@@ -848,8 +848,6 @@ var WebGLApp = (function() { return new function () {
       var mesh = new THREE.Mesh( labelspheregeometry, color );
       mesh.position.set( v.x, v.y, v.z );
       mesh.node_id = nodeID;
-      mesh.skeleton_id = self.id;
-      mesh.orig_coord = {x: node[4], y: node[5], z: node[6]};
       self.specialTagSpheres[nodeID] = mesh;
       scene.add( mesh );
     };
@@ -904,16 +902,13 @@ var WebGLApp = (function() { return new function () {
         self.vertexIDs[type].push(id2);
       };
 
-      var createNodeSphere = function(id, x, y, z, radius) {
+      var createNodeSphere = function(id, v, radius) {
         // Reuse geometry: an icoSphere of radius 1.0
         var mesh = new THREE.Mesh( icoSphere, new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
         // Scale the mesh to bring about the correct radius
         mesh.scale.x = mesh.scale.y = mesh.scale.z = radius;
-        var v = pixelSpaceVector(x, y, z);
         mesh.position.set( v.x, v.y, v.z );
         mesh.node_id = id;
-        mesh.orig_coord = {x: x, y: y, z: z};
-        mesh.skeleton_id = self.id;
         self.radiusVolumes[id] = mesh;
         scene.add( mesh );
       };
@@ -961,13 +956,13 @@ var WebGLApp = (function() { return new function () {
             createEdge(node[0], v1, p[0], v2, 'neurite');
             // Create sphere
             if (node[7] > 0) {
-              createNodeSphere(node[0], node[4], node[5], node[6], v1, node[7] * scale);
+              createNodeSphere(node[0], v1, node[7] * scale);
             }
           }
         } else if (node[7] > 0) {
           // For the root node
           var v1 = pixelSpaceVector(node[4], node[5], node[6]);
-          createNodeSphere(node[0], node[4], node[5], node[6], v1, node[7] * scale);
+          createNodeSphere(node[0], v1, node[7] * scale);
         }
         if (node[8] < 5) {
           createLabelSphere(node[0], labelColors.uncertain);
@@ -975,13 +970,10 @@ var WebGLApp = (function() { return new function () {
       });
 
       // The itype is 0 (pre) or 1 (post), and chooses from the two arrays above
-      var createSynapticSphere = function(nodeID, x, y, z, itype) {
-        var v = pixelSpaceVector(x, y, z);
+      var createSynapticSphere = function(nodeID, v, itype) {
         var mesh = new THREE.Mesh( radiusSphere, synapticColors[itype] );
         mesh.position.set( v.x, v.y, v.z );
         mesh.node_id = nodeID;
-        mesh.orig_coord = {x: x, y: y, z: z};
-        mesh.skeleton_id = self.id;
         mesh.type = synapticTypes[itype];
         self.synapticSpheres[nodeID] = mesh;
         scene.add( mesh );
@@ -997,12 +989,14 @@ var WebGLApp = (function() { return new function () {
         var node = nodeProps[con[0]];
         // indices 3,4,5 are x,y,z for connector
         // indices 4,5,6 are x,y,z for node
-        createEdge(con[1], pixelSpaceVector(con[3], con[4], con[5]),
-                   node[0], pixelSpaceVector(node[4], node[5], node[6]),
+        var v1 = pixelSpaceVector(con[3], con[4], con[5]);
+        var v2 = pixelSpaceVector(node[4], node[5], node[6]);
+        createEdge(con[1], v1,
+                   node[0], v2,
                    synapticTypes[con[2]]);
         if (!self.synapticSpheres.hasOwnProperty(node[0])) {
           // con[2] is 0 for presynaptic and 1 for postsynaptic
-          createSynapticSphere(node[0], node[4], node[5], node[6], con[2]);
+          createSynapticSphere(node[0], v2, con[2]);
         }
       });
 

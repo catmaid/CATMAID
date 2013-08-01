@@ -600,13 +600,13 @@ var SkeletonElements = new function()
             // Joining two skeletons: only possible if one owns both nodes involved
             // or is a superuser
             if( node.skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
-              alert('Can not join node with another node of the same skeleton!');
+              alert('Cannot join node with another node of the same skeleton!');
               return;
             }
 
             //check time points to make sure of the order
             if( node.t === SkeletonAnnotations.getActiveNodeTime() ) {
-              alert('Can not join node with another node of the same time point!');
+              alert('Cannot join node with another node of the same time point!');
               return;
             }
 

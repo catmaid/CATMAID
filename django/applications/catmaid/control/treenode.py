@@ -197,7 +197,7 @@ def create_treenode(request, project_id=None):
 
             #to allow tracing backwards in time
             tracingBackwards = False
-            if parent_treenode.parent_id is None and parent_treenode.location_t > params['t']:
+            if parent_treenode.parent_id is None and parent_treenode.location_t >= params['t']:
                 params['parent_id'] = None
                 tracingBackwards = True
 

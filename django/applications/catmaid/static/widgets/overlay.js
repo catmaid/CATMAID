@@ -1440,12 +1440,16 @@ var SkeletonAnnotations = new function()
         // do something else when clicking
         if (getMode() === "skeletontracing") {
           if ("treenode" === atn.type || null === atn.id) {
+            if( atn.t === phys_t) {
+                alert('cannot add a new node to the active node in the same time point!');  
+            }else{
             // Create a new treenode,
             // either root node if atn is null, or child if it is not null
             if (null !== atn.id) {
               statusBar.replaceLast("Created new node as child of node #" + atn.id);
             }
             createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z, phys_t, phys_c);
+           }
           } else if ("connector" === atn.type) {
             // create new treenode (and skeleton) presynaptic to activated connector
             // if the connector doesn't have a presynaptic node already

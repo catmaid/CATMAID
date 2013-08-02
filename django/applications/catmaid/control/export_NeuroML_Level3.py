@@ -12,15 +12,21 @@
 import time
 from collections import defaultdict, namedtuple
 
-def export(all_treenodes, connections, scale=0.001):
-    """ Export a group of neuronal arbors and their synapses as NetworkML v1.8.1.
+def exportMutual(all_treenodes, connections, scale=0.001):
+    """ Export a group of neuronal arbors and their synapses as NeuroML Level 3 v1.8.1.
     all_treenodes: an iterator (can be lazy) of treenodes like [<id>, <parent_id>, <location>, <radius>, <skeleton_id>].
     connections: a dictionary of skeleton ID vs tuple of tuple of tuples, each a pair containing the presynaptic treenode ID and the map of connector ID vs list of postsynaptic treenode IDs.
     scale: defaults to 0.001 to transform nanometers (CATMAID) into micrometers (NeuroML).
     Returns a lazy sequence of strings that expresses the XML. """
-    for source in ([header()], body(all_treenodes, connections, scale), ["</neuroml>"]):
+    for source in ([header()], bodyMutual(all_treenodes, connections, scale), ["</neuroml>"]):
         for line in source:
            yield line
+
+def exportSingle(all_treenodes, inputs, scale=0.001):
+    """ Export a single neuronal arbor with a set of inputs as NeuroML Level 3 v1.8.1. """
+    for source in ([header()], bodySingle(all_treenodes, inputs, scale), ["</neuroml>"]):
+        for line in source:
+            yield line
 
 def header():
     return """<?xml version="1.0" encoding="UTF-8"?>
@@ -209,7 +215,7 @@ def make_arbors(all_treenodes, cellIDs, scale, state):
         for line in make_arbor(skeletonID, treenodes, scale, state):
             yield line
 
-def make_synapses(pre_skID, post_skID, synapses, state):
+def make_connection_entries(pre_skID, post_skID, synapses, state):
     for pre_treenodeID, post_treenodeID in synapses:
         yield '<connection id="%s" pre_cell_id="%s" pre_segment_id="%s" pre_fraction_along="0.5" post_cell_id="%s" post_segment_id="%s"/>\n' % (state.nextID(), pre_skID, state.synaptic_treenodes[pre_treenodeID], post_skID, state.synaptic_treenodes[post_treenodeID])
 
@@ -219,7 +225,7 @@ def make_connection(connection, state):
         for source in (('<projection name="NetworkConnection" source="%s" target="%s">\n' % (pre_skID, post_skID),
                         '<synapse_props synapse_type="DoubExpSynA" internal_delay="5" weight="1" threshold="-20"/>\n',
                         '<connections size="%s">\n' % len(synapses)),
-                       make_synapses(pre_skID, post_skID, synapses, state),
+                       make_connection_entries(pre_skID, post_skID, synapses, state),
                        ('</connections>\n', '</projection>\n')):
             for line in source:
                 yield line
@@ -234,7 +240,8 @@ def make_cells(cellIDs):
     for cellID in cellIDs:
         yield '<population name="%s" cell_type="%s"><instances size="1"><instance id="0"><location x="0" y="0" z="0"/></instance></instances></population>\n' % (cellID, cellID)
 
-def body(all_treenodes, connections, scale):
+
+def bodyMutual(all_treenodes, connections, scale):
     """ Create a cell for each arbor. """
     synaptic_treenodes = {}
     for m in connections.itervalues():
@@ -252,7 +259,7 @@ def body(all_treenodes, connections, scale):
                make_arbors(all_treenodes, cellIDs, scale, state),
                ['</cells>\n']]
 
-    # Then populations
+    # Then populations: one instance of each cell
     sources.append(['<populations xmlns="http://morphml.org/networkml/schema">\n'])
     sources.append(make_cells(cellIDs))
     sources.append(['</populations>\n'])
@@ -262,6 +269,47 @@ def body(all_treenodes, connections, scale):
         sources.append(['<projections units="Physiological Units" xmlns="http://morphml.org/networkml/schema">\n'])
         sources.append(make_connections(connections, state))
         sources.append(['</projections>\n'])
+
+    for source in sources:
+        for line in source:
+            yield line
+
+def make_inputs(cellIDs, inputs, state):
+    cellID = cellIDs[0]
+    for inputSkeletonID, treenodeIDs in inputs.iteritems():
+        for source in [('<input name="%s">\n' % inputSkeletonID,
+                        '<random_stim frequency="20" synaptic_mechanism="DoubExpSynA"/>\n',
+                        '<target population="%s">\n' % cellID,
+                        '<sites size="%s">\n' % len(treenodeIDs)),
+                       ('<site cell_id="0" segment_id="%s"/>\n' % state.synaptic_treenodes[treenodeID] for treenodeID in treenodeIDs),
+                       ('</sites>\n',
+                        '</target>\n',
+                        '</input>\n')]:
+            for line in source:
+                yield line
+
+
+def bodySingle(all_treenodes, inputs, scale):
+    synaptic_treenodes = {treenodeID: None for treenodeIDs in inputs.itervalues() for treenodeID in treenodeIDs}
+
+    state = State(synaptic_treenodes)
+
+    cellIDs = []
+
+    # First cells (only one)
+    sources = [['<cells>\n'],
+               make_arbors(all_treenodes, cellIDs, scale, state),
+               ['</cells>\n']]
+
+    # Then populations: one instance of the one cell
+    sources.append(['<populations xmlns="http://morphml.org/networkml/schema">\n'])
+    sources.append(make_cells(cellIDs))
+    sources.append(['</populations>\n'])
+
+    # Then inputs onto the one cell
+    sources.append(['<inputs units="SI Units" xmlns="http://morphml.org/networkml/schema">\n'])
+    sources.append(make_inputs(cellIDs, inputs, state))
+    sources.append(['</inputs>\n'])
 
     for source in sources:
         for line in source:

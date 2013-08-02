@@ -47,12 +47,50 @@
     });
   }
 	
-	function graphexport_NetworkML181() {
-		var post = { skids: NeuronStagingArea.get_selected_skeletons() };
-		$(function() {
-				// TODO: leaves behind a hidden iframe
-				var iframe = $("body").append('<iframe src="' + django_url + project.id + '/neuroml/neuroml_level3_v181?' + $.param(post) + '" style="display: none;" ></iframe>'); 
-		});
+	function graphexport_NeuroML181() {
+		var dialog = new OptionsDialog("Export NeuroML Level 3");
+		var choice = dialog.appendChoice("Source: ", "neuroml-choice",
+				['Neurons in Selection Table and their mutual synapses',
+				 'Active neuron and all its input synapses',
+				 'Active neuron and input synapses only from neurons in Selection Table'],
+				[0, 1, 2],
+				0);
+		dialog.onOK = function() {
+			var post;
+			switch (choice.selectedIndex) {
+				case 0:
+					post = {skids: NeuronStagingArea.get_selected_skeletons()};
+					if (!post.skids || 0 === post.skids.length) {
+						alert("Add first one or more skeletons to the Selection Table!");
+						return;
+					}
+					break;
+				case 1:
+					post = {skids: [SkeletonAnnotations.getActiveSkeletonId()]};
+					if (!post.skids || 0 === post.skids.length) {
+						alert("Select a neuron first!");
+						return;
+					}
+					break;
+				case 2:
+					post = {skids: [SkeletonAnnotations.getActiveSkeletonId()],
+					        inputs: NeuronStagingArea.get_selected_skeletons()};
+					if (!post.skids || 0 === post.skids.length) {
+						alert("Select a neuron first!");
+						return;
+					} else if (!post.inputs || 0 === post.inputs.length) {
+						alert("Add first one or more skeletons to the Selection Table!");
+						return;
+					}
+					break;
+			}
+			post.mode = choice.selectedIndex;
+			$(function() {
+					// TODO: leaves behind a hidden iframe
+					var iframe = $("body").append('<iframe src="' + django_url + project.id + '/neuroml/neuroml_level3_v181?' + $.param(post) + '" style="display: none;" ></iframe>'); 
+			});
+		};
+		dialog.show();
 	};
 
 </script>
@@ -73,7 +111,7 @@ summary statistics.
   <li><a target="_new" href="javascript: graphexport_graphml()"><strong>Graph ML</strong></a><br />
   To further analyze the graph in e.g. <a target='_new' href='http://gephi.org/'>Gephi</a> or <a target='_new' href='http://www.cytoscape.org'>Cytoscape</a>.</li>
 
-	<li><a target="_new" href="javascript: graphexport_NetworkML181()"><strong>NeuroML 1.8.1 (Level 3, NetworkML)</strong></a></br />
+	<li><a target="_new" href="javascript: graphexport_NeuroML181()"><strong>NeuroML 1.8.1 (Level 3, NetworkML)</strong></a></br />
 	For modeling with <a href="http://www.neuroconstruct.org/">neuroConstruct</a> and then e.g. the <a href="http://www.neuron.yale.edu/neuron/">NEURON</a> simulator.</li>
 
   <!-- <li>Connectivity Matrix (Matlab, Python)</li> -->

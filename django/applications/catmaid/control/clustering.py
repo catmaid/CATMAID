@@ -13,6 +13,7 @@ from django.http import HttpResponse
 from django.template import RequestContext
 
 from catmaid.models import Class, ClassInstance, ClassClass, ClassInstanceClassInstance
+from catmaid.models import Relation
 from catmaid.control.classification import ClassProxy
 from catmaid.control.classification import get_root_classes_qs, get_classification_links_qs
 
@@ -107,7 +108,8 @@ class ClusteringWizard(SessionWizardView):
             # checked which classes they have instanciated.
             raw_features = []
             for o in ontologies:
-                raw_features = raw_features + get_features( o, graphs, add_nonleafs, only_used_features )
+                raw_features = raw_features + get_features( o, self.workspace_pid,
+                    graphs, add_nonleafs, only_used_features )
             self.features = raw_features
             # Build form array
             features = []
@@ -234,11 +236,11 @@ class Feature:
     def __len__(self):
         return len(self.links)
 
-def get_features( ontology, graphs, add_nonleafs=False, only_used_features=False ):
+def get_features( ontology, workspace_pid, graphs, add_nonleafs=False, only_used_features=False ):
     """ Return a list of Feature instances which represent paths
     to leafs of the ontology.
     """
-    feature_lists = get_feature_paths( ontology, add_nonleafs )
+    feature_lists = get_feature_paths( ontology, workspace_pid, add_nonleafs )
     features = [Feature(fl) for fl in feature_lists]
     if only_used_features:
         used_features = get_by_graphs_instantiated_features(graphs, features)
@@ -246,7 +248,64 @@ def get_features( ontology, graphs, add_nonleafs=False, only_used_features=False
     else:
         return features
 
-def get_feature_paths( ontology, add_nonleafs=False, depth=0, max_depth=100 ):
+def get_feature_paths( ontology, workspace_pid, add_nonleafs=False, depth=0, max_depth=100 ):
+    """ Returns all root-leaf paths of the passed ontology. It respects
+    is_a relationships.
+    """
+    return get_feature_paths_remote(ontology, workspace_pid, add_nonleafs, depth, max_depth)
+
+def get_feature_paths_remote( ontology, workspace_pid, add_nonleafs=False, depth=0, max_depth=100 ):
+    """ Returns all root-leaf paths of the passed ontology. It respects
+    is_a relationships. It uses an implementation stored remotely in the
+    database server. It needs three database queries in total.
+    """
+
+    query = "SELECT * FROM get_feature_paths(%s, %s, %s, %s, %s);" % \
+        (ontology.id, workspace_pid, add_nonleafs, depth, max_depth)
+
+    # Run query
+    cursor = connection.cursor()
+    cursor.execute(query)
+
+    # Parse result
+    class_ids = set()
+    relation_ids = set()
+    rows = cursor.fetchall()
+    for r in rows:
+        # We get back tuples of feature links with each consisting of the
+        # IDs of class_a, class_b, relation and a super class. To create
+        # FeatureLink objects out of this, we need to get the class objects
+        # first. So collect all class IDs we have got.
+        # The link data can be found in the first row of the result set
+        if not r:
+            raise Exception('Could not parse feature path data received from data base.')
+        for link_data in r[0]:
+            class_ids.add(link_data[0])
+            class_ids.add(link_data[1])
+            relation_ids.add(link_data[2])
+            if link_data[3]:
+               class_ids.add(link_data[3])
+
+    # Get all needed class and relation model objects
+    classes = Class.objects.in_bulk(class_ids)
+    relations = Relation.objects.in_bulk(relation_ids)
+
+    # Create feature links
+    features = []
+    for r in rows:
+        feature = []
+        for link_data in r[0]:
+            class_a = classes[link_data[0]]
+            class_b = classes[link_data[1]]
+            relation = relations[link_data[2]]
+            super_a = link_data[3] if classes[link_data[3]] else None
+            fl = FeatureLink(class_a, class_b, relation, super_a)
+            feature.append(fl)
+        features.append(feature)
+
+    return features
+
+def get_feature_paths_simple( ontology, add_nonleafs=False, depth=0, max_depth=100 ):
     """ Returns all root-leaf paths of the passed ontology. It respects
     is_a relationships.
     """

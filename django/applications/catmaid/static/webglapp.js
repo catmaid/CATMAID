@@ -909,7 +909,7 @@ var WebGLApp = (function() { return new function () {
       };
 
       // Reused for all meshes
-      var material = new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false  } );
+      var material = new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false } );
 
       var createNodeSphere = function(id, v, radius) {
         // Reuse geometry: an icoSphere of radius 1.0

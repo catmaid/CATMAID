@@ -1,8 +1,10 @@
 # A 'tree' is a networkx.DiGraph with a single root node (a node without parents)
 
 from operator import itemgetter
-from networkx import Graph
+from networkx import Graph, DiGraph
 from collections import defaultdict
+from math import sqrt
+from itertools import izip
 
 def find_root(tree):
     """ Search and return the first node that has zero predecessors.
@@ -122,22 +124,22 @@ def simplify(tree, keepers):
 
     return mini
 
-def partition(tree):
+def partition(tree, root_node=None):
     """ Partition the tree as a list of sequences of node IDs,
     with branch nodes repeated as ends of all sequences except the longest
     one that finishes at the root.
     Each sequence runs from an end node to either the root or a branch node. """
-    distances = edge_count_to_root(tree, root_node=None) # distance in number of edges from root
+    distances = edge_count_to_root(tree, root_node=root_node) # distance in number of edges from root
     seen = set()
-    sequences = []
+    sequences = [] # TODO use yield instead
     # Iterate end nodes sorted from highest to lowest distance to root
     endNodeIDs = (nID for nID in tree.nodes() if 0 == len(tree.successors(nID)))
     for nodeID in sorted(endNodeIDs, key=distances.get, reverse=True):
-        sequence = [tree.node[nodeID]]
+        sequence = [nodeID]
         parents = tree.predecessors(nodeID)
         while parents:
             parentID = parents[0]
-            sequence.append(tree.node[parentID])
+            sequence.append(parentID)
             if parentID in seen:
                 break
             seen.add(parentID)
@@ -146,4 +148,46 @@ def partition(tree):
         if len(sequence) > 1:
             sequences.append(sequence)
     return sequences
+
+
+def spanning_tree(tree, preserve):
+    """ Return a new DiGraph with the spanning tree including the desired nodes.
+    preserve: a set of nodes to keep. """
+    if len(tree.successors(find_root(tree))) > 1:
+        tree = tree.copy()
+        endNode = (node for node in tree if not tree.successors(node)).next()
+        reroot(tree, endNode)
+
+    spanning = DiGraph()
+    preserve = set(preserve) # duplicate, will be altered
+    n_seen = 0
+    sequences = sorted(partition(tree), key=len)
+
+    # Start from shortest sequence
+    for seq in sequences:
+        path = []
+        for node in seq:
+            if node in preserve:
+                path.append(node)
+                if node not in spanning:
+                    n_seen += 1
+                if len(preserve) == n_seen:
+                    break
+            elif path:
+                path.append(node)
+
+        if path:
+            spanning.add_path(path)
+            if seq[-1] == path[-1]:
+                preserve.add(path[-1])
+
+        if len(preserve) == n_seen:
+            break
+
+    return spanning
+
+def cable_length(tree, locations):
+    """ locations: a dictionary of nodeID vs tuple of node position (1d, 2d, 3d, ...)
+    Returns the total cable length. """
+    return sum(sqrt(sum(pow(loc2 - loc1, 2) for loc1, loc2 in izip(locations[a], locations[b]))) for a,b in tree.edges_iter())
 

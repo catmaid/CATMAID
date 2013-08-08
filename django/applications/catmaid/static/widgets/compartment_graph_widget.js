@@ -259,17 +259,20 @@ var CompartmentGraphWidget = new function()
       };
 
       cy.layout( options );
-
     }
-
-    
   }
 
 
   this.updateGraph = function( data ) {
 
-    for(var i = 0; i < data.nodes.length; i++) {
+    for (var i = 0; i < data.nodes.length; i++) {
       data.nodes[i]['data']['color'] = '#' + NeuronStagingArea.get_color_of_skeleton( parseInt(data.nodes[i]['data'].id) ).getHexString();
+    }
+
+    for (var i=0; i<data.edges.length; i++) {
+      console.log(data.edges[i].data.source,
+                  data.edges[i].data.target,
+                  data.edges[i].data.risk);
     }
 
     // first remove all nodes

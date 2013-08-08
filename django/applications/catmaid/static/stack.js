@@ -689,6 +689,15 @@ function Stack(
 		return tool;
 	}
 
+	/**
+	 * Shows and hides reference lines that meet on the center of each slice.
+	 */
+	this.showReferenceLines = function( show )
+	{
+		vert.style.visibility = show ? "visible" : "hidden";
+		horr.style.visibility = show ? "visible" : "hidden";
+	};
+
 	// initialize
 	var self = this;
 	if ( typeof ui == "undefined" ) ui = new UI();
@@ -825,21 +834,20 @@ function Stack(
 	neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
 	view.appendChild( neuronnameDisplay );
 
-    // Display horizontal and vertical reference lines if wanted.
-    if (userprofile.display_stack_reference_lines) {
-        var vert = document.createElement( "div" );
-        var horr = document.createElement( "div" );
-        vert.style.height = horr.style.width = "100%";
-        vert.style.width = horr.style.height = "1px";
-        vert.style.position = horr.style.position = "absolute";
-        vert.style.top = horr.style.left = "0px";
-        vert.style.left = horr.style.top = "50%";
-        vert.style.zIndex = horr.style.zIndex = "1";
-        vert.style.backgroundColor = horr.style.backgroundColor = "#ffffff";
-        vert.style.opacity = horr.style.opacity = "0.5";
-        view.appendChild( vert );
-        view.appendChild( horr );
-    }
+	// Display horizontal and vertical reference lines if wanted.
+	var vert = document.createElement( "div" );
+	var horr = document.createElement( "div" );
+	vert.style.height = horr.style.width = "100%";
+	vert.style.width = horr.style.height = "1px";
+	vert.style.position = horr.style.position = "absolute";
+	vert.style.top = horr.style.left = "0px";
+	vert.style.left = horr.style.top = "50%";
+	vert.style.zIndex = horr.style.zIndex = "1";
+	vert.style.backgroundColor = horr.style.backgroundColor = "#ffffff";
+	vert.style.opacity = horr.style.opacity = "0.5";
+	view.appendChild( vert );
+	view.appendChild( horr );
+	self.showReferenceLines( userprofile.display_stack_reference_lines );
 
 	// take care, that all values are within a proper range
 	// Declare the x,y,z,s as coordinates in pixels

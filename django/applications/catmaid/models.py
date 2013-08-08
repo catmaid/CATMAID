@@ -821,6 +821,8 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User)
     inverse_mouse_wheel = models.BooleanField(
         default=settings.PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL)
+    display_stack_reference_lines = models.BooleanField(
+        default=settings.PROFILE_DISPLAY_STACK_REFERENCE_LINES)
     independent_ontology_workspace_is_default = models.BooleanField(
         default=settings.PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT)
     show_text_label_tool = models.BooleanField(
@@ -845,6 +847,8 @@ class UserProfile(models.Model):
         """
         pdict = {}
         pdict['inverse_mouse_wheel'] = self.inverse_mouse_wheel
+        pdict['display_stack_reference_lines'] = \
+            self.display_stack_reference_lines
         pdict['independent_ontology_workspace_is_default'] = \
             self.independent_ontology_workspace_is_default
         pdict['show_text_label_tool'] = self.show_text_label_tool

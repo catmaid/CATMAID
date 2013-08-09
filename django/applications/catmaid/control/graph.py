@@ -88,7 +88,6 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
             # Define edges between domains: create a simplified graph
             mini = simplify(graph, anchors.keys())
             # Replace each node by the corresponding graph, or a graph of a single node
-            table = {}
             for node in mini.nodes_iter():
                 g = anchors.get(node)
                 if not g:
@@ -180,7 +179,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
         i = 0
         for g in digraphs:
             if g.number_of_nodes() == 0:
-                print "no nodes in g, from sekelton ID #%s" % skid
+                print "no nodes in g, from skeleton ID #%s" % skid
                 continue
             circuit.add_node(g, {'id': "%s_%s" % (skid, i+1),
                                  'label': "%s [%s]" % (names[skid], i+1),
@@ -264,10 +263,10 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
         # Add edges between circuit nodes that represent different domains of the same neuron
         for skeleton_id, list_mini in minis.iteritems():
             for mini in list_mini:
-                for i,node in enumerate(mini.nodes_iter()): # TODO no need to enumerate
+                for node in mini.nodes_iter():
                     g = mini.node[node]['g']
-                    if g not in circuit:
-                        # A branch node that was preserved to the minified arbor
+                    if 1 == len(g) and g.nodes_iter(data=True).next()[1].get('branch'):
+                        # A branch node that was preserved in the minified arbor
                         circuit.add_node(g, {'id': '%s-%s' % (skeleton_id, node),
                                              'skeleton_id': skeleton_id,
                                              'label': "", # "%s [%s]" % (names[skeleton_id], node),

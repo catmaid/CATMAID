@@ -12,6 +12,7 @@ from catmaid.models import *
 from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
+from catmaid.control.tracing import check_tracing_setup
 
 import sys
 try:
@@ -52,12 +53,15 @@ def node_list_tuples(request, project_id=None):
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
-    if 'skeleton' not in class_map:
-        raise Exception('Can not find "skeleton" class for this project')
-
-    for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of']:
-        if relation not in relation_map:
-            raise Exception('Can not find "%s" relation for this project' % relation)
+    # First, check if the tracing system is correctly set-up
+    setup_okay = check_tracing_setup(project_id)
+    if not setup_okay:
+        # Check permissions
+        can_administer = request.user.has_perm('can_administer', project_id)
+        # Find missing links and classes
+        return HttpResponse(json.dumps(
+            {'needs_setup': True,
+             'has_needed_permissions': can_administer}))
 
     try:
         cursor = connection.cursor()

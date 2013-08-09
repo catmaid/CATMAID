@@ -14,7 +14,7 @@ from catmaid.control.object import get_annotation_graph
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-
+from catmaid.control.tracing import check_tracing_setup
 
 @requires_user_role(UserRole.Annotate)
 def instance_operation(request, project_id=None):
@@ -413,13 +413,15 @@ def tree_object_list(request, project_id=None):
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
-    for class_name in ['neuron', 'skeleton', 'group', 'root']:
-        if class_name not in class_map:
-            raise Exception('Can not find "%s" class for this project' % class_name)
-
-    for relation in ['model_of', 'part_of']:
-        if relation not in relation_map:
-            raise Exception('Can not find "%s" relation for this project' % relation)
+    # First, check if the tracing system is correctly set-up
+    setup_okay = check_tracing_setup(project_id)
+    if not setup_okay:
+        # Check permissions
+        can_administer = user.has_perm('can_administer', p)
+        # Find missing links and classes
+        return HttpResponse(json.dumps(
+            {'needs_setup': True,
+             'has_needed_permissions': can_administer}))
 
     response_on_error = ''
     try:

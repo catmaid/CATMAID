@@ -152,7 +152,7 @@ def partition(tree, root_node=None):
 
 def spanning_tree(tree, preserve):
     """ Return a new DiGraph with the spanning tree including the desired nodes.
-    preserve: a set of nodes to keep. """
+    preserve: the set of nodes that delimit the spanning tree. """
     if len(tree.successors(find_root(tree))) > 1:
         tree = tree.copy()
         endNode = (node for node in tree if not tree.successors(node)).next()

@@ -625,19 +625,36 @@ var WindowMaker = new function()
     sync.appendChild(option);
     contentbutton.appendChild(sync);
 
-    var show = document.createElement('input');
-    show.setAttribute("type", "button");
-    show.setAttribute("id", "refresh_compartment_layout");
-    show.setAttribute("value", "Update layout");
-    show.onclick = CompartmentGraphWidget.updateLayout;
-    contentbutton.appendChild(show);
+    var update = document.createElement('input');
+    update.setAttribute("type", "button");
+    update.setAttribute("id", "refresh_compartment_layout");
+    update.setAttribute("value", "Update layout");
+    update.onclick = CompartmentGraphWidget.updateLayout;
+    contentbutton.appendChild(update);
 
-    var show = document.createElement('input');
-    show.setAttribute("type", "button");
-    show.setAttribute("id", "graph_properties");
-    show.setAttribute("value", "Properties");
-    show.onclick = CompartmentGraphWidget.graph_properties;
-    contentbutton.appendChild(show);
+    var props = document.createElement('input');
+    props.setAttribute("type", "button");
+    props.setAttribute("id", "graph_properties");
+    props.setAttribute("value", "Properties");
+    props.onclick = CompartmentGraphWidget.graph_properties;
+    contentbutton.appendChild(props);
+
+    contentbutton.appendChild(document.createTextNode('Text: '));
+    var toggleNames = document.createElement('input');
+    toggleNames.setAttribute("type", "checkbox");
+    toggleNames.setAttribute("id", "graph_toggle_names");
+    toggleNames.setAttribute("label", "Toggle names");
+    toggleNames.checked = true;
+    toggleNames.onclick = CompartmentGraphWidget.toggle_show_node_labels;
+    contentbutton.appendChild(toggleNames);
+
+    contentbutton.appendChild(document.createTextNode('Short: '));
+    var toggleShortNames = document.createElement('input');
+    toggleShortNames.setAttribute("type", "checkbox");
+    toggleShortNames.setAttribute("id", "graph_toggle_short_names");
+    toggleShortNames.setAttribute("label", "Crop names at semicolon");
+    toggleShortNames.onclick = CompartmentGraphWidget.toggleCutNamesAtSemiColon;
+    contentbutton.appendChild(toggleShortNames);
 
     content.appendChild( contentbutton );
 

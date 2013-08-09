@@ -21,7 +21,7 @@ var CompartmentGraphWidget = new function()
       show_node_labels = true;
       cy.nodes().css('text-opacity', 1);
     }
-  }
+  };
 
   this.graph_properties = function() {
 
@@ -325,7 +325,7 @@ var CompartmentGraphWidget = new function()
       columns: undefined, // force num of cols in the grid
       ready: undefined, // callback on layoutready
       stop: undefined // callback on layoutstop
-      };
+    };
 
     cy.layout( options );
 
@@ -352,6 +352,33 @@ var CompartmentGraphWidget = new function()
         ConnectorSelection.show_shared_connectors( splitedge[0], splitedge[2] );
       }
     });
+  };
+
+  this.toggleCutNamesAtSemiColon = function() {
+    if (this.originalNames) {
+      // Restore
+      var originalNames = this.originalNames;
+      cy.nodes().each(function(i, element) {
+        if (element.id() in originalNames) {
+          element.data('label', originalNames[element.id()]);
+        }
+      });
+      delete this.originalNames;
+    } else {
+      // Crop at semicolon
+      this.originalNames = {};
+      var originalNames = this.originalNames;
+      cy.nodes().each(function(i, element) {
+        if (element.isNode()) {
+          var label = element.data().label;
+          originalNames[element.id()] = label;
+          var i_semicolon = label.indexOf(';');
+          if (i_semicolon > 0) {
+            element.data('label', label.substring(0, i_semicolon));
+          }
+        }
+      });
+    }
   };
 
   this.updateConfidenceGraphFrom3DViewer = function() {

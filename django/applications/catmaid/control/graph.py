@@ -232,6 +232,11 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
     # Estimate the risk factor of the edge between two arbors,
     # as a function of the number of synapses and their location within the arbor.
     for pre_arbor, post_arbor, edge_props in circuit.edges_iter(data=True):
+        if pre_arbor == post_arbor:
+            # Signal autapse
+            edge_props['risk'] = -2
+            continue
+
         spanning = spanning_tree(post_arbor, edge_props['post_treenodes'])
         tc = post_arbor.treenode_synapse_counts
         maximum_synapse_centrality = max(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())

@@ -609,28 +609,14 @@ var WindowMaker = new function()
     var show = document.createElement('input');
     show.setAttribute("type", "button");
     show.setAttribute("id", "confidence_compartment_show_neurons_from_3d_view");
-    show.setAttribute("value", "Show graph");
+    show.setAttribute("value", "Generate graph");
     show.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
     contentbutton.appendChild(show);
 
-    var sync = document.createElement('select');
-    sync.setAttribute("id", "compartment_layout");
-    var option = document.createElement("option");
-    option.text = "Grid";
-    option.value = 1;
-    sync.appendChild(option);
-    var option = document.createElement("option");
-    option.text = "Force-directed";
-    option.value = 2;
-    sync.appendChild(option);
-    contentbutton.appendChild(sync);
-
-    var update = document.createElement('input');
-    update.setAttribute("type", "button");
-    update.setAttribute("id", "refresh_compartment_layout");
-    update.setAttribute("value", "Update layout");
-    update.onclick = CompartmentGraphWidget.updateLayout;
-    contentbutton.appendChild(update);
+    var layout = appendSelect(contentbutton, "compartment_layout", ["Force-directed", "Grid"]);
+    layout.onchange = function() {
+      CompartmentGraphWidget.updateLayout(layout.selectedIndex);
+    };
 
     var props = document.createElement('input');
     props.setAttribute("type", "button");
@@ -995,6 +981,7 @@ var WindowMaker = new function()
       select.appendChild(option);
     });
     div.appendChild(select);
+    return select;
   };
 
   var createSkeletonAnalyticsWindow = function()

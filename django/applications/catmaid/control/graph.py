@@ -147,6 +147,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
     minis = defaultdict(list) # skeleton_id vs list of minified graphs
     locations = None
     if bandwidth > 0:
+        whole_arbors = arbors
         locations = {row[0]: eval(row[4]) for row in rows}
         treenode_connector = defaultdict(list)
         for connector_id, pp in connectors.iteritems():
@@ -155,6 +156,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
             for treenode_id in chain.from_iterable(pp[relations['postsynaptic_to']]):
                 treenode_connector[treenode_id].append((connector_id, "postsynaptic_to"))
         arbors, minis = split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, minis)
+    else:
+        whole_arbors = arbors
 
 
     # Obtain neuron names
@@ -206,53 +209,62 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                                 break
                     break
 
-    # Compute synapse centrality of every node in every arbor
-    for arbor in circuit.nodes_iter():
-        tc = {treenodeID: Counts() for treenodeID in arbor}
-        synapses = skeleton_synapses[circuit.node[arbor]['skeleton_id']] # TODO skeleton_id cannot be found
-        pre = synapses[relations['presynaptic_to']]
-        post = synapses[relations['postsynaptic_to']]
-        totalInputs = len(pre)
-        totalOutputs = len(post)
+    if bandwidth <= 0:
+        # Compute synapse centrality of every node in every arbor that has synapses
+        for skeleton_id, arbors in whole_arbors.iteritems():
+            synapses = skeleton_synapses[skeleton_id]
+            pre = synapses[relations['presynaptic_to']]
+            post = synapses[relations['postsynaptic_to']]
+            for arbor in arbors:
+                # The subset of synapses that belong to the fraction of the original arbor
+                pre_sub = tuple(treenodeID for treenodeID in pre if treenodeID in arbor)
+                post_sub = tuple(treenodeID for treenodeID in post if treenodeID in arbor)
 
-        for treenodeID in pre:
-            tc[treenodeID].outputs += 1
+                totalInputs = len(pre_sub)
+                totalOutputs = len(post_sub)
+                tc = {treenodeID: Counts() for treenodeID in arbor}
 
-        for treenodeID in post:
-            tc[treenodeID].inputs += 1
+                for treenodeID in pre_sub:
+                    tc[treenodeID].outputs += 1
 
-        # Update the nPossibleIOPaths field in the Counts instance of each treenode
-        _node_centrality_by_synapse(arbor, tc, totalOutputs, totalInputs)
+                for treenodeID in post_sub:
+                    tc[treenodeID].inputs += 1
 
-        arbor.treenode_synapse_counts = tc
+                # Update the nPossibleIOPaths field in the Counts instance of each treenode
+                _node_centrality_by_synapse(arbor, tc, totalOutputs, totalInputs)
 
-    if not locations:
-        locations = {row[0]: eval(row[4]) for row in rows}
+                arbor.treenode_synapse_counts = tc
 
-    # Estimate the risk factor of the edge between two arbors,
-    # as a function of the number of synapses and their location within the arbor.
-    for pre_arbor, post_arbor, edge_props in circuit.edges_iter(data=True):
-        if pre_arbor == post_arbor:
-            # Signal autapse
-            edge_props['risk'] = -2
-            continue
+        if not locations:
+            locations = {row[0]: eval(row[4]) for row in rows}
 
-        spanning = spanning_tree(post_arbor, edge_props['post_treenodes'])
-        tc = post_arbor.treenode_synapse_counts
-        maximum_synapse_centrality = max(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())
-        cable = cable_length(spanning, locations)
-        if -1 == maximum_synapse_centrality:
-            # Signal not computable
-            edge_props['risk'] = -1
-        else:
-            edge_props['risk'] = 1.0 / sqrt(pow(cable / cable_spread, 2) + pow(maximum_synapse_centrality / path_confluence, 2)) # NOTE: should subtract 1 from maximum_synapse_centrality
+        # Estimate the risk factor of the edge between two arbors,
+        # as a function of the number of synapses and their location within the arbor.
+        for pre_arbor, post_arbor, edge_props in circuit.edges_iter(data=True):
+            if pre_arbor == post_arbor:
+                # Signal autapse
+                edge_props['risk'] = -2
+                continue
+
+            spanning = spanning_tree(post_arbor, edge_props['post_treenodes'])
+            #for arbor in whole_arbors[circuit[post_arbor]['skeleton_id']]:
+            #    if post_arbor == arbor:
+            #        tc = arbor.treenode_synapse_counts
+            tc = post_arbor.treenode_synapse_counts
+            maximum_synapse_centrality = max(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())
+            cable = cable_length(spanning, locations)
+            if -1 == maximum_synapse_centrality:
+                # Signal not computable
+                edge_props['risk'] = -1
+            else:
+                edge_props['risk'] = 1.0 / sqrt(pow(cable / cable_spread, 2) + pow(maximum_synapse_centrality / path_confluence, 2)) # NOTE: should subtract 1 from maximum_synapse_centrality, but not doing it here to avoid potential divisions by zero
 
 
     if bandwidth > 0:
         # Add edges between circuit nodes that represent different domains of the same neuron
         for skeleton_id, list_mini in minis.iteritems():
             for mini in list_mini:
-                for i,node in enumerate(mini.nodes_iter()):
+                for i,node in enumerate(mini.nodes_iter()): # TODO no need to enumerate
                     g = mini.node[node]['g']
                     if g not in circuit:
                         # A branch node that was preserved to the minified arbor
@@ -292,7 +304,7 @@ def skeleton_graph(request, project_id=None):
                                'directed': props['directed'],
                                'arrow': props['arrow'],
                                'color': props['color'],
-                               'risk': props['risk']}})
+                               'risk': props.get('risk')}})
 
     return HttpResponse(json.dumps(package))
 

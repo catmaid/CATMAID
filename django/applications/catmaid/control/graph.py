@@ -253,7 +253,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                         # A branch node that was preserved to the minified arbor
                         circuit.add_node(g, {'id': '%s-%s' % (skeleton_id, node),
                                              'skeleton_id': skeleton_id,
-                                             'label': "%s [%s]" % (names[skeleton_id], node),
+                                             'label': "", # "%s [%s]" % (names[skeleton_id], node),
                                              'node_count': 1,
                                              'branch': True})
                 for node1, node2 in mini.edges_iter():

@@ -3,6 +3,7 @@ import json
 from django.http import HttpResponse
 from django.contrib.auth.models import User
 from django.conf import settings
+from traceback import format_exc
 
 class AnonymousAuthenticationMiddleware(object):
     """ This middleware class tests whether the current user is the
@@ -20,7 +21,7 @@ class AnonymousAuthenticationMiddleware(object):
 class AjaxExceptionMiddleware(object):
 
     def process_exception(self, request, exception):
-        response = {'error': str(exception)}
+        response = {'error': str(exception) + '\n' + format_exc()}
         if settings.DEBUG:
             import sys, traceback
             (exc_type, exc_info, tb) = sys.exc_info()

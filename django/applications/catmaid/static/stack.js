@@ -11,20 +11,25 @@
 /**
  */
 
+/** orientations */
+Stack.ORIENTATION_XY = 0;
+Stack.ORIENTATION_XZ = 1;
+Stack.ORIENTATION_ZY = 2;
+
 /**
  * Stack is the core data viewer and interaction element.  It displays a list
  * of layers of an x,y-plane in an n-dimensional data set, tracks the
  * navigation/edit mode and organizes access to user interface elements such
  * as navigation sliders and buttons.  x, y dimensions are shown in the plane,
  * for all other dimensions, a slider is used.
- * 
+ *
  * Layers can be images, text, SVG or arbitrary other overlays.
- * 
+ *
  * A Stack is created with a given pixel resolution, pixel dimension, a
  * translation relative to the project and lists of planes to be excluded
  * (e.g. missing sections in serial section microscopy and missing frames in a
  * time series).  These properties limit the field of view and the slider
- * ranges.  
+ * ranges.
  */
 function Stack(
 		project,					//!< {Project} reference to the parent project
@@ -40,11 +45,12 @@ function Stack(
 		tile_source_type,			//!< {int} that defines the tile source type
 		labelupload_url,			//!< {String} that defines the label upload URL for labels (for tile_source_type==2)
 		metadata,					//!< {String} of arbitrary meta data
-    inverse_mouse_wheel //!< {boolean} Whether to inverse mouse wheel for changing sections
+		inverse_mouse_wheel,		//!< {boolean} Whether to inverse mouse wheel for changing sections
+		orientation					//!< {Integer} orientation (0: xy, 1: xz, 2: yz)
 )
 {
 	var n = dimension.length;
-	
+
 	/**
 	 * update the scale bar (x-resolution) to a proper size
 	 */
@@ -72,28 +78,29 @@ function Stack(
 			scaleBar.firstChild.firstChild.firstChild );
 		return;
 	}
-	
+
+
 	/**
 	 * update all state informations and the screen content
 	 */
 	var update = function( completionCallback )
 	{
-		
+
 		self.overview.redraw();
 		updateScaleBar();
-		
+
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
-		
+
 		self.redraw(completionCallback);
 
 		if( tool ) {
 			tool.redraw();
 		}
-		
+
 		return
 	}
 	this.update = update;
-	
+
 	/**
 	 * Get stack coordinates of the current view's top left corner.
 	 * These values might be used as an offset to get the stack coordinates of a
@@ -110,38 +117,247 @@ function Stack(
 		};
 		return l;
 	}
-	
+
 	/**
-	 * Get the project coordinates of the current view.
+	 * Project x-coordinate for stack coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_ZY:
+		this.stackToProjectX = function( zs, ys, xs )
+		{
+			return zs * resolution.z + translation.x;
+		};
+		break;
+	default:
+		this.stackToProjectX = function( zs, ys, xs )
+		{
+			return xs * resolution.x + translation.x;
+		};
+	}
+
+	/**
+	 * Project y-coordinate for stack coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_XZ:
+		this.stackToProjectY = function( zs, ys, xs )
+		{
+			return zs * resolution.z + translation.y;
+		};
+		break;
+	default:
+		this.stackToProjectY = function( zs, ys, xs )
+		{
+			return ys * resolution.y + translation.y;
+		};
+	}
+
+	/**
+	 * Project z-coordinate for stack coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_XZ:
+		this.stackToProjectZ = function( zs, ys, xs )
+		{
+			return ys * resolution.y + translation.z;
+		};
+		break;
+	case Stack.ORIENTATION_ZY:
+		this.stackToProjectZ = function( zs, ys, xs )
+		{
+			return xs * resolution.x + translation.z;
+		};
+		break;
+	default:
+		this.stackToProjectZ = function( zs, ys, xs )
+		{
+			return zs * resolution.z + translation.z;
+		};
+	}
+
+	/**
+	 * Project coordinates of the current view.
 	 */
 	this.projectCoordinates = function()
 	{
 		var l =
 		{
-			z : self.z * resolution.z + translation.z,
+			z : self.stackToProjectZ( self.z, self.y, self.x ),
 			s : self.s,
 			scale : self.scale,
-			y : self.y * resolution.y + translation.y,
-			x : self.x * resolution.x + translation.x
+			y : self.stackToProjectY( self.z, self.y, self.x ),
+			x : self.stackToProjectX( self.z, self.y, self.x )
 		};
 		return l;
 	}
 
-  /*
-   * Get the top and left coordinates in physical project coordinates of
-   * stack's window
-   */
-  this.getWorldTopLeft = function()
-  {
-    return {
-      worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
-      worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
-      scale : self.scale
-    }
-  }
 
-  /*
+	/**
+	 * Transfer the limiting coordinates of an orthogonal box from stack to
+	 * project coordinates.  Transferred coordinates are written into
+	 * projectBox.  This method is faster than createStackToProjectBox because
+	 * it does not generate new objects (Firefox 20%, Chromium 100% !)
+	 *
+	 *  @param stackBox {min {x, y, z}, max{x, y, z}}
+	 *  @param projectBox {min {x, y, z}, max{x, y, z}}
+	 */
+	this.stackToProjectBox = function( stackBox, projectBox )
+	{
+		projectBox.min.x = self.stackToProjectX( stackBox.min.z, stackBox.min.y, stackBox.min.x );
+		projectBox.min.y = self.stackToProjectY( stackBox.min.z, stackBox.min.y, stackBox.min.x );
+		projectBox.min.z = self.stackToProjectZ( stackBox.min.z, stackBox.min.y, stackBox.min.x );
+
+		projectBox.max.x = self.stackToProjectX( stackBox.max.z, stackBox.max.y, stackBox.max.x );
+		projectBox.max.y = self.stackToProjectY( stackBox.max.z, stackBox.max.y, stackBox.max.x );
+		projectBox.max.z = self.stackToProjectZ( stackBox.max.z, stackBox.max.y, stackBox.max.x );
+	}
+
+
+	/**
+	 * Create a new box from an orthogonal box by transferring its limiting
+	 * coordinates from stack to project coordinates.
+	 *
+	 *  @param stackBox {min {x, y, z}, max{x, y, z}}
+	 */
+	this.createStackToProjectBox = function( stackBox )
+	{
+		return {
+			min : {
+				x : self.stackToProjectX( stackBox.min.z, stackBox.min.y, stackBox.min.x ),
+				y : self.stackToProjectY( stackBox.min.z, stackBox.min.y, stackBox.min.x ),
+				z : self.stackToProjectZ( stackBox.min.z, stackBox.min.y, stackBox.min.x )
+			},
+			max : {
+				x : self.stackToProjectX( stackBox.max.z, stackBox.max.y, stackBox.max.x ),
+				y : self.stackToProjectY( stackBox.max.z, stackBox.max.y, stackBox.max.x ),
+				z : self.stackToProjectZ( stackBox.max.z, stackBox.max.y, stackBox.max.x )
+			}
+		}
+	}
+
+
+	/**
+	 * Write the limiting coordinates of the current stack view's bounding box
+	 * into stackBox.  Faster tthan creating an ew box.
+	 *
+	 *  @param stackBox {min {x, y, z}, max{x, y, z}}
+	 */
+	this.stackViewBox = function( stackBox )
+	{
+		var w2 = self.viewWidth / self.scale / 2;
+		var h2 = self.viewHeight / self.scale / 2;
+
+		stackBox.min.x = self.x - w2;
+		stackBox.min.y = self.y - h2;
+		stackBox.min.z = self.z - 0.5;
+
+		stackBox.max.x = self.x + w2;
+		stackBox.max.y = self.y + h2;
+		stackBox.max.z = self.z + 0.5;
+	}
+
+
+	/**
+	 * Create the bounding box of the current stack view.
+	 *
+	 *  @return {min {x, y, z}, max{x, y, z}}
+	 */
+	this.createStackViewBox = function()
+	{
+		var w2 = self.viewWidth / self.scale / 2;
+		var h2 = self.viewHeight / self.scale / 2;
+
+		return {
+			min : {
+				x : self.x - w2,
+				y : self.y - w2,
+				z : self.z - 0.5
+			},
+			max : {
+				x : self.x + w2,
+				y : self.y + w2,
+				z : self.z + 0.5
+			}
+		}
+	}
+
+
+	/**
+	 * Write the limiting coordinates of the current stack view's bounding box
+	 * plus some excess padding space into stackBox.  Faster than creating a
+	 * new box.
+	 *
+	 *  @param stackBox {min {x, y, z}, max{x, y, z}}
+	 *  @param padScreenX x-padding in screen coordinates
+	 *  @param padScreenY y-padding in screen coordinates
+	 *  @param padScreenZ z-padding in screen coordinates (==stack coordinates as z is not scaled)
+	 */
+	this.paddedStackViewBox = function( paddedStackBox, padScreenX, padScreenY, padScreenZ )
+	{
+		var w2 = ( self.viewWidth / 2 + padScreenX ) / self.scale;
+		var h2 = ( self.viewHeight / 2 + padScreenY ) / self.scale;
+		var d2 = 0.5 + padScreenZ;
+
+		stackBox.min.x = self.x - w2;
+		stackBox.min.y = self.y - h2;
+		stackBox.min.z = self.z - d2;
+
+		stackBox.max.x = self.x + w2;
+		stackBox.max.y = self.y + h2;
+		stackBox.max.z = self.z + d2;
+	}
+
+
+	/**
+	 * Create the bounding box of the current stack view plus some excess
+	 * padding space.
+	 *
+	 *  @param padScreenX x-padding in screen coordinates
+	 *  @param padScreenY y-padding in screen coordinates
+	 *  @param padScreenZ z-padding in screen coordinates (==stack coordinates as z is not scaled)
+	 */
+	this.createPaddedStackViewBox = function( padScreenX, padScreenY, padScreenZ )
+	{
+		var w2 = ( self.viewWidth / 2 + padScreenX ) / self.scale;
+		var h2 = ( self.viewHeight / 2 + padScreenY ) / self.scale;
+		var d2 = 0.5 + padScreenZ;
+
+		return {
+			min : {
+				x : self.x - w2,
+				y : self.y - w2,
+				z : self.z - d2
+			},
+			max : {
+				x : self.x + w2,
+				y : self.y + w2,
+				z : self.z + d2
+			}
+		}
+	}
+
+
+	/**
+	 * Get the top and left coordinates in physical project coordinates of
+	 * stack's window
+	 *
+	 * TODO This method doesn't conceptually conform with coordinate transforms
+	 */
+	this.getWorldTopLeft = function()
+	{
+		return {
+			worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
+			worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
+			scale : self.scale };
+	}
+
+  /**
    * Get stacks width and height
+   *
+   * TODO This method doesn't conceptually conform with coordinate transforms
    */
   this.getFieldOfViewInPixel = function()
   {
@@ -159,7 +375,7 @@ function Stack(
     };
     return l;
   }
-  
+
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
@@ -215,7 +431,7 @@ function Stack(
 
 		return 2;
 	}
-	
+
 	/**
 	 * Get the view element
 	 */
@@ -232,11 +448,89 @@ function Stack(
         return layers;
     }
 
+
+    /**
+	 * Stack x-coordinate from project coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_ZY:
+		this.projectToStackX = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_X, ( zp - translation.z ) / resolution.x ) );
+		};
+		break;
+	default:
+		this.projectToStackX = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_X, ( xp - translation.x ) / resolution.x ) );
+		};
+	}
+
+	/**
+	 * Stack y-coordinate from project coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_XZ:
+		this.projectToStackY = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_Y, ( zp - translation.z ) / resolution.y ) );
+		};
+		break;
+	default:	// xy
+		this.projectToStackY = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_Y, ( yp - translation.y ) / resolution.y ) );
+		};
+	}
+
+
+	var projectToStackZ;
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_XZ:
+		projectToStackZ = function( zp, yp, xp )
+		{
+			return Math.round( ( yp - translation.y ) / resolution.z );
+		};
+		break;
+	case Stack.ORIENTATION_ZY:
+		projectToStackZ = function( zp, yp, xp )
+		{
+			return Math.round( ( xp - translation.x ) / resolution.z );
+		};
+		break;
+	default:
+		projectToStackZ = function( zp, yp, xp )
+		{
+			return Math.round( ( zp - translation.z ) / resolution.z );
+		};
+	}
+
+
+	/**
+	 * Stack z-coordinate from project coordinates
+	 */
+	this.projectToStackZ = function( zp, yp, xp )
+	{
+		var z1, z2;
+		z1 = z2 = projectToStackZ( zp, yp, xp );
+		while ( skip_planes[ z1 ] && skip_planes[ z2 ] )
+		{
+			z1 = Math.max( 0, z1 - 1 );
+			z2 = Math.min( MAX_Z, z2 + 1 );
+		}
+		var z3 = skip_planes[ z1 ] ? z2 : z1;
+		return Math.max( 0, Math.min( MAX_Z, z3 ) );
+	}
+
 	this.moveToAfterBeforeMoves = function( zp, yp, xp, sp, completionCallback, layersWithBeforeMove )
 	{
 		var layerWithBeforeMove;
 
-		if (layersWithBeforeMove.length == 0) {
+		if ( layersWithBeforeMove.length == 0 )
+		{
 			// Then carry on to the actual move:
 
 			if ( typeof sp == "number" )
@@ -245,29 +539,21 @@ function Stack(
 				self.scale = 1.0 / Math.pow( 2, self.s );
 			}
 
-			self.x = Math.max( 0, Math.min( MAX_X, ( xp - translation.x ) / resolution.x ) );
-			self.y = Math.max( 0, Math.min( MAX_Y, ( yp - translation.y ) / resolution.y ) );
+			self.x = this.projectToStackX( zp, yp, xp );
+			self.y = this.projectToStackY( zp, yp, xp );
+			self.z = this.projectToStackZ( zp, yp, xp );
 
-			var z1;
-			var z2;
-			z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
-			while ( skip_planes[ z1 ] && skip_planes[ z2 ] )
-			{
-				z1 = Math.max( 0, z1 - 1 );
-				z2 = Math.min( MAX_Z, z2 + 1 );
-			}
-			if ( !skip_planes[ z1 ] ) self.z = z1;
-			else self.z = z2;
-			self.z = Math.max( 0, Math.min( MAX_Z, self.z ) );
+			update( completionCallback );
 
-			update(completionCallback);
-
-		} else {
+		}
+		else
+		{
 			// Otherwise do the next layer's beforeMove():
+
 			layerWithBeforeMove = layersWithBeforeMove.shift();
-			layerWithBeforeMove.beforeMove(function () {
+			layerWithBeforeMove.beforeMove( function() {
 				self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
-			});
+			} );
 		}
 	}
 
@@ -289,48 +575,48 @@ function Stack(
 
 		self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
 	}
-	
+
 	/**
 	 * move to pixel coordinates
 	 */
-	this.moveToPixel = function( zp, yp, xp, sp )
+	this.moveToPixel = function( zs, ys, xs, ss )
 	{
 		project.moveTo(
-			zp * resolution.z + translation.z,
-			yp * resolution.y + translation.y,
-			xp * resolution.x + translation.x,
-			sp );
-		
+			self.stackToProjectZ( zs, ys, xs ),
+			self.stackToProjectY( zs, ys, xs ),
+			self.stackToProjectX( zs, ys, xs ),
+			ss );
+
 		return true;
 	}
-	
+
 	var resize = function()
 	{
 		self.viewWidth = stackWindow.getFrame().offsetWidth;
 		self.viewHeight = stackWindow.getFrame().offsetHeight;
-		
+
 		for ( var key in layers ) {
 			if( layers.hasOwnProperty( key )) {
 				layers[ key ].resize( self.viewWidth, self.viewHeight );
 			}
 		}
-		
+
 		self.overview.redraw();
-		
+
 		return;
 	}
 	this.resize = resize
-	
+
 	/**
 	 * Get the stack window.
 	 */
 	this.getWindow = function() { return stackWindow; }
-	
+
 	/**
 	 * Get the project.
 	 */
 	this.getProject = function(){ return project; }
-	
+
 	/**
 	 * Get stack ID.
 	 */
@@ -351,7 +637,7 @@ function Stack(
 	/**
 	 * Add a layer.  Layers are associated by a unique key.
 	 * If a layer with the passed key exists, then this layer will be replaced.
-	 * 
+	 *
 	 * @param key
 	 * @param layer
 	 */
@@ -363,11 +649,11 @@ function Stack(
 		self.overviewlayer.refresh();
 		return;
 	}
-	
+
 	/**
 	 * Remove a layer specified by its key.  If no layer with this key exists,
 	 * then nothing will happen.  The layer is returned;
-	 * 
+	 *
 	 */
 	this.removeLayer = function( key )
 	{
@@ -382,8 +668,8 @@ function Stack(
 		else
 			return null;
 	}
-	
-	
+
+
 	/**
 	 * Register a tool at this stack.  Unregisters the current tool and then
 	 * makes the tool working.
@@ -402,23 +688,32 @@ function Stack(
 	{
 		return tool;
 	}
-	
+
+	/**
+	 * Shows and hides reference lines that meet on the center of each slice.
+	 */
+	this.showReferenceLines = function( show )
+	{
+		vert.style.visibility = show ? "visible" : "hidden";
+		horr.style.visibility = show ? "visible" : "hidden";
+	};
+
 	// initialize
 	var self = this;
-	if ( !ui ) ui = new UI();
-	
+	if ( typeof ui == "undefined" ) ui = new UI();
+
 	self.id = id;
-	
+
 	self.resolution = resolution;
 	self.translation = translation;
 	self.dimension = dimension;
 
 	self.tile_source_type = tile_source_type;
 	self.labelupload_url = labelupload_url;
-	
+
 	var tool = null;
 	var layers = {};
-	
+
 	var MAX_X = dimension.x - 1;   //!< the last possible x-coordinate
 	var MAX_Y = dimension.y - 1;   //!< the last possible y-coordinate
 	var MAX_Z = dimension.z - 1;   //!< the last possible z-coordinate
@@ -435,7 +730,7 @@ function Stack(
 		self.MAX_S = num_zoom_levels;
 	}
 	self.MIN_S = max_zoom_level;
-	
+
 	//! all possible slices
 	self.slices = new Array();
 	self.broken_slices = new Array();
@@ -446,21 +741,21 @@ function Stack(
 		else
 			self.broken_slices.push( i );
 	}
-	
+
 	//-------------------------------------------------------------------------
-	
+
 	// extract the borders of the viewer window from CSS rules
 	var viewTop    = parseInt( getPropertyFromCssRules( 3, 0, "top" ) );
 	var viewBottom = parseInt( getPropertyFromCssRules( 3, 0, "bottom" ) );
 	var viewLeft   = parseInt( getPropertyFromCssRules( 3, 0, "left" ) );
 	var viewRight  = parseInt( getPropertyFromCssRules( 3, 0, "right" ) );
-	
+
 	var stackWindow = new CMWWindow( title );
 	var view = stackWindow.getFrame();
 
 	var viewWidth = stackWindow.getFrame().offsetWidth;
 	var viewHeight = stackWindow.getFrame().offsetHeight;
-	
+
 	stackWindow.addListener(
 		function( callingWindow, signal )
 		{
@@ -496,13 +791,13 @@ function Stack(
 			}
 			return true;
 		} );
-	
+
 	self.overview = new Overview( self );
 	view.appendChild( self.overview.getView() );
 
 	self.overviewlayer = new OverviewLayer( self );
 	view.appendChild( self.overviewlayer.getView() );
-	
+
 	var scaleBar = document.createElement( "div" );
 	scaleBar.className = "sliceBenchmark";
 	scaleBar.appendChild( document.createElement( "p" ) );
@@ -520,39 +815,63 @@ function Stack(
 		view.appendChild( metadataDisplay );
 	}
 
-  if( inverse_mouse_wheel === 0 ) {
-    self.inverse_mouse_wheel = 1;
-  } else {
-    self.inverse_mouse_wheel = -1;
-  }
+	if( inverse_mouse_wheel === 0 )
+		self.inverse_mouse_wheel = 1;
+	else
+		self.inverse_mouse_wheel = -1;
 
-  var indicatorbar = document.createElement( "div" );
-  indicatorbar.className = "indicatorbar";
-  indicatorbar.id = "indicatorbar";
-  view.appendChild( indicatorbar );
+	var indicatorbar = document.createElement( "div" );
+	indicatorbar.className = "indicatorbar";
+	indicatorbar.id = "indicatorbar";
+	view.appendChild( indicatorbar );
+
+	var neuronnameDisplay = document.createElement( "div" );
+	neuronnameDisplay.className = "neuronname";
+	neuronnameDisplay.appendChild( document.createElement( "p" ) );
+	var spanName = document.createElement( "span" );
+	spanName.id = "neuronName";
+	neuronnameDisplay.firstChild.appendChild( spanName );
+	neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
+	view.appendChild( neuronnameDisplay );
+
+	// Display horizontal and vertical reference lines if wanted.
+	var vert = document.createElement( "div" );
+	var horr = document.createElement( "div" );
+	vert.style.height = horr.style.width = "100%";
+	vert.style.width = horr.style.height = "1px";
+	vert.style.position = horr.style.position = "absolute";
+	vert.style.top = horr.style.left = "0px";
+	vert.style.left = horr.style.top = "50%";
+	vert.style.zIndex = horr.style.zIndex = "1";
+	vert.style.backgroundColor = horr.style.backgroundColor = "#ffffff";
+	vert.style.opacity = horr.style.opacity = "0.5";
+	view.appendChild( vert );
+	view.appendChild( horr );
+	self.showReferenceLines( userprofile.display_stack_reference_lines );
 
 	// take care, that all values are within a proper range
-  // Declare the x,y,z,s as coordinates in pixels
+	// Declare the x,y,z,s as coordinates in pixels
 	self.z = 0;
 	self.y = Math.floor( MAX_Y / 2 );
 	self.x = Math.floor( MAX_X / 2 );
 	self.s = self.MAX_S;
-	
+
 	self.old_z = -1;
 	self.old_y = self.y;
 	self.old_x = self.x;
 	self.old_s = self.s;
 
-  self.yc = 0;
-  self.xc = 0;
-	
+	self.yc = 0;
+	self.xc = 0;
+
 	self.scale = 1 / Math.pow( 2, self.s );
 	self.old_scale = self.scale;
 
-  self.is_trackem2_stack = trakem2_project;
+	self.is_trackem2_stack = trakem2_project;
+	self.orientation = orientation;
 }
 
-//!< in nanometers
+/** known scale bar sizes in nanometers */
 Stack.SCALE_BAR_SIZES = new Array(
 			10,
 			20,
@@ -598,8 +917,11 @@ Stack.SCALE_BAR_SIZES = new Array(
 			200000000000,
 			250000000000,
 			500000000000 );
+
+/** known scale bar units */
 Stack.SCALE_BAR_UNITS = new Array(
 			"nm",
 			unescape( "%u03BCm" ),
 			"mm",
 			"m" );
+

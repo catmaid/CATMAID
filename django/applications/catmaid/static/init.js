@@ -628,7 +628,7 @@ function handle_openProjectStack( status, text, xml )
 			{
 				var tool = tools[ inittool ];
 				if ( tool )
-					project.setTool( tool );
+					project.setTool( new tool() );
 			}
 
 			/* Update the projects "current project" menu. If there is more

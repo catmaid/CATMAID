@@ -1232,17 +1232,21 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback, futur
        atnid: atnid,
        labels: self.getLabelStatus()},
       function(json) {
-        self.refreshNodesFromTuples(json, pz);
+        if (json.needs_setup) {
+            display_tracing_setup_dialog(project.id, json.has_needed_permissions);
+        } else {
+          self.refreshNodesFromTuples(json, pz);
 
-        // initialization hack for "URL to this view"
-        if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
-          self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
-          delete SkeletonAnnotations.init_active_node_id;
-        }
+          // initialization hack for "URL to this view"
+          if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
+            self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
+            delete SkeletonAnnotations.init_active_node_id;
+          }
 
-        stack.redraw();
-        if (typeof callback !== "undefined") {
-          callback();
+          stack.redraw();
+          if (typeof callback !== "undefined") {
+            callback();
+          }
         }
       },
       false,

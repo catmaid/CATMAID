@@ -6,6 +6,27 @@
     ul { list-style: none; padding: 0px; }
     ul li { list-style-type: none; }
 </style>
+<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
+<script>
+    $(document).ready(function() {
+        // functionality for (un-)selecting all projects
+        var master_cb = $("#id_select-all");
+        if (master_cb.length > 0) {
+            var slave_cbs = $("input[type=checkbox][class=autoselectable]");
+
+            master_cb.click( function() {
+                var val = master_cb.attr("checked") == "checked";
+                slave_cbs.attr("checked", val);
+            });
+
+            slave_cbs.click( function() {
+                master_cb.attr("checked", $.grep(slave_cbs, function(e) {
+                    return $(e).attr("checked");
+                }).length == slave_cbs.length)
+            });
+        }
+    });
+</script>
 {% endblock %}
 
 {% block breadcrumbs %}
@@ -43,6 +64,12 @@
         to import. If you want to add one or more tags to the imported
         projects, please insert them in the field below.</p>
         <p>
+        <p>
+            <label for="select_all">
+                <input type="checkbox" name="select_all" id="id_select-all" checked>
+                Select all projects
+            </label>
+        </p>
         <table>
         {{ wizard.management_form }}
         {% if wizard.form.forms %}

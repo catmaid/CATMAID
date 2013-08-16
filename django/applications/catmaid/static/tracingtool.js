@@ -995,3 +995,72 @@ TracingTool.search = function()
 
 
 };
+
+/**
+ * Show dialog regarding the set-up of the tracing tool. If a user
+ * has then needed permission, (s)he is offered to let CATMAID set
+ * tracing up for the current project. Regardless of the result, the
+ * navigator tool is loaded afterwards. It provides a safe fallback
+ * on failure and forces a tool reload on success.
+ */
+function display_tracing_setup_dialog(pid, has_needed_permissions)
+{
+  var dialog = document.createElement('div');
+  dialog.setAttribute("id", "dialog-confirm");
+  dialog.setAttribute("title", "Tracing not set-up for project");
+  var msg = document.createElement('p');
+  dialog.appendChild(msg);
+  var msg_text = "The tracing system isn't set up to work with this project" +
+    ", yet. It needs certain classes and relations which haven't been found. ";
+  var buttons;
+  if (has_needed_permissions) {
+    msg.innerHTML = msg_text + "Do you want CATMAID to create " +
+      "the missing bits and initialize tracing support for this " +
+      "project?";
+    buttons = {
+      "Yes": function() {
+          $(this).dialog("close");
+          // Call setup method for this project
+          requestQueue.register(django_url + pid + '/tracing/setup/rebuild',
+            'GET', {}, function(status, data, text) {
+              if (status !== 200) {
+                alert("Setting up tracing failed with HTTP status code: "+status);
+              } else {
+                var json = $.parseJSON(data);
+                project.setTool( new Navigator() );
+                if (json.error) {
+                  alert("An error was returned when trying to set up tracing: " +
+                    json.error);
+                } else if (json.all_good) {
+                  alert("Tracing has been set up successfully for the current " +
+                    "project. Please reload the tracing tool.");
+                } else {
+                  alert("An unidentified error happened while trying to set " +
+                    "up tracing.");
+                }
+              }
+            });
+      },
+      "No": function() {
+          project.setTool( new Navigator() );
+          $(this).dialog("close");
+        }
+      };
+  } else {
+    msg.innerHTML = msg_text + "Unfortunately, you don't have " +
+      "needed permissions to add the missing bits and intitialize " +
+      "tracing fro this project";
+      buttons = {
+        "Ok": function() {
+            project.setTool( new Navigator() );
+            $(this).dialog("close");
+          }
+        };
+  }
+  // The dialog is inserted into the document and shown by the following call:
+  $(dialog).dialog({
+    height: 200,
+    modal: true,
+    buttons: buttons,
+  });
+};

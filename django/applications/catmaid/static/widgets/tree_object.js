@@ -80,7 +80,9 @@ var ObjectTree = new function()
           },
           "success": function (e) {
             if (e.error) {
-              alert(e.error);
+                alert(e.error);
+            } else if (e.needs_setup) {
+                display_tracing_setup_dialog(pid, e.has_needed_permissions);
             }
           }
         },

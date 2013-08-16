@@ -534,7 +534,8 @@ class ProjectSelectionForm(forms.Form):
     """
     # A checkbox for each project, checked by default
     projects = forms.MultipleChoiceField(required=False,
-        widget=forms.CheckboxSelectMultiple(),
+        widget=forms.CheckboxSelectMultiple(
+            attrs={'class': 'autoselectable'}),
         help_text="Only selected projects will be imported.")
     tags = forms.CharField(initial="", required=False,
         help_text="A comma separated list of unquoted tags.")

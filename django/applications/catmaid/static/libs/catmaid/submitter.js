@@ -62,9 +62,15 @@ var submitterFn = function() {
       if (!text) {
         return reset(q, "Unexpected request response text: " + text + "\n for URL: " + q.url);
       }
-      var json = $.parseJSON(text);
+      var json;
+      try {
+        json = $.parseJSON(text);
+      } catch (e) {
+        alert(e);
+        return reset(q, "Unable to parse json text: " + text + "\n for URL: " + q.url);
+      }
       if (!json) {
-        return reset(q, "Uxpected json: " + json + "\n for URL: " + q.url);
+        return reset(q, "Unexpected json: " + json + "\n for URL: " + q.url);
       }
       if (json.error) {
         if (q.replace && 'REPLACED' === json.error) {

@@ -8,7 +8,7 @@ wsgiref==0.1.2
 networkx==1.7
 pgmagick==0.5.5
 celery==3.0.19
-django-celery==3.0.17
+django-celery==3.0.21
 kombu==2.5.10
 django-kombu==0.9.4
 PyYAML==3.10

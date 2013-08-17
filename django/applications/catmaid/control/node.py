@@ -12,7 +12,7 @@ from catmaid.models import *
 from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.control.tracing import check_tracing_setup
+from catmaid.control.tracing import check_tracing_setup_detailed
 
 import sys
 try:
@@ -54,13 +54,16 @@ def node_list_tuples(request, project_id=None):
     class_map = get_class_to_id_map(project_id)
 
     # First, check if the tracing system is correctly set-up
-    setup_okay = check_tracing_setup(project_id)
+    setup_okay, mc, mr, mci = check_tracing_setup_detailed(project_id)
     if not setup_okay:
         # Check permissions
         can_administer = request.user.has_perm('can_administer', project_id)
         # Find missing links and classes
         return HttpResponse(json.dumps(
             {'needs_setup': True,
+             'missing_classes': mc,
+             'missing_relations': mr,
+             'missing_classinstances': mci,
              'has_needed_permissions': can_administer}))
 
     try:

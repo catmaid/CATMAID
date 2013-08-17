@@ -1233,7 +1233,9 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback, futur
        labels: self.getLabelStatus()},
       function(json) {
         if (json.needs_setup) {
-            display_tracing_setup_dialog(project.id, json.has_needed_permissions);
+            display_tracing_setup_dialog(project.id, json.has_needed_permissions,
+                json.missing_classes, json.missing_relations,
+                json.missing_classinstances);
         } else {
           self.refreshNodesFromTuples(json, pz);
 

@@ -82,7 +82,9 @@ var ObjectTree = new function()
             if (e.error) {
                 alert(e.error);
             } else if (e.needs_setup) {
-                display_tracing_setup_dialog(pid, e.has_needed_permissions);
+                display_tracing_setup_dialog(pid, e.has_needed_permissions,
+                    e.missing_classes, e.missing_relations,
+                    e.missing_classinstances);
             }
           }
         },

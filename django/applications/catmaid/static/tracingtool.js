@@ -1003,7 +1003,8 @@ TracingTool.search = function()
  * navigator tool is loaded afterwards. It provides a safe fallback
  * on failure and forces a tool reload on success.
  */
-function display_tracing_setup_dialog(pid, has_needed_permissions)
+function display_tracing_setup_dialog(pid, has_needed_permissions,
+    missing_classes, missing_relations, missing_classinstances)
 {
   var dialog = document.createElement('div');
   dialog.setAttribute("id", "dialog-confirm");
@@ -1012,6 +1013,19 @@ function display_tracing_setup_dialog(pid, has_needed_permissions)
   dialog.appendChild(msg);
   var msg_text = "The tracing system isn't set up to work with this project" +
     ", yet. It needs certain classes and relations which haven't been found. ";
+  if (missing_classes.length > 0) {
+    msg_text = msg_text + "The missing classes are: " +
+       missing_classes.join(", ") + ". ";
+  }
+  if (missing_relations.length > 0) {
+    msg_text = msg_text + "The missing relations are: " +
+       missing_relations.join(", ") + ". ";
+  }
+  if (missing_classinstances.length > 0) {
+    msg_text = msg_text + "The missing class instances are: " +
+       missing_classinstances.join(", ") + ". ";
+  }
+
   var buttons;
   if (has_needed_permissions) {
     msg.innerHTML = msg_text + "Do you want CATMAID to create " +

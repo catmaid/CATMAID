@@ -35,23 +35,45 @@ def check_tracing_setup(project_id):
     """ Checks if all classes and relations needed by the
     tracing system are available.
     """
+    all_good, _, _, _ = check_tracing_setup_detailed(project_id)
+    return all_good
+
+def check_tracing_setup_detailed(project_id):
+    """ Checks if all classes and relations needed by the tracing system are
+    available. It returns a four-tuple with a boolean indicating if all is
+    setup, the missing class names, the missing relation names and the missing
+    class instance names.
+    """
     # Get class and relation data
     class_map = get_class_to_id_map(project_id)
     relation_map = get_relation_to_id_map(project_id)
 
     # Check if all classes and relations are available
     all_good = True
+    missing_classes = []
+    missing_relations = []
+    missing_classinstances = []
+
     for c in needed_classes:
-        all_good = (all_good and (c in class_map))
+        if not c in class_map:
+            all_good = False
+            missing_classes.append(c)
     for r in needed_relations:
-        all_good = (all_good and (r in relation_map))
+        if not r in relation_map:
+            all_good = False
+            missing_relations.append(r)
     # Check if the root node is there
-    if all_good:
-        all_good = ClassInstance.objects.filter(
+    if 'root' in class_map:
+        exists = ClassInstance.objects.filter(
             class_column=class_map['root'],
             project_id=project_id).exists()
+        if not exists:
+            all_good = False
+            missing_classinstances.append('root')
+    else:
+            missing_classinstances.append('root')
 
-    return all_good
+    return all_good, missing_classes, missing_relations, missing_classinstances
 
 @requires_user_role([UserRole.Admin])
 def rebuild_tracing_setup_view(request, project_id=None):

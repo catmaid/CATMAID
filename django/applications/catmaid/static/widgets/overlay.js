@@ -1363,10 +1363,15 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
           [0, 1, 2, 3, 4],
           self.editRadius_defaultValue);
         dialog.onOK = function() {
+          var radius = parseFloat(input.value);
+          if (isNaN(radius)) {
+            alert("Invalid number: '" + input.value + "'");
+            return;
+          }
           self.editRadius_defaultValue = choice.selectedIndex;
           self.submit(
             django_url + project.id + '/treenode/' + treenode_id + '/radius',
-            {radius: parseFloat(input.value),
+            {radius: radius,
              option: choice.selectedIndex},
             function(json) {
               var skeleton_id = self.nodes[treenode_id].skeleton_id;

@@ -417,6 +417,7 @@ def tree_object_list(request, project_id=None):
     setup_okay, mc, mr, mci = check_tracing_setup_detailed(project_id)
     if not setup_okay:
         # Check permissions
+        p = Project.objects.get(pk=project_id)
         can_administer = user.has_perm('can_administer', p)
         # Find missing links and classes
         return HttpResponse(json.dumps(

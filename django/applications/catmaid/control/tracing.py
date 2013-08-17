@@ -9,7 +9,6 @@ from django.http import HttpResponse
 # All classes needed by the tracing system alongside their
 # descriptions.
 needed_classes = {
-    'assembly': "An assembly",
     'group': "A group",
     'label': "A label",
     'neuron': "A neuron representation",

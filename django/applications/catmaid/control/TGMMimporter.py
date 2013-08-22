@@ -877,9 +877,9 @@ def parse_TGMM_XML_file(fileXML, treeNodeList, t, transpose_xy, nullVal):
         confidence = int(gmm.get('splitScore'))
 
         #save elements
-        if( transpose_xy == False )
+        if transpose_xy == False:
             treeNodeList[numT, :] =[m[1], m[0], m[2], t, channel_, radius, parent, confidence] #apparently TGMM flips x,y woth respect how CATMAID displays elements
-        else
+        else:
             treeNodeList[numT, :] =[m[0], m[1], m[2], t, channel_, radius, parent, confidence] #apparently TGMM flips x,y woth respect how CATMAID displays elements
         numT = numT + 1
 

@@ -236,6 +236,7 @@ class ImportingWizard(SessionWizardView):
         #create new project
         selected_projects = self.projects
         make_public = self.get_cleaned_data_for_step('pathsettings')['make_projects_public']
+        transpose_xy = self.get_cleaned_data_for_step('pathsettings')['transpose_xy_coordinates']
         tile_width = selected_projects.stacks.tile_width
         tile_height = selected_projects.stacks.tile_height
         tile_source_type = selected_projects.stacks.tile_source_type #this should be 5 in order to have 5D visualization
@@ -266,7 +267,7 @@ class ImportingWizard(SessionWizardView):
             #prof = hotshot.Profile( "/media/sdd2/dataCATMAID/12_06_29/XMLfinalResult_large/importTracks.prof" )
             #prof.start()
 
-            import_tracks(filesXML, selected_projects, trln, ImportingWizard.requestDjango, fileOutputProgress)
+            import_tracks(filesXML, selected_projects, trln, ImportingWizard.requestDjango, fileOutputProgress,transpose_xy)
 
             #prof.stop()
         # Show final page
@@ -356,6 +357,10 @@ class DataFileForm(forms.Form):
         required=False, help_text="If made public, a project \
         can be seen without being logged in.")
 
+    transpose_xy_coordinates = forms.BooleanField(initial=False,
+        required=False, help_text="Sometimes CATMAID tiles are transposed \
+        with respect to tracking coordinates.")
+
     #TODO: get the datastes from the database in a pop down menu. Check django.forms.MultipleChoiceField an dpopulate it with the database
 
 class ConfirmationForm(forms.Form):
@@ -422,7 +427,7 @@ def import_projects( pre_projects, make_public, permissions,
 
 
 @task()
-def import_tracks(filesXML, project, trln, request, fileOutputProgress):
+def import_tracks(filesXML, project, trln, request, fileOutputProgress, transpose_xy):
     """Import tracks into a selected project"""
 
     numNodes = 0
@@ -471,7 +476,7 @@ def import_tracks(filesXML, project, trln, request, fileOutputProgress):
             break
 
         #parse frame
-        treeNodeList, numT = parse_TGMM_XML_file(f, treeNodeList, t, nullVal)
+        treeNodeList, numT = parse_TGMM_XML_file(f, treeNodeList, t, transpose_xy, nullVal)
         
         #convert x,y,z from pixels to project coordinates
         treeNodeList[:numT, 0] *= project.stacks.resolution.x
@@ -856,7 +861,7 @@ def import_treeNodes_bulk_allWithParents( treeNodeList, numT, parentId, skeleton
 
     return (parentId, skeletonId)
 
-def parse_TGMM_XML_file(fileXML, treeNodeList, t, nullVal):
+def parse_TGMM_XML_file(fileXML, treeNodeList, t, transpose_xy, nullVal):
     """ Parses tracking information from TGMM xml files"""
 
     channel_ = 0 #default TODO: allow user to change it
@@ -872,7 +877,10 @@ def parse_TGMM_XML_file(fileXML, treeNodeList, t, nullVal):
         confidence = int(gmm.get('splitScore'))
 
         #save elements
-        treeNodeList[numT, :] =[m[1], m[0], m[2], t, channel_, radius, parent, confidence] #apparently TGMM flips x,y woth respect how CATMAID displays elements
+        if( transpose_xy == False )
+            treeNodeList[numT, :] =[m[1], m[0], m[2], t, channel_, radius, parent, confidence] #apparently TGMM flips x,y woth respect how CATMAID displays elements
+        else
+            treeNodeList[numT, :] =[m[0], m[1], m[2], t, channel_, radius, parent, confidence] #apparently TGMM flips x,y woth respect how CATMAID displays elements
         numT = numT + 1
 
 

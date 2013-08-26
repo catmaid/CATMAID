@@ -47,6 +47,15 @@ def node_list_tuples(request, project_id=None):
     atnid = int(request.POST.get('atnid', -1))
     for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
         params[p] = float(request.POST.get(p, 0))
+    extra_zs = int(request.POST.get('extra_zs', 4))
+    if extra_zs > 0:
+        zs = [params['z']]
+        for i in xrange(1, extra_zs + 1):
+            zs.insert(0, params['z'] - params['zres'] * i)
+            zs.append(params['z'] + params['zres'] * i)
+    else:
+        zs = [params['z']]
+    params['zs'] = tuple(zs)
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
     
@@ -79,11 +88,6 @@ def node_list_tuples(request, project_id=None):
         params['bottom'] = params['top'] + params['height']
         params['right'] = params['left'] + params['width']
         params['user_id'] = user_id
-        #if request.user.userprofile.show_all_tracings:
-        #    params['hide_other_user_ids'] = ''
-        #else:
-        #    params['hide_other_user_ids'] = 'AND t1.user_id = %s' % user_id
-        #print params['hide_other_user_ids']
         if request.user.userprofile.show_all_tracings:
             cursor.execute('''
                 SELECT
@@ -110,7 +114,7 @@ def node_list_tuples(request, project_id=None):
                        (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
                         OR (t1.parent_id IS NULL AND t1.id = t2.id))
                 WHERE
-                    (t1.location).z = %(z)s
+                    (t1.location).z IN %(zs)s
                     AND (t1.location).x > %(left)s
                     AND (t1.location).x < %(right)s
                     AND (t1.location).y > %(top)s
@@ -118,6 +122,7 @@ def node_list_tuples(request, project_id=None):
                     AND t1.project_id = %(project_id)s
                 LIMIT %(limit)s
                 ''', params)
+                #    (t1.location).z = %(z)s
         else:
             cursor.execute('''
                 SELECT
@@ -144,7 +149,7 @@ def node_list_tuples(request, project_id=None):
                        (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
                         OR (t1.parent_id IS NULL AND t1.id = t2.id))
                 WHERE
-                    (t1.location).z = %(z)s
+                    (t1.location).z IN %(zs)s
                     AND (t1.location).x > %(left)s
                     AND (t1.location).x < %(right)s
                     AND (t1.location).y > %(top)s
@@ -341,7 +346,6 @@ def node_list_tuples(request, project_id=None):
                 ''' % visible)
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
-
         return HttpResponse(json.dumps((treenodes, connectors, labels, n_retrieved_nodes == params['limit']), separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
 
     except Exception as e:

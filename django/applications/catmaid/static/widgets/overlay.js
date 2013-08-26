@@ -1224,6 +1224,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback, futur
       {pid: stack.getProject().id,
        sid: stack.getId(),
        z: pz,
+       extra_zs: 0,
        top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
        left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
        width: (stack.viewWidth / stack.scale) * stack.resolution.x,

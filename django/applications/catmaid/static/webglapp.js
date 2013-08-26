@@ -16,6 +16,8 @@ var WebGLApp = (function() { return new function () {
 
   var labelspheregeometry;
   var radiusSphere;
+  var icoSphere;
+  var cylinder;
 
   var show_meshes = false,
       show_active_node = true,
@@ -183,8 +185,10 @@ var WebGLApp = (function() { return new function () {
     controls.target = new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
 
     // new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
-    labelspheregeometry = new THREE.OctahedronGeometry( 130 * scale, 4);
-    radiusSphere = new THREE.OctahedronGeometry( 40 * scale, 4);
+    labelspheregeometry = new THREE.OctahedronGeometry( 130 * scale, 3);
+    radiusSphere = new THREE.OctahedronGeometry( 40 * scale, 3);
+    icoSphere = new THREE.IcosahedronGeometry(1, 2);
+    cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
 
     debugaxes();
     draw_grid();
@@ -492,9 +496,11 @@ var WebGLApp = (function() { return new function () {
         this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
           this.line_material[connectivity_types[i]], THREE.LinePieces );
       }
+
+      // TODO these should be arrays per skeleton, not general objects per node
       this.specialTagSpheres = new Object();
       this.synapticSpheres = new Object();
-      this.radiusSpheres = new Object();
+      this.radiusVolumes = new Object(); // contains spheres and cylinders
       this.textlabels = new Object();
 
       this.connectoractor = new Object();
@@ -532,9 +538,9 @@ var WebGLApp = (function() { return new function () {
         if( this.synapticSpheres.hasOwnProperty( k ) )
           delete this.synapticSpheres[k];
       }
-      for ( var k in this.radiusSpheres ) {
-        if( this.radiusSpheres.hasOwnProperty( k ) )
-          delete this.radiusSpheres[k];
+      for ( var k in this.radiusVolumes ) {
+        if( this.radiusVolumes.hasOwnProperty( k ) )
+          delete this.radiusVolumes[k];
       }
       for ( var k in this.textlabels ) {
         if( self.textlabels.hasOwnProperty( k ))
@@ -556,9 +562,9 @@ var WebGLApp = (function() { return new function () {
         if( this.synapticSpheres.hasOwnProperty( k ) )
           scene.remove( this.synapticSpheres[k] );
       }
-      for ( var k in this.radiusSpheres ) {
-        if( this.radiusSpheres.hasOwnProperty( k ) )
-          scene.remove( this.radiusSpheres[k] );
+      for ( var k in this.radiusVolumes ) {
+        if( this.radiusVolumes.hasOwnProperty( k ) )
+          scene.remove( this.radiusVolumes[k] );
       }
       for (var k in this.specialTagSpheres) {
         if (this.specialTagSpheres.hasOwnProperty(k))
@@ -572,9 +578,9 @@ var WebGLApp = (function() { return new function () {
       self.visible = vis;
       self.visibilityCompositeActor( 'neurite', vis );
       // The spheres where nodes have a radius larger than zero
-      for( var idx in self.radiusSpheres ) {
-        if( self.radiusSpheres.hasOwnProperty( idx )) {
-          self.radiusSpheres[ idx ].visible = vis;
+      for( var idx in self.radiusVolumes ) {
+        if( self.radiusVolumes.hasOwnProperty( idx )) {
+          self.radiusVolumes[ idx ].visible = vis;
         }
       }
       // The spheres at special tags like 'TODO', 'Uncertain end', etc.
@@ -702,6 +708,7 @@ var WebGLApp = (function() { return new function () {
           // TODO: Darken the skeleton based on the branch calculation.
           edgeWeights = self.branchCentrality;
         }
+
         self.vertexIDs['neurite'].forEach(function(vertexID) {
           var vertex = self.nodeProps[vertexID];
           
@@ -725,14 +732,16 @@ var WebGLApp = (function() { return new function () {
           weight = (weight / neighbors.length) * 0.75 + 0.25;
           var color = new THREE.Color().setRGB(baseColor.r * weight, baseColor.g * weight, baseColor.b * weight);
           self.geometry['neurite'].colors.push(color);
-          
-          if (vertexID in self.radiusSpheres) {
-            self.radiusSpheres[vertexID].material.color = baseColor;
-            self.radiusSpheres[vertexID].material.needsUpdate = true;
+
+          if (vertexID in self.radiusVolumes) {
+            var mesh = self.radiusVolumes[vertexID];
+            var material = mesh.material.clone();
+            material.color = color;
+            mesh.setMaterial(material);
           }
         });
         self.geometry['neurite'].colorsNeedUpdate = true;
-        
+
         self.actor['neurite'].material.color = new THREE.Color(0xffffff);
         self.actor['neurite'].material.needsUpdate = true;
       } else {
@@ -742,10 +751,11 @@ var WebGLApp = (function() { return new function () {
         
         self.actor['neurite'].material.color = self.actorColor;
         self.actor['neurite'].material.needsUpdate = true;
-      
-        for ( var k in self.radiusSpheres ) {
-          self.radiusSpheres[k].material.color = self.actorColor;
-          self.radiusSpheres[k].material.needsUpdate = true;
+
+        var material = new THREE.MeshBasicMaterial({color: self.actorColor, opacity:1.0, transparent:false});
+
+        for ( var k in self.radiusVolumes ) {
+          self.radiusVolumes[k].setMaterial(material);
         }
       }
     };
@@ -842,8 +852,6 @@ var WebGLApp = (function() { return new function () {
       var mesh = new THREE.Mesh( labelspheregeometry, color );
       mesh.position.set( v.x, v.y, v.z );
       mesh.node_id = nodeID;
-      mesh.skeleton_id = self.id;
-      mesh.orig_coord = {x: node[4], y: node[5], z: node[6]};
       self.specialTagSpheres[nodeID] = mesh;
       scene.add( mesh );
     };
@@ -875,6 +883,8 @@ var WebGLApp = (function() { return new function () {
       }, {});
 
       // Store for reuse in other functions
+      // TODO incurs in large memory footprint, should retrieve it when needed from the database (e.g. when needing to create the graph).
+      // TODO all that needs to be kept is the x,y,z for the nodes that have connectors or labels, and those for connectors can be removed after creating them (for the text labels one has to keep them, as labels are recreated every time)
       self.nodeProps = nodeProps;
       self.connectorProps = connectors.reduce(function(ob, con) {
         ob[con[1]] = con;
@@ -885,34 +895,51 @@ var WebGLApp = (function() { return new function () {
       self.tags = tags;
 
 
-      var createEdge = function(id1, x1, y1, z1,
-                                id2, x2, y2, z2,
+      var createEdge = function(id1, v1,
+                                id2, v2,
                                 type) {
         // Create edge between child (id1) and parent (id2) nodes:
         // Takes the coordinates of each node, transforms them into the space,
         // and then adds them to the parallel lists of vertices and vertexIDs
-        var v1 = pixelSpaceVector(x1, y1, z1);
         self.geometry[type].vertices.push( v1 );
         self.vertexIDs[type].push(id1);
 
-        var v2 = pixelSpaceVector(x2, y2, z2);
         self.geometry[type].vertices.push( v2 );
         self.vertexIDs[type].push(id2);
-
-        return v1;
       };
 
-      var createNodeSphere = function(id, x, y, z, v, radius) {
-        // TODO replace with IcosahedronGeometry: less vertices
-        var radiusCustomSphere = new THREE.SphereGeometry( radius, 32, 32, 1 );
-        var mesh = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
-        if (!v) v = pixelSpaceVector(x, y, z);
+      // Reused for all meshes
+      var material = new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false } );
+
+      var createNodeSphere = function(id, v, radius) {
+        // Reuse geometry: an icoSphere of radius 1.0
+        var mesh = new THREE.Mesh(icoSphere, material);
+        // Scale the mesh to bring about the correct radius
+        mesh.scale.x = mesh.scale.y = mesh.scale.z = radius;
         mesh.position.set( v.x, v.y, v.z );
         mesh.node_id = id;
-        mesh.orig_coord = {x: x, y: y, z: z};
-        mesh.skeleton_id = self.id;
-        self.radiusSpheres[id] = mesh;
+        self.radiusVolumes[id] = mesh;
         scene.add( mesh );
+      };
+
+      var createCylinder = function(nodeID, v1, v2, radius) {
+        var mesh = new THREE.Mesh(cylinder, material);
+
+        // BE CAREFUL with side effects: all functions on a Vector3 alter the vector and return it (rather than returning an altered copy)
+        var direction = new THREE.Vector3().subVectors(v2, v1);
+
+        mesh.scale.x = radius;
+        mesh.scale.y = direction.length();
+        mesh.scale.z = radius;
+
+        var arrow = new THREE.ArrowHelper(direction.clone().normalize(), v1);
+        mesh.rotation = new THREE.Vector3().setEulerFromQuaternion(arrow.quaternion);
+        mesh.position = new THREE.Vector3().addVectors(v1, direction.multiplyScalar(0.5));
+
+        mesh.node_id = nodeID;
+
+        self.radiusVolumes[nodeID] = mesh;
+        scene.add(mesh);
       };
 
       // Create edges between all skeleton nodes
@@ -922,17 +949,31 @@ var WebGLApp = (function() { return new function () {
         // node[1]: parent ID
         // node[7]: radius
         // node[8]: confidence
-        var v; // for reuse in translating the sphere if any
         // If node has a parent
         if (node[1]) {
           // indices 4,5,6 are x,y,z
           var p = nodeProps[node[1]];
-          v = createEdge(node[0], node[4], node[5], node[6],
-                         p[0], p[4], p[5], p[6],
-                         'neurite');
-        }
-        if (node[7] > 0) {
-          createNodeSphere(node[0], node[4], node[5], node[6], v, node[7] * scale);
+          var v1 = pixelSpaceVector(node[4], node[5], node[6]);
+          var v2 = pixelSpaceVector(p[4], p[5], p[6]);
+          var nodeID = node[0];
+          if (node[7] > 0 && p[7] > 0) {
+            // Create cylinder using the node's radius only (not the parent) so that the geometry can be reused
+            var scaled_radius = node[7] * scale;
+            createCylinder(nodeID, v1, v2, scaled_radius);
+            // Create skeleton line as well
+            createEdge(nodeID, v1, p[0], v2, 'neurite');
+          } else {
+            // Create line
+            createEdge(nodeID, v1, p[0], v2, 'neurite');
+            // Create sphere
+            if (node[7] > 0) {
+              createNodeSphere(nodeID, v1, node[7] * scale);
+            }
+          }
+        } else if (node[7] > 0) {
+          // For the root node
+          var v1 = pixelSpaceVector(node[4], node[5], node[6]);
+          createNodeSphere(node[0], v1, node[7] * scale);
         }
         if (node[8] < 5) {
           createLabelSphere(node[0], labelColors.uncertain);
@@ -940,13 +981,10 @@ var WebGLApp = (function() { return new function () {
       });
 
       // The itype is 0 (pre) or 1 (post), and chooses from the two arrays above
-      var createSynapticSphere = function(nodeID, x, y, z, itype) {
-        var v = pixelSpaceVector(x, y, z);
+      var createSynapticSphere = function(nodeID, v, itype) {
         var mesh = new THREE.Mesh( radiusSphere, synapticColors[itype] );
         mesh.position.set( v.x, v.y, v.z );
         mesh.node_id = nodeID;
-        mesh.orig_coord = {x: x, y: y, z: z};
-        mesh.skeleton_id = self.id;
         mesh.type = synapticTypes[itype];
         self.synapticSpheres[nodeID] = mesh;
         scene.add( mesh );
@@ -962,12 +1000,14 @@ var WebGLApp = (function() { return new function () {
         var node = nodeProps[con[0]];
         // indices 3,4,5 are x,y,z for connector
         // indices 4,5,6 are x,y,z for node
-        createEdge(con[1], con[3], con[4], con[5],
-                   node[0], node[4], node[5], node[6],
+        var v1 = pixelSpaceVector(con[3], con[4], con[5]);
+        var v2 = pixelSpaceVector(node[4], node[5], node[6]);
+        createEdge(con[1], v1,
+                   node[0], v2,
                    synapticTypes[con[2]]);
         if (!self.synapticSpheres.hasOwnProperty(node[0])) {
           // con[2] is 0 for presynaptic and 1 for postsynaptic
-          createSynapticSphere(node[0], node[4], node[5], node[6], con[2]);
+          createSynapticSphere(node[0], v2, con[2]);
         }
       });
 
@@ -1781,7 +1821,7 @@ var WebGLApp = (function() { return new function () {
         container.style.cursor = 'move';
       }
 
-      // intersect connectors
+      // intersect volumes
       var sphere_objects = [];
       for( var skeleton_id in skeletons) {
         if( skeletons.hasOwnProperty( skeleton_id )) {
@@ -1799,19 +1839,22 @@ var WebGLApp = (function() { return new function () {
             }
           }
 
+          for(var idx in skeletons[ skeleton_id ].radiusVolumes) {
+            if( skeletons[ skeleton_id ].radiusVolumes.hasOwnProperty( idx )) {
+              sphere_objects.push( skeletons[ skeleton_id ].radiusVolumes[ idx ] )
+            }
+          }
+
           var intersects = raycaster.intersectObjects( sphere_objects, true );
           // console.log('intersects sphere objects', intersects)
           if ( intersects.length > 0 ) {
             for( var i = 0; i < sphere_objects.length; i++) {
               if( sphere_objects[i].id === intersects[0].object.id ) {
-                  var jso = sphere_objects[i];
-                  SkeletonAnnotations.staticMoveTo(jso.orig_coord.z, jso.orig_coord.y, jso.orig_coord.x, function() { 
-                    SkeletonAnnotations.staticSelectNode(parseInt(jso.node_id, 10), parseInt(jso.skeleton_id, 10)) });
+                  var o = sphere_objects[i];
+                  SkeletonAnnotations.staticMoveToAndSelectNode(o.node_id, undefined);
               }
             }
           }
-
-
         } // has own skeleton
       }  // end for
 

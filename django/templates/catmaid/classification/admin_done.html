@@ -1,0 +1,55 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url admin:index %}">Home</a> &rsaquo; Tag Based Classification Graph Linker
+  </div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    {% if tag_groups.items|length == 0 %}
+        <p>Sorry, no project could have been attached to a classification graph.</p>
+    {% else %}
+        {% if failed_links|length == 0 %}
+            <p>All missing links have been established. In particular these are:</p>
+        {% else %}
+            <p>Unfortunately, not all links could be established.</p>
+        {% endif %}
+        <table>
+            <tr>
+                <th>Tag group</th>
+                <th>Affected projects</th>
+                <th>Previously linked graphs</th>
+                <th>Added links</th>
+            </tr>
+            {% for tags, projects in tag_groups.items %}
+                {% for project, cgroots in projects.project_cgroots.items %}
+                <tr>
+                    {% if forloop.counter0 == 0 %}
+                        <td rowspan="{{ projects.project_cgroots.items|length }}">{{ tags }}</td>
+                    {% endif %}
+                    <td>{{ project|safe }}</td>
+                    {% if cgroots.linked|length == 0 %}
+                        <td><em>none</em></td>
+                    {% else %}
+                        <td>{{ cgroots.linked|join:", " }}</td>
+                    {% endif %}
+                    {% if cgroots.missing|length == 0 %}
+                        <td><em>none</em></td>
+                    {% else %}
+                        <td>{{ cgroots.missing|join:", " }}</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            {% endfor %}
+        </table>
+    {% endif %}
+    <p><a href="{% url admin:index %}">Return to the administration home page.</a></p>
+  </div>
+{% endblock %}
+

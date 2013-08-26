@@ -53,21 +53,29 @@ function Selector()
 			var m = ui.getMouse( e, stack.getView() );
 			if ( m )
 			{
-				var dist_center_x = m.offsetX - stack.viewWidth / 2;
-				var dist_center_y = m.offsetY - stack.viewHeight / 2;
+				var mouseStackX = stack.x + ( m.offsetX - stack.viewWidth / 2 ) / stack.scale;
+				var mouseStackY = stack.y + ( m.offsetY - stack.viewHeight / 2 ) / stack.scale;
 
-				var pos_x = stack.translation.x + ( stack.x + dist_center_x / stack.scale ) * stack.resolution.x;
-				var pos_y = stack.translation.y + ( stack.y + dist_center_y / stack.scale ) * stack.resolution.y;
-				statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
+				var project_pos_x = stack.stackToProjectX( stack.z, mouseStackY, mouseStackX );
+				var project_pos_y = stack.stackToProjectY( stack.z, mouseStackY, mouseStackX );
+				var project_pos_z = stack.stackToProjectZ( stack.z, mouseStackY, mouseStackX );
+
+				statusBar.replaceLast( "[" + project_pos_x.toFixed( 3 ) + ", " + project_pos_y.toFixed( 3 ) + ", " + project_pos_z.toFixed( 3 ) + "]" );
 
 				// update position marks in other open stacks as well
 				for ( i = 0; i < position_markers.length; ++i )
 				{
 					var current_stack = position_markers[ i ].stack;
+
+					var stack_pos_x = current_stack.projectToStackX( project_pos_z, project_pos_y, project_pos_x );
+					var stack_pos_y = current_stack.projectToStackY( project_pos_z, project_pos_y, project_pos_x );
+
 					// positioning is relative to the center of the current view
-					var rel_x = ( current_stack.viewWidth / 2 ) + dist_center_x - img_width / 2;
-					var rel_y = ( current_stack.viewHeight / 2 ) + dist_center_y - img_height / 2;
+					var rel_x = ( stack_pos_x - current_stack.x ) * current_stack.scale + current_stack.viewWidth * 0.5 - img_width / 2;
+					var rel_y = ( stack_pos_y - current_stack.y ) * current_stack.scale + current_stack.viewHeight * 0.5 - img_height / 2;
+
 					var stack_marker = position_markers[ i ].marker;
+
 					stack_marker.style.left = rel_x + "px";
 					stack_marker.style.top = rel_y + "px";
 				}

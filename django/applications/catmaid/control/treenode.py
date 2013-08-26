@@ -14,6 +14,7 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
 import sys
+import math
 
 
 def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
@@ -377,6 +378,8 @@ def update_treenode_table(request, project_id=None):
 def update_radius(request, project_id=None, treenode_id=None):
     treenode_id = int(treenode_id)
     radius = float(request.POST.get('radius', -1))
+    if math.isnan(radius):
+        raise Exception("Radius '%s' is not a number!" % request.POST.get('radius'))
     option = int(request.POST.get('option', 0))
     cursor = connection.cursor()
 

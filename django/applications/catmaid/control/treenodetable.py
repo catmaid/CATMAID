@@ -1,4 +1,5 @@
 import json
+import math
 from string import upper
 
 from django.http import HttpResponse
@@ -22,8 +23,12 @@ def update_treenode_table(request, project_id=None):
         treenode_id = int(treenode_id)
         if property_name == 'confidence':
             property_value = int(property_value)
+            if property_value < 1 or property_value > 5:
+                raise Exception("Value '%s' out of range for %s" % (property_value, property_value))
         elif property_name == 'radius':
             property_value = float(property_value)
+            if math.isnan(property_value):
+                raise Exception("Invalid value '%s' for %s" % (property_value, property_name))
         else:
             property_value = int(property_value)
 

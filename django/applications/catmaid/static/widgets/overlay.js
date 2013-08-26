@@ -88,6 +88,15 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
   }
 };
 
+SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
+  var instances = SkeletonAnnotations.SVGOverlay.prototype._instances;
+  for (var stack in instances) {
+    if (instances.hasOwnProperty(stack)) {
+      instances[stack].moveToAndSelectNode(nodeID, fn);
+    }
+  }
+};
+
 SkeletonAnnotations.getActiveNodeId = function() {
   return this.atn.id;
 };
@@ -652,6 +661,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (c
   // Check that connectorID doesn't have a presynaptic treenode already
   // (It is also checked in the server on attempting to create a link. Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
   var connectorNode = this.nodes[connectorID];
+  if (!connectorNode) {
+    alert("Connector #" + connectorID + " is not loaded. Browse to its section and make sure it is selected.");
+    return;
+  }
   if (Object.keys(connectorNode.pregroup).length > 0) {
     growlAlert("WARNING", "The connector already has a presynaptic node!");
     return;
@@ -1219,17 +1232,23 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback, futur
        atnid: atnid,
        labels: self.getLabelStatus()},
       function(json) {
-        self.refreshNodesFromTuples(json, pz);
+        if (json.needs_setup) {
+            display_tracing_setup_dialog(project.id, json.has_needed_permissions,
+                json.missing_classes, json.missing_relations,
+                json.missing_classinstances);
+        } else {
+          self.refreshNodesFromTuples(json, pz);
 
-        // initialization hack for "URL to this view"
-        if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
-          self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
-          delete SkeletonAnnotations.init_active_node_id;
-        }
+          // initialization hack for "URL to this view"
+          if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
+            self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
+            delete SkeletonAnnotations.init_active_node_id;
+          }
 
-        stack.redraw();
-        if (typeof callback !== "undefined") {
-          callback();
+          stack.redraw();
+          if (typeof callback !== "undefined") {
+            callback();
+          }
         }
       },
       false,
@@ -1343,17 +1362,26 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
           ['Only this node', 'From this node to the next branch or end node (included)',
            'From this node to the previous branch node or root (excluded)',
            'From this node to root (included)', 'All nodes'],
-          [0, 1, 2, 3, 4]);
+          [0, 1, 2, 3, 4],
+          self.editRadius_defaultValue);
         dialog.onOK = function() {
+          var radius = parseFloat(input.value);
+          if (isNaN(radius)) {
+            alert("Invalid number: '" + input.value + "'");
+            return;
+          }
+          self.editRadius_defaultValue = choice.selectedIndex;
           self.submit(
             django_url + project.id + '/treenode/' + treenode_id + '/radius',
-            {radius: parseFloat(input.value),
+            {radius: radius,
              option: choice.selectedIndex},
             function(json) {
               var skeleton_id = self.nodes[treenode_id].skeleton_id;
               if (NeuronStagingArea.is_widget_open() && NeuronStagingArea.get_skeletonmodel(skeleton_id) && WebGLApp.is_widget_open()) {
                 // Reinit the actor
                 WebGLApp.addSkeletonFromID(skeleton_id, false);
+                // Reinit SVGOverlay to read in the radius of each altered treenode
+                self.updateNodes();
               }
             });
         };
@@ -1370,12 +1398,13 @@ SkeletonAnnotations.SVGOverlay.prototype.moveTo = function(z, y, x, fn) {
   });
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.moveToAndSelectNode = function(nodeID) {
+SkeletonAnnotations.SVGOverlay.prototype.moveToAndSelectNode = function(nodeID, fn) {
   if (this.isIDNull(nodeID)) return;
   var self = this;
   this.goToNode(nodeID,
       function() {
         self.selectNode(nodeID);
+        if (fn) fn();
       });
 };
 
@@ -1419,26 +1448,9 @@ SkeletonAnnotations.SVGOverlay.prototype.goToLastEditedNode = function(skeletonI
 
 SkeletonAnnotations.SVGOverlay.prototype.goToNearestOpenEndNode = function(nodeID) {
   if (this.isIDNull(nodeID)) return;
-  if (this.getLabelStatus()) {
-    var label = this.labels[nodeID];
-    if (label) {
-      var end_labels = ['soma', 'not a branch', 'uncertain continuation', 'uncertain end', 'ends'];
-      var tagged = false;
-      for (var j = label.text.length -1; j > -1; --j) {
-        tagged = -1 !== label.text[j].search('end');
-        for (var i = end_labels.length -1; !tagged && i > -1; --i) {
-          tagged = label.text[j] === end_labels[i];
-        }
-      }
-      if (!tagged) {
-        growlAlert("Information", "You are at an open end node.");
-        return;
-      }
-    }
-  }
   var self = this;
   // TODO could be done by inspecting the graph locally if it is loaded in the 3d Viewer
-  // of from the treenode table (both sources though may not be up to date)
+  // of from the treenode table (but neither source may not be up to date)
   this.submit(
       django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf',
       {tnid: nodeID},
@@ -1881,7 +1893,7 @@ window.OptionsDialog.prototype.appendMessage = function(msg) {
   this.dialog.appendChild(msg);
 };
 
-window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, values) {
+window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, values, defaultValue) {
   if (!names || !values || names.length !== values.length) {
     alert("Improper arrays for names and values.");
     return;
@@ -1894,6 +1906,7 @@ window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, v
     var option = document.createElement('option');
     option.text = names[i];
     option.value = values[i];
+    option.defaultSelected = defaultValue === values[i];
     choice.add(option);
   }
   p.appendChild(choice);

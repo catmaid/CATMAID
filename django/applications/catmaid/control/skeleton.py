@@ -29,36 +29,48 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
     ''' % int(skeleton_id))
 
     # Some entries repeated, when a node has more than one tag
-    nodes = tuple(cursor.fetchall())
-
     # Create a graph with edges from parent to child, and accumulate parents
     tree = nx.DiGraph()
-    parentIDs = set()
-    for node in nodes:
-        if node[1]:
-            tree.add_edge(node[1], node[0])
-            parentIDs.add(node[1])
+    for row in cursor.fetchall():
+        nodeID = row[0]
+        if row[1]:
+            # It is ok to add edges that already exist: DiGraph doesn't keep duplicates
+            tree.add_edge(row[1], nodeID)
+        else:
+            tree.add_node(nodeID)
+        tree.node[nodeID]['loc'] = row[2]
+        if row[3]:
+            props = tree.node[nodeID]
+            tags = props.get('tags')
+            if tags:
+                tags.append(row[3])
+            else:
+                props['tags'] = [row[3]]
+
+    if tnid not in tree:
+        raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
 
     reroot(tree, tnid)
     distances = edge_count_to_root(tree, root_node=tnid)
 
     # Iterate end nodes, find closest
     nearest = None
-    distance = len(nodes) + 1
+    distance = tree.number_of_nodes() + 1
     loc = None
     other_tags = set(('uncertain continuation', 'not a branch', 'soma'))
-    for node in nodes:
-        if node[0] not in parentIDs:
+
+    for nodeID, out_degree in tree.out_degree_iter():
+        if 0 == out_degree:
             # Found an end node
+            props = tree.node[nodeID]
             # Check if not tagged with a tag containing 'end'
-            if not node[3] or ('end' not in node[3] and node[3] not in other_tags):
-                # Found open end
-                nid = node[0]
-                d = distances[nid]
+            if not 'tags' in props and not [s for s in props if 'end' in s or s in other_tags]:
+                # Found an open end
+                d = distances[nodeID]
                 if d < distance:
-                    nearest = nid
+                    nearest = nodeID
                     distance = d
-                    loc = node[2]
+                    loc = props['loc']
 
     return HttpResponse(json.dumps((nearest, loc)))
 

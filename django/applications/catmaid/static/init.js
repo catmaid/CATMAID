@@ -543,7 +543,8 @@ function handle_openProjectStack( status, text, xml )
 					e.tile_source_type,
 					labelupload, // TODO: if there is any
 					e.metadata,
-					userprofile.inverse_mouse_wheel);
+					userprofile.inverse_mouse_wheel,
+					e.orientation );
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
 
@@ -627,7 +628,7 @@ function handle_openProjectStack( status, text, xml )
 			{
 				var tool = tools[ inittool ];
 				if ( tool )
-					project.setTool( tool );
+					project.setTool( new tool() );
 			}
 
 			/* Update the projects "current project" menu. If there is more

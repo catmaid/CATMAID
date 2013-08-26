@@ -183,7 +183,7 @@ var SkeletonConnectivity = new function()
                 td.style.backgroundColor = getBackgroundColor(partner.reviewed);
                 tr.appendChild(td);
 
-                // Cell with numnber of nodes of partner neuron
+                // Cell with number of nodes of partner neuron
                 var td = document.createElement('td');
                 td.innerText = partner.num_nodes;
                 tr.appendChild(td);

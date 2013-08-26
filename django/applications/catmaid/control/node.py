@@ -78,46 +78,81 @@ def node_list_tuples(request, project_id=None):
         response_on_error = 'Failed to query treenodes'
         params['bottom'] = params['top'] + params['height']
         params['right'] = params['left'] + params['width']
-        if is_superuser:
-            # if superuser show all tracings
-            params['hide_other_user_ids'] = ''
+        params['user_id'] = user_id
+        #if request.user.userprofile.show_all_tracings:
+        #    params['hide_other_user_ids'] = ''
+        #else:
+        #    params['hide_other_user_ids'] = 'AND t1.user_id = %s' % user_id
+        #print params['hide_other_user_ids']
+        if request.user.userprofile.show_all_tracings:
+            cursor.execute('''
+                SELECT
+                    t1.id,
+                    t1.parent_id,
+                    (t1.location).x AS x,
+                    (t1.location).y AS y,
+                    (t1.location).z AS z,
+                    t1.confidence,
+                    t1.radius,
+                    t1.skeleton_id,
+                    t1.user_id,
+                    t2.id,
+                    t2.parent_id,
+                    (t2.location).x AS x,
+                    (t2.location).y AS y,
+                    (t2.location).z AS z,
+                    t2.confidence,
+                    t2.radius,
+                    t2.skeleton_id,
+                    t2.user_id
+                FROM treenode t1
+                     INNER JOIN treenode t2 ON
+                       (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
+                        OR (t1.parent_id IS NULL AND t1.id = t2.id))
+                WHERE
+                    (t1.location).z = %(z)s
+                    AND (t1.location).x > %(left)s
+                    AND (t1.location).x < %(right)s
+                    AND (t1.location).y > %(top)s
+                    AND (t1.location).y < %(bottom)s
+                    AND t1.project_id = %(project_id)s
+                LIMIT %(limit)s
+                ''', params)
         else:
-            # if not, show only tracings for this user
-            params['hide_other_user_ids'] = 'AND t1.user_id = %s' % user_id
-        cursor.execute('''
-        SELECT
-            t1.id,
-            t1.parent_id,
-            (t1.location).x AS x,
-            (t1.location).y AS y,
-            (t1.location).z AS z,
-            t1.confidence,
-            t1.radius,
-            t1.skeleton_id,
-            t1.user_id,
-            t2.id,
-            t2.parent_id,
-            (t2.location).x AS x,
-            (t2.location).y AS y,
-            (t2.location).z AS z,
-            t2.confidence,
-            t2.radius,
-            t2.skeleton_id,
-            t2.user_id
-        FROM treenode t1
-             INNER JOIN treenode t2 ON
-               (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
-                OR (t1.parent_id IS NULL AND t1.id = t2.id))
-        WHERE
-            (t1.location).z = %(z)s
-            AND (t1.location).x > %(left)s
-            AND (t1.location).x < %(right)s
-            AND (t1.location).y > %(top)s
-            AND (t1.location).y < %(bottom)s
-            AND t1.project_id = %(project_id)s
-            %(hide_other_user_ids)s
-        LIMIT %(limit)s
-        ''', params)
+            cursor.execute('''
+                SELECT
+                    t1.id,
+                    t1.parent_id,
+                    (t1.location).x AS x,
+                    (t1.location).y AS y,
+                    (t1.location).z AS z,
+                    t1.confidence,
+                    t1.radius,
+                    t1.skeleton_id,
+                    t1.user_id,
+                    t2.id,
+                    t2.parent_id,
+                    (t2.location).x AS x,
+                    (t2.location).y AS y,
+                    (t2.location).z AS z,
+                    t2.confidence,
+                    t2.radius,
+                    t2.skeleton_id,
+                    t2.user_id
+                FROM treenode t1
+                     INNER JOIN treenode t2 ON
+                       (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
+                        OR (t1.parent_id IS NULL AND t1.id = t2.id))
+                WHERE
+                    (t1.location).z = %(z)s
+                    AND (t1.location).x > %(left)s
+                    AND (t1.location).x < %(right)s
+                    AND (t1.location).y > %(top)s
+                    AND (t1.location).y < %(bottom)s
+                    AND t1.project_id = %(project_id)s
+                    AND t1.user_id = %(user_id)s
+                LIMIT %(limit)s
+                ''', params)
 
         # Above, notice that the join is done for:
         # 1. A parent-child or child-parent pair (where the first one is in section z)

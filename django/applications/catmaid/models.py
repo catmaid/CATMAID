@@ -837,6 +837,8 @@ class UserProfile(models.Model):
         default=settings.PROFILE_SHOW_TRACING_TOOL)
     show_ontology_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_ONTOLOGY_TOOL)
+    show_all_tracings = models.BooleanField(
+        default=settings.PROFILE_SHOW_ALL_TRACINGS)
     color = RGBAField(default=distinct_user_color)
 
     def __unicode__(self):
@@ -856,6 +858,7 @@ class UserProfile(models.Model):
         pdict['show_cropping_tool'] = self.show_cropping_tool
         pdict['show_segmentation_tool'] = self.show_segmentation_tool
         pdict['show_tracing_tool'] = self.show_tracing_tool
+        pdict['show_all_tracings'] = self.show_all_tracings
         pdict['show_ontology_tool'] = self.show_ontology_tool
         return pdict
     

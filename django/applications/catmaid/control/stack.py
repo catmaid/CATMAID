@@ -16,8 +16,14 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
     p = get_object_or_404(Project, pk=project_id)
     s = get_object_or_404(Stack, pk=stack_id)
     ps_all = ProjectStack.objects.filter(project=project_id, stack=stack_id)
-    if len(ps_all) != 1:
-        return {'error': 'Multiple project - stack associations, but should only be one.'}
+    num_stacks = len(ps_all)
+    if num_stacks == 0:
+        return {'error': 'There is no stack with ID %s linked to the ' \
+                         'project with ID %s.' % (stack_id, project_id)}
+    elif num_stacks > 1:
+        return {'error': 'The stack with ID %s is linked multiple times ' \
+                         'to the project with ID %s, but there should only be ' \
+                         'one link.' % (stack_id, project_id)}
     ps=ps_all[0]
     can_edit = user.has_perm('can_administer', p) or user.has_perm('can_annotate', p)
 

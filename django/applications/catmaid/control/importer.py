@@ -538,6 +538,7 @@ class ProjectSelectionForm(forms.Form):
             attrs={'class': 'autoselectable'}),
         help_text="Only selected projects will be imported.")
     tags = forms.CharField(initial="", required=False,
+        widget=forms.TextInput(attrs={'size':'50'}),
         help_text="A comma separated list of unquoted tags.")
     tile_width = forms.IntegerField(initial=256,
         help_text="The width of one tile in <em>pixel</em>.")

@@ -18,9 +18,14 @@ class ProjectAdmin(GuardedModelAdmin):
 #    def has_change_permission(self, request, obj=None):
 #        pass
 
+class ProjectInline(admin.TabularInline):
+    model = ProjectStack
+    extra = 1
+
 class StackAdmin(GuardedModelAdmin):
     list_display = ('title', 'dimension', 'resolution', 'num_zoom_levels', 'image_base')
     search_fields = ['title', 'image_base']
+    inlines = [ProjectInline,]
 
 class DataViewConfigWidget(forms.widgets.Textarea):
     def render(self, name, value, attrs=None):

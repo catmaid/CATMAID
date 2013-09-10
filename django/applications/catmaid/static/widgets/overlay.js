@@ -689,9 +689,10 @@ var SkeletonAnnotations = new function()
                       //move to selection
                       if( stack.tile_source_type === 5)//5D visualization
                       {
-                        stack.getProject().moveTo5D(par.z * stack.resolution.z + stack.translation.z, 
-                                                    par.y * stack.resolution.y + stack.translation.y,
-                                                    par.x * stack.resolution.x + stack.translation.x,
+                        scaleAux = stack.scale;
+                        stack.getProject().moveTo5D( (par.z * stack.resolution.z + stack.translation.z) , 
+                                                     (par.y * stack.resolution.y + stack.translation.y) / scaleAux,
+                                                     (par.x * stack.resolution.x + stack.translation.x) / scaleAux,
                                                     undefined, 
                                                     par.t, par.ch,
                         function() {

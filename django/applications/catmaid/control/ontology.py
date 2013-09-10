@@ -303,6 +303,66 @@ def get_number_of_inverse_links( obj ):
     return count
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+def rename_class(request, project_id=None):
+    # Get class
+    class_id = request.POST.get('classid', None)
+    if not class_id:
+        raise Exception("No class id was provided!")
+    class_id = int(class_id)
+    class_obj  = get_object_or_404(Class, id=class_id)
+    # Get new name
+    new_name = request.POST.get('newname', None)
+    if not new_name:
+        raise Exception("No new name was provided!")
+
+    # Make sure the name is not the same as before
+    if class_obj.class_name == new_name:
+        raise Exception("The new ralation name equals the current one!")
+
+    # If in strict mode, try to find a class that already
+    # has the requested name.
+    if be_strict:
+        same_name_count = Class.objects.filter(class_name=new_name).count()
+        if same_name_count > 0:
+            raise Exception("There is already a class named '%s'!" % new_name)
+
+    # Rename class to new name
+    class_obj.class_name = new_name
+    class_obj.save()
+
+    return HttpResponse(json.dumps({'renamed_class': class_id}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def rename_relation(request, project_id=None):
+    # Get relation
+    rel_id = request.POST.get('relid', None)
+    if not rel_id:
+        raise Exception("No relation id was provided!")
+    rel_id = int(rel_id)
+    relation = get_object_or_404(Relation, id=rel_id)
+    # Get new name
+    new_name = request.POST.get('newname', None)
+    if not new_name:
+        raise Exception("No new name was provided!")
+
+    # Make sure the name is not the same as before
+    if relation.relation_name == new_name:
+        raise Exception("The new ralation name equals the current one!")
+
+    # If in strict mode, try to find a relation that already
+    # has the requested name.
+    if be_strict:
+        same_name_count = Relation.objects.filter(relation_name=new_name).count()
+        if same_name_count > 0:
+            raise Exception("There is already a relation named '%s'!" % new_name)
+
+    # Rename relation to name
+    relation.relation_name = new_name
+    relation.save()
+
+    return HttpResponse(json.dumps({'renamed_relation': relid}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_relation_from_ontology(request, project_id=None):
     relid = int(request.POST.get('relid', -1))
     force = bool(int(request.POST.get('force', 0)))

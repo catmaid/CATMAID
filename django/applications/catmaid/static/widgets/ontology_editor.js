@@ -566,6 +566,17 @@ var OntologyEditor = new function()
                     }
                 } else if (type_of_node === "class") {
                     menu = {
+                    "rename_class": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Rename class",
+                        "action": function (obj) {
+                            var class_id = obj.attr('id').replace("node_", "");
+                            var class_name = obj.attr('name');
+                            return OntologyEditor.rename_class_handler(
+                                class_id, class_name, pid, tree_id);
+                         }
+                    },
                     "remove_class": {
                         "separator_before": false,
                         "separator_after": false,
@@ -698,6 +709,31 @@ var OntologyEditor = new function()
                                 OntologyEditor.refresh_tree(tree_id);
                                 OntologyEditor.show_error_status( "Success",
                                     "The relation has been renamed." );
+                            });
+                    });
+            });
+    };
+
+    /**
+     * Handles the renaming of a class out of the tree's context menu.
+     */
+    this.rename_class_handler = function (class_id, class_name, pid, tree_id) {
+        general_rename_handler("class", class_name,
+            function(new_name) {
+                OntologyEditor.display_wait_message(
+                    "Renaming class. Just a moment...");
+                // rename relation with AJAX call
+                requestQueue.register(django_url + pid + '/ontology/classes/rename',
+                    'POST',
+                    { "classid": class_id,
+                      "newname": new_name, },
+                    function(status, data, text) {
+                        OntologyEditor.hide_wait_message();
+                        OntologyEditor.handle_operation_response(status, data, text,
+                            function() {
+                                OntologyEditor.refresh_tree(tree_id);
+                                OntologyEditor.show_error_status( "Success",
+                                    "The class has been renamed." );
                             });
                     });
             });

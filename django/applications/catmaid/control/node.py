@@ -51,7 +51,10 @@ def node_list_tuples(request, project_id=None):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
-    
+    params['zUpper'] = params['z'] + params['zres'] + 0.0001
+    params['zLower'] = params['z'] - params['zres'] - 0.0001
+
+
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
@@ -99,12 +102,13 @@ def node_list_tuples(request, project_id=None):
                (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
                 OR (t1.parent_id IS NULL AND t1.id = t2.id))
         WHERE
-            (t1.location).z = %(z)s
+            t1.project_id = %(project_id)s
+            AND (t1.location).z <= %(zUpper)s
+            AND (t1.location).z >= %(zLower)s
             AND (t1.location).x > %(left)s
             AND (t1.location).x < %(right)s
             AND (t1.location).y > %(top)s
             AND (t1.location).y < %(bottom)s
-            AND t1.project_id = %(project_id)s
             AND t1.location_t >= %(back)s
             AND t1.location_t <= %(front)s
             AND t1.location_c = %(channel)s

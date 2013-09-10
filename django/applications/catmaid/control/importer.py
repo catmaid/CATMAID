@@ -540,9 +540,11 @@ class ProjectSelectionForm(forms.Form):
     tags = forms.CharField(initial="", required=False,
         widget=forms.TextInput(attrs={'size':'50'}),
         help_text="A comma separated list of unquoted tags.")
-    tile_width = forms.IntegerField(initial=256,
+    tile_width = forms.IntegerField(
+        initial=settings.IMPORTER_DEFAULT_TILE_WIDTH,
         help_text="The width of one tile in <em>pixel</em>.")
-    tile_height = forms.IntegerField(initial=256,
+    tile_height = forms.IntegerField(
+        initial=settings.IMPORTER_DEFAULT_TILE_HEIGHT,
         help_text="The height of one tile in <em>pixel</em>.")
     make_projects_public = forms.BooleanField(initial=False,
         required=False, help_text="If made public, a project \

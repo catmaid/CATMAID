@@ -563,6 +563,10 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         ''' % to_treenode_id)
         to_skeleton_user_id, to_skid, to_treenode_user_id = cursor.fetchone()
 
+
+        #destination node for cell tracking(largest t) has to be root (otherwise it is unclear who is the parent)
+        #TODO: maybe just delete parent and give a warning
+
         # Check if joining is allowed
         if 0 == Treenode.objects.filter(parent_id=to_treenode_id).count() and Treenode.objects.filter(pk=to_treenode_id).values_list('parent_id')[0][0] is None:
             # Is an isolated node, so it can be joined freely

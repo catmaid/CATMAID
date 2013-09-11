@@ -82,6 +82,10 @@ var SkeletonAnnotations = new function()
     return atn.t;
   };
 
+  this.getActiveNodeParentId = function() {
+    return atn.parent_id;
+  };
+
   this.getActiveSkeletonId = function() {
     return atn.skeleton_id;
   };

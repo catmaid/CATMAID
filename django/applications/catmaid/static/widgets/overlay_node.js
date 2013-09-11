@@ -611,9 +611,21 @@ var SkeletonElements = new function()
             }
 
             if( node.t > SkeletonAnnotations.getActiveNodeTime() ){
+
+              if( node.parent_id != null)
+              {
+                alert('Cannot join node with node in t+1 that is not root');
+                return;
+              }
+
               paper.catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
             }
             else{
+              if( SkeletonAnnotations.getActiveNodeParentId() != null)
+              {
+                alert('Cannot join node with node in t+1 that is not root');
+                return;
+              }
               paper.catmaidSVGOverlay.createTreenodeLink(node.id, atnID);
               //make current node active since the user is going to be in this node
               //Note: right now it is not possible because callback to createTreeNodeLink() is executed in parallel and overwrites the next two commands

@@ -25,6 +25,7 @@ from catmaid.control.classificationadmin import get_tag_sets
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs
 from catmaid.control.classification import link_existing_classification
+from catmaid.control.classification import ClassInstanceClassInstanceProxy
 
 from taggit.models import Tag
 
@@ -321,8 +322,8 @@ class ImportingWizard(SessionWizardView):
                 cgraphs.append( (cr.id, name) )
                 # Create ID to classificatin graph mapping
                 self.id_to_cls_graph[cr.id] = cr
-            form.fields['classification_graphs'].choices = cgraphs
-            #form.fields['classification_graphs'].initial = [cg[0] for cg in cgraphs]
+            form.fields['classification_graph_suggestions'].choices = cgraphs
+            #form.fields['classification_graph_suggestions'].initial = [cg[0] for cg in cgraphs]
 
         return form
 
@@ -366,14 +367,21 @@ class ImportingWizard(SessionWizardView):
                 group_permissions = self.get_cleaned_data_for_step(
                     'projectselection')['group_permissions']
                 group_permissions = get_permissions_from_selection( Group, group_permissions )
-                # Classification suggestions
+                # Classification graph links
                 link_cls_graphs = self.get_cleaned_data_for_step(
-                    'projectselection')['check_classification_links']
+                    'projectselection')['link_classifications']
                 if link_cls_graphs:
-                    cls_graph_ids = self.get_cleaned_data_for_step(
-                        'classification')['classification_graphs']
-                    cls_graphs_to_link = [ self.id_to_cls_graph[int(cgid)] \
-                        for cgid in cls_graph_ids ]
+                    # Suggested graphs
+                    sugg_cls_graph_ids = self.get_cleaned_data_for_step(
+                        'classification')['classification_graph_suggestions']
+                    cls_graphs_to_link = set( self.id_to_cls_graph[int(cgid)] \
+                        for cgid in sugg_cls_graph_ids )
+                    # Manually selected graphs
+                    sel_cicis = self.get_cleaned_data_for_step(
+                        'classification')['additional_links']
+                    sel_cls_graphs = set(cici.class_instance_b for cici in sel_cicis)
+                    cls_graphs_to_link.update(sel_cls_graphs)
+                    # Store combined result in context
                     context.update({
                         'cls_graphs_to_link': cls_graphs_to_link,
                     })
@@ -421,11 +429,11 @@ class ImportingWizard(SessionWizardView):
         tags = [t.strip() for t in tags.split(',')]
         # Classifications
         link_cls_graphs = self.get_cleaned_data_for_step(
-            'projectselection')['check_classification_links']
+            'projectselection')['link_classifications']
         cls_graph_ids = []
         if link_cls_graphs:
             cls_graph_ids = self.get_cleaned_data_for_step(
-                'classification')['classification_graphs']
+                'classification')['classification_graph_suggestions']
         # Get remaining properties
         make_public = self.get_cleaned_data_for_step('projectselection')['make_projects_public']
         tile_width = self.get_cleaned_data_for_step('projectselection')['tile_width']
@@ -448,7 +456,7 @@ def importer_admin_view(request, *args, **kwargs):
     """
     forms = [("pathsettings", DataFileForm),
              ("projectselection", ProjectSelectionForm),
-             ("classification", ClassificationLinkingForm),
+             ("classification", create_classification_linking_form()),
              ("confirmation", ConfirmationForm)]
     # Create view with condition for classification step. It should only
     # be displayed if selected in the step before.
@@ -461,8 +469,8 @@ def show_classification_suggestions(wizard):
     be shown or not.
     """
     cleaned_data = wizard.get_cleaned_data_for_step('projectselection') \
-        or {'check_classification_links': False}
-    return cleaned_data['check_classification_links']
+        or {'link_classifications': False}
+    return cleaned_data['link_classifications']
 
 def importer_finish(request):
     return render_to_response('catmaid/import/done.html', {})
@@ -550,12 +558,11 @@ class ProjectSelectionForm(forms.Form):
     make_projects_public = forms.BooleanField(initial=False,
         required=False, help_text="If made public, a project \
         can be seen without being logged in.")
-    check_classification_links = forms.BooleanField(initial=False,
-        required=False, help_text="If wanted, the importer can " \
-        "check which projects have the same tag set as specified above " \
-        "and to which classification graphs those projects are linked " \
-        "(if any). If checked, this option will let the importer suggest " \
-        "classification graphs to link the new projects against.")
+    link_classifications = forms.BooleanField(initial=False,
+        required=False, help_text="If checked, this option will " \
+            "let the importer suggest classification graphs to " \
+            "link the new projects against and will allow manual " \
+            "links as well.")
     user_permissions = forms.MultipleChoiceField(required=False,
         widget=FilteredSelectMultiple('user permissions', is_stacked=False),
         help_text="The selected <em>user/permission combination</em> \
@@ -565,11 +572,30 @@ class ProjectSelectionForm(forms.Form):
         help_text="The selected <em>group/permission combination</em> \
                    will be assigned to every project.")
 
-class ClassificationLinkingForm(forms.Form):
-    # A checkbox for each project, checked by default
-    classification_graphs = forms.MultipleChoiceField(required=False,
-        widget=forms.CheckboxSelectMultiple(),
-        help_text="Only selected classification graphs will be linked to the new projects.")
+def create_classification_linking_form():
+    """ Create a new ClassificationLinkingForm instance.
+    """
+    workspace_pid = settings.ONTOLOGY_DUMMY_PROJECT_ID
+    root_links = get_classification_links_qs( workspace_pid, [], True )
+    # Make sure we use no classification graph more than once
+    known_roots = []
+    root_ids = []
+    for link in root_links:
+        if link.class_instance_b.id not in known_roots:
+            known_roots.append(link.class_instance_b.id)
+            root_ids.append(link.id)
+
+    class ClassificationLinkingForm(forms.Form):
+        # A checkbox for each project, checked by default
+        classification_graph_suggestions = forms.MultipleChoiceField(required=False,
+            widget=forms.CheckboxSelectMultiple(),
+            help_text="Only selected classification graphs will be linked to the new projects.")
+        additional_links = forms.ModelMultipleChoiceField(required=False,
+            widget=FilteredSelectMultiple('Classification roots',
+                is_stacked=False),
+            queryset = ClassInstanceClassInstanceProxy.objects.filter(id__in=root_ids))
+
+    return ClassificationLinkingForm
 
 class ConfirmationForm(forms.Form):
     """ A form to confirm the selection and settings of the

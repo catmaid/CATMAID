@@ -9,10 +9,16 @@
 {% endblock %}
 
 {% block extrahead %}
-<style type="text/css">
-    ul { list-style: none; padding: 0px; }
-    ul li { list-style-type: none; }
-</style>
+    {{ block.super }}
+    {{ media.js }}
+    <script src="{% url 'admin:jsi18n' %}"></script>
+    <script src="{% static "admin/js/jquery.min.js" %}"></script>
+    <script src="{% static "admin/js/jquery.init.js" %}"></script>
+    <style type="text/css">
+        ul { list-style: none; padding: 0px; }
+        ul li { list-style-type: none; }
+    </style>
+    {{ wizard.form.media }}
 {% endblock %}
 
 {% block breadcrumbs %}

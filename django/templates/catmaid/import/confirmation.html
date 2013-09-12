@@ -1,11 +1,13 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n admin_static %}
 {% load common %}
 
 {% block extrastyle %}
-<style>
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+  <style>
     .not-accessible { color: red; }
-</style>
+  </style>
 {% endblock %}
 
 {% block extrahead %}
@@ -21,6 +23,9 @@
   <div id="content-main">
     <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
 
+    <form method="post" id="confirmation-form" action="">
+    {% csrf_token %}
+    <div class="module">
     <p>The following projects have been selected to be imported together with
     the settings listed. Please confirm this selection to do the actual import.
     Alternatively, you can go back and change settings. If an image base of a
@@ -126,24 +131,23 @@
             {% if link_cls_graphs %}
                 <td>
                     {% for cg in cls_graphs_to_link %}
-                        {{ cg.name }} ({{ cg.id }})
+                        {{ cg.name }} ({{ cg.id }})<br />
                     {% endfor %}
                 </td>
             {% endif %}
         </tr>
     </table></p>
+    </div>
     
+    <div class="submit-row">
     <p>
-      <form method="post" id="confirmation-form"
-            action="">
-      {% csrf_token %}
       {{ wizard.management_form }}
       {% if wizard.steps.prev %}
           <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>
           <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="button small">{% trans "prev step" %}</button>
       {% endif %}
       <input type="submit" value="submit"/>
-    </form>
     </p>
+    </form>
   </div>
 {% endblock %}

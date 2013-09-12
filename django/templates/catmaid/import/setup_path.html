@@ -1,5 +1,10 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n admin_static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+{% endblock %}
 
 {% block extrahead %}
 {% endblock %}
@@ -11,8 +16,12 @@
 {% endblock %}
 
 {% block content %}
-  <div id="content-main">
-    <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+<div id="content-main">
+  <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+
+  <form method="post" id="path-setup-form" action="">
+    {% csrf_token %}
+  <div class="module">
     <p>This tool assists you with importing data into your CATMAID instance.
     To identify potentially new projects, the tool will look at the files and
     folders in a working directory. If a sub-directory in the working directory
@@ -37,45 +46,44 @@
         configuration. Please make sure it is there.</em></p>
     {% else %}
         <p>The following settings have been found:
-          <table>
-              <tr>
-                  <td>{{ datafolder_setting }}</td>
-                  <td> {{ settings.CATMAID_IMPORT_PATH }}</td>
-              </tr>
-              <tr>
-                  <td>{{ base_url_setting }}</td>
-                  {% if base_url_setting_missing %}
-                      <td><em>not set</em></td>
-                  {% else %}
-                      <td>{{ settings.CATMAID_IMPORT_URL }}</td>
-                  {% endif %}
-              </tr>
-          </table>
+        <div class="form-row">
+              <table>
+                  <tr>
+                      <td>{{ datafolder_setting }}</td>
+                      <td> {{ settings.CATMAID_IMPORT_PATH }}</td>
+                  </tr>
+                  <tr>
+                      <td>{{ base_url_setting }}</td>
+                      {% if base_url_setting_missing %}
+                          <td><em>not set</em></td>
+                      {% else %}
+                          <td>{{ settings.CATMAID_IMPORT_URL }}</td>
+                      {% endif %}
+                  </tr>
+              </table>
+        </div>
         </p>
-
         <p>First you can narrow down the set of folders looked at. With the
         <em>relative path</em> setting below you can specify a sub-directory below the import
         path to be the working directory. If left empty, just the {{ datafolder_setting }}
         setting will be used.
         You can filter the projects used by specifying a <em>filter term</em> (a regular
         expression).
-
-        <form method="post" id="path-setup-form"
-              action="">
-        {% csrf_token %}
-        <p>
-        <table>
+        <div class="aligned">
         {{ wizard.management_form }}
-        {% if wizard.form.forms %}
-            {{ wizard.form.management_form }}
-            {% for form in wizard.form.forms %}
-                {{ form.as_table }}
-            {% endfor %}
-        {% else %}
-            {{ wizard.form.as_table }}
-        {% endif %}
-        </table>
-        </p>
+        {% for field in wizard.form %}
+            <div class="form-row">
+                {{ field.label_tag }}
+                {{ field }}
+                <p class="help">{{ field.help_text|safe }}</p>
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+    </div>
+
+    {% if not datafolder_missing %}
+    <div class="submit-row">
         <p>
         {% if wizard.steps.prev %}
             <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}">{% trans "first step" %}</button>
@@ -83,9 +91,10 @@
         {% endif %}
         <input type="submit" value="next step"/>
         </p>
-        </form>
         </p>
+    </div>
     {% endif %}
-  </div>
+ </form>
+</div>
 {% endblock %}
 

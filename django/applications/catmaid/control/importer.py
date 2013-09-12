@@ -6,6 +6,7 @@ import yaml
 from django import forms
 from django.db.models import Count
 from django.conf import settings
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import Context, loader
@@ -556,11 +557,11 @@ class ProjectSelectionForm(forms.Form):
         "(if any). If checked, this option will let the importer suggest " \
         "classification graphs to link the new projects against.")
     user_permissions = forms.MultipleChoiceField(required=False,
-        widget=forms.SelectMultiple(attrs={'size':'10'}),
+        widget=FilteredSelectMultiple('user permissions', is_stacked=False),
         help_text="The selected <em>user/permission combination</em> \
                    will be assigned to every project.")
     group_permissions = forms.MultipleChoiceField(required=False,
-        widget=forms.SelectMultiple(attrs={'size':'10'}),
+        widget=FilteredSelectMultiple('group permissions', is_stacked=False),
         help_text="The selected <em>group/permission combination</em> \
                    will be assigned to every project.")
 

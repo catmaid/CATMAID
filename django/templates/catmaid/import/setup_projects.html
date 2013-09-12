@@ -1,43 +1,65 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n admin_static %}
+{% load url from future %}
+{% load admin_urls %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+{% endblock %}
 
 {% block extrahead %}
-<style type="text/css">
-    ul { list-style: none; padding: 0px; }
-    ul li { list-style-type: none; }
-</style>
-<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
-<script>
-    $(document).ready(function() {
-        // functionality for (un-)selecting all projects
-        var master_cb = $("#id_select-all");
-        if (master_cb.length > 0) {
-            var slave_cbs = $("input[type=checkbox][class=autoselectable]");
+    {{ block.super }}
+    {{ media.js }}
+    <script type="text/javascript" src="{% url "admin:jsi18n" %}"></script>
+    <script type="text/javascript" src="{% static "admin/js/jquery.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "admin/js/jquery.init.js" %}"></script>
+    <style type="text/css">
+        ul { list-style: none; padding: 0px; }
+        ul li { list-style-type: none; }
+    </style>
+    {{ wizard.form.media }}
 
-            master_cb.click( function() {
-                var val = master_cb.attr("checked") == "checked";
-                slave_cbs.attr("checked", val);
-            });
+    {% comment %}
+        Django's jQuery lives in its own namespace ('django') and we don't
+        want to mess around with it. It uses currently v1.4.2, but we want
+        to have a newer version. Therefore, we use our own jQuery version here.
+    {% endcomment %}
+    <script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
+    <script>
+        $(document).ready(function() {
+            // functionality for (un-)selecting all projects
+            var master_cb = $("#id_select-all");
+            if (master_cb.length > 0) {
+                var slave_cbs = $("input[type=checkbox][class=autoselectable]");
 
-            slave_cbs.click( function() {
-                master_cb.attr("checked", $.grep(slave_cbs, function(e) {
-                    return $(e).attr("checked");
-                }).length == slave_cbs.length)
-            });
-        }
-    });
-</script>
+                master_cb.click( function() {
+                    var val = master_cb.attr("checked") == "checked";
+                    slave_cbs.attr("checked", val);
+                });
+
+                slave_cbs.click( function() {
+                    master_cb.attr("checked", $.grep(slave_cbs, function(e) {
+                        return $(e).attr("checked");
+                    }).length == slave_cbs.length)
+                });
+            }
+        });
+    </script>
 {% endblock %}
 
 {% block breadcrumbs %}
   <div class="breadcrumbs">
-    <a href="{% url admin:index %}">Home</a> &rsaquo; {{ title }}
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; {{ title }}
   </div>
 {% endblock %}
 
 {% block content %}
   <div id="content-main">
     <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+    <form method="post" id="path-setup-form" action="">
+    {% csrf_token %}
+    <div class="module">
     {% if not_readable %}
         {% if folders %}
             <p>Unfortunately, no project folder could be read successfully.
@@ -54,9 +76,6 @@
     {% endif %}
 
     {% if folders %}
-        <form method="post" id="path-setup-form"
-              action="">
-        {% csrf_token %}
         <p>The list below shows all the folders (projects) that fit your
         configuration. Please continue with the next step without any (or
         all) projects selected if you want to use all projects.
@@ -64,24 +83,26 @@
         to import. If you want to add one or more tags to the imported
         projects, please insert them in the field below.</p>
         <p>
-        <p>
             <label for="select_all">
                 <input type="checkbox" name="select_all" id="id_select-all" checked>
                 Select all projects
             </label>
         </p>
-        <table>
+        <div class="aligned">
         {{ wizard.management_form }}
-        {% if wizard.form.forms %}
-            {{ wizard.form.management_form }}
-            {% for form in wizard.form.forms %}
-                {{ form.as_table }}
-            {% endfor %}
-        {% else %}
-            {{ wizard.form.as_table }}
-        {% endif %}
-        </table>
-        </p>
+        {% for field in wizard.form %}
+            <div class="form-row">
+                {{ field.label_tag }}
+                {{ field }}
+                <p class="help">{{ field.help_text|safe }}</p>
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+    </div>
+
+    {% if folders %}
+    <div class="submit-row">
         <p>
         {% if wizard.steps.prev %}
             <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>
@@ -89,7 +110,6 @@
         {% endif %}
         <input type="submit" value="next step"/>
         </p>
-        </form>
       {% else %}
         <form method="post" id="path-setup-form"
               action="">
@@ -102,8 +122,10 @@
             </p>
         {% endif %}
         </form>
+      </div>
       {% endif %}
     </p>
+   </form>
   </div>
 {% endblock %}
 

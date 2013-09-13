@@ -1,22 +1,58 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n admin_static admin_list %}
+{% load url from future %}
+{% load admin_urls %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+  <style>
+    {% comment %}
+        Increase width of classification graph selection control.
+    {% endcomment %}
+
+    .selector {
+        width: 840px;
+    }
+
+    .selector-available,
+    .selector-chosen,
+    .selector-available select,
+    .selector-chosen select {
+        width: 400px;
+    }
+
+    .selector .selector-available input {
+        width: 360px;
+    }
+  </style>
+{% endblock %}
 
 {% block extrahead %}
-<style type="text/css">
-    ul { list-style: none; padding: 0px; }
-    ul li { list-style-type: none; }
-</style>
+    {{ block.super }}
+    {{ media.js }}
+    <script src="{% url 'admin:jsi18n' %}"></script>
+    <script src="{% static "admin/js/jquery.min.js" %}"></script>
+    <script src="{% static "admin/js/jquery.init.js" %}"></script>
+    <style type="text/css">
+        ul { list-style: none; padding: 0px; }
+        ul li { list-style-type: none; }
+    </style>
+    {{ wizard.form.media }}
 {% endblock %}
 
 {% block breadcrumbs %}
   <div class="breadcrumbs">
-    <a href="{% url admin:index %}">Home</a> &rsaquo; {{ title }}
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo; {{ title }}
   </div>
 {% endblock %}
 
 {% block content %}
   <div id="content-main">
       <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+      <form method="post" id="path-setup-form" action="">
+      {% csrf_token %}
+      <div class="module">
       <p>In the previous step you added the following tags to the project(s) to
       be be imported: <em>{{ cls_tags|join:", " }}</em>. The importer looked
       for projects matching this tag set.
@@ -32,22 +68,19 @@
       {% endif %}
       </p>
 
-        <form method="post" id="path-setup-form"
-              action="">
-        {% csrf_token %}
-        <p>
-        <table>
+        <div class="aligned">
         {{ wizard.management_form }}
-        {% if wizard.form.forms %}
-            {{ wizard.form.management_form }}
-            {% for form in wizard.form.forms %}
-                {{ form.as_table }}
-            {% endfor %}
-        {% else %}
-            {{ wizard.form.as_table }}
-        {% endif %}
-        </table>
-        </p>
+        {% for field in wizard.form %}
+            <div class="form-row">
+                {{ field.label_tag }}
+                {{ field }}
+                <p class="help">{{ field.help_text|safe }}</p>
+            </div>
+        {% endfor %}
+        </div>
+        </div>
+
+        <div class="submit-row">
         <p>
         {% if wizard.steps.prev %}
             <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>
@@ -55,8 +88,9 @@
         {% endif %}
         <input type="submit" value="next step"/>
         </p>
-        </form>
+        </div>
         </p>
+        </form>
   </div>
 {% endblock %}
 

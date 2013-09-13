@@ -56,7 +56,7 @@ class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
             name = self.class_instance_b.name
         else:
             name = self.class_instance_b.class_column.class_name
-        result = "{0} ({1})".format(name, str(self.id))
+        result = "{0} ({1})".format(name, str(self.class_instance_b.id))
 
         # Display referce count if wanted
         display_refs = True

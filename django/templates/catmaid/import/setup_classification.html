@@ -6,6 +6,26 @@
 {% block extrastyle %}
   {{ block.super }}
   <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+  <style>
+    {% comment %}
+        Increase width of classification graph selection control.
+    {% endcomment %}
+
+    .selector {
+        width: 840px;
+    }
+
+    .selector-available,
+    .selector-chosen,
+    .selector-available select,
+    .selector-chosen select {
+        width: 400px;
+    }
+
+    .selector .selector-available input {
+        width: 360px;
+    }
+  </style>
 {% endblock %}
 
 {% block extrahead %}

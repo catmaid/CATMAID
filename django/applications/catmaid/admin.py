@@ -11,21 +11,23 @@ from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.views import UseranalyticsView
 
+
+class ProjectStackInline(admin.TabularInline):
+    model = ProjectStack
+    extra = 1
+
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title', 'public')
     search_fields = ['title']
+    inlines = [ProjectStackInline,]
     
 #    def has_change_permission(self, request, obj=None):
 #        pass
 
-class ProjectInline(admin.TabularInline):
-    model = ProjectStack
-    extra = 1
-
 class StackAdmin(GuardedModelAdmin):
     list_display = ('title', 'dimension', 'resolution', 'num_zoom_levels', 'image_base')
     search_fields = ['title', 'image_base']
-    inlines = [ProjectInline,]
+    inlines = [ProjectStackInline,]
 
 class DataViewConfigWidget(forms.widgets.Textarea):
     def render(self, name, value, attrs=None):

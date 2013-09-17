@@ -3,10 +3,13 @@
  */
 function OverviewLayer( stack )
 {
+
+	var self = this;
+
 	/**
 	 * get the view object
 	 */
-	this.getView = function()
+	self.getView = function()
 	{
 		return view;
 	}
@@ -14,73 +17,45 @@ function OverviewLayer( stack )
   /**
 	 * set opacity for a layer
 	 */
-	this.setOpacity = function ( key, val )
+	self.setOpacity = function ( key, val )
 	{
-		self.layers[key].setOpacity( val / 100 );
+		if(self.layers.hasOwnProperty(key))
+			self.layers[key].setOpacity( val / 100 );
 	}
 
-	this.refresh = function()
+	self.refresh = function()
 	{
-		var layers = stack.getLayers();
-		self.sliderfunct = {};
-		self.sliderslider = {};
-
-		if ( view.hasChildNodes() )
+		for( var key in self.layers)
 		{
-			while ( view.childNodes.length >= 1 )
-			{
-				view.removeChild( view.firstChild );
-			}
-		}
-
-		for( var key in layers)
-		{
-			var container = document.createElement("div"), default_opacity = 100;
+			
+			var container = document.createElement("div");
 
 			var setOpac = function ( val )
 			{
 				self.setOpacity( this.idd, val );
+				stack.redraw();
 				return;
 			}
-
-			if(layers[key].hasOwnProperty('getOpacity'))
-			{
-				default_opacity = layers[key].getOpacity();
-			}
 			
+			self.layers[key].updateOpacity();
+
 			var slider = new Slider(
 							SLIDER_HORIZONTAL,
 							false,
 							1,
 							100,
 							100,
-							default_opacity,
+							self.layers[key].getOpacity() * 100,
 							setOpac );
 
 			slider.idd = key;
-			// container.innerHTML += "<input type='checkbox' name='" + key + "-check' id='" + key + "-check' checked>" + key + "<br />";
-			container.innerHTML += "<button type='button' id='"+ key + "-button'>" + key + "</button><br />";
 			container.setAttribute("id", key + "-container");
-			
+			container.appendChild( document.createElement("strong").appendChild( document.createTextNode(key)) );
 			container.appendChild( slider.getView() );
 			view.appendChild(container);
 
-			self.setButtonHandle( key );
-
 		}
 	};
-
-	this.setButtonHandle = function( key ) {
-		$('#'+ key + '-button').click(function() {
-			if( !self.layers[key].visible ) {
-				self.layers[key].reattachTileLayer();
-			} else {
-				self.layers[key].isolateTileLayer();
-			}
-	    });
-	}
-
-	var self = this;
 
 	self.layers = stack.getLayers();
 
@@ -88,6 +63,8 @@ function OverviewLayer( stack )
 	view.className = "OverviewLayer";
 	view.id = "OverviewLayer";
 	view.style.zIndex = 8;
+
+	stack.getView().appendChild( view );
 
 }
 

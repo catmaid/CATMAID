@@ -550,28 +550,33 @@ function handle_openProjectStack( status, text, xml )
 
 			var tilesource = getTileSource( e.tile_source_type, e.image_base,
 					e.file_extension );
+			var tilelayername = "TileLayer";
 			var tilelayer = new TileLayer(
+					tilelayername,
 					stack,
 					e.tile_width,
 					e.tile_height,
 					tilesource,
-					true);
+					true,
+					1);
 
-			stack.addLayer( "TileLayer", tilelayer );
+			stack.addLayer( tilelayername, tilelayer );
 
 			$.each(e.overlay, function(key, value) {
-				var tilesource2 = getTileSource( value.tile_source_type,
+				var tilesource = getTileSource( value.tile_source_type,
 					value.image_base, value.file_extension );
+				var layer_visibility = false;
+				if( parseInt(value.default_opacity) > 0) 
+					layer_visibility = true;
 				var tilelayer2 = new TileLayer(
+								value.title,
 								stack,
 								value.tile_width,
 								value.tile_height,
-								tilesource2,
-				false);
-				// set default opacity internally
-				tilelayer2.setOpacity( value.default_opacity );
+								tilesource,
+								layer_visibility,
+								value.default_opacity / 100 );
 				stack.addLayer( value.title, tilelayer2 );
-				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
 			});
 
 			// If the requested stack is already loaded, the existing

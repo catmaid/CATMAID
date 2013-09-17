@@ -49,11 +49,13 @@ function getTileBaseName3D( stack, pixelPos, adjacent )
  * 
  */
 function TileLayer(
+		tilelayername,
 		stack,						//!< reference to the parent stack
 		tileWidth,
 		tileHeight,
 		tileSource,
-		visibility
+		visibility,
+		opacity
 		)
 {
 	/**
@@ -318,15 +320,27 @@ function TileLayer(
 	 */
 	this.getStack = function(){ return stack; }
 
+	/* Set opacity in the range from 0 to 1 */
 	this.setOpacity = function( val )
 	{
 		tilesContainer.style.opacity = val+"";
-		opacity = val;
+		self.opacity = val;
+		if(val < 0.02) {
+			if(self.visible)
+				self.isolateTileLayer();
+		} else {
+			if(!self.visible)
+				self.reattachTileLayer();
+		}
+	}
+
+	this.updateOpacity = function() {
+		self.setOpacity( opacity );
 	}
 
 	this.getOpacity = function()
 	{
-		return opacity;
+		return self.opacity;
 	}
 
 	this.isolateTileLayer = function()
@@ -344,13 +358,12 @@ function TileLayer(
 	// initialise
 	var self = this;
 
-	// internal opacity variable
-	var opacity = 100;
-	this.visible = visibility;
-	
+	self.opacity = opacity; // in the range [0,1]
+	self.visible = visibility;
+	self.tileSource = tileSource;
+
 	/* Contains all tiles in a 2d-array */
 	var tiles = new Array();
-	var tiles2 = new Array();
 	
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
@@ -361,7 +374,4 @@ function TileLayer(
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 
-	self.tileSource = tileSource;
-
-	var overviewLayer = tileSource.getOverviewLayer( this );
 }

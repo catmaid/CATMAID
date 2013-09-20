@@ -584,14 +584,14 @@ function handle_openProjectStack( status, text, xml )
 			stack = project.addStack( stack );
 
 			// refresh the overview handler to also register the mouse events on the buttons
-			stack.overviewlayer.refresh();
+			stack.tilelayercontrol.refresh();
 
 			var tools = {
 				navigator: Navigator,
 				canvastool: CanvasTool,
 				tracingtool: TracingTool,
 				segmentationtool: SegmentationTool,
-        classification_editor: null
+				classification_editor: null
 			};
 
 			//! if the stack was initialized by an URL query, move it to a given position

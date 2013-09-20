@@ -1,7 +1,7 @@
 /**
- * Overview Layer navigator widget
+ * The tilelayer control element on the top-left of the stack window
  */
-function OverviewLayer( stack )
+function TilelayerControl( stack )
 {
 
 	var self = this;
@@ -60,8 +60,8 @@ function OverviewLayer( stack )
 	self.layers = stack.getLayers();
 
 	var view = document.createElement( "div" );
-	view.className = "OverviewLayer";
-	view.id = "OverviewLayer";
+	view.className = "TilelayerControl";
+	view.id = "TilelayerControl";
 	view.style.zIndex = 8;
 
 	stack.getView().appendChild( view );

@@ -374,4 +374,15 @@ function TileLayer(
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 
+	var overviewLayer;
+	if( tilelayername === "TileLayer" ) {
+		// Initialize the OverviewLayer on the bottom-right with the correct
+		// path to the small thumbnail images depending on the tile source type
+		// This is only run for the TileLayer which usually holds the primary
+		// raw data, and not for additional overlay layers. Overlay layers are
+		// currently not shown with a small image.
+		overviewLayer = tileSource.getOverviewLayer( this );
+	}
+	
+
 }

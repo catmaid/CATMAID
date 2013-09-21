@@ -33,9 +33,13 @@ function DefaultTileSource( baseURL, fileExtension )
         return baseURL + baseName + row + "_" + col + "_" + zoom_level + "." + fileExtension;
     }
 
+    this.getOverviewURL = function( stack ) {
+        return baseURL + stack.z + "/small." + fileExtension;
+    }
+
     this.getOverviewLayer = function( layer )
     {
-        return new GenericOverviewLayer( layer, baseURL, fileExtension );
+        return new GenericOverviewLayer( layer, baseURL, fileExtension, this.getOverviewURL );
     }
 }
 
@@ -116,9 +120,13 @@ function BackslashTileSource( baseURL, fileExtension )
         return baseURL + baseName + zoom_level + "/" + row + "_" + col + "." + fileExtension;
     }
 
+    this.getOverviewURL = function( stack ) {
+        return baseURL + stack.z + "/small." + fileExtension;
+    }
+
     this.getOverviewLayer = function( layer )
     {
-        return new GenericOverviewLayer( layer, baseURL, fileExtension );
+        return new GenericOverviewLayer( layer, baseURL, fileExtension, this.getOverviewURL );
     }
 }
 
@@ -139,9 +147,13 @@ function LargeDataTileSource( baseURL, fileExtension )
         return baseURL + zoom_level + "/" + baseName + "/" + row + "/" +  col + "." + fileExtension;
     }
 
+    this.getOverviewURL = function( stack ) {
+        return baseURL + "/small/" + stack.z + "." + fileExtension;
+    }
+
     this.getOverviewLayer = function( layer )
     {
-        return new GenericOverviewLayer( layer, baseURL, fileExtension );
+        return new GenericOverviewLayer( layer, baseURL, fileExtension, this.getOverviewURL);
     }
 }
 
@@ -164,11 +176,11 @@ function DummyOverviewLayer()
  * This is an overviewlayer that displays a small overview
  * map.
  */
-function GenericOverviewLayer( layer, baseURL, fileExtension )
+function GenericOverviewLayer( layer, baseURL, fileExtension, getOverviewURL)
 {
     this.redraw = function()
     {
-        img.src = baseURL + stack.z + "/small." + fileExtension;
+        img.src = getOverviewURL( stack );
     }
 
     this.unregister = function()

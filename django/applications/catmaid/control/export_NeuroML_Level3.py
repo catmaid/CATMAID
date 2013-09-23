@@ -43,7 +43,7 @@ def header():
 """ % time.strftime("%c %z")
 
 def segment(t1, t2, p, q, segmentID, parentSegmentID, cableID, is_first):
-    s = '<segment id="%s" name="%s"' % (segmentID, segmentID)
+    s = '<segment id="%s" name="s%s"' % (segmentID, segmentID)
     if parentSegmentID:
         s += ' parent="%s"' % parentSegmentID
     s += ' cable="%s">\n' % cableID
@@ -159,7 +159,7 @@ def make_slabs(root, root_segmentID, successors, cableIDs, scale, state):
 
 def make_cables(cableIDs):
     for i, cableID in enumerate(cableIDs):
-        yield '<cable id="%s" name="%s" fract_along_parent="%s"><meta:group>%s_group</meta:group></cable>\n' % (cableID, cableID, 0.5 if 0 == i else 1.0, "soma" if 0 == i else "arbor")
+        yield '<cable id="%s" name="c%s" fract_along_parent="%s"><meta:group>%s_group</meta:group></cable>\n' % (cableID, cableID, 0.5 if 0 == i else 1.0, "soma" if 0 == i else "arbor")
 
 
 def make_arbor(skeletonID, treenodes, scale, state):
@@ -178,7 +178,7 @@ def make_arbor(skeletonID, treenodes, scale, state):
     # Accumulate new cable IDs, one for each slab
     cableIDs = [root_cableID]
 
-    for source in [['<cell name="%s">\n' % skeletonID, '<segments xmlns="http://morphml.org/morphml/schema">\n'],
+    for source in [['<cell name="sk_%s">\n' % skeletonID, '<segments xmlns="http://morphml.org/morphml/schema">\n'],
                    # Create zero-length point before root to represent the cell body
                    [segment(root, root, root_point, root_point, root_segmentID, None, root_cableID, True)],
                    make_slabs(root, root_segmentID, successors, cableIDs, scale, state),
@@ -217,12 +217,12 @@ def make_arbors(all_treenodes, cellIDs, scale, state):
 
 def make_connection_entries(pre_skID, post_skID, synapses, state):
     for pre_treenodeID, post_treenodeID in synapses:
-        yield '<connection id="%s" pre_cell_id="%s" pre_segment_id="%s" pre_fraction_along="0.5" post_cell_id="%s" post_segment_id="%s"/>\n' % (state.nextID(), pre_skID, state.synaptic_treenodes[pre_treenodeID], post_skID, state.synaptic_treenodes[post_treenodeID])
+        yield '<connection id="syn_%s" pre_cell_id="sk_%s" pre_segment_id="%s" pre_fraction_along="0.5" post_cell_id="sk_%s" post_segment_id="%s"/>\n' % (state.nextID(), pre_skID, state.synaptic_treenodes[pre_treenodeID], post_skID, state.synaptic_treenodes[post_treenodeID])
 
 def make_connection(connection, state):
     pre_skID, m = connection
     for post_skID, synapses in m.iteritems():
-        for source in (('<projection name="NetworkConnection" source="%s" target="%s">\n' % (pre_skID, post_skID),
+        for source in (('<projection name="NetworkConnection" source="sk_%s" target="sk_%s">\n' % (pre_skID, post_skID),
                         '<synapse_props synapse_type="DoubExpSynA" internal_delay="5" weight="1" threshold="-20"/>\n',
                         '<connections size="%s">\n' % len(synapses)),
                        make_connection_entries(pre_skID, post_skID, synapses, state),
@@ -238,7 +238,7 @@ def make_connections(connections, state):
 
 def make_cells(cellIDs):
     for cellID in cellIDs:
-        yield '<population name="%s" cell_type="%s"><instances size="1"><instance id="0"><location x="0" y="0" z="0"/></instance></instances></population>\n' % (cellID, cellID)
+        yield '<population name="sk_%s" cell_type="sk_%s"><instances size="1"><instance id="0"><location x="0" y="0" z="0"/></instance></instances></population>\n' % (cellID, cellID)
 
 
 def bodyMutual(all_treenodes, connections, scale):
@@ -279,7 +279,7 @@ def make_inputs(cellIDs, inputs, state):
     for inputSkeletonID, treenodeIDs in inputs.iteritems():
         for source in [('<input name="%s">\n' % inputSkeletonID,
                         '<random_stim frequency="20" synaptic_mechanism="DoubExpSynA"/>\n',
-                        '<target population="%s">\n' % cellID,
+                        '<target population="sk_%s">\n' % cellID,
                         '<sites size="%s">\n' % len(treenodeIDs)),
                        ('<site cell_id="0" segment_id="%s"/>\n' % state.synaptic_treenodes[treenodeID] for treenodeID in treenodeIDs),
                        ('</sites>\n',

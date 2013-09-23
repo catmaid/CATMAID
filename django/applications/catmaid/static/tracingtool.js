@@ -608,6 +608,20 @@ not needed for cell tracking
     }
   }) );
 
+this.addAction( new Action({
+    helpText: "Go to a random location in the current time point and channel",//if there is more, the first one is chosen
+    keyShortcuts: {
+      "F": [ 70 ] //depending if shift is down or up it will go to left or right child
+    },
+    run: function (e) {
+      if (!mayView())
+        return false;
+      tracingLayer.svgOverlay.tracingCommand('gorandomlocation');
+      
+      return true;
+    }
+  }) );  
+
 
   this.addAction( new Action({
     helpText: "Go to last edited node in this skeleton",

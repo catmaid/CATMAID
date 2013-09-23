@@ -1809,6 +1809,17 @@ var SkeletonAnnotations = new function()
           });
     };
 
+
+    this.gotoRandomLocation = function()
+    {
+      var xx = Math.random() * stack.dimension.x * stack.resolution.x + stack.translation.x;
+      var yy = Math.random() * stack.dimension.y * stack.resolution.y + stack.translation.y;
+      var zz = Math.random() * stack.dimension.z * stack.resolution.z + stack.translation.z;
+
+      stack.getProject().moveTo5D(zz, yy , xx , undefined, stack.t, stack.c,
+                                  undefined);
+    }
+
     this.goToNextBranchOrEndNode = function(treenode_id, e) {
       requestQueue.register(
           django_url + project.id + "/node/next_branch_or_end",
@@ -2175,6 +2186,12 @@ var SkeletonAnnotations = new function()
           self.activateNearestNode(lastX, lastY, project.coordinates.z);
         }
         break;
+      case "gorandomlocation":
+        //go to a random location
+        self.gotoRandomLocation();
+        //deactivate active node
+        self.activateNode(null);
+        break; 
       case 'retrievetreenodeinfo':
         if (atn !== null) {
           requestQueue.replace(django_url + project.id + '/node/user-info', 'POST', { treenode_id: atn.id }, function(status, text, xml) {

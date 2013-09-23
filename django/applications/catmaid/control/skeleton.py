@@ -55,8 +55,16 @@ def split_skeleton(request, project_id=None):
     # The split is only possible if the user owns the treenode or the skeleton
     if not request.user.is_superuser:
         if request.user.id != skeleton.user.id and request.user.id != treenode.user.id and not _under_fragments(skeleton_id):
-            cursor.execute('SELECT username FROM auth_user WHERE id=%s' % skeleton.user.id)
-            return HttpResponse(json.dumps({'error': 'User %s doesn\'t own neither the treenode #%s nor the skeleton #%s.\nThe treenode owner is %s, and the skeleton owner is %s.' % (request.user.username, treenode_id, skeleton_id, treenode.user.username, cursor.fetchone()[0])}))
+            #check if they belong to the same group
+            groups = User.objects.get(pk=request.user.id).groups.all()
+            for gg in groups:                
+                nn = User.objects.filter(groups=gg,id=treenode.user.id).count()
+                nn += User.objects.filter(groups=gg,id=request.user.id).count()
+                if nn >= 2:#they belong to the same group->it can be modified
+                    break
+            if nn < 2:
+                cursor.execute('SELECT username FROM auth_user WHERE id=%s' % skeleton.user.id)
+                return HttpResponse(json.dumps({'error': 'User %s doesn\'t own neither the treenode #%s nor the skeleton #%s.\nThe treenode owner is %s, and the skeleton owner is %s.' % (request.user.username, treenode_id, skeleton_id, treenode.user.username, cursor.fetchone()[0])}))
 
     project_id=int(project_id)
 

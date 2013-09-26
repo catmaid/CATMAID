@@ -1,0 +1,99 @@
+<div id="clustering_results">
+	<div id="ontologies">
+		<p class="title"><span class="extend-box-open"></span>Ontologies:</p>
+		<div class="content">
+			<ul class="indented">
+				{% for o in ontologies %}
+					<li>{{ o }}</li>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+
+	<div id="features">
+		<p class="title"><span class="extend-box-open"></span>Features:</p>
+		<div class="content">
+			<table class="indented">
+				<tr>
+				{% for f in features %}
+					<td>{{ f }}</td>
+				{% endfor %}
+				</tr>
+				<tr>
+				{% for f in features %}
+					<td>{{ forloop.counter }}</td>
+				{% endfor %}
+				</tr>
+			</table>
+		</div>
+	</div>
+
+	<div id="binary-matrix">
+		<p class="title"><span class="extend-box-open"></span>Binary matrix:</p>
+		<div class="content">
+			<table class="indented">
+				<tr>
+					<td></td>
+				{% for f in features %}
+					<td>{{ forloop.counter }}</td>
+				{% endfor %}
+				</tr>
+				{% for bin_row in bin_matrix %}
+				<tr>
+					<td>{{ bin_row.graph.name }}</td>
+					{% for elem in bin_row.feature %}
+						<td>{{ elem|floatformat:0 }}</td>
+					{% endfor %}
+				</tr>
+				{% endfor %}
+			</table>
+		</div>
+	</div>
+
+	<div id="distances">
+		<p class="title"><span class="extend-box-open"></span>Distance matrix:</p>
+		<div class="content">
+			<p class="indented">Distance metric: {{ metric }}</p>
+			<table class="indented" id="distance_matrix">
+				<tr>
+					<td></td>
+					{% for g in graphs %}
+						<td>{{ g.name }}</td>
+					{% endfor %}
+				</tr>
+				{% for dst_row in dst_matrix %}
+				<tr>
+					<td>{{ dst_row.graph.name }}</td>
+					{% for elem in dst_row.distances %}
+						{% if forloop.counter < forloop.parentloop.counter %}
+							<td class="lowertriangle">{{ elem|floatformat:3 }}</td>
+						{% elif forloop.counter == forloop.parentloop.counter %}
+							<td class="identity">{{ elem|floatformat:3 }}</td>
+						{% else %}
+							<td class="uppertriangle">{{ elem|floatformat:3 }}</td>
+						{% endif %}
+					{% endfor %}
+				</tr>
+				{% endfor %}
+			</table>
+		</div>
+	</div>
+
+	<div id="clustering">
+		<p class="title"><span class="extend-box-open"></span>Dendrogram:</p>
+		<div class="content">
+			<div class="indented">
+				<p><em>Note: To display data for every selected classification,
+				all NaN values (not a number) have been replaced by 1.0. These
+				occur when there is more than one feature vector with zeros only
+				in it.</em></p>
+				<p><a href="#" id="dendrogram_export_link">Export SVG file</a></p>
+			</div>
+			{# Smuggle the dendrogram data into the DOM #}
+			<img width="1" height="1" src="{{ STATIC_URL }}widgets/themes/kde/empty.gif" alt=""
+				onload="ClusteringWidget.render_clustering('{{ dendrogram_json }}');
+					this.parentNode.removeChild(this);" />
+			<div id="clustering-graph" class="indented"></div>
+		</div>
+	</div>
+</div>

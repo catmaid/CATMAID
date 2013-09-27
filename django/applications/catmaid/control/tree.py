@@ -58,6 +58,7 @@ def instance_operation(request, project_id=None):
                 SELECT user_id, count(user_id) FROM treenode WHERE skeleton_id=%s GROUP BY user_id
                 ''', [skid])
                 rows = tuple(row for row in cursor.fetchall())
+
                 if 1 == len(rows) and rows[0][0] == request.user.id:
                     instance_operation.res_on_err = 'Failed to delete in treenode for skeletons #%s' % skeleton_id_list
                     Treenode.objects.filter(
@@ -71,12 +72,38 @@ def instance_operation(request, project_id=None):
 
                     instance_operation.res_on_err = 'Failed to delete in class_instance for skeletons #%s' % skeleton_id_list
                     ClassInstance.objects.filter(pk=skid).delete()
-                else:
-                    cursor.execute('SELECT first_name, last_name FROM "auth_user" WHERE id IN (%s)', [row[0] for row in rows if row[0] != request.user.id])
-                    users = [a[0] + ' ' + a[1] for a in cursor.fetchall()]
-                    raise Exception('Cannot delete skeleton #%s: %s of %s nodes belong to user(s) %s' % (sum(row[1] for row in rows if row[0] != request.user.id),
-              sum(row[1] for row in rows),
-              ", ".join(a[0] + ' ' + a[1] for a in cursor.fetchall())))
+                else:#maybe they all belong to the same group->we can erase skeleton
+                    #rows[i][0] = user_id; rows[i][1] = count of nodes for that user id
+                    can_edit = True
+                    groups = User.objects.get(pk=request.user.id).groups.all()
+                    for rr in rows:
+                        for gg in groups:                
+                            if User.objects.filter(groups=gg,id=rr[0]).count() == 0:
+                                can_edit = False
+                                break
+                            if can_edit == False:
+                                break
+
+                    if can_edit == True:#we can delete skeleton
+                        instance_operation.res_on_err = 'Failed to delete in treenode for skeletons #%s' % skeleton_id_list
+                        Treenode.objects.filter(
+                                project=project_id,
+                                skeleton=skid).delete()
+
+                        instance_operation.res_on_err = 'Failed to delete in treenode_connector for skeletons #%s' % skeleton_id_list
+                        TreenodeConnector.objects.filter(
+                                project=project_id,
+                                skeleton=skid).delete()
+
+                        instance_operation.res_on_err = 'Failed to delete in class_instance for skeletons #%s' % skeleton_id_list
+                        ClassInstance.objects.filter(pk=skid).delete()
+
+                    else:
+                        cursor.execute('SELECT first_name, last_name FROM "auth_user" WHERE id IN (%s)', [row[0] for row in rows if row[0] != request.user.id])
+                        users = [a[0] + ' ' + a[1] for a in cursor.fetchall()]
+                        raise Exception('Cannot delete skeleton #%s: %s of %s nodes belong to user(s) %s' % (sum(row[1] for row in rows if row[0] != request.user.id),
+                            sum(row[1] for row in rows),
+                            ", ".join(a[0] + ' ' + a[1] for a in cursor.fetchall())))
 
 
     def rename_node():
@@ -97,7 +124,7 @@ def instance_operation(request, project_id=None):
             raise Exception('Could not find any node with ID %s' % params['id'])
 
     def remove_node():
-        # Can only remove the node if the user owns it or the user is a superuser
+        # Can only remove the node if the user owns it or the user is a superuser or if they belong to the same group
         can_edit_or_fail(request.user, params['id'], 'class_instance')
         # Check if node is a skeleton. If so, we have to remove its treenodes as well!
         if 0 == params['rel']:

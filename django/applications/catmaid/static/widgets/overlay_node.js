@@ -69,7 +69,7 @@ var SkeletonElements = new function()
     zdiff, // the different from the current slices
     confidence,
     skeleton_id, // the id of the skeleton this node is an element of
-    can_edit,  // a boolean combining (is_superuser or user owns the node)
+    can_edit,  // a boolean combining (is_superuser or user owns the node). Or belongs to the same group as owner
     t,    //time coordinate in 5D datasets
     ch,   //channel coordinate in 5D dtasets
     tdiff, //the difference from current time point

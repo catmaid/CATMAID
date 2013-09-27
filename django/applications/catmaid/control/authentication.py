@@ -210,14 +210,18 @@ def can_edit_or_fail(user, ob_id, table_name):
     cursor = connection.cursor()
     cursor.execute("SELECT user_id FROM %s WHERE id=%s" % (table_name, ob_id))
     rows = cursor.fetchall()
+
+    print "==========At can_edit_or_fail for node " + str(ob_id)
     if rows:
         if rows[0][0] == user.id or user.is_superuser:
             return True
         else:
+            print "==========At can_edit_or_fail for NOT OWNER user " + str(user.id)
             groups = User.objects.get(pk=user.id).groups.all()
             for gg in groups:                
                 nn = User.objects.filter(groups=gg,id=rows[0][0]).count()
                 nn += User.objects.filter(groups=gg,id=user.id).count()
+                print "==========At can_edit_or_fail for group " + str(gg) + " with nn = " + str(nn)
                 if nn >= 2:#they belong to the same group->it can be modified
                     return True
         raise Exception('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))

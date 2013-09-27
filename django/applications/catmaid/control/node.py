@@ -131,16 +131,38 @@ def node_list_tuples(request, project_id=None):
         user_id = request.user.id
 
         n_retrieved_nodes = 0 # at one per row, only those within the section
+        groups = User.objects.get(pk=user_id).groups.all()
         for row in cursor.fetchall():
           n_retrieved_nodes += 1
           t1id = row[0]
           if t1id not in treenode_ids:
-              treenode_ids.add(t1id)
-              treenodes.append(row[0:8] + (is_superuser or row[8] == user_id,) + row[9:11])
+            treenode_ids.add(t1id)
+              
+            can_edit = False
+            if is_superuser or row[8] == user_id:
+                can_edit = True
+            else:
+                for gg in groups:                
+                    if User.objects.filter(groups=gg,id=row[8]).count() > 0:
+                        can_edit = True
+                        break
+              
+            treenodes.append(row[0:8] + ( can_edit,) + row[9:11])
+
           t2id = row[9]
           if t2id not in treenode_ids:
-              treenode_ids.add(t2id)
-              treenodes.append(row[11:19] + (is_superuser or row[19] == user_id,) + row[20:22])
+            treenode_ids.add(t2id)
+
+            can_edit = False
+            if is_superuser or row[19] == user_id:
+                can_edit = True
+            else:
+                for gg in groups:                
+                    if User.objects.filter(groups=gg,id=row[19]).count() > 0:
+                        can_edit = True
+                        break
+            
+            treenodes.append(row[11:19] + (can_edit,) + row[20:22])
 
         # Find connectors related to treenodes in the field of view
         # Connectors found attached to treenodes
@@ -270,7 +292,15 @@ def node_list_tuples(request, project_id=None):
 
             for row in cursor.fetchall():
                 treenodes.append(row)
-                treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id,) + row[9:11])
+                can_edit = False
+                if is_superuser or row[8] == user_id:
+                    can_edit = True
+                else:
+                    for gg in groups:                
+                        if User.objects.filter(groups=gg,id=row[8]).count() > 0:
+                            can_edit = True
+                            break
+                treenode_ids.add(row[0:8] + (can_edit,) + row[9:11])
 
         labels = defaultdict(list)
         if request.POST['labels']:

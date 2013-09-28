@@ -47,6 +47,15 @@ def node_list_tuples(request, project_id=None):
     atnid = int(request.POST.get('atnid', -1))
     for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
         params[p] = float(request.POST.get(p, 0))
+    extra_zs = int(request.POST.get('extra_zs', 0))
+    if extra_zs > 0:
+        zs = [params['z']]
+        for i in xrange(1, extra_zs + 1):
+            zs.insert(0, params['z'] - params['zres'] * i)
+            zs.append(params['z'] + params['zres'] * i)
+    else:
+        zs = [params['z']]
+    params['zs'] = tuple(zs)
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
     
@@ -68,6 +77,9 @@ def node_list_tuples(request, project_id=None):
              'has_needed_permissions': can_administer}))
 
     try:
+        is_superuser = request.user.is_superuser
+        user_id = request.user.id
+
         cursor = connection.cursor()
         # Fetch treenodes which are in the bounding box,
         # which in z it includes the full thickess of the prior section
@@ -75,39 +87,77 @@ def node_list_tuples(request, project_id=None):
         response_on_error = 'Failed to query treenodes'
         params['bottom'] = params['top'] + params['height']
         params['right'] = params['left'] + params['width']
-        cursor.execute('''
-        SELECT
-            t1.id,
-            t1.parent_id,
-            (t1.location).x AS x,
-            (t1.location).y AS y,
-            (t1.location).z AS z,
-            t1.confidence,
-            t1.radius,
-            t1.skeleton_id,
-            t1.user_id,
-            t2.id,
-            t2.parent_id,
-            (t2.location).x AS x,
-            (t2.location).y AS y,
-            (t2.location).z AS z,
-            t2.confidence,
-            t2.radius,
-            t2.skeleton_id,
-            t2.user_id
-        FROM treenode t1
-             INNER JOIN treenode t2 ON
-               (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
-                OR (t1.parent_id IS NULL AND t1.id = t2.id))
-        WHERE
-            (t1.location).z = %(z)s
-            AND (t1.location).x > %(left)s
-            AND (t1.location).x < %(right)s
-            AND (t1.location).y > %(top)s
-            AND (t1.location).y < %(bottom)s
-            AND t1.project_id = %(project_id)s
-        LIMIT %(limit)s
-        ''', params)
+        params['user_id'] = user_id
+        if request.user.userprofile.show_all_tracings:
+            cursor.execute('''
+                SELECT
+                    t1.id,
+                    t1.parent_id,
+                    (t1.location).x AS x,
+                    (t1.location).y AS y,
+                    (t1.location).z AS z,
+                    t1.confidence,
+                    t1.radius,
+                    t1.skeleton_id,
+                    t1.user_id,
+                    t2.id,
+                    t2.parent_id,
+                    (t2.location).x AS x,
+                    (t2.location).y AS y,
+                    (t2.location).z AS z,
+                    t2.confidence,
+                    t2.radius,
+                    t2.skeleton_id,
+                    t2.user_id
+                FROM treenode t1
+                     INNER JOIN treenode t2 ON
+                       (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
+                        OR (t1.parent_id IS NULL AND t1.id = t2.id))
+                WHERE
+                    (t1.location).z IN %(zs)s
+                    AND (t1.location).x > %(left)s
+                    AND (t1.location).x < %(right)s
+                    AND (t1.location).y > %(top)s
+                    AND (t1.location).y < %(bottom)s
+                    AND t1.project_id = %(project_id)s
+                LIMIT %(limit)s
+                ''', params)
+                #    (t1.location).z = %(z)s
+        else:
+            cursor.execute('''
+                SELECT
+                    t1.id,
+                    t1.parent_id,
+                    (t1.location).x AS x,
+                    (t1.location).y AS y,
+                    (t1.location).z AS z,
+                    t1.confidence,
+                    t1.radius,
+                    t1.skeleton_id,
+                    t1.user_id,
+                    t2.id,
+                    t2.parent_id,
+                    (t2.location).x AS x,
+                    (t2.location).y AS y,
+                    (t2.location).z AS z,
+                    t2.confidence,
+                    t2.radius,
+                    t2.skeleton_id,
+                    t2.user_id
+                FROM treenode t1
+                     INNER JOIN treenode t2 ON
+                       (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
+                        OR (t1.parent_id IS NULL AND t1.id = t2.id))
+                WHERE
+                    (t1.location).z IN %(zs)s
+                    AND (t1.location).x > %(left)s
+                    AND (t1.location).x < %(right)s
+                    AND (t1.location).y > %(top)s
+                    AND (t1.location).y < %(bottom)s
+                    AND t1.project_id = %(project_id)s
+                    AND t1.user_id = %(user_id)s
+                LIMIT %(limit)s
+                ''', params)
 
         # Above, notice that the join is done for:
         # 1. A parent-child or child-parent pair (where the first one is in section z)
@@ -176,7 +226,7 @@ def node_list_tuples(request, project_id=None):
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
-          AND (connector.location).z = %(z)s
+          AND (connector.location).z IN %(zs)s
           AND (connector.location).x > %(left)s
           AND (connector.location).x < %(right)s
           AND (connector.location).y > %(top)s
@@ -296,7 +346,6 @@ def node_list_tuples(request, project_id=None):
                 ''' % visible)
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
-
         return HttpResponse(json.dumps((treenodes, connectors, labels, n_retrieved_nodes == params['limit']), separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
 
     except Exception as e:

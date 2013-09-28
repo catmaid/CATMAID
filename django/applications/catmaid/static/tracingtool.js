@@ -51,6 +51,29 @@ function TracingTool()
         actions,
         "tracingbuttons",
         "trace_");
+
+      // append extrazs slider to box
+      var zs_slider = new Slider(
+                  SLIDER_HORIZONTAL,
+                  true,
+                  0,
+                  9,
+                  10,
+                  0,
+                  function( val ) {
+                      tracingLayer.set_extra_zs(val);
+                      return;
+                  });
+      var zs_slider_box = document.createElement("div");
+      zs_slider_box.className = "box";
+      zs_slider_box.id = "slider_zs_box";
+      var zs_slider_box_label = document.createElement("p");
+      zs_slider_box_label.appendChild( document.createTextNode("adjacent sections   "));
+      zs_slider_box.appendChild(zs_slider_box_label);
+      zs_slider_box.appendChild(zs_slider.getView());
+      zs_slider_box.appendChild(zs_slider.getInputView());
+      box.append(zs_slider_box);
+
       $( "#toolbar_nav" ).prepend( box );
 
     }

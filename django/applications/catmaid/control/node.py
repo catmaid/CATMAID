@@ -47,7 +47,7 @@ def node_list_tuples(request, project_id=None):
     atnid = int(request.POST.get('atnid', -1))
     for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
         params[p] = float(request.POST.get(p, 0))
-    extra_zs = int(request.POST.get('extra_zs', 4))
+    extra_zs = int(request.POST.get('extra_zs', 0))
     if extra_zs > 0:
         zs = [params['z']]
         for i in xrange(1, extra_zs + 1):

@@ -1012,11 +1012,13 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
    So, if we *do* need to call updateNodes, we should pass it the
    completionCallback.  Otherwise, just fire the
    completionCallback at the end of this method. */
-SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCallback ) {
+SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCallback, force ) {
   var wc = this.stack.getWorldTopLeft();
   var pl = wc.worldLeft,
       pt = wc.worldTop,
       new_scale = wc.scale;
+
+  force = (force === undefined ? false : force);
   
   // TODO: this should also check for the size of the containing
   // div having changed.  You can see this problem if you have
@@ -1041,7 +1043,7 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
     }
   }
 
-  if ( !doNotUpdate ) {
+  if ( !doNotUpdate || force ) {
     this.updateNodes(completionCallback);
   }
 
@@ -1226,7 +1228,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback, futur
       {pid: stack.getProject().id,
        sid: stack.getId(),
        z: pz,
-       extra_zs: 0,
+       extra_zs: stack.extra_zs,
        top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
        left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
        width: (stack.viewWidth / stack.scale) * stack.resolution.x,

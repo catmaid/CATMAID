@@ -5,6 +5,7 @@ function TracingLayer( stack )
 {
 
   var self = this;
+  stack.extra_zs = 0;
 
   this.svgOverlay = new SkeletonAnnotations.SVGOverlay(stack);
 
@@ -18,6 +19,16 @@ function TracingLayer( stack )
   this.beforeMove = function (completionCallback) {
     this.svgOverlay.updateNodeCoordinatesinDB(completionCallback);
   }
+
+
+  this.set_extra_zs = function ( val )
+  {
+      if (val !== stack.extra_zs) {
+          stack.extra_zs = val;
+          self.svgOverlay.redraw(stack, undefined, true);
+      };
+  };
+          
 
   this.setOpacity = function ( val )
   {

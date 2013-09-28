@@ -12,19 +12,19 @@
 import time
 from collections import defaultdict, namedtuple
 
-def exportMutual(all_treenodes, connections, scale=0.001):
+def exportMutual(neuron_names, all_treenodes, connections, scale=0.001):
     """ Export a group of neuronal arbors and their synapses as NeuroML Level 3 v1.8.1.
     all_treenodes: an iterator (can be lazy) of treenodes like [<id>, <parent_id>, <location>, <radius>, <skeleton_id>].
     connections: a dictionary of skeleton ID vs tuple of tuple of tuples, each a pair containing the presynaptic treenode ID and the map of connector ID vs list of postsynaptic treenode IDs.
     scale: defaults to 0.001 to transform nanometers (CATMAID) into micrometers (NeuroML).
     Returns a lazy sequence of strings that expresses the XML. """
-    for source in ([header()], bodyMutual(all_treenodes, connections, scale), ["</neuroml>"]):
+    for source in ([header()], bodyMutual(neuron_names, all_treenodes, connections, scale), ["</neuroml>"]):
         for line in source:
            yield line
 
-def exportSingle(all_treenodes, inputs, scale=0.001):
+def exportSingle(neuron_names, all_treenodes, inputs, scale=0.001):
     """ Export a single neuronal arbor with a set of inputs as NeuroML Level 3 v1.8.1. """
-    for source in ([header()], bodySingle(all_treenodes, inputs, scale), ["</neuroml>"]):
+    for source in ([header()], bodySingle(neuron_names, all_treenodes, inputs, scale), ["</neuroml>"]):
         for line in source:
             yield line
 
@@ -43,7 +43,7 @@ def header():
 """ % time.strftime("%c %z")
 
 def segment(t1, t2, p, q, segmentID, parentSegmentID, cableID, is_first):
-    s = '<segment id="%s" name="%s"' % (segmentID, segmentID)
+    s = '<segment id="%s" name="s%s"' % (segmentID, segmentID)
     if parentSegmentID:
         s += ' parent="%s"' % parentSegmentID
     s += ' cable="%s">\n' % cableID
@@ -159,10 +159,10 @@ def make_slabs(root, root_segmentID, successors, cableIDs, scale, state):
 
 def make_cables(cableIDs):
     for i, cableID in enumerate(cableIDs):
-        yield '<cable id="%s" name="%s" fract_along_parent="%s"><meta:group>%s_group</meta:group></cable>\n' % (cableID, cableID, 0.5 if 0 == i else 1.0, "soma" if 0 == i else "arbor")
+        yield '<cable id="%s" name="c%s" fract_along_parent="%s"><meta:group>%s_group</meta:group></cable>\n' % (cableID, cableID, 0.5 if 0 == i else 1.0, "soma" if 0 == i else "arbor")
 
 
-def make_arbor(skeletonID, treenodes, scale, state):
+def make_arbor(neuron_name, treenodes, scale, state):
     """ treenodes is a sequence of treenodes, where each treenode is a tuple of id, parent_id, location. """
     successors = defaultdict(list)
     for treenode in treenodes:
@@ -178,7 +178,7 @@ def make_arbor(skeletonID, treenodes, scale, state):
     # Accumulate new cable IDs, one for each slab
     cableIDs = [root_cableID]
 
-    for source in [['<cell name="%s">\n' % skeletonID, '<segments xmlns="http://morphml.org/morphml/schema">\n'],
+    for source in [['<cell name="%s">\n' % neuron_name, '<segments xmlns="http://morphml.org/morphml/schema">\n'],
                    # Create zero-length point before root to represent the cell body
                    [segment(root, root, root_point, root_point, root_segmentID, None, root_cableID, True)],
                    make_slabs(root, root_segmentID, successors, cableIDs, scale, state),
@@ -199,7 +199,7 @@ class State:
         if treenodeID in self.synaptic_treenodes:
             self.synaptic_treenodes[treenodeID] = segmentID
 
-def make_arbors(all_treenodes, cellIDs, scale, state):
+def make_arbors(neuron_names, all_treenodes, cellIDs, scale, state):
     """ Consume all_treenodes lazily. Assumes treenodes are sorted by skeleton_id.
     Accumulates new cell IDs in cellIDs (the skeletonID is used). """
     i = 0
@@ -212,17 +212,17 @@ def make_arbors(all_treenodes, cellIDs, scale, state):
             treenodes.append((t[0], t[1], map(float, t[2][1:-1].split(',')), t[3]))
             i += 1
         cellIDs.append(skeletonID)
-        for line in make_arbor(skeletonID, treenodes, scale, state):
+        for line in make_arbor(neuron_name(skeletonID, neuron_names), treenodes, scale, state):
             yield line
 
 def make_connection_entries(pre_skID, post_skID, synapses, state):
     for pre_treenodeID, post_treenodeID in synapses:
-        yield '<connection id="%s" pre_cell_id="%s" pre_segment_id="%s" pre_fraction_along="0.5" post_cell_id="%s" post_segment_id="%s"/>\n' % (state.nextID(), pre_skID, state.synaptic_treenodes[pre_treenodeID], post_skID, state.synaptic_treenodes[post_treenodeID])
+        yield '<connection id="syn_%s" pre_cell_id="sk_%s" pre_segment_id="%s" pre_fraction_along="0.5" post_cell_id="sk_%s" post_segment_id="%s"/>\n' % (state.nextID(), pre_skID, state.synaptic_treenodes[pre_treenodeID], post_skID, state.synaptic_treenodes[post_treenodeID])
 
 def make_connection(connection, state):
     pre_skID, m = connection
     for post_skID, synapses in m.iteritems():
-        for source in (('<projection name="NetworkConnection" source="%s" target="%s">\n' % (pre_skID, post_skID),
+        for source in (('<projection name="NetworkConnection" source="sk_%s" target="sk_%s">\n' % (pre_skID, post_skID),
                         '<synapse_props synapse_type="DoubExpSynA" internal_delay="5" weight="1" threshold="-20"/>\n',
                         '<connections size="%s">\n' % len(synapses)),
                        make_connection_entries(pre_skID, post_skID, synapses, state),
@@ -236,12 +236,19 @@ def make_connections(connections, state):
         for line in make_connection(connection, state):
             yield line
 
-def make_cells(cellIDs):
+def neuron_name(skeleton_id, neuron_names):
+    """ Generate a valid name for a neuron: must start with [a-zZ-a]
+    and not contain any double quotes or line breaks or spaces. """
+    name = neuron_names[skeleton_id].replace('"', "'").replace('\n', ' ')
+    return "neuron %s - sk_%s" % (neuron_names[skeleton_id], skeleton_id)
+
+def make_cells(cellIDs, neuron_names):
     for cellID in cellIDs:
-        yield '<population name="%s" cell_type="%s"><instances size="1"><instance id="0"><location x="0" y="0" z="0"/></instance></instances></population>\n' % (cellID, cellID)
+        name = neuron_name(cellID, neuron_names)
+        yield '<population name="%s" cell_type="%s"><instances size="1"><instance id="0"><location x="0" y="0" z="0"/></instance></instances></population>\n' % (name, name)
 
 
-def bodyMutual(all_treenodes, connections, scale):
+def bodyMutual(neuron_names, all_treenodes, connections, scale):
     """ Create a cell for each arbor. """
     synaptic_treenodes = {}
     for m in connections.itervalues():
@@ -256,12 +263,12 @@ def bodyMutual(all_treenodes, connections, scale):
     
     # First cells
     sources = [['<cells>\n'],
-               make_arbors(all_treenodes, cellIDs, scale, state),
+               make_arbors(neuron_names, all_treenodes, cellIDs, scale, state),
                ['</cells>\n']]
 
     # Then populations: one instance of each cell
     sources.append(['<populations xmlns="http://morphml.org/networkml/schema">\n'])
-    sources.append(make_cells(cellIDs))
+    sources.append(make_cells(cellIDs, neuron_names))
     sources.append(['</populations>\n'])
 
     # Then connections between cells
@@ -274,12 +281,12 @@ def bodyMutual(all_treenodes, connections, scale):
         for line in source:
             yield line
 
-def make_inputs(cellIDs, inputs, state):
+def make_inputs(cellIDs, neuron_names, inputs, state):
     cellID = cellIDs[0]
     for inputSkeletonID, treenodeIDs in inputs.iteritems():
         for source in [('<input name="%s">\n' % inputSkeletonID,
                         '<random_stim frequency="20" synaptic_mechanism="DoubExpSynA"/>\n',
-                        '<target population="%s">\n' % cellID,
+                        '<target population="%s">\n' % neuron_name(cellID, neuron_names),
                         '<sites size="%s">\n' % len(treenodeIDs)),
                        ('<site cell_id="0" segment_id="%s"/>\n' % state.synaptic_treenodes[treenodeID] for treenodeID in treenodeIDs),
                        ('</sites>\n',
@@ -289,7 +296,7 @@ def make_inputs(cellIDs, inputs, state):
                 yield line
 
 
-def bodySingle(all_treenodes, inputs, scale):
+def bodySingle(neuron_names, all_treenodes, inputs, scale):
     synaptic_treenodes = {treenodeID: None for treenodeIDs in inputs.itervalues() for treenodeID in treenodeIDs}
 
     state = State(synaptic_treenodes)
@@ -298,17 +305,17 @@ def bodySingle(all_treenodes, inputs, scale):
 
     # First cells (only one)
     sources = [['<cells>\n'],
-               make_arbors(all_treenodes, cellIDs, scale, state),
+               make_arbors(neuron_names, all_treenodes, cellIDs, scale, state),
                ['</cells>\n']]
 
     # Then populations: one instance of the one cell
     sources.append(['<populations xmlns="http://morphml.org/networkml/schema">\n'])
-    sources.append(make_cells(cellIDs))
+    sources.append(make_cells(cellIDs, neuron_names))
     sources.append(['</populations>\n'])
 
     # Then inputs onto the one cell
     sources.append(['<inputs units="SI Units" xmlns="http://morphml.org/networkml/schema">\n'])
-    sources.append(make_inputs(cellIDs, inputs, state))
+    sources.append(make_inputs(cellIDs, neuron_names, inputs, state))
     sources.append(['</inputs>\n'])
 
     for source in sources:

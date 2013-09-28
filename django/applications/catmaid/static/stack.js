@@ -85,7 +85,7 @@ function Stack(
 	 */
 	var update = function( completionCallback )
 	{
-
+		
 		self.overview.redraw();
 		updateScaleBar();
 
@@ -646,7 +646,6 @@ function Stack(
 		if ( layers[ key ] )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
-		self.overviewlayer.refresh();
 		return;
 	}
 
@@ -662,7 +661,7 @@ function Stack(
 		{
 			layer.unregister();
 			delete layers[ key ];
-			self.overviewlayer.refresh();
+			self.tilelayercontrol.refresh();
 			return layer;
 		}
 		else
@@ -795,8 +794,8 @@ function Stack(
 	self.overview = new Overview( self );
 	view.appendChild( self.overview.getView() );
 
-	self.overviewlayer = new OverviewLayer( self );
-	view.appendChild( self.overviewlayer.getView() );
+	self.tilelayercontrol = new TilelayerControl( self );
+	view.appendChild( self.tilelayercontrol.getView() );
 
 	var scaleBar = document.createElement( "div" );
 	scaleBar.className = "sliceBenchmark";

@@ -43,6 +43,17 @@ function OntologyTool()
         }
     }));
 
+    this.addAction( new Action({
+        helpText: "Show clustering widget",
+        buttonName: 'clustering_widget',
+        buttonID: "clustering_button",
+        run: function (e) {
+            WindowMaker.show('clustering-widget');
+            self.update_workspace_in_widgets();
+            return true;
+        }
+    }));
+
     /**
      * Adds tools to the ontology tool box.
      */
@@ -83,9 +94,11 @@ function OntologyTool()
           if (self.workspace_mode === "classification") {
               OntologyEditor.change_workspace(-1, true);
               ClassificationEditor.change_workspace(-1, true);
+              ClusteringWidget.change_workspace(-1, true);
           } else {
               OntologyEditor.change_workspace(project.id, true);
               ClassificationEditor.change_workspace(project.id, true);
+              ClusteringWidget.change_workspace(project.id, true);
           }
     };
 

@@ -8,7 +8,7 @@ var WebGLApp = (function() { return new function () {
   // Queue server requests, awaiting returns
   var submit;
 
-  var camera, scene, renderer, scale, controls, zplane = null, meshes = [];
+  var camera, scene, renderer, scale, controls, zplane = null, meshes = [], meshes_default_color = '0xffffff';
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],
       bbmesh, floormesh, debugax, togglevisibleall = false, missing_sections = [], mouse = new THREE.Vector2();
   var pointLight, light, ambientLight;
@@ -1489,20 +1489,32 @@ var WebGLApp = (function() { return new function () {
     scene.add( mesh );
   }
 
-  function createScene( geometry, start ) {
-    //addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
-    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2, wireframe:true } ) ); // , transparent:true
-  }
+  var validateOctalString = function(id, default_color_string) {
+    var sf = $(id);
+    if (!sf) {
+      return default_color_string;
+    }
+    var s = sf.val();
+    if (8 === s.length && '0' === s[0] && 'x' === s[1] && /0x[0-9a-f]{6}/.exec(s)) {
+      return s;
+    }
+    return default_color_string;
+  };
 
-  function drawmesh() {
-    var loader = new THREE.JSONLoader( true );
-    var s = Date.now(),
-        callback = function( geometry ) { createScene( geometry, s ) };
+  var createMeshMaterial = function() {
+    var mesh_color = parseInt(validateOctalString("#meshes-color", meshes_default_color));
+    return new THREE.MeshBasicMaterial({color: mesh_color, opacity:0.2, wireframe:true});
+  };
+
+  /** This function loads 3d meshes specific of the project into the meshes array. */
+  function loadMesh() {
     jQuery.ajax({
         url: django_url + project.id + "/stack/" + self.stack_id + "/models",
         type: "GET",
         dataType: "json",
         success: function (models) {
+          var loader = new THREE.JSONLoader( true );
+          var material = createMeshMaterial();
           // loop over objects
           for( var obj in models) {
             if( models.hasOwnProperty( obj )) {
@@ -1516,13 +1528,14 @@ var WebGLApp = (function() { return new function () {
               }
               models[obj].vertices = vert2;
               var parsed = loader.parse( models[obj] );
-              createScene( parsed['geometry'] )
-
+              var geometry = parsed['geometry'];
+              addMesh(geometry, scale, 0,0,0, 0,0,0, material); // , transparent:true
+              self.render();
             }
           }
         }
       });
-  }
+  };
 
   self.toggleMeshes = function() {
     if( show_meshes ) {
@@ -1531,12 +1544,12 @@ var WebGLApp = (function() { return new function () {
       }
       meshes = [];
       show_meshes = false;
+      self.render();
     } else {
       // add them
-      drawmesh();
       show_meshes = true;
+      loadMesh();
     }
-    self.render();
   }
 
   self.removeMissingSections = function() {
@@ -1649,11 +1662,31 @@ var WebGLApp = (function() { return new function () {
     rand.setAttribute("value", "Show meshes");
     if( show_meshes )
       rand.setAttribute("checked", "true");
-    rand.onclick = WebGLApp.toggleMeshes;
+    rand.onclick = self.toggleMeshes;
     dialog.appendChild(rand);
-    var rand = document.createTextNode('Show meshes');
+    var rand = document.createTextNode('Show meshes, with color: ');
     dialog.appendChild(rand);
-    dialog.appendChild( document.createElement("br"));
+
+    var c = document.createElement('input');
+    c.setAttribute('type', 'text');
+    c.setAttribute('id', 'meshes-color');
+    c.setAttribute('value', '0xff0000');
+    c.setAttribute('size', '10');
+    $(document).on('keyup', "#meshes-color", function (e) {
+      var code = (e.keyCode ? e.keyCode : e.which);
+      if (13 === code) {
+        // Enter was pressed
+        if (show_meshes) {
+          var material = createMeshMaterial();
+          meshes.forEach(function(mesh) {
+            mesh.material = material;
+          });
+          self.render();
+        }
+      }
+    });
+    dialog.appendChild(c);
+    dialog.appendChild(document.createElement("br"));
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
@@ -1737,6 +1770,7 @@ var WebGLApp = (function() { return new function () {
       },
       close: function(event, ui) {
 
+        // TODO validate these inputs!
           missing_section_height = $('#missing-section-height').val();
           soma_scale = $('#soma-scale').val();
           if( show_missing_sections ) {
@@ -1744,9 +1778,12 @@ var WebGLApp = (function() { return new function () {
             self.createMissingSections();            
           }
           $('#dialog-confirm').remove();
+
+          // Remove the binding
+          $(document).off('keyup', "#meshes-color");
       }
     });
-  }
+  };
 
   self.toggleZplane = function() {
     if( show_zplane ) {

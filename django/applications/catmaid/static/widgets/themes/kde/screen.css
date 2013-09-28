@@ -288,3 +288,42 @@ div#classification_graph_object img.roiimage {
     display: none;
     color: #fff;
 }
+
+#clustering_content .indented {
+    margin: 1.5em 16px 0.5em 20px;
+}
+
+#clustering_content #distance_matrix td.lowertriangle {
+    background-color: #CED8F6;
+}
+
+#clustering_content .title {
+	font-weight:bold;
+}
+
+/* This is needed to make jQuery's slideToggle() not override
+ * the overflow property to 'hidded' and thereby cause jumping. */
+#clustering_content .content {
+    position: relative;
+    overflow: visible !important;
+}
+
+.extend-box-open,
+.extend-box-closed {
+	width: 0px;
+	height: 0px;
+	float: left;
+	margin-top: 1px;
+	margin-right: 3px;
+	border-style: solid;
+}
+
+.extend-box-open {
+	border-width: 8px 4px 0 4px;
+	border-color: #0000ff transparent transparent transparent;
+}
+
+.extend-box-closed {
+	border-width: 4px 0 4px 8px;
+	border-color: transparent transparent transparent #0000ff;
+}

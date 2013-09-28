@@ -249,6 +249,8 @@ urlpatterns += patterns('',
         'catmaid.control.get_available_relations'),
     (r'^(?P<project_id>%s)/ontology/relations/add$' % (integer),
         'catmaid.control.add_relation_to_ontology'),
+    (r'^(?P<project_id>%s)/ontology/relations/rename$' % (integer),
+        'catmaid.control.rename_relation'),
     (r'^(?P<project_id>%s)/ontology/relations/remove$' % (integer),
         'catmaid.control.remove_relation_from_ontology'),
     (r'^(?P<project_id>%s)/ontology/relations/removeall$' % (integer),
@@ -259,6 +261,8 @@ urlpatterns += patterns('',
         'catmaid.control.get_available_classes'),
     (r'^(?P<project_id>%s)/ontology/classes/add$' % (integer),
         'catmaid.control.add_class_to_ontology'),
+    (r'^(?P<project_id>%s)/ontology/classes/rename$' % (integer),
+        'catmaid.control.rename_class'),
     (r'^(?P<project_id>%s)/ontology/classes/remove$' % (integer),
         'catmaid.control.remove_class_from_ontology'),
     (r'^(?P<project_id>%s)/ontology/classes/removeall$' % (integer),
@@ -331,6 +335,15 @@ urlpatterns += patterns('',
         'catmaid.control.remove_roi_link', name='remove_roi_link'),
     url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer),
         'catmaid.control.get_roi_image', name='get_roi_image'),
+    )
+
+# Clustering
+urlpatterns += patterns('',
+    url(r'^clustering/(?P<workspace_pid>{0})/setup$'.format(integer),
+        'catmaid.control.setup_clustering', name="clustering_setup"),
+    url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),
+        TemplateView.as_view(template_name="catmaid/clustering/display.html"),
+        name="clustering_display"),
     )
 
 if settings.DEBUG:

@@ -408,12 +408,15 @@ var OntologyEditor = new function()
                     }
                 } else if (type_of_node === "relation") {
                     menu = {
-                    "add_relation": {
+                    "rename_relation": {
                         "separator_before": false,
                         "separator_after": false,
-                        "label": "Add new relation",
+                        "label": "Rename relation",
                         "action": function (obj) {
-                            return OntologyEditor.create_relation_handler(pid, tree_id);
+                            var rel_id = obj.attr('id').replace("node_", "");
+                            var rel_name = obj.attr('name');
+                            return OntologyEditor.rename_relation_handler(
+                                rel_id, rel_name, pid, tree_id);
                          }
                     },
                     "remove_relation": {
@@ -563,12 +566,15 @@ var OntologyEditor = new function()
                     }
                 } else if (type_of_node === "class") {
                     menu = {
-                    "add_class": {
+                    "rename_class": {
                         "separator_before": false,
                         "separator_after": false,
-                        "label": "Add new class",
+                        "label": "Rename class",
                         "action": function (obj) {
-                            return OntologyEditor.create_class_handler(pid, tree);
+                            var class_id = obj.attr('id').replace("node_", "");
+                            var class_name = obj.attr('name');
+                            return OntologyEditor.rename_class_handler(
+                                class_id, class_name, pid, tree_id);
                          }
                     },
                     "remove_class": {
@@ -645,6 +651,92 @@ var OntologyEditor = new function()
         $('#ontology_add_dialog #target_object').css("display", "none");
         // show dialog
         $.blockUI({ message: $('#ontology_add_dialog') });
+    };
+
+    var general_rename_handler = function(entity_name, current_name, rename_fn) {
+        var dialog = document.createElement('div');
+        dialog.setAttribute("id", "dialog-rename-entity");
+        dialog.setAttribute("title", "Rename " + entity_name);
+        var msg = document.createElement('p');
+        msg.innerHTML = "Please enter a new name for the currently " +
+            "selected " + entity_name + ".";
+        dialog.appendChild(msg);
+        var form = document.createElement('p');
+        dialog.appendChild(form)
+        var input = document.createElement('input');
+        input.setAttribute("id", "dialog-rename-input");
+        input.value = current_name;
+        input.setAttribute("type", "text");
+        form.appendChild(input);
+        var label = document.createElement('label');
+        label.setAttribute("for", "dialog-rename-input");
+        label.innerHTML = "New " + entity_name + " name:";
+        form.insertBefore(label, input);
+        var buttons = {
+            "Cancel": function() {
+                $(this).dialog("close");
+            },
+            "Rename": function() {
+                $(this).dialog("close");
+                rename_fn(input.value);
+            },
+        };
+        // The dialog is inserted into the document and shown by the following call:
+        $(dialog).dialog({
+            height: 200,
+            modal: true,
+            buttons: buttons,
+        });
+    };
+
+    /**
+     * Handles the renaming of a relation out of the tree's context menu.
+     */
+    this.rename_relation_handler = function (rel_id, rel_name, pid, tree_id) {
+        general_rename_handler("relation", rel_name,
+            function(new_name) {
+                OntologyEditor.display_wait_message(
+                    "Renaming relation. Just a moment...");
+                // rename relation with AJAX call
+                requestQueue.register(django_url + pid + '/ontology/relations/rename',
+                    'POST',
+                    { "relid": rel_id,
+                      "newname": new_name, },
+                    function(status, data, text) {
+                        OntologyEditor.hide_wait_message();
+                        OntologyEditor.handle_operation_response(status, data, text,
+                            function() {
+                                OntologyEditor.refresh_tree(tree_id);
+                                OntologyEditor.show_error_status( "Success",
+                                    "The relation has been renamed." );
+                            });
+                    });
+            });
+    };
+
+    /**
+     * Handles the renaming of a class out of the tree's context menu.
+     */
+    this.rename_class_handler = function (class_id, class_name, pid, tree_id) {
+        general_rename_handler("class", class_name,
+            function(new_name) {
+                OntologyEditor.display_wait_message(
+                    "Renaming class. Just a moment...");
+                // rename relation with AJAX call
+                requestQueue.register(django_url + pid + '/ontology/classes/rename',
+                    'POST',
+                    { "classid": class_id,
+                      "newname": new_name, },
+                    function(status, data, text) {
+                        OntologyEditor.hide_wait_message();
+                        OntologyEditor.handle_operation_response(status, data, text,
+                            function() {
+                                OntologyEditor.refresh_tree(tree_id);
+                                OntologyEditor.show_error_status( "Success",
+                                    "The class has been renamed." );
+                            });
+                    });
+            });
     };
 
     /**

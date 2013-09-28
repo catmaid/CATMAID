@@ -99,6 +99,10 @@ PROFILE_SHOW_ALL_TRACINGS = True
 # such an image will be created when requested.
 ROI_AUTO_CREATE_IMAGE = False
 
+# Default importer tile width and height
+IMPORTER_DEFAULT_TILE_WIDTH = 256
+IMPORTER_DEFAULT_TILE_HEIGHT = 256
+
 # A couple of functions useful for generating default directories to
 # be used in the settings files:
 

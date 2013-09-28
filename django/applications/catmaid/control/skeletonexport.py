@@ -492,6 +492,19 @@ def export_neuroml_level3_v181(request, project_id=None):
     presynaptic_to = relations['presynaptic_to']
     postsynaptic_to = relations['postsynaptic_to']
 
+    cursor.execute('''
+    SELECT cici.class_instance_a, ci.name
+    FROM class_instance_class_instance cici,
+         class_instance ci,
+         relation r
+    WHERE cici.class_instance_a IN (%s)
+      AND cici.class_instance_b = ci.id
+      AND cici.relation_id = r.id
+      AND r.relation_name = 'model_of'
+    ''' % skeleton_strings)
+
+    neuron_names = dict(cursor.fetchall())
+
     skeleton_query = '''
         SELECT id, parent_id, location, radius, skeleton_id
         FROM treenode
@@ -521,8 +534,8 @@ def export_neuroml_level3_v181(request, project_id=None):
                     connections[skID1][skID2].append((pre_treenodeID, post_treenodeID))
 
         cursor.execute(skeleton_query)
-        
-        generator = export_NeuroML_Level3.exportMutual(cursor.fetchall(), connections)
+
+        generator = export_NeuroML_Level3.exportMutual(neuron_names, cursor.fetchall(), connections)
 
     else:
         if len(skeleton_ids) > 1:
@@ -557,7 +570,7 @@ def export_neuroml_level3_v181(request, project_id=None):
 
         cursor.execute(skeleton_query)
 
-        generator = export_NeuroML_Level3.exportSingle(cursor.fetchall(), inputs)
+        generator = export_NeuroML_Level3.exportSingle(neuron_names, cursor.fetchall(), inputs)
 
     response = HttpResponse(generator, mimetype='text/plain')
     response['Content-Disposition'] = 'attachment; filename=neuronal-circuit.neuroml'

@@ -57,9 +57,12 @@ var rootWindow;
 var userprofile = {};
 
 var user_permissions = null;
+var user_groups = null;
+
 function checkPermission(p) {
   return user_permissions && user_permissions[p][project.getId()];
 }
+
 function mayEdit() {
   return checkPermission('can_annotate');
 }
@@ -255,7 +258,8 @@ function updateProjects(completionCallback) {
 		if (data.error) {
 			alert(data.error);
 		} else {
-			user_permissions = data;
+			user_permissions = data[0];
+      user_groups = data[1];
 		}
 	}, 'json');
 

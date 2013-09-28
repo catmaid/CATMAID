@@ -73,13 +73,14 @@ var SkeletonElements = function(paper)
     zdiff,      // the difference in Z from the current slice
     confidence,
     skeleton_id,// the id of the skeleton this node is an element of
-    can_edit)   // a boolean combining (is_superuser or user owns the node)
+    can_edit,   // a boolean combining (is_superuser or user owns the node)
+    cullz)      // whether node should be hidden based on zdiff
   {
     var node = this.cache.nodePool.next();
     if (node) {
-      node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+      node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit, cullz);
     } else {
-      node = new this.Node(paper, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+      node = new this.Node(paper, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit, cullz);
       this.cache.nodePool.push(node);
     }
     return node;
@@ -94,13 +95,14 @@ var SkeletonElements = function(paper)
     z,          // z coordinates
     zdiff,      // the different from the current slices
     confidence,
-    can_edit)   // a boolean combining (is_superuser or user owns the node)
+    can_edit,   // a boolean combining (is_superuser or user owns the node)
+    cullz)      // whether node should be hidden based on zdiff
   {
     var connector = this.cache.connectorPool.next();
     if (connector) {
-      connector.reInit(id, x, y, z, zdiff, confidence, can_edit);
+      connector.reInit(id, x, y, z, zdiff, confidence, can_edit, cullz);
     } else {
-      connector = new this.ConnectorNode(paper, id, x, y, z, zdiff, confidence, can_edit);
+      connector = new this.ConnectorNode(paper, id, x, y, z, zdiff, confidence, can_edit, cullz);
       connector.createArrow = this.createArrow;
       this.cache.connectorPool.push(connector);
     }
@@ -231,7 +233,7 @@ SkeletonElements.prototype.NodePrototype = new (function() {
   };
 
   this.shouldDisplay = function() {
-    return this.zdiff >= 0 && this.zdiff < 1;
+    return (!this.cullz) || (this.zdiff >= 0 && this.zdiff < 1);
   };
 
   /** Draw a line with the other node if this or the other should be displayed. */
@@ -425,7 +427,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
   };
 
   /** Reset all member variables and reposition Raphael circles when existing. */
-  this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit) {
+  this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit, cullz) {
     this.id = id;
     this.parent = parent;
     this.parent_id = parent_id;
@@ -440,10 +442,11 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.skeleton_id = skeleton_id;
     this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
     this.can_edit = can_edit;
+    this.cullz = (cullz === undefined ? true : cullz);
     this.needsync = false;
 
     if (this.c) {
-      if (0 !== zdiff) {
+      if (!this.shouldDisplay()) {
         this.c.hide();
         this.mc.hide();
       } else {
@@ -477,7 +480,8 @@ SkeletonElements.prototype.Node = function(
   zdiff,      // the difference in z from the current slice
   confidence, // confidence with the parent
   skeleton_id,// the id of the skeleton this node is an element of
-  can_edit)   // whether the user can edit (move, remove) this node
+  can_edit,   // whether the user can edit (move, remove) this node
+  cullz)      // whether node should be hidden based on zdiff
 {
   this.paper = paper;
   this.id = id;
@@ -494,6 +498,7 @@ SkeletonElements.prototype.Node = function(
   this.confidence = confidence;
   this.skeleton_id = skeleton_id;
   this.can_edit = can_edit;
+  this.cullz = (cullz === undefined ? true : cullz);
   this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
   this.c = null; // The Raphael circle for drawing
   this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
@@ -606,7 +611,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     }
   };
 
-  this.reInit = function(id, x, y, z, zdiff, confidence, can_edit) {
+  this.reInit = function(id, x, y, z, zdiff, confidence, can_edit, cullz) {
     this.id = id;
     this.x = x;
     this.y = y;
@@ -614,6 +619,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     this.zdiff = zdiff;
     this.confidence = confidence;
     this.can_edit = can_edit;
+    this.cullz = (cullz === undefined ? true : cullz);
     this.pregroup = {};
     this.postgroup = {};
     this.needsync = false;
@@ -644,7 +650,8 @@ SkeletonElements.prototype.ConnectorNode = function(
   z,          // z coordinates
   zdiff,      // the difference from the current slice
   confidence, // (TODO: UNUSED)
-  can_edit) // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
+  can_edit, // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
+  cullz)      // whether node should be hidden based on zdiff
 {
   this.paper = paper;
   this.id = id;
@@ -656,6 +663,7 @@ SkeletonElements.prototype.ConnectorNode = function(
   this.zdiff = zdiff;
   this.confidence = confidence;
   this.can_edit = can_edit;
+  this.cullz = (cullz === undefined ? true : cullz);
   this.pregroup = {}; // set of presynaptic treenodes
   this.postgroup = {}; // set of postsynaptic treenodes
   this.c = null; // The Raphael circle for drawing

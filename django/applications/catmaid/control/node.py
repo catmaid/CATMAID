@@ -226,7 +226,7 @@ def node_list_tuples(request, project_id=None):
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
-          AND (connector.location).z = %(z)s
+          AND (connector.location).z IN %(zs)s
           AND (connector.location).x > %(left)s
           AND (connector.location).x < %(right)s
           AND (connector.location).y > %(top)s

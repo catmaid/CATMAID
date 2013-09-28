@@ -902,10 +902,11 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   jso[0].forEach(function(a, index, array) {
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
+    // cullz: hide nodes from adjacent sections
     this.nodes[a[0]] = this.graphics.newNode(
       a[0], null, a[1], a[6], this.phys2pixX(a[2]),
       this.phys2pixY(a[3]), this.phys2pixZ(a[4]),
-      (a[4] - pz) / this.stack.resolution.z, a[5], a[7], a[8]);
+      (a[4] - pz) / this.stack.resolution.z, a[5], a[7], a[8], false);
   }, this);
 
   // Populate ConnectorNodes
@@ -914,10 +915,11 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     // a[5]: presynaptic nodes as array of arrays with treenode id
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
     // and confidence, a[7]: whether the user can edit the connector
+    // cullz: hide nodes from adjacent sections
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0], this.phys2pixX(a[1]),
       this.phys2pixY(a[2]), this.phys2pixZ(a[3]),
-      (a[3] - pz) / this.stack.resolution.z, a[4], a[7]);
+      (a[3] - pz) / this.stack.resolution.z, a[4], a[7], false);
   }, this);
 
   // Disable any unused instances

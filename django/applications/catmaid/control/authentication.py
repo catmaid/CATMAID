@@ -253,8 +253,8 @@ def can_edit_all_or_fail(user, ob_ids, table_name):
         if 1 == len(rows) and rows[0][0] == user.id:
             return True
         # If more than one user, check if the request.user can edit them all
-        domain = user_domain(cursor, user.id)
-        if all(row[0] in domain for row in rows):
+        # In other words, check if the set of user_id associated with ob_ids is a subset of the user's domain (the set of user_id that the user can edit)
+        if set(row[0] for row in rows).issubset(user_domain(cursor, user.id)):
             return True
 
         raise Exception('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))

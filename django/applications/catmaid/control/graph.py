@@ -112,7 +112,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
 
     # Fetch all treenodes of all skeletons
     cursor.execute('''
-    SELECT id, parent_id, confidence, skeleton_id, location
+    SELECT id, parent_id, confidence, skeleton_id, location, reviewer_id
     FROM treenode
     WHERE skeleton_id IN (%s)
     ''' % skeletons_string)
@@ -122,7 +122,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
 
     # Create a DiGraph for every skeleton
     for row in rows:
-        arbors[row[3]].add_node(row[0])
+        arbors[row[3]].add_node(row[0], {'reviewer_id': row[5]})
 
     # Dictionary of skeleton IDs vs list of DiGraph instances
     arbors = split_by_confidence_and_add_edges(confidence_threshold, arbors, rows)
@@ -173,12 +173,13 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
         i = 0
         for g in digraphs:
             if g.number_of_nodes() == 0:
-                print "no nodes in g, from sekelton ID #%s" % skid
+                print "no nodes in g, from skeleton ID #%s" % skid
                 continue
             circuit.add_node(g, {'id': "%s_%s" % (skid, i+1),
                                  'label': "%s [%s]" % (names[skid], i+1),
                                  'skeleton_id': skid,
                                  'node_count': len(g),
+                                 'node_reviewed_count': len([k for k,v in g.nodes(data=True) if v['reviewer_id'] != -1]),
                                  'branch': False})
             i += 1
             

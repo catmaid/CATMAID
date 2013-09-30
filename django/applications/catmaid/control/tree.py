@@ -414,11 +414,11 @@ def tree_object_list(request, project_id=None):
     class_map = get_class_to_id_map(project_id)
 
     # First, check if the tracing system is correctly set-up
-    setup_okay, mc, mr, mci = check_tracing_setup_detailed(project_id)
+    setup_okay, mc, mr, mci = check_tracing_setup_detailed(project_id,
+        class_map, relation_map, check_root_ci=False)
     if not setup_okay:
         # Check permissions
-        p = Project.objects.get(pk=project_id)
-        can_administer = user.has_perm('can_administer', p)
+        can_administer = request.user.has_perm('can_administer', project_id)
         # Find missing links and classes
         return HttpResponse(json.dumps(
             {'needs_setup': True,

@@ -27,25 +27,36 @@ needed_relations = {
     'postsynaptic_to': "Something is postsynaptic to something else."}
 
 def check_tracing_setup_view(request, project_id=None):
-    all_good = check_tracing_setup(project_id)
-    return HttpResponse(json.dumps({'all_good': all_good}))
+    all_good, mc, mr, mci = check_tracing_setup_detailed(project_id)
+    can_administer = request.user.has_perm('can_administer', project_id)
+    return HttpResponse(json.dumps(
+        {'needs_setup': not all_good,
+         'missing_classes': mc,
+         'missing_relations': mr,
+         'missing_classinstances': mci,
+         'has_needed_permissions': can_administer}))
 
-def check_tracing_setup(project_id):
-    """ Checks if all classes and relations needed by the
-    tracing system are available.
+def check_tracing_setup(project_id, opt_class_map=None, opt_relation_map=None,
+        check_root_ci=True):
+    """ Checks if all classes and relations needed by the tracing system are
+    available. Allows to avoid test for root class instances and to pass
+    already available class and relation maps to save queries.
     """
-    all_good, _, _, _ = check_tracing_setup_detailed(project_id)
+    all_good, _, _, _ = check_tracing_setup_detailed(project_id, opt_class_map,
+            opt_relation_map, check_root_ci)
     return all_good
 
-def check_tracing_setup_detailed(project_id):
+def check_tracing_setup_detailed(project_id, opt_class_map=None,
+        opt_relation_map=None, check_root_ci=True):
     """ Checks if all classes and relations needed by the tracing system are
     available. It returns a four-tuple with a boolean indicating if all is
     setup, the missing class names, the missing relation names and the missing
-    class instance names.
+    class instance names. Allows to avoid test for root class instances and to
+    pass already available class and relation maps.
     """
-    # Get class and relation data
-    class_map = get_class_to_id_map(project_id)
-    relation_map = get_relation_to_id_map(project_id)
+    # Get class and relation data. If available, use the provided one.
+    class_map = opt_class_map or get_class_to_id_map(project_id)
+    relation_map = opt_relation_map or get_relation_to_id_map(project_id)
 
     # Check if all classes and relations are available
     all_good = True
@@ -61,16 +72,17 @@ def check_tracing_setup_detailed(project_id):
         if not r in relation_map:
             all_good = False
             missing_relations.append(r)
-    # Check if the root node is there
-    if 'root' in class_map:
-        exists = ClassInstance.objects.filter(
-            class_column=class_map['root'],
-            project_id=project_id).exists()
-        if not exists:
-            all_good = False
-            missing_classinstances.append('root')
-    else:
-            missing_classinstances.append('root')
+    # Check if the root node is there if requested
+    if check_root_ci:
+        if 'root' in class_map:
+            exists = ClassInstance.objects.filter(
+                class_column=class_map['root'],
+                project_id=project_id).exists()
+            if not exists:
+                all_good = False
+                missing_classinstances.append('root')
+        else:
+                missing_classinstances.append('root')
 
     return all_good, missing_classes, missing_relations, missing_classinstances
 

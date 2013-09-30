@@ -639,6 +639,12 @@ var WindowMaker = new function()
     show.onclick = CompartmentGraphWidget.graph_properties;
     contentbutton.appendChild(show);
 
+    var gml = document.createElement('input');
+    gml.setAttribute("type", "button");
+    gml.setAttribute("value", "Export GML");
+    gml.onclick = CompartmentGraphWidget.exportGML;
+    contentbutton.appendChild(gml);
+
     content.appendChild( contentbutton );
 
     var container = createContainer("compartment_graph_widget");

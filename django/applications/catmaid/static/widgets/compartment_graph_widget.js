@@ -395,7 +395,7 @@ var CompartmentGraphWidget = new function()
                    'outline "#000000"',
                    "outline_width 1"].join("\n      "),
                   "]",
-                  'label "' + props.label + '"'].join("\n    "));
+                  'label "' + props.label + ' #' + props.id + '"'].join("\n    "));
       items.push("]");
     });
 

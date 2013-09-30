@@ -102,10 +102,12 @@ summary statistics.
   <li><a target="_new" href="javascript: graphexport_nxjson()"><strong>NetworkX JSON graph</strong></a><br />
     Using Python and <a href target='_new' href='http://networkx.github.io/documentation/latest/reference/readwrite.json_graph.html'>NetworkX</a>, you can import the returned file in your Python shell for further analysis.<br />
     <pre>
+    import networkx as nx
     from networkx.readwrite import json_graph
     g=json_graph.load(open('my_downloaded_file.json'))
     g.nodes(data=True)
     g.edges(data=True)
+    nx.write_graphml( g, 'mynetwork.graphml' )
     </pre></li>
 
 	<li><a target="_new" href="javascript: graphexport_NeuroML181()"><strong>NeuroML 1.8.1 (Level 3, NetworkML)</strong></a></br />

@@ -337,6 +337,15 @@ urlpatterns += patterns('',
         'catmaid.control.get_roi_image', name='get_roi_image'),
     )
 
+# Clustering
+urlpatterns += patterns('',
+    url(r'^clustering/(?P<workspace_pid>{0})/setup$'.format(integer),
+        'catmaid.control.setup_clustering', name="clustering_setup"),
+    url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),
+        TemplateView.as_view(template_name="catmaid/clustering/display.html"),
+        name="clustering_display"),
+    )
+
 if settings.DEBUG:
     urlpatterns += patterns('',
         (r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),

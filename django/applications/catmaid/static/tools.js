@@ -152,3 +152,17 @@ function sync_request(url, type, data) {
 
   return result;
 }
+
+/**
+ * Stops default behaviour of an event. Found here:
+ * http://stackoverflow.com/questions/891581
+ */
+function stopDefault(e) {
+    if (e && e.preventDefault) {
+        e.preventDefault();
+    }
+    else {
+        window.event.returnValue = false;
+    }
+    return false;
+}

@@ -27,8 +27,14 @@ needed_relations = {
     'postsynaptic_to': "Something is postsynaptic to something else."}
 
 def check_tracing_setup_view(request, project_id=None):
-    all_good = check_tracing_setup(project_id)
-    return HttpResponse(json.dumps({'all_good': all_good}))
+    all_good, mc, mr, mci = check_tracing_setup_detailed(project_id)
+    can_administer = request.user.has_perm('can_administer', project_id)
+    return HttpResponse(json.dumps(
+        {'needs_setup': not all_good,
+         'missing_classes': mc,
+         'missing_relations': mr,
+         'missing_classinstances': mci,
+         'has_needed_permissions': can_administer}))
 
 def check_tracing_setup(project_id, opt_class_map=None, opt_relation_map=None,
         check_root_ci=True):

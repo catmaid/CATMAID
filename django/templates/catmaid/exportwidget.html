@@ -21,12 +21,8 @@
     });
   }
 
-  function summary_statistics() {
-    new_window_with_return( "/graphexport/summary-statistics/csv" );
-  }
-
   function graphexport_nxjson() {
-    new_window_with_return( "/graphexport/nx_json" );    
+    new_window_with_return( "/graphexport/json" );    
   }
 
   function graphexport_graphml() {
@@ -102,34 +98,19 @@ The selected skeletons from the <i>Selection Table</i> are used to extract the s
 summary statistics.
 
 <ul>
-  <li><a target="_new" href="javascript: summary_statistics()"><strong>Summary Statistics</strong></a><br />
-  As CSV file, with columns: skeleton ID, neuron name, cable length, number of input synapses, number of output synapses, number of input neurons, number of outputs neuron, number of inputs with a single node, number of outputs with a single node</li>
 
   <li><a target="_new" href="javascript: graphexport_nxjson()"><strong>NetworkX JSON graph</strong></a><br />
-    Using Python and <a href target='_new' href='http://networkx.github.io/documentation/latest/reference/readwrite.json_graph.html'>NetworkX</a>, you can import the returned file in your Python shell for further analysis.</li>
-
-  <li><a target="_new" href="javascript: graphexport_graphml()"><strong>Graph ML</strong></a><br />
-  To further analyze the graph in e.g. <a target='_new' href='http://gephi.org/'>Gephi</a> or <a target='_new' href='http://www.cytoscape.org'>Cytoscape</a>.</li>
+    Using Python and <a href target='_new' href='http://networkx.github.io/documentation/latest/reference/readwrite.json_graph.html'>NetworkX</a>, you can import the returned file in your Python shell for further analysis.<br />
+    <pre>
+    from networkx.readwrite import json_graph
+    g=json_graph.load(open('my_downloaded_file.json'))
+    g.nodes(data=True)
+    g.edges(data=True)
+    </pre></li>
 
 	<li><a target="_new" href="javascript: graphexport_NeuroML181()"><strong>NeuroML 1.8.1 (Level 3, NetworkML)</strong></a></br />
 	For modeling with <a href="http://www.neuroconstruct.org/">neuroConstruct</a> and then e.g. the <a href="http://www.neuron.yale.edu/neuron/">NEURON</a> simulator.</li>
 
-  <!-- <li>Connectivity Matrix (Matlab, Python)</li> -->
-</ul>
-
-<h3>Export Skeletons</h3>
-
-Individual selected skeletons from the <i>Selection Table</i> are exported in the selected format and returned as ZIP archive file.
-
-<ul>
-  <!-- (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'catmaid.control.skeleton_neuroml'), -->
-  <li>NeuroML v2.0</li>
-
-  <!-- (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'catmaid.control.skeleton_swc'), -->
-  <li>SWC</li>
-
-  
-  <li>Extended JSON (includes synapse information)</li>
 </ul>
 
 {% endblock %}

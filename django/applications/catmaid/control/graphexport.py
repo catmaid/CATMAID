@@ -6,6 +6,7 @@ from catmaid.models import *
 from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
+from catmaid.control.graph import _skeleton_graph
 
 try:
     import networkx as nx
@@ -14,51 +15,46 @@ except ImportError:
     pass
 
 import json
-import cStringIO
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def summary_statistics(request, project_id=None):
-
-    # return CSV
-    # skeleton ID, neuron name, cable length, number of input
-    # synapses, number of output synapses, number of input
-    #  neurons, number of outputs neuron, number of inputs
-    # with a single node, number of outputs with a single node
-
-    data = json_graph.node_link_data(g)
-    json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
-
-def _get_skeletongroup(request, project_id):
+def export_jsongraph(request, project_id):
+    
     skeletonlist = request.POST.getlist('skeleton_list[]')
     skeletonlist = map(int, skeletonlist)
     p = get_object_or_404(Project, pk=project_id)
-    skelgroup = SkeletonGroup( skeletonlist, p.id )
-    return skelgroup
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def export_nxjsgraph(request, project_id=None):
-    skelgroup = _get_skeletongroup(request, project_id)
-    data = json_graph.node_link_data(skelgroup.graph)
-    return HttpResponse(json.dumps(data, indent=2), mimetype='text/json')
+    # default: confidence_threshold = 0, bandwidth = 0
+    circuit = _skeleton_graph(project_id, skeletonlist, 0, 9000)
+    package = {'nodes': [{'data': props} for digraph, props in circuit.nodes_iter(data=True)],
+               'edges': []}
+    edges = package['edges']
+    for g1, g2, props in circuit.edges_iter(data=True):
+        id1 = circuit.node[g1]['id']
+        id2 = circuit.node[g2]['id']
+        edges.append({'data': {'id': '%s_%s' % (id1, id2),
+                               'source': id1,
+                               'target': id2,
+                               'weight': props['c'],
+                               'label': str(props['c']) if props['directed'] else None,
+                               'directed': props['directed'],
+                               'arrow': props['arrow'],
+                               'color': props['color']}})
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def export_graphml(request, project_id=None):
-    skelgroup = _get_skeletongroup(request, project_id)
-    output = cStringIO.StringIO()
-    nx.write_graphml( skelgroup.graph, output )
-    return HttpResponse(output.getvalue())
+    newgraph = nx.DiGraph()
+    for digraph, props in circuit.nodes_iter(data=True):
+        newgraph.add_node( props['id'], {
+            'node_count': props['node_count'],
+            'skeleton_id': props['skeleton_id'],
+            'label': props['label'],
+        })
+    for g1, g2, props in circuit.edges_iter(data=True):
+        id1 = circuit.node[g1]['id']
+        id2 = circuit.node[g2]['id']
+        newgraph.add_edge( id1, id2, {
+            'id': '%s-%s' % (id1, id2),
+           'weight': props['c'],
+           'label': str(props['c']) if props['directed'] else None,
+           'directed': props['directed']
+            })
 
-    response = HttpResponse(mimetype="application/xml")
-    response['Content-Disposition'] = "attachment;filename=network.graphml"
-    response.write(output.getvalue())
-    return response
-    # return HttpResponse(output.read())
-
-# file download
-# http://stackoverflow.com/questions/908258/generating-file-to-download-with-django
-
-# response = HttpResponse(mimetype="application/zip")
-# # response['Content-Disposition'] = "attachment;filename=%s" % filename
-# response.write(output.read())
-# return response
+    return HttpResponse(json.dumps(json_graph.node_link_data(newgraph), indent=2), mimetype='text/json')

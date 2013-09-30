@@ -61,9 +61,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
     (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
 
-    (r'^(?P<project_id>\d+)/graphexport/summary-statistics/csv$', 'catmaid.control.graphexport.summary_statistics' ),
-    (r'^(?P<project_id>\d+)/graphexport/nx_json$', 'catmaid.control.graphexport.export_nxjsgraph' ),
-    (r'^(?P<project_id>\d+)/graphexport/graphml$', 'catmaid.control.graphexport.export_graphml' ),
+    (r'^(?P<project_id>\d+)/graphexport/json$', 'catmaid.control.graphexport.export_jsongraph' ),
     (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'catmaid.control.skeletonexport.export_neuroml_level3_v181'),
     (r'^(?P<project_id>\d+)/tracing/setup/rebuild$', 'catmaid.control.rebuild_tracing_setup_view'),
     (r'^(?P<project_id>\d+)/tracing/setup/test$', 'catmaid.control.check_tracing_setup_view'),

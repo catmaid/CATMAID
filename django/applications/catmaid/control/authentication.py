@@ -14,7 +14,7 @@ from django.shortcuts import _get_queryset
 from catmaid.models import Project, UserRole
 from django.contrib.auth.models import User, Group
 
-from catmaid.control.common import json_error_response, cursor_fetch_dictionary
+from catmaid.control.common import json_error_response
 from catmaid.control.common import my_render_to_response
 
 from django.contrib.auth import authenticate, logout, login

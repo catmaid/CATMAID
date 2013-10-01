@@ -362,16 +362,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     return partners
 
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeleton_info_raw(request, project_id=None):
-    # sanitize arguments
-    project_id = int(project_id)
-    skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source['))
-    synaptic_count_high_pass = int( request.POST.get( 'threshold', 0 ) )
-    op = request.POST.get('boolean_op') # values: AND, OR
-    op = {'AND': 'AND', 'OR': 'OR'}[op[6:]] # sanitize
-
+def _skeleton_info_raw(project_id, skeletons, synaptic_count_high_pass, op):
     cursor = connection.cursor()
 
     # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
@@ -402,6 +393,19 @@ def skeleton_info_raw(request, project_id=None):
 
     prepare(incoming)
     prepare(outgoing)
+
+    return incoming, outgoing
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeleton_info_raw(request, project_id=None):
+    # sanitize arguments
+    project_id = int(project_id)
+    skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source['))
+    synaptic_count_high_pass = int( request.POST.get( 'threshold', 0 ) )
+    op = request.POST.get('boolean_op') # values: AND, OR
+    op = {'AND': 'AND', 'OR': 'OR'}[op[6:]] # sanitize
+
+    incoming, outgoing = _skeleton_info_raw(project_id, skeletons, synaptic_count_high_pass, op)
 
     return HttpResponse(json.dumps({'incoming': incoming, 'outgoing': outgoing}), mimetype='text/json')
 

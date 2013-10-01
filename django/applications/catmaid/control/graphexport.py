@@ -20,10 +20,10 @@ except ImportError:
 def export_jsongraph(request, project_id):
     p = get_object_or_404(Project, pk=project_id)
     skeletonlist = request.POST.getlist('skeleton_list[]')
-    confidence_threshold = int(request.GET.get('confidence_threshold', 0))
-    bandwidth = int(request.GET.get('bandwidth', 0))
-    synaptic_count_high_pass = int(request.GET.get('synaptic_count_high_pass', 0))
-    order = int(request.GET.get('order', 0))
+    confidence_threshold = int(request.POST.get('confidence_threshold', 0))
+    bandwidth = int(request.POST.get('bandwidth', 0))
+    synaptic_count_high_pass = int(request.POST.get('synaptic_count_high_pass', 0))
+    order = int(request.POST.get('order', 0))
     skeletonlist = map(int, skeletonlist)
 
     if order > 2: # only allow to retrieve order two to limit server usage

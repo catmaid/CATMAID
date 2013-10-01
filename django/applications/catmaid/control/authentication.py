@@ -221,7 +221,7 @@ def can_edit_or_fail(user, ob_id, table_name):
             return True
         if 1 == len(rows):
             # Implicit: a user belongs to its own group
-            onwer_id = rows[0][0]
+            owner_id = rows[0][0]
             if owner_id == user.id:
                 return True
             # Check if the user belongs to a group with the name of the owner
@@ -277,7 +277,7 @@ def user_can_edit(cursor, user_id, other_user_id):
       AND u.username = g.name
       AND g.id = ug.group_id
       AND ug.user_id = %s
-    """ % (owner_id, user_id))
+    """ % (other_user_id, user_id))
     rows = cursor.fetchall()
     return rows and rows[0] > 0
 

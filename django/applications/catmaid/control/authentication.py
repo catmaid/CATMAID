@@ -279,7 +279,7 @@ def user_can_edit(cursor, user_id, other_user_id):
       AND ug.user_id = %s
     """ % (other_user_id, user_id))
     rows = cursor.fetchall()
-    return rows and rows[0] > 0
+    return rows and rows[0][0] > 0
 
 
 def user_domain(cursor, user_id):

@@ -434,7 +434,8 @@ var tracingWindowActions = [
         buttonID: "data_button_connectivit",
         buttonName: 'table_connectivity',
         run: function (e) {
-            WindowMaker.show('connectivity-widget');
+            var widgetid = SkeletonConnectivity.getNextId();
+            WindowMaker.show('connectivity-widget', {'widgetid': widgetid } );
             return true;
         }
     }),

@@ -129,10 +129,14 @@ def split_skeleton(request, project_id=None):
 
     skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
     # The split is only possible if the user owns the treenode or the skeleton
-    if not request.user.is_superuser:
-        if request.user.id != skeleton.user.id and request.user.id != treenode.user.id and not _under_fragments(skeleton_id):
-            cursor.execute('SELECT username FROM auth_user WHERE id=%s' % skeleton.user.id)
-            return HttpResponse(json.dumps({'error': 'User %s doesn\'t own neither the treenode #%s nor the skeleton #%s.\nThe treenode owner is %s, and the skeleton owner is %s.' % (request.user.username, treenode_id, skeleton_id, treenode.user.username, cursor.fetchone()[0])}))
+    # or the skeleton is under fragments
+    if not _under_fragments(skeleton_id):
+        try:
+            # Check if user can edit the skeleton
+            can_edit_or_fail(request.user, skeleton_id, "class_instance")
+        except:
+            # Check if user can edit the treenode
+            can_edit_or_fail(request.user, treenode_id, "treenode")
 
     project_id=int(project_id)
 
@@ -621,7 +625,9 @@ def _under_fragments(skeleton_id):
 @requires_user_role(UserRole.Annotate)
 def join_skeleton(request, project_id=None):
     """ An user with an Annotate role can join two skeletons if he owns the child
-    skeleton. A superuser can join any.
+    skeleton. A superuser can join any. Skeletons under the "Fragments" or "Isolated
+    Synaptic Terminals" can be joined by anyone. If all nodes fall within the user domain,
+    even though the skeleton is owned by someone else, the join is allowed.
     """
     response_on_error = 'Failed to join'
     try:
@@ -653,33 +659,29 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
     try:
         to_treenode_id = int(to_treenode_id)
         cursor = connection.cursor()
-        cursor.execute('''
-        SELECT class_instance.user_id,
-               treenode.skeleton_id,
-               treenode.user_id
-        FROM class_instance,
-             treenode
-        WHERE treenode.id = %s
-          AND treenode.skeleton_id = class_instance.id
-        ''' % to_treenode_id)
-        to_skeleton_user_id, to_skid, to_treenode_user_id = cursor.fetchone()
+        cursor.execute('SELECT skeleton_id FROM treenode WHERE id = %s' % to_treenode_id)
+        rows = tuple(cursor.fetchall())
+        if not rows:
+            raise Exception("Could not find a skeleton for treenode #%s" % to_treenode_id)
+
+        to_skid = rows[0][0]
 
         # Check if joining is allowed
-        if 0 == Treenode.objects.filter(parent_id=to_treenode_id).count() and Treenode.objects.filter(pk=to_treenode_id).values_list('parent_id')[0][0] is None:
+        if 1 == Treenode.objects.filter(skeleton_id=to_skid).count():
             # Is an isolated node, so it can be joined freely
             pass
-        # If the treenode is not isolated, must own the skeleton or be superuser
-        elif user.is_superuser or user.id == to_skeleton_user_id:
-            pass
-        # If the skeleton is a model_of a neuron that is part_of the 'Fragments' group
-        # or the 'Isolated synaptic terminals' group, then it can be joined
+        # If the treenode is not isolated, the skeleton must be under fragments, or the user must own the skeleton or be superuser
         elif _under_fragments(to_skid):
             pass
-        # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes also belong to the user (such a situation occurs when the user ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
-        elif user.id == to_treenode_user_id and 0 == Treenode.objects.filter(skeleton_id=to_skid).exclude(user=user).count():
-            pass
         else:
-            raise Exception("User %s with id #%s cannot join skeleton #%s, because the user doesn't own the skeleton or the skeleton contains nodes that belong to someone else." % (user.username, user.id, to_skid))
+            try:
+                can_edit_or_fail(user, to_skid, "class_instance")
+            except Exception:
+                # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes are editable by the user (such a situation occurs when the user domain ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
+                can_edit_or_fail(user, to_treenode_id, "treenode")
+                if Treenode.objects.filter(skeleton_id=to_skid).exclude(user__in=user_domain(cursor, user.id)).count() > 0:
+                    # There are at least some nodes that the user can't edit
+                    raise Exception("User %s with id #%s cannot join skeleton #%s, because the user doesn't own the skeleton or the skeleton contains nodes that belong to users outside of the user's domain." % (user.username, user.id, to_skid))
 
         from_treenode_id = int(from_treenode_id)
         from_treenode = Treenode.objects.get(pk=from_treenode_id)

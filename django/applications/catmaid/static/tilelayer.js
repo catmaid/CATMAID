@@ -443,7 +443,7 @@ function TileLayer(
 				var wt = parseInt(tiles[ii][jj].style.width,10);
 				var ht = parseInt(tiles[ii][jj].style.height,10);
 
-				if( tt <== hh && tt+ht > hh && lt < ww && lt+wt > ww)//this is the correct tile
+				if( (tt <= hh) && (tt+ht > hh) && (lt < ww) && (lt+wt > ww))//this is the correct tile
 				{
 					aa = ii;
 					bb = jj;

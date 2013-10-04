@@ -1814,8 +1814,9 @@ var SkeletonAnnotations = new function()
     {
       var lVal = 0;
 
-      while( lVal < 80 )//255 is the maximum. To make sure we land in a pixel with fluorescence
-      {
+	//too much empty space: ti usually hits empty spot (plus ther emight be some bug in getting position)
+      //while( lVal < 80 )//255 is the maximum. To make sure we land in a pixel with fluorescence
+      //{
           var xx = Math.random() * stack.dimension.x * stack.resolution.x + stack.translation.x;
           var yy = Math.random() * stack.dimension.y * stack.resolution.y + stack.translation.y;
           var zz = Math.random() * stack.dimension.z * stack.resolution.z + stack.translation.z;
@@ -1823,8 +1824,8 @@ var SkeletonAnnotations = new function()
           stack.getProject().moveTo5D(zz, yy , xx , undefined, stack.t, stack.c,
                                   undefined);
 
-          lVal = stack.getLayer('TileLayer').getTilePixelValueScreenCenter();
-      }
+       //   lVal = stack.getLayer('TileLayer').getTilePixelValueScreenCenter();
+      //}
     }
 
     this.goToNextBranchOrEndNode = function(treenode_id, e) {

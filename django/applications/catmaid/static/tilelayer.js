@@ -281,7 +281,191 @@ function TileLayer(
 
 		return 2;
 	}
+
+	/**
+	*gets pixel value from image at (x,y) temporalily creating a canvas object
+	*/
+	this.getPixelValue = function(image,x,y)
+	{
+		rgba = new Array();
+		rgba[0] = -1;//dumb initialization
+		rgba[1] = -1;
+		rgba[2] = -1;
+		rgba[3] = -1;
+		var rgba = [-1, -1, -1, -1];
+		if( !image.width || !image.height ){
+			return rgba;
+		}
+
+		var canvasFA = document.createElement('canvas');
+		//document.body.appendChild(canvasFA);
+		//var canvasFA = document.getElementById('canvasFA');
+		var ctx = canvasFA.getContext('2d');
+		canvasFA.width = image.width;
+    	canvasFA.height = image.height;
+    	ctx.drawImage(image, 0, 0, image.width, image.height);
+    	//console.log("x=" + x + ";y=" + y);
+    	//console.log("width=" + image.width + ";height=" + image.height);
+    	var imageData = ctx.getImageData(0, 0, canvasFA.width, canvasFA.height);
+
+
+    	//To read the values of a pixel, you write this code:
+		var pixelIndex = 4 * (x + y * image.width);
+		rgba[0] = imageData.data[pixelIndex    ];  // red   color
+		rgba[1] = imageData.data[pixelIndex + 1];  // green color
+		rgba[2] = imageData.data[pixelIndex + 2];  // blue  color
+		rgba[3] = imageData.data[pixelIndex + 3];  //alpha blending
+		//destroy canvas
+		canvasFA.remove();
+
+		return rgba;
+	}
+
+	/**
+	*gets max luminsoity value in a certain area
+	*/
+	this.getPixelValueMaxLuminosity = function(image,x,y, winSize)
+	{
+		var l = -1;
+		if( !image.width || !image.height ){
+			return l;
+		}
+
+		var canvasFA = document.createElement('canvas');
+		//document.body.appendChild(canvasFA);
+		//var canvasFA = document.getElementById('canvasFA');
+		var ctx = canvasFA.getContext('2d');
+		canvasFA.width = image.width;
+    	canvasFA.height = image.height;
+    	ctx.drawImage(image, 0, 0, image.width, image.height);
+    	//console.log("x=" + x + ";y=" + y);
+    	//console.log("width=" + image.width + ";height=" + image.height);
+    	var imageData = ctx.getImageData(0, 0, canvasFA.width, canvasFA.height);
+
+
+    	var rgba = [-1,-1,-1,-1];
+    	for( var ii = -winSize; ii < winSize; ++ii)
+		{
+			var pixelIndex = 4 * (x + ii + y  * image.width);
+			for( var jj = -winSize; jj < winSize; ++jj)
+			{
+				if( x+ii >= 0 && y+jj>=0 && x+ii<image.width && y+jj<image.height)
+				{
+					
+					rgba[0] = imageData.data[pixelIndex    ];  // red   color
+					rgba[1] = imageData.data[pixelIndex + 1];  // green color
+					rgba[2] = imageData.data[pixelIndex + 2];  // blue  color
+					rgba[3] = imageData.data[pixelIndex + 3];  //alpha blending
+					//luminosity
+					var lAux = 0.21 * rgba[0] + 0.71 * rgba[1] + 0.07 * rgba[2];
+					l = Math.max(l, lAux);		  
+				}else{
+					break;
+				}
+				pixelIndex = pixelIndex + 4;
+			}
+		}
+
+		//====================debug=======================================================
+		/*
+		console.log("===========================================================================")
+		//create website to print array
+		var div = document.getElementById('divDebug');
+		if( div == null) 
+		{
+			div = document.createElement('div');
+			div.id = "divDebug";
+		div.style.left = '0px'; 
+		div.style.top = '1024px';
+		div.style.width = '1024px';
+		div.style.height = '1024px';
+		div.style.position = "absolute"
+		document.body.appendChild(div);
+		}	
+
+		
+		var pixelIndex = 0;
+		var count = 0;
+		var lArray = new Array();
+		for( var ii = 0; ii < image.height; ++ii )
+		{
+			for( var jj = 0; jj < image.width; ++jj )
+			{
+				rgba[0] = imageData.data[pixelIndex    ];  // red   color
+				rgba[1] = imageData.data[pixelIndex + 1];  // green color
+				rgba[2] = imageData.data[pixelIndex + 2];  // blue  color
+				rgba[3] = imageData.data[pixelIndex + 3];  //alpha blending
+				//luminosity
+				var lAux = 0.21 * rgba[0] + 0.71 * rgba[1] + 0.07 * rgba[2];
+				//var lAux = imageData.data[pixelIndex    ];
+
+				lArray[count] = lAux;
+				pixelIndex = pixelIndex + 4;
+				count = count + 1;
+			}
+		}
+		div.appendChild(canvasFA);
+		div.innerHTML = '<p>' + lArray + '</p>';
+		console.log("===========================================================================")
+		*/
+		//================================================================================
+
+
+    	//destroy canvas
+		canvasFA.remove();
+
+		return l;
+	}
 	
+	/**
+	* gets the pi
+	*/
+	this.getTilePixelValueScreenCenter = function()
+	{
+
+		//find center (in pixels) of current tile screen
+		var CMW0 = document.getElementById("CMW0");//div containing tiles
+		var hh = parseInt(CMW0.style.height,10) / 2;//height and width (in pixels) of the tile area
+		var ww = parseInt(CMW0.style.width,10) / 2;
+
+		//find which tile and at which (x,y) I need to retrieve
+		var aa = 0;
+		var bb = 0;
+		var x = 0;
+		var y = 0;
+		var foundTile = false;
+		for ( var ii = 0; ii < tiles.length; ++ii )
+		{
+			for ( var jj = 0; jj < tiles[0].length; ++jj )
+			{
+				var tt = parseInt(tiles[ii][jj].style.top,10);
+				var lt = parseInt(tiles[ii][jj].style.left,10);
+				var wt = parseInt(tiles[ii][jj].style.width,10);
+				var ht = parseInt(tiles[ii][jj].style.height,10);
+
+				if( tt <== hh && tt+ht > hh && lt < ww && lt+wt > ww)//this is the correct tile
+				{
+					aa = ii;
+					bb = jj;
+					y = Math.floor(hh - tt);//y is related to height of image
+					x = Math.floor(ww - lt);//x is related to width of image
+					foundTile = true;
+					break;
+				}
+			}
+			if( foundTile === true ){
+				break;
+			}
+		}
+
+		//look in a window around the center
+		var l = self.getPixelValueMaxLuminosity(tiles[aa][bb],x,y,10);
+
+		//-------------------------debug-------------------
+    	//console.log("====Value at center (" + x + "," + y + ") is l = " + l + " ==============");
+
+		return l;
+	}
 
 	/**
 	 * same as redraw() but for XZ plane in the tracing triview. Basically we change Y<->Z

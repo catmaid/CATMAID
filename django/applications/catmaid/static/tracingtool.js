@@ -609,9 +609,9 @@ not needed for cell tracking
   }) );
 
 this.addAction( new Action({
-    helpText: "Go to a random location in the current time point and channel",//if there is more, the first one is chosen
+    helpText: "Go to a random location in the current time point and channel",
     keyShortcuts: {
-      "F": [ 70 ] //depending if shift is down or up it will go to left or right child
+      "F": [ 70 ] 
     },
     run: function (e) {
       if (!mayView())

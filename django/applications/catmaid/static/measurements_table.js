@@ -17,7 +17,7 @@ var SkeletonMeasurementsTable = new function() {
       "iDisplayLength": -1,
       "oTableTools": {
         "sSwfPath": STATIC_URL_JS + "libs/tabletools/swf/copy_csv_xls_pdf.swf",
-        "aButtons": [ "copy", "csv", "pdf" ]
+        "aButtons": [ "copy", "csv" ]
       },
       "aLengthMenu": [
         [-1, 10, 100, 200],

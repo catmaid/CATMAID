@@ -179,7 +179,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
                                  'label': "%s [%s]" % (names[skid], i+1),
                                  'skeleton_id': skid,
                                  'node_count': len(g),
-                                 'node_reviewed_count': len([k for k,v in g.nodes(data=True) if v['reviewer_id'] != -1]),
+                                 'node_reviewed_count': len([k for k,v in g.nodes(data=True) if v.get('reviewer_id', -1) != -1]),
                                  'branch': False})
             i += 1
             

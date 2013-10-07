@@ -63,6 +63,4 @@ def load_skeletonlist(request, project_id=None):
     skellist = [q.class_instance_a.id for q in qs]
     skelneuronname = [q.class_instance_b.name + ' (Skeleton ID: ' + str(q.class_instance_a.id) + ')' for q in qs]
 
-    print skellist, skelneuronname
-
     return HttpResponse(json.dumps({'skeletonlist': skellist, 'neuronname': skelneuronname}))

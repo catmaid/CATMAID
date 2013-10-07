@@ -9,16 +9,12 @@ var SkeletonMeasurementsTable = new function() {
     table = $('#skeleton_measurements_table').dataTable({
       // http://www.datatables.net/usage/options
       "bDestroy": true,
-      "sDom": 'T<"clear"><"H"lr>t<"F"ip>',
+      "sDom": '<"H"lr>t<"F"ip>',
       // default: <"H"lfr>t<"F"ip>
       "bProcessing": true,
       "bServerSide": false, // Enable sorting locally, and prevent sorting from calling the fnServerData to reload the table -- an expensive and undesirable operation.
       "bAutoWidth": false,
       "iDisplayLength": -1,
-      "oTableTools": {
-        "sSwfPath": STATIC_URL_JS + "libs/tabletools/swf/copy_csv_xls_pdf.swf",
-        "aButtons": [ "copy", "csv" ]
-      },
       "aLengthMenu": [
         [-1, 10, 100, 200],
         ["All", 10, 100, 200]

@@ -136,7 +136,7 @@ var CompartmentGraphWidget = new function()
                 "content": "data(label)",
                 "shape": "data(shape)",
                 "border-width": 1,
-                "background-color": "data(color)", //#DDD",
+                "background-color": "data(color)",
                 "border-color": "#555",
                 "width": "mapData(node_count, 10, 2000, 30, 50)", //"data(node_count)",
                 "height": "mapData(node_count, 10, 2000, 30, 50)"   // "data(node_count)"
@@ -149,7 +149,6 @@ var CompartmentGraphWidget = new function()
                 // "source-arrow-shape": "circle",
                 "line-color": "data(color)",
                 "opacity": 0.4,
-                
               })
             .selector(":selected")
               .css({
@@ -265,7 +264,28 @@ var CompartmentGraphWidget = new function()
       data.nodes[i]['data']['color'] = '#' + NeuronStagingArea.get_color_of_skeleton( parseInt(data.nodes[i]['data'].id) ).getHexString();
     }
 
+    var grey = [0, 0, 0.267]; // HSV for #444
+    var red = [0, 1, 1]; // HSV for #F00 
+    var max = 0.75;
+    var min = 0.0;
+
     for (var i=0; i<data.edges.length; i++) {
+      var d = data.edges[i].data;
+      if (d.risk) {
+        /*
+        var hsv = [0,
+                   d.risk > 0.75 ? 0 : 1 - d.risk / 0.75,
+                   d.risk > 0.75 ? 0.267 : 1.267 - d.risk / 0.75]; 
+        */
+        // TODO how to convert HSV to RGB hex?
+        d.color = '#444';
+        d.label += ' (' + d.risk.toFixed(2) + ')';
+      } else {
+        d.color = '#444';
+      }
+      if (d.arrow === 'none') {
+        d.color = '#F00';
+      }
       console.log(data.edges[i].data.source,
                   data.edges[i].data.target,
                   data.edges[i].data.risk);

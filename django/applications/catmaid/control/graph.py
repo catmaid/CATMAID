@@ -209,7 +209,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                                     edge_props['pre_treenodes'].append(pre_treenode)
                                     edge_props['post_treenodes'].append(post_treenode)
                                 else:
-                                    circuit.add_edge(pre_arbor, post_arbor, {'c': 1, 'pre_treenodes': [pre_treenode], 'post_treenodes': [post_treenode], 'arrow': 'triangle', 'color': '#444', 'directed': True})
+                                    circuit.add_edge(pre_arbor, post_arbor, {'c': 1, 'pre_treenodes': [pre_treenode], 'post_treenodes': [post_treenode], 'arrow': 'triangle', 'directed': True})
                                 break
                     break
 
@@ -282,7 +282,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                 for node1, node2 in mini.edges_iter():
                     g1 = mini.node[node1]['g']
                     g2 = mini.node[node2]['g']
-                    circuit.add_edge(g1, g2, {'c': 10, 'arrow': 'none', 'color': '#F00', 'directed': False})
+                    circuit.add_edge(g1, g2, {'c': 10, 'arrow': 'none', 'directed': False})
 
     return circuit
 
@@ -296,7 +296,7 @@ def skeleton_graph(request, project_id=None):
     cable_spread = float(request.POST.get('cable_spread', 2500)) # in nanometers
     path_confluence = int(request.POST.get('path_confluence', 10)) # a count
     circuit = _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, cable_spread, path_confluence)
-    package = {'nodes': [{'data': props} for digraph, props in circuit.nodes_iter(data=True)],
+    package = {'nodes': [{'data': props} for props in circuit.node.itervalues()],
                'edges': []}
     edges = package['edges']
     for g1, g2, props in circuit.edges_iter(data=True):
@@ -309,7 +309,6 @@ def skeleton_graph(request, project_id=None):
                                'label': str(props['c']) if props['directed'] else None,
                                'directed': props['directed'],
                                'arrow': props['arrow'],
-                               'color': props['color'],
                                'risk': props.get('risk')}})
 
     return HttpResponse(json.dumps(package))

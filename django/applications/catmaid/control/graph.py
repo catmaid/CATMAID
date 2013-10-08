@@ -251,7 +251,6 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
             #    if post_arbor == arbor:
             #        tc = arbor.treenode_synapse_counts
             tc = post_arbor.treenode_synapse_counts
-            print "Spanning:", spanning
             maximum_synapse_centrality = max(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())
             cable = cable_length(spanning, locations)
             if -1 == maximum_synapse_centrality:

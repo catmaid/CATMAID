@@ -185,6 +185,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                 continue
             if tag:
                 label = "%s [%s]" % (base_label, i+1)
+            else:
+                label = base_label
             circuit.add_node(g, {'id': "%s_%s" % (skid, i+1),
                                  'label': label,
                                  'skeleton_id': skid,

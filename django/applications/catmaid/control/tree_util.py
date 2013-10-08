@@ -187,7 +187,7 @@ def spanning_tree(tree, preserve):
     return spanning
 
 def cable_length(tree, locations):
-    """ locations: a dictionary of nodeID vs tuple of node position (1d, 2d, 3d, ...)
+    """ locations: a dictionary of nodeID vs iterable of node position (1d, 2d, 3d, ...)
     Returns the total cable length. """
     return sum(sqrt(sum(pow(loc2 - loc1, 2) for loc1, loc2 in izip(locations[a], locations[b]))) for a,b in tree.edges_iter())
 

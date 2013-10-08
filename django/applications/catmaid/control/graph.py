@@ -147,7 +147,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
     locations = None
     if bandwidth > 0:
         whole_arbors = arbors
-        locations = {row[0]: eval(row[4]) for row in rows}
+        locations = {row[0]: imap(float, row[4][1:-1].split(',')) for row in rows}
         treenode_connector = defaultdict(list)
         for connector_id, pp in connectors.iteritems():
             for treenode_id in chain.from_iterable(pp[relations['presynaptic_to']]):
@@ -236,7 +236,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                 arbor.treenode_synapse_counts = tc
 
         if not locations:
-            locations = {row[0]: eval(row[4]) for row in rows}
+            locations = {row[0]: imap(float, row[4][1:-1].split(',')) for row in rows}
 
         # Estimate the risk factor of the edge between two arbors,
         # as a function of the number of synapses and their location within the arbor.
@@ -251,6 +251,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
             #    if post_arbor == arbor:
             #        tc = arbor.treenode_synapse_counts
             tc = post_arbor.treenode_synapse_counts
+            print "Spanning:", spanning
             maximum_synapse_centrality = max(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())
             cable = cable_length(spanning, locations)
             if -1 == maximum_synapse_centrality:

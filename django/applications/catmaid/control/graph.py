@@ -147,7 +147,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
     locations = None
     if bandwidth > 0:
         whole_arbors = arbors
-        locations = {row[0]: imap(float, row[4][1:-1].split(',')) for row in rows}
+        locations = {row[0]: tuple(imap(float, row[4][1:-1].split(','))) for row in rows}
         treenode_connector = defaultdict(list)
         for connector_id, pp in connectors.iteritems():
             for treenode_id in chain.from_iterable(pp[relations['presynaptic_to']]):

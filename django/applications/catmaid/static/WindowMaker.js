@@ -625,23 +625,6 @@ var WindowMaker = new function()
     props.onclick = CompartmentGraphWidget.graph_properties;
     contentbutton.appendChild(props);
 
-    contentbutton.appendChild(document.createTextNode('Text: '));
-    var toggleNames = document.createElement('input');
-    toggleNames.setAttribute("type", "checkbox");
-    toggleNames.setAttribute("id", "graph_toggle_names");
-    toggleNames.setAttribute("label", "Toggle names");
-    toggleNames.checked = true;
-    toggleNames.onclick = CompartmentGraphWidget.toggle_show_node_labels;
-    contentbutton.appendChild(toggleNames);
-
-    contentbutton.appendChild(document.createTextNode('Short: '));
-    var toggleShortNames = document.createElement('input');
-    toggleShortNames.setAttribute("type", "checkbox");
-    toggleShortNames.setAttribute("id", "graph_toggle_short_names");
-    toggleShortNames.setAttribute("label", "Crop names at semicolon");
-    toggleShortNames.onclick = CompartmentGraphWidget.toggleCutNamesAtSemiColon;
-    contentbutton.appendChild(toggleShortNames);
-
     var gml = document.createElement('input');
     gml.setAttribute("type", "button");
     gml.setAttribute("value", "Export GML");

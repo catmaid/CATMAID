@@ -11,6 +11,7 @@ var CompartmentGraphWidget = new function()
   var confidence_threshold = 0,
       synaptic_count_edge_filter = 0, // value equal or higher than this number or kept
       show_node_labels = true,
+      trim_node_labels = false;
       clustering_bandwidth = 0;
 
   this.toggle_show_node_labels = function() {
@@ -77,12 +78,20 @@ var CompartmentGraphWidget = new function()
     var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "show_node_labels");
-    rand.setAttribute("value", "Show node labels");
     if( show_node_labels )
       rand.setAttribute("checked", "true");
     rand.onclick = self.toggle_show_node_labels;
     dialog.appendChild(rand);
     dialog.appendChild( document.createElement("br"));
+
+    dialog.appendChild(document.createTextNode('Trim node labels:'));
+    var check = document.createElement('input');
+    check.setAttribute('type', 'checkbox');
+    check.setAttribute('id', 'graph_toggle_short_names');
+    if (trim_node_labels) check.setAttribute('checked', 'true');
+    check.onclick = self.toggleTrimmedNodeLabels;
+    dialog.appendChild(check);
+    dialog.appendChild(document.createElement("br"));
 
     $(dialog).dialog({
       height: 440,
@@ -310,9 +319,9 @@ var CompartmentGraphWidget = new function()
     }
 
     // if text is to be short, render as short
-    if ($('#graph_toggle_short_names').attr('checked')) {
+    if (trim_node_labels || $('#graph_toggle_short_names').attr('checked')) {
       delete this.originalNames;
-      this.toggleCutNamesAtSemiColon();
+      this.toggleTrimmedNodeLabels();
     }
 
     this.updateLayout( 0 );
@@ -342,8 +351,9 @@ var CompartmentGraphWidget = new function()
     });
   };
 
-  this.toggleCutNamesAtSemiColon = function() {
+  this.toggleTrimmedNodeLabels = function() {
     if (this.originalNames) {
+      trim_node_labels = false;
       // Restore
       var originalNames = this.originalNames;
       cy.nodes().each(function(i, element) {
@@ -354,6 +364,7 @@ var CompartmentGraphWidget = new function()
       delete this.originalNames;
     } else {
       // Crop at semicolon
+      trim_node_labels = true;
       this.originalNames = {};
       var originalNames = this.originalNames;
       cy.nodes().each(function(i, element) {

@@ -176,13 +176,17 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
     circuit = nx.DiGraph()
 
     for skid, digraphs in arbors.iteritems():
+        base_label = names[skid]
+        tag = len(digraphs) > 1
         i = 0
         for g in digraphs:
             if g.number_of_nodes() == 0:
                 print "no nodes in g, from skeleton ID #%s" % skid
                 continue
+            if tag:
+                label = "%s [%s]" % (base_label, i+1)
             circuit.add_node(g, {'id': "%s_%s" % (skid, i+1),
-                                 'label': "%s [%s]" % (names[skid], i+1),
+                                 'label': label,
                                  'skeleton_id': skid,
                                  'node_count': len(g),
                                  'node_reviewed_count': sum(1 for v in g.node.itervalues() if -1 != v.get('reviewer_id', -1)), # TODO when bandwidth > 0, not all nodes are included. Tey will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)

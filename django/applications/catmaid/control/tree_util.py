@@ -146,6 +146,7 @@ def spanning_tree(tree, preserve):
     """ Return a new DiGraph with the spanning tree including the desired nodes.
     preserve: the set of nodes that delimit the spanning tree. """
     spanning = DiGraph()
+    preserve = set(preserve) # duplicate, will be altered
     if 1 == len(preserve):
         spanning.add_node(iter(preserve).next())
         return spanning
@@ -156,7 +157,6 @@ def spanning_tree(tree, preserve):
         endNode = (node for node in tree if not next(tree.successors_iter(node), None)).next()
         reroot(tree, endNode)
 
-    preserve = set(preserve) # duplicate, will be altered
     n_seen = 0
 
     # Start from shortest sequence

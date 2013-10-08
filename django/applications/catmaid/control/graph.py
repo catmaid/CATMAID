@@ -6,7 +6,7 @@ from catmaid.models import Relation
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
-from itertools import chain, ifilter
+from itertools import chain, ifilter, imap
 from functools import partial
 from synapseclustering import tree_max_density
 from numpy import subtract

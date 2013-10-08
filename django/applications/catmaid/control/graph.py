@@ -185,7 +185,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                                  'label': "%s [%s]" % (names[skid], i+1),
                                  'skeleton_id': skid,
                                  'node_count': len(g),
-                                 'node_reviewed_count': sum(1 for v in g.node.itervalues() if -1 != v.get('reviewer_id', -1)) # TODO when bandwidth > 0, not all nodes are included. Tey will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
+                                 'node_reviewed_count': sum(1 for v in g.node.itervalues() if -1 != v.get('reviewer_id', -1)), # TODO when bandwidth > 0, not all nodes are included. Tey will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
                                  'branch': False})
             i += 1
 

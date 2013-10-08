@@ -346,7 +346,7 @@ var CompartmentGraphWidget = new function()
       var edge = this;
       var splitedge = edge.id().split('_');
       if (evt.originalEvent.shiftKey) {
-        ConnectorSelection.show_shared_connectors( splitedge[0], splitedge[2] );
+        ConnectorSelection.show_shared_connectors( splitedge[0], [splitedge[2]], "presynaptic_to" );
       }
     });
   };

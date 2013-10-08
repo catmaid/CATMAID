@@ -240,6 +240,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
 
         # Estimate the risk factor of the edge between two arbors,
         # as a function of the number of synapses and their location within the arbor.
+        # Algorithm by Casey Schneider-Mizell
+        # Implemented by Albert Cardona
         for pre_arbor, post_arbor, edge_props in circuit.edges_iter(data=True):
             if pre_arbor == post_arbor:
                 # Signal autapse

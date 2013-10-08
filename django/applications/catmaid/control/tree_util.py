@@ -11,7 +11,7 @@ def find_root(tree):
     Will be the root node in directed graphs.
     Avoids one database lookup. """
     for node in tree:
-        if 0 == len(tree.predecessors(node)):
+        if not next(tree.predecessors_iter(node), None):
             return node
 
 def edge_count_to_root(tree, root_node=None):
@@ -25,53 +25,49 @@ def edge_count_to_root(tree, root_node=None):
         while current_level:
             node = current_level.pop()
             distances[node] = count
-            next_level.extend(tree.successors(node)) # successors is the empty list when none
+            next_level.extend(tree.successors_iter(node))
         # Rotate lists (current_level is now empty)
         current_level, next_level = next_level, current_level
         count += 1
     return distances
 
-def find_common_ancestor(tree, nodes, ds=None):
+def find_common_ancestor(tree, nodes, ds=None, root_node=None):
     """ Return the node in tree that is the nearest common ancestor to all nodes.
     Assumes that nodes contains at least 1 node.
     Assumes that all nodes are present in tree.
     Returns a tuple with the ancestor node and its distance to root. """
     if 1 == len(nodes):
         return nodes[0], 0
-    distances = ds if ds else edge_count_to_root(tree)
+    distances = ds if ds else edge_count_to_root(tree, root_node=root_node)
     # Pick the pair with the shortest edge count to root
     first, second = sorted({node: distances(node) for node in nodes}.iteritems(), key=itemgetter(1))[:2]
     # Start from the second, and bring it to an edge count equal to the first
     while second[1] < first[1]:
-        second = (tree.predecessors(second[0])[0], second[1] - 1)
+        second = (tree.predecessors_iter(second[0]).next(), second[1] - 1)
     # Walk parents up for both until finding the common ancestor
     first = first[0]
     second = second[0]
     while first != second:
-        first = tree.predecessors(first)[0]
-        second = tree.predecessors(second)[0]
+        first = tree.predecessors_iter(first).next()
+        second = tree.predecessors_iter(second).next()
     return first, distances[first]
 
 def find_common_ancestors(tree, node_groups):
     distances = edge_count_to_root(tree)
-    return [find_common_ancestor(tree, nodes, ds=distances) for nodes in node_groups]
+    return (find_common_ancestor(tree, nodes, ds=distances) for nodes in node_groups)
 
 def reroot(tree, new_root):
     """ Reverse in place the direction of the edges from the new_root to root. """
-    parents = tree.predecessors(new_root)
-    if not parents:
+    parent = next(tree.predecessors_iter(new_root), None)
+    if not parent:
         # new_root is already the root
         return
-    child = new_root
-    edges = []
-    while parents:
-        parent = parents[0]
-        tree.remove_edge(parent, child)
-        edges.append((child, parent))
-        parents = tree.predecessors(parent)
-        child = parent
-    for parent, child in edges:
-        tree.add_edge(parent, child)
+    path = [new_root]
+    while parent is not None:
+        tree.remove_edge(parent, path[-1])
+        path.append(parent)
+        parent = next(tree.predecessors_iter(parent), None)
+    tree.add_path(path)
 
 def simplify(tree, keepers):
     """ Given a tree and a set of nodes to keep, create a new tree
@@ -96,21 +92,20 @@ def simplify(tree, keepers):
     for node in keepers:
         path = [node]
         paths.append(path)
-        parents = tree.predecessors(node)
-        while parents:
-            parent = parents[0]
+        parent = next(tree.predecessors_iter(node), None)
+        while parent is not None:
             if parent in mini:
                 # Reached one of the keeper nodes
                 path.append(parent)
                 break
-            elif len(tree.successors(parent)) > 1:
+            elif len(tree.succ[parent]) > 1:
                 # Reached a branch node
                 children[parent] += 1
                 path.append(parent)
                 if parent in seen_branch_nodes:
                     break
                 seen_branch_nodes.add(parent)
-            parents = tree.predecessors(parent)
+            parent = next(tree.predecessors_iter(parent), None)
     for path in paths:
         # A path starts and ends with desired nodes for the minified tree.
         # The nodes in the middle of the path are branch nodes
@@ -131,23 +126,20 @@ def partition(tree, root_node=None):
     Each sequence runs from an end node to either the root or a branch node. """
     distances = edge_count_to_root(tree, root_node=root_node) # distance in number of edges from root
     seen = set()
-    sequences = [] # TODO use yield instead
     # Iterate end nodes sorted from highest to lowest distance to root
     endNodeIDs = (nID for nID in tree.nodes() if 0 == len(tree.successors(nID)))
     for nodeID in sorted(endNodeIDs, key=distances.get, reverse=True):
         sequence = [nodeID]
-        parents = tree.predecessors(nodeID)
-        while parents:
-            parentID = parents[0]
+        parentID = next(tree.predecessors_iter(nodeID), None)
+        while parentID is not None:
             sequence.append(parentID)
             if parentID in seen:
                 break
             seen.add(parentID)
-            parents = tree.predecessors(parentID)
+            parentID = next(tree.predecessors_iter(parentID), None)
 
         if len(sequence) > 1:
-            sequences.append(sequence)
-    return sequences
+            yield sequence
 
 
 def spanning_tree(tree, preserve):
@@ -155,16 +147,16 @@ def spanning_tree(tree, preserve):
     preserve: the set of nodes that delimit the spanning tree. """
     if len(tree.successors(find_root(tree))) > 1:
         tree = tree.copy()
-        endNode = (node for node in tree if not tree.successors(node)).next()
+        # First end node found
+        endNode = (node for node in tree if not next(tree.successors_iter(node), None)).next()
         reroot(tree, endNode)
 
     spanning = DiGraph()
     preserve = set(preserve) # duplicate, will be altered
     n_seen = 0
-    sequences = sorted(partition(tree), key=len)
 
     # Start from shortest sequence
-    for seq in sequences:
+    for seq in sorted(partition(tree), key=len):
         path = []
         for node in seq:
             if node in preserve:

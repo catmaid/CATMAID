@@ -48,41 +48,41 @@ def node_list_tuples(request, project_id=None):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
-    
+
     relation_map = get_relation_to_id_map(project_id)
-    class_map = get_class_to_id_map(project_id)
-
-    if 'skeleton' not in class_map:
-        raise Exception('Can not find "skeleton" class for this project')
-
-    for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of']:
-        if relation not in relation_map:
-            raise Exception('Can not find "%s" relation for this project' % relation)
 
     try:
         cursor = connection.cursor()
+        response_on_error = 'Failed to query treenodes'
+
+        is_superuser = request.user.is_superuser
+        user_id = request.user.id
+
+        # Set of other user_id for which the request user has editing rights on.
+        # For a superuser, the domain is all users, and implicit.
+        domain = None if is_superuser else user_domain(cursor, user_id)
+
         # Fetch treenodes which are in the bounding box,
         # which in z it includes the full thickess of the prior section
         # and of the next section (therefore the '<' and not '<=' for zhigh)
-        response_on_error = 'Failed to query treenodes'
         params['bottom'] = params['top'] + params['height']
         params['right'] = params['left'] + params['width']
         cursor.execute('''
         SELECT
             t1.id,
             t1.parent_id,
-            (t1.location).x AS x,
-            (t1.location).y AS y,
-            (t1.location).z AS z,
+            (t1.location).x,
+            (t1.location).y,
+            (t1.location).z,
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
             t1.user_id,
             t2.id,
             t2.parent_id,
-            (t2.location).x AS x,
-            (t2.location).y AS y,
-            (t2.location).z AS z,
+            (t2.location).x,
+            (t2.location).y,
+            (t2.location).z,
             t2.confidence,
             t2.radius,
             t2.skeleton_id,
@@ -113,20 +113,18 @@ def node_list_tuples(request, project_id=None):
         # A set of unique treenode IDs
         treenode_ids = set()
 
-        is_superuser = request.user.is_superuser
-        user_id = request.user.id
-
         n_retrieved_nodes = 0 # at one per row, only those within the section
         for row in cursor.fetchall():
           n_retrieved_nodes += 1
           t1id = row[0]
           if t1id not in treenode_ids:
               treenode_ids.add(t1id)
-              treenodes.append(row[0:8] + (is_superuser or row[8] == user_id,))
+              treenodes.append(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
           t2id = row[9]
           if t2id not in treenode_ids:
               treenode_ids.add(t2id)
-              treenodes.append(row[9:17] + (is_superuser or row[17] == user_id,))
+              treenodes.append(row[9:17] + (is_superuser or row[17] == user_id or row[17] in domain,))
+
 
         # Find connectors related to treenodes in the field of view
         # Connectors found attached to treenodes
@@ -227,7 +225,7 @@ def node_list_tuples(request, project_id=None):
             connectors[i] = (cid, c[1], c[2], c[3], c[4],
                     [kv for kv in  pre[cid].iteritems()],
                     [kv for kv in post[cid].iteritems()],
-                    is_superuser or c[8] == user_id)
+                    is_superuser or c[8] == user_id or c[8] in domain)
 
 
         # Fetch missing treenodes. These are related to connectors
@@ -254,7 +252,7 @@ def node_list_tuples(request, project_id=None):
 
             for row in cursor.fetchall():
                 treenodes.append(row)
-                treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id,))
+                treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
 
         labels = defaultdict(list)
         if 'true' == request.POST['labels']:

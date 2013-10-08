@@ -26,6 +26,7 @@ function Navigator()
 	var sliders_box = document.getElementById( "sliders_box" );
 	this.input_x = document.getElementById( "x" );		//!< x_input
 	this.input_y = document.getElementById( "y" );		//!< y_input
+	this.checkbox_reflines = document.getElementById( "displayreflines" );
 
 	// Last mouse position for proper zoom with + and -
 	var lastX = 0, lastY = 0;
@@ -525,6 +526,13 @@ function Navigator()
 			}
 			catch ( error ) {}
 		}
+
+		self.checkbox_reflines.checked = userprofile.display_stack_reference_lines;
+		self.checkbox_reflines.onchange = function( e )
+		{
+			self.stack.showReferenceLines( this.checked );
+			return true;
+		};
 		
 		self.updateControls();
 		
@@ -596,6 +604,8 @@ function Navigator()
 			catch ( error ) {}
 		}
 		
+		self.checkbox_reflines.onchange = null;
+
 		self.stack = null;
 		
 		return;

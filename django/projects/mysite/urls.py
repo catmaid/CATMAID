@@ -61,11 +61,11 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
     (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
 
-    (r'^(?P<project_id>\d+)/graphexport/summary-statistics/csv$', 'catmaid.control.graphexport.summary_statistics' ),
-    (r'^(?P<project_id>\d+)/graphexport/nx_json$', 'catmaid.control.graphexport.export_nxjsgraph' ),
-    (r'^(?P<project_id>\d+)/graphexport/graphml$', 'catmaid.control.graphexport.export_graphml' ),
+    (r'^(?P<project_id>\d+)/graphexport/json$', 'catmaid.control.graphexport.export_jsongraph' ),
     (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'catmaid.control.skeletonexport.export_neuroml_level3_v181'),
-        
+    (r'^(?P<project_id>\d+)/tracing/setup/rebuild$', 'catmaid.control.rebuild_tracing_setup_view'),
+    (r'^(?P<project_id>\d+)/tracing/setup/test$', 'catmaid.control.check_tracing_setup_view'),
+
 
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'catmaid.control.adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'catmaid.control.skeletonlist_subgraph'),
@@ -248,6 +248,8 @@ urlpatterns += patterns('',
         'catmaid.control.get_available_relations'),
     (r'^(?P<project_id>%s)/ontology/relations/add$' % (integer),
         'catmaid.control.add_relation_to_ontology'),
+    (r'^(?P<project_id>%s)/ontology/relations/rename$' % (integer),
+        'catmaid.control.rename_relation'),
     (r'^(?P<project_id>%s)/ontology/relations/remove$' % (integer),
         'catmaid.control.remove_relation_from_ontology'),
     (r'^(?P<project_id>%s)/ontology/relations/removeall$' % (integer),
@@ -258,6 +260,8 @@ urlpatterns += patterns('',
         'catmaid.control.get_available_classes'),
     (r'^(?P<project_id>%s)/ontology/classes/add$' % (integer),
         'catmaid.control.add_class_to_ontology'),
+    (r'^(?P<project_id>%s)/ontology/classes/rename$' % (integer),
+        'catmaid.control.rename_class'),
     (r'^(?P<project_id>%s)/ontology/classes/remove$' % (integer),
         'catmaid.control.remove_class_from_ontology'),
     (r'^(?P<project_id>%s)/ontology/classes/removeall$' % (integer),
@@ -330,6 +334,15 @@ urlpatterns += patterns('',
         'catmaid.control.remove_roi_link', name='remove_roi_link'),
     url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer),
         'catmaid.control.get_roi_image', name='get_roi_image'),
+    )
+
+# Clustering
+urlpatterns += patterns('',
+    url(r'^clustering/(?P<workspace_pid>{0})/setup$'.format(integer),
+        'catmaid.control.setup_clustering', name="clustering_setup"),
+    url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),
+        TemplateView.as_view(template_name="catmaid/clustering/display.html"),
+        name="clustering_display"),
     )
 
 if settings.DEBUG:

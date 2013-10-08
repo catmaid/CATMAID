@@ -132,7 +132,7 @@ div.smallMapView_hidden div.smallMapRect div
 	opacity:.25;
 }
 
-div.OverviewLayer
+div.TilelayerControl
 {
 	/*border:solid 2px #0000FF;*/
 	margin:0px;

@@ -57,9 +57,12 @@ var rootWindow;
 var userprofile = {};
 
 var user_permissions = null;
+var user_groups = null;
+
 function checkPermission(p) {
   return user_permissions && user_permissions[p][project.getId()];
 }
+
 function mayEdit() {
   return checkPermission('can_annotate');
 }
@@ -255,7 +258,8 @@ function updateProjects(completionCallback) {
 		if (data.error) {
 			alert(data.error);
 		} else {
-			user_permissions = data;
+			user_permissions = data[0];
+      user_groups = data[1];
 		}
 	}, 'json');
 
@@ -543,34 +547,40 @@ function handle_openProjectStack( status, text, xml )
 					e.tile_source_type,
 					labelupload, // TODO: if there is any
 					e.metadata,
-					userprofile.inverse_mouse_wheel);
+					userprofile.inverse_mouse_wheel,
+					e.orientation );
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
 
 			var tilesource = getTileSource( e.tile_source_type, e.image_base,
 					e.file_extension );
+			var tilelayername = "TileLayer";
 			var tilelayer = new TileLayer(
+					tilelayername,
 					stack,
 					e.tile_width,
 					e.tile_height,
 					tilesource,
-					true);
+					true,
+					1);
 
-			stack.addLayer( "TileLayer", tilelayer );
+			stack.addLayer( tilelayername, tilelayer );
 
 			$.each(e.overlay, function(key, value) {
-				var tilesource2 = getTileSource( value.tile_source_type,
+				var tilesource = getTileSource( value.tile_source_type,
 					value.image_base, value.file_extension );
+				var layer_visibility = false;
+				if( parseInt(value.default_opacity) > 0) 
+					layer_visibility = true;
 				var tilelayer2 = new TileLayer(
+								value.title,
 								stack,
 								value.tile_width,
 								value.tile_height,
-								tilesource2,
-				false);
-				// set default opacity internally
-				tilelayer2.setOpacity( value.default_opacity );
+								tilesource,
+								layer_visibility,
+								value.default_opacity / 100 );
 				stack.addLayer( value.title, tilelayer2 );
-				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
 			});
 
 			// If the requested stack is already loaded, the existing
@@ -578,14 +588,14 @@ function handle_openProjectStack( status, text, xml )
 			stack = project.addStack( stack );
 
 			// refresh the overview handler to also register the mouse events on the buttons
-			stack.overviewlayer.refresh();
+			stack.tilelayercontrol.refresh();
 
 			var tools = {
 				navigator: Navigator,
 				canvastool: CanvasTool,
 				tracingtool: TracingTool,
 				segmentationtool: SegmentationTool,
-        classification_editor: null
+				classification_editor: null
 			};
 
 			//! if the stack was initialized by an URL query, move it to a given position
@@ -627,7 +637,7 @@ function handle_openProjectStack( status, text, xml )
 			{
 				var tool = tools[ inittool ];
 				if ( tool )
-					project.setTool( tool );
+					project.setTool( new tool() );
 			}
 
 			/* Update the projects "current project" menu. If there is more

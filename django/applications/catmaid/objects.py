@@ -211,7 +211,6 @@ class Skeleton(object):
         else:
             return 0.0
 
-
 class SkeletonGroup(object):
 
     def __init__(self, skeleton_id_list, project_id):

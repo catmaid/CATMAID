@@ -1232,17 +1232,23 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback, futur
        atnid: atnid,
        labels: self.getLabelStatus()},
       function(json) {
-        self.refreshNodesFromTuples(json, pz);
+        if (json.needs_setup) {
+            display_tracing_setup_dialog(project.id, json.has_needed_permissions,
+                json.missing_classes, json.missing_relations,
+                json.missing_classinstances);
+        } else {
+          self.refreshNodesFromTuples(json, pz);
 
-        // initialization hack for "URL to this view"
-        if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
-          self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
-          delete SkeletonAnnotations.init_active_node_id;
-        }
+          // initialization hack for "URL to this view"
+          if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
+            self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
+            delete SkeletonAnnotations.init_active_node_id;
+          }
 
-        stack.redraw();
-        if (typeof callback !== "undefined") {
-          callback();
+          stack.redraw();
+          if (typeof callback !== "undefined") {
+            callback();
+          }
         }
       },
       false,
@@ -1359,10 +1365,15 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
           [0, 1, 2, 3, 4],
           self.editRadius_defaultValue);
         dialog.onOK = function() {
+          var radius = parseFloat(input.value);
+          if (isNaN(radius)) {
+            alert("Invalid number: '" + input.value + "'");
+            return;
+          }
           self.editRadius_defaultValue = choice.selectedIndex;
           self.submit(
             django_url + project.id + '/treenode/' + treenode_id + '/radius',
-            {radius: parseFloat(input.value),
+            {radius: radius,
              option: choice.selectedIndex},
             function(json) {
               var skeleton_id = self.nodes[treenode_id].skeleton_id;

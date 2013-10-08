@@ -12,9 +12,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset
 
 from catmaid.models import Project, UserRole
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
-from catmaid.control.common import json_error_response, cursor_fetch_dictionary
+from catmaid.control.common import json_error_response
 from catmaid.control.common import my_render_to_response
 
 from django.contrib.auth import authenticate, logout, login
@@ -193,8 +193,12 @@ def user_project_permissions(request):
                 if permName not in result:
                     result[permName] = {}
                 result[permName][project_id] = permName in userPerms
+        # Obtain the list of groups of the user
+        groups = list(Group.objects.filter(user=request.user).values_list('name', flat=True))
+    else:
+        groups = []
 
-    return HttpResponse(json.dumps(result))
+    return HttpResponse(json.dumps((result, groups)))
 
 
 def can_edit_or_fail(user, ob_id, table_name):
@@ -212,12 +216,21 @@ def can_edit_or_fail(user, ob_id, table_name):
     cursor.execute("SELECT user_id FROM %s WHERE id=%s" % (table_name, ob_id))
     rows = tuple(cursor.fetchall())
     if rows:
+        # Implicit: a super user belongs to all users' groups
         if user.is_superuser:
             return True
-        if 1 == len(rows) and rows[0][0] == user.id:
-            return True
+        if 1 == len(rows):
+            # Implicit: a user belongs to its own group
+            owner_id = rows[0][0]
+            if owner_id == user.id:
+                return True
+            # Check if the user belongs to a group with the name of the owner
+            if user_can_edit(cursor, user.id, owner_id):
+                return True
+
         raise Exception('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))
     raise ObjectDoesNotExist('Object #%s not found in table %s' % (ob_id, table_name))
+
 
 def can_edit_all_or_fail(user, ob_ids, table_name):
     """ Returns true if the user owns all the objects or if the user is a superuser.
@@ -233,14 +246,60 @@ def can_edit_all_or_fail(user, ob_ids, table_name):
     cursor = connection.cursor()
     cursor.execute("SELECT user_id, count(user_id) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
     rows = tuple(cursor.fetchall())
+    # Check that all ids to edit exist
     if rows and len(ob_ids) == sum(row[1] for row in rows):
         if user.is_superuser:
             return True
         if 1 == len(rows) and rows[0][0] == user.id:
             return True
+        # If more than one user, check if the request.user can edit them all
+        # In other words, check if the set of user_id associated with ob_ids is a subset of the user's domain (the set of user_id that the user can edit)
+        if set(row[0] for row in rows).issubset(user_domain(cursor, user.id)):
+            return True
+
         raise Exception('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
     raise ObjectDoesNotExist('One or more of the %s unique objects were not found in table %s' % (len(ob_ids), table_name))
 
+
+def user_can_edit(cursor, user_id, other_user_id):
+    """ Determine whether the user with id 'user_'id' can edit the work of the user with id 'other_user_id'. This will be the case when the user_id belongs to a group whose name is identical to ther username of other_user_id.
+    This function is equivalent to 'other_user_id in user_domain(cursor, user_id), but consumes less resources."""
+    # The group with identical name to the username is implicit, doesn't have to exist. Therefore, check this edge case before querying:
+    if user_id == other_user_id:
+        return True
+    # Retrieve a value larger than zero when the user_id belongs to a group with name equal to that associated with other_user_id
+    cursor.execute("""
+    SELECT count(*)
+    FROM auth_user u,
+         auth_group g,
+         auth_user_groups ug
+    WHERE u.id = %s
+      AND u.username = g.name
+      AND g.id = ug.group_id
+      AND ug.user_id = %s
+    """ % (other_user_id, user_id))
+    rows = cursor.fetchall()
+    return rows and rows[0][0] > 0
+
+
+def user_domain(cursor, user_id):
+    """ This function returns the set of all other user_id, including the self, that the user has edit rights on via group membership.
+    A user can edit nodes of other user(s) when the user belongs to a group named like that other user(s). Belonging to the self group is implicit, and therefore the self group--a group named like the user--doesn't have to exist; the user_id is added to the set in all cases.
+    If a user can only edit its own nodes, then the returned set contains only its own user_id. """
+    cursor.execute("""
+    SELECT u2.id
+    FROM auth_user u1,
+         auth_user u2,
+         auth_group g,
+         auth_user_groups ug
+    WHERE u1.id = %s
+      AND u1.id = ug.user_id
+      AND ug.group_id = g.id
+      AND u2.username = g.name
+    """ % int(user_id))
+    domain = set(row[0] for row in cursor.fetchall())
+    domain.add(user_id)
+    return domain
 
 @requires_user_role([UserRole.Annotate])
 def all_usernames(request, project_id=None):

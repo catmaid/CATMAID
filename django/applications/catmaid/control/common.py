@@ -196,16 +196,10 @@ def cursor_fetch_dictionary(cursor):
             ]
 
 def get_relation_to_id_map(project_id):
-    result = {}
-    for r in Relation.objects.filter(project=project_id):
-        result[r.relation_name] = r.id
-    return result
+    return {rname: ID for rname, ID in Relation.objects.filter(project=project_id).values_list("relation_name", "id")}
 
 def get_class_to_id_map(project_id):
-    result = {}
-    for r in Class.objects.filter(project=project_id):
-        result[r.class_name] = r.id
-    return result
+    return {cname: ID for cname, ID in Class.objects.filter(project=project_id).values_list("class_name", "id")}
 
 def urljoin(a, b):
     """ Joins to URL parts a and b while making sure this

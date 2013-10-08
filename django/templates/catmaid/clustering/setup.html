@@ -1,0 +1,61 @@
+{% load i18n %}
+
+<p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+<p>{{ description }}</p>
+
+{# Add "Select all" checkboxes for the classification selections step #}
+{% if wizard.steps.current == "classifications" %}
+    <p>
+        <label for="select_all">
+            <input type="checkbox" name="select_all" id="select-all">
+            Select all classification graphs
+        </label>
+    </p>
+{% elif wizard.steps.current == "features" %}
+    <p>
+        <label for="select_all">
+            <input type="checkbox" name="select_all" id="select-all">
+            Select all classification features
+        </label>
+    </p>
+{% endif %}
+<form method="post" id="clustering-setup-form"
+      action="{% url clustering_setup workspace_pid %}">
+{% csrf_token %}
+{{ wizard.management_form }}
+
+{% if wizard.form.forms %}
+    {{ wizard.form.management_form }}
+    {% for form in wizard.form.forms %}
+        {{ form.as_p }}
+    {% endfor %}
+{% else %}
+    {{ wizard.form.as_p }}
+{% endif %}
+
+{% if wizard.steps.current == "features" %}
+    {# Add extra div for feature selection on 'features' step #}
+    {% comment %}
+    <div id="clutering-setup-features">
+        {% for fs in formsets %}
+            <span id="ontology-{{ fs.ontology.id }}">
+                {{ fs.formset }}
+            </span>
+            <div id="ontology-{{ fs.ontology.id }}-tree">
+            </div>
+        {% endfor %}
+    </div>
+    {% endcomment %}
+{% endif %}
+<p>
+{% if wizard.steps.prev %}
+<button class="button" name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}">{% trans "first step" %}</button>
+<button class="button" name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}">{% trans "prev step" %}</button>
+{% endif %}
+{% if wizard.steps.step1 == wizard.steps.count %}
+    <input class="button" name="next_step" type="submit" value="{% trans "submit" %}"/>
+{% else %}
+    <input class="button" name="next_step" type="submit" value="{% trans "next step" %}"/>
+{% endif %}
+</p>
+</form>

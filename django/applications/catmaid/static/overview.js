@@ -54,10 +54,10 @@ function Overview( stack )
 	this.redraw = function()
 	{
 
-    // If it is minimized, don't redraw. Avoids fetching and decoding an extra jpeg
-    if ("" === view.style.width) {
-      return;
-    }
+		// If it is minimized, don't redraw. Avoids fetching and decoding an extra jpeg
+		if ("" === view.style.width) {
+			return;
+		}
 
 		var height = scale / stack.scale * stack.viewHeight;
 		var width = scale / stack.scale * stack.viewWidth;

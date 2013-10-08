@@ -642,6 +642,12 @@ var WindowMaker = new function()
     toggleShortNames.onclick = CompartmentGraphWidget.toggleCutNamesAtSemiColon;
     contentbutton.appendChild(toggleShortNames);
 
+    var gml = document.createElement('input');
+    gml.setAttribute("type", "button");
+    gml.setAttribute("value", "Export GML");
+    gml.onclick = CompartmentGraphWidget.exportGML;
+    contentbutton.appendChild(gml);
+
     content.appendChild( contentbutton );
 
     var container = createContainer("compartment_graph_widget");
@@ -1226,17 +1232,18 @@ var WindowMaker = new function()
         return win;
     };
 
-    var createConnectivityWindow = function()
+    var createConnectivityWindow = function( params )
     {
-        var win = new CMWWindow("Skeleton Connectivity");
+        var widgetid = params['widgetid'];
+        var win = new CMWWindow("Skeleton Connectivity " + widgetid);
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
 
         var contentbutton = document.createElement('div');
-        contentbutton.setAttribute("id", 'skeleton_connectivity_buttons');
+        contentbutton.setAttribute("id", 'skeleton_connectivity_buttons' + widgetid);
 
         var source = document.createElement('select');
-        source.setAttribute('id', 'connectivity_source');
+        source.setAttribute('id', 'connectivity_source' + widgetid);
         ['Active neuron', 'Selected neurons'].forEach(function(text, i) {
           var option = document.createElement('option');
           option.text = text;
@@ -1246,7 +1253,7 @@ var WindowMaker = new function()
         contentbutton.appendChild(source);
 
         var op = document.createElement('select');
-        op.setAttribute('id', 'connectivity_operation');
+        op.setAttribute('id', 'connectivity_operation' + widgetid);
         var option = document.createElement('option');
         option.text = 'AND';
         option.value = 'logic-AND'; // added prefix, otherwise gets sent as nonsense
@@ -1257,26 +1264,25 @@ var WindowMaker = new function()
         op.appendChild(option);
         contentbutton.appendChild(op);
 
-
         var add = document.createElement('input');
         add.setAttribute("type", "button");
-        add.setAttribute("id", "retrieve_connectivity");
+        add.setAttribute("id", "retrieve_connectivity" + widgetid);
         add.setAttribute("value", "Get connectivity");
-        add.onclick = SkeletonConnectivity.fetchConnectivityForSkeleton;
+        add.onclick = function( ev ) { SkeletonConnectivity.fetchConnectivityForSkeleton( widgetid ) };
         contentbutton.appendChild(add);
 
         var refresh = document.createElement('input');
         refresh.setAttribute("type", "button");
-        refresh.setAttribute("id", "refresh_connectivity");
+        refresh.setAttribute("id", "refresh_connectivity" + widgetid);
         refresh.setAttribute("value", "Refresh");
-        refresh.onclick = SkeletonConnectivity.refresh;
+        refresh.onclick = function( ev ) { SkeletonConnectivity.refresh( widgetid ) };
         contentbutton.appendChild(refresh);
 
         var threshold_label = document.createTextNode(' Synapse threshold: ');
         contentbutton.appendChild(threshold_label);
 
         var threshold = document.createElement('select');
-        threshold.setAttribute("id", "connectivity_count_threshold");
+        threshold.setAttribute("id", "connectivity_count_threshold" + widgetid);
 
         for (var i = 0; i < 21; i++) {
           var option = document.createElement("option");
@@ -1289,14 +1295,14 @@ var WindowMaker = new function()
 
         content.appendChild( contentbutton );
 
-        var container = createContainer( "connectivity_widget" );
+        var container = createContainer( "connectivity_widget" + widgetid );
         content.appendChild( container );
 
-        addListener(win, container, 'skeleton_connectivity_buttons');
+        addListener(win, container, 'skeleton_connectivity_buttons' + widgetid);
 
         addLogic(win);
 
-        SkeletonConnectivity.init();
+        SkeletonConnectivity.init( widgetid );
 
         return win;
     };
@@ -1409,6 +1415,26 @@ var WindowMaker = new function()
     addLogic(win);
 
     ClassificationEditor.init();
+
+    return win;
+  };
+
+  var createClusteringWidget = function()
+  {
+    var win = new CMWWindow( "Clustering" );
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer( "clustering_widget" );
+    content.appendChild( container );
+
+    container.innerHTML = '<div id="clustering_content"></div>';
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    ClusteringWidget.init();
 
     return win;
   };
@@ -1686,18 +1712,26 @@ var WindowMaker = new function()
     "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
     "ontology-editor": createOntologyWidget,
     "classification-editor": createClassificationWidget,
-    "notifications": createNotificationsWindow
+    "notifications": createNotificationsWindow,
+    "clustering-widget": createClusteringWidget,
   };
 
   /** If the window for the given name is already showing, just focus it.
    * Otherwise, create it new. */
-  this.show = function( name )
+  this.show = function( name, params )
   {
     if (creators.hasOwnProperty( name )) {
-      if (windows[name]) {
-        windows[name].focus();
+
+      if( params !== undefined ) {
+          // if the call has parameters, we assume that we
+          // want to create a new window
+          windows[name] = creators[name]( params );
       } else {
-        windows[name] = creators[name]();
+        if (windows[name]) {
+          windows[name].focus();
+        } else {
+          windows[name] = creators[name]();
+        }
       }
     } else {
       alert("No known window with name " + name);

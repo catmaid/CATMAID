@@ -238,23 +238,31 @@ var NeuronStagingArea = new function()
       delete skeletonmodels[ id ];
       // remove from webgl if open
       if( WebGLApp.is_widget_open() ) {
-        WebGLApp.removeSkeleton( id );
+        WebGLApp.removeSkeletons( [id] );
       }
     } else {
       console.log('Cannot remove skeleton', id, ' it is not in the list');
     }
   };
 
+	self.remove_skeletons = function(ids)
+	{
+		for (var id in ids) {
+			if (skeletonmodels.hasOwnProperty(id)) {
+				self._remove_skeleton_from_table(id);
+				delete skeletonmodels[id];
+			}
+		}
+		if (WebGLApp.is_widget_open()) {
+			WebGLApp.removeSkeletons(ids);
+		}
+	}
+
   self.remove_all_skeletons = function()
   {
-      for( var skeleton_id in skeletonmodels ) {
-        if( skeletonmodels.hasOwnProperty(skeleton_id) ) {
-          // TODO: callback for other widgets
-          self.remove_skeleton( skeleton_id );
-        }
-      }
+		self.remove_skeletons(Object.keys(skeletonmodels));
   };
-  
+ 
   self.set_skeletons_base_color = function() {
     // Set the color of all skeletons based on the state of the "Color" pop-up menu.
     var skeletons = self.get_all_skeletons();

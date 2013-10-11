@@ -347,6 +347,8 @@ var WindowMaker = new function()
       return;
     }
 
+    if (!window.WebGLApp) window.WebGLApp = new WebGLApplication();
+
     var win = new CMWWindow("3D WebGL View");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
@@ -362,7 +364,7 @@ var WindowMaker = new function()
     reload.setAttribute("type", "button");
     reload.setAttribute("id", "refresh_skeletons");
     reload.setAttribute("value", "Reload skeletons");
-    reload.onclick = WebGLApp.refresh_skeletons;
+    reload.onclick = WebGLApp.fn('refresh_skeletons');
     buttons.appendChild(reload);
     
     var center = document.createElement('input');
@@ -370,7 +372,7 @@ var WindowMaker = new function()
     center.setAttribute("id", "center_active_node");
     center.setAttribute("value", "Center active");
     center.style.marginLeft = '1em';
-    center.onclick = WebGLApp.look_at_active_node;
+    center.onclick = WebGLApp.fn('look_at_active_node');
     buttons.appendChild(center);
 
     var fulls = document.createElement('input');
@@ -378,7 +380,7 @@ var WindowMaker = new function()
     fulls.setAttribute("id", "fullscreen_webgl_view");
     fulls.setAttribute("value", "Fullscreen");
     fulls.style.marginLeft = '1em';
-    fulls.onclick = WebGLApp.fullscreenWebGL;
+    fulls.onclick = WebGLApp.fn('fullscreenWebGL');
     buttons.appendChild(fulls);
 
     var xy = document.createElement('input');
@@ -386,21 +388,21 @@ var WindowMaker = new function()
     xy.setAttribute("id", "xy_plane");
     xy.setAttribute("value", "XY");
     xy.style.marginLeft = '1em';
-    xy.onclick =  WebGLApp.XYView;
+    xy.onclick =  WebGLApp.fn('XYView');
     buttons.appendChild(xy);
 
     var xz = document.createElement('input');
     xz.setAttribute("type", "button");
     xz.setAttribute("id", "xz_plane");
     xz.setAttribute("value", "XZ");
-    xz.onclick = WebGLApp.XZView;
+    xz.onclick = WebGLApp.fn('XZView');
     buttons.appendChild(xz);
 
     var yz = document.createElement('input');
     yz.setAttribute("type", "button");
     yz.setAttribute("id", "yz_plane");
     yz.setAttribute("value", "YZ");
-    yz.onclick = WebGLApp.YZView;
+    yz.onclick = WebGLApp.fn('YZView');
     buttons.appendChild(yz);
 
     // Restrict display to shared connectors between visible skeletons
@@ -409,7 +411,7 @@ var WindowMaker = new function()
     connectors.setAttribute("id", "toggle_connector");
     connectors.setAttribute("value", "Restrict connectors");
     connectors.style.marginLeft = '1em';
-    connectors.onclick = WebGLApp.toggleConnector;
+    connectors.onclick = WebGLApp.fn('toggleConnectors');
     buttons.appendChild(connectors);
 
     var options = document.createElement('input');
@@ -417,7 +419,7 @@ var WindowMaker = new function()
     options.setAttribute("id", "configure_parameters");
     options.setAttribute("value", "Options");
     options.style.marginLeft = '1em';
-    options.onclick = WebGLApp.configure_parameters;
+    options.onclick = WebGLApp.fn('configureParameters');
     buttons.appendChild(options);
     
     var shadingLabel = document.createElement('div');
@@ -430,7 +432,7 @@ var WindowMaker = new function()
     $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
     $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
     $('<option/>', {value : 'branch_centrality', text: 'Branch centrality'}).appendTo(shadingMenu);
-    shadingMenu.onchange = WebGLApp.set_shading_method;
+    shadingMenu.onchange = WebGLApp.fn('set_shading_method');
     buttons.appendChild(shadingMenu);
     
     var canvas = document.createElement('div');
@@ -491,7 +493,7 @@ var WindowMaker = new function()
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
     // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
 
-    WebGLApp.init( canvas.getAttribute("id") );
+    WebGLApp.init( 800, 600, canvas.getAttribute("id") );
     win.callListeners( CMWWindow.RESIZE );
 
     return win;

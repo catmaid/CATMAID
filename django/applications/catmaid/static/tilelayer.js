@@ -7,6 +7,7 @@
  *	 ui.js
  *	 slider.js
  *
+ *	 pixastic.custom.js from http://www.pixastic.com/
  * @todo redo all public interfaces to use physical coordinates instead of pixel coordinates
  */
 
@@ -418,6 +419,29 @@ function TileLayer(
 	}
 	
 	/**
+	* returns true is all tiles have been fully loaded
+	*/
+	this.tilesFullyLoaded = function()
+	{
+		var tilesLoaded = true;
+
+		for ( var ii = 0; ii < tiles.length; ++ii )
+		{
+			for ( var jj = 0; jj < tiles[0].length; ++jj )
+			{
+				if( tiles[ii][jj].complete === false )//check if image has been loaded
+				{
+					tilesLoaded = false;
+					break;
+				}
+			}
+			if( tilesLoaded === false )
+				break;
+		}
+		return tilesLoaded;
+	}
+
+	/**
 	* gets the pi
 	*/
 	this.getTilePixelValueScreenCenter = function()
@@ -438,6 +462,12 @@ function TileLayer(
 		{
 			for ( var jj = 0; jj < tiles[0].length; ++jj )
 			{
+				if( tiles[ii][jj].complete === false )//make sure image has been loaded
+				{
+					//wait predetermined numner of milliseconds
+					//setTimeout(function(){console.log("Error: for tile " + ii + "," + jj + " to load");}, 100);
+					console.log("Error: for tile " + ii + "," + jj + " to load");
+				}
 				var tt = parseInt(tiles[ii][jj].style.top,10);
 				var lt = parseInt(tiles[ii][jj].style.left,10);
 				var wt = parseInt(tiles[ii][jj].style.width,10);
@@ -450,6 +480,7 @@ function TileLayer(
 					y = Math.floor(hh - tt);//y is related to height of image
 					x = Math.floor(ww - lt);//x is related to width of image
 					foundTile = true;
+					console.log("====Selected tile is " + tiles[ii][jj].src + " ==============");
 					break;
 				}
 			}
@@ -462,7 +493,7 @@ function TileLayer(
 		var l = self.getPixelValueMaxLuminosity(tiles[aa][bb],x,y,10);
 
 		//-------------------------debug-------------------
-    	//console.log("====Value at center (" + x + "," + y + ") is l = " + l + " ==============");
+    	console.log("====Value at center (" + x + "," + y + ") is l = " + l + " ==============");
 
 		return l;
 	}
@@ -751,9 +782,46 @@ function TileLayer(
 		opacity = val;
 	}
 
+	this.setContrast = function( val )
+	{
+		//hola debugging
+		val = 0;
+
+		options = {"brightness":brightness_,"contrast":val};
+		for ( var ii = 0; ii < tiles.length; ++ii )
+		{
+			for ( var jj = 0; jj < tiles[0].length; ++jj )
+			{
+				var newImg = Pixastic.process(tiles[ii][jj], "brightness", options);
+			}
+		}
+		//tilesContainer.style.opacity = val+"";
+		contrast_ = val;
+
+		//debug: revert to original state!!!
+		/*
+		for ( var ii = 0; ii < tiles.length; ++ii )
+		{
+			for ( var jj = 0; jj < tiles[0].length; ++jj )
+			{
+				Pixastic.revert(tiles[ii][jj]);
+			}
+		}
+		*/
+	}
+
 	this.getOpacity = function()
 	{
 		return opacity;
+	}
+
+	this.getContrast = function()
+	{
+		return contrast_;
+	}
+	this.getBrightness = function()
+	{
+		return brightness_;
 	}
 
 	// initialise
@@ -761,6 +829,8 @@ function TileLayer(
 
 	// internal opacity variable
 	var opacity = 100;
+	var contrast_ = 100;
+	var brightness_ = 0;
 	
 	/* Contains all tiles in a 2d-array */
 	var tiles = new Array();

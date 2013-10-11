@@ -19,6 +19,11 @@ function OverviewLayer( stack )
 		self.layers[key].setOpacity( val / 100 );
 	}
 
+	this.setContrast = function ( key, val )
+	{
+		self.layers[key].setContrast( val / 100 );
+	}
+
 	this.refresh = function()
 	{
 		var layers = stack.getLayers();
@@ -61,7 +66,43 @@ function OverviewLayer( stack )
 			container.innerHTML += key + "<br />";
 			container.appendChild( slider.getView() );
 			view.appendChild(container);
+
+
+			//slider to adjust image contrast
+			//hola debugging
+			if( key === "TileLayer")
+			{
+				var container = document.createElement("div"), default_contrast = 100;
+
+				var setContr = function ( val )
+				{
+					self.setContrast( "TileLayer", val );
+					return;
+				}
+
+				if(layers[key].hasOwnProperty('getContrast'))
+				{
+					default_contrast = layers[key].getOpacity();
+				}
+			
+				var slider = new Slider(
+								SLIDER_HORIZONTAL,
+								false,
+								1,
+								100,
+								100,
+								default_contrast,
+								setContr );
+
+				var keyName = "Image contrast"
+				slider.idd = keyName;
+				container.innerHTML += keyName + "<br />";
+				container.appendChild( slider.getView() );
+				view.appendChild(container);
+			}
 		}
+
+
 	};
 
 	var self = this;

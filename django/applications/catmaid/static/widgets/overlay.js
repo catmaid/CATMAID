@@ -1810,23 +1810,73 @@ var SkeletonAnnotations = new function()
     };
 
 
-    this.gotoRandomLocation = function()
+    //global variables to control asynchronous flow of gotoRandomLocation
+    var nextIterRandomLocation = -1;
+    var lastIterRandomLocation = -1;
+    var FAintervId0;
+    var FAintervId1;
+    this.selectRandomLocation = function()
     {
-      var lVal = 0;
-
-	//too much empty space: ti usually hits empty spot (plus ther emight be some bug in getting position)
-      //while( lVal < 80 )//255 is the maximum. To make sure we land in a pixel with fluorescence
-      //{
+      console.log("At selectRandomLocation with nextIter=" + nextIterRandomLocation + "; lastIter =" + lastIterRandomLocation);
+        if( nextIterRandomLocation < 0)//we are done
+        {
+          clearInterval(FAintervId0);
+          return;
+        }
+        if( nextIterRandomLocation > lastIterRandomLocation )
+        {
           var xx = Math.random() * stack.dimension.x * stack.resolution.x + stack.translation.x;
           var yy = Math.random() * stack.dimension.y * stack.resolution.y + stack.translation.y;
           var zz = Math.random() * stack.dimension.z * stack.resolution.z + stack.translation.z;
 
           stack.getProject().moveTo5D(zz, yy , xx , undefined, stack.t, stack.c,
-                                  undefined);
-
-       //   lVal = stack.getLayer('TileLayer').getTilePixelValueScreenCenter();
-      //}
+                                  undefined); 
+          lastIterRandomLocation++;                         
+        }
     }
+
+    this.synchronousGetTilePixelValueScreenCenter = function ()
+    {
+      console.log("At synchronousGetTilePixelValueScreenCenter with nextIter=" + nextIterRandomLocation + "; lastIter =" + lastIterRandomLocation);
+      if( nextIterRandomLocation < 0)//we are done
+      {
+         //http://stackoverflow.com/questions/2452151/is-it-ok-to-call-clearinterval-inside-a-setinterval-handler
+         clearInterval(FAintervId1);
+          return;
+        }
+      if( stack.getLayer('TileLayer').tilesFullyLoaded() === true )//we can access info
+      {
+         
+         var lValAux = stack.getLayer('TileLayer').getTilePixelValueScreenCenter();
+         if( lValAux > 80 )
+         {
+            nextIterRandomLocation = -1;
+            clearInterval(FAintervId1);
+         }else
+        {
+            nextIterRandomLocation++;
+        }
+      }
+    }
+
+    this.gotoRandomLocation = function()
+    {
+      /*asynchronous works (most of the time but then clicking seems to be affected: new active node is not displayed)
+      nextIterRandomLocation = 0;
+      lastIterRandomLocation = -1;
+	    
+      FAintervId0 = setInterval( self.selectRandomLocation, 20 );//call function every 20 ms
+      FAintervId1 = setInterval( self.synchronousGetTilePixelValueScreenCenter, 20);
+      */
+
+      var xx = Math.random() * stack.dimension.x * stack.resolution.x + stack.translation.x;
+      var yy = Math.random() * stack.dimension.y * stack.resolution.y + stack.translation.y;
+          var zz = Math.random() * stack.dimension.z * stack.resolution.z + stack.translation.z;
+
+      stack.getProject().moveTo5D(zz, yy , xx , undefined, stack.t, stack.c,
+                                  undefined); 
+    }
+
 
     this.goToNextBranchOrEndNode = function(treenode_id, e) {
       requestQueue.register(

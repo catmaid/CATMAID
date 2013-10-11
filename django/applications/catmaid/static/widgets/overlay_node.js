@@ -466,7 +466,8 @@ var SkeletonElements = new function()
       this.cdiff = 0;
        console.log('Warning: At overlay_node::displayTreeNode: this.cdiff is undefined. Setting to default variable')
     }
-    return (this.zdiff >= 0 && this.zdiff < 1) && (this.tdiff >= 0 && this.tdiff < 1) && (this.cdiff >= 0 && this.cdiff < 1);
+    //changed to 0.5 to make sure we display nodes that when rounding are assigned to the current slice
+    return (this.zdiff >= -0.5 && this.zdiff < 0.5) && (this.tdiff >= -0.5 && this.tdiff < 0.5) && (this.cdiff >= -0.5 && this.cdiff < 0.5);
   };
 
   var displayConnector = function() {

@@ -320,6 +320,25 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
   fn(skeleton_ids[0]);
 };
 
+WebGLApplication.prototype.refresh_skeletons = function() {
+  var selected = NeuronStagingArea.get_selected_skeletons();
+  var selected_set = selected.reduce(function(o, id) { o[id] = id; return o;}, {});
+
+  var skeletons = this.space.content.skeletons;
+
+  var remove = Object.keys(skeletons).filter(function(skid) { return !(skid in selected_set); });
+
+  if (remove.length > 0) this.space.removeSkeletons(remove);
+  if (selected.length > 0) {
+    this.addSkeletons(selected, false);
+    this.space.render();
+  } else if (Object.keys(skeletons).length > 0) {
+    this.refreshRestrictedConnectors();
+  } else {
+    this.space.render();
+  }
+};
+
 WebGLApplication.prototype.getListOfSkeletonIDs = function(only_visible) {
 	growlAlert("OBSOLETE", "You should be grabbing the list from the Selection Table!");
 	var skeletons = this.space.content.skeletons;

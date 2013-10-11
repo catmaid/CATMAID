@@ -1199,8 +1199,8 @@ var SkeletonAnnotations = new function()
         //a[9]: time, a[10]: channel
         nodes[a[0]] = SkeletonElements.newNode(
           a[0], self.paper, null, a[1], a[6], phys2pixX(a[2]),
-          phys2pixY(a[3]), phys2pixZ(a[4]),
-          (a[4] - pz) / stack.resolution.z, a[5], a[7], a[8], a[9], a[10], a[9] - pt, a[10] - pc);
+          phys2pixY(a[3]), Math.round(phys2pixZ(a[4])),
+          Math.round((a[4] - pz) / stack.resolution.z), a[5], a[7], a[8], a[9], a[10], a[9] - pt, a[10] - pc);
       });
 
       // Populate ConnectorNodes

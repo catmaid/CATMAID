@@ -116,10 +116,10 @@ var SkeletonElements = new function()
     this.r = 3; // not use radius size on overlay display
     this.x = x;
     this.y = y;
-    this.z = z;
+    this.z = Math.round(z);//overlay_node.js code does very random things with non-integer z. This is already in pixel coordinates
     this.t = t;
     this.ch = ch;
-    this.zdiff = zdiff;
+    this.zdiff = Math.round(zdiff);//to handle without any other change in the code points in non-integer slices
     this.tdiff = tdiff;
     this.cdiff = cdiff;
     this.shouldDisplay = displayTreenode;
@@ -190,10 +190,10 @@ var SkeletonElements = new function()
     node.r = r < 0 ? 3 : r;
     node.x = x;
     node.y = y;
-    node.z = z;
+    node.z = Math.round(z);
     node.t = t;
     node.ch = ch;
-    node.zdiff = zdiff;
+    node.zdiff = Math.round(zdiff);
     node.tdiff = tdiff;
     node.cdiff = cdiff;
     node.shouldDisplay = displayTreenode;
@@ -445,9 +445,9 @@ var SkeletonElements = new function()
   var nodeColorFromZDiff = function(zdiff, skeleton_id)
   {
     // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
-    if (zdiff >= 1) {
+    if (zdiff >= 0.5) {
       return inactive_skeleton_color_above;
-    } else if (zdiff < 0) {
+    } else if (zdiff < -0.5) {
       return inactive_skeleton_color_below;
     } else if (skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
       return active_skeleton_color;

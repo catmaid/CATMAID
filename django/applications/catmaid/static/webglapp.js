@@ -2,15 +2,15 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 
-/** Main, top-level object, and the only public object in this file.
- * Create a new instance and invoke its "init" method to create a 3d space.
- *
- * Only methods of the WebGLApplication object elicit a render. All other methods
+/* Only methods of the WebGLApplication object elicit a render. All other methods
  * do not, except for those that use continuations to load data (meshes) or to
  * compute with web workers (betweenness centrality shading). */
 WebGLApplication = function() {};
 
 WebGLApplication.prototype = {};
+
+/** Static, empty instance. Call its init method to create the 3d space. */
+window.WebGLApp = new WebGLApplication();
 
 WebGLApplication.prototype.fn = function(name) {
   var self = this;
@@ -281,19 +281,40 @@ WebGLApplication.prototype.has_skeleton = function(skeleton_id) {
 	return this.space.content.skeletons.hasOwnProperty(skeleton_id);
 };
 
-WebGLApplication.prototype.addSkeletonFromID = function(skeletonID, refresh_restricted_connectors) {
-	if (!skeletonID) return;
-	var skeleton_id = parseInt(skeletonID);
+/** Fetch skeletons one by one, and render just once at the end. */
+WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restricted_connectors, callback) {
+	if (!skeletonIDs || 0 === skeletonIDs.length) return;
+	var skeleton_ids = skeletonIDs.map(function(id) { return parseInt(id); });
+  console.log(skeletonIDs, skeleton_ids);
 	var self = this;
-	this.submit(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json',
-			{},
-			function(json) {
-        var sk = self.space.updateSkeleton(skeleton_id, json);
-	      sk.show(self.options);
-
-				if (refresh_restricted_connectors) self.refreshRestrictedConnectors();
-				self.space.render();
-			});
+  var i = 0;
+  var submit = this.submit;
+  var fn = function(skeleton_id) {
+    submit(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json',
+        {},
+        function(json) {
+          if (json.error) {
+            alert(json.error);
+            return;
+          }
+          var sk = self.space.updateSkeleton(skeleton_id, json);
+          sk.show(self.options);
+          i += 1;
+          $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
+          if (i < skeleton_ids.length) {
+            fn(skeleton_ids[i]);
+          } else {
+            if (refresh_restricted_connectors) self.refreshRestrictedConnectors();
+            self.space.render();
+            if (callback) {
+              try { callback(); } catch (e) { alert(e); }
+            }
+				    $.unblockUI();
+          }
+        });
+  };
+  $.blockUI({message: '<img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> <h2>Loading skeletons <div id="counting-loaded-skeletons">0 / ' + skeleton_ids.length + '</div></h2>'});
+  fn(skeleton_ids[0]);
 };
 
 WebGLApplication.prototype.getListOfSkeletonIDs = function(only_visible) {

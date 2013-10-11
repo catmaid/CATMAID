@@ -342,7 +342,6 @@ def _collect_neuron_ids(node_id, node_type=None):
         for row in cursor.fetchall():
             # row[0] is the class_instance.id that is part_of nid
             # row[1] is the class.class_name
-            print >> sys.stderr, row
             if 'neuron' == row[1]:
                 neuron_ids.append(row[0])
             elif 'group' == row[1]:

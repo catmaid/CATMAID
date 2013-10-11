@@ -202,13 +202,32 @@ var NeuronStagingArea = new function()
       self._add_skeleton_to_table( skeletonmodels[ id ] );
       self.update_skeleton_color_button( id );
       if( WebGLApp.is_widget_open() ) {
-        WebGLApp.addSkeletonFromID( id, true );
+        WebGLApp.addSkeletons( [id], true );
       }
     }
     if (typeof callback !== "undefined" && callback instanceof Function) {
       callback();
     }
   }
+
+	/** sks: object with skeleton_id as keys and neuron names as values. */
+	self.add_skeletons_to_stage = function(sks, callback)
+	{
+		var skids = Object.keys(sks).filter(function(id) {
+			if (skeletonmodels.hasOwnProperty(id)) {
+				// Already in table
+				return false;
+			}
+			var neuronname = sks[id];
+			skeletonmodels[id] = new SkeletonModel(id, neuronname);
+			self._add_skeleton_to_table(skeletonmodels[id]);
+      self.update_skeleton_color_button( id );
+			return true;
+		});
+		if (WebGLApp.is_widget_open()) {
+			WebGLApp.addSkeletons(skids, true, callback);
+		}
+	};
 
   self.add_skeleton_to_stage_without_name = function( id, callback )
   {
@@ -225,6 +244,22 @@ var NeuronStagingArea = new function()
       });
     }
   };
+
+	self.add_skeletons = function(ids, callback)
+	{
+		ensureOpen();
+		jQuery.ajax({
+			url: django_url + project.id + '/skeleton/neuronnames',
+			data : {
+				skids: ids.map(function(id) { return parseInt(id); })
+			},
+			type: "POST", // GET gets cached by the browser
+			dataType: "json",
+			success: function ( json ) {
+				self.add_skeletons_to_stage(json, callback );
+			}
+		});
+	};
 
   self._remove_skeleton_from_table = function( id )
   {

@@ -347,8 +347,6 @@ var WindowMaker = new function()
       return;
     }
 
-    if (!window.WebGLApp) window.WebGLApp = new WebGLApplication();
-
     var win = new CMWWindow("3D WebGL View");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

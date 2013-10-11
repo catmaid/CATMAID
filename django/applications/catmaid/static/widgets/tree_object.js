@@ -121,9 +121,7 @@ var ObjectTree = new function()
                             alert(json.error);
                           } else {
                             WindowMaker.show("3d-webgl-view");
-                            json.forEach(function(skid) {
-                              NeuronStagingArea.add_skeleton_to_stage_without_name( skid );
-                            });
+                            NeuronStagingArea.add_skeletons(json);
                           }
                         }
                       });
@@ -142,9 +140,7 @@ var ObjectTree = new function()
                           if (json.error) {
                             alert(json.error);
                           } else {
-                            json.forEach(function(skid) {
-                              NeuronStagingArea.add_skeleton_to_stage_without_name( skid );
-                            });
+                            NeuronStagingArea.add_skeletons(json);
                           }
                         }
                       });

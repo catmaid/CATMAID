@@ -285,7 +285,6 @@ WebGLApplication.prototype.has_skeleton = function(skeleton_id) {
 WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restricted_connectors, callback) {
 	if (!skeletonIDs || 0 === skeletonIDs.length) return;
 	var skeleton_ids = skeletonIDs.map(function(id) { return parseInt(id); });
-  console.log(skeletonIDs, skeleton_ids);
 	var self = this;
   var i = 0;
   var submit = this.submit;
@@ -309,11 +308,15 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
             if (callback) {
               try { callback(); } catch (e) { alert(e); }
             }
-				    $.unblockUI();
+            if (skeleton_ids.length > 1) {
+              $.unblockUI();
+            }
           }
         });
   };
-  $.blockUI({message: '<img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> <h2>Loading skeletons <div id="counting-loaded-skeletons">0 / ' + skeleton_ids.length + '</div></h2>'});
+  if (skeleton_ids.length > 1) {
+    $.blockUI({message: '<img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> <h2>Loading skeletons <div id="counting-loaded-skeletons">0 / ' + skeleton_ids.length + '</div></h2>'});
+  }
   fn(skeleton_ids[0]);
 };
 

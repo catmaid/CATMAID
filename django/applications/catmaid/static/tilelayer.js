@@ -480,7 +480,7 @@ function TileLayer(
 					y = Math.floor(hh - tt);//y is related to height of image
 					x = Math.floor(ww - lt);//x is related to width of image
 					foundTile = true;
-					console.log("====Selected tile is " + tiles[ii][jj].src + " ==============");
+					//console.log("====Selected tile is " + tiles[ii][jj].src + " ==============");
 					break;
 				}
 			}
@@ -493,7 +493,7 @@ function TileLayer(
 		var l = self.getPixelValueMaxLuminosity(tiles[aa][bb],x,y,10);
 
 		//-------------------------debug-------------------
-    	console.log("====Value at center (" + x + "," + y + ") is l = " + l + " ==============");
+    	//console.log("====Value at center (" + x + "," + y + ") is l = " + l + " ==============");
 
 		return l;
 	}

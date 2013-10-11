@@ -609,14 +609,18 @@ not needed for cell tracking
   }) );
 
 this.addAction( new Action({
-    helpText: "Go to a random location in the current time point and channel",
+    helpText: "Go to a random location in the current time point and channel(with ctrl activates next childless node)",
     keyShortcuts: {
-      "F": [ 70 ] 
+      "Q": [ 81 ] 
     },
     run: function (e) {
       if (!mayView())
-        return false;
-      tracingLayer.svgOverlay.tracingCommand('gorandomlocation');
+          return false;
+
+      if (e.ctrlKey === true)//so we can validate automatic tracking very fast
+        tracingLayer.svgOverlay.tracingCommand('gotonextnodewithnochild');
+      else
+        tracingLayer.svgOverlay.tracingCommand('gotorandomlocation');
       
       return true;
     }

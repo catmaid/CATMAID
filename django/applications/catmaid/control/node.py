@@ -728,6 +728,38 @@ def find_next_lowest_confidence(request, project_id=None):
         raise Exception('There is no node in this time point to select' + str(e))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_next_childless(request, project_id=None):
+    try:
+        t = int(request.POST['t'])
+        c = int(request.POST['ch'])
+
+        qs = Treenode.objects.filter(project_id = project_id, location_t = t, location_c = c) #ascending order
+
+        #json is a tuple:
+        #json[0]: treenode id
+        #json[4]: skeleton_id
+        #json[1], [2], [3], [5], [6]: x, y, z, t, c in calibrated world units
+
+        for t in qs:
+            skid = t.skeleton_id
+            graph = _skeleton_as_graph(skid)
+            children = graph.successors(t.id)
+            if len(children) == 0:
+                return HttpResponse(json.dumps( (
+                    t.id,
+                        int(t.location.x),
+                        int(t.location.y),
+                        int(t.location.z),
+                        t.skeleton_id,
+                        int(t.location_t),
+                        int(t.location_c) ) ) )
+
+    except Exception as e:
+        raise Exception('There is no node in this time point to select' + str(e))
+
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def find_next_child(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])

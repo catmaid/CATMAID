@@ -1817,7 +1817,7 @@ var SkeletonAnnotations = new function()
     var FAintervId1;
     this.selectRandomLocation = function()
     {
-      console.log("At selectRandomLocation with nextIter=" + nextIterRandomLocation + "; lastIter =" + lastIterRandomLocation);
+      //console.log("At selectRandomLocation with nextIter=" + nextIterRandomLocation + "; lastIter =" + lastIterRandomLocation);
         if( nextIterRandomLocation < 0)//we are done
         {
           clearInterval(FAintervId0);
@@ -1837,7 +1837,7 @@ var SkeletonAnnotations = new function()
 
     this.synchronousGetTilePixelValueScreenCenter = function ()
     {
-      console.log("At synchronousGetTilePixelValueScreenCenter with nextIter=" + nextIterRandomLocation + "; lastIter =" + lastIterRandomLocation);
+      //console.log("At synchronousGetTilePixelValueScreenCenter with nextIter=" + nextIterRandomLocation + "; lastIter =" + lastIterRandomLocation);
       if( nextIterRandomLocation < 0)//we are done
       {
          //http://stackoverflow.com/questions/2452151/is-it-ok-to-call-clearinterval-inside-a-setinterval-handler
@@ -1861,20 +1861,23 @@ var SkeletonAnnotations = new function()
 
     this.gotoRandomLocation = function()
     {
-      /*asynchronous works (most of the time but then clicking seems to be affected: new active node is not displayed)
+      
+      //asynchronous works (most of the time but then clicking seems to be affected: new active node is not displayed)
       nextIterRandomLocation = 0;
       lastIterRandomLocation = -1;
 	    
       FAintervId0 = setInterval( self.selectRandomLocation, 20 );//call function every 20 ms
       FAintervId1 = setInterval( self.synchronousGetTilePixelValueScreenCenter, 20);
-      */
+      
 
+      /*
       var xx = Math.random() * stack.dimension.x * stack.resolution.x + stack.translation.x;
       var yy = Math.random() * stack.dimension.y * stack.resolution.y + stack.translation.y;
           var zz = Math.random() * stack.dimension.z * stack.resolution.z + stack.translation.z;
 
       stack.getProject().moveTo5D(zz, yy , xx , undefined, stack.t, stack.c,
                                   undefined); 
+      */
     }
 
 
@@ -1973,6 +1976,60 @@ var SkeletonAnnotations = new function()
       }
     }
 
+    this.goToChildlessNode = function()
+    {
+
+      //check over the cached nodes if there is one childless node in the current time point
+      var nodeLowC = undefined;
+      var idn;
+      for (idn in nodes)
+      {
+          if ( (nodes[idn].t == stack.t) && (nodes[idn].ch == stack.c) && (Object.keys(nodes[idn].children).length == 0) )
+          {
+              nodeLowC = nodes[idn];
+              break;
+          }
+      }
+
+      if (nodeLowC) {
+        // We found a cached node to display
+        self.moveToAndSelectNode(nodeLowC);
+      } else {
+        requestQueue.replace(
+          django_url + project.id + "/node/next_childless",
+          "POST",
+          {t: stack.t,
+           ch: stack.c },
+          function(status, text) {
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert("Error when trying to find next childless node:" + json.error);
+              } else {
+                // json is a tuple:
+                // json[0]: treenode id
+                //json[4]: skeleton_id
+                // json[1], [2], [3], [5], [6]: x, y, z, t, c in calibrated world units                
+
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    stack.getProject().moveTo5D(json[3], json[2], json[1], undefined,json[5], json[6],
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                   }else{   
+                  stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                  }
+                 }              
+            }else{
+              alert("No childless node found in this time point and channel!");
+            }
+          });
+      }
+    }
 
     this.goToChildNode = function(treenode_id, e) {
       requestQueue.register(
@@ -2145,6 +2202,9 @@ var SkeletonAnnotations = new function()
       case "golowconfidence":
         self.goToLowestConfidenceNode();
         break;
+      case "gotonextnodewithnochild":
+        self.goToChildlessNode();
+        break;  
       case "goactive":
         var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();
         if (activeNodePosition === null) {
@@ -2244,7 +2304,7 @@ var SkeletonAnnotations = new function()
           self.activateNearestNode(lastX, lastY, project.coordinates.z);
         }
         break;
-      case "gorandomlocation":
+      case "gotorandomlocation":
         //go to a random location
         self.gotoRandomLocation();
         //deactivate active node

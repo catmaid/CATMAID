@@ -1861,23 +1861,23 @@ var SkeletonAnnotations = new function()
 
     this.gotoRandomLocation = function()
     {
-      
+      /*
       //asynchronous works (most of the time but then clicking seems to be affected: new active node is not displayed)
       nextIterRandomLocation = 0;
       lastIterRandomLocation = -1;
-	    
+
       FAintervId0 = setInterval( self.selectRandomLocation, 20 );//call function every 20 ms
       FAintervId1 = setInterval( self.synchronousGetTilePixelValueScreenCenter, 20);
-      
+      */
 
-      /*
+      
       var xx = Math.random() * stack.dimension.x * stack.resolution.x + stack.translation.x;
       var yy = Math.random() * stack.dimension.y * stack.resolution.y + stack.translation.y;
-          var zz = Math.random() * stack.dimension.z * stack.resolution.z + stack.translation.z;
+      var zz = Math.random() * stack.dimension.z * stack.resolution.z + stack.translation.z;
 
       stack.getProject().moveTo5D(zz, yy , xx , undefined, stack.t, stack.c,
                                   undefined); 
-      */
+      
     }
 
 

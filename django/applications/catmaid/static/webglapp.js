@@ -212,43 +212,46 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
 	if (!this.options.connector_filter) return;
 	// Find all connector IDs referred to by more than one skeleton
 	// but only for visible skeletons
-	var counts = {};
-	var visible_skeletons = [];
-	var invisible_skeletons = [];
 	var skeletons = this.space.content.skeletons;
-	for (var skeleton_id in skeletons) {
-		if (skeletons.hasOwnProperty(skeleton_id)) {
-			if ($('#skeletonshow-' + skeleton_id).is(':checked')) {
-				visible_skeletons.push(skeleton_id);
-				var sk = skeletons[skeleton_id];
-				for (var connectorID in sk.connectorProps) {
-					if (sk.connectorProps.hasOwnProperty(connectorID)) {
-						if (counts.hasOwnProperty(connectorID)) {
-							counts[connectorID][skeleton_id] = null;
-						} else {
-							counts[connectorID] = {};
-							counts[connectorID][skeleton_id] = null;
-						}
-					}
-				}
-			} else {
-				invisible_skeletons.push(skeleton_id);
-			}
-		}
-	}
+	var visible_skeletons = NeuronStagingArea.get_selected_skeletons();
+  var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
+
+	var counts = visible_skeletons.reduce(function(counts, skeleton_id) {
+    return synapticTypes.reduce(function(counts, type) {
+      var vertices = skeletons[skeleton_id].geometry[type].vertices;
+      // Vertices is an array of Vector3, every two a pair, the first at the connector and the second at the node
+      for (var i=vertices.length-2; i>-1; i-=2) {
+        var connector_id = vertices[i].node_id;
+        if (!counts.hasOwnProperty(connector_id)) {
+          counts[connector_id] = {};
+        }
+        counts[connector_id][skeleton_id] = null;
+      }
+      return counts;
+    }, counts);
+  }, {});
+
 	var common = {};
-	for (var connectorID in counts) {
-		if (Object.keys(counts[connectorID]).length > 1) {
-			common[connectorID] = null; // null, just to add something
+	for (var connector_id in counts) {
+		if (counts.hasOwnProperty(connector_id) && Object.keys(counts[connector_id]).length > 1) {
+			common[connector_id] = null; // null, just to add something
 		}
 	}
-	visible_skeletons.forEach(function(skeleton_id) {
-		skeletons[skeleton_id].remove_connector_selection();
-		skeletons[skeleton_id].create_connector_selection( common );
-	});
-	invisible_skeletons.forEach(function(skeleton_id) {
-		skeletons[skeleton_id].remove_connector_selection();
-	});
+
+  var visible_set = visible_skeletons.reduce(function(o, skeleton_id) {
+    o[skeleton_id] = null;
+    return o;
+  }, {});
+
+  for (var skeleton_id in skeletons) {
+    if (skeletons.hasOwnProperty(skeleton_id)) {
+      skeletons[skeleton_id].remove_connector_selection();
+      if (skeleton_id in visible_set) {
+        skeletons[skeleton_id].create_connector_selection( common );
+      }
+    }
+	}
+
 	this.space.render();
 };
 
@@ -296,21 +299,27 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
             alert(json.error);
             return;
           }
-          var sk = self.space.updateSkeleton(skeleton_id, json);
-          sk.show(self.options);
-          i += 1;
-          $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
-          if (i < skeleton_ids.length) {
-            fn(skeleton_ids[i]);
-          } else {
-            if (refresh_restricted_connectors) self.refreshRestrictedConnectors();
-            self.space.render();
-            if (callback) {
-              try { callback(); } catch (e) { alert(e); }
+          try {
+            var sk = self.space.updateSkeleton(skeleton_id, json);
+            sk.show(self.options);
+            i += 1;
+            $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
+            if (i < skeleton_ids.length) {
+              fn(skeleton_ids[i]);
+            } else {
+              if (refresh_restricted_connectors) self.refreshRestrictedConnectors();
+              self.space.render();
+              if (callback) {
+                try { callback(); } catch (e) { alert(e); }
+              }
+              if (skeleton_ids.length > 1) {
+                $.unblockUI();
+              }
             }
-            if (skeleton_ids.length > 1) {
-              $.unblockUI();
-            }
+          } catch(e) {
+            $.unblockUI();
+            console.log(e, new Error(e).stack);
+            growlAlert("ERROR", "Loaded only " + i + " / " + skeleton_ids.length + " skeletons!");
           }
         });
   };
@@ -1140,32 +1149,22 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects
 	this.line_material[CTYPES[1]] = new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6});
 	this.line_material[CTYPES[2]] = new THREE.LineBasicMaterial({color: 0x00f6ff, opacity: 1.0, linewidth: 6});
 
-	this.nodeProps = null; // TODO don't store them
-	this.connectorProps = null;
-
 	this.geometry = {};
 	this.geometry[CTYPES[0]] = new THREE.Geometry();
 	this.geometry[CTYPES[1]] = new THREE.Geometry();
 	this.geometry[CTYPES[2]] = new THREE.Geometry();
 
-	this.vertexcolors = [];
-
-	this.vertexIDs = {};
-	this.vertexIDs[CTYPES[0]] = [];
-	this.vertexIDs[CTYPES[1]] = [];
-	this.vertexIDs[CTYPES[2]] = [];
-	
 	this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
 	for (var i=0; i<CTYPES.length; ++i) {
 		this.actor[CTYPES[i]] = new THREE.Line(this.geometry[CTYPES[i]], this.line_material[CTYPES[i]], THREE.LinePieces);
 	}
 
-	// TODO these should be arrays per skeleton, not general objects per node
 	this.specialTagSpheres = {};
 	this.synapticSpheres = {};
 	this.radiusVolumes = {}; // contains spheres and cylinders
 	this.textlabels = {};
 
+  // Used only with restricted connectors
 	this.connectoractor = {};
 	this.connectorgeometry = {};
 };
@@ -1181,9 +1180,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.destroy = function
 			 }
 		 }
 	});
-
-	this.nodeProps = null;
-	this.connectorProps = null;
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.removeActorFromScene = function() {
@@ -1265,14 +1261,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTextMeshes =
 		}
 	}
 
+  // Find Vector3 of tagged nodes
+  var vs = this.geometry['neurite'].vertices.reduce(function(o, v) {
+    if (v.node_id in nodeIDTags) o[v.node_id] = v;
+    return o;
+  }, {});
+
 	// Create meshes for the tags for all nodes that need them, reusing the geometries
 	var cache = WebGLApplication.prototype.Space.prototype.TextGeometryCache,
 			textMaterial = this.space.staticContent.textMaterial;
 	for (var tagString in tagNodes) {
 		if (tagNodes.hasOwnProperty(tagString)) {
 			tagNodes[tagString].forEach(function(nodeID) {
-				var node = this.nodeProps[nodeID];
-        var v = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6]));
+        var v = vs[nodeID];
 				var text = new THREE.Mesh( cache.getTagGeometry(tagString, this.space.scale), textMaterial );
 				text.position.x = v.x;
 				text.position.y = v.y;
@@ -1339,19 +1340,21 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 			edgeWeights = this.branchCentrality;
 		}
 
-		this.vertexIDs['neurite'].forEach(function(vertexID) {
-			// TODO don't use nodeProps, instead, reconstruct the properties from the vertex coordinates. That way there wouldn't be any need to store the nodeProps.
-			var vertex = this.nodeProps[vertexID];
-			
-			// Determine the base color of the vertex.
-			var baseColor = this.actorColor;
-			if ('creator' === NeuronStagingArea.skeletonsColorMethod) {
-				baseColor = User(vertex[2]).color; // vertex[2] is user_id
-			} else if ('reviewer' === NeuronStagingArea.skeletonsColorMethod) {
-				baseColor = User(vertex[3]).color; // vertex[3] is reviewer_id
-			}
+    var pickColor;
+    var actorColor = this.actorColor;
+    if ('creator' === NeuronStagingArea.skeletonsColorMethod) {
+      pickColor = function(vertex) { return User(vertex[2].user_id).color; };
+    } else if ('reviewer' === NeuronStagingArea.skeletonsColorMethod) {
+      pickColor = function(vertex) { return User(vertex[3].reviewer_id).color; };
+    } else {
+      pickColor = function() { return actorColor; };
+    }
 
-			if (!this.graph) this.createGraph();
+		this.geometry['neurite'].vertices.forEach(function(vertex) {
+			// Determine the base color of the vertex.
+			var baseColor = pickColor(vertex);
+
+			if (!this.graph) this.graph = this.createGraph();
 
 			// Darken the color by the average weight of the vertex's edges.
 			var weight = 0;
@@ -1436,63 +1439,52 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_s
 	this.connectorgeometry[this.CTYPES[1]] = new THREE.Geometry();
 	this.connectorgeometry[this.CTYPES[2]] = new THREE.Geometry();
 
-	for (var connectorID in this.connectorProps) {
-		if (this.connectorProps.hasOwnProperty(connectorID) && common_connector_IDs.hasOwnProperty(connectorID)) {
-			var con = this.connectorProps[connectorID];
-			var node = this.nodeProps[con[0]]; // 0 is the treenode ID
-			var v1 = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6])); // x, y, z
-			var v2 = this.space.toSpace(new THREE.Vector3(con[3], con[4], con[5])); // x, y, z
-			// con[2] is 0 for presynaptic_to and 1 for postsynaptic_to
-			var type = this.synapticTypes[con[2]];
-			var vertices = this.connectorgeometry[type].vertices;
-			vertices.push( v1 );
-			vertices.push( v2 );
-		}
-	}
-
-	for (var i=0; i<2; ++i) {
-		var type = this.synapticTypes[i];
+  this.synapticTypes.forEach(function(type) {
+    // Vertices is an array of Vector3, every two a pair, the first at the connector and the second at the node
+    var vertices1 = this.geometry[type].vertices;
+    var vertices2 = this.connectorgeometry[type].vertices;
+    for (var i=vertices1.length-2; i>-1; i-=2) {
+      var v = vertices1[i];
+      if (common_connector_IDs.hasOwnProperty(v.node_id)) {
+        vertices2.push(vertices1[i+1]);
+        vertices2.push(v);
+      }
+    }
 		this.connectoractor[type] = new THREE.Line( this.connectorgeometry[type], this.line_material[type], THREE.LinePieces );
 		this.space.add( this.connectoractor[type] );
-	}
+  }, this);
 };
 
 /** Place a colored sphere at the node. Used for highlighting special tags like 'uncertain end' and 'todo'. */
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(nodeID, color) {
-	var node = this.nodeProps[nodeID];
-	var v = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6]));
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, color) {
 	var mesh = new THREE.Mesh( this.space.staticContent.labelspheregeometry, color );
 	mesh.position.set( v.x, v.y, v.z );
-	mesh.node_id = nodeID;
-	this.specialTagSpheres[nodeID] = mesh;
+	mesh.node_id = v.node_id;
+	this.specialTagSpheres[v.node_id] = mesh;
 	this.space.add( mesh );
 };
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = function(id1, v1,
-		id2, v2,
-		type) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = function(v1, v2, type) {
 	// Create edge between child (id1) and parent (id2) nodes:
 	// Takes the coordinates of each node, transforms them into the space,
 	// and then adds them to the parallel lists of vertices and vertexIDs
-	this.geometry[type].vertices.push( v1 );
-	this.vertexIDs[type].push(id1);
-
-	this.geometry[type].vertices.push( v2 );
-	this.vertexIDs[type].push(id2);
+  var vs = this.geometry[type].vertices;
+  vs.push(v1);
+	vs.push(v2);
 };
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere = function(id, v, radius, material) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere = function(v, radius, material) {
 	// Reuse geometry: an icoSphere of radius 1.0
 	var mesh = new THREE.Mesh(this.space.staticContent.icoSphere, material);
 	// Scale the mesh to bring about the correct radius
 	mesh.scale.x = mesh.scale.y = mesh.scale.z = radius;
 	mesh.position.set( v.x, v.y, v.z );
-	mesh.node_id = id;
-	this.radiusVolumes[id] = mesh;
+	mesh.node_id = v.node_id;
+	this.radiusVolumes[v.node_id] = mesh;
 	this.space.add(mesh);
 };
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(nodeID, v1, v2, radius) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius) {
 	var mesh = new THREE.Mesh(this.space.staticContent.cylinder, material);
 
 	// BE CAREFUL with side effects: all functions on a Vector3 alter the vector and return it (rather than returning an altered copy)
@@ -1506,19 +1498,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = f
 	mesh.rotation = new THREE.Vector3().setEulerFromQuaternion(arrow.quaternion);
 	mesh.position = new THREE.Vector3().addVectors(v1, direction.multiplyScalar(0.5));
 
-	mesh.node_id = nodeID;
+	mesh.node_id = v1.node_id;
 
-	this.radiusVolumes[nodeID] = mesh;
+	this.radiusVolumes[v1.node_id] = mesh;
 	this.space.add(mesh);
 };
 
 /* The itype is 0 (pre) or 1 (post), and chooses from the two arrays: synapticTypes and synapticColors. */
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphere = function(nodeID, v, itype) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphere = function(v, itype) {
 	var mesh = new THREE.Mesh( this.space.staticContent.radiusSphere, this.synapticColors[itype] );
 	mesh.position.set( v.x, v.y, v.z );
-	mesh.node_id = nodeID;
+	mesh.node_id = v.node_id;
 	mesh.type = this.synapticTypes[itype];
-	this.synapticSpheres[nodeID] = mesh;
+	this.synapticSpheres[v.node_id] = mesh;
 	this.space.add( mesh );
 };
 
@@ -1540,23 +1532,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 
 	var scale = this.space.scale;
 
-	// Map of node ID vs node properties
+	// Map of node ID vs node properties array
 	var nodeProps = nodes.reduce(function(ob, node) {
 		ob[node[0]] = node;
 		return ob;
 	}, {});
 
-	// Store for reuse in other functions
-	// TODO incurs in large memory footprint, should retrieve it when needed from the database (e.g. when needing to create the graph).
-	// TODO all that needs to be kept is the x,y,z for the nodes that have connectors or labels, and those for connectors can be removed after creating them (for the text labels one has to keep them, as labels are recreated every time)
-	this.nodeProps = nodeProps;
-	this.connectorProps = connectors.reduce(function(ob, con) {
-		ob[con[1]] = con;
-		return ob;
-	}, {});
-
 	// Store for creation when requested
 	this.tags = tags;
+
+  // Cache for reusing Vector3d instances
+  var vs = {};
 
 	// Reused for all meshes
 	var material = new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
@@ -1566,37 +1552,63 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 	nodes.forEach(function(node) {
 		// node[0]: treenode ID
 		// node[1]: parent ID
+    // node[2]: user ID
+    // node[3]: reviewer ID
+    // 4,5,6: x,y,z
 		// node[7]: radius
 		// node[8]: confidence
 		// If node has a parent
+    var v1;
 		if (node[1]) {
-			// indices 4,5,6 are x,y,z
-			var p = this.nodeProps[node[1]];
-			var v1 = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6]));
-			var v2 = this.space.toSpace(new THREE.Vector3(p[4], p[5], p[6]));
+			var p = nodeProps[node[1]];
+      v1 = vs[node[0]];
+      if (!v1) {
+			  v1 = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6]));
+        v1.node_id = node[0];
+        v1.user_id = node[2];
+        v1.reviewer_id = node[3];
+        vs[node[0]] = v1;
+      }
+      var v2 = vs[p[0]];
+      if (!v2) {
+			  v2 = this.space.toSpace(new THREE.Vector3(p[4], p[5], p[6]));
+        v2.node_id = p[0];
+        v2.user_id = p[2];
+        v2.reviewer_id = p[3];
+        vs[p[0]] = v2;
+      }
 			var nodeID = node[0];
 			if (node[7] > 0 && p[7] > 0) {
 				// Create cylinder using the node's radius only (not the parent) so that the geometry can be reused
 				var scaled_radius = node[7] * scale;
-				this.createCylinder(nodeID, v1, v2, scaled_radius);
+				this.createCylinder(v1, v2, scaled_radius);
 				// Create skeleton line as well
-				this.createEdge(nodeID, v1, p[0], v2, 'neurite');
+				this.createEdge(v1, v2, 'neurite');
 			} else {
 				// Create line
-				this.createEdge(nodeID, v1, p[0], v2, 'neurite');
+				this.createEdge(v1, v2, 'neurite');
 				// Create sphere
 				if (node[7] > 0) {
-					this.createNodeSphere(nodeID, v1, node[7] * scale);
+					this.createNodeSphere(v1, node[7] * scale);
 				}
 			}
-		} else if (node[7] > 0) {
-			// For the root node
-			var v1 = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6]));
-			this.createNodeSphere(node[0], v1, node[7] * scale);
+		} else {
+			// For the root node, which must be added to vs
+			v1 = vs[node[0]];
+      if (!v1) {
+        v1 = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6]));
+        v1.node_id = node[0];
+        v1.user_id = node[2];
+        v1.reviewer_id = node[3];
+        vs[node[0]] = v1;
+      }
+      if (node[7] > 0) {
+			  this.createNodeSphere(v1, node[7] * scale);
+      }
 		}
 		if (node[8] < 5) {
 			// Edge with confidence lower than 5
-			this.createLabelSphere(node[0], this.space.staticContent.labelColors.uncertain);
+			this.createLabelSphere(v1, this.space.staticContent.labelColors.uncertain);
 		}
 	}, this);
 
@@ -1607,17 +1619,14 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 		// con[0]: treenode ID
 		// con[1]: connector ID
 		// con[2]: 0 for pre, 1 for post
-		var node = this.nodeProps[con[0]];
 		// indices 3,4,5 are x,y,z for connector
 		// indices 4,5,6 are x,y,z for node
 		var v1 = this.space.toSpace(new THREE.Vector3(con[3], con[4], con[5]));
-		var v2 = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6]));
-		this.createEdge(con[1], v1,
-					     		  node[0], v2,
-							      this.synapticTypes[con[2]]);
-		if (!this.synapticSpheres.hasOwnProperty(node[0])) {
-			// con[2] is 0 for presynaptic and 1 for postsynaptic
-			this.createSynapticSphere(node[0], v2, con[2]);
+    v1.node_id = con[1];
+		var v2 = vs[con[0]];
+		this.createEdge(v1, v2, this.synapticTypes[con[2]]);
+		if (!this.synapticSpheres.hasOwnProperty(v2.node_id)) {
+			this.createSynapticSphere(v2, con[2]);
 		}
 	}, this);
 
@@ -1628,13 +1637,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			if (-1 !== tagLC.indexOf('todo')) {
 				this.tags[tag].forEach(function(nodeID) {
 					if (!this.specialTagSpheres[nodeID]) {
-						this.createLabelSphere(nodeID, this.space.staticContent.labelColors.todo);
+						this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.todo);
 					}
 				}, this);
 			} else if (-1 !== tagLC.indexOf('uncertain')) {
 				this.tags[tag].forEach(function(nodeID) {
 					if (!this.specialTagSpheres[nodeID]) {
-						this.createLabelSphere(nodeID, this.space.staticContent.labelColors.uncertain);
+						this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.uncertain);
 					}
 				}, this);
 			}
@@ -1664,16 +1673,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.show = function(op
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createGraph = function() {
-	var nodeProps = this.nodeProps,
+  // Every consecutive pair of nodes represents an edge, and with the node id, one can recreate the graph easily.
+  var nodes = this.geometry['neurite'].vertices,
 			graph = jsnx.Graph();
-	for (var nodeID in nodeProps) {
-		var props = nodeProps[nodeID];
-		if (props[1]) {
-			// Edge from parent to child
-			graph.add_edge(props[1], nodeID);
-		}
-	}
-	this.graph = graph;
+  for (var i=0; i<nodes.length; i+=2) {
+    graph.add_edge(nodes[i].node_id, nodes[i+1].node_id);
+  }
+	return graph;
 };
 
 /** Populate datastructures for skeleton shading methods, and trigger a render
@@ -1693,7 +1699,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.shaderWorkers = fu
 		return;
 	}
 
-	if (!this.graph) this.createGraph();
+	if (!this.graph) this.graph = this.createGraph();
 
 	// Put up some kind of indicator that calculations are underway.
 	$.blockUI({message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Computing... just a moment...</h2>'});

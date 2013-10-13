@@ -534,6 +534,16 @@ var tracingWindowActions = [
   }),
 
   new Action({
+    helpText: "Query Neurons by Annotations",
+    buttonID: "data_button_query_neurons",
+    buttonName: 'query_neurons',
+    run: function (e) {
+      WindowMaker.show('neuron-annotations');
+      return true;
+    }
+  }),
+
+  new Action({
       helpText: "Show 3D WebGL view",
       buttonID: "view_3d_webgl_button",
       buttonName: '3d-view-webgl',

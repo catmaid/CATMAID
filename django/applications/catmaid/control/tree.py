@@ -495,11 +495,13 @@ def tree_object_list(request, project_id=None):
                     ON ci.user_id = "auth_user".id
                 WHERE cici.class_instance_b = %s
                   AND (cici.relation_id = %s
+                       OR cici.relation_id = %s
                        OR cici.relation_id = %s)
                 ORDER BY ci.class_id DESC, ci.name ASC
                 LIMIT %s''', (
             parent_id,
             relation_map['model_of'],
+            relation_map['annotated_with'],
             relation_map['part_of'],
             max_nodes))
 

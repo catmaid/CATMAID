@@ -25,7 +25,7 @@ var SkeletonConnectivity = new function()
             }
             skeletons[skid] = $('#neuronname' + SkeletonAnnotations.getActiveStackId()).text();
         } else {
-            skeletons = NeuronStagingArea.get_selected_skeletons_data();
+            skeletons = NeuronStagingArea.get_selected_skeletons_names();
             if (0 === Object.keys(skeletons).length) {
                 growlAlert("Information", "Selection Table is empty!");
                 return;

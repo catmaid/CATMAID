@@ -197,7 +197,7 @@ var WindowMaker = new function()
     add.setAttribute("type", "button");
     add.setAttribute("id", "add_current_active_object_to_staging");
     add.setAttribute("value", "Add active object");
-    add.onclick = NeuronStagingArea.add_active_object_to_stage;
+    add.onclick = NeuronStagingArea.fn("add_active_object_to_stage");
     buttons.appendChild(add);
 
     var save = document.createElement('input');
@@ -205,14 +205,14 @@ var WindowMaker = new function()
     save.setAttribute("id", "save_skeleton_list");
     save.setAttribute("value", "Save list");
     save.style.marginLeft = '1em';
-    save.onclick = NeuronStagingArea.save_skeleton_list;
+    save.onclick = NeuronStagingArea.fn("save_skeleton_list");
     buttons.appendChild(save);
 
     var load = document.createElement('input');
     load.setAttribute("type", "button");
     load.setAttribute("id", "load_skeleton_list");
     load.setAttribute("value", "Load list");
-    load.onclick = NeuronStagingArea.load_skeleton_list;
+    load.onclick = NeuronStagingArea.fn("load_skeleton_list");
     buttons.appendChild(load);
     
     var colorLabel = document.createElement('div');
@@ -226,7 +226,7 @@ var WindowMaker = new function()
     $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
     $('<option/>', {value : 'reviewer', text: 'By Reviewer'}).appendTo(colorMenu);
     $('<option/>', {value : 'manual', text: 'Manual'}).appendTo(colorMenu);
-    colorMenu.onchange = NeuronStagingArea.set_skeletons_base_color;
+    colorMenu.onchange = NeuronStagingArea.fn("set_skeletons_base_color");
     buttons.appendChild(colorMenu);
     
     var map = document.createElement('input');
@@ -234,14 +234,14 @@ var WindowMaker = new function()
     map.setAttribute("id", "user_colormap_dialog");
     map.setAttribute("value", "User colormap");
     map.style.marginLeft = '1em';
-    map.onclick = NeuronStagingArea.usercolormap_dialog;
+    map.onclick = NeuronStagingArea.fn("usercolormap_dialog");
     buttons.appendChild(map);
 
     var measure = document.createElement('input');
     measure.setAttribute('type', 'button');
     measure.setAttribute('id', 'selection_table_measure');
     measure.setAttribute('value', 'Measure');
-    measure.onclick = NeuronStagingArea.measure;
+    measure.onclick = NeuronStagingArea.fn("measure");
     buttons.appendChild(measure);
     
     win.getFrame().appendChild(buttons);

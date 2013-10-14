@@ -371,15 +371,17 @@ WebGLApplication.prototype.removeSkeletons = function(skeleton_ids) {
 	else this.space.render();
 };
 
-WebGLApplication.prototype.changeSkeletonColor = function(skeleton_id, color) {
+WebGLApplication.prototype.changeSkeletonColors = function(skeleton_ids, colors) {
 	var skeletons = this.space.content.skeletons;
-	if (!skeletons.hasOwnProperty(skeleton_id)) {
-		console.log("Skeleton "+skeleton_id+" does not exist.");
-		return false;
-	}
 
-	if (undefined === color) skeletons[skeleton_id].updateSkeletonColor(this.options);
-	else skeletons[skeleton_id].changeColor(color, this.options);
+  skeleton_ids.forEach(function(skeleton_id, index) {
+    if (!skeletons.hasOwnProperty(skeleton_id)) {
+		  console.log("Skeleton "+skeleton_id+" does not exist.");
+    }
+    if (undefined === colors) skeletons[skeleton_id].updateSkeletonColor(this.options);
+    else skeletons[skeleton_id].changeColor(colors[index], this.options);
+  }, this);
+
 	this.space.render();
 	return true;
 };

@@ -1072,8 +1072,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
 
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function(scale) {
-  this.geometry = new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
+  this.geometry = new THREE.IcosahedronGeometry(1, 2);
   this.mesh = new THREE.Mesh( this.geometry, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
+  this.mesh.scale.x = this.mesh.scale.y = this.mesh.scale.z = 160 * scale;
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototype = {};

@@ -1344,9 +1344,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     var pickColor;
     var actorColor = this.actorColor;
     if ('creator' === NeuronStagingArea.skeletonsColorMethod) {
-      pickColor = function(vertex) { return User(vertex[2].user_id).color; };
+      pickColor = function(vertex) { return User(vertex.user_id).color; };
     } else if ('reviewer' === NeuronStagingArea.skeletonsColorMethod) {
-      pickColor = function(vertex) { return User(vertex[3].reviewer_id).color; };
+      pickColor = function(vertex) { return User(vertex.reviewer_id).color; };
     } else {
       pickColor = function() { return actorColor; };
     }
@@ -1359,17 +1359,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
 			// Darken the color by the average weight of the vertex's edges.
 			var weight = 0;
-			var neighbors = this.graph.neighbors(vertexID);
+			var neighbors = this.graph.neighbors(vertex.node_id);
 			neighbors.forEach(function(neighbor) {
-				var edge = [vertexID, neighbor].sort();
+				var edge = [vertex.node_id, neighbor].sort();
 				weight += (edge in edgeWeights ? edgeWeights[edge] : 1.0);
 			});
 			weight = (weight / neighbors.length) * 0.75 + 0.25;
 			var color = new THREE.Color().setRGB(baseColor.r * weight, baseColor.g * weight, baseColor.b * weight);
 			this.geometry['neurite'].colors.push(color);
 
-			if (vertexID in this.radiusVolumes) {
-				var mesh = this.radiusVolumes[vertexID];
+			if (vertex.node_id in this.radiusVolumes) {
+				var mesh = this.radiusVolumes[vertex.node_id];
 				var material = mesh.material.clone();
 				material.color = color;
 				mesh.setMaterial(material);

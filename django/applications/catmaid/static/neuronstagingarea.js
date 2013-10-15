@@ -319,7 +319,7 @@ SelectionTable.prototype.addActive = function() {
     var atn_id = SkeletonAnnotations.getActiveNodeId(),
         skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
     if (!atn_id) {
-        alert("You must have an active node selected to add its skeleton to the staging area.");
+        growlAlert("Information", "You must have an active node selected to add its skeleton to the staging area.");
         return;
     }
     if (SkeletonAnnotations.getActiveNodeType() !== SkeletonAnnotations.TYPE_NODE) {

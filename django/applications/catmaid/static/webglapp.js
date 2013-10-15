@@ -213,7 +213,7 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
 	// Find all connector IDs referred to by more than one skeleton
 	// but only for visible skeletons
 	var skeletons = this.space.content.skeletons;
-	var visible_skeletons = NeuronStagingArea.get_selected_skeletons();
+	var visible_skeletons = NeuronStagingArea.getSelectedSkeletons();
   var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
 
 	var counts = visible_skeletons.reduce(function(counts, skeleton_id) {
@@ -330,7 +330,7 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
 };
 
 WebGLApplication.prototype.refresh_skeletons = function() {
-  var selected = NeuronStagingArea.get_selected_skeletons();
+  var selected = NeuronStagingArea.getSelectedSkeletons();
   var selected_set = selected.reduce(function(o, id) { o[id] = id; return o;}, {});
 
   var skeletons = this.space.content.skeletons;

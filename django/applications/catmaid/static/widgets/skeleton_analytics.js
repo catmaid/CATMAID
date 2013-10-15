@@ -74,7 +74,7 @@ var SkeletonAnalytics = new function()
         skids = [SkeletonAnnotations.getActiveSkeletonId()];
         break;
       case "1":
-        skids = WebGLApp.getListOfSkeletonIDs(true);
+        skids = NeuronStagingArea.getSelectedSkeletons();
         break;
     }
     if (!skids || !skids[0]) {

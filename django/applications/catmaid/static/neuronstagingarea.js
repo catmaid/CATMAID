@@ -2,15 +2,16 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 SelectionTable = function() {
-  this.skeletonmodels = {};
+  this.skeletons = [];
+  this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
   this.skeletonsColorMethod = 'random';
   this.togglevisibleall = false;
   this.selected_skeleton_id = null;
+  this.highlighting_color = "#d6ffb5";
+  this.gui = new this.GUI(this, 20);
 };
 
 SelectionTable.prototype = {};
-
-window.NeuronStagingArea = new SelectionTable();
 
 SelectionTable.prototype.fn = function(fnName) {
   return function() {
@@ -19,7 +20,7 @@ SelectionTable.prototype.fn = function(fnName) {
 };
 
 SelectionTable.prototype.SkeletonModel = function( id, neuronname, color ) {
-    this.id = id;
+    this.id = parseInt(id);
     this.baseName = neuronname + ' - #' + id;
     this.selected = true;
     // 3d viewer attributes
@@ -108,14 +109,6 @@ SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
 };
 
 
-
-
-SelectionTable.prototype.getNSkeletons = function() {
-  var count = 0;
-  for (var key in this.skeletonmodels) if (this.skeletonmodels.hasOwnProperty(key)) ++count;
-  return count;
-};
-
 SelectionTable.prototype.COLORS = [[1, 1, 0], // yellow
                                    [1, 0, 1], // magenta
                                    [0.5, 0.5, 1], // light blue
@@ -155,14 +148,13 @@ SelectionTable.prototype.pickColor = function(index) {
   return color;
 };
 
-SelectionTable.prototype.highlight_skeleton = function( skeleton_id ) {
-  if (this.selected_skeleton_id === skeleton_id) return;
-  if (this.selected_skeleton_id in this.skeletonmodels) {
+SelectionTable.prototype.highlight = function( skeleton_id ) {
+  if (this.selected_skeleton_id in this.skeleton_ids) {
     $('#skeletonrow-' + this.selected_skeleton_id).css('background-color', 'white');
     this.selected_skeleton_id = null;
   }
-  if (skeleton_id in this.skeletonmodels) {
-    $('#skeletonrow-' + skeleton_id).css('background-color', '#FFFF00');
+  if (skeleton_id in this.skeleton_ids) {
+    $('#skeletonrow-' + skeleton_id).css('background-color', this.highlighting_color);
     this.selected_skeleton_id = skeleton_id;
   }
 };
@@ -177,82 +169,59 @@ SelectionTable.prototype.ensureOpen = function() {
   }
 };
 
+/** setup button handlers */
 SelectionTable.prototype.reinit_list_with_existing_skeleton = function() {
-  for (var skeleton_id in this.skeletonmodels) {
-    if (this.skeletonmodels.hasOwnProperty(skeleton_id)) {
-      this._add_skeleton_to_table(this.skeletonmodels[skeleton_id]);
-    }
-  }
+  
+  this.addActive();
 
-  // setup button handlers
   var self = this;
-  $('#webgl-show').click(function() {
-    for( var skeleton_id in self.skeletonmodels ) {
-      if( self.skeletonmodels.hasOwnProperty(skeleton_id) ) {
-        self.select_skeleton( skeleton_id, self.togglevisibleall );
-      }
+
+  $('#webgl-rmall').click(function() {
+    if (confirm("Empty selection table?")) {
+      self.clear();
     }
-    self.togglevisibleall = !self.togglevisibleall;
-    if( self.togglevisibleall )
-      $('#webgl-show').text('select all');
-    else
-      $('#webgl-show').text('unselect all');
   });
+
+  $('#webgl-show').click(function() {
+    self.skeletons.forEach(function(skeleton) {
+      self.selectSkeleton(skeleton, self.togglevisibleall);
+    });
+    self.togglevisibleall = !self.togglevisibleall;
+  });
+
+  // TODO add similar buttons and handlers for pre and post
 };
 
 SelectionTable.prototype.add_skeleton_to_stage = function( id, neuronname, callback ) {
-  // if it does not exists yet, add it
-  if( this.skeletonmodels.hasOwnProperty( id ) ) {
-    console.log('Skeleton', id, ' already in table');
-  } else {
-    this.skeletonmodels[ id ] = new this.SkeletonModel(id, neuronname, this.pickColor(this.getNSkeletons()));
-    this._add_skeleton_to_table( this.skeletonmodels[ id ] );
-    this.update_skeleton_color_button( id );
-    if( WebGLApp.is_widget_open() ) {
-      WebGLApp.addSkeletons( [id], true );
-    }
-  }
-  if (typeof callback !== "undefined" && callback instanceof Function) {
-    callback();
-  }
+  var o = {};
+  o[id] = neuronname;
+  this.insertSkeletons(o, callbalk);
 };
 
 /** sks: object with skeleton_id as keys and neuron names as values. */
-SelectionTable.prototype.add_skeletons_to_stage = function(sks, callback) {
-  var self = this;
-  var n = this.getNSkeletons();
+SelectionTable.prototype.insertSkeletons = function(sks, callback) {
+  var n = this.skeletons.length;
   var skids = Object.keys(sks).filter(function(id) {
-    if (self.skeletonmodels.hasOwnProperty(id)) {
+    if (id in this.skeleton_ids) {
       // Already in table
       return false;
     }
     var neuronname = sks[id];
-    self.skeletonmodels[id] = new self.SkeletonModel(id, neuronname, self.pickColor(n++));
-    self._add_skeleton_to_table(self.skeletonmodels[id]);
-    self.update_skeleton_color_button( id );
+    this.skeletons.push(new this.SkeletonModel(id, neuronname, this.pickColor(n++)));
+    this.skeleton_ids[id] = this.skeletons.length -1;
     return true;
-  });
+  }, this);
+
+  this.gui.update();
+
   if (WebGLApp.is_widget_open()) {
     WebGLApp.addSkeletons(skids, true, callback);
+  } else {
+    if (callback) callback();
   }
 };
 
-SelectionTable.prototype.add_skeleton_to_stage_without_name = function( id, callback ) {
-  if (id) {
-    this.ensureOpen();
-    var skeleton_id = parseInt(id),
-        self = this;
-    requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/neuronname', 'POST', {},
-        function(status, text) {
-          if (200 !== status) return;
-          var json = $.parseJSON(text);
-          if (json.error) { alert(json.error); return; }
-          self.add_skeleton_to_stage(skeleton_id, json['neuronname'], callback);
-        });
-  }
-};
-
-SelectionTable.prototype.add_skeletons = function(ids, callback) {
+SelectionTable.prototype.addSkeletons = function(ids, callback) {
   this.ensureOpen();
   var self = this;
   requestQueue.register(django_url + project.id + '/skeleton/neuronnames', 'POST',
@@ -261,57 +230,42 @@ SelectionTable.prototype.add_skeletons = function(ids, callback) {
       if (200 !== status) return;
       var json = $.parseJSON(text);
       if (json.error) { alert(json.error); return; }
-      self.add_skeletons_to_stage(json, callback);
+      self.insertSkeletons(json, callback);
     });
 };
 
-SelectionTable.prototype._remove_skeleton_from_table = function( id ) {
-  $('#skeletonrow-' + id).remove();
-};
-
-SelectionTable.prototype.remove_skeleton = function( id ) {
-  if (this.skeletonmodels.hasOwnProperty(id) ) {
-    if (id === this.selected_skeleton_id) {
-      this.selected_skeleton_id = null;
-    }
-    this._remove_skeleton_from_table(id);
-    delete this.skeletonmodels[id];
-    // remove from webgl if open
-    if (WebGLApp.is_widget_open() ) {
-      WebGLApp.removeSkeletons([id]);
-    }
-  } else {
-    console.log('Cannot remove skeleton', id, ' it is not in the list');
-  }
-};
-
-SelectionTable.prototype.remove_skeletons = function(ids) {
+SelectionTable.prototype.removeSkeletons = function(ids) {
   ids.forEach(function(id) {
     if (id === this.selected_skeleton_id) {
       this.selected_skeleton_id = null;
     }
-    this._remove_skeleton_from_table(id);
-    delete this.skeletonmodels[id];
+
+    this.skeletons.splice(this.skeleton_ids[id], 1);
+    delete this.skeleton_ids[id];
   }, this);
+
+  this.gui.update();
+
   if (WebGLApp.is_widget_open()) {
     WebGLApp.removeSkeletons(ids);
   }
 };
 
-SelectionTable.prototype.remove_all_skeletons = function() {
-  this.remove_skeletons(Object.keys(this.skeletonmodels));
+SelectionTable.prototype.clear = function() {
+  this.skeletons = [];
+  this.skeleton_ids = {};
+  this.gui.clear();
 };
  
 /** Set the color of all skeletons based on the state of the "Color" pulldown menu. */
 SelectionTable.prototype.set_skeletons_base_color = function() {
   this.skeletonsColorMethod = $('#skeletons_base_color :selected').attr("value");
-  var skeleton_ids = Object.keys(this.skeletonmodels);
+  var skeleton_ids = Object.keys(this.skeleton_ids);
   
   if ("random" === this.skeletonsColorMethod) {
-    var colors = skeleton_ids.map(function(skeleton_id, index) {
-      var skeleton = this.skeletonmodels[skeleton_id];
+    var colors = this.skeletons.map(function(skeleton, index) {
       skeleton.color = this.pickColor(index);
-      this.update_skeleton_color_button(skeleton_id);
+      this.gui.update_skeleton_color_button(skeleton);
       return skeleton.color;
     }, this);
     if (WebGLApp.is_widget_open()) {
@@ -324,52 +278,42 @@ SelectionTable.prototype.set_skeletons_base_color = function() {
   }
 };
  
-SelectionTable.prototype.update_skeleton_color_button = function( id ) {
-  $('#skeletonaction-changecolor-' + id).css("background-color", '#' + this.skeletonmodels[ id ].color.getHexString() );
-};
-
-SelectionTable.prototype.update_skeleton_color_in_3d = function( id ) {
-  if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( id ) ) {
-    WebGLApp.changeSkeletonColors( [id], [this.skeletonmodels[ id ].color] );
+SelectionTable.prototype.update_skeleton_color_in_3d = function( skeleton ) {
+  if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( skeleton.id ) ) {
+    WebGLApp.changeSkeletonColors( [skeleton.id], [skeleton.color] );
   }
 };
 
-SelectionTable.prototype.get_skeletonmodel = function( id ) {
-  return this.skeletonmodels[ id ];
-};
-
-SelectionTable.prototype.get_color_of_skeleton = function( id ) {
-  return this.skeletonmodels[ id ].color.clone();
-};
-
-SelectionTable.prototype.get_selected_skeletons = function() {
-  var keys = [];
-  for (var id in this.skeletonmodels) {  
-    if (this.skeletonmodels.hasOwnProperty(id) && this.skeletonmodels[id].selected) {
-      keys.push(id)
-    }
+SelectionTable.prototype.getSkeleton = function( id ) {
+  if (id in this.skeleton_ids) {
+    return this.skeletons[this.skeleton_ids[id]];
   }
-  return keys;
 };
 
-SelectionTable.prototype.get_selected_skeletons_names = function() {
-  var skeletons = {};
-  for (var skid in this.skeletonmodels) {
-    if (this.skeletonmodels.hasOwnProperty(skid)) {
-      var sk = this.skeletonmodels[skid];
-      if (sk.selected) {
-        skeletons[skid] = sk.baseName;
-      }
-    }
-  }
-  return skeletons;
+SelectionTable.prototype.getSkeletonColor = function( id ) {
+  var sk = this.getSkeleton(id);
+  if (sk) return sk.color.clone();
+};
+
+SelectionTable.prototype.getSelectedSkeletons = function() {
+  return this.skeletons.reduce(function(a, skeleton) {
+    if (skeleton.selected) a.push(skeleton.id);
+    return a;
+  }, []);
+};
+
+SelectionTable.prototype.getSelectedSkeletonNames = function() {
+  return this.skeletons.reduce(function(o, skeleton) {
+    if (skeleton.selected) o[skeleton.id] = skeleton.baseName;
+    return o;
+  }, {});
 };
 
 SelectionTable.prototype.get_all_skeletons = function() {
-  return Object.keys( skeletonmodels );
+  return Object.keys( skeleton_ids );
 };
 
-SelectionTable.prototype.add_active_object_to_stage = function( event ) {
+SelectionTable.prototype.addActive = function() {
   // add either a skeleton or an assembly based on the tool selected
   if ('tracingtool' === project.getTool().toolname) {
     var atn_id = SkeletonAnnotations.getActiveNodeId(),
@@ -379,28 +323,72 @@ SelectionTable.prototype.add_active_object_to_stage = function( event ) {
         return;
     }
     if (SkeletonAnnotations.getActiveNodeType() !== SkeletonAnnotations.TYPE_NODE) {
-      alert("Select the node of a skeleton, not a connector, to add it to the staging area.");
+      alert("Select the node of a skeleton, not a connector, to add it to the Selection Table");
       return;
     }
     var self = this;
     var new_callback = function() {
-      self.highlight_skeleton( skeleton_id );
+      self.highlight( skeleton_id );
     }
-    this.add_skeleton_to_stage_without_name( skeleton_id, new_callback );
+    this.addSkeletons( [skeleton_id], new_callback );
   }
 };
 
-SelectionTable.prototype._add_skeleton_to_table = function ( skeleton ) {
-  if( $('#skeletonrow-' + skeleton.id ).length > 0 ) {
-    return;
-  }
+SelectionTable.prototype.showPrevious = function() {
+  this.gui.showPrevious();
+};
 
-  var self = this;
+SelectionTable.prototype.showNext = function() {
+  this.gui.showNext();
+};
+
+
+SelectionTable.prototype.GUI = function(table, max) {
+  this.table = table;
+  this.first = 0;
+  this.max = max;
+};
+
+SelectionTable.prototype.GUI.prototype = {};
+
+SelectionTable.prototype.GUI.prototype.clear = function() {
+  this.first = 0;
+  this.update();
+};
+
+SelectionTable.prototype.GUI.prototype.showPrevious = function() {
+  if (0 === this.first) return;
+  this.first -= this.max;
+  this.update();
+};
+
+SelectionTable.prototype.GUI.prototype.showNext = function() {
+  if (this.first + this.max > this.table.skeletons.length) return;
+  this.first += this.max;
+  this.update();
+};
+
+SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(skeleton) {
+  $('#skeletonaction-changecolor-' + skeleton.id).css("background-color", '#' + skeleton.color.getHexString() );
+};
+
+/** Remove all, and repopulate with the current range. */
+SelectionTable.prototype.GUI.prototype.update = function() {
+  $('#selection_table_first').text(this.first + 1);
+  $('#selection_table_last').text(Math.min(this.first + this.max + 1, this.table.skeletons.length));
+
+  // Remove all table rows
+  $("tr[id^='skeletonrow-']").remove();
+  // Re-add the range
+  this.table.skeletons.slice(this.first, this.first + this.max).forEach(this.append, this);
+};
+
+SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
+  var table = this.table;
 
   var rowElement = $('<tr/>').attr({
     id: 'skeletonrow-' + skeleton.id
   });
-  $('#webgl-skeleton-table > tbody:last').append( rowElement );
 
   var td = $(document.createElement("td"));
   td.append( $(document.createElement("img")).attr({
@@ -419,7 +407,7 @@ SelectionTable.prototype._add_skeleton_to_table = function ( skeleton ) {
         })
         .click( function( event )
         {
-          self.remove_skeleton( skeleton.id );
+          table.removeSkeletons( [skeleton.id] );
         })
         .attr('src', STATIC_URL_JS + 'widgets/themes/kde/delete.png')
         .text('Remove!')
@@ -438,14 +426,14 @@ SelectionTable.prototype._add_skeleton_to_table = function ( skeleton ) {
                 name:  skeleton.baseName,
                 value: skeleton.id,
                 type:  'checkbox',
-                checked: true
+                checked: skeleton.selected
         })
         .click( function( event )
         {
           var vis = $('#skeletonshow-' + skeleton.id).is(':checked')
-          self.skeletonmodels[ skeleton.id ].selected = vis;
+          skeleton.selected = vis;
           if( WebGLApp.is_widget_open() ) {
-            self.select_skeleton( skeleton.id, vis );
+            table.selectSkeleton( skeleton, vis );
           }
             
         } )
@@ -463,9 +451,9 @@ SelectionTable.prototype._add_skeleton_to_table = function ( skeleton ) {
         })
         .click( function( event )
         {
-          self.skeletonmodels[ skeleton.id ].pre_visible = $('#skeletonpre-' + skeleton.id).is(':checked');
+          skeleton.pre_visible = $('#skeletonpre-' + skeleton.id).is(':checked');
           if( WebGLApp.is_widget_open() )
-            WebGLApp.setSkeletonPreVisibility( skeleton.id, self.skeletonmodels[ skeleton.id ].pre_visible);
+            WebGLApp.setSkeletonPreVisibility( skeleton.id, skeleton.pre_visible);
 
         } )
   ));
@@ -482,9 +470,9 @@ SelectionTable.prototype._add_skeleton_to_table = function ( skeleton ) {
         })
         .click( function( event )
         {
-          self.skeletonmodels[ skeleton.id ].post_visible = $('#skeletonpost-' + skeleton.id).is(':checked');
+          skeleton.post_visible = $('#skeletonpost-' + skeleton.id).is(':checked');
           if( WebGLApp.is_widget_open() )
-            WebGLApp.setSkeletonPostVisibility( skeleton.id, self.skeletonmodels[ skeleton.id ].post_visible);
+            WebGLApp.setSkeletonPostVisibility( skeleton.id, skeleton.post_visible);
         } )
   ));
 
@@ -499,9 +487,9 @@ SelectionTable.prototype._add_skeleton_to_table = function ( skeleton ) {
         })
         .click( function( event )
         {
-          self.skeletonmodels[ skeleton.id ].text_visible = $('#skeletontext-' + skeleton.id).is(':checked');
+          skeleton.text_visible = $('#skeletontext-' + skeleton.id).is(':checked');
           if( WebGLApp.is_widget_open() )
-            WebGLApp.setSkeletonTextVisibility( skeleton.id, self.skeletonmodels[ skeleton.id ].text_visible);
+            WebGLApp.setSkeletonTextVisibility( skeleton.id, skeleton.text_visible);
         } )
   ));
 
@@ -509,29 +497,44 @@ SelectionTable.prototype._add_skeleton_to_table = function ( skeleton ) {
   td.append(
     $(document.createElement("button")).attr({
       id:    'skeletonaction-properties-' + skeleton.id,
-      value: 'Properties'
+      value: 'P'
     })
       .click( function( event )
       {
-        self.skeletonmodels[ skeleton.id ].property_dialog();
+        skeleton.property_dialog();
       })
-      .text('Properties')
+      .text('P')
   );
   td.append(
     $(document.createElement("button")).attr({
       id:    'skeletonaction-changecolor-' + skeleton.id,
-      value: 'Change color'
+      value: 'color'
     })
       .click( function( event )
       {
-        $('#color-wheel-' + skeleton.id).toggle();
+        // Select the inner div, which will contain the color wheel
+        var sel = $('#color-wheel-' + skeleton.id + ' .colorwheel' + skeleton.id);
+        if (skeleton.cw) {
+          delete skeleton.cw;
+          $('#color-wheel-' + skeleton.id).hide();
+          sel.empty();
+        } else {
+          var cw = Raphael.colorwheel(sel[0], 150);
+          cw.color('#' + skeleton.color.getHexString());
+          cw.onchange(function(color) {
+            skeleton.color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
+            table.gui.update_skeleton_color_button(skeleton);
+            table.update_skeleton_color_in_3d(skeleton);
+          });
+          skeleton.cw = cw;
+          $('#color-wheel-' + skeleton.id).show();
+        }
       })
-      .text('Change color')
+      .text('color')
+      .css("background-color", '#' + skeleton.color.getHexString())
   );
   td.append(
-    $('<div id="color-wheel-' +
-      skeleton.id + '"><div class="colorwheel'+
-      skeleton.id + '"></div></div>')
+    $('<div id="color-wheel-' + skeleton.id + '"><div class="colorwheel' + skeleton.id + '"></div></div>')
   );
   td.append(
     $(document.createElement("button")).attr({
@@ -540,45 +543,37 @@ SelectionTable.prototype._add_skeleton_to_table = function ( skeleton ) {
     })
       .click( function( event )
       {
-        self.skeletonmodels[ skeleton.id ].skeleton_info();
+        skeleton.skeleton_info();
       })
       .text('Info')
   );
+
   rowElement.append( td );
 
-  // TODO don't create one for each!
-  var cw = Raphael.colorwheel($("#color-wheel-"+skeleton.id+" .colorwheel"+skeleton.id)[0],150);
-  cw.color("#FFFF00");
-  $('#skeletonaction-changecolor-' + skeleton.id).css("background-color","#FFFF00");
-  cw.onchange(function(color)
-  {
-    self.skeletonmodels[ skeleton.id ].color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
-    self.update_skeleton_color_button( skeleton.id);
-    self.update_skeleton_color_in_3d( skeleton.id );
-
-  });
-  // TODO just call the proper method of cw, no need to jQuery-select it
-  $('#color-wheel-' + skeleton.id).hide();
+  $('#webgl-skeleton-table > tbody:last').append( rowElement );
+ 
+  if (skeleton.id === this.table.selected_skeleton_id) {
+    this.table.highlight(skeleton.id);
+  }
 };
 
-SelectionTable.prototype.select_skeleton = function( skeleton_id, vis ) {
-  if( !this.skeletonmodels.hasOwnProperty( skeleton_id ) ) {
-    return;
+SelectionTable.prototype.selectSkeletonById = function(id) {
+  if (id in this.skeleton_ids) {
+    this.selectSkeleton(this.skeletons[this.skeleton_ids[id]], true);
   }
-  if (undefined === vis) {
-    vis = !this.skeletonmodels[ skeleton_id ].selected;
-  }
-  var skeleton = this.skeletonmodels[ skeleton_id ];
+};
+
+SelectionTable.prototype.selectSkeleton = function( skeleton, vis ) {
   $('#skeletonshow-' + skeleton.id).attr('checked', vis);
-  this.skeletonmodels[ skeleton.id ].selected = vis;
+  skeleton.selected = vis;
   if( WebGLApp.is_widget_open() ) {
     var connector_filter = WebGLApp.setSkeletonVisibility(skeleton.id, vis);
     if (!connector_filter) {
-      this.skeletonmodels[ skeleton.id ].pre_visible = vis;
+      skeleton.pre_visible = vis;
       $('#skeletonpre-' + skeleton.id).attr('checked', vis);
       WebGLApp.setSkeletonPreVisibility( skeleton.id,  vis );
 
-      this.skeletonmodels[ skeleton.id ].post_visible = vis;
+      skeleton.post_visible = vis;
       $('#skeletonpost-' + skeleton.id).attr('checked', vis);
       WebGLApp.setSkeletonPostVisibility( skeleton.id, vis );
     }
@@ -596,7 +591,7 @@ SelectionTable.prototype.save_skeleton_list = function() {
     url: django_url + project.id + '/skeletonlist/save',
     data: { 
       shortname: shortname,
-      skeletonlist: self.get_selected_skeletons()
+      skeletonlist: self.getSelectedSkeletons()
     },
     type: "POST",
     dataType: "json",
@@ -614,9 +609,7 @@ SelectionTable.prototype.load_skeleton_list = function() {
     type: "POST",
     dataType: "json",
     success: function ( data ) {
-      for( var idx in data['skeletonlist']) {
-        self.add_skeleton_to_stage_without_name( data['skeletonlist'][idx] );
-      }
+      self.addSkeletons(data['skeletonlist']);
     }
   });
 };
@@ -668,7 +661,7 @@ SelectionTable.prototype.usercolormap_dialog = function() {
 };
 
 SelectionTable.prototype.measure = function() {
-  var skeleton_ids = this.get_selected_skeletons();
+  var skeleton_ids = this.getSelectedSkeletons();
   if (0 === skeleton_ids.length) return;
   var self = this;
   requestQueue.register(django_url + project.id + '/skeletons/measure', "POST",
@@ -681,11 +674,15 @@ SelectionTable.prototype.measure = function() {
         return;
       }
       SkeletonMeasurementsTable.populate(json.map(function(row) {
-        row.unshift(self.skeletonmodels[row[0]].baseName);
+        row.unshift(self.skeletons[self.skeleton_ids[row[0]]].baseName);
         return row;
       }));
     });
 };
+
+
+window.NeuronStagingArea = new SelectionTable();
+
 
 /** credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery */
 SelectionTable.prototype._rgb2hex = function(rgb) {

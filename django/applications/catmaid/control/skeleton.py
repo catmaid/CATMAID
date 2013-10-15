@@ -117,7 +117,7 @@ def neuronname(request, project_id=None, skeleton_id=None):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronnames(request, project_id=None):
     """ Returns a JSON object with skeleton IDs as keys and neuron names as values. """
-    skeleton_ids = map(int, request.POST.getlist('skids[]'))
+    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
     qs = ClassInstanceClassInstance.objects.filter(
             relation__relation_name='model_of',
             project=project_id,

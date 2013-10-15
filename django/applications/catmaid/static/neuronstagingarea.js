@@ -238,35 +238,31 @@ SelectionTable.prototype.add_skeletons_to_stage = function(sks, callback) {
 };
 
 SelectionTable.prototype.add_skeleton_to_stage_without_name = function( id, callback ) {
-  this.ensureOpen();
   if (id) {
+    this.ensureOpen();
     var skeleton_id = parseInt(id),
         self = this;
-    jQuery.ajax({
-      url: django_url + project.id + '/skeleton/' + skeleton_id + '/neuronname',
-      type: "POST", // GET gets cached by the browser
-      dataType: "json",
-      success: function (data) {
-        self.add_skeleton_to_stage( skeleton_id, data['neuronname'], callback );
-      }
-    });
+    requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/neuronname', 'POST', {},
+        function(status, text) {
+          if (200 !== status) return;
+          var json = $.parseJSON(text);
+          if (json.error) { alert(json.error); return; }
+          self.add_skeleton_to_stage(skeleton_id, json['neuronname'], callback);
+        });
   }
 };
 
 SelectionTable.prototype.add_skeletons = function(ids, callback) {
   this.ensureOpen();
   var self = this;
-  jQuery.ajax({
-    url: django_url + project.id + '/skeleton/neuronnames',
-    data : {
-      skids: ids.map(function(id) { return parseInt(id); })
-    },
-    type: "POST", // GET gets cached by the browser
-    dataType: "json",
-    success: function ( json ) {
-      self.add_skeletons_to_stage(json, callback );
-    }
-  });
+  requestQueue.register(django_url + project.id + '/skeleton/neuronnames', 'POST',
+    { skids: ids.map(function(id) { return parseInt(id); }) },
+    function(status, text) {
+      if (200 !== status) return;
+      var json = $.parseJSON(text);
+      if (json.error) { alert(json.error); return; }
+      self.add_skeletons_to_stage(json, callback);
+    });
 };
 
 SelectionTable.prototype._remove_skeleton_from_table = function( id ) {

@@ -951,7 +951,7 @@ WebGLApplication.prototype.Space.prototype.View = function(container, space) {
 
 WebGLApplication.prototype.Space.prototype.View.prototype = {};
 
-WebGLApplication.prototype.Space.prototype.View.destroy = function() {
+WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
 	var e = this.renderer.domElement;
   e.removeEventListener('mousedown', this.mouseControls.onMouseDown, false);
   e.removeEventListener('mouseup', this.mouseControls.onMouseUp, false);

@@ -172,7 +172,7 @@ SelectionTable.prototype.ensureOpen = function() {
 /** setup button handlers */
 SelectionTable.prototype.reinit_list_with_existing_skeleton = function() {
   
-  this.addActive();
+  if (SkeletonAnnotations.getActiveSkeletonId()) this.addActive();
 
   var self = this;
 
@@ -374,8 +374,10 @@ SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(s
 
 /** Remove all, and repopulate with the current range. */
 SelectionTable.prototype.GUI.prototype.update = function() {
-  $('#selection_table_first').text(this.first + 1);
-  $('#selection_table_last').text(Math.min(this.first + this.max + 1, this.table.skeletons.length));
+  var one = 0 === this.table.skeletons.length? 0 : 1;
+  $('#selection_table_first').text(this.first + one);
+  $('#selection_table_last').text(Math.min(this.first + this.max + one, this.table.skeletons.length));
+  $('#selection_table_length').text(this.table.skeletons.length);
 
   // Remove all table rows
   $("tr[id^='skeletonrow-']").remove();

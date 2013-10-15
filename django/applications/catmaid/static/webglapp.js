@@ -705,10 +705,10 @@ WebGLApplication.prototype.Space.prototype.removeSkeleton = function(skeleton_id
 };
 
 
-WebGLApplication.prototype.Space.prototype.TextGeometryCache = {
-	geometryCache : {},
+WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
+	this.geometryCache = {};
 
-	getTagGeometry : function(tagString, scale) {
+	this.getTagGeometry = function(tagString, scale) {
 		if (tagString in this.geometryCache) {
 			var e = this.geometryCache[tagString];
 			e.refs += 1;
@@ -725,9 +725,9 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = {
 		text3d.tagString = tagString;
 		this.geometryCache[tagString] = {geometry: text3d, refs: 1};
 		return text3d;
-	},
+	};
 
-	releaseTagGeometry : function(tagString) {
+	this.releaseTagGeometry = function(tagString) {
     if (tagString in this.geometryCache) {
       var e = this.geometryCache[tagString];
       e.refs -= 1;
@@ -736,7 +736,7 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = {
         delete this.geometryCache[tagString];
       }
     }
-	}
+	};
 };
 
 WebGLApplication.prototype.Space.prototype.StaticContent = function(stack, center, scale) {
@@ -757,6 +757,9 @@ WebGLApplication.prototype.Space.prototype.StaticContent = function(stack, cente
   // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
   this.labelColors = {uncertain: new THREE.MeshBasicMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
                       todo: new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true})};
+  this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache();
+  this.synapticColors = [new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ), new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } )];
+
 };
 
 
@@ -1128,18 +1131,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeleton_i
 	this.space = space;
 	this.id = skeleton_id;
 	this.baseName = json[0];
+  this.synapticColors = space.staticContent.synapticColors;
 	this.reinit_actor(json);
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite', 'presynaptic_to', 'postsynaptic_to'];
-
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to'];
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticColors = [new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ), new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } )];
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects = function() {
-	this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( this.id );
+	this.skeletonmodel = NeuronStagingArea.getSkeleton( this.id );
 	this.line_material = {};
 	this.actorColor = new THREE.Color(0xffff00);
 	this.visible = true;
@@ -1271,7 +1273,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTextMeshes =
   }, {});
 
 	// Create meshes for the tags for all nodes that need them, reusing the geometries
-	var cache = WebGLApplication.prototype.Space.prototype.TextGeometryCache,
+	var cache = this.space.staticContent.textGeometryCache,
 			textMaterial = this.space.staticContent.textMaterial;
 	for (var tagString in tagNodes) {
 		if (tagNodes.hasOwnProperty(tagString)) {
@@ -1290,7 +1292,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTextMeshes =
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.removeTextMeshes = function() {
-  var cache = WebGLApplication.prototype.Space.prototype.TextGeometryCache;
+  var cache = this.space.staticContent.textGeometryCache;
 	for (var k in this.textlabels) {
 		if (this.textlabels.hasOwnProperty(k)) {
 			this.space.remove(this.textlabels[k]);

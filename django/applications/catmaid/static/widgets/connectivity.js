@@ -25,7 +25,7 @@ var SkeletonConnectivity = new function()
             }
             skeletons[skid] = $('#neuronname' + SkeletonAnnotations.getActiveStackId()).text();
         } else {
-            skeletons = NeuronStagingArea.get_selected_skeletons_data();
+            skeletons = NeuronStagingArea.getSelectedSkeletonNames();
             if (0 === Object.keys(skeletons).length) {
                 growlAlert("Information", "Selection Table is empty!");
                 return;
@@ -119,9 +119,9 @@ var SkeletonConnectivity = new function()
         var add_to_selection_table = function(ev) {
             var skelid = parseInt( ev.target.value );
             if ($('#incoming-show-skeleton-' + skelid + '-' + widgetid).is(':checked')) {
-                NeuronStagingArea.add_skeleton_to_stage_without_name( skelid );
+                NeuronStagingArea.addSkeletons( [skelid] );
             } else {
-                NeuronStagingArea.remove_skeleton( skelid );
+                NeuronStagingArea.removeSkeleton( [skelid] );
             }
         };
 
@@ -228,7 +228,7 @@ var SkeletonConnectivity = new function()
                         checkbox.checked = true;
                         skids.push(checkbox.value);
                     };
-                    NeuronStagingArea.add_skeletons( skids );
+                    NeuronStagingArea.addSkeletons( skids );
                 } else {
                     var open = NeuronStagingArea.is_widget_open();
                     var skids = [];
@@ -237,7 +237,7 @@ var SkeletonConnectivity = new function()
                         checkbox.checked = false;
                         if (open) skids.push(checkbox.value);
                     };
-                    if (open) NeuronStagingArea.remove_skeletons( skids );
+                    if (open) NeuronStagingArea.removeSkeletons( skids );
                 }
             });
         };

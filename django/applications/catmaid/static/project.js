@@ -426,6 +426,7 @@ function Project( pid )
 		var shift;
 		var alt;
 		var ctrl;
+		var meta;
 		var keyAction;
 
 		/* The code here used to modify 'e' and pass it
@@ -446,9 +447,11 @@ function Project( pid )
 			fakeEvent.shiftKey = e.shiftKey;
 			fakeEvent.altKey = e.altKey;
 			fakeEvent.ctrlKey = e.ctrlKey;
+			fakeEvent.metaKey = e.metaKey;
 			shift = e.shiftKey;
 			alt = e.altKey;
 			ctrl = e.ctrlKey;
+			meta = e.metaKey;
 		}
 		else if ( event && event.keyCode )
 		{
@@ -456,9 +459,11 @@ function Project( pid )
 			fakeEvent.shiftKey = event.shiftKey;
 			fakeEvent.altKey = event.altKey;
 			fakeEvent.ctrlKey = event.ctrlKey;
+			fakeEvent.metaKey = event.metaKey;
 			shift = event.shiftKey;
 			alt = event.altKey;
 			ctrl = event.ctrlKey;
+			meta = event.metaKey;
 		}
 		fakeEvent.target = UI.getTargetElement(e || event);
 		var n = fakeEvent.target.nodeName.toLowerCase();
@@ -468,6 +473,10 @@ function Project( pid )
 			if (inputType == "text" || inputType == "password") {
 				fromATextField = true;
 			}
+		}
+		if (meta) {
+			// Don't intercept command-key events on Mac.
+			return true;
 		}
 		if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
 		{

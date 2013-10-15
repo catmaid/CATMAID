@@ -213,7 +213,7 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
 	// Find all connector IDs referred to by more than one skeleton
 	// but only for visible skeletons
 	var skeletons = this.space.content.skeletons;
-	var visible_skeletons = NeuronStagingArea.get_selected_skeletons();
+	var visible_skeletons = NeuronStagingArea.getSelectedSkeletons();
   var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
 
 	var counts = visible_skeletons.reduce(function(counts, skeleton_id) {
@@ -330,7 +330,7 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
 };
 
 WebGLApplication.prototype.refresh_skeletons = function() {
-  var selected = NeuronStagingArea.get_selected_skeletons();
+  var selected = NeuronStagingArea.getSelectedSkeletons();
   var selected_set = selected.reduce(function(o, id) { o[id] = id; return o;}, {});
 
   var skeletons = this.space.content.skeletons;
@@ -371,15 +371,17 @@ WebGLApplication.prototype.removeSkeletons = function(skeleton_ids) {
 	else this.space.render();
 };
 
-WebGLApplication.prototype.changeSkeletonColor = function(skeleton_id, color) {
+WebGLApplication.prototype.changeSkeletonColors = function(skeleton_ids, colors) {
 	var skeletons = this.space.content.skeletons;
-	if (!skeletons.hasOwnProperty(skeleton_id)) {
-		console.log("Skeleton "+skeleton_id+" does not exist.");
-		return false;
-	}
 
-	if (undefined === color) skeletons[skeleton_id].updateSkeletonColor(this.options);
-	else skeletons[skeleton_id].changeColor(color, this.options);
+  skeleton_ids.forEach(function(skeleton_id, index) {
+    if (!skeletons.hasOwnProperty(skeleton_id)) {
+		  console.log("Skeleton "+skeleton_id+" does not exist.");
+    }
+    if (undefined === colors) skeletons[skeleton_id].updateSkeletonColor(this.options);
+    else skeletons[skeleton_id].changeColor(colors[index], this.options);
+  }, this);
+
 	this.space.render();
 	return true;
 };
@@ -703,10 +705,10 @@ WebGLApplication.prototype.Space.prototype.removeSkeleton = function(skeleton_id
 };
 
 
-WebGLApplication.prototype.Space.prototype.TextGeometryCache = {
-	geometryCache : {},
+WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
+	this.geometryCache = {};
 
-	getTagGeometry : function(tagString, scale) {
+	this.getTagGeometry = function(tagString, scale) {
 		if (tagString in this.geometryCache) {
 			var e = this.geometryCache[tagString];
 			e.refs += 1;
@@ -723,9 +725,9 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = {
 		text3d.tagString = tagString;
 		this.geometryCache[tagString] = {geometry: text3d, refs: 1};
 		return text3d;
-	},
+	};
 
-	releaseTagGeometry : function(tagString) {
+	this.releaseTagGeometry = function(tagString) {
     if (tagString in this.geometryCache) {
       var e = this.geometryCache[tagString];
       e.refs -= 1;
@@ -734,7 +736,7 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = {
         delete this.geometryCache[tagString];
       }
     }
-	}
+	};
 };
 
 WebGLApplication.prototype.Space.prototype.StaticContent = function(stack, center, scale) {
@@ -755,6 +757,9 @@ WebGLApplication.prototype.Space.prototype.StaticContent = function(stack, cente
   // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
   this.labelColors = {uncertain: new THREE.MeshBasicMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
                       todo: new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true})};
+  this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache();
+  this.synapticColors = [new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ), new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } )];
+
 };
 
 
@@ -946,7 +951,7 @@ WebGLApplication.prototype.Space.prototype.View = function(container, space) {
 
 WebGLApplication.prototype.Space.prototype.View.prototype = {};
 
-WebGLApplication.prototype.Space.prototype.View.destroy = function() {
+WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
 	var e = this.renderer.domElement;
   e.removeEventListener('mousedown', this.mouseControls.onMouseDown, false);
   e.removeEventListener('mouseup', this.mouseControls.onMouseUp, false);
@@ -1072,8 +1077,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
 
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function(scale) {
-  this.geometry = new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
+  this.geometry = new THREE.IcosahedronGeometry(1, 2);
   this.mesh = new THREE.Mesh( this.geometry, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
+  this.mesh.scale.x = this.mesh.scale.y = this.mesh.scale.z = 160 * scale;
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototype = {};
@@ -1125,18 +1131,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeleton_i
 	this.space = space;
 	this.id = skeleton_id;
 	this.baseName = json[0];
+  this.synapticColors = space.staticContent.synapticColors;
 	this.reinit_actor(json);
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite', 'presynaptic_to', 'postsynaptic_to'];
-
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to'];
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticColors = [new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ), new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } )];
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects = function() {
-	this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( this.id );
+	this.skeletonmodel = NeuronStagingArea.getSkeleton( this.id );
 	this.line_material = {};
 	this.actorColor = new THREE.Color(0xffff00);
 	this.visible = true;
@@ -1268,7 +1273,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTextMeshes =
   }, {});
 
 	// Create meshes for the tags for all nodes that need them, reusing the geometries
-	var cache = WebGLApplication.prototype.Space.prototype.TextGeometryCache,
+	var cache = this.space.staticContent.textGeometryCache,
 			textMaterial = this.space.staticContent.textMaterial;
 	for (var tagString in tagNodes) {
 		if (tagNodes.hasOwnProperty(tagString)) {
@@ -1287,7 +1292,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTextMeshes =
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.removeTextMeshes = function() {
-  var cache = WebGLApplication.prototype.Space.prototype.TextGeometryCache;
+  var cache = this.space.staticContent.textGeometryCache;
 	for (var k in this.textlabels) {
 		if (this.textlabels.hasOwnProperty(k)) {
 			this.space.remove(this.textlabels[k]);
@@ -1343,9 +1348,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     var pickColor;
     var actorColor = this.actorColor;
     if ('creator' === NeuronStagingArea.skeletonsColorMethod) {
-      pickColor = function(vertex) { return User(vertex[2].user_id).color; };
+      pickColor = function(vertex) { return User(vertex.user_id).color; };
     } else if ('reviewer' === NeuronStagingArea.skeletonsColorMethod) {
-      pickColor = function(vertex) { return User(vertex[3].reviewer_id).color; };
+      pickColor = function(vertex) { return User(vertex.reviewer_id).color; };
     } else {
       pickColor = function() { return actorColor; };
     }
@@ -1358,17 +1363,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
 			// Darken the color by the average weight of the vertex's edges.
 			var weight = 0;
-			var neighbors = this.graph.neighbors(vertexID);
+			var neighbors = this.graph.neighbors(vertex.node_id);
 			neighbors.forEach(function(neighbor) {
-				var edge = [vertexID, neighbor].sort();
+				var edge = [vertex.node_id, neighbor].sort();
 				weight += (edge in edgeWeights ? edgeWeights[edge] : 1.0);
 			});
 			weight = (weight / neighbors.length) * 0.75 + 0.25;
 			var color = new THREE.Color().setRGB(baseColor.r * weight, baseColor.g * weight, baseColor.b * weight);
 			this.geometry['neurite'].colors.push(color);
 
-			if (vertexID in this.radiusVolumes) {
-				var mesh = this.radiusVolumes[vertexID];
+			if (vertex.node_id in this.radiusVolumes) {
+				var mesh = this.radiusVolumes[vertex.node_id];
 				var material = mesh.material.clone();
 				material.color = color;
 				mesh.setMaterial(material);
@@ -1456,8 +1461,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_s
 };
 
 /** Place a colored sphere at the node. Used for highlighting special tags like 'uncertain end' and 'todo'. */
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, color) {
-	var mesh = new THREE.Mesh( this.space.staticContent.labelspheregeometry, color );
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, material) {
+	var mesh = new THREE.Mesh( this.space.staticContent.labelspheregeometry, material );
 	mesh.position.set( v.x, v.y, v.z );
 	mesh.node_id = v.node_id;
 	this.specialTagSpheres[v.node_id] = mesh;
@@ -1484,7 +1489,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere =
 	this.space.add(mesh);
 };
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius, material) {
 	var mesh = new THREE.Mesh(this.space.staticContent.cylinder, material);
 
 	// BE CAREFUL with side effects: all functions on a Vector3 alter the vector and return it (rather than returning an altered copy)
@@ -1581,7 +1586,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			if (node[7] > 0 && p[7] > 0) {
 				// Create cylinder using the node's radius only (not the parent) so that the geometry can be reused
 				var scaled_radius = node[7] * scale;
-				this.createCylinder(v1, v2, scaled_radius);
+				this.createCylinder(v1, v2, scaled_radius, material);
 				// Create skeleton line as well
 				this.createEdge(v1, v2, 'neurite');
 			} else {
@@ -1589,7 +1594,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 				this.createEdge(v1, v2, 'neurite');
 				// Create sphere
 				if (node[7] > 0) {
-					this.createNodeSphere(v1, node[7] * scale);
+					this.createNodeSphere(v1, node[7] * scale, material);
 				}
 			}
 		} else {
@@ -1603,7 +1608,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
         vs[node[0]] = v1;
       }
       if (node[7] > 0) {
-			  this.createNodeSphere(v1, node[7] * scale);
+			  this.createNodeSphere(v1, node[7] * scale, material);
       }
 		}
 		if (node[8] < 5) {
@@ -1690,7 +1695,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.shaderWorkers = fu
 	// Update color and return if calculations were already done or are not requested
 	if ('none' === options.shading_method || Object.keys(this.betweenness).length > 0) {
 		this.updateSkeletonColor(options);
-		this.space.render(); // TODO remove
 		return;
 	}
 

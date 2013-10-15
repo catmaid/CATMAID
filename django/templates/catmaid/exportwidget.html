@@ -9,7 +9,7 @@
       url: django_url + project.id + url,
       type: "POST",
       dataType: "text",
-      data: { skeleton_list: NeuronStagingArea.get_selected_skeletons() },
+      data: { skeleton_list: NeuronStagingArea.getSelectedSkeletons() },
       success: function (data) {
         // console.log('data', data)
         var recipe = window.open('', 'Export', 'width=600,height=600');
@@ -31,7 +31,7 @@
       url: django_url + project.id + "/graphexport/graphml",
       type: "POST",
       dataType: "text",
-      data: { skeleton_list: NeuronStagingArea.get_selected_skeletons() },
+      data: { skeleton_list: NeuronStagingArea.getSelectedSkeletons() },
       success: function (data) {
         console.log('data', data)
         var recipe = window.open('', 'Export', 'width=600,height=600');
@@ -55,7 +55,7 @@
 			var post;
 			switch (choice.selectedIndex) {
 				case 0:
-					post = {skids: NeuronStagingArea.get_selected_skeletons()};
+					post = {skids: NeuronStagingArea.getSelectedSkeletons()};
 					if (!post.skids || 0 === post.skids.length) {
 						alert("Add first one or more skeletons to the Selection Table!");
 						return;
@@ -70,7 +70,7 @@
 					break;
 				case 2:
 					post = {skids: [SkeletonAnnotations.getActiveSkeletonId()],
-					        inputs: NeuronStagingArea.get_selected_skeletons()};
+					        inputs: NeuronStagingArea.getSelectedSkeletons()};
 					if (!post.skids || 0 === post.skids.length) {
 						alert("Select a neuron first!");
 						return;

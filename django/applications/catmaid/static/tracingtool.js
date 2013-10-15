@@ -908,7 +908,7 @@ TracingTool.search = function()
         };
         var actionaddstage = function(type) {
           return function() {
-              NeuronStagingArea.add_skeleton_to_stage_without_name( parseInt($(this).attr('id')) );
+              NeuronStagingArea.addSkeletons([parseInt($(this).attr('id'))]);
               return false;
           };
         };

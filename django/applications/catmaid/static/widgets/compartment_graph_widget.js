@@ -270,7 +270,7 @@ var CompartmentGraphWidget = new function()
   this.updateGraph = function( data ) {
 
     for (var i = 0; i < data.nodes.length; i++) {
-      data.nodes[i]['data']['color'] = '#' + NeuronStagingArea.get_color_of_skeleton( parseInt(data.nodes[i]['data'].id) ).getHexString();
+      data.nodes[i]['data']['color'] = '#' + NeuronStagingArea.getSkeletonColor( parseInt(data.nodes[i]['data'].id) ).getHexString();
     }
 
     var grey = [0, 0, 0.267]; // HSV for #444
@@ -335,7 +335,7 @@ var CompartmentGraphWidget = new function()
       var splitname = node.id().split('_');
       if (evt.originalEvent.altKey) {
         // Toggle visibility in the 3d viewer
-        NeuronStagingArea.select_skeleton( splitname[0] );
+        NeuronStagingArea.selectSkeletonById( splitname[0] );
       } else if (evt.originalEvent.shiftKey) {
         // Select in the overlay
         TracingTool.goToNearestInNeuronOrSkeleton("skeleton", parseInt(splitname[0]));
@@ -381,14 +381,14 @@ var CompartmentGraphWidget = new function()
   };
 
   this.updateConfidenceGraphFrom3DViewer = function() {
-    var skellist = NeuronStagingArea.get_selected_skeletons();
+    var skellist = NeuronStagingArea.getSelectedSkeletons();
     if( skellist.length == 0) {
       alert('Please add skeletons to the selection table before updating the graph.')
       return;
     }
     requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
         "POST",
-        { skeleton_list: NeuronStagingArea.get_selected_skeletons(),
+        { skeleton_list: skellist,
           confidence_threshold: confidence_threshold,
           bandwidth: clustering_bandwidth },
         function (status, text) {

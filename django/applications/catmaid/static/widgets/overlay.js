@@ -150,7 +150,7 @@ SkeletonAnnotations.refreshAllWidgets = function() {
   }
 
   if (NeuronStagingArea.is_widget_open()) {
-    NeuronStagingArea.highlight_skeleton(this.atn.skeleton_id);
+    NeuronStagingArea.highlight(this.atn.skeleton_id);
   }
 };
 
@@ -1377,7 +1377,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
              option: choice.selectedIndex},
             function(json) {
               var skeleton_id = self.nodes[treenode_id].skeleton_id;
-              if (NeuronStagingArea.is_widget_open() && NeuronStagingArea.get_skeletonmodel(skeleton_id) && WebGLApp.is_widget_open()) {
+              if (NeuronStagingArea.is_widget_open() && NeuronStagingArea.getSkeleton(skeleton_id) && WebGLApp.is_widget_open()) {
                 // Reinit the actor
                 WebGLApp.addSkeletonFromID(skeleton_id, false);
                 // Reinit SVGOverlay to read in the radius of each altered treenode

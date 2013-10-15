@@ -25,7 +25,7 @@ var SkeletonConnectivity = new function()
             }
             skeletons[skid] = $('#neuronname' + SkeletonAnnotations.getActiveStackId()).text();
         } else {
-            skeletons = NeuronStagingArea.get_selected_skeletons_data();
+            skeletons = NeuronStagingArea.getSelectedSkeletonNames();
             if (0 === Object.keys(skeletons).length) {
                 growlAlert("Information", "Selection Table is empty!");
                 return;
@@ -119,9 +119,9 @@ var SkeletonConnectivity = new function()
         var add_to_selection_table = function(ev) {
             var skelid = parseInt( ev.target.value );
             if ($('#incoming-show-skeleton-' + skelid + '-' + widgetid).is(':checked')) {
-                NeuronStagingArea.add_skeleton_to_stage_without_name( skelid );
+                NeuronStagingArea.addSkeletons( [skelid] );
             } else {
-                NeuronStagingArea.remove_skeleton( skelid );
+                NeuronStagingArea.removeSkeleton( [skelid] );
             }
         };
 
@@ -222,19 +222,22 @@ var SkeletonConnectivity = new function()
                  var rows = table[0].childNodes[1].childNodes; // all tr elements
 
                 if($('#' + name + 'stream-selectall' + widgetid).is(':checked') ) {
+                    var skids = [];
                     for (var i=rows.length-1; i > -1; --i) {
                         var checkbox = rows[i].childNodes[4].childNodes[0];
                         checkbox.checked = true;
-                        // TODO should be fetching neuron names from the server all at once
-                        NeuronStagingArea.add_skeleton_to_stage_without_name( checkbox.value );
+                        skids.push(checkbox.value);
                     };
+                    NeuronStagingArea.addSkeletons( skids );
                 } else {
                     var open = NeuronStagingArea.is_widget_open();
+                    var skids = [];
                     for (var i=rows.length-1; i > -1; --i) {
                         var checkbox = rows[i].childNodes[4].childNodes[0];
                         checkbox.checked = false;
-                        if (open) NeuronStagingArea.remove_skeleton( checkbox.value );
+                        if (open) skids.push(checkbox.value);
                     };
+                    if (open) NeuronStagingArea.removeSkeletons( skids );
                 }
             });
         };

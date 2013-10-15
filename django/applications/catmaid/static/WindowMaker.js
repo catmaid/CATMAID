@@ -197,22 +197,40 @@ var WindowMaker = new function()
     add.setAttribute("type", "button");
     add.setAttribute("id", "add_current_active_object_to_staging");
     add.setAttribute("value", "Add active object");
-    add.onclick = NeuronStagingArea.add_active_object_to_stage;
+    add.onclick = NeuronStagingArea.fn("addActive");
     buttons.appendChild(add);
+
+    var prev = document.createElement('input');
+    prev.setAttribute("type", "button");
+    prev.setAttribute("id", "selection_table_prev");
+    prev.setAttribute("value", "<");
+    prev.onclick = NeuronStagingArea.fn("showPrevious");
+    buttons.appendChild(prev);
+
+    var range = document.createElement('span');
+    range.innerHTML = "[<span id='selection_table_first'>0</span>, <span id='selection_table_last'>0</span>] of <span id='selection_table_length'>0</span>";
+    buttons.appendChild(range);
+
+    var next = document.createElement('input');
+    next.setAttribute("type", "button");
+    next.setAttribute("id", "selection_table_next");
+    next.setAttribute("value", ">");
+    next.onclick = NeuronStagingArea.fn("showNext");
+    buttons.appendChild(next);
 
     var save = document.createElement('input');
     save.setAttribute("type", "button");
     save.setAttribute("id", "save_skeleton_list");
     save.setAttribute("value", "Save list");
     save.style.marginLeft = '1em';
-    save.onclick = NeuronStagingArea.save_skeleton_list;
+    save.onclick = NeuronStagingArea.fn("save_skeleton_list");
     buttons.appendChild(save);
 
     var load = document.createElement('input');
     load.setAttribute("type", "button");
     load.setAttribute("id", "load_skeleton_list");
     load.setAttribute("value", "Load list");
-    load.onclick = NeuronStagingArea.load_skeleton_list;
+    load.onclick = NeuronStagingArea.fn("load_skeleton_list");
     buttons.appendChild(load);
     
     var colorLabel = document.createElement('div');
@@ -226,7 +244,7 @@ var WindowMaker = new function()
     $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
     $('<option/>', {value : 'reviewer', text: 'By Reviewer'}).appendTo(colorMenu);
     $('<option/>', {value : 'manual', text: 'Manual'}).appendTo(colorMenu);
-    colorMenu.onchange = NeuronStagingArea.set_skeletons_base_color;
+    colorMenu.onchange = NeuronStagingArea.fn("set_skeletons_base_color");
     buttons.appendChild(colorMenu);
     
     var map = document.createElement('input');
@@ -234,14 +252,14 @@ var WindowMaker = new function()
     map.setAttribute("id", "user_colormap_dialog");
     map.setAttribute("value", "User colormap");
     map.style.marginLeft = '1em';
-    map.onclick = NeuronStagingArea.usercolormap_dialog;
+    map.onclick = NeuronStagingArea.fn("usercolormap_dialog");
     buttons.appendChild(map);
 
     var measure = document.createElement('input');
     measure.setAttribute('type', 'button');
     measure.setAttribute('id', 'selection_table_measure');
     measure.setAttribute('value', 'Measure');
-    measure.onclick = NeuronStagingArea.measure;
+    measure.onclick = NeuronStagingArea.fn("measure");
     buttons.appendChild(measure);
     
     win.getFrame().appendChild(buttons);
@@ -252,20 +270,20 @@ var WindowMaker = new function()
     tab.innerHTML =
         '<thead>' +
           '<tr>' +
-            '<th width="100px">action</th>' +
+            '<th width="60px">action</th>' +
             '<th>name</th>' +
             '<th>selected</th>' +
             '<th>pre</th>' +
             '<th>post</th>' +
             '<th>text</th>' +
-            '<th>property</th>' +
+            '<th>property  </th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +
           '<tr>' +
-            '<td><button type="button" id="webgl-rmall">remove all</button></td>' +
+            '<td><img src="' + STATIC_URL_JS + 'widgets/themes/kde/delete.png" id="webgl-rmall" title="Remove all"></td>' +
             '<td></td>' +
-            '<td><button type="button" id="webgl-show">unselect all</button></td>' +
+            '<td><input type="checkbox" id="webgl-show" checked /></td>' +
             '<td></td>' +
             '<td></td>' +
             '<td></td>' +
@@ -293,7 +311,7 @@ var WindowMaker = new function()
                   }
                 }
               }
-              NeuronStagingArea.remove_all_skeletons();
+              NeuronStagingArea.clear();
               // win.close();
             }
             break;
@@ -331,9 +349,6 @@ var WindowMaker = new function()
     }
 
     NeuronStagingArea.reinit_list_with_existing_skeleton();
-    $('#webgl-rmall').click(function() {
-        NeuronStagingArea.remove_all_skeletons();
-    });
 
     return win;
   }
@@ -362,7 +377,7 @@ var WindowMaker = new function()
     reload.setAttribute("type", "button");
     reload.setAttribute("id", "refresh_skeletons");
     reload.setAttribute("value", "Reload skeletons");
-    reload.onclick = WebGLApp.refresh_skeletons;
+    reload.onclick = WebGLApp.fn('refresh_skeletons');
     buttons.appendChild(reload);
     
     var center = document.createElement('input');
@@ -370,7 +385,7 @@ var WindowMaker = new function()
     center.setAttribute("id", "center_active_node");
     center.setAttribute("value", "Center active");
     center.style.marginLeft = '1em';
-    center.onclick = WebGLApp.look_at_active_node;
+    center.onclick = WebGLApp.fn('look_at_active_node');
     buttons.appendChild(center);
 
     var fulls = document.createElement('input');
@@ -378,7 +393,7 @@ var WindowMaker = new function()
     fulls.setAttribute("id", "fullscreen_webgl_view");
     fulls.setAttribute("value", "Fullscreen");
     fulls.style.marginLeft = '1em';
-    fulls.onclick = WebGLApp.fullscreenWebGL;
+    fulls.onclick = WebGLApp.fn('fullscreenWebGL');
     buttons.appendChild(fulls);
 
     var xy = document.createElement('input');
@@ -386,21 +401,21 @@ var WindowMaker = new function()
     xy.setAttribute("id", "xy_plane");
     xy.setAttribute("value", "XY");
     xy.style.marginLeft = '1em';
-    xy.onclick =  WebGLApp.XYView;
+    xy.onclick =  WebGLApp.fn('XYView');
     buttons.appendChild(xy);
 
     var xz = document.createElement('input');
     xz.setAttribute("type", "button");
     xz.setAttribute("id", "xz_plane");
     xz.setAttribute("value", "XZ");
-    xz.onclick = WebGLApp.XZView;
+    xz.onclick = WebGLApp.fn('XZView');
     buttons.appendChild(xz);
 
     var yz = document.createElement('input');
     yz.setAttribute("type", "button");
     yz.setAttribute("id", "yz_plane");
     yz.setAttribute("value", "YZ");
-    yz.onclick = WebGLApp.YZView;
+    yz.onclick = WebGLApp.fn('YZView');
     buttons.appendChild(yz);
 
     // Restrict display to shared connectors between visible skeletons
@@ -409,7 +424,7 @@ var WindowMaker = new function()
     connectors.setAttribute("id", "toggle_connector");
     connectors.setAttribute("value", "Restrict connectors");
     connectors.style.marginLeft = '1em';
-    connectors.onclick = WebGLApp.toggleConnector;
+    connectors.onclick = WebGLApp.fn('toggleConnectors');
     buttons.appendChild(connectors);
 
     var options = document.createElement('input');
@@ -417,7 +432,7 @@ var WindowMaker = new function()
     options.setAttribute("id", "configure_parameters");
     options.setAttribute("value", "Options");
     options.style.marginLeft = '1em';
-    options.onclick = WebGLApp.configure_parameters;
+    options.onclick = WebGLApp.fn('configureParameters');
     buttons.appendChild(options);
     
     var shadingLabel = document.createElement('div');
@@ -430,7 +445,7 @@ var WindowMaker = new function()
     $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
     $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
     $('<option/>', {value : 'branch_centrality', text: 'Branch centrality'}).appendTo(shadingMenu);
-    shadingMenu.onchange = WebGLApp.set_shading_method;
+    shadingMenu.onchange = WebGLApp.fn('set_shading_method');
     buttons.appendChild(shadingMenu);
     
     var canvas = document.createElement('div');
@@ -491,7 +506,8 @@ var WindowMaker = new function()
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
     // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
 
-    WebGLApp.init( canvas.getAttribute("id") );
+    WebGLApp.init( 800, 600, canvas.getAttribute("id") );
+    WebGLApp.refresh_skeletons();
     win.callListeners( CMWWindow.RESIZE );
 
     return win;

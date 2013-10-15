@@ -1695,7 +1695,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.shaderWorkers = fu
 	// Update color and return if calculations were already done or are not requested
 	if ('none' === options.shading_method || Object.keys(this.betweenness).length > 0) {
 		this.updateSkeletonColor(options);
-		this.space.render(); // TODO remove
 		return;
 	}
 

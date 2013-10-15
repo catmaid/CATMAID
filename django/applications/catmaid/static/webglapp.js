@@ -1461,8 +1461,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_s
 };
 
 /** Place a colored sphere at the node. Used for highlighting special tags like 'uncertain end' and 'todo'. */
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, color) {
-	var mesh = new THREE.Mesh( this.space.staticContent.labelspheregeometry, color );
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, material) {
+	var mesh = new THREE.Mesh( this.space.staticContent.labelspheregeometry, material );
 	mesh.position.set( v.x, v.y, v.z );
 	mesh.node_id = v.node_id;
 	this.specialTagSpheres[v.node_id] = mesh;
@@ -1489,7 +1489,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere =
 	this.space.add(mesh);
 };
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius, material) {
 	var mesh = new THREE.Mesh(this.space.staticContent.cylinder, material);
 
 	// BE CAREFUL with side effects: all functions on a Vector3 alter the vector and return it (rather than returning an altered copy)
@@ -1586,7 +1586,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			if (node[7] > 0 && p[7] > 0) {
 				// Create cylinder using the node's radius only (not the parent) so that the geometry can be reused
 				var scaled_radius = node[7] * scale;
-				this.createCylinder(v1, v2, scaled_radius);
+				this.createCylinder(v1, v2, scaled_radius, material);
 				// Create skeleton line as well
 				this.createEdge(v1, v2, 'neurite');
 			} else {
@@ -1594,7 +1594,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 				this.createEdge(v1, v2, 'neurite');
 				// Create sphere
 				if (node[7] > 0) {
-					this.createNodeSphere(v1, node[7] * scale);
+					this.createNodeSphere(v1, node[7] * scale, material);
 				}
 			}
 		} else {
@@ -1608,7 +1608,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
         vs[node[0]] = v1;
       }
       if (node[7] > 0) {
-			  this.createNodeSphere(v1, node[7] * scale);
+			  this.createNodeSphere(v1, node[7] * scale, material);
       }
 		}
 		if (node[8] < 5) {

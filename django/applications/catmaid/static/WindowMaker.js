@@ -492,6 +492,7 @@ var WindowMaker = new function()
     // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
 
     WebGLApp.init( 800, 600, canvas.getAttribute("id") );
+    WebGLApp.refresh_skeletons();
     win.callListeners( CMWWindow.RESIZE );
 
     return win;

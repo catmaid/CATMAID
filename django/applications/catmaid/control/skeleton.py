@@ -137,17 +137,23 @@ def split_skeleton(request, project_id=None):
     if not treenode.parent:
         return HttpResponse(json.dumps({'error': 'Can\'t split at the root node: it doesn\'t have a parent.'}))
 
-    skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
     # The split is only possible if the user owns the treenode or the skeleton
-    # or the skeleton is under fragments
-    if not _under_fragments(skeleton_id):
+    # or the skeleton is under fragments or in the user's staging area
+    # Ordered from cheap to expensive query
+    try:
+        # Check if user can edit the skeleton
+        can_edit_or_fail(request.user, skeleton_id, "class_instance")
+    except:
         try:
-            # Check if user can edit the skeleton
-            can_edit_or_fail(request.user, skeleton_id, "class_instance")
-        except:
             # Check if user can edit the treenode
             can_edit_or_fail(request.user, treenode_id, "treenode")
+        except:
+            if not _under_fragments(skeleton_id):
+                # Check skeleton under user's staging area (indirect ownership)
+                if not _under_staging_area(request.user, skeleton_id):
+                    raise Exception("User '%s' can't edit skeleton #%s at node #%s:\nThe user doesn't own the skeleton or the node;\nthe skeleton is not under fragments;\nand the skeleton is not under the user's staging group." % (request.user.username, skeleton_id, treenode_id))
 
+    skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
     project_id=int(project_id)
 
     # retrieve neuron of this skeleton
@@ -256,11 +262,11 @@ def skeleton_ancestry(request, project_id=None):
 
         # Doing this query in a loop is horrible, but it should be very rare
         # for the hierarchy to be more than 4 deep or so.  (This is a classic
-        # problem of not being able to do recursive joins in pure SQL.) Just
-        # in case a cyclic hierarchy has somehow been introduced, limit the
-        # number of parents that may be found to 10.
+        # problem of not being able to do recursive joins in pure SQL.)
+        # Detects erroneous cyclic hierarchy.
         current_ci = parent_neuron['class_instance_b']
-        for i in range(10):
+        seen = set([current_ci])
+        while True:
             response_on_error = 'Could not retrieve parent of class instance %s' % current_ci
             parents = ClassInstanceClassInstance.objects.filter(
                 class_instance_a=current_ci,
@@ -281,6 +287,8 @@ def skeleton_ancestry(request, project_id=None):
                     'class': parent['class_instance_b__class_column__class_name']
                 })
                 current_ci = parent['class_instance_b']
+                if current_ci in seen:
+                    raise Exception('Cyclic hierarchy detected for skeleton #%s' % skeleton_id)
 
         return HttpResponse(json.dumps(ancestry))
 
@@ -577,11 +585,45 @@ def _root_as_parent(oid):
     ''' % int(oid))
     return 0 == cursor.fetchone()[0]
 
+def _staging_as_parent(oid):
+    """ Returns True if the parent is named Staging and its parent is the root group. """
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT count(*)
+    FROM class_instance_class_instance cici1,
+         class_instance_class_instance cici2,
+         class_instance ci1,
+         class_instance ci2,
+         relation r,
+         class c
+    WHERE cici1.class_instance_a = %s
+      AND cici1.class_instance_b = ci1.id
+      AND ci1.name = 'Staging'
+      AND cici1.relation_id = r.id
+      AND r.relation_name = 'part_of'
+      AND cici2.class_instance_a = cici1.class_instance_b
+      AND cici2.class_instance_b = ci2.id
+      AND cici2.relation_id = r.id
+      AND ci2.class_id = c.id
+      AND c.class_name = 'root'
+    ''' % int(oid))
+    return 1 == cursor.fetchone()[0]
+
 def _under_fragments(skeleton_id):
     """ Returns True if the skeleton_id is a model_of a neuron that is part_of
     a group that is or is within the hierarchy downstream of the "Fragments" group
     or the "Isolated synaptic terminals" group.
     """
+    return _under_specific_groups(skeleton_id, set(['Fragments', 'Isolated synaptic terminals']), _root_as_parent)
+
+def _under_staging_area(skeleton_id, user):
+    """ Returns true if the skeleton_id is a model_of a neuron that is part_of
+    a group that is or is within the hierarchy downstream of the user's staging area,
+    defined by ther user.first_name and user.last_name.
+    """
+    return _under_specific_groups(skeleton_id, set(['%s %s (%s)' % (user.first_name, user.last_name, user.username)]), _staging_as_parent)
+
+def _under_specific_groups(skeleton_id, specific_groups, group_id_test_fn):
     cursor = connection.cursor()
     # Find the ID and name of the group for which the neuron is a part_of,
     # where the skeleton is a model_of that neuron
@@ -602,11 +644,9 @@ def _under_fragments(skeleton_id):
     ''' % int(skeleton_id))
     group_id, group_name = cursor.fetchone()
 
-    fragment_groups = set(['Fragments', 'Isolated synaptic terminals'])
-
     # To prevent issues with similarly named folders, check that
     # the fragment folders are under the root group.
-    if group_name in fragment_groups and _root_as_parent(group_id):
+    if group_name in specific_groups and group_id_test_fn(group_id):
         return True
 
     # Else, check the parent group until reaching the root (a group without parent)
@@ -633,7 +673,7 @@ def _under_fragments(skeleton_id):
             # Error: circular reference
             raise Exception('Circular reference for group "%s" with id #%s was found when trying to determine if skeleton #%s is part of "Fragments" or "Isolated synaptic terminals"' % (group_name, group_id, skeleton_id))
         #
-        if group_name in fragment_groups and _root_as_parent(group_id):
+        if group_name in specific_groups and group_id_test_fn(group_id):
             return True
         # Else, keep climbing up the group relations
         seen.add(group_id)
@@ -689,14 +729,14 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
             # Is an isolated node, so it can be joined freely
             pass
         # If the treenode is not isolated, the skeleton must be under fragments, or the user must own the skeleton or be superuser
-        elif _under_fragments(to_skid):
-            pass
         else:
             try:
                 can_edit_or_fail(user, to_skid, "class_instance")
             except Exception:
                 # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes are editable by the user (such a situation occurs when the user domain ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
                 can_edit_or_fail(user, to_treenode_id, "treenode")
+                if _under_fragments(to_skid) or _under_staging_area(user, to_skid):
+                    pass
                 if Treenode.objects.filter(skeleton_id=to_skid).exclude(user__in=user_domain(cursor, user.id)).count() > 0:
                     # There are at least some nodes that the user can't edit
                     raise Exception("User %s with id #%s cannot join skeleton #%s, because the user doesn't own the skeleton or the skeleton contains nodes that belong to users outside of the user's domain." % (user.username, user.id, to_skid))

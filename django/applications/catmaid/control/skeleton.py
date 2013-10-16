@@ -394,16 +394,20 @@ def _skeleton_info_raw(project_id, skeletons, synaptic_count_high_pass, op):
     incoming = _connected_skeletons(skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
     outgoing = _connected_skeletons(skeletons, op, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
 
+    # TODO this filtering should be done in the client
     # Remove skeleton IDs under synaptic_count_high_pass and jsonize class instances
     def prepare(partners):
-        for partnerID in partners.iterkeys():
+        for partnerID in partners.keys():
             partner = partners[partnerID]
             skids = partner.skids
             for skid in skids.keys():
                 if skids[skid] < synaptic_count_high_pass:
                     del skids[skid]
             # jsonize: swap class instance by its dict of members vs values
-            partners[partnerID] = partner.__dict__
+            if skids:
+                partners[partnerID] = partner.__dict__
+            else:
+                del partners[partnerID]
 
     prepare(incoming)
     prepare(outgoing)
@@ -735,7 +739,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         if neuron_id:
             response_on_error = 'Could not delete neuron with id %s.' % neuron_id
             if _delete_if_empty(neuron_id):
-                print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
+                pass #print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
 
         # Update the parent of to_treenode.
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id

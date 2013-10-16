@@ -549,8 +549,6 @@ def export_neuroml_level3_v181(request, project_id=None):
         else:
             raise Exception("Unknown mode %s" % mode)
 
-        print "SKELETON STRINGS", skeleton_strings
-
         cursor.execute('''
         SELECT tc2.skeleton_id, tc1.treenode_id
         FROM treenode_connector tc1,

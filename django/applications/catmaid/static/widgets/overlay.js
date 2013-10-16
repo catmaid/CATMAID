@@ -291,7 +291,7 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
              classname: "neuron",
              pid: project.id},
             function(json) {
-              SkeletonAnnotations.setNeuronNameInTopbar(self.stack, new_name, skeletonID);
+              SkeletonAnnotations.setNeuronNameInTopbar(self.stack.id, new_name, skeletonID);
               SkeletonAnnotations.refreshAllWidgets();
             });
       });

@@ -484,7 +484,7 @@ def delete_treenode(request, project_id=None):
             if neuron_id:
                 response_on_error = 'Could not delete neuron #%s' % neuron_id
                 if _delete_if_empty(neuron_id):
-                    print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
+                    pass #print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
 
         else:
             # Treenode is not root, it has a parent and perhaps children.

@@ -14,6 +14,7 @@ from numpy.linalg import norm
 from tree_util import edge_count_to_root, simplify, find_root, reroot, partition, spanning_tree, cable_length
 from operator import attrgetter
 from math import sqrt
+import sys
 
 def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows):
     """ dipgrahs is a dictionary of skeleton IDs as keys and DiGraph instances as values,
@@ -181,7 +182,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
         i = 0
         for g in digraphs:
             if g.number_of_nodes() == 0:
-                print "no nodes in g, from skeleton ID #%s" % skid
+                #print "no nodes in g, from skeleton ID #%s" % skid
                 continue
             if tag:
                 label = "%s [%s]" % (base_label, i+1)
@@ -254,18 +255,23 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                 edge_props['risk'] = -2
                 continue
 
-            spanning = spanning_tree(post_arbor, edge_props['post_treenodes'])
-            #for arbor in whole_arbors[circuit[post_arbor]['skeleton_id']]:
-            #    if post_arbor == arbor:
-            #        tc = arbor.treenode_synapse_counts
-            tc = post_arbor.treenode_synapse_counts
-            maximum_synapse_centrality = max(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())
-            cable = cable_length(spanning, locations)
-            if -1 == maximum_synapse_centrality:
-                # Signal not computable
-                edge_props['risk'] = -1
-            else:
-                edge_props['risk'] = 1.0 / sqrt(pow(cable / cable_spread, 2) + pow(maximum_synapse_centrality / path_confluence, 2)) # NOTE: should subtract 1 from maximum_synapse_centrality, but not doing it here to avoid potential divisions by zero
+            try:
+                spanning = spanning_tree(post_arbor, edge_props['post_treenodes'])
+                #for arbor in whole_arbors[circuit[post_arbor]['skeleton_id']]:
+                #    if post_arbor == arbor:
+                #        tc = arbor.treenode_synapse_counts
+                tc = post_arbor.treenode_synapse_counts
+                maximum_synapse_centrality = max(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())
+                cable = cable_length(spanning, locations)
+                if -1 == maximum_synapse_centrality:
+                    # Signal not computable
+                    edge_props['risk'] = -1
+                else:
+                    edge_props['risk'] = 1.0 / sqrt(pow(cable / cable_spread, 2) + pow(maximum_synapse_centrality / path_confluence, 2)) # NOTE: should subtract 1 from maximum_synapse_centrality, but not doing it here to avoid potential divisions by zero
+            except Exception as e:
+                print >> sys.stderr, e
+                # Signal error when computing
+                edge_props['risk'] = -3
 
 
     if bandwidth > 0:

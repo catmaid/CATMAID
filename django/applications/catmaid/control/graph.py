@@ -182,7 +182,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
         i = 0
         for g in digraphs:
             if g.number_of_nodes() == 0:
-                print "no nodes in g, from skeleton ID #%s" % skid
+                #print "no nodes in g, from skeleton ID #%s" % skid
                 continue
             if tag:
                 label = "%s [%s]" % (base_label, i+1)

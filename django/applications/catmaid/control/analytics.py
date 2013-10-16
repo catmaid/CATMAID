@@ -253,7 +253,6 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     # Type 6: node with a TODO tag
     # Type 7: root, slab or branch node with a tag like 'ends', 'not a branch', 'uncertain end', or 'uncertain continuation'
     end_labels = set(['ends', 'not a branch', 'uncertain end', 'uncertain continuation', 'soma', 'nerve out'])
-    print 'all nodes', nodes
     if root in parents:
         parents.remove(root) # Consider the root as a leaf node
     for node_id, props in nodes.iteritems():

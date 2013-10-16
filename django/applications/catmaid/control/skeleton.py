@@ -735,7 +735,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         if neuron_id:
             response_on_error = 'Could not delete neuron with id %s.' % neuron_id
             if _delete_if_empty(neuron_id):
-                print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
+                pass #print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
 
         # Update the parent of to_treenode.
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id

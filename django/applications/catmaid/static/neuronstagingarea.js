@@ -252,6 +252,7 @@ SelectionTable.prototype.removeSkeletons = function(ids) {
 };
 
 SelectionTable.prototype.clear = function() {
+  WebGLApp.removeSkeletons(Object.keys(this.skeleton_ids));
   this.skeletons = [];
   this.skeleton_ids = {};
   this.gui.clear();

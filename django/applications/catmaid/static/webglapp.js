@@ -290,18 +290,41 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
 	var skeleton_ids = skeletonIDs.map(function(id) { return parseInt(id); });
 	var self = this;
   var i = 0;
-  var submit = this.submit;
+  var missing = [];
+  var unloadable = [];
+
+  var fnMissing = function() {
+    if (missing.length > 0 && confirm("Skeletons " + missing.join(', ') + " do not exist. Remove them from the Selection Table?")) {
+      NeuronStagingArea.removeSkeletons(missing);
+    }
+    if (unloadable.length > 0) {
+      alert("Could not load skeletons: " + unloadable.join(', '));
+    }
+  };
+
   var fn = function(skeleton_id) {
-    submit(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json',
-        {},
-        function(json) {
-          if (json.error) {
-            alert(json.error);
-            return;
-          }
+    // NOTE: cannot use 'submit': on error, it would abort the chain of calls and show an alert
+    requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json', 'POST', {},
+        function(status, text) {
           try {
-            var sk = self.space.updateSkeleton(skeleton_id, json);
-            if (sk) sk.show(self.options);
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                // e.g. the skeleton as listed in the selection table does not exist in the database
+                console.log(json.error);
+                self.space.removeSkeleton(skeleton_id);
+                if (0 === json.error.indexOf("Skeleton #" + skeleton_id + " doesn't exist")) {
+                  missing.push(skeleton_id);
+                } else {
+                  unloadable.push(skeleton_id);
+                }
+              } else {
+                var sk = self.space.updateSkeleton(skeleton_id, json);
+                if (sk) sk.show(self.options);
+              }
+            } else {
+              unloadable.push(skeleton_id);
+            }
             i += 1;
             $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
             if (i < skeleton_ids.length) {
@@ -315,11 +338,13 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
               if (skeleton_ids.length > 1) {
                 $.unblockUI();
               }
+              fnMissing();
             }
           } catch(e) {
             $.unblockUI();
             console.log(e, new Error(e).stack);
             growlAlert("ERROR", "Loaded only " + i + " / " + skeleton_ids.length + " skeletons!");
+            fnMissing();
           }
         });
   };

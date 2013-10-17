@@ -681,11 +681,11 @@ SelectionTable.prototype.usercolormap_dialog = function() {
 };
 
 SelectionTable.prototype.measure = function() {
-  var skeleton_ids = this.getSelectedSkeletons();
-  if (0 === skeleton_ids.length) return;
+  var skids = this.getSelectedSkeletons();
+  if (0 === skids.length) return;
   var self = this;
   requestQueue.register(django_url + project.id + '/skeletons/measure', "POST",
-    {skeleton_ids: skeleton_ids},
+    {skeleton_ids: skids},
     function(status, text) {
       if (200 !== status) return;
       var json = $.parseJSON(text);

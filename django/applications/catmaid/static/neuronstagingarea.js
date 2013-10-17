@@ -230,15 +230,33 @@ SelectionTable.prototype.addSkeletons = function(ids, callback) {
     });
 };
 
+/** ids: an array of Skeleton IDs. */
 SelectionTable.prototype.removeSkeletons = function(ids) {
-  ids.forEach(function(id) {
-    if (id === this.selected_skeleton_id) {
+  if (1 === ids.length) {
+    // Remove element
+    this.skeletons.splice(this.skeleton_ids[ids[0]], 1);
+    // Edit selection
+    if (ids[0] === this.selected_skeleton_id) {
       this.selected_skeleton_id = null;
     }
+  } else {
+    var ids_set = ids.reduce(function(o, id) { o[id] = null; return o; }, {});
+    // Recreate skeletons array
+    this.skeletons = this.skeletons.reduce(function(a, sk) {
+      if (!(sk.id in ids_set)) a.push(sk);
+      return a;
+    }, []);
+    // Edit selection
+    if (this.selected_skeleton_id in ids_set) {
+      this.selected_skeleton_id = null;
+    }
+  }
 
-    this.skeletons.splice(this.skeleton_ids[id], 1);
-    delete this.skeleton_ids[id];
-  }, this);
+  // Recreate map of indices
+  this.skeleton_ids = this.skeletons.reduce(function(o, sk, i) {
+    o[sk.id] = i;
+    return o;
+  }, {});
 
   this.gui.update();
 

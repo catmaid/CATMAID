@@ -195,12 +195,6 @@ SelectionTable.prototype.reinit_list_with_existing_skeleton = function() {
   // TODO add similar buttons and handlers for pre and post
 };
 
-SelectionTable.prototype.add_skeleton_to_stage = function( id, neuronname, callback ) {
-  var o = {};
-  o[id] = neuronname;
-  this.insertSkeletons(o, callbalk);
-};
-
 /** sks: object with skeleton_id as keys and neuron names as values. */
 SelectionTable.prototype.insertSkeletons = function(sks, callback) {
   var skids = Object.keys(sks).filter(function(id) {

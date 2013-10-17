@@ -121,7 +121,7 @@ var SkeletonConnectivity = new function()
             if ($('#incoming-show-skeleton-' + skelid + '-' + widgetid).is(':checked')) {
                 NeuronStagingArea.addSkeletons( [skelid] );
             } else {
-                NeuronStagingArea.removeSkeleton( [skelid] );
+                NeuronStagingArea.removeSkeletons( [skelid] );
             }
         };
 

@@ -233,8 +233,10 @@ SelectionTable.prototype.addSkeletons = function(ids, callback) {
 /** ids: an array of Skeleton IDs. */
 SelectionTable.prototype.removeSkeletons = function(ids) {
   if (1 === ids.length) {
+    var index = this.skeleton_ids[ids[0]];
+    if (!index) return;
     // Remove element
-    this.skeletons.splice(this.skeleton_ids[ids[0]], 1);
+    this.skeletons.splice(index, 1);
     // Edit selection
     if (ids[0] === this.selected_skeleton_id) {
       this.selected_skeleton_id = null;

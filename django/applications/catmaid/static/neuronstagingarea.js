@@ -242,10 +242,9 @@ SelectionTable.prototype.removeSkeletons = function(ids) {
   } else {
     var ids_set = ids.reduce(function(o, id) { o[id] = null; return o; }, {});
     // Recreate skeletons array
-    this.skeletons = this.skeletons.reduce(function(a, sk) {
-      if (!(sk.id in ids_set)) a.push(sk);
-      return a;
-    }, []);
+    this.skeletons = this.skeletons.filter(function(sk) {
+      return !(sk.id in ids_set);
+    });
     // Edit selection
     if (this.selected_skeleton_id in ids_set) {
       this.selected_skeleton_id = null;

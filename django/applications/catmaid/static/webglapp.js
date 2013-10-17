@@ -146,8 +146,13 @@ WebGLApplication.prototype.XZView = function() {
 	this.space.render();
 };
 
-WebGLApplication.prototype.YZView = function() {
-	this.space.view.YZ();
+WebGLApplication.prototype.ZYView = function() {
+	this.space.view.ZY();
+	this.space.render();
+};
+
+WebGLApplication.prototype.ZXView = function() {
+	this.space.view.ZX();
 	this.space.render();
 };
 
@@ -1022,19 +1027,29 @@ WebGLApplication.prototype.Space.prototype.View.prototype.XZ = function() {
 			dimensions = this.space.dimensions;
 	this.controls.target = center;
 	this.camera.position.x = center.x;
-	this.camera.position.y = (dimensions.y / 2) + 150;
+	this.camera.position.y = dimensions.y * 2;
 	this.camera.position.z = center.z;
-	this.camera.up.set(0, 0, -1);
+	this.camera.up.set(0, 0, 1);
 };
 
-WebGLApplication.prototype.Space.prototype.View.prototype.YZ = function() {
+WebGLApplication.prototype.Space.prototype.View.prototype.ZY = function() {
 	var center = this.space.center,
 			dimensions = this.space.dimensions;
 	this.controls.target = center;
-	this.camera.position.x = (dimensions.x  / 2) + 150;;
+	this.camera.position.x = dimensions.x * 2;
 	this.camera.position.y = center.y;
 	this.camera.position.z = center.z;
 	this.camera.up.set(0, 1, 0);
+};
+
+WebGLApplication.prototype.Space.prototype.View.prototype.ZX = function() {
+	var center = this.space.center,
+			dimensions = this.space.dimensions;
+	this.controls.target = center;
+	this.camera.position.x = center.x;
+	this.camera.position.y = dimensions.y * 2;
+	this.camera.position.z = center.z;
+	this.camera.up.set(-1, 0, 0);
 };
 
 WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = function(space, controls, projector, camera) {

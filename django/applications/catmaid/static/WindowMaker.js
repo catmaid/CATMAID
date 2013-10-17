@@ -411,12 +411,19 @@ var WindowMaker = new function()
     xz.onclick = WebGLApp.fn('XZView');
     buttons.appendChild(xz);
 
-    var yz = document.createElement('input');
-    yz.setAttribute("type", "button");
-    yz.setAttribute("id", "yz_plane");
-    yz.setAttribute("value", "YZ");
-    yz.onclick = WebGLApp.fn('YZView');
-    buttons.appendChild(yz);
+    var zy = document.createElement('input');
+    zy.setAttribute("type", "button");
+    zy.setAttribute("id", "zy_plane");
+    zy.setAttribute("value", "ZY");
+    zy.onclick = WebGLApp.fn('ZYView');
+    buttons.appendChild(zy);
+
+    var zx = document.createElement('input');
+    zx.setAttribute("type", "button");
+    zx.setAttribute("id", "zx_plane");
+    zx.setAttribute("value", "ZX");
+    zx.onclick = WebGLApp.fn('ZXView');
+    buttons.appendChild(zx);
 
     // Restrict display to shared connectors between visible skeletons
     var connectors = document.createElement('input');

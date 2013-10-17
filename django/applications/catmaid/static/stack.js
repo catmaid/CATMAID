@@ -721,9 +721,9 @@ function Stack(
 	//! estimate the zoom levels
 	if ( num_zoom_levels < 0 ) {
 		self.MAX_S = 0;
-		var min_max = Math.min( MAX_X, MAX_Y );
-		var min_size = 256;
-		while ( min_max / Math.pow( 2, self.MAX_S ) / min_size > 4 )
+		var max_dim = Math.max( MAX_X, MAX_Y );
+		var min_size = 1024;
+		while ( max_dim / Math.pow( 2, self.MAX_S ) > min_size )
 			++self.MAX_S;
 	} else {
 		self.MAX_S = num_zoom_levels;

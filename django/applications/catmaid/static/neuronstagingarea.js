@@ -391,6 +391,12 @@ SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(s
 
 /** Remove all, and repopulate with the current range. */
 SelectionTable.prototype.GUI.prototype.update = function() {
+  // Cope with changes in size
+  if (this.first >= this.table.skeletons.length) {
+    this.first = Math.max(0, this.table.skeletons.length - this.max);
+  }
+
+  // Update GUI state
   var one = 0 === this.table.skeletons.length? 0 : 1;
   $('#selection_table_first').text(this.first + one);
   $('#selection_table_last').text(Math.min(this.first + this.max + one, this.table.skeletons.length));

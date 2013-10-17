@@ -8,6 +8,7 @@ SelectionTable = function() {
   this.togglevisibleall = false;
   this.selected_skeleton_id = null;
   this.highlighting_color = "#d6ffb5";
+  this.next_color_index = 0;
   this.gui = new this.GUI(this, 20);
 };
 
@@ -134,10 +135,11 @@ SelectionTable.prototype.COLORS = [[1, 1, 0], // yellow
                                    [1, 0.75, 0.79]]; // pink
 
 
-SelectionTable.prototype.pickColor = function(index) {
-  var c = this.COLORS[index % this.COLORS.length];
+SelectionTable.prototype.pickColor = function() {
+  var c = this.COLORS[this.next_color_index % this.COLORS.length];
   var color = new THREE.Color().setRGB(c[0], c[1], c[2]);
-  if (index < this.COLORS.length) {
+  if (this.next_color_index < this.COLORS.length) {
+    this.next_color_index += 1;
     return color;
   }
   // Else, play a variation on the color's hue (+/- 0.25) and saturation (from 0.5 to 1)
@@ -145,6 +147,7 @@ SelectionTable.prototype.pickColor = function(index) {
   color.setHSL((hsl.h + (Math.random() - 0.5) / 2.0) % 1.0,
                Math.max(0.5, Math.min(1.0, (hsl.s + (Math.random() - 0.5) * 0.3))),
                hsl.l);
+  this.next_color_index += 1;
   return color;
 };
 
@@ -200,14 +203,13 @@ SelectionTable.prototype.add_skeleton_to_stage = function( id, neuronname, callb
 
 /** sks: object with skeleton_id as keys and neuron names as values. */
 SelectionTable.prototype.insertSkeletons = function(sks, callback) {
-  var n = this.skeletons.length;
   var skids = Object.keys(sks).filter(function(id) {
     if (id in this.skeleton_ids) {
       // Already in table
       return false;
     }
     var neuronname = sks[id];
-    this.skeletons.push(new this.SkeletonModel(id, neuronname, this.pickColor(n++)));
+    this.skeletons.push(new this.SkeletonModel(id, neuronname, this.pickColor()));
     this.skeleton_ids[id] = this.skeletons.length -1;
     return true;
   }, this);
@@ -256,6 +258,8 @@ SelectionTable.prototype.clear = function() {
   this.skeletons = [];
   this.skeleton_ids = {};
   this.gui.clear();
+  this.selected_skeleton_id = null;
+  this.next_color_index = 0;
 };
  
 /** Set the color of all skeletons based on the state of the "Color" pulldown menu. */
@@ -264,8 +268,9 @@ SelectionTable.prototype.set_skeletons_base_color = function() {
   var skeleton_ids = Object.keys(this.skeleton_ids);
   
   if ("random" === this.skeletonsColorMethod) {
-    var colors = this.skeletons.map(function(skeleton, index) {
-      skeleton.color = this.pickColor(index);
+    this.next_color_index = 0; // reset
+    var colors = this.skeletons.map(function(skeleton) {
+      skeleton.color = this.pickColor();
       this.gui.update_skeleton_color_button(skeleton);
       return skeleton.color;
     }, this);

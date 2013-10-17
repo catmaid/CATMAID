@@ -301,7 +301,7 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
           }
           try {
             var sk = self.space.updateSkeleton(skeleton_id, json);
-            sk.show(self.options);
+            if (sk) sk.show(self.options);
             i += 1;
             $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
             if (i < skeleton_ids.length) {
@@ -1106,6 +1106,13 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 };
 
 WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeleton_id, json) {
+  if (!NeuronStagingArea.getSkeleton(skeleton_id)) {
+    // Skeleton was removed from selection while json was loading
+    // Remove if present
+    this.removeSkeleton(skeleton_id);
+    return false;
+  }
+
   if (this.content.skeletons.hasOwnProperty(skeleton_id)) {
     this.content.skeletons[skeleton_id].reinit_actor(json);
   } else {
@@ -1544,6 +1551,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 	}, {});
 
 	// Store for creation when requested
+  // TODO could request them from the server when necessary
 	this.tags = tags;
 
   // Cache for reusing Vector3d instances

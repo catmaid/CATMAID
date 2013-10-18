@@ -279,8 +279,7 @@ WebGLApplication.prototype.look_at_active_node = function() {
 };
 
 WebGLApplication.prototype.updateActiveNodePosition = function() {
-	var a = this.space.content.active_node;
-	a.updatePosition(this.space);
+	this.space.content.active_node.updatePosition(this.space);
   this.space.render();
 };
 
@@ -710,20 +709,30 @@ WebGLApplication.prototype.Space.prototype.render = function() {
 };
 
 WebGLApplication.prototype.Space.prototype.destroy = function() {
-	this.view.destroy();
+  // remove active_node and project-wise meshes
+	this.scene.remove(this.content.active_node.mesh);
+	this.content.meshes.forEach(this.scene.remove, this.scene);
+
+  // dispose active_node and meshes
+  this.content.dispose();
+
+  // dispose and remove skeletons
+  this.removeSkeletons(Object.keys(this.content.skeletons));
 
 	this.lights.forEach(this.scene.remove, this.scene);
+
+  // dispose meshes and materials
+  this.staticContent.dispose();
+
+  // remove meshes
 	this.scene.remove(this.staticContent.box);
 	this.scene.remove(this.staticContent.floor);
 	if (this.staticContent.zplane) this.scene.remove(this.staticContent.zplane);
 	this.staticContent.missing_sections.forEach(this.scene.remove, this.scene);
 
-  this.removeSkeletons(Object.keys(this.content.skeletons));
-	this.scene.remove(this.content.active_node.mesh);
-	this.content.meshes.forEach(this.scene.remove, this.scene);
+	this.view.destroy();
 
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
-  console.log(this);
 };
 
 WebGLApplication.prototype.Space.prototype.removeSkeletons = function(skeleton_ids) {
@@ -770,6 +779,19 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
       }
     }
 	};
+
+  this.createTextMesh = function(tagString, scale, material) {
+    var text = new THREE.Mesh(this.getTagGeometry(tagString, scale), material);
+    text.visible = true;
+    return text;
+  };
+
+  this.destroy = function() {
+    Object.keys(this.geometryCache).forEach(function(entry) {
+      entry.geometry.dispose();
+    });
+    delete this.geometryCache;
+  };
 };
 
 WebGLApplication.prototype.Space.prototype.StaticContent = function(stack, center, scale) {
@@ -792,11 +814,40 @@ WebGLApplication.prototype.Space.prototype.StaticContent = function(stack, cente
                       todo: new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true})};
   this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache();
   this.synapticColors = [new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ), new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } )];
-
+  this.connectorLineColors = {'presynaptic_to': new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6}),
+                              'postsynaptic_to': new THREE.LineBasicMaterial({color: 0x00f6ff, opacity: 1.0, linewidth: 6})};
 };
 
-
 WebGLApplication.prototype.Space.prototype.StaticContent.prototype = {};
+
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.dispose = function() {
+  // dispose ornaments
+  this.box.geometry.dispose();
+  this.box.material.dispose();
+  this.floor.geometry.dispose();
+  this.floor.material.dispose();
+  this.missing_sections.forEach(function(s) {
+    s.geometry.dispose();
+    s.material.dispose(); // it is ok to call more than once
+  });
+  if (this.zplane) {
+    this.zplane.geometry.dispose();
+    this.zplane.material.dispose();
+  }
+ 
+  // dispose shared geometries
+  [this.labelspheregeometry, this.radiusSphere, this.icoSphere, this.cylinder].forEach(function(g) { 
+    g.dispose();
+  });
+  this.textGeometryCache.destroy();
+
+  // dispose shared materials
+  this.textMaterial.dispose();
+  this.labelColors.uncertain.dispose();
+  this.labelColors.todo.dispose();
+  this.synapticColors[0].dispose();
+  this.synapticColors[1].dispose();
+};
 
 WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(center, dimension, resolution, scale) {
   var width = dimension.x * resolution.x * scale;
@@ -915,21 +966,31 @@ WebGLApplication.prototype.Space.prototype.Content = function(scale) {
 
 WebGLApplication.prototype.Space.prototype.Content.prototype = {};
 
+WebGLApplication.prototype.Space.prototype.Content.prototype.dispose = function() {
+  this.active_node.mesh.geometry.dispose();
+  this.active_node.mesh.material.dispose();
+
+  this.meshes.forEach(function(mesh) {
+    mesh.geometry.dispose();
+    mesh.material.dispose();
+  });
+};
+
 WebGLApplication.prototype.Space.prototype.Content.prototype.loadMeshes = function(space, submit, material) {
   submit(django_url + project.id + "/stack/" + space.stack.id + "/models",
          {},
          function (models) {
            var ids = Object.keys(models);
            if (0 === ids.length) return;
-           var loader = new THREE.JSONLoader( true );
-           var scale = space.scale;
+           var loader = space.newJSONLoader();
+               scale = space.scale;
            ids.forEach(function(id) {
              var vs = models[id].vertices;
              for (var i=0; i < vs.length; i+=3) {
                space.coordsToUnscaledSpace2(vs, i);
              }
              var geometry = loader.parse(models[id]).geometry;
-             var mesh = new THREE.Mesh(geometry, material);
+             var mesh = space.newMesh(geometry, material);
              mesh.scale.set(scale, scale, scale);
              mesh.position.set(0, 0, 0);
              mesh.rotation.set(0, 0, 0);
@@ -938,6 +999,14 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.loadMeshes = functi
            });
            space.render();
         });
+};
+
+WebGLApplication.prototype.Space.prototype.Content.prototype.newMesh = function(geometry, material) {
+  return new THREE.Mesh(geometry, material);
+};
+
+WebGLApplication.prototype.Space.prototype.Content.prototype.newJSONLoader = function() {
+  return new THREE.JSONLoader(true);
 };
 
 /** Adjust visibility of static content according to the persistent options. */
@@ -1168,8 +1237,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.ZX = function() {
 
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function(scale) {
-  this.geometry = new THREE.IcosahedronGeometry(1, 2);
-  this.mesh = new THREE.Mesh( this.geometry, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
+  this.mesh = new THREE.Mesh( new THREE.IcosahedronGeometry(1, 2), new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
   this.mesh.scale.x = this.mesh.scale.y = this.mesh.scale.z = 160 * scale;
 };
 
@@ -1240,7 +1308,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects = function() {
 	this.skeletonmodel = NeuronStagingArea.getSkeleton( this.id );
-	this.line_material = {};
 	this.actorColor = new THREE.Color(0xffff00);
 	this.visible = true;
 	if (undefined === this.skeletonmodel) {
@@ -1248,9 +1315,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects
 		return;
 	}
 	var CTYPES = this.CTYPES;
-	this.line_material[CTYPES[0]] = new THREE.LineBasicMaterial({color: 0xffff00, opacity: 1.0, linewidth: 3});
-	this.line_material[CTYPES[1]] = new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6});
-	this.line_material[CTYPES[2]] = new THREE.LineBasicMaterial({color: 0x00f6ff, opacity: 1.0, linewidth: 6});
+	this.line_material = new THREE.LineBasicMaterial({color: 0xffff00, opacity: 1.0, linewidth: 3});
 
 	this.geometry = {};
 	this.geometry[CTYPES[0]] = new THREE.Geometry();
@@ -1258,9 +1323,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects
 	this.geometry[CTYPES[2]] = new THREE.Geometry();
 
 	this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
-	for (var i=0; i<CTYPES.length; ++i) {
-		this.actor[CTYPES[i]] = new THREE.Line(this.geometry[CTYPES[i]], this.line_material[CTYPES[i]], THREE.LinePieces);
-	}
+	this.actor[CTYPES[0]] = new THREE.Line(this.geometry[CTYPES[0]], this.line_material, THREE.LinePieces);
+  this.actor[CTYPES[1]] = new THREE.Line(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]], THREE.LinePieces);
+  this.actor[CTYPES[2]] = new THREE.Line(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]], THREE.LinePieces);
 
 	this.specialTagSpheres = {};
 	this.synapticSpheres = {};
@@ -1286,6 +1351,14 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.destroy = function
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.removeActorFromScene = function() {
+  // Dispose of both geometry and material, unique to this Skeleton
+  this.actor[this.CTYPES[0]].geometry.dispose();
+  this.actor[this.CTYPES[0]].material.dispose();
+
+  // Dispose only of the geometries. Materials for connectors are shared
+  this.actor[this.CTYPES[1]].geometry.dispose();
+  this.actor[this.CTYPES[2]].geometry.dispose();
+
 	[this.actor, this.synapticSpheres, this.radiusVolumes,
 	 this.specialTagSpheres].forEach(function(ob) {
 		if (ob) {
@@ -1376,12 +1449,11 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTextMeshes =
 	for (var tagString in tagNodes) {
 		if (tagNodes.hasOwnProperty(tagString)) {
 			tagNodes[tagString].forEach(function(nodeID) {
+        var text = cache.createTextMesh(tagString, this.space.scale, textMaterial);
         var v = vs[nodeID];
-				var text = new THREE.Mesh( cache.getTagGeometry(tagString, this.space.scale), textMaterial );
-				text.position.x = v.x;
-				text.position.y = v.y;
-				text.position.z = v.z;
-				text.visible = true;
+        text.position.x = v.x;
+        text.position.y = v.y;
+        text.position.z = v.z;
 				this.textlabels[nodeID] = text;
 				this.space.add(text);
 			}, this);
@@ -1431,8 +1503,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 	 || 'none' !== options.shading_method)
 	{
 		// The skeleton colors need to be set per-vertex.
-		this.line_material['neurite'].vertexColors = THREE.VertexColors;
-		this.line_material['neurite'].needsUpdate = true;
+		this.line_material.vertexColors = THREE.VertexColors;
+		this.line_material.needsUpdate = true;
 		this.geometry['neurite'].colors = [];
 		var edgeWeights = {};
 		if ('betweenness_centrality' === options.shading_method) {
@@ -1479,12 +1551,12 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 		}, this);
 		this.geometry['neurite'].colorsNeedUpdate = true;
 
-		this.actor['neurite'].material.color = new THREE.Color(0xffffff);
+		this.actor['neurite'].material.color = new THREE.Color().setHex(0xffffff);
 		this.actor['neurite'].material.needsUpdate = true;
 	} else {
 		// Display the entire skeleton with a single color.
-		this.line_material['neurite'].vertexColors = THREE.NoColors;
-		this.line_material['neurite'].needsUpdate = true;
+		this.line_material.vertexColors = THREE.NoColors;
+		this.line_material.needsUpdate = true;
 		
 		this.actor['neurite'].material.color = this.actorColor;
 		this.actor['neurite'].material.needsUpdate = true;
@@ -1527,8 +1599,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getActorColorAsHex
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.remove_connector_selection = function() {
 	if (this.connectoractor) {
 		for (var i=0; i<2; ++i) {
-			if (this.connectoractor[this.synapticTypes[i]]) {
-				this.space.remove(this.connectoractor[this.synapticTypes[i]]);
+      var ca = this.connectoractor[this.synapticTypes[i]];
+			if (ca) {
+        ca.geometry.dispose(); // do not dispose material, it is shared
+				this.space.remove(ca);
 				delete this.connectoractor[this.synapticTypes[i]];
 			}
 		}
@@ -1553,7 +1627,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_s
         vertices2.push(v);
       }
     }
-		this.connectoractor[type] = new THREE.Line( this.connectorgeometry[type], this.line_material[type], THREE.LinePieces );
+		this.connectoractor[type] = new THREE.Line( this.connectorgeometry[type], this.space.staticContent.connectorLineColors[type], THREE.LinePieces );
 		this.space.add( this.connectoractor[type] );
   }, this);
 };

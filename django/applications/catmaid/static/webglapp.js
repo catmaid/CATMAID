@@ -112,7 +112,6 @@ WebGLApplication.prototype.Options.prototype.validateOctalString = function(id, 
   if (!sf) {
     return default_color_string;
   }
-  console.log(sf, sf.val());
   var s = sf.val();
   if (8 === s.length && '0' === s[0] && 'x' === s[1] && /0x[0-9a-f]{6}/.exec(s)) {
     return s;
@@ -611,7 +610,7 @@ WebGLApplication.prototype.Space = function( w, h, container, stack, scale ) {
 
 	// WebGL space
 	this.scene = new THREE.Scene();
-	this.view = new this.View(container, this);
+	this.view = new this.View(this);
 	this.lights = this.createLights(stack.dimension, stack.resolution, scale, this.view.camera);
 	this.lights.forEach(this.scene.add, this.scene);
 
@@ -710,7 +709,6 @@ WebGLApplication.prototype.Space.prototype.render = function() {
 
 WebGLApplication.prototype.Space.prototype.destroy = function() {
 	this.view.destroy();
-	this.view = null;
 
 	this.lights.forEach(this.scene.remove, this.scene);
 	this.scene.remove(this.staticContent.box);
@@ -721,6 +719,9 @@ WebGLApplication.prototype.Space.prototype.destroy = function() {
   this.removeSkeletons(Object.keys(this.content.skeletons));
 	this.scene.remove(this.content.active_node.mesh);
 	this.content.meshes.forEach(this.scene.remove, this.scene);
+
+  Object.keys(this).forEach(function(key) { delete this[key]; }, this);
+  console.log(this);
 };
 
 WebGLApplication.prototype.Space.prototype.removeSkeletons = function(skeleton_ids) {
@@ -952,28 +953,10 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
 };
 
 
-WebGLApplication.prototype.Space.prototype.View = function(container, space) {
+WebGLApplication.prototype.Space.prototype.View = function(space) {
 	this.space = space;
 
-	this.camera = new THREE.CombinedCamera( -space.canvasWidth, -space.canvasHeight, 75, 1, 3000, -1000, 1, 500 );
-  this.camera.frustumCulled = false;
-
-	this.projector = new THREE.Projector();
-
-	this.renderer = new THREE.WebGLRenderer({ antialias: true });
-  this.renderer.sortObjects = false;
-  this.renderer.setSize( space.canvasWidth, space.canvasHeight );
-
-	this.controls = this.createControls( this.camera, container, this.space.center );
-	this.mouseControls = new this.MouseControls(this.space, this.controls, this.projector, this.camera);
-
-	// Initialize
-	var e = this.renderer.domElement;
-  container.appendChild(e);
-  e.addEventListener('mousedown', this.mouseControls.onMouseDown, false);
-  e.addEventListener('mouseup', this.mouseControls.onMouseUp, false);
-  e.addEventListener('mousemove', this.mouseControls.onMouseMove, false);
-  e.addEventListener('mousewheel', this.mouseControls.onMouseWheel, false);
+  this.init();
 
 	// Initial view
 	this.XY();
@@ -981,17 +964,44 @@ WebGLApplication.prototype.Space.prototype.View = function(container, space) {
 
 WebGLApplication.prototype.Space.prototype.View.prototype = {};
 
-WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
-	var e = this.renderer.domElement;
-  e.removeEventListener('mousedown', this.mouseControls.onMouseDown, false);
-  e.removeEventListener('mouseup', this.mouseControls.onMouseUp, false);
-  e.removeEventListener('mousemove', this.mouseControls.onMouseMove, false);
-  e.removeEventListener('mousewheel', this.mouseControls.onMouseWheel, false);
-  this.renderer = null;
+WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
+	this.camera = new THREE.CombinedCamera( -this.space.canvasWidth, -this.space.canvasHeight, 75, 1, 3000, -1000, 1, 500 );
+  this.camera.frustumCulled = false;
+
+	this.projector = new THREE.Projector();
+
+	this.renderer = new THREE.WebGLRenderer({ antialias: true });
+  this.renderer.sortObjects = false;
+  this.renderer.setSize( this.space.canvasWidth, this.space.canvasHeight );
+
+	this.controls = this.createControls();
+
+  this.mouse = {position: new THREE.Vector2(),
+                is_mouse_down: false};
+  this.mouseControls = {mousewheel: new this.MouseWheel(this.space),
+                        mousemove: new this.MouseMove(this.space, this.mouse),
+                        mouseup: new this.MouseUp(this.space, this.mouse, this.controls),
+                        mousedown: new this.MouseDown(this.space, this.mouse, this.projector, this.camera)};
+
+  this.space.container.appendChild(this.renderer.domElement);
+
+  Object.keys(this.mouseControls).forEach(function(m) {
+    this.renderer.domElement.addEventListener(m, this.mouseControls[m], false);
+  }, this);
 };
 
-WebGLApplication.prototype.Space.prototype.View.prototype.createControls = function( camera, container, center ) {
-	var controls = new THREE.TrackballControls( camera, container );
+
+WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
+  Object.keys(this.mouseControls).forEach(function(m) {
+    this.renderer.domElement.removeEventListener(m, this.mouseControls[m], false);
+    this.mouseControls[m].destroy();
+  }, this);
+  this.space.container.removeChild(this.renderer.domElement);
+  Object.keys(this).forEach(function(key) { delete this[key]; }, this);
+};
+
+WebGLApplication.prototype.Space.prototype.View.prototype.createControls = function() {
+	var controls = new THREE.TrackballControls( this.camera, this.space.container );
   controls.rotateSpeed = 1.0;
   controls.zoomSpeed = 3.2;
   controls.panSpeed = 1.5;
@@ -999,7 +1009,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.createControls = funct
   controls.noPan = false;
   controls.staticMoving = true;
   controls.dynamicDampingFactor = 0.3;
-	controls.target = center.clone();
+	controls.target = this.space.center.clone();
 	return controls;
 };
 
@@ -1052,44 +1062,77 @@ WebGLApplication.prototype.Space.prototype.View.prototype.ZX = function() {
 	this.camera.up.set(-1, 0, 0);
 };
 
-WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = function(space, controls, projector, camera) {
-	var is_mouse_down = false;
-	var mouse = new THREE.Vector2();
-
-  this.onMouseWheel = function(ev) {
-    space.render();
+/** Construct mouse controls as objects, so that no context is retained. */
+(function(p) {
+  p.MouseWheel = function(space) {
+    this.space = space;
+  };
+  p.MouseWheel.prototype = {};
+  p.MouseWheel.prototype.handleEvent = function(ev) {
+    this.space.render();
+  };
+  p.MouseWheel.prototype.destroy = function(ev) {
+    delete this.space;
   };
 
-	this.onMouseMove = function(ev) {
-    mouse.x =  ( ev.offsetX / space.canvasWidth  ) * 2 -1;
-    mouse.y = -( ev.offsetY / space.canvasHeight ) * 2 +1;
+  p.MouseMove = function(space, mouse) {
+    this.space = space;
+    this.mouse = mouse;
+  };
+  p.MouseMove.prototype = {};
+  p.MouseMove.prototype.handleEvent = function(ev) {
+    this.mouse.position.x =  ( ev.offsetX / this.space.canvasWidth  ) * 2 -1;
+    this.mouse.position.y = -( ev.offsetY / this.space.canvasHeight ) * 2 +1;
 
-    if (is_mouse_down) {
-      space.render();
+    if (this.mouse.is_mouse_down) {
+      this.space.render();
     }
 
-    space.container.style.cursor = 'pointer';
-	};
+    this.space.container.style.cursor = 'pointer';
+  };
+  p.MouseMove.prototype.destroy = function() {
+    delete this.space;
+    delete this.mouse;
+  };
 
-	this.onMouseUp = function(ev) {
-		is_mouse_down = false;
-    controls.enabled = true;
-    space.render(); // May need another render on occasions
-	};
+  p.MouseUp = function(space, mouse, controls) {
+    this.space = space;
+    this.mouse = mouse;
+    this.controls = controls;
+  };
+  p.MouseUp.prototype = {};
+  p.MouseUp.prototype.handleEvent = function(ev) {
+		this.mouse.is_mouse_down = false;
+    this.controls.enabled = true;
+    this.space.render(); // May need another render on occasions
+  };
+  p.MouseUp.prototype.destroy = function() {
+    delete this.space;
+    delete this.mouse;
+    delete this.controls;
+  };
 
-	this.onMouseDown = function(ev) {
-    is_mouse_down = true;
+  p.MouseDown = function(space, mouse, projector, camera) {
+    this.space = space;
+    this.mouse = mouse;
+    this.projector = projector;
+    this.camera = camera;
+  };
+  p.MouseDown.prototype = {};
+  p.MouseDown.prototype.handleEvent = function(ev) {
+    this.mouse.is_mouse_down = true;
 		if (!ev.shiftKey) return;
 
 		// Find object under the mouse
-		var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-		projector.unprojectVector(vector, camera);
-		var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+		var vector = new THREE.Vector3(this.mouse.position.x, this.mouse.position.y, 0.5);
+		this.projector.unprojectVector(vector, this.camera);
+		var raycaster = new THREE.Raycaster(this.camera.position, vector.sub(this.camera.position).normalize());
 
 		// Attempt to intersect visible skeleton spheres, stopping at the first found
 		var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
-		if (Object.keys(space.content.skeletons).some(function(skeleton_id) {
-			var skeleton = space.content.skeletons[skeleton_id];
+    var skeletons = this.space.content.skeletons;
+		if (Object.keys(skeletons).some(function(skeleton_id) {
+			var skeleton = skeletons[skeleton_id];
 			if (!skeleton.visible) return false;
 			var all_spheres = fields.map(function(field) { return skeleton[field]; })
 						                  .reduce(function(a, spheres) {
@@ -1112,8 +1155,14 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
 		}
 
 		growlAlert("Oops", "Couldn't find any intersectable object under the mouse.");
-	};
-};
+  };
+  p.MouseDown.prototype.destroy = function() {
+    delete this.space;
+    delete this.mouse;
+    delete this.projector;
+    delete this.camera;
+  };
+}(WebGLApplication.prototype.Space.prototype.View.prototype));
 
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function(scale) {

@@ -396,6 +396,7 @@ WebGLApplication.prototype.getColorOfSkeleton = function( skeleton_id ) {
 };
 
 WebGLApplication.prototype.removeSkeletons = function(skeleton_ids) {
+	if (!this.space) return;
 	this.space.removeSkeletons(skeleton_ids);
 	if (this.options.connector_filter) this.refreshRestrictedConnectors();
 	else this.space.render();

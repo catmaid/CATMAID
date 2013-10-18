@@ -1,16 +1,17 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+"use strict";
 
 /* Only methods of the WebGLApplication object elicit a render. All other methods
  * do not, except for those that use continuations to load data (meshes) or to
  * compute with web workers (betweenness centrality shading). */
-WebGLApplication = function() {};
+var WebGLApplication = function() {};
 
 WebGLApplication.prototype = {};
 
 /** Static, empty instance. Call its init method to create the 3d space. */
-window.WebGLApp = new WebGLApplication();
+var WebGLApp = new WebGLApplication();
 
 WebGLApplication.prototype.fn = function(name) {
   var self = this;

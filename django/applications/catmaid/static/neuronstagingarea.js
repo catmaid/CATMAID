@@ -1,7 +1,9 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-SelectionTable = function() {
+"use strict";
+
+var SelectionTable = function() {
   this.skeletons = [];
   this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
   this.skeletonsColorMethod = 'random';
@@ -710,7 +712,7 @@ SelectionTable.prototype.measure = function() {
 };
 
 
-window.NeuronStagingArea = new SelectionTable();
+var NeuronStagingArea = new SelectionTable();
 
 
 /** credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery */

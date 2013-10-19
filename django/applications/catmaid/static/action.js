@@ -431,11 +431,10 @@ var tracingWindowActions = [
 
     new Action({
         helpText: "Connectivity widget",
-        buttonID: "data_button_connectivit",
+        buttonID: "data_button_connectivity",
         buttonName: 'table_connectivity',
         run: function (e) {
-            var widgetid = SkeletonConnectivity.getNextId();
-            WindowMaker.show('connectivity-widget', {'widgetid': widgetid } );
+            WindowMaker.create('connectivity-widget');
             return true;
         }
     }),

@@ -22,16 +22,18 @@ var WindowMaker = new function()
     return container;
   };
 
-  var addListener = function(win, container, button_bar) {
+  var addListener = function(win, container, button_bar, destroy) {
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {
           case CMWWindow.CLOSE:
-            if (typeof project === undefined || project === null) {
+            if (typeof(destroy) === "function") {
+              destroy();
+            }
+            if (typeof(project) === "undefined" || project === null) {
               rootWindow.close();
               document.getElementById("content").style.display = "none";
-            }
-            else {
+            } else {
               // Remove from listing
               for (var name in windows) {
                 if (windows.hasOwnProperty(name)) {
@@ -1238,9 +1240,11 @@ var WindowMaker = new function()
         return win;
     };
 
-    var createConnectivityWindow = function( params )
+    var createConnectivityWindow = function()
     {
-        var widgetid = params['widgetid'];
+        var SC = new SkeletonConnectivity();
+        var widgetid = SC.widgetid;
+
         var win = new CMWWindow("Skeleton Connectivity " + widgetid);
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
@@ -1274,14 +1278,14 @@ var WindowMaker = new function()
         add.setAttribute("type", "button");
         add.setAttribute("id", "retrieve_connectivity" + widgetid);
         add.setAttribute("value", "Get connectivity");
-        add.onclick = function( ev ) { SkeletonConnectivity.fetchConnectivityForSkeleton( widgetid ) };
+        add.onclick = SC.fetchConnectivityForSkeleton.bind(SC);
         contentbutton.appendChild(add);
 
         var refresh = document.createElement('input');
         refresh.setAttribute("type", "button");
         refresh.setAttribute("id", "refresh_connectivity" + widgetid);
         refresh.setAttribute("value", "Refresh");
-        refresh.onclick = function( ev ) { SkeletonConnectivity.refresh( widgetid ) };
+        refresh.onclick = SC.refresh.bind(SC);
         contentbutton.appendChild(refresh);
 
         var threshold_label = document.createTextNode(' Synapse threshold: ');
@@ -1304,11 +1308,9 @@ var WindowMaker = new function()
         var container = createContainer( "connectivity_widget" + widgetid );
         content.appendChild( container );
 
-        addListener(win, container, 'skeleton_connectivity_buttons' + widgetid);
+        addListener(win, container, 'skeleton_connectivity_buttons' + widgetid, SC.destroy.bind(SC));
 
         addLogic(win);
-
-        SkeletonConnectivity.init( widgetid );
 
         return win;
     };
@@ -1724,21 +1726,23 @@ var WindowMaker = new function()
 
   /** If the window for the given name is already showing, just focus it.
    * Otherwise, create it new. */
-  this.show = function( name, params )
+  this.show = function(name)
   {
-    if (creators.hasOwnProperty( name )) {
-
-      if( params !== undefined ) {
-          // if the call has parameters, we assume that we
-          // want to create a new window
-          windows[name] = creators[name]( params );
+    if (creators.hasOwnProperty(name)) {
+      if (windows[name]) {
+        windows[name].focus();
       } else {
-        if (windows[name]) {
-          windows[name].focus();
-        } else {
-          windows[name] = creators[name]();
-        }
+        windows[name] = creators[name]();
       }
+    } else {
+      alert("No known window with name " + name);
+    }
+  };
+
+  /** Always create a new instance of the widget. */
+  this.create = function(name) {
+    if (creators.hasOwnProperty(name)) {
+      windows[name] = creators[name]();
     } else {
       alert("No known window with name " + name);
     }

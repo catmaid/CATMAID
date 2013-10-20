@@ -635,7 +635,7 @@ var WindowMaker = new function()
     show.setAttribute("type", "button");
     show.setAttribute("id", "confidence_compartment_show_neurons_from_3d_view");
     show.setAttribute("value", "Generate graph");
-    show.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
+    show.onclick = CompartmentGraphWidget.updateFromSelectionTable.bind(CompartmentGraphWidget);
     contentbutton.appendChild(show);
 
     var layout = appendSelect(contentbutton, "compartment_layout", ["Force-directed", "Grid"]);
@@ -649,6 +649,46 @@ var WindowMaker = new function()
     props.setAttribute("value", "Properties");
     props.onclick = CompartmentGraphWidget.graph_properties;
     contentbutton.appendChild(props);
+
+    var circles = document.createElement('input');
+    circles.setAttribute("type", "button");
+    circles.setAttribute("id", "graph_circles");
+    circles.setAttribute("value", "Grow graph");
+    circles.onclick = CompartmentGraphWidget.growGraph.bind(CompartmentGraphWidget);
+    contentbutton.appendChild(circles);
+
+    var n_circles = document.createElement('select');
+    n_circles.setAttribute("id", "n_circles_of_hell");
+    [1, 2, 3, 4, 5].forEach(function(title, i) {
+      var option = document.createElement("option");
+      option.text = title;
+      option.value = title;
+      n_circles.appendChild(option);
+    });
+    contentbutton.appendChild(n_circles);
+
+    var f = function(name) {
+      var e = document.createElement('select');
+      e.setAttribute("id", "n_circles_min_" + name);
+      var option = document.createElement("option");
+      option.text = "All " + name;
+      option.value = 0;
+      e.appendChild(option);
+      option = document.createElement("option");
+      option.text = "No " + name;
+      option.value = -1;
+      e.appendChild(option)
+      for (var i=1; i<51; ++i) {
+        option = document.createElement("option");
+        option.text = i;
+        option.value = i;
+        e.appendChild(option);
+      }
+      return e;
+    };
+
+    contentbutton.appendChild(f("pre"));
+    contentbutton.appendChild(f("post"));
 
     var gml = document.createElement('input');
     gml.setAttribute("type", "button");

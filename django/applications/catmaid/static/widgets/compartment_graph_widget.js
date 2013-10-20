@@ -266,11 +266,11 @@ var CompartmentGraphWidget = new function()
     cy.layout( options );
   };
 
-
   this.updateGraph = function( data ) {
 
     for (var i = 0; i < data.nodes.length; i++) {
-      data.nodes[i]['data']['color'] = '#' + NeuronStagingArea.getSkeletonColor( parseInt(data.nodes[i]['data'].id) ).getHexString();
+      var color = NeuronStagingArea.getSkeletonColor(parseInt(data.nodes[i]['data'].id));
+      data.nodes[i]['data']['color'] = color ? '#' + color.getHexString() : '#60AFFE';
     }
 
     var grey = [0, 0, 0.267]; // HSV for #444
@@ -380,12 +380,16 @@ var CompartmentGraphWidget = new function()
     }
   };
 
-  this.updateConfidenceGraphFrom3DViewer = function() {
+  this.updateFromSelectionTable = function() {
     var skellist = NeuronStagingArea.getSelectedSkeletons();
     if( skellist.length == 0) {
       alert('Please add skeletons to the selection table before updating the graph.')
       return;
     }
+    this.update(skellist);
+  };
+
+  this.update = function(skellist) {
     requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
         "POST",
         { skeleton_list: skellist,
@@ -459,5 +463,45 @@ var CompartmentGraphWidget = new function()
     recipe.document.open();
     recipe.document.write(html);
     recipe.document.close();
+  };
+
+  this.growGraph = function() {
+    // Collect unique IDs
+    var ids = {};
+    cy.nodes(function(i, node) {
+      var id = node.data("id");
+      ids[id.substring(0, id.lastIndexOf('_'))] = null;
+    });
+
+    var skeleton_ids = Object.keys(ids).map(Number);
+    if (0 === skeleton_ids.length) {
+      growlAlert("Information", "Load a graph first!");
+      return;
+    }
+
+    var n_circles = $('#n_circles_of_hell').val(),
+        min_pre = $('#n_circles_min_pre').val(),
+        min_post = $('#n_circles_min_post').val();
+
+    var self = this;
+    requestQueue.register(django_url + project.id + "/graph/circlesofhell",
+        "POST", 
+        {skeleton_ids: skeleton_ids,
+         n_circles: n_circles,
+         min_pre: min_pre,
+         min_post: min_post},
+        function(status, text) {
+          if (200 !== status) return;
+          var json = $.parseJSON(text);
+          if (json.error) {
+            alert(json.error);
+            return;
+          }
+          if (0 === json.length) {
+            growlAlert("Information", "No further connections found!");
+            return;
+          }
+          self.update(skeleton_ids.concat(json));
+        });
   };
 };

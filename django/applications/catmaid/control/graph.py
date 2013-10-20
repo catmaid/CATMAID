@@ -12,7 +12,6 @@ from synapseclustering import tree_max_density
 from numpy import subtract
 from numpy.linalg import norm
 from tree_util import edge_count_to_root, simplify, find_root, reroot, partition, spanning_tree, cable_length
-from operator import attrgetter
 from math import sqrt
 import sys
 

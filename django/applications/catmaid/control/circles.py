@@ -23,6 +23,23 @@ def _next_circle(skeleton_set, cursor):
         connections[row[0]][row[1]][row[2]] += 1
     return connections
 
+def _clean_mins(request, cursor):
+    min_pre  = int(request.POST.get('min_pre',  0))
+    min_post = int(request.POST.get('min_post', 0))
+
+    if -1 == min_pre and -1 == min_post:
+        raise Exception("Can't grow: not retrieving any pre or post.")
+    if -1 == min_pre:
+        min_pre = float('inf')
+    if -1 == min_post:
+        min_post = float('inf')
+
+    cursor.execute("SELECT relation_name, id FROM relation WHERE relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to'")
+    relations = dict(cursor.fetchall())
+    mins = {}
+    mins[relations['presynaptic_to']]  = min_post # inverted: all postsynaptic to the set
+    mins[relations['postsynaptic_to']] = min_pre # inverted: all presynaptic to the set
+    return mins, relations
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def circles_of_hell(request, project_id=None):
@@ -34,28 +51,13 @@ def circles_of_hell(request, project_id=None):
     if n_circles < 1:
         raise Exception("Requires at least one circle.")
 
-    min_pre  = int(request.POST.get('min_pre',  0))
-    min_post = int(request.POST.get('min_post', 0))
-
-    if -1 == min_pre and -1 == min_post:
-        raise Exception("Can't grow: not retrieving any pre or post.")
-    if -1 == min_pre:
-        min_pre = float('inf')
-    if -1 == min_post:
-        min_post = float('inf')
-
     first_circle = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
 
     if not first_circle:
         raise Exception("No skeletons were provided.")
 
     cursor = connection.cursor()
-
-    cursor.execute("SELECT relation_name, id FROM relation WHERE relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to'")
-    relations = dict(cursor.fetchall())
-    mins = {}
-    mins[relations['presynaptic_to']]  = min_post # inverted: all postsynaptic to the set
-    mins[relations['postsynaptic_to']] = min_pre # inverted: all presynaptic to the set
+    mins, _ = _clean_mins(request, cursor)
 
     current_circle = first_circle
     all_circles = first_circle
@@ -68,4 +70,54 @@ def circles_of_hell(request, project_id=None):
         all_circles = all_circles.union(next_circle)
 
     return HttpResponse(json.dumps(tuple(all_circles - first_circle)))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_directed_paths(request, project_id=None):
+    """ Given a set of two or more skeleton IDs, find directed paths of connected neurons between them, for a maximum inner path length as given (i.e. origin and destination not counted). A directed path means that all edges are of the same kind, e.g. presynaptic_to. """
+
+    sources = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    if len(sources) < 2:
+        raise Exception('Need at least 2 skeleton IDs to find directed paths!')
+
+    path_length = int(request.POST.get('n_circles', 1))
+    cursor = connection.cursor()
+    mins, relations = _clean_mins(request, cursor)
+    presynaptic_to = relations['presynaptic_to']
+    graph = nx.DiGraph()
+    next_sources = sources
+    all_sources = sources
+    length = path_length
+
+    def rev_args(fn):
+        def f(arg1, arg2):
+            fn(arg2, arg1)
+        return f
+
+    # Create a graph by growing the sources
+    while length > 0 and next_sources:
+        length -= 1
+        next_circles = _next_circle(next_sources, cursor)
+        next_sources = set()
+        for skid1, c in next_circles.iteritems():
+            for relationID, targets in c.iteritems():
+                threshold = mins[relationID]
+                add_edge = graph.add_edge if relationID == presynaptic_to else rev_args(graph.add_edge)
+                for skid2, count in targets.iteritems():
+                    if count < threshold:
+                        continue
+                    add_edge(skid1, skid2)
+                    next_sources.add(skid2)
+        next_sources = next_sources - all_sources
+        all_sources = all_sources.union(next_sources)
+
+    # Find all directed paths between all pairs of inputs
+    unique = set()
+    for start, end in combinations(sources, 2):
+        for paths in [nx.all_simple_paths(graph, start, end),
+                      nx.all_simple_paths(graph, end, start)]:
+            for path in paths:
+                for node in path:
+                    unique.add(node)
+
+    return HttpResponse(json.dumps(tuple(unique - sources)))
 

@@ -650,12 +650,33 @@ var WindowMaker = new function()
     props.onclick = CompartmentGraphWidget.graph_properties;
     contentbutton.appendChild(props);
 
+    var gml = document.createElement('input');
+    gml.setAttribute("type", "button");
+    gml.setAttribute("value", "Export GML");
+    gml.onclick = CompartmentGraphWidget.exportGML;
+    contentbutton.appendChild(gml);
+
+    contentbutton.appendChild(document.createElement('br'));
+
+    contentbutton.appendChild(document.createTextNode('Grow '));
+
     var circles = document.createElement('input');
     circles.setAttribute("type", "button");
     circles.setAttribute("id", "graph_circles");
-    circles.setAttribute("value", "Grow graph");
+    circles.setAttribute("value", "Circles");
     circles.onclick = CompartmentGraphWidget.growGraph.bind(CompartmentGraphWidget);
     contentbutton.appendChild(circles);
+
+    contentbutton.appendChild(document.createTextNode(" or "));
+
+    var paths = document.createElement('input');
+    paths.setAttribute("type", "button");
+    paths.setAttribute("id", "graph_paths");
+    paths.setAttribute("value", "Paths");
+    paths.onclick = CompartmentGraphWidget.growPaths.bind(CompartmentGraphWidget);
+    contentbutton.appendChild(paths);
+
+    contentbutton.appendChild(document.createTextNode(" by "));
 
     var n_circles = document.createElement('select');
     n_circles.setAttribute("id", "n_circles_of_hell");
@@ -666,6 +687,9 @@ var WindowMaker = new function()
       n_circles.appendChild(option);
     });
     contentbutton.appendChild(n_circles);
+
+
+    contentbutton.appendChild(document.createTextNode(" limit:"));
 
     var f = function(name) {
       var e = document.createElement('select');
@@ -684,17 +708,12 @@ var WindowMaker = new function()
         option.value = i;
         e.appendChild(option);
       }
+      e.selectedIndex = 3; // value of 2 pre or post min
       return e;
     };
 
     contentbutton.appendChild(f("pre"));
     contentbutton.appendChild(f("post"));
-
-    var gml = document.createElement('input');
-    gml.setAttribute("type", "button");
-    gml.setAttribute("value", "Export GML");
-    gml.onclick = CompartmentGraphWidget.exportGML;
-    contentbutton.appendChild(gml);
 
     content.appendChild( contentbutton );
 

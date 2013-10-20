@@ -466,6 +466,14 @@ var CompartmentGraphWidget = new function()
   };
 
   this.growGraph = function() {
+    this.grow('circlesofhell', 1);
+  };
+
+  this.growPaths = function() {
+    this.grow('directedpaths', 2);
+  };
+
+  this.grow = function(subURL, minimum) {
     // Collect unique IDs
     var ids = {};
     cy.nodes(function(i, node) {
@@ -474,8 +482,8 @@ var CompartmentGraphWidget = new function()
     });
 
     var skeleton_ids = Object.keys(ids).map(Number);
-    if (0 === skeleton_ids.length) {
-      growlAlert("Information", "Load a graph first!");
+    if (skeleton_ids.length < minimum) {
+      growlAlert("Information", "Need at least " + minimum + " skeleton IDs!");
       return;
     }
 
@@ -484,7 +492,7 @@ var CompartmentGraphWidget = new function()
         min_post = $('#n_circles_min_post').val();
 
     var self = this;
-    requestQueue.register(django_url + project.id + "/graph/circlesofhell",
+    requestQueue.register(django_url + project.id + "/graph/" + subURL,
         "POST", 
         {skeleton_ids: skeleton_ids,
          n_circles: n_circles,
@@ -498,7 +506,7 @@ var CompartmentGraphWidget = new function()
             return;
           }
           if (0 === json.length) {
-            growlAlert("Information", "No further connections found!");
+            growlAlert("Information", "No further skeletons found!");
             return;
           }
           self.update(skeleton_ids.concat(json));

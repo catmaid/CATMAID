@@ -624,36 +624,36 @@ var WindowMaker = new function()
 
   var createCompartmentGraphWindow = function()
   {
-    var win = new CMWWindow("Compartment Graph Widget");
+    var CGW = new CompartmentGraphWidget();
+
+    var win = new CMWWindow("Compartment Graph Widget " + CGW.widgetID);
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
     var contentbutton = document.createElement('div');
-    contentbutton.setAttribute("id", 'compartment_graph_window_buttons');
+    contentbutton.setAttribute("id", 'compartment_graph_window_buttons' + CGW.widgetID);
 
     var show = document.createElement('input');
     show.setAttribute("type", "button");
-    show.setAttribute("id", "confidence_compartment_show_neurons_from_3d_view");
     show.setAttribute("value", "Generate graph");
-    show.onclick = CompartmentGraphWidget.updateFromSelectionTable.bind(CompartmentGraphWidget);
+    show.onclick = CGW.updateFromSelectionTable.bind(CGW);
     contentbutton.appendChild(show);
 
     var layout = appendSelect(contentbutton, "compartment_layout", ["Force-directed", "Grid"]);
     layout.onchange = function() {
-      CompartmentGraphWidget.updateLayout(layout.selectedIndex);
+      CGW.updateLayout(layout.selectedIndex);
     };
 
     var props = document.createElement('input');
     props.setAttribute("type", "button");
-    props.setAttribute("id", "graph_properties");
     props.setAttribute("value", "Properties");
-    props.onclick = CompartmentGraphWidget.graph_properties;
+    props.onclick = CGW.graph_properties.bind(CGW);
     contentbutton.appendChild(props);
 
     var gml = document.createElement('input');
     gml.setAttribute("type", "button");
     gml.setAttribute("value", "Export GML");
-    gml.onclick = CompartmentGraphWidget.exportGML;
+    gml.onclick = CGW.exportGML.bind(CGW);
     contentbutton.appendChild(gml);
 
     contentbutton.appendChild(document.createElement('br'));
@@ -662,24 +662,22 @@ var WindowMaker = new function()
 
     var circles = document.createElement('input');
     circles.setAttribute("type", "button");
-    circles.setAttribute("id", "graph_circles");
     circles.setAttribute("value", "Circles");
-    circles.onclick = CompartmentGraphWidget.growGraph.bind(CompartmentGraphWidget);
+    circles.onclick = CGW.growGraph.bind(CGW);
     contentbutton.appendChild(circles);
 
     contentbutton.appendChild(document.createTextNode(" or "));
 
     var paths = document.createElement('input');
     paths.setAttribute("type", "button");
-    paths.setAttribute("id", "graph_paths");
     paths.setAttribute("value", "Paths");
-    paths.onclick = CompartmentGraphWidget.growPaths.bind(CompartmentGraphWidget);
+    paths.onclick = CGW.growPaths.bind(CGW);
     contentbutton.appendChild(paths);
 
     contentbutton.appendChild(document.createTextNode(" by "));
 
     var n_circles = document.createElement('select');
-    n_circles.setAttribute("id", "n_circles_of_hell");
+    n_circles.setAttribute("id", "n_circles_of_hell" + CGW.widgetID);
     [1, 2, 3, 4, 5].forEach(function(title, i) {
       var option = document.createElement("option");
       option.text = title;
@@ -693,7 +691,7 @@ var WindowMaker = new function()
 
     var f = function(name) {
       var e = document.createElement('select');
-      e.setAttribute("id", "n_circles_min_" + name);
+      e.setAttribute("id", "n_circles_min_" + name + CGW.widgetID);
       var option = document.createElement("option");
       option.text = "All " + name;
       option.value = 0;
@@ -717,21 +715,21 @@ var WindowMaker = new function()
 
     content.appendChild( contentbutton );
 
-    var container = createContainer("compartment_graph_widget");
+    var container = createContainer("compartment_graph_widget" + CGW.widgetID);
     content.appendChild(container);
 
     var graph = document.createElement('div');
-    graph.setAttribute("id", "cyelement");
+    graph.setAttribute("id", "cyelement" + CGW.widgetID);
     graph.style.width = "100%";
     graph.style.height = "100%";
     graph.style.backgroundColor = "#FFFFF0";
     container.appendChild(graph);
 
-    addListener(win, container, 'compartment_graph_window_buttons');
+    addListener(win, container, 'compartment_graph_window_buttons' + CGW.widgetID, CGW.unregister.bind(CGW));
 
     addLogic(win);
 
-    CompartmentGraphWidget.init();
+    CGW.init();
 
     return win;
   };

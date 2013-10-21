@@ -485,7 +485,7 @@ var tracingWindowActions = [
       buttonID: "data_button_compartment_graph_widget",
       buttonName: 'graph_widget',
       run: function (e) {
-          WindowMaker.show('compartment-graph-widget');
+          WindowMaker.create('compartment-graph-widget');
           return true;
       }
   }),

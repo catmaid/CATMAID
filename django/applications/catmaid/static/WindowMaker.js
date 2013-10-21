@@ -1300,17 +1300,17 @@ var WindowMaker = new function()
     var createConnectivityWindow = function()
     {
         var SC = new SkeletonConnectivity();
-        var widgetid = SC.widgetid;
+        var widgetID = SC.widgetID;
 
-        var win = new CMWWindow("Skeleton Connectivity " + widgetid);
+        var win = new CMWWindow("Skeleton Connectivity " + widgetID);
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
 
         var contentbutton = document.createElement('div');
-        contentbutton.setAttribute("id", 'skeleton_connectivity_buttons' + widgetid);
+        contentbutton.setAttribute("id", 'skeleton_connectivity_buttons' + widgetID);
 
         var source = document.createElement('select');
-        source.setAttribute('id', 'connectivity_source' + widgetid);
+        source.setAttribute('id', 'connectivity_source' + widgetID);
         ['Active neuron', 'Selected neurons'].forEach(function(text, i) {
           var option = document.createElement('option');
           option.text = text;
@@ -1320,7 +1320,7 @@ var WindowMaker = new function()
         contentbutton.appendChild(source);
 
         var op = document.createElement('select');
-        op.setAttribute('id', 'connectivity_operation' + widgetid);
+        op.setAttribute('id', 'connectivity_operation' + widgetID);
         var option = document.createElement('option');
         option.text = 'AND';
         option.value = 'logic-AND'; // added prefix, otherwise gets sent as nonsense
@@ -1333,14 +1333,14 @@ var WindowMaker = new function()
 
         var add = document.createElement('input');
         add.setAttribute("type", "button");
-        add.setAttribute("id", "retrieve_connectivity" + widgetid);
+        add.setAttribute("id", "retrieve_connectivity" + widgetID);
         add.setAttribute("value", "Get connectivity");
         add.onclick = SC.fetchConnectivityForSkeleton.bind(SC);
         contentbutton.appendChild(add);
 
         var refresh = document.createElement('input');
         refresh.setAttribute("type", "button");
-        refresh.setAttribute("id", "refresh_connectivity" + widgetid);
+        refresh.setAttribute("id", "refresh_connectivity" + widgetID);
         refresh.setAttribute("value", "Refresh");
         refresh.onclick = SC.refresh.bind(SC);
         contentbutton.appendChild(refresh);
@@ -1349,7 +1349,7 @@ var WindowMaker = new function()
         contentbutton.appendChild(threshold_label);
 
         var threshold = document.createElement('select');
-        threshold.setAttribute("id", "connectivity_count_threshold" + widgetid);
+        threshold.setAttribute("id", "connectivity_count_threshold" + widgetID);
 
         for (var i = 0; i < 21; i++) {
           var option = document.createElement("option");
@@ -1362,10 +1362,10 @@ var WindowMaker = new function()
 
         content.appendChild( contentbutton );
 
-        var container = createContainer( "connectivity_widget" + widgetid );
+        var container = createContainer( "connectivity_widget" + widgetID );
         content.appendChild( container );
 
-        addListener(win, container, 'skeleton_connectivity_buttons' + widgetid, SC.destroy.bind(SC));
+        addListener(win, container, 'skeleton_connectivity_buttons' + widgetID, SC.unregister.bind(SC));
 
         addLogic(win);
 

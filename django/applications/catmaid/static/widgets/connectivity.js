@@ -5,20 +5,14 @@
 
 var SkeletonConnectivity = function() {
   this.skeletons = {}; // skeletonID, skeletonTitle;
-  this.widgetid = SkeletonConnectivity.prototype.pid++;
+  this.widgetID = this.register();
 };
 
-SkeletonConnectivity.prototype = {};
-
-SkeletonConnectivity.prototype.pid = 1;
-
-SkeletonConnectivity.prototype.destroy = function() {
-  SkeletonConnectivity.prototype.pid--;
-};
+SkeletonConnectivity.prototype = new InstanceRegistry();
 
 SkeletonConnectivity.prototype.fetchConnectivityForSkeleton = function() {
   this.skeletons = {};
-  if ('Active neuron' === $('#connectivity_source' + this.widgetid).val()) {
+  if ('Active neuron' === $('#connectivity_source' + this.widgetID).val()) {
     var skid = SkeletonAnnotations.getActiveSkeletonId();
     if (null === skid) {
         growlAlert("Information", "Select a skeleton first!");
@@ -42,8 +36,8 @@ SkeletonConnectivity.prototype.refresh = function() {
           django_url + project.id + '/skeleton/connectivity',
           'POST',
           {'source': skids,
-           'threshold': $('#connectivity_count_threshold' + this.widgetid).val(),
-           'boolean_op': $('#connectivity_operation' + this.widgetid).val()},
+           'threshold': $('#connectivity_count_threshold' + this.widgetID).val(),
+           'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
           this.createConnectivityTable.bind(this),
           'update_connectivity_table');
 };
@@ -56,22 +50,22 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
         return;
     }
 
-    var widgetid = this.widgetid;
+    var widgetID = this.widgetID;
 
     // Clear table and plots
     ["_table", "_plot_Upstream", "_plot_Downstream"].forEach(function(name) {
-        var s = $('#connectivity' + name + widgetid);
+        var s = $('#connectivity' + name + widgetID);
         if (s.length > 0) s.remove();
     });
 
-    var bigtable = $('<table />').attr('cellpadding', '0').attr('cellspacing', '0').attr('width', '100%').attr('id', 'connectivity_table' + widgetid).attr('border', '0');
+    var bigtable = $('<table />').attr('cellpadding', '0').attr('cellspacing', '0').attr('width', '100%').attr('id', 'connectivity_table' + widgetID).attr('border', '0');
     var row = $('<tr />')
     var incoming = $('<td />').attr('id', 'incoming_field').attr('valign', 'top');
     row.append( incoming );
     var outgoing = $('<td />').attr('id', 'outgoing_field').attr('valign', 'top');
     row.append( outgoing );
     bigtable.append( row );
-    $("#connectivity_widget" + widgetid).append( bigtable );
+    $("#connectivity_widget" + widgetID).append( bigtable );
 
     var synaptic_count = function(skids_dict) {
         return Object.keys(skids_dict).reduce(function(sum, skid) {
@@ -111,7 +105,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
 
     var add_to_selection_table = function(ev) {
         var skelid = parseInt( ev.target.value );
-        if ($('#incoming-show-skeleton-' + skelid + '-' + widgetid).is(':checked')) {
+        if ($('#incoming-show-skeleton-' + skelid + '-' + widgetID).is(':checked')) {
             NeuronStagingArea.addSkeletons( [skelid] );
         } else {
             NeuronStagingArea.removeSkeletons( [skelid] );
@@ -129,7 +123,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     };
 
     var create_table = function(partners, title, relation) {
-        var table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'incoming_connectivity_table' + widgetid).attr('border', '1');
+        var table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'incoming_connectivity_table' + widgetID).attr('border', '1');
         // create header
         var thead = $('<thead />');
         table.append( thead );
@@ -146,7 +140,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
         var average = (partners.reduce(function(sum, partner) { return sum + partner.reviewed; }, 0 ) / partners.length) | 0;
         row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));
         row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.num_nodes; }, 0) ));
-        var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetid + '" />');
+        var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
         row.append( $('<td />').append( el ) );
         thead.append( row );
         var tbody = $('<tbody />');
@@ -192,7 +186,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
             // Cell with checkbox for adding to Selection Table
             var td = document.createElement('td');
             var input = document.createElement('input');
-            input.setAttribute('id', 'incoming-show-skeleton-' + partner.id + '-' + widgetid);
+            input.setAttribute('id', 'incoming-show-skeleton-' + partner.id + '-' + widgetID);
             input.setAttribute('type', 'checkbox');
             input.setAttribute('value', partner.id);
             input.onclick = add_to_selection_table;               
@@ -211,10 +205,10 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     outgoing.append(table_outgoing);
 
     var add_select_all_fn = function(name, table) {
-         $('#' + name + 'stream-selectall' + widgetid).click( function( event ) {
+         $('#' + name + 'stream-selectall' + widgetID).click( function( event ) {
              var rows = table[0].childNodes[1].childNodes; // all tr elements
 
-            if($('#' + name + 'stream-selectall' + widgetid).is(':checked') ) {
+            if($('#' + name + 'stream-selectall' + widgetID).is(':checked') ) {
                 var skids = [];
                 for (var i=rows.length-1; i > -1; --i) {
                     var checkbox = rows[i].childNodes[4].childNodes[0];
@@ -239,14 +233,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     add_select_all_fn('down', table_outgoing);
 
     var neuronList = document.createElement("ul");
-    neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetid);
+    neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
     Object.keys(this.skeletons).forEach(function(skid) {
         var li = document.createElement("li");
         li.appendChild(createNameElement(this.skeletons[skid], skid));
         neuronList.appendChild(li);
     }, this);
 
-    $("#connectivity_table" + widgetid).prepend(neuronList);
+    $("#connectivity_table" + widgetID).prepend(neuronList);
             
     this.createSynapseDistributionPlots(json);
 };
@@ -427,6 +421,6 @@ SkeletonConnectivity.prototype.createSynapseDistributionPlots = function(json) {
             .text(function(d) { return d; });
     };
 
-    makeMultipleBarChart(json.incoming, "#connectivity_widget" + this.widgetid, "Upstream" + this.widgetid);
-    makeMultipleBarChart(json.outgoing, "#connectivity_widget" + this.widgetid, "Downstream" + this.widgetid);
+    makeMultipleBarChart(json.incoming, "#connectivity_widget" + this.widgetID, "Upstream" + this.widgetID);
+    makeMultipleBarChart(json.outgoing, "#connectivity_widget" + this.widgetID, "Downstream" + this.widgetID);
 };

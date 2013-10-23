@@ -363,7 +363,6 @@ var WindowMaker = new function()
           webglwin.getParent().replaceChild(new CMWVSplitNode(webglwin, win), webglwin);
           // Set as push target
           for (var i = 0; i < link.options.length; ++i) {
-            console.log(link.options[i].value === webglwin_name, link.options[i].value, webglwin_name);
             if (link.options[i].value === webglwin_name) {
               link.selectedIndex = i;
               break;

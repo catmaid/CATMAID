@@ -348,7 +348,7 @@ SelectionTable.prototype.set_skeletons_base_color = function() {
   }
 
   if (this.linkTarget) {
-    var models = getSelectedSkeletonModels();
+    var models = this.getSelectedSkeletonModels();
     // Prevent propagation loop by checking if the target already has all the skeletons
     var diff = SkeletonListSources.findDifference(this.linkTarget, models);
     if (Object.keys(diff).length > 0) {

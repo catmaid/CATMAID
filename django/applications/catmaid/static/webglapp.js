@@ -115,7 +115,7 @@ WebGLApplication.prototype.resizeView = function(w, h) {
       canvasHeight = h;
 
   if (!THREEx.FullScreen.activated()) {
-    $('#view_in_3d_webgl_widget').css('overflowY', 'hidden');
+    $('#view_in_3d_webgl_widget' + this.widgetID).css('overflowY', 'hidden');
     if(isNaN(h) && isNaN(w)) {
       canvasHeight = 800;
       canvasWidth = 600;
@@ -134,9 +134,9 @@ WebGLApplication.prototype.resizeView = function(w, h) {
       canvasHeight = 60;
     }
 
-    $('#viewer-3d-webgl-canvas').width(canvasWidth);
-    $('#viewer-3d-webgl-canvas').height(canvasHeight);
-    $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
+    $('#viewer-3d-webgl-canvas' + this.widgetID).width(canvasWidth);
+    $('#viewer-3d-webgl-canvas' + this.widgetID).height(canvasHeight);
+    $('#viewer-3d-webgl-canvas' + this.widgetID).css("background-color", "#000000");
 
     this.space.setSize(canvasWidth, canvasHeight);
 
@@ -145,13 +145,12 @@ WebGLApplication.prototype.resizeView = function(w, h) {
 };
 
 WebGLApplication.prototype.fullscreenWebGL = function() {
-	var divID = 'view_in_3d_webgl_widget'; //'viewer-3d-webgl-canvas';
 	if (THREEx.FullScreen.activated()){
 		var w = canvasWidth, h = canvasHeight;
 		this.resizeView( w, h );
 		THREEx.FullScreen.cancel();
 	} else {
-		THREEx.FullScreen.request(document.getElementById('viewer-3d-webgl-canvas'));
+		THREEx.FullScreen.request(document.getElementById('viewer-3d-webgl-canvas' + this.widgetID));
 		var w = window.innerWidth, h = window.innerHeight;
 		this.resizeView( w, h );
 	}
@@ -216,8 +215,8 @@ WebGLApplication.prototype.staticUpdateZPlane = function() {
   });
 };
 
-WebGLApplication.prototype.updateSkeletonColors = function() {
-  this.options.color_method = $('#skeletons_color_mode' + this.widgetID).attr("value");
+WebGLApplication.prototype.updateSkeletonColors = function(colorMenu) {
+  this.options.color_method = colorMenu.value;
   Object.keys(this.space.content.skeletons).forEach(function(skeleton_id) {
     this.space.content.skeletons[skeleton_id].updateSkeletonColor(this.options);
   }, this);
@@ -242,14 +241,6 @@ WebGLApplication.prototype.ZYView = function() {
 WebGLApplication.prototype.ZXView = function() {
 	this.space.view.ZX();
 	this.space.render();
-};
-
-WebGLApplication.prototype.is_widget_open = function() {
-	// TODO must change to accomodate multiple 3D Viewers
-  if( $('#view_in_3d_webgl_widget').length ) 
-    return true;
-  else
-    return false;
 };
 
 WebGLApplication.prototype._skeletonVizFn = function(field) {

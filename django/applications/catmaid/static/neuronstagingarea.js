@@ -357,12 +357,6 @@ SelectionTable.prototype.set_skeletons_base_color = function() {
   }
 };
  
-//SelectionTable.prototype.update_skeleton_color_in_3d = function( skeleton ) {
-//  if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( skeleton.id ) ) {
-//    WebGLApp.changeSkeletonColors( [skeleton.id], [skeleton.color] );
-//  }
-//};
-
 SelectionTable.prototype.getSkeletonModel = function( id ) {
   if (id in this.skeleton_ids) {
     return this.skeletons[this.skeleton_ids[id]].clone();

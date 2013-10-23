@@ -397,7 +397,7 @@ var WindowMaker = new function()
     buttons.id = "buttons_in_3d_webgl_widget";
     content.appendChild(buttons);
     
-    var container = createContainer("view_in_3d_webgl_widget");
+    var container = createContainer("view_in_3d_webgl_widget" + WA.widgetID);
     content.appendChild(container);
 
     buttons.appendChild(SkeletonListSources.createSelect(WA));
@@ -489,15 +489,14 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createTextNode(" Color:"));
     var colorMenu = document.createElement('select');
-    colorMenu.setAttribute("id", "skeletons_color_mode" + WA.widgetID);
     $('<option/>', {value : 'none', text: 'Source', selected: true}).appendTo(colorMenu);
     $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
     $('<option/>', {value : 'reviewer', text: 'By Reviewer'}).appendTo(colorMenu);
-    colorMenu.onchange = WA.updateSkeletonColors.bind(WA);
+    colorMenu.onchange = WA.updateSkeletonColors.bind(WA, colorMenu);
     buttons.appendChild(colorMenu);
 
     var canvas = document.createElement('div');
-    canvas.setAttribute("id", "viewer-3d-webgl-canvas");
+    canvas.setAttribute("id", "viewer-3d-webgl-canvas" + WA.widgetID);
     // canvas.style.width = "800px";
     // canvas.style.height = "600px";
     canvas.style.backgroundColor = "#000000";

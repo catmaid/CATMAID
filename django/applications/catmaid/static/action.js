@@ -528,7 +528,7 @@ var tracingWindowActions = [
       buttonID: "view_3d_webgl_button",
       buttonName: '3d-view-webgl',
       run: function (e) {
-        WindowMaker.show('3d-webgl-view');
+        WindowMaker.create('3d-webgl-view');
       }
     }),
 

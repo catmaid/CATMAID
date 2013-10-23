@@ -280,11 +280,9 @@ SelectionTable.prototype.append = function(models) {
 
   if (this.linkTarget) {
     // Prevent propagation loop by checking if the target already has all the skeletons
-    var remaining = Object.keys(models).filter(function(skid) {
-      return !this.linkTarget.hasSkeleton(skid);
-    }, this);
-    if (remaining.length > 0) {
-      this.linkTarget.append(remaining.reduce(function(o, skid) { o[skid] = models[skid]; return o;}, {}));
+    var diff = SkeletonListSources.findDifference(this.linkTarget, models);
+    if (Object.keys(diff).length > 0) {
+      this.linkTarget.append(diff);
     }
   }
 };
@@ -347,6 +345,15 @@ SelectionTable.prototype.set_skeletons_base_color = function() {
       this.gui.update_skeleton_color_button(skeleton);
       return skeleton.color;
     }, this);
+  }
+
+  if (this.linkTarget) {
+    var models = getSelectedSkeletonModels();
+    // Prevent propagation loop by checking if the target already has all the skeletons
+    var diff = SkeletonListSources.findDifference(this.linkTarget, models);
+    if (Object.keys(diff).length > 0) {
+      this.linkTarget.append(diff);
+    }
   }
 };
  
@@ -549,6 +556,15 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
         {
           var vis = $('#skeletonshow' + widgetID + '-' + skeleton.id).is(':checked')
           skeleton.selected = vis;
+          $('#skeletonpre' + widgetID + '-' + skeleton.id).attr({checked: vis});
+          skeleton.pre_visible = vis;
+          $('#skeletonpost' + widgetID + '-' + skeleton.id).attr({checked: vis});
+          skeleton.post_visible = vis;
+          if (!vis) {
+            // hide text
+            $('#skeletontext' + widgetID + '-' + skeleton.id).attr({checked: vis});
+            skeleton.text_visible = vis;
+          }
           table.notifyLink(skeleton);
         } )
   ));

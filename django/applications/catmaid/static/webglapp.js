@@ -64,6 +64,7 @@ WebGLApplication.prototype.updateModel = function(model, source_chain) {
    || model.color.b !== skeleton.actorColor.b) {
      skeleton.updateSkeletonColor(this.options);
   }
+  skeleton.setTextVisibility(model.text_visible);
 
   skeleton.skeletonmodel = model.clone();
 

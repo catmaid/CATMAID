@@ -183,6 +183,14 @@ SkeletonSourceManager.prototype.getSelectedSkeletonModels = function(ref_source)
 	return models;
 };
 
+/** Return the subset of models not present in source. */
+SkeletonSourceManager.prototype.findDifference = function(source, models) {
+    return Object.keys(models).reduce(function(o, skid) {
+			if (!source.hasSkeleton(skid)) o[skid] = models[skid];
+			return o;
+		}, {});
+};
+
 SkeletonSourceManager.prototype.highlight = function(caller, skeleton_id) {
 	Object.keys(this.sources).forEach(function(name) {
 		var source = this.sources[name];

@@ -196,41 +196,47 @@ SelectionTable.prototype.getOrCreate = function() {
   return SelectionTable.prototype.getFirstInstance();
 };
 
-/** setup button handlers */
-SelectionTable.prototype.reinit_list_with_existing_skeleton = function() {
-  
-  if (SkeletonAnnotations.getActiveSkeletonId()) this.addActive();
+SelectionTable.prototype.toggleSelectAllSkeletons = function() {
+  this.skeletons.forEach(function(skeleton) {
+    this.selectSkeleton(skeleton, this.togglevisibleall);
+  });
+  this.togglevisibleall = !this.togglevisibleall;
+};
 
-  var self = this;
+/** setup button handlers */
+SelectionTable.prototype.init = function() {
+  // Set the default source at the 'Active skeleton'
+  var select = $('#' + SkeletonListSources.createSelectID(this))[0];
+  for (var i=0; i<select.options.length; ++i) {
+    if ('Active skeleton' === select.options[i].value) {
+      select.selectedIndex = i;
+      break;
+    }
+  }
+  // Load the default source (should at least be the 'Active skeleton')
+  this.loadSource();
+
+  var clear = this.clear.bind(this),
+      toggleSelectAllSkeletons = this.toggleSelectAllSkeletons.bind(this);
 
   $('#webgl-rmall').click(function() {
     if (confirm("Empty selection table?")) {
-      self.clear();
+      clear();
     }
   });
 
-  $('#webgl-show').click(function() {
-    self.skeletons.forEach(function(skeleton) {
-      self.selectSkeleton(skeleton, self.togglevisibleall);
-    });
-    self.togglevisibleall = !self.togglevisibleall;
-  });
+  $('#webgl-show').click(toggleSelectAllSkeletons);
 
   // TODO add similar buttons and handlers for pre and post
 };
 
 /** sks: object with skeleton_id as keys and neuron names as values. */
 SelectionTable.prototype.insertSkeletons = function(sks, callback) {
-  var skids = Object.keys(sks).filter(function(id) {
-    if (id in this.skeleton_ids) {
-      // Already in table
-      return false;
-    }
-    var neuronname = sks[id];
-    this.skeletons.push(new this.SkeletonModel(id, neuronname, this.pickColor()));
-    this.skeleton_ids[id] = this.skeletons.length -1;
-    return true;
+  var models = {};
+  Object.keys(sks).forEach(function(id) {
+    models[id] = new this.SkeletonModel(id, sks[id], this.pickColor());
   }, this);
+  this.append(models);
 
   this.gui.update();
 
@@ -278,7 +284,7 @@ SelectionTable.prototype.append = function(models) {
       return !this.linkTarget.hasSkeleton(skid);
     }, this);
     if (remaining.length > 0) {
-      this.linkTarget.append(remaining.reduce(function(o, model) { o[model.id] = model; return o;}, {}));
+      this.linkTarget.append(remaining.reduce(function(o, skid) { o[skid] = models[skid]; return o;}, {}));
     }
   }
 };
@@ -668,20 +674,7 @@ SelectionTable.prototype.selectSkeletonById = function(id) {
 SelectionTable.prototype.selectSkeleton = function( skeleton, vis ) {
   $('#skeletonshow' + this.widgetID + '-' + skeleton.id).attr('checked', vis);
   skeleton.selected = vis;
-
-  // TODO if a target source is defined and exist, push changes to it
-  //if (WebGLApp.is_widget_open()) {
-  //  var connector_filter = WebGLApp.setSkeletonVisibility(skeleton.id, vis);
-  //  if (!connector_filter) {
-  //    skeleton.pre_visible = vis;
-  //    $('#skeletonpre-' + skeleton.id).attr('checked', vis);
-  //    WebGLApp.setSkeletonPreVisibility( skeleton.id,  vis );
-
-  //    skeleton.post_visible = vis;
-  //    $('#skeletonpost-' + skeleton.id).attr('checked', vis);
-  //    WebGLApp.setSkeletonPostVisibility( skeleton.id, vis );
-  //  }
-  //}
+  this.notifyLink(skeleton);
 };
 
 

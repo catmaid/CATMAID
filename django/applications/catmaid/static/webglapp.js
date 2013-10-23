@@ -53,13 +53,6 @@ WebGLApplication.prototype.updateModel = function(model, source_chain) {
     }
     return;
   }
-  if (model.selected !== skeleton.visible) {
-    skeleton.setActorVisibility(model.selected);
-    if (!model.selected) {
-      skeleton.setPreVisibility(false);
-      skeleton.setPostVisibility(false);
-    }
-  }
   if (model.pre_visible !== skeleton.actor['presynaptic_to'].visible) {
     skeleton.setPreVisibility(model.pre_visible);
   }
@@ -71,7 +64,18 @@ WebGLApplication.prototype.updateModel = function(model, source_chain) {
    || model.color.b !== skeleton.actorColor.b) {
      skeleton.updateSkeletonColor(this.options);
   }
+
   skeleton.skeletonmodel = model.clone();
+
+  if (model.selected !== skeleton.visible) {
+    this.setSkeletonVisibility(model.id, model.selected);
+    if (!model.selected) {
+      skeleton.setPreVisibility(false);
+      skeleton.setPostVisibility(false);
+    }
+  } else {
+    this.space.render();
+  }
 };
 
 WebGLApplication.prototype.getSelectedSkeletons = function() {

@@ -144,7 +144,6 @@ SkeletonSourceManager.prototype.createPushSelect = function(source, suffix) {
 	select.options.add(new Option('None', 'None'));
 	var name = source.getName();
 	this.createOptions().forEach(function(option) {
-		console.log(name, option.value, typeof(name), typeof(option.value), option.value === name);
 		if (option.value !== name) select.options.add(option);
 	});
 	return select;

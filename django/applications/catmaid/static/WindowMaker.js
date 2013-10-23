@@ -365,15 +365,15 @@ var WindowMaker = new function()
           for (var i = 0; i < link.options.length; ++i) {
             if (link.options[i].value === webglwin_name) {
               link.selectedIndex = i;
+              link.onchange(); // set the linkTarget
               break;
             }
           }
         }
     }
 
-    ST.loadSource();
-
     SkeletonListSources.updateGUI();
+    ST.init();
 
     return win;
   };

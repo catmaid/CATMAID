@@ -24,14 +24,14 @@ def _next_circle(skeleton_set, cursor):
     return connections
 
 def _clean_mins(request, cursor):
-    min_pre  = int(request.POST.get('min_pre',  0))
-    min_post = int(request.POST.get('min_post', 0))
+    min_pre  = int(request.POST.get('min_pre',  -1))
+    min_post = int(request.POST.get('min_post', -1))
 
     if -1 == min_pre and -1 == min_post:
         raise Exception("Can't grow: not retrieving any pre or post.")
-    if -1 == min_pre:
+    if 0 == min_pre:
         min_pre = float('inf')
-    if -1 == min_post:
+    if 0 == min_post:
         min_post = float('inf')
 
     cursor.execute("SELECT relation_name, id FROM relation WHERE relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to'")

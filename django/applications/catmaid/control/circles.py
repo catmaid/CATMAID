@@ -34,7 +34,7 @@ def _clean_mins(request, cursor, project_id):
     if -1 == min_post:
         min_post = float('inf')
 
-    cursor.execute("SELECT relation_name, id FROM relation WHERE project_id = %s AND relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to'" % int(project_id))
+    cursor.execute("SELECT relation_name, id FROM relation WHERE project_id = %s AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')" % int(project_id))
     relations = dict(cursor.fetchall())
     mins = {}
     mins[relations['presynaptic_to']]  = min_post # inverted: all postsynaptic to the set

@@ -30,6 +30,20 @@ SelectionTable.prototype.destroy = function() {
   this.unregisterSource();
 };
 
+SelectionTable.prototype.updateModel = function(model, source_chain) {
+  if (source_chain && (this in source_chain)) return; // break propagation loop
+  if (!source_chain) source_chain = {};
+  source_chain[this] = this;
+
+  if (!(model.id in this.skeleton_ids)) {
+    growlAlert("Oops", this.getName() + " does not have skeleton #" + model.id);
+    return;
+  }
+  this.skeletons[this.skeleton_ids[model.id]] = model.clone();
+  this.gui.update();
+  this.notifyLink(model, source_chain);
+};
+
 SelectionTable.prototype.SkeletonModel = function( id, neuronname, color ) {
     this.id = parseInt(id);
     this.baseName = neuronname;
@@ -41,6 +55,15 @@ SelectionTable.prototype.SkeletonModel = function( id, neuronname, color ) {
 };
 
 SelectionTable.prototype.SkeletonModel.prototype = {};
+
+SelectionTable.prototype.SkeletonModel.prototype.clone = function() {
+  var m = new SelectionTable.prototype.SkeletonModel(this.id, this.neuronname, this.color.clone());
+  m.selected = this.selected;
+  m.pre_visible = this.pre_visible;
+  m.post_visible = this.post_visible;
+  m.text_visible = this.text_visible;
+  return m;
+};
 
 // TODO doesn't do anything?
 SelectionTable.prototype.SkeletonModel.prototype.property_dialog = function() {
@@ -248,6 +271,16 @@ SelectionTable.prototype.append = function(models) {
   }, this);
 
   this.gui.update();
+
+  if (this.linkTarget) {
+    // Prevent propagation loop by checking if the target already has all the skeletons
+    var remaining = Object.keys(models).filter(function(skid) {
+      return !this.linkTarget.hasSkeleton(skid);
+    }, this);
+    if (remaining.length > 0) {
+      this.linkTarget.append(remaining.reduce(function(o, model) { o[model.id] = model; return o;}, {}));
+    }
+  }
 };
 
 /** ids: an array of Skeleton IDs. */
@@ -280,6 +313,13 @@ SelectionTable.prototype.removeSkeletons = function(ids) {
   }, {});
 
   this.gui.update();
+
+  if (this.linkTarget) {
+    // Prevent propagation loop by checking if the target has the skeletons anymore
+    if (ids.some(this.linkTarget.hasSkeleton, this.linkTarget)) {
+      this.linkTarget.removeSkeletons(ids);
+    }
+  }
 };
 
 SelectionTable.prototype.clear = function() {
@@ -312,14 +352,14 @@ SelectionTable.prototype.set_skeletons_base_color = function() {
 
 SelectionTable.prototype.getSkeletonModel = function( id ) {
   if (id in this.skeleton_ids) {
-    return this.skeletons[this.skeleton_ids[id]];
+    return this.skeletons[this.skeleton_ids[id]].clone();
   }
 };
 
 SelectionTable.prototype.getSelectedSkeletonModels = function() {
   return this.skeletons.reduce(function(o, model) {
     if (model.selected) {
-      o[model.id] = model;
+      o[model.id] = model.clone();
     }
     return o;
   }, {});
@@ -327,7 +367,7 @@ SelectionTable.prototype.getSelectedSkeletonModels = function() {
 
 SelectionTable.prototype.getSkeletonModels = function() {
   return this.skeletons.reduce(function(o, model) {
-      o[model.id] = model;
+      o[model.id] = model.clone();
     return o;
   }, {});
 };
@@ -503,10 +543,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
         {
           var vis = $('#skeletonshow' + widgetID + '-' + skeleton.id).is(':checked')
           skeleton.selected = vis;
-          //if( WebGLApp.is_widget_open() ) {
-          //  table.selectSkeleton( skeleton, vis );
-          //}
-            
+          table.notifyLink(skeleton);
         } )
   ));
 
@@ -523,9 +560,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
         .click( function( event )
         {
           skeleton.pre_visible = $('#skeletonpre' + widgetID + '-' + skeleton.id).is(':checked');
-          //if( WebGLApp.is_widget_open() )
-          //  WebGLApp.setSkeletonPreVisibility( skeleton.id, skeleton.pre_visible);
-
+          table.notifyLink(skeleton);
         } )
   ));
 
@@ -542,8 +577,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
         .click( function( event )
         {
           skeleton.post_visible = $('#skeletonpost' + widgetID + '-' + skeleton.id).is(':checked');
-          //if( WebGLApp.is_widget_open() )
-          //  WebGLApp.setSkeletonPostVisibility( skeleton.id, skeleton.post_visible);
+          table.notifyLink(skeleton);
         } )
   ));
 
@@ -559,8 +593,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
         .click( function( event )
         {
           skeleton.text_visible = $('#skeletontext' + widgetID + '-' + skeleton.id).is(':checked');
-          //if( WebGLApp.is_widget_open() )
-          //  WebGLApp.setSkeletonTextVisibility( skeleton.id, skeleton.text_visible);
+          table.notifyLink(skeleton);
         } )
   ));
 
@@ -594,7 +627,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
           cw.onchange(function(color) {
             skeleton.color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
             table.gui.update_skeleton_color_button(skeleton);
-            // TODO if a target source is defined and exist, push changes to it
+            table.notifyLink(skeleton);
           });
           skeleton.cw = cw;
           $('#color-wheel' + widgetID + '-' + skeleton.id).show();

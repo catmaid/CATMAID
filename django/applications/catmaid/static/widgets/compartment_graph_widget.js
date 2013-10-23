@@ -53,14 +53,37 @@ CompartmentGraphWidget.prototype.destroy = function() {
   this.unregisterSource();
 };
 
+/** Reads only selection state and color. */
+CompartmentGraphWidget.prototype.updateModel = function(model, source_chain) {
+  if (source_chain && (this in source_chain)) return; // break propagation loop
+  source_chain[this] = this;
+
+  var nodes = this.getNodes(model.id);
+  if (model.selected) nodes.select();
+  else nodes.unselect();
+  nodes.data('color', '#' + model.color.getHexString());
+};
+
 CompartmentGraphWidget.prototype.hasSkeleton = function(skeleton_id) {
   return this.getNodes(skeleton_id).length > 0;
 };
 
+CompartmentGraphWidget.prototype.getSkeletonModel = function(skeleton_id) {
+  var nodes = this.getNodes(skeleton_id);
+  if (0 === nodes.length) return null;
+  var node = nodes[0],
+      props = node.data(),
+      model = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color.setHex(parseInt('0x' + props.color.substring(1))));
+  model.selected = node.selected();
+  return model;
+};
+
 CompartmentGraphWidget.prototype.getSkeletonModels = function() {
   return this.cy.nodes().toArray().map(function(node) {
-    var props = node.data();
-    return new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color(props.color));
+    var props = node.data(),
+        model = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color.setHex(parseInt('0x' + props.color.substring(1))));
+    model.selected = node.selected();
+    return model;
   });
 };
 
@@ -404,8 +427,10 @@ CompartmentGraphWidget.prototype.clear = function() {
 
 CompartmentGraphWidget.prototype.append = function(models) {
   var unique = this.getSelectedSkeletonModels();
+  console.log(unique.length);
   // Add or update
   $.extend(unique, models);
+  console.log(unique.length);
   this.load(models);
 };
 

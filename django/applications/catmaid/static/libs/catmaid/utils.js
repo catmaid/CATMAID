@@ -69,6 +69,20 @@ SkeletonSource.prototype.loadSource = function() {
   this.append(models);
 };
 
+SkeletonSource.prototype.updateLink = function(select) {
+  this.linkTarget = SkeletonListSources.getSource(select.value);
+};
+
+SkeletonSource.prototype.notifyLink = function(model, source_chain) {
+  if (this.linkTarget) {
+    this.linkTarget.updateModel(model, source_chain);
+	}
+};
+
+SkeletonSource.prototype.getLinkTarget = function() {
+	return this.linkTarget;
+};
+
 // A prototype for a manager of existing skeleton sources
 var SkeletonSourceManager = function() {
 	this.sources = {};
@@ -97,14 +111,15 @@ SkeletonSourceManager.prototype.updateGUI = function() {
 	var options = this.createOptions.bind(this);
 	var sources = this.sources;
 	$("[id^='skeleton-source-select-']").each(function(index, select) {
-		var name = this.id.substring(23).replace(/-/g, ' ');
-		var selected = select.options[select.selectedIndex].text;
-		select.options.length = 0;
+		var ipush = this.id.indexOf('-push-');
+		var name = (-1 === ipush ? this.id.substring(23) : this.id.substring(23, ipush)).replace(/-/g, ' ');
+		var selected = select.options[select.selectedIndex].value;
+		select.options.length = select.options[0].value === 'None' ? 1 : 0; // preserve manually added initial void entry when present in push selects
 		select.selectedIndex = 0;
 		options().forEach(function(option, i) {
 			if (option.value === name) return; // ignore self
 			select.options.add(option);
-			if (option.text === selected) select.selectedIndex = i;
+			if (option.value === selected) select.selectedIndex = select.options.length -1;
 		});
 	});
 };
@@ -123,8 +138,24 @@ SkeletonSourceManager.prototype.createSelect = function(source) {
 	return select;
 };
 
+SkeletonSourceManager.prototype.createPushSelect = function(source, suffix) {
+	var select = document.createElement('select');
+	select.setAttribute('id', this.createSelectID(source) + '-push-' + suffix);
+	select.options.add(new Option('None', 'None'));
+	var name = source.getName();
+	this.createOptions().forEach(function(option) {
+		console.log(name, option.value, typeof(name), typeof(option.value), option.value === name);
+		if (option.value !== name) select.options.add(option);
+	});
+	return select;
+};
+
 SkeletonSourceManager.prototype.getSelectedSource = function(ref_source) {
 	return this.sources[$('#' + this.createSelectID(ref_source)).val()];
+};
+
+SkeletonSourceManager.prototype.getSource = function(name) {
+	return this.sources[name];
 };
 
 SkeletonSourceManager.prototype.getSelectedSkeletons = function(ref_source) {
@@ -218,4 +249,8 @@ ActiveSkeleton.prototype.getSelectedSkeletonModels = function() {
 
 ActiveSkeleton.prototype.highlight = function(skeleton_id) {
 	TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
+};
+
+ActiveSkeleton.prototype.updateModel = function(model) {
+	console.log("Ignoring updateModel", model);
 };

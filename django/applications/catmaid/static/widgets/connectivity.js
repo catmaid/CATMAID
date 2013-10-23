@@ -37,8 +37,33 @@ SkeletonConnectivity.prototype.clear = function() {
   this.update();
 };
 
+SkeletonConnectivity.prototype.updateModel = function(model, source_chain) {
+  if (source_chain && (this in source_chain)) return; // break propagation loop
+  source_chain[this] = this;
+
+  console.log("Ignoring updateModel", model);
+};
+
 SkeletonConnectivity.prototype.getSelectedSkeletons = function() {
   return Object.keys(this.skeletons).map(Number);
+};
+
+SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
+    var name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
+    if (0 === name.length) return null;
+
+    var pre = $("#presynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
+    var post = $("#postsynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
+
+    var color = new THREE.Color();
+    if (pre.length > 0) {
+      if (post.length > 0) color.setRGB(0.8, 0.6, 1); // both
+      else color.setRGB(1, 0.4, 0.4); // pre
+    } else if (post.length > 0) color.setRGB(0.5, 1, 1); // post
+
+    var model = new SelectionTable.prototype.SkeletonModel(skeleton_id, name, color);
+    model.selected = pre.is(':checked') || post.is(':checked');
+    return model;
 };
 
 SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
@@ -114,6 +139,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     }
 
     var widgetID = this.widgetID;
+    var getLinkTarget = this.getLinkTarget.bind(this);
+    var getSkeletonModel = this.getSkeletonModel.bind(this);
 
     // Clear table and plots
     this._clearGUI();
@@ -176,14 +203,22 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
 
     var create_table = function(partners, title, relation) {
 
-      var add_to_selection_table = function(ev) {
-        // TODO change to a "push" pulldown menu
-        var selection = SelectionTable.prototype.getOrCreate();
+      var set_as_selected = function(ev) {
+        var linkTarget = getLinkTarget();
+        if (!linkTarget) return;
         var skelid = parseInt( ev.target.value );
+        var model = linkTarget.getSkeletonModel(skelid);
         if ($('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked')) {
-            selection.addSkeletons( [skelid] );
+          if (!model) model = getSkeletonModel(skelid);
+          model.selected = true;
+          var models = {};
+          models[skelid] = model;
+          linkTarget.append(models);
         } else {
-            selection.removeSkeletons( [skelid] );
+          if (model) {
+            model.selected = false;
+            linkTarget.updateModel(model);
+          }
         }
       };
 
@@ -253,7 +288,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
             input.setAttribute('id', relation + '-show-skeleton-' + widgetID + '-' + partner.id);
             input.setAttribute('type', 'checkbox');
             input.setAttribute('value', partner.id);
-            input.onclick = add_to_selection_table;
+            input.onclick = set_as_selected;
             td.appendChild(input);
             tr.appendChild(td);
         });
@@ -271,6 +306,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     var add_select_all_fn = function(name, table) {
          $('#' + name + 'stream-selectall' + widgetID).click( function( event ) {
              var rows = table[0].childNodes[1].childNodes; // all tr elements
+             var linkTarget = getLinkTarget();
 
             if($('#' + name + 'stream-selectall' + widgetID).is(':checked') ) {
                 var skids = [];
@@ -279,16 +315,32 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
                     checkbox.checked = true;
                     skids.push(checkbox.value);
                 };
-                SelectionTable.prototype.getOrCreate().addSkeletons( skids );
+                if (linkTarget) {
+                  linkTarget.append(skids.reduce(function(o, skid) {
+                    // See if the target has the model and update only its selection state
+                    var model = linkTarget.getSkeletonModel(skid);
+                    if (model) model.selected = true;
+                    else model = getSkeletonModel(skid); // otherwise add new
+                    o[skid] = model;
+                    return o;
+                  }, {}));
+                }
             } else {
-                var open = !SelectionTable.prototype.noInstances();
                 var skids = [];
                 for (var i=rows.length-1; i > -1; --i) {
                     var checkbox = rows[i].childNodes[4].childNodes[0];
                     checkbox.checked = false;
-                    if (open) skids.push(checkbox.value);
+                    skids.push(checkbox.value);
                 };
-                if (open) SelectionTable.prototype.getOrCreate().removeSkeletons( skids );
+                if (linkTarget) {
+                  skids.forEach(function(skid) {
+                    var model = linkTarget.getSkeletonModel(skid);
+                    if (model) {
+                      model.selected = false;
+                      linkTarget.updateModel(model);
+                    }
+                  });
+                }
             }
         });
     };

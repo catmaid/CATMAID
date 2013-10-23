@@ -184,7 +184,7 @@ var WindowMaker = new function()
   };
 
 
-  var createStagingListWindow = function( webglwin ) {
+  var createStagingListWindow = function( webglwin, webglwin_name ) {
 
     var ST = new SelectionTable();
 
@@ -271,7 +271,12 @@ var WindowMaker = new function()
     measure.setAttribute('value', 'Measure');
     measure.onclick = ST.measure.bind(ST);
     buttons.appendChild(measure);
-    
+
+    buttons.appendChild(document.createTextNode(' Link:'));
+    var link = SkeletonListSources.createPushSelect(ST, 'link');
+    link.onchange = ST.updateLink.bind(ST, link);
+    buttons.appendChild(link);
+
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
     
@@ -356,6 +361,14 @@ var WindowMaker = new function()
             rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
         } else {
           webglwin.getParent().replaceChild(new CMWVSplitNode(webglwin, win), webglwin);
+          // Set as push target
+          for (var i = 0; i < link.options.length; ++i) {
+            console.log(link.options[i].value === webglwin_name, link.options[i].value, webglwin_name);
+            if (link.options[i].value === webglwin_name) {
+              link.selectedIndex = i;
+              break;
+            }
+          }
         }
     }
 
@@ -535,7 +548,7 @@ var WindowMaker = new function()
     addLogic(win);
 
     if (SelectionTable.prototype.noInstances()) {
-        createStagingListWindow( win );
+        createStagingListWindow( win, WA.getName() );
     }
 
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
@@ -1387,15 +1400,18 @@ var WindowMaker = new function()
 
         var threshold = document.createElement('select');
         threshold.setAttribute("id", "connectivity_count_threshold" + widgetID);
-
         for (var i = 0; i < 21; i++) {
           var option = document.createElement("option");
           option.text = i.toString();
           option.value = i;
           threshold.appendChild(option);
         }
-
         contentbutton.appendChild(threshold);
+
+        contentbutton.appendChild(document.createTextNode(' Link:'));
+        var link = SkeletonListSources.createPushSelect(SC, 'link');
+        link.onchange = SC.updateLink.bind(SC, link);
+        contentbutton.appendChild(link);
 
         content.appendChild( contentbutton );
 

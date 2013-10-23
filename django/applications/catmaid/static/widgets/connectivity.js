@@ -44,6 +44,10 @@ SkeletonConnectivity.prototype.updateModel = function(model, source_chain) {
   console.log("Ignoring updateModel", model);
 };
 
+SkeletonConnectivity.prototype.highlight = function(skeleton_id) {
+  // TODO color the table row in green if present, clear all others
+};
+
 SkeletonConnectivity.prototype.getSelectedSkeletons = function() {
   return Object.keys(this.skeletons).map(Number);
 };

@@ -541,7 +541,7 @@ CompartmentGraphWidget.prototype.growPaths = function() {
 CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
   var skeleton_ids = this.getSelectedSkeletons();
   if (skeleton_ids.length < minimum) {
-    growlAlert("Information", "Need at least " + minimum + " skeleton IDs!");
+    growlAlert("Information", "Need at least " + minimum + " skeletons selected!");
     return;
   }
 
@@ -564,7 +564,7 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
           return;
         }
         if (0 === json.length) {
-          growlAlert("Information", "No further skeletons found!");
+          growlAlert("Information", "No further skeletons found, with parameters min_pre=" + min_pre + ", min_post=" + min_post);
           return;
         }
         self.append(json.reduce(function(m, skid) {

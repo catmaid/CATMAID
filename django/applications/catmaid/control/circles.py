@@ -29,9 +29,9 @@ def _clean_mins(request, cursor):
 
     if -1 == min_pre and -1 == min_post:
         raise Exception("Can't grow: not retrieving any pre or post.")
-    if 0 == min_pre:
+    if -1 == min_pre:
         min_pre = float('inf')
-    if 0 == min_post:
+    if -1 == min_post:
         min_post = float('inf')
 
     cursor.execute("SELECT relation_name, id FROM relation WHERE relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to'")

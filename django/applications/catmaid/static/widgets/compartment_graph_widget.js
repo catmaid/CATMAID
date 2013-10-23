@@ -79,20 +79,21 @@ CompartmentGraphWidget.prototype.getSkeletonModel = function(skeleton_id) {
 };
 
 CompartmentGraphWidget.prototype.getSkeletonModels = function() {
-  return this.cy.nodes().toArray().map(function(node) {
+  return this.cy.nodes().toArray().reduce(function(m, node) {
     var props = node.data(),
-        model = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color.setHex(parseInt('0x' + props.color.substring(1))));
+        model = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color().setHex(parseInt('0x' + props.color.substring(1))));
     model.selected = node.selected();
-    return model;
-  });
+    m[props.skeleton_id] = model;
+    return m;
+  }, {});
 };
 
 CompartmentGraphWidget.prototype.getSelectedSkeletonModels = function() {
-  return this.cy.nodes().filter(function(i, node) {
-    return node.selected();
-  }).toArray().reduce(function(m, node) {
-    var props = node.data();
-    m[props.skeleton_id] = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color(props.color));
+  return this.cy.nodes().toArray().reduce(function(m, node) {
+    if (node.selected()) {
+      var props = node.data();
+      m[props.skeleton_id] = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color(props.color));
+    }
     return m;
   }, {});
 };
@@ -309,8 +310,8 @@ CompartmentGraphWidget.prototype.updateLayout = function( layout ) {
 
 CompartmentGraphWidget.prototype.updateGraph = function(data, models) {
   for (var i = 0; i < data.nodes.length; i++) {
-    var color = models[data.nodes[i]['data'].skeleton_id].color;
-    data.nodes[i]['data']['color'] = color ? '#' + color.getHexString() : '#60AFFE';
+    var model = models[data.nodes[i]['data'].skeleton_id];
+    data.nodes[i]['data']['color'] = model ? '#' + model.color.getHexString() : '#ffae56';
   }
 
   var grey = [0, 0, 0.267]; // HSV for #444
@@ -426,22 +427,23 @@ CompartmentGraphWidget.prototype.clear = function() {
 };
 
 CompartmentGraphWidget.prototype.append = function(models) {
-  var unique = this.getSelectedSkeletonModels();
-  console.log(unique.length);
-  // Add or update
-  $.extend(unique, models);
-  console.log(unique.length);
-  this.load(models);
+  var unique = this.getSkeletonModels();
+  // Add or update if there is a model
+  Object.keys(models).forEach(function(skid) {
+    if (models[skid]) unique[skid] = models[skid];
+    else unique[skid] = null;
+  });
+  this.load(Object.keys(unique), unique);
 };
 
 CompartmentGraphWidget.prototype.update = function() {
-  this.load(this.getSkeletonModels());
+  var models = this.getSkeletonModels();
+  this.load(Object.keys(models), models);
 };
 
-CompartmentGraphWidget.prototype.load = function(models) {
-  var skeleton_ids = Object.keys(models);
+CompartmentGraphWidget.prototype.load = function(skeleton_ids, models) {
   if (0 === skeleton_ids.length) {
-    growlAlert("Info", "No skeletons selected!");
+    growlAlert("Info", "Nothing to load!");
     return;
   }
   requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
@@ -545,8 +547,7 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
       min_pre = $('#n_circles_min_pre' + this.widgetID).val(),
       min_post = $('#n_circles_min_post' + this.widgetID).val();
 
-  var self = this,
-      models = this.getSkeletonModels();
+  var self = this;
   requestQueue.register(django_url + project.id + "/graph/" + subURL,
       "POST", 
       {skeleton_ids: skeleton_ids,
@@ -564,6 +565,9 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
           growlAlert("Information", "No further skeletons found!");
           return;
         }
-        self.updateGraph(json, models);
+        self.append(json.reduce(function(m, skid) {
+          m[skid] = null;
+          return m;
+        }, {}));
       });
 };

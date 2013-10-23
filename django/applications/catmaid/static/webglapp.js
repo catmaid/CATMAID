@@ -1098,7 +1098,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.loadMeshes = functi
          function (models) {
            var ids = Object.keys(models);
            if (0 === ids.length) return;
-           var loader = space.newJSONLoader();
+           var loader = space.content.newJSONLoader(),
                scale = space.scale;
            ids.forEach(function(id) {
              var vs = models[id].vertices;
@@ -1106,7 +1106,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.loadMeshes = functi
                space.coordsToUnscaledSpace2(vs, i);
              }
              var geometry = loader.parse(models[id]).geometry;
-             var mesh = space.newMesh(geometry, material);
+             var mesh = space.content.newMesh(geometry, material);
              mesh.scale.set(scale, scale, scale);
              mesh.position.set(0, 0, 0);
              mesh.rotation.set(0, 0, 0);

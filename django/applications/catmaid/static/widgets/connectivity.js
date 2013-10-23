@@ -5,33 +5,96 @@
 
 var SkeletonConnectivity = function() {
   this.skeletons = {}; // skeletonID, skeletonTitle;
-  this.widgetID = this.register();
+  this.widgetID = this.registerInstance();
+  this.registerSource();
 };
 
-SkeletonConnectivity.prototype = new InstanceRegistry();
+SkeletonConnectivity.prototype = {};
+$.extend(SkeletonConnectivity.prototype, new InstanceRegistry());
+$.extend(SkeletonConnectivity.prototype, new SkeletonSource());
 
-SkeletonConnectivity.prototype.fetchConnectivityForSkeleton = function() {
+SkeletonConnectivity.prototype.append = function(models) {
+  var skeletons = Object.keys(models).reduce(function(o, skid) {
+    o[skid] = models[skid].baseName;
+    return o;
+  }, {});
+  // Update existing ones and add new ones
+  $.extend(this.skeletons, skeletons);
+  this.update();
+};
+
+SkeletonConnectivity.prototype.getName = function() {
+  return "Connectivity " + this.widgetID;
+};
+
+SkeletonConnectivity.prototype.destroy = function() {
+  this.unregisterInstance();
+  this.unregisterSource();
+};
+
+SkeletonConnectivity.prototype.clear = function() {
   this.skeletons = {};
-  if ('Active neuron' === $('#connectivity_source' + this.widgetID).val()) {
-    var skid = SkeletonAnnotations.getActiveSkeletonId();
-    if (null === skid) {
-        growlAlert("Information", "Select a skeleton first!");
-        return;
-    }
-    this.skeletons[skid] = $('#neuronname' + SkeletonAnnotations.getActiveStackId()).text();
-  } else {
-    this.skeletons = NeuronStagingArea.getSelectedSkeletonNames();
-    if (0 === Object.keys(skeletons).length) {
-      growlAlert("Information", "Selection Table is empty!");
-      return;
-    }
-  }
-  this.refresh();
+  this.update();
 };
 
-SkeletonConnectivity.prototype.refresh = function() {
+SkeletonConnectivity.prototype.getSelectedSkeletons = function() {
+  return Object.keys(this.skeletons).map(Number);
+};
+
+SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
+  var skeletons = this.skeletons;
+  var models = Object.keys(this.skeletons).reduce(function(o, skid) {
+    var name = skeletons[skid];
+    name = name.substring(0, name.lastIndexOf(' - #'));
+    o[skid] = new SelectionTable.prototype.SkeletonModel(skid, skeletons[skid], new THREE.Color().setRGB(1, 1, 0));
+    return o;
+  }, {});
+
+  var widgetID = this.widgetID;
+  var colors = [new THREE.Color().setRGB(1, 0.4, 0.4),
+                new THREE.Color().setRGB(0.5, 1, 1),
+                new THREE.Color().setRGB(0.8, 0.6, 1)];
+  // Read out all skeletons
+  var sks = {};
+  ['presynaptic_to', 'postsynaptic_to'].forEach(function(relation, index) {
+    $("input[id^='" + relation + "-show-skeleton-" + widgetID + "-']").each(function(i, e) {
+      var skid = parseInt(e.value);
+      if (!(skid in sks)) sks[skid] = {};
+      sks[skid][index] = e.checked;
+    });
+  });
+  // Pick those for which at least one checkbox is checked (if they have more than one)
+  Object.keys(sks).forEach(function(skid) {
+    var sk = sks[skid];
+    if (true === sk[0] || true === sk[1]) {
+      var index = -1;
+      if (0 in sk) {
+        if (1 in sk) index = 2; // exists in both pre and post
+        else index = 0;
+      } else if (1 in sk) index = 1;
+      var name = $('#a-connectivity-table-' + widgetID + '-' + skid).text();
+      name = name.substring(0, name.lastIndexOf('/ skeleton'));
+      models[skid] = new SelectionTable.prototype.SkeletonModel(skid, name, colors[index].clone());
+    }
+  });
+
+  return models;
+};
+
+SkeletonConnectivity.prototype._clearGUI = function() {
+  // Clear table and plots
+  ["_table", "_plot_Upstream", "_plot_Downstream"].forEach(function(name) {
+      var s = $('#connectivity' + name + this.widgetID);
+      if (s.length > 0) s.remove();
+  }, this);
+};
+
+SkeletonConnectivity.prototype.update = function() {
   var skids = Object.keys(this.skeletons);
-  if (0 === skids.length) { return };
+  if (0 === skids.length) {
+    this._clearGUI();
+    return;
+  };
   requestQueue.replace(
           django_url + project.id + '/skeleton/connectivity',
           'POST',
@@ -53,10 +116,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     var widgetID = this.widgetID;
 
     // Clear table and plots
-    ["_table", "_plot_Upstream", "_plot_Downstream"].forEach(function(name) {
-        var s = $('#connectivity' + name + widgetID);
-        if (s.length > 0) s.remove();
-    });
+    this._clearGUI();
 
     var bigtable = $('<table />').attr('cellpadding', '0').attr('cellspacing', '0').attr('width', '100%').attr('id', 'connectivity_table' + widgetID).attr('border', '0');
     var row = $('<tr />')
@@ -92,6 +152,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
         var a = document.createElement('a');
         a.innerText = name;
         a.setAttribute('href', '#');
+        a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
         a.onclick = function() {
             TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
             return false;
@@ -101,15 +162,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
         a.style.color = 'black';
         a.style.textDecoration = 'none';
         return a;
-    };
-
-    var add_to_selection_table = function(ev) {
-        var skelid = parseInt( ev.target.value );
-        if ($('#incoming-show-skeleton-' + skelid + '-' + widgetID).is(':checked')) {
-            NeuronStagingArea.addSkeletons( [skelid] );
-        } else {
-            NeuronStagingArea.removeSkeletons( [skelid] );
-        }
     };
 
     var getBackgroundColor = function(reviewed) {
@@ -123,6 +175,18 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     };
 
     var create_table = function(partners, title, relation) {
+
+      var add_to_selection_table = function(ev) {
+        // TODO change to a "push" pulldown menu
+        var selection = SelectionTable.prototype.getOrCreate();
+        var skelid = parseInt( ev.target.value );
+        if ($('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked')) {
+            selection.addSkeletons( [skelid] );
+        } else {
+            selection.removeSkeletons( [skelid] );
+        }
+      };
+
         var table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'incoming_connectivity_table' + widgetID).attr('border', '1');
         // create header
         var thead = $('<thead />');
@@ -186,10 +250,10 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
             // Cell with checkbox for adding to Selection Table
             var td = document.createElement('td');
             var input = document.createElement('input');
-            input.setAttribute('id', 'incoming-show-skeleton-' + partner.id + '-' + widgetID);
+            input.setAttribute('id', relation + '-show-skeleton-' + widgetID + '-' + partner.id);
             input.setAttribute('type', 'checkbox');
             input.setAttribute('value', partner.id);
-            input.onclick = add_to_selection_table;               
+            input.onclick = add_to_selection_table;
             td.appendChild(input);
             tr.appendChild(td);
         });
@@ -215,16 +279,16 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
                     checkbox.checked = true;
                     skids.push(checkbox.value);
                 };
-                NeuronStagingArea.addSkeletons( skids );
+                SelectionTable.prototype.getOrCreate().addSkeletons( skids );
             } else {
-                var open = NeuronStagingArea.is_widget_open();
+                var open = !SelectionTable.prototype.noInstances();
                 var skids = [];
                 for (var i=rows.length-1; i > -1; --i) {
                     var checkbox = rows[i].childNodes[4].childNodes[0];
                     checkbox.checked = false;
                     if (open) skids.push(checkbox.value);
                 };
-                if (open) NeuronStagingArea.removeSkeletons( skids );
+                if (open) SelectionTable.prototype.getOrCreate().removeSkeletons( skids );
             }
         });
     };

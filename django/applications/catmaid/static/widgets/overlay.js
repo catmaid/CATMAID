@@ -20,7 +20,9 @@ var SkeletonAnnotations = {
   },
 
   TYPE_NODE : "treenode",
-  TYPE_CONNECTORNODE : "connector"
+  TYPE_CONNECTORNODE : "connector",
+
+  sourceView : new ActiveSkeleton()
 };
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
@@ -149,9 +151,7 @@ SkeletonAnnotations.refreshAllWidgets = function() {
     TreenodeTable.init( project.getId() );
   }
 
-  if (NeuronStagingArea.is_widget_open()) {
-    NeuronStagingArea.highlight(this.atn.skeleton_id);
-  }
+  SkeletonListSources.highlight(SkeletonAnnotations.sourceView, this.atn.skeleton_id);
 };
 
 SkeletonAnnotations.exportSWC = function() {
@@ -473,11 +473,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     this.recolorAllNodes();
   }
 
-  if ($("#view_in_3d_webgl_widget").length) {
-    // if displayed in 3d viewer, update position
-    WebGLApp.showActiveNode();
-    WebGLApp.updateActiveNodePosition();
-  }
+  WebGLApplication.prototype.staticUpdateActiveNodePosition();
 };
 
 /** Activate the node nearest to the mouse. */
@@ -1376,13 +1372,10 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
             {radius: radius,
              option: choice.selectedIndex},
             function(json) {
-              var skeleton_id = self.nodes[treenode_id].skeleton_id;
-              if (NeuronStagingArea.is_widget_open() && NeuronStagingArea.getSkeleton(skeleton_id) && WebGLApp.is_widget_open()) {
-                // Reinit the actor
-                WebGLApp.addSkeletonFromID(skeleton_id, false);
-                // Reinit SVGOverlay to read in the radius of each altered treenode
-                self.updateNodes();
-              }
+              // Refresh 3d views if any
+              WebGLApplication.prototype.staticUpdateSkeleton([self.nodes[treenode_id].skeleton_id]);
+              // Reinit SVGOverlay to read in the radius of each altered treenode
+              self.updateNodes();
             });
         };
         dialog.show();

@@ -4,8 +4,8 @@
 "use strict";
 
 var CompartmentGraphWidget = function() {
-  var skeleton_ids = {};
-  this.widgetID = this.register();
+  this.widgetID = this.registerInstance();
+  this.registerSource();
 
   this.confidence_threshold = 0;
   this.synaptic_count_edge_filter = 0; // value equal or higher than this number or kept
@@ -14,7 +14,65 @@ var CompartmentGraphWidget = function() {
   this.clustering_bandwidth = 0;
 }
 
-CompartmentGraphWidget.prototype = new InstanceRegistry();
+CompartmentGraphWidget.prototype = {};
+$.extend(CompartmentGraphWidget.prototype, new InstanceRegistry());
+$.extend(CompartmentGraphWidget.prototype, new SkeletonSource());
+
+CompartmentGraphWidget.prototype.getName = function() {
+  return "Graph " + this.widgetID;
+};
+
+CompartmentGraphWidget.prototype.getSelectedSkeletons = function() {
+  if (!this.cy) return [];
+  // Collect unique skeleton IDs
+  var ids = {};
+  this.cy.nodes(function(i, node) {
+    var id = node.data("id");
+    ids[id.substring(0, id.lastIndexOf('_'))] = null;
+  });
+  return Object.keys(ids).map(Number);
+};
+
+/** One or more for each skeleton_id, depending on the synapse clustering bandwidth. */
+CompartmentGraphWidget.prototype.getNodes = function(skeleton_id) {
+  return this.cy.nodes().filter(function(i, node) {
+    return skeleton_id === node.data("skeleton_id");
+  });
+};
+
+CompartmentGraphWidget.prototype.getSkeletonColor = function(skeleton_id) {
+  var nodes = this.getNodes(skeleton_id);
+  if (nodes.length > 0) {
+    return new THREE.Color(nodes[0].data("color"));
+  }
+  return new THREE.Color().setRGB(1, 0, 1);
+};
+
+CompartmentGraphWidget.prototype.destroy = function() {
+  this.unregisterInstance();
+  this.unregisterSource();
+};
+
+CompartmentGraphWidget.prototype.hasSkeleton = function(skeleton_id) {
+  return this.getNodes(skeleton_id).length > 0;
+};
+
+CompartmentGraphWidget.prototype.getSkeletonModels = function() {
+  return this.cy.nodes().toArray().map(function(node) {
+    var props = node.data();
+    return new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color(props.color));
+  });
+};
+
+CompartmentGraphWidget.prototype.getSelectedSkeletonModels = function() {
+  return this.cy.nodes().filter(function(i, node) {
+    return node.selected();
+  }).toArray().reduce(function(m, node) {
+    var props = node.data();
+    m[props.skeleton_id] = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color(props.color));
+    return m;
+  }, {});
+};
 
 CompartmentGraphWidget.prototype.toggle_show_node_labels = function() {
   if (this.show_node_labels) {
@@ -226,9 +284,9 @@ CompartmentGraphWidget.prototype.updateLayout = function( layout ) {
   this.cy.layout( options );
 };
 
-CompartmentGraphWidget.prototype.updateGraph = function( data ) {
+CompartmentGraphWidget.prototype.updateGraph = function(data, models) {
   for (var i = 0; i < data.nodes.length; i++) {
-    var color = NeuronStagingArea.getSkeletonColor(parseInt(data.nodes[i]['data'].id));
+    var color = models[data.nodes[i]['data'].skeleton_id].color;
     data.nodes[i]['data']['color'] = color ? '#' + color.getHexString() : '#60AFFE';
   }
 
@@ -293,8 +351,9 @@ CompartmentGraphWidget.prototype.updateGraph = function( data ) {
     var node = this;
     var splitname = node.id().split('_');
     if (evt.originalEvent.altKey) {
-      // Toggle visibility in the 3d viewer
-      NeuronStagingArea.selectSkeletonById( splitname[0] );
+      // Toggle visibility in all selection sources
+      // TODO should be only in the target source, if any
+      SkeletonListSources.setVisible([splitname[0]], true);
     } else if (evt.originalEvent.shiftKey) {
       // Select in the overlay
       TracingTool.goToNearestInNeuronOrSkeleton("skeleton", parseInt(splitname[0]));
@@ -339,19 +398,30 @@ CompartmentGraphWidget.prototype.toggleTrimmedNodeLabels = function() {
   }
 };
 
-CompartmentGraphWidget.prototype.updateFromSelectionTable = function() {
-  var skellist = NeuronStagingArea.getSelectedSkeletons();
-  if( skellist.length == 0) {
-    alert('Please add skeletons to the selection table before updating the graph.')
-    return;
-  }
-  this.update(skellist);
+CompartmentGraphWidget.prototype.clear = function() {
+  if (this.cy) this.cy.elements("node").remove();
 };
 
-CompartmentGraphWidget.prototype.update = function(skellist) {
+CompartmentGraphWidget.prototype.append = function(models) {
+  var unique = this.getSelectedSkeletonModels();
+  // Add or update
+  $.extend(unique, models);
+  this.load(models);
+};
+
+CompartmentGraphWidget.prototype.update = function() {
+  this.load(this.getSkeletonModels());
+};
+
+CompartmentGraphWidget.prototype.load = function(models) {
+  var skeleton_ids = Object.keys(models);
+  if (0 === skeleton_ids.length) {
+    growlAlert("Info", "No skeletons selected!");
+    return;
+  }
   requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
       "POST",
-      {skeleton_list: skellist,
+      {skeleton_list: skeleton_ids,
        confidence_threshold: this.confidence_threshold,
        bandwidth: this.clustering_bandwidth},
       (function (status, text) {
@@ -361,9 +431,16 @@ CompartmentGraphWidget.prototype.update = function(skellist) {
               alert(json.error);
               return;
           }
-          this.updateGraph( json );
+          this.updateGraph(json, models);
       }).bind(this),
       "graph_widget_request");
+};
+
+CompartmentGraphWidget.prototype.highlight = function(skeleton_id) {
+  // TODO rather than select, animate it: grow and shrink its size, or its color
+  this.cy.nodes().filter(function(i, node) {
+    return skeleton_id === node.data("skeleton_id");
+  }).select();
 };
 
 CompartmentGraphWidget.prototype.writeGML = function() {
@@ -433,14 +510,7 @@ CompartmentGraphWidget.prototype.growPaths = function() {
 };
 
 CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
-  // Collect unique IDs
-  var ids = {};
-  this.cy.nodes(function(i, node) {
-    var id = node.data("id");
-    ids[id.substring(0, id.lastIndexOf('_'))] = null;
-  });
-
-  var skeleton_ids = Object.keys(ids).map(Number);
+  var skeleton_ids = this.getSelectedSkeletons();
   if (skeleton_ids.length < minimum) {
     growlAlert("Information", "Need at least " + minimum + " skeleton IDs!");
     return;
@@ -450,7 +520,8 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
       min_pre = $('#n_circles_min_pre' + this.widgetID).val(),
       min_post = $('#n_circles_min_post' + this.widgetID).val();
 
-  var self = this;
+  var self = this,
+      models = this.getSkeletonModels();
   requestQueue.register(django_url + project.id + "/graph/" + subURL,
       "POST", 
       {skeleton_ids: skeleton_ids,
@@ -468,6 +539,6 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
           growlAlert("Information", "No further skeletons found!");
           return;
         }
-        self.update(skeleton_ids.concat(json));
+        self.updateGraph(json, models);
       });
 };

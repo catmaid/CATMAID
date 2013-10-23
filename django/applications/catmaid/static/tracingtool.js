@@ -211,10 +211,8 @@ function TracingTool()
 
   this.prototype.changeSlice = function( val )
   {
-    if( WebGLApp.is_widget_open() ) {
-      WebGLApp.updateZPlane( val );
+    WebGLApplication.prototype.staticUpdateZPlane();
 
-    }
     SkeletonAnnotations.Tag.changeSlice();
     stack.moveToPixel( val, stack.y, stack.x, stack.s );
   }
@@ -908,8 +906,10 @@ TracingTool.search = function()
         };
         var actionaddstage = function(type) {
           return function() {
-              NeuronStagingArea.addSkeletons([parseInt($(this).attr('id'))]);
-              return false;
+            // Find an open Selection, or open one if none
+            var selection = SelectionTable.prototype.getOrCreate();
+            selection.addSkeletons([parseInt($(this).attr('id'))]);
+            return false;
           };
         };
         var removelabel = function(id) {

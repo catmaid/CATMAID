@@ -6,17 +6,14 @@
 /* Only methods of the WebGLApplication object elicit a render. All other methods
  * do not, except for those that use continuations to load data (meshes) or to
  * compute with web workers (betweenness centrality shading). */
-var WebGLApplication = function() {};
+var WebGLApplication = function() {
+  this.widgetID = this.registerInstance();
+  this.registerSource();
+};
 
 WebGLApplication.prototype = {};
-
-/** Static, empty instance. Call its init method to create the 3d space. */
-var WebGLApp = new WebGLApplication();
-
-WebGLApplication.prototype.fn = function(name) {
-  var self = this;
-  return function() { self[name](); };
-};
+$.extend(WebGLApplication.prototype, new InstanceRegistry());
+$.extend(WebGLApplication.prototype, new SkeletonSource());
 
 WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.divID = divID;
@@ -28,9 +25,35 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.scale);
 };
 
+WebGLApplication.prototype.getName = function() {
+  return "3D View " + this.widgetID;
+};
+
 WebGLApplication.prototype.destroy = function() {
+  this.unregisterInstance();
+  this.unregisterSource();
   this.space.destroy();
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
+};
+
+WebGLApplication.prototype.getSelectedSkeletons = function() {
+	var skeletons = this.space.content.skeletons;
+	return Object.keys(skeletons).filter(function(skid) { return skeletons[skid].visible; }).map(Number);
+};
+
+WebGLApplication.prototype.getSelectedSkeletonModels = function() {
+	var skeletons = this.space.content.skeletons;
+	return Object.keys(skeletons).reduce(function(m, skid) {
+    var skeleton = skeletons[skid];
+    if (skeleton.visible) {
+      m[skid] = new SelectionTable.prototype.SkeletonModel(skeleton.id, skeleton.skeletonmodel.baseName, skeleton.actorColor.clone());
+    }
+    return m;
+  }, {});
+};
+
+WebGLApplication.prototype.highlight = function(skeleton_id) {
+   // Do nothing, for now
 };
 
 WebGLApplication.prototype.resizeView = function(w, h) {
@@ -97,6 +120,7 @@ WebGLApplication.prototype.Options = function() {
 	this.show_zplane = false;
 	this.connector_filter = false;
   this.shading_method = 'none';
+  this.color_method = 'none';
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -134,6 +158,20 @@ WebGLApplication.prototype.OPTIONS = new WebGLApplication.prototype.Options();
 WebGLApplication.prototype.updateZPlane = function() {
 	this.space.staticContent.updateZPlanePosition(this.stack, this.scale);
 	this.space.render();
+};
+
+WebGLApplication.prototype.staticUpdateZPlane = function() {
+  this.getInstances().forEach(function(instance) {
+    instance.updateZPlane();
+  });
+};
+
+WebGLApplication.prototype.updateSkeletonColors = function() {
+  this.options.color_method = $('#skeletons_color_mode' + this.widgetID).attr("value");
+  Object.keys(this.space.content.skeletons).forEach(function(skeleton_id) {
+    this.space.content.skeletons[skeleton_id].updateSkeletonColor(this.options);
+  }, this);
+  this.space.render();
 };
 
 WebGLApplication.prototype.XYView = function() {
@@ -218,7 +256,7 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
 	// Find all connector IDs referred to by more than one skeleton
 	// but only for visible skeletons
 	var skeletons = this.space.content.skeletons;
-	var visible_skeletons = NeuronStagingArea.getSelectedSkeletons();
+	var visible_skeletons = Object.keys(skeletons).filter(function(skeleton_id) { return skeletons[skeleton_id].visible; });
   var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
 
 	var counts = visible_skeletons.reduce(function(counts, skeleton_id) {
@@ -262,7 +300,7 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
 
 WebGLApplication.prototype.set_shading_method = function() {
 	// Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
-	this.options.shading_method = $('#skeletons_shading :selected').attr("value");
+	this.options.shading_method = $('#skeletons_shading' + this.widgetID + ' :selected').attr("value");
 
 	var skeletons = this.space.content.skeletons;
 	for (var skeleton_id in skeletons) {
@@ -270,6 +308,9 @@ WebGLApplication.prototype.set_shading_method = function() {
 			skeletons[skeleton_id].shaderWorkers(this.options);
 		}
 	}
+
+  // Won't be superfluous if shaderWorkers already run once
+  this.space.render();
 };
 
 WebGLApplication.prototype.look_at_active_node = function() {
@@ -283,23 +324,53 @@ WebGLApplication.prototype.updateActiveNodePosition = function() {
   this.space.render();
 };
 
+WebGLApplication.prototype.staticUpdateActiveNodePosition = function() {
+  this.getInstances().map(function(instance) {
+    instance.updateActiveNodePosition();
+  });
+};
+
 
 WebGLApplication.prototype.has_skeleton = function(skeleton_id) {
 	return this.space.content.skeletons.hasOwnProperty(skeleton_id);
 };
 
+WebGLApplication.prototype.staticUpdateSkeleton = function(skeleton_ids) {
+  this.getInstances().forEach(function(instance) {
+    var sks = skeleton_ids.filter(function(skid) { return skid in instance.space.skeletons; });
+    if (sks.length > 0) instance.addSkeletons(sks, instance.options.connector_filter);
+  });
+};
+
+
 /** Fetch skeletons one by one, and render just once at the end. */
-WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restricted_connectors, callback) {
-	if (!skeletonIDs || 0 === skeletonIDs.length) return;
-	var skeleton_ids = skeletonIDs.map(function(id) { return parseInt(id); });
+WebGLApplication.prototype.addSkeletons = function(models, refresh_restricted_connectors, callback) {
+  // Update skeleton properties for existing skeletons, and remove them from models
+  var skeleton_ids = Object.keys(models).filter(function(skid) {
+    if (skid in this.space.content.skeletons) {
+      var model = models[skid],
+          skeleton = this.space.content.skeletons[skid];
+      skeleton.skeletonmodel = model;
+      skeleton.setActorVisibility(model.selected);
+      skeleton.setPreVisibility(model.pre_visible);
+      skeleton.setPostVisibility(model.post_visible);
+      skeleton.setTextVisibility(model.text_visible);
+      skeleton.actorColor = model.color.clone();
+      return false;
+    }
+    return true;
+  }, this);
+
+  if (0 === skeleton_ids.length) return;
+
 	var self = this;
   var i = 0;
   var missing = [];
   var unloadable = [];
 
   var fnMissing = function() {
-    if (missing.length > 0 && confirm("Skeletons " + missing.join(', ') + " do not exist. Remove them from the Selection Table?")) {
-      NeuronStagingArea.removeSkeletons(missing);
+    if (missing.length > 0 && confirm("Skeletons " + missing.join(', ') + " do not exist. Remove them from selections?")) {
+      SkeletonListSources.removeSkeletons(missing);
     }
     if (unloadable.length > 0) {
       alert("Could not load skeletons: " + unloadable.join(', '));
@@ -323,7 +394,7 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
                   unloadable.push(skeleton_id);
                 }
               } else {
-                var sk = self.space.updateSkeleton(skeleton_id, json);
+                var sk = self.space.updateSkeleton(models[skeleton_id], json);
                 if (sk) sk.show(self.options);
               }
             } else {
@@ -332,7 +403,7 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
             i += 1;
             $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
             if (i < skeleton_ids.length) {
-              fn(skeleton_ids[i]);
+              fn(skeleton_id[i]);
             } else {
               if (refresh_restricted_connectors) self.refreshRestrictedConnectors();
               self.space.render();
@@ -346,8 +417,8 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
             }
           } catch(e) {
             $.unblockUI();
-            console.log(e, new Error(e).stack);
-            growlAlert("ERROR", "Loaded only " + i + " / " + skeleton_ids.length + " skeletons!");
+            console.log(e, e.stack);
+            growlAlert("ERROR", "Problem loading skeleton " + skeleton_id);
             fnMissing();
           }
         });
@@ -358,40 +429,40 @@ WebGLApplication.prototype.addSkeletons = function(skeletonIDs, refresh_restrict
   fn(skeleton_ids[0]);
 };
 
-WebGLApplication.prototype.refresh_skeletons = function() {
-  var selected = NeuronStagingArea.getSelectedSkeletons();
-  var selected_set = selected.reduce(function(o, id) { o[id] = id; return o;}, {});
+/** Reload skeletons from database. */
+WebGLApplication.prototype.updateSkeletons = function() {
+  var models = this.getSelectedSkeletonModels(); // visible ones
+  this.clear();
+  this.append(models);
+};
 
-  var skeletons = this.space.content.skeletons;
-
-  var remove = Object.keys(skeletons).filter(function(skid) { return !(skid in selected_set); });
-
-  if (remove.length > 0) this.space.removeSkeletons(remove);
-  if (selected.length > 0) {
-    this.addSkeletons(selected, false);
-    this.space.render();
-  } else if (Object.keys(skeletons).length > 0) {
+WebGLApplication.prototype.append = function(models) {
+  if (0 === Object.keys(models).length) {
+    growlAlert("Info", "No skeletons selected!");
+    return;
+  }
+  this.addSkeletons(models, false);
+  if (this.options.connector_filter) {
     this.refreshRestrictedConnectors();
   } else {
     this.space.render();
   }
 };
 
-WebGLApplication.prototype.getListOfSkeletonIDs = function(only_visible) {
-	growlAlert("OBSOLETE", "You should be grabbing the list from the Selection Table!");
-	var skeletons = this.space.content.skeletons;
-	if (only_visible) return Object.keys(skeletons).filter(function(skid) { return skeletons[skid].visible; }).map(parseInt);
-	return Object.keys(skeletons).map(parseInt);
+WebGLApplication.prototype.clear = function() {
+  this.removeSkeletons(Object.keys(this.space.content.skeletons));
+  this.space.render();
 };
 
+WebGLApplication.prototype.getSkeletonColor = function( skeleton_id ) {
+	if (skeleton_id in this.space.content.skeletons) {
+		return this.space.content.skeletons[skeleton_id].actorColor.clone();
+  }
+	return new THREE.Color().setRGB(1, 0, 1);
+};
 
-WebGLApplication.prototype.getColorOfSkeleton = function( skeleton_id ) {
-	growlAlert("OBSOLETE", "You should be grabbing the color from the Selection Table!");
-	if (skeleton_id in skeletons) {
-		return skeletons[skeleton_id].getActorColorAsHTMLHex();
-	} else {
-		return '#FF0000';
-	}
+WebGLApplication.prototype.hasSkeleton = function(skeleton_id) {
+  return skeleton_id in this.space.content.skeletons;
 };
 
 WebGLApplication.prototype.removeSkeletons = function(skeleton_ids) {
@@ -1264,20 +1335,13 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 	this.setVisible(true);
 };
 
-WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeleton_id, json) {
-  if (!NeuronStagingArea.getSkeleton(skeleton_id)) {
-    // Skeleton was removed from selection while json was loading
-    // Remove if present
-    this.removeSkeleton(skeleton_id);
-    return false;
-  }
-
-  if (this.content.skeletons.hasOwnProperty(skeleton_id)) {
-    this.content.skeletons[skeleton_id].reinit_actor(json);
+WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json) {
+  if (this.content.skeletons.hasOwnProperty(skeletonmodel.id)) {
+    this.content.skeletons[skeletonmodel.id].reinit_actor(skeletonmodel, json);
   } else {
-    this.content.skeletons[skeleton_id] = new this.Skeleton(this, skeleton_id, json);
+    this.content.skeletons[skeletonmodel.id] = new this.Skeleton(this, skeletonmodel, json);
   }
-  return this.content.skeletons[skeleton_id];
+  return this.content.skeletons[skeletonmodel.id];
 };
 
 /** An object to represent a skeleton in the WebGL space.
@@ -1293,12 +1357,13 @@ WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeleton_id
  *  When visualizing only the connectors among the skeletons visible in the WebGL space, the geometries of the pre- and postsynaptic edges are hidden away, and a new pair of geometries are created to represent just the edges that converge onto connectors also related to by the other skeletons.
  *
  */
-WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeleton_id, json) {
+WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmodel, json) {
 	this.space = space;
-	this.id = skeleton_id;
+	this.id = skeletonmodel.id;
 	this.baseName = json[0];
   this.synapticColors = space.staticContent.synapticColors;
-	this.reinit_actor(json);
+  this.skeletonmodel = skeletonmodel;
+	this.reinit_actor(skeletonmodel, json);
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
@@ -1307,7 +1372,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to'];
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects = function() {
-	this.skeletonmodel = NeuronStagingArea.getSkeleton( this.id );
 	this.actorColor = new THREE.Color(0xffff00);
 	this.visible = true;
 	if (undefined === this.skeletonmodel) {
@@ -1498,8 +1562,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 */
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
-	if ('creator' === NeuronStagingArea.skeletonsColorMethod
-	 || 'reviewer' === NeuronStagingArea.skeletonsColorMethod
+	if ('creator' === options.color_method
+	 || 'reviewer' === options.color_method
 	 || 'none' !== options.shading_method)
 	{
 		// The skeleton colors need to be set per-vertex.
@@ -1517,9 +1581,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     var pickColor;
     var actorColor = this.actorColor;
-    if ('creator' === NeuronStagingArea.skeletonsColorMethod) {
+    if ('creator' === options.color_method) {
       pickColor = function(vertex) { return User(vertex.user_id).color; };
-    } else if ('reviewer' === NeuronStagingArea.skeletonsColorMethod) {
+    } else if ('reviewer' === options.color_method) {
       pickColor = function(vertex) { return User(vertex.reviewer_id).color; };
     } else {
       pickColor = function() { return actorColor; };
@@ -1571,8 +1635,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeColor = function(color, options) {
 	this.actorColor = color;
-	
-	if (NeuronStagingArea.skeletonsColorMethod === 'random' || NeuronStagingArea.skeletonsColorMethod === 'manual') {
+	if (options.color_method === 'random' || options.color_method === 'manual') {
 		this.updateSkeletonColor(options);
 	}
 };
@@ -1692,10 +1755,11 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphe
 };
 
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = function(skeleton_data) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = function(skeletonmodel, skeleton_data) {
 	if (this.actor) {
 		this.destroy();
 	}
+  this.skeletonmodel = skeletonmodel; // updating properties
 	this.initialize_objects();
 
 	// Graph for calculating the centrality-based shading will be created when needed
@@ -1845,9 +1909,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.show = function(op
 
 	this.setTextVisibility( this.skeletonmodel.text_visible ); // the text labels
 	
-	this.actorColor = this.skeletonmodel.color;
+	this.actorColor = this.skeletonmodel.color.clone();
 
-  this.shaderWorkers(options);
+  if ('none' !== options.shading_method && 0 === Object.keys(this.betweenness).length) {
+    this.shaderWorkers(options);
+  } else {
+    this.updateSkeletonColor(options);
+  }
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createGraph = function() {

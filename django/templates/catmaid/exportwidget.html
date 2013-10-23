@@ -51,11 +51,21 @@
 				 'Active neuron and input synapses only from neurons in Selection Table'],
 				[0, 1, 2],
 				0);
+		var selectionTables = SelectionTable.prototype.getInstances();
+		var choiceST = dialog.appendChoice("Selection table: ", "neuroml-st",
+				selectionTables.map(function(item) { return item.getName(); }),
+				selectionTables.map(function(item, i) { return i; }),
+				0);
+
 		dialog.onOK = function() {
 			var post;
 			switch (choice.selectedIndex) {
 				case 0:
-					post = {skids: NeuronStagingArea.getSelectedSkeletons()};
+					if (0 === selectionTables.length) {
+						alert("Create and fill out a selection table first!");
+						return;
+					}
+					post = {skids: selectionTables[choiceST.selectedIndex].getSelectedSkeletons()};
 					if (!post.skids || 0 === post.skids.length) {
 						alert("Add first one or more skeletons to the Selection Table!");
 						return;
@@ -70,7 +80,7 @@
 					break;
 				case 2:
 					post = {skids: [SkeletonAnnotations.getActiveSkeletonId()],
-					        inputs: NeuronStagingArea.getSelectedSkeletons()};
+					        inputs: selectionTables[choiceST.selectedIndex].getSelectedSkeletons()};
 					if (!post.skids || 0 === post.skids.length) {
 						alert("Select a neuron first!");
 						return;

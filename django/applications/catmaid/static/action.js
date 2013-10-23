@@ -475,7 +475,7 @@ var tracingWindowActions = [
       buttonID: "button_skeleton_analytics_widget",
       buttonName: 'skeleton_analytics_widget',
       run: function (e) {
-          WindowMaker.show('skeleton-analytics-widget');
+          WindowMaker.create('skeleton-analytics-widget');
           return true;
       }
   }),
@@ -495,9 +495,7 @@ var tracingWindowActions = [
       buttonID: "data_button_neuron_staging_area_widget",
       buttonName: 'neuron_staging',
       run: function (e) {
-          if( !NeuronStagingArea.is_widget_open() ) {
-            WindowMaker.show('neuron-staging-area');
-          }
+          WindowMaker.create('neuron-staging-area');
           return true;
       }
   }),

@@ -120,8 +120,7 @@ var ObjectTree = new function()
                           if (json.error) {
                             alert(json.error);
                           } else {
-                            WindowMaker.show("3d-webgl-view");
-                            NeuronStagingArea.addSkeletons(json, function() { WindowMaker.show("3d-webgl-view"); });
+                            SelectionTable.prototype.getOrCreate().addSkeletons(json, function() { WindowMaker.show("3d-webgl-view"); });
                           }
                         }
                       });
@@ -140,7 +139,7 @@ var ObjectTree = new function()
                           if (json.error) {
                             alert(json.error);
                           } else {
-                            NeuronStagingArea.addSkeletons(json, function() { WindowMaker.show("3d-webgl-view"); });
+                            SelectionTable.prototype.getOrCreate().addSkeletons(json, function() { WindowMaker.show("3d-webgl-view"); });
                           }
                         }
                       });
@@ -486,7 +485,7 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   // var myparent = $.jstree._focused()._get_parent(obj);
                   var skelid = obj.attr("id").replace("node_", "");
-                  NeuronStagingArea.addSkeletons([skelid], function() { WindowMaker.show("3d-webgl-view"); });
+                  SelectionTable.prototype.getOrCreate().addSkeletons([skelid], function() { WindowMaker.show("3d-webgl-view"); });
                 }
               },
               "goto_parent": {

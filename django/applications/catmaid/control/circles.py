@@ -23,7 +23,7 @@ def _next_circle(skeleton_set, cursor):
         connections[row[0]][row[1]][row[2]] += 1
     return connections
 
-def _clean_mins(request, cursor):
+def _clean_mins(request, cursor, project_id):
     min_pre  = int(request.POST.get('min_pre',  -1))
     min_post = int(request.POST.get('min_post', -1))
 
@@ -34,7 +34,7 @@ def _clean_mins(request, cursor):
     if -1 == min_post:
         min_post = float('inf')
 
-    cursor.execute("SELECT relation_name, id FROM relation WHERE relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to'")
+    cursor.execute("SELECT relation_name, id FROM relation WHERE project_id = %s AND relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to'" % project_id)
     relations = dict(cursor.fetchall())
     mins = {}
     mins[relations['presynaptic_to']]  = min_post # inverted: all postsynaptic to the set
@@ -57,7 +57,7 @@ def circles_of_hell(request, project_id=None):
         raise Exception("No skeletons were provided.")
 
     cursor = connection.cursor()
-    mins, _ = _clean_mins(request, cursor)
+    mins, _ = _clean_mins(request, cursor, int(project_id))
 
     current_circle = first_circle
     all_circles = first_circle
@@ -81,7 +81,7 @@ def find_directed_paths(request, project_id=None):
 
     path_length = int(request.POST.get('n_circles', 1))
     cursor = connection.cursor()
-    mins, relations = _clean_mins(request, cursor)
+    mins, relations = _clean_mins(request, cursor, int(project_id))
     presynaptic_to = relations['presynaptic_to']
     graph = nx.DiGraph()
     next_sources = sources

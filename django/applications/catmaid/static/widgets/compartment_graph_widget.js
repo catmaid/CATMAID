@@ -27,8 +27,10 @@ CompartmentGraphWidget.prototype.getSelectedSkeletons = function() {
   // Collect unique skeleton IDs
   var ids = {};
   this.cy.nodes(function(i, node) {
-    var id = node.data("id");
-    ids[id.substring(0, id.lastIndexOf('_'))] = null;
+    if (node.selected()) {
+      var id = node.data("id");
+      ids[id.substring(0, id.lastIndexOf('_'))] = null;
+    }
   });
   return Object.keys(ids).map(Number);
 };

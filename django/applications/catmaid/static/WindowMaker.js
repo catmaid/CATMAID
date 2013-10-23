@@ -197,11 +197,12 @@ var WindowMaker = new function()
     var buttons = document.createElement("div");
     buttons.id = "selection-table-buttons-div";
 
+    buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(SkeletonListSources.createSelect(ST));
 
     var load = document.createElement('input');
     load.setAttribute("type", "button");
-    load.setAttribute("value", "Load");
+    load.setAttribute("value", "Append");
     load.onclick = ST.loadSource.bind(ST);
     buttons.appendChild(load);
 
@@ -213,7 +214,7 @@ var WindowMaker = new function()
 
     var update = document.createElement('input');
     update.setAttribute("type", "button");
-    update.setAttribute("value", "Update");
+    update.setAttribute("value", "Refresh");
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
 
@@ -272,9 +273,9 @@ var WindowMaker = new function()
     measure.onclick = ST.measure.bind(ST);
     buttons.appendChild(measure);
 
-    buttons.appendChild(document.createTextNode(' Link:'));
+    buttons.appendChild(document.createTextNode(' Sync to'));
     var link = SkeletonListSources.createPushSelect(ST, 'link');
-    link.onchange = ST.updateLink.bind(ST, link);
+    link.onchange = ST.syncLink.bind(ST, link);
     buttons.appendChild(link);
 
     win.getFrame().appendChild(buttons);
@@ -400,17 +401,18 @@ var WindowMaker = new function()
     var container = createContainer("view_in_3d_webgl_widget" + WA.widgetID);
     content.appendChild(container);
 
+    buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(SkeletonListSources.createSelect(WA));
 
     var load = document.createElement('input');
     load.setAttribute("type", "button");
-    load.setAttribute("value", "Load");
+    load.setAttribute("value", "Append");
     load.onclick = WA.loadSource.bind(WA);
     buttons.appendChild(load);
 
     var reload = document.createElement('input');
     reload.setAttribute("type", "button");
-    reload.setAttribute("value", "Update");
+    reload.setAttribute("value", "Refresh");
     reload.onclick = WA.updateSkeletons.bind(WA);
     buttons.appendChild(reload);
 
@@ -545,9 +547,8 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    if (SelectionTable.prototype.noInstances()) {
-        createStagingListWindow( win, WA.getName() );
-    }
+    // Create a Selection Table, preset as the sync target
+    createStagingListWindow( win, WA.getName() );
 
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
     // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
@@ -671,11 +672,12 @@ var WindowMaker = new function()
     var contentbutton = document.createElement('div');
     contentbutton.setAttribute("id", 'compartment_graph_window_buttons' + CGW.widgetID);
 
+    contentbutton.appendChild(document.createTextNode('From'));
     contentbutton.appendChild(SkeletonListSources.createSelect(CGW));
 
     var show = document.createElement('input');
     show.setAttribute("type", "button");
-    show.setAttribute("value", "Load");
+    show.setAttribute("value", "Append");
     show.onclick = CGW.loadSource.bind(CGW);
     contentbutton.appendChild(show);
 
@@ -687,7 +689,7 @@ var WindowMaker = new function()
 
     var show = document.createElement('input');
     show.setAttribute("type", "button");
-    show.setAttribute("value", "Update");
+    show.setAttribute("value", "Refresh");
     show.onclick = CGW.update.bind(CGW);
     contentbutton.appendChild(show);
 
@@ -1367,6 +1369,7 @@ var WindowMaker = new function()
         var contentbutton = document.createElement('div');
         contentbutton.setAttribute("id", 'skeleton_connectivity_buttons' + widgetID);
 
+        contentbutton.appendChild(document.createTextNode('From'));
         contentbutton.appendChild(SkeletonListSources.createSelect(SC));
 
         var op = document.createElement('select');
@@ -1377,7 +1380,7 @@ var WindowMaker = new function()
 
         var add = document.createElement('input');
         add.setAttribute("type", "button");
-        add.setAttribute("value", "Load");
+        add.setAttribute("value", "Append");
         add.onclick = SC.loadSource.bind(SC);
         contentbutton.appendChild(add);
 
@@ -1406,9 +1409,9 @@ var WindowMaker = new function()
         }
         contentbutton.appendChild(threshold);
 
-        contentbutton.appendChild(document.createTextNode(' Link:'));
+        contentbutton.appendChild(document.createTextNode(' Sync to'));
         var link = SkeletonListSources.createPushSelect(SC, 'link');
-        link.onchange = SC.updateLink.bind(SC, link);
+        link.onchange = SC.syncLink.bind(SC, link);
         contentbutton.appendChild(link);
 
         content.appendChild( contentbutton );

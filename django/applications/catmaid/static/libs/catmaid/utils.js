@@ -69,8 +69,12 @@ SkeletonSource.prototype.loadSource = function() {
   this.append(models);
 };
 
-SkeletonSource.prototype.updateLink = function(select) {
+SkeletonSource.prototype.syncLink = function(select) {
   this.linkTarget = SkeletonListSources.getSource(select.value);
+	if (this.linkTarget) {
+		this.linkTarget.clear();
+		this.linkTarget.append(this.getSelectedSkeletonModels());
+	}
 };
 
 SkeletonSource.prototype.notifyLink = function(model, source_chain) {
@@ -201,10 +205,7 @@ SkeletonSourceManager.prototype.highlight = function(caller, skeleton_id) {
 
 SkeletonSourceManager.prototype.removeSkeletons = function(skeleton_ids) {
 	Object.keys(this.sources).forEach(function(name) {
-		var source = this.sources[name];
-		if (typeof(source['removeSkeletons'] === 'function')) {
-			source.removeSkeletons(skeleton_ids);
-		}
+		this.sources[name].removeSkeletons(skeleton_ids);
 	}, this);
 };
 
@@ -231,6 +232,10 @@ ActiveSkeleton.prototype.getName = function(skeleton_id) {
 	return "Active skeleton";
 };
 
+ActiveSkeleton.prototype.append = function() {};
+ActiveSkeleton.prototype.clear = function() {};
+ActiveSkeleton.prototype.removeSkeletons = function() {};
+
 ActiveSkeleton.prototype.getSelectedSkeletons = function() {
 	var skid = SkeletonAnnotations.getActiveSkeletonId();
 	if (!skid) return [];
@@ -249,10 +254,13 @@ ActiveSkeleton.prototype.getSelectedSkeletonModels = function() {
 	var active = SkeletonAnnotations.getActiveSkeletonId();
 	if (!active) return {};
 	var name = $('#neuronname' + SkeletonAnnotations.getActiveStackId()).text();
+	name = name.substring(0, name.lastIndexOf(' (Sk'));
 	var o = {};
 	o[active] = new SelectionTable.prototype.SkeletonModel(active, name, new THREE.Color().setRGB(1, 1, 0));
 	return o;
 };
+
+ActiveSkeleton.prototype.getSkeletonModels = ActiveSkeleton.prototype.getSelectedSkeletonModels;
 
 ActiveSkeleton.prototype.highlight = function(skeleton_id) {
 	TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
@@ -261,3 +269,4 @@ ActiveSkeleton.prototype.highlight = function(skeleton_id) {
 ActiveSkeleton.prototype.updateModel = function(model) {
 	console.log("Ignoring updateModel", model);
 };
+

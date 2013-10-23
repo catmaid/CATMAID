@@ -53,8 +53,10 @@ SkeletonConnectivity.prototype.getSelectedSkeletons = function() {
 };
 
 SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
-    var name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
-    if (0 === name.length) return null;
+    var e_name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
+    if (0 === e_name.length) return null;
+    var name = e_name.text();
+    name = name.substring(0, name.lastIndexOf(' / sk'));
 
     var pre = $("#presynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
     var post = $("#postsynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);

@@ -103,10 +103,10 @@ CompartmentGraphWidget.prototype.getSelectedSkeletonModels = function() {
 CompartmentGraphWidget.prototype.toggle_show_node_labels = function() {
   if (this.show_node_labels) {
     this.show_node_labels = false;
-    cy.nodes().css('text-opacity', 0);
+    this.cy.nodes().css('text-opacity', 0);
   } else {
     this.show_node_labels = true;
-    cy.nodes().css('text-opacity', 1);
+    this.cy.nodes().css('text-opacity', 1);
   }
 };
 
@@ -228,10 +228,10 @@ CompartmentGraphWidget.prototype.init = function() {
           })
         .selector(":selected")
           .css({
-            "background-color": "#000",
-            "line-color": "#000",
-            "source-arrow-color": "#000",
-            "target-arrow-color": "#000",
+            "background-color": "#d6ffb5",
+            "line-color": "#d6ffb5",
+            "source-arrow-color": "#d6ffb5",
+            "target-arrow-color": "#d6ffb5",
             "text-opacity": 1.0
           })
         .selector(".ui-cytoscape-edgehandles-source")
@@ -428,6 +428,14 @@ CompartmentGraphWidget.prototype.clear = function() {
   if (this.cy) this.cy.elements("node").remove();
 };
 
+CompartmentGraphWidget.prototype.removeSkeletons = function(skeleton_ids) {
+  var models = this.getSkeletonModels();
+  skeleton_ids.forEach(function(skid) {
+    delete models[skid];
+  });
+  this.load(Object.keys(models), models);
+};
+
 CompartmentGraphWidget.prototype.append = function(models) {
   var unique = this.getSkeletonModels();
   // Add or update if there is a model
@@ -466,10 +474,9 @@ CompartmentGraphWidget.prototype.load = function(skeleton_ids, models) {
 };
 
 CompartmentGraphWidget.prototype.highlight = function(skeleton_id) {
-  // TODO rather than select, animate it: grow and shrink its size, or its color
   this.cy.nodes().filter(function(i, node) {
     return skeleton_id === node.data("skeleton_id");
-  }).select();
+  }).animate({css: {backgroundColor: green}}, {duration: 2000});
 };
 
 CompartmentGraphWidget.prototype.writeGML = function() {

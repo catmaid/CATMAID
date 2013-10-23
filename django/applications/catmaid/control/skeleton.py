@@ -114,15 +114,18 @@ def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
 def neuronname(request, project_id=None, skeleton_id=None):
     return HttpResponse(json.dumps(_get_neuronname_from_skeletonid(project_id, skeleton_id)), mimetype='text/json')
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def neuronnames(request, project_id=None):
-    """ Returns a JSON object with skeleton IDs as keys and neuron names as values. """
-    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+def _neuronnames(skeleton_ids, project_id):
     qs = ClassInstanceClassInstance.objects.filter(
             relation__relation_name='model_of',
             project=project_id,
             class_instance_a__in=skeleton_ids).select_related("class_instance_b").values_list("class_instance_a", "class_instance_b__name")
-    return HttpResponse(json.dumps(dict(qs)))
+    return dict(qs)
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def neuronnames(request, project_id=None):
+    """ Returns a JSON object with skeleton IDs as keys and neuron names as values. """
+    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+    return HttpResponse(json.dumps(_neuronnames(skeleton_ids, project_id)))
 
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):

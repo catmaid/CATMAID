@@ -199,7 +199,7 @@ SelectionTable.prototype.getOrCreate = function() {
 SelectionTable.prototype.toggleSelectAllSkeletons = function() {
   this.skeletons.forEach(function(skeleton) {
     this.selectSkeleton(skeleton, this.togglevisibleall);
-  });
+  }, this);
   this.togglevisibleall = !this.togglevisibleall;
 };
 

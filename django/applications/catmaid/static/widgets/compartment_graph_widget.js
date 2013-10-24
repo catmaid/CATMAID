@@ -228,8 +228,9 @@ CompartmentGraphWidget.prototype.init = function() {
           })
         .selector(":selected")
           .css({
-            "background-color": "#d6ffb5",
-            "line-color": "#d6ffb5",
+            "background-color": "#b0ff72",
+            "border-width": 3,
+            "line-color": "#878787",
             "source-arrow-color": "#d6ffb5",
             "target-arrow-color": "#d6ffb5",
             "text-opacity": 1.0

@@ -53,20 +53,23 @@ WebGLApplication.prototype.updateModel = function(model, source_chain) {
     }
     return;
   }
+
   if (model.pre_visible !== skeleton.actor['presynaptic_to'].visible) {
     skeleton.setPreVisibility(model.pre_visible);
   }
   if (model.post_visible !== skeleton.actor['postsynaptic_to'].visible) {
     skeleton.setPostVisibility(model.post_visible);
   }
+
+  skeleton.skeletonmodel = model.clone();
+
   if (model.color.r !== skeleton.actorColor.r
    || model.color.g !== skeleton.actorColor.g
    || model.color.b !== skeleton.actorColor.b) {
+     skeleton.actorColor = model.color;
      skeleton.updateSkeletonColor(this.options);
   }
   skeleton.setTextVisibility(model.text_visible);
-
-  skeleton.skeletonmodel = model.clone();
 
   if (model.selected !== skeleton.visible) {
     this.setSkeletonVisibility(model.id, model.selected);

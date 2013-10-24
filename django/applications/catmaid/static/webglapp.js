@@ -379,13 +379,13 @@ WebGLApplication.prototype.has_skeleton = function(skeleton_id) {
 WebGLApplication.prototype.staticUpdateSkeleton = function(skeleton_ids) {
   this.getInstances().forEach(function(instance) {
     var sks = skeleton_ids.filter(function(skid) { return skid in instance.space.skeletons; });
-    if (sks.length > 0) instance.addSkeletons(sks, instance.options.connector_filter);
+    if (sks.length > 0) instance.addSkeletons(sks);
   });
 };
 
 
 /** Fetch skeletons one by one, and render just once at the end. */
-WebGLApplication.prototype.addSkeletons = function(models, refresh_restricted_connectors, callback) {
+WebGLApplication.prototype.addSkeletons = function(models, callback) {
   // Update skeleton properties for existing skeletons, and remove them from models
   var skeleton_ids = Object.keys(models).filter(function(skid) {
     if (skid in this.space.content.skeletons) {

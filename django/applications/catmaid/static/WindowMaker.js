@@ -235,6 +235,13 @@ var WindowMaker = new function()
     next.onclick = ST.showNext.bind(ST);
     buttons.appendChild(next);
 
+    buttons.appendChild(document.createTextNode(' Sync to:'));
+    var link = SkeletonListSources.createPushSelect(ST, 'link');
+    link.onchange = ST.syncLink.bind(ST, link);
+    buttons.appendChild(link);
+
+    buttons.appendChild(document.createElement('br'));
+
     var save = document.createElement('input');
     save.setAttribute("type", "button");
     save.setAttribute("value", "Save list");
@@ -273,10 +280,28 @@ var WindowMaker = new function()
     measure.onclick = ST.measure.bind(ST);
     buttons.appendChild(measure);
 
-    buttons.appendChild(document.createTextNode(' Sync to'));
-    var link = SkeletonListSources.createPushSelect(ST, 'link');
-    link.onchange = ST.syncLink.bind(ST, link);
-    buttons.appendChild(link);
+    buttons.appendChild(document.createElement('br'));
+
+    buttons.appendChild(document.createTextNode('Filter:'));
+    var filter = document.createElement('input');
+    filter.setAttribute('type', 'text');
+    filter.setAttribute('id', 'selection-table-filter' + ST.widgetID);
+    filter.onkeyup = function(ev) { if (13 === ev.keyCode) ST.filterBy(filter.value); };
+    buttons.appendChild(filter);
+
+    buttons.appendChild(document.createTextNode('Batch color:'));
+    var batch = document.createElement('input');
+    batch.setAttribute('type', 'button');
+    batch.setAttribute('value', 'color');
+    batch.setAttribute('id', 'selection-table-batch-color-button' + ST.widgetID);
+    batch.style.backgroundColor = '#ffff00';
+    batch.onclick = ST.toggleBatchColorWheel.bind(ST);
+    buttons.appendChild(batch);
+
+    var colorwheeldiv = document.createElement('div');
+    colorwheeldiv.setAttribute('id', 'selection-table-batch-color-wheel' + ST.widgetID);
+    colorwheeldiv.innerHTML = '<div class="batch-colorwheel-' + ST.widgetID + '"></div>';
+    buttons.appendChild(colorwheeldiv);
 
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
@@ -1409,7 +1434,7 @@ var WindowMaker = new function()
         }
         contentbutton.appendChild(threshold);
 
-        contentbutton.appendChild(document.createTextNode(' Sync to'));
+        contentbutton.appendChild(document.createTextNode(' Sync to:'));
         var link = SkeletonListSources.createPushSelect(SC, 'link');
         link.onchange = SC.syncLink.bind(SC, link);
         contentbutton.appendChild(link);

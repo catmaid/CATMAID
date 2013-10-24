@@ -364,13 +364,10 @@ SelectionTable.prototype.getSkeletonModel = function( id ) {
   }
 };
 
+/** Returns a clone of each model. */
 SelectionTable.prototype.getSelectedSkeletonModels = function() {
-  return this.skeletons.reduce(function(o, model) {
-    if (model.selected) {
-      o[model.id] = model.clone();
-    }
-    return o;
-  }, {});
+  return this.skeletons.filter(this.isSelectedFn())
+                       .reduce(function(m, sk) { m[sk.id] = sk.clone(); return m; }, {});
 };
 
 SelectionTable.prototype.getSkeletonModels = function() {
@@ -410,11 +407,15 @@ SelectionTable.prototype.getSkeletonColor = function( id ) {
   if (sk) return sk.color.clone();
 };
 
+SelectionTable.prototype.isSelectedFn = function() {
+  return (this.match ?
+      function(sk) { return sk.selected && sk.baseName.indexOf(this.match) > -1; }
+    : function(sk) { return sk.selected; }).bind(this);
+};
+
 SelectionTable.prototype.getSelectedSkeletons = function() {
-  return this.skeletons.reduce(function(a, skeleton) {
-    if (skeleton.selected) a.push(skeleton.id);
-    return a;
-  }, []);
+  return this.skeletons.filter(this.isSelectedFn())
+                       .map(function(s) { return s.id; });
 };
 
 SelectionTable.prototype.hasSkeleton = function(skeleton_id) {
@@ -481,22 +482,44 @@ SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(s
 
 /** Remove all, and repopulate with the current range. */
 SelectionTable.prototype.GUI.prototype.update = function() {
+
+  var skeletons = this.table.skeletons,
+      skeleton_ids = this.table.skeleton_ids;
+
+  if (this.table.match) {
+    // filter skeletons by the matching string
+    skeletons = skeletons.filter(function(skeleton) {
+      return skeleton.baseName && skeleton.baseName.indexOf(this.table.match) > -1;
+    }, this);
+    // recreate the indices
+    var i = 0;
+    skeleton_ids = skeletons.reduce(function(o, skeleton) {
+      o[skeleton.id] = i++;
+      return o;
+    }, {});
+  }
+
   // Cope with changes in size
-  if (this.first >= this.table.skeletons.length) {
-    this.first = Math.max(0, this.table.skeletons.length - this.max);
+  if (this.first >= skeletons.length) {
+    this.first = Math.max(0, skeletons.length - this.max);
   }
 
   // Update GUI state
   var widgetID = this.table.widgetID;
-  var one = 0 === this.table.skeletons.length? 0 : 1;
+  var one = 0 === skeletons.length? 0 : 1;
   $('#selection_table_first' + widgetID).text(this.first + one);
-  $('#selection_table_last' + widgetID).text(Math.min(this.first + this.max + one, this.table.skeletons.length));
-  $('#selection_table_length' + widgetID).text(this.table.skeletons.length);
+  $('#selection_table_last' + widgetID).text(Math.min(this.first + this.max + one, skeletons.length));
+
+  var total = this.table.skeletons.length;
+  if (this.table.match) {
+    total = skeletons.length + " (of " + total + ")";
+  }
+  $('#selection_table_length' + widgetID).text(total);
 
   // Remove all table rows
   $("tr[id^='skeletonrow" + widgetID + "']").remove();
   // Re-add the range
-  this.table.skeletons.slice(this.first, this.first + this.max).forEach(this.append, this);
+  skeletons.slice(this.first, this.first + this.max).forEach(this.append, this);
 
   // If the active skeleton is within the range, highlight it
   this.selected_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
@@ -787,6 +810,51 @@ SelectionTable.prototype.measure = function() {
         return row;
       }));
     });
+};
+
+/** Filtering by an empty text resets to no filtering. */
+SelectionTable.prototype.filterBy = function(text) {
+  if (!text || 0 === text.length) {
+    delete this.match;
+    return;
+  }
+
+  this.match = text;
+
+  // reset view
+  this.first = 0;
+  this.gui.update();
+};
+
+SelectionTable.prototype.batchColorSelected = function(rgb) {
+  var c = [parseInt(rgb.r) / 255.0,
+           parseInt(rgb.g) / 255.0,
+           parseInt(rgb.b) / 255.0];
+  this.getSelectedSkeletons().forEach(function(skid) {
+    var skeleton = this.skeletons[this.skeleton_ids[skid]];
+    skeleton.color.setRGB(c[0], c[1], c[2]);
+    this.gui.update_skeleton_color_button(skeleton);
+    this.notifyLink(skeleton); // TODO need a batchNotifyLink
+  }, this);
+  $('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor = rgb.hex;
+};
+
+SelectionTable.prototype.toggleBatchColorWheel = function() {
+  var div = $('#selection-table-batch-color-wheel' + this.widgetID + ' .batch-colorwheel-' + this.widgetID);
+  if (this.batch_cw) {
+    // hide it
+    delete this.batch_cw;
+    $('#selection-table-batch-color-wheel' + this.widgetID).hide();
+    div.empty();
+  } else {
+    // show it
+    this.batch_cw = Raphael.colorwheel(div[0], 150);
+    var c = $('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor;
+    var rgb = c.substring(c.indexOf('(') + 1, c.lastIndexOf(')')).split(',').map(Number);
+    this.batch_cw.color(this._rgbarray2hex(rgb));
+    this.batch_cw.onchange(this.batchColorSelected.bind(this));
+    $('#selection-table-batch-color-wheel' + this.widgetID).show();
+  }
 };
 
 

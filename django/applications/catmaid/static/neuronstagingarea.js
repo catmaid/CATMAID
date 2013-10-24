@@ -337,6 +337,10 @@ SelectionTable.prototype.clear = function() {
   this.gui.clear();
   this.selected_skeleton_id = null;
   this.next_color_index = 0;
+
+  if (this.linkTarget) {
+    this.linkTarget.clear();
+  }
 };
  
 /** Set the color of all skeletons based on the state of the "Color" pulldown menu. */

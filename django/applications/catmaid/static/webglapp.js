@@ -96,7 +96,7 @@ WebGLApplication.prototype.getSelectedSkeletonModels = function() {
 	return Object.keys(skeletons).reduce(function(m, skid) {
     var skeleton = skeletons[skid];
     if (skeleton.visible) {
-      m[skid] = new SelectionTable.prototype.SkeletonModel(skeleton.id, skeleton.skeletonmodel.baseName, skeleton.actorColor.clone());
+      m[skid] = new SelectionTable.prototype.SkeletonModel(skid, skeleton.skeletonmodel.baseName, skeleton.actorColor.clone());
     }
     return m;
   }, {});

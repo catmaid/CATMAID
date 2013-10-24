@@ -745,52 +745,6 @@ SelectionTable.prototype.load_skeleton_list = function() {
   });
 };
 
-SelectionTable.prototype.usercolormap_dialog = function() {
-  var dialog = document.createElement('div');
-  dialog.setAttribute("id", "user-colormap-dialog");
-  dialog.setAttribute("title", "User colormap");
-
-  var tab = document.createElement('table');
-  tab.setAttribute("id", "usercolormap-table");
-  tab.innerHTML =
-      '<thead>' +
-        '<tr>' +
-          '<th>login</th>' +
-          '<th>name</th>' +
-          '<th>color</th>' +
-        '</tr>' +
-      '</thead>' +
-      '<tbody></tbody>';
-  dialog.appendChild(tab);
-
-  $(dialog).dialog({
-    height: 440,
-    width: 340,
-    modal: false,
-    dialogClass: "no-close",
-    buttons: {
-      "OK": function() {
-        $(this).dialog("close");
-      }
-    },
-    close: function(event, ui) {
-      $('#user-colormap-dialog').remove();
-    }
-  });
-
-  var users = User.all();
-  for (var userID in users) {
-    if (users.hasOwnProperty(userID) && userID !== "-1") {
-      var user = users[userID];
-      var rowElement = $('<tr/>');
-      rowElement.append( $('<td/>').text( user.login ) );
-      rowElement.append( $('<td/>').text( user.fullName ) );
-      rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', '#' + user.color.getHexString()) );
-      $('#usercolormap-table > tbody:last').append( rowElement );
-    }
-  }
-};
-
 SelectionTable.prototype.measure = function() {
   var skids = this.getSelectedSkeletons();
   if (0 === skids.length) return;

@@ -267,13 +267,6 @@ var WindowMaker = new function()
     colorMenu.onchange = ST.set_skeletons_base_color.bind(ST);
     buttons.appendChild(colorMenu);
 
-    var map = document.createElement('input');
-    map.setAttribute("type", "button");
-    map.setAttribute("value", "User colormap");
-    map.style.marginLeft = '1em';
-    map.onclick = ST.usercolormap_dialog.bind(ST);
-    buttons.appendChild(map);
-
     var measure = document.createElement('input');
     measure.setAttribute('type', 'button');
     measure.setAttribute('value', 'Measure');
@@ -521,6 +514,13 @@ var WindowMaker = new function()
     $('<option/>', {value : 'reviewer', text: 'By Reviewer'}).appendTo(colorMenu);
     colorMenu.onchange = WA.updateSkeletonColors.bind(WA, colorMenu);
     buttons.appendChild(colorMenu);
+
+    var map = document.createElement('input');
+    map.setAttribute("type", "button");
+    map.setAttribute("value", "User colormap");
+    map.style.marginLeft = '1em';
+    map.onclick = WA.usercolormap_dialog.bind(WA);
+    buttons.appendChild(map);
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas" + WA.widgetID);

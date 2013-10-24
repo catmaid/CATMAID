@@ -279,6 +279,10 @@ SelectionTable.prototype.append = function(models) {
 
   this.gui.update();
 
+  this.pushToLinkTarget(models);
+};
+
+SelectionTable.prototype.pushToLinkTarget = function(models) {
   if (this.linkTarget) {
     // Prevent propagation loop by checking if the target already has all the skeletons
     var diff = SkeletonListSources.findDifference(this.linkTarget, models);
@@ -380,7 +384,7 @@ SelectionTable.prototype.getSkeletonModels = function() {
 /** Update neuron names and remove stale non-existing skeletons while preserving
  *  ordering and properties of each skeleton currently in the selection. */
 SelectionTable.prototype.update = function() {
-  var models = this.getSkeletonModels();
+  var models = this.skeletons.reduce(function(o, sk) { o[sk.id] = sk; return o; }, {});
   var indices = this.skeleton_ids;
   this.clear();
   var self = this;
@@ -393,12 +397,17 @@ SelectionTable.prototype.update = function() {
       Object.keys(json).forEach(function(skid) {
         o[indices[skid]] = skid;
       });
+      var new_models = {};
       Object.keys(o).map(Number).sort().forEach(function(index) {
-        var skid = o[index];
+        var skid = o[index],
+            model = models[skid];
+        model.baseName = json[skid];
+        new_models[skid] = model;
         self.skeletons.push(models[skid]);
         self.skeleton_ids[skid] = self.skeletons.length -1;
       });
       self.gui.update();
+      self.pushToLinkTarget(new_models);
     });
 };
 

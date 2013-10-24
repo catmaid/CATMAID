@@ -779,13 +779,10 @@ SelectionTable.prototype.measure = function() {
 SelectionTable.prototype.filterBy = function(text) {
   if (!text || 0 === text.length) {
     delete this.match;
-    return;
+  } else {
+    this.match = text;
+    this.first = 0;
   }
-
-  this.match = text;
-
-  // reset view
-  this.first = 0;
   this.gui.update();
 };
 

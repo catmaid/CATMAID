@@ -1981,6 +1981,7 @@ var SkeletonAnnotations = new function()
 
       //check over the cached nodes if there is one childless node in the current time point
       var nodeLowC = undefined;
+      /*this is not reliable. Sometime nodes[idn] has not cached children. So we always need to check the database
       var idn;
       for (idn in nodes)
       {
@@ -1990,7 +1991,7 @@ var SkeletonAnnotations = new function()
               break;
           }
       }
-
+      */
       if (nodeLowC) {
         // We found a cached node to display
         self.moveToAndSelectNode(nodeLowC);

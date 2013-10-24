@@ -446,8 +446,8 @@ WebGLApplication.prototype.addSkeletons = function(models, refresh_restricted_co
             if (i < skeleton_ids.length) {
               fn(skeleton_ids[i]);
             } else {
-              if (refresh_restricted_connectors) self.refreshRestrictedConnectors();
-              self.space.render();
+              if (self.options.connector_filter) self.refreshRestrictedConnectors();
+              else self.space.render();
               if (callback) {
                 try { callback(); } catch (e) { alert(e); }
               }

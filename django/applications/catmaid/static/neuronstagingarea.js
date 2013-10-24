@@ -58,7 +58,7 @@ SelectionTable.prototype.SkeletonModel = function( id, neuronname, color ) {
 SelectionTable.prototype.SkeletonModel.prototype = {};
 
 SelectionTable.prototype.SkeletonModel.prototype.clone = function() {
-  var m = new SelectionTable.prototype.SkeletonModel(this.id, this.neuronname, this.color.clone());
+  var m = new SelectionTable.prototype.SkeletonModel(this.id, this.baseName, this.color.clone());
   m.selected = this.selected;
   m.pre_visible = this.pre_visible;
   m.post_visible = this.post_visible;

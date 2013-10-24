@@ -444,7 +444,7 @@ WebGLApplication.prototype.addSkeletons = function(models, refresh_restricted_co
             i += 1;
             $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
             if (i < skeleton_ids.length) {
-              fn(skeleton_id[i]);
+              fn(skeleton_ids[i]);
             } else {
               if (refresh_restricted_connectors) self.refreshRestrictedConnectors();
               self.space.render();

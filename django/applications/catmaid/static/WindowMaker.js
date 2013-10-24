@@ -275,14 +275,19 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createElement('br'));
 
-    buttons.appendChild(document.createTextNode('Filter:'));
+    var filterButton = document.createElement('input');
+    filterButton.setAttribute('type', 'button');
+    filterButton.setAttribute('value', 'Filter by');
+    filterButton.onclick = function() { ST.filterBy(filter.value); };
+    buttons.appendChild(filterButton);
+
     var filter = document.createElement('input');
     filter.setAttribute('type', 'text');
     filter.setAttribute('id', 'selection-table-filter' + ST.widgetID);
     filter.onkeyup = function(ev) { if (13 === ev.keyCode) ST.filterBy(filter.value); };
     buttons.appendChild(filter);
 
-    buttons.appendChild(document.createTextNode('Batch color:'));
+    buttons.appendChild(document.createTextNode(' Batch color:'));
     var batch = document.createElement('input');
     batch.setAttribute('type', 'button');
     batch.setAttribute('value', 'color');

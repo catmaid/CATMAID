@@ -11,7 +11,6 @@ var SelectionTable = function() {
   this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
   this.togglevisibleall = false;
   this.selected_skeleton_id = null;
-  this.highlighting_color = "#d6ffb5";
   this.next_color_index = 0;
   this.gui = new this.GUI(this, 20);
 };
@@ -19,6 +18,8 @@ var SelectionTable = function() {
 SelectionTable.prototype = {};
 $.extend(SelectionTable.prototype, new InstanceRegistry());
 $.extend(SelectionTable.prototype, new SkeletonSource());
+
+SelectionTable.prototype.highlighting_color = "#d6ffb5";
 
 SelectionTable.prototype.getName = function() {
   return "Selection " + this.widgetID;

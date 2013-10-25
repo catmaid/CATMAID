@@ -232,11 +232,18 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     var create_table = function(partners, title, relation) {
 
       var set_as_selected = function(ev) {
+        var skelid = parseInt( ev.target.value );
+        var checked = $('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked');
+        // Update the checkbox for the same skeleton on the other table, if any
+        var r = {presynaptic_to: 'postsynaptic_to',
+                 postsynaptic_to: 'presynaptic_to'}[relation];
+        $('#' + r + '-show-skeleton-' + widgetID + '-' + skelid).attr('checked', checked);
+
         var linkTarget = getLinkTarget();
         if (!linkTarget) return;
-        var skelid = parseInt( ev.target.value );
+
         var model = linkTarget.getSkeletonModel(skelid);
-        if ($('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked')) {
+        if (checked) {
           if (!model) model = getSkeletonModel(skelid);
           model.selected = true;
           var models = {};

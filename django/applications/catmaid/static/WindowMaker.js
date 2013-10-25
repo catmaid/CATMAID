@@ -797,6 +797,20 @@ var WindowMaker = new function()
     contentbutton.appendChild(f("pre"));
     contentbutton.appendChild(f("post"));
 
+    contentbutton.appendChild(document.createTextNode(' - '));
+
+    var hide = document.createElement('input');
+    hide.setAttribute('type', 'button');
+    hide.setAttribute('value', 'Hide selected');
+    hide.onclick = CGW.hideSelected.bind(CGW);
+    contentbutton.appendChild(hide);
+
+    var show = document.createElement('input');
+    show.setAttribute('type', 'button');
+    show.setAttribute('value', 'Show hidden');
+    show.onclick = CGW.showHidden.bind(CGW);
+    contentbutton.appendChild(show);
+
     content.appendChild( contentbutton );
 
     var container = createContainer("compartment_graph_widget" + CGW.widgetID);

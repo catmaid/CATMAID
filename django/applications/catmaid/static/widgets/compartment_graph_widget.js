@@ -236,6 +236,7 @@ CompartmentGraphWidget.prototype.init = function() {
             // "source-arrow-shape": "circle",
             "line-color": "data(color)",
             "opacity": 0.4,
+            "text-opacity": 1.0
           })
         .selector(":selected")
           .css({
@@ -609,4 +610,33 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
           return m;
         }, {}));
       });
+};
+
+CompartmentGraphWidget.prototype.hideSelected = function() {
+  if (!this.cy) return;
+  this.cy.elements().each(function(i, e) {
+    if (e.selected()) {
+      e.hide(); // if it's a node, hides edges too
+      e.unselect();
+    }
+    /* doesn't work?
+    if (e.isNode()) {
+      e.edges().css('text-opacity', 0); // the edge label
+    }
+    */
+  });
+  // Work-around cytoscapejs bug
+  this.cy.edges().each(function(i, e) {
+    if (e.hidden()) e.css('text-opacity', 0);
+  });
+};
+
+CompartmentGraphWidget.prototype.showHidden = function() {
+  if (!this.cy) return;
+  this.cy.elements().show();
+  if (this.show_node_labels) {
+    this.cy.elements().css('text-opacity', 1);
+  } else {
+    this.cy.edges().css('text-opacity', 0);
+  }
 };

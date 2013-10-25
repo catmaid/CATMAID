@@ -383,7 +383,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
       AND class_instance.id=class_instance_class_instance.class_instance_b
     ''' % (model_of_id, skids_string)) # No need to sanitize, and would quote skids_string
     for row in cursor.fetchall():
-        partners[row[0]].name = '%s / skeleton %s' % (row[1], row[0])
+        partners[row[0]].name = row[1]
 
     return partners
 

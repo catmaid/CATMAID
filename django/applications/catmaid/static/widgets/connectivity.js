@@ -13,13 +13,24 @@ SkeletonConnectivity.prototype = {};
 $.extend(SkeletonConnectivity.prototype, new InstanceRegistry());
 $.extend(SkeletonConnectivity.prototype, new SkeletonSource());
 
+/** Appends only to the top list, that is, the set of seed skeletons
+ *  for which all pre- and postsynaptic partners are listed. */
 SkeletonConnectivity.prototype.append = function(models) {
-  var skeletons = Object.keys(models).reduce(function(o, skid) {
-    o[skid] = models[skid].baseName;
+  var skeletons = this.skeletons,
+      count = 0,
+      widgetID = this.widgetID;
+  var new_skeletons = Object.keys(models).reduce(function(o, skid) {
+    if (skid in skeletons) {
+      $('#a-connectivity-table-' + widgetID + '-' + skid).html(models[skid].baseName + ' #' + skid);
+    } else {
+      o[skid] = models[skid].baseName;
+      ++count;
+    }
     return o;
   }, {});
+  if (0 === count) return;
   // Update existing ones and add new ones
-  $.extend(this.skeletons, skeletons);
+  $.extend(this.skeletons, new_skeletons);
   this.update();
 };
 
@@ -56,7 +67,7 @@ SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
     var e_name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
     if (0 === e_name.length) return null;
     var name = e_name.text();
-    name = name.substring(0, name.lastIndexOf('/') - 1);
+    name = name.substring(0, name.lastIndexOf(' '));
 
     var pre = $("#presynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
     var post = $("#postsynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
@@ -76,7 +87,7 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
   var skeletons = this.skeletons;
   var models = Object.keys(this.skeletons).reduce(function(o, skid) {
     var name = skeletons[skid];
-    name = name.substring(0, name.lastIndexOf('-') -1);
+    name = name.substring(0, name.lastIndexOf(' '));
     o[skid] = new SelectionTable.prototype.SkeletonModel(skid, skeletons[skid], new THREE.Color().setRGB(1, 1, 0));
     return o;
   }, {});
@@ -104,7 +115,7 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
         else index = 0;
       } else if (1 in sk) index = 1;
       var name = $('#a-connectivity-table-' + widgetID + '-' + skid).text();
-      name = name.substring(0, name.lastIndexOf('/') -1);
+      name = name.substring(0, name.lastIndexOf(' '));
       models[skid] = new SelectionTable.prototype.SkeletonModel(skid, name, colors[index].clone());
     }
   });
@@ -205,7 +216,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
 
     var createNameElement = function(name, skeleton_id) {
         var a = document.createElement('a');
-        a.innerText = name;
+        a.innerText = name + ' #' + skeleton_id;
         a.setAttribute('href', '#');
         a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
         a.onclick = function() {

@@ -279,17 +279,7 @@ SelectionTable.prototype.append = function(models) {
 
   this.gui.update();
 
-  this.pushToLinkTarget(models);
-};
-
-SelectionTable.prototype.pushToLinkTarget = function(models) {
-  if (this.linkTarget) {
-    // Prevent propagation loop by checking if the target already has all the skeletons
-    var diff = SkeletonListSources.findDifference(this.linkTarget, models);
-    if (Object.keys(diff).length > 0) {
-      this.linkTarget.append(diff);
-    }
-  }
+  this.appendToLinkTarget(models);
 };
 
 /** ids: an array of Skeleton IDs. */

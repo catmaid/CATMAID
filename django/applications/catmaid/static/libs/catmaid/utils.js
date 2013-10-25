@@ -77,6 +77,16 @@ SkeletonSource.prototype.syncLink = function(select) {
 	}
 };
 
+SkeletonSource.prototype.appendToLinkTarget = function(models) {
+  if (this.linkTarget) {
+    // Prevent propagation loop by checking if the target already has all the skeletons
+    var diff = SkeletonListSources.findDifference(this.linkTarget, models);
+    if (Object.keys(diff).length > 0) {
+      this.linkTarget.append(diff);
+    }
+  }
+};
+
 SkeletonSource.prototype.notifyLink = function(model, source_chain) {
   if (this.linkTarget) {
     this.linkTarget.updateModel(model, source_chain);

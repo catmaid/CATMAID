@@ -1,7 +1,7 @@
 import json, sys
 
 from django.http import HttpResponse
-from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -9,9 +9,11 @@ from catmaid.control.common import *
 
 
 @requires_user_role([UserRole.Browse])
-def query_neurons_by_annotations(request, project_id=None):
+def query_neurons_by_annotations(request, project_id = None):
+    p = get_object_or_404(Project, pk = project_id)
     
-    neurons = ClassInstance.objects.filter(class_column__class_name = 'neuron')
+    neurons = ClassInstance.objects.filter(project = p, 
+                                           class_column__class_name = 'neuron')
     #print >> sys.stderr, 'Starting with ' + str(len(neurons)) + ' neurons.'
     for key in request.POST:
         if key.startswith('neuron_query_by_annotation'):
@@ -55,3 +57,47 @@ def query_neurons_by_annotations(request, project_id=None):
         # TODO: include node count, review percentage, etc.
     return HttpResponse(json.dumps(dump))
 
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def annotate_neurons(request, project_id = None):
+    p = get_object_or_404(Project, pk = project_id)
+    r = Relation.objects.get(relation_name = 'annotated_with')
+    
+    annotations = request.POST.getlist('annotations[]', [])
+    neuron_ids = [int(n) for n in request.POST.getlist('neuron_ids[]', [])]
+    skeleton_ids = [int(s) for s in request.POST.getlist('skeleton_ids[]', [])]
+    
+#     print >> sys.stderr, 'Annotations: ' + str(annotations)
+#     print >> sys.stderr, 'Neuron IDs: ' + str(neuron_ids)
+#     print >> sys.stderr, 'Skeleton IDs: ' + str(skeleton_ids)
+    
+    # TODO: make neurons a set in case neuron IDs and skeleton IDs overlap?
+    neurons = []
+    if any(neuron_ids):
+        neurons += ClassInstance.objects.filter(project = p, 
+                                                class_column__class_name = 'neuron', 
+                                                id__in = neuron_ids)
+    if any(skeleton_ids):
+        neurons += ClassInstance.objects.filter(project = p,
+                                                class_column__class_name = 'neuron', 
+                                                cici_via_b__relation__relation_name = 'model_of',
+                                                cici_via_b__class_instance_a__in = skeleton_ids)
+    
+    for annotation in annotations:
+        # Make sure the annotation's class instance exists.
+        ci, created = ClassInstance.objects.get_or_create(project = p, 
+                                                          name = annotation,
+                                                          class_column__class_name = 'annotation',
+                                                          defaults = {'user': request.user});
+        # Annotate each of the neurons.
+        # Avoid duplicates for the current user, but it's OK for multiple users to annotate with the same instance.
+        for neuron in neurons:
+            print >> sys.stderr, 'Annotating neuron ' + str(neuron) + ' with ' + str(ci) + ''
+            cici, created = ClassInstanceClassInstance.objects.get_or_create(project = p,
+                                                                             relation = r,
+                                                                             class_instance_a = ci,
+                                                                             class_instance_b = neuron,
+                                                                             user = request.user);
+            cici.save() # update the last edited time
+    
+    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')

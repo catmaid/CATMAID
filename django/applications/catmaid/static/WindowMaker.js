@@ -259,6 +259,14 @@ var WindowMaker = new function()
     load.onclick = ST.load_skeleton_list.bind(ST);
     buttons.appendChild(load);
 
+    var annotate = document.createElement('input');
+    annotate.setAttribute("type", "button");
+    annotate.setAttribute("id", "annotate_skeleton_list");
+    annotate.setAttribute("value", "Annotate");
+    annotate.style.marginLeft = '1em';
+    annotate.onclick = ST.annotate_skeleton_list.bind(ST);
+    buttons.appendChild(annotate);
+    
     var random = document.createElement('input');
     random.setAttribute("type", "button");
     random.setAttribute("value", "Randomize colors");
@@ -2023,7 +2031,7 @@ var WindowMaker = new function()
           '<td class="annotations_query_field_label">annotated:</td> ' + 
           '<td class="annotations_query_field">' + 
             '<input type="text" name="neuron_query_by_annotation" id="neuron_query_by_annotation" value="" class=""/>' + 
-            '<input type="button" name="annotations_add_annotation" id="annotations_add_annotation" value="+" class="" onclick="NeuronAnnotations.addQueryField()"/>' + 
+            '<input type="button" name="annotations_add_annotation" id="annotations_add_annotation" value="+" class="" onclick="NeuronAnnotations.add_query_field()"/>' + 
           '</td> ' + 
         '</tr>' + 
         '<tr id="neuron_query_by_annotator">' + 

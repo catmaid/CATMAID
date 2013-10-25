@@ -145,6 +145,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'catmaid.control.get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'catmaid.control.give_neuron_to_other_user'),
     (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'catmaid.control.query_neurons_by_annotations'),
+    (r'^(?P<project_id>\d+)/neuron/annotate$', 'catmaid.control.annotate_neurons'),
     
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/confidence/update$', 'catmaid.control.update_confidence'),
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'catmaid.control.update_location_reviewer'),

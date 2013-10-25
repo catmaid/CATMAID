@@ -478,7 +478,6 @@ CompartmentGraphWidget.prototype.highlight = function(skeleton_id) {
   var nodes = this.cy.nodes().filter(function(i, node) {
     return skeleton_id === node.data("skeleton_id");
   });
-  console.log(nodes.length, nodes.css());
   if (0 === nodes.length) return;
   var css = nodes.css(); // for the first, which should be like the others
   nodes.animate({css: {width: '300px',

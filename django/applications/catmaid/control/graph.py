@@ -105,7 +105,7 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
     return arbors2, minis
 
 
-def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, cable_spread, path_confluence):
+def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand, compute_risk, cable_spread, path_confluence):
     """ Assumes all skeleton_ids belong to project_id. """
     skeletons_string = ",".join(str(int(x)) for x in skeleton_ids)
     cursor = connection.cursor()
@@ -145,8 +145,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
     # Cluster by synapses
     minis = defaultdict(list) # skeleton_id vs list of minified graphs
     locations = None
-    if bandwidth > 0:
-        whole_arbors = arbors
+    whole_arbors = arbors
+    if expand and bandwidth > 0:
         locations = {row[0]: tuple(imap(float, row[4][1:-1].split(','))) for row in rows}
         treenode_connector = defaultdict(list)
         for connector_id, pp in connectors.iteritems():
@@ -154,9 +154,9 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                 treenode_connector[treenode_id].append((connector_id, "presynaptic_to"))
             for treenode_id in chain.from_iterable(pp[relations['postsynaptic_to']]):
                 treenode_connector[treenode_id].append((connector_id, "postsynaptic_to"))
-        arbors, minis = split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, minis)
-    else:
-        whole_arbors = arbors
+        arbors_to_expand = {skid: ls for skid, ls in arbors.iteritems() if skid in expand}
+        expanded_arbors, minis = split_by_synapse_domain(bandwidth, locations, arbors_to_expand, treenode_connector, minis)
+        arbors.update(expanded_arbors)
 
 
     # Obtain neuron names
@@ -191,7 +191,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                                  'label': label,
                                  'skeleton_id': skid,
                                  'node_count': len(g),
-                                 'node_reviewed_count': sum(1 for v in g.node.itervalues() if -1 != v.get('reviewer_id', -1)), # TODO when bandwidth > 0, not all nodes are included. Tey will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
+                                 'node_reviewed_count': sum(1 for v in g.node.itervalues() if -1 != v.get('reviewer_id', -1)), # TODO when bandwidth > 0, not all nodes are included. They will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
                                  'branch': False})
             i += 1
 
@@ -215,7 +215,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                                 break
                     break
 
-    if bandwidth <= 0:
+    if compute_risk and bandwidth <= 0:
+        # Compute synapse risk:
         # Compute synapse centrality of every node in every arbor that has synapses
         for skeleton_id, arbors in whole_arbors.iteritems():
             synapses = skeleton_synapses[skeleton_id]
@@ -273,7 +274,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
                 edge_props['risk'] = -3
 
 
-    if bandwidth > 0:
+    if expand and bandwidth > 0:
         # Add edges between circuit nodes that represent different domains of the same neuron
         for skeleton_id, list_mini in minis.iteritems():
             for mini in list_mini:
@@ -297,26 +298,31 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, c
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_graph(request, project_id=None):
     project_id = int(project_id)
-    skeleton_ids = [int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_list[')]
+    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_list['))
     confidence_threshold = int(request.POST.get('confidence_threshold', 0))
-    bandwidth = float(request.POST.get('bandwidth', 9000)) # in nanometers
+    bandwidth = float(request.POST.get('bandwidth', 0)) # in nanometers
     cable_spread = float(request.POST.get('cable_spread', 2500)) # in nanometers
     path_confluence = int(request.POST.get('path_confluence', 10)) # a count
-    circuit = _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, cable_spread, path_confluence)
+    compute_risk = 1 == int(request.POST.get('risk', 0))
+    expand = set(int(v) for k,v in request.POST.iteritems() if k.startswith('expand['))
+
+    circuit = _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand, compute_risk, cable_spread, path_confluence)
     package = {'nodes': [{'data': props} for props in circuit.node.itervalues()],
                'edges': []}
     edges = package['edges']
     for g1, g2, props in circuit.edges_iter(data=True):
         id1 = circuit.node[g1]['id']
         id2 = circuit.node[g2]['id']
-        edges.append({'data': {'id': '%s_%s' % (id1, id2),
-                               'source': id1,
-                               'target': id2,
-                               'weight': props['c'],
-                               'label': str(props['c']) if props['directed'] else None,
-                               'directed': props['directed'],
-                               'arrow': props['arrow'],
-                               'risk': props.get('risk')}})
+        data = {'id': '%s_%s' % (id1, id2),
+                'source': id1,
+                'target': id2,
+                'weight': props['c'],
+                'label': str(props['c']) if props['directed'] else None,
+                'directed': props['directed'],
+                'arrow': props['arrow']}
+        if compute_risk:
+            data['risk'] = props.get('risk')
+        edges.append({'data': data})
 
     return HttpResponse(json.dumps(package))
 

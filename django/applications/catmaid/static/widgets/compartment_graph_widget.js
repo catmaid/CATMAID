@@ -12,6 +12,7 @@ var CompartmentGraphWidget = function() {
   this.show_node_labels = true;
   this.trim_node_labels = false;
   this.clustering_bandwidth = 0;
+  this.compute_risk = false;
 }
 
 CompartmentGraphWidget.prototype = {};
@@ -144,6 +145,15 @@ CompartmentGraphWidget.prototype.graph_properties = function() {
   dialog.appendChild(bandwidth);
   dialog.appendChild( document.createElement("br"));
 
+  dialog.appendChild(document.createTextNode('Compute synapse risk'));
+  var risk = document.createElement('input');
+  risk.setAttribute('id', 'synaptic_risk');
+  risk.setAttribute('type', 'checkbox');
+  if (this.compute_risk)
+    risk.setAttribute('checked', 'true');
+  dialog.appendChild(risk);
+  dialog.appendChild( document.createElement("br"));
+
   var label = document.createTextNode('Keep edges with weight ');
   dialog.appendChild(label);
   var syncount = document.createElement('input');
@@ -184,9 +194,10 @@ CompartmentGraphWidget.prototype.graph_properties = function() {
     buttons: {
       "OK": function() {
         // TODO: fixme, does not return correct value after update
-        self.clustering_bandwidth = $('#clustering_bandwidth_input').val();
-        self.confidence_threshold = $('#confidence_threshold').val();
-        self.synaptic_count_edge_filter = $('#synaptic_count_edge_filter').val();
+        self.clustering_bandwidth = bandwidth.value;
+        self.confidence_threshold = sync.value;
+        self.synaptic_count_edge_filter = syncount.value;
+        self.compute_risk = risk.checked;
         $(this).dialog("close");
       }
     },
@@ -457,11 +468,22 @@ CompartmentGraphWidget.prototype.load = function(skeleton_ids, models) {
     growlAlert("Info", "Nothing to load!");
     return;
   }
+  var post = {skeleton_list: skeleton_ids,
+              confidence_threshold: this.confidence_threshold,
+              risk: this.compute_risk ? 1 : 0};
+  if (this.clustering_bandwidth > 0) {
+    var selected = Object.keys(this.cy.nodes().toArray().reduce(function(m, node) {
+      if (node.selected()) m[node.data('skeleton_id')] = true;
+      return m;
+    }, {}));
+    if (selected.length > 0) {
+      post.bandwidth = this.clustering_bandwidth;
+      post.expand = selected;
+    }
+  }
   requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
       "POST",
-      {skeleton_list: skeleton_ids,
-       confidence_threshold: this.confidence_threshold,
-       bandwidth: this.clustering_bandwidth},
+      post,
       (function (status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);

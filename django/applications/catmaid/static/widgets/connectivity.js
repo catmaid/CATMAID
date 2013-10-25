@@ -126,13 +126,35 @@ SkeletonConnectivity.prototype.update = function() {
     this._clearGUI();
     return;
   };
+
+  // Record the state of checkboxes
+  var checkboxes = [{}, {}],
+      widgetID = this.widgetID,
+      relations = ['presynaptic_to', 'postsynaptic_to'];
+  relations.forEach(function(relation, index) {
+    $("[id^='" + relation + "-show-skeleton-" + widgetID + "-']").each(function(_, checkbox) {
+      checkboxes[index][checkbox.value] = checkbox.checked;
+    });
+  });
+
+  var createConnectivityTable = this.createConnectivityTable.bind(this);
+
   requestQueue.replace(
           django_url + project.id + '/skeleton/connectivity',
           'POST',
           {'source': skids,
            'threshold': $('#connectivity_count_threshold' + this.widgetID).val(),
            'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
-          this.createConnectivityTable.bind(this),
+          function(status, text) {
+            createConnectivityTable(status, text);
+            // Restore checkbox state
+            checkboxes.forEach(function(c, i) {
+              var relation = relations[i];
+              Object.keys(c).forEach(function(skeleton_id) {
+                $('#' + relation + '-show-skeleton-' + widgetID + '-' + skeleton_id).attr('checked', c[skeleton_id]);
+              });
+            });
+          },
           'update_connectivity_table');
 };
 

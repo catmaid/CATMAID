@@ -37,10 +37,6 @@ WebGLApplication.prototype.destroy = function() {
 };
 
 WebGLApplication.prototype.updateModel = function(model, source_chain) {
-  if (source_chain && (this in source_chain)) return; // break propagation loop
-  if (!source_chain) source_chain = {};
-  source_chain[this] = this;
-
   var skeleton = this.space.content.skeletons[model.id];
   if (!skeleton) {
     if (model.selected) {

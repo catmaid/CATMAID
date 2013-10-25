@@ -771,7 +771,7 @@ var WindowMaker = new function()
     contentbutton.appendChild(n_circles);
 
 
-    contentbutton.appendChild(document.createTextNode(" limit:"));
+    contentbutton.appendChild(document.createTextNode("hops, limit:"));
 
     var f = function(name) {
       var e = document.createElement('select');

@@ -58,9 +58,6 @@ CompartmentGraphWidget.prototype.destroy = function() {
 
 /** Reads only selection state and color. */
 CompartmentGraphWidget.prototype.updateModel = function(model, source_chain) {
-  if (source_chain && (this in source_chain)) return; // break propagation loop
-  source_chain[this] = this;
-
   var nodes = this.getNodes(model.id);
   if (model.selected) nodes.select();
   else nodes.unselect();

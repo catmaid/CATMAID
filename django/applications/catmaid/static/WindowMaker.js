@@ -254,19 +254,13 @@ var WindowMaker = new function()
     load.setAttribute("value", "Load list");
     load.onclick = ST.load_skeleton_list.bind(ST);
     buttons.appendChild(load);
-    
-    var colorLabel = document.createElement('div');
-    colorLabel.innerHTML = 'Color:';
-    colorLabel.style.display = 'inline';
-    colorLabel.style.marginLeft = '1em';
-    buttons.appendChild(colorLabel);
-    var colorMenu = document.createElement('select');
-    colorMenu.setAttribute("id", "skeletons_base_color" + ST.widgetID);
-    $('<option/>', {value : 'random', text: 'Random', selected: true}).appendTo(colorMenu);
-    $('<option/>', {value : 'manual', text: 'Manual'}).appendTo(colorMenu);
-    colorMenu.onchange = ST.set_skeletons_base_color.bind(ST);
-    buttons.appendChild(colorMenu);
 
+    var random = document.createElement('input');
+    random.setAttribute("type", "button");
+    random.setAttribute("value", "Randomize colors");
+    random.onclick = ST.randomizeColorsOfSelected.bind(ST);
+    buttons.appendChild(random);
+    
     var measure = document.createElement('input');
     measure.setAttribute('type', 'button');
     measure.setAttribute('value', 'Measure');

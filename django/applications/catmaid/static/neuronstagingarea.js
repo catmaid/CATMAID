@@ -358,19 +358,14 @@ SelectionTable.prototype.clear = function(source_chain) {
 };
  
 /** Set the color of all skeletons based on the state of the "Color" pulldown menu. */
-SelectionTable.prototype.set_skeletons_base_color = function() {
-  // TODO just convert menu into a button to randomize color
-  var skeletonsColorMethod = $('#skeletons_base_color' + this.widgetID + ' :selected').attr("value");
-  if ("random" === skeletonsColorMethod) {
-    this.next_color_index = 0; // reset
-    var colors = this.skeletons.map(function(skeleton) {
-      skeleton.color = this.pickColor();
-      this.gui.update_skeleton_color_button(skeleton);
-      return skeleton.color;
-    }, this);
-
-    this.updateLink(this.getSelectedSkeletonModels());
-  }
+SelectionTable.prototype.randomizeColorsOfSelected = function() {
+  this.next_color_index = 0; // reset
+  this.skeletons.filter(this.isSelectedFn())
+                .forEach(function(skeleton) {
+                  skeleton.color = this.pickColor();
+                  this.gui.update_skeleton_color_button(skeleton);
+                }, this);
+  this.updateLink(this.getSelectedSkeletonModels());
 };
  
 SelectionTable.prototype.getSkeletonModel = function( id ) {

@@ -123,7 +123,7 @@ SkeletonSourceManager.prototype.add = function(source) {
 SkeletonSourceManager.prototype.remove = function(source) {
 	delete this.sources[source.getName()];
 	this.updateGUI();
-	Object.key(this.sources).forEach(function(name) {
+	Object.keys(this.sources).forEach(function(name) {
 		var s = this.sources[name];
 		if (s.linkTarget === source) delete s.linkTarget;
 	}, this);

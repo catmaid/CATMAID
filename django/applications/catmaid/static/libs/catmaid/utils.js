@@ -69,6 +69,12 @@ SkeletonSource.prototype.loadSource = function() {
   this.append(models);
 };
 
+SkeletonSource.prototype.updateOneModel = function(model, source_chain) {
+  var models = {};
+  models[model.id] = model;
+  this.updateModels(models, source_chain);
+};
+
 SkeletonSource.prototype.syncLink = function(select) {
   this.linkTarget = SkeletonListSources.getSource(select.value);
 	if (this.linkTarget) {
@@ -77,19 +83,25 @@ SkeletonSource.prototype.syncLink = function(select) {
 	}
 };
 
-SkeletonSource.prototype.appendToLinkTarget = function(models) {
+SkeletonSource.prototype.updateLink = function(models) {
   if (this.linkTarget) {
-    // Prevent propagation loop by checking if the target already has all the skeletons
-    var diff = SkeletonListSources.findDifference(this.linkTarget, models);
-    if (Object.keys(diff).length > 0) {
-      this.linkTarget.append(diff);
-    }
+		this.linkTarget.updateModels(models);
   }
 };
 
 SkeletonSource.prototype.notifyLink = function(model, source_chain) {
   if (this.linkTarget) {
-    this.linkTarget.updateModel(model, source_chain);
+    this.linkTarget.updateOneModel(model, source_chain);
+	}
+};
+
+SkeletonSource.prototype.clearLink = function(source_chain) {
+	if (this.linkTarget) {
+		if (source_chain && (this in source_chain)) return; // break propagation loop
+		if (!source_chain) source_chain = {};
+		source_chain[this] = this;
+
+		this.linkTarget.clear();
 	}
 };
 
@@ -111,6 +123,10 @@ SkeletonSourceManager.prototype.add = function(source) {
 SkeletonSourceManager.prototype.remove = function(source) {
 	delete this.sources[source.getName()];
 	this.updateGUI();
+	Object.key(this.sources).forEach(function(name) {
+		var s = this.sources[name];
+		if (s.linkTarget === source) delete s.linkTarget;
+	}, this);
 };
 
 SkeletonSourceManager.prototype.createOptions = function() {
@@ -245,6 +261,7 @@ ActiveSkeleton.prototype.getName = function(skeleton_id) {
 ActiveSkeleton.prototype.append = function() {};
 ActiveSkeleton.prototype.clear = function() {};
 ActiveSkeleton.prototype.removeSkeletons = function() {};
+ActiveSkeleton.prototype.updateModels = function() {};
 
 ActiveSkeleton.prototype.getSelectedSkeletons = function() {
 	var skid = SkeletonAnnotations.getActiveSkeletonId();
@@ -275,8 +292,3 @@ ActiveSkeleton.prototype.getSkeletonModels = ActiveSkeleton.prototype.getSelecte
 ActiveSkeleton.prototype.highlight = function(skeleton_id) {
 	TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
 };
-
-ActiveSkeleton.prototype.updateModel = function(model) {
-	console.log("Ignoring updateModel", model);
-};
-

@@ -56,16 +56,16 @@ CompartmentGraphWidget.prototype.destroy = function() {
   this.unregisterSource();
 };
 
-/** Reads only selection state and color. */
-CompartmentGraphWidget.prototype.updateModel = function(model, source_chain) {
-  var nodes = this.getNodes(model.id);
-  if (model.selected) nodes.select();
-  else nodes.unselect();
-  nodes.data('color', '#' + model.color.getHexString());
+CompartmentGraphWidget.prototype.updateModels = function(models) {
+  this.append(models);
 };
 
 CompartmentGraphWidget.prototype.hasSkeleton = function(skeleton_id) {
   return this.getNodes(skeleton_id).length > 0;
+};
+
+CompartmentGraphWidget.prototype.createSkeletonModel = function(props) {
+  return new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color().setHex(parseInt('0x' + props.color.substring(1))));
 };
 
 CompartmentGraphWidget.prototype.getSkeletonModel = function(skeleton_id) {
@@ -73,16 +73,16 @@ CompartmentGraphWidget.prototype.getSkeletonModel = function(skeleton_id) {
   if (0 === nodes.length) return null;
   var node = nodes[0],
       props = node.data(),
-      model = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color.setHex(parseInt('0x' + props.color.substring(1))));
-  model.selected = node.selected();
+      model = this.createSkeletonModel(props);
+  model.setVisible(node.selected());
   return model;
 };
 
 CompartmentGraphWidget.prototype.getSkeletonModels = function() {
   return this.cy.nodes().toArray().reduce(function(m, node) {
     var props = node.data(),
-        model = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color().setHex(parseInt('0x' + props.color.substring(1))));
-    model.selected = node.selected();
+        model = CompartmentGraphWidget.prototype.createSkeletonModel(props);
+    model.setVisible(node.selected());
     m[props.skeleton_id] = model;
     return m;
   }, {});
@@ -447,13 +447,39 @@ CompartmentGraphWidget.prototype.removeSkeletons = function(skeleton_ids) {
 };
 
 CompartmentGraphWidget.prototype.append = function(models) {
-  var unique = this.getSkeletonModels();
-  // Add or update if there is a model
-  Object.keys(models).forEach(function(skid) {
-    if (models[skid]) unique[skid] = models[skid];
-    else unique[skid] = null;
+
+  var set = {};
+
+  this.cy.nodes().each(function(i, node) {
+    var skid = node.data('skeleton_id'),
+        model = models[skid];
+    if (skid in models) {
+      if (model.selected) {
+        node.data('label', model.baseName);
+        node.data('color', '#' + model.color.getHexString());
+        set[skid] = model;
+      } else {
+        node.remove();
+      }
+    } else {
+      set[skid] = CompartmentGraphWidget.prototype.createSkeletonModel(node.data());
+    }
   });
-  this.load(Object.keys(unique), unique);
+
+  var additions = 0;
+
+  Object.keys(models).forEach(function(skid) {
+    if (skid in set) return;
+    var model = models[skid];
+    if (model.selected) {
+      set[skid] = model;
+      ++additions;
+    }
+  });
+
+  if (0 === additions) return; // all updating and removing done above
+
+  this.load(Object.keys(set), set);
 };
 
 CompartmentGraphWidget.prototype.update = function() {

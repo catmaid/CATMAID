@@ -36,46 +36,8 @@ WebGLApplication.prototype.destroy = function() {
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
 
-WebGLApplication.prototype.updateModel = function(model, source_chain) {
-  var skeleton = this.space.content.skeletons[model.id];
-  if (!skeleton) {
-    if (model.selected) {
-      // add it
-      var models = {};
-      models[model.id] = model;
-      this.append(models);
-    } else {
-      growlAlert("Oops", this.getName() + " does not have skeleton #" + model.id);
-    }
-    return;
-  }
-
-  if (model.pre_visible !== skeleton.actor['presynaptic_to'].visible) {
-    skeleton.setPreVisibility(model.pre_visible);
-  }
-  if (model.post_visible !== skeleton.actor['postsynaptic_to'].visible) {
-    skeleton.setPostVisibility(model.post_visible);
-  }
-
-  skeleton.skeletonmodel = model.clone();
-
-  if (model.color.r !== skeleton.actorColor.r
-   || model.color.g !== skeleton.actorColor.g
-   || model.color.b !== skeleton.actorColor.b) {
-     skeleton.actorColor = model.color;
-     skeleton.updateSkeletonColor(this.options);
-  }
-  skeleton.setTextVisibility(model.text_visible);
-
-  if (model.selected !== skeleton.visible) {
-    this.setSkeletonVisibility(model.id, model.selected);
-    if (!model.selected) {
-      skeleton.setPreVisibility(false);
-      skeleton.setPostVisibility(false);
-    }
-  } else {
-    this.space.render();
-  }
+WebGLApplication.prototype.updateModels = function(models) {
+  this.append(models);
 };
 
 WebGLApplication.prototype.getSelectedSkeletons = function() {
@@ -255,18 +217,6 @@ WebGLApplication.prototype.setSkeletonPreVisibility = WebGLApplication.prototype
 WebGLApplication.prototype.setSkeletonPostVisibility = WebGLApplication.prototype._skeletonVizFn('Post');
 WebGLApplication.prototype.setSkeletonTextVisibility = WebGLApplication.prototype._skeletonVizFn('Text');
 
-WebGLApplication.prototype.setSkeletonVisibility = function( skeleton_id, vis ) {
-	var skeletons = this.space.content.skeletons;
-	if (!skeletons.hasOwnProperty(skeleton_id)) return;
-	skeletons[skeleton_id].setActorVisibility( vis );
-	if (this.options.connector_filter) {
-		this.refreshRestrictedConnectors();
-	} else {
-		this.space.render();
-	}
-	return this.options.connector_filter;
-};
-
 WebGLApplication.prototype.toggleConnectors = function() {
   this.options.connector_filter = ! this.options.connector_filter;
 
@@ -375,13 +325,12 @@ WebGLApplication.prototype.has_skeleton = function(skeleton_id) {
 	return this.space.content.skeletons.hasOwnProperty(skeleton_id);
 };
 
-WebGLApplication.prototype.staticUpdateSkeleton = function(skeleton_ids) {
+WebGLApplication.prototype.staticUpdateModels = function(models) {
   this.getInstances().forEach(function(instance) {
-    var sks = skeleton_ids.filter(function(skid) { return skid in instance.space.skeletons; });
-    if (sks.length > 0) instance.addSkeletons(sks);
+    instance.updateModels(models);
+    // TODO
   });
 };
-
 
 /** Fetch skeletons one by one, and render just once at the end. */
 WebGLApplication.prototype.addSkeletons = function(models, callback) {
@@ -396,6 +345,7 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
       skeleton.setPostVisibility(model.post_visible);
       skeleton.setTextVisibility(model.text_visible);
       skeleton.actorColor = model.color.clone();
+      skeleton.updateSkeletonColor(this.options);
       return false;
     }
     return true;

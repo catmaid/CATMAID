@@ -4,45 +4,40 @@
 
 
   function new_window_with_return( url ) {
-    // var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
-    jQuery.ajax({
-      url: django_url + project.id + url,
-      type: "POST",
-      dataType: "text",
-      data: { skeleton_list: NeuronStagingArea.getSelectedSkeletons() },
-      success: function (data) {
-        // console.log('data', data)
-        var recipe = window.open('', 'Export', 'width=600,height=600');
-        recipe.document.open();
-        recipe.document.write(data);
-        recipe.document.close();
-        // window.open('{{ catmaid_url }}' + project.id + '/graphexport/nx_json', '_blank');
-      }
-    });
-  }
+    var selectionTables = SelectionTable.prototype.getInstances();
+    if (0 === selectionTables.length) {
+      alert("Open and populate a Selection Table first!");
+      return;
+    }
+    var dialog = new OptionsDialog("Export NetworkX");
+    var choiceST = dialog.appendChoice("Source: ", "neuroml-st",
+        selectionTables.map(function(item) { return item.getName(); }),
+        selectionTables.map(function(item, i) { return i; }),
+        0);
+
+    dialog.onOK = function() {
+      jQuery.ajax({
+        url: django_url + project.id + url,
+        type: "POST",
+        dataType: "text",
+        data: { skeleton_list: selectionTables[choiceST.selectedIndex].getSelectedSkeletons() },
+        success: function (data) {
+          var recipe = window.open('', 'Export', 'width=600,height=600');
+          console.log(recipe);
+          recipe.document.open();
+          recipe.document.write(data);
+          recipe.document.close();
+          // window.open('{{ catmaid_url }}' + project.id + '/graphexport/nx_json', '_blank');
+        }
+      });
+    }
+    dialog.show();
+  };
 
   function graphexport_nxjson() {
     new_window_with_return( "/graphexport/json" );    
   }
 
-  function graphexport_graphml() {
-
-    jQuery.ajax({
-      url: django_url + project.id + "/graphexport/graphml",
-      type: "POST",
-      dataType: "text",
-      data: { skeleton_list: NeuronStagingArea.getSelectedSkeletons() },
-      success: function (data) {
-        console.log('data', data)
-        var recipe = window.open('', 'Export', 'width=600,height=600');
-        recipe.document.open();
-        recipe.document.write(data);
-        recipe.document.close();
-        // window.open('{{ catmaid_url }}' + project.id + '/graphexport/nx_json', '_blank');
-      }
-    });
-  }
-	
 	function graphexport_NeuroML181() {
 		var dialog = new OptionsDialog("Export NeuroML Level 3");
 		var choice = dialog.appendChoice("Source: ", "neuroml-choice",

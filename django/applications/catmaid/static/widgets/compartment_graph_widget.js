@@ -323,7 +323,7 @@ CompartmentGraphWidget.prototype.updateLayout = function( layout ) {
 CompartmentGraphWidget.prototype.updateGraph = function(data, models) {
   for (var i = 0; i < data.nodes.length; i++) {
     var model = models[data.nodes[i]['data'].skeleton_id];
-    data.nodes[i]['data']['color'] = model ? '#' + model.color.getHexString() : '#ffae56';
+    data.nodes[i]['data']['color'] = '#' + model.color.getHexString();
   }
 
   var grey = [0, 0, 0.267]; // HSV for #444
@@ -628,8 +628,9 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
           growlAlert("Information", "No further skeletons found, with parameters min_pre=" + min_pre + ", min_post=" + min_post);
           return;
         }
+        var pseudomodel = {selected: true, color: new THREE.Color().setHex(0xffae56)};
         self.append(json.reduce(function(m, skid) {
-          m[skid] = null;
+          m[skid] = pseudomodel;
           return m;
         }, {}));
       });

@@ -320,9 +320,9 @@ var WindowMaker = new function()
         '</thead>' +
         '<tbody>' +
           '<tr>' +
-            '<td><img src="' + STATIC_URL_JS + 'widgets/themes/kde/delete.png" id="webgl-rmall" title="Remove all"></td>' +
+            '<td><img src="' + STATIC_URL_JS + 'widgets/themes/kde/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></td>' +
             '<td></td>' +
-            '<td><input type="checkbox" id="webgl-show" checked /></td>' +
+            '<td><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></td>' +
             '<td></td>' +
             '<td></td>' +
             '<td></td>' +

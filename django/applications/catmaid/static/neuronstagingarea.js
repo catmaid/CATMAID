@@ -9,7 +9,7 @@ var SelectionTable = function() {
 
   this.skeletons = [];
   this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
-  this.togglevisibleall = false;
+  this.all_visible = true;
   this.selected_skeleton_id = null;
   this.next_color_index = 0;
   this.gui = new this.GUI(this, 20);
@@ -68,6 +68,7 @@ SelectionTable.prototype.SkeletonModel.prototype.setVisible = function(v) {
     this.selected = v;
     this.pre_visible = v;
     this.post_visible = v;
+    if (!v) this.text_visible = v;
 };
 
 SelectionTable.prototype.SkeletonModel.prototype.clone = function() {
@@ -211,10 +212,22 @@ SelectionTable.prototype.getOrCreate = function() {
 };
 
 SelectionTable.prototype.toggleSelectAllSkeletons = function() {
-  this.skeletons.forEach(function(skeleton) {
-    this.selectSkeleton(skeleton, this.togglevisibleall);
+  this.all_visible = !this.all_visible;
+  $("[id^='skeletonshow" + this.widgetID + "-']").attr('checked', this.all_visible);
+  $("[id^='skeletonpre" + this.widgetID + "-']").attr('checked', this.all_visible);
+  $("[id^='skeletonpost" + this.widgetID + "-']").attr('checked', this.all_visible);
+  if (!this.all_visible) {
+    $("[id^='skeletontext" + this.widgetID + "-']").attr('checked', this.all_visible);
+  }
+  this.skeletons.map(function(skeleton) {
+    skeleton.setVisible(this.all_visible);
   }, this);
-  this.togglevisibleall = !this.togglevisibleall;
+  if (this.linkTarget) {
+    this.updateLink(this.skeletons.reduce(function(o, skeleton) {
+      o[skeleton.id] = skeleton.clone();
+      return o;
+    }, {}));
+  }
 };
 
 /** setup button handlers */
@@ -233,13 +246,13 @@ SelectionTable.prototype.init = function() {
   var clear = this.clear.bind(this),
       toggleSelectAllSkeletons = this.toggleSelectAllSkeletons.bind(this);
 
-  $('#webgl-rmall').click(function() {
+  $('#selection-table-remove-all' + this.widgetID).click(function() {
     if (confirm("Empty selection table?")) {
       clear();
     }
   });
 
-  $('#webgl-show').click(toggleSelectAllSkeletons);
+  $('#selection-table-show-all' + this.widgetID).click(toggleSelectAllSkeletons);
 
   // TODO add similar buttons and handlers for pre and post
 };
@@ -717,7 +730,7 @@ SelectionTable.prototype.selectSkeletonById = function(id) {
 
 SelectionTable.prototype.selectSkeleton = function( skeleton, vis ) {
   $('#skeletonshow' + this.widgetID + '-' + skeleton.id).attr('checked', vis);
-  skeleton.selected = vis;
+  skeleton.setVisible(vis);
   this.notifyLink(skeleton);
 };
 

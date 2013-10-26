@@ -325,10 +325,16 @@ WebGLApplication.prototype.has_skeleton = function(skeleton_id) {
 	return this.space.content.skeletons.hasOwnProperty(skeleton_id);
 };
 
-WebGLApplication.prototype.staticUpdateModels = function(models) {
+/** Reload only if present. */
+WebGLApplication.prototype.staticReloadSkeletons = function(skeleton_ids) {
   this.getInstances().forEach(function(instance) {
+    var models = skeleton_ids.filter(instance.hasSkeleton, instance)
+                             .reduce(function(m, skid) {
+                               if (instance.hasSkeleton(skid)) m[skid] = instance.getSkeletonModel(skid);
+                               return m;
+                             }, {});
+    instance.space.removeSkeletons(skeleton_ids);
     instance.updateModels(models);
-    // TODO
   });
 };
 

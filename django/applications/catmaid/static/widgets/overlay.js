@@ -1373,7 +1373,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
              option: choice.selectedIndex},
             function(json) {
               // Refresh 3d views if any
-              WebGLApplication.prototype.staticUpdateSkeleton([self.nodes[treenode_id].skeleton_id]);
+              WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
               // Reinit SVGOverlay to read in the radius of each altered treenode
               self.updateNodes();
             });

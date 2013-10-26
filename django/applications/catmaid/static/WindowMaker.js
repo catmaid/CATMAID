@@ -425,7 +425,8 @@ var WindowMaker = new function()
     content.appendChild(container);
 
     buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(SkeletonListSources.createSelect(WA));
+    var select_source = SkeletonListSources.createSelect(WA);
+    buttons.appendChild(select_source);
 
     var load = document.createElement('input');
     load.setAttribute("type", "button");
@@ -580,13 +581,18 @@ var WindowMaker = new function()
     // Create a Selection Table, preset as the sync target
     createStagingListWindow( win, WA.getName() );
 
-    // Fill in with a Raphael canvas, now that the window exists in the DOM:
-    // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
-
     WA.init( 800, 600, canvas.getAttribute("id") );
     win.callListeners( CMWWindow.RESIZE );
 
     SkeletonListSources.updateGUI();
+
+    // Now that a Selection Table exists, set it as the default pull source
+    for (var i=select_source.length; --i; ) {
+      if (0 === select_source.options[i].value.indexOf("Selection ")) {
+        select_source.selectedIndex = i;
+        break;
+      }
+    }
 
     return win;
   };

@@ -385,21 +385,16 @@ CompartmentGraphWidget.prototype.updateGraph = function(data, models) {
 
   this.cy.on('click', 'node', {}, function(evt){
     var node = this;
-    var splitname = node.id().split('_');
     if (evt.originalEvent.altKey) {
-      // Toggle visibility in all selection sources
-      // TODO should be only in the target source, if any
-      SkeletonListSources.setVisible([splitname[0]], true);
-    } else if (evt.originalEvent.shiftKey) {
       // Select in the overlay
-      TracingTool.goToNearestInNeuronOrSkeleton("skeleton", parseInt(splitname[0]));
+      TracingTool.goToNearestInNeuronOrSkeleton("skeleton", node.data('skeleton_id'));
     }
   });
 
   this.cy.on('click', 'edge', {}, function(evt){
     var edge = this;
-    var splitedge = edge.id().split('_');
-    if (evt.originalEvent.shiftKey) {
+    if (evt.originalEvent.altKey) {
+      var splitedge = edge.id().split('_');
       ConnectorSelection.show_shared_connectors( splitedge[0], [splitedge[2]], "presynaptic_to" );
     }
   });

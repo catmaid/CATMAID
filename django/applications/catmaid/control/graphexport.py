@@ -22,6 +22,9 @@ def export_jsongraph(request, project_id):
     skeletonlist = request.POST.getlist('skeleton_list[]')
     confidence_threshold = int(request.POST.get('confidence_threshold', 0))
     bandwidth = int(request.POST.get('bandwidth', 0))
+    cable_spread = float(request.POST.get('cable_spread', 2500)) # in nanometers
+    path_confluence = int(request.POST.get('path_confluence', 10)) # a count
+    compute_risk = 1 == int(request.POST.get('risk', 0))
     synaptic_count_high_pass = int(request.POST.get('synaptic_count_high_pass', 0))
     order = int(request.POST.get('order', 0))
     skeletonlist = map(int, skeletonlist)
@@ -34,7 +37,7 @@ def export_jsongraph(request, project_id):
       skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
       order -= 1
     
-    circuit = _skeleton_graph(project_id, skeletonlist, confidence_threshold, bandwidth)
+    circuit = _skeleton_graph(project_id, skeletonlist, confidence_threshold, bandwidth, set(), compute_risk, cable_spread, path_confluence)
     newgraph = nx.DiGraph()
     for digraph, props in circuit.nodes_iter(data=True):
         newgraph.add_node( props['id'], {

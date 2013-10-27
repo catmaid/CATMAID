@@ -502,6 +502,7 @@ var WindowMaker = new function()
     var shadingMenu = document.createElement('select');
     shadingMenu.setAttribute("id", "skeletons_shading" + WA.widgetID);
     $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
+    $('<option/>', {value : 'active_node_split', text: 'Active node split'}).appendTo(shadingMenu);
     $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
     $('<option/>', {value : 'branch_centrality', text: 'Branch centrality'}).appendTo(shadingMenu);
     shadingMenu.onchange = WA.set_shading_method.bind(WA);

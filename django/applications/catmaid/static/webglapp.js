@@ -1560,7 +1560,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
 	if ('creator' === options.color_method
 	 || 'reviewer' === options.color_method
-	 || 'none' !== options.shading_method)
+	 || ('active_node_split' === options.shading_method && SkeletonAnnotations.getActiveSkeletonId() === this.id))
 	{
 		// The skeleton colors need to be set per-vertex.
 		this.line_material.vertexColors = THREE.VertexColors;
@@ -1571,9 +1571,30 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 			// Darken the skeleton based on the betweenness calculation.
 			edgeWeights = this.betweenness;
 		} else if ('branch_centrality' === options.shading_method) {
-			// TODO: Darken the skeleton based on the branch calculation.
+			// Darken the skeleton based on the branch calculation.
 			edgeWeights = this.branchCentrality;
-		}
+		} else if ('active_node_split' === options.shading_method) {
+      var atn_id = SkeletonAnnotations.getActiveNodeId();
+      var graph = this.createGraph();
+      graph.remove_edge(atn_id, graph.neighbors(atn_id)[0]);
+      // jsnetworkx is not complete. Must manually find the connected component subgraphs
+
+      // Edges on the side of the active node get a weight of 0.5
+      // All other edges at 1.0 by default, in absence.
+
+      var open = [atn_id];
+      while (open.length > 0) {
+        var node = open.pop(),
+            neighbors = graph.neighbors(node);
+        for (var i=neighbors.length-1; i>-1; --i) {
+          var neighbor = neighbors[i],
+              edge = [node, neighbor].sort();
+          if (edge in edgeWeights) continue;
+          open.push(neighbor);
+          edgeWeights[edge] = 0.5;
+        }
+      }
+    }
 
     var pickColor;
     var actorColor = this.actorColor;
@@ -1928,7 +1949,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createGraph = func
  * populated. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.shaderWorkers = function(options) {
 	// Update color and return if calculations were already done or are not requested
-	if ('none' === options.shading_method || Object.keys(this.betweenness).length > 0) {
+	if ('none' === options.shading_method
+      || 'active_node_split' === options.shading_method
+      || Object.keys(this.betweenness).length > 0) {
+    // The first two don't need background threads, and the centrality-based coloring don't either if betweenness has already been computed and cached
 		this.updateSkeletonColor(options);
 		return;
 	}
@@ -1937,6 +1961,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.shaderWorkers = fu
 		growlAlert("Warning", "Cannot calculate graph centrality, your browser does not support Web Workers");
 		return;
 	}
+
+  // TODO these functions work on graph without directional edges and potentially with loops. Instead, they should work assuming a tree, which has directional edges and lacks loops. The 'edgeWeights' should be instread node weights, reducing storage requirements and simplifying look up.
 
 	if (!this.graph) this.graph = this.createGraph();
 

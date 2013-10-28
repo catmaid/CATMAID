@@ -416,7 +416,7 @@ SelectionTable.prototype.update = function() {
         self.skeleton_ids[skid] = self.skeletons.length -1;
       });
       self.gui.update();
-      self.updateLinkTarget(new_models);
+      self.updateLink(new_models);
     });
 };
 

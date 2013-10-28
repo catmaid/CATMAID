@@ -113,8 +113,8 @@ def find_directed_paths(request, project_id=None):
     # Find all directed paths between all pairs of inputs
     unique = set()
     for start, end in combinations(sources, 2):
-        for paths in [nx.all_simple_paths(graph, start, end),
-                      nx.all_simple_paths(graph, end, start)]:
+        for paths in [nx.all_simple_paths(graph, start, end, path_length + 1),
+                      nx.all_simple_paths(graph, end, start, path_length + 1)]:
             for path in paths:
                 for node in path:
                     unique.add(node)

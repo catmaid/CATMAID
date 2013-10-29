@@ -557,13 +557,20 @@ CompartmentGraphWidget.prototype.highlight = function(skeleton_id) {
   var nodes = this.cy.nodes().filter(function(i, node) {
     return skeleton_id === node.data("skeleton_id");
   });
+  var css = {};
+  nodes.each(function(i, node) {
+    css[node.id()] = {w: node.css('width'),
+                      h: node.css('height')};
+  });
   if (0 === nodes.length) return;
-  var css = nodes.css(); // for the first, which should be like the others
-  nodes.animate({css: {width: '300px',
-                       height: '300px'}},
-                {duration: 2000})
-       .animate(css,
-                {duration: 2000, queue: true});
+  nodes.animate({css: {width: '100px',
+                       height: '100px'}},
+                {duration: 1000,
+                 complete: function() { nodes.each(function(i, node) {
+                   var p = css[node.id()];
+                   node.css('width', p.w)
+                       .css('height', p.h);
+                 });}});
 };
 
 CompartmentGraphWidget.prototype.writeGML = function() {

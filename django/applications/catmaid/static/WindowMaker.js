@@ -1735,11 +1735,25 @@ var WindowMaker = new function()
     var container = createContainer( "object_tree_widget" );
     content.appendChild( container );
 
-    container.innerHTML =
-      '<input type="button" id="refresh_object_tree" value="refresh" style="display:block; float:left;" />' +
-      '&nbsp; Synchronize <input type="checkbox" id="synchronize_object_tree" checked="yes" />' +
-      '<br clear="all" />' +
-      '<div id="tree_object"></div>';
+    var refresh = document.createElement('input');
+    refresh.setAttribute('type', 'button');
+    refresh.setAttribute('value', 'Refresh');
+    refresh.onclick = ObjectTree.refresh;
+    container.appendChild(refresh);
+
+    container.appendChild(document.createTextNode(' Synchronize '));
+
+    var sync = document.createElement('input');
+    sync.setAttribute('type', 'checkbox');
+    sync.checked = true;
+    container.appendChild(sync);
+
+    container.appendChild(document.createTextNode(' - Push to:'));
+    container.appendChild(SkeletonListSources.createPushSelect(ObjectTree, 'link'));
+
+    var div = document.createElement('div');
+    div.setAttribute('id', 'tree_object');
+    container.appendChild(div);
 
     addListener(win, container);
 

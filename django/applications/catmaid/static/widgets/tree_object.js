@@ -120,7 +120,7 @@ var ObjectTree = new function()
                           if (json.error) {
                             alert(json.error);
                           } else {
-                            SelectionTable.prototype.getOrCreate().addSkeletons(json, function() { WindowMaker.show("3d-webgl-view"); });
+                            ObjectTree.pushSkeletons(json);
                           }
                         }
                       });
@@ -139,7 +139,7 @@ var ObjectTree = new function()
                           if (json.error) {
                             alert(json.error);
                           } else {
-                            SelectionTable.prototype.getOrCreate().addSkeletons(json, function() { WindowMaker.show("3d-webgl-view"); });
+                            ObjectTree.pushSkeletons(json);
                           }
                         }
                       });
@@ -485,7 +485,19 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   // var myparent = $.jstree._focused()._get_parent(obj);
                   var skelid = obj.attr("id").replace("node_", "");
-                  SelectionTable.prototype.getOrCreate().addSkeletons([skelid], function() { WindowMaker.show("3d-webgl-view"); });
+                  requestQueue.register(django_url + project.id + '/skeleton/neuronnames',
+                      "POST",
+                      {skids: [skelid]},
+                      function(status, text) {
+                        if (200 === status) {
+                          var json = $.parseJSON(text);
+                          if (json.error) {
+                            alert(json.error);
+                          } else {
+                            ObjectTree.pushSkeletons(json);
+                          }
+                        }
+                      });
                 }
               },
               "goto_parent": {
@@ -982,4 +994,42 @@ var ObjectTree = new function()
     }
   };
 
+  this.getName = function() {
+    return "Object Tree";
+  };
+
+  this.createModels = function(ids) {
+    var Colorizer = function() { this.next_color_index = 0; };
+    Colorizer.prototype = SelectionTable.prototype;
+    var c = new Colorizer();
+    return Object.keys(ids).reduce(function(m, id) {
+      m[id] = new SelectionTable.prototype.SkeletonModel(id, ids[id], c.pickColor());
+      return m;
+    }, {});
+  };
+
+  this.pushSkeletons = function(json) {
+    var link = SkeletonListSources.getSelectedPushSource(ObjectTree, 'link');
+    if (link) {
+      link.append(this.createModels(json));
+    } else {
+      // Check that a Selection Table is open and points to a 3d viewer
+      var tables = SelectionTable.prototype.getInstances();
+      var linked = Object.keys(tables).filter(function(name) {
+        var table = tables[name];
+        return table.linkTarget && 0 === table.linkTarget.getName().indexOf("3D View");
+      });
+      var target = null;
+      if (0 === linked.length) {
+        // Open a new 3D View with a linked Selection Table
+        WindowMaker.create("3d-webgl-view");
+        tables = SelectionTable.prototype.getInstances();
+        linked[0] = (Object.keys(tables).filter(function(name) {
+          var table = tables[name];
+          return table.linkTarget && 0 === table.linkTarget.getName().indexOf('3D View');
+        }))[0];
+      }
+      tables[linked[0]].append(this.createModels(json));
+    }
+  };
 };

@@ -363,37 +363,38 @@ def collect_neuron_ids(request, project_id=None, node_id=None, node_type=None):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None, threshold=1):
     """ Retrieve all skeleton IDs under a given group or neuron node of the Object Tree,
-    recursively.
+    recursively, as a dictionary of skeleton ID vs neuron name.
     Limits the collection to skeletons with more treenodes than the threshold."""
-    try:
-        neuron_ids = _collect_neuron_ids(node_id, node_type)
-        if neuron_ids:
-            # Find skeleton IDs
-            # A skeleton is a model_of a neuron
-            cursor = connection.cursor()
-            cursor.execute('''
-            SELECT class_instance_class_instance.class_instance_a
-            FROM class_instance_class_instance,
-                 relation
-            WHERE relation.relation_name = 'model_of'
-              AND class_instance_class_instance.relation_id = relation.id
-              AND class_instance_class_instance.class_instance_b IN (%s)
-            ''' % ','.join(str(x) for x in neuron_ids)) # no need to sanitize
-            skeleton_ids = tuple(row[0] for row in cursor.fetchall())
-        else:
-            skeleton_ids = tuple()
+    neuron_ids = _collect_neuron_ids(node_id, node_type)
+    if neuron_ids:
+        # Find skeleton IDs and neuron names
+        # A skeleton is a model_of a neuron
+        cursor = connection.cursor()
+        cursor.execute('''
+        SELECT cici.class_instance_a, ci.name
+        FROM class_instance_class_instance cici,
+             class_instance ci,
+             relation r
+        WHERE cici.class_instance_b IN (%s)
+          AND cici.relation_id = r.id
+          AND r.relation_name = 'model_of'
+          AND ci.id = cici.class_instance_b
+        ''' % ','.join(str(x) for x in neuron_ids)) # no need to sanitize
+        skeletons = dict(cursor.fetchall())
+    else:
+        skeletons = {}
 
-        # Skip skeletons with less than threshold+1 nodes
-        if skeleton_ids and threshold > 0:
-            cursor = connection.cursor()
-            cursor.execute('''
-            SELECT skeleton_id FROM treenode WHERE skeleton_id IN (%s) GROUP BY skeleton_id HAVING count(*) > %s
-            ''' % (",".join(str(skid) for skid in skeleton_ids), threshold))
-            skeleton_ids = tuple(row[0] for row in cursor.fetchall())
+    # Skip skeletons with less than threshold+1 nodes
+    if skeletons and threshold > 0:
+        cursor = connection.cursor()
+        cursor.execute('''
+        SELECT skeleton_id FROM treenode WHERE skeleton_id IN (%s) GROUP BY skeleton_id HAVING count(*) > %s
+        ''' % (",".join(str(skid) for skid in skeletons), int(threshold)))
+        skeleton_ids = {row[0]: skeletons[row[0]] for row in cursor.fetchall()}
+    else:
+        skeleton_ids = skeletons
 
-        return HttpResponse(json.dumps(skeleton_ids))
-    except Exception as e:
-        raise Exception('Failed to obtain a list of skeleton IDs:' + str(e))
+    return HttpResponse(json.dumps(skeleton_ids))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

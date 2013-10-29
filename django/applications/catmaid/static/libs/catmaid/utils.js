@@ -183,6 +183,10 @@ SkeletonSourceManager.prototype.getSelectedSource = function(ref_source) {
 	return this.sources[$('#' + this.createSelectID(ref_source)).val()];
 };
 
+SkeletonSourceManager.prototype.getSelectedPushSource = function(ref_source, suffix) {
+	return this.sources[$('#' + this.createSelectID(ref_source) + "-push-" + suffix).val()];
+};
+
 SkeletonSourceManager.prototype.getSource = function(name) {
 	return this.sources[name];
 };

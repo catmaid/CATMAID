@@ -2023,24 +2023,24 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
     
     var queryFields = document.createElement('div');
-    queryFields.setAttribute("id", 'annotation_query_fields');
+    queryFields.setAttribute('id', 'neuron_annotations_query_fields');
     queryFields.innerHTML = 
       '<form id="neuron_query_by_annotations" onsubmit="NeuronAnnotations.query(); return false">' + 
-      '<table cellpadding="0" cellspacing="0" border="0" class="annotations_query_fields" id="annotations_query_fields">' + 
+      '<table cellpadding="0" cellspacing="0" border="0" class="neuron_annotations_query_fields" id="neuron_annotations_query_fields">' + 
         '<tr id="neuron_query_by_annotation">' + 
-          '<td class="annotations_query_field_label">annotated:</td> ' + 
-          '<td class="annotations_query_field">' + 
+          '<td class="neuron_annotations_query_field_label">annotated:</td> ' + 
+          '<td class="neuron_annotations_query_field">' + 
             '<input type="text" name="neuron_query_by_annotation" id="neuron_query_by_annotation" value="" class=""/>' + 
-            '<input type="button" name="annotations_add_annotation" id="annotations_add_annotation" value="+" class="" onclick="NeuronAnnotations.add_query_field()"/>' + 
+            '<input type="button" name="neuron_annotations_add_annotation" id="neuron_annotations_add_annotation" value="+" class="" onclick="NeuronAnnotations.add_query_field()"/>' + 
           '</td> ' + 
         '</tr>' + 
         '<tr id="neuron_query_by_annotator">' + 
-          '<td class="annotations_query_field_label">by:</td>' + 
-          '<td class="annotations_query_field"><select name="neuron_query_by_annotator" id="neuron_query_by_annotator" class=""><option value="-2">Anyone</option><\select></td>' + 
+          '<td class="neuron_annotations_query_field_label">by:</td>' + 
+          '<td class="neuron_annotations_query_field"><select name="neuron_query_by_annotator" id="neuron_query_by_annotator" class=""><option value="-2">Anyone</option><\select></td>' + 
         '</tr>' + 
         '<tr id="neuron_query_by_date_range">' + 
-          '<td class="annotations_query_field_label">between:</td>' + 
-          '<td class="annotations_query_field"><input type="text" name="neuron_query_by_start_date" id="neuron_query_by_start_date" size="10" value="" class=""/> and ' + 
+          '<td class="neuron_annotations_query_field_label">between:</td>' + 
+          '<td class="neuron_annotations_query_field"><input type="text" name="neuron_query_by_start_date" id="neuron_query_by_start_date" size="10" value="" class=""/> and ' + 
             '<input type="text" name="neuron_query_by_end_date" id="neuron_query_by_end_date" size="10" value="" class=""/> ' + 
           '</td> ' + 
         '</tr>' + 
@@ -2049,24 +2049,29 @@ var WindowMaker = new function()
       '</form>';
     content.appendChild(queryFields);
     
-    var container = createContainer("annotation_query_results");
-
+    var container = createContainer("neuron_annotations_query_results");
     container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="neuron_annotations_query_results">' +
+      '<table cellpadding="0" cellspacing="0" border="0" class="neuron_annotations_query_results_table" id="neuron_annotations_query_results_table">' +
         '<thead>' +
           '<tr>' +
-            '<th><input type="checkbox" name="" id=""></th>' +
+            '<th><input type="checkbox" id="neuron_annotations_toggle_neuron_selections_checkbox" onclick="NeuronAnnotations.toggle_neuron_selections();"></th>' +
             '<th>Neuron Name</th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +
           '<tr><td colspan="2"></td></tr>' +
         '</tbody>' +
-      '</table>';
+      '</table>' + 
+      '<div id="neuron_annotations_query_footer" class="neuron_annotations_query_footer">' + 
+        '<p class="neuron_annotations_query_footer">' +
+          '<input type="button" name="" id="" value="Add to Selection" onclick="NeuronAnnotations.add_to_selection(); return false;"/>' +
+          '<input type="button" name="" id="" value="Annotate..." onclick="NeuronAnnotations.annotate_neurons(); return false;"/>' +
+        '</p>' + 
+      '</div>';
     content.appendChild( container );
-
+    
+    // Wire it up.
     addListener(win, container, 'annotation_query_fields');
-
     addLogic(win);
     
     // TODO: allow more than one of these widgets at a time?  or tabs?

@@ -63,6 +63,8 @@ def annotate_neurons(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
     r = Relation.objects.get(relation_name = 'annotated_with')
     
+#     print >> sys.stderr, 'request.POST: ' + str(request.POST)
+
     annotations = request.POST.getlist('annotations[]', [])
     neuron_ids = [int(n) for n in request.POST.getlist('neuron_ids[]', [])]
     skeleton_ids = [int(s) for s in request.POST.getlist('skeleton_ids[]', [])]
@@ -83,16 +85,18 @@ def annotate_neurons(request, project_id = None):
                                                 cici_via_b__relation__relation_name = 'model_of',
                                                 cici_via_b__class_instance_a__in = skeleton_ids)
     
+    annotation_class = Class.objects.get(project = p,
+                                         class_name = 'annotation')
     for annotation in annotations:
         # Make sure the annotation's class instance exists.
         ci, created = ClassInstance.objects.get_or_create(project = p, 
                                                           name = annotation,
-                                                          class_column__class_name = 'annotation',
+                                                          class_column = annotation_class,
                                                           defaults = {'user': request.user});
         # Annotate each of the neurons.
         # Avoid duplicates for the current user, but it's OK for multiple users to annotate with the same instance.
         for neuron in neurons:
-            print >> sys.stderr, 'Annotating neuron ' + str(neuron) + ' with ' + str(ci) + ''
+#             print >> sys.stderr, 'Annotating neuron ' + str(neuron) + ' with ' + str(ci) + ''
             cici, created = ClassInstanceClassInstance.objects.get_or_create(project = p,
                                                                              relation = r,
                                                                              class_instance_a = ci,

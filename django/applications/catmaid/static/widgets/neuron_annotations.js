@@ -5,15 +5,17 @@ var NeuronAnnotations = new function()
     
     var nextFieldID = 1;    // unique ID for annotation fields added by the "+" button
     
+    self.queryResults = [];
+    
     self.query = function() {
         var posting = $.post(django_url + self.pid + '/neuron/query-by-annotations', $('#neuron_query_by_annotations').serialize());
         posting.done(function(data) {
             var $tableBody = $('#neuron_annotations_query_results').find('tbody');
             $tableBody.empty();
-            data = JSON.parse(data);
-            for (var i = 0; i < data.length; i++) {
-                $tableBody.append('<tr><td><input type="checkbox"/></td>' + 
-                                      '<td><a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + data[i].skeleton_id + '); return false;">' + data[i].name + '</a></td></tr>');
+            self.queryResults = JSON.parse(data);
+            for (var i = 0; i < self.queryResults.length; i++) {
+                $tableBody.append('<tr><td><input type="checkbox" id="result_' + i + '"/></td>' + 
+                                      '<td><a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + self.queryResults[i].skeleton_id + '); return false;">' + self.queryResults[i].name + '</a></td></tr>');
             }
         });
     };
@@ -36,7 +38,7 @@ var NeuronAnnotations = new function()
         var $text = $newRow.find("input[type='text']");
         $text.attr({id: 'neuron_query_by_annotation_' + nextFieldID, 
                   name: 'neuron_query_by_annotation_' + nextFieldID,
-                  value: ''});
+                 value: ''});
     
         // Update the button attributes.
         var $button = $newRow.find("input[type='button']");
@@ -53,47 +55,76 @@ var NeuronAnnotations = new function()
         $row.remove();
     };
     
+    self.toggle_neuron_selections = function() {
+        var newValue = $("#neuron_annotations_toggle_neuron_selections_checkbox")[0].checked;
+        $("#neuron_annotations_query_results_table").find('tbody tr td input[id*=result_]').each(function(i, element) { element.checked = newValue; });
+    };
+    
     self.get_selected_neurons = function()
     {
-        // TODO: this function is not working yet
-        
-        var keys = [];
-            for( var skeleton_id in skeletonmodels ) {    
-                if( skeletonmodels.hasOwnProperty(skeleton_id) &&
-                    skeletonmodels[ skeleton_id ].selected ) {
-                        keys.push( skeleton_id )
-                }
+        var selected_neurons = [];
+        for (var i = 0; i < self.queryResults.length; i++) {
+            var $input = $("#neuron_annotations_query_results_table").find('input[id=result_' + i + ']');
+            if ($input[0].checked) {
+                selected_neurons.push(self.queryResults[i]);
             }
-            return keys;
+        }
+        return selected_neurons;
     }
     
     self.add_to_selection = function() {
-        // TODO: this function is not working yet
+        // Add the selected neurons to the list in the staging area.
+        // TODO: is this handling multiple skeletons per neuron correctly?
         
-        var neuron_ids = self.get_selected_neurons();
-        if (0 === neuron_ids.length) return;
-        
+        var selected_neurons = self.get_selected_neurons();
+        for (var i = 0; i < selected_neurons.length; i++)
+            NeuronStagingArea.add_skeleton_to_stage(selected_neurons[i].skeleton_id, selected_neurons[i].name);
     }
     
-    self.annotate = function() {
-        // TODO: this function is not working yet
+    self.annotate_neurons = function() {
+        // Add a new annotation to the selected neurons.
+        // TODO: is this handling multiple skeletons per neuron correctly?
         
-        var neuron_ids = self.get_selected_neurons();
-        if (0 === neuron_ids.length) return;
+        // TODO: prompt for annotations
+        var annotation = prompt('Annotation:');
+        if (!annotation) return;
+        annotation = annotation.trim();
+        if (0 === annotation.length) return; // can't annotate with nothing
+        annotations = [annotation]
+
+        var selected_neurons = self.get_selected_neurons();
+        var neuron_ids = [];
+        selected_neurons.forEach(function(neuron) { neuron_ids.push(neuron.id); });
         
-        requestQueue.register(django_url + project.id + '/neurons/annotate', "POST",
-            {neuron_ids: neuron_ids},
-            function(status, text) {
-                if (200 !== status) return;
-                var json = $.parseJSON(text);
-                if (json.error) {
-                    alert(json.error);
-                    return;
-                }
-                SkeletonMeasurementsTable.populate(json.map(function(row) {
-                    row.unshift(skeletonmodels[row[0]].baseName);
-                    return row;
-                }));
-            });
+        jQuery.ajax({
+            url: django_url + project.id + '/neuron/annotate',
+            data: {
+                annotations: annotations,
+                 neuron_ids: neuron_ids
+            },
+            type: "POST",
+            dataType: "json",
+            success: function () {
+                if (annotations.length == 1)
+                    growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
+                else
+                    growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
+            }
+        });
+//         requestQueue.register(django_url + project.id + '/neuron/annotate', "POST",
+//             {annotations: annotations, 
+//               neuron_ids: neuron_ids},
+//             function(status, text) {
+//                 if (200 !== status) return;
+//                 var json = $.parseJSON(text);
+//                 if (json.error) {
+//                     alert(json.error);
+//                     return;
+//                 }
+//                 if (annotations.length == 1)
+//                     growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
+//                 else
+//                     growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
+//             });
     };
 }

@@ -724,10 +724,17 @@ var WindowMaker = new function()
     show.onclick = CGW.update.bind(CGW);
     contentbutton.appendChild(show);
 
-    var layout = appendSelect(contentbutton, "compartment_layout", ["Force-directed", "Grid"]);
-    layout.onchange = function() {
-      CGW.updateLayout(layout.selectedIndex);
-    };
+    contentbutton.appendChild(document.createTextNode(' - '));
+
+    var layout = appendSelect(contentbutton, "compartment_layout", ["Force-directed", "Hierarchical", "Grid", "Circle", "Random"]);
+
+    var trigger = document.createElement('input');
+    trigger.setAttribute('type', 'button');
+    trigger.setAttribute('value', 'Re-layout');
+    trigger.onclick = CGW.updateLayout.bind(CGW, layout);
+    contentbutton.appendChild(trigger);
+
+    contentbutton.appendChild(document.createTextNode(' - '));
 
     var props = document.createElement('input');
     props.setAttribute("type", "button");

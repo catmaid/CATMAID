@@ -268,26 +268,44 @@ CompartmentGraphWidget.prototype.init = function() {
   var sel = $("#cyelement" + this.widgetID);
   sel.cytoscape(options);
   this.cy = sel.cytoscape("get");
+
+  // this.cy.nodes().bind("mouseover", function(e) {
+  //   // console.log('node mouseover', e);
+  // });
+
+  this.cy.on('click', 'node', {}, function(evt){
+    var node = this;
+    if (evt.originalEvent.altKey) {
+      // Select in the overlay
+      TracingTool.goToNearestInNeuronOrSkeleton("skeleton", node.data('skeleton_id'));
+    }
+  });
+
+  this.cy.on('click', 'edge', {}, function(evt){
+    var edge = this;
+    if (evt.originalEvent.altKey) {
+      var splitedge = edge.id().split('_');
+      ConnectorSelection.show_shared_connectors( splitedge[0], [splitedge[2]], "presynaptic_to" );
+    }
+  });
 };
 
-CompartmentGraphWidget.prototype.updateLayout = function( layout ) {
+/** Unlocks of locked nodes, if any, when done. */
+CompartmentGraphWidget.prototype.updateLayout = function(layout) {
+  var index = layout ? layout.selectedIndex : 0;
   var options;
 
-  if ( 1 === layout ) {
+  if ( 2 === index ) {
     options = {
       name: 'grid',
       fit: true, // whether to fit the viewport to the graph
       rows: undefined, // force num of rows in the grid
       columns: undefined, // force num of cols in the grid
-      ready: undefined, // callback on layoutready
-      stop: undefined // callback on layoutstop
     };
-  } else if ( 0 === layout) {
+  } else if ( 0 === index) {
     options = {
         name: 'arbor',
         liveUpdate: true, // whether to show the layout as it's running
-        ready: undefined, // callback on layoutready 
-        stop: undefined, // callback on layoutstop
         maxSimulationTime: 4000, // max length in ms to run the layout
         fit: true, // fit to viewport
         padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
@@ -315,24 +333,45 @@ CompartmentGraphWidget.prototype.updateLayout = function( layout ) {
             return (e.max <= 0.5) || (e.mean <= 0.3);
         }
     };
+  } else if (3 === index) {
+      options = {
+          name: 'circle',
+          fit: true, // whether to fit the viewport to the graph
+          rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
+          padding: 30, // the padding on fit
+          startAngle: 3/2 * Math.PI, // the position of the first node
+          counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+      };
+  } else if (1 === index) {
+    options = {
+        name: 'breadthfirst', // Hierarchical
+        fit: true, // whether to fit the viewport to the graph
+        directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
+        padding: 30, // padding on fit
+        circle: false, // put depths in concentric circles if true, put depths top down if false
+        roots: undefined // the roots of the trees
+    };
+  } else if (4 === index) {
+    options = {
+        name: 'random',
+        fit: true // whether to fit to viewport
+    };
   }
+
+  options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
 
   this.cy.layout( options );
 };
 
 CompartmentGraphWidget.prototype.updateGraph = function(data, models) {
-  for (var i = 0; i < data.nodes.length; i++) {
-    var model = models[data.nodes[i]['data'].skeleton_id];
-    data.nodes[i]['data']['color'] = '#' + model.color.getHexString();
-  }
+  // Set color of new nodes
+  data.nodes.forEach(function(node) {
+    node.data.color = '#' + models[node.data.skeleton_id].color.getHexString();
+  });
 
-  var grey = [0, 0, 0.267]; // HSV for #444
-  var red = [0, 1, 1]; // HSV for #F00 
-  var max = 0.75;
-  var min = 0.0;
-
-  for (var i=0; i<data.edges.length; i++) {
-    var d = data.edges[i].data;
+  // Set color of new edges
+  data.edges.forEach(function(edge) {
+    var d = edge.data;
     if (d.risk) {
       /*
       var hsv = [0,
@@ -348,18 +387,36 @@ CompartmentGraphWidget.prototype.updateGraph = function(data, models) {
     if (d.arrow === 'none') {
       d.color = '#F00';
     }
-    console.log(data.edges[i].data.source,
-                data.edges[i].data.target,
-                data.edges[i].data.risk);
-  }
+    console.log(edge.data.source,
+                edge.data.target,
+                edge.data.risk);
+  });
 
-  // first remove all nodes
-  this.cy.elements("node").remove();
+  // Store positions of current nodes and their selected state
+  var positions = {},
+      selected = {};
+  this.cy.nodes().each(function(i, node) {
+    positions[node.id()] = node.position();
+    if (node.selected()) selected[node.id()] = true;
+  });
 
+  // Remove all nodes (and their edges)
+  // (Can't just remove removed ones: very hard to get right if the value of the clustering_bandwidth changes. Additionally, their size may have changed.)
+  this.cy.elements().remove();
+
+  // Re-add them
   this.cy.add( data );
 
-  // Make branch nodes, if any, be smaller
   this.cy.nodes().each(function(i, node) {
+    // Lock old nodes into place and restore their position
+    var id = node.id();
+    if (id in positions) {
+      node.position(positions[id]);
+      node.lock();
+    }
+    // Restore selection state
+    if (id in selected) node.select();
+    // Make branch nodes, if any, be smaller
     if (node.data().branch) {
       node.css('height', 15);
       node.css('width', 15);
@@ -377,27 +434,7 @@ CompartmentGraphWidget.prototype.updateGraph = function(data, models) {
     this.toggleTrimmedNodeLabels();
   }
 
-  this.updateLayout( 0 );
-
-  // this.cy.nodes().bind("mouseover", function(e) {
-  //   // console.log('node mouseover', e);
-  // });
-
-  this.cy.on('click', 'node', {}, function(evt){
-    var node = this;
-    if (evt.originalEvent.altKey) {
-      // Select in the overlay
-      TracingTool.goToNearestInNeuronOrSkeleton("skeleton", node.data('skeleton_id'));
-    }
-  });
-
-  this.cy.on('click', 'edge', {}, function(evt){
-    var edge = this;
-    if (evt.originalEvent.altKey) {
-      var splitedge = edge.id().split('_');
-      ConnectorSelection.show_shared_connectors( splitedge[0], [splitedge[2]], "presynaptic_to" );
-    }
-  });
+  this.updateLayout();
 };
 
 CompartmentGraphWidget.prototype.toggleTrimmedNodeLabels = function() {
@@ -500,6 +537,7 @@ CompartmentGraphWidget.prototype.load = function(skeleton_ids, models) {
       post.expand = selected;
     }
   }
+
   requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
       "POST",
       post,

@@ -266,7 +266,7 @@ CompartmentGraphWidget.prototype.init = function() {
   };
 
   var sel = $("#cyelement" + this.widgetID);
-  sel.cytoscape(options);
+  sel.cytoscape(options).css('background', 'white');
   this.cy = sel.cytoscape("get");
 
   // this.cy.nodes().bind("mouseover", function(e) {

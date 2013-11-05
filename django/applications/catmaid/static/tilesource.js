@@ -144,7 +144,7 @@ function LargeDataTileSource( baseURL, fileExtension )
     this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
-        return baseURL + zoom_level + "/" + baseName + "/" + row + "/" +  col + "." + fileExtension;
+        return baseURL + zoom_level + "/" + baseName + row + "/" +  col + "." + fileExtension;
     }
 
     this.getOverviewURL = function( stack ) {

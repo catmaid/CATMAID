@@ -8,6 +8,7 @@ var ReviewSystem = new function()
     self.skeleton_segments = null;
     self.current_segment = null;
     self.current_segment_index = 0;
+    var tile_image_counter = 0, total_count = 0;
 
     this.init = function() {
         projectID = project.id;
@@ -250,6 +251,9 @@ var ReviewSystem = new function()
         if (!checkSkeletonID()) {
             return;
         }
+        // empty caching text
+        $('#counting-cache').text('');
+
         submit(django_url + "accounts/" + projectID + "/all-usernames", {},
             function(usernames) {
                 submit(django_url + projectID + "/skeleton/" + skeletonID + "/review", {},
@@ -257,6 +261,7 @@ var ReviewSystem = new function()
                             self.createReviewSkeletonTable( skeleton_data, usernames );
                     });
             });
+
     };
 
     var resetFn = function(fnName) {
@@ -283,4 +288,53 @@ var ReviewSystem = new function()
     this.resetRevisionsByOthers = function() {
         resetFn("reset-others");
     };
+
+    var loadImageCallback = function( imageArray ) {
+        if( imageArray.length == 0 )
+            return;
+        var src = imageArray.pop();
+        var image = new Image();
+        image.src = src;
+        image.onload = function(e) {
+            $('#counting-cache').text( total_count - imageArray.length + '/' + total_count );
+            loadImageCallback( imageArray );
+        };
+
+    }
+
+
+    this.cacheImages = function() {
+        if (!checkSkeletonID()) {
+            return;
+        }
+        submit(django_url+projectID+'/stack/' + project.focusedStack.id+"/skeleton/" + skeletonID + "/cache", {},
+            function(json) {
+                var s = [];
+                var tilelength = json.tiles.length;
+                for(var i = 0; i < tilelength; i++) {
+                    s.push( json.image_base + json.tiles[i]);
+                }
+                total_count = s.length;
+                // tile_image_counter = 0;
+                loadImageCallback( s );
+                /*
+                tile_image_counter = 0;
+                total_count = s.length;
+                $('#counting-cache').text( tile_image_counter + '/' + total_count );
+                imageCache.pushArray(s, function() {
+                    tile_image_counter += 1;
+                    if( tile_image_counter % 5000 == 0 ) {
+                        console.log(tile_image_counter, ' done ...')
+                    }
+                    $('#counting-cache').text( tile_image_counter + '/' + total_count );
+                }, function() {
+                    $('#counting-cache').text( tile_image_counter + '/' + total_count + ' DONE! ' );
+                    tile_image_counter = 0;
+                    total_count = 0;
+                });
+
+                */
+        });
+    }
+
 };

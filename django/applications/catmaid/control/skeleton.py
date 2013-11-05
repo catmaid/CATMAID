@@ -13,6 +13,76 @@ import json
 from operator import itemgetter
 import networkx as nx
 from tree_util import reroot, edge_count_to_root
+from stack import get_stack_info
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def cache_image(request, project_id=None, stack_id=None, skeleton_id=None):
+    p = get_object_or_404(Project, pk=project_id)
+    s = get_object_or_404(Stack, pk=stack_id)
+
+    tn = Treenode.objects.filter(
+        project=p,
+        reviewer_id=-1,
+        skeleton_id=skeleton_id).extra(select={'sectionindex': ' (location).z'}).order_by('sectionindex')
+
+    zoom_level = 0
+    tile_images = set()
+
+    stackinfo = get_stack_info(project_id, stack_id, request.user)
+    if not stackinfo['tile_source_type'] in [1,5]:
+        return HttpResponse(json.dumps({'error': 'No caching implemented for this tile source type!'}), mimetype='text/json')
+
+    maxcol = stackinfo['dimension']['x'] / stackinfo['tile_width']
+    maxrow = stackinfo['dimension']['y'] / stackinfo['tile_height']
+    print 'max', maxcol,maxrow
+    for treenode in tn:
+        row = int( treenode.location.y / stackinfo['resolution']['y'] / stackinfo['tile_height'] )
+        col = int( treenode.location.x / stackinfo['resolution']['x'] / stackinfo['tile_width'] )
+        sectionindex = int( treenode.location.z / stackinfo['resolution']['z'] )
+
+        if stackinfo['tile_source_type'] == 5:
+            # return baseURL + zoom_level + "/" + baseName + "/" + row + "/" +  col + "." + fileExtension;
+
+            # add neighbourhood tiles
+            for rowidx in range(row-1, row+2):
+                for colidx in range(col-1, col+2):
+                    
+                    if rowidx == -1 or colidx == -1 or rowidx >= maxrow or colidx >= maxcol:
+                        continue
+                    url = ""
+                    url += str( zoom_level )
+                    url += '/'
+                    url += str( sectionindex )
+                    url += '/'
+                    url += str( rowidx )
+                    url += '/'
+                    url += str( colidx )
+                    url += '.'
+                    url += stackinfo['file_extension']
+                    tile_images.add( url )
+
+        elif stackinfo['tile_source_type'] == 1:
+            # return baseURL + baseName + row + "_" + col + "_" + zoom_level + "." + fileExtension;
+            # add neighbourhood tiles
+            for rowidx in range(row-1, row+2):
+                for colidx in range(col-1, col+2):
+                    if rowidx == -1 or colidx == -1 or rowidx >= maxrow or colidx >= maxcol:
+                        continue
+                    url = ""
+                    url += str( sectionindex )
+                    url += '/'
+                    url += str( rowidx )
+                    url += '_'
+                    url += str( colidx )
+                    url += '_'
+                    url += str( zoom_level )
+                    url += '.'
+                    url += stackinfo['file_extension']
+                    tile_images.add( url )
+
+    return HttpResponse(json.dumps(
+        {'image_base': stackinfo['image_base'], 'tiles': sorted(list(tile_images))}), mimetype='text/json')
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def last_openleaf(request, project_id=None, skeleton_id=None):

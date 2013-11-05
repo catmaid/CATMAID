@@ -1502,6 +1502,17 @@ var WindowMaker = new function()
         resetOthers.onclick = ReviewSystem.resetRevisionsByOthers;
         contentbutton.appendChild(resetOthers);
 
+        var cacheImages = document.createElement('input');
+        cacheImages.setAttribute("type", "button");
+        cacheImages.setAttribute("id", "cache_images_of_skeleton");
+        cacheImages.setAttribute("value", "Cache tiles");
+        cacheImages.onclick = ReviewSystem.cacheImages;
+        contentbutton.appendChild(cacheImages);
+
+        var cacheCounter = document.createElement('div');
+        cacheCounter.setAttribute("id", "counting-cache");
+        contentbutton.appendChild(cacheCounter);
+
         addListener(win, container, 'review_window_buttons');
 
         addLogic(win);

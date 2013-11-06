@@ -1012,7 +1012,7 @@ var ObjectTree = new function()
 
   // Refresh the Object Tree if it is visible.
   this.refresh = function() {
-    if (this.object_tree_widget.style.display !== 'none') {
+    if (this.object_tree_widget && this.object_tree_widget.style.display !== 'none') {
       $('#tree_object').jstree("refresh", -1);
     }
   };

@@ -538,7 +538,7 @@ var tracingWindowActions = [
     buttonID: "data_button_query_neurons",
     buttonName: 'query_neurons',
     run: function (e) {
-      WindowMaker.show('neuron-annotations');
+      WindowMaker.create('neuron-annotations');
       return true;
     }
   }),

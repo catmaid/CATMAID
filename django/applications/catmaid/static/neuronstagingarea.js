@@ -872,7 +872,7 @@ SelectionTable.prototype.annotate_skeleton_list = function() {
   if (!shortname) return;
   shortname = shortname.trim();
   if (0 === shortname.length) return; // can't save a no-name list
-  annotations = [shortname]
+  var annotations = [shortname]
   
   // TODO: use request
   jQuery.ajax({

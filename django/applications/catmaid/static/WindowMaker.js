@@ -2018,78 +2018,125 @@ var WindowMaker = new function()
   
   var createNeuronAnnotationsWindow = function()
   {
-    var win = new CMWWindow("Neuron Annotations");
+    var NA = new NeuronAnnotations();
+    var win = new CMWWindow("Neuron Annotations " + NA.widgetID);
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
     
     var queryFields = document.createElement('div');
-    queryFields.setAttribute('id', 'neuron_annotations_query_fields');
-    queryFields.innerHTML = 
-      '<form id="neuron_query_by_annotations" onsubmit="NeuronAnnotations.query(); return false">' + 
-      '<table cellpadding="0" cellspacing="0" border="0" class="neuron_annotations_query_fields" id="neuron_annotations_query_fields">' + 
-        '<tr id="neuron_query_by_annotation">' + 
-          '<td class="neuron_annotations_query_field_label">annotated:</td> ' + 
-          '<td class="neuron_annotations_query_field">' + 
-            '<input type="text" name="neuron_query_by_annotation" id="neuron_query_by_annotation" value="" class=""/>' + 
-            '<input type="button" name="neuron_annotations_add_annotation" id="neuron_annotations_add_annotation" value="+" class="" onclick="NeuronAnnotations.add_query_field()"/>' + 
-          '</td> ' + 
-        '</tr>' + 
-        '<tr id="neuron_query_by_annotator">' + 
-          '<td class="neuron_annotations_query_field_label">by:</td>' + 
-          '<td class="neuron_annotations_query_field"><select name="neuron_query_by_annotator" id="neuron_query_by_annotator" class=""><option value="-2">Anyone</option><\select></td>' + 
-        '</tr>' + 
-        '<tr id="neuron_query_by_date_range">' + 
-          '<td class="neuron_annotations_query_field_label">between:</td>' + 
-          '<td class="neuron_annotations_query_field"><input type="text" name="neuron_query_by_start_date" id="neuron_query_by_start_date" size="10" value="" class=""/> and ' + 
-            '<input type="text" name="neuron_query_by_end_date" id="neuron_query_by_end_date" size="10" value="" class=""/> ' + 
-          '</td> ' + 
-        '</tr>' + 
-      '</table>' + 
-      '<input type="submit"/>' + 
+    queryFields.setAttribute('id', 'neuron_annotations_query_fields' + NA.widgetID);
+    // Create the query fields HTML and use {{NA-ID}} as template for the
+    // actual NA.widgetID which will be replaced afterwards.
+    queryFields_html =
+      '<form id="neuron_query_by_annotations{{NA-ID}}">' +
+      '<table cellpadding="0" cellspacing="0" border="0" ' +
+          'class="neuron_annotations_query_fields" ' +
+          'id="neuron_annotations_query_fields{{NA-ID}}">' +
+        '<tr id="neuron_query_by_annotation{{NA-ID}}">' +
+          '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
+          '<td class="neuron_annotations_query_field">' +
+            '<input type="text" name="neuron_query_by_annotation" ' +
+                'id="neuron_query_by_annotation{{NA-ID}}" value="" class=""/>' +
+            '<input type="button" name="neuron_annotations_add_annotation" ' +
+                'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" ' +
+                'class="" />' +
+          '</td> ' +
+        '</tr>' +
+        '<tr id="neuron_query_by_annotator{{NA-ID}}">' +
+          '<td class="neuron_annotations_query_field_label">by:</td>' +
+          '<td class="neuron_annotations_query_field">' +
+            '<select name="neuron_query_by_annotator" ' +
+                'id="neuron_query_by_annotator{{NA-ID}}" class="">' +
+              '<option value="-2">Anyone</option>' +
+            '</select>' +
+          '</td>' +
+        '</tr>' +
+        '<tr id="neuron_query_by_date_range{{NA-ID}}">' +
+          '<td class="neuron_annotations_query_field_label">between:</td>' +
+          '<td class="neuron_annotations_query_field">' +
+            '<input type="text" name="neuron_query_by_start_date" ' +
+                'id="neuron_query_by_start_date{{NA-ID}}" size="10" ' +
+                'value="" class=""/>' +
+            ' and ' +
+            '<input type="text" name="neuron_query_by_end_date" ' +
+                'id="neuron_query_by_end_date{{NA-ID}}" size="10" ' +
+                'value="" class=""/> ' +
+          '</td>' +
+        '</tr>' +
+      '</table>' +
+      '<input type="submit"/>' +
       '</form>';
+    // Replace {{NA-ID}} with the actual widget ID
+    queryFields.innerHTML = queryFields_html.replace(/{{NA-ID}}/g, NA.widgetID);
     content.appendChild(queryFields);
     
-    var container = createContainer("neuron_annotations_query_results");
-    container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="neuron_annotations_query_results_table" id="neuron_annotations_query_results_table">' +
+    var container = createContainer("neuron_annotations_query_results" + NA.widgetID);
+    // Create container HTML and use {{NA-ID}} as template for the
+    // actual NA.widgetID which will be replaced afterwards.
+    container_html =
+      '<table cellpadding="0" cellspacing="0" border="0" ' +
+            'class="neuron_annotations_query_results_table" ' +
+            'id="neuron_annotations_query_results_table{{NA-ID}}">' +
         '<thead>' +
           '<tr>' +
-            '<th><input type="checkbox" id="neuron_annotations_toggle_neuron_selections_checkbox" onclick="NeuronAnnotations.toggle_neuron_selections();"></th>' +
+            '<th>' +
+              '<input type="checkbox" ' +
+                  'id="neuron_annotations_toggle_neuron_selections_checkbox{{NA-ID}}" />' +
+            '</th>' +
             '<th>Neuron Name</th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +
           '<tr><td colspan="2"></td></tr>' +
         '</tbody>' +
-      '</table>' + 
-      '<div id="neuron_annotations_query_footer" class="neuron_annotations_query_footer">' + 
+      '</table>' +
+      '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +
+          'class="neuron_annotations_query_footer">' +
         '<p class="neuron_annotations_query_footer">' +
-          '<input type="button" name="" id="" value="Add to Selection" onclick="NeuronAnnotations.add_to_selection(); return false;"/>' +
-          '<input type="button" name="" id="" value="Annotate..." onclick="NeuronAnnotations.annotate_neurons(); return false;"/>' +
-        '</p>' + 
+          '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
+              'value="Annotate..." />' +
+          '<input type="button" id="neuron_annotations_add_to_selection{{NA-ID}}" ' +
+              'value="Sync to: " />' +
+        '</p>' +
       '</div>';
+    // Replace {{NA-ID}} with the actual widget ID
+    container.innerHTML = container_html.replace(/{{NA-ID}}/g, NA.widgetID);
     content.appendChild( container );
     
     // Wire it up.
-    addListener(win, container, 'annotation_query_fields');
+    addListener(win, container, 'annotation_query_fields', NA.destroy.bind(NA));
     addLogic(win);
+
+    $('#neuron_annotations_add_annotation' + NA.widgetID)[0].onclick =
+        NA.add_query_field.bind(NA);
+    $('#neuron_query_by_annotations' + NA.widgetID)[0].onclick =
+        NA.query.bind(NA);
+    $('#neuron_annotations_annotate' + NA.widgetID)[0].onclick =
+        NA.annotate_neurons.bind(NA);
+    $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
+        NA.toggle_neuron_selections.bind(NA);
+    var select = SkeletonListSources.createPushSelect(NA, '0');
+    $('#neuron_annotations_add_to_selection' + NA.widgetID).parent().append(
+        select);
+    $('#neuron_annotations_add_to_selection' + NA.widgetID)[0].onclick =
+        NA.syncLink.bind(NA, select);
     
-    // TODO: allow more than one of these widgets at a time?  or tabs?
-    NeuronAnnotations.init( project.getId() );
-    
-    var $select = $('tr #neuron_query_by_annotator');
+    var $select = $('tr #neuron_query_by_annotator' + NA.widgetID);
     var users = User.all();
     for (var userID in users) {
       if (users.hasOwnProperty(userID) && userID !== "-1") {
         var user = users[userID];
         {
-          $("<option />", {value: user.id, text: user.fullName}).appendTo($select);
+          $("<option />", {value: user.id, text: user.fullName}).appendTo(
+              $select);
         }
       }
     }
     
-    $( "#neuron_query_by_start_date" ).datepicker({ dateFormat: "yy-mm-dd" });
-    $( "#neuron_query_by_end_date" ).datepicker({ dateFormat: "yy-mm-dd" });
+    $( "#neuron_query_by_start_date" + NA.widgetID ).datepicker(
+        { dateFormat: "yy-mm-dd" });
+    $( "#neuron_query_by_end_date" + NA.widgetID ).datepicker(
+        { dateFormat: "yy-mm-dd" });
 
     return win;
   };

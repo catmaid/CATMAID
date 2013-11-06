@@ -394,7 +394,8 @@ SkeletonAnnotations.SVGOverlay.prototype.recolorAllNodes = function () {
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
-  var atn = SkeletonAnnotations.atn;
+  var atn = SkeletonAnnotations.atn,
+      last_skeleton_id = atn.skeleton_id;
   if (node) {
     // Check if the node is already selected/activated
     if (node.id === atn.id && node.skeleton_id === atn.skeleton_id) {
@@ -445,6 +446,11 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     project.setSelectObject( null, null );
     $('#tree_object').jstree("deselect_all");
     this.recolorAllNodes();
+  }
+
+  // (de)highlight in SkeletonSource instances if any if different from the last activated skeleton
+  if (last_skeleton_id !== SkeletonAnnotations.getActiveSkeletonId()) {
+    SkeletonListSources.highlight(SkeletonAnnotations.sourceView, SkeletonAnnotations.getActiveSkeletonId());
   }
 };
 

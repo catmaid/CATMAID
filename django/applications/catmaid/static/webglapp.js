@@ -491,7 +491,7 @@ WebGLApplication.prototype.addActiveObjectToStagingArea = function() {
 };
 
 WebGLApplication.prototype.showActiveNode = function() {
-	this.space.content.active_node.visible = true;
+	this.space.content.active_node.setVisible(true);
 };
 
 
@@ -1314,7 +1314,6 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 	space.toSpace(c);
 
 	this.mesh.position.set(c.x, c.y, c.z);
-	this.setVisible(true);
 };
 
 WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json) {

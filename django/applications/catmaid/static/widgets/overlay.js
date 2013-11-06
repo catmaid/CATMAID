@@ -457,6 +457,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
       // and/or refresh have to be added to the individual operation's
       // (such as split tree) callbacks
       SkeletonAnnotations.refreshAllWidgets();
+      WebGLApplication.prototype.staticUpdateActiveNodePosition();
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
       statusBar.replaceLast("Activated connector node #" + node.id);
       atn.set(node, this.getStack().getId());
@@ -472,8 +473,6 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     $('#tree_object').jstree("deselect_all");
     this.recolorAllNodes();
   }
-
-  WebGLApplication.prototype.staticUpdateActiveNodePosition();
 };
 
 /** Activate the node nearest to the mouse. */

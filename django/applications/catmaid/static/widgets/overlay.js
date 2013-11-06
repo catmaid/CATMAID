@@ -132,7 +132,7 @@ SkeletonAnnotations.getActiveStackId = function() {
  * and if the Object Tree synchronize_object_tree checkbox is checked.
  */
 SkeletonAnnotations.maybeOpenSkeletonNodeInObjectTree = function(node) {
-  if (node) ObjectTree.maybeOpenTreePath(node);
+  if (node) ObjectTree.maybeOpenTreePath(node.skeleton_id);
 };
 
 SkeletonAnnotations.exportSWC = function() {

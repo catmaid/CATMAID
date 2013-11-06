@@ -135,25 +135,6 @@ SkeletonAnnotations.maybeOpenSkeletonNodeInObjectTree = function(node) {
   if (node) ObjectTree.maybeOpenTreePath(node);
 };
 
-SkeletonAnnotations.refreshAllWidgets = function() {
-  // TODO prevent 4 DOM traversals by reading static variables in the ConnectorTable and TreenodeTable namespaces.
-  // TODO synchronizing these widgets is in any case a bad idea. A "Refresh" button would do.
-
-  if ($('#connectortable_widget').css('display') === "block" && $('#synchronize_connectortable').attr('checked')) {
-    ConnectorTable.init( project.getId() );
-  }
-
-  if ($('#treenode_table_widget').css('display') === "block" && $('#synchronize_treenodetable').attr('checked')) {
-    TreenodeTable.init( project.getId() );
-  }
-
-  // TODO highlighting should be a user-triggered command, not a side effect.
-  // TODO this can be very expensive when many widgets are open
-  SkeletonListSources.highlight(SkeletonAnnotations.sourceView, this.atn.skeleton_id);
-
-  // TODO in summary this entire function ought to disappear.
-};
-
 SkeletonAnnotations.exportSWC = function() {
   if (!this.atn.id || !this.atn.skeleton_id) {
     alert('Need to activate a treenode before exporting to SWC!');
@@ -292,7 +273,6 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
              pid: project.id},
             function(json) {
               SkeletonAnnotations.setNeuronNameInTopbar(self.stack.id, new_name, skeletonID);
-              SkeletonAnnotations.refreshAllWidgets();
             });
       });
 };
@@ -450,13 +430,6 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
 
       atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
-
-      // refresh all widgets except for the object tree
-      // the reason is that calling a refresh just after a request to open tree path
-      // prevents the opening of the tree path. thus, the opening of the treepath
-      // and/or refresh have to be added to the individual operation's
-      // (such as split tree) callbacks
-      SkeletonAnnotations.refreshAllWidgets();
       WebGLApplication.prototype.staticUpdateActiveNodePosition();
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
       statusBar.replaceLast("Activated connector node #" + node.id);
@@ -579,7 +552,6 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
       function () {
         self.updateNodes();
         ObjectTree.refresh();
-        SkeletonAnnotations.refreshAllWidgets();
         self.selectNode(nodeID);
       },
       true); // block UI
@@ -603,7 +575,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
           function (json) {
             self.updateNodes(function() {
               ObjectTree.refresh();
-              SkeletonAnnotations.refreshAllWidgets();
               self.selectNode(toid);
             });
           });
@@ -820,8 +791,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
         var active_node_z = SkeletonAnnotations.atn.z;
         // Set atn to be the newly created node
         self.activateNode(nn);
-        // ALREADY DONE by activate node // refreshAllWidgets();
-
         // Append to parent and recolor
         if (parentID) {
           var parentNode = self.nodes[parentID];

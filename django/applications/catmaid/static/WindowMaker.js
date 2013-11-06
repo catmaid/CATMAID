@@ -975,22 +975,13 @@ var WindowMaker = new function()
     refresh.onclick = TreenodeTable.refresh; // function declared in table_treenode.js
     contentbutton.appendChild(refresh);
 
-    var sync = document.createElement('input');
-    sync.setAttribute("type", "checkbox");
-    sync.setAttribute("id", "synchronize_treenodetable");
-    sync.setAttribute("label", "Synchronize");
-    contentbutton.appendChild(sync);
-
-    var label = document.createTextNode('Synchronize');
-    contentbutton.appendChild(label);
-
-    var sync = document.createElement('select');
-    sync.setAttribute("id", "treenodetable_lastskeletons");
+    var last = document.createElement('select');
+    last.setAttribute("id", "treenodetable_lastskeletons");
     var option = document.createElement("option");
     option.text = "None";
     option.value = -1;
-    sync.appendChild(option);
-    contentbutton.appendChild(sync);
+    last.appendChild(option);
+    contentbutton.appendChild(last);
 
     content.appendChild( contentbutton );
 
@@ -1074,34 +1065,26 @@ var WindowMaker = new function()
     add.onclick = ConnectorTable.refreshConnectorTable;
     contentbutton.appendChild(add);
 
-    var sync = document.createElement('select');
-    sync.setAttribute("id", "connector_relation_type");
+    var direction = document.createElement('select');
+    direction.setAttribute("id", "connector_relation_type");
     var objOption = document.createElement("option");
     objOption.innerHTML = "Incoming connectors";
     objOption.value = "0";
-    sync.appendChild(objOption);
+    direction.appendChild(objOption);
     var objOption2 = document.createElement("option");
     objOption2.innerHTML = "Outgoing connectors";
     objOption2.value = "1";
     objOption2.selected = "selected";
-    sync.appendChild(objOption2);
-    contentbutton.appendChild(sync);
+    direction.appendChild(objOption2);
+    contentbutton.appendChild(direction);
 
-    var rand = document.createTextNode('Synchronize');
-    contentbutton.appendChild(rand);
-    var sync = document.createElement('input');
-    sync.setAttribute("type", "checkbox");
-    sync.setAttribute("id", "synchronize_connectortable");
-    sync.setAttribute("label", "Synchronize");
-    contentbutton.appendChild(sync);
-
-    var sync = document.createElement('select');
-    sync.setAttribute("id", "connectortable_lastskeletons");
+    var last = document.createElement('select');
+    last.setAttribute("id", "connectortable_lastskeletons");
     var option = document.createElement("option");
     option.text = "None";
     option.value = -1;
-    sync.appendChild(option);
-    contentbutton.appendChild(sync);
+    last.appendChild(option);
+    contentbutton.appendChild(last);
 
     content.appendChild( contentbutton );
 

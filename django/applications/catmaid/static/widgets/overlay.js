@@ -131,18 +131,14 @@ SkeletonAnnotations.getActiveStackId = function() {
  * Open the skeleton node in the Object Tree if the Object Tree is visible
  * and if the Object Tree synchronize_object_tree checkbox is checked.
  */
-SkeletonAnnotations.openSkeletonNodeInObjectTree = function(node) {
-  // Check if the Object Tree div is visible
-  if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {
-    return;
-  }
-  // Else, synchronize:
-  if (node) {
-    ObjectTree.requestOpenTreePath(node.skeleton_id);
-  }
+SkeletonAnnotations.maybeOpenSkeletonNodeInObjectTree = function(node) {
+  if (node) ObjectTree.maybeOpenTreePath(node);
 };
 
 SkeletonAnnotations.refreshAllWidgets = function() {
+  // TODO prevent 4 DOM traversals by reading static variables in the ConnectorTable and TreenodeTable namespaces.
+  // TODO synchronizing these widgets is in any case a bad idea. A "Refresh" button would do.
+
   if ($('#connectortable_widget').css('display') === "block" && $('#synchronize_connectortable').attr('checked')) {
     ConnectorTable.init( project.getId() );
   }
@@ -151,7 +147,11 @@ SkeletonAnnotations.refreshAllWidgets = function() {
     TreenodeTable.init( project.getId() );
   }
 
+  // TODO highlighting should be a user-triggered command, not a side effect.
+  // TODO this can be very expensive when many widgets are open
   SkeletonListSources.highlight(SkeletonAnnotations.sourceView, this.atn.skeleton_id);
+
+  // TODO in summary this entire function ought to disappear.
 };
 
 SkeletonAnnotations.exportSWC = function() {
@@ -429,7 +429,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
       // If changing skeletons:
       if (atn.skeleton_id !== node.skeleton_id) {
         // 1. Open the object tree node if synchronizing:
-        SkeletonAnnotations.openSkeletonNodeInObjectTree(node);
+        SkeletonAnnotations.maybeOpenSkeletonNodeInObjectTree(node);
         // 2. Update the status with the ancestry of that skeleton:
         var stackID = this.stack.getId();
         this.submit(

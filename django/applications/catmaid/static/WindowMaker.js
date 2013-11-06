@@ -1738,7 +1738,7 @@ var WindowMaker = new function()
     var refresh = document.createElement('input');
     refresh.setAttribute('type', 'button');
     refresh.setAttribute('value', 'Refresh');
-    refresh.onclick = ObjectTree.refresh;
+    refresh.onclick = ObjectTree.refresh.bind(ObjectTree);
     container.appendChild(refresh);
 
     container.appendChild(document.createTextNode(' Synchronize '));
@@ -1755,7 +1755,7 @@ var WindowMaker = new function()
     div.setAttribute('id', 'tree_object');
     container.appendChild(div);
 
-    addListener(win, container);
+    addListener(win, container, undefined, ObjectTree.destroy.bind(ObjectTree));
 
     addLogic(win);
 

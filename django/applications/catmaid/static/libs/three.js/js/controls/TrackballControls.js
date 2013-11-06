@@ -1,5 +1,7 @@
 /**
  * @author Eberhard Graether / http://egraether.com/
+ *
+ * Modified by Albert Cardona: added function removeListeners
  */
 
 THREE.TrackballControls = function ( object, domElement ) {
@@ -532,6 +534,21 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	this.handleResize();
 
+
+	this.removeListeners = function() {
+		var fns = {mousedown: mousedown,
+			         mousewheel: mousewheel,
+							 DOMMouseScroll: mousewheel,
+							 touchstart: touchstart,
+							 touchend: touchend,
+							 touchmove: touchmove};
+		Object.keys(fns).forEach(function(name) {
+			this.domElement.removeEventListener(name, fns[name], false);
+		}, this);
+
+		window.removeEventListener('keydown', keydown, false);
+		window.removeEventListener('keyup', keydown, false);
+	};
 };
 
 THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );

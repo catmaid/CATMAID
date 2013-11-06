@@ -87,6 +87,54 @@ placeholder needs to be replaced with the absolute path to your CATMAID
 folder. The second location block passes all requests to the WSGI server
 defined before and allows therefore the execution of Django.
 
+A note on the ``proxy_redirect`` command
+****************************************
+
+In general, this command modifies the *Location* and the *Refresh* HTTP header
+fields in the header of a redirect reply of the proxied server. In our case
+this is the WSGI server, running CATMAID. Redirects happen e.g. as the correct
+response to HTTP POST request (which e.g. happen if you change something from
+within the admin interface). The first URL gets replaced by the second one,
+i.e.  ``http://catmaid-wsgi/`` with ``http://$host/``. The
+`$host <http://wiki.nginx.org/HttpCoreModule#.24host>`_ variable is the header's
+*Host* field and therefore the host CATMAID is running on. This makes the
+outside world see the front end server in the request URLs---a good thing and
+if CATMAID is *not* running in a subdirectory, one can remove this line and the
+default behavior should just work. The
+`default behavior <http://wiki.nginx.org/HttpProxyModule#proxy_redirect>`_
+replaces the URL given to ``proxy_pass`` with the path of the whole
+``location`` block. When CATMAID doesn't live in a subdirectory, this is
+equivalent to:
+
+.. code-block:: nginx
+
+  proxy_redirect http://catmaid-wsgi/ /;
+
+This is fine, so the line could be removed, but it gets a problem if CATMAID
+lives in a subdirectory. The default behavior would then translate to (wrt. to
+the configuration above):
+
+.. code-block:: nginx
+
+  proxy_redirect http://catmaid-wsgi/ /catmaid/;
+
+If CATMAID lives in a subdirectory, you likely also have the
+``FORCE_SCRIPT_NAME`` property in your settings file set accordingly (e.g. to
+``/catmaid``). In short, this leads Django to prepend every generated URL with
+this path. If in a subdirectory, it is needed for all types of HTTP
+requests---not only, but also for redirects. This in turn results in prepending
+the subdirectory twice for redirect requests: 1. Django does it due to
+``FORCE_SCRIPT_NAME`` 2. Nginx does it when ``proxy_redirect`` is used with its
+default behavior (e.g. if left out). To fix this, the rewrite of proxies
+redirects has to be explicitly set to rewrite the WSGI URL to ``$host`` or to
+``/``, i.e. to:
+
+.. code-block:: nginx
+
+  proxy_redirect http://catmaid-wsgi/ http://$host/;
+
+Therefore, it is is part of the above configuration.
+
 Gevent run script
 #################
 

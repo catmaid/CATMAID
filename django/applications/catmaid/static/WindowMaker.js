@@ -1745,6 +1745,7 @@ var WindowMaker = new function()
 
     var sync = document.createElement('input');
     sync.setAttribute('type', 'checkbox');
+    sync.setAttribute('id', 'synchronize_object_tree');
     sync.checked = true;
     container.appendChild(sync);
 

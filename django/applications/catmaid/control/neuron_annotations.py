@@ -45,18 +45,21 @@ def query_neurons_by_annotations(request, project_id = None):
             
     dump = [];
     for neuron in neurons:
-        skeletons = ClassInstanceClassInstance.objects.filter(
-            class_instance_b = neuron,
-            relation__relation_name = 'model_of')
-        skeleton = skeletons[0].class_instance_a
-        tn = Treenode.objects.get(
-            project=project_id,
-            parent__isnull=True,
-            skeleton_id=skeleton.id)
-        dump += [{'id': neuron.id, 'name': neuron.name, 'skeleton_id': skeleton.id, 'root_node': tn.id}]
-        # TODO: include node count, review percentage, etc.
-    return HttpResponse(json.dumps(dump))
+        try:
+            cici_skeleton = ClassInstanceClassInstance.objects.get(
+                class_instance_b = neuron,
+                relation__relation_name = 'model_of')
+            skeleton = cici_skeleton.class_instance_a
+            tn = Treenode.objects.get(
+                project=project_id,
+                parent__isnull=True,
+                skeleton_id=skeleton.id)
+            # TODO: include node count, review percentage, etc.
+            dump += [{'id': neuron.id, 'name': neuron.name, 'skeleton_id': skeleton.id, 'root_node': tn.id}]
+        except ClassInstanceClassInstance.DoesNotExist:
+            pass
 
+    return HttpResponse(json.dumps(dump))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def annotate_neurons(request, project_id = None):

@@ -66,27 +66,39 @@ NeuronAnnotations.prototype.highlight = function(skeleton_id)
 
 NeuronAnnotations.prototype.query = function()
 {
-  var posting = $.post(django_url + this.pid + '/neuron/query-by-annotations',
-      $('#neuron_query_by_annotations' + this.widgetID).serialize());
+  var form_data = $('#neuron_query_by_annotations' +
+      this.widgetID).serializeArray().reduce(function(o, e) {
+        o[e.name] = e.value;
+        return o;
+      }, {});
+
   // Here, $.proxy is used to bind 'this' to the anonymous function
-  posting.done( $.proxy( function(data) {
-    var $tableBody = $('#neuron_annotations_query_results' +
-        this.widgetID).find('tbody');
-    $tableBody.empty();
-    this.queryResults = JSON.parse(data);
-    for (var i = 0; i < this.queryResults.length; i++) {
-      $tableBody.append(
-          '<tr id="neuron_annotation_result_row' + this.widgetID +
-              '_' + this.queryResults[i].skeleton_id + '">' +
-            '<td><input type="checkbox" id="result' + this.widgetID + '_' +
-                this.queryResults[i].skelton_id + '"/></td>' +
-            '<td><a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(' +
-                '\'skeleton\', ' +
-                this.queryResults[i].skeleton_id + '); return false;">' +
-                this.queryResults[i].name + '</a></td>' +
-          '</tr>');
-    }
-  }, this));
+  requestQueue.register(django_url + this.pid + '/neuron/query-by-annotations',
+      'POST', form_data, $.proxy( function(status, text, xml) {
+        if (status === 200) {
+          var e = $.parseJSON(text);
+          if (e.error) {
+            alert(e.error);
+          } else {
+            var $tableBody = $('#neuron_annotations_query_results' +
+                this.widgetID).find('tbody');
+            $tableBody.empty();
+            this.queryResults = e;
+            for (var i = 0; i < this.queryResults.length; i++) {
+              $tableBody.append(
+                  '<tr id="neuron_annotation_result_row' + this.widgetID +
+                      '_' + this.queryResults[i].skeleton_id + '">' +
+                    '<td><input type="checkbox" id="result' + this.widgetID + '_' +
+                        this.queryResults[i].skelton_id + '"/></td>' +
+                    '<td><a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(' +
+                        '\'skeleton\', ' +
+                        this.queryResults[i].skeleton_id + '); return false;">' +
+                        this.queryResults[i].name + '</a></td>' +
+                  '</tr>');
+            }
+          }
+        }
+      }, this));
 };
 
 NeuronAnnotations.prototype.add_query_field = function()

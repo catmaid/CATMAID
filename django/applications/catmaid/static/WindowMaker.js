@@ -815,7 +815,9 @@ var WindowMaker = new function()
 
     var show = document.createElement('input');
     show.setAttribute('type', 'button');
+    show.setAttribute('id', 'graph_show_hidden' + CGW.widgetID);
     show.setAttribute('value', 'Show hidden');
+    show.setAttribute('disabled', true);
     show.onclick = CGW.showHidden.bind(CGW);
     contentbutton.appendChild(show);
 

@@ -89,7 +89,7 @@ NeuronAnnotations.prototype.query = function()
                   '<tr id="neuron_annotation_result_row' + this.widgetID +
                       '_' + this.queryResults[i].skeleton_id + '">' +
                     '<td><input type="checkbox" id="result' + this.widgetID + '_' +
-                        this.queryResults[i].skelton_id + '"/></td>' +
+                        this.queryResults[i].skeleton_id + '"/></td>' +
                     '<td><a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(' +
                         '\'skeleton\', ' +
                         this.queryResults[i].skeleton_id + '); return false;">' +

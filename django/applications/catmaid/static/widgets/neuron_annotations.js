@@ -85,6 +85,14 @@ NeuronAnnotations.prototype.query = function()
             $tableBody.empty();
             this.queryResults = e;
             for (var i = 0; i < this.queryResults.length; i++) {
+              // Build list of annotations
+              var annotation_names = this.queryResults[i].annotations.reduce(
+                function(o, e) {
+                  o.push(e.name);
+                  return o;
+                }, []);
+
+              // Build table row
               $tableBody.append(
                   '<tr id="neuron_annotation_result_row' + this.widgetID +
                       '_' + this.queryResults[i].skeleton_id + '">' +
@@ -94,6 +102,7 @@ NeuronAnnotations.prototype.query = function()
                         '\'skeleton\', ' +
                         this.queryResults[i].skeleton_id + '); return false;">' +
                         this.queryResults[i].name + '</a></td>' +
+                    '<td>' + annotation_names.join(', ') + '</td>' +
                   '</tr>');
             }
           }

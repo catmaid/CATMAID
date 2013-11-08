@@ -54,8 +54,23 @@ def query_neurons_by_annotations(request, project_id = None):
                 project=project_id,
                 parent__isnull=True,
                 skeleton_id=skeleton.id)
+            # Get all annotations linked to this neuron
+            # TODO: Try to get rid of joins, because of performance hit
+            annotation_cis = ClassInstance.objects.filter(
+                cici_via_a__relation__relation_name = 'annotated_with',
+                cici_via_a__class_instance_b__id = neuron.id)
+            annotations = [{'id': a.id, 'name': a.name} for a in annotation_cis]
+
+            neuron_info = {
+                'id': neuron.id,
+                'name': neuron.name,
+                'skeleton_id': skeleton.id,
+                'root_node': tn.id,
+                'annotations': annotations,
+            }
+
             # TODO: include node count, review percentage, etc.
-            dump += [{'id': neuron.id, 'name': neuron.name, 'skeleton_id': skeleton.id, 'root_node': tn.id}]
+            dump += [neuron_info]
         except ClassInstanceClassInstance.DoesNotExist:
             pass
 

@@ -129,74 +129,74 @@ NeuronAnnotations.prototype.add_query_field = function()
   $button.attr('value', '-');
   $button.click(this.remove_query_field.bind(this, this.nextFieldID));
   $("#neuron_query_by_annotator" + this.widgetID).before($newRow);
-  
+
   this.nextFieldID += 1;
 };
 
 NeuronAnnotations.prototype.remove_query_field = function(rowNum)
 {
-    var $row = $("#neuron_query_by_annotation" + this.widgetID + "_" + rowNum);
-    $row.remove();
+  var $row = $("#neuron_query_by_annotation" + this.widgetID + "_" + rowNum);
+  $row.remove();
 };
 
 NeuronAnnotations.prototype.toggle_neuron_selections = function()
 {
-    var newValue = $("#neuron_annotations_toggle_neuron_selections_checkbox" +
-        this.widgetID)[0].checked;
-    $("#neuron_annotations_query_results_table" + this.widgetID).find(
-        'tbody tr td input[id*=result' + this.widgetID + '_]').each(
-            function(i, element) {
-              element.checked = newValue;
-            });
+  var newValue = $("#neuron_annotations_toggle_neuron_selections_checkbox" +
+      this.widgetID)[0].checked;
+  $("#neuron_annotations_query_results_table" + this.widgetID).find(
+      'tbody tr td input[id*=result' + this.widgetID + '_]').each(
+          function(i, element) {
+            element.checked = newValue;
+          });
 };
 
 NeuronAnnotations.prototype.get_selected_neurons = function()
 {
-    var selected_neurons = [];
-    for (var i = 0; i < this.queryResults.length; i++) {
-        var $input = $("#neuron_annotations_query_results_table" +
-            this.widgetID).find('input[id=result' + this.widgetID +
-                '_' + this.queryResults[i].skeleton_id + ']');
-        if ($input[0].checked) {
-            selected_neurons.push(this.queryResults[i]);
-        }
-    }
-    return selected_neurons;
+  var selected_neurons = [];
+  for (var i = 0; i < this.queryResults.length; i++) {
+      var $input = $("#neuron_annotations_query_results_table" +
+          this.widgetID).find('input[id=result' + this.widgetID +
+              '_' + this.queryResults[i].skeleton_id + ']');
+      if ($input[0].checked) {
+          selected_neurons.push(this.queryResults[i]);
+      }
+  }
+  return selected_neurons;
 }
 
 NeuronAnnotations.prototype.annotate_neurons = function()
 {
-    // Add a new annotation to the selected neurons.
-    // TODO: is this handling multiple skeletons per neuron correctly?
-    
-    // TODO: prompt for annotations
-    var annotation = prompt('Annotation:');
-    if (!annotation) return;
-    annotation = annotation.trim();
-    if (0 === annotation.length) return; // can't annotate with nothing
-    var annotations = [annotation]
+  // Add a new annotation to the selected neurons.
+  // TODO: is this handling multiple skeletons per neuron correctly?
 
-    var selected_neurons = this.get_selected_neurons();
-    var neuron_ids = [];
-    selected_neurons.forEach(function(neuron) { neuron_ids.push(neuron.id); });
-    
-    jQuery.ajax({
-        url: django_url + project.id + '/neuron/annotate',
-        data: {
-            annotations: annotations,
-             neuron_ids: neuron_ids
-        },
-        type: "POST",
-        dataType: "json",
-        success: function () {
-            if (annotations.length == 1)
-                growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
-            else
-                growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
-        }
-    });
+  // TODO: prompt for annotations
+  var annotation = prompt('Annotation:');
+  if (!annotation) return;
+  annotation = annotation.trim();
+  if (0 === annotation.length) return; // can't annotate with nothing
+  var annotations = [annotation];
+
+  var selected_neurons = this.get_selected_neurons();
+  var neuron_ids = [];
+  selected_neurons.forEach(function(neuron) { neuron_ids.push(neuron.id); });
+
+  jQuery.ajax({
+    url: django_url + project.id + '/neuron/annotate',
+    data: {
+      annotations: annotations,
+      neuron_ids: neuron_ids
+    },
+    type: "POST",
+    dataType: "json",
+    success: function () {
+      if (annotations.length == 1)
+        growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
+      else
+        growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
+    }
+  });
 //         requestQueue.register(django_url + project.id + '/neuron/annotate', "POST",
-//             {annotations: annotations, 
+//             {annotations: annotations,
 //               neuron_ids: neuron_ids},
 //             function(status, text) {
 //                 if (200 !== status) return;

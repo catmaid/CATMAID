@@ -180,34 +180,23 @@ NeuronAnnotations.prototype.annotate_neurons = function()
   var neuron_ids = [];
   selected_neurons.forEach(function(neuron) { neuron_ids.push(neuron.id); });
 
-  jQuery.ajax({
-    url: django_url + project.id + '/neuron/annotate',
-    data: {
+  var form_data = {
       annotations: annotations,
-      neuron_ids: neuron_ids
-    },
-    type: "POST",
-    dataType: "json",
-    success: function () {
-      if (annotations.length == 1)
-        growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
-      else
-        growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
-    }
-  });
-//         requestQueue.register(django_url + project.id + '/neuron/annotate', "POST",
-//             {annotations: annotations,
-//               neuron_ids: neuron_ids},
-//             function(status, text) {
-//                 if (200 !== status) return;
-//                 var json = $.parseJSON(text);
-//                 if (json.error) {
-//                     alert(json.error);
-//                     return;
-//                 }
-//                 if (annotations.length == 1)
-//                     growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
-//                 else
-//                     growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
-//             });
+      neuron_ids: neuron_ids,
+  };
+
+  requestQueue.register(django_url + this.pid + '/neuron/annotate',
+      'POST', form_data, function(status, text, xml) {
+        if (status === 200) {
+          var e = $.parseJSON(text);
+          if (e.error) {
+            alert(e.error);
+          } else {
+            if (annotations.length == 1)
+              growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
+            else
+              growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
+          }
+        }
+      });
 };

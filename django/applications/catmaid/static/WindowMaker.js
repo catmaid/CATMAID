@@ -2064,7 +2064,7 @@ var WindowMaker = new function()
           '</td>' +
         '</tr>' +
       '</table>' +
-      '<input type="submit"/>' +
+      '<input type="submit" />' +
       '</form>';
     // Replace {{NA-ID}} with the actual widget ID
     queryFields.innerHTML = queryFields_html.replace(/{{NA-ID}}/g, NA.widgetID);
@@ -2109,8 +2109,10 @@ var WindowMaker = new function()
 
     $('#neuron_annotations_add_annotation' + NA.widgetID)[0].onclick =
         NA.add_query_field.bind(NA);
-    $('#neuron_query_by_annotations' + NA.widgetID)[0].onclick =
-        NA.query.bind(NA);
+    $('#neuron_query_by_annotations' + NA.widgetID).submit(function(event) {
+          NA.query.call(NA);
+          event.preventDefault();
+        });
     $('#neuron_annotations_annotate' + NA.widgetID)[0].onclick =
         NA.annotate_neurons.bind(NA);
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =

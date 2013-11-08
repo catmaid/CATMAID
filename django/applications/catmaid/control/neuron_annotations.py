@@ -77,12 +77,12 @@ def annotate_neurons(request, project_id = None):
     # TODO: make neurons a set in case neuron IDs and skeleton IDs overlap?
     neurons = []
     if any(neuron_ids):
-        neurons += ClassInstance.objects.filter(project = p, 
-                                                class_column__class_name = 'neuron', 
+        neurons += ClassInstance.objects.filter(project = p,
+                                                class_column__class_name = 'neuron',
                                                 id__in = neuron_ids)
     if any(skeleton_ids):
         neurons += ClassInstance.objects.filter(project = p,
-                                                class_column__class_name = 'neuron', 
+                                                class_column__class_name = 'neuron',
                                                 cici_via_b__relation__relation_name = 'model_of',
                                                 cici_via_b__class_instance_a__in = skeleton_ids)
     
@@ -94,10 +94,9 @@ def annotate_neurons(request, project_id = None):
                                                           name = annotation,
                                                           class_column = annotation_class,
                                                           defaults = {'user': request.user});
-        # Annotate each of the neurons.
-        # Avoid duplicates for the current user, but it's OK for multiple users to annotate with the same instance.
+        # Annotate each of the neurons. Avoid duplicates for the current user,
+        # but it's OK for multiple users to annotate with the same instance.
         for neuron in neurons:
-#             print >> sys.stderr, 'Annotating neuron ' + str(neuron) + ' with ' + str(ci) + ''
             cici, created = ClassInstanceClassInstance.objects.get_or_create(project = p,
                                                                              relation = r,
                                                                              class_instance_a = ci,

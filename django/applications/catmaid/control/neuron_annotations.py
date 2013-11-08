@@ -64,9 +64,8 @@ def query_neurons_by_annotations(request, project_id = None):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def annotate_neurons(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
-    r = Relation.objects.get(relation_name = 'annotated_with')
-    
-#     print >> sys.stderr, 'request.POST: ' + str(request.POST)
+    r = Relation.objects.get(project_id = project_id,
+            relation_name = 'annotated_with')
 
     annotations = request.POST.getlist('annotations[]', [])
     neuron_ids = [int(n) for n in request.POST.getlist('neuron_ids[]', [])]

@@ -67,13 +67,12 @@ def annotate_neurons(request, project_id = None):
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')
 
-    annotations = request.POST.getlist('annotations[]', [])
-    neuron_ids = [int(n) for n in request.POST.getlist('neuron_ids[]', [])]
-    skeleton_ids = [int(s) for s in request.POST.getlist('skeleton_ids[]', [])]
-    
-#     print >> sys.stderr, 'Annotations: ' + str(annotations)
-#     print >> sys.stderr, 'Neuron IDs: ' + str(neuron_ids)
-#     print >> sys.stderr, 'Skeleton IDs: ' + str(skeleton_ids)
+    annotations = [v for k,v in request.POST.iteritems()
+            if k.startswith('annotations[')]
+    neuron_ids = [int(v) for k,v in request.POST.iteritems()
+            if k.startswith('neuron_ids[')]
+    skeleton_ids = [int(v) for k,v in request.POST.iteritems()
+            if k.startswith('skeleton_ids[')]
     
     # TODO: make neurons a set in case neuron IDs and skeleton IDs overlap?
     neurons = []

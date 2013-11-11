@@ -2103,6 +2103,15 @@ var WindowMaker = new function()
     // Replace {{NA-ID}} with the actual widget ID
     container.innerHTML = container_html.replace(/{{NA-ID}}/g, NA.widgetID);
     content.appendChild( container );
+    // Hide the result container by default
+    $(container).hide();
+
+    // Add a container that gets displayed if no results could be found
+    var no_results = createContainer("neuron_annotations_query_no_results" + NA.widgetID);
+    no_results.innerHTML = '<em>No results could be found.</em>';
+    content.appendChild(no_results);
+    $(no_results).hide();
+
     
     // Wire it up.
     addListener(win, container, 'annotation_query_fields', NA.destroy.bind(NA));

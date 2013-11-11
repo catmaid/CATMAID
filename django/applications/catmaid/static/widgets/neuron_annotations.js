@@ -108,6 +108,15 @@ NeuronAnnotations.prototype.query = function()
                   '</tr>');
             }
 
+            // If there are results, display the result table
+            if (this.queryResults.length > 0) {
+              $('#neuron_annotations_query_no_results' + this.widgetID).hide();
+              $('#neuron_annotations_query_results' + this.widgetID).show();
+            } else {
+              $('#neuron_annotations_query_results' + this.widgetID).hide();
+              $('#neuron_annotations_query_no_results' + this.widgetID).show();
+            }
+
             // Add click handlers to remove tags from nodes
             var NA = this;
             $(".remove_annotation", $tableBody).click( function() {

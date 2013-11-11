@@ -141,6 +141,8 @@ NeuronAnnotations.prototype.add_query_field = function()
           this.nextFieldID,
       value: ''
   });
+  // Add autocompletion to it
+  this.add_autocomplete_to_input($text);
 
   // Update the button attributes.
   var $button = $newRow.find("input[type='button']");
@@ -244,4 +246,22 @@ NeuronAnnotations.prototype.remove_annotation = function(neuron_id,
           }
         }
       }, this));
+};
+
+NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
+{
+  // Get a JSON list with all available annotations and initialize
+  // autocompletion for the name field.
+  requestQueue.register(django_url + project.id + '/annotations/list',
+      'GET', {}, function (status, data, text) {
+        var e = $.parseJSON(data);
+        if (status !== 200) {
+            alert("The server returned an unexpected status (" +
+              status + ") " + "with error message:\n" + text);
+        } else {
+          $(input).autocomplete({
+            source: e
+          });
+        }
+      });
 };

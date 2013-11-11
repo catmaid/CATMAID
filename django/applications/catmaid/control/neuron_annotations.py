@@ -152,3 +152,12 @@ def remove_annotation(request, project_id=None, neuron_id=None,
                 % num_annotation_links
 
     return HttpResponse(json.dumps({'message': message}), mimetype='text/json')
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def list_annotations(request, project_id=None):
+    annotations = ClassInstance.objects.filter(project_id=project_id,
+            class_column__class_name='annotation')
+
+    annotation_names = [a.name for a in annotations]
+
+    return HttpResponse(json.dumps(annotation_names), mimetype="text/json")

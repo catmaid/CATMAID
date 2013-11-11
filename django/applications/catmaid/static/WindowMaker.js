@@ -2036,7 +2036,7 @@ var WindowMaker = new function()
           '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
           '<td class="neuron_annotations_query_field">' +
             '<input type="text" name="neuron_query_by_annotation" ' +
-                'id="neuron_query_by_annotation{{NA-ID}}" value="" class=""/>' +
+                'id="neuron_query_by_annotation_name{{NA-ID}}" value="" class=""/>' +
             '<input type="button" name="neuron_annotations_add_annotation" ' +
                 'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" ' +
                 'class="" />' +
@@ -2106,6 +2106,10 @@ var WindowMaker = new function()
     // Wire it up.
     addListener(win, container, 'annotation_query_fields', NA.destroy.bind(NA));
     addLogic(win);
+
+    // Add autocompletion to the first name input field
+    NA.add_autocomplete_to_input($('#neuron_query_by_annotation_name' +
+        NA.widgetID));
 
     $('#neuron_annotations_add_annotation' + NA.widgetID)[0].onclick =
         NA.add_query_field.bind(NA);

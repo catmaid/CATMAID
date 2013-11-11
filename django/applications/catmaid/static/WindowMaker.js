@@ -2084,6 +2084,7 @@ var WindowMaker = new function()
                   'id="neuron_annotations_toggle_neuron_selections_checkbox{{NA-ID}}" />' +
             '</th>' +
             '<th>Neuron Name</th>' +
+            '<th>Annotations</th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +

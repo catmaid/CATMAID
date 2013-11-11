@@ -85,10 +85,13 @@ NeuronAnnotations.prototype.query = function()
             $tableBody.empty();
             this.queryResults = e;
             for (var i = 0; i < this.queryResults.length; i++) {
+              var neuron_id = this.queryResults[i].id;
               // Build list of annotations and use layout of jQuery tagbox
               var annotation_list = this.queryResults[i].annotations.reduce(
                 function(o, e) {
-                  return o + '<li title="Remove annotation">' + e.name + '</li>';
+                  return o + '<li title="Remove annotation" ' +
+                      'class="remove_annotation" neuron_id="' + neuron_id + '"' +
+                      'annotation_id="' + e.id + '">' + e.name + '</li>';
                 }, '');
 
               // Build table row
@@ -104,6 +107,13 @@ NeuronAnnotations.prototype.query = function()
                     '<td><ul class="tagEditor">' + annotation_list + '</ul></td>' +
                   '</tr>');
             }
+
+            // Add click handlers to remove tags from nodes
+            var NA = this;
+            $(".remove_annotation", $tableBody).click( function() {
+                NA.remove_annotation($(this).attr('neuron_id'),
+                    $(this).attr('annotation_id'));
+            });
           }
         }
       }, this));
@@ -207,4 +217,31 @@ NeuronAnnotations.prototype.annotate_neurons = function()
           }
         }
       });
+};
+
+NeuronAnnotations.prototype.remove_annotation = function(neuron_id,
+    annotation_id)
+{
+  if (!confirm('Are you sure you want to remove this annotation?')) {
+    return;
+  }
+
+  requestQueue.register(django_url + this.pid + '/neuron/' + neuron_id +
+      '/annotation/' + annotation_id + '/remove',
+      'POST', {}, $.proxy(function(status, text, xml) {
+        if (status === 200) {
+          var e = $.parseJSON(text);
+          if (e.error) {
+            alert(e.error);
+          } else {
+            // Display message returned by the server
+            growlAlert('Information', e.message);
+            // Remove current annotation from displayed list
+            var result_tr = $('#neuron_annotations_query_results' +
+                this.widgetID).find('.remove_annotation[neuron_id=' +
+                neuron_id + '][annotation_id=' + annotation_id + ']');
+            result_tr.fadeOut(1000, function() { $(this).remove(); });
+          }
+        }
+      }, this));
 };

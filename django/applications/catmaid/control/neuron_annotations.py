@@ -18,23 +18,23 @@ def query_neurons_by_annotations(request, project_id = None):
         if key.startswith('neuron_query_by_annotation'):
             tag = request.POST[key].strip()
             if len(tag) > 0:
-                neurons = neurons.filter(cici_via_b__relation__relation_name = 'annotated_with',
-                                         cici_via_b__class_instance_a__name = tag)
+                neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
+                                         cici_via_a__class_instance_b__name = tag)
         elif key == 'neuron_query_by_annotator':
             userID = int(request.POST[key])
             if userID >= 0:
-                neurons = neurons.filter(cici_via_b__relation__relation_name = 'annotated_with',
-                                         cici_via_b__user = userID)
+                neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
+                                         cici_via_a__user = userID)
         elif key == 'neuron_query_by_start_date':
             startDate = request.POST[key].strip()
             if len(startDate) > 0:
-                neurons = neurons.filter(cici_via_b__relation__relation_name = 'annotated_with',
-                                         cici_via_b__creation_time__gte = startDate)
+                neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
+                                         cici_via_a__creation_time__gte = startDate)
         elif key == 'neuron_query_by_end_date':
             endDate = request.POST[key].strip()
             if len(endDate) > 0:
-                neurons = neurons.filter(cici_via_b__relation__relation_name = 'annotated_with',
-                                         cici_via_b__creation_time__lte = endDate)
+                neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
+                                         cici_via_a__creation_time__lte = endDate)
             
     dump = [];
     for neuron in neurons:
@@ -50,8 +50,8 @@ def query_neurons_by_annotations(request, project_id = None):
             # Get all annotations linked to this neuron
             # TODO: Try to get rid of joins, because of performance hit
             annotation_cis = ClassInstance.objects.filter(
-                cici_via_a__relation__relation_name = 'annotated_with',
-                cici_via_a__class_instance_b__id = neuron.id)
+                cici_via_b__relation__relation_name = 'annotated_with',
+                cici_via_b__class_instance_a__id = neuron.id)
             annotations = [{'id': a.id, 'name': a.name} for a in annotation_cis]
 
             neuron_info = {
@@ -107,8 +107,8 @@ def annotate_neurons(request, project_id = None):
         for neuron in neurons:
             cici, created = ClassInstanceClassInstance.objects.get_or_create(project = p,
                                                                              relation = r,
-                                                                             class_instance_a = ci,
-                                                                             class_instance_b = neuron,
+                                                                             class_instance_a = neuron,
+                                                                             class_instance_b = ci,
                                                                              user = request.user);
             cici.save() # update the last edited time
     
@@ -123,7 +123,7 @@ def remove_annotation(request, project_id=None, neuron_id=None,
 
     # Get CICI instance representing the link
     cici_n_a = ClassInstanceClassInstance.objects.get(project=p,
-            class_instance_b__id=neuron_id, class_instance_a__id=annotation_id)
+            class_instance_a__id=neuron_id, class_instance_b__id=annotation_id)
     # Make sure the current user has permissions to remove the annotation
     can_edit_or_fail(request.user, cici_n_a.id, 'class_instance_class_instance')
     # Remove link between neuron and annotation.
@@ -134,7 +134,7 @@ def remove_annotation(request, project_id=None, neuron_id=None,
     # Remove the annotation class instance, regardless of the owner, if there
     # are no more links to it
     annotation_links = ClassInstanceClassInstance.objects.filter(project=p,
-            class_instance_a__id=annotation_id)
+            class_instance_b__id=annotation_id)
     num_annotation_links = annotation_links.count()
     if num_annotation_links == 0:
         ClassInstance.objects.get(pk=annotation_id).delete()

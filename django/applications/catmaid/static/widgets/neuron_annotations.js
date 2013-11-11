@@ -85,12 +85,11 @@ NeuronAnnotations.prototype.query = function()
             $tableBody.empty();
             this.queryResults = e;
             for (var i = 0; i < this.queryResults.length; i++) {
-              // Build list of annotations
-              var annotation_names = this.queryResults[i].annotations.reduce(
+              // Build list of annotations and use layout of jQuery tagbox
+              var annotation_list = this.queryResults[i].annotations.reduce(
                 function(o, e) {
-                  o.push(e.name);
-                  return o;
-                }, []);
+                  return o + '<li title="Remove annotation">' + e.name + '</li>';
+                }, '');
 
               // Build table row
               $tableBody.append(
@@ -102,7 +101,7 @@ NeuronAnnotations.prototype.query = function()
                         '\'skeleton\', ' +
                         this.queryResults[i].skeleton_id + '); return false;">' +
                         this.queryResults[i].name + '</a></td>' +
-                    '<td>' + annotation_names.join(', ') + '</td>' +
+                    '<td><ul class="tagEditor">' + annotation_list + '</ul></td>' +
                   '</tr>');
             }
           }

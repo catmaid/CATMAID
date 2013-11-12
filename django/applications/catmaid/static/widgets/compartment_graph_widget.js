@@ -579,9 +579,10 @@ CompartmentGraphWidget.prototype.append = function(models) {
   this.cy.nodes().each(function(i, node) {
     var skid = node.data('skeleton_id'),
         model = models[skid];
-    if (skid in models) {
+    if (model) {
       if (model.selected) {
-        node.data('label', model.baseName);
+        // Update name only if present
+        if (model.baseName) node.data('label', model.baseName);
         node.data('color', '#' + model.color.getHexString());
         set[skid] = model;
       } else {

@@ -900,7 +900,7 @@ CompartmentGraphWidget.prototype.colorBy = function(mode) {
         else hex = '#F00'; // red
       } else if (0 === io.outputs) hex = '#0F0'; // green
       // Map between red (H:0) and green (H:0.333)
-      else hex = '#' + color.setHSV((io.inputs / (io.inputs + io.outputs)) * 0.333, 1, 0.5).getHexString();
+      else hex = '#' + color.setHSL((io.inputs / (io.inputs + io.outputs)) * 0.333, 1, 0.5).getHexString();
       node.data('color', hex);
     });
 

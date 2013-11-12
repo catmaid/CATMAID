@@ -2157,6 +2157,24 @@ var WindowMaker = new function()
     return win;
   };
 
+  var createNeuronNavigatorWindow = function()
+  {
+    var NN = new NeuronNavigator();
+    var win = new CMWWindow(NN.getName());
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("neuron-navigator" + NN.widgetID);
+
+    // Add container to DOM
+    content.appendChild(container);
+
+    // Wire it up.
+    addListener(win, container, undefined, NN.destroy.bind(NN));
+    addLogic(win);
+
+    return win
+  };
   
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
@@ -2187,6 +2205,7 @@ var WindowMaker = new function()
     "clustering-widget": createClusteringWidget,
     "circuit-graph-plot": createCircuitGraphPlot,
     "neuron-annotations": createNeuronAnnotationsWindow,
+    "neuron-navigator": createNeuronNavigatorWindow,
   };
 
   /** If the window for the given name is already showing, just focus it.

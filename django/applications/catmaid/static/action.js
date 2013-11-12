@@ -534,6 +534,16 @@ var tracingWindowActions = [
   }),
 
   new Action({
+    helpText: "Navigate Neurons",
+    buttonID: 'data_button_neuron_navigator',
+    buttonName: 'neuron_navigator_button',
+    run: function (e) {
+      WindowMaker.create('neuron-navigator');
+      return true;
+    }
+  }),
+
+  new Action({
     helpText: "Query Neurons by Annotations",
     buttonID: "data_button_query_neurons",
     buttonName: 'query_neurons',

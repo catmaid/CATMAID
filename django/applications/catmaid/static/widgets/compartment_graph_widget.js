@@ -852,6 +852,12 @@ CompartmentGraphWidget.prototype._colorize = function(select) {
 
 CompartmentGraphWidget.prototype.colorBy = function(mode) {
   if (mode === this.getState().color_mode) return;
+
+  if ('source' === this.getState().color_mode) {
+    // Requested mode is not source: preserve colors for when resetting to source
+    this.setState('colors', this.getSkeletonHexColors());
+  }
+
   this.setState('color_mode', mode);
 
   if ('source' === mode) {
@@ -871,7 +877,6 @@ CompartmentGraphWidget.prototype.colorBy = function(mode) {
     // greenish '#6fff5c': fully reviewed
     // orange '#ffc71d': review started
     // redish '#ff8c8c': not reviewed at all
-    this.setState('colors', this.getSkeletonHexColors());
     var cy = this.cy;
     requestQueue.register(django_url + project.id + "/skeleton/review-status", "POST",
         {skeleton_ids: this.getSkeletons()},
@@ -892,7 +897,6 @@ CompartmentGraphWidget.prototype.colorBy = function(mode) {
     // where purely output nodes are red,
     // and purely input nodes are green,
     // and mixed nodes span the hue axis from red to green, with balanced input/output nodes being yellow.
-    this.setState('colors', this.getSkeletonHexColors());
     var ios = this.getSkeletonsIO();
     var color = new THREE.Color();
     this.cy.nodes().each(function(i, node) {
@@ -911,7 +915,6 @@ CompartmentGraphWidget.prototype.colorBy = function(mode) {
     // Color according to the betweenness centrality of each node,
     // with the centrality value mapped to the range from white to red.
     // Disconnected nodes are white.
-    this.setState('colors', this.getSkeletonHexColors());
     var graph = jsnx.DiGraph();
     this.cy.edges().each(function(i, edge) {
       var d = edge.data();

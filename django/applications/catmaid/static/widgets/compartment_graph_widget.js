@@ -920,24 +920,33 @@ CompartmentGraphWidget.prototype.colorBy = function(mode) {
       var d = edge.data();
       graph.add_edge(d.source, d.target, {weight: d.weight});
     });
-    var bc = jsnx.betweenness_centrality(graph, {weight: 'weight'});
-    var max = Object.keys(bc).reduce(function(max, nodeID) {
-      return Math.max(max, bc[nodeID]);
-    }, 0);
 
-    // Set centrality of disconnected nodes to zero
-    this.cy.nodes().each(function(i, node) {
-      if (!bc.hasOwnProperty(node.id())) bc[node.id()] = 0;
-    });
+    if (graph.number_of_nodes() > 10) $.blockUI({message: '<img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> <h2>Computing betweenness centrality for ' + graph.number_of_nodes() + ' nodes and ' + graph.number_of_edges() + ' edges.</div></h2>'});
 
-    // Handle edge case
-    if (0 === max) max = 1;
+    try {
+      var bc = jsnx.betweenness_centrality(graph, {weight: 'weight'});
+      var max = Object.keys(bc).reduce(function(max, nodeID) {
+        return Math.max(max, bc[nodeID]);
+      }, 0);
 
-    var color = new THREE.Color();
-    this.cy.nodes().each(function(i, node) {
-      var c = bc[node.id()] / max;
-      // Map centrality to a color between white (0) and red (1)
-      node.data('color', '#' + color.setHSL(0, c, 1 - (c / 2)).getHexString());
-    });
+      // Set centrality of disconnected nodes to zero
+      this.cy.nodes().each(function(i, node) {
+        if (!bc.hasOwnProperty(node.id())) bc[node.id()] = 0;
+      });
+
+      // Handle edge case
+      if (0 === max) max = 1;
+
+      var color = new THREE.Color();
+      this.cy.nodes().each(function(i, node) {
+        var c = bc[node.id()] / max;
+        // Map centrality to a color between white (0) and red (1)
+        node.data('color', '#' + color.setHSL(0, c, 1 - (c / 2)).getHexString());
+      });
+    } catch (e) {
+      console.log(e, e.stack);
+      growlAlert('ERROR', 'Problem computing betweenness centrality');
+    }
+    $.unblockUI();
   }
 };

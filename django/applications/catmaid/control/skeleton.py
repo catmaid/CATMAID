@@ -764,12 +764,14 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
                 can_edit_or_fail(user, to_skid, "class_instance")
             except Exception:
                 # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes are editable by the user (such a situation occurs when the user domain ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
-                can_edit_or_fail(user, to_treenode_id, "treenode")
-                if _under_fragments(to_skid) or _under_staging_area(user, to_skid):
-                    pass
-                elif Treenode.objects.filter(skeleton_id=to_skid).exclude(user__in=user_domain(cursor, user.id)).count() > 0:
-                    # There are at least some nodes that the user can't edit
-                    raise Exception("User %s with id #%s cannot join skeleton #%s, because the user doesn't own the skeleton or the skeleton contains nodes that belong to users outside of the user's domain." % (user.username, user.id, to_skid))
+                try:
+                    can_edit_or_fail(user, to_treenode_id, "treenode")
+                except Exception:
+                    if _under_fragments(to_skid) or _under_staging_area(user, to_skid):
+                        pass
+                    elif Treenode.objects.filter(skeleton_id=to_skid).exclude(user__in=user_domain(cursor, user.id)).count() > 0:
+                        # There are at least some nodes that the user can't edit
+                        raise Exception("User %s with id #%s cannot join skeleton #%s, because the user doesn't own the skeleton or the skeleton contains nodes that belong to users outside of the user's domain." % (user.username, user.id, to_skid))
 
         from_treenode_id = int(from_treenode_id)
         from_treenode = Treenode.objects.get(pk=from_treenode_id)

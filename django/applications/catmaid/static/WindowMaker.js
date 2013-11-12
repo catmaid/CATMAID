@@ -2019,7 +2019,7 @@ var WindowMaker = new function()
   var createNeuronAnnotationsWindow = function()
   {
     var NA = new NeuronAnnotations();
-    var win = new CMWWindow("Neuron Annotations " + NA.widgetID);
+    var win = new CMWWindow(NA.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
     

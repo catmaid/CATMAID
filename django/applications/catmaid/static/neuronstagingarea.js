@@ -26,7 +26,8 @@ SelectionTable.prototype.getName = function() {
 };
 
 SelectionTable.prototype.destroy = function() {
-  this.clear();
+  delete this.linkTarget;
+  this.clear(); // clear after clearing linkTarget, so it doesn't get cleared
   this.unregisterInstance();
   this.unregisterSource();
 };

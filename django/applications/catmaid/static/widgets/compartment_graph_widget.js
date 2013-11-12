@@ -363,41 +363,120 @@ CompartmentGraphWidget.prototype.updateLayout = function(layout) {
   this.cy.layout( options );
 };
 
-CompartmentGraphWidget.prototype.updateGraph = function(data, models) {
-  // Set color of new nodes
-  data.nodes.forEach(function(node) {
-    node.data.color = '#' + models[node.data.skeleton_id].color.getHexString();
-  });
+CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
 
-  // Set color of new edges
-  data.edges.forEach(function(edge) {
-    var d = edge.data;
-    if (d.risk) {
-      /*
-      var hsv = [0,
-                 d.risk > 0.75 ? 0 : 1 - d.risk / 0.75,
-                 d.risk > 0.75 ? 0.267 : 1.267 - d.risk / 0.75]; 
-      */
-      // TODO how to convert HSV to RGB hex?
-      d.color = '#444';
-      d.label += ' (' + d.risk.toFixed(2) + ')';
+  var data = {};
+
+  if (this.compute_risk) {
+    data = json;
+
+    // Color nodes
+    data.nodes.forEach(function(node) {
+      node.data.color = '#' + models[node.data.skeleton_id].color.getHexString();
+    });
+
+    // Set color of new edges
+    data.edges.forEach(function(edge) {
+      var d = edge.data;
+      if (d.risk) {
+        /*
+        var hsv = [0,
+                   d.risk > 0.75 ? 0 : 1 - d.risk / 0.75,
+                   d.risk > 0.75 ? 0.267 : 1.267 - d.risk / 0.75]; 
+        */
+        // TODO how to convert HSV to RGB hex?
+        d.color = '#444';
+        d.label += ' (' + d.risk.toFixed(2) + ')';
+      } else {
+        d.color = '#444';
+      }
+      if (d.arrow === 'none') {
+        d.color = '#F00';
+      }
+    });
+
+  } else {
+    var asEdge = function(edge) {
+        return {data: {directed: true,
+                       arrow: 'triangle',
+                       id: edge[0] + '_' + edge[1],
+                       label: edge[2],
+                       color: '#444',
+                       source: edge[0],
+                       target: edge[1],
+                       weight: edge[2]}};
+    };
+
+    var asNode = function(nodeID) {
+        nodeID = nodeID + '';
+        var i_ = nodeID.indexOf('_'),
+            skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
+            model = models[skeleton_id];
+        return {data: {id: nodeID, // MUST be a string, or fails
+                       skeleton_id: skeleton_id,
+                       label: model.baseName,
+                       node_count: 0,
+                       color: '#' + model.color.getHexString()}};
+    };
+
+    if (this.confidence_threshold <= 0 && this.clustering_bandwidth <= 0) {
+      // Basic graph: infer nodes from json.edges
+      var seen = {},
+          nodes = [],
+          appendNode = function(skid) {
+            if (seen[skid]) return;
+            var node = asNode('' + skid);
+            seen[skid] = true;
+            nodes.push(node);
+          };
+
+      json.edges.forEach(function(edge) {
+        edge.slice(0, 2).forEach(appendNode);
+      });
+
+      // For nodes without edges, add them from the local list
+      Object.keys(models).forEach(appendNode);
+
+      data.nodes = nodes;
+      data.edges = json.edges.map(asEdge);
+
+    } else if (this.confidence_threshold > 0 && this.clustering_bandwidth <= 0) {
+      // Graph with skeletons potentially split at low confidence edges
+      data.nodes = json.nodes.map(asNode);
+      data.edges = json.edges.map(asEdge);
+
     } else {
-      d.color = '#444';
+      // Graph with skeletons potentially split both at low confidence edges
+      // and by synapse clustering
+      data.nodes = json.nodes.map(asNode).concat(json.branch_nodes.map(function(bnodeID) {
+        var node = asNode(bnodeID);
+        node.data.label = '';
+        node.data.branch = true;
+        return node;
+      }));
+
+      data.edges = json.edges.map(asEdge).concat(json.intraedges.map(function(edge) {
+        return {data: {directed: true,
+                       arrow: 'none',
+                       id: edge[0] + '_' + edge[1],
+                       label: edge[2],
+                       color: '#F00',
+                       source: edge[0],
+                       target: edge[1],
+                       weight: 10}}; // default weight for intraedge
+      }));
     }
-    if (d.arrow === 'none') {
-      d.color = '#F00';
-    }
-    console.log(edge.data.source,
-                edge.data.target,
-                edge.data.risk);
-  });
+  }
 
   // Store positions of current nodes and their selected state
   var positions = {},
-      selected = {};
+      selected = {},
+      hidden = {};
   this.cy.nodes().each(function(i, node) {
-    positions[node.id()] = node.position();
-    if (node.selected()) selected[node.id()] = true;
+    var id = node.id();
+    positions[id] = node.position();
+    if (node.selected()) selected[id] = true;
+    if (node.hidden()) hidden[id] = true;
   });
 
   // Remove all nodes (and their edges)
@@ -416,8 +495,10 @@ CompartmentGraphWidget.prototype.updateGraph = function(data, models) {
     }
     // Restore selection state
     if (id in selected) node.select();
+    // Restore visibility state
+    if (id in hidden) node.hide();
     // Make branch nodes, if any, be smaller
-    if (node.data().branch) {
+    if (node.data('branch')) {
       node.css('height', 15);
       node.css('width', 15);
     }
@@ -678,10 +759,12 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
 
 CompartmentGraphWidget.prototype.hideSelected = function() {
   if (!this.cy) return;
+  var hidden = 0;
   this.cy.elements().each(function(i, e) {
     if (e.selected()) {
       e.hide(); // if it's a node, hides edges too
       e.unselect();
+      hidden += 1;
     }
     /* doesn't work?
     if (e.isNode()) {
@@ -693,6 +776,7 @@ CompartmentGraphWidget.prototype.hideSelected = function() {
   this.cy.edges().each(function(i, e) {
     if (e.hidden()) e.css('text-opacity', 0);
   });
+  $('#graph_show_hidden' + this.widgetID).val('Show hidden' + (0 === hidden ? '' : ' (' + hidden + ')')).prop('disabled', false);
 };
 
 CompartmentGraphWidget.prototype.showHidden = function() {
@@ -702,5 +786,30 @@ CompartmentGraphWidget.prototype.showHidden = function() {
     this.cy.elements().css('text-opacity', 1);
   } else {
     this.cy.edges().css('text-opacity', 0);
+  }
+  $('#graph_show_hidden' + this.widgetID).val('Show hidden').prop('disabled', true);
+};
+
+CompartmentGraphWidget.prototype.colorize = function(select) {
+  var type = select.value;
+  if ('source' === type) {
+    // Color by the color given in the SkeletonModel
+    var colors = this.colors;
+    this.cy.nodes().each(function(i, node) {
+      node.css('background', colors[node.id()]);
+    });
+    delete this.colors;
+  } else if ('review' === type) {
+    // Color by review status like in the connectivity widget:
+    // greenish '#6fff5c': fully reviewed
+    // orange '#ffc71d': review started
+    // redish '#ff8c8c': not reviewed at all
+    // TODO and store color in this.colors if this.colors doesn't exist
+  } else if ('I/O' === type) {
+    // Color according to the number of inputs and outputs,
+    // where purely output nodes are red,
+    // and purely input nodes are green,
+    // and mixed nodes span the hue axis from red to green, with balanced input/output nodes being yellow.
+    // TODO and store color in this.colors if this.colors doesn't exist
   }
 };

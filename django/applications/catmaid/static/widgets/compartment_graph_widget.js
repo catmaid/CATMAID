@@ -760,9 +760,11 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
           growlAlert("Information", "No further skeletons found, with parameters min_pre=" + min_pre + ", min_post=" + min_post);
           return;
         }
-        var pseudomodel = {selected: true, color: new THREE.Color().setHex(0xffae56)};
-        self.append(json.reduce(function(m, skid) {
-          m[skid] = pseudomodel;
+        var color = new THREE.Color().setHex(0xffae56);
+        self.append(json[0].reduce(function(m, skid) {
+          m[skid] = {selected: true,
+                     color: color,
+                     baseName: json[1][skid]};
           return m;
         }, {}));
       });

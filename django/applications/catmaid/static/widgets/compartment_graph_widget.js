@@ -13,6 +13,8 @@ var CompartmentGraphWidget = function() {
   this.trim_node_labels = false;
   this.clustering_bandwidth = 0;
   this.compute_risk = false;
+
+  this.setState('color_mode', 'source');
 }
 
 CompartmentGraphWidget.prototype = {};
@@ -25,13 +27,22 @@ CompartmentGraphWidget.prototype.getName = function() {
 
 CompartmentGraphWidget.prototype.getSelectedSkeletons = function() {
   if (!this.cy) return [];
-  // Collect unique skeleton IDs
+  // Collect unique, selected skeleton IDs
   var ids = {};
   this.cy.nodes(function(i, node) {
     if (node.selected()) {
-      var id = node.data("id");
-      ids[id.substring(0, id.lastIndexOf('_'))] = null;
+      ids[node.data("skeleton_id")] = null;
     }
+  });
+  return Object.keys(ids).map(Number);
+};
+
+CompartmentGraphWidget.prototype.getSkeletons = function() {
+  if (!this.cy) return [];
+  // Collect unique skeleton IDs
+  var ids = {};
+  this.cy.nodes(function(i, node) {
+    ids[node.data('skeleton_id')] = null;
   });
   return Object.keys(ids).map(Number);
 };
@@ -283,9 +294,8 @@ CompartmentGraphWidget.prototype.init = function() {
 
   this.cy.on('click', 'edge', {}, function(evt){
     var edge = this;
-    if (evt.originalEvent.altKey) {
-      var splitedge = edge.id().split('_');
-      ConnectorSelection.show_shared_connectors( splitedge[0], [splitedge[2]], "presynaptic_to" );
+    if (edge.data('directed') && evt.originalEvent.altKey) {
+      ConnectorSelection.show_shared_connectors( edge.source, edge.target, "presynaptic_to" );
     }
   });
 };
@@ -413,7 +423,7 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
             skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
             model = models[skeleton_id];
         return {data: {id: nodeID, // MUST be a string, or fails
-                       skeleton_id: skeleton_id,
+                       skeleton_id: parseInt(skeleton_id),
                        label: model.baseName,
                        node_count: 0,
                        color: '#' + model.color.getHexString()}};
@@ -456,7 +466,7 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
       }));
 
       data.edges = json.edges.map(asEdge).concat(json.intraedges.map(function(edge) {
-        return {data: {directed: true,
+        return {data: {directed: false,
                        arrow: 'none',
                        id: edge[0] + '_' + edge[1],
                        label: edge[2],
@@ -514,6 +524,9 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
     delete this.originalNames;
     this.toggleTrimmedNodeLabels();
   }
+
+  this.resetState();
+  this.colorBy($('#graph_color_choice' + this.widgetID)[0].value);
 
   this.updateLayout();
 };
@@ -635,15 +648,13 @@ CompartmentGraphWidget.prototype.load = function(skeleton_ids, models) {
 };
 
 CompartmentGraphWidget.prototype.highlight = function(skeleton_id) {
-  var nodes = this.cy.nodes().filter(function(i, node) {
-    return skeleton_id === node.data("skeleton_id");
-  });
-  var css = {};
+  var nodes = this.getNodes(skeleton_id),
+      css = {};
+  if (0 === nodes.length) return;
   nodes.each(function(i, node) {
     css[node.id()] = {w: node.css('width'),
                       h: node.css('height')};
   });
-  if (0 === nodes.length) return;
   nodes.animate({css: {width: '100px',
                        height: '100px'}},
                 {duration: 1000,
@@ -790,26 +801,137 @@ CompartmentGraphWidget.prototype.showHidden = function() {
   $('#graph_show_hidden' + this.widgetID).val('Show hidden').prop('disabled', true);
 };
 
-CompartmentGraphWidget.prototype.colorize = function(select) {
-  var type = select.value;
-  if ('source' === type) {
+CompartmentGraphWidget.prototype.getState = function() {
+  return this.state ? this.state : {};
+};
+
+CompartmentGraphWidget.prototype.setState = function(key, value) {
+  if (!this.state) this.state = {};
+  this.state[key] = value;
+};
+
+CompartmentGraphWidget.prototype.removeState = function(key) {
+  if (this.state) delete this.state[key];
+};
+
+CompartmentGraphWidget.prototype.resetState = function() {
+  delete this.state;
+};
+
+CompartmentGraphWidget.prototype.getSkeletonHexColors = function() {
+  var colors = {};
+  this.cy.nodes().each(function(i, node) {
+    var id = node.data('skeleton_id');
+    if (!colors[id]) colors[id] = node.data('color');
+  });
+  return colors;
+};
+
+/** Return an object with skeleton ID as keys and a {inputs: <total-inputs>, outputs: <total-outputs>} as values. */
+CompartmentGraphWidget.prototype.getSkeletonsIO = function() {
+  var nodes = this.getSkeletons().reduce(function(o, skid) {
+    o[skid] = {inputs: 0, outputs: 0};
+    return o;
+  }, {});
+  this.cy.edges().each(function(i, edge) {
+    var e = edge.data();
+    if (e.directed) {
+      nodes[e.target].inputs += e.weight;
+      nodes[e.source].outputs += e.weight;
+    }
+  });
+  return nodes;
+};
+
+CompartmentGraphWidget.prototype._colorize = function(select) {
+  this.colorBy(select.value);
+};
+
+CompartmentGraphWidget.prototype.colorBy = function(mode) {
+  if (mode === this.getState().color_mode) return;
+  this.setState('color_mode', mode);
+
+  if ('source' === mode) {
     // Color by the color given in the SkeletonModel
-    var colors = this.colors;
+    var colors = this.getState().colors;
+    if (!colors) {
+      ("Oops: color state was not preserved.");
+      return;
+    }
     this.cy.nodes().each(function(i, node) {
-      node.css('background', colors[node.id()]);
+      node.data('color', colors[node.data('skeleton_id')]);
     });
-    delete this.colors;
-  } else if ('review' === type) {
+    this.removeState('colors');
+
+  } else if ('review' === mode) {
     // Color by review status like in the connectivity widget:
     // greenish '#6fff5c': fully reviewed
     // orange '#ffc71d': review started
     // redish '#ff8c8c': not reviewed at all
-    // TODO and store color in this.colors if this.colors doesn't exist
-  } else if ('I/O' === type) {
+    this.setState('colors', this.getSkeletonHexColors());
+    var cy = this.cy;
+    requestQueue.register(django_url + project.id + "/skeleton/review-status", "POST",
+        {skeleton_ids: this.getSkeletons()},
+        function(status, text) {
+          if (status !== 200) return;
+          var json = $.parseJSON(text);
+          cy.nodes().each(function(i, node) {
+            var percent_reviewed = json[node.data('skeleton_id')],
+                hex = '#ff8c8c';
+            if (100 === percent_reviewed) hex = '#6fff5c';
+            else if (percent_reviewed > 0) hex = '#ffc71d';
+            node.data('color', hex);
+          });
+        });
+
+  } else if ('I/O' === mode) {
     // Color according to the number of inputs and outputs,
     // where purely output nodes are red,
     // and purely input nodes are green,
     // and mixed nodes span the hue axis from red to green, with balanced input/output nodes being yellow.
-    // TODO and store color in this.colors if this.colors doesn't exist
+    this.setState('colors', this.getSkeletonHexColors());
+    var ios = this.getSkeletonsIO();
+    var color = new THREE.Color();
+    this.cy.nodes().each(function(i, node) {
+      var io = ios[node.data('skeleton_id')];
+      var hex;
+      if (0 === io.inputs) {
+        if (0 === io.outputs) hex = '#FFF'; // white
+        else hex = '#F00'; // red
+      } else if (0 === io.outputs) hex = '#0F0'; // green
+      // Map between red (H:0) and green (H:0.333)
+      else hex = '#' + color.setHSV((io.inputs / (io.inputs + io.outputs)) * 0.333, 1, 0.5).getHexString();
+      node.data('color', hex);
+    });
+
+  } else if ('betweenness_centrality' === mode) {
+    // Color according to the betweenness centrality of each node,
+    // with the centrality value mapped to the range from white to red.
+    // Disconnected nodes are white.
+    this.setState('colors', this.getSkeletonHexColors());
+    var graph = jsnx.DiGraph();
+    this.cy.edges().each(function(i, edge) {
+      var d = edge.data();
+      graph.add_edge(d.source, d.target, {weight: d.weight});
+    });
+    var bc = jsnx.betweenness_centrality(graph, {weight: 'weight'});
+    var max = Object.keys(bc).reduce(function(max, nodeID) {
+      return Math.max(max, bc[nodeID]);
+    }, 0);
+
+    // Set centrality of disconnected nodes to zero
+    this.cy.nodes().each(function(i, node) {
+      if (!bc.hasOwnProperty(node.id())) bc[node.id()] = 0;
+    });
+
+    // Handle edge case
+    if (0 === max) max = 1;
+
+    var color = new THREE.Color();
+    this.cy.nodes().each(function(i, node) {
+      var c = bc[node.id()] / max;
+      // Map centrality to a color between white (0) and red (1)
+      node.data('color', '#' + color.setHSL(0, c, 1 - (c / 2)).getHexString());
+    });
   }
 };

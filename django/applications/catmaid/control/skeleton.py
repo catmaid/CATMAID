@@ -489,6 +489,33 @@ def skeleton_info(request, project_id=None, skeleton_id=None):
     json_return = json.dumps(result, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
 
+@requires_user_role([UserRole.Browse, UserRole.Annotate])
+def review_status(request, project_id=None):
+    """ Return the review status for each skeleton in the request
+    as a value between 0 and 100 (integers). """
+    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT skeleton_id, reviewer_id, count(*)
+    FROM treenode
+    WHERE skeleton_id IN (%s)
+    GROUP BY skeleton_id, reviewer_id
+    ''' % ",".join(str(skid) for skid in skeleton_ids))
+
+    s = defaultdict(dict)
+    for row in cursor.fetchall():
+        s[row[0]][row[1]] = row[2]
+
+    status = {}
+    for skid, reviewers in s.iteritems():
+        pending = reviewers.get(-1, 0)
+        if 0 == pending:
+            status[skid] = 100
+        else:
+            status[skid] = int(100 * (float(pending) / sum(reviewers.itervalues())))
+
+    return HttpResponse(json.dumps(status))
+
 
 @requires_user_role(UserRole.Annotate)
 def reroot_skeleton(request, project_id=None):

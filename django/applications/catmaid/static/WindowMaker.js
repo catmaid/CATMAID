@@ -821,6 +821,16 @@ var WindowMaker = new function()
     show.onclick = CGW.showHidden.bind(CGW);
     contentbutton.appendChild(show);
 
+    contentbutton.appendChild(document.createTextNode(' - Color:'));
+    var color = document.createElement('select');
+    color.setAttribute('id', 'graph_color_choice' + CGW.widgetID);
+    color.options.add(new Option('source', 'source'));
+    color.options.add(new Option('review status', 'review'));
+    color.options.add(new Option('input/output', 'I/O'));
+    color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
+    color.onchange = CGW._colorize.bind(CGW, color);
+    contentbutton.appendChild(color);
+
     content.appendChild( contentbutton );
 
     var container = createContainer("compartment_graph_widget" + CGW.widgetID);

@@ -131,27 +131,8 @@ SkeletonAnnotations.getActiveStackId = function() {
  * Open the skeleton node in the Object Tree if the Object Tree is visible
  * and if the Object Tree synchronize_object_tree checkbox is checked.
  */
-SkeletonAnnotations.openSkeletonNodeInObjectTree = function(node) {
-  // Check if the Object Tree div is visible
-  if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {
-    return;
-  }
-  // Else, synchronize:
-  if (node) {
-    ObjectTree.requestOpenTreePath(node.skeleton_id);
-  }
-};
-
-SkeletonAnnotations.refreshAllWidgets = function() {
-  if ($('#connectortable_widget').css('display') === "block" && $('#synchronize_connectortable').attr('checked')) {
-    ConnectorTable.init( project.getId() );
-  }
-
-  if ($('#treenode_table_widget').css('display') === "block" && $('#synchronize_treenodetable').attr('checked')) {
-    TreenodeTable.init( project.getId() );
-  }
-
-  SkeletonListSources.highlight(SkeletonAnnotations.sourceView, this.atn.skeleton_id);
+SkeletonAnnotations.maybeOpenSkeletonNodeInObjectTree = function(node) {
+  if (node) ObjectTree.maybeOpenTreePath(node.skeleton_id);
 };
 
 SkeletonAnnotations.exportSWC = function() {
@@ -292,7 +273,6 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
              pid: project.id},
             function(json) {
               SkeletonAnnotations.setNeuronNameInTopbar(self.stack.id, new_name, skeletonID);
-              SkeletonAnnotations.refreshAllWidgets();
             });
       });
 };
@@ -414,7 +394,8 @@ SkeletonAnnotations.SVGOverlay.prototype.recolorAllNodes = function () {
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
-  var atn = SkeletonAnnotations.atn;
+  var atn = SkeletonAnnotations.atn,
+      last_skeleton_id = atn.skeleton_id;
   if (node) {
     // Check if the node is already selected/activated
     if (node.id === atn.id && node.skeleton_id === atn.skeleton_id) {
@@ -429,7 +410,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
       // If changing skeletons:
       if (atn.skeleton_id !== node.skeleton_id) {
         // 1. Open the object tree node if synchronizing:
-        SkeletonAnnotations.openSkeletonNodeInObjectTree(node);
+        SkeletonAnnotations.maybeOpenSkeletonNodeInObjectTree(node);
         // 2. Update the status with the ancestry of that skeleton:
         var stackID = this.stack.getId();
         this.submit(
@@ -450,13 +431,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
 
       atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
-
-      // refresh all widgets except for the object tree
-      // the reason is that calling a refresh just after a request to open tree path
-      // prevents the opening of the tree path. thus, the opening of the treepath
-      // and/or refresh have to be added to the individual operation's
-      // (such as split tree) callbacks
-      SkeletonAnnotations.refreshAllWidgets();
+      WebGLApplication.prototype.staticUpdateActiveNodePosition();
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
       statusBar.replaceLast("Activated connector node #" + node.id);
       atn.set(node, this.getStack().getId());
@@ -473,7 +448,10 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     this.recolorAllNodes();
   }
 
-  WebGLApplication.prototype.staticUpdateActiveNodePosition();
+  // (de)highlight in SkeletonSource instances if any if different from the last activated skeleton
+  if (last_skeleton_id !== SkeletonAnnotations.getActiveSkeletonId()) {
+    SkeletonListSources.highlight(SkeletonAnnotations.sourceView, SkeletonAnnotations.getActiveSkeletonId());
+  }
 };
 
 /** Activate the node nearest to the mouse. */
@@ -580,7 +558,6 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
       function () {
         self.updateNodes();
         ObjectTree.refresh();
-        SkeletonAnnotations.refreshAllWidgets();
         self.selectNode(nodeID);
       },
       true); // block UI
@@ -604,7 +581,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
           function (json) {
             self.updateNodes(function() {
               ObjectTree.refresh();
-              SkeletonAnnotations.refreshAllWidgets();
               self.selectNode(toid);
             });
           });
@@ -821,8 +797,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
         var active_node_z = SkeletonAnnotations.atn.z;
         // Set atn to be the newly created node
         self.activateNode(nn);
-        // ALREADY DONE by activate node // refreshAllWidgets();
-
         // Append to parent and recolor
         if (parentID) {
           var parentNode = self.nodes[parentID];

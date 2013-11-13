@@ -724,10 +724,17 @@ var WindowMaker = new function()
     show.onclick = CGW.update.bind(CGW);
     contentbutton.appendChild(show);
 
-    var layout = appendSelect(contentbutton, "compartment_layout", ["Force-directed", "Grid"]);
-    layout.onchange = function() {
-      CGW.updateLayout(layout.selectedIndex);
-    };
+    contentbutton.appendChild(document.createTextNode(' - '));
+
+    var layout = appendSelect(contentbutton, "compartment_layout", ["Force-directed", "Hierarchical", "Grid", "Circle", "Random"]);
+
+    var trigger = document.createElement('input');
+    trigger.setAttribute('type', 'button');
+    trigger.setAttribute('value', 'Re-layout');
+    trigger.onclick = CGW.updateLayout.bind(CGW, layout);
+    contentbutton.appendChild(trigger);
+
+    contentbutton.appendChild(document.createTextNode(' - '));
 
     var props = document.createElement('input');
     props.setAttribute("type", "button");
@@ -808,9 +815,21 @@ var WindowMaker = new function()
 
     var show = document.createElement('input');
     show.setAttribute('type', 'button');
+    show.setAttribute('id', 'graph_show_hidden' + CGW.widgetID);
     show.setAttribute('value', 'Show hidden');
+    show.setAttribute('disabled', true);
     show.onclick = CGW.showHidden.bind(CGW);
     contentbutton.appendChild(show);
+
+    contentbutton.appendChild(document.createTextNode(' - Color:'));
+    var color = document.createElement('select');
+    color.setAttribute('id', 'graph_color_choice' + CGW.widgetID);
+    color.options.add(new Option('source', 'source'));
+    color.options.add(new Option('review status', 'review'));
+    color.options.add(new Option('input/output', 'I/O'));
+    color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
+    color.onchange = CGW._colorize.bind(CGW, color);
+    contentbutton.appendChild(color);
 
     content.appendChild( contentbutton );
 
@@ -968,22 +987,13 @@ var WindowMaker = new function()
     refresh.onclick = TreenodeTable.refresh; // function declared in table_treenode.js
     contentbutton.appendChild(refresh);
 
-    var sync = document.createElement('input');
-    sync.setAttribute("type", "checkbox");
-    sync.setAttribute("id", "synchronize_treenodetable");
-    sync.setAttribute("label", "Synchronize");
-    contentbutton.appendChild(sync);
-
-    var label = document.createTextNode('Synchronize');
-    contentbutton.appendChild(label);
-
-    var sync = document.createElement('select');
-    sync.setAttribute("id", "treenodetable_lastskeletons");
+    var last = document.createElement('select');
+    last.setAttribute("id", "treenodetable_lastskeletons");
     var option = document.createElement("option");
     option.text = "None";
     option.value = -1;
-    sync.appendChild(option);
-    contentbutton.appendChild(sync);
+    last.appendChild(option);
+    contentbutton.appendChild(last);
 
     content.appendChild( contentbutton );
 
@@ -1067,34 +1077,26 @@ var WindowMaker = new function()
     add.onclick = ConnectorTable.refreshConnectorTable;
     contentbutton.appendChild(add);
 
-    var sync = document.createElement('select');
-    sync.setAttribute("id", "connector_relation_type");
+    var direction = document.createElement('select');
+    direction.setAttribute("id", "connector_relation_type");
     var objOption = document.createElement("option");
     objOption.innerHTML = "Incoming connectors";
     objOption.value = "0";
-    sync.appendChild(objOption);
+    direction.appendChild(objOption);
     var objOption2 = document.createElement("option");
     objOption2.innerHTML = "Outgoing connectors";
     objOption2.value = "1";
     objOption2.selected = "selected";
-    sync.appendChild(objOption2);
-    contentbutton.appendChild(sync);
+    direction.appendChild(objOption2);
+    contentbutton.appendChild(direction);
 
-    var rand = document.createTextNode('Synchronize');
-    contentbutton.appendChild(rand);
-    var sync = document.createElement('input');
-    sync.setAttribute("type", "checkbox");
-    sync.setAttribute("id", "synchronize_connectortable");
-    sync.setAttribute("label", "Synchronize");
-    contentbutton.appendChild(sync);
-
-    var sync = document.createElement('select');
-    sync.setAttribute("id", "connectortable_lastskeletons");
+    var last = document.createElement('select');
+    last.setAttribute("id", "connectortable_lastskeletons");
     var option = document.createElement("option");
     option.text = "None";
     option.value = -1;
-    sync.appendChild(option);
-    contentbutton.appendChild(sync);
+    last.appendChild(option);
+    contentbutton.appendChild(last);
 
     content.appendChild( contentbutton );
 
@@ -1728,13 +1730,28 @@ var WindowMaker = new function()
     var container = createContainer( "object_tree_widget" );
     content.appendChild( container );
 
-    container.innerHTML =
-      '<input type="button" id="refresh_object_tree" value="refresh" style="display:block; float:left;" />' +
-      '&nbsp; Synchronize <input type="checkbox" id="synchronize_object_tree" checked="yes" />' +
-      '<br clear="all" />' +
-      '<div id="tree_object"></div>';
+    var refresh = document.createElement('input');
+    refresh.setAttribute('type', 'button');
+    refresh.setAttribute('value', 'Refresh');
+    refresh.onclick = ObjectTree.refresh.bind(ObjectTree);
+    container.appendChild(refresh);
 
-    addListener(win, container);
+    container.appendChild(document.createTextNode(' Synchronize '));
+
+    var sync = document.createElement('input');
+    sync.setAttribute('type', 'checkbox');
+    sync.setAttribute('id', 'synchronize_object_tree');
+    sync.checked = true;
+    container.appendChild(sync);
+
+    container.appendChild(document.createTextNode(' - Push to:'));
+    container.appendChild(SkeletonListSources.createPushSelect(ObjectTree, 'link'));
+
+    var div = document.createElement('div');
+    div.setAttribute('id', 'tree_object');
+    container.appendChild(div);
+
+    addListener(win, container, undefined, ObjectTree.destroy.bind(ObjectTree));
 
     addLogic(win);
 

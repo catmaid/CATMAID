@@ -304,14 +304,16 @@ WebGLApplication.prototype.set_shading_method = function() {
 };
 
 WebGLApplication.prototype.look_at_active_node = function() {
-	this.updateActiveNodePosition();
+	this.space.content.active_node.updatePosition(this.space);
 	this.space.view.controls.target = this.space.content.active_node.mesh.position.clone();
 	this.space.render();
 };
 
 WebGLApplication.prototype.updateActiveNodePosition = function() {
 	this.space.content.active_node.updatePosition(this.space);
-  this.space.render();
+  if (this.space.content.active_node.mesh.visible) {
+    this.space.render();
+  }
 };
 
 WebGLApplication.prototype.staticUpdateActiveNodePosition = function() {
@@ -489,7 +491,7 @@ WebGLApplication.prototype.addActiveObjectToStagingArea = function() {
 };
 
 WebGLApplication.prototype.showActiveNode = function() {
-	this.space.content.active_node.visible = true;
+	this.space.content.active_node.setVisible(true);
 };
 
 
@@ -1114,26 +1116,19 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
 
 	this.controls = this.createControls();
 
-  this.mouse = {position: new THREE.Vector2(),
-                is_mouse_down: false};
-  this.mouseControls = {mousewheel: new this.MouseWheel(this.space),
-                        mousemove: new this.MouseMove(this.space, this.mouse),
-                        mouseup: new this.MouseUp(this.space, this.mouse, this.controls),
-                        mousedown: new this.MouseDown(this.space, this.mouse, this.projector, this.camera)};
-
   this.space.container.appendChild(this.renderer.domElement);
 
-  Object.keys(this.mouseControls).forEach(function(m) {
-    this.renderer.domElement.addEventListener(m, this.mouseControls[m], false);
-  }, this);
+  this.mouse = {position: new THREE.Vector2(),
+                is_mouse_down: false};
+
+  this.mouseControls = new this.MouseControls();
+  this.mouseControls.attach(this, this.renderer.domElement);
 };
 
 
 WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
-  Object.keys(this.mouseControls).forEach(function(m) {
-    this.renderer.domElement.removeEventListener(m, this.mouseControls[m], false);
-    this.mouseControls[m].destroy();
-  }, this);
+  this.controls.removeListeners();
+  this.mouseControls.detach(this.renderer.domElement);
   this.space.container.removeChild(this.renderer.domElement);
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
@@ -1201,74 +1196,71 @@ WebGLApplication.prototype.Space.prototype.View.prototype.ZX = function() {
 };
 
 /** Construct mouse controls as objects, so that no context is retained. */
-(function(p) {
-  p.MouseWheel = function(space) {
-    this.space = space;
-  };
-  p.MouseWheel.prototype = {};
-  p.MouseWheel.prototype.handleEvent = function(ev) {
-    this.space.render();
-  };
-  p.MouseWheel.prototype.destroy = function(ev) {
-    delete this.space;
+WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = function() {
+
+  this.attach = function(view, domElement) {
+    domElement.CATMAID_view = view;
+  
+    domElement.addEventListener('mousewheel', this.MouseWheel, false);
+    domElement.addEventListener('mousemove', this.MouseMove, false);
+    domElement.addEventListener('mouseup', this.MouseUp, false);
+    domElement.addEventListener('mousedown', this.MouseDown, false);
   };
 
-  p.MouseMove = function(space, mouse) {
-    this.space = space;
-    this.mouse = mouse;
-  };
-  p.MouseMove.prototype = {};
-  p.MouseMove.prototype.handleEvent = function(ev) {
-    this.mouse.position.x =  ( ev.offsetX / this.space.canvasWidth  ) * 2 -1;
-    this.mouse.position.y = -( ev.offsetY / this.space.canvasHeight ) * 2 +1;
+  this.detach = function(domElement) {
+    domElement.CATMAID_view = null;
+    delete domElement.CATMAID_view;
 
-    if (this.mouse.is_mouse_down) {
-      this.space.render();
+    domElement.removeEventListener('mousewheel', this.MouseWheel, false);
+    domElement.removeEventListener('mousemove', this.MouseMove, false);
+    domElement.removeEventListener('mouseup', this.MouseUp, false);
+    domElement.removeEventListener('mousedown', this.MouseDown, false);
+
+    Object.keys(this).forEach(function(key) { delete this[key]; }, this);
+  };
+
+  this.MouseWheel = function(ev) {
+    this.CATMAID_view.space.render();
+  };
+
+  this.MouseMove = function(ev) {
+    var mouse = this.CATMAID_view.mouse,
+        space = this.CATMAID_view.space;
+    mouse.position.x =  ( ev.offsetX / space.canvasWidth  ) * 2 -1;
+    mouse.position.y = -( ev.offsetY / space.canvasHeight ) * 2 +1;
+
+    if (mouse.is_mouse_down) {
+      space.render();
     }
 
-    this.space.container.style.cursor = 'pointer';
-  };
-  p.MouseMove.prototype.destroy = function() {
-    delete this.space;
-    delete this.mouse;
+    space.container.style.cursor = 'pointer';
   };
 
-  p.MouseUp = function(space, mouse, controls) {
-    this.space = space;
-    this.mouse = mouse;
-    this.controls = controls;
-  };
-  p.MouseUp.prototype = {};
-  p.MouseUp.prototype.handleEvent = function(ev) {
-		this.mouse.is_mouse_down = false;
-    this.controls.enabled = true;
-    this.space.render(); // May need another render on occasions
-  };
-  p.MouseUp.prototype.destroy = function() {
-    delete this.space;
-    delete this.mouse;
-    delete this.controls;
+  this.MouseUp = function(ev) {
+    var mouse = this.CATMAID_view.mouse,
+        controls = this.CATMAID_view.controls,
+        space = this.CATMAID_view.space;
+		mouse.is_mouse_down = false;
+    controls.enabled = true;
+    space.render(); // May need another render on occasions
   };
 
-  p.MouseDown = function(space, mouse, projector, camera) {
-    this.space = space;
-    this.mouse = mouse;
-    this.projector = projector;
-    this.camera = camera;
-  };
-  p.MouseDown.prototype = {};
-  p.MouseDown.prototype.handleEvent = function(ev) {
-    this.mouse.is_mouse_down = true;
+  this.MouseDown = function(ev) {
+    var mouse = this.CATMAID_view.mouse,
+        space = this.CATMAID_view.space,
+        camera = this.CATMAID_view.camera,
+        projector = this.CATMAID_view.projector;
+    mouse.is_mouse_down = true;
 		if (!ev.shiftKey) return;
 
 		// Find object under the mouse
-		var vector = new THREE.Vector3(this.mouse.position.x, this.mouse.position.y, 0.5);
-		this.projector.unprojectVector(vector, this.camera);
-		var raycaster = new THREE.Raycaster(this.camera.position, vector.sub(this.camera.position).normalize());
+		var vector = new THREE.Vector3(mouse.position.x, mouse.position.y, 0.5);
+		projector.unprojectVector(vector, camera);
+		var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
 
 		// Attempt to intersect visible skeleton spheres, stopping at the first found
 		var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
-    var skeletons = this.space.content.skeletons;
+    var skeletons = space.content.skeletons;
 		if (Object.keys(skeletons).some(function(skeleton_id) {
 			var skeleton = skeletons[skeleton_id];
 			if (!skeleton.visible) return false;
@@ -1294,13 +1286,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.ZX = function() {
 
 		growlAlert("Oops", "Couldn't find any intersectable object under the mouse.");
   };
-  p.MouseDown.prototype.destroy = function() {
-    delete this.space;
-    delete this.mouse;
-    delete this.projector;
-    delete this.camera;
-  };
-}(WebGLApplication.prototype.Space.prototype.View.prototype));
+};
 
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function(scale) {
@@ -1328,7 +1314,6 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 	space.toSpace(c);
 
 	this.mesh.position.set(c.x, c.y, c.z);
-	this.setVisible(true);
 };
 
 WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json) {
@@ -1644,8 +1629,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
 		var material = new THREE.MeshBasicMaterial({color: this.actorColor, opacity:1.0, transparent:false});
 
-		for ( var k in this.radiusVolumes ) {
-			this.radiusVolumes[k].setMaterial(material);
+		for (var k in this.radiusVolumes) {
+      if (this.radiusVolumes.hasOwnProperty(k)) {
+        this.radiusVolumes[k].setMaterial(material);
+      }
 		}
 	}
 };
@@ -1714,6 +1701,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_s
 
 /** Place a colored sphere at the node. Used for highlighting special tags like 'uncertain end' and 'todo'. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, material) {
+  if (this.specialTagSpheres.hasOwnProperty(v.node_id)) {
+    // There already is a tag sphere at the node
+    return;
+  }
 	var mesh = new THREE.Mesh( this.space.staticContent.labelspheregeometry, material );
 	mesh.position.set( v.x, v.y, v.z );
 	mesh.node_id = v.node_id;
@@ -1731,6 +1722,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = funct
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere = function(v, radius, material) {
+  if (this.radiusVolumes.hasOwnProperty(v.node_id)) {
+    // There already is a sphere or cylinder at the node
+    return;
+  }
 	// Reuse geometry: an icoSphere of radius 1.0
 	var mesh = new THREE.Mesh(this.space.staticContent.icoSphere, material);
 	// Scale the mesh to bring about the correct radius
@@ -1742,6 +1737,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere =
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius, material) {
+  if (this.radiusVolumes.hasOwnProperty(v.node_id)) {
+    // There already is a sphere or cylinder at the node
+    return;
+  }
 	var mesh = new THREE.Mesh(this.space.staticContent.cylinder, material);
 
 	// BE CAREFUL with side effects: all functions on a Vector3 alter the vector and return it (rather than returning an altered copy)
@@ -1763,6 +1762,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = f
 
 /* The itype is 0 (pre) or 1 (post), and chooses from the two arrays: synapticTypes and synapticColors. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphere = function(v, itype) {
+  if (this.synapticSpheres.hasOwnProperty(v.node_id)) {
+    // There already is a synaptic sphere at the node
+    return;
+  }
 	var mesh = new THREE.Mesh( this.space.staticContent.radiusSphere, this.synapticColors[itype] );
 	mesh.position.set( v.x, v.y, v.z );
 	mesh.node_id = v.node_id;
@@ -1862,6 +1865,12 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
         vs[node[0]] = v1;
       }
       if (node[7] > 0) {
+        // Clear the slot for a sphere at the root
+        var mesh = this.radiusVolumes[v1.node_id];
+        if (mesh) {
+          this.space.remove(mesh);
+          delete this.radiusVolumes[v1.node_id];
+        }
 			  this.createNodeSphere(v1, node[7] * scale, material);
       }
 		}
@@ -1884,9 +1893,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
     v1.node_id = con[1];
 		var v2 = vs[con[0]];
 		this.createEdge(v1, v2, this.synapticTypes[con[2]]);
-		if (!this.synapticSpheres.hasOwnProperty(v2.node_id)) {
-			this.createSynapticSphere(v2, con[2]);
-		}
+		this.createSynapticSphere(v2, con[2]);
 	}, this);
 
 	// Place spheres on nodes with special labels, if they don't have a sphere there already

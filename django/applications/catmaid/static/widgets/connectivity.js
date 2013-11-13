@@ -66,6 +66,14 @@ SkeletonConnectivity.prototype.clear = function(source_chain) {
   this.clearLink(source_chain);
 };
 
+SkeletonConnectivity.prototype.removeSkeletons = function(skeleton_ids) {
+  skeleton_ids.forEach(function(skid) {
+    delete this.skeletons[skid];
+  }, this);
+  this.update();
+  this.updateLink(this.getSelectedSkeletonModels());
+};
+
 SkeletonConnectivity.prototype.hasSkeleton = function(skeleton_id) {
   return skeleton_id in this.skeletons;
 };

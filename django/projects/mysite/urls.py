@@ -69,7 +69,7 @@ urlpatterns += patterns(
 
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'catmaid.control.adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'catmaid.control.skeletonlist_subgraph'),
-    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'catmaid.control.skeleton_graph'),
+    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'catmaid.control.graph2.skeleton_graph'),
     (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'catmaid.control.all_shared_connectors'),
     (r'^(?P<project_id>\d+)/graph/circlesofhell', 'catmaid.control.circles.circles_of_hell'),
     (r'^(?P<project_id>\d+)/graph/directedpaths', 'catmaid.control.circles.find_directed_paths'),
@@ -128,6 +128,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-own$', 'catmaid.control.reset_own_reviewer_ids'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-others$', 'catmaid.control.reset_other_reviewer_ids'),
     (r'^(?P<project_id>\d+)/skeleton/connectivity$', 'catmaid.control.skeleton_info_raw'),
+    (r'^(?P<project_id>\d+)/skeleton/review-status$', 'catmaid.control.review_status'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', 'catmaid.control.skeleton_statistics'),
     (r'^(?P<project_id>\d+)/skeletons/measure$', 'catmaid.control.measure_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/openleaf$', 'catmaid.control.last_openleaf'),
@@ -208,6 +209,7 @@ urlpatterns += patterns(
 
     (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'catmaid.control.graphedge_list'),
     (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'catmaid.control.one_to_many_synapses'),
+    (r'^(?P<project_id>\d+)/connector/skeletons$', 'catmaid.control.connector_skeletons'),
 
     )
 

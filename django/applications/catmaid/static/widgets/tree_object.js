@@ -4,6 +4,16 @@
 var ObjectTree = new function()
 {
 
+  this.initialized = false;
+  this.object_tree_widget = null;
+  this.synchronize_object_tree = null;
+
+  this.destroy = function() {
+    this.initialized = false;
+    delete this.object_tree_widget;
+    delete this.synchronize_object_tree;
+  };
+
   this.deselectAll = function() {
     $('#tree_object').jstree("deselect_all");
     project.setSelectObject( null, null );
@@ -63,10 +73,9 @@ var ObjectTree = new function()
           "url": django_url + pid + '/object-tree/list',
           "type": 'POST',
           "data": function (n) {
-            var expandRequest, parentName, parameters;
             // depending on which type of node it is, display those
             // the result is fed to the AJAX request `data` option
-            parameters = {
+            var parameters = {
               "pid": pid,
               "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
             };
@@ -85,6 +94,14 @@ var ObjectTree = new function()
                 display_tracing_setup_dialog(pid, e.has_needed_permissions,
                     e.missing_classes, e.missing_relations,
                     e.missing_classinstances);
+            }
+            // Only run when reacting to the internal initialization call.
+            if (!ObjectTree.initialized) {
+              ObjectTree.initialized = true;
+              // Open tree path to the selected skeleton if any
+              if (SkeletonAnnotations.getActiveSkeletonId()) {
+                ObjectTree.requestOpenTreePath(SkeletonAnnotations.getActiveSkeletonId());
+              }
             }
           }
         },
@@ -120,7 +137,7 @@ var ObjectTree = new function()
                           if (json.error) {
                             alert(json.error);
                           } else {
-                            SelectionTable.prototype.getOrCreate().addSkeletons(json, function() { WindowMaker.show("3d-webgl-view"); });
+                            ObjectTree.pushSkeletons(json);
                           }
                         }
                       });
@@ -139,7 +156,7 @@ var ObjectTree = new function()
                           if (json.error) {
                             alert(json.error);
                           } else {
-                            SelectionTable.prototype.getOrCreate().addSkeletons(json, function() { WindowMaker.show("3d-webgl-view"); });
+                            ObjectTree.pushSkeletons(json);
                           }
                         }
                       });
@@ -485,7 +502,19 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   // var myparent = $.jstree._focused()._get_parent(obj);
                   var skelid = obj.attr("id").replace("node_", "");
-                  SelectionTable.prototype.getOrCreate().addSkeletons([skelid], function() { WindowMaker.show("3d-webgl-view"); });
+                  requestQueue.register(django_url + project.id + '/skeleton/neuronnames',
+                      "POST",
+                      {skids: [skelid]},
+                      function(status, text) {
+                        if (200 === status) {
+                          var json = $.parseJSON(text);
+                          if (json.error) {
+                            alert(json.error);
+                          } else {
+                            ObjectTree.pushSkeletons(json);
+                          }
+                        }
+                      });
                 }
               },
               "goto_parent": {
@@ -899,12 +928,9 @@ var ObjectTree = new function()
       });
     });
 
-    // Open tree path to the selected skeleton if any
-    if (SkeletonAnnotations.getActiveSkeletonId()) {
-      // TODO: I cannot find where in init is the request made for listing the root node;
-      // TODO  for it is after that request that the requestOpenTreePath call must be made.
-      setTimeout("ObjectTree.requestOpenTreePath(SkeletonAnnotations.getActiveSkeletonId())", 3000);
-    }
+    // Cache DOM elements
+    this.object_tree_widget = $('#object_tree_widget')[0];
+    this.synchronize_object_tree = $('#synchronize_object_tree')[0];
   };
 
   /* A function that takes an array of ids starting from the root id
@@ -947,6 +973,15 @@ var ObjectTree = new function()
     }
   };
 
+  /** Invoke this.requestOpenTreePath if the widget is visible and its sync checkbox is checked. */
+  this.maybeOpenTreePath = function(class_instance_id) {
+    if (   this.object_tree_widget
+        && this.object_tree_widget.style.display !== 'none'
+        && this.synchronize_object_tree.checked) {
+      this.requestOpenTreePath(class_instance_id);
+    }
+  };
+
   this.requestOpenTreePath = function(class_instance_id) {
     // Check if the node is already highlighted
     if ($('#node_' + class_instance_id + ' a').hasClass('jstree-clicked')) {
@@ -977,9 +1012,47 @@ var ObjectTree = new function()
 
   // Refresh the Object Tree if it is visible.
   this.refresh = function() {
-    if ($('#object_tree_widget').css('display') === "block") {
-      $("#tree_object").jstree("refresh", -1);
+    if (this.object_tree_widget && this.object_tree_widget.style.display !== 'none') {
+      $('#tree_object').jstree("refresh", -1);
     }
   };
 
+  this.getName = function() {
+    return "Object Tree";
+  };
+
+  this.createModels = function(ids) {
+    var Colorizer = function() { this.next_color_index = 0; };
+    Colorizer.prototype = SelectionTable.prototype;
+    var c = new Colorizer();
+    return Object.keys(ids).reduce(function(m, id) {
+      m[id] = new SelectionTable.prototype.SkeletonModel(id, ids[id], c.pickColor());
+      return m;
+    }, {});
+  };
+
+  this.pushSkeletons = function(json) {
+    var link = SkeletonListSources.getSelectedPushSource(ObjectTree, 'link');
+    if (link) {
+      link.append(this.createModels(json));
+    } else {
+      // Check that a Selection Table is open and points to a 3d viewer
+      var tables = SelectionTable.prototype.getInstances();
+      var linked = Object.keys(tables).filter(function(name) {
+        var table = tables[name];
+        return table.linkTarget && 0 === table.linkTarget.getName().indexOf("3D View");
+      });
+      var target = null;
+      if (0 === linked.length) {
+        // Open a new 3D View with a linked Selection Table
+        WindowMaker.create("3d-webgl-view");
+        tables = SelectionTable.prototype.getInstances();
+        linked[0] = (Object.keys(tables).filter(function(name) {
+          var table = tables[name];
+          return table.linkTarget && 0 === table.linkTarget.getName().indexOf('3D View');
+        }))[0];
+      }
+      tables[linked[0]].append(this.createModels(json));
+    }
+  };
 };

@@ -489,6 +489,33 @@ def skeleton_info(request, project_id=None, skeleton_id=None):
     json_return = json.dumps(result, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
 
+@requires_user_role([UserRole.Browse, UserRole.Annotate])
+def review_status(request, project_id=None):
+    """ Return the review status for each skeleton in the request
+    as a value between 0 and 100 (integers). """
+    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT skeleton_id, reviewer_id, count(*)
+    FROM treenode
+    WHERE skeleton_id IN (%s)
+    GROUP BY skeleton_id, reviewer_id
+    ''' % ",".join(str(skid) for skid in skeleton_ids))
+
+    s = defaultdict(dict)
+    for row in cursor.fetchall():
+        s[row[0]][row[1]] = row[2]
+
+    status = {}
+    for skid, reviewers in s.iteritems():
+        pending = reviewers.get(-1, 0)
+        if 0 == pending:
+            status[skid] = 100
+        else:
+            status[skid] = int(100 * (float(pending) / sum(reviewers.itervalues())))
+
+    return HttpResponse(json.dumps(status))
+
 
 @requires_user_role(UserRole.Annotate)
 def reroot_skeleton(request, project_id=None):
@@ -737,10 +764,9 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
                 can_edit_or_fail(user, to_skid, "class_instance")
             except Exception:
                 # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes are editable by the user (such a situation occurs when the user domain ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
-                can_edit_or_fail(user, to_treenode_id, "treenode")
                 if _under_fragments(to_skid) or _under_staging_area(user, to_skid):
                     pass
-                if Treenode.objects.filter(skeleton_id=to_skid).exclude(user__in=user_domain(cursor, user.id)).count() > 0:
+                elif Treenode.objects.filter(skeleton_id=to_skid).exclude(user__in=user_domain(cursor, user.id)).count() > 0:
                     # There are at least some nodes that the user can't edit
                     raise Exception("User %s with id #%s cannot join skeleton #%s, because the user doesn't own the skeleton or the skeleton contains nodes that belong to users outside of the user's domain." % (user.username, user.id, to_skid))
 

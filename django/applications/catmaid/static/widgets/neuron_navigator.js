@@ -243,9 +243,20 @@ NeuronNavigatorAnnotationsNode.prototype.create_content = function()
   // Make node easily accessible in created methods
   var self = this;
 
+  // Collect all filtered annotations into post data
+  var filters = this.collect_filters();
+  var post_data = {
+    'ignored_annotations': filters.reduce(function(o, f) {
+        if (f.annotation) {
+          o.push(f.annotation);
+        }
+        return o;
+      }, [])
+  };
+
   // Get the list of currently available annotations
   requestQueue.register(django_url + project.id + '/annotations/list',
-      'GET', {}, function(status, data, text) {
+      'POST', post_data, function(status, data, text) {
         var e = $.parseJSON(data);
         if (status != 200) {
           alert("The server returned an unexpected status (" +

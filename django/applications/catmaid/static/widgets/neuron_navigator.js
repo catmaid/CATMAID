@@ -230,7 +230,37 @@ $.extend(NeuronNavigatorUsersNode.prototype,
 NeuronNavigatorUsersNode.prototype.create_content = function(navigator)
 {
   var content = document.createElement('div');
-  content.innerHTML = "Users node content";
+  content.setAttribute('id', 'navigator_users_content' +
+      navigator.widgetID);
+  content.innerHTML = "Please wait while the existing users are requested";
+
+  // Make node easily accessible in created methods
+  var self = this;
+
+  // Get the list of currently available annotations
+  requestQueue.register(django_url + 'user-list',
+      'GET', {}, function(status, data, text) {
+        var e = $.parseJSON(data);
+        if (status != 200) {
+          alert("The server returned an unexpected status (" +
+            status + ") with error message:\n" + text);
+        } else {
+          // Create a list of user links
+          var users = e.map(function(u) {
+            var user_link = self.create_path_link(u.full_name +
+                " (" + u.login + ")");
+            $(user_link).click(function() {
+                var filter_node = new NeuronNavigatorFilterNode(undefined, u);
+                filter_node.link(self);
+                navigator.select_node(filter_node);
+            });
+            return user_link;
+          });
+          // Add all annotation links
+          $('#navigator_users_content' + navigator.widgetID).empty().
+            append(users);
+        }
+      });
 
   return content;
 };
@@ -254,7 +284,7 @@ var NeuronNavigatorFilterNode = function(included_annotation,
   }
 
   if (included_user) {
-    filter_names.push("U: " + included_user);
+    filter_names.push("U: " + included_user.login);
   }
 
   if (filter_names.length > 0) {

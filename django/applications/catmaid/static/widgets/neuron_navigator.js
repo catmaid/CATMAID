@@ -183,7 +183,36 @@ $.extend(NeuronNavigatorAnnotationsNode.prototype,
 NeuronNavigatorAnnotationsNode.prototype.create_content = function(navigator)
 {
   var content = document.createElement('div');
-  content.innerHTML = "Annotations node content";
+  content.setAttribute('id', 'navigator_annotations_content' +
+      navigator.widgetID);
+  content.innerHTML = "Please wait while the available annotatios are requested";
+
+  // Make node easily accessible in created methods
+  var self = this;
+
+  // Get the list of currently available annotations
+  requestQueue.register(django_url + project.id + '/annotations/list',
+      'GET', {}, function(status, data, text) {
+        var e = $.parseJSON(data);
+        if (status != 200) {
+          alert("The server returned an unexpected status (" +
+            status + ") with error message:\n" + text);
+        } else {
+          // Create a list of annotation links
+          var annotations = e.map(function(a) {
+            var annotations_link = self.create_path_link(a);
+            $(annotations_link).click(function() {
+                var annotations_node = new NeuronNavigatorFilterNode(a);
+                annotations_node.link(self);
+                navigator.select_node(annotations_node);
+            });
+            return annotations_link;
+          });
+          // Add all annotation links
+          $('#navigator_annotations_content' + navigator.widgetID).empty().
+            append(annotations);
+        }
+      });
 
   return content;
 };

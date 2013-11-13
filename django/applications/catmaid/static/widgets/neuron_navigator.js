@@ -275,7 +275,7 @@ var NeuronNavigatorFilterNode = function(included_annotation,
     included_user)
 {
   this.included_annotation = included_annotation;
-  this.included_annotation = included_user;
+  this.included_user = included_user;
 
   var filter_names = []
 

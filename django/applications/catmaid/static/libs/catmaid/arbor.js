@@ -139,6 +139,15 @@ Arbor.prototype.allSuccessors = function() {
 	}, {});
 };
 
+/** Returns an array with all branch nodes. Runs in O(n + m) time,
+ * where n is the number of nodes and m the number of branches. */
+Arbor.prototype.findBranchNodes = function() {
+	var successors = this.allSuccessors();
+	return Object.keys(successors).filter(function(node) {
+		return successors[node].length > 1;
+	});
+};
+
 /** Return a map of node vs number of edges from the root. If the given root is null or undfined, it will be searched for. */
 Arbor.prototype.edgeCountToRoot = function(root) {
 	var successors = this.allSuccessors(),
@@ -307,3 +316,67 @@ Arbor.prototype.betweennessCentrality = function() {
 
 	return centrality;
 };
+
+/** Return a new arbor that preserves only the root, branch and end nodes.
+ * Runs in O(2*n) time. */
+Arbor.prototype.topologicalCopy = function() {
+	var topo = new Arbor(),
+			successors = this.allSuccessors(),
+			open = [this.root];
+	topo.root = this.root;
+	while (open.length > 0) {
+		var paren = open.pop(),
+			  succ = successors[paren],
+			  child;
+		while (1 === succ.length) {
+			child = succ[0];
+			succ = successors[child];
+		}
+		topo.edges[child] = this.root === paren ? paren : this.edges[paren];
+		if (succ.length > 1) {
+			open = open.concat(succ);
+		}
+	}
+	return topo;
+};
+
+Arbor.prototype.slabs = function() {
+	var slabs = [],
+			successors = this.allSuccessors(),
+			open = [[this.root]];
+	while (open.length > 0) {
+		var slab = open.pop(),
+			  succ = successors[slab[slab.length -1]],
+			  child;
+		while (1 === succ.length) {
+			child = succ[0];
+			slab.push(child);
+			succ = successors[child];
+		}
+		slabs.push(slab);
+		if (succ.length > 1) {
+			open = open.concat(succ.map(function(s) { return [this.edges[s], s]; }, this));
+		}
+	}
+	return slabs;
+};
+
+/** Compute the centrality of each slab as the average centrality of its starting
+ * and ending nodes, when computing the centrality of the topologically reduced
+ * arbor (an arbor that only preserves root, branch and end nodes relative to the
+ * original).
+ * Returns an object with nodes as keys and the centrality as value.
+ * At the branch nodes, the centrality is set to that of the parent slab;
+ * for root, it is always zero. */
+Arbor.prototype.slabCentrality = function() {
+	var topo = this.topologicalCopy(),
+			tc = topo.betweennessCentrality(),
+			sc = {};
+	sc[this.root] = tc[topo.root];
+	this.slabs().forEach(function(slab) {
+		var c = (tc[slab[0]] + tc[slab[slab.length -1]]) / 2;
+		for (var i=slab.length; --i;) sc[slab[i]] = c;
+	});
+	return sc;
+};
+

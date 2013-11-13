@@ -2165,6 +2165,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var container = createContainer("neuron-navigator" + NN.widgetID);
+    container.setAttribute('class', 'navigator_widget');
 
     // Add container to DOM
     content.appendChild(container);
@@ -2172,6 +2173,10 @@ var WindowMaker = new function()
     // Wire it up.
     addListener(win, container, undefined, NN.destroy.bind(NN));
     addLogic(win);
+
+    // Let the navigator initialize the interface within
+    // the created container.
+    NN.init_ui(container);
 
     return win
   };

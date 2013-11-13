@@ -327,3 +327,20 @@ div#classification_graph_object img.roiimage {
 	border-width: 4px 0 4px 8px;
 	border-color: transparent transparent transparent #0000ff;
 }
+
+.navigator_widget {
+    margin-left: 0.5em;
+}
+
+.navigator_navi_bar {
+    margin-top: 0.5em;
+}
+
+.navigator_content {
+    margin-top: 1em;
+}
+
+.navigator_content_option {
+    float: left;
+    clear: both;
+}

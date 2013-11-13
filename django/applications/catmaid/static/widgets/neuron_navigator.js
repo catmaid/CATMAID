@@ -301,9 +301,20 @@ NeuronNavigatorUsersNode.prototype.create_content = function()
   // Make node easily accessible in created methods
   var self = this;
 
+  // Collect all filtered annotations into post data
+  var filters = this.collect_filters();
+  var post_data = {
+    'ignored_users': filters.reduce(function(o, f) {
+        if (f.user) {
+          o.push(f.user);
+        }
+        return o;
+      }, [])
+  };
+
   // Get the list of currently available annotations
   requestQueue.register(django_url + 'user-list',
-      'GET', {}, function(status, data, text) {
+      'POST', post_data, function(status, data, text) {
         var e = $.parseJSON(data);
         if (status != 200) {
           alert("The server returned an unexpected status (" +
@@ -314,7 +325,7 @@ NeuronNavigatorUsersNode.prototype.create_content = function()
             var user_link = self.create_path_link(u.full_name +
                 " (" + u.login + ")");
             $(user_link).click(function() {
-                var filter_node = new NeuronNavigatorUserFilterNode(undefined, u);
+                var filter_node = new NeuronNavigatorUserFilterNode(u);
                 filter_node.link(self.navigator, self);
                 self.navigator.select_node(filter_node);
             });
@@ -370,8 +381,8 @@ NeuronNavigatorAnnotationFilterNode.prototype.create_content = function()
  */
 var NeuronNavigatorUserFilterNode = function(included_user)
 {
-  this.filters = new NeuronNavigatorFilter(null, included_annotation)
-  this.name = "U: " + included_user;
+  this.filters = new NeuronNavigatorFilter(null, included_user.id)
+  this.name = "U: " + included_user.login;
 };
 
 NeuronNavigatorUserFilterNode.prototype = {};

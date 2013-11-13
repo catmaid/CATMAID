@@ -313,6 +313,50 @@ def list_connector(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
+def _connector_skeletons(connector_ids, project_id):
+    """ Return a dictionary of connector ID as keys and a dictionary as value
+    containing two entries: 'presynaptic_to' with a skeleton ID of None,
+    and 'postsynaptic_to' with a list of skeleton IDs (maybe empty). """
+    cursor = connection.cursor()
+
+    cursor.execute('''
+    SELECT relation_name, id
+    FROM relation
+    WHERE project_id = %s
+      AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')
+    ''' % int(project_id))
+
+    relations = dict(cursor.fetchall())
+    PRE = relations['presynaptic_to']
+    POST = relations['postsynaptic_to']
+
+    cursor.execute('''
+    SELECT connector_id, relation_id, skeleton_id
+    FROM treenode_connector
+    WHERE connector_id IN (%s)
+    ''' % ",".join(str(cid) for cid in connector_ids))
+
+    cs = {}
+    for row in cursor.fetchall():
+        c = cs.get(row[0])
+        if not c:
+            # Ensure each connector has the two entries at their minimum
+            c = {'presynaptic_to': None, 'postsynaptic_to': []}
+            cs[row[0]] = c
+        if POST == row[1]:
+            c['postsynaptic_to'].append(row[2])
+        elif PRE == row[1]:
+            c['presynaptic_to'] = row[2]
+
+    return cs
+
+@requires_user_role([UserRole.Browse, UserRole.Annotate])
+def connector_skeletons(request, project_id=None):
+    """ See _connector_skeletons """
+    connector_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('connector_ids['))
+    cs = tuple(_connector_skeletons(connector_ids, project_id).iteritems())
+    return HttpResponse(json.dumps(cs))
+
 
 @requires_user_role(UserRole.Annotate)
 def create_connector(request, project_id=None):

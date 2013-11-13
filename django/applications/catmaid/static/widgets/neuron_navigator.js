@@ -205,3 +205,42 @@ NeuronNavigatorUsersNode.prototype.create_content = function(navigator)
 
   return content;
 };
+
+
+/**
+ * The filter node of the navigator. It filters output based on a
+ * set of annotations and/or users. The content it creates lists
+ * user, neuron, annotation and co-annotation links.
+ */
+var NeuronNavigatorFilterNode = function(included_annotation,
+    included_user)
+{
+  this.included_annotation = included_annotation;
+  this.included_annotation = included_user;
+
+  var filter_names = []
+
+  if (included_annotation) {
+    filter_names.push("A: " + included_annotation);
+  }
+
+  if (included_user) {
+    filter_names.push("U: " + included_user);
+  }
+
+  if (filter_names.length > 0) {
+    this.name = filter_names.join(', ');
+  }
+};
+
+NeuronNavigatorFilterNode.prototype = {};
+$.extend(NeuronNavigatorFilterNode.prototype,
+    new NeuronNavigatorNode("Empty Filter"));
+
+NeuronNavigatorFilterNode.prototype.create_content = function(navigator)
+{
+  var content = document.createElement('div');
+  content.innerHTML = "Filtered content";
+
+  return content;
+};

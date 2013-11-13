@@ -1629,8 +1629,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
 		var material = new THREE.MeshBasicMaterial({color: this.actorColor, opacity:1.0, transparent:false});
 
-		for ( var k in this.radiusVolumes ) {
-			this.radiusVolumes[k].setMaterial(material);
+		for (var k in this.radiusVolumes) {
+      if (this.radiusVolumes.hasOwnProperty(k)) {
+        this.radiusVolumes[k].setMaterial(material);
+      }
 		}
 	}
 };
@@ -1699,6 +1701,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_s
 
 /** Place a colored sphere at the node. Used for highlighting special tags like 'uncertain end' and 'todo'. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, material) {
+  if (this.specialTagSpheres.hasOwnProperty(v.node_id)) {
+    // There already is a tag sphere at the node
+    return;
+  }
 	var mesh = new THREE.Mesh( this.space.staticContent.labelspheregeometry, material );
 	mesh.position.set( v.x, v.y, v.z );
 	mesh.node_id = v.node_id;
@@ -1716,6 +1722,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = funct
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere = function(v, radius, material) {
+  if (this.radiusVolumes.hasOwnProperty(v.node_id)) {
+    // There already is a sphere or cylinder at the node
+    return;
+  }
 	// Reuse geometry: an icoSphere of radius 1.0
 	var mesh = new THREE.Mesh(this.space.staticContent.icoSphere, material);
 	// Scale the mesh to bring about the correct radius
@@ -1727,6 +1737,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere =
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius, material) {
+  if (this.radiusVolumes.hasOwnProperty(v.node_id)) {
+    // There already is a sphere or cylinder at the node
+    return;
+  }
 	var mesh = new THREE.Mesh(this.space.staticContent.cylinder, material);
 
 	// BE CAREFUL with side effects: all functions on a Vector3 alter the vector and return it (rather than returning an altered copy)
@@ -1748,6 +1762,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = f
 
 /* The itype is 0 (pre) or 1 (post), and chooses from the two arrays: synapticTypes and synapticColors. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphere = function(v, itype) {
+  if (this.synapticSpheres.hasOwnProperty(v.node_id)) {
+    // There already is a synaptic sphere at the node
+    return;
+  }
 	var mesh = new THREE.Mesh( this.space.staticContent.radiusSphere, this.synapticColors[itype] );
 	mesh.position.set( v.x, v.y, v.z );
 	mesh.node_id = v.node_id;
@@ -1847,6 +1865,12 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
         vs[node[0]] = v1;
       }
       if (node[7] > 0) {
+        // Clear the slot for a sphere at the root
+        var mesh = this.radiusVolumes[v1.node_id];
+        if (mesh) {
+          this.space.remove(mesh);
+          delete this.radiusVolumes[v1.node_id];
+        }
 			  this.createNodeSphere(v1, node[7] * scale, material);
       }
 		}
@@ -1869,9 +1893,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
     v1.node_id = con[1];
 		var v2 = vs[con[0]];
 		this.createEdge(v1, v2, this.synapticTypes[con[2]]);
-		if (!this.synapticSpheres.hasOwnProperty(v2.node_id)) {
-			this.createSynapticSphere(v2, con[2]);
-		}
+		this.createSynapticSphere(v2, con[2]);
 	}, this);
 
 	// Place spheres on nodes with special labels, if they don't have a sphere there already

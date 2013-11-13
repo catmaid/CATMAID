@@ -83,18 +83,45 @@ NeuronNavigator.prototype.select_node = function(node)
 
 
 /**
+ * A filter container that keeps track of either an annotation, a user or a
+ * neuron to be used as filter when selection data.
+ */
+var NeuronNavigatorFilter = function(annotation, user, neuron)
+{
+  this.annotation = annotation;
+  this.user = user;
+  this.neuron = neuron;
+};
+
+/**
  * A class representing a node in the graph of the navigator.
  */
 var NeuronNavigatorNode = function(name)
 {
   this.name = name;
   this.navigator = null;
+  this.filters = null;
 };
 
 NeuronNavigatorNode.prototype.link = function(navigator, parent_node)
 {
   this.navigator = navigator;
   this.parent_node = parent_node;
+};
+
+NeuronNavigatorNode.prototype.collect_filters = function()
+{
+  // Collect filters by reference
+  if (this.parent_node) {
+    var path_filters = this.parent_node.collect_filters();
+    if (this.filters) {
+      path_filters.push(this.filters);
+    }
+    return path_filters;
+  } else {
+    // The home node will return an empty list
+    return [];
+  }
 };
 
 NeuronNavigatorNode.prototype.create_path = function()
@@ -299,7 +326,7 @@ NeuronNavigatorUsersNode.prototype.create_content = function()
  */
 var NeuronNavigatorAnnotationFilterNode = function(included_annotation)
 {
-  this.included_annotation = included_annotation;
+  this.filters = new NeuronNavigatorFilter(included_annotation)
   this.name = "A: " + included_annotation;
 };
 
@@ -332,7 +359,7 @@ NeuronNavigatorAnnotationFilterNode.prototype.create_content = function()
  */
 var NeuronNavigatorUserFilterNode = function(included_user)
 {
-  this.included_user = included_user;
+  this.filters = new NeuronNavigatorFilter(null, included_annotation)
   this.name = "U: " + included_user;
 };
 

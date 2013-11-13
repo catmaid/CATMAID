@@ -66,6 +66,7 @@ NeuronNavigator.prototype.init_ui = function(container)
 
   // Add home node as starting point without any parent
   var home_node = new NeuronNavigatorHomeNode(this.widgetID);
+  home_node.link(this, null);
   this.select_node(home_node);
 };
 
@@ -87,25 +88,27 @@ NeuronNavigator.prototype.select_node = function(node)
 var NeuronNavigatorNode = function(name)
 {
   this.name = name;
+  this.navigator = null;
 };
 
-NeuronNavigatorNode.prototype.link = function(parent_node)
+NeuronNavigatorNode.prototype.link = function(navigator, parent_node)
 {
+  this.navigator = navigator;
   this.parent_node = parent_node;
 };
 
-NeuronNavigatorNode.prototype.create_path = function(navigator)
+NeuronNavigatorNode.prototype.create_path = function()
 {
   var path_link = document.createElement('a');
   path_link.setAttribute('href', '#');
   path_link.setAttribute('class', 'navigator_navi_bar_element');
   path_link.innerHTML = this.name;
   $(path_link).click($.proxy(function() {
-    navigator.select_node(this);
+    this.navigator.select_node(this);
   }, this));
 
   if (this.parent_node) {
-    var path_elements = this.parent_node.create_path(navigator);
+    var path_elements = this.parent_node.create_path();
     path_elements.push(document.createTextNode(" > "));
     path_elements.push(path_link);
     return path_elements;
@@ -114,9 +117,43 @@ NeuronNavigatorNode.prototype.create_path = function(navigator)
   }
 };
 
-NeuronNavigatorNode.prototype.create_content = function(navigator)
+NeuronNavigatorNode.prototype.create_content = function()
 {
   return undefined;
+};
+
+NeuronNavigatorNode.prototype.create_annotations_link = function()
+{
+  var annotations_link = this.create_path_link("Annotations");
+  $(annotations_link).click($.proxy(function() {
+      var annotations_node = new NeuronNavigatorAnnotationsNode();
+      annotations_node.link(this.navigator, this);
+      this.navigator.select_node(annotations_node);
+  }, this));
+
+  return annotations_link;
+};
+
+NeuronNavigatorNode.prototype.create_users_link = function()
+{
+  var users_link = this.create_path_link("Users");
+  $(users_link).click($.proxy(function() {
+      var users_node = new NeuronNavigatorUsersNode();
+      users_node.link(this.navigator, this);
+      this.navigator.select_node(users_node);
+  }, this));
+
+  return users_link;
+};
+
+NeuronNavigatorNode.prototype.create_neurons_link = function()
+{
+  var neurons_link = this.create_path_link("Neurons");
+  $(neurons_link).click($.proxy(function() {
+      // TODO
+  }, this));
+
+  return neurons_link
 };
 
 NeuronNavigatorNode.prototype.create_path_link = function(text)
@@ -147,25 +184,14 @@ var NeuronNavigatorHomeNode = function()
 NeuronNavigatorHomeNode.prototype = {};
 $.extend(NeuronNavigatorHomeNode.prototype, new NeuronNavigatorNode("Home"));
 
-NeuronNavigatorHomeNode.prototype.create_content = function(navigator)
+NeuronNavigatorHomeNode.prototype.create_content = function()
 {
   var content = document.createElement('div');
 
-  var annotations_link = this.create_path_link("Annotations");
+  var annotations_link = this.create_annotations_link();
+  var users_link = this.create_users_link();
   content.appendChild(annotations_link);
-  $(annotations_link).click($.proxy(function() {
-      var annotations_node = new NeuronNavigatorAnnotationsNode();
-      annotations_node.link(this);
-      navigator.select_node(annotations_node);
-  }, this));
-
-  var users_link = this.create_path_link("Users");
   content.appendChild(users_link);
-  $(users_link).click($.proxy(function() {
-      var users_node = new NeuronNavigatorUsersNode();
-      users_node.link(this);
-      navigator.select_node(users_node);
-  }, this));
 
   return content;
 };
@@ -180,11 +206,11 @@ NeuronNavigatorAnnotationsNode.prototype = {};
 $.extend(NeuronNavigatorAnnotationsNode.prototype,
     new NeuronNavigatorNode("Annotations"));
 
-NeuronNavigatorAnnotationsNode.prototype.create_content = function(navigator)
+NeuronNavigatorAnnotationsNode.prototype.create_content = function()
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_annotations_content' +
-      navigator.widgetID);
+      this.navigator.widgetID);
   content.innerHTML = "Please wait while the available annotatios are requested";
 
   // Make node easily accessible in created methods
@@ -202,14 +228,14 @@ NeuronNavigatorAnnotationsNode.prototype.create_content = function(navigator)
           var annotations = e.map(function(a) {
             var annotations_link = self.create_path_link(a);
             $(annotations_link).click(function() {
-                var annotations_node = new NeuronNavigatorFilterNode(a);
-                annotations_node.link(self);
-                navigator.select_node(annotations_node);
+                var annotations_node = new NeuronNavigatorAnnotationFilterNode(a);
+                annotations_node.link(self.navigator, self);
+                self.navigator.select_node(annotations_node);
             });
             return annotations_link;
           });
           // Add all annotation links
-          $('#navigator_annotations_content' + navigator.widgetID).empty().
+          $('#navigator_annotations_content' + self.navigator.widgetID).empty().
             append(annotations);
         }
       });
@@ -227,11 +253,11 @@ NeuronNavigatorUsersNode.prototype = {};
 $.extend(NeuronNavigatorUsersNode.prototype,
     new NeuronNavigatorNode("Users"));
 
-NeuronNavigatorUsersNode.prototype.create_content = function(navigator)
+NeuronNavigatorUsersNode.prototype.create_content = function()
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_users_content' +
-      navigator.widgetID);
+      this.navigator.widgetID);
   content.innerHTML = "Please wait while the existing users are requested";
 
   // Make node easily accessible in created methods
@@ -250,14 +276,14 @@ NeuronNavigatorUsersNode.prototype.create_content = function(navigator)
             var user_link = self.create_path_link(u.full_name +
                 " (" + u.login + ")");
             $(user_link).click(function() {
-                var filter_node = new NeuronNavigatorFilterNode(undefined, u);
-                filter_node.link(self);
-                navigator.select_node(filter_node);
+                var filter_node = new NeuronNavigatorUserFilterNode(undefined, u);
+                filter_node.link(self.navigator, self);
+                self.navigator.select_node(filter_node);
             });
             return user_link;
           });
           // Add all annotation links
-          $('#navigator_users_content' + navigator.widgetID).empty().
+          $('#navigator_users_content' + self.navigator.widgetID).empty().
             append(users);
         }
       });
@@ -267,39 +293,63 @@ NeuronNavigatorUsersNode.prototype.create_content = function(navigator)
 
 
 /**
- * The filter node of the navigator. It filters output based on a
- * set of annotations and/or users. The content it creates lists
- * user, neuron, annotation and co-annotation links.
+ * The annotation filter node of the navigator filters output based on the
+ * existence of an annotations. The content it creates lists user, neuron,
+ * annotation and co-annotation links.
  */
-var NeuronNavigatorFilterNode = function(included_annotation,
-    included_user)
+var NeuronNavigatorAnnotationFilterNode = function(included_annotation)
 {
   this.included_annotation = included_annotation;
-  this.included_user = included_user;
-
-  var filter_names = []
-
-  if (included_annotation) {
-    filter_names.push("A: " + included_annotation);
-  }
-
-  if (included_user) {
-    filter_names.push("U: " + included_user.login);
-  }
-
-  if (filter_names.length > 0) {
-    this.name = filter_names.join(', ');
-  }
+  this.name = "A: " + included_annotation;
 };
 
-NeuronNavigatorFilterNode.prototype = {};
-$.extend(NeuronNavigatorFilterNode.prototype,
-    new NeuronNavigatorNode("Empty Filter"));
+NeuronNavigatorAnnotationFilterNode.prototype = {};
+$.extend(NeuronNavigatorAnnotationFilterNode.prototype,
+    new NeuronNavigatorNode("Empty Annotation Filter"));
 
-NeuronNavigatorFilterNode.prototype.create_content = function(navigator)
+NeuronNavigatorAnnotationFilterNode.prototype.create_content = function()
+{
+  /* An annotation filter node, will display options to add ad user filter,
+   * another annotation filter or to select a neuron.
+   */
+  var content = document.createElement('div');
+
+  var annotations_link = this.create_annotations_link();
+  var users_link = this.create_users_link();
+  var neurons_link = this.create_neurons_link();
+  content.appendChild(annotations_link);
+  content.appendChild(users_link);
+  content.appendChild(neurons_link);
+
+  return content;
+};
+
+
+/**
+ * The user filter node of the navigator filters output based on the
+ * ownership by a particular user. The content it creates lists user, neuron,
+ * annotation and co-annotation links.
+ */
+var NeuronNavigatorUserFilterNode = function(included_user)
+{
+  this.included_user = included_user;
+  this.name = "U: " + included_user;
+};
+
+NeuronNavigatorUserFilterNode.prototype = {};
+$.extend(NeuronNavigatorUserFilterNode.prototype,
+    new NeuronNavigatorNode("Empty User Filter"));
+
+NeuronNavigatorUserFilterNode.prototype.create_content = function()
 {
   var content = document.createElement('div');
-  content.innerHTML = "Filtered content";
+
+  var annotations_link = this.create_annotations_link();
+  var users_link = this.create_users_link();
+  var neurons_link = this.create_neurons_link();
+  content.appendChild(annotations_link);
+  content.appendChild(users_link);
+  content.appendChild(neurons_link);
 
   return content;
 };

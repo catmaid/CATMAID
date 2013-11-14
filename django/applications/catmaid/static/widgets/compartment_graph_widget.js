@@ -950,3 +950,11 @@ CompartmentGraphWidget.prototype.colorBy = function(mode) {
     $.unblockUI();
   }
 };
+
+CompartmentGraphWidget.prototype.exportAdjacencyMatrix = function() {
+  alert("TODO"); // TODO
+};
+
+CompartmentGraphWidget.prototype.openPlot = function() {
+  alert("TODO"); // TODO
+};

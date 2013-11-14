@@ -398,6 +398,12 @@ NeuronNavigatorNeuronListNode.prototype.create_content = function()
             });
             return neuron_link;
           });
+          // If the list is empty, create informational text
+          if (e.length == 0) {
+            neurons = document.createElement('em');
+            neurons.appendChild(document.createTextNode(
+                  "No neurons matching the given filters where found."));
+          }
           // Add all annotation links
           $('#navigator_neuronlist_content' + self.navigator.widgetID).empty().
             append(neurons);

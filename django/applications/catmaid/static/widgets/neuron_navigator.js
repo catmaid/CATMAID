@@ -177,7 +177,9 @@ NeuronNavigatorNode.prototype.create_neurons_link = function()
 {
   var neurons_link = this.create_path_link("Neurons");
   $(neurons_link).click($.proxy(function() {
-      // TODO
+      var node = new NeuronNavigatorNeuronListNode();
+      node.link(this.navigator, this);
+      this.navigator.select_node(node);
   }, this));
 
   return neurons_link
@@ -334,6 +336,71 @@ NeuronNavigatorUsersNode.prototype.create_content = function()
           // Add all annotation links
           $('#navigator_users_content' + self.navigator.widgetID).empty().
             append(users);
+        }
+      });
+
+  return content;
+};
+
+
+/**
+ * The neuron list node of the navigator lists all neurons matching the
+ * filter criteria in the path.
+ */
+var NeuronNavigatorNeuronListNode = function() {};
+
+NeuronNavigatorNeuronListNode.prototype = {};
+$.extend(NeuronNavigatorNeuronListNode.prototype,
+    new NeuronNavigatorNode("Neurons"));
+
+NeuronNavigatorNeuronListNode.prototype.create_content = function()
+{
+  var content = document.createElement('div');
+  content.setAttribute('id', 'navigator_neuronlist_content' +
+      this.navigator.widgetID);
+  content.innerHTML = "Please wait while matching neurons are requested";
+
+  // Make node easily accessible in created methods
+  var self = this;
+
+  // Collect all filters into post data
+  var filters = this.collect_filters();
+  var post_data = filters.reduce(function(o, f) {
+        if (f.user) {
+          // Expect only one user filter and create the
+          // field in result object if one exists.
+          o.neuron_query_by_annotator = f.user;
+        }
+        if (f.annotation) {
+          o.neuron_query_by_annotation.push(f.annotation);
+        }
+        return o;
+      }, {
+        'neuron_query_by_annotation': []
+      });
+
+  // Get the list of currently available annotations
+  requestQueue.register(django_url + project.id +
+      '/neuron/query-by-annotations',
+      'POST', post_data, function(status, data, text) {
+        var e = $.parseJSON(data);
+        if (status != 200) {
+          alert("The server returned an unexpected status (" +
+            status + ") with error message:\n" + text);
+        } else {
+          // Create a list of neuron links
+          var neurons = e.map(function(n) {
+            var neuron_link = self.create_path_link(n.name +
+                " (ID: " + n.id + ", Skeleton ID: " + n.skeleton_id +
+                ", Root node: " + n.root_node + ")");
+            $(neuron_link).click(function() {
+                // TODO: What should happen when clicking a neuron?
+            });
+            return neuron_link;
+          });
+          // Add all annotation links
+          $('#navigator_neuronlist_content' + self.navigator.widgetID).empty().
+            append(neurons);
         }
       });
 

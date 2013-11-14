@@ -37,7 +37,7 @@ def query_neurons_by_annotations(request, project_id = None):
                                          cici_via_a__creation_time__lte = endDate)
             
     dump = [];
-    for neuron in neurons:
+    for neuron in neurons.distinct():
         try:
             cici_skeleton = ClassInstanceClassInstance.objects.get(
                 class_instance_b = neuron,

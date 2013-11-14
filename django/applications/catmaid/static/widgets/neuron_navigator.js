@@ -161,6 +161,18 @@ NeuronNavigatorNode.prototype.create_annotations_link = function()
   return annotations_link;
 };
 
+NeuronNavigatorNode.prototype.create_coannotations_link = function()
+{
+  var annotations_link = this.create_path_link("Co-Annotations");
+  $(annotations_link).click($.proxy(function() {
+      var annotations_node = new NeuronNavigatorAnnotationListNode();
+      annotations_node.link(this.navigator, this);
+      this.navigator.select_node(annotations_node);
+  }, this));
+
+  return annotations_link;
+};
+
 NeuronNavigatorNode.prototype.create_users_link = function()
 {
   var users_link = this.create_path_link("Users");
@@ -449,6 +461,9 @@ NeuronNavigatorAnnotationFilterNode.prototype.create_content = function()
 
   var annotations_link = this.create_annotations_link();
   content.appendChild(annotations_link);
+
+  var coannotations_link = this.create_coannotations_link();
+  content.appendChild(coannotations_link);
 
   // Only show the users link, if there hasn't been one before
   var filters = this.collect_filters();

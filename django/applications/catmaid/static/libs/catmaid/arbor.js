@@ -366,13 +366,13 @@ Arbor.prototype.topologicalCopy = function() {
 	topo.root = this.root;
 	while (open.length > 0) {
 		var paren = open.pop(),
-			  succ = successors[paren],
-			  child;
+			  child = paren,
+			  succ = successors[paren];
 		while (1 === succ.length) {
 			child = succ[0];
 			succ = successors[child];
 		}
-		topo.edges[child] = this.root === paren ? paren : this.edges[paren];
+		topo.edges[child] = this.root == paren ? paren : this.edges[paren];
 		if (succ.length > 1) {
 			open = open.concat(succ);
 		}
@@ -380,6 +380,9 @@ Arbor.prototype.topologicalCopy = function() {
 	return topo;
 };
 
+/** Return an array of arrays, each subarray containing the nodes of a slab,
+ * including the initial node (root or a branch node ) and the ending node
+ * (a branch node or an end node). */
 Arbor.prototype.slabs = function() {
 	var slabs = [],
 			successors = this.allSuccessors(),

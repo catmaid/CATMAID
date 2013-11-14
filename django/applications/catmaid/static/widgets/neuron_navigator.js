@@ -217,10 +217,18 @@ NeuronNavigatorHomeNode.prototype.create_content = function()
 {
   var content = document.createElement('div');
 
+  // Add annotation and user list links
   var annotations_link = this.create_annotations_link();
   var users_link = this.create_users_link();
   content.appendChild(annotations_link);
   content.appendChild(users_link);
+
+  // Add link for active skeleton
+  var active_skeleton_link = this.create_path_link("Active Skeleton");
+  $(active_skeleton_link).click($.proxy(function() {
+      // TODO: What should be done when a neuron/skeleton is clicked?
+  }, this));
+  content.appendChild(active_skeleton_link);
 
   return content;
 };

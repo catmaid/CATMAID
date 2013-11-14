@@ -294,23 +294,63 @@ Arbor.prototype.spanningTree = function(keepers) {
 	return spanning;
 };
 
-/** Compute betweenness centrality in O(5n) time.
+/** Compute betweenness centrality of a tree in O(5n) time.
+ * Note that edges are considered non-directional, that is,
+ * this is the betweenness centrality of the equivalent undirected graph of the tree.
+ * This implementation relies on trees having non-duplicate directed edges and no loops.
+ * All edges are considered equal, and endpoints are included.
  * Returns a map of node vs number of paths traveling through the node. */
-Arbor.prototype.betweennessCentrality = function() {
-	var counts = {},
+Arbor.prototype.betweennessCentrality = function(normalized) {
+	var succ_groups = {},
 			centrality = {},
 			n_nodes = this.countNodes();
+	// Iterate from shortest to longest partition, where each partition
+	// runs from an end node to a branch node or root,
+	// and the last partition is the longest and reaches the root.
 	this.partitionSorted().forEach(function(seq) {
-		var branch = seq.pop(), // remove the last one
-        count = counts[branch];
-		counts[branch] = (count ? count : 0) + seq.length;
-		seq.reduce(function(cumulative, node, i) {
-			var c = counts[node];
-			if (c) cumulative += c;
-			centrality[node] = (cumulative * (n_nodes - cumulative - 1)) / n_nodes;
+		var branch = seq.pop(), // remove the last one, which is a branch node or root
+        group = succ_groups[branch];
+		if (!group) {
+			group = [];
+			succ_groups[branch] = group;
+		}
+		group.push(seq.reduce(function(cumulative, node) {
+			var g = succ_groups[node];
+			if (g) {
+				// Passing through a branch node that had already been reached before
+				// by shorter partitions
+				// Count nodes accumulated by other partitions
+				var other = g.reduce(function(a) { return a + b; });
+				// Add the count of nodes downstream of this node within this partition
+				g.push(cumulative);
+				// Add the count of upstream nodes
+				g.push(n_nodes - cumulative - other - 1);
+				// Count the paths passing through this node
+				var paths = 0,
+			      len = g.length;
+				for (var i=0; i<len; ++i) {
+					for (var k=i+1; k<len; ++k) {
+						paths += g[i] * g[k];
+					}
+				}
+				// Update cumulative at this node
+				cumulative += other;
+				centrality[node] = paths;
+			} else {
+				// Slab node: the number of paths is the number of successor nodes
+				// times the number of predecessor nodes
+				centrality[node] = (cumulative * (n_nodes - cumulative -1));
+			}
 			return cumulative + 1;
-		}, 0);
+		}, 0));
 	});
+
+	if (normalized) {
+		var K = 1.0 / ((n_nodes -1) * (n_nodes -2));
+		Object.keys(centrality).forEach(function(node) {
+			centrality[node] *= K;
+		});
+	}
 
 	centrality[this.root] = 0;
 

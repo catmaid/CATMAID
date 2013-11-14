@@ -153,7 +153,7 @@ NeuronNavigatorNode.prototype.create_annotations_link = function()
 {
   var annotations_link = this.create_path_link("Annotations");
   $(annotations_link).click($.proxy(function() {
-      var annotations_node = new NeuronNavigatorAnnotationsNode();
+      var annotations_node = new NeuronNavigatorAnnotationListNode();
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
@@ -227,15 +227,17 @@ NeuronNavigatorHomeNode.prototype.create_content = function()
 
 
 /**
- * The annotations node of the navigator. It links to annotations.
+ * The annotation list node of the navigator provides a list of all available
+ * annotations minus the onces choses in already existing filters. If clicked
+ * on a listed annotations, it adds a new annotation filter.
  */
-var NeuronNavigatorAnnotationsNode = function() {};
+var NeuronNavigatorAnnotationListNode = function() {};
 
-NeuronNavigatorAnnotationsNode.prototype = {};
-$.extend(NeuronNavigatorAnnotationsNode.prototype,
+NeuronNavigatorAnnotationListNode.prototype = {};
+$.extend(NeuronNavigatorAnnotationListNode.prototype,
     new NeuronNavigatorNode("Annotations"));
 
-NeuronNavigatorAnnotationsNode.prototype.create_content = function()
+NeuronNavigatorAnnotationListNode.prototype.create_content = function()
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_annotations_content' +

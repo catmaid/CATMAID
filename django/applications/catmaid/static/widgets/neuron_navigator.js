@@ -364,10 +364,19 @@ NeuronNavigatorAnnotationFilterNode.prototype.create_content = function()
   var content = document.createElement('div');
 
   var annotations_link = this.create_annotations_link();
-  var users_link = this.create_users_link();
-  var neurons_link = this.create_neurons_link();
   content.appendChild(annotations_link);
-  content.appendChild(users_link);
+
+  // Only show the users link, if there hasn't been one before
+  var filters = this.collect_filters();
+  var has_user_filter = filters.some(function(f) {
+    return f.user;
+  });
+  if (!has_user_filter) {
+    var users_link = this.create_users_link();
+    content.appendChild(users_link);
+  }
+
+  var neurons_link = this.create_neurons_link();
   content.appendChild(neurons_link);
 
   return content;
@@ -394,10 +403,8 @@ NeuronNavigatorUserFilterNode.prototype.create_content = function()
   var content = document.createElement('div');
 
   var annotations_link = this.create_annotations_link();
-  var users_link = this.create_users_link();
   var neurons_link = this.create_neurons_link();
   content.appendChild(annotations_link);
-  content.appendChild(users_link);
   content.appendChild(neurons_link);
 
   return content;

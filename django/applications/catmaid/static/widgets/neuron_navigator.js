@@ -165,7 +165,7 @@ NeuronNavigatorNode.prototype.create_users_link = function()
 {
   var users_link = this.create_path_link("Users");
   $(users_link).click($.proxy(function() {
-      var users_node = new NeuronNavigatorUsersNode();
+      var users_node = new NeuronNavigatorUserListNode();
       users_node.link(this.navigator, this);
       this.navigator.select_node(users_node);
   }, this));
@@ -285,15 +285,16 @@ NeuronNavigatorAnnotationsNode.prototype.create_content = function()
 
 
 /**
- * The users node of the navigator. It links to users.
+ * The user list node of the navigator provides a list of all existing users.
+ * It will add a user filter if clicked on one of them.
  */
-var NeuronNavigatorUsersNode = function() {};
+var NeuronNavigatorUserListNode = function() {};
 
-NeuronNavigatorUsersNode.prototype = {};
-$.extend(NeuronNavigatorUsersNode.prototype,
+NeuronNavigatorUserListNode.prototype = {};
+$.extend(NeuronNavigatorUserListNode.prototype,
     new NeuronNavigatorNode("Users"));
 
-NeuronNavigatorUsersNode.prototype.create_content = function()
+NeuronNavigatorUserListNode.prototype.create_content = function()
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_users_content' +

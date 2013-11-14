@@ -475,7 +475,7 @@ NeuronNavigatorAnnotationFilterNode.prototype.create_content = function()
 var NeuronNavigatorUserFilterNode = function(included_user)
 {
   this.filters = new NeuronNavigatorFilter(null, included_user.id)
-  this.name = "U: " + included_user.login;
+  this.name = included_user.login;
 };
 
 NeuronNavigatorUserFilterNode.prototype = {};

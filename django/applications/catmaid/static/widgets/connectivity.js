@@ -156,7 +156,7 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
 
 SkeletonConnectivity.prototype._clearGUI = function() {
   // Clear table and plots
-  ["_table", "_plot_Upstream", "_plot_Downstream"].forEach(function(name) {
+  ["_table", "_plot_" + this.widgetID + "_Upstream", "_plot_" + this.widgetID + "_Downstream"].forEach(function(name) {
       var s = $('#connectivity' + name + this.widgetID);
       if (s.length > 0) s.remove();
   }, this);

@@ -14,8 +14,14 @@
  * Structural Properties of the Caenorhabditis elegans Neuronal Network
  * Lav R. Varshney, Beth L. Chen, Eric Paniagua, David H. Hall, Dmitri B. Chklovskii
  * PLoS Computational Biology 2010, DOI: 10.1371/journal.pcbi.1001066
+ *
+ * Invoke like:
+ *
+ * var cga = new CircuitGraphAnalysis().init(adjacency_matrix, maxiter)
+ * ... with maxiter being the maximum number of iterations to compute
+ * the eigenvalues and eigenvectors.
  */
-var CircuitGraphAnalysis = function(adjacency_matrix) {
+var CircuitGraphAnalysis = function() {
   // Signal Flow, as an array where each index corresponds to the row and column
   // index of the adjacency matrix
   this.z = null;
@@ -24,8 +30,7 @@ var CircuitGraphAnalysis = function(adjacency_matrix) {
   // of eigenvalue and eigenvector, sorted by eigenvalue.
   this.e = null;
 
-	// Compute z and e
-  this._init(adjacency_matrix);
+	// Compute z and e via a call to init
 };
 
 CircuitGraphAnalysis.prototype = {};
@@ -59,7 +64,7 @@ CircuitGraphAnalysis.prototype._sign = function(M) {
   });
 };
 
-CircuitGraphAnalysis.prototype._init = function(adjacency_matrix) {
+CircuitGraphAnalysis.prototype.init = function(adjacency_matrix, maxiter) {
   var t_adjacency_matrix = numeric.transpose(adjacency_matrix);
 
   // symmetrized adjacency matrix
@@ -78,7 +83,9 @@ CircuitGraphAnalysis.prototype._init = function(adjacency_matrix) {
   this.z = this.signalFlow(W, numeric.sub(adjacency_matrix, t_adjacency_matrix), pseudoinverse);
 
   // Compute the eigenvectors and eigenvalues
-  this.e = this.eigen(D, L);
+  this.e = this.eigen(D, L, maxiter);
+
+  return this;
 };
 
 CircuitGraphAnalysis.prototype.signalFlow = function(W, io_difference, pseudoinverse) {
@@ -97,7 +104,7 @@ CircuitGraphAnalysis.prototype.signalFlow = function(W, io_difference, pseudoinv
 
 /** Compute eigenvalues and eigenvectors of the graph Laplacian 'L',
  * normalized by the 1/sqrt(degree) of each node, 'D'. */
-CircuitGraphAnalysis.prototype._eig = function(D, L) {
+CircuitGraphAnalysis.prototype._eig = function(D, L, maxiter) {
   // Horizontal coordinates (the eigen spectra), normalized by degrees
   var D12 = D.map(function(row) {
     return row.map(function(a) {
@@ -107,12 +114,12 @@ CircuitGraphAnalysis.prototype._eig = function(D, L) {
 
   // var Q = numeric.dot(D12, numeric.dot(L, D12));
   // var eig = numeric.eig(Q);
-  return numeric.eig(numeric.dot(D12, numeric.dot(L, D12)));
+  return numeric.eig(numeric.dot(D12, numeric.dot(L, D12)), maxiter);
 };
 
-CircuitGraphAnalysis.prototype.eigen = function(D, L) {
+CircuitGraphAnalysis.prototype.eigen = function(D, L, maxiter) {
   // eigenvalues and eigenvectors
-  var eig = this._eig(D, L);
+  var eig = this._eig(D, L, maxiter);
 
   var sorted_lambda = eig.lambda.x.map(function(e, i) { return [i, e]; })
                                   .sort(function(a, b) { return a[1] - b[1]; });

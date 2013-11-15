@@ -130,7 +130,8 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
 
   // Compute signal flow and eigenvectors
   try {
-    var cga = new CircuitGraphAnalysis(AdjM);
+    window.AdjM = AdjM;
+    var cga = new CircuitGraphAnalysis().init(AdjM, 100000);
   } catch (e) {
     this.clear();
     console.log(e, e.stack);

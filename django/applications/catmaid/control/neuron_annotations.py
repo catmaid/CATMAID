@@ -9,43 +9,43 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 
 
-@requires_user_role([UserRole.Browse])
-def query_neurons_by_annotations(request, project_id = None):
-    p = get_object_or_404(Project, pk = project_id)
-    
-    neurons = ClassInstance.objects.filter(project = p, 
+def create_basic_annotated_neuron_query(project, params):
+    neurons = ClassInstance.objects.filter(project = project,
                                            class_column__class_name = 'neuron')
-    for key in request.POST:
+    for key in params:
         if key.startswith('neuron_query_by_annotation'):
-            tag = request.POST[key].strip()
+            tag = params[key].strip()
             if len(tag) > 0:
                 neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
                                          cici_via_a__class_instance_b__name = tag)
         elif key == 'neuron_query_by_annotator':
-            userID = int(request.POST[key])
+            userID = int(params[key])
             if userID >= 0:
                 neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
                                          cici_via_a__user = userID)
         elif key == 'neuron_query_by_start_date':
-            startDate = request.POST[key].strip()
+            startDate = params[key].strip()
             if len(startDate) > 0:
                 neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
                                          cici_via_a__creation_time__gte = startDate)
         elif key == 'neuron_query_by_end_date':
-            endDate = request.POST[key].strip()
+            endDate = params[key].strip()
             if len(endDate) > 0:
                 neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
                                          cici_via_a__creation_time__lte = endDate)
-            
-    dump = [];
-    for neuron in neurons.order_by('id').distinct():
+
+    return neurons
+
+def create_annotated_neuron_list(project, neurons):
+    annotated_neurons = [];
+    for neuron in neurons:
         try:
             cici_skeleton = ClassInstanceClassInstance.objects.get(
                 class_instance_b = neuron,
                 relation__relation_name = 'model_of')
             skeleton = cici_skeleton.class_instance_a
             tn = Treenode.objects.get(
-                project=project_id,
+                project=project,
                 parent__isnull=True,
                 skeleton_id=skeleton.id)
             # Get all annotations linked to this neuron
@@ -64,9 +64,19 @@ def query_neurons_by_annotations(request, project_id = None):
             }
 
             # TODO: include node count, review percentage, etc.
-            dump += [neuron_info]
+            annotated_neurons += [neuron_info]
         except ClassInstanceClassInstance.DoesNotExist:
             pass
+
+    return annotated_neurons
+
+@requires_user_role([UserRole.Browse])
+def query_neurons_by_annotations(request, project_id = None):
+    p = get_object_or_404(Project, pk = project_id)
+
+    neuron_query = create_basic_annotated_neuron_query(p, request.POST)
+    neuron_query = neuron_query.order_by('id').distinct()
+    dump = create_annotated_neuron_list(p, neuron_query)
 
     return HttpResponse(json.dumps(dump))
 

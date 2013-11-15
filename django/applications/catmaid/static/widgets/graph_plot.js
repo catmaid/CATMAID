@@ -121,6 +121,7 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
   try {
     var cga = new CircuitGraphAnalysis(AdjM);
   } catch (e) {
+    this.clear();
     console.log(e, e.stack);
     alert("Failed to compute the adjacency matrix: \n" + e + "\n" + e.stack);
     return;

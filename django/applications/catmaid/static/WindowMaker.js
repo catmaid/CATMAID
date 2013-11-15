@@ -22,7 +22,7 @@ var WindowMaker = new function()
     return container;
   };
 
-  var addListener = function(win, container, button_bar, destroy) {
+  var addListener = function(win, container, button_bar, destroy, resize) {
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {
@@ -54,6 +54,10 @@ var WindowMaker = new function()
                 container.style.height = ( win.getContentHeight() ) + "px";
             }
             container.style.width = ( win.getAvailableWidth() + "px" );
+
+            if (typeof(resize) === "function") {
+              resize();
+            }
 
             break;
         }
@@ -923,7 +927,7 @@ var WindowMaker = new function()
     plot.style.backgroundColor = "#FFFFF0";
     container.appendChild(plot);
 
-    addListener(win, container, 'circuit_graph_plot_buttons' + GP.widgetID, GP.destroy.bind(GP));
+    addListener(win, container, 'circuit_graph_plot_buttons' + GP.widgetID, GP.destroy.bind(GP), GP.resize.bind(GP));
 
     addLogic(win);
 

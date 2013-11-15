@@ -156,7 +156,7 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
 
 SkeletonConnectivity.prototype._clearGUI = function() {
   // Clear table and plots
-  ["_table", "_plot_Upstream", "_plot_Downstream"].forEach(function(name) {
+  ["_table", "_plot_" + this.widgetID + "_Upstream", "_plot_" + this.widgetID + "_Downstream"].forEach(function(name) {
       var s = $('#connectivity' + name + this.widgetID);
       if (s.length > 0) s.remove();
   }, this);
@@ -443,7 +443,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
 SkeletonConnectivity.prototype.createSynapseDistributionPlots = function(json) {
     // A grouped bar chart plot from d3.js
     
-    var skeletons = this.skeletons;
+    var skeletons = this.skeletons,
+        widgetID = this.widgetID;
 
     /** Generate a distribution of number of Y partners that have X synapses,
      * for each partner. The distribution then takes the form of an array of blocks,
@@ -524,7 +525,7 @@ SkeletonConnectivity.prototype.createSynapseDistributionPlots = function(json) {
             height = 500 - margin.top - margin.bottom;
 
         var svg = d3.select(container).append("svg")
-            .attr("id", "connectivity_plot_" + title)
+            .attr("id", "connectivity_plot_" + widgetID + "_" + title)
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")

@@ -280,49 +280,77 @@ $.extend(NeuronNavigatorAnnotationListNode.prototype,
 NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
-  content.setAttribute('id', 'navigator_annotations_content' +
+  content.setAttribute('id', 'navigator_annotationlist_content' +
       this.navigator.widgetID);
-  content.innerHTML = "Please wait while the available annotatios are requested";
 
-  // Make node easily accessible in created methods
+  // Create user table
+  var columns = ['Annotation'];
+  var table_header = document.createElement('thead');
+  table_header.appendChild(this.create_header_row(columns));
+  var table_footer = document.createElement('tfoot');
+  table_footer.appendChild(this.create_header_row(columns));
+  var table_id = 'navigator_annotationlist_table' + this.navigator.widgetID;
+  var table = document.createElement('table');
+  table.setAttribute('id', table_id);
+  table.setAttribute('class', 'display');
+  table.setAttribute('cellpadding', 0);
+  table.setAttribute('cellspacing', 0);
+  table.setAttribute('border', 0);
+  table.appendChild(table_header);
+  table.appendChild(table_footer);
+
+  content.appendChild(table);
+
+  // Add table to DOM
+  container.append(content);
+
+  // Fill user table
+  var datatable = $(table).dataTable({
+    // http://www.datatables.net/usage/options
+    "bDestroy": true,
+    "sDom": '<"H"lr>t<"F"ip>',
+    "bProcessing": true,
+    "bServerSide": true,
+    "bAutoWidth": false,
+    "iDisplayLength": this.possibleLengths[0],
+    "sAjaxSource": django_url + project.id + '/annotations/table-list',
+    "fnServerData": function (sSource, aoData, fnCallback) {
+        $.ajax({
+            "dataType": 'json',
+            "cache": false,
+            "type": "POST",
+            "url": sSource,
+            "data": aoData,
+            "success": fnCallback
+        });
+    },
+    "aLengthMenu": [
+        this.possibleLengths,
+        this.possibleLengthsLabels
+    ],
+    "bJQueryUI": true,
+    "aaSorting": [[ 2, "desc" ]],
+    "aoColumns": [
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+    ]
+  });
+
+  // Make self available in callback (original this is needed there)
   var self = this;
 
-  // Collect all filtered annotations into post data
-  var filters = this.collect_filters();
-  var post_data = {
-    'ignored_annotations': filters.reduce(function(o, f) {
-        if (f.annotation) {
-          o.push(f.annotation);
-        }
-        return o;
-      }, [])
-  };
-
-  // Get the list of currently available annotations
-  requestQueue.register(django_url + project.id + '/annotations/list',
-      'POST', post_data, function(status, data, text) {
-        var e = $.parseJSON(data);
-        if (status != 200) {
-          alert("The server returned an unexpected status (" +
-            status + ") with error message:\n" + text);
-        } else {
-          // Create a list of annotation links
-          var annotations = e.map(function(a) {
-            var annotations_link = self.create_path_link(a);
-            $(annotations_link).click(function() {
-                var annotations_node = new NeuronNavigatorAnnotationFilterNode(a);
-                annotations_node.link(self.navigator, self);
-                self.navigator.select_node(annotations_node);
-            });
-            return annotations_link;
-          });
-          // Add all annotation links
-          $('#navigator_annotations_content' + self.navigator.widgetID).empty().
-            append(annotations);
-        }
-      });
-
-  container.append(content);
+  // If a user is selected an annotation filter node is created and the event
+  // is removed.
+  $('#' + table_id).on('click', ' tbody tr', function () {
+      var aData = datatable.fnGetData(this);
+      var a = aData[0];
+      var annotations_node = new NeuronNavigatorAnnotationFilterNode(a);
+      annotations_node.link(self.navigator, self);
+      self.navigator.select_node(annotations_node);
+  });
 };
 
 
@@ -388,7 +416,7 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
         this.possibleLengthsLabels
     ],
     "bJQueryUI": true,
-    "aaSorting": [[ 2, "desc" ]],
+    "aaSorting": [[ 0, "desc" ]],
     "aoColumns": [
       {
         "sClass": "center",

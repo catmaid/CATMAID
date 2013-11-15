@@ -1,4 +1,5 @@
 import json, sys
+from string import upper
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -157,3 +158,41 @@ def list_annotations(request, project_id=None):
     annotation_names = [a.name for a in annotations]
 
     return HttpResponse(json.dumps(annotation_names), mimetype="text/json")
+
+@requires_user_role([UserRole.Browse])
+def list_annotations_datatable(request, project_id=None):
+    display_start = int(request.POST.get('iDisplayStart', 0))
+    display_length = int(request.POST.get('iDisplayLength', -1))
+    if display_length < 0:
+        display_length = 2000  # Default number of result rows
+
+    should_sort = request.POST.get('iSortCol_0', False)
+
+    annotation_query = ClassInstance.objects.filter(project_id=project_id,
+            class_column__class_name='annotation')
+
+    if should_sort:
+        column_count = int(request.POST.get('iSortingCols', 0))
+        sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
+                for d in range(column_count)]
+        sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
+                sorting_directions)
+
+        fields = ['name']
+        sorting_index = [int(request.POST.get('iSortCol_%d' % d))
+                for d in range(column_count)]
+        sorting_cols = map(lambda i: fields[i], sorting_index)
+
+        annotation_query = annotation_query.extra(order_by=[di + col for (di, col) in zip(
+                sorting_directions, sorting_cols)])
+
+    result = list(annotation_query[display_start:display_start + display_length])
+
+    response = {'iTotalRecords': len(result),
+            'iTotalDisplayRecords': len(result), 'aaData': []}
+    for annotation in result:
+        response['aaData'] += [[
+            annotation.name,
+        ]]
+
+    return HttpResponse(json.dumps(response), mimetype='text/json')

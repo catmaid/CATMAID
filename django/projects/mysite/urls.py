@@ -150,6 +150,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/annotation/(?P<annotation_id>\d+)/remove$',
             'catmaid.control.remove_annotation'),
     (r'^(?P<project_id>\d+)/annotations/list$', 'catmaid.control.list_annotations'),
+    (r'^(?P<project_id>\d+)/annotations/table-list$', 'catmaid.control.list_annotations_datatable'),
     
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/confidence/update$', 'catmaid.control.update_confidence'),
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'catmaid.control.update_location_reviewer'),

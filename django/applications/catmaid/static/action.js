@@ -493,7 +493,7 @@ var tracingWindowActions = [
   new Action({
       helpText: "Circuit Graph Plot",
       buttonID: "data_button_circuit_graph_plot",
-      buttonName: 'circuit_graph_plot',
+      buttonName: 'circuit_plot',
       run: function (e) {
           WindowMaker.create('circuit-graph-plot');
           return true;

@@ -9,16 +9,8 @@ from django.contrib.auth.models import User
 
 @login_required
 def user_list(request):
-    # Allow a request to pass users IDs to ignore
-    if request.method == "POST":
-        ignored_users = [v for k,v in request.POST.iteritems()
-                if k.startswith('ignored_users[')]
-    else:
-        ignored_users = []
-
     result = []
-    for u in User.objects.exclude(id__in=ignored_users).order_by(
-            'last_name', 'first_name'):
+    for u in User.objects.all().order_by('last_name', 'first_name'):
         up = u.userprofile
         result.append({
             "id": u.id,

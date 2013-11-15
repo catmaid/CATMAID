@@ -348,9 +348,9 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
   table_header.appendChild(this.create_header_row(columns));
   var table_footer = document.createElement('tfoot');
   table_footer.appendChild(this.create_header_row(columns));
+  var table_id = 'navigator_user_table' + this.navigator.widgetID;
   var table = document.createElement('table');
-  table.setAttribute('id', 'navigator_user_table' +
-      this.navigator.widgetID);
+  table.setAttribute('id', table_id);
   table.setAttribute('class', 'display');
   table.setAttribute('cellpadding', 0);
   table.setAttribute('cellspacing', 0);
@@ -360,8 +360,11 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
 
   content.appendChild(table);
 
+  // Add table to DOM
+  container.append(content);
+
   // Fill user table
-  $(table).dataTable({
+  var datatable = $(table).dataTable({
     // http://www.datatables.net/usage/options
     "bDestroy": true,
     "sDom": '<"H"lr>t<"F"ip>',
@@ -410,7 +413,23 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
     ]
   });
 
-  container.append(content);
+  // Make self available in callback (original this is needed there)
+  var self = this;
+
+  // If a user is selected a user filter node is created and the event is
+  // removed.
+  $('#' + table_id).on('click', ' tbody tr', function () {
+      var aData = datatable.fnGetData(this);
+      var user = {
+        'login': aData[0],
+        'first_name': aData[1],
+        'last_name': aData[2],
+        'id': aData[3],
+      }
+      var filter_node = new NeuronNavigatorUserFilterNode(user);
+      filter_node.link(self.navigator, self);
+      self.navigator.select_node(filter_node);
+  });
 };
 
 

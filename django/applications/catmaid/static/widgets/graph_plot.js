@@ -59,7 +59,10 @@ CircuitGraphPlot.prototype.hasSkeleton = function(skeleton_id) {
 };
 
 CircuitGraphPlot.prototype.clear = function() {
-	// TODO
+	this.skeletons = {};
+  this.skeleton_ids = [];
+  this.selected = {};
+  this.redraw();
 };
 
 CircuitGraphPlot.prototype.append = function(models) {
@@ -145,13 +148,13 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
 };
 
 CircuitGraphPlot.prototype.redraw = function() {
-  if (!this.skeleton_ids || 0 === this.skeleton_ids.length) return;
-
   var containerID = '#circuit_graph_plot_div' + this.widgetID,
       container = $(containerID);
 
   // Clear existing plot if any
   container.empty();
+
+  if (!this.skeleton_ids || 0 === this.skeleton_ids.length) return;
 
   // Recreate plot
   var margin = {top: 20, right: 20, bottom: 30, left: 40},

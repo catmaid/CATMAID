@@ -88,7 +88,7 @@ CircuitGraphAnalysis.prototype.signalFlow = function(W, io_difference, pseudoinv
   });
 
   // Signal flow:
-  var z = numeric.dot(pseudoinverse, b);
+  var z = numeric.dot(pseudoinverse, b).map(function(a) { return a[0]; }); // as a row
 
   return z;
 };

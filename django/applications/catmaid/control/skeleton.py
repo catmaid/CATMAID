@@ -511,8 +511,10 @@ def review_status(request, project_id=None):
         pending = reviewers.get(-1, 0)
         if 0 == pending:
             status[skid] = 100
+        elif pending > 0 and 1 == len(reviewers):
+            status[skid] = 0
         else:
-            status[skid] = int(100 * (float(pending) / sum(reviewers.itervalues())))
+            status[skid] = int(100 * (1 - (float(pending) / sum(reviewers.itervalues()))))
 
     return HttpResponse(json.dumps(status))
 

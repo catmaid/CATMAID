@@ -54,6 +54,11 @@ CircuitGraphPlot.prototype.getSelectedSkeletonModels = function() {
 
 CircuitGraphPlot.prototype.getSkeletonModels = CircuitGraphPlot.prototype.getSelectedSkeletonModels;
 
+CircuitGraphPlot.prototype.getSkeletonModel = function(skeleton_id) {
+  var model = this.skeletons[skeleton_id];
+  return model ? model.clone() : null;
+};
+
 CircuitGraphPlot.prototype.hasSkeleton = function(skeleton_id) {
   return skeleton_id in this.skeleton_ids;
 };
@@ -62,7 +67,7 @@ CircuitGraphPlot.prototype.clear = function() {
 	this.skeletons = {};
   this.skeleton_ids = [];
   this.selected = {};
-  this.redraw();
+  this.clearGUI();
 };
 
 CircuitGraphPlot.prototype.append = function(models) {
@@ -87,6 +92,12 @@ CircuitGraphPlot.prototype.append = function(models) {
   }, this);
 
 	this.skeleton_ids = Object.keys(this.skeletons);
+
+  if (1 === this.skeleton_ids.length) {
+    this.clearGUI();
+    growlAlert('Need more than one', 'Add at least another skeleton!');
+    return;
+  }
 
 	// fetch connectivity data, create adjacency matrix and plot it
 	requestQueue.register(django_url + project.id + '/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'POST',
@@ -146,6 +157,11 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
   updateSelect($('#circuit_graph_plot_Y_' + this.widgetID)[0]).selectedIndex = 0;
 
   this.redraw();
+};
+
+CircuitGraphPlot.prototype.clearGUI = function() {
+  this.selected = {};
+  $('#circuit_graph_plot_div' + this.widgetID).empty();
 };
 
 CircuitGraphPlot.prototype.redraw = function() {

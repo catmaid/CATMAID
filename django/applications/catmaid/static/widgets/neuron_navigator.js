@@ -60,7 +60,7 @@ NeuronNavigator.prototype.init_ui = function(container)
 
   // Create a containe where all the content of every node will be placed in
   var content = document.createElement('div');
-  content.setAttribute('id', 'navigatior_content' + this.widgetID);
+  content.setAttribute('id', 'navigator_content' + this.widgetID);
   content.setAttribute('class', 'navigator_content');
   container.appendChild(content);
 
@@ -77,7 +77,7 @@ NeuronNavigator.prototype.select_node = function(node)
       node.create_path(this));
   
   // Set the actual content
-  $('#navigatior_content' + this.widgetID).empty().append(
+  $('#navigator_content' + this.widgetID).empty().append(
       node.create_content(this));
 };
 

@@ -48,6 +48,7 @@ urlpatterns += patterns(
 
     (r'^projects$', 'catmaid.control.projects'),
     (r'^user-list$', 'catmaid.control.user_list'),
+    (r'^user-table-list$', 'catmaid.control.user_list_datatable'),
     (r'^permissions$', 'catmaid.control.user_project_permissions'),
     (r'^messages/list$', 'catmaid.control.list_messages'),
     (r'^messages/mark_read$', 'catmaid.control.read_message'),

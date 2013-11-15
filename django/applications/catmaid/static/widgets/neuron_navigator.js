@@ -101,6 +101,13 @@ var NeuronNavigatorNode = function(name)
   this.name = name;
   this.navigator = null;
   this.filters = null;
+
+  /* Because some nodes use tables to display data, some common options are
+   * kept on the abstract node level.
+   */
+  this.possibleLengths = [25, 100, -1];
+  this.possibleLengthsLabels = this.possibleLengths.map(
+      function (n) { return (n === -1) ? "All" : n.toString() });
 };
 
 NeuronNavigatorNode.prototype.link = function(navigator, parent_node)
@@ -209,6 +216,19 @@ NeuronNavigatorNode.prototype.create_path_link = function(text)
   }
 
   return option;
+};
+
+// A convenience helper for creating a table header
+NeuronNavigatorNode.prototype.create_header_row = function(columns)
+{
+  var tr = columns.reduce(function(tr, col) {
+    var th = document.createElement('th');
+    th.appendChild(document.createTextNode(col));
+    tr.appendChild(th);
+    return tr;
+  }, document.createElement('tr'));
+
+  return tr;
 };
 
 
@@ -321,46 +341,69 @@ NeuronNavigatorUserListNode.prototype.create_content = function()
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_users_content' +
       this.navigator.widgetID);
-  content.innerHTML = "Please wait while the existing users are requested";
 
-  // Make node easily accessible in created methods
-  var self = this;
+  // Create user table
+  var columns = ['Login', 'First Name', 'Last Name'];
+  var table_header = document.createElement('thead');
+  table_header.appendChild(this.create_header_row(columns));
+  var table_footer = document.createElement('tfoot');
+  table_footer.appendChild(this.create_header_row(columns));
+  var table = document.createElement('table');
+  table.setAttribute('id', 'navigator_user_table' +
+      this.navigator.widgetID);
+  table.setAttribute('class', 'display');
+  table.setAttribute('cellpadding', 0);
+  table.setAttribute('cellspacing', 0);
+  table.setAttribute('border', 0);
+  table.appendChild(table_header);
+  table.appendChild(table_footer);
 
-  // Collect all filtered annotations into post data
-  var filters = this.collect_filters();
-  var post_data = {
-    'ignored_users': filters.reduce(function(o, f) {
-        if (f.user) {
-          o.push(f.user);
-        }
-        return o;
-      }, [])
-  };
+  content.appendChild(table);
 
-  // Get the list of currently available annotations
-  requestQueue.register(django_url + 'user-list',
-      'POST', post_data, function(status, data, text) {
-        var e = $.parseJSON(data);
-        if (status != 200) {
-          alert("The server returned an unexpected status (" +
-            status + ") with error message:\n" + text);
-        } else {
-          // Create a list of user links
-          var users = e.map(function(u) {
-            var user_link = self.create_path_link(u.full_name +
-                " (" + u.login + ")");
-            $(user_link).click(function() {
-                var filter_node = new NeuronNavigatorUserFilterNode(u);
-                filter_node.link(self.navigator, self);
-                self.navigator.select_node(filter_node);
-            });
-            return user_link;
-          });
-          // Add all annotation links
-          $('#navigator_users_content' + self.navigator.widgetID).empty().
-            append(users);
-        }
-      });
+  // Fill user table
+  $(table).dataTable({
+    // http://www.datatables.net/usage/options
+    "bDestroy": true,
+    "sDom": '<"H"lr>t<"F"ip>',
+    "bProcessing": true,
+    "bServerSide": true,
+    "bAutoWidth": false,
+    "iDisplayLength": this.possibleLengths[0],
+    "sAjaxSource": django_url + 'user-table-list',
+    "fnServerData": function (sSource, aoData, fnCallback) {
+        $.ajax({
+            "dataType": 'json',
+            "cache": false,
+            "type": "POST",
+            "url": sSource,
+            "data": aoData,
+            "success": fnCallback
+        });
+    },
+    "aLengthMenu": [
+        this.possibleLengths,
+        this.possibleLengthsLabels
+    ],
+    "bJQueryUI": true,
+    "aaSorting": [[ 2, "desc" ]],
+    "aoColumns": [
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+    ]
+  });
 
   return content;
 };

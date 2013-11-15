@@ -16,6 +16,11 @@ var CircuitGraphPlot = function() {
 	// From CircuitGraphAnalysis, first array entry is Signal Flow, rest are
 	// the sorted pairs of [eigenvalue, eigenvector].
 	this.vectors = null;
+
+  this.names_visible = true;
+
+  // Skeleton ID vs true
+  this.selected = {};
 };
 
 CircuitGraphPlot.prototype = {};
@@ -29,6 +34,8 @@ CircuitGraphPlot.prototype.getName = function() {
 CircuitGraphPlot.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
+  
+  Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
 
 CircuitGraphPlot.prototype.updateModels = function(models) {
@@ -37,8 +44,9 @@ CircuitGraphPlot.prototype.updateModels = function(models) {
 
 /** Returns a clone of all skeleton models, keyed by skeleton ID. */
 CircuitGraphPlot.prototype.getSelectedSkeletonModels = function() {
+  if (!this.svg) return {};
 	var skeletons = this.skeletons;
-	return Object.keys(skeletons).reduce(function(o, skid) {
+	return Object.keys(this.selected).reduce(function(o, skid) {
 		o[skid] = skeletons[skid].clone();
 		return o;
 	}, {});
@@ -104,11 +112,16 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
   // Set the new data
   this.skeleton_ids = skeleton_ids;
   this.skeletons = models;
+  this.selected = {};
 
   // Compute signal flow and eigenvectors
-  var cga = new CircuitGraphAnalysis(AdjM);
-
-  console.log(cga);
+  try {
+    var cga = new CircuitGraphAnalysis(AdjM);
+  } catch (e) {
+    console.log(e, e.stack);
+    alert("Failed to compute the adjacency matrix: \n" + e + "\n" + e.stack);
+    return;
+  }
 
   // Store for replotting later
   this.vectors = [[-1, cga.z]];
@@ -132,18 +145,18 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
 };
 
 CircuitGraphPlot.prototype.redraw = function() {
-  // Data
-  $('#circuit_graph_plot_X_' + this.widgetID)[0]
+  if (!this.skeleton_ids || 0 === this.skeleton_ids.length) return;
 
-  var containerID = '#circuit_graph_plot_div' + this.widgetID;
+  var containerID = '#circuit_graph_plot_div' + this.widgetID,
+      container = $(containerID);
 
   // Clear existing plot if any
-  $(containerID).empty();
+  container.empty();
 
   // Recreate plot
   var margin = {top: 20, right: 20, bottom: 30, left: 40},
-      width = 960 - margin.left - margin.right,
-      height = 500 - margin.top - margin.bottom;
+      width = container.width() - margin.left - margin.right,
+      height = container.height() - margin.top - margin.bottom;
 
   var svg = d3.select(containerID).append("svg")
     .attr("id", "circuit_graph_plot" + this.widgetID)
@@ -179,21 +192,43 @@ CircuitGraphPlot.prototype.redraw = function() {
   var yAxis = d3.svg.axis().scale(yR)
                            .orient("left")
                            .ticks(10);
-                           //.tickFormat(d3.format("r")); // "r" means rounded, see https://github.com/mbostock/d3/wiki/Formatting#wiki-d3_format
 
-  // Insert the data
-  var state = svg.selectAll(".state").data(data)
-    .enter().append('circle')
-      .attr('class', 'dot')
-      .attr('r', 3)
-      .attr('cx', function(d) { return xR(d.x); })
-      .attr('cy', function(d) { return yR(d.y); })
-      .style('fill', function(d) { return d.hex; })
-      .style('stroke', 'grey')
-      .append('text').text(function(d) { return d.name; })
-      .attr('dx', function(d) { return 5; })
-      .attr('dy', function(d) { return 0; })
-      .on('click', function(d) { alert('clicked: ' + d); });
+  // Create a 'g' group for each skeleton, containing a circle and the neuron name
+  var elems = svg.selectAll(".state").data(data).enter()
+    .append('g')
+    .attr('transform', function(d) { return "translate(" + xR(d.x) + "," + yR(d.y) + ")"; });
+
+  var setSelected = (function(skid, b) {
+    if (b) this.selected[skid] = true;
+    else delete this.selected[skid];
+  }).bind(this);
+
+  var selected = this.selected;
+
+  elems.append('circle')
+     .attr('class', 'dot')
+     .attr('r', function(d) { return selected[d.skid] ? 6 : 3; })
+     .style('fill', function(d) { return d.hex; })
+     .style('stroke', function(d) { return selected[d.skid] ? 'black' : 'grey'; })
+     .on('click', function(d) {
+       // Toggle selected:
+       var c = d3.select(this);
+       if (3 === Number(c.attr('r'))) {
+         c.attr('r', 6).style('stroke', 'black');
+         setSelected(d.skid, true);
+       } else {
+         c.attr('r', 3).style('stroke', 'grey');
+         setSelected(d.skid, false);
+       }
+     })
+   .append('svg:title')
+     .text(function(d) { return d.name; });
+
+  elems.append('text')
+     .text(function(d) { return d.name; })
+     .attr('id', 'name')
+     .attr('display', this.names_visible ? '' : 'none')
+     .attr('dx', function(d) { return 5; });
 
   // Insert the graphics for the axes (after the data, so that they draw on top)
   svg.append("g")
@@ -216,10 +251,32 @@ CircuitGraphPlot.prototype.redraw = function() {
       .style("text-anchor", "end")
       .text(ySelect.options[ySelect.selectedIndex].text);
 
+  this.svg = svg;
 };
 
+/** Redraw only the last request, where last is a period of about 1 second. */
 CircuitGraphPlot.prototype.resize = function() {
-  // TODO
+  var now = new Date();
+  // Overwrite request log if any
+  this.last_request = now;
+
+  setTimeout((function() {
+    if (this.last_request && now === this.last_request) {
+      delete this.last_request;
+      this.redraw();
+    }
+  }).bind(this), 1000);
+};
+
+CircuitGraphPlot.prototype.setNamesVisible = function(v) {
+  if (this.svg) {
+    this.svg.selectAll('text#name').attr('display', v ? '' : 'none');
+  }
+};
+
+CircuitGraphPlot.prototype.toggleNamesVisible = function(checkbox) {
+  this.names_visible = checkbox.checked;
+  this.setNamesVisible(this.names_visible);
 };
 
 CircuitGraphPlot.prototype.update = function() {

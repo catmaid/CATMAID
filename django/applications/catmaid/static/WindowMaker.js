@@ -915,6 +915,19 @@ var WindowMaker = new function()
     axisY.setAttribute('id', 'circuit_graph_plot_Y_' + GP.widgetID);
     buttons.appendChild(axisY);
 
+    var redraw = document.createElement('input');
+    redraw.setAttribute("type", "button");
+    redraw.setAttribute("value", "Draw");
+    redraw.onclick = GP.redraw.bind(GP);
+    buttons.appendChild(redraw);
+
+    buttons.appendChild(document.createTextNode(" Names:"));
+    var toggle = document.createElement('input');
+    toggle.setAttribute("type", "checkbox");
+    toggle.checked = true;
+    toggle.onclick = GP.toggleNamesVisible.bind(GP, toggle);
+    buttons.appendChild(toggle);
+
     content.appendChild(buttons);
 
     var container = createContainer('circuit_graph_plot_div' + GP.widgetID);

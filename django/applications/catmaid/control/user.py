@@ -57,6 +57,7 @@ def user_list_datatable(request):
             user.username,
             user.first_name,
             user.last_name,
+            user.id,
         ]]
 
     return HttpResponse(json.dumps(response), mimetype='text/json')

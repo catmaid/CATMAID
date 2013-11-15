@@ -343,7 +343,7 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
       this.navigator.widgetID);
 
   // Create user table
-  var columns = ['Login', 'First Name', 'Last Name'];
+  var columns = ['Login', 'First Name', 'Last Name', 'ID'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
   var table_footer = document.createElement('tfoot');
@@ -387,6 +387,11 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
     "bJQueryUI": true,
     "aaSorting": [[ 2, "desc" ]],
     "aoColumns": [
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
       {
         "sClass": "center",
         "bSearchable": true,

@@ -6,11 +6,13 @@ var InstanceRegistry = function() {
 
 InstanceRegistry.prototype = {};
 
-/** Return an array of open instances. */
+/** Return an array of open instances, sorted from oldest to newest. */
 InstanceRegistry.prototype.getInstances = function() {
 	return Object.keys(this.instances).map(function(key) {
-		return this.instances[key];
-	}, this);
+		return [Number(key), this.instances[key]];
+	}, this).sort(function(a, b) {
+		return a[0] > b[0];
+	}).map(function(a) { return a[1]; });
 };
 
 InstanceRegistry.prototype.noInstances = function() {

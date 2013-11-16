@@ -178,13 +178,6 @@ CircuitGraphPlot.prototype.redraw = function() {
       width = container.width() - margin.left - margin.right,
       height = container.height() - margin.top - margin.bottom;
 
-  var svg = d3.select(containerID).append("svg")
-    .attr("id", "circuit_graph_plot" + this.widgetID)
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
-
   var xSelect = $('#circuit_graph_plot_X_' + this.widgetID)[0],
       ySelect = $('#circuit_graph_plot_Y_' + this.widgetID)[0];
 
@@ -213,10 +206,48 @@ CircuitGraphPlot.prototype.redraw = function() {
                            .orient("left")
                            .ticks(10);
 
+  var svg = d3.select(containerID).append("svg")
+      .attr("id", "circuit_graph_plot" + this.widgetID)
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+
+  // Function that maps from data domain to plot coordinates
+  var transform = function(d) { return "translate(" + xR(d.x) + "," + yR(d.y) + ")"; };
+
   // Create a 'g' group for each skeleton, containing a circle and the neuron name
   var elems = svg.selectAll(".state").data(data).enter()
     .append('g')
-    .attr('transform', function(d) { return "translate(" + xR(d.x) + "," + yR(d.y) + ")"; });
+    .attr('transform', transform);
+
+  var zoomed = function() {
+    // Prevent panning beyond limits
+    var translate = zoom.translate(),
+        scale = zoom.scale(),
+        tx = Math.min(0, Math.max(width * (1 - scale), translate[0])),
+        ty = Math.min(0, Math.max(height * (1 - scale), translate[1]));
+
+    zoom.translate([tx, ty]);
+
+    // Scale as well the axes
+    svg.select(".x.axis").call(xAxis);
+    svg.select(".y.axis").call(yAxis);
+
+    elems.attr('transform', transform);
+  };
+
+  // Variables exist throughout the scope of the function, so zoom is reachable from zoomed
+  var zoom = d3.behavior.zoom().x(xR).y(yR).scaleExtent([1, 10]).on("zoom", zoomed);
+
+  // Assign the zooming behavior to the encapsulating root group
+  svg.call(zoom);
+
+  // Add an invisible layer to enable triggering zoom from anywhere, and panning
+  svg.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .style("opacity", "0");
 
   var setSelected = (function(skid, b) {
     if (b) this.selected[skid] = true;

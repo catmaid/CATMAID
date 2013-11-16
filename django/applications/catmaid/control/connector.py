@@ -81,6 +81,7 @@ def one_to_many_synapses(request, project_id=None):
       AND tc1.connector_id = tc2.connector_id
       AND tc1.relation_id = r1.id
       AND r1.relation_name = '%s'
+      AND tc1.relation_id != tc2.relation_id
       AND tc1.treenode_id = t1.id
       AND tc2.treenode_id = t2.id
       AND tc1.user_id = u1.id

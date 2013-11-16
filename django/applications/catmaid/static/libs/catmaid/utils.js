@@ -49,6 +49,11 @@ InstanceRegistry.prototype.getFirstInstance = function() {
 	return this.instances[Math.min.apply(Math, keys.map(Number))];
 };
 
+InstanceRegistry.prototype.getLastInstance = function() {
+	var a = this.getInstances();
+	return a[a.length-1];
+};
+
 
 var SkeletonSource = function() {};
 

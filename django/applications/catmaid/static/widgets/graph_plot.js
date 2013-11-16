@@ -213,6 +213,12 @@ CircuitGraphPlot.prototype.redraw = function() {
     .append("g")
       .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
 
+  // Add an invisible layer to enable triggering zoom from anywhere, and panning
+  svg.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .style("opacity", "0");
+
   // Function that maps from data domain to plot coordinates
   var transform = function(d) { return "translate(" + xR(d.x) + "," + yR(d.y) + ")"; };
 
@@ -242,12 +248,6 @@ CircuitGraphPlot.prototype.redraw = function() {
 
   // Assign the zooming behavior to the encapsulating root group
   svg.call(zoom);
-
-  // Add an invisible layer to enable triggering zoom from anywhere, and panning
-  svg.append("rect")
-    .attr("width", width)
-    .attr("height", height)
-    .style("opacity", "0");
 
   var setSelected = (function(skid, b) {
     if (b) this.selected[skid] = true;

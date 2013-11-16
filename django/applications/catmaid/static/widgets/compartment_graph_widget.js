@@ -293,9 +293,10 @@ CompartmentGraphWidget.prototype.init = function() {
   });
 
   this.cy.on('click', 'edge', {}, function(evt){
-    var edge = this;
-    if (edge.data('directed') && evt.originalEvent.altKey) {
-      ConnectorSelection.show_shared_connectors( edge.source, edge.target, "presynaptic_to" );
+    var edge = this,
+        props = edge.data();
+    if (props.directed && evt.originalEvent.altKey) {
+      ConnectorSelection.show_shared_connectors( props.source, [props.target], "presynaptic_to" );
     }
   });
 };

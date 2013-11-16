@@ -491,6 +491,16 @@ var tracingWindowActions = [
   }),
 
   new Action({
+      helpText: "Circuit Graph Plot",
+      buttonID: "data_button_circuit_graph_plot",
+      buttonName: 'circuit_plot',
+      run: function (e) {
+          WindowMaker.create('circuit-graph-plot');
+          return true;
+      }
+  }),
+
+  new Action({
       helpText: "Selection Table",
       buttonID: "data_button_neuron_staging_area_widget",
       buttonName: 'neuron_staging',

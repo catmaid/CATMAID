@@ -6,11 +6,13 @@ var InstanceRegistry = function() {
 
 InstanceRegistry.prototype = {};
 
-/** Return an array of open instances. */
+/** Return an array of open instances, sorted from oldest to newest. */
 InstanceRegistry.prototype.getInstances = function() {
 	return Object.keys(this.instances).map(function(key) {
-		return this.instances[key];
-	}, this);
+		return [Number(key), this.instances[key]];
+	}, this).sort(function(a, b) {
+		return a[0] > b[0];
+	}).map(function(a) { return a[1]; });
 };
 
 InstanceRegistry.prototype.noInstances = function() {
@@ -25,7 +27,7 @@ InstanceRegistry.prototype.registerInstance = function() {
   }
 
   // Find lowest unused number
-  var max = Math.max.apply(Math, pids),
+  var max = Math.max.apply(Math, pids.map(Number)),
       pid = max + 1;
   for (var i = 0; i < max; ++i) {
     if (typeof(pids[i]) === 'undefined') {
@@ -45,6 +47,11 @@ InstanceRegistry.prototype.getFirstInstance = function() {
 	var keys = Object.keys(this.instances);
 	if (0 === keys.length) return null;
 	return this.instances[Math.min.apply(Math, keys.map(Number))];
+};
+
+InstanceRegistry.prototype.getLastInstance = function() {
+	var a = this.getInstances();
+	return a[a.length-1];
 };
 
 

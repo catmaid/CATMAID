@@ -153,7 +153,7 @@ def split_skeleton(request, project_id=None):
         except:
             if not _under_fragments(skeleton_id):
                 # Check skeleton under user's staging area (indirect ownership)
-                if not _under_staging_area(request.user, skeleton_id):
+                if not _under_staging_area(skeleton_id, request.user):
                     raise Exception("User '%s' can't edit skeleton #%s at node #%s:\nThe user doesn't own the skeleton or the node;\nthe skeleton is not under fragments;\nand the skeleton is not under the user's staging group." % (request.user.username, skeleton_id, treenode_id))
 
     skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
@@ -511,8 +511,10 @@ def review_status(request, project_id=None):
         pending = reviewers.get(-1, 0)
         if 0 == pending:
             status[skid] = 100
+        elif pending > 0 and 1 == len(reviewers):
+            status[skid] = 0
         else:
-            status[skid] = int(100 * (float(pending) / sum(reviewers.itervalues())))
+            status[skid] = int(100 * (1 - (float(pending) / sum(reviewers.itervalues()))))
 
     return HttpResponse(json.dumps(status))
 
@@ -764,7 +766,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
                 can_edit_or_fail(user, to_skid, "class_instance")
             except Exception:
                 # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes are editable by the user (such a situation occurs when the user domain ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
-                if _under_fragments(to_skid) or _under_staging_area(user, to_skid):
+                if _under_fragments(to_skid) or _under_staging_area(to_skid, user):
                     pass
                 elif Treenode.objects.filter(skeleton_id=to_skid).exclude(user__in=user_domain(cursor, user.id)).count() > 0:
                     # There are at least some nodes that the user can't edit

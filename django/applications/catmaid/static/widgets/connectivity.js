@@ -156,8 +156,8 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
 
 SkeletonConnectivity.prototype._clearGUI = function() {
   // Clear table and plots
-  ["_table", "_plot_Upstream", "_plot_Downstream"].forEach(function(name) {
-      var s = $('#connectivity' + name + this.widgetID);
+  ["table", "plot_Upstream", "plot_Downstream"].forEach(function(name) {
+      var s = $('#connectivity_' + name + this.widgetID);
       if (s.length > 0) s.remove();
   }, this);
 };
@@ -524,7 +524,7 @@ SkeletonConnectivity.prototype.createSynapseDistributionPlots = function(json) {
             height = 500 - margin.top - margin.bottom;
 
         var svg = d3.select(container).append("svg")
-            .attr("id", "connectivity_plot_" + title)
+            .attr("id", "connectivity_plot_" + title) // already has widgetID in it
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")

@@ -22,7 +22,7 @@ var WindowMaker = new function()
     return container;
   };
 
-  var addListener = function(win, container, button_bar, destroy) {
+  var addListener = function(win, container, button_bar, destroy, resize) {
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {
@@ -54,6 +54,10 @@ var WindowMaker = new function()
                 container.style.height = ( win.getContentHeight() ) + "px";
             }
             container.style.width = ( win.getAvailableWidth() + "px" );
+
+            if (typeof(resize) === "function") {
+              resize();
+            }
 
             break;
         }
@@ -192,10 +196,9 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
-    var container = createContainer("neuron_staging_table");
-    
+    var container = createContainer("neuron_staging_table" + ST.widgetID);
+
     var buttons = document.createElement("div");
-    buttons.id = "selection-table-buttons-div";
 
     buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(SkeletonListSources.createSelect(ST));
@@ -724,6 +727,12 @@ var WindowMaker = new function()
     show.onclick = CGW.update.bind(CGW);
     contentbutton.appendChild(show);
 
+    var props = document.createElement('input');
+    props.setAttribute("type", "button");
+    props.setAttribute("value", "Properties");
+    props.onclick = CGW.graph_properties.bind(CGW);
+    contentbutton.appendChild(props);
+
     contentbutton.appendChild(document.createTextNode(' - '));
 
     var layout = appendSelect(contentbutton, "compartment_layout", ["Force-directed", "Hierarchical", "Grid", "Circle", "Random"]);
@@ -733,20 +742,6 @@ var WindowMaker = new function()
     trigger.setAttribute('value', 'Re-layout');
     trigger.onclick = CGW.updateLayout.bind(CGW, layout);
     contentbutton.appendChild(trigger);
-
-    contentbutton.appendChild(document.createTextNode(' - '));
-
-    var props = document.createElement('input');
-    props.setAttribute("type", "button");
-    props.setAttribute("value", "Properties");
-    props.onclick = CGW.graph_properties.bind(CGW);
-    contentbutton.appendChild(props);
-
-    var gml = document.createElement('input');
-    gml.setAttribute("type", "button");
-    gml.setAttribute("value", "Export GML");
-    gml.onclick = CGW.exportGML.bind(CGW);
-    contentbutton.appendChild(gml);
 
     contentbutton.appendChild(document.createElement('br'));
 
@@ -821,7 +816,9 @@ var WindowMaker = new function()
     show.onclick = CGW.showHidden.bind(CGW);
     contentbutton.appendChild(show);
 
-    contentbutton.appendChild(document.createTextNode(' - Color:'));
+    contentbutton.appendChild(document.createElement('br'));
+
+    contentbutton.appendChild(document.createTextNode('Color:'));
     var color = document.createElement('select');
     color.setAttribute('id', 'graph_color_choice' + CGW.widgetID);
     color.options.add(new Option('source', 'source'));
@@ -830,6 +827,26 @@ var WindowMaker = new function()
     color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
     color.onchange = CGW._colorize.bind(CGW, color);
     contentbutton.appendChild(color);
+
+    contentbutton.appendChild(document.createTextNode(' - '));
+
+    var gml = document.createElement('input');
+    gml.setAttribute("type", "button");
+    gml.setAttribute("value", "Export GML");
+    gml.onclick = CGW.exportGML.bind(CGW);
+    contentbutton.appendChild(gml);
+
+    var adj = document.createElement('input');
+    adj.setAttribute("type", "button");
+    adj.setAttribute("value", "Export Adjacency Matrix");
+    adj.onclick = CGW.exportAdjacencyMatrix.bind(CGW);
+    contentbutton.appendChild(adj);
+
+    var plot = document.createElement('input');
+    plot.setAttribute("type", "button");
+    plot.setAttribute("value", "Open plot");
+    plot.onclick = CGW.openPlot.bind(CGW);
+    contentbutton.appendChild(plot);
 
     content.appendChild( contentbutton );
 
@@ -853,6 +870,85 @@ var WindowMaker = new function()
 
     return win;
   };
+
+  var createCircuitGraphPlot = function() {
+
+    var GP = new CircuitGraphPlot();
+
+    var win = new CMWWindow(GP.getName());
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var buttons = document.createElement('div');
+    buttons.setAttribute('id', 'circuit_graph_plot_buttons' + GP.widgetID);
+
+    buttons.appendChild(document.createTextNode('From'));
+    buttons.appendChild(SkeletonListSources.createSelect(GP));
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("value", "Append");
+    add.onclick = GP.loadSource.bind(GP);
+    buttons.appendChild(add);
+
+    var clear = document.createElement('input');
+    clear.setAttribute("type", "button");
+    clear.setAttribute("value", "Clear");
+    clear.onclick = GP.clear.bind(GP);
+    buttons.appendChild(clear);
+
+    var update = document.createElement('input');
+    update.setAttribute("type", "button");
+    update.setAttribute("value", "Refresh");
+    update.onclick = GP.update.bind(GP);
+    buttons.appendChild(update);
+
+    buttons.appendChild(document.createTextNode(' - X:'));
+
+    var axisX = document.createElement('select');
+    axisX.setAttribute('id', 'circuit_graph_plot_X_' + GP.widgetID);
+    buttons.appendChild(axisX);
+
+    buttons.appendChild(document.createTextNode(' Y:'));
+
+    var axisY = document.createElement('select');
+    axisY.setAttribute('id', 'circuit_graph_plot_Y_' + GP.widgetID);
+    buttons.appendChild(axisY);
+
+    var redraw = document.createElement('input');
+    redraw.setAttribute("type", "button");
+    redraw.setAttribute("value", "Draw");
+    redraw.onclick = GP.redraw.bind(GP);
+    buttons.appendChild(redraw);
+
+    buttons.appendChild(document.createTextNode(" Names:"));
+    var toggle = document.createElement('input');
+    toggle.setAttribute("type", "checkbox");
+    toggle.checked = true;
+    toggle.onclick = GP.toggleNamesVisible.bind(GP, toggle);
+    buttons.appendChild(toggle);
+
+    content.appendChild(buttons);
+
+    var container = createContainer('circuit_graph_plot_div' + GP.widgetID);
+    content.appendChild(container);
+
+    var plot = document.createElement('div');
+    plot.setAttribute('id', 'circuit_graph_plot' + GP.widgetID);
+    plot.style.width = "100%";
+    plot.style.height = "100%";
+    plot.style.backgroundColor = "#FFFFF0";
+    container.appendChild(plot);
+
+    addListener(win, container, 'circuit_graph_plot_buttons' + GP.widgetID, GP.destroy.bind(GP), GP.resize.bind(GP));
+
+    addLogic(win);
+
+    SkeletonListSources.updateGUI();
+
+    return win;
+  };
+
 
   var createAssemblyGraphWindow = function()
   {
@@ -1895,6 +1991,7 @@ var WindowMaker = new function()
     "classification-editor": createClassificationWidget,
     "notifications": createNotificationsWindow,
     "clustering-widget": createClusteringWidget,
+    "circuit-graph-plot": createCircuitGraphPlot,
   };
 
   /** If the window for the given name is already showing, just focus it.

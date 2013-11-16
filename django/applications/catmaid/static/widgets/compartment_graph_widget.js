@@ -952,10 +952,81 @@ CompartmentGraphWidget.prototype.colorBy = function(mode) {
   }
 };
 
+/** Includes only visible nodes and edges. */
+CompartmentGraphWidget.prototype.createAdjacencyMatrix = function() {
+  if (0 === this.cy.nodes().size()) {
+    return {skeleton_ids: [],
+            AdjM: []};
+  }
+  // Collect unique, visible skeleton IDs
+  var unique_ids = {};
+  this.cy.nodes(function(i, node) {
+    if (node.hidden()) return;
+    unique_ids[node.data('skeleton_id')] = null;
+  });
+  var skeleton_ids = Object.keys(unique_ids).map(Number),
+      indices = skeleton_ids.reduce(function(o, skid, i) { o[skid] = i; return o;}, {}),
+      AdjM = skeleton_ids.map(function() { return skeleton_ids.map(function() { return 0; })}),
+      edges = {};
+  // Plan for potentially split neurons
+  this.cy.edges().each(function(i, edge) {
+    if (edge.hidden()) return;
+    var e = edge.data();
+    var c = edges[e.source];
+    if (!c) {
+      edges[e.source] = {};
+      edges[e.source][e.target] = e.weight;
+    } else if (c[e.target]) {
+      c[e.target] += e.weight;
+    } else {
+      c[e.target] = e.weight;
+    }
+  });
+  Object.keys(edges).forEach(function(source) {
+    var c = edges[source];
+    Object.keys(c).forEach(function(target) {
+      AdjM[indices[source]][indices[target]] = c[target];
+    });
+  });
+  return {skeleton_ids: skeleton_ids,
+          AdjM: AdjM};
+};
+
 CompartmentGraphWidget.prototype.exportAdjacencyMatrix = function() {
-  alert("TODO"); // TODO
+  if (0 === this.cy.nodes().size()) {
+    alert("Load a graph first!");
+    return;
+  }
+
+  var m = this.createAdjacencyMatrix(),
+      models = this.getSkeletonModels(),
+      names = m.skeleton_ids.reduce(function(o, skid) {
+        o[skid] = '"' + models[skid].baseName.replace(/"/g, '\\"') + ' #' + skid + '"';
+        return o;
+      }, {});
+
+  // First row and first column take the neuron names plus the #<skeleton_id>
+  var csv = m.skeleton_ids.map(function(skid) {
+    return names[skid];
+  }).join(',') + '\n' + m.AdjM.map(function(row, i) {
+    return names[m.skeleton_ids[i]] + ',' + row.join(',');
+  }).join('\n');
+
+  var html = "<html><head><title>Adjacency Matrix</title></head><body><pre><div id='myprintrecipe'>" + csv + "</div></pre></body></html>";
+  var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
+  recipe.document.open();
+  recipe.document.write(html);
+  recipe.document.close();
 };
 
 CompartmentGraphWidget.prototype.openPlot = function() {
-  alert("TODO"); // TODO
+  if (0 === this.cy.nodes().size()) {
+    alert("Load a graph first!");
+    return;
+  }
+  WindowMaker.create('circuit-graph-plot');
+  var GP = CircuitGraphPlot.prototype.getLastInstance(),
+      models = this.getSkeletonModels(),
+      m = this.createAdjacencyMatrix();
+  GP.plot(m.skeleton_ids, models, m.AdjM);
 };

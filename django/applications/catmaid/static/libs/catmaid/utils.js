@@ -27,7 +27,7 @@ InstanceRegistry.prototype.registerInstance = function() {
   }
 
   // Find lowest unused number
-  var max = Math.max.apply(Math, pids),
+  var max = Math.max.apply(Math, pids.map(Number)),
       pid = max + 1;
   for (var i = 0; i < max; ++i) {
     if (typeof(pids[i]) === 'undefined') {

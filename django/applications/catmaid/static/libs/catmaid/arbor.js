@@ -29,19 +29,26 @@ Arbor.prototype.clone = function() {
 };
 
 /** edges: an array where every consecutive pair of nodes defines an edge from parent
- * to child. Every edge implictly adds its nodes. Sets the root node to edges[0] if
- * the latter doesn't exist in this.edges (i.e. if it does not have a parent node).
+ * to child. Every edge implictly adds its nodes.
  * Assumes that the newly created edges will somewhere intersect with the existing
  * ones, if any. Otherwise the tree will have multiple disconnected subtrees and
  * not operate according to expectations.
  * Returns this. */
-Arbor.prototype.addEdges = function(edges) {
-	for (var i=edges.length -1; i>-1; i-=2) {
-		// Add edge from child to parent
-		this.edges[edges[i]] = edges[i-1];
+Arbor.prototype.addEdges = function(edges, accessor) {
+	var length = edges.length;
+	if (accessor) {
+		for (var i=0; i<length; i+=2) {
+			// Add edge from child to parent
+			this.edges[accessor(edges[i])] = accessor(edges[i+1]);
+		}
+	} else {
+		for (var i=0; i<length; i+=2) {
+			// Add edge from child to parent
+			this.edges[accessor(edges[i])] = accessor(edges[i+1]);
+		}
 	}
 
-	if (!this.edges.hasOwnProperty(edges[0])) this.root = edges[0];
+	this.root = this.findRoot();
 
 	return this;
 };

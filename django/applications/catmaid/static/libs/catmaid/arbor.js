@@ -116,7 +116,7 @@ Arbor.prototype.reroot = function(new_root) {
 	return this.addPath(path);
 };
 
-/** Returns an array with all end nodes, in O(2*n) time. */
+/** Returns an array with all end nodes, in O(3*n) time. */
 Arbor.prototype.findEndNodes = function() {
 	var edges = this.edges,
 			children = Object.keys(edges),
@@ -133,7 +133,7 @@ Arbor.prototype.findEndNodes = function() {
 };
 
 /** Return an object with parent node as keys and arrays of children as values.
- *  Notice that end nodes will not appear other than as children in the value arrays. */
+ * End nodes have empty arrays. */
 Arbor.prototype.allSuccessors = function() {
 	var edges = this.edges;
 	return Object.keys(edges).reduce(function(o, child) {
@@ -327,7 +327,7 @@ Arbor.prototype.betweennessCentrality = function(normalized) {
 				// Passing through a branch node that had already been reached before
 				// by shorter partitions
 				// Count nodes accumulated by other partitions
-				var other = g.reduce(function(a) { return a + b; });
+				var other = g.reduce(function(a, b) { return a + b; });
 				// Add the count of nodes downstream of this node within this partition
 				g.push(cumulative);
 				// Add the count of upstream nodes
@@ -369,21 +369,26 @@ Arbor.prototype.betweennessCentrality = function(normalized) {
 Arbor.prototype.topologicalCopy = function() {
 	var topo = new Arbor(),
 			successors = this.allSuccessors(),
-			open = [this.root];
+			open = [[this.root, this.root]];
+
 	topo.root = this.root;
+
 	while (open.length > 0) {
-		var paren = open.pop(),
-			  child = paren,
-			  succ = successors[paren];
+		var edge = open.shift(), // faster than pop
+			  child = edge[0],
+			  paren = edge[1],
+			  succ = successors[child];
 		while (1 === succ.length) {
 			child = succ[0];
 			succ = successors[child];
 		}
-		topo.edges[child] = this.root == paren ? paren : this.edges[paren];
-		if (succ.length > 1) {
-			open = open.concat(succ);
-		}
+		topo.edges[child] = paren;
+		for (var i=0; i<succ.length; ++i) open.push([succ[i], child]);
 	}
+
+	// Handle cheaply a potential corner case: single-node arbors
+	delete topo.edges[topo.root];
+
 	return topo;
 };
 
@@ -395,7 +400,7 @@ Arbor.prototype.slabs = function() {
 			successors = this.allSuccessors(),
 			open = [[this.root]];
 	while (open.length > 0) {
-		var slab = open.pop(),
+		var slab = open.shift(), // faster than pop
 			  succ = successors[slab[slab.length -1]],
 			  child;
 		while (1 === succ.length) {
@@ -418,14 +423,14 @@ Arbor.prototype.slabs = function() {
  * Returns an object with nodes as keys and the centrality as value.
  * At the branch nodes, the centrality is set to that of the parent slab;
  * for root, it is always zero. */
-Arbor.prototype.slabCentrality = function() {
-	var topo = this.topologicalCopy(),
-			tc = topo.betweennessCentrality(),
-			sc = {};
+Arbor.prototype.slabCentrality = function(normalized) {
+	var topo = this.topologicalCopy();
+	var	tc = topo.betweennessCentrality(normalized);
+	var sc = {};
 	sc[this.root] = tc[topo.root];
 	this.slabs().forEach(function(slab) {
 		var c = (tc[slab[0]] + tc[slab[slab.length -1]]) / 2;
-		for (var i=slab.length; --i;) sc[slab[i]] = c;
+		for (var i=0; i<slab.length; ++i) sc[slab[i]] = c;
 	});
 	return sc;
 };

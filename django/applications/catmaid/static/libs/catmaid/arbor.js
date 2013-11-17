@@ -435,3 +435,34 @@ Arbor.prototype.slabCentrality = function(normalized) {
 	return sc;
 };
 
+/** Return a new Arbor which is a shallow copy of this Arbor, starting at node. */
+Arbor.prototype.subArbor = function(new_root) {
+	// Thinking about the way that traverses the arbor the least times
+	// Via allSuccessors: 2 traversals for allSuccessors, and one more to read the subtree
+	// Via findEndNodes: 3 traversals, then a forth one
+
+	var successors = this.allSuccessors(),
+			sub = new Arbor(),
+			open = [new_root],
+			paren, children, child, i;
+
+	sub.root = new_root;
+
+	while (open.length > 0) {
+		paren = open.shift(), // faster than pop
+		children = successors[paren];
+		while (children.length > 0) {
+			child = children[0];
+			sub.edges[child] = paren;
+			// Add others to the queue
+			for (i=1; i<children.length; ++i) {
+				sub.edges[children[i]] = paren;
+				open.push(children[i]);
+			}
+			paren = child;
+			children = successors[paren];
+		}
+	}
+
+	return sub;
+};

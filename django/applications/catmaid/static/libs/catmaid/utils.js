@@ -169,8 +169,9 @@ SkeletonSourceManager.prototype.createSelect = function(source) {
 	var select = document.createElement('select');
 	select.setAttribute('id', this.createSelectID(source));
 	var name = source.getName();
-	this.createOptions().forEach(function(option) {
+	this.createOptions().forEach(function(option, i) {
 		if (option.value !== name) select.options.add(option);
+		if (option.value === 'Active skeleton') select.selectedIndex = i;
 	});
 	return select;
 };

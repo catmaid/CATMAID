@@ -290,15 +290,20 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
 };
 
 WebGLApplication.prototype.set_shading_method = function() {
-	// Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
-	this.options.shading_method = $('#skeletons_shading' + this.widgetID + ' :selected').attr("value");
+  // Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
+  this.options.shading_method = $('#skeletons_shading' + this.widgetID + ' :selected').attr("value");
 
-	var skeletons = this.space.content.skeletons;
-	for (var skeleton_id in skeletons) {
-		if (skeletons.hasOwnProperty(skeleton_id)) {
-			skeletons[skeleton_id].updateSkeletonColor(this.options);
-		}
-	}
+  var skeletons = this.space.content.skeletons;
+  try {
+    $.blockUI();
+    Object.keys(skeletons).forEach(function(skid) {
+      skeletons[skid].updateSkeletonColor(this.options);
+    }, this);
+  } catch (e) {
+    console.log(e, e.stack);
+    alert(e);
+  }
+  $.unblockUI();
 
   this.space.render();
 };

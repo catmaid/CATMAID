@@ -821,9 +821,9 @@ WebGLApplication.prototype.Space.prototype.removeSkeleton = function(skeleton_id
 WebGLApplication.prototype.Space.prototype.updateSplitShading = function(old_skeleton_id, new_skeleton_id, options) {
   if ('active_node_split' === options.shading_method) {
     if (old_skeleton_id !== new_skeleton_id) {
-      if (old_skeleton_id) this.content.skeletons[old_skeleton_id].updateSkeletonColor(options);
+      if (old_skeleton_id && old_skeleton_id in this.content.skeletons) this.content.skeletons[old_skeleton_id].updateSkeletonColor(options);
     }
-    if (new_skeleton_id) this.content.skeletons[new_skeleton_id].updateSkeletonColor(options);
+    if (new_skeleton_id && new_skeleton_id in this.content.skeletons) this.content.skeletons[new_skeleton_id].updateSkeletonColor(options);
   }
 };
 

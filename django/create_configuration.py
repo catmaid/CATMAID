@@ -65,6 +65,11 @@ for f in ['', '_production']:
     known_protocols = ["(?<!%s:)" % p for p in known_protocols]
     known_protocols = ''.join(known_protocols)
     data = re.sub('%s//' % known_protocols, '/', data)
+    # If CATMAID doesn't live in a sub-directory, the FORCE_SCRIPT_NAME setting
+    # has to be commented out. Otherwise, it would add an extra slash in
+    # redirects.
+    if len(catmaid_subdirectory) == 0:
+      data = re.sub(r'^FORCE_SCRIPT_NAME', '# FORCE_SCRIPT_NAME', data, flags=re.M)
     # Write out the configuration
     o.write( data )
     o.close()

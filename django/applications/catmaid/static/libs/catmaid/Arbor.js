@@ -353,7 +353,7 @@ Arbor.prototype.betweennessCentrality = function(normalized) {
 				// Passing through a branch node that had already been reached before
 				// by shorter partitions
 				// Count nodes accumulated by other partitions
-				var other = g.reduce(function(a, b) { return a + b; });
+				var other = g.reduce(function(a, b) { return a + b; }, 0);
 				// Add the count of nodes downstream of this node within this partition
 				g.push(cumulative);
 				// Add the count of upstream nodes

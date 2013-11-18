@@ -80,7 +80,8 @@ LANGUAGE_CODE = 'en-gb'
 # this information to Django automatically (e.g. Apache + mod_wsgi).
 # However, some don't (e.g. Nginx + Gevent) and the easiest way to
 # tell Django were it lives is with the help of the FORCE_SCRIPT_NAME
-# variable. It must not have a trailing slash.
+# variable. It must not have a trailing slash. Therefore, if CATMAID
+# runs in the root of a domain, this setting needs to be commented out.
 FORCE_SCRIPT_NAME = '/CATMAID_SUBDIR'
 
 # URL of your CATMAID's Django instance, relative to the domain root

@@ -476,59 +476,96 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_neuronlist_content' +
       this.navigator.widgetID);
-  content.innerHTML = "Please wait while matching neurons are requested";
 
-  // Make node easily accessible in created methods
+  // Create user table
+  var columns = ['Name', 'Annotations', 'Skeletons', 'Root node ID', 'ID'];
+  var table_header = document.createElement('thead');
+  table_header.appendChild(this.create_header_row(columns));
+  var table_footer = document.createElement('tfoot');
+  table_footer.appendChild(this.create_header_row(columns));
+  var table_id = 'navigator_annotationlist_table' + this.navigator.widgetID;
+  var table = document.createElement('table');
+  table.setAttribute('id', table_id);
+  table.setAttribute('class', 'display');
+  table.setAttribute('cellpadding', 0);
+  table.setAttribute('cellspacing', 0);
+  table.setAttribute('border', 0);
+  table.appendChild(table_header);
+  table.appendChild(table_footer);
+
+  content.appendChild(table);
+
+  // Add table to DOM
+  container.append(content);
+
+  // Fill user table
+  var datatable = $(table).dataTable({
+    // http://www.datatables.net/usage/options
+    "bDestroy": true,
+    "sDom": '<"H"lr>t<"F"ip>',
+    "bProcessing": true,
+    "bServerSide": true,
+    "bAutoWidth": false,
+    "iDisplayLength": this.possibleLengths[0],
+    "sAjaxSource": django_url + project.id + '/neuron/table/query-by-annotations',
+    "fnServerData": function (sSource, aoData, fnCallback) {
+        $.ajax({
+            "dataType": 'json',
+            "cache": false,
+            "type": "POST",
+            "url": sSource,
+            "data": aoData,
+            "success": fnCallback
+        });
+    },
+    "aLengthMenu": [
+        this.possibleLengths,
+        this.possibleLengthsLabels
+    ],
+    "bJQueryUI": true,
+    "aaSorting": [[ 0, "desc" ]],
+    "aoColumns": [
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+      {
+        "sClass": "center",
+        "bSearchable": false,
+        "bSortable": false,
+        "mRender": "[, ].name"
+      },
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+    ]
+  });
+
+  // Make self available in callback (original this is needed there)
   var self = this;
 
-  // Collect all filters into post data
-  var filters = this.collect_filters();
-  var post_data = filters.reduce(function(o, f) {
-        if (f.user) {
-          // Expect only one user filter and create the
-          // field in result object if one exists.
-          o.neuron_query_by_annotator = f.user;
-        }
-        if (f.annotation) {
-          o.neuron_query_by_annotation.push(f.annotation);
-        }
-        return o;
-      }, {
-        'neuron_query_by_annotation': []
-      });
-
-  // Get the list of currently available annotations
-  requestQueue.register(django_url + project.id +
-      '/neuron/query-by-annotations',
-      'POST', post_data, function(status, data, text) {
-        var e = $.parseJSON(data);
-        if (status != 200) {
-          alert("The server returned an unexpected status (" +
-            status + ") with error message:\n" + text);
-        } else {
-          // Create a list of neuron links
-          var neurons = e.map(function(n) {
-            var neuron_link = self.create_path_link(n.name +
-                " (ID: " + n.id + ", Skeleton ID: " + n.skeleton_id +
-                ", Root node: " + n.root_node + ")");
-            $(neuron_link).click(function() {
-                // TODO: What should happen when clicking a neuron?
-            });
-            return neuron_link;
-          });
-          // If the list is empty, create informational text
-          if (e.length == 0) {
-            neurons = document.createElement('em');
-            neurons.appendChild(document.createTextNode(
-                  "No neurons matching the given filters where found."));
-          }
-          // Add all annotation links
-          $('#navigator_neuronlist_content' + self.navigator.widgetID).empty().
-            append(neurons);
-        }
-      });
-
-  container.append(content);
+  // If a user is selected an annotation filter node is created and the event
+  // is removed.
+  $('#' + table_id).on('click', ' tbody tr', function () {
+      var aData = datatable.fnGetData(this);
+      var a = aData[0];
+      var annotations_node = new NeuronNavigatorAnnotationFilterNode(a);
+      annotations_node.link(self.navigator, self);
+      self.navigator.select_node(annotations_node);
+  });
 };
 
 

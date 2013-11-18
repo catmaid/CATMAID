@@ -97,6 +97,8 @@ Arbor.prototype.findRoot = function() {
 			}
 		}
 	}
+	// Handle corner case: no edges
+	return this.root;
 };
 
 /** Assumes new_root belongs to this Arbor.
@@ -116,7 +118,8 @@ Arbor.prototype.reroot = function(new_root) {
 	return this.addPath(path);
 };
 
-/** Returns an array with all end nodes, in O(3*n) time. */
+/** Returns an array with all end nodes, in O(3*n) time.
+ * Does not include the root node. */
 Arbor.prototype.findEndNodes = function() {
 	var edges = this.edges,
 			children = Object.keys(edges),
@@ -135,8 +138,18 @@ Arbor.prototype.findEndNodes = function() {
 /** Return an object with parent node as keys and arrays of children as values.
  * End nodes have empty arrays. */
 Arbor.prototype.allSuccessors = function() {
-	var edges = this.edges;
-	return Object.keys(edges).reduce(function(o, child) {
+	var edges = this.edges,
+			children = Object.keys(edges);
+	// Handle corner cases
+	if (0 === children.length) {
+		if (this.root) {
+			var a = {};
+			a[this.root] = [];
+			return a;
+		}
+		return {};
+	}
+	return children.reduce(function(o, child) {
 		var paren = edges[child],
 			  children = o[paren];
 	  if (children) children.push(child);
@@ -149,19 +162,26 @@ Arbor.prototype.allSuccessors = function() {
 /** Returns an array with all branch nodes. Runs in O(n + m) time,
  * where n is the number of nodes and m the number of branches. */
 Arbor.prototype.findBranchNodes = function() {
-	var successors = this.allSuccessors();
-	return Object.keys(successors).filter(function(node) {
+	var successors = this.allSuccessors(),
+			node_ids = Object.keys(successors);
+	// Handle corner case
+	if (0 === node_ids.length) return [];
+	return node_ids.filter(function(node) {
 		return successors[node].length > 1;
 	});
 };
 
-/** Return a map of node vs number of edges from the root. If the given root is null or undfined, it will be searched for. */
+/** Return a map of node vs number of edges from the root. If the given root is null or undfined, it will be searched for. Invoke with this.root as argument to get the distances to the root of this Arbor. Invoke with any non-end node to get distances to that node for nodes downstream of it. */
 Arbor.prototype.edgeCountToRoot = function(root) {
+	var distances = {};
+
+	// Handle corner case:
+	if (!this.root) return distances;
+
 	var successors = this.allSuccessors(),
 			count = 1,
 			current_level = [root ? root : this.findRoot()],
-			next_level = [],
-			distances = {};
+			next_level = [];
 
 	while (current_level.length > 0) {
 		// Consume all elements in current level
@@ -200,7 +220,7 @@ Arbor.prototype.nodesArray = function() {
 
 /** Counts number of nodes in O(n) time. */
 Arbor.prototype.countNodes = function() {
-	return Object.keys(this.edges).length + 1;
+	return Object.keys(this.edges).length + (this.root ? 1 : 0);
 };
 
 /** Returns an array of arrays, unsorted, where the longest array contains the linear
@@ -209,7 +229,7 @@ Arbor.prototype.countNodes = function() {
  * another path. Runs in O(3n) time. */
 Arbor.prototype.partition = function() {
 	var ends = this.findEndNodes(),
-		  distances = this.edgeCountToRoot(),
+		  distances = this.edgeCountToRoot(this.root),
 			seen = {};
 
 	// Sort nodes by distance to root, so that the first end node is the furthest
@@ -241,7 +261,7 @@ Arbor.prototype.partitionSorted = function() {
 };
 
 /** Returns an array of child nodes in O(n) time.
- * See also this.allSuccessors() to get them all in one shot at O(n) time. */
+ * See also this.allSuccessors() to get them all in one single shot at O(n) time. */
 Arbor.prototype.successors = function(node) {
 	var edges = this.edges;
 	return Object.keys(edges).reduce(function(a, child) {
@@ -311,6 +331,12 @@ Arbor.prototype.betweennessCentrality = function(normalized) {
 	var succ_groups = {},
 			centrality = {},
 			n_nodes = this.countNodes();
+	// Handle corner cases
+	if (0 === n_nodes) return centrality;
+	if (1 === n_nodes) {
+		centrality[this.root] = 0;
+		return centrality;
+	}
 	// Iterate from shortest to longest partition, where each partition
 	// runs from an end node to a branch node or root,
 	// and the last partition is the longest and reaches the root.
@@ -368,8 +394,12 @@ Arbor.prototype.betweennessCentrality = function(normalized) {
  * Runs in O(2*n) time. */
 Arbor.prototype.topologicalCopy = function() {
 	var topo = new Arbor(),
-			successors = this.allSuccessors(),
-			open = [[this.root, this.root]];
+			successors = this.allSuccessors();
+
+	// Handle corner case
+	if (!this.root) return topo;
+	
+	var open = [[this.root, this.root]];
 
 	topo.root = this.root;
 
@@ -396,8 +426,12 @@ Arbor.prototype.topologicalCopy = function() {
  * including the initial node (root or a branch node ) and the ending node
  * (a branch node or an end node). */
 Arbor.prototype.slabs = function() {
-	var slabs = [],
-			successors = this.allSuccessors(),
+	var slabs = [];
+
+	// Handle corner case
+	if (!this.root) return slabs;
+
+	var successors = this.allSuccessors(),
 			open = [[this.root]];
 	while (open.length > 0) {
 		var slab = open.shift(), // faster than pop
@@ -424,9 +458,11 @@ Arbor.prototype.slabs = function() {
  * At the branch nodes, the centrality is set to that of the parent slab;
  * for root, it is always zero. */
 Arbor.prototype.slabCentrality = function(normalized) {
-	var topo = this.topologicalCopy();
-	var	tc = topo.betweennessCentrality(normalized);
 	var sc = {};
+	// Handle corner case
+	if (!this.root) return sc;
+	var topo = this.topologicalCopy(),
+	    tc = topo.betweennessCentrality(normalized);
 	sc[this.root] = tc[topo.root];
 	this.slabs().forEach(function(slab) {
 		var c = (tc[slab[0]] + tc[slab[slab.length -1]]) / 2;

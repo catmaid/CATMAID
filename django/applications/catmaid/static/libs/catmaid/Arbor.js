@@ -379,7 +379,7 @@ Arbor.prototype.betweennessCentrality = function(normalized) {
 	});
 
 	if (normalized) {
-		var K = 1.0 / ((n_nodes -1) * (n_nodes -2));
+		var K = 2.0 / ((n_nodes -1) * (n_nodes -2));
 		Object.keys(centrality).forEach(function(node) {
 			centrality[node] *= K;
 		});

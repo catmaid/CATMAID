@@ -233,17 +233,6 @@ SelectionTable.prototype.toggleSelectAllSkeletons = function() {
 
 /** setup button handlers */
 SelectionTable.prototype.init = function() {
-  // Set the default source at the 'Active skeleton'
-  var select = $('#' + SkeletonListSources.createSelectID(this))[0];
-  for (var i=0; i<select.options.length; ++i) {
-    if ('Active skeleton' === select.options[i].value) {
-      select.selectedIndex = i;
-      break;
-    }
-  }
-  // Load the default source (should at least be the 'Active skeleton')
-  this.loadSource();
-
   var clear = this.clear.bind(this),
       toggleSelectAllSkeletons = this.toggleSelectAllSkeletons.bind(this);
 

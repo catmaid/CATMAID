@@ -236,7 +236,7 @@ Arbor.prototype.partition = function() {
 	return ends.sort(function(a, b) {
 		var da = distances[a],
 		    db = distances[b];
-		return da === db ? 0 : da > db;
+		return da === db ? 0 : (da < db ? 1 : -1);
 	}).map(function(child) {
 		// Iterate nodes sorted from highest to lowest distance to root
 		var sequence = [child],
@@ -256,7 +256,7 @@ Arbor.prototype.partitionSorted = function() {
 	return this.partition().sort(function(a, b) {
 		var da = a.length,
 		    db = b.length;
-		return da === db ? 0 : da > db;
+		return da === db ? 0 : (da < db ? -1 : 1);
 	});
 };
 

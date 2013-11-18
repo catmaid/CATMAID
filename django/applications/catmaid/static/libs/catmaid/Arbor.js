@@ -159,6 +159,25 @@ Arbor.prototype.allSuccessors = function() {
 	}, {});
 };
 
+/** Find branch and end nodes in O(4*n) time. */
+Arbor.prototype.findBranchAndEndNodes = function() {
+	var edges = this.edges,
+			children = Object.keys(edges),
+			parents = children.reduce(function(o, child) {
+				o[edges[child]] = 0;
+				return o;
+			}, {}),
+			ends = [];
+
+	children.forEach(function(node) {
+		parents[this.edges[node]] += 1;
+		if (!(node in parents)) ends.push(node);
+	}, this);
+
+	return {ends: ends,
+		      branching: Object.keys(parents).filter(function(k) { return parents[k] > 1; })};
+};
+
 /** Returns an array with all branch nodes. Runs in O(n + m) time,
  * where n is the number of nodes and m the number of branches. */
 Arbor.prototype.findBranchNodes = function() {

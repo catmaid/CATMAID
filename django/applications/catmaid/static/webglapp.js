@@ -1616,11 +1616,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       node_weights = distances;
 
 		} else if ('active_node_split' === options.shading_method) {
-      node_weights = arbor.subArbor(SkeletonAnnotations.getActiveNodeId())
-        .nodesArray().reduce(function(o, node) {
-          o[node] = 0.5;
-          return o;
-        }, {});
+      var atn = SkeletonAnnotations.getActiveNodeId();
+      if (arbor.contains(atn)) {
+        node_weights = arbor.subArbor(atn)
+          .nodesArray().reduce(function(o, node) {
+            o[node] = 0.5;
+            return o;
+          }, {});
+      } else {
+        // Don't shade any
+        node_weights = {};
+      }
 
     } else if ('partitions' === options.shading_method) {
       // Shade by euclidian length, relative to the longest branch

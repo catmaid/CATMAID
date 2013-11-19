@@ -261,13 +261,17 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
                 #    if post_arbor == arbor:
                 #        tc = arbor.treenode_synapse_counts
                 tc = post_arbor.treenode_synapse_counts
-                maximum_synapse_centrality = max(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())
+                count = spanning.number_of_nodes()
+                if count < 3:
+                    median_synapse_centrality = sum(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter()) / count
+                else:
+                    median_synapse_centrality = sorted(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())[count / 2]
                 cable = cable_length(spanning, locations)
-                if -1 == maximum_synapse_centrality:
+                if -1 == median_synapse_centrality:
                     # Signal not computable
                     edge_props['risk'] = -1
                 else:
-                    edge_props['risk'] = 1.0 / sqrt(pow(cable / cable_spread, 2) + pow(maximum_synapse_centrality / path_confluence, 2)) # NOTE: should subtract 1 from maximum_synapse_centrality, but not doing it here to avoid potential divisions by zero
+                    edge_props['risk'] = 1.0 / sqrt(pow(cable / cable_spread, 2) + pow(median_synapse_centrality / path_confluence, 2)) # NOTE: should subtract 1 from median_synapse_centrality, but not doing it here to avoid potential divisions by zero
             except Exception as e:
                 print >> sys.stderr, e
                 # Signal error when computing

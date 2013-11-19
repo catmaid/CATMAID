@@ -17,7 +17,7 @@
  *
  * Invoke like:
  *
- * var cga = new CircuitGraphAnalysis().init(adjacency_matrix, maxiter)
+ * var cga = new CircuitGraphAnalysis().init(adjacency_matrix, maxiter, epsilon)
  * ... with maxiter being the maximum number of iterations to compute
  * the eigenvalues and eigenvectors.
  */
@@ -64,26 +64,47 @@ CircuitGraphAnalysis.prototype._sign = function(M) {
   });
 };
 
-CircuitGraphAnalysis.prototype.init = function(adjacency_matrix, maxiter) {
-  var t_adjacency_matrix = numeric.transpose(adjacency_matrix);
+/**
+ * adjacency_matrix: an array of arrays of even dimensions.
+ * maxiter: maximum number of iterations for computing the eigen values.
+ * epsilon: precision below which a floating-point number is considered zero.
+ *
+ * In practice, using the default numeric.epsilon fails in some occasions,
+ * when too many nodes are too 'close' to each other network-wise.
+ * An epsilon of 0.0000000001 works well empirically.
+ */
+CircuitGraphAnalysis.prototype.init = function(adjacency_matrix, maxiter, epsilon) {
+  var numeric_epsilon = numeric.epsilon;
+  if (typeof(epsilon) === 'number') {
+    numeric.epsilon = epsilon;
+  }
+  try {
+    var t_adjacency_matrix = numeric.transpose(adjacency_matrix);
 
-  // symmetrized adjacency matrix
-  var W = numeric.div(numeric.add(adjacency_matrix, t_adjacency_matrix), 2);
+    // symmetrized adjacency matrix
+    var W = numeric.div(numeric.add(adjacency_matrix, t_adjacency_matrix), 2);
 
-  // diagonalized circuit graph degrees (number of edges per node)
-  var D = numeric.diag(this._degrees(W));
+    // diagonalized circuit graph degrees (number of edges per node)
+    var D = numeric.diag(this._degrees(W));
 
-  // graph Laplacian
-  var L = numeric.sub(D, W);
+    // graph Laplacian
+    var L = numeric.sub(D, W);
 
-  // pseudoinverse of the graph Laplacian approximated with the singular value decomposition method
-  var pseudoinverse = this._pseudoinverse(L);
+    // pseudoinverse of the graph Laplacian approximated with the singular value decomposition method
+    var pseudoinverse = this._pseudoinverse(L);
 
-  // Compute the signal flow
-  this.z = this.signalFlow(W, numeric.sub(adjacency_matrix, t_adjacency_matrix), pseudoinverse);
+    // Compute the signal flow
+    this.z = this.signalFlow(W, numeric.sub(adjacency_matrix, t_adjacency_matrix), pseudoinverse);
 
-  // Compute the eigenvectors and eigenvalues
-  this.e = this.eigen(D, L, maxiter);
+    // Compute the eigenvectors and eigenvalues
+    this.e = this.eigen(D, L, maxiter);
+  } catch (e) {
+    console.log(e, e.stack);
+    alert(e);
+  }
+
+  // Restore
+  numeric.epsilon = numeric_epsilon;
 
   return this;
 };

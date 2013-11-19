@@ -291,7 +291,7 @@ NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
   content.setAttribute('id', 'navigator_annotationlist_content' +
       this.navigator.widgetID);
 
-  // Create user table
+  // Create annotation table
   var columns = ['Annotation'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
@@ -312,6 +312,9 @@ NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
   // Add table to DOM
   container.append(content);
 
+  // Make self accessible in callbacks more easily
+  var self = this;
+
   // Fill user table
   var datatable = $(table).dataTable({
     // http://www.datatables.net/usage/options
@@ -323,6 +326,17 @@ NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
     "iDisplayLength": this.possibleLengths[0],
     "sAjaxSource": django_url + project.id + '/annotations/table-list',
     "fnServerData": function (sSource, aoData, fnCallback) {
+        // Use parent node provides filters, if available
+        if (self.parent_node) {
+          // Annotation filter -- we are requesting annotations that are
+          // annotated with a specific filter
+          if (self.parent_node.annotation) {
+            aoData.push({
+                'name': 'annotation',
+                'value': self.parent_node.annotation
+            });
+          }
+        }
         $.ajax({
             "dataType": 'json',
             "cache": false,
@@ -346,9 +360,6 @@ NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
       },
     ]
   });
-
-  // Make self available in callback (original this is needed there)
-  var self = this;
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.
@@ -399,6 +410,9 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
   // Add table to DOM
   container.append(content);
 
+  // Make self accessible in callbacks more easily
+  var self = this;
+
   // Fill user table
   var datatable = $(table).dataTable({
     // http://www.datatables.net/usage/options
@@ -410,6 +424,17 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
     "iDisplayLength": this.possibleLengths[0],
     "sAjaxSource": django_url + 'user-table-list',
     "fnServerData": function (sSource, aoData, fnCallback) {
+        // Use parent node provides filters, if available
+        if (self.parent_node) {
+          // Annotation filter -- we are requesting users that have
+          // used a certain annotation
+          if (self.parent_node.annotation) {
+            aoData.push({
+                'name': 'annotation',
+                'value': self.parent_node.annotation
+            });
+          }
+        }
         $.ajax({
             "dataType": 'json',
             "cache": false,
@@ -448,9 +473,6 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
       },
     ]
   });
-
-  // Make self available in callback (original this is needed there)
-  var self = this;
 
   // If a user is selected a user filter node is created and the event is
   // removed.
@@ -573,9 +595,6 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
       },
     ]
   });
-
-  // Make self available in callback (original this is needed there)
-  var self = this;
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.

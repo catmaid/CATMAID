@@ -227,6 +227,14 @@ def list_annotations_datatable(request, project_id=None):
     annotation_query = ClassInstance.objects.filter(project_id=project_id,
             class_column__class_name='annotation')
 
+    # Meta annotations are annotations that are used to annotate other
+    # annotations.
+    meta_annotation = request.POST.get('annotation', None)
+    if meta_annotation:
+        annotation_query = annotation_query.filter(
+                cici_via_a__relation__relation_name = 'annotated_with',
+                          cici_via_a__class_instance_b__name = meta_annotation)
+
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')

@@ -33,6 +33,18 @@ def user_list_datatable(request):
 
     user_query = User.objects.all()
 
+    # This field can be used to only return users that have used a certain
+    # annotation.
+    annotation_used = request.POST.get('annotation', None)
+    if annotation_used:
+        user_query = user_query.filter(
+                classinstanceclassinstance__relation__relation_name = \
+                     'annotated_with',
+                classinstanceclassinstance__class_instance_b__name = \
+                     annotation_used)
+        # Make sure we only get distinct user names
+        user_query = user_query.distinct()
+
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')

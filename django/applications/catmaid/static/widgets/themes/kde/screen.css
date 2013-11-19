@@ -330,9 +330,16 @@ div#classification_graph_object img.roiimage {
 
 .navigator_navi_bar {
     margin-top: 0.5em;
+    width: 100%
+}
+
+.navigator_navi_bar .navigator_duplicate_button {
+    float: right;
+    margin-right: 5px;
 }
 
 .navigator_content {
+    clear: both;
     margin-top: 1em;
 }
 

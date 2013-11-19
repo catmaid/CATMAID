@@ -7,6 +7,7 @@ var NeuronNavigator = function()
 {
   this.widgetID = this.registerInstance();
   this.registerSource();
+  this.current_node = null;
 };
 
 NeuronNavigator.prototype = {};
@@ -72,15 +73,48 @@ NeuronNavigator.prototype.init_ui = function(container)
 
 NeuronNavigator.prototype.select_node = function(node)
 {
+  // Remember this node as the current node
+  this.current_node = node;
+
   // Set the navigation bar contents
-  $('#navigator_navi_bar' + this.widgetID).empty().append(
-      node.create_path(this));
+  var $navi_bar = $('#navigator_navi_bar' + this.widgetID).empty();
+  $navi_bar.append(node.create_path(this));
+
+  // Create a containe where all the content of every node will be placed in
+  var duplicate_button = document.createElement('div');
+  duplicate_button.setAttribute('class', 'navigator_duplicate_button');
+  var duplicate_image = document.createElement('img');
+  duplicate_image.setAttribute('src', STATIC_URL_JS +
+      'widgets/themes/kde/duplicate_navigator.png');
+  duplicate_button.appendChild(duplicate_image);
+  $navi_bar.append(duplicate_button);
+  $(duplicate_image).on('click', this.duplicate.bind(this));
   
   // Clear the content div, and let the node add content to it
   var $content = $('#navigator_content' + this.widgetID).empty();
   node.add_content($content);
 };
 
+/**
+ *  With the help of the duplicate method, the whole navigator is cloned. It
+ *  produces a new window with the same content as the first navigator.
+ */
+NeuronNavigator.prototype.duplicate = function()
+{
+  var NN = new NeuronNavigator();
+  // Clone the current node (and its parents)
+  var cloned_node = $.extend(true, {}, this.current_node);
+  // Override the navigator propery of all cloned nodes
+  var n = cloned_node;
+  do {
+    n.navigator = NN;
+    n = n.parent_node;
+  } while (n)
+  // Create a new window, based on the newly created navigator
+  WindowMaker.create('neuron-navigator', NN);
+  // Select the cloned node in the new navigator
+  NN.select_node(cloned_node);
+};
 
 /**
  * A filter container that keeps track of either an annotation, a user or a

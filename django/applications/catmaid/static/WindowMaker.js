@@ -2157,9 +2157,10 @@ var WindowMaker = new function()
     return win;
   };
 
-  var createNeuronNavigatorWindow = function()
+  var createNeuronNavigatorWindow = function(new_nn_instance)
   {
-    var NN = new NeuronNavigator();
+    // If available, a new instance passed as parameter will be used.
+    var NN = new_nn_instance ? new_nn_instance : new NeuronNavigator();
     var win = new CMWWindow(NN.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

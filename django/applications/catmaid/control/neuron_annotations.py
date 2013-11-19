@@ -40,14 +40,16 @@ def create_annotated_neuron_list(project, neurons):
     annotated_neurons = [];
     for neuron in neurons:
         try:
-            cici_skeleton = ClassInstanceClassInstance.objects.get(
+            cici_skeletons = ClassInstanceClassInstance.objects.filter(
                 class_instance_b = neuron,
-                relation__relation_name = 'model_of')
-            skeleton = cici_skeleton.class_instance_a
-            tn = Treenode.objects.get(
-                project=project,
-                parent__isnull=True,
-                skeleton_id=skeleton.id)
+                relation__relation_name = 'model_of').order_by('id')
+            skeleton_ids = [cici.class_instance_a.id for cici in cici_skeletons]
+            # Get treenode ids of all skeletons in the same order as the
+            # skeletons are. Under the assumption there is one treenode per
+            # skeleton, they should map nicely.
+            treenodes = Treenode.objects.filter(project=project,
+                parent__isnull=True, skeleton_id__in=skeleton_ids).order_by(
+                    'skeleton__id')
             # Get all annotations linked to this neuron
             # TODO: Try to get rid of joins, because of performance hit
             annotation_cis = ClassInstance.objects.filter(
@@ -58,8 +60,8 @@ def create_annotated_neuron_list(project, neurons):
             neuron_info = {
                 'id': neuron.id,
                 'name': neuron.name,
-                'skeleton_id': skeleton.id,
-                'root_node': tn.id,
+                'skeleton_ids': skeleton_ids,
+                'root_node_ids': [tn.id for tn in treenodes],
                 'annotations': annotations,
             }
 
@@ -117,8 +119,8 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
         response['aaData'] += [[
             neuron['name'],
             neuron['annotations'],
-            neuron['skeleton_id'],
-            neuron['root_node'],
+            neuron['skeleton_ids'],
+            neuron['root_node_ids'],
             neuron['id'],
         ]]
 

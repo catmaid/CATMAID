@@ -514,7 +514,7 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
       this.navigator.widgetID);
 
   // Create user table
-  var columns = ['Name', 'Annotations', 'Skeletons', 'Root node ID', 'ID'];
+  var columns = ['Name', 'Annotations', 'Skeleton IDs', 'Root node IDs', 'ID'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
   var table_footer = document.createElement('tfoot');
@@ -574,13 +574,13 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
       },
       {
         "sClass": "center",
-        "bSearchable": true,
-        "bSortable": true
+        "bSearchable": false,
+        "bSortable": false
       },
       {
         "sClass": "center",
-        "bSearchable": true,
-        "bSortable": true
+        "bSearchable": false,
+        "bSortable": false
       },
       {
         "sClass": "center",

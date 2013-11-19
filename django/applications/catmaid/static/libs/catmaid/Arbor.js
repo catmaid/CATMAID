@@ -190,34 +190,55 @@ Arbor.prototype.findBranchNodes = function() {
 	});
 };
 
-/** Return a map of node vs number of edges from the root. If the given root is null or undfined, it will be searched for. Invoke with this.root as argument to get the distances to the root of this Arbor. Invoke with any non-end node to get distances to that node for nodes downstream of it. */
-Arbor.prototype.edgeCountToRoot = function(root) {
-	var distances = {};
+/** Return a map of node vs topological distance from the given root. Rather than a distance, these are the hierarchical orders, where root has order 0, nodes directly downstream of root have order 1, and so on. Invoke with this.root as argument to get the distances to the root of this Arbor. Invoke with any non-end node to get distances to that node for nodes downstream of it. */
+Arbor.prototype.nodesOrderFrom = function(root) {
+	return this.nodesDistanceTo(root, function() { return 1; }).distances;
+};
+
+/** Measure distance of every node to root, by using the given
+ * distanceFn which takes two nodes (child and parent) as arguments and returns a number.
+ * Returns an object containing the distances and the maximum distance. */
+Arbor.prototype.nodesDistanceTo = function(root, distanceFn) {
+	var distances = {},
+	    r = {distances: distances,
+	         max: 0};
 
 	// Handle corner case:
-	if (!this.root) return distances;
+	if (!root) return r;
 
 	var successors = this.allSuccessors(),
-			count = 1,
-			current_level = [root ? root : this.findRoot()],
-			next_level = [];
+			open = [[root, 0]],
+			max = 0.000001;
 
-	while (current_level.length > 0) {
-		// Consume all elements in current level
-		while (current_level.length > 0) {
-			var node = current_level.shift();
-			distances[node] = count;
-			next_level = next_level.concat(successors[node]);
+	var next, paren, child, dist, succ;
+
+	while (open.length > 0) {
+		next = open.shift();
+		paren = next[0];
+		dist = next[1];
+		distances[paren] = dist;
+		succ = successors[paren];
+		while (1 === succ.length) {
+			child = succ[0];
+			dist += distanceFn(child, paren);
+			distances[child] = dist;
+			paren = child;
+			succ = successors[paren];
 		}
-		// Rotate lists (current_level is now empty)
-		var tmp = current_level;
-		current_level = next_level;
-		next_level = tmp;
-		// Increase level
-		++count;
+		if (0 === succ.length) {
+			// End node
+			max = Math.max(max, dist);
+		} else {
+			// Branch node
+			for (var i=0; i<succ.length; ++i) {
+				open.push([succ[i], dist + distanceFn(succ[i], paren)]);
+			}
+		}
 	}
 
-	return distances;
+	r.max = max;
+
+	return r;
 };
 
 /** Return an Object with node keys and true values, in O(2n) time. */
@@ -248,7 +269,7 @@ Arbor.prototype.countNodes = function() {
  * another path. Runs in O(3n) time. */
 Arbor.prototype.partition = function() {
 	var ends = this.findEndNodes(),
-		  distances = this.edgeCountToRoot(this.root),
+		  distances = this.nodesOrderFrom(this.root),
 			seen = {};
 
 	// Sort nodes by distance to root, so that the first end node is the furthest

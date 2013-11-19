@@ -1594,6 +1594,27 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
       node_weights = c;
 
+    } else if ('distance_to_root' === options.shading_method) {
+      var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
+        vs[v.node_id] = v;
+        return vs;
+      }, {});
+
+      var distanceFn = (function(child, paren) {
+        return this[child].distanceTo(this[paren]);
+      }).bind(locations);
+
+      var dr = arbor.nodesDistanceTo(arbor.root, distanceFn),
+          distances = dr.distances,
+          max = dr.max;
+
+      // Normalize by max in place
+      Object.keys(distances).forEach(function(node) {
+        distances[node] = 1 - (distances[node] / max);
+      });
+
+      node_weights = distances;
+
 		} else if ('active_node_split' === options.shading_method) {
       node_weights = arbor.subArbor(SkeletonAnnotations.getActiveNodeId())
         .nodesArray().reduce(function(o, node) {

@@ -508,6 +508,7 @@ var WindowMaker = new function()
     $('<option/>', {value : 'active_node_split', text: 'Active node split'}).appendTo(shadingMenu);
     $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
     $('<option/>', {value : 'slab_centrality', text: 'Slab centrality'}).appendTo(shadingMenu);
+    $('<option/>', {value : 'distance_to_root', text: 'Distance to root'}).appendTo(shadingMenu);
     shadingMenu.onchange = WA.set_shading_method.bind(WA);
     buttons.appendChild(shadingMenu);
 

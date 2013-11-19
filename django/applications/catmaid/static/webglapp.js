@@ -1815,7 +1815,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere =
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius, material) {
-  if (this.radiusVolumes.hasOwnProperty(v.node_id)) {
+  if (this.radiusVolumes.hasOwnProperty(v1.node_id)) {
     // There already is a sphere or cylinder at the node
     return;
   }

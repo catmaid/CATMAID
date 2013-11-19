@@ -1621,6 +1621,33 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           o[node] = 0.5;
           return o;
         }, {});
+
+    } else if ('partitions' === options.shading_method) {
+      // Shade by euclidian length, relative to the longest branch
+      var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
+        vs[v.node_id] = v;
+        return vs;
+      }, {});
+      var partitions = arbor.partitionSorted();
+      node_weights = partitions.reduce(function(o, seq, i) {
+        var loc1 = locations[seq[0]],
+            loc2,
+            plen = 0;
+        for (var i=1, len=seq.length; i<len; ++i) {
+          loc2 = locations[seq[i]];
+          plen += loc1.distanceTo(loc2);
+          loc1 = loc2;
+        }
+        return seq.reduce(function(o, node) {
+          o[node] = plen;
+          return o;
+        }, o);
+      }, {});
+      // Normalize by the length of the longest partition, which ends at root
+      var max_length = node_weights[arbor.root];
+      Object.keys(node_weights).forEach(function(node) {
+        node_weights[node] /= max_length;
+      });
     }
 
     var pickColor;

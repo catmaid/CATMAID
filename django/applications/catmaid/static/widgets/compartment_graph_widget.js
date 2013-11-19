@@ -1006,7 +1006,7 @@ CompartmentGraphWidget.prototype.exportAdjacencyMatrix = function() {
       }, {});
 
   // First row and first column take the neuron names plus the #<skeleton_id>
-  var csv = m.skeleton_ids.map(function(skid) {
+  var csv = '"Neurons",' + m.skeleton_ids.map(function(skid) {
     return names[skid];
   }).join(',') + '\n' + m.AdjM.map(function(row, i) {
     return names[m.skeleton_ids[i]] + ',' + row.join(',');

@@ -2228,10 +2228,11 @@ var WindowMaker = new function()
     }
   };
 
-  /** Always create a new instance of the widget. */
-  this.create = function(name) {
+  /** Always create a new instance of the widget. The caller is allowed to hand
+   * in extra parameters that will be passed on to the actual creator method. */
+  this.create = function(name, init_params) {
     if (creators.hasOwnProperty(name)) {
-      windows[name] = creators[name]();
+      windows[name] = creators[name](init_params);
     } else {
       alert("No known window with name " + name);
     }

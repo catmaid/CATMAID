@@ -336,6 +336,14 @@ NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
                 'value': self.parent_node.annotation
             });
           }
+          // User filter -- we are requesting annotations that are used by a
+          // particular user.
+          if (self.parent_node.user_id) {
+            aoData.push({
+                'name': 'user_id',
+                'value': self.parent_node.user_id
+            });
+          }
         }
         $.ajax({
             "dataType": 'json',
@@ -548,6 +556,14 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
             aoData.push({
                 'name': 'neuron_query_by_annotation',
                 'value': self.parent_node.annotation
+            });
+          }
+          // User filter -- only show neurons that have been annotated by the
+          // user in question
+          if (self.parent_node.user_id) {
+            aoData.push({
+                'name': 'neuron_query_by_annotator',
+                'value': self.parent_node.user_id
             });
           }
         }

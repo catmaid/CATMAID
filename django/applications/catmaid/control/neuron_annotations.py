@@ -235,6 +235,15 @@ def list_annotations_datatable(request, project_id=None):
                 cici_via_a__relation__relation_name = 'annotated_with',
                           cici_via_a__class_instance_b__name = meta_annotation)
 
+    # Passing in a user ID causes the result set to only contain annotations
+    # that are used by the respective user. The query filter could lead to
+    # duplicate entries, therefore distinct() is added here.
+    user_id = request.POST.get('user_id', None)
+    if user_id:
+        user_id = int(user_id)
+        annotation_query = annotation_query.filter(
+                cici_via_b__user__id=user_id).distinct()
+
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')

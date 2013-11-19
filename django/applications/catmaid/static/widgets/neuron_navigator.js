@@ -59,7 +59,7 @@ NeuronNavigator.prototype.init_ui = function(container)
   navigation_bar.setAttribute('class', 'navigator_navi_bar');
   container.appendChild(navigation_bar);
 
-  // Create a containe where all the content of every node will be placed in
+  // Create a container where all the content of every node will be placed in
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_content' + this.widgetID);
   content.setAttribute('class', 'navigator_content');
@@ -80,7 +80,7 @@ NeuronNavigator.prototype.select_node = function(node)
   var $navi_bar = $('#navigator_navi_bar' + this.widgetID).empty();
   $navi_bar.append(node.create_path(this));
 
-  // Create a containe where all the content of every node will be placed in
+  // Create a container where all the content of every node will be placed in
   var duplicate_button = document.createElement('div');
   duplicate_button.setAttribute('class', 'navigator_duplicate_button');
   var duplicate_image = document.createElement('img');
@@ -104,7 +104,7 @@ NeuronNavigator.prototype.duplicate = function()
   var NN = new NeuronNavigator();
   // Clone the current node (and its parents)
   var cloned_node = $.extend(true, {}, this.current_node);
-  // Override the navigator propery of all cloned nodes
+  // Override the navigator property of all cloned nodes
   var n = cloned_node;
   do {
     n.navigator = NN;
@@ -116,6 +116,7 @@ NeuronNavigator.prototype.duplicate = function()
   NN.select_node(cloned_node);
 };
 
+
 /**
  * A filter container that keeps track of either an annotation, a user or a
  * neuron to be used as filter when selection data.
@@ -126,6 +127,7 @@ var NeuronNavigatorFilter = function(annotation, user, neuron)
   this.user = user;
   this.neuron = neuron;
 };
+
 
 /**
  * A class representing a node in the graph of the navigator.

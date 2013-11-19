@@ -505,6 +505,9 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
   // Add table to DOM
   container.append(content);
 
+  // Make self accessible in callbacks more easily
+  var self = this;
+
   // Fill user table
   var datatable = $(table).dataTable({
     // http://www.datatables.net/usage/options
@@ -516,6 +519,16 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
     "iDisplayLength": this.possibleLengths[0],
     "sAjaxSource": django_url + project.id + '/neuron/table/query-by-annotations',
     "fnServerData": function (sSource, aoData, fnCallback) {
+        // Use parent node provides filters, if available
+        if (self.parent_node) {
+          // Annotation filter
+          if (self.parent_node.annotation) {
+            aoData.push({
+                'name': 'neuron_query_by_annotation',
+                'value': self.parent_node.annotation
+            });
+          }
+        }
         $.ajax({
             "dataType": 'json',
             "cache": false,

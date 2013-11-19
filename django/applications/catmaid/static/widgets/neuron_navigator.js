@@ -118,25 +118,12 @@ NeuronNavigator.prototype.duplicate = function()
 
 
 /**
- * A filter container that keeps track of either an annotation, a user or a
- * neuron to be used as filter when selection data.
- */
-var NeuronNavigatorFilter = function(annotation, user, neuron)
-{
-  this.annotation = annotation;
-  this.user = user;
-  this.neuron = neuron;
-};
-
-
-/**
  * A class representing a node in the graph of the navigator.
  */
 var NeuronNavigatorNode = function(name)
 {
   this.name = name;
   this.navigator = null;
-  this.filters = null;
 
   /* Because some nodes use tables to display data, some common options are
    * kept on the abstract node level.
@@ -150,21 +137,6 @@ NeuronNavigatorNode.prototype.link = function(navigator, parent_node)
 {
   this.navigator = navigator;
   this.parent_node = parent_node;
-};
-
-NeuronNavigatorNode.prototype.collect_filters = function()
-{
-  // Collect filters by reference
-  if (this.parent_node) {
-    var path_filters = this.parent_node.collect_filters();
-    if (this.filters) {
-      path_filters.push(this.filters);
-    }
-    return path_filters;
-  } else {
-    // The home node will return an empty list
-    return [];
-  }
 };
 
 NeuronNavigatorNode.prototype.create_path = function()
@@ -304,8 +276,8 @@ NeuronNavigatorHomeNode.prototype.add_content = function(container)
 
 /**
  * The annotation list node of the navigator provides a list of all available
- * annotations minus the onces choses in already existing filters. If clicked
- * on a listed annotations, it adds a new annotation filter.
+ * annotations. If clicked on a listed annotations, it adds a new annotation
+ * filter node.
  */
 var NeuronNavigatorAnnotationListNode = function() {};
 
@@ -392,7 +364,7 @@ NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
 
 /**
  * The user list node of the navigator provides a list of all existing users.
- * It will add a user filter if clicked on one of them.
+ * It will add a user filter node if clicked on one of them.
  */
 var NeuronNavigatorUserListNode = function() {};
 
@@ -498,8 +470,7 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
 
 
 /**
- * The neuron list node of the navigator lists all neurons matching the
- * filter criteria in the path.
+ * The neuron list node of the navigator lists all neurons.
  */
 var NeuronNavigatorNeuronListNode = function() {};
 
@@ -612,7 +583,7 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
  */
 var NeuronNavigatorAnnotationFilterNode = function(included_annotation)
 {
-  this.filters = new NeuronNavigatorFilter(included_annotation)
+  this.annotation = included_annotation
   this.name = "A: " + included_annotation;
 };
 
@@ -622,7 +593,7 @@ $.extend(NeuronNavigatorAnnotationFilterNode.prototype,
 
 NeuronNavigatorAnnotationFilterNode.prototype.add_content = function(container)
 {
-  /* An annotation filter node, will display options to add ad user filter,
+  /* An annotation filter node, will display options to add a user filter,
    * another annotation filter or to select a neuron.
    */
   var content = document.createElement('div');
@@ -633,15 +604,8 @@ NeuronNavigatorAnnotationFilterNode.prototype.add_content = function(container)
   var coannotations_link = this.create_coannotations_link();
   content.appendChild(coannotations_link);
 
-  // Only show the users link, if there hasn't been one before
-  var filters = this.collect_filters();
-  var has_user_filter = filters.some(function(f) {
-    return f.user;
-  });
-  if (!has_user_filter) {
-    var users_link = this.create_users_link();
-    content.appendChild(users_link);
-  }
+  var users_link = this.create_users_link();
+  content.appendChild(users_link);
 
   var neurons_link = this.create_neurons_link();
   content.appendChild(neurons_link);
@@ -657,7 +621,7 @@ NeuronNavigatorAnnotationFilterNode.prototype.add_content = function(container)
  */
 var NeuronNavigatorUserFilterNode = function(included_user)
 {
-  this.filters = new NeuronNavigatorFilter(null, included_user.id)
+  this.user_id = included_user.id;
   this.name = included_user.login;
 };
 

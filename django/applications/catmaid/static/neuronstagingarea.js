@@ -233,16 +233,13 @@ SelectionTable.prototype.toggleSelectAllSkeletons = function() {
 
 /** setup button handlers */
 SelectionTable.prototype.init = function() {
-  var clear = this.clear.bind(this),
-      toggleSelectAllSkeletons = this.toggleSelectAllSkeletons.bind(this);
-
-  $('#selection-table-remove-all' + this.widgetID).click(function() {
-    if (confirm("Empty selection table?")) {
-      clear();
+  $('#selection-table-remove-all' + this.widgetID).click((function() {
+    if (confirm("Remove selected from table?")) {
+      this.removeSkeletons(this.getSelectedSkeletons());
     }
-  });
+  }).bind(this));
 
-  $('#selection-table-show-all' + this.widgetID).click(toggleSelectAllSkeletons);
+  $('#selection-table-show-all' + this.widgetID).click(this.toggleSelectAllSkeletons.bind(this));
 
   // TODO add similar buttons and handlers for pre and post
 };

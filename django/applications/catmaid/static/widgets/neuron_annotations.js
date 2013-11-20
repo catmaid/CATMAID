@@ -214,7 +214,7 @@ NeuronAnnotations.prototype.annotate_neurons = function()
       neuron_ids: neuron_ids,
   };
 
-  requestQueue.register(django_url + this.pid + '/neuron/annotate',
+  requestQueue.register(django_url + project.id + '/neuron/annotate',
       'POST', form_data, function(status, text, xml) {
         if (status === 200) {
           var e = $.parseJSON(text);

@@ -697,10 +697,13 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
   // is removed.
   $('#' + table_id).on('click', ' tbody tr', function () {
       var aData = datatable.fnGetData(this);
-      var a = aData[0];
-      var annotations_node = new NeuronNavigator.AnnotationFilterNode(a);
-      annotations_node.link(self.navigator, self);
-      self.navigator.select_node(annotations_node);
+      var n = {
+        'name': aData[0],
+        'id': aData[4],
+      };
+      var node = new NeuronNavigator.NeuronNode(n);
+      node.link(self.navigator, self);
+      self.navigator.select_node(node);
   });
 };
 
@@ -795,4 +798,27 @@ NeuronNavigator.UserFilterNode.prototype.add_content = function(container)
       node.link(this.navigator, this);
       this.navigator.select_node(node);
   }, this));
+};
+
+
+/**
+ * A neuron node displays information about a particular node.
+ */
+NeuronNavigator.NeuronNode = function(neuron)
+{
+  this.neuron_id = neuron.id;
+  this.name = neuron.name;
+};
+
+NeuronNavigator.NeuronNode.prototype = {};
+$.extend(NeuronNavigator.NeuronNode.prototype,
+    new NeuronNavigator.Node("Neuron node"));
+
+NeuronNavigator.NeuronNode.prototype.add_content = function(container)
+{
+  var content = document.createElement('div');
+
+
+  // Add container to DOM
+  container.append(content);
 };

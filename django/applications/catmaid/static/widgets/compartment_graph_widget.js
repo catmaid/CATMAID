@@ -14,6 +14,8 @@ var CompartmentGraphWidget = function() {
   this.clustering_bandwidth = 0;
   this.compute_risk = false;
 
+  this.color_circles_of_hell = this.colorCirclesOfHell.bind(this);
+
   this.setState('color_mode', 'source');
 }
 
@@ -848,18 +850,22 @@ CompartmentGraphWidget.prototype.getSkeletonsIO = function() {
 };
 
 CompartmentGraphWidget.prototype._colorize = function(select) {
-  this.colorBy(select.value);
+  this.colorBy(select.value, select);
 };
 
-CompartmentGraphWidget.prototype.colorBy = function(mode) {
-  if (mode === this.getState().color_mode) return;
+CompartmentGraphWidget.prototype.colorBy = function(mode, select) {
+  var current_mode = this.getState().color_mode;
+  if (mode === current_mode) return;
 
-  if ('source' === this.getState().color_mode) {
+  if ('source' === current_mode) {
     // Requested mode is not source: preserve colors for when resetting to source
     this.setState('colors', this.getSkeletonHexColors());
   }
 
   this.setState('color_mode', mode);
+
+  this.cy.nodes().off({'select': this.color_circles_of_hell,
+                       'unselect': this.color_circles_of_hell});
 
   if ('source' === mode) {
     // Color by the color given in the SkeletonModel
@@ -949,7 +955,93 @@ CompartmentGraphWidget.prototype.colorBy = function(mode) {
       growlAlert('ERROR', 'Problem computing betweenness centrality');
     }
     $.unblockUI();
+
+  } else if ('circles_of_hell' === mode) {
+    this.cy.nodes().on({'select': this.color_circles_of_hell,
+                        'unselect': this.color_circles_of_hell});
+    this.color_circles_of_hell();
   }
+};
+
+CompartmentGraphWidget.prototype.colorCirclesOfHell = function() {
+  var selected = this.getSelectedSkeletons();
+  if (1 !== selected.length) {
+    growlAlert("Info", "Need 1 (and only 1) selected neuron!");
+    this.cy.nodes().each(function(i, node) {
+      node.data('color', '#fff');
+    });
+    return;
+  }
+
+  var m = this.createAdjacencyMatrix(),
+      circles = [],
+      current = {},
+      next,
+      consumed = {},
+      n_consumed = 1,
+      n = 0;
+
+  current[selected[0]] = true;
+  circles.push(current);
+  consumed[selected[0]] = true;
+
+  while (n_consumed < m.skeleton_ids.length) {
+    current = circles[circles.length -1];
+    next = {};
+    n = 0;
+    Object.keys(current).forEach(function(skid1) {
+      var k = m.indices[skid1];
+      // Downstream:
+      m.AdjM[k].forEach(function(count, i) {
+        if (0 === count) return;
+        var skid2 = m.skeleton_ids[i];
+        if (consumed[skid2]) return;
+        next[skid2] = true;
+        consumed[skid2] = true;
+        n += 1;
+      });
+      // Upstream:
+      m.AdjM.forEach(function(row, i) {
+        if (0 === row[k]) return;
+        var skid2 = m.skeleton_ids[i];
+        if (consumed[skid2]) return;
+        next[skid2] = true;
+        consumed[skid2] = true;
+        n += 1;
+      });
+    });
+    if (0 === n) break;
+    n_consumed += n;
+    circles.push(next);
+  }
+
+  var disconnected = m.skeleton_ids.reduce(function(o, skid) {
+    if (skid in consumed) return o;
+    o[skid] = true;
+    return o;
+  }, {});
+
+  // Color selected neuron in selection green
+  // Next circles are colored by a linear saturation gradient from blue 90% to green 20%
+  // Color disconnected in white
+
+  var colors = ['#b0ff72'].concat(circles.slice(1).map(function(circle, i) {
+    return '#' + new THREE.Color().setHSL(0.66, 1, 0.55 + 0.45 * (i+1) / circles.length).getHexString();
+  }));
+  colors.push['#fff']; // white
+
+  circles.push(disconnected);
+
+  this.cy.nodes().each(function(i, node) {
+    var skid = node.data('skeleton_id');
+    circles.some(function(circle, i) {
+      if (skid in circle) {
+        node.data('color', colors[i]); 
+        return true; // break
+      }
+      return false; // continue
+    });
+  });
 };
 
 /** Includes only visible nodes and edges. */
@@ -989,6 +1081,7 @@ CompartmentGraphWidget.prototype.createAdjacencyMatrix = function() {
     });
   });
   return {skeleton_ids: skeleton_ids,
+          indices: indices,
           AdjM: AdjM};
 };
 

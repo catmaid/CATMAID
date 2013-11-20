@@ -827,6 +827,7 @@ var WindowMaker = new function()
     color.options.add(new Option('review status', 'review'));
     color.options.add(new Option('input/output', 'I/O'));
     color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
+    color.options.add(new Option('circles of hell', 'circles_of_hell')); // inspired by Tom Jessell's comment
     color.onchange = CGW._colorize.bind(CGW, color);
     contentbutton.appendChild(color);
 

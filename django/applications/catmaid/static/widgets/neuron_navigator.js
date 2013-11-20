@@ -260,6 +260,57 @@ NeuronNavigatorNode.prototype.create_header_row = function(columns)
   return tr;
 };
 
+/**
+ * Adds a datatable like menu to the container passed.
+ */
+NeuronNavigatorNode.prototype.add_menu_table = function(entries, container)
+{
+  var toolbar_classes = 'fg-toolbar ui-toolbar ui-widget-header' +
+      ' ui-helper-clearfix'
+
+  // Create top tool bar
+  var top_toolbar = document.createElement('div');
+  top_toolbar.setAttribute('class', toolbar_classes +
+      ' ui-corner-tl ui-corner-tr' );
+  top_toolbar.appendChild(document.createTextNode("Please select..."));
+
+  // Create table body
+  var table_body = document.createElement('tbody');
+  var odd=true;
+  var rows = entries.map(function(e) {
+    var td = document.createElement('td');
+    td.appendChild(document.createTextNode(e));
+    var tr = document.createElement('tr');
+    tr.appendChild(td);
+    tr.setAttribute('class', odd ? "odd" : "even");
+    table_body.appendChild(tr);
+
+    odd = !odd;
+    return tr;
+  });
+
+  // Create table itself
+  var table = document.createElement('table');
+  table.setAttribute('class', 'display');
+  table.setAttribute('cellpadding', 0);
+  table.setAttribute('cellspacing', 0);
+  table.setAttribute('border', 0);
+  table.appendChild(table_body);
+
+  // Create bottom tool bar with 1em height
+  var bottom_toolbar = document.createElement('div');
+  bottom_toolbar.setAttribute('class', toolbar_classes +
+      'ui-corner-bl ui-corner-br');
+  bottom_toolbar.style.height = '1em';
+
+  // Add single elements to container
+  container.appendChild(top_toolbar);
+  container.appendChild(table);
+  container.appendChild(bottom_toolbar);
+
+  return rows;
+};
+
 
 /**
  * The home node of the navigator. It links to annotation

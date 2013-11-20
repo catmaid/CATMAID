@@ -775,10 +775,24 @@ NeuronNavigator.UserFilterNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
 
-  var annotations_link = this.create_annotations_link();
-  var neurons_link = this.create_neurons_link();
-  content.appendChild(annotations_link);
-  content.appendChild(neurons_link);
+  // Create menu and add it to container
+  var menu_entries = ['Annotations', 'Neurons'];
+  var table_rows = this.add_menu_table(menu_entries, content);
 
+  // Add container to DOM
   container.append(content);
+
+  // Append click handler
+  $(table_rows[0]).click($.proxy(function() {
+      // Show annotation list
+      var annotations_node = new NeuronNavigator.AnnotationListNode();
+      annotations_node.link(this.navigator, this);
+      this.navigator.select_node(annotations_node);
+  }, this));
+  $(table_rows[1]).click($.proxy(function() {
+      // Show neuron list
+      var node = new NeuronNavigator.NeuronListNode();
+      node.link(this.navigator, this);
+      this.navigator.select_node(node);
+  }, this));
 };

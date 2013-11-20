@@ -103,13 +103,7 @@ NeuronNavigator.prototype.duplicate = function()
 {
   var NN = new NeuronNavigator();
   // Clone the current node (and its parents)
-  var cloned_node = $.extend(true, {}, this.current_node);
-  // Override the navigator property of all cloned nodes
-  var n = cloned_node;
-  do {
-    n.navigator = NN;
-    n = n.parent_node;
-  } while (n)
+  var cloned_node = this.current_node.clone(NN);
   // Create a new window, based on the newly created navigator
   WindowMaker.create('neuron-navigator', NN);
   // Select the cloned node in the new navigator
@@ -137,6 +131,33 @@ NeuronNavigatorNode.prototype.link = function(navigator, parent_node)
 {
   this.navigator = navigator;
   this.parent_node = parent_node;
+};
+
+NeuronNavigatorNode.prototype.clone = function(new_navigator)
+{
+  // Create a new object and make sure the clone has the
+  // same prototype as the original.
+  var clone = Object.create(Object.getPrototypeOf(this));
+  // Copy over all fields that are not-part of the prototype chain
+  for (var key in this) {
+    if (this.hasOwnProperty(key)) {
+      // Ignore navigator and parent node fields for cloning as they
+      // are set later anyway.
+      if (key !== 'navigator' && key !== 'parent_node') {
+        clone[key] = deepCopy(this[key]);
+      }
+    }
+  }
+  clone.navigator = new_navigator;
+
+  // Clone the parent as well
+  if (this.parent_node) {
+    clone.parent_node = this.parent_node.clone(new_navigator);
+  } else {
+    clone.parent_node = null;
+  }
+
+  return clone;
 };
 
 NeuronNavigatorNode.prototype.create_path = function()

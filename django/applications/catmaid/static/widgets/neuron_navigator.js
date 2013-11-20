@@ -329,20 +329,29 @@ NeuronNavigatorHomeNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
 
-  // Add annotation and user list links
-  var annotations_link = this.create_annotations_link();
-  var users_link = this.create_users_link();
-  content.appendChild(annotations_link);
-  content.appendChild(users_link);
+  // Create menu and add it to container
+  var menu_entries = ['Annotations', 'Users', 'Active Skeleton'];
+  var table_rows = this.add_menu_table(menu_entries, content);
 
-  // Add link for active skeleton
-  var active_skeleton_link = this.create_path_link("Active Skeleton");
-  $(active_skeleton_link).click($.proxy(function() {
-      // TODO: What should be done when a neuron/skeleton is clicked?
-  }, this));
-  content.appendChild(active_skeleton_link);
-
+  // Add container to DOM
   container.append(content);
+
+  // Append click handler
+  $(table_rows[0]).click($.proxy(function() {
+      // Show annotation list
+      var annotations_node = new NeuronNavigatorAnnotationListNode();
+      annotations_node.link(this.navigator, this);
+      this.navigator.select_node(annotations_node);
+  }, this));
+  $(table_rows[1]).click($.proxy(function() {
+      // Show user list
+      var users_node = new NeuronNavigatorUserListNode();
+      users_node.link(this.navigator, this);
+      this.navigator.select_node(users_node);
+  }, this));
+  $(table_rows[2]).click($.proxy(function() {
+      // Show active skeleton
+  }, this));
 };
 
 

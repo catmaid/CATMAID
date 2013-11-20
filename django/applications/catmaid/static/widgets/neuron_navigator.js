@@ -589,14 +589,37 @@ NeuronNavigator.NeuronListNode.prototype = {};
 $.extend(NeuronNavigator.NeuronListNode.prototype,
     new NeuronNavigator.Node("Neurons"));
 
+/**
+ * This method retrieves the currently selected neurons in the neuron list
+ * node. It is required by the annotate button functionality which expects
+ * this function to be available on the current instance.
+ */
+NeuronNavigator.NeuronListNode.prototype.get_selected_neurons = function()
+{
+  var cb_selector = '#navigator_annotationlist_table' +
+      this.navigator.widgetID + ' tbody td.selector_column input';
+  var selected_neurons = $(cb_selector).toArray().reduce(function(ret, cb) {
+    ret.push($(cb).attr('neuron_id'));
+    return ret;
+  }, []);
+
+  return selected_neurons;
+};
+
 NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_neuronlist_content' +
       this.navigator.widgetID);
 
+  // Create annotate button
+  var annotate_button = document.createElement('input');
+  annotate_button.setAttribute('type', 'button');
+  annotate_button.setAttribute('value', 'Annotate');
+  content.appendChild(annotate_button);
+
   // Create user table
-  var columns = ['Name'];
+  var columns = ['Selected', 'Name'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
   var table_footer = document.createElement('tfoot');
@@ -665,10 +688,34 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
     "aaSorting": [[ 0, "desc" ]],
     "aoColumns": [
       {
+        "sWidth": '5em',
+        "sClass": 'selector_column center',
+        "mRender": function (data, type, full) {
+          var cb_id = 'navigator_neuron_' + full[4] + '_selection' +
+              self.navigator.widgetID;
+          return '<input type="checkbox" id="' + cb_id +
+              '" name="someCheckbox" neuron_id="' + full[4] + '" />';
+      },
+      },
+      {
         "bSearchable": true,
-        "bSortable": true
+        "bSortable": true,
+        "mData": 0,
       },
     ]
+  });
+
+  $(annotate_button).click(function() {
+    NeuronAnnotations.prototype.annotate_neurons.call(self);
+  });
+
+  $('#' + table_id).on('click', ' tbody td.selector_column', function (event) {
+      // Make sure the event doesn't bubble up, because otherwise it would reach
+      // the click handler of the tr element.
+      event.stopPropagation();
+      // Toggle check box
+      var checkbox = $(this).find('input');
+      checkbox.prop("checked", !checkbox.prop("checked"));
   });
 
   // If a user is selected an annotation filter node is created and the event

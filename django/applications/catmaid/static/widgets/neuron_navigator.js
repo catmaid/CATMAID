@@ -66,7 +66,7 @@ NeuronNavigator.prototype.init_ui = function(container)
   container.appendChild(content);
 
   // Add home node as starting point without any parent
-  var home_node = new NeuronNavigatorHomeNode(this.widgetID);
+  var home_node = new NeuronNavigator.HomeNode(this.widgetID);
   home_node.link(this, null);
   this.select_node(home_node);
 };
@@ -114,7 +114,7 @@ NeuronNavigator.prototype.duplicate = function()
 /**
  * A class representing a node in the graph of the navigator.
  */
-var NeuronNavigatorNode = function(name)
+NeuronNavigator.Node = function(name)
 {
   this.name = name;
   this.navigator = null;
@@ -127,13 +127,13 @@ var NeuronNavigatorNode = function(name)
       function (n) { return (n === -1) ? "All" : n.toString() });
 };
 
-NeuronNavigatorNode.prototype.link = function(navigator, parent_node)
+NeuronNavigator.Node.prototype.link = function(navigator, parent_node)
 {
   this.navigator = navigator;
   this.parent_node = parent_node;
 };
 
-NeuronNavigatorNode.prototype.clone = function(new_navigator)
+NeuronNavigator.Node.prototype.clone = function(new_navigator)
 {
   // Create a new object and make sure the clone has the
   // same prototype as the original.
@@ -160,7 +160,7 @@ NeuronNavigatorNode.prototype.clone = function(new_navigator)
   return clone;
 };
 
-NeuronNavigatorNode.prototype.create_path = function()
+NeuronNavigator.Node.prototype.create_path = function()
 {
   var path_link = document.createElement('a');
   path_link.setAttribute('href', '#');
@@ -180,16 +180,16 @@ NeuronNavigatorNode.prototype.create_path = function()
   }
 };
 
-NeuronNavigatorNode.prototype.add_content = function(container)
+NeuronNavigator.Node.prototype.add_content = function(container)
 {
   return undefined;
 };
 
-NeuronNavigatorNode.prototype.create_annotations_link = function()
+NeuronNavigator.Node.prototype.create_annotations_link = function()
 {
   var annotations_link = this.create_path_link("Annotations");
   $(annotations_link).click($.proxy(function() {
-      var annotations_node = new NeuronNavigatorAnnotationListNode();
+      var annotations_node = new NeuronNavigator.AnnotationListNode();
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
@@ -197,11 +197,11 @@ NeuronNavigatorNode.prototype.create_annotations_link = function()
   return annotations_link;
 };
 
-NeuronNavigatorNode.prototype.create_coannotations_link = function()
+NeuronNavigator.Node.prototype.create_coannotations_link = function()
 {
   var annotations_link = this.create_path_link("Co-Annotations");
   $(annotations_link).click($.proxy(function() {
-      var annotations_node = new NeuronNavigatorAnnotationListNode();
+      var annotations_node = new NeuronNavigator.AnnotationListNode();
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
@@ -209,11 +209,11 @@ NeuronNavigatorNode.prototype.create_coannotations_link = function()
   return annotations_link;
 };
 
-NeuronNavigatorNode.prototype.create_users_link = function()
+NeuronNavigator.Node.prototype.create_users_link = function()
 {
   var users_link = this.create_path_link("Users");
   $(users_link).click($.proxy(function() {
-      var users_node = new NeuronNavigatorUserListNode();
+      var users_node = new NeuronNavigator.UserListNode();
       users_node.link(this.navigator, this);
       this.navigator.select_node(users_node);
   }, this));
@@ -221,11 +221,11 @@ NeuronNavigatorNode.prototype.create_users_link = function()
   return users_link;
 };
 
-NeuronNavigatorNode.prototype.create_neurons_link = function()
+NeuronNavigator.Node.prototype.create_neurons_link = function()
 {
   var neurons_link = this.create_path_link("Neurons");
   $(neurons_link).click($.proxy(function() {
-      var node = new NeuronNavigatorNeuronListNode();
+      var node = new NeuronNavigator.NeuronListNode();
       node.link(this.navigator, this);
       this.navigator.select_node(node);
   }, this));
@@ -233,7 +233,7 @@ NeuronNavigatorNode.prototype.create_neurons_link = function()
   return neurons_link
 };
 
-NeuronNavigatorNode.prototype.create_path_link = function(text)
+NeuronNavigator.Node.prototype.create_path_link = function(text)
 {
   var option = document.createElement('a');
   option.setAttribute('href', '#');
@@ -248,7 +248,7 @@ NeuronNavigatorNode.prototype.create_path_link = function(text)
 };
 
 // A convenience helper for creating a table header
-NeuronNavigatorNode.prototype.create_header_row = function(columns)
+NeuronNavigator.Node.prototype.create_header_row = function(columns)
 {
   var tr = columns.reduce(function(tr, col) {
     var th = document.createElement('th');
@@ -263,7 +263,7 @@ NeuronNavigatorNode.prototype.create_header_row = function(columns)
 /**
  * Adds a datatable like menu to the container passed.
  */
-NeuronNavigatorNode.prototype.add_menu_table = function(entries, container)
+NeuronNavigator.Node.prototype.add_menu_table = function(entries, container)
 {
   var toolbar_classes = 'fg-toolbar ui-toolbar ui-widget-header' +
       ' ui-helper-clearfix'
@@ -316,16 +316,16 @@ NeuronNavigatorNode.prototype.add_menu_table = function(entries, container)
  * The home node of the navigator. It links to annotation
  * and users nodes.
  */
-var NeuronNavigatorHomeNode = function()
+NeuronNavigator.HomeNode = function()
 {
   // A home node acts as the root node and has therefore no parent.
   this.link(null);
 };
 
-NeuronNavigatorHomeNode.prototype = {};
-$.extend(NeuronNavigatorHomeNode.prototype, new NeuronNavigatorNode("Home"));
+NeuronNavigator.HomeNode.prototype = {};
+$.extend(NeuronNavigator.HomeNode.prototype, new NeuronNavigator.Node("Home"));
 
-NeuronNavigatorHomeNode.prototype.add_content = function(container)
+NeuronNavigator.HomeNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
 
@@ -339,13 +339,13 @@ NeuronNavigatorHomeNode.prototype.add_content = function(container)
   // Append click handler
   $(table_rows[0]).click($.proxy(function() {
       // Show annotation list
-      var annotations_node = new NeuronNavigatorAnnotationListNode();
+      var annotations_node = new NeuronNavigator.AnnotationListNode();
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
   $(table_rows[1]).click($.proxy(function() {
       // Show user list
-      var users_node = new NeuronNavigatorUserListNode();
+      var users_node = new NeuronNavigator.UserListNode();
       users_node.link(this.navigator, this);
       this.navigator.select_node(users_node);
   }, this));
@@ -360,13 +360,13 @@ NeuronNavigatorHomeNode.prototype.add_content = function(container)
  * annotations. If clicked on a listed annotations, it adds a new annotation
  * filter node.
  */
-var NeuronNavigatorAnnotationListNode = function() {};
+NeuronNavigator.AnnotationListNode = function() {};
 
-NeuronNavigatorAnnotationListNode.prototype = {};
-$.extend(NeuronNavigatorAnnotationListNode.prototype,
-    new NeuronNavigatorNode("Annotations"));
+NeuronNavigator.AnnotationListNode.prototype = {};
+$.extend(NeuronNavigator.AnnotationListNode.prototype,
+    new NeuronNavigator.Node("Annotations"));
 
-NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
+NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_annotationlist_content' +
@@ -455,7 +455,7 @@ NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
   $('#' + table_id).on('click', ' tbody tr', function () {
       var aData = datatable.fnGetData(this);
       var a = aData[0];
-      var annotations_node = new NeuronNavigatorAnnotationFilterNode(a);
+      var annotations_node = new NeuronNavigator.AnnotationFilterNode(a);
       annotations_node.link(self.navigator, self);
       self.navigator.select_node(annotations_node);
   });
@@ -466,13 +466,13 @@ NeuronNavigatorAnnotationListNode.prototype.add_content = function(container)
  * The user list node of the navigator provides a list of all existing users.
  * It will add a user filter node if clicked on one of them.
  */
-var NeuronNavigatorUserListNode = function() {};
+NeuronNavigator.UserListNode = function() {};
 
-NeuronNavigatorUserListNode.prototype = {};
-$.extend(NeuronNavigatorUserListNode.prototype,
-    new NeuronNavigatorNode("Users"));
+NeuronNavigator.UserListNode.prototype = {};
+$.extend(NeuronNavigator.UserListNode.prototype,
+    new NeuronNavigator.Node("Users"));
 
-NeuronNavigatorUserListNode.prototype.add_content = function(container)
+NeuronNavigator.UserListNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_users_content' +
@@ -573,7 +573,7 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
         'last_name': aData[2],
         'id': aData[3],
       }
-      var filter_node = new NeuronNavigatorUserFilterNode(user);
+      var filter_node = new NeuronNavigator.UserFilterNode(user);
       filter_node.link(self.navigator, self);
       self.navigator.select_node(filter_node);
   });
@@ -583,13 +583,13 @@ NeuronNavigatorUserListNode.prototype.add_content = function(container)
 /**
  * The neuron list node of the navigator lists all neurons.
  */
-var NeuronNavigatorNeuronListNode = function() {};
+NeuronNavigator.NeuronListNode = function() {};
 
-NeuronNavigatorNeuronListNode.prototype = {};
-$.extend(NeuronNavigatorNeuronListNode.prototype,
-    new NeuronNavigatorNode("Neurons"));
+NeuronNavigator.NeuronListNode.prototype = {};
+$.extend(NeuronNavigator.NeuronListNode.prototype,
+    new NeuronNavigator.Node("Neurons"));
 
-NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
+NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_neuronlist_content' +
@@ -698,7 +698,7 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
   $('#' + table_id).on('click', ' tbody tr', function () {
       var aData = datatable.fnGetData(this);
       var a = aData[0];
-      var annotations_node = new NeuronNavigatorAnnotationFilterNode(a);
+      var annotations_node = new NeuronNavigator.AnnotationFilterNode(a);
       annotations_node.link(self.navigator, self);
       self.navigator.select_node(annotations_node);
   });
@@ -710,17 +710,17 @@ NeuronNavigatorNeuronListNode.prototype.add_content = function(container)
  * existence of an annotations. The content it creates lists user, neuron,
  * annotation and co-annotation links.
  */
-var NeuronNavigatorAnnotationFilterNode = function(included_annotation)
+NeuronNavigator.AnnotationFilterNode = function(included_annotation)
 {
   this.annotation = included_annotation
   this.name = "A: " + included_annotation;
 };
 
-NeuronNavigatorAnnotationFilterNode.prototype = {};
-$.extend(NeuronNavigatorAnnotationFilterNode.prototype,
-    new NeuronNavigatorNode("Empty Annotation Filter"));
+NeuronNavigator.AnnotationFilterNode.prototype = {};
+$.extend(NeuronNavigator.AnnotationFilterNode.prototype,
+    new NeuronNavigator.Node("Empty Annotation Filter"));
 
-NeuronNavigatorAnnotationFilterNode.prototype.add_content = function(container)
+NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
 
@@ -734,22 +734,22 @@ NeuronNavigatorAnnotationFilterNode.prototype.add_content = function(container)
   // Append click handler
   $(table_rows[0]).click($.proxy(function() {
       // Show annotation list
-      var annotations_node = new NeuronNavigatorAnnotationListNode();
+      var annotations_node = new NeuronNavigator.AnnotationListNode();
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
-  $(table_rows[0]).click($.proxy(function() {
+  $(table_rows[1]).click($.proxy(function() {
       // Show co-annotation list
   }, this));
-  $(table_rows[1]).click($.proxy(function() {
+  $(table_rows[2]).click($.proxy(function() {
       // Show user list
-      var users_node = new NeuronNavigatorUserListNode();
+      var users_node = new NeuronNavigator.UserListNode();
       users_node.link(this.navigator, this);
       this.navigator.select_node(users_node);
   }, this));
-  $(table_rows[2]).click($.proxy(function() {
+  $(table_rows[3]).click($.proxy(function() {
       // Show neuron list
-      var node = new NeuronNavigatorNeuronListNode();
+      var node = new NeuronNavigator.NeuronListNode();
       node.link(this.navigator, this);
       this.navigator.select_node(node);
   }, this));
@@ -761,17 +761,17 @@ NeuronNavigatorAnnotationFilterNode.prototype.add_content = function(container)
  * ownership by a particular user. The content it creates lists user, neuron,
  * annotation and co-annotation links.
  */
-var NeuronNavigatorUserFilterNode = function(included_user)
+NeuronNavigator.UserFilterNode = function(included_user)
 {
   this.user_id = included_user.id;
   this.name = included_user.login;
 };
 
-NeuronNavigatorUserFilterNode.prototype = {};
-$.extend(NeuronNavigatorUserFilterNode.prototype,
-    new NeuronNavigatorNode("Empty User Filter"));
+NeuronNavigator.UserFilterNode.prototype = {};
+$.extend(NeuronNavigator.UserFilterNode.prototype,
+    new NeuronNavigator.Node("Empty User Filter"));
 
-NeuronNavigatorUserFilterNode.prototype.add_content = function(container)
+NeuronNavigator.UserFilterNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
 

@@ -166,3 +166,19 @@ function stopDefault(e) {
     }
     return false;
 }
+
+/**
+ * Creates a deep copy of an object. Based on:
+ * http://stackoverflow.com/questions/122102
+ */
+function deepCopy(obj) {
+    if(obj == null || typeof(obj) !== 'object'){
+        return obj;
+    }
+    //make sure the returned object has the same prototype as the original
+    var ret = Object.create(Object.getPrototypeOf(obj));
+    for(var key in obj){
+        ret[key] = deepCopy(obj[key]);
+    }
+    return ret;
+}

@@ -722,24 +722,37 @@ $.extend(NeuronNavigatorAnnotationFilterNode.prototype,
 
 NeuronNavigatorAnnotationFilterNode.prototype.add_content = function(container)
 {
-  /* An annotation filter node, will display options to add a user filter,
-   * another annotation filter or to select a neuron.
-   */
   var content = document.createElement('div');
 
-  var annotations_link = this.create_annotations_link();
-  content.appendChild(annotations_link);
+  // Create menu and add it to container
+  var menu_entries = ['Annotations', 'Co-Annotations', 'Users', 'Neurons'];
+  var table_rows = this.add_menu_table(menu_entries, content);
 
-  var coannotations_link = this.create_coannotations_link();
-  content.appendChild(coannotations_link);
-
-  var users_link = this.create_users_link();
-  content.appendChild(users_link);
-
-  var neurons_link = this.create_neurons_link();
-  content.appendChild(neurons_link);
-
+  // Add container to DOM
   container.append(content);
+
+  // Append click handler
+  $(table_rows[0]).click($.proxy(function() {
+      // Show annotation list
+      var annotations_node = new NeuronNavigatorAnnotationListNode();
+      annotations_node.link(this.navigator, this);
+      this.navigator.select_node(annotations_node);
+  }, this));
+  $(table_rows[0]).click($.proxy(function() {
+      // Show co-annotation list
+  }, this));
+  $(table_rows[1]).click($.proxy(function() {
+      // Show user list
+      var users_node = new NeuronNavigatorUserListNode();
+      users_node.link(this.navigator, this);
+      this.navigator.select_node(users_node);
+  }, this));
+  $(table_rows[2]).click($.proxy(function() {
+      // Show neuron list
+      var node = new NeuronNavigatorNeuronListNode();
+      node.link(this.navigator, this);
+      this.navigator.select_node(node);
+  }, this));
 };
 
 

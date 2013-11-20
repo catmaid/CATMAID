@@ -596,7 +596,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
       this.navigator.widgetID);
 
   // Create user table
-  var columns = ['Name', 'Annotations', 'Skeleton IDs', 'Root node IDs', 'ID'];
+  var columns = ['Name'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
   var table_footer = document.createElement('tfoot');
@@ -665,28 +665,6 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
     "aaSorting": [[ 0, "desc" ]],
     "aoColumns": [
       {
-        "sClass": "center",
-        "bSearchable": true,
-        "bSortable": true
-      },
-      {
-        "sClass": "center",
-        "bSearchable": false,
-        "bSortable": false,
-        "mRender": "[, ].name"
-      },
-      {
-        "sClass": "center",
-        "bSearchable": false,
-        "bSortable": false
-      },
-      {
-        "sClass": "center",
-        "bSearchable": false,
-        "bSortable": false
-      },
-      {
-        "sClass": "center",
         "bSearchable": true,
         "bSortable": true
       },

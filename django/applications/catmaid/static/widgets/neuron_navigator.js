@@ -396,7 +396,7 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
   // Make self accessible in callbacks more easily
   var self = this;
 
-  // Fill user table
+  // Fill annotation table
   var datatable = $(table).dataTable({
     // http://www.datatables.net/usage/options
     "bDestroy": true,
@@ -618,7 +618,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
   annotate_button.setAttribute('value', 'Annotate');
   content.appendChild(annotate_button);
 
-  // Create user table
+  // Create neuron table
   var columns = ['Selected', 'Name'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
@@ -642,7 +642,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
   // Make self accessible in callbacks more easily
   var self = this;
 
-  // Fill user table
+  // Fill neuron table
   var datatable = $(table).dataTable({
     // http://www.datatables.net/usage/options
     "bDestroy": true,
@@ -719,7 +719,8 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
     checkboxes.prop("checked", !checkboxes.prop("checked"));
   });
 
-  $('#' + table_id).on('click', ' tbody td.selector_column', function (event) {
+  // Add click handler for table cells containing a select check box
+  $('#' + table_id).on('click', 'tbody td.selector_column', function (event) {
       // Make sure the event doesn't bubble up, because otherwise it would reach
       // the click handler of the tr element.
       event.stopPropagation();
@@ -733,7 +734,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.
-  $('#' + table_id).on('click', ' tbody tr', function () {
+  $('#' + table_id).on('click', 'tbody tr', function () {
       var aData = datatable.fnGetData(this);
       var n = {
         'name': aData[0],

@@ -711,7 +711,11 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
   });
 
   $(annotate_button).click(function() {
-    NeuronAnnotations.prototype.annotate_neurons.call(self);
+    if (self.get_selected_neurons().length > 0) {
+      NeuronAnnotations.prototype.annotate_neurons.call(self);
+    } else {
+      alert("Please select at least one neuron to annotate first!");
+    }
   });
 
   // Add click handler for the select column's header to select/unselect all

@@ -910,7 +910,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
   //var columns = ['Skeleton ID', 'Raw cable (nm)', 'Smooth cable (nm)',
   //    'N inputs', 'N outputs', 'N nodes', 'N branch nodes', 'N end nodes'];
   var columns = ['Skeleton ID', 'N nodes', 'N branch nodes', 'N end nodes',
-      'N open end nodes'];
+      'N open end nodes', '% reviewed'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
   var table_footer = document.createElement('tfoot');
@@ -962,6 +962,10 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
         "bSortable": true
       },
       { // Number of open end nodes
+        "bSearchable": true,
+        "bSortable": true
+      },
+      { // Percent of reviewed nodes
         "bSearchable": true,
         "bSortable": true
       },
@@ -1057,6 +1061,18 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
                   return o;
                 }, []);
 
+                /* Calculate review percentage */
+
+                var num_reviewed = nodes.reduce(function(total, node) {
+                  if (node[3] != -1) {
+                    total = total + 1;
+                  }
+                  return total;
+                }, 0);
+                var percent_reviewed = (num_reviewed / nodes.length) * 100;
+                percent_reviewed = Math.round(percent_reviewed * 100) / 100;
+
+
                 // Put data into table
                 skeleton_table.fnAddData([
                   skeleton_id,
@@ -1064,6 +1080,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
                   arbor.findBranchNodes().length,
                   tagged_end_nodes.length,
                   end_nodes.length - tagged_end_nodes.length,
+                  percent_reviewed + "%",
                 ]);
               }
             } else {

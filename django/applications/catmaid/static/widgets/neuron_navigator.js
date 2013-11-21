@@ -382,7 +382,6 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
     "aaSorting": [[ 2, "desc" ]],
     "aoColumns": [
       {
-        "sClass": "center",
         "bSearchable": true,
         "bSortable": true
       },

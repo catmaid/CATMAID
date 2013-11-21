@@ -920,6 +920,9 @@ $.extend(NeuronNavigator.NeuronNode.prototype,
 
 NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 {
+  // Make self accessible in callbacks more easily
+  var self = this;
+
   container.addClass('multi_table_node');
 
   /* Skeletons: Request compact JSON data */
@@ -1128,19 +1131,18 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
   var user_id_filter = undefined;
   var neuron_id_filter = this.neuron_id;
 
-  var table_id = 'navigator_annotationlist_table' + this.navigator.widgetID;
+  var annotation_table_id = 'navigator_annotationlist_table' +
+      this.navigator.widgetID;
 
   // Add annotation data table based on filters above
-  var datatable = this.add_annotation_list_table(container, table_id,
-      annotation_filter, user_id_filter, neuron_id_filter);
-
-  // Make self accessible in callbacks more easily
-  var self = this;
+  var annotation_datatable = this.add_annotation_list_table(container,
+      annotation_table_id, annotation_filter, user_id_filter,
+      neuron_id_filter);
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.
-  $('#' + table_id).on('click', ' tbody tr', function () {
-      var aData = datatable.fnGetData(this);
+  $('#' + annotation_table_id).on('click', ' tbody tr', function () {
+      var aData = annotation_datatable.fnGetData(this);
       var a = aData[0];
       var annotations_node = new NeuronNavigator.AnnotationFilterNode(a);
       annotations_node.link(self.navigator, self);

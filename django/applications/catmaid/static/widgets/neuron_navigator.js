@@ -712,6 +712,13 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
     NeuronAnnotations.prototype.annotate_neurons.call(self);
   });
 
+  // Add click handler for the select column's header to select/unselect all
+  // check boxes at once.
+  $('#' + table_id).on('click', 'thead th:first', function () {
+    var checkboxes = $('#' + table_id).find('tbody td.selector_column input');
+    checkboxes.prop("checked", !checkboxes.prop("checked"));
+  });
+
   $('#' + table_id).on('click', ' tbody td.selector_column', function (event) {
       // Make sure the event doesn't bubble up, because otherwise it would reach
       // the click handler of the tr element.

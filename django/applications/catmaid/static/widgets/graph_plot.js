@@ -13,9 +13,17 @@ var CircuitGraphPlot = function() {
   // and the order corresponds with that of the adjacency matrix.
   this.skeleton_ids = [];
 
+  this.AdjM = null;
+
 	// From CircuitGraphAnalysis, first array entry is Signal Flow, rest are
 	// the sorted pairs of [eigenvalue, eigenvector].
 	this.vectors = null;
+
+  // Array of arrays, containing anatomical measurements
+  this.anatomy = null;
+
+  // Array of arrays, containing centrality measures
+  this.centralities = [null];
 
   this.names_visible = true;
 
@@ -127,6 +135,7 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
   this.skeleton_ids = skeleton_ids;
   this.skeletons = models;
   this.selected = {};
+  this.AdjM = AdjM;
 
   // Compute signal flow and eigenvectors
   try {
@@ -138,6 +147,11 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
     return;
   }
 
+  // Reset data
+  this.vectors = null;
+  this.anatomy = null;
+  this.centralities = [null];
+
   // Store for replotting later
   this.vectors = [[-1, cga.z]];
   for (var i=0; i<10 && i <cga.e.length; ++i) {
@@ -147,12 +161,26 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
   // Reset pulldown menus
   var updateSelect = function(select) {
     select.options.length = 0;
+
     select.options.add(new Option('Signal Flow', 0));
     for (var i=0; i<10 && i <cga.e.length; ++i) {
       select.options.add(new Option('Eigenvalue ' + Number(cga.e[i][0]).toFixed(2), i+1));
     }
+
+    ['Cable length (nm)',
+     'Num. input synapses',
+     'Num. output synapses',
+     'Num. input - Num. output'].forEach(function(name, k) {
+       select.options.add(new Option(name, 'a' + k));
+     });
+
+    ['Betweenness centrality'].forEach(function(name, k) {
+       select.options.add(new Option(name, 'c' + k));
+     });
+
     return select;
   };
+
   updateSelect($('#circuit_graph_plot_X_' + this.widgetID)[0]).selectedIndex = 1;
   updateSelect($('#circuit_graph_plot_Y_' + this.widgetID)[0]).selectedIndex = 0;
 
@@ -165,24 +193,123 @@ CircuitGraphPlot.prototype.clearGUI = function() {
 };
 
 CircuitGraphPlot.prototype.redraw = function() {
+  if (!this.skeleton_ids || 0 === this.skeleton_ids.length) return;
+
+  var xSelect = $('#circuit_graph_plot_X_' + this.widgetID)[0],
+      ySelect = $('#circuit_graph_plot_Y_' + this.widgetID)[0];
+
+  var f = (function(select) {
+    var index = select.selectedIndex;
+    if (index < this.vectors.length) {
+      return this.vectors[index][1];
+    } else if ('a' === select.value[0]) {
+      if (!this.anatomy) {
+        return this.loadAnatomy(this.redraw.bind(this));
+      }
+      return this.anatomy[parseInt(select.value.slice(1))];
+    } else if ('c' === select.value[0]) {
+      var i = parseInt(select.value.slice(1));
+      if (!this.centralities[i]) {
+        return this.loadBetweennessCentrality(this.redraw.bind(this));
+      }
+      return this.centralities[i];
+    }
+  }).bind(this);
+
+  var xVector = f(xSelect),
+      yVector = f(ySelect);
+
+  if (!xVector || !yVector) return;
+
+  this.draw(xVector, xSelect[xSelect.selectedIndex].text,
+            yVector, ySelect[ySelect.selectedIndex].text);
+};
+
+CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
+  $.blockUI();
+  requestQueue.register(django_url + project.id + '/skeletons/measure', "POST",
+      {skeleton_ids: this.skeleton_ids},
+      (function(status, text) {
+        try {
+          if (200 !== status) return;
+          var json = $.parseJSON(text);
+          if (json.error) { alert(json.error); return ;}
+          // Map by skeleton ID
+          var rows = json.reduce(function(o, row) {
+            o[row[0]] = row;
+            return o;
+          }, {});
+          // 0: cable length
+          // 1: number of inputs
+          // 2: number of outputs
+          // 3: inputs minus outputs
+          var vs = [[], [], [], []];
+          this.skeleton_ids.forEach(function(skeleton_id) {
+            var row = rows[skeleton_id];
+            vs[0].push(row[2]);
+            vs[1].push(row[3]);
+            vs[2].push(row[4]);
+            vs[3].push(row[3] - row[4]);
+          });
+          this.anatomy = vs;
+          if (typeof(callback) === 'function') callback();
+        } catch (e) {
+          console.log(e, e.stack);
+          alert("Error: " + e);
+        } finally {
+          $.unblockUI();
+        }
+      }).bind(this));
+};
+
+CircuitGraphPlot.prototype.loadBetweennessCentrality = function(callback) {
+  try {
+    var graph = jsnx.DiGraph();
+    this.AdjM.forEach(function(row, i) {
+      var source = this.skeleton_ids[i];
+      row.forEach(function(count, j) {
+        var target = this.skeleton_ids[j];
+        graph.add_edge(source, target, {weight: count});
+      }, this);
+    }, this);
+
+    if (this.skeleton_ids.length > 10) {
+      $.blockUI();
+    }
+
+    var bc = jsnx.betweenness_centrality(graph, {weight: 'weight',
+                                                 normalized: true});
+    var max = Object.keys(bc).reduce(function(max, nodeID) {
+      return Math.max(max, bc[nodeID]);
+    }, 0);
+
+    // Handle edge case
+    if (0 === max) max = 1;
+
+    this.centralities[0] = this.skeleton_ids.map(function(skeleton_id) {
+      return bc[skeleton_id] / max;
+    });
+
+    if (typeof(callback) === 'function') callback();
+  } catch (e) {
+    console.log(e, e.stack);
+    alert("Error: " + e);
+  } finally {
+    $.unblockUI();
+  }
+};
+
+CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
   var containerID = '#circuit_graph_plot_div' + this.widgetID,
       container = $(containerID);
 
   // Clear existing plot if any
   container.empty();
 
-  if (!this.skeleton_ids || 0 === this.skeleton_ids.length) return;
-
   // Recreate plot
   var margin = {top: 20, right: 20, bottom: 30, left: 40},
       width = container.width() - margin.left - margin.right,
       height = container.height() - margin.top - margin.bottom;
-
-  var xSelect = $('#circuit_graph_plot_X_' + this.widgetID)[0],
-      ySelect = $('#circuit_graph_plot_Y_' + this.widgetID)[0];
-
-  var xVector = this.vectors[xSelect.selectedIndex][1],
-      yVector = this.vectors[ySelect.selectedIndex][1];
 
   // Package data
   var data = this.skeleton_ids.map(function(skid, i) {
@@ -290,7 +417,7 @@ CircuitGraphPlot.prototype.redraw = function() {
       .attr("x", width)
       .attr("y", -6)
       .style("text-anchor", "end")
-      .text(xSelect.options[xSelect.selectedIndex].text);
+      .text(xTitle);
 
   svg.append("g")
       .attr("class", "y axis")
@@ -300,7 +427,7 @@ CircuitGraphPlot.prototype.redraw = function() {
       .attr("y", 6)
       .attr("dy", ".71em")
       .style("text-anchor", "end")
-      .text(ySelect.options[ySelect.selectedIndex].text);
+      .text(yTitle);
 
   this.svg = svg;
 };
@@ -330,6 +457,7 @@ CircuitGraphPlot.prototype.toggleNamesVisible = function(checkbox) {
   this.setNamesVisible(this.names_visible);
 };
 
+/** Implements the refresh button. */
 CircuitGraphPlot.prototype.update = function() {
   this.append(this.skeletons);
 };

@@ -723,9 +723,12 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
       // Make sure the event doesn't bubble up, because otherwise it would reach
       // the click handler of the tr element.
       event.stopPropagation();
-      // Toggle check box
-      var checkbox = $(this).find('input');
-      checkbox.prop("checked", !checkbox.prop("checked"));
+      // Toggle check box if the event target isn't the checkbox itself and was
+      // therefore triggered already.
+      if (!$(event.target).is('input')) {
+        var checkbox = $(this).find('input');
+        checkbox.prop("checked", !checkbox.prop("checked"));
+      }
   });
 
   // If a user is selected an annotation filter node is created and the event

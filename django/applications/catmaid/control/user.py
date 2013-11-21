@@ -33,6 +33,9 @@ def user_list_datatable(request):
 
     user_query = User.objects.all()
 
+    # By default, there is no need to explicitly request a distinct result
+    distinct = False
+
     # This field can be used to only return users that have used a certain
     # annotation.
     annotation_used = request.POST.get('annotation', None)
@@ -43,6 +46,21 @@ def user_list_datatable(request):
                 classinstanceclassinstance__class_instance_b__name = \
                      annotation_used)
         # Make sure we only get distinct user names
+        distinct = True
+
+    # The neuron_id field can be used to constrain the result by only showing
+    # users that annotated a certain neuron.
+    neuron_annotated = request.POST.get('neuron_id', None)
+    if neuron_annotated:
+        user_query = user_query.filter(
+                classinstanceclassinstance__relation__relation_name = \
+                     'annotated_with',
+                classinstanceclassinstance__class_instance_a__id = \
+                     neuron_annotated)
+        # Make sure we only get distinct user names
+        distinct = True
+
+    if distinct:
         user_query = user_query.distinct()
 
     if should_sort:

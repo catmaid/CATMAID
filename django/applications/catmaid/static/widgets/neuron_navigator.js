@@ -523,6 +523,14 @@ NeuronNavigator.UserListNode.prototype.add_content = function(container)
                 'value': self.parent_node.annotation
             });
           }
+          // Neuron filter -- only users who annotated this neuron
+          // are shown.
+          if (self.parent_node.neuron_id) {
+            aoData.push({
+                'name': 'neuron_id',
+                'value': self.parent_node.neuron_id
+            });
+          }
         }
         $.ajax({
             "dataType": 'json',

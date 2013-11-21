@@ -1148,5 +1148,30 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
   });
 
 
-  /* TODO: Users who locked the neuron */
+  /* User who locked the neuron */
+  var locked_annotation_filter = "locked";
+
+  var locked_user_table_id = 'navigator_userlist_table' +
+      this.navigator.widgetID;
+
+  // Add user data table based on filters above
+  var locked_user_datatable = this.add_user_list_table(container,
+      locked_user_table_id, locked_annotation_filter, neuron_id_filter);
+
+  // If a user is selected a user filter node is created and the event is
+  // removed.
+  $('#' + locked_user_table_id).on('click', ' tbody tr', function () {
+      var aData = locked_user_datatable.fnGetData(this);
+      if (aData) {
+        var user = {
+          'login': aData[0],
+          'first_name': aData[1],
+          'last_name': aData[2],
+          'id': aData[3],
+        }
+        var filter_node = new NeuronNavigator.UserFilterNode(user);
+        filter_node.link(self.navigator, self);
+        self.navigator.select_node(filter_node);
+      }
+  });
 };

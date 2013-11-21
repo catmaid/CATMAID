@@ -399,6 +399,101 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
   return datatable;
 };
 
+NeuronNavigator.Node.prototype.add_user_list_table = function($container,
+    table_id, annotation_filter, neuron_id_filter)
+{
+  var content = document.createElement('div');
+  content.setAttribute('id', 'navigator_users_content' +
+      this.navigator.widgetID);
+
+  // Create user table
+  var columns = ['Login', 'First Name', 'Last Name', 'ID'];
+  var table_header = document.createElement('thead');
+  table_header.appendChild(this.create_header_row(columns));
+  var table_footer = document.createElement('tfoot');
+  table_footer.appendChild(this.create_header_row(columns));
+  var table = document.createElement('table');
+  table.setAttribute('id', table_id);
+  table.setAttribute('class', 'display');
+  table.setAttribute('cellpadding', 0);
+  table.setAttribute('cellspacing', 0);
+  table.setAttribute('border', 0);
+  table.appendChild(table_header);
+  table.appendChild(table_footer);
+
+  content.appendChild(table);
+
+  // Add table to DOM
+  $container.append(content);
+
+  // Fill user table
+  var datatable = $(table).dataTable({
+    "bDestroy": true,
+    "sDom": '<"H"lr>t<"F"ip>',
+    "bProcessing": true,
+    "bServerSide": true,
+    "bAutoWidth": false,
+    "iDisplayLength": this.possibleLengths[0],
+    "sAjaxSource": django_url + 'user-table-list',
+    "fnServerData": function (sSource, aoData, fnCallback) {
+        // Annotation filter -- we are requesting users that have
+        // used a certain annotation
+        if (annotation_filter) {
+          aoData.push({
+              'name': 'annotation',
+              'value': annotation_filter
+          });
+        }
+        // Neuron filter -- only users who annotated this neuron
+        // are shown.
+        if (neuron_id_filter) {
+          aoData.push({
+              'name': 'neuron_id',
+              'value': neuron_id_filter
+          });
+        }
+        $.ajax({
+            "dataType": 'json',
+            "cache": false,
+            "type": "POST",
+            "url": sSource,
+            "data": aoData,
+            "success": fnCallback
+        });
+    },
+    "aLengthMenu": [
+        this.possibleLengths,
+        this.possibleLengthsLabels
+    ],
+    "bJQueryUI": true,
+    "aaSorting": [[ 0, "desc" ]],
+    "aoColumns": [
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": true
+      },
+    ]
+  });
+
+  return datatable;
+};
+
 
 /**
  * The home node of the navigator. It links to annotation
@@ -502,103 +597,27 @@ $.extend(NeuronNavigator.UserListNode.prototype,
 
 NeuronNavigator.UserListNode.prototype.add_content = function(container)
 {
-  var content = document.createElement('div');
-  content.setAttribute('id', 'navigator_users_content' +
-      this.navigator.widgetID);
+  var annotation_filter = undefined;
+  var neuron_id_filter = undefined;
 
-  // Create user table
-  var columns = ['Login', 'First Name', 'Last Name', 'ID'];
-  var table_header = document.createElement('thead');
-  table_header.appendChild(this.create_header_row(columns));
-  var table_footer = document.createElement('tfoot');
-  table_footer.appendChild(this.create_header_row(columns));
+  // Use parent node provided filters, if available
+  if (this.parent_node) {
+    if (this.parent_node.annotation) {
+      annotation_filter = this.parent_node.annotation;
+    }
+    if (this.parent_node.neuron_id) {
+      neuron_id_filter = this.parent_node.neuron_id;
+    }
+  }
+
   var table_id = 'navigator_user_table' + this.navigator.widgetID;
-  var table = document.createElement('table');
-  table.setAttribute('id', table_id);
-  table.setAttribute('class', 'display');
-  table.setAttribute('cellpadding', 0);
-  table.setAttribute('cellspacing', 0);
-  table.setAttribute('border', 0);
-  table.appendChild(table_header);
-  table.appendChild(table_footer);
 
-  content.appendChild(table);
-
-  // Add table to DOM
-  container.append(content);
+  // Add user data table based on filters above
+  var datatable = this.add_user_list_table(container, table_id,
+      annotation_filter, neuron_id_filter);
 
   // Make self accessible in callbacks more easily
   var self = this;
-
-  // Fill user table
-  var datatable = $(table).dataTable({
-    // http://www.datatables.net/usage/options
-    "bDestroy": true,
-    "sDom": '<"H"lr>t<"F"ip>',
-    "bProcessing": true,
-    "bServerSide": true,
-    "bAutoWidth": false,
-    "iDisplayLength": this.possibleLengths[0],
-    "sAjaxSource": django_url + 'user-table-list',
-    "fnServerData": function (sSource, aoData, fnCallback) {
-        // Use parent node provides filters, if available
-        if (self.parent_node) {
-          // Annotation filter -- we are requesting users that have
-          // used a certain annotation
-          if (self.parent_node.annotation) {
-            aoData.push({
-                'name': 'annotation',
-                'value': self.parent_node.annotation
-            });
-          }
-          // Neuron filter -- only users who annotated this neuron
-          // are shown.
-          if (self.parent_node.neuron_id) {
-            aoData.push({
-                'name': 'neuron_id',
-                'value': self.parent_node.neuron_id
-            });
-          }
-        }
-        $.ajax({
-            "dataType": 'json',
-            "cache": false,
-            "type": "POST",
-            "url": sSource,
-            "data": aoData,
-            "success": fnCallback
-        });
-    },
-    "aLengthMenu": [
-        this.possibleLengths,
-        this.possibleLengthsLabels
-    ],
-    "bJQueryUI": true,
-    "aaSorting": [[ 0, "desc" ]],
-    "aoColumns": [
-      {
-        "sClass": "center",
-        "bSearchable": true,
-        "bSortable": true
-      },
-      {
-        "sClass": "center",
-        "bSearchable": true,
-        "bSortable": true
-      },
-      {
-        "sClass": "center",
-        "bSearchable": true,
-        "bSortable": true
-      },
-      {
-        "sClass": "center",
-        "bSearchable": true,
-        "bSortable": true
-      },
-    ]
-  });
-
   // If a user is selected a user filter node is created and the event is
   // removed.
   $('#' + table_id).on('click', ' tbody tr', function () {

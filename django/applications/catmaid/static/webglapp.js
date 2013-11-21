@@ -1564,20 +1564,15 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 */
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
-	if ('creator' === options.color_method
-	 || 'reviewer' === options.color_method
-	 || 'none' !== options.shading_method)
-	{
-		// The skeleton colors need to be set per-vertex.
-		this.line_material.vertexColors = THREE.VertexColors;
-		this.line_material.needsUpdate = true;
+  var node_weights;
 
-    var arbor = new Arbor().addEdges(this.geometry['neurite'].vertices,
-                                     function(v) { return v.node_id; }),
-        node_weights;
-
-		if (-1 !== options.shading_method.lastIndexOf('centrality')) {
-			// Darken the skeleton based on the betweenness calculation.
+  if ('none' === options.shading_method) {
+    node_weights = null;
+  } else {
+    var arbor =  new Arbor().addEdges(this.geometry['neurite'].vertices,
+                                      function(v) { return v.node_id; });
+    if (-1 !== options.shading_method.lastIndexOf('centrality')) {
+      // Darken the skeleton based on the betweenness calculation.
       var c = (0 === options.shading_method.indexOf('betweenness')) ?
           arbor.betweennessCentrality(true) // betweenness_centrality
         : arbor.slabCentrality(true); // branch_centrality
@@ -1615,7 +1610,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
       node_weights = distances;
 
-		} else if ('active_node_split' === options.shading_method) {
+    } else if ('active_node_split' === options.shading_method) {
       var atn = SkeletonAnnotations.getActiveNodeId();
       if (arbor.contains(atn)) {
         node_weights = arbor.subArbor(atn)
@@ -1655,6 +1650,12 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         node_weights[node] /= max_length;
       });
     }
+  }
+
+  if (node_weights || 'none' !== options.color_method) {
+    // The skeleton colors need to be set per-vertex.
+    this.line_material.vertexColors = THREE.VertexColors;
+    this.line_material.needsUpdate = true;
 
     var pickColor;
     var actorColor = this.actorColor;
@@ -1667,7 +1668,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     }
 
     var seen = {};
-		this.geometry['neurite'].colors = this.geometry['neurite'].vertices.map(function(vertex) {
+    this.geometry['neurite'].colors = this.geometry['neurite'].vertices.map(function(vertex) {
       var node_id = vertex.node_id,
           color = seen[node_id];
       if (color) return color;
@@ -1675,7 +1676,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       var weight = node_weights[node_id];
       weight = undefined === weight? 1.0 : weight * 0.9 + 0.1;
 
-			var baseColor = pickColor(vertex);
+      var baseColor = pickColor(vertex);
       color = new THREE.Color().setRGB(baseColor.r * weight,
                                            baseColor.g * weight,
                                            baseColor.b * weight);
@@ -1685,34 +1686,34 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       // Side effect: color a volume at the node, if any
       var mesh = this.radiusVolumes[node_id];
       if (mesh) {
-				var material = mesh.material.clone();
-				material.color = color;
-				mesh.setMaterial(material);
+        var material = mesh.material.clone();
+        material.color = color;
+        mesh.setMaterial(material);
       }
 
       return color;
     }, this);
 
-		this.geometry['neurite'].colorsNeedUpdate = true;
-		this.actor['neurite'].material.color = new THREE.Color().setHex(0xffffff);
-		this.actor['neurite'].material.needsUpdate = true;
+    this.geometry['neurite'].colorsNeedUpdate = true;
+    this.actor['neurite'].material.color = new THREE.Color().setHex(0xffffff);
+    this.actor['neurite'].material.needsUpdate = true;
 
-	} else {
-		// Display the entire skeleton with a single color.
-		this.line_material.vertexColors = THREE.NoColors;
-		this.line_material.needsUpdate = true;
-		
-		this.actor['neurite'].material.color = this.actorColor;
-		this.actor['neurite'].material.needsUpdate = true;
+  } else {
+    // Display the entire skeleton with a single color.
+    this.line_material.vertexColors = THREE.NoColors;
+    this.line_material.needsUpdate = true;
+    
+    this.actor['neurite'].material.color = this.actorColor;
+    this.actor['neurite'].material.needsUpdate = true;
 
-		var material = new THREE.MeshBasicMaterial({color: this.actorColor, opacity:1.0, transparent:false});
+    var material = new THREE.MeshBasicMaterial({color: this.actorColor, opacity:1.0, transparent:false});
 
-		for (var k in this.radiusVolumes) {
+    for (var k in this.radiusVolumes) {
       if (this.radiusVolumes.hasOwnProperty(k)) {
         this.radiusVolumes[k].setMaterial(material);
       }
-		}
-	}
+    }
+  }
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeColor = function(color, options) {

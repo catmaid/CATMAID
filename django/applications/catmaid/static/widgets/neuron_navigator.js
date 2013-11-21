@@ -685,11 +685,13 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
         this.possibleLengthsLabels
     ],
     "bJQueryUI": true,
-    "aaSorting": [[ 0, "desc" ]],
+    "aaSorting": [[ 1, "desc" ]],
     "aoColumns": [
       {
         "sWidth": '5em',
         "sClass": 'selector_column center',
+        "bSearchable": false,
+        "bSortable": false,
         "mRender": function (data, type, full) {
           var cb_id = 'navigator_neuron_' + full[4] + '_selection' +
               self.navigator.widgetID;
@@ -701,6 +703,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
         "bSearchable": true,
         "bSortable": true,
         "mData": 0,
+        "aDataSort": [ 0 ],
       },
     ]
   });

@@ -883,7 +883,9 @@ NeuronNavigator.UserFilterNode.prototype.add_content = function(container)
 
 
 /**
- * A neuron node displays information about a particular node.
+ * A neuron node displays information about a particular node. It shows all the
+ * skeletons that are model for a neuron as well as all its annotations and the
+ * user that has locked it.
  */
 NeuronNavigator.NeuronNode = function(neuron)
 {
@@ -899,7 +901,36 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
 
-
   // Add container to DOM
   container.append(content);
+
+  /* TODO: Skeletons: Request compact JSON data */
+
+
+  /* Annotations */
+  var annotation_filter = undefined;
+  var user_id_filter = undefined;
+  var neuron_id_filter = this.neuron_id;
+
+  var table_id = 'navigator_annotationlist_table' + this.navigator.widgetID;
+
+  // Add annotation data table based on filters above
+  var datatable = this.add_annotation_list_table(container, table_id,
+      annotation_filter, user_id_filter, neuron_id_filter);
+
+  // Make self accessible in callbacks more easily
+  var self = this;
+
+  // If a user is selected an annotation filter node is created and the event
+  // is removed.
+  $('#' + table_id).on('click', ' tbody tr', function () {
+      var aData = datatable.fnGetData(this);
+      var a = aData[0];
+      var annotations_node = new NeuronNavigator.AnnotationFilterNode(a);
+      annotations_node.link(self.navigator, self);
+      self.navigator.select_node(annotations_node);
+  });
+
+
+  /* TODO: Users who locked the neuron */
 };

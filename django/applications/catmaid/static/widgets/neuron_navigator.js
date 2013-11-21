@@ -780,6 +780,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
       var aData = datatable.fnGetData(this);
       var n = {
         'name': aData[0],
+        'skeleton_ids': aData[2],
         'id': aData[4],
       };
       var node = new NeuronNavigator.NeuronNode(n);
@@ -891,6 +892,7 @@ NeuronNavigator.NeuronNode = function(neuron)
 {
   this.neuron_id = neuron.id;
   this.name = neuron.name;
+  this.skeleton_ids = neuron.skeleton_ids;
 };
 
 NeuronNavigator.NeuronNode.prototype = {};
@@ -899,12 +901,188 @@ $.extend(NeuronNavigator.NeuronNode.prototype,
 
 NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 {
+  /* Skeletons: Request compact JSON data */
   var content = document.createElement('div');
+  content.setAttribute('id', 'navigator_skeletonlist_content' +
+      this.navigator.widgetID);
 
-  // Add container to DOM
+  // Create neuron table
+  //var columns = ['Skeleton ID', 'Raw cable (nm)', 'Smooth cable (nm)',
+  //    'N inputs', 'N outputs', 'N nodes', 'N branch nodes', 'N end nodes'];
+  var columns = ['Skeleton ID', 'N nodes', 'N branch nodes', 'N end nodes',
+      'N open end nodes'];
+  var table_header = document.createElement('thead');
+  table_header.appendChild(this.create_header_row(columns));
+  var table_footer = document.createElement('tfoot');
+  table_footer.appendChild(this.create_header_row(columns));
+  var table_id = 'navigator_skeletonlist_table' + this.navigator.widgetID;
+  var table = document.createElement('table');
+  table.setAttribute('id', table_id);
+  table.setAttribute('class', 'display');
+  table.setAttribute('cellpadding', 0);
+  table.setAttribute('cellspacing', 0);
+  table.setAttribute('border', 0);
+  table.appendChild(table_header);
+  table.appendChild(table_footer);
+
+  content.appendChild(table);
+
+  // Add table to DOM
   container.append(content);
 
-  /* TODO: Skeletons: Request compact JSON data */
+  var skeleton_table = $(table).dataTable({
+    "bDestroy": true,
+    "sDom": '<"H"lr>t<"F"ip>',
+    // default: <"H"lfr>t<"F"ip>
+    "bProcessing": true,
+    "bServerSide": false, // Enable sorting locally, and prevent sorting from calling the fnServerData to reload the table -- an expensive and undesirable operation.
+    "bAutoWidth": false,
+    "iDisplayLength": -1,
+    "aLengthMenu": [
+      [-1, 10, 100, 200],
+      ["All", 10, 100, 200]
+    ],
+    //"aLengthChange": false,
+    "bJQueryUI": true,
+    "aoColumns": [
+      { // Skeleton ID
+        "bSearchable": true,
+        "bSortable": true
+      },
+      { // Number of nodes
+        "bSearchable": true,
+        "bSortable": true
+      },
+      { // Number of branch nodes
+        "bSearchable": true,
+        "bSortable": true
+      },
+      { // Number of end nodes
+        "bSearchable": true,
+        "bSortable": true
+      },
+      { // Number of open end nodes
+        "bSearchable": true,
+        "bSortable": true
+      },
+    ]
+  });
+
+  // Manually request compact-json object for skeleton
+  var loader_fn = function(skeleton_id) {
+    requestQueue.register(django_url + project.id +
+        '/skeleton/' + skeleton_id + '/compact-json', 'POST', {},
+        function(status, text) {
+          try {
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert(json.error);
+              } else {
+                var nodes = json[1];
+                var tags = json[2];
+                var connectors = json[3];
+
+                // Map of node ID vs node properties array
+                var nodeProps = nodes.reduce(function(ob, node) {
+                  ob[node[0]] = node;
+                  return ob;
+                }, {});
+
+                // Cache for reusing Vector3d instances
+                var vs = {};
+
+                // Create edges between all skeleton nodes
+                var geometry = new THREE.Geometry();;
+                nodes.forEach(function(node) {
+                  // node[0]: treenode ID
+                  // node[1]: parent ID
+                  // node[2]: user ID
+                  // node[3]: reviewer ID
+                  // 4,5,6: x,y,z
+                  // node[7]: radius
+                  // node[8]: confidence
+                  // If node has a parent
+                  var v1;
+                  if (node[1]) {
+                    var p = nodeProps[node[1]];
+                    v1 = vs[node[0]];
+                    if (!v1) {
+                      v1 = new THREE.Vector3(node[4], node[5], node[6]);
+                      v1.node_id = node[0];
+                      v1.user_id = node[2];
+                      v1.reviewer_id = node[3];
+                      vs[node[0]] = v1;
+                    }
+                    var v2 = vs[p[0]];
+                    if (!v2) {
+                      v2 = new THREE.Vector3(p[4], p[5], p[6]);
+                      v2.node_id = p[0];
+                      v2.user_id = p[2];
+                      v2.reviewer_id = p[3];
+                      vs[p[0]] = v2;
+                    }
+                    geometry.vertices.push(v1);
+                    geometry.vertices.push(v2);
+                  }
+                }, this);
+
+                // Use arbor data structure to do measurements
+                var arbor = new Arbor().addEdges(geometry.vertices, function(v) {
+                  return v.node_id;
+                });
+
+                /* Calculate end point information */
+
+                // Find open and closed end nodes and convert to integers
+                var end_nodes = arbor.findEndNodes().map(function(n) {
+                  return +n
+                });
+                // See which end node tags are available at all
+                var end_tags = ['ends', 'uncertain end', 'not a branch', 'soma'];
+                var available_end_tags = end_tags.reduce(function(o, e) {
+                    if (e in tags) {
+                      o.push(e);
+                    }
+                    return o;
+                }, []);
+
+                var tagged_end_nodes = end_nodes.reduce(function(o, n) {
+                  var node_is_tagged = function(t) {
+                    return tags[t].indexOf(n) > -1;
+                  };
+                  if (available_end_tags.some(node_is_tagged)) {
+                    o.push(n);
+                  }
+                  return o;
+                }, []);
+
+                // Put data into table
+                skeleton_table.fnAddData([
+                  skeleton_id,
+                  arbor.countNodes(),
+                  arbor.findBranchNodes().length,
+                  tagged_end_nodes.length,
+                  end_nodes.length - tagged_end_nodes.length,
+                ]);
+              }
+            } else {
+              alert("Unexpected status code: " + status);
+            }
+          } catch(e) {
+              console.log(e, e.stack);
+              growlAlert("ERROR", "Problem loading skeleton " + skeleton_id);
+          }
+        });
+  };
+
+  var num_loaded = this.skeleton_ids.reduce(function(o, sk_id) {
+    if (loader_fn(sk_id)) {
+      return o + 1;
+    } else {
+      return o;
+    }
+  }, 0);
 
 
   /* Annotations */

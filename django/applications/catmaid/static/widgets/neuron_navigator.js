@@ -901,6 +901,8 @@ $.extend(NeuronNavigator.NeuronNode.prototype,
 
 NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 {
+  container.addClass('multi_table_node');
+
   /* Skeletons: Request compact JSON data */
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_skeletonlist_content' +

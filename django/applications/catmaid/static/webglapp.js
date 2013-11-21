@@ -1667,6 +1667,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       pickColor = function() { return actorColor; };
     }
 
+    // When not using shading, but using creator or reviewer:
+    if (!node_weights) node_weights = {}
+
     var seen = {};
     this.geometry['neurite'].colors = this.geometry['neurite'].vertices.map(function(vertex) {
       var node_id = vertex.node_id,

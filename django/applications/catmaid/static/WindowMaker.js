@@ -199,6 +199,7 @@ var WindowMaker = new function()
     var container = createContainer("neuron_staging_table" + ST.widgetID);
 
     var buttons = document.createElement("div");
+    buttons.setAttribute('id', 'ST_button_bar' + ST.widgetID);
 
     buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(SkeletonListSources.createSelect(ST));

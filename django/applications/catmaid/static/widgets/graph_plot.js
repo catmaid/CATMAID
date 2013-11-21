@@ -268,6 +268,7 @@ CircuitGraphPlot.prototype.loadBetweennessCentrality = function(callback) {
     this.AdjM.forEach(function(row, i) {
       var source = this.skeleton_ids[i];
       row.forEach(function(count, j) {
+        if (0 === count) return;
         var target = this.skeleton_ids[j];
         graph.add_edge(source, target, {weight: count});
       }, this);

@@ -244,6 +244,13 @@ def list_annotations_datatable(request, project_id=None):
         annotation_query = annotation_query.filter(
                 cici_via_b__user__id=user_id).distinct()
 
+    # With the help of the neuron_id field, it is possible to restrict the
+    # result set to only show annotations that are used for a particular neuron.
+    neuron_id = request.POST.get('neuron_id', None)
+    if neuron_id:
+        annotation_query = annotation_query.filter(
+                cici_via_b__class_instance_a__id=neuron_id)
+
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')

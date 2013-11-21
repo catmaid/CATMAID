@@ -312,7 +312,7 @@ NeuronNavigator.Node.prototype.add_menu_table = function(entries, container)
 };
 
 NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
-    table_id, annotation_filter, user_id_filter)
+    table_id, annotation_filter, user_id_filter, neuron_id_filter)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_annotationlist_content' +
@@ -363,6 +363,14 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
           aoData.push({
               'name': 'user_id',
               'value': user_id_filter
+          });
+        }
+        // Neuron filter -- we are requesting annotations that are used for
+        // a particular neuron.
+        if (neuron_id_filter) {
+          aoData.push({
+              'name': 'neuron_id',
+              'value': neuron_id_filter
           });
         }
         $.ajax({

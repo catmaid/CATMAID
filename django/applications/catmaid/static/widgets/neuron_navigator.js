@@ -599,7 +599,9 @@ NeuronNavigator.NeuronListNode.prototype.get_selected_neurons = function()
   var cb_selector = '#navigator_annotationlist_table' +
       this.navigator.widgetID + ' tbody td.selector_column input';
   var selected_neurons = $(cb_selector).toArray().reduce(function(ret, cb) {
-    ret.push($(cb).attr('neuron_id'));
+    if ($(cb).prop('checked')) {
+      ret.push($(cb).attr('neuron_id'));
+    }
     return ret;
   }, []);
 

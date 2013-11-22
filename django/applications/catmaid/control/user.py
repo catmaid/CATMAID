@@ -38,13 +38,15 @@ def user_list_datatable(request):
 
     # This field can be used to only return users that have used a certain
     # annotation.
-    annotation_used = request.POST.get('annotation', None)
-    if annotation_used:
+    annotations = [v for k,v in request.POST.iteritems()
+            if k.startswith('annotations[')]
+
+    for annotation in annotations:
         user_query = user_query.filter(
                 classinstanceclassinstance__relation__relation_name = \
                      'annotated_with',
                 classinstanceclassinstance__class_instance_b__name = \
-                     annotation_used)
+                     annotation)
         # Make sure we only get distinct user names
         distinct = True
 

@@ -229,8 +229,9 @@ def list_annotations_datatable(request, project_id=None):
 
     # Meta annotations are annotations that are used to annotate other
     # annotations.
-    meta_annotation = request.POST.get('annotation', None)
-    if meta_annotation:
+    meta_annotations = [v for k,v in request.POST.iteritems()
+            if k.startswith('annotations[')]
+    for meta_annotation in meta_annotations:
         annotation_query = annotation_query.filter(
                 cici_via_a__relation__relation_name = 'annotated_with',
                           cici_via_a__class_instance_b__name = meta_annotation)

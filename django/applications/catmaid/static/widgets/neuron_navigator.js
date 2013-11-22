@@ -432,6 +432,99 @@ NeuronNavigator.Node.prototype.add_user_list_table = function($container,
   return datatable;
 };
 
+NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
+    table_id, annotation_filter, user_id_filter)
+{
+  var content = document.createElement('div');
+  content.setAttribute('id', 'navigator_neuronlist_content' +
+      this.navigator.widgetID);
+
+  // Create neuron table
+  var columns = ['Selected', 'Name'];
+  var table_header = document.createElement('thead');
+  table_header.appendChild(this.create_header_row(columns));
+  var table_footer = document.createElement('tfoot');
+  table_footer.appendChild(this.create_header_row(columns));
+  var table = document.createElement('table');
+  table.setAttribute('id', table_id);
+  table.setAttribute('class', 'display');
+  table.setAttribute('cellpadding', 0);
+  table.setAttribute('cellspacing', 0);
+  table.setAttribute('border', 0);
+  table.appendChild(table_header);
+  table.appendChild(table_footer);
+
+  content.appendChild(table);
+
+  // Add table to DOM
+  $container.append(content);
+
+  // Fill neuron table
+  var datatable = $(table).dataTable({
+    // http://www.datatables.net/usage/options
+    "bDestroy": true,
+    "sDom": '<"H"lr>t<"F"ip>',
+    "bProcessing": true,
+    "bServerSide": true,
+    "bAutoWidth": false,
+    "iDisplayLength": this.possibleLengths[0],
+    "sAjaxSource": django_url + project.id + '/neuron/table/query-by-annotations',
+    "fnServerData": function (sSource, aoData, fnCallback) {
+        // Annotation filter
+        if (annotation_filter) {
+          aoData.push({
+              'name': 'neuron_query_by_annotation',
+              'value': annotation_filter
+          });
+        }
+        // User filter -- only show neurons that have been annotated by the
+        // user in question
+        if (user_id_filter) {
+          aoData.push({
+              'name': 'neuron_query_by_annotator',
+              'value': user_id_filter
+          });
+        }
+        $.ajax({
+            "dataType": 'json',
+            "cache": false,
+            "type": "POST",
+            "url": sSource,
+            "data": aoData,
+            "success": fnCallback
+        });
+    },
+    "aLengthMenu": [
+        this.possibleLengths,
+        this.possibleLengthsLabels
+    ],
+    "bJQueryUI": true,
+    "aaSorting": [[ 1, "desc" ]],
+    "aoColumns": [
+      {
+        "sWidth": '5em',
+        "sClass": 'selector_column center',
+        "bSearchable": false,
+        "bSortable": false,
+        "mRender": function (data, type, full) {
+          var cb_id = 'navigator_neuron_' + full[4] + '_selection' +
+              self.navigator.widgetID;
+          return '<input type="checkbox" id="' + cb_id +
+              '" name="someCheckbox" neuron_id="' + full[4] + '" />';
+      },
+      },
+      {
+        "bSearchable": true,
+        "bSortable": true,
+        "mData": 0,
+        "aDataSort": [ 0 ],
+      },
+    ]
+  });
+
+  return datatable;
+};
+
 
 /**
  * The home node of the navigator. It links to annotation
@@ -589,7 +682,7 @@ $.extend(NeuronNavigator.NeuronListNode.prototype,
  */
 NeuronNavigator.NeuronListNode.prototype.get_selected_neurons = function()
 {
-  var cb_selector = '#navigator_annotationlist_table' +
+  var cb_selector = '#navigator_neuronlist_table' +
       this.navigator.widgetID + ' tbody td.selector_column input';
   var selected_neurons = $(cb_selector).toArray().reduce(function(ret, cb) {
     if ($(cb).prop('checked')) {
@@ -603,105 +696,33 @@ NeuronNavigator.NeuronListNode.prototype.get_selected_neurons = function()
 
 NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
 {
-  var content = document.createElement('div');
-  content.setAttribute('id', 'navigator_neuronlist_content' +
-      this.navigator.widgetID);
+  var annotation_filter = undefined;
+  var user_id_filter = undefined;
+
+  // Use parent node provided filters, if available
+  if (this.parent_node) {
+    if (this.parent_node.annotation) {
+      annotation_filter = this.parent_node.annotation;
+    }
+    if (this.parent_node.user_id) {
+      user_id_filter = this.parent_node.user_id;
+    }
+  }
 
   // Create annotate button
   var annotate_button = document.createElement('input');
   annotate_button.setAttribute('type', 'button');
   annotate_button.setAttribute('value', 'Annotate');
-  content.appendChild(annotate_button);
+  container.append(annotate_button);
 
-  // Create neuron table
-  var columns = ['Selected', 'Name'];
-  var table_header = document.createElement('thead');
-  table_header.appendChild(this.create_header_row(columns));
-  var table_footer = document.createElement('tfoot');
-  table_footer.appendChild(this.create_header_row(columns));
-  var table_id = 'navigator_annotationlist_table' + this.navigator.widgetID;
-  var table = document.createElement('table');
-  table.setAttribute('id', table_id);
-  table.setAttribute('class', 'display');
-  table.setAttribute('cellpadding', 0);
-  table.setAttribute('cellspacing', 0);
-  table.setAttribute('border', 0);
-  table.appendChild(table_header);
-  table.appendChild(table_footer);
+  var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
 
-  content.appendChild(table);
-
-  // Add table to DOM
-  container.append(content);
+  // Add neuron data table based on filters above
+  var datatable = this.add_neuron_list_table(container, table_id,
+      annotation_filter, user_id_filter);
 
   // Make self accessible in callbacks more easily
   var self = this;
-
-  // Fill neuron table
-  var datatable = $(table).dataTable({
-    // http://www.datatables.net/usage/options
-    "bDestroy": true,
-    "sDom": '<"H"lr>t<"F"ip>',
-    "bProcessing": true,
-    "bServerSide": true,
-    "bAutoWidth": false,
-    "iDisplayLength": this.possibleLengths[0],
-    "sAjaxSource": django_url + project.id + '/neuron/table/query-by-annotations',
-    "fnServerData": function (sSource, aoData, fnCallback) {
-        // Use parent node provides filters, if available
-        if (self.parent_node) {
-          // Annotation filter
-          if (self.parent_node.annotation) {
-            aoData.push({
-                'name': 'neuron_query_by_annotation',
-                'value': self.parent_node.annotation
-            });
-          }
-          // User filter -- only show neurons that have been annotated by the
-          // user in question
-          if (self.parent_node.user_id) {
-            aoData.push({
-                'name': 'neuron_query_by_annotator',
-                'value': self.parent_node.user_id
-            });
-          }
-        }
-        $.ajax({
-            "dataType": 'json',
-            "cache": false,
-            "type": "POST",
-            "url": sSource,
-            "data": aoData,
-            "success": fnCallback
-        });
-    },
-    "aLengthMenu": [
-        this.possibleLengths,
-        this.possibleLengthsLabels
-    ],
-    "bJQueryUI": true,
-    "aaSorting": [[ 1, "desc" ]],
-    "aoColumns": [
-      {
-        "sWidth": '5em',
-        "sClass": 'selector_column center',
-        "bSearchable": false,
-        "bSortable": false,
-        "mRender": function (data, type, full) {
-          var cb_id = 'navigator_neuron_' + full[4] + '_selection' +
-              self.navigator.widgetID;
-          return '<input type="checkbox" id="' + cb_id +
-              '" name="someCheckbox" neuron_id="' + full[4] + '" />';
-      },
-      },
-      {
-        "bSearchable": true,
-        "bSortable": true,
-        "mData": 0,
-        "aDataSort": [ 0 ],
-      },
-    ]
-  });
 
   $(annotate_button).click(function() {
     if (self.get_selected_neurons().length > 0) {
@@ -868,18 +889,16 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
   content.setAttribute('id', 'navigator_skeletonlist_content' +
       this.navigator.widgetID);
 
-  // Create neuron table
-  //var columns = ['Skeleton ID', 'Raw cable (nm)', 'Smooth cable (nm)',
-  //    'N inputs', 'N outputs', 'N nodes', 'N branch nodes', 'N end nodes'];
+  // Create skeleton table
   var columns = ['Skeleton ID', 'N nodes', 'N branch nodes', 'N end nodes',
       'N open end nodes', '% reviewed'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
   var table_footer = document.createElement('tfoot');
   table_footer.appendChild(this.create_header_row(columns));
-  var table_id = 'navigator_skeletonlist_table' + this.navigator.widgetID;
+  var skeleton_table_id = 'navigator_skeletonlist_table' + this.navigator.widgetID;
   var table = document.createElement('table');
-  table.setAttribute('id', table_id);
+  table.setAttribute('id', skeleton_table_id);
   table.setAttribute('class', 'display');
   table.setAttribute('cellpadding', 0);
   table.setAttribute('cellspacing', 0);
@@ -892,7 +911,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
   // Add table to DOM
   container.append(content);
 
-  var skeleton_table = $(table).dataTable({
+  var skeleton_datatable = $(table).dataTable({
     "bDestroy": true,
     "sDom": '<"H"lr>t<"F"ip>',
     // default: <"H"lfr>t<"F"ip>
@@ -1036,7 +1055,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 
 
                 // Put data into table
-                skeleton_table.fnAddData([
+                skeleton_datatable.fnAddData([
                   skeleton_id,
                   arbor.countNodes(),
                   arbor.findBranchNodes().length,

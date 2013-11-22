@@ -36,30 +36,50 @@ NeuronAnnotations.prototype.removeSkeletons = function() {};
 NeuronAnnotations.prototype.updateModels = function() {};
 
 NeuronAnnotations.prototype.getSelectedSkeletons = function() {
-  return this.queryResults.map( function(e) { return e.skeleton_id; } );
+  return this.queryResults.reduce( function(o, e) {
+    o = o.concat(e.skeleton_ids);
+   }, []);
 };
 
 NeuronAnnotations.prototype.hasSkeleton = function(skeleton_id) {
-  return this.queryResults.some(
-      function(e) { return e.skeleton_id === skeleton_id; } );
+  return this.queryResults.some(function(e) {
+    return e.skeleton_ids.some(function(id) {
+      return id === skeleton_id;
+    });
+  });
 };
 
 NeuronAnnotations.prototype.getSelectedSkeletonModels = function() {
   return this.queryResults.reduce(function(o, e) {
-      o[e.skeleton_id] = new SelectionTable.prototype.SkeletonModel(
-          e.skeleton_id, e.name, new THREE.Color().setRGB(1, 1, 0));
-      return o;
+    e.skeleton_ids.forEach(function(s) {
+      o[s] = new SelectionTable.prototype.SkeletonModel(
+          s, e.name, new THREE.Color().setRGB(1, 1, 0));
+    });
+    return o;
   }, {});
 };
 
 NeuronAnnotations.prototype.highlight = function(skeleton_id)
 {
-  // Remove any highlighting
-  $('[id^=neuron_annotation_result_row' + this.widgetID + '_]').css(
-      'background-color', 'white');
-  // Highlight the requesten skelton, if available
-  $('#neuron_annotation_result_row' + this.widgetID + '_' + skeleton_id).css(
-      'background-color', SelectionTable.prototype.highlighting_color);
+  // Find neuron containing this skeleton_id
+  var neurons = this.queryResults.filter(function(e) {
+    return e.skeleton_ids.some(function(s) {
+      return s == skeleton_id;
+    });
+  });
+
+  if (neurons) {
+    // Remove any highlighting
+    $('[id^=neuron_annotation_result_row' + this.widgetID + '_]').css(
+        'background-color', 'white');
+    // Highlight the neuron, containing the requested skeleton, if available.
+    // Altough the code works for multiple neurons, it should be normally the
+    // case that there is only one neuron, belonging to the skeleton.
+    neurons.forEach($.proxy(function(n) {
+      $('#neuron_annotation_result_row' + this.widgetID + '_' + n.id).css(
+          'background-color', SelectionTable.prototype.highlighting_color);
+    }, this));
+  }
 };
 
 /* Non-interface methods */
@@ -97,12 +117,12 @@ NeuronAnnotations.prototype.query = function()
               // Build table row
               $tableBody.append(
                   '<tr id="neuron_annotation_result_row' + this.widgetID +
-                      '_' + this.queryResults[i].skeleton_id + '">' +
+                      '_' + this.queryResults[i].id + '">' +
                     '<td><input type="checkbox" id="result' + this.widgetID + '_' +
-                        this.queryResults[i].skeleton_id + '"/></td>' +
+                        this.queryResults[i].id + '"/></td>' +
                     '<td><a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(' +
                         '\'skeleton\', ' +
-                        this.queryResults[i].skeleton_id + '); return false;">' +
+                        this.queryResults[i].id + '); return false;">' +
                         this.queryResults[i].name + '</a></td>' +
                     '<td><ul class="tagEditor">' + annotation_list + '</ul></td>' +
                   '</tr>');
@@ -185,7 +205,7 @@ NeuronAnnotations.prototype.get_selected_neurons = function()
   for (var i = 0; i < this.queryResults.length; i++) {
       var $input = $("#neuron_annotations_query_results_table" +
           this.widgetID).find('input[id=result' + this.widgetID +
-              '_' + this.queryResults[i].skeleton_id + ']');
+              '_' + this.queryResults[i].id + ']');
       if ($input[0].checked) {
           selected_neurons.push(this.queryResults[i]);
       }

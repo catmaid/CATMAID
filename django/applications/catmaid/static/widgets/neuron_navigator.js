@@ -185,68 +185,6 @@ NeuronNavigator.Node.prototype.add_content = function(container)
   return undefined;
 };
 
-NeuronNavigator.Node.prototype.create_annotations_link = function()
-{
-  var annotations_link = this.create_path_link("Annotations");
-  $(annotations_link).click($.proxy(function() {
-      var annotations_node = new NeuronNavigator.AnnotationListNode();
-      annotations_node.link(this.navigator, this);
-      this.navigator.select_node(annotations_node);
-  }, this));
-
-  return annotations_link;
-};
-
-NeuronNavigator.Node.prototype.create_coannotations_link = function()
-{
-  var annotations_link = this.create_path_link("Co-Annotations");
-  $(annotations_link).click($.proxy(function() {
-      var annotations_node = new NeuronNavigator.AnnotationListNode();
-      annotations_node.link(this.navigator, this);
-      this.navigator.select_node(annotations_node);
-  }, this));
-
-  return annotations_link;
-};
-
-NeuronNavigator.Node.prototype.create_users_link = function()
-{
-  var users_link = this.create_path_link("Users");
-  $(users_link).click($.proxy(function() {
-      var users_node = new NeuronNavigator.UserListNode();
-      users_node.link(this.navigator, this);
-      this.navigator.select_node(users_node);
-  }, this));
-
-  return users_link;
-};
-
-NeuronNavigator.Node.prototype.create_neurons_link = function()
-{
-  var neurons_link = this.create_path_link("Neurons");
-  $(neurons_link).click($.proxy(function() {
-      var node = new NeuronNavigator.NeuronListNode();
-      node.link(this.navigator, this);
-      this.navigator.select_node(node);
-  }, this));
-
-  return neurons_link
-};
-
-NeuronNavigator.Node.prototype.create_path_link = function(text)
-{
-  var option = document.createElement('a');
-  option.setAttribute('href', '#');
-  option.setAttribute('class', 'navigator_content_option');
-  // Add text to option, if passed
-  if (text)
-  {
-    option.innerHTML = text;
-  }
-
-  return option;
-};
-
 // A convenience helper for creating a table header
 NeuronNavigator.Node.prototype.create_header_row = function(columns)
 {

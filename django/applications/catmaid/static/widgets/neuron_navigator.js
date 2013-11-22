@@ -180,6 +180,16 @@ NeuronNavigator.Node.prototype.create_path = function()
   }
 };
 
+NeuronNavigator.Node.prototype.get_last_user = function()
+{
+  while (this.parent_node)
+  {
+    return this.parent_node.get_last_user();
+  }
+
+  return null;
+};
+
 NeuronNavigator.Node.prototype.add_content = function(container)
 {
   return undefined;
@@ -722,18 +732,15 @@ NeuronNavigator.NeuronListNode.prototype.get_selected_neurons = function()
 NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
 {
   var annotation_filters = undefined;
-  var user_id_filter = undefined;
-
   // Use parent node provided filters, if available
   if (this.parent_node) {
     // Collect annotarion and co-annotation filters
     if (this.parent_node.collect_annotation_filters) {
       annotation_filters = this.parent_node.collect_annotation_filters();
     }
-    if (this.parent_node.user_id) {
-      user_id_filter = this.parent_node.user_id;
-    }
   }
+
+  var user_id_filter = this.get_last_user();
 
   // Create annotate button
   var annotate_button = document.createElement('input');
@@ -882,6 +889,11 @@ NeuronNavigator.UserFilterNode = function(included_user)
 NeuronNavigator.UserFilterNode.prototype = {};
 $.extend(NeuronNavigator.UserFilterNode.prototype,
     new NeuronNavigator.Node("Empty User Filter"));
+
+NeuronNavigator.UserFilterNode.prototype.get_last_user = function()
+{
+    return this.user_id;
+};
 
 NeuronNavigator.UserFilterNode.prototype.add_content = function(container)
 {

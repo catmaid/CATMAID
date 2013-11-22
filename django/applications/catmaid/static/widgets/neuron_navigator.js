@@ -1127,10 +1127,16 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 
 
   /* Annotations */
+
+  // Title
+  var annotation_title = document.createElement('h4');
+  annotation_title.appendChild(document.createTextNode('Annotations'));
+  container.append(annotation_title);
+
+  // Table filters and ID
   var annotation_filter = undefined;
   var user_id_filter = undefined;
   var neuron_id_filter = this.neuron_id;
-
   var annotation_table_id = 'navigator_annotationlist_table' +
       this.navigator.widgetID;
 
@@ -1151,8 +1157,14 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 
 
   /* User who locked the neuron */
-  var locked_annotation_filter = "locked";
 
+  // Title
+  var annotation_title = document.createElement('h4');
+  annotation_title.appendChild(document.createTextNode('User who locked this neuron'));
+  container.append(annotation_title);
+
+  // Table filters and ID
+  var locked_annotation_filter = "locked";
   var locked_user_table_id = 'navigator_userlist_table' +
       this.navigator.widgetID;
 

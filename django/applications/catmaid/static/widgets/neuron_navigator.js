@@ -755,7 +755,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
 NeuronNavigator.AnnotationFilterNode = function(included_annotation)
 {
   this.annotation = included_annotation
-  this.name = "A: " + included_annotation;
+  this.name = included_annotation;
 };
 
 NeuronNavigator.AnnotationFilterNode.prototype = {};

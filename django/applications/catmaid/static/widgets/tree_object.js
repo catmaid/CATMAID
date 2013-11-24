@@ -48,6 +48,23 @@ var ObjectTree = new function()
     };
   };
 
+  var sendSmallSkeletonsToFragments = function(obj) {
+    var min_treenodes = prompt("Minimum number of treenodes:", 500);
+    if (!min_treenodes || !confirm("Are you sure you want to send all single-skeleton neurons and skeletons in multi-skeleton neurons that have less than " + min_treenodes + " treenodes to the 'Fragments' group?")) {
+      return;
+    }
+    requestQueue.register(django_url + project.id + '/object-tree/send-small-to-fragments', 'POST',
+        {node_id: parseInt(obj.attr("id").slice(5)),
+         min_treenodes: min_treenodes},
+         function(status, text) {
+           if (200 !== status) return;
+           var json = $.parseJSON(text);
+           if (json.error) return alert(json.error);
+           ObjectTree.refresh();
+           alert('Moved to Fragments: ' + json.n_neurons + " neurons and " + json.n_skeletons + " skeletons.");
+         });
+  };
+
   this.init = function (pid) {
     // id of object tree
     var object_tree_id = "#tree_object";
@@ -188,6 +205,12 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   this.rename(obj);
                 }
+              },
+              "cleanup_fragments": {
+                "separator_before": true,
+                "separator_after": false,
+                "label": "Cleanup fragments...",
+                "action": sendSmallSkeletonsToFragments
               }
             };
           } else if (type_of_node === "group") {
@@ -271,6 +294,12 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "Send to fragments",
                 "action": sendToFragmentsFn(type_of_node)
+              },
+              "cleanup_fragments": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Cleanup fragments...",
+                "action": sendSmallSkeletonsToFragments
               },
               "cut": {
                               "separator_before": true,
@@ -451,6 +480,12 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "Send to fragments",
                 "action": sendToFragmentsFn(type_of_node)
+              },
+              "cleanup_fragments": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Cleanup fragments...",
+                "action": sendSmallSkeletonsToFragments
               },
               "ccp": false
             };

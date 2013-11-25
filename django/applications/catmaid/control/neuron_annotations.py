@@ -233,6 +233,15 @@ def create_annotation_query(project_id, param_dict):
                 cici_via_b__relation__relation_name = 'annotated_with',
                 cici_via_b__class_instance_a__id=neuron_id)
 
+    # Instead of a neuron a user can also use to skeleton id to constrain the
+    # annotation set returned. This is implicetely a neuron id restriction.
+    skeleton_id = param_dict.get('skeleton_id', None)
+    if skeleton_id:
+        annotation_query = annotation_query.filter(
+                cici_via_b__relation__relation_name = 'annotated_with',
+                cici_via_b__class_instance_a__cici_via_b__relation__relation_name = 'model_of',
+                cici_via_b__class_instance_a__cici_via_b__class_instance_a__id = skeleton_id)
+
     # If annotations to ignore are passed in, they won't appear in the
     # result set.
     ignored_annotations = [v for k,v in param_dict.iteritems()

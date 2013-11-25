@@ -546,17 +546,21 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
 
 SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
-  if (!confirm("Do you really want to split the skeleton?")) return;
+  var dialog = new SplitDialog(SkeletonAnnotations.sourceView.createModel());
   var self = this;
-  this.submit(
-      django_url + project.id + '/skeleton/split',
-      { treenode_id: nodeID },
-      function () {
-        self.updateNodes();
-        ObjectTree.refresh();
-        self.selectNode(nodeID);
-      },
-      true); // block UI
+  dialog.onOK = function() {
+    if (!confirm("Do you really want to split the skeleton?")) return;
+    self.submit(
+        django_url + project.id + '/skeleton/split',
+        { treenode_id: nodeID },
+        function () {
+          self.updateNodes();
+          ObjectTree.refresh();
+          self.selectNode(nodeID);
+        },
+        true); // block UI
+  };
+  dialog.show();
 };
 
 /** Used to join two skeletons together.
@@ -1888,3 +1892,166 @@ window.OptionsDialog.prototype.appendField = function(title, fieldID, initialVal
   return input;
 };
 
+
+var SplitDialog = function(model1, model2) {
+  // Models object
+  this.models = {};
+  this.models[model1.id] = model1;
+  if (model2) models[model2.id] = model2;
+  // Basic dialog setup
+  this.dialog = document.createElement('div');
+  this.dialog.setAttribute("id", "skeleton-split-merge-dialog");
+  this.dialog.setAttribute("title", "Split skeleton");
+  // Dialog dimensions
+  this.width = parseInt(UI.getFrameWidth() * 0.8);
+  this.height = parseInt(UI.getFrameHeight() * 0.8);
+};
+
+SplitDialog.prototype = {};
+
+SplitDialog.prototype.populate = function() {
+  // Annotation list boxes
+  var titleBig = document.createElement('div'),
+      titleSmall = document.createElement('div'),
+      big = document.createElement('div'),
+      small = document.createElement('div');
+
+  big.setAttribute('id', 'split_merge_dialog_over_annotations')
+  small.setAttribute('id', 'split_merge_dialog_under_annotations')
+
+  // Style annotation list boxes
+  big.setAttribute('multiple', 'multiple');
+  small.setAttribute('multiple', 'multiple');
+
+  big.style.width = '100%';
+  big.style.height = '230px';
+  big.style.overflowY = 'scroll';
+  small.style.width = '100%';
+  small.style.height = '230px';
+  small.style.overflowY = 'scroll';
+
+  titleBig.style.padding = '0.1em';
+  titleSmall.style.padding = '0.1em';
+
+  var left = document.createElement('div'),
+      right = document.createElement('div'),
+      leftWidth = 250;
+
+  // Position columns
+  left.style.cssFloat = 'left';
+  left.style.width = leftWidth + 'px';
+  right.style.cssFloat = 'right';
+
+  right.setAttribute('id', 'dialog-3d-view');
+  right.style.backgroundColor = "#000000";
+
+  // Layout left column
+  left.appendChild(titleBig);
+  left.appendChild(document.createElement('br'));
+  left.appendChild(big);
+  left.appendChild(document.createElement('br'));
+  left.appendChild(small);
+  left.appendChild(document.createElement('br'));
+  left.appendChild(titleSmall);
+
+  this.dialog.appendChild(left);
+  this.dialog.appendChild(right);
+
+  // Create a 3D View that is not a SkeletonSource neither in an instance registry
+  var W = function() {};
+  W.prototype = WebGLApplication.prototype;
+  this.webglapp = new W();
+  this.webglapp.init(this.width - leftWidth - 50, this.height - 100,
+      'dialog-3d-view'); // add to the right
+  this.webglapp.options.shading_method = 'active_node_split';
+  this.webglapp.look_at_active_node();
+  // Get ID of the first model available
+  var model1_id = Object.keys(this.models)[0];
+  // Add skeletons and do things depending on the success of this in a
+  // callback function.
+  this.webglapp.addSkeletons(this.models, (function() {
+    // Splitting data
+    var skeleton = this.webglapp.space.content.skeletons[model1_id],
+        arbor = skeleton.createArbor(),
+        under_count = arbor.subArbor(SkeletonAnnotations.getActiveNodeId()).countNodes(),
+        over_count = arbor.countNodes() - under_count;
+
+    // Add titles
+    titleBig.appendChild(document.createTextNode(over_count + " nodes"));
+    titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
+    // Color the small and big node cound boxes
+    titleBig.style.backgroundColor = '#' + skeleton.getActorColorAsHTMLHex();
+    var bc = this.webglapp.getSkeletonColor(model1_id);
+    // Convert the big arbor color to 8 bit and weight it by 0.5. Since the 3D
+    // viewer multiplies this weight by 0.9 and adds 0.1, we do the same.
+    var sc_8bit = [bc.r, bc.g, bc.b].map(function(c) {
+      return parseInt(c * 255 * 0.55);
+    });
+    titleSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
+  }).bind(this));
+
+  // Get all annotations and fill the list boxes
+  requestQueue.register(django_url + project.id +  '/annotations/list',
+    'POST', {'skeleton_id': model1_id}, function(status, text) {
+      if (status !== 200) {
+        alert("Unexpected status code: " + status);
+        return false;
+      }
+      if (text && text !== " ") {
+        var json = $.parseJSON(text);
+        if (json.error) {
+          alert(json.error);
+        } else {
+          // Create annotation check boxes
+          json.forEach(function(annotation) {
+            var create_cb = function(label_text, checked) {
+              var cb_label = document.createElement('label');
+              cb_label.style.cssFloat = 'left';
+              cb_label.style.clear = 'left';
+              var cb = document.createElement('input');
+              cb.checked = checked;
+              cb.setAttribute('class', 'split_skeleton_annotation');
+              cb.setAttribute('annotation', label_text);
+              cb.setAttribute('type', 'checkbox');
+              cb_label.appendChild(cb);
+              cb_label.appendChild(document.createTextNode(label_text));
+              return cb_label;
+            };
+            big.appendChild(create_cb(annotation, true));
+            small.appendChild(create_cb(annotation, false));
+          });
+        }
+      }
+    });
+
+  return this;
+};
+
+SplitDialog.prototype.show = function() {
+  var self = this;
+  $(this.dialog).dialog({
+    width: self.width,
+    height: self.height,
+    modal: true,
+    buttons: {
+      "Cancel": function() {
+        if (self.webglapp) self.webglapp.space.destroy();
+        $(this).dialog("destroy");
+        if (self.onCancel) self.onCancel();
+      },
+      "OK": function() {
+        if (!checkAnnotations()) {
+          // TODO notify user
+        } else {
+          if (self.webglapp) self.webglapp.space.destroy();
+          $(this).dialog("destroy");
+          if (self.onOK) self.onOK();
+        }
+      }
+    }
+  });
+
+  // The dialog is populated after creation, since the 3D viewer expects
+  // elements to be added to the DOM.
+  this.populate();
+};

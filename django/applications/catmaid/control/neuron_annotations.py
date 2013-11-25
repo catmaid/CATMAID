@@ -126,11 +126,29 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
 
     return HttpResponse(json.dumps(response), mimetype='text/json')
 
+def _annotate_neurons(project_id, user, neurons, annotations):
+    r = Relation.objects.get(project_id = project_id,
+            relation_name = 'annotated_with')
+
+    annotation_class = Class.objects.get(project_id = project_id,
+                                         class_name = 'annotation')
+    for annotation in annotations:
+        # Make sure the annotation's class instance exists.
+        ci, created = ClassInstance.objects.get_or_create(
+                project_id=project_id, name=annotation,
+                class_column=annotation_class,
+                defaults={'user': user});
+        # Annotate each of the neurons. Avoid duplicates for the current user,
+        # but it's OK for multiple users to annotate with the same instance.
+        for neuron in neurons:
+            cici, created = ClassInstanceClassInstance.objects.get_or_create(
+                    project_id=project_id, relation=r, class_instance_a=neuron,
+                    class_instance_b=ci, user=user);
+            cici.save() # update the last edited time
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def annotate_neurons(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
-    r = Relation.objects.get(project_id = project_id,
-            relation_name = 'annotated_with')
 
     annotations = [v for k,v in request.POST.iteritems()
             if k.startswith('annotations[')]
@@ -150,25 +168,9 @@ def annotate_neurons(request, project_id = None):
                                                 class_column__class_name = 'neuron',
                                                 cici_via_b__relation__relation_name = 'model_of',
                                                 cici_via_b__class_instance_a__in = skeleton_ids)
-    
-    annotation_class = Class.objects.get(project = p,
-                                         class_name = 'annotation')
-    for annotation in annotations:
-        # Make sure the annotation's class instance exists.
-        ci, created = ClassInstance.objects.get_or_create(project = p, 
-                                                          name = annotation,
-                                                          class_column = annotation_class,
-                                                          defaults = {'user': request.user});
-        # Annotate each of the neurons. Avoid duplicates for the current user,
-        # but it's OK for multiple users to annotate with the same instance.
-        for neuron in neurons:
-            cici, created = ClassInstanceClassInstance.objects.get_or_create(project = p,
-                                                                             relation = r,
-                                                                             class_instance_a = neuron,
-                                                                             class_instance_b = ci,
-                                                                             user = request.user);
-            cici.save() # update the last edited time
-    
+
+    _annotate_neurons(project_id, request.user, neurons, annotations)
+
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

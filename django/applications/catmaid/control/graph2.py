@@ -184,7 +184,9 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
     # All nodes of the graph (with or without edges. Includes those representing synapse domains)
     nodeIDs = []
 
-    if confidence_threshold > 0:
+    not_to_expand = skeleton_ids - expand
+
+    if confidence_threshold > 0 and not_to_expand:
         # Now fetch all treenodes of only skeletons in skeleton_ids (the ones not to expand)
         cursor.execute('''
         SELECT skeleton_id, id, parent_id, confidence
@@ -192,7 +194,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
         WHERE project_id = %s
           AND skeleton_id IN (%s)
         ORDER BY skeleton_id
-        ''' % (project_id, ",".join(str(int(skid)) for skid in (skeleton_ids - expand))))
+        ''' % (project_id, ",".join(str(int(skid)) for skid in not_to_expand)))
 
         # Read out into memory only one skeleton at a time
         current_skid = None
@@ -218,7 +220,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
     else:
         # No need to split.
         # Populate connectors from the connections among them
-        for skid in (skeleton_ids - expand):
+        for skid in not_to_expand:
             nodeIDs.append(skid)
             for c in stc[skid]:
                 connectors[c[1]][c[2]].append(skid)

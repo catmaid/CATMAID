@@ -203,15 +203,50 @@ def remove_annotation(request, project_id=None, neuron_id=None,
 
     return HttpResponse(json.dumps({'message': message}), mimetype='text/json')
 
+def create_annotation_query(project_id, param_dict):
+    annotation_query = ClassInstance.objects.filter(project_id=project_id,
+            class_column__class_name='annotation')
+
+    # Meta annotations are annotations that are used to annotate other
+    # annotations.
+    meta_annotations = [v for k,v in param_dict.iteritems()
+            if k.startswith('annotations[')]
+    for meta_annotation in meta_annotations:
+        annotation_query = annotation_query.filter(
+                cici_via_a__relation__relation_name = 'annotated_with',
+                          cici_via_a__class_instance_b__name = meta_annotation)
+
+    # Passing in a user ID causes the result set to only contain annotations
+    # that are used by the respective user. The query filter could lead to
+    # duplicate entries, therefore distinct() is added here.
+    user_id = param_dict.get('user_id', None)
+    if user_id:
+        user_id = int(user_id)
+        annotation_query = annotation_query.filter(
+                cici_via_b__user__id=user_id).distinct()
+
+    # With the help of the neuron_id field, it is possible to restrict the
+    # result set to only show annotations that are used for a particular neuron.
+    neuron_id = param_dict.get('neuron_id', None)
+    if neuron_id:
+        annotation_query = annotation_query.filter(
+                cici_via_b__relation__relation_name = 'annotated_with',
+                cici_via_b__class_instance_a__id=neuron_id)
+
+    # If annotations to ignore are passed in, they won't appear in the
+    # result set.
+    ignored_annotations = [v for k,v in param_dict.iteritems()
+            if k.startswith('ignored_annotations[')]
+    if ignored_annotations:
+        annotation_query = annotation_query.exclude(
+                name__in=ignored_annotations)
+
+    return annotation_query
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_annotations(request, project_id=None):
-    ignored_annotations = [v for k,v in request.POST.iteritems()
-            if k.startswith('ignored_annotations[')]
-    annotations = ClassInstance.objects.filter(project_id=project_id,
-            class_column__class_name='annotation').exclude(
-                    name__in=ignored_annotations)
-
-    annotation_names = [a.name for a in annotations]
+    annotation_query = create_annotation_query(project_id, request.POST)
+    annotation_names = [a.name for a in annotation_query]
 
     return HttpResponse(json.dumps(annotation_names), mimetype="text/json")
 
@@ -222,35 +257,9 @@ def list_annotations_datatable(request, project_id=None):
     if display_length < 0:
         display_length = 2000  # Default number of result rows
 
+    annotation_query = create_annotation_query(project_id, request.POST)
+
     should_sort = request.POST.get('iSortCol_0', False)
-
-    annotation_query = ClassInstance.objects.filter(project_id=project_id,
-            class_column__class_name='annotation')
-
-    # Meta annotations are annotations that are used to annotate other
-    # annotations.
-    meta_annotations = [v for k,v in request.POST.iteritems()
-            if k.startswith('annotations[')]
-    for meta_annotation in meta_annotations:
-        annotation_query = annotation_query.filter(
-                cici_via_a__relation__relation_name = 'annotated_with',
-                          cici_via_a__class_instance_b__name = meta_annotation)
-
-    # Passing in a user ID causes the result set to only contain annotations
-    # that are used by the respective user. The query filter could lead to
-    # duplicate entries, therefore distinct() is added here.
-    user_id = request.POST.get('user_id', None)
-    if user_id:
-        user_id = int(user_id)
-        annotation_query = annotation_query.filter(
-                cici_via_b__user__id=user_id).distinct()
-
-    # With the help of the neuron_id field, it is possible to restrict the
-    # result set to only show annotations that are used for a particular neuron.
-    neuron_id = request.POST.get('neuron_id', None)
-    if neuron_id:
-        annotation_query = annotation_query.filter(
-                cici_via_b__class_instance_a__id=neuron_id)
 
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))

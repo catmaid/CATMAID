@@ -432,7 +432,15 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
                        color: '#' + model.color.getHexString()}};
     };
 
-    if (this.confidence_threshold <= 0 && this.clustering_bandwidth <= 0) {
+    // Figure out what kind of response we got
+    var modes = {basic: false,
+                 confidence_split: false,
+                 dual_split: false};
+    if ('branch_nodes' in json && 'intraedges' in json) modes.dual_split = true;
+    else if ('nodes' in json) modes.confidence_split = true;
+    else modes.basic = true;
+
+    if (modes.basic) {
       // Basic graph: infer nodes from json.edges
       var seen = {},
           nodes = [],
@@ -453,7 +461,7 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
       data.nodes = nodes;
       data.edges = json.edges.map(asEdge);
 
-    } else if (this.confidence_threshold > 0 && this.clustering_bandwidth <= 0) {
+    } else if (modes.confidence_split) {
       // Graph with skeletons potentially split at low confidence edges
       data.nodes = json.nodes.map(asNode);
       data.edges = json.edges.map(asEdge);
@@ -642,9 +650,11 @@ CompartmentGraphWidget.prototype.load = function(skeleton_ids, models) {
       (function (status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);
+          console.log(json, text);
           if (json.error) {
-              alert(json.error);
-              return;
+            if ('REPLACED' === json.error) return;
+            alert(json.error);
+            return;
           }
           this.updateGraph(json, models);
       }).bind(this),

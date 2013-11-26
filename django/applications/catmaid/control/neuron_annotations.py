@@ -126,6 +126,29 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
 
     return HttpResponse(json.dumps(response), mimetype='text/json')
 
+def _update_neuron_annotations(project_id, user, neuron, annotations):
+    """ Ensure that the neuron is annotated_with only the annotations given.
+    """
+    qs = ClassInstanceClassInstance.objects.filter(class_instance_a=neuron,
+            relation__relation_name='annotated_with')
+    qs = qs.select_related('class_instance_b').values_list(
+            'class_instance_b__name', 'class_instance_b__id')
+
+    existing_annotations = dict(qs)
+
+    annotations = set(annotations)
+    existing = set(existing_annotations.iterkeys())
+
+    missing = annotations - existing
+    _annotate_neurons(project_id, user, [neuron], missing)
+
+    to_delete = existing - annotations
+    to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \
+        if name in to_delete)
+
+    ClassInstanceClassInstance.objects.filter(class_instance_b__in=to_delete_ids).delete()
+
+
 def _annotate_neurons(project_id, user, neurons, annotations):
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')

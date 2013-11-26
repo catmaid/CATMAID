@@ -6,6 +6,9 @@ from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
+from catmaid.control.neuron_annotations import create_annotation_query
+from catmaid.control.neuron_annotations import _annotate_neurons
+from catmaid.control.neuron_annotations import _update_neuron_annotations
 from collections import defaultdict
 import json
 from operator import itemgetter
@@ -126,6 +129,24 @@ def neuronnames(request, project_id=None):
     skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
     return HttpResponse(json.dumps(_neuronnames(skeleton_ids, project_id)))
 
+def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
+        under_annotation_set):
+    """ With respect to annotations, a split is only correct if one part keeps
+    the whole set of annotations.
+    """
+    # Get current annotation set
+    annotation_query = create_annotation_query(project_id,
+        {'skeleton_id': skeleton_id})
+
+    # Check if current set is equal to under or over set
+    current_annotation_set = frozenset(a.name for a in annotation_query)
+    if not current_annotation_set.difference(over_annotation_set):
+      return True
+    if not current_annotation_set.difference(under_annotation_set):
+      return True
+
+    return False
+
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):
     """ The split is only possible if the user owns the treenode or the skeleton, or is superuser, or the skeleton is under Fragments.
@@ -133,11 +154,21 @@ def split_skeleton(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
     skeleton_id = treenode.skeleton_id
+    over_annotation_set = frozenset([v for k,v in request.POST.iteritems()
+            if k.startswith('over_annotation_set[')])
+    under_annotation_set = frozenset([v for k,v in request.POST.iteritems()
+            if k.startswith('under_annotation_set[')])
     cursor = connection.cursor()
 
     # Check if the treenode is root!
     if not treenode.parent:
         return HttpResponse(json.dumps({'error': 'Can\'t split at the root node: it doesn\'t have a parent.'}))
+
+    # Check if annotations are valid
+    if not check_annotations_on_split(project_id, skeleton_id,
+            over_annotation_set, under_annotation_set):
+        raise Exception("Annotation distribution is not valid for splitting. " \
+          "One part has to keep the whole set of annotations!")
 
     # The split is only possible if the user owns the treenode or the skeleton
     # or the skeleton is under fragments or in the user's staging area
@@ -191,10 +222,20 @@ def split_skeleton(request, project_id=None):
     new_skeleton.save()
     new_skeleton.name = 'Skeleton {0}'.format( new_skeleton.id ) # This could be done with a trigger in the database
     new_skeleton.save()
-    # Assign the skeleton to the same neuron
+    # Create new neuron
+    new_neuron = ClassInstance()
+    new_neuron.name = 'Neuron'
+    new_neuron.project_id = project_id
+    new_neuron.user = skeleton.user
+    new_neuron.class_column = Class.objects.get(class_name='neuron',
+            project_id=project_id)
+    new_neuron.save()
+    new_neuron.name = 'Neuron %s' % str(new_neuron.id)
+    new_neuron.save()
+    # Assign the skeleton to new neuron
     cici = ClassInstanceClassInstance()
     cici.class_instance_a = new_skeleton
-    cici.class_instance_b = neuron
+    cici.class_instance_b = new_neuron
     cici.relation = Relation.objects.get(relation_name='model_of', project_id=project_id)
     cici.user = skeleton.user # The same user that owned the skeleton to split
     cici.project_id = project_id
@@ -210,10 +251,17 @@ def split_skeleton(request, project_id=None):
     ).update(skeleton=new_skeleton)
     # setting new root treenode's parent to null
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
+
+    # Update annotations of existing neuron to have only over set
+    _update_neuron_annotations(project_id, request.user, neuron, over_annotation_set)
+
+    # Update annotations of under skeleton
+    _annotate_neurons(project_id, request.user, [new_neuron], under_annotation_set)
+
     # Log the location of the node at which the split was done
     insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
-    return HttpResponse(json.dumps({}), mimetype='text/json')
 
+    return HttpResponse(json.dumps({}), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def root_for_skeleton(request, project_id=None, skeleton_id=None):

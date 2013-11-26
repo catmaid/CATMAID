@@ -552,7 +552,11 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
     if (!confirm("Do you really want to split the skeleton?")) return;
     self.submit(
         django_url + project.id + '/skeleton/split',
-        { treenode_id: nodeID },
+        {
+          treenode_id: nodeID,
+          over_annotation_set: dialog.get_over_annotation_set(),
+          under_annotation_set: dialog.get_under_annotation_set(),
+        },
         function () {
           self.updateNodes();
           ObjectTree.refresh();
@@ -2027,6 +2031,53 @@ SplitDialog.prototype.populate = function() {
   return this;
 };
 
+SplitDialog.prototype.get_annotation_set = function(over) {
+  var tag = over ? 'over' : 'under';
+  var over_checkboxes = $(this.dialog).find('#split_merge_dialog_' +
+      tag + '_annotations input[type=checkbox]').toArray();
+  var annotations = over_checkboxes.reduce(function(o, cb) {
+    if (cb.checked) o.push($(cb).attr('annotation'));
+    return o;
+  }, []);
+
+  return annotations;
+}
+
+SplitDialog.prototype.get_over_annotation_set = function() {
+  return this.get_annotation_set(true);
+}
+
+SplitDialog.prototype.get_under_annotation_set = function() {
+  return this.get_annotation_set(false);
+}
+
+/**
+ * The annotation distribution for a split is only valid if one part keeps the
+ * whole set of annotations. This test verifies this agains the cached list of
+ * annotations. One part keeps all annotations if all its checkboxes are
+ * checked.
+ */
+SplitDialog.prototype.check_annotations = function() {
+  // Define a test function every checkbox should be tested against
+  var checked_test = function(cb) {
+    return cb.checked;
+  };
+  // Test over annotation set
+  var $over_checkboxes = $(this.dialog).find(
+      '#split_merge_dialog_over_annotations input[type=checkbox]');
+  if ($over_checkboxes.toArray().every(checked_test)) {
+    return true;
+  }
+  // Test under annotation set
+  var $under_checkboxes = $(this.dialog).find(
+      '#split_merge_dialog_under_annotations input[type=checkbox]');
+  if ($under_checkboxes.toArray().every(checked_test)) {
+    return true;
+  }
+
+  return false;
+};
+
 SplitDialog.prototype.show = function() {
   var self = this;
   $(this.dialog).dialog({
@@ -2040,8 +2091,9 @@ SplitDialog.prototype.show = function() {
         if (self.onCancel) self.onCancel();
       },
       "OK": function() {
-        if (!checkAnnotations()) {
-          // TODO notify user
+        if (!self.check_annotations()) {
+          alert("The selected annotation configuration isn't valid. " +
+              "One part has to keep all annotations.");
         } else {
           if (self.webglapp) self.webglapp.space.destroy();
           $(this).dialog("destroy");

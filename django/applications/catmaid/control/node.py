@@ -133,15 +133,15 @@ def node_list_tuples(request, project_id=None):
         if treenode_ids:
             response_on_error = 'Failed to query connector locations.'
             cursor.execute('''
-            SELECT connector.id AS id,
-                (connector.location).x AS x,
-                (connector.location).y AS y,
-                (connector.location).z AS z,
-                connector.confidence AS confidence,
-                treenode_connector.relation_id AS treenode_relation_id,
-                treenode_connector.treenode_id AS tnid,
-                treenode_connector.confidence AS tc_confidence,
-                connector.user_id AS user_id
+            SELECT connector.id,
+                (connector.location).x,
+                (connector.location).y,
+                (connector.location).z,
+                connector.confidence,
+                treenode_connector.relation_id,
+                treenode_connector.treenode_id,
+                treenode_connector.confidence,
+                connector.user_id
             FROM treenode_connector,
                  connector
             WHERE treenode_connector.treenode_id IN (%s)
@@ -155,15 +155,15 @@ def node_list_tuples(request, project_id=None):
         # that is, connectors that aren't referenced from treenode_connector.
 
         cursor.execute('''
-        SELECT connector.id AS id,
-            (connector.location).x AS x,
-            (connector.location).y AS y,
-            (connector.location).z AS z,
-            connector.confidence AS confidence,
-            treenode_connector.relation_id AS treenode_relation_id,
-            treenode_connector.treenode_id AS tnid,
-            treenode_connector.confidence AS tc_confidence,
-            connector.user_id AS user_id
+        SELECT connector.id,
+            (connector.location).x,
+            (connector.location).y,
+            (connector.location).z,
+            connector.confidence,
+            treenode_connector.relation_id,
+            treenode_connector.treenode_id,
+            treenode_connector.confidence,
+            connector.user_id
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
@@ -240,9 +240,9 @@ def node_list_tuples(request, project_id=None):
             cursor.execute('''
             SELECT id,
                 parent_id,
-                (location).x AS x,
-                (location).y AS y,
-                (location).z AS z,
+                (location).x,
+                (location).y,
+                (location).z,
                 confidence,
                 radius,
                 skeleton_id,

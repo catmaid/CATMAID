@@ -35,6 +35,7 @@ def node_list_tuples(request, project_id=None):
     statements without modifying the accesses to said data both in this function
     and in the client that consumes it.
     '''
+    project_id = int(project_id) # sanitize
     params = {}
     # z: the section index in calibrated units.
     # width: the width of the field of view in calibrated units.
@@ -49,10 +50,14 @@ def node_list_tuples(request, project_id=None):
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
 
-    relation_map = get_relation_to_id_map(project_id)
-
     try:
         cursor = connection.cursor()
+
+        cursor.execute('''
+        SELECT relation_name, id FROM relation WHERE project_id=%s
+        ''' % project_id)
+        relation_map = dict(cursor.fetchall())
+
         response_on_error = 'Failed to query treenodes'
 
         is_superuser = request.user.is_superuser

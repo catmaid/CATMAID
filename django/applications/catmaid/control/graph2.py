@@ -324,9 +324,14 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
         for parent, child in chunk.edges_iter():
             chunk[parent][child]['weight'] = norm(subtract(locations[child], locations[parent]))
 
-        treenode_ids, connector_ids, relation_ids = zip(*(c for c in cs if c[0] in chunk))
-
         # Check if need to expand at all
+        blob = tuple(c for c in cs if c[0] in chunk)
+        if 0 == len(blob):
+            nodes.append(chunkID)
+            continue
+
+        treenode_ids, connector_ids, relation_ids = zip(*blob)
+
         if 0 == len(connector_ids):
             nodes.append(chunkID)
             continue

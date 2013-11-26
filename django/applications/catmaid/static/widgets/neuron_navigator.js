@@ -580,7 +580,33 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container)
       this.navigator.select_node(users_node);
   }, this));
   $(table_rows[2]).click($.proxy(function() {
-      // Show active skeleton
+      // Get active skeleton and request information about its neuron
+      var skid = SkeletonAnnotations.getActiveSkeletonId();
+      if (skid) {
+        requestQueue.register(django_url + project.id + '/skeleton/' + skid +
+            '/neuronname', 'POST', {}, (function(status, text) {
+              if (200 !== status) {
+                alert("Unexpected status code: " + status);
+              } else {
+                var json = $.parseJSON(text);
+                if (json.error) {
+                  alert(json.error);
+                } else {
+                  var active_neuron = {
+                    'name': json.neuronname,
+                    'skeleton_ids': [skid],
+                    'id': json.neuronid,
+                  };
+                  // Show active neuron
+                  var node = new NeuronNavigator.NeuronNode(active_neuron);
+                  node.link(this.navigator, this);
+                  this.navigator.select_node(node);
+                }
+              }
+        }).bind(this));
+      } else {
+        alert("There is currently no skeleton selected.");
+      }
   }, this));
 };
 

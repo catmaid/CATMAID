@@ -142,10 +142,11 @@ def node_list_tuples(request, project_id=None):
                 treenode_connector.treenode_id AS tnid,
                 treenode_connector.confidence AS tc_confidence,
                 connector.user_id AS user_id
-            FROM treenode
-                 INNER JOIN treenode_connector ON treenode.id = treenode_connector.treenode_id
-                 INNER JOIN connector ON treenode_connector.connector_id = connector.id
-            WHERE treenode.id IN (%s)''' % ','.join(str(x) for x in treenode_ids))
+            FROM treenode_connector,
+                 connector
+            WHERE treenode_connector.treenode_id IN (%s)
+              AND treenode_connector.connector_id = connector.id
+            ''' % ','.join(str(x) for x in treenode_ids))
 
             for row in cursor.fetchall():
                 crows.append(row)

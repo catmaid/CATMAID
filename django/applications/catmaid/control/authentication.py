@@ -50,6 +50,7 @@ def login_user(request):
                 # Add some context information
                 profile_context['id'] = request.session.session_key
                 profile_context['longname'] = user.get_full_name()
+                profile_context['userid'] = user.id
                 return HttpResponse(json.dumps(profile_context))
             else:
                # Return a 'disabled account' error message
@@ -66,6 +67,7 @@ def login_user(request):
         if request.user.is_authenticated():
             profile_context['id'] = request.session.session_key
             profile_context['longname'] = request.user.get_full_name()
+            profile_context['userid'] = request.user.id
             return HttpResponse(json.dumps(profile_context))
         else:
             # Return a 'not logged in' warning message.

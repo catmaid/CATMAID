@@ -2024,6 +2024,12 @@ SplitDialog.prototype.populate = function() {
             big.appendChild(create_cb(annotation, true));
             small.appendChild(create_cb(annotation, false));
           });
+          // If there is no annotation, add a note
+          if (json.length == 0) {
+            var msg = "no annotations found";
+            big.appendChild(document.createTextNode(msg));
+            small.appendChild(document.createTextNode(msg));
+          }
         }
       }
     });

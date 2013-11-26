@@ -546,7 +546,7 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
 
 SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
-  var dialog = new SplitDialog(SkeletonAnnotations.sourceView.createModel());
+  var dialog = new SplitMergeDialog(SkeletonAnnotations.sourceView.createModel());
   var self = this;
   dialog.onOK = function() {
     if (!confirm("Do you really want to split the skeleton?")) return;
@@ -1897,7 +1897,7 @@ window.OptionsDialog.prototype.appendField = function(title, fieldID, initialVal
 };
 
 
-var SplitDialog = function(model1, model2) {
+var SplitMergeDialog = function(model1, model2) {
   // Models object
   this.models = {};
   this.models[model1.id] = model1;
@@ -1911,9 +1911,9 @@ var SplitDialog = function(model1, model2) {
   this.height = parseInt(UI.getFrameHeight() * 0.8);
 };
 
-SplitDialog.prototype = {};
+SplitMergeDialog.prototype = {};
 
-SplitDialog.prototype.populate = function() {
+SplitMergeDialog.prototype.populate = function() {
   // Annotation list boxes
   var titleBig = document.createElement('div'),
       titleSmall = document.createElement('div'),
@@ -2037,7 +2037,7 @@ SplitDialog.prototype.populate = function() {
   return this;
 };
 
-SplitDialog.prototype.get_annotation_set = function(over) {
+SplitMergeDialog.prototype.get_annotation_set = function(over) {
   var tag = over ? 'over' : 'under';
   var over_checkboxes = $(this.dialog).find('#split_merge_dialog_' +
       tag + '_annotations input[type=checkbox]').toArray();
@@ -2049,11 +2049,11 @@ SplitDialog.prototype.get_annotation_set = function(over) {
   return annotations;
 }
 
-SplitDialog.prototype.get_over_annotation_set = function() {
+SplitMergeDialog.prototype.get_over_annotation_set = function() {
   return this.get_annotation_set(true);
 }
 
-SplitDialog.prototype.get_under_annotation_set = function() {
+SplitMergeDialog.prototype.get_under_annotation_set = function() {
   return this.get_annotation_set(false);
 }
 
@@ -2063,7 +2063,7 @@ SplitDialog.prototype.get_under_annotation_set = function() {
  * annotations. One part keeps all annotations if all its checkboxes are
  * checked.
  */
-SplitDialog.prototype.check_annotations = function() {
+SplitMergeDialog.prototype.check_annotations = function() {
   // Define a test function every checkbox should be tested against
   var checked_test = function(cb) {
     return cb.checked;
@@ -2084,7 +2084,7 @@ SplitDialog.prototype.check_annotations = function() {
   return false;
 };
 
-SplitDialog.prototype.show = function() {
+SplitMergeDialog.prototype.show = function() {
   var self = this;
   $(this.dialog).dialog({
     width: self.width,

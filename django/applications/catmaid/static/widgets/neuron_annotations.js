@@ -288,8 +288,11 @@ NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
             alert("The server returned an unexpected status (" +
               status + ") " + "with error message:\n" + text);
         } else {
+          var annotations = e.map(function(aobj) {
+            return aobj.aname;
+          });
           $(input).autocomplete({
-            source: e
+            source: annotations
           });
         }
       });

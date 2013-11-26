@@ -2007,22 +2007,23 @@ SplitMergeDialog.prototype.populate = function() {
           alert(json.error);
         } else {
           // Create annotation check boxes
-          json.forEach(function(annotation) {
-            var create_cb = function(label_text, checked) {
+          json.forEach(function(aobj) {
+            var create_cb = function(a_info, checked) {
               var cb_label = document.createElement('label');
               cb_label.style.cssFloat = 'left';
               cb_label.style.clear = 'left';
               var cb = document.createElement('input');
               cb.checked = checked;
               cb.setAttribute('class', 'split_skeleton_annotation');
-              cb.setAttribute('annotation', label_text);
+              cb.setAttribute('annotation', a_info.aname);
               cb.setAttribute('type', 'checkbox');
               cb_label.appendChild(cb);
-              cb_label.appendChild(document.createTextNode(label_text));
+              cb_label.appendChild(document.createTextNode(
+                  a_info.aname + ' (by ' + a_info.uname + ')'));
               return cb_label;
             };
-            big.appendChild(create_cb(annotation, true));
-            small.appendChild(create_cb(annotation, false));
+            big.appendChild(create_cb(aobj, true));
+            small.appendChild(create_cb(aobj, false));
           });
           // If there is no annotation, add a note
           if (json.length == 0) {

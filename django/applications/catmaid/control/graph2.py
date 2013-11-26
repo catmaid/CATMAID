@@ -228,7 +228,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
     # Now fetch all treenodes of all skeletons to expand
     cursor.execute('''
-    SELECT skeleton_id, id, parent_id, confidence, location
+    SELECT skeleton_id, id, parent_id, confidence, (location).x, (location).y, (location).z
     FROM treenode
     WHERE project_id = %s
       AND skeleton_id IN (%s)
@@ -248,7 +248,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
     for row in cursor.fetchall():
         if row[0] == current_skid:
             # Build the tree, breaking it at the low-confidence edges
-            locations[row[1]] = tuple(imap(float, row[4][1:-1].split(',')))
+            locations[row[1]] = row[4:]
             if row[2] and row[3] >= confidence_threshold:
                     tree.add_edge(row[2], row[1])
             continue
@@ -262,7 +262,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
         current_skid = row[0]
         tree = nx.DiGraph()
         locations = {}
-        locations[row[1]] = tuple(imap(float, row[4][1:-1].split(',')))
+        locations[row[1]] = row[4:]
         if row[2] and row[3] > confidence_threshold:
             tree.add_edge(row[2], row[1])
 

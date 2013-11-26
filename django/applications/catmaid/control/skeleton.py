@@ -170,22 +170,6 @@ def split_skeleton(request, project_id=None):
         raise Exception("Annotation distribution is not valid for splitting. " \
           "One part has to keep the whole set of annotations!")
 
-    # The split is only possible if the user owns the treenode or the skeleton
-    # or the skeleton is under fragments or in the user's staging area
-    # Ordered from cheap to expensive query
-    try:
-        # Check if user can edit the skeleton
-        can_edit_or_fail(request.user, skeleton_id, "class_instance")
-    except:
-        try:
-            # Check if user can edit the treenode
-            can_edit_or_fail(request.user, treenode_id, "treenode")
-        except:
-            if not _under_fragments(skeleton_id):
-                # Check skeleton under user's staging area (indirect ownership)
-                if not _under_staging_area(skeleton_id, request.user):
-                    raise Exception("User '%s' can't edit skeleton #%s at node #%s:\nThe user doesn't own the skeleton or the node;\nthe skeleton is not under fragments;\nand the skeleton is not under the user's staging group." % (request.user.username, skeleton_id, treenode_id))
-
     skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
     project_id=int(project_id)
 
@@ -193,6 +177,16 @@ def split_skeleton(request, project_id=None):
     neuron = ClassInstance.objects.get(
         cici_via_b__relation__relation_name='model_of',
         cici_via_b__class_instance_a_id=skeleton_id)
+
+    # The split is only possible if the neuron is not locked
+    locked_by_others_qs = ClassInstanceClassInstance.objects.filter(
+        class_instance_a=neuron, class_instance_b__name='locked').exclude(
+            user=request.user)
+    if locked_by_others_qs.exists():
+        raise Exception("User '%s' can't edit skeleton #%s at node #%s:\n" \
+            "The neuron is locked and the user isn't the one who locked it." \
+            % (request.user.username, skeleton_id, treenode_id))
+
     # retrieve the id, parent_id of all nodes in the skeleton
     # with minimal ceremony
     cursor.execute('''

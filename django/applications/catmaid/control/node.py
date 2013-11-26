@@ -268,9 +268,8 @@ def node_list_tuples(request, project_id=None):
                 cursor.execute('''
                 SELECT treenode.id, class_instance.name
                 FROM treenode, class_instance, treenode_class_instance
-                WHERE relation.id = %s
+                WHERE treenode_class_instance.relation_id = %s
                   AND treenode.id IN (%s)
-                  AND relation.id = treenode_class_instance.relation_id
                   AND treenode_class_instance.treenode_id = treenode.id
                   AND class_instance.id = treenode_class_instance.class_instance_id
                 ''' % (relation_map['labeled_as'], visible))
@@ -283,9 +282,8 @@ def node_list_tuples(request, project_id=None):
                 cursor.execute('''
                 SELECT connector.id, class_instance.name
                 FROM connector, class_instance, connector_class_instance
-                WHERE relation.id = %s
+                WHERE connector_class_instance.relation_id = %s
                   AND connector.id IN (%s)
-                  AND relation.id = connector_class_instance.relation_id
                   AND connector_class_instance.connector_id = connector.id
                   AND class_instance.id = connector_class_instance.class_instance_id
                 ''' % (relation_map['labeled_as'], visible))

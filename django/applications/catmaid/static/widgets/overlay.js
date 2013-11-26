@@ -546,25 +546,52 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
 
 SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
-  var dialog = new SplitMergeDialog(SkeletonAnnotations.sourceView.createModel());
-  var self = this;
-  dialog.onOK = function() {
-    if (!confirm("Do you really want to split the skeleton?")) return;
-    self.submit(
-        django_url + project.id + '/skeleton/split',
-        {
-          treenode_id: nodeID,
-          over_annotation_set: dialog.get_over_annotation_set(),
-          under_annotation_set: dialog.get_under_annotation_set(),
-        },
-        function () {
-          self.updateNodes();
-          ObjectTree.refresh();
-          self.selectNode(nodeID);
-        },
-        true); // block UI
-  };
-  dialog.show();
+  // Get ID of the first model available
+  var model = SkeletonAnnotations.sourceView.createModel()
+  // Make sure the neuron the skeleton models is not locked by a different user
+  requestQueue.register(django_url + project.id +  '/annotations/list',
+    'POST', {'skeleton_id': model.id}, (function(status, text) {
+      if (status !== 200) {
+        alert("Unexpected status code: " + status);
+        return false;
+      }
+      if (text && text !== " ") {
+        var annotations = $.parseJSON(text);
+        if (annotations.error) {
+          alert(annotations.error);
+        } else {
+          /* Make sure the user is not locked by another user */
+          var is_locked_by_other = annotations.some(function(a) {
+            return a.aname === 'locked' && a.uid !== session.userid;
+          });
+          if (is_locked_by_other) {
+            alert("This skeleton is locked by another user. " +
+                "You don't have permission to split it.");
+            return;
+          }
+          /* Create the dialog */
+          var dialog = new SplitMergeDialog(model);
+          var self = this;
+          dialog.onOK = function() {
+            if (!confirm("Do you really want to split the skeleton?")) return;
+            self.submit(
+                django_url + project.id + '/skeleton/split',
+                {
+                  treenode_id: nodeID,
+                  over_annotation_set: dialog.get_over_annotation_set(),
+                  under_annotation_set: dialog.get_under_annotation_set(),
+                },
+                function () {
+                  self.updateNodes();
+                  ObjectTree.refresh();
+                  self.selectNode(nodeID);
+                },
+                true); // block UI
+          };
+          dialog.show();
+        }
+      }
+    }).bind(this));
 };
 
 /** Used to join two skeletons together.

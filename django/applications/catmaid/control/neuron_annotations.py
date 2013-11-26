@@ -285,8 +285,8 @@ def list_annotations(request, project_id=None):
     annotation_query = create_annotation_query(project_id, request.POST)
     annotation_tuples = annotation_query.distinct().values_list('name',
         'cici_via_b__user__id', 'cici_via_b__user__username')
-    annotations = [{ 'aname': an, 'uid': uid, 'uname': un } for an, uid, un in \
-        annotation_tuples]
+    annotations = [{ 'aname': an, 'uid': uid, 'uname': un } \
+        for an, uid, un in annotation_tuples]
     return HttpResponse(json.dumps(annotations), mimetype="text/json")
 
 @requires_user_role([UserRole.Browse])

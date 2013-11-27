@@ -109,8 +109,12 @@ def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
                 relation__relation_name='model_of',
                 project=p,
                 class_instance_a=int(skeleton_id)).select_related("class_instance_b")
-    return {'neuronname': qs[0].class_instance_b.name,
-        'neuronid': qs[0].class_instance_b.id }
+    try:
+        return {'neuronname': qs[0].class_instance_b.name,
+            'neuronid': qs[0].class_instance_b.id }
+    except IndexError:
+        raise Exception("Couldn't find a neuron linking to a skeleton with " \
+                "ID %s" % skeleton_id)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronname(request, project_id=None, skeleton_id=None):

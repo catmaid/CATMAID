@@ -600,22 +600,37 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
   if (fromid === toid) return;
   if (!this.nodes.hasOwnProperty(toid)) return;
   var self = this;
-  this.maybeExecuteIfSkeletonHasMoreThanOneNode(
-      toid,
-      "join",
-      function() {
-        // The call to join will reroot the target skeleton at the shift-clicked treenode
-        self.submit(
-          django_url + project.id + '/skeleton/join',
-          {from_id: fromid,
-           to_id: toid},
-          function (json) {
-            self.updateNodes(function() {
-              ObjectTree.refresh();
-              self.selectNode(toid);
-            });
-          });
-      });
+  // Get neuron name and id of the to-skeleton
+  self.submit(
+    django_url + project.id + '/treenode/info',
+    {treenode_id: toid},
+    function(json) {
+      var from_model = SkeletonAnnotations.sourceView.createModel();
+      var to_color = new THREE.Color().setRGB(1, 0, 1);
+      var to_model = new SelectionTable.prototype.SkeletonModel(
+          json['skeleton_id'], json['neuron_name'], to_color);
+      var dialog = new SplitMergeDialog(from_model, to_model);
+      dialog.onOK = function() {
+        if (!confirm("Do you really want to merge the skeletons?")) return;
+          // The call to join will reroot the target skeleton at the shift-clicked treenode
+          self.submit(
+            django_url + project.id + '/skeleton/join',
+            {
+              from_id: fromid,
+              to_id: toid,
+              over_annotation_set: dialog.get_over_annotation_set(),
+              under_annotation_set: dialog.get_under_annotation_set(),
+            },
+            function (json) {
+              self.updateNodes(function() {
+                ObjectTree.refresh();
+                self.selectNode(toid);
+              });
+            },
+            true); // block UI
+      };
+      dialog.show();
+    });
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, link_type) {

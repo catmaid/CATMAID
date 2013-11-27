@@ -1928,11 +1928,22 @@ var SplitMergeDialog = function(model1, model2) {
   // Models object
   this.models = {};
   this.models[model1.id] = model1;
-  if (model2) models[model2.id] = model2;
+  this.model1_id = model1.id;
+  if (model2) {
+    this.models[model2.id] = model2;
+    this.model2_id = model2.id;
+    this.in_merge_mode = true;
+  } else {
+    this.in_merge_mode = false;
+  }
   // Basic dialog setup
   this.dialog = document.createElement('div');
   this.dialog.setAttribute("id", "skeleton-split-merge-dialog");
-  this.dialog.setAttribute("title", "Split skeleton");
+  if (this.in_merge_mode) {
+    this.dialog.setAttribute("title", "Merge skeletons");
+  } else {
+    this.dialog.setAttribute("title", "Split skeleton");
+  }
   // Dialog dimensions
   this.width = parseInt(UI.getFrameWidth() * 0.8);
   this.height = parseInt(UI.getFrameHeight() * 0.8);
@@ -1996,13 +2007,11 @@ SplitMergeDialog.prototype.populate = function() {
       'dialog-3d-view'); // add to the right
   this.webglapp.options.shading_method = 'active_node_split';
   this.webglapp.look_at_active_node();
-  // Get ID of the first model available
-  var model1_id = Object.keys(this.models)[0];
   // Add skeletons and do things depending on the success of this in a
   // callback function.
   this.webglapp.addSkeletons(this.models, (function() {
     // Splitting data
-    var skeleton = this.webglapp.space.content.skeletons[model1_id],
+    var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
         arbor = skeleton.createArbor(),
         under_count = arbor.subArbor(SkeletonAnnotations.getActiveNodeId()).countNodes(),
         over_count = arbor.countNodes() - under_count;
@@ -2012,55 +2021,71 @@ SplitMergeDialog.prototype.populate = function() {
     titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
     // Color the small and big node cound boxes
     titleBig.style.backgroundColor = '#' + skeleton.getActorColorAsHTMLHex();
-    var bc = this.webglapp.getSkeletonColor(model1_id);
-    // Convert the big arbor color to 8 bit and weight it by 0.5. Since the 3D
-    // viewer multiplies this weight by 0.9 and adds 0.1, we do the same.
-    var sc_8bit = [bc.r, bc.g, bc.b].map(function(c) {
-      return parseInt(c * 255 * 0.55);
-    });
-    titleSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
+    if (this.in_merge_mode) {
+      var skeleton2 = this.webglapp.space.content.skeletons[this.model2_id];
+      titleSmall.style.backgroundColor = '#' + skeleton2.getActorColorAsHTMLHex();
+    } else {
+      var bc = this.webglapp.getSkeletonColor(this.model1_id);
+      // Convert the big arbor color to 8 bit and weight it by 0.5. Since the 3D
+      // viewer multiplies this weight by 0.9 and adds 0.1, we do the same.
+      var sc_8bit = [bc.r, bc.g, bc.b].map(function(c) {
+        return parseInt(c * 255 * 0.55);
+      });
+      titleSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
+    }
   }).bind(this));
 
-  // Get all annotations and fill the list boxes
-  requestQueue.register(django_url + project.id +  '/annotations/list',
-    'POST', {'skeleton_id': model1_id}, function(status, text) {
-      if (status !== 200) {
-        alert("Unexpected status code: " + status);
-        return false;
-      }
-      if (text && text !== " ") {
-        var json = $.parseJSON(text);
-        if (json.error) {
-          alert(json.error);
-        } else {
-          // Create annotation check boxes
-          json.forEach(function(aobj) {
-            var create_cb = function(a_info, checked) {
-              var cb_label = document.createElement('label');
-              cb_label.style.cssFloat = 'left';
-              cb_label.style.clear = 'left';
-              var cb = document.createElement('input');
-              cb.checked = checked;
-              cb.setAttribute('class', 'split_skeleton_annotation');
-              cb.setAttribute('annotation', a_info.aname);
-              cb.setAttribute('type', 'checkbox');
-              cb_label.appendChild(cb);
-              cb_label.appendChild(document.createTextNode(
-                  a_info.aname + ' (by ' + a_info.uname + ')'));
-              return cb_label;
-            };
-            big.appendChild(create_cb(aobj, true));
-            small.appendChild(create_cb(aobj, false));
-          });
-          // If there is no annotation, add a note
-          if (json.length == 0) {
-            var msg = "no annotations found";
-            big.appendChild(document.createTextNode(msg));
-            small.appendChild(document.createTextNode(msg));
+  // Get all annotations for the first model and fill the list boxes
+  var add_annotations_fn = function(skid, listboxes) {
+    requestQueue.register(django_url + project.id +  '/annotations/list',
+      'POST', {'skeleton_id': skid}, function(status, text) {
+        if (status !== 200) {
+          alert("Unexpected status code: " + status);
+          return false;
+        }
+        if (text && text !== " ") {
+          var json = $.parseJSON(text);
+          if (json.error) {
+            alert(json.error);
+          } else {
+            // Create annotation check boxes
+            json.forEach(function(aobj) {
+              var create_cb = function(a_info, checked) {
+                var cb_label = document.createElement('label');
+                cb_label.style.cssFloat = 'left';
+                cb_label.style.clear = 'left';
+                var cb = document.createElement('input');
+                cb.checked = checked;
+                cb.setAttribute('class', 'split_skeleton_annotation');
+                cb.setAttribute('annotation', a_info.aname);
+                cb.setAttribute('type', 'checkbox');
+                cb_label.appendChild(cb);
+                cb_label.appendChild(document.createTextNode(
+                    a_info.aname + ' (by ' + a_info.uname + ')'));
+                return cb_label;
+              };
+              listboxes.forEach(function(lb) {
+                lb.obj.appendChild(create_cb(aobj, lb.checked));
+              });
+            });
+            // If there is no annotation, add a note
+            if (json.length == 0) {
+              var msg = "no annotations found";
+              listboxes.forEach(function(lb) {
+                lb.obj.appendChild(document.createTextNode(msg));
+              });
+            }
           }
         }
-      }
-    });
+      });
+    };
+    if (this.in_merge_mode) {
+      add_annotations_fn(this.model1_id, [{obj: big, checked: true}]);
+      add_annotations_fn(this.model2_id, [{obj: small, checked: true}]);
+    } else {
+      add_annotations_fn(this.model1_id,
+          [{obj: big, checked: true}, {obj: small, checked: false}]);
+    }
 
   return this;
 };
@@ -2091,7 +2116,7 @@ SplitMergeDialog.prototype.get_under_annotation_set = function() {
  * annotations. One part keeps all annotations if all its checkboxes are
  * checked.
  */
-SplitMergeDialog.prototype.check_annotations = function() {
+SplitMergeDialog.prototype.check_split_annotations = function() {
   // Define a test function every checkbox should be tested against
   var checked_test = function(cb) {
     return cb.checked;
@@ -2112,6 +2137,24 @@ SplitMergeDialog.prototype.check_annotations = function() {
   return false;
 };
 
+SplitMergeDialog.prototype.check_merge_annotations = function() {
+  // Define a test function every checkbox should be tested against
+  var checked_test = function(cb) {
+    return cb.checked;
+  };
+  // Test over annotation set
+  var $over_checkboxes = $(this.dialog).find(
+      '#split_merge_dialog_over_annotations input[type=checkbox]');
+  var all_over_annotations = $over_checkboxes.toArray().every(checked_test);
+
+  // Test under annotation set
+  var $under_checkboxes = $(this.dialog).find(
+      '#split_merge_dialog_under_annotations input[type=checkbox]');
+  var all_under_annotations = $under_checkboxes.toArray().every(checked_test);
+
+  return all_over_annotations && all_under_annotations;
+}
+
 SplitMergeDialog.prototype.show = function() {
   var self = this;
   $(this.dialog).dialog({
@@ -2125,7 +2168,10 @@ SplitMergeDialog.prototype.show = function() {
         if (self.onCancel) self.onCancel();
       },
       "OK": function() {
-        if (!self.check_annotations()) {
+        if (self.in_merge_mode && !self.check_merge_annotations()) {
+          alert("The selected annotation configuration isn't valid. " +
+              "No annotation can be lost.");
+        } else if (!self.in_merge_mode && !self.check_split_annotations()) {
           alert("The selected annotation configuration isn't valid. " +
               "One part has to keep all annotations.");
         } else {

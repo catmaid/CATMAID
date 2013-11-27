@@ -522,6 +522,13 @@ var WindowMaker = new function()
     colorMenu.onchange = WA.updateSkeletonColors.bind(WA, colorMenu);
     buttons.appendChild(colorMenu);
 
+    buttons.appendChild(document.createTextNode(" Synapse color:"));
+    var synColors = document.createElement('select');
+    synColors.options.add(new Option('Type: pre/red, post/cyan', 'cyan-red'));
+    synColors.options.add(new Option('N with partner: pre[red > blue], post[yellow > cyan]', 'by-amount'));
+    synColors.onchange = WA.updateConnectorColors.bind(WA, synColors);
+    buttons.appendChild(synColors);
+
     var map = document.createElement('input');
     map.setAttribute("type", "button");
     map.setAttribute("value", "User colormap");

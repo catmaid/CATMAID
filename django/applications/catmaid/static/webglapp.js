@@ -132,6 +132,7 @@ WebGLApplication.prototype.Options = function() {
 	this.connector_filter = false;
   this.shading_method = 'none';
   this.color_method = 'none';
+  this.connector_color = 'cyan-red';
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -1699,15 +1700,16 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     this.geometry['neurite'].colorsNeedUpdate = true;
     this.actor['neurite'].material.color = new THREE.Color().setHex(0xffffff);
-    this.actor['neurite'].material.needsUpdate = true;
+    this.actor['neurite'].material.needsUpdate = true; // TODO repeated, it's the line_material
 
   } else {
     // Display the entire skeleton with a single color.
+    this.geometry['neurite'].colors = [];
     this.line_material.vertexColors = THREE.NoColors;
     this.line_material.needsUpdate = true;
     
     this.actor['neurite'].material.color = this.actorColor;
-    this.actor['neurite'].material.needsUpdate = true;
+    this.actor['neurite'].material.needsUpdate = true; // TODO repeated it's the line_material
 
     var material = new THREE.MeshBasicMaterial({color: this.actorColor, opacity:1.0, transparent:false});
 
@@ -1724,6 +1726,149 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeColor = func
 	if (options.color_method === 'manual') {
 		this.updateSkeletonColor(options);
 	}
+};
+
+WebGLApplication.prototype.updateConnectorColors = function(select) {
+  this.options.connector_color = select.value;
+  var skeletons = Object.keys(this.space.content.skeletons).map(function(skid) {
+    return this.space.content.skeletons[skid];
+  }, this);
+  this.space.updateConnectorColors(this.options, skeletons, this.space.render.bind(this.space));
+};
+
+WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(options, skeletons, callback) {
+  if ('cyan-red' === options.connector_color) {
+    var pre = this.staticContent.synapticColors[0],
+        post = this.staticContent.synapticColors[1];
+
+    pre.color.setRGB(1, 0, 0); // red
+    pre.vertexColors = THREE.NoColors;
+    pre.needsUpdate = true;
+
+    post.color.setRGB(0, 1, 1); // cyan
+    post.vertexColors = THREE.NoColors;
+    post.needsUpdate = true;
+
+    skeletons.forEach(function(skeleton) {
+      skeleton.completeUpdateConnectorColor(options);
+    });
+
+    if (callback) callback();
+
+  } else if ('by-amount') {
+
+    var skids = skeletons.map(function(skeleton) { return skeleton.id; });
+    
+    if (skids.length > 1) $.blockUI();
+
+    requestQueue.register(django_url + project.id + "/skeleton/connectors-by-partner",
+        "POST",
+        {skids: skids},
+        (function(status, text) {
+          try {
+            if (200 !== status) return;
+            var json = $.parseJSON(text);
+            if (json.error) return alert(json.error);
+
+            skeletons.forEach(function(skeleton) {
+              skeleton.completeUpdateConnectorColor(options, json[skeleton.id]);
+            });
+
+            if (callback) callback();
+          } catch (e) {
+            console.log(e, e.stack);
+            alert(e);
+          }
+          $.unblockUI();
+        }).bind(this));
+  }
+};
+
+/** Operates in conjunction with updateConnectorColors above. */
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConnectorColor = function(options, json) {
+  if ('cyan-red' === options.connector_color) {
+    this.CTYPES.slice(1).forEach(function(type, i) {
+      this.geometry[type].colors = [];
+      this.geometry[type].colorsNeedUpdate = true;
+      this.actor[type].material.vertexColors = THREE.NoColors;
+      this.actor[type].material.color = this.synapticColors[this.CTYPES[1] === type ? 0 : 1].color;
+      this.actor[type].material.needsUpdate = true;
+    }, this);
+
+    Object.keys(this.synapticSpheres).forEach(function(idx) {
+      var mesh = this.synapticSpheres[idx];
+      mesh.material = this.synapticColors[this.CTYPES[1] === mesh.type ? 0 : 1];
+    }, this);
+
+  } else if ('by-amount' === options.connector_color) {
+    var ranges = {};
+    ranges[this.CTYPES[1]] = function(ratio) {
+      return 0.66 + 0.34 * ratio; // 0.66 (blue) to 1 (red)
+    };
+    ranges[this.CTYPES[2]] = function(ratio) {
+      return 0.16 + 0.34 * (1 - ratio); //  0.5 (cyan) to 0.16 (yellow)
+    };
+
+    this.CTYPES.slice(1).forEach(function(type, k) {
+      var partners = json[type],
+          connectors = Object.keys(partners).reduce(function(o, skid) {
+            return partners[skid].reduce(function(a, connector_id, i, arr) {
+              a[connector_id] = arr.length;
+              return a;
+            }, o);
+          }, {}),
+          max = Object.keys(connectors).reduce(function(m, connector_id) {
+            return Math.max(m, connectors[connector_id]);
+          }, 0),
+          range = ranges[type];
+
+      // Set colors per-vertex
+
+      var seen = {},
+          seen_materials = {},
+          colors = [],
+          vertices = this.geometry[type].vertices;
+
+      for (var i=0; i<vertices.length; i+=2) {
+        var node_id = vertices[i+1].node_id,
+            connector_id = vertices[i].node_id,
+            value = connectors[connector_id];
+
+        if (!value) value = 1; // connector without partner skeleton
+        
+        var color = seen[value];
+
+        if (!color) {
+          color = new THREE.Color().setHSL(1 === max ? range(0) : range((value -1) / (max -1)), 1, 0.5);
+          seen[value] = color;
+        }
+
+        // twice: for treenode and for connector
+        colors.push(color);
+        colors.push(color);
+
+        var mesh = this.synapticSpheres[node_id];
+        if (mesh) {
+          mesh.material.color = color;
+          mesh.material.needsUpdate = true;
+          var material = seen_materials[value];
+          if (!material) {
+            material = mesh.material.clone();
+            material.color = color;
+            seen_materials[value] = material;
+          }
+          mesh.setMaterial(material);
+        }
+      }
+
+      this.geometry[type].colors = colors;
+      this.geometry[type].colorsNeedUpdate = true;
+      var material = new THREE.LineBasicMaterial({color: 0xffffff, opacity: 1.0, linewidth: 6});
+      material.vertexColors = THREE.VertexColors;
+      material.needsUpdate = true;
+      this.actor[type].material = material;
+    }, this);
+  }
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.addCompositeActorToScene = function() {
@@ -2011,6 +2156,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.show = function(op
 	this.setTextVisibility( this.skeletonmodel.text_visible ); // the text labels
 
   this.updateSkeletonColor(options);
+
+  // Will query the server
+  if ('cyan-red' !== options.connector_color) this.space.updateConnectorColors(options, [this]);
 };
 
 WebGLApplication.prototype.usercolormap_dialog = function() {

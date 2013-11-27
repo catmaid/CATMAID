@@ -640,3 +640,34 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, format=No
 
     return HttpResponse(json.dumps(segments))
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeleton_connectors_by_partner(request, project_id):
+    """ Return a dict of requested skeleton vs relation vs partner skeleton vs list of connectors.
+    Connectors lacking a skeleton partner will of course not be included. """
+    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+    cursor = connection.cursor()
+
+    cursor.execute('''
+    SELECT id, relation_name FROM relation WHERE relation_name = 'postsynaptic_to' OR relation_name = 'presynaptic_to'
+    ''')
+    relations = dict(cursor.fetchall())
+
+    cursor.execute('''
+    SELECT tc1.skeleton_id, tc1.relation_id,
+           tc2.skeleton_id, tc1.connector_id
+    FROM treenode_connector tc1,
+         treenode_connector tc2
+    WHERE tc1.skeleton_id IN (%s)
+      AND tc1.connector_id = tc2.connector_id
+      AND tc1.skeleton_id != tc2.skeleton_id
+      AND tc1.relation_id != tc2.relation_id
+    ''' % ','.join(str(skid) for skid in skeleton_ids))
+
+    # Dict of skeleton vs relation vs skeleton vs list of connectors
+    partners = defaultdict(partial(defaultdict, partial(defaultdict, list)))
+
+    for row in cursor.fetchall():
+        partners[row[0]][relations[row[1]]][row[2]].append(row[3])
+
+    return HttpResponse(json.dumps(partners))
+

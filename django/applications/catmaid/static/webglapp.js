@@ -1810,8 +1810,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
     };
 
     this.CTYPES.slice(1).forEach(function(type, k) {
-      var partners = json[type],
-          connectors = Object.keys(partners).reduce(function(o, skid) {
+      var partners = json[type];
+      if (!partners) return;
+      var connectors = Object.keys(partners).reduce(function(o, skid) {
             return partners[skid].reduce(function(a, connector_id, i, arr) {
               a[connector_id] = arr.length;
               return a;

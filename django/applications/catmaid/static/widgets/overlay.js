@@ -628,7 +628,19 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
           },
           true); // block UI
       };
-      dialog.show();
+      // Extend the display with the newly created line
+      var extension = {};
+      var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
+          c = self.nodes[toid];
+      extension[from_model.id] = [
+          new THREE.Vector3(self.pix2physX(p.x),
+                            self.pix2physY(p.y),
+                            self.pix2physZ(p.z)),
+          new THREE.Vector3(self.pix2physX(c.x),
+                            self.pix2physY(c.y),
+                            self.pix2physZ(c.z))
+      ];
+      dialog.show(extension);
     });
 };
 
@@ -1561,7 +1573,19 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
               self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
                   nearestnode_id, annotation_set);
             };
-            dialog.show();
+            // Extend the display with the newly created line
+            var extension = {};
+            var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
+                c = self.nodes[nearestnode_id];
+            extension[from_model.id] = [
+                new THREE.Vector3(self.pix2physX(p.x),
+                                  self.pix2physY(p.y),
+                                  self.pix2physZ(p.z)),
+                new THREE.Vector3(self.pix2physX(c.x),
+                                  self.pix2physY(c.y),
+                                  self.pix2physZ(c.z))
+            ];
+            dialog.show(extension);
           });
         return;
       } else {
@@ -1980,7 +2004,7 @@ var SplitMergeDialog = function(model1, model2) {
 
 SplitMergeDialog.prototype = {};
 
-SplitMergeDialog.prototype.populate = function() {
+SplitMergeDialog.prototype.populate = function(extension) {
   // Annotation list boxes
   var titleBig = document.createElement('div'),
       titleSmall = document.createElement('div'),
@@ -2061,6 +2085,26 @@ SplitMergeDialog.prototype.populate = function() {
         return parseInt(c * 255 * 0.55);
       });
       titleSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
+    }
+
+    // Extend skeletons: Unfortunately, it is not possible right now to add new
+    // points to existing meshes in THREE. Therefore, a new line is created.
+    if (extension) {
+      var pairs = extension[this.model1_id];
+      if (pairs) {
+        // Create new line representing interpolated link
+        var geometry = new THREE.Geometry();
+        pairs.forEach(function(v) {
+          geometry.vertices.push(this.webglapp.space.toSpace(v.clone()));
+        }, this);
+        var material = new THREE.LineBasicMaterial({
+          color: 0x00ff00,
+          linewidth: 3,
+        });
+        skeleton.space.add(new THREE.Line(geometry, material, THREE.LinePieces));
+        // Update view
+        skeleton.space.render();
+      }
     }
   }).bind(this));
 
@@ -2198,7 +2242,7 @@ SplitMergeDialog.prototype.check_merge_annotations = function() {
   return all_over_annotations && all_under_annotations;
 }
 
-SplitMergeDialog.prototype.show = function() {
+SplitMergeDialog.prototype.show = function(extension) {
   var self = this;
   $(this.dialog).dialog({
     width: self.width,
@@ -2228,5 +2272,5 @@ SplitMergeDialog.prototype.show = function() {
 
   // The dialog is populated after creation, since the 3D viewer expects
   // elements to be added to the DOM.
-  this.populate();
+  this.populate(extension);
 };

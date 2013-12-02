@@ -126,10 +126,11 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
 
     return HttpResponse(json.dumps(response), mimetype='text/json')
 
-def _update_neuron_annotations(project_id, user, neuron, annotations):
+def _update_neuron_annotations(project_id, user, neuron_id, annotations):
     """ Ensure that the neuron is annotated_with only the annotations given.
     """
-    qs = ClassInstanceClassInstance.objects.filter(class_instance_a=neuron,
+    qs = ClassInstanceClassInstance.objects.filter(
+            class_instance_a__id=neuron_id,
             relation__relation_name='annotated_with')
     qs = qs.select_related('class_instance_b').values_list(
             'class_instance_b__name', 'class_instance_b__id')
@@ -140,7 +141,7 @@ def _update_neuron_annotations(project_id, user, neuron, annotations):
     existing = set(existing_annotations.iterkeys())
 
     missing = annotations - existing
-    _annotate_neurons(project_id, user, [neuron], missing)
+    _annotate_neurons(project_id, user, [neuron_id], missing)
 
     to_delete = existing - annotations
     to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \
@@ -149,7 +150,7 @@ def _update_neuron_annotations(project_id, user, neuron, annotations):
     ClassInstanceClassInstance.objects.filter(class_instance_b__in=to_delete_ids).delete()
 
 
-def _annotate_neurons(project_id, user, neurons, annotations):
+def _annotate_neurons(project_id, user, neuron_ids, annotations):
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')
 
@@ -163,10 +164,13 @@ def _annotate_neurons(project_id, user, neurons, annotations):
                 defaults={'user': user});
         # Annotate each of the neurons. Avoid duplicates for the current user,
         # but it's OK for multiple users to annotate with the same instance.
-        for neuron in neurons:
+        for neuron_id in neuron_ids:
             cici, created = ClassInstanceClassInstance.objects.get_or_create(
-                    project_id=project_id, relation=r, class_instance_a=neuron,
-                    class_instance_b=ci, user=user);
+                    project_id=project_id, relation=r,
+                    class_instance_a__id=neuron_id,
+                    class_instance_a__class_column__class_name='neuron',
+                    class_instance_b=ci, user=user,
+                    defaults={'class_instance_a_id': neuron_id})
             cici.save() # update the last edited time
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -180,19 +184,14 @@ def annotate_neurons(request, project_id = None):
     skeleton_ids = [int(v) for k,v in request.POST.iteritems()
             if k.startswith('skeleton_ids[')]
     
-    # TODO: make neurons a set in case neuron IDs and skeleton IDs overlap?
-    neurons = []
-    if any(neuron_ids):
-        neurons += ClassInstance.objects.filter(project = p,
-                                                class_column__class_name = 'neuron',
-                                                id__in = neuron_ids)
     if any(skeleton_ids):
-        neurons += ClassInstance.objects.filter(project = p,
-                                                class_column__class_name = 'neuron',
-                                                cici_via_b__relation__relation_name = 'model_of',
-                                                cici_via_b__class_instance_a__in = skeleton_ids)
+        neuron_ids += ClassInstance.objects.filter(project = p,
+                class_column__class_name = 'neuron',
+                cici_via_b__relation__relation_name = 'model_of',
+                cici_via_b__class_instance_a__in = skeleton_ids).values_list(
+                        'id', flat=True)
 
-    _annotate_neurons(project_id, request.user, neurons, annotations)
+    _annotate_neurons(project_id, request.user, neuron_ids, annotations)
 
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 

@@ -251,7 +251,7 @@ def split_skeleton(request, project_id=None):
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
 
     # Update annotations of existing neuron to have only over set
-    _update_neuron_annotations(project_id, request.user, neuron, over_annotation_set)
+    _update_neuron_annotations(project_id, request.user, neuron.id, over_annotation_set)
 
     # Update annotations of under skeleton
     _annotate_neurons(project_id, request.user, [new_neuron], under_annotation_set)

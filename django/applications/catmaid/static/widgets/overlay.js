@@ -2125,6 +2125,20 @@ SplitMergeDialog.prototype.get_under_annotation_set = function() {
   return this.get_annotation_set(false);
 }
 
+SplitMergeDialog.prototype.get_combined_annotation_set = function() {
+  // Get both annotation sets
+  var over_set = this.get_over_annotation_set();
+  var under_set = this.get_under_annotation_set();
+  // Combine both, avoid duplicates
+  var combined_set = over_set;
+  under_set.forEach(function(a) {
+    if (combined_set.indexOf(a) === -1) {
+      combined_set.push(a);
+    }
+  });
+  return combined_set;
+}
+
 /**
  * The annotation distribution for a split is only valid if one part keeps the
  * whole set of annotations. This test verifies this agains the cached list of

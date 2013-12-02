@@ -2225,21 +2225,9 @@ SplitMergeDialog.prototype.check_split_annotations = function() {
 };
 
 SplitMergeDialog.prototype.check_merge_annotations = function() {
-  // Define a test function every checkbox should be tested against
-  var checked_test = function(cb) {
-    return cb.checked;
-  };
-  // Test over annotation set
-  var $over_checkboxes = $(this.dialog).find(
-      '#split_merge_dialog_over_annotations input[type=checkbox]');
-  var all_over_annotations = $over_checkboxes.toArray().every(checked_test);
-
-  // Test under annotation set
-  var $under_checkboxes = $(this.dialog).find(
-      '#split_merge_dialog_under_annotations input[type=checkbox]');
-  var all_under_annotations = $under_checkboxes.toArray().every(checked_test);
-
-  return all_over_annotations && all_under_annotations;
+  // At the moment, all combinations of annotations (even selecting none!) are
+  // allowed. If a user is shown the dialog, (s)he can do whatever (s)he wants.
+  return true;
 }
 
 SplitMergeDialog.prototype.show = function(extension) {

@@ -768,7 +768,10 @@ def join_skeleton(request, project_id=None):
     try:
         from_treenode_id = int(request.POST.get('from_id', None))
         to_treenode_id = int(request.POST.get('to_id', None))
-        _join_skeleton(request.user, from_treenode_id, to_treenode_id, project_id)
+        annotation_set = frozenset([v for k,v in request.POST.iteritems()
+                if k.startswith('annotation_set[')])
+        _join_skeleton(request.user, from_treenode_id, to_treenode_id,
+                project_id, annotation_set)
 
         response_on_error = 'Could not log actions.'
 
@@ -781,12 +784,13 @@ def join_skeleton(request, project_id=None):
         raise Exception(response_on_error + ':' + str(e))
 
 
-def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
-    """ Take the IDs of two nodes, each belonging to a different skeleton,
-    and make to_treenode be a child of from_treenode,
-    and join the nodes of the skeleton of to_treenode
-    into the skeleton of from_treenode,
-    and delete the former skeleton of to_treenode."""
+def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
+        annotation_set):
+    """ Take the IDs of two nodes, each belonging to a different skeleton, and
+    make to_treenode be a child of from_treenode, and join the nodes of the
+    skeleton of to_treenode into the skeleton of from_treenode, and delete the
+    former skeleton of to_treenode. All annotations in annotation_set will be
+    linked to the skeleton of to_treenode."""
     if from_treenode_id is None or to_treenode_id is None:
         raise Exception('Missing arguments to _join_skeleton')
 
@@ -860,6 +864,12 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         # Update the parent of to_treenode.
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id
         Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id, editor=user)
+
+        # Update linked annotations of neuron
+        response_on_error = 'Could not update annotations of neuron ' \
+                'with ID %s' % neuron_id
+        _update_neuron_annotations(project_id, user, to_neuron['neuronid'],
+                annotation_set)
 
         insert_into_log(project_id, user.id, 'join_skeleton', from_treenode.location, 'Joined skeleton with ID %s (neuron: %s) into skeleton with ID %s (neuron: %s)' % (to_skid, to_neuron['neuronname'], from_skid, from_neuron['neuronname']) )
 

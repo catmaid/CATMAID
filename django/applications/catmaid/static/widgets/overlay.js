@@ -612,22 +612,21 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
       var dialog = new SplitMergeDialog(from_model, to_model);
       dialog.onOK = function() {
         if (!confirm("Do you really want to merge the skeletons?")) return;
-          // The call to join will reroot the target skeleton at the shift-clicked treenode
-          self.submit(
-            django_url + project.id + '/skeleton/join',
-            {
-              from_id: fromid,
-              to_id: toid,
-              over_annotation_set: dialog.get_over_annotation_set(),
-              under_annotation_set: dialog.get_under_annotation_set(),
-            },
-            function (json) {
-              self.updateNodes(function() {
-                ObjectTree.refresh();
-                self.selectNode(toid);
-              });
-            },
-            true); // block UI
+        // The call to join will reroot the target skeleton at the shift-clicked treenode
+        self.submit(
+          django_url + project.id + '/skeleton/join',
+          {
+            from_id: fromid,
+            to_id: toid,
+            annotation_set: dialog.get_combined_annotation_set(),
+          },
+          function (json) {
+            self.updateNodes(function() {
+              ObjectTree.refresh();
+              self.selectNode(toid);
+            });
+          },
+          true); // block UI
       };
       dialog.show();
     });
@@ -784,6 +783,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
       url = '/skeleton/join_interpolated';
       post.from_id = parent_id;
       post.to_id = q.nearestnode_id;
+      post.annotation_set = q.annotation_set;
     } else {
       url = '/treenode/create/interpolated';
       post.parent_id = parent_id;
@@ -791,11 +791,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
     requestQueue.register(django_url + project.id + url, "POST", post, handler);
   };
 
-  return function (phys_x, phys_y, phys_z, nearestnode_id) {
+  return function (phys_x, phys_y, phys_z, nearestnode_id, annotation_set) {
     queue.push({phys_x: phys_x,
                 phys_y: phys_y,
                 phys_z: phys_z,
                 nearestnode_id: nearestnode_id,
+                annotation_set: annotation_set,
                 self: this});
 
     if (queue.length > 1) {
@@ -1523,7 +1524,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
           this.activateNode(nearestnode);
           return;
         }
-        // If the target skeleton has more than one node, ask for confirmation
         var nearestnode_id = nearestnode.id;
         var nearestnode_skid = nearestnode.skeleton_id;
         var atn_id = atn.id;
@@ -1532,10 +1532,19 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
         var atn_y = atn.y;
         var atn_z = atn.z;
         var self = this;
-        this.maybeExecuteIfSkeletonHasMoreThanOneNode(
-            nearestnode.id,
-            "join",
-            function() {
+        // Ask for merging
+        // Get neuron name and id of the to-skeleton
+        self.submit(
+          django_url + project.id + '/treenode/info',
+          {treenode_id: nearestnode_id},
+          function(json) {
+            var from_model = SkeletonAnnotations.sourceView.createModel();
+            var to_color = new THREE.Color().setRGB(1, 0, 1);
+            var to_model = new SelectionTable.prototype.SkeletonModel(
+                json['skeleton_id'], json['neuron_name'], to_color);
+            var dialog = new SplitMergeDialog(from_model, to_model);
+            dialog.onOK = function() {
+              if (!confirm("Do you really want to merge the skeletons?")) return;
               // Take into account current local offset coordinates and scale
               var pos_x = self.phys2pixX(self.coords.offsetXPhysical);
               var pos_y = self.phys2pixY(self.coords.offsetYPhysical);
@@ -1546,9 +1555,14 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
               // Get physical coordinates for node position creation
               var phys_x = self.pix2physX(pos_x);
               var phys_y = self.pix2physY(pos_y);
+              // Get annotation set for the joined neuron
+              var annotation_set = dialog.get_combined_annotation_set();
               // Ask to join the two skeletons with interpolated nodes
-              self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z, nearestnode_id);
-            });
+              self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
+                  nearestnode_id, annotation_set);
+            };
+            dialog.show();
+          });
         return;
       } else {
         // If shift is not down, just select the node:
@@ -1576,7 +1590,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
   // Get physical coordinates for node position creation
   var phys_x = this.pix2physX(pos_x);
   var phys_y = this.pix2physY(pos_y);
-  this.createInterpolatedNode(phys_x, phys_y, phys_z, null);
+  this.createInterpolatedNode(phys_x, phys_y, phys_z, null, null);
 };
 
 

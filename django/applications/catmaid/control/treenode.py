@@ -573,10 +573,15 @@ def join_skeletons_interpolated(request, project_id=None):
     # Create interpolate nodes skipping the last one 
     last_treenode_id, skeleton_id = _create_interpolated_treenode(request, params, project_id, True)
 
+    # Get set of annoations the combinet skeleton should have
+    annotation_set = frozenset([v for k,v in request.POST.iteritems()
+            if k.startswith('annotation_set[')])
+
     # Link last_treenode_id to to_id
     # TODO this is not elegant
     from skeleton import _join_skeleton
-    _join_skeleton(request.user, last_treenode_id, params['to_id'], project_id)
+    _join_skeleton(request.user, last_treenode_id, params['to_id'], project_id,
+            annotation_set)
 
     return HttpResponse(json.dumps({'treenode_id': params['to_id']}))
 

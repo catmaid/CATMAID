@@ -241,6 +241,34 @@ SkeletonAnnotations.SVGOverlay.prototype.maybeExecuteIfSkeletonHasMoreThanOneNod
       });
 };
 
+SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
+    skeleton_id, fn) {
+  var url = django_url + project.id + '/skeleton/' + skeleton_id +
+      '/permissions';
+  requestQueue.register(url, 'POST', null, function(status, text) {
+      if (status !== 200) {
+        alert("Unexpected status code: " + status);
+        return false;
+      }
+      if (text && text !== " ") {
+        var permissions = $.parseJSON(text);
+        if (permissions.error) {
+          alert(permissions.error);
+        } else {
+          // Check permissions
+          if (!permissions.can_edit) {
+            alert("This skeleton is locked by another user and you are not " +
+                "part of the other user's group. You don't have permission " +
+                "to split it.");
+            return;
+          }
+          // Execute continuation
+          fn();
+        }
+      }
+  });
+};
+
 SkeletonAnnotations.SVGOverlay.prototype.updateNeuronNameLabel = function(stackID, skeletonID) {
   if (!skeletonID) return;
   this.submit(
@@ -548,47 +576,29 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   // Get ID of the first model available
   var model = SkeletonAnnotations.sourceView.createModel()
+  var self = this;
   // Make sure we have permissions to edit the neuron
-  var url = django_url + project.id + '/skeleton/' + model.id + '/permissions';
-  requestQueue.register(url, 'POST', null, (function(status, text) {
-      if (status !== 200) {
-        alert("Unexpected status code: " + status);
-        return false;
-      }
-      if (text && text !== " ") {
-        var permissions = $.parseJSON(text);
-        if (permissions.error) {
-          alert(permissions.error);
-        } else {
-          if (!permissions.can_edit) {
-            alert("This skeleton is locked by another user and you are not " +
-                "part of the other user's group. You don't have permission " +
-                "to split it.");
-            return;
-          }
-          /* Create the dialog */
-          var dialog = new SplitMergeDialog(model);
-          var self = this;
-          dialog.onOK = function() {
-            if (!confirm("Do you really want to split the skeleton?")) return;
-            self.submit(
-                django_url + project.id + '/skeleton/split',
-                {
-                  treenode_id: nodeID,
-                  over_annotation_set: dialog.get_over_annotation_set(),
-                  under_annotation_set: dialog.get_under_annotation_set(),
-                },
-                function () {
-                  self.updateNodes();
-                  ObjectTree.refresh();
-                  self.selectNode(nodeID);
-                },
-                true); // block UI
-          };
-          dialog.show();
-        }
-      }
-    }).bind(this));
+  this.executeIfSkeletonEditable(model.id, (function() {
+    /* Create the dialog */
+    var dialog = new SplitMergeDialog(model);
+    dialog.onOK = function() {
+      if (!confirm("Do you really want to split the skeleton?")) return;
+      self.submit(
+          django_url + project.id + '/skeleton/split',
+          {
+            treenode_id: nodeID,
+            over_annotation_set: dialog.get_over_annotation_set(),
+            under_annotation_set: dialog.get_under_annotation_set(),
+          },
+          function () {
+            self.updateNodes();
+            ObjectTree.refresh();
+            self.selectNode(nodeID);
+          },
+          true); // block UI
+    };
+    dialog.show();
+  }).bind(this));
 };
 
 /** Used to join two skeletons together.
@@ -603,42 +613,49 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
     {treenode_id: toid},
     function(json) {
       var from_model = SkeletonAnnotations.sourceView.createModel();
-      var to_color = new THREE.Color().setRGB(1, 0, 1);
-      var to_model = new SelectionTable.prototype.SkeletonModel(
-          json['skeleton_id'], json['neuron_name'], to_color);
-      var dialog = new SplitMergeDialog(from_model, to_model);
-      dialog.onOK = function() {
-        if (!confirm("Do you really want to merge the skeletons?")) return;
-        // The call to join will reroot the target skeleton at the shift-clicked treenode
-        self.submit(
-          django_url + project.id + '/skeleton/join',
-          {
-            from_id: fromid,
-            to_id: toid,
-            annotation_set: dialog.get_combined_annotation_set(),
-          },
-          function (json) {
-            self.updateNodes(function() {
-              ObjectTree.refresh();
-              self.selectNode(toid);
-            });
-          },
-          true); // block UI
-      };
-      // Extend the display with the newly created line
-      var extension = {};
-      var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
-          c = self.nodes[toid];
-      extension[from_model.id] = [
-          new THREE.Vector3(self.pix2physX(p.x),
-                            self.pix2physY(p.y),
-                            self.pix2physZ(p.z)),
-          new THREE.Vector3(self.pix2physX(c.x),
-                            self.pix2physY(c.y),
-                            self.pix2physZ(c.z))
-      ];
-      dialog.show(extension);
+      var to_skid = json['skeleton_id'];
+      // Make sure the user has permissions to edit both the from and the to
+      // skeleton.
+      self.executeIfSkeletonEditable(from_model.id, function() {
+        self.executeIfSkeletonEditable(to_skid, function() {
+          var to_color = new THREE.Color().setRGB(1, 0, 1);
+          var to_model = new SelectionTable.prototype.SkeletonModel(
+              to_skid, json['neuron_name'], to_color);
+          var dialog = new SplitMergeDialog(from_model, to_model);
+          dialog.onOK = function() {
+            if (!confirm("Do you really want to merge the skeletons?")) return;
+            // The call to join will reroot the target skeleton at the shift-clicked treenode
+            self.submit(
+              django_url + project.id + '/skeleton/join',
+              {
+                from_id: fromid,
+                to_id: toid,
+                annotation_set: dialog.get_combined_annotation_set(),
+              },
+              function (json) {
+                self.updateNodes(function() {
+                  ObjectTree.refresh();
+                  self.selectNode(toid);
+                });
+              },
+              true); // block UI
+          };
+          // Extend the display with the newly created line
+          var extension = {};
+          var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
+              c = self.nodes[toid];
+          extension[from_model.id] = [
+              new THREE.Vector3(self.pix2physX(p.x),
+                                self.pix2physY(p.y),
+                                self.pix2physZ(p.z)),
+              new THREE.Vector3(self.pix2physX(c.x),
+                                self.pix2physY(c.y),
+                                self.pix2physZ(c.z))
+          ];
+          dialog.show(extension);
+        });
     });
+  });
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, link_type) {
@@ -1541,49 +1558,55 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
         var atn_y = atn.y;
         var atn_z = atn.z;
         var self = this;
-        // Ask for merging
-        // Get neuron name and id of the to-skeleton
-        self.submit(
-          django_url + project.id + '/treenode/info',
-          {treenode_id: nearestnode_id},
-          function(json) {
-            var from_model = SkeletonAnnotations.sourceView.createModel();
-            var to_color = new THREE.Color().setRGB(1, 0, 1);
-            var to_model = new SelectionTable.prototype.SkeletonModel(
-                json['skeleton_id'], json['neuron_name'], to_color);
-            var dialog = new SplitMergeDialog(from_model, to_model);
-            dialog.onOK = function() {
-              if (!confirm("Do you really want to merge the skeletons?")) return;
-              // Take into account current local offset coordinates and scale
-              var pos_x = self.phys2pixX(self.coords.offsetXPhysical);
-              var pos_y = self.phys2pixY(self.coords.offsetYPhysical);
-              // At this point of the execution
-              // project.coordinates.z is not on the new z index, thus simulate it here
-              var pos_z = self.phys2pixZ(project.coordinates.z);
-              var phys_z = self.pix2physZ(pos_z);
-              // Get physical coordinates for node position creation
-              var phys_x = self.pix2physX(pos_x);
-              var phys_y = self.pix2physY(pos_y);
-              // Get annotation set for the joined neuron
-              var annotation_set = dialog.get_combined_annotation_set();
-              // Ask to join the two skeletons with interpolated nodes
-              self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
-                  nearestnode_id, annotation_set);
-            };
-            // Extend the display with the newly created line
-            var extension = {};
-            var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
-                c = self.nodes[nearestnode_id];
-            extension[from_model.id] = [
-                new THREE.Vector3(self.pix2physX(p.x),
-                                  self.pix2physY(p.y),
-                                  self.pix2physZ(p.z)),
-                new THREE.Vector3(self.pix2physX(c.x),
-                                  self.pix2physY(c.y),
-                                  self.pix2physZ(c.z))
-            ];
-            dialog.show(extension);
+        // Make sure the user has permissions to edit both the from and the to
+        // skeleton.
+        self.executeIfSkeletonEditable(atn_skid, function() {
+          self.executeIfSkeletonEditable(nearestnode_skid, function() {
+            // Ask for merging
+            // Get neuron name and id of the to-skeleton
+            self.submit(
+              django_url + project.id + '/treenode/info',
+              {treenode_id: nearestnode_id},
+              function(json) {
+                var from_model = SkeletonAnnotations.sourceView.createModel();
+                var to_color = new THREE.Color().setRGB(1, 0, 1);
+                var to_model = new SelectionTable.prototype.SkeletonModel(
+                    json['skeleton_id'], json['neuron_name'], to_color);
+                var dialog = new SplitMergeDialog(from_model, to_model);
+                dialog.onOK = function() {
+                  if (!confirm("Do you really want to merge the skeletons?")) return;
+                  // Take into account current local offset coordinates and scale
+                  var pos_x = self.phys2pixX(self.coords.offsetXPhysical);
+                  var pos_y = self.phys2pixY(self.coords.offsetYPhysical);
+                  // At this point of the execution
+                  // project.coordinates.z is not on the new z index, thus simulate it here
+                  var pos_z = self.phys2pixZ(project.coordinates.z);
+                  var phys_z = self.pix2physZ(pos_z);
+                  // Get physical coordinates for node position creation
+                  var phys_x = self.pix2physX(pos_x);
+                  var phys_y = self.pix2physY(pos_y);
+                  // Get annotation set for the joined neuron
+                  var annotation_set = dialog.get_combined_annotation_set();
+                  // Ask to join the two skeletons with interpolated nodes
+                  self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
+                      nearestnode_id, annotation_set);
+                };
+                // Extend the display with the newly created line
+                var extension = {};
+                var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
+                    c = self.nodes[nearestnode_id];
+                extension[from_model.id] = [
+                    new THREE.Vector3(self.pix2physX(p.x),
+                                      self.pix2physY(p.y),
+                                      self.pix2physZ(p.z)),
+                    new THREE.Vector3(self.pix2physX(c.x),
+                                      self.pix2physY(c.y),
+                                      self.pix2physZ(c.z))
+                ];
+                dialog.show(extension);
+              });
           });
+        });
         return;
       } else {
         // If shift is not down, just select the node:

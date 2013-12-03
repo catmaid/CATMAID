@@ -2025,6 +2025,7 @@ var SplitMergeDialog = function(model1, model2) {
 SplitMergeDialog.prototype = {};
 
 SplitMergeDialog.prototype.populate = function(extension) {
+  var usable_height = this.height - 100;
   // Annotation list boxes
   var titleBig = document.createElement('div'),
       titleSmall = document.createElement('div'),
@@ -2039,10 +2040,10 @@ SplitMergeDialog.prototype.populate = function(extension) {
   small.setAttribute('multiple', 'multiple');
 
   big.style.width = '100%';
-  big.style.height = '230px';
+  big.style.height = usable_height * 0.45 + 'px';
   big.style.overflowY = 'scroll';
   small.style.width = '100%';
-  small.style.height = '230px';
+  small.style.height = usable_height * 0.45 + 'px';
   small.style.overflowY = 'scroll';
 
   titleBig.style.padding = '0.1em';
@@ -2076,7 +2077,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
   var W = function() {};
   W.prototype = WebGLApplication.prototype;
   this.webglapp = new W();
-  this.webglapp.init(this.width - leftWidth - 50, this.height - 100,
+  this.webglapp.init(this.width - leftWidth - 50, usable_height,
       'dialog-3d-view'); // add to the right
   this.webglapp.options.shading_method = 'active_node_split';
   this.webglapp.look_at_active_node();

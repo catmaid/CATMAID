@@ -500,13 +500,7 @@ def delete_treenode(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ': ' + str(e))
 
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def treenode_info(request, project_id=None):
-    treenode_id = int(request.POST.get('treenode_id', -1))
-    if treenode_id < 0:
-        raise Exception('A treenode id has not been provided!')
-
+def _treenode_info(project_id=None, treenode_id):
     c = connection.cursor()
     # (use raw SQL since we are returning values from several different models)
     c.execute("""
@@ -537,10 +531,17 @@ def treenode_info(request, project_id=None):
         raise Exception('Found more than one skeleton and neuron for treenode %s' % treenode_id)
     elif (len(results) == 0):
         raise Exception('No skeleton and neuron for treenode %s' % treenode_id)
-    else:
-        return HttpResponse(json.dumps(results[0]))
 
+    return results[0]
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def treenode_info(request, project_id=None):
+    treenode_id = int(request.POST.get('treenode_id', -1))
+    if treenode_id < 0:
+        raise Exception('A treenode id has not been provided!')
+
+    info = _treenode_info(project_id, treenode_id)
+    return HttpResponse(json.dumps(info))
 
 @requires_user_role(UserRole.Annotate)
 def join_skeletons_interpolated(request, project_id=None):

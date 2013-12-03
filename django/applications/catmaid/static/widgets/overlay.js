@@ -548,25 +548,22 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   // Get ID of the first model available
   var model = SkeletonAnnotations.sourceView.createModel()
-  // Make sure the neuron the skeleton models is not locked by a different user
-  requestQueue.register(django_url + project.id +  '/annotations/list',
-    'POST', {'skeleton_id': model.id}, (function(status, text) {
+  // Make sure we have permissions to edit the neuron
+  var url = django_url + project.id + '/skeleton/' + model.id + '/permissions';
+  requestQueue.register(url, 'POST', null, (function(status, text) {
       if (status !== 200) {
         alert("Unexpected status code: " + status);
         return false;
       }
       if (text && text !== " ") {
-        var annotations = $.parseJSON(text);
-        if (annotations.error) {
-          alert(annotations.error);
+        var permissions = $.parseJSON(text);
+        if (permissions.error) {
+          alert(permissions.error);
         } else {
-          /* Make sure the user is not locked by another user */
-          var is_locked_by_other = annotations.some(function(a) {
-            return a.aname === 'locked' && a.uid !== session.userid;
-          });
-          if (is_locked_by_other) {
-            alert("This skeleton is locked by another user. " +
-                "You don't have permission to split it.");
+          if (!permissions.can_edit) {
+            alert("This skeleton is locked by another user and you are not " +
+                "part of the other user's group. You don't have permission " +
+                "to split it.");
             return;
           }
           /* Create the dialog */

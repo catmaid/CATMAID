@@ -302,7 +302,6 @@ var ReviewSystem = new function()
 
     }
 
-
     this.cacheImages = function() {
         if (!checkSkeletonID()) {
             return;
@@ -315,25 +314,8 @@ var ReviewSystem = new function()
                     s.push( json.image_base + json.tiles[i]);
                 }
                 total_count = s.length;
-                // tile_image_counter = 0;
+                $('#counting-cache-info').text( 'From segment: ' + json.startsegment + ' to ' + json.endsegment );
                 loadImageCallback( s );
-                /*
-                tile_image_counter = 0;
-                total_count = s.length;
-                $('#counting-cache').text( tile_image_counter + '/' + total_count );
-                imageCache.pushArray(s, function() {
-                    tile_image_counter += 1;
-                    if( tile_image_counter % 5000 == 0 ) {
-                        console.log(tile_image_counter, ' done ...')
-                    }
-                    $('#counting-cache').text( tile_image_counter + '/' + total_count );
-                }, function() {
-                    $('#counting-cache').text( tile_image_counter + '/' + total_count + ' DONE! ' );
-                    tile_image_counter = 0;
-                    total_count = 0;
-                });
-
-                */
         });
     }
 

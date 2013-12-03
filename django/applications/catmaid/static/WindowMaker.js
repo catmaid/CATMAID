@@ -1513,6 +1513,10 @@ var WindowMaker = new function()
         cacheCounter.setAttribute("id", "counting-cache");
         contentbutton.appendChild(cacheCounter);
 
+        var cacheInfoCounter = document.createElement('div');
+        cacheInfoCounter.setAttribute("id", "counting-cache-info");
+        contentbutton.appendChild(cacheInfoCounter);
+
         addListener(win, container, 'review_window_buttons');
 
         addLogic(win);

@@ -13,6 +13,7 @@ import json
 from operator import itemgetter
 import networkx as nx
 from tree_util import reroot, edge_count_to_root
+from skeletonexport import _export_review_skeleton
 from stack import get_stack_info
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -20,10 +21,26 @@ def cache_image(request, project_id=None, stack_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)
     s = get_object_or_404(Stack, pk=stack_id)
 
+    segments = _export_review_skeleton( project_id, skeleton_id )
+    treenode_accumulator = []
+    startsegment = -1
+    endsegment = 0
+    for i, segment in enumerate(segments):
+        if segment['status'] == '100.00':
+            continue
+        if startsegment == -1:
+            startsegment = i
+        for node in segment['sequence']:
+            if node['rid'] == -1:
+                treenode_accumulator.append( node['id'] )
+        endsegment = i
+        if len(treenode_accumulator) > 500:
+            break
+
     tn = Treenode.objects.filter(
         project=p,
         reviewer_id=-1,
-        skeleton_id=skeleton_id).extra(select={'sectionindex': ' (location).z'}).order_by('sectionindex')
+        id__in=treenode_accumulator).extra(select={'sectionindex': ' (location).z'}).order_by('sectionindex')
 
     zoom_level = 0
     tile_images = set()
@@ -34,7 +51,7 @@ def cache_image(request, project_id=None, stack_id=None, skeleton_id=None):
 
     maxcol = stackinfo['dimension']['x'] / stackinfo['tile_width']
     maxrow = stackinfo['dimension']['y'] / stackinfo['tile_height']
-    print 'max', maxcol,maxrow
+    
     for treenode in tn:
         row = int( treenode.location.y / stackinfo['resolution']['y'] / stackinfo['tile_height'] )
         col = int( treenode.location.x / stackinfo['resolution']['x'] / stackinfo['tile_width'] )
@@ -81,7 +98,12 @@ def cache_image(request, project_id=None, stack_id=None, skeleton_id=None):
                     tile_images.add( url )
 
     return HttpResponse(json.dumps(
-        {'image_base': stackinfo['image_base'], 'tiles': sorted(list(tile_images))}), mimetype='text/json')
+            {'image_base': stackinfo['image_base'], 
+            'startsegment': startsegment,
+            'endsegment': endsegment,
+            'tiles': sorted(list(tile_images))}),
+            mimetype='text/json')
+
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

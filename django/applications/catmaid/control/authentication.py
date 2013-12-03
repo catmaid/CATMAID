@@ -11,7 +11,8 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset
 
-from catmaid.models import Project, UserRole
+from catmaid.models import Project, UserRole, ClassInstance
+from catmaid.models import ClassInstanceClassInstance
 from django.contrib.auth.models import User, Group
 
 from catmaid.control.common import json_error_response
@@ -202,6 +203,35 @@ def user_project_permissions(request):
 
     return HttpResponse(json.dumps((result, groups)))
 
+def can_edit_class_instance_or_fail(user, ci_id, name='object'):
+    """ Returns true if a) the class instance is not locked or b) if the class
+    instance is locked and the the user owns the link to the 'locked' annotation
+    or (s)he belongs to a group with the same name as the owner of the link.
+    Otherwise, false is returned. The name argument describes the class instance
+    and is only used in messages returned to the user.
+    """
+    ci_id = int(ci_id)
+    # Check if the class instance exists at all
+    if ClassInstance.objects.filter(id=ci_id).exists():
+        # Implicit: a super user belongs to all users' groups
+        if user.is_superuser:
+            return True
+        # Check if the class instance is locked by other users
+        locked_by_other = ClassInstanceClassInstance.objects.filter(
+                class_instance_a__id=ci_id,
+                relation__relation_name = 'annotated_with',
+                class_instance_b__name='locked').exclude(user=user)
+        if bool(locked_by_other):
+            # Check if the user belongs to a group with the name of the owner
+            if user_can_edit(connection.cursor(), user.id,
+                    locked_by_other[0].user_id):
+                return True
+
+            raise Exception('User %s with id #%s cannot edit %s #%s' % \
+                (user.username, user.id, name, ci_id))
+        # The class instance is locked by user or not locked at all
+        return True
+    raise ObjectDoesNotExist('Could not find %s #%s' % (name, ci_id))
 
 def can_edit_or_fail(user, ob_id, table_name):
     """ Returns true if the user owns the object or if the user is a superuser.

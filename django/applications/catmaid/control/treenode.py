@@ -17,6 +17,12 @@ import sys
 import math
 
 
+def can_edit_treenode_or_fail(user, project_id, treenode_id):
+    """ Tests if a user has permissions to edit the neuron which the skeleton of
+    the treenode models."""
+    info = _treenode_info(project_id, treenode_id)
+    return can_edit_class_instance_or_fail(user, info['neuron_id'], 'neuron')
+
 def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
     relation = ClassInstanceClassInstance()
     relation.user = user
@@ -449,8 +455,9 @@ def update_radius(request, project_id=None, treenode_id=None):
 def delete_treenode(request, project_id=None):
     """ If the skeleton has a single node, deletes the skeleton, and if so, if the skeleton is a model_of a neuron that was part_of group 'Isolated synaptic terminals', deletes the neuron. Returns the parent_id, if any."""
     treenode_id = int(request.POST.get('treenode_id', -1))
-    # Raise an Exception if the user doesn't own the treenode or is not superuser
-    can_edit_or_fail(request.user, treenode_id, 'treenode')
+    # Raise an Exception if the user doesn't have permission to edit the neuron
+    # the skeleton of the treenode is modeling.
+    can_edit_treenode_or_fail(request.user, project_id, treenode_id)
     #
     treenode = Treenode.objects.get(pk=treenode_id)
     parent_id = treenode.parent_id
@@ -500,7 +507,7 @@ def delete_treenode(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ': ' + str(e))
 
-def _treenode_info(project_id=None, treenode_id):
+def _treenode_info(project_id, treenode_id):
     c = connection.cursor()
     # (use raw SQL since we are returning values from several different models)
     c.execute("""

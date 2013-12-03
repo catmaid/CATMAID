@@ -12,6 +12,7 @@ from catmaid.models import *
 from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
+from catmaid.control.treenode import can_edit_treenode_or_fail
 
 import sys
 try:
@@ -312,7 +313,7 @@ def update_location_reviewer(request, project_id=None, node_id=None):
 @requires_user_role(UserRole.Annotate)
 def update_confidence(request, project_id=None, node_id=0):
     tnid = int(node_id)
-    can_edit_or_fail(request.user, tnid, 'treenode')
+    can_edit_treenode_or_fail(request.user, project_id, tnid)
 
     new_confidence = int(request.POST.get('new_confidence', 0))
     if new_confidence < 1 or new_confidence > 5:

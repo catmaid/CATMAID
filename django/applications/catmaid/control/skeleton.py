@@ -182,14 +182,8 @@ def split_skeleton(request, project_id=None):
         cici_via_b__relation__relation_name='model_of',
         cici_via_b__class_instance_a_id=skeleton_id)
 
-    # The split is only possible if the neuron is not locked
-    locked_by_others_qs = ClassInstanceClassInstance.objects.filter(
-        class_instance_a=neuron, class_instance_b__name='locked').exclude(
-            user=request.user)
-    if locked_by_others_qs.exists():
-        raise Exception("User '%s' can't edit skeleton #%s at node #%s:\n" \
-            "The neuron is locked and the user isn't the one who locked it." \
-            % (request.user.username, skeleton_id, treenode_id))
+    # Make sure the user has permissions to edit
+    can_edit_class_instance_or_fail(request.user, neuron.id, 'neuron')
 
     # retrieve the id, parent_id of all nodes in the skeleton
     # with minimal ceremony
@@ -805,6 +799,9 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
         to_skid = rows[0][0]
 
+        from_neuron = _get_neuronname_from_skeletonid( project_id, from_skid )
+        to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
+
         # Check if joining is allowed
         if 1 == Treenode.objects.filter(skeleton_id=to_skid).count():
             # Is an isolated node, so it can be joined freely
@@ -812,7 +809,11 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         # If the treenode is not isolated, the skeleton must be under fragments, or the user must own the skeleton or be superuser
         else:
             try:
-                can_edit_or_fail(user, to_skid, "class_instance")
+                # Make sure the user has permissions to edit both neurons
+                can_edit_class_instance_or_fail(
+                        request.user, from_neuron['neuronid'], 'neuron')
+                can_edit_class_instance_or_fail(
+                        request.user, to_neuron['neuronid'], 'neuron')
             except Exception:
                 # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes are editable by the user (such a situation occurs when the user domain ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
                 if _under_fragments(to_skid) or _under_staging_area(to_skid, user):
@@ -827,9 +828,6 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
         if from_skid == to_skid:
             raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
-        
-        from_neuron = _get_neuronname_from_skeletonid( project_id, from_skid )
-        to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
 
         # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id

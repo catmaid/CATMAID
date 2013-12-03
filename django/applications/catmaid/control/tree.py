@@ -85,7 +85,7 @@ def instance_operation(request, project_id=None):
 
 
     def rename_node():
-        can_edit_or_fail(request.user, params['id'], 'class_instance')
+        can_edit_class_instance_or_fail(request.user, params['id'])
         # Do not allow '|' in name because it is used as string separator in NeuroHDF export
         if '|' in params['title']:
             raise Exception('Name should not contain pipe character!')
@@ -103,7 +103,7 @@ def instance_operation(request, project_id=None):
 
     def remove_node():
         # Can only remove the node if the user owns it or the user is a superuser
-        can_edit_or_fail(request.user, params['id'], 'class_instance')
+        can_edit_class_instance_or_fail(request.user, params['id'])
         # Check if node is a skeleton. If so, we have to remove its treenodes as well!
         if 0 == params['rel']:
             raise Exception('No relation given!')
@@ -146,7 +146,7 @@ def instance_operation(request, project_id=None):
         # Given that the parentid is 0 to signal root (but root has a non-zero id),
         # this implies that regular non-superusers cannot create nodes under root,
         # but only in their staging area.
-        can_edit_or_fail(request.user, params['parentid'], 'class_instance')
+        can_edit_class_instance_or_fail(request.user, params['parentid'])
 
         if params['classname'] not in class_map:
             raise Exception('Failed to select class.')
@@ -186,8 +186,8 @@ def instance_operation(request, project_id=None):
     def move_node():
         # Can only move the node if the user owns the node and the target node,
         # or the user is a superuser
-        can_edit_or_fail(request.user, params['src'], 'class_instance') # node to move
-        can_edit_or_fail(request.user, params['ref'], 'class_instance') # new parent node
+        can_edit_class_instance_or_fail(request.user, params['src'], 'node') # node to move
+        can_edit_class_instance_or_fail(request.user, params['ref'], 'node') # new parent node
         #
         if 0 == params['src'] or 0 == params['ref']:
             raise Exception('src (%s) or ref (%s) not set.' % (params['src'], params['ref']))
@@ -626,7 +626,7 @@ def _fragments_group_id(request, project_id, class_root_id, relation_part_of_id)
 def send_to_fragments_group(request, project_id, node_id, node_type):
     """ Anybody can send an owned neuron or group to the 'Fragments' group
     """
-    can_edit_or_fail(request.user, node_id, 'class_instance')
+    can_edit_class_instance_or_fail(request.user, node_id, 'neuron/group')
     
     classes = dict(Class.objects.values_list('class_name', 'id').filter(project_id=project_id, class_name__in=('root', 'group', 'neuron', 'skeleton')))
     relations = dict(Relation.objects.values_list('relation_name', 'id').filter(project_id=project_id, relation_name__in=('model_of', 'part_of')))

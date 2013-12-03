@@ -53,6 +53,8 @@ urlpatterns += patterns(
     (r'^messages/list$', 'catmaid.control.list_messages'),
     (r'^messages/mark_read$', 'catmaid.control.read_message'),
     (r'^(?P<project_id>\d+)/stacks$', 'catmaid.control.stacks'),
+    (r'^classinstance/(?P<ci_id>\d+)/permissions$',
+            'catmaid.control.get_object_permissions'),
 
     (r'^(?P<project_id>\d+)/skeletonlist/save$', 'catmaid.control.save_skeletonlist'),
     (r'^(?P<project_id>\d+)/skeletonlist/load$', 'catmaid.control.load_skeletonlist'),
@@ -142,6 +144,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'catmaid.control.reroot_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/analytics$', 'catmaid.control.analyze_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'catmaid.control.skeleton_connectors_by_partner'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
+            'catmaid.control.get_skeleton_permissions'),
 
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'catmaid.control.get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'catmaid.control.give_neuron_to_other_user'),

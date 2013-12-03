@@ -16,6 +16,22 @@ import networkx as nx
 from tree_util import reroot, edge_count_to_root
 
 
+def get_skeleton_permissions(request, project_id, skeleton_id):
+    """ Tests editing permissions of a user on a skeleton and returns the
+    result as JSON object."""
+    try:
+        nn = _get_neuronname_from_skeletonid( project_id, skeleton_id )
+        can_edit = can_edit_class_instance_or_fail(request.user,
+                nn['neuronid'])
+    except:
+        can_edit = False
+
+    permissions = {
+      'can_edit': can_edit,
+    }
+
+    return HttpResponse(json.dumps(permissions))
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def last_openleaf(request, project_id=None, skeleton_id=None):
     """ Return the ID of the nearest node (or itself), and its location string;

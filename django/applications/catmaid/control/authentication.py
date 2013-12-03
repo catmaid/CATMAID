@@ -203,6 +203,20 @@ def user_project_permissions(request):
 
     return HttpResponse(json.dumps((result, groups)))
 
+def get_object_permissions(request, ci_id):
+    """ Tests editing permissions of a user on a class_instance and returns the
+    result as JSON object."""
+    try:
+        can_edit = can_edit_class_instance_or_fail(request.user, ci_id)
+    except:
+        can_edit = False
+
+    permissions = {
+        'can_edit': can_edit,
+    }
+
+    return HttpResponse(json.dumps(permissions))
+
 def can_edit_class_instance_or_fail(user, ci_id, name='object'):
     """ Returns true if a) the class instance is not locked or b) if the class
     instance is locked and the the user owns the link to the 'locked' annotation

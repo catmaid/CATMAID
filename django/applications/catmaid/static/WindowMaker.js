@@ -2136,7 +2136,8 @@ var WindowMaker = new function()
         select);
     $('#neuron_annotations_add_to_selection' + NA.widgetID)[0].onclick =
         NA.syncLink.bind(NA, select);
-    
+
+    // Fill user select box
     var $select = $('tr #neuron_query_by_annotator' + NA.widgetID);
     var users = User.all();
     for (var userID in users) {
@@ -2148,6 +2149,8 @@ var WindowMaker = new function()
         }
       }
     }
+    // Make it support autocompletion
+    $select.combobox();
     
     $( "#neuron_query_by_start_date" + NA.widgetID ).datepicker(
         { dateFormat: "yy-mm-dd" });

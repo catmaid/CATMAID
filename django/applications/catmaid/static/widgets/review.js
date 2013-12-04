@@ -81,7 +81,14 @@ var ReviewSystem = new function()
             return;
         if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
             self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
-            self.startSkeletonToReview(skeletonID);
+
+            // Segment fully reviewed, go to next without refreshing table
+            // much faster for smaller fragments
+            growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
+            var cell = $('#rev-status-cell-' + self.current_segment['id']);
+            cell.text('100.00%');
+            cell.css('background-color', '#6fff5c');
+            self.selectNextSegment();
             return;
         }
 
@@ -138,22 +145,20 @@ var ReviewSystem = new function()
             // Define helper functions
             var unreviewed_nodes = function (node) { return -1 === node['rid']; };
             var unreviewed_segments = function(segment, i) {
-                if (segment['sequence'].some(unreviewed_nodes)) {
-                    // Side effect:
-                    self.initReviewSegment(i);
-                    return true;
+                if( segment['status'] !== "100.00") {
+                    // only check for segments with less than 100 percent reviewed
+                    if (segment['sequence'].some(unreviewed_nodes)) {
+                        // Side effect:
+                        self.initReviewSegment(i);
+                        return true;
+                    }                    
                 }
                 return false;
             };
             // Find a segment with unreviewed nodes, starting after current segment
-            if (self.skeleton_segments.slice(index + 1).some(unreviewed_segments)) {
+            if (self.skeleton_segments.some(unreviewed_segments)) {
                 return;
             }
-            // Not found after segment at index; check before:
-            if (self.skeleton_segments.slice(0, index + 1).some(unreviewed_segments)) {
-                return;
-            }
-
             growlAlert("Done", "Done reviewing.");
         }
     };

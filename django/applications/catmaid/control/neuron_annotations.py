@@ -40,49 +40,53 @@ def create_basic_annotated_entity_query(project, params,
 
     return entities
 
-def create_annotated_neuron_list(project, neurons):
-    annotated_neurons = [];
-    for neuron in neurons:
+def create_annotated_entity_list(project, entities):
+    annotated_entities = [];
+    for entity in entities:
         try:
-            cici_skeletons = ClassInstanceClassInstance.objects.filter(
-                class_instance_b = neuron,
-                relation__relation_name = 'model_of').order_by('id')
-            skeleton_ids = [cici.class_instance_a.id for cici in cici_skeletons]
-            # Get treenode ids of all skeletons in the same order as the
-            # skeletons are. Under the assumption there is one treenode per
-            # skeleton, they should map nicely.
-            treenodes = Treenode.objects.filter(project=project,
-                parent__isnull=True, skeleton_id__in=skeleton_ids).order_by(
-                    'skeleton__id')
-            # Get all annotations linked to this neuron
-            # TODO: Try to get rid of joins, because of performance hit
+            # Get all annotations linked to this entity
             annotation_cis = ClassInstance.objects.filter(
                 cici_via_b__relation__relation_name = 'annotated_with',
-                cici_via_b__class_instance_a__id = neuron.id)
+                cici_via_b__class_instance_a__id = entity.id)
             annotations = [{'id': a.id, 'name': a.name} for a in annotation_cis]
+            class_name = entity.class_column.class_name
 
-            neuron_info = {
-                'id': neuron.id,
-                'name': neuron.name,
-                'skeleton_ids': skeleton_ids,
-                'root_node_ids': [tn.id for tn in treenodes],
+            entity_info = {
+                'id': entity.id,
+                'name': entity.name,
                 'annotations': annotations,
+                'type': class_name,
             }
 
-            # TODO: include node count, review percentage, etc.
-            annotated_neurons += [neuron_info]
+            # Depending on the type of entity, some extra information is added.
+            if class_name == 'neuron':
+              cici_skeletons = ClassInstanceClassInstance.objects.filter(
+                  class_instance_b = entity,
+                  relation__relation_name = 'model_of').order_by('id')
+              skeleton_ids = [cici.class_instance_a.id for cici in cici_skeletons]
+              # Get treenode ids of all skeletons in the same order as the
+              # skeletons are. Under the assumption there is one treenode per
+              # skeleton, they should map nicely.
+              treenodes = Treenode.objects.filter(project=project,
+                  parent__isnull=True, skeleton_id__in=skeleton_ids).order_by(
+                      'skeleton__id')
+
+              entity_info['skeleton_ids'] = skeleton_ids
+              entity_info['root_node_ids'] = [tn.id for tn in treenodes]
+
+            annotated_entities += [entity_info]
         except ClassInstanceClassInstance.DoesNotExist:
             pass
 
-    return annotated_neurons
+    return annotated_entities
 
 @requires_user_role([UserRole.Browse])
 def query_neurons_by_annotations(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
 
-    neuron_query = create_basic_annotated_entity_query(p, request.POST)
-    neuron_query = neuron_query.order_by('id').distinct()
-    dump = create_annotated_neuron_list(p, neuron_query)
+    query = create_basic_annotated_entity_query(p, request.POST)
+    query = query.order_by('id').distinct()
+    dump = create_annotated_entity_list(p, query)
 
     return HttpResponse(json.dumps(dump))
 
@@ -118,15 +122,16 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
     response = {'iTotalRecords': len(result),
             'iTotalDisplayRecords': len(result), 'aaData': []}
 
-    neurons = create_annotated_neuron_list(p, result)
-    for neuron in neurons:
-        response['aaData'] += [[
-            neuron['name'],
-            neuron['annotations'],
-            neuron['skeleton_ids'],
-            neuron['root_node_ids'],
-            neuron['id'],
-        ]]
+    entities = create_annotated_entity_list(p, result)
+    for entity in entities:
+        if entity['type'] == 'neuron':
+          response['aaData'] += [[
+              entity['name'],
+              entity['annotations'],
+              entity['skeleton_ids'],
+              entity['root_node_ids'],
+              entity['id'],
+          ]]
 
     return HttpResponse(json.dumps(response), mimetype='text/json')
 

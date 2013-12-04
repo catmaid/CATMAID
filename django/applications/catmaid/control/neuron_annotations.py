@@ -9,32 +9,36 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 
 
-def create_basic_annotated_neuron_query(project, params):
-    neurons = ClassInstance.objects.filter(project = project,
-                                           class_column__class_name = 'neuron')
+def create_basic_annotated_entity_query(project, params,
+        allowed_classes=['neuron', 'annotation']):
+    # Let the default unsrestrcted result set contain all instances of
+    # the given set of allowed classes
+    entities = ClassInstance.objects.filter(project = project,
+            class_column__class_name__in = allowed_classes)
+
     for key in params:
         if key.startswith('neuron_query_by_annotation'):
             tag = params[key].strip()
             if len(tag) > 0:
-                neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
+                entities = entities.filter(cici_via_a__relation__relation_name = 'annotated_with',
                                          cici_via_a__class_instance_b__name = tag)
         elif key == 'neuron_query_by_annotator':
             userID = int(params[key])
             if userID >= 0:
-                neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
+                entities = entities.filter(cici_via_a__relation__relation_name = 'annotated_with',
                                          cici_via_a__user = userID)
         elif key == 'neuron_query_by_start_date':
             startDate = params[key].strip()
             if len(startDate) > 0:
-                neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
+                entities = entities.filter(cici_via_a__relation__relation_name = 'annotated_with',
                                          cici_via_a__creation_time__gte = startDate)
         elif key == 'neuron_query_by_end_date':
             endDate = params[key].strip()
             if len(endDate) > 0:
-                neurons = neurons.filter(cici_via_a__relation__relation_name = 'annotated_with',
+                entities = entities.filter(cici_via_a__relation__relation_name = 'annotated_with',
                                          cici_via_a__creation_time__lte = endDate)
 
-    return neurons
+    return entities
 
 def create_annotated_neuron_list(project, neurons):
     annotated_neurons = [];
@@ -76,7 +80,7 @@ def create_annotated_neuron_list(project, neurons):
 def query_neurons_by_annotations(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
 
-    neuron_query = create_basic_annotated_neuron_query(p, request.POST)
+    neuron_query = create_basic_annotated_entity_query(p, request.POST)
     neuron_query = neuron_query.order_by('id').distinct()
     dump = create_annotated_neuron_list(p, neuron_query)
 
@@ -92,7 +96,7 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
 
     should_sort = request.POST.get('iSortCol_0', False)
 
-    neuron_query = create_basic_annotated_neuron_query(p, request.POST)
+    neuron_query = create_basic_annotated_entity_query(p, request.POST)
 
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))

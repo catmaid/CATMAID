@@ -36,7 +36,7 @@ NeuronAnnotations.prototype.removeSkeletons = function() {};
 NeuronAnnotations.prototype.updateModels = function() {};
 
 NeuronAnnotations.prototype.getSelectedSkeletons = function() {
-  return this.queryResults.reduce( function(o, e) {
+  return this.get_selected_neurons().reduce( function(o, e) {
     o = o.concat(e.skeleton_ids);
     return o;
   }, []);
@@ -51,7 +51,7 @@ NeuronAnnotations.prototype.hasSkeleton = function(skeleton_id) {
 };
 
 NeuronAnnotations.prototype.getSelectedSkeletonModels = function() {
-  return this.queryResults.reduce(function(o, e) {
+  return this.get_selected_neurons().reduce(function(o, e) {
     e.skeleton_ids.forEach(function(s) {
       o[s] = new SelectionTable.prototype.SkeletonModel(
           s, e.name, new THREE.Color().setRGB(1, 1, 0));

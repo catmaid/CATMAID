@@ -8,7 +8,7 @@ var ReviewSystem = new function()
     self.skeleton_segments = null;
     self.current_segment = null;
     self.current_segment_index = 0;
-    var tile_image_counter = 0, total_count = 0;
+    var tile_image_counter = 0, total_count = 0, end_puffer_count = 0;
 
     this.init = function() {
         projectID = project.id;
@@ -36,6 +36,7 @@ var ReviewSystem = new function()
         self.current_segment = self.skeleton_segments[id];
         self.current_segment_index = 0;
         self.goToNodeIndexOfSegmentSequence( 0 );
+        end_puffer_count = 0;
     };
 
     this.goToNodeIndexOfSegmentSequence = function( idx ) {
@@ -81,10 +82,15 @@ var ReviewSystem = new function()
             return;
         if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
             self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
-
+            end_puffer_count += 1;
+            // do not directly jump to the next segment to review
+            if( end_puffer_count < 3) {
+                growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
+                return;
+            }
             // Segment fully reviewed, go to next without refreshing table
             // much faster for smaller fragments
-            growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
+            // growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
             var cell = $('#rev-status-cell-' + self.current_segment['id']);
             cell.text('100.00%');
             cell.css('background-color', '#6fff5c');

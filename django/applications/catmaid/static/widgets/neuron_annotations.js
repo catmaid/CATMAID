@@ -21,7 +21,7 @@ $.extend(NeuronAnnotations.prototype, new SkeletonSource());
 
 NeuronAnnotations.prototype.getName = function()
 {
-    return "Neuron Annotations " + this.widgetID;
+    return "Neuron Search " + this.widgetID;
 };
 
 NeuronAnnotations.prototype.destroy = function()

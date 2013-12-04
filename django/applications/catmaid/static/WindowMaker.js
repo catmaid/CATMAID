@@ -2083,12 +2083,13 @@ var WindowMaker = new function()
               '<input type="checkbox" ' +
                   'id="neuron_annotations_toggle_neuron_selections_checkbox{{NA-ID}}" />' +
             '</th>' +
-            '<th>Neuron Name</th>' +
+            '<th>Entity Name</th>' +
+            '<th>Type</th>' +
             '<th>Annotations</th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +
-          '<tr><td colspan="2"></td></tr>' +
+          '<tr><td colspan="3"></td></tr>' +
         '</tbody>' +
       '</table>' +
       '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +

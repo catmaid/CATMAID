@@ -118,13 +118,15 @@ NeuronAnnotations.prototype.query = function()
               // Build table row
               $tableBody.append(
                   '<tr id="neuron_annotation_result_row' + this.widgetID +
-                      '_' + this.queryResults[i].id + '">' +
+                      '_' + this.queryResults[i].id + '" type="' +
+                      this.queryResults[i].type + '">' +
                     '<td><input type="checkbox" id="result' + this.widgetID + '_' +
                         this.queryResults[i].id + '"/></td>' +
                     '<td><a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(' +
                         '\'skeleton\', ' +
                         this.queryResults[i].id + '); return false;">' +
                         this.queryResults[i].name + '</a></td>' +
+                    '<td>' + this.queryResults[i].type  + '</td>' +
                     '<td><ul class="tagEditor">' + annotation_list + '</ul></td>' +
                   '</tr>');
             }
@@ -205,9 +207,9 @@ NeuronAnnotations.prototype.get_selected_neurons = function()
   var selected_neurons = [];
   for (var i = 0; i < this.queryResults.length; i++) {
       var $input = $("#neuron_annotations_query_results_table" +
-          this.widgetID).find('input[id=result' + this.widgetID +
+          this.widgetID).find('tr[type=neuron]').find('input[id=result' + this.widgetID +
               '_' + this.queryResults[i].id + ']');
-      if ($input[0].checked) {
+      if ($input.length > 0 && $input[0].checked) {
           selected_neurons.push(this.queryResults[i]);
       }
   }

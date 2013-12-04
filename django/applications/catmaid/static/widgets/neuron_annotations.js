@@ -38,7 +38,8 @@ NeuronAnnotations.prototype.updateModels = function() {};
 NeuronAnnotations.prototype.getSelectedSkeletons = function() {
   return this.queryResults.reduce( function(o, e) {
     o = o.concat(e.skeleton_ids);
-   }, []);
+    return o;
+  }, []);
 };
 
 NeuronAnnotations.prototype.hasSkeleton = function(skeleton_id) {

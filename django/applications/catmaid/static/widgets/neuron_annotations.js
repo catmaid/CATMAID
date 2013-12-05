@@ -93,7 +93,13 @@ NeuronAnnotations.prototype.highlight = function(skeleton_id)
 
 /* Non-interface methods */
 
-NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn)
+/**
+ * Create a table row and passes it to add_row_fn which should it add it
+ * whereever it wants. The third parameter specifies the number of indentation
+ * steps that should be used.
+ */
+NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
+    indent)
 {
   // Build table row
   var tr = document.createElement('tr');
@@ -101,22 +107,23 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn)
           this.widgetID + '_' + entity.id);
   tr.setAttribute('type', entity.type);
 
-  // Checkbox column
+  // Checkbox & name column, potentially indented
   var td_cb = document.createElement('td');
+  var div_cb = document.createElement('div');
+  // Make sure the line isn't wrapped
+  div_cb.style.whiteSpace = 'nowrap';
+  // Add indentation
+  div_cb.style.marginLeft = indent * 1.5 + 'em';
   var cb = document.createElement('input');
   cb.setAttribute('type', 'checkbox');
   cb.setAttribute('id', 'result' + this.widgetID + '_' +
           entity.id);
-  td_cb.appendChild(cb);
-  tr.appendChild(td_cb);
-
-  // Name column
-  var td_name = document.createElement('td');
+  div_cb.appendChild(cb);
   var a = document.createElement('a');
   a.setAttribute('href', '#');
   a.appendChild(document.createTextNode(entity.name));
-  td_name.appendChild(a);
-  tr.appendChild(td_name);
+  div_cb.appendChild(a);
+  tr.appendChild(div_cb);
 
   // Type column
   var td_type = document.createElement('td');
@@ -159,9 +166,45 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn)
       $(a).click(function() { alert("No skeleton found!"); });
     }
   } else if (entity.type == 'annotation') {
+    // Add annotation attribute to link
+    a.setAttribute('annotation', entity.name);
     // Expand
+    var self = this;
     $(a).click(function() {
-      }).bind(this));
+      // If expanded, collapse it. Expand it otherwise.
+      if ($(this).is('[expanded]')) {
+        // TODO: Collapse it
+      } else {
+        // Mark link expanded
+        this.setAttribute('expanded', 'true');
+        // Request entities that are annotated with this annotation
+        // and replace the clicked on annotation with the result.
+        var query_data = {
+          'neuron_query_by_annotation': $(this).attr('annotation'),
+        };
+        requestQueue.register(django_url + project.id + '/neuron/query-by-annotations',
+            'POST', query_data, function(status, text, xml) {
+              if (status === 200) {
+                var e = $.parseJSON(text);
+                if (e.error) {
+                  alert(e.error);
+                } else {
+                  //Append new content right after the current node
+                  var appender = function(new_tr) {
+                    $(tr).after(new_tr)
+                  };
+
+                  e.forEach((function(entity) {
+                    self.add_result_table_row(entity, appender, indent + 1);
+                  }).bind(self));
+
+                  // The order of the query result array doesn't matter.
+                  // It is therefore possible to just append the new results.
+                  self.queryResults = self.queryResults.concat(e);
+                }
+              }
+        });
+      }
     });
   }
   // Add click handlers to remove tags from nodes
@@ -198,7 +241,7 @@ NeuronAnnotations.prototype.query = function()
             };
             // Create result table rows
             this.queryResults.forEach((function(entity) {
-              this.add_result_table_row(entity, appender);
+              this.add_result_table_row(entity, appender, 0);
             }).bind(this));
 
             // If there are results, display the result table

@@ -322,7 +322,7 @@ var ReviewSystem = new function()
             tileHeight = tilelayer.getTileHeight(),
             max_column = parseInt( stack.dimension.x / tileWidth ),
             max_row = parseInt( stack.dimension.y / tileHeight )
-            startsegment = -1, endsegment = 0;
+            startsegment = -1, endsegment = 0; node_counter = 0;
         var s = [];
         for(var idx in self.skeleton_segments) {
             if( self.skeleton_segments[idx]['status'] !== "100.00" ) {
@@ -331,6 +331,7 @@ var ReviewSystem = new function()
                 var seq = self.skeleton_segments[idx]['sequence'];
                 for(var i = 0; i < self.skeleton_segments[idx]['nr_nodes']; i++ ) {
                     if( seq[i]['rid'] == -1 ) {
+                        node_counter++;
                         var c = parseInt( seq[i].x / stack.resolution.x / tileWidth),
                             r = parseInt( seq[i].y / stack.resolution.y / tileHeight );
                         for( var rowidx = r-1; rowidx <= r+1; rowidx++ ) {
@@ -345,6 +346,8 @@ var ReviewSystem = new function()
                 }
                 endsegment = idx;
             }
+            if(node_counter > 800)
+                break;
         }
         total_count = s.length;
         $('#counting-cache-info').text( 'From segment: ' + startsegment + ' to ' + endsegment );

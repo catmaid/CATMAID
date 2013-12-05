@@ -785,7 +785,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
 
   $(annotate_button).click(function() {
     if (self.get_selected_neurons().length > 0) {
-      NeuronAnnotations.prototype.annotate_neurons.call(self);
+      NeuronAnnotations.prototype.annotate_neurons(self.get_selected_neurons());
     } else {
       alert("Please select at least one neuron to annotate first!");
     }

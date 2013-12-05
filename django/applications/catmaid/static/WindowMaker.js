@@ -2128,8 +2128,9 @@ var WindowMaker = new function()
           NA.query.call(NA);
           event.preventDefault();
         });
-    $('#neuron_annotations_annotate' + NA.widgetID)[0].onclick =
-        NA.annotate_neurons.bind(NA);
+    $('#neuron_annotations_annotate' + NA.widgetID)[0].onclick = (function() {
+        this.annotate_neurons(this.get_selected_neurons());
+    }).bind(NA);
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);
     var select = SkeletonListSources.createPushSelect(NA, '0');

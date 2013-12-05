@@ -327,11 +327,8 @@ NeuronAnnotations.prototype.get_selected_neurons = function()
     }).bind(this), []);
 }
 
-NeuronAnnotations.prototype.annotate_neurons = function()
+NeuronAnnotations.prototype.annotate_neurons = function(entities)
 {
-  // Add a new annotation to the selected neurons.
-  // TODO: is this handling multiple skeletons per neuron correctly?
-
   // TODO: prompt for annotations
   var annotation = prompt('Annotation:');
   if (!annotation) return;
@@ -339,9 +336,8 @@ NeuronAnnotations.prototype.annotate_neurons = function()
   if (0 === annotation.length) return; // can't annotate with nothing
   var annotations = [annotation];
 
-  var selected_neurons = this.get_selected_neurons();
   var neuron_ids = [];
-  selected_neurons.forEach(function(neuron) { neuron_ids.push(neuron.id); });
+  entities.forEach(function(neuron) { neuron_ids.push(neuron.id); });
 
   var form_data = {
       annotations: annotations,

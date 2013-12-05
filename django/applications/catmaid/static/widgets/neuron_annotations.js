@@ -93,6 +93,85 @@ NeuronAnnotations.prototype.highlight = function(skeleton_id)
 
 /* Non-interface methods */
 
+NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn)
+{
+  // Build table row
+  var tr = document.createElement('tr');
+  tr.setAttribute('id', 'neuron_annotation_result_row' +
+          this.widgetID + '_' + entity.id);
+  tr.setAttribute('type', entity.type);
+
+  // Checkbox column
+  var td_cb = document.createElement('td');
+  var cb = document.createElement('input');
+  cb.setAttribute('type', 'checkbox');
+  cb.setAttribute('id', 'result' + this.widgetID + '_' +
+          entity.id);
+  td_cb.appendChild(cb);
+  tr.appendChild(td_cb);
+
+  // Name column
+  var td_name = document.createElement('td');
+  var a = document.createElement('a');
+  a.setAttribute('href', '#');
+  a.appendChild(document.createTextNode(entity.name));
+  td_name.appendChild(a);
+  tr.appendChild(td_name);
+
+  // Type column
+  var td_type = document.createElement('td');
+  td_type.appendChild(document.createTextNode(
+          entity.type));
+  tr.appendChild(td_type);
+
+  // Annotations column
+  var td_ann = document.createElement('td');
+  // Build list of annotations and use layout of jQuery tagbox
+  var ul = entity.annotations.reduce(
+    function(o, e) {
+      var li = document.createElement('li');
+      li.setAttribute('title', 'Remove annotation');
+      li.setAttribute('class', 'remove_annotation');
+      li.setAttribute('neuron_id', entity.id);
+      li.setAttribute('annotation_id', e.id);
+      li.appendChild(document.createTextNode(e.name));
+      o.appendChild(li);
+      return o;
+    }, document.createElement('ul'));
+  ul.setAttribute('class', 'tagEditor');
+  td_ann.appendChild(ul);
+  tr.appendChild(td_ann);
+
+  // Add row to table
+  add_row_fn(tr);
+
+  // Wire up handlers
+  if (entity.type == 'neuron') {
+    var create_handler = function(skid) {
+      return function() {
+        TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skid );
+      }
+    }
+    // Go to nearest
+    if (entity.skeleton_ids.length > 0) {
+      $(a).click(create_handler(entity.skeleton_ids[0]));
+    } else {
+      $(a).click(function() { alert("No skeleton found!"); });
+    }
+  } else if (entity.type == 'annotation') {
+    // Expand
+    $(a).click(function() {
+      }).bind(this));
+    });
+  }
+  // Add click handlers to remove tags from nodes
+  var NA = this;
+  $(".remove_annotation", $(ul)).click( function() {
+      NA.remove_annotation($(this).attr('neuron_id'),
+          $(this).attr('annotation_id'));
+  });
+};
+
 NeuronAnnotations.prototype.query = function()
 {
   var form_data = $('#neuron_query_by_annotations' +
@@ -113,77 +192,14 @@ NeuronAnnotations.prototype.query = function()
                 this.widgetID).find('tbody');
             $tableBody.empty();
             this.queryResults = e;
-            for (var i = 0; i < this.queryResults.length; i++) {
-              var neuron_id = this.queryResults[i].id;
-
-              // Build table row
-              var tr = document.createElement('tr');
-              tr.setAttribute('id', 'neuron_annotation_result_row' +
-                      this.widgetID + '_' + this.queryResults[i].id);
-              tr.setAttribute('type', this.queryResults[i].type);
-
-              // Checkbox column
-              var td_cb = document.createElement('td');
-              var cb = document.createElement('input');
-              cb.setAttribute('type', 'checkbox');
-              cb.setAttribute('id', 'result' + this.widgetID + '_' +
-                      this.queryResults[i].id);
-              td_cb.appendChild(cb);
-              tr.appendChild(td_cb);
-
-              // Name column
-              var td_name = document.createElement('td');
-              var a = document.createElement('a');
-              a.setAttribute('href', '#');
-              a.appendChild(document.createTextNode(this.queryResults[i].name));
-              td_name.appendChild(a);
-              tr.appendChild(td_name);
-
-              // Type column
-              var td_type = document.createElement('td');
-              td_type.appendChild(document.createTextNode(
-                      this.queryResults[i].type));
-              tr.appendChild(td_type);
-
-              // Annotations column
-              var td_ann = document.createElement('td');
-              // Build list of annotations and use layout of jQuery tagbox
-              var ul = this.queryResults[i].annotations.reduce(
-                function(o, e) {
-                  var li = document.createElement('li');
-                  li.setAttribute('title', 'Remove annotation');
-                  li.setAttribute('class', 'remove_annotation');
-                  li.setAttribute('neuron_id', neuron_id);
-                  li.setAttribute('annotation_id', e.id);
-                  li.appendChild(document.createTextNode(e.name));
-                  o.appendChild(li);
-                  return o;
-                }, document.createElement('ul'));
-              ul.setAttribute('class', 'tagEditor');
-              td_ann.appendChild(ul);
-              tr.appendChild(td_ann);
-
+            // create appender function which adds rows to table
+            var appender = function(tr) {
               $tableBody.append(tr);
-
-              // Wire up handlers
-              if (this.queryResults[i].type == 'neuron') {
-                var create_handler = function(skid) {
-                  return function() {
-                    TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skid );
-                  }
-                }
-                // Go to nearest
-                if (this.queryResults[i].skeleton_ids.length > 0) {
-                  $(a).click(create_handler(this.queryResults[i].skeleton_ids[0]));
-                } else {
-                  $(a).click(function() { alert("No skeleton found!"); });
-                }
-              } else if (this.queryResults[i].type == 'annotation') {
-                $(a).click(function() {
-                  // Expand
-                });
-              }
-            }
+            };
+            // Create result table rows
+            this.queryResults.forEach((function(entity) {
+              this.add_result_table_row(entity, appender);
+            }).bind(this));
 
             // If there are results, display the result table
             if (this.queryResults.length > 0) {
@@ -193,13 +209,6 @@ NeuronAnnotations.prototype.query = function()
               $('#neuron_annotations_query_results' + this.widgetID).hide();
               $('#neuron_annotations_query_no_results' + this.widgetID).show();
             }
-
-            // Add click handlers to remove tags from nodes
-            var NA = this;
-            $(".remove_annotation", $tableBody).click( function() {
-                NA.remove_annotation($(this).attr('neuron_id'),
-                    $(this).attr('annotation_id'));
-            });
           }
         }
       }, this));

@@ -310,24 +310,45 @@ var ReviewSystem = new function()
             $('#counting-cache').text( total_count - imageArray.length + '/' + total_count );
             loadImageCallback( imageArray );
         };
-
     }
 
     this.cacheImages = function() {
         if (!checkSkeletonID()) {
             return;
         }
-        submit(django_url+projectID+'/stack/' + project.focusedStack.id+"/skeleton/" + skeletonID + "/cache", {},
-            function(json) {
-                var s = [];
-                var tilelength = json.tiles.length;
-                for(var i = 0; i < tilelength; i++) {
-                    s.push( json.image_base + json.tiles[i]);
+        var tilelayer = project.focusedStack.getLayers()['TileLayer'];
+            stack = project.focusedStack,
+            tileWidth = tilelayer.getTileWidth(),
+            tileHeight = tilelayer.getTileHeight(),
+            max_column = parseInt( stack.dimension.x / tileWidth ),
+            max_row = parseInt( stack.dimension.y / tileHeight )
+            startsegment = -1, endsegment = 0;
+        var s = [];
+        for(var idx in self.skeleton_segments) {
+            if( self.skeleton_segments[idx]['status'] !== "100.00" ) {
+                if( startsegment == -1)
+                    startsegment = idx;
+                var seq = self.skeleton_segments[idx]['sequence'];
+                for(var i = 0; i < self.skeleton_segments[idx]['nr_nodes']; i++ ) {
+                    if( seq[i]['rid'] == -1 ) {
+                        var c = parseInt( seq[i].x / stack.resolution.x / tileWidth),
+                            r = parseInt( seq[i].y / stack.resolution.y / tileHeight );
+                        for( var rowidx = r-1; rowidx <= r+1; rowidx++ ) {
+                            for( var colidx = c-1; colidx <= c+1; colidx++ ) {
+                                if( colidx < 0 || colidx > max_column || rowidx < 0 || rowidx > max_row )
+                                    continue;
+                                var tileBaseName = getTileBaseName( [ seq[i].x, seq[i].y, parseInt( seq[i].z / stack.resolution.z ) ] );
+                                s.push( tilelayer.tileSource.getTileURL( project, stack, tileBaseName, tileWidth, tileHeight, colidx, rowidx, 0) );                                
+                            }
+                        }
+                    }
                 }
-                total_count = s.length;
-                $('#counting-cache-info').text( 'From segment: ' + json.startsegment + ' to ' + json.endsegment );
-                loadImageCallback( s );
-        });
+                endsegment = idx;
+            }
+        }
+        total_count = s.length;
+        $('#counting-cache-info').text( 'From segment: ' + startsegment + ' to ' + endsegment );
+        loadImageCallback( s );
     }
 
 };

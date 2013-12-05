@@ -107,28 +107,74 @@ NeuronAnnotations.prototype.query = function()
             this.queryResults = e;
             for (var i = 0; i < this.queryResults.length; i++) {
               var neuron_id = this.queryResults[i].id;
-              // Build list of annotations and use layout of jQuery tagbox
-              var annotation_list = this.queryResults[i].annotations.reduce(
-                function(o, e) {
-                  return o + '<li title="Remove annotation" ' +
-                      'class="remove_annotation" neuron_id="' + neuron_id + '"' +
-                      'annotation_id="' + e.id + '">' + e.name + '</li>';
-                }, '');
 
               // Build table row
-              $tableBody.append(
-                  '<tr id="neuron_annotation_result_row' + this.widgetID +
-                      '_' + this.queryResults[i].id + '" type="' +
-                      this.queryResults[i].type + '">' +
-                    '<td><input type="checkbox" id="result' + this.widgetID + '_' +
-                        this.queryResults[i].id + '"/></td>' +
-                    '<td><a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(' +
-                        '\'skeleton\', ' +
-                        this.queryResults[i].id + '); return false;">' +
-                        this.queryResults[i].name + '</a></td>' +
-                    '<td>' + this.queryResults[i].type  + '</td>' +
-                    '<td><ul class="tagEditor">' + annotation_list + '</ul></td>' +
-                  '</tr>');
+              var tr = document.createElement('tr');
+              tr.setAttribute('id', 'neuron_annotation_result_row' +
+                      this.widgetID + '_' + this.queryResults[i].id);
+              tr.setAttribute('type', this.queryResults[i].type);
+
+              // Checkbox column
+              var td_cb = document.createElement('td');
+              var cb = document.createElement('input');
+              cb.setAttribute('type', 'checkbox');
+              cb.setAttribute('id', 'result' + this.widgetID + '_' +
+                      this.queryResults[i].id);
+              td_cb.appendChild(cb);
+              tr.appendChild(td_cb);
+
+              // Name column
+              var td_name = document.createElement('td');
+              var a = document.createElement('a');
+              a.setAttribute('href', '#');
+              a.appendChild(document.createTextNode(this.queryResults[i].name));
+              td_name.appendChild(a);
+              tr.appendChild(td_name);
+
+              // Type column
+              var td_type = document.createElement('td');
+              td_type.appendChild(document.createTextNode(
+                      this.queryResults[i].type));
+              tr.appendChild(td_type);
+
+              // Annotations column
+              var td_ann = document.createElement('td');
+              // Build list of annotations and use layout of jQuery tagbox
+              var ul = this.queryResults[i].annotations.reduce(
+                function(o, e) {
+                  var li = document.createElement('li');
+                  li.setAttribute('title', 'Remove annotation');
+                  li.setAttribute('class', 'remove_annotation');
+                  li.setAttribute('neuron_id', neuron_id);
+                  li.setAttribute('annotation_id', e.id);
+                  li.appendChild(document.createTextNode(e.name));
+                  o.appendChild(li);
+                  return o;
+                }, document.createElement('ul'));
+              ul.setAttribute('class', 'tagEditor');
+              td_ann.appendChild(ul);
+              tr.appendChild(td_ann);
+
+              $tableBody.append(tr);
+
+              // Wire up handlers
+              if (this.queryResults[i].type == 'neuron') {
+                var create_handler = function(skid) {
+                  return function() {
+                    TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skid );
+                  }
+                }
+                // Go to nearest
+                if (this.queryResults[i].skeleton_ids.length > 0) {
+                  $(a).click(create_handler(this.queryResults[i].skeleton_ids[0]));
+                } else {
+                  $(a).click(function() { alert("No skeleton found!"); });
+                }
+              } else if (this.queryResults[i].type == 'annotation') {
+                $(a).click(function() {
+                  // Expand
+                });
+              }
             }
 
             // If there are results, display the result table

@@ -267,16 +267,15 @@ NeuronAnnotations.prototype.toggle_neuron_selections = function()
 
 NeuronAnnotations.prototype.get_selected_neurons = function()
 {
-  var selected_neurons = [];
-  for (var i = 0; i < this.queryResults.length; i++) {
+  return this.queryResults.reduce((function(o, e) {
       var $input = $("#neuron_annotations_query_results_table" +
           this.widgetID).find('tr[type=neuron]').find('input[id=result' + this.widgetID +
-              '_' + this.queryResults[i].id + ']');
+              '_' + e.id + ']');
       if ($input.length > 0 && $input[0].checked) {
-          selected_neurons.push(this.queryResults[i]);
+          o.push(e);
       }
-  }
-  return selected_neurons;
+      return o;
+    }).bind(this), []);
 }
 
 NeuronAnnotations.prototype.annotate_neurons = function()

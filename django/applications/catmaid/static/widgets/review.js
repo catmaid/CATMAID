@@ -346,7 +346,7 @@ var ReviewSystem = new function()
                 }
                 endsegment = idx;
             }
-            if(node_counter > 800)
+            if(node_counter > 500)
                 break;
         }
         total_count = s.length;

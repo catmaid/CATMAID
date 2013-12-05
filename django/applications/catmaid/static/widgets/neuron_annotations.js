@@ -79,13 +79,13 @@ NeuronAnnotations.prototype.highlight = function(skeleton_id)
 
   if (neurons) {
     // Remove any highlighting
-    $('[id^=neuron_annotation_result_row' + this.widgetID + '_]').css(
+    $('[class^=neuron_annotation_result_row' + this.widgetID + '_]').css(
         'background-color', 'white');
     // Highlight the neuron, containing the requested skeleton, if available.
     // Altough the code works for multiple neurons, it should be normally the
     // case that there is only one neuron, belonging to the skeleton.
     neurons.forEach($.proxy(function(n) {
-      $('#neuron_annotation_result_row' + this.widgetID + '_' + n.id).css(
+      $('.neuron_annotation_result_row' + this.widgetID + '_' + n.id).css(
           'background-color', SelectionTable.prototype.highlighting_color);
     }, this));
   }
@@ -103,7 +103,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
 {
   // Build table row
   var tr = document.createElement('tr');
-  tr.setAttribute('id', 'neuron_annotation_result_row' +
+  tr.setAttribute('class', 'neuron_annotation_result_row' +
           this.widgetID + '_' + entity.id);
   tr.setAttribute('type', entity.type);
 
@@ -116,14 +116,15 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   div_cb.style.marginLeft = indent * 1.5 + 'em';
   var cb = document.createElement('input');
   cb.setAttribute('type', 'checkbox');
-  cb.setAttribute('id', 'result' + this.widgetID + '_' +
+  cb.setAttribute('class', 'result' + this.widgetID + '_' +
           entity.id);
   div_cb.appendChild(cb);
   var a = document.createElement('a');
   a.setAttribute('href', '#');
   a.appendChild(document.createTextNode(entity.name));
   div_cb.appendChild(a);
-  tr.appendChild(div_cb);
+  td_cb.appendChild(div_cb);
+  tr.appendChild(td_cb);
 
   // Type column
   var td_type = document.createElement('td');
@@ -302,7 +303,7 @@ NeuronAnnotations.prototype.toggle_neuron_selections = function()
   var newValue = $("#neuron_annotations_toggle_neuron_selections_checkbox" +
       this.widgetID)[0].checked;
   $("#neuron_annotations_query_results_table" + this.widgetID).find(
-      'tbody tr td input[id*=result' + this.widgetID + '_]').each(
+      'tbody tr td input[class*=result' + this.widgetID + '_]').each(
           function(i, element) {
             element.checked = newValue;
           });
@@ -310,12 +311,17 @@ NeuronAnnotations.prototype.toggle_neuron_selections = function()
 
 NeuronAnnotations.prototype.get_selected_neurons = function()
 {
+  var visited = {};
   return this.queryResults.reduce((function(o, e) {
-      var $input = $("#neuron_annotations_query_results_table" +
-          this.widgetID).find('tr[type=neuron]').find('input[id=result' + this.widgetID +
-              '_' + e.id + ']');
-      if ($input.length > 0 && $input[0].checked) {
+      // Test if one of the checkboxes for a particular neuron is checked
+      var is_checked = $("#neuron_annotations_query_results_table" +
+          this.widgetID).find('tr[type=neuron]').find('input[class=result' +
+              this.widgetID + '_' + e.id + ']').is(':checked');
+      // Avoid duplicates if the same neuron is checked multiple times and
+      // add it only if not yet present.
+      if (is_checked && !(e.id in visited)) {
           o.push(e);
+          visited[e.id] = true;
       }
       return o;
     }).bind(this), []);

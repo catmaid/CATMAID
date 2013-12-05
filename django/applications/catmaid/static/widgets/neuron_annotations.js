@@ -37,14 +37,16 @@ NeuronAnnotations.prototype.updateModels = function() {};
 
 NeuronAnnotations.prototype.getSelectedSkeletons = function() {
   return this.get_selected_neurons().reduce( function(o, e) {
-    o = o.concat(e.skeleton_ids);
+    if (e.type === 'neuron') {
+      o = o.concat(e.skeleton_ids);
+    }
     return o;
   }, []);
 };
 
 NeuronAnnotations.prototype.hasSkeleton = function(skeleton_id) {
   return this.queryResults.some(function(e) {
-    return e.skeleton_ids.some(function(id) {
+    return e.type === 'neuron' && e.skeleton_ids.some(function(id) {
       return id === skeleton_id;
     });
   });
@@ -52,10 +54,12 @@ NeuronAnnotations.prototype.hasSkeleton = function(skeleton_id) {
 
 NeuronAnnotations.prototype.getSelectedSkeletonModels = function() {
   return this.get_selected_neurons().reduce(function(o, e) {
-    e.skeleton_ids.forEach(function(s) {
-      o[s] = new SelectionTable.prototype.SkeletonModel(
-          s, e.name, new THREE.Color().setRGB(1, 1, 0));
-    });
+    if (e.type === 'neuron') {
+      e.skeleton_ids.forEach(function(s) {
+        o[s] = new SelectionTable.prototype.SkeletonModel(
+            s, e.name, new THREE.Color().setRGB(1, 1, 0));
+      });
+    }
     return o;
   }, {});
 };
@@ -64,9 +68,13 @@ NeuronAnnotations.prototype.highlight = function(skeleton_id)
 {
   // Find neuron containing this skeleton_id
   var neurons = this.queryResults.filter(function(e) {
-    return e.skeleton_ids.some(function(s) {
-      return s == skeleton_id;
-    });
+    if (e.type == 'neuron') {
+      return e.skeleton_ids.some(function(s) {
+        return s == skeleton_id;
+      });
+    } else {
+      return false;
+    }
   });
 
   if (neurons) {

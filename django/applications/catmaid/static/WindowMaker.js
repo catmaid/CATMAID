@@ -2129,7 +2129,11 @@ var WindowMaker = new function()
           event.preventDefault();
         });
     $('#neuron_annotations_annotate' + NA.widgetID)[0].onclick = (function() {
-        this.annotate_neurons(this.get_selected_neurons());
+        // Get IDs of selected entities
+        var selected_entity_ids = this.get_selected_neurons().map( function(e) {
+          return e.id;
+        });;
+        this.annotate_neurons(selected_entity_ids);
     }).bind(NA);
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);

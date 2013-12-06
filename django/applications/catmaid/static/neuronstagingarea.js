@@ -867,24 +867,8 @@ SelectionTable.prototype.measure = function() {
 };
 
 SelectionTable.prototype.annotate_skeleton_list = function() {
-  // TODO: prompt for annotations
-  var shortname = prompt('Annotation:');
-  if (!shortname) return;
-  shortname = shortname.trim();
-  if (0 === shortname.length) return; // can't save a no-name list
-  var annotations = [shortname]
-  
-  // TODO: use request
-  jQuery.ajax({
-    url: django_url + project.id + '/neuron/annotate',
-    data: {
-      annotations: annotations,
-      skeleton_ids: this.getSelectedSkeletons()
-    },
-    type: "POST",
-    dataType: "json",
-    success: function () {}
-  });
+  var skeleton_ids = this.getSelectedSkeletons();
+  NeuronAnnotations.prototype.annotate_neurons_of_skeletons(skeleton_ids);
 };
 
 /** Filtering by an empty text resets to no filtering. */

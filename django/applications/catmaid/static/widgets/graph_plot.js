@@ -158,6 +158,48 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
     this.vectors.push(cga.e[i]);
   }
 
+  if (this.vectors.length > 2) {
+    // Potentially disjoint if there are least two network components,
+    // detectable by finding out whether the second eigenvector has zeros where the third doesn't.
+    var ev2 = this.vectors[1][1], // second eigenvector
+        ev3 = this.vectors[2][1]; // third eigenvector
+    if (ev2.some(function(v2, i) {
+      var v3 = ev3[i];
+      return (0 === v2 && 0 !== v3) || (0 === v3 && 0 !== v2);
+    })) {
+      this.vectors.push([-1, ev2.map(function(v2, i) {
+        return 0 === v2 ? ev3[i] : v2;
+      })]);
+    } else if (this.vectors.length > 3) {
+      // Not disjoint: combine the third and fourth eigenvectors
+      // as a function of the second eigenvector, according to the sign in the latter.
+
+      // Pick all indices for positive values in the second (1) eigenvector
+      var positive = this.vectors[1][1].reduce(function(a, v, i) { if (v > 0) a.push(i); return a; }, []);
+
+      // For the positive indices, find out if the std dev is larger in the third
+      // or the fourth eigenvectors
+      var indices = [2, 3].map(function(k) {
+        var v = this.vectors[k][1],
+            mean = positive.reduce(function(sum, i) { return sum + v[i];}, 0) / positive.length,
+            stdDev = positive.reduce(function(sum, i) { return sum + Math.pow(v[i] - mean, 2); }, 0) / positive.length;
+        return [k, stdDev];
+      }, this).sort(function(a, b) {
+        return a[1] < b[1];
+      }).map(function(a) { return a[0]; });
+
+      // Create a new vector with the most signal from both the third (2) and fourth (3) eigenvectors
+      this.vectors.push([-1, this.vectors[1][1].map(function(v, i) {
+        return this.vectors[v > 0 ? indices[0] : indices[1]][1][i]; 
+      }, this)]);
+    } else {
+      this.vectors.push([-1, this.skeleton_ids.map(function() { return 0; })]);
+    }
+  } else {
+    this.vectors.push([-1, this.skeleton_ids.map(function() { return 0; })]);
+  }
+
+
   // Reset pulldown menus
   var updateSelect = function(select) {
     select.options.length = 0;
@@ -166,6 +208,8 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
     for (var i=0; i<10 && i <cga.e.length; ++i) {
       select.options.add(new Option('Eigenvalue ' + Number(cga.e[i][0]).toFixed(2), i+1));
     }
+
+    select.options.add(new Option('Graph partition (cell types)', 11));
 
     ['Cable length (nm)',
      'Num. input synapses',

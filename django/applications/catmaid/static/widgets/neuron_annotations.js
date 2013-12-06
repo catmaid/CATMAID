@@ -327,14 +327,20 @@ NeuronAnnotations.prototype.get_selected_neurons = function()
     }).bind(this), []);
 }
 
-NeuronAnnotations.prototype.prompt_for_annotations = function()
+NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
 {
-  // TODO: prompt for annotations
-  var annotation = prompt('Annotation:');
-  if (!annotation) return;
-  annotation = annotation.trim();
-  if (0 === annotation.length) return; // can't annotate with nothing
-  return [annotation];
+  var dialog = new OptionsDialog("Add new annotation");
+  dialog.appendMessage("Add a new annotation for the selected objects");
+  var annotation_input = dialog.appendField('Annotation: ', 'new-annotation', '');
+  dialog.onOK = function() {
+    var annotation = annotation_input.value;
+    if (!annotation) return;
+    annotation = annotation.trim();
+    if (0 === annotation.length) return; // can't annotate with nothing
+    success_fn([annotation]);
+  };
+
+  dialog.show(300, 200, true);
 }
 
 NeuronAnnotations.prototype.annotate_neurons_of_skeletons = function(skeleton_ids)
@@ -350,33 +356,34 @@ NeuronAnnotations.prototype.annotate_neurons = function(neuron_ids)
 NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids)
 {
   // Get annotation terms
-  var annotations = this.prompt_for_annotations();
-  if (!annotations) return;
-  // Build request data structure
-  var data = {
-    annotations: annotations,
-  };
-  if (neuron_ids) {
-      data.neuron_ids = neuron_ids;
-  }
-  if (skeleton_ids) {
-      data.skeleton_ids = skeleton_ids;
-  }
-  // Do request
-  requestQueue.register(django_url + project.id + '/neuron/annotate',
-      'POST', data, function(status, text, xml) {
-        if (status === 200) {
-          var e = $.parseJSON(text);
-          if (e.error) {
-            alert(e.error);
-          } else {
-            if (annotations.length == 1)
-              growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
-            else
-              growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
+  var annotations = this.prompt_for_annotations(function(annotations) {
+    if (!annotations) return;
+    // Build request data structure
+    var data = {
+      annotations: annotations,
+    };
+    if (neuron_ids) {
+        data.neuron_ids = neuron_ids;
+    }
+    if (skeleton_ids) {
+        data.skeleton_ids = skeleton_ids;
+    }
+    // Do request
+    requestQueue.register(django_url + project.id + '/neuron/annotate',
+        'POST', data, function(status, text, xml) {
+          if (status === 200) {
+            var e = $.parseJSON(text);
+            if (e.error) {
+              alert(e.error);
+            } else {
+              if (annotations.length == 1)
+                growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
+              else
+                growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
+            }
           }
-        }
-      });
+        });
+  });
 };
 
 NeuronAnnotations.prototype.remove_annotation = function(neuron_id,

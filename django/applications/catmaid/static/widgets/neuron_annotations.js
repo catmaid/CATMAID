@@ -332,6 +332,7 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
   var dialog = new OptionsDialog("Add new annotation");
   dialog.appendMessage("Add a new annotation for the selected objects");
   var annotation_input = dialog.appendField('Annotation: ', 'new-annotation', '');
+  this.add_autocomplete_to_input(annotation_input);
   dialog.onOK = function() {
     var annotation = annotation_input.value;
     if (!annotation) return;

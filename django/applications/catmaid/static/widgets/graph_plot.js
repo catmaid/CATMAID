@@ -154,7 +154,7 @@ CircuitGraphPlot.prototype._add_graph_partition = function(mirror) {
           vs = [ev3, ev4];
 
       // Pick all indices for positive values in the second (1) eigenvector
-      var positive = this.vectors[1][1].reduce(function(a, v, i) { if (v > 0) a.push(i); return a; }, []);
+      var positive = ev2.reduce(function(a, v, i) { if (v > 0) a.push(i); return a; }, []);
 
       // For the positive indices, find out if the std dev is larger in the third
       // or the fourth eigenvectors

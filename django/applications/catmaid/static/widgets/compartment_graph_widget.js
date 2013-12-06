@@ -650,7 +650,6 @@ CompartmentGraphWidget.prototype.load = function(skeleton_ids, models) {
       (function (status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);
-          console.log(json, text);
           if (json.error) {
             if ('REPLACED' === json.error) return;
             alert(json.error);

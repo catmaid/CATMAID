@@ -3,16 +3,15 @@ from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
 from catmaid.objects import *
-from catmaid.control.node import _fetch_location
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
-import sys
 from collections import defaultdict
 import json
 from operator import itemgetter
 import networkx as nx
 from tree_util import reroot, edge_count_to_root
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def last_openleaf(request, project_id=None, skeleton_id=None):

@@ -587,12 +587,7 @@ def skeleton_json(*args, **kwargs):
     kwargs['format'] = 'json'
     return export_extended_skeleton_response(*args, **kwargs)
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
-    """
-    Export the skeleton as a list of sequences of entries, each entry containing
-    an id, a sequence of nodes, the percent of reviewed nodes, and the node count.
-    """
+def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
     treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'location', 'parent_id', 'reviewer_id')
 
     g = nx.DiGraph()
@@ -637,7 +632,15 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, format=No
             'status': '%.2f' % (100.0 * sum(1 for node in sequence if node['id'] in reviewed) / len(sequence)),
             'nr_nodes': len(sequence)
         })
+    return segments
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
+    """
+    Export the skeleton as a list of sequences of entries, each entry containing
+    an id, a sequence of nodes, the percent of reviewed nodes, and the node count.
+    """
+    segments = _export_review_skeleton( project_id, skeleton_id, format)
     return HttpResponse(json.dumps(segments))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

@@ -1958,9 +1958,9 @@ window.OptionsDialog.prototype.show = function(width, height, modal) {
   });
 };
 
-window.OptionsDialog.prototype.appendMessage = function(msg) {
+window.OptionsDialog.prototype.appendMessage = function(text) {
   var msg = document.createElement('p');
-  msg.innerHTML = msg;
+  msg.appendChild(document.createTextNode(text));
   this.dialog.appendChild(msg);
 };
 

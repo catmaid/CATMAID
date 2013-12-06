@@ -94,6 +94,7 @@ var ReviewSystem = new function()
             var cell = $('#rev-status-cell-' + self.current_segment['id']);
             cell.text('100.00%');
             cell.css('background-color', '#6fff5c');
+            self.current_segment['status'] = '100.00';
             self.selectNextSegment();
             return;
         }
@@ -130,6 +131,7 @@ var ReviewSystem = new function()
                 var cell = $('#rev-status-cell-' + self.current_segment['id']);
                 cell.text('100.00%');
                 cell.css('background-color', '#6fff5c');
+                self.current_segment['status'] = '100.00';
                 // Don't startSkeletonToReview, because self.current_segment_index
                 // would be lost, losing state for q/w navigation.
             }
@@ -322,7 +324,7 @@ var ReviewSystem = new function()
             tileHeight = tilelayer.getTileHeight(),
             max_column = parseInt( stack.dimension.x / tileWidth ),
             max_row = parseInt( stack.dimension.y / tileHeight )
-            startsegment = -1, endsegment = 0; node_counter = 0;
+            startsegment = -1, endsegment = 0; tile_counter = 0;
         var s = [];
         for(var idx in self.skeleton_segments) {
             if( self.skeleton_segments[idx]['status'] !== "100.00" ) {
@@ -331,7 +333,6 @@ var ReviewSystem = new function()
                 var seq = self.skeleton_segments[idx]['sequence'];
                 for(var i = 0; i < self.skeleton_segments[idx]['nr_nodes']; i++ ) {
                     if( seq[i]['rid'] == -1 ) {
-                        node_counter++;
                         var c = parseInt( seq[i].x / stack.resolution.x / tileWidth),
                             r = parseInt( seq[i].y / stack.resolution.y / tileHeight );
                         for( var rowidx = r-1; rowidx <= r+1; rowidx++ ) {
@@ -340,13 +341,14 @@ var ReviewSystem = new function()
                                     continue;
                                 var tileBaseName = getTileBaseName( [ seq[i].x, seq[i].y, parseInt( seq[i].z / stack.resolution.z ) ] );
                                 s.push( tilelayer.tileSource.getTileURL( project, stack, tileBaseName, tileWidth, tileHeight, colidx, rowidx, 0) );                                
+                                tile_counter++;
                             }
                         }
                     }
                 }
                 endsegment = idx;
             }
-            if(node_counter > 500)
+            if(tile_counter > 3000)
                 break;
         }
         total_count = s.length;

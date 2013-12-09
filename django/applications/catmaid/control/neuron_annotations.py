@@ -3,6 +3,7 @@ from string import upper
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.db.models import Max
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -329,6 +330,10 @@ def list_annotations_datatable(request, project_id=None):
 
     should_sort = request.POST.get('iSortCol_0', False)
 
+    # Annotate last used time
+    annotation_query = annotation_query.annotate(
+        last_used=Max('cici_via_b__edition_time'))
+
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
@@ -336,7 +341,7 @@ def list_annotations_datatable(request, project_id=None):
         sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
                 sorting_directions)
 
-        fields = ['name']
+        fields = ['name', 'last_used']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
                 for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
@@ -344,13 +349,23 @@ def list_annotations_datatable(request, project_id=None):
         annotation_query = annotation_query.extra(order_by=[di + col for (di, col) in zip(
                 sorting_directions, sorting_cols)])
 
+    # We only require ID, name and last used
+    annotation_query = annotation_query.values_list('id', 'name', 'last_used')
+
     result = list(annotation_query[display_start:display_start + display_length])
 
     response = {'iTotalRecords': len(result),
             'iTotalDisplayRecords': len(result), 'aaData': []}
     for annotation in result:
+        # Format last used time
+        if annotation[2]:
+            last_used = annotation[2].strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            last_used = 'never'
+
         response['aaData'] += [[
-            annotation.name,
+            annotation[1], # Name
+            last_used, # Last used
         ]]
 
     return HttpResponse(json.dumps(response), mimetype='text/json')

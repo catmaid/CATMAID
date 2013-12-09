@@ -267,7 +267,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
       this.navigator.widgetID);
 
   // Create annotation table
-  var columns = ['Annotation'];
+  var columns = ['Annotation', 'Last used'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
   var table_footer = document.createElement('tfoot');
@@ -339,7 +339,11 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
     "bJQueryUI": true,
     "aaSorting": [[ 2, "desc" ]],
     "aoColumns": [
-      {
+      { // Annotation name
+        "bSearchable": true,
+        "bSortable": true
+      },
+      { // Last used date
         "bSearchable": true,
         "bSortable": true
       },

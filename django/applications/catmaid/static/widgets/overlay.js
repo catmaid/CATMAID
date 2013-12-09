@@ -1962,6 +1962,7 @@ window.OptionsDialog.prototype.appendMessage = function(text) {
   var msg = document.createElement('p');
   msg.appendChild(document.createTextNode(text));
   this.dialog.appendChild(msg);
+  return msg;
 };
 
 window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, values, defaultValue) {

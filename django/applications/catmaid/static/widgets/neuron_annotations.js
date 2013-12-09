@@ -370,17 +370,20 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
   dialog.show('auto', 'auto', true);
 }
 
-NeuronAnnotations.prototype.annotate_neurons_of_skeletons = function(skeleton_ids)
+NeuronAnnotations.prototype.annotate_neurons_of_skeletons = function(
+    skeleton_ids, callback)
 {
-  this.annotate(null, skeleton_ids);
+  this.annotate(null, skeleton_ids, callback);
 };
 
-NeuronAnnotations.prototype.annotate_neurons = function(neuron_ids)
+NeuronAnnotations.prototype.annotate_neurons = function(neuron_ids,
+    callback)
 {
-  this.annotate(neuron_ids, null);
+  this.annotate(neuron_ids, null, callback);
 };
 
-NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids)
+NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids,
+    callback)
 {
   // Get annotation terms
   var annotations = this.prompt_for_annotations(function(annotations,
@@ -411,6 +414,8 @@ NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids)
                 growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
               else
                 growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
+              // Execute callback, if any
+              if (callback) callback();
             }
           }
         });

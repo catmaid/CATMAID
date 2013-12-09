@@ -165,12 +165,14 @@ def _annotate_neurons(project_id, user, neuron_ids, annotations):
 
     annotation_class = Class.objects.get(project_id = project_id,
                                          class_name = 'annotation')
+    annotation_objects = []
     for annotation in annotations:
         # Make sure the annotation's class instance exists.
         ci, created = ClassInstance.objects.get_or_create(
                 project_id=project_id, name=annotation,
                 class_column=annotation_class,
                 defaults={'user': user});
+        annotation_objects.append(ci)
         # Annotate each of the neurons. Avoid duplicates for the current user,
         # but it's OK for multiple users to annotate with the same instance.
         for neuron_id in neuron_ids:
@@ -182,12 +184,16 @@ def _annotate_neurons(project_id, user, neuron_ids, annotations):
                     defaults={'class_instance_a_id': neuron_id})
             cici.save() # update the last edited time
 
+    return annotation_objects
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def annotate_neurons(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
 
     annotations = [v for k,v in request.POST.iteritems()
             if k.startswith('annotations[')]
+    meta_annotations = [v for k,v in request.POST.iteritems()
+            if k.startswith('meta_annotations[')]
     neuron_ids = [int(v) for k,v in request.POST.iteritems()
             if k.startswith('neuron_ids[')]
     skeleton_ids = [int(v) for k,v in request.POST.iteritems()
@@ -200,7 +206,14 @@ def annotate_neurons(request, project_id = None):
                 cici_via_b__class_instance_a__in = skeleton_ids).values_list(
                         'id', flat=True)
 
-    _annotate_neurons(project_id, request.user, neuron_ids, annotations)
+    # Annotate neurons
+    annotations = _annotate_neurons(project_id, request.user, neuron_ids,
+            annotations)
+    # Annotate annotations
+    if meta_annotations:
+        annotation_ids = [a.id for a in annotations]
+        _annotate_neurons(project_id, request.user, annotation_ids,
+                meta_annotations)
 
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 

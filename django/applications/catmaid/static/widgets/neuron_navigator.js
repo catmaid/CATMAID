@@ -337,7 +337,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
         this.possibleLengthsLabels
     ],
     "bJQueryUI": true,
-    "aaSorting": [[ 2, "desc" ]],
+    "aaSorting": [[ 0, "desc" ]],
     "aoColumns": [
       { // Annotation name
         "bSearchable": true,

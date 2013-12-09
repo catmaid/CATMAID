@@ -1216,34 +1216,44 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 
   /* User who locked the neuron */
 
-  // Title
-  var annotation_title = document.createElement('h4');
-  annotation_title.appendChild(document.createTextNode('User who locked this neuron'));
-  container.append(annotation_title);
-
-  // Table filters and ID
-  var locked_annotation_filters = ["locked"];
-  var locked_user_table_id = 'navigator_userlist_table' +
-      this.navigator.widgetID;
-
-  // Add user data table based on filters above
-  var locked_user_datatable = this.add_user_list_table(container,
-      locked_user_table_id, locked_annotation_filters, neuron_id_filter);
-
-  // If a user is selected a user filter node is created and the event is
-  // removed.
-  $('#' + locked_user_table_id).on('click', ' tbody tr', function () {
-      var aData = locked_user_datatable.fnGetData(this);
-      if (aData) {
-        var user = {
-          'login': aData[0],
-          'first_name': aData[1],
-          'last_name': aData[2],
-          'id': aData[3],
+  requestQueue.register(django_url + project.id + '/annotations/list',
+    'POST', {'neuron_id': this.neuron_id}, (function(status, text) {
+        if (200 !== status) {
+          alert("Unexpected status code: " + status);
+        } else {
+          var json = $.parseJSON(text);
+          if (json.error) {
+            alert(json.error);
+          } else {
+            // Check if the neuron is locked and if so who did it
+            var locked = json.annotations.filter(function(a) {
+              return a.name === 'locked';
+            });
+            var annotation_title = document.createElement('h4');
+            container.append(annotation_title);
+            if (locked.length > 0) {
+              var locked_user = locked[0].users[0];
+              annotation_title.appendChild(document.createTextNode(
+                  'User who locked this neuron: '));
+              var a = document.createElement('a');
+              a.appendChild(document.createTextNode(locked_user.name));
+              annotation_title.appendChild(a);
+              // If one clicks the user who locked the neuron, a new user filter
+              // node is created.
+              $(a).on('click', (function () {
+                    var user = {
+                      'login': locked_user.name,
+                      'id': locked_user.id,
+                    }
+                    var filter_node = new NeuronNavigator.UserFilterNode(user);
+                    filter_node.link(this.navigator, this);
+                    this.navigator.select_node(filter_node);
+              }).bind(this));
+            } else {
+              annotation_title.appendChild(document.createTextNode(
+                  'No one locked this neuron'));
+            }
+          }
         }
-        var filter_node = new NeuronNavigator.UserFilterNode(user);
-        filter_node.link(self.navigator, self);
-        self.navigator.select_node(filter_node);
-      }
-  });
+  }).bind(this));
 };

@@ -972,6 +972,19 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 
   container.addClass('multi_table_node');
 
+  // Create annotate button
+  var annotate_button = document.createElement('input');
+  annotate_button.setAttribute('type', 'button');
+  annotate_button.setAttribute('value', 'Annotate');
+  container.append(annotate_button);
+
+  // When clicked, the annotate button should prompt for a new annotation and
+  // reload the node
+  $(annotate_button).click((function() {
+    NeuronAnnotations.prototype.annotate_neurons([this.neuron_id],
+        (function() { this.navigator.select_node(this); }).bind(this));
+  }).bind(this));
+
   /* Skeletons: Request compact JSON data */
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_skeletonlist_content' +

@@ -21,6 +21,7 @@ django/configuration.py
 /.pydevproject
 .idea/
 *.orig
+/.settings/
 *.pyc
 scripts/cloud/configuration.py
 *.swp

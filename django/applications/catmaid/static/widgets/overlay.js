@@ -2143,7 +2143,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
             alert(json.error);
           } else {
             // Create annotation check boxes
-            json.forEach(function(aobj) {
+            json.annotations.forEach(function(aobj) {
               var create_cb = function(a_info, checked) {
                 var cb_label = document.createElement('label');
                 cb_label.style.cssFloat = 'left';
@@ -2151,11 +2151,13 @@ SplitMergeDialog.prototype.populate = function(extension) {
                 var cb = document.createElement('input');
                 cb.checked = checked;
                 cb.setAttribute('class', 'split_skeleton_annotation');
-                cb.setAttribute('annotation', a_info.aname);
+                cb.setAttribute('annotation', a_info.name);
                 cb.setAttribute('type', 'checkbox');
                 cb_label.appendChild(cb);
+                // There should only be one user who has used this annotation
+                // with the current neuron.
                 cb_label.appendChild(document.createTextNode(
-                    a_info.aname + ' (by ' + a_info.uname + ')'));
+                    a_info.name + ' (by ' + a_info.users[0].name + ')'));
                 return cb_label;
               };
               listboxes.forEach(function(lb) {

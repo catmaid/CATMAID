@@ -288,14 +288,22 @@ def create_annotation_query(project_id, param_dict):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_annotations(request, project_id=None):
     """ Creates a list of objects containing an annotation name and the user
-    name and ID of the user having linked that particular annotation.
+    name and ID of the users having linked that particular annotation.
     """
     annotation_query = create_annotation_query(project_id, request.POST)
     annotation_tuples = annotation_query.distinct().values_list('name',
         'cici_via_b__user__id', 'cici_via_b__user__username')
-    annotations = [{ 'aname': an, 'uid': uid, 'uname': un } \
-        for an, uid, un in annotation_tuples]
-    return HttpResponse(json.dumps(annotations), mimetype="text/json")
+    # Create a set mapping annotation names to its users
+    annotation_dict = {}
+    for an, uid, un in annotation_tuples:
+        if an not in annotation_dict:
+            annotation_dict[an] = []
+        annotation_dict[an].append({'id': uid, 'name': un})
+    # Flatten dictoray to list
+    annotations = [{'name': k, 'users': v} for k, v in \
+            annotation_dict.iteritems()]
+    return HttpResponse(json.dumps({'annotations': annotations}),
+            mimetype="text/json")
 
 @requires_user_role([UserRole.Browse])
 def list_annotations_datatable(request, project_id=None):

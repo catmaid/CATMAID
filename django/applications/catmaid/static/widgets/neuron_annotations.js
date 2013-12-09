@@ -425,12 +425,16 @@ NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
             alert("The server returned an unexpected status (" +
               status + ") " + "with error message:\n" + text);
         } else {
-          var annotations = e.map(function(aobj) {
-            return aobj.aname;
-          });
-          $(input).autocomplete({
-            source: annotations
-          });
+          if (e.error) {
+            alert(e.error);
+          } else {
+            var annotation_names = e.annotations.map(function(a) {
+              return a.name;
+            });
+            $(input).autocomplete({
+              source: annotation_names
+            });
+          }
         }
       });
 };

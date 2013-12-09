@@ -995,8 +995,6 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
       'N open end nodes', '% reviewed'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
-  var table_footer = document.createElement('tfoot');
-  table_footer.appendChild(this.create_header_row(columns));
   var skeleton_table_id = 'navigator_skeletonlist_table' + this.navigator.widgetID;
   var table = document.createElement('table');
   table.setAttribute('id', skeleton_table_id);
@@ -1005,7 +1003,6 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
   table.setAttribute('cellspacing', 0);
   table.setAttribute('border', 0);
   table.appendChild(table_header);
-  table.appendChild(table_footer);
 
   content.appendChild(table);
 
@@ -1014,44 +1011,13 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 
   var skeleton_datatable = $(table).dataTable({
     "bDestroy": true,
-    "sDom": '<"H"lr>t<"F"ip>',
+    "sDom": '<"H"r>t<"F">',
     // default: <"H"lfr>t<"F"ip>
     "bProcessing": true,
-    "bServerSide": false, // Enable sorting locally, and prevent sorting from calling the fnServerData to reload the table -- an expensive and undesirable operation.
     "bAutoWidth": false,
-    "iDisplayLength": -1,
-    "aLengthMenu": [
-      [-1, 10, 100, 200],
-      ["All", 10, 100, 200]
-    ],
     //"aLengthChange": false,
     "bJQueryUI": true,
-    "aoColumns": [
-      { // Skeleton ID
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // Number of nodes
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // Number of branch nodes
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // Number of end nodes
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // Number of open end nodes
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // Percent of reviewed nodes
-        "bSearchable": true,
-        "bSortable": true
-      },
-    ]
+    "bSort": false
   });
 
   // Manually request compact-json object for skeleton

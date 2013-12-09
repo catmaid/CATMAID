@@ -329,6 +329,7 @@ def list_annotations_datatable(request, project_id=None):
     annotation_query = create_annotation_query(project_id, request.POST)
 
     should_sort = request.POST.get('iSortCol_0', False)
+    search_term = request.POST.get('sSearch', '')
 
     # Annotate last used time
     annotation_query = annotation_query.annotate(
@@ -337,6 +338,9 @@ def list_annotations_datatable(request, project_id=None):
     # Annotate usage count
     annotation_query = annotation_query.annotate(
         num_usage=Count('cici_via_b'))
+
+    if len(search_term) > 0:
+        annotation_query = annotation_query.filter(name__regex=search_term)
 
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))

@@ -290,7 +290,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
   var datatable = $(table).dataTable({
     // http://www.datatables.net/usage/options
     "bDestroy": true,
-    "sDom": '<"H"lr>t<"F"ip>',
+    "sDom": '<"H"lrf>t<"F"ip>',
     "bProcessing": true,
     "bServerSide": true,
     "bAutoWidth": false,
@@ -336,6 +336,9 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
         this.possibleLengths,
         this.possibleLengthsLabels
     ],
+    "oLanguage": {
+      "sSearch": "Search annotations (regex):"
+    },
     "bJQueryUI": true,
     "aaSorting": [[ 0, "desc" ]],
     "aoColumns": [
@@ -344,11 +347,11 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
         "bSortable": true
       },
       { // Last used date
-        "bSearchable": true,
+        "bSearchable": false,
         "bSortable": true
       },
       { // Last used date
-        "bSearchable": true,
+        "bSearchable": false,
         "bSortable": true
       },
     ]

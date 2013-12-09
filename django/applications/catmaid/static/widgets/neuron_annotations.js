@@ -331,17 +331,43 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
 {
   var dialog = new OptionsDialog("Add new annotation");
   dialog.appendMessage("Add a new annotation for the selected objects");
+  // Add annotation input field supporting auto-completion
   var annotation_input = dialog.appendField('Annotation: ', 'new-annotation', '');
   this.add_autocomplete_to_input(annotation_input);
+  // Add button to toggle display of meta annotation input field
+  var meta_toggle = dialog.appendMessage("Click here to also add a meta annotation");
+  var meta_annotation_input = dialog.appendField('Meta annotation: ',
+      'new-meta-annotation', '');
+  this.add_autocomplete_to_input(meta_annotation_input);
+  // Add toggle functionalty to text and hide meta input box
+  $(meta_annotation_input).parent().hide();
+  $(meta_toggle).click(function() {
+    $(meta_annotation_input).parent().toggle();
+  });
+
   dialog.onOK = function() {
+    // Get annotation, if any
     var annotation = annotation_input.value;
     if (!annotation) return;
     annotation = annotation.trim();
     if (0 === annotation.length) return; // can't annotate with nothing
-    success_fn([annotation]);
+    // Get meta annotation, if any
+    var meta_annotation = meta_annotation_input.value;
+    if (meta_annotation) {
+      meta_annotation = meta_annotation.trim();
+      if (0 === meta_annotation.length) {
+        meta_annotation = null;
+      } else {
+        meta_annotation = [meta_annotation];
+      }
+    } else {
+      meta_annotation = null;
+    }
+    // Call handler
+    success_fn([annotation], meta_annotation);
   };
 
-  dialog.show(300, 200, true);
+  dialog.show('auto', 'auto', true);
 }
 
 NeuronAnnotations.prototype.annotate_neurons_of_skeletons = function(skeleton_ids)
@@ -357,12 +383,16 @@ NeuronAnnotations.prototype.annotate_neurons = function(neuron_ids)
 NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids)
 {
   // Get annotation terms
-  var annotations = this.prompt_for_annotations(function(annotations) {
+  var annotations = this.prompt_for_annotations(function(annotations,
+      meta_annotations) {
     if (!annotations) return;
     // Build request data structure
     var data = {
       annotations: annotations,
     };
+    if (meta_annotations) {
+      data.meta_annotations = meta_annotations;
+    }
     if (neuron_ids) {
         data.neuron_ids = neuron_ids;
     }

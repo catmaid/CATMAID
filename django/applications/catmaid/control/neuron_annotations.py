@@ -332,12 +332,16 @@ def list_annotations_datatable(request, project_id=None):
     search_term = request.POST.get('sSearch', '')
 
     # Annotate last used time
-    annotation_query = annotation_query.annotate(
-        last_used=Max('cici_via_b__edition_time'))
+    annotation_query = annotation_query.extra(
+        select={'last_used': 'SELECT MAX(edition_time) FROM ' \
+            'class_instance_class_instance cici WHERE ' \
+            'cici.class_instance_b = class_instance.id'})
 
     # Annotate usage count
-    annotation_query = annotation_query.annotate(
-        num_usage=Count('cici_via_b'))
+    annotation_query = annotation_query.extra(
+        select={'num_usage': 'SELECT COUNT(*) FROM ' \
+            'class_instance_class_instance cici WHERE ' \
+            'cici.class_instance_b = class_instance.id'})
 
     if len(search_term) > 0:
         annotation_query = annotation_query.filter(name__regex=search_term)

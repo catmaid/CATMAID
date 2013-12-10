@@ -368,12 +368,22 @@ div#classification_graph_object img.roiimage {
     margin-top: 0px;
 }
 
-.neuron_annotations_query_results_table th input {
+.neuron_annotations_query_results_table th input[type=checkbox] {
     padding: 3px;
     width: auto;
     margin-left: 6px;
     margin-right: -6px;
     float: left;
+}
+
+.neuron_annotations_query_results_table th label {
+    font-weight: normal;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.neuron_annotations_query_results_table th input[type=radio] {
+    width: auto;
 }
 
 .neuron_annotations_query_results_table li.remove_annotation {

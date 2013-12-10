@@ -146,6 +146,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
       li.setAttribute('class', 'remove_annotation');
       li.setAttribute('neuron_id', entity.id);
       li.setAttribute('annotation_id', e.id);
+      li.setAttribute('user_id', e.uid);
       li.appendChild(document.createTextNode(e.name));
       o.appendChild(li);
       return o;
@@ -494,4 +495,19 @@ NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
           }
         }
       });
+};
+
+/**
+ * If passed 'true', this function will hide all annotation objects within the
+ * result table that hasn't been linked by the current user. Otherwise, it will
+ * show all annotations.
+ */
+NeuronAnnotations.prototype.toggle_annotation_display = function(show_only_own)
+{
+  var $results= $('#neuron_annotations_query_results' + this.widgetID);
+  if (show_only_own) {
+    $results.find('li[user_id!=' + session.userid + ']').hide();
+  } else {
+    $results.find('li').show();
+  }
 };

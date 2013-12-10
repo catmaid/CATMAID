@@ -2087,7 +2087,15 @@ var WindowMaker = new function()
               'Entity Name' +
             '</th>' +
             '<th>Type</th>' +
-            '<th>Annotations</th>' +
+            '<th>' +
+              '<div class="result_annotations_column">Annotations</div>' +
+              '<div>' +
+                '<label><input type="radio" name="neuron_annotations_display" ' +
+                    'value="show_own" />Show only own</label>' +
+                '<label><input type="radio" name="neuron_annotations_display" ' +
+                    'value="show_all" checked />Show all</label>' +
+              '</div>' +
+            '</th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +
@@ -2164,6 +2172,11 @@ var WindowMaker = new function()
         { dateFormat: "yy-mm-dd" });
     $( "#neuron_query_by_end_date" + NA.widgetID ).datepicker(
         { dateFormat: "yy-mm-dd" });
+    // Bind handler to filter annotation by ownership
+    $( "#neuron_annotations_query_results_table" + NA.widgetID +
+        " th input[name=neuron_annotations_display]" ).change( function() {
+      NA.toggle_annotation_display($(this).val() == 'show_own');
+    });
 
     return win;
   };

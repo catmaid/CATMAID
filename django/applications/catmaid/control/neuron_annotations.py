@@ -46,10 +46,12 @@ def create_annotated_entity_list(project, entities):
     for entity in entities:
         try:
             # Get all annotations linked to this entity
-            annotation_cis = ClassInstance.objects.filter(
+            annotations = ClassInstance.objects.filter(
                 cici_via_b__relation__relation_name = 'annotated_with',
-                cici_via_b__class_instance_a__id = entity.id)
-            annotations = [{'id': a.id, 'name': a.name} for a in annotation_cis]
+                cici_via_b__class_instance_a__id = entity.id).values_list('id',
+                    'name', 'cici_via_b__user__id')
+            annotations = [{'id': a[0], 'name': a[1], 'uid': a[2]} \
+                for a in annotations]
             class_name = entity.class_column.class_name
 
             entity_info = {

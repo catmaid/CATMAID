@@ -117,6 +117,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   div_cb.style.marginLeft = indent * 1.5 + 'em';
   var cb = document.createElement('input');
   cb.setAttribute('type', 'checkbox');
+  cb.setAttribute('entity_id', entity.id);
   cb.setAttribute('class', 'result' + this.widgetID + '_' +
           entity.id);
   var a = document.createElement('a');
@@ -217,6 +218,24 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
       NA.remove_annotation($(this).attr('neuron_id'),
           $(this).attr('annotation_id'));
   });
+  // Add handler to the checkbox infront of each entity
+  var create_cb_handler = function(widget_id) {
+    return function() {
+          // Due to expanded annotations, an entity can appear multiple times. Look
+          // therefore for copies of the current one to toggle it as well.
+          var clicked_cb = this;
+          var is_checked = $(this).is(':checked');
+          var entity_id = $(clicked_cb).attr('entity_id');
+          $("#neuron_annotations_query_results_table" + widget_id).find(
+              'td input[entity_id=' + entity_id + ']').each(function() {
+                  if (this != clicked_cb) {
+                    // Set property without firing event
+                    $(this).prop('checked', is_checked);
+                  }
+              });
+      };
+  };
+  $(cb).change(create_cb_handler(this.widgetID));
 };
 
 NeuronAnnotations.prototype.query = function()

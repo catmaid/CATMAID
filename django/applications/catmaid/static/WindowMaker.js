@@ -1509,6 +1509,13 @@ var WindowMaker = new function()
         cacheImages.onclick = ReviewSystem.cacheImages;
         contentbutton.appendChild(cacheImages);
 
+        var sync = document.createElement('input');
+        sync.setAttribute('type', 'checkbox');
+        sync.setAttribute('id', 'remote_review_skeleton');
+        sync.checked = false;
+        contentbutton.appendChild(sync);
+        contentbutton.appendChild(document.createTextNode(' Remote? '));
+
         var cacheCounter = document.createElement('div');
         cacheCounter.setAttribute("id", "counting-cache");
         contentbutton.appendChild(cacheCounter);

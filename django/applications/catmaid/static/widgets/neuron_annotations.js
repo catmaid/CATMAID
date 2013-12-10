@@ -109,6 +109,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
 
   // Checkbox & name column, potentially indented
   var td_cb = document.createElement('td');
+  td_cb.setAttribute('colspan', '2');
   var div_cb = document.createElement('div');
   // Make sure the line isn't wrapped
   div_cb.style.whiteSpace = 'nowrap';
@@ -118,11 +119,13 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   cb.setAttribute('type', 'checkbox');
   cb.setAttribute('class', 'result' + this.widgetID + '_' +
           entity.id);
-  div_cb.appendChild(cb);
   var a = document.createElement('a');
   a.setAttribute('href', '#');
   a.appendChild(document.createTextNode(entity.name));
-  div_cb.appendChild(a);
+  var label = document.createElement('label');
+  label.appendChild(cb);
+  label.appendChild(a);
+  div_cb.appendChild(label);
   td_cb.appendChild(div_cb);
   tr.appendChild(td_cb);
 

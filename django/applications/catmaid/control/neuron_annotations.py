@@ -361,6 +361,10 @@ def list_annotations_datatable(request, project_id=None):
     annotation_query = annotation_query.values_list(
             'id', 'name', 'last_used', 'num_usage')
 
+    # Make sure we get a distinct result (which otherwise might not be the case
+    # due to the JOINS that are made).
+    annotation_query = annotation_query.distinct()
+
     result = list(annotation_query[display_start:display_start + display_length])
 
     response = {'iTotalRecords': len(result),

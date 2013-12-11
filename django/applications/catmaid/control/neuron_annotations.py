@@ -262,8 +262,17 @@ def create_annotation_query(project_id, param_dict):
             if k.startswith('annotations[')]
     for meta_annotation in meta_annotations:
         annotation_query = annotation_query.filter(
+                cici_via_b__relation__relation_name = 'annotated_with',
+                          cici_via_b__class_instance_a__name = meta_annotation)
+
+    # If information about annotated annotations is found, the current query
+    # will include only annotations that are meta annotations for it.
+    annotated_annotations = [v for k,v in param_dict.iteritems()
+            if k.startswith('annotates[')]
+    for sub_annotation in annotated_annotations:
+        annotation_query = annotation_query.filter(
                 cici_via_a__relation__relation_name = 'annotated_with',
-                          cici_via_a__class_instance_b__name = meta_annotation)
+                          cici_via_a__class_instance_b__name = sub_annotation)
 
     # Passing in a user ID causes the result set to only contain annotations
     # that are used by the respective user. The query filter could lead to

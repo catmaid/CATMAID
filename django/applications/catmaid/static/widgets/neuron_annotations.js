@@ -332,7 +332,11 @@ NeuronAnnotations.prototype.toggle_neuron_selections = function()
           });
 };
 
-NeuronAnnotations.prototype.get_selected_neurons = function()
+/**
+ * If passed true, this function returns a list of selected entities.
+ * Otherweise, a list of unselected entities is returned.
+ */
+NeuronAnnotations.prototype.get_entities = function(checked)
 {
   var visited = {};
   return this.queryResults.reduce((function(o, e) {
@@ -342,12 +346,22 @@ NeuronAnnotations.prototype.get_selected_neurons = function()
               this.widgetID + '_' + e.id + ']').is(':checked');
       // Avoid duplicates if the same neuron is checked multiple times and
       // add it only if not yet present.
-      if (is_checked && !(e.id in visited)) {
+      if (is_checked == checked && !(e.id in visited)) {
           o.push(e);
           visited[e.id] = true;
       }
       return o;
     }).bind(this), []);
+}
+
+NeuronAnnotations.prototype.get_selected_neurons = function()
+{
+  return this.get_entities(true);
+}
+
+NeuronAnnotations.prototype.get_unselected_neurons = function()
+{
+  return this.get_entities(false);
 }
 
 NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)

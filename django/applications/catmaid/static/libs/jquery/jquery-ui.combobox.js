@@ -5,19 +5,25 @@
   /**
    * Creates a new combobox widget that supports autocompletion. It is based on
    * the autocomplete demo at http://jqueryui.com/autocomplete/#combobox and the
-   * stack overflow answer at http://stackoverflow.com/a/15246954/1665417.
+   * stack overflow answer at http://stackoverflow.com/a/15246954/1665417. It
+   * also includes additions from
+   * http://robertmarkbramprogrammer.blogspot.com/2010/09/event-handling-with-jquery-autocomplete.html
    */
   $.widget("ui.combobox", {
     _create: function () {
       var input,
           that = this,
           wasOpen = false,
-          select = this.element.hide(),
+          select = this.element,
+          theWidth = select.width(),
+          theTitle = select.attr("title"),
           selected = select.children(":selected"),
           defaultValue = selected.text() || "",
           wrapper = this.wrapper = $("<span>")
           .addClass("ui-combobox")
           .insertAfter(select);
+      // Hide original combo box
+      select.hide();
 
       function removeIfInvalid(element) {
         var value = $(element).val(),
@@ -38,10 +44,10 @@
         }
       }
 
-      input = $("<input>")
+      input = $("<input style=\"width:" + theWidth + "px;\">")
         .appendTo(wrapper)
         .val(defaultValue)
-        .attr("title", "")
+        .attr("title", '' + theTitle + '')
         .addClass("ui-state-default ui-combobox-input")
         .width(select.width())
         .autocomplete({

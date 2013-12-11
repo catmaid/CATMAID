@@ -499,14 +499,16 @@ NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
 
 /**
  * If passed 'true', this function will hide all annotation objects within the
- * result table that hasn't been linked by the current user. Otherwise, it will
- * show all annotations.
+ * result table that hasn't been linked by the user passed as second argument.
+ * Otherwise, it will show all annotations.
  */
-NeuronAnnotations.prototype.toggle_annotation_display = function(show_only_own)
+NeuronAnnotations.prototype.toggle_annotation_display = function(
+    show_only_user, user_id)
 {
   var $results= $('#neuron_annotations_query_results' + this.widgetID);
-  if (show_only_own) {
-    $results.find('li[user_id!=' + session.userid + ']').hide();
+  if (show_only_user) {
+    $results.find('li[user_id!=' + user_id + ']').hide();
+    $results.find('li[user_id=' + user_id + ']').show();
   } else {
     $results.find('li').show();
   }

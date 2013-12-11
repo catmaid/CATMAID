@@ -2090,10 +2090,19 @@ var WindowMaker = new function()
             '<th>' +
               '<div class="result_annotations_column">Annotations</div>' +
               '<div>' +
-                '<label><input type="radio" name="neuron_annotations_display" ' +
-                    'value="show_own" />Show only own</label>' +
-                '<label><input type="radio" name="neuron_annotations_display" ' +
-                    'value="show_all" checked />Show all</label>' +
+                '<input type="radio" name="neuron_annotations_display" ' +
+                    'id="neuron_annotations_all_filter{{NA-ID}}" ' +
+                    'value="show_all" checked />' +
+                '<label for="neuron_annotations_all_filter{{NA-ID}}">' +
+                    'Show all' +
+                '</label>' +
+                '<input type="radio" name="neuron_annotations_display" ' +
+                    'id="neuron_annotations_user_filter{{NA-ID}}" ' +
+                    'value="show_user" />' +
+                '<label for="neuron_annotations_user_filter{{NA-ID}}">' +
+                    'Show only ' +
+                '</label>' +
+                '<select name="annotator_filter" class=""></select>' +
               '</div>' +
             '</th>' +
           '</tr>' +
@@ -2153,15 +2162,21 @@ var WindowMaker = new function()
     $('#neuron_annotations_add_to_selection' + NA.widgetID)[0].onclick =
         NA.syncLink.bind(NA, select);
 
-    // Fill user select box
+    // Fill user select boxes
     var $select = $('tr #neuron_query_by_annotator' + NA.widgetID);
+    var $filter_select = $("#neuron_annotations_query_results_table" +
+        NA.widgetID + ' select[name=annotator_filter]');
     var users = User.all();
     for (var userID in users) {
       if (users.hasOwnProperty(userID) && userID !== "-1") {
         var user = users[userID];
         {
-          $("<option />", {value: user.id, text: user.fullName}).appendTo(
-              $select);
+          // Add entry to query select
+          var opts = {value: user.id, text: user.fullName}
+          $("<option />", opts).appendTo($select);
+          // Add entry to filter select and select current user by default
+          if (userID == session.userid) { opts.selected = true; }
+          $("<option />", opts).appendTo($filter_select);
         }
       }
     }
@@ -2172,10 +2187,24 @@ var WindowMaker = new function()
         { dateFormat: "yy-mm-dd" });
     $( "#neuron_query_by_end_date" + NA.widgetID ).datepicker(
         { dateFormat: "yy-mm-dd" });
-    // Bind handler to filter annotation by ownership
+    // Bind handlers to filter annotation by ownership
     $( "#neuron_annotations_query_results_table" + NA.widgetID +
         " th input[name=neuron_annotations_display]" ).change( function() {
-      NA.toggle_annotation_display($(this).val() == 'show_own');
+      // Display annotations according to the current choice
+      var $filter_select = $("#neuron_annotations_query_results_table" +
+          NA.widgetID + ' select[name=annotator_filter]');
+      NA.toggle_annotation_display($(this).val() == 'show_user',
+          $filter_select.val());
+    });
+    $("#neuron_annotations_query_results_table" + NA.widgetID +
+        " select[name=annotator_filter]").change( function() {
+      // If not all annotations should be shown, display only those of the newly
+      // selected name.
+      var $filter_radio = $("input[name=neuron_annotations_display]:checked",
+          "#neuron_annotations_query_results_table" + NA.widgetID + " th"  );
+      if ($filter_radio.val() == 'show_user') {
+        NA.toggle_annotation_display(true, $(this).val());
+      }
     });
 
     return win;

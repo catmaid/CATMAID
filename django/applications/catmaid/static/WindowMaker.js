@@ -2123,8 +2123,6 @@ var WindowMaker = new function()
     // Replace {{NA-ID}} with the actual widget ID
     container.innerHTML = container_html.replace(/{{NA-ID}}/g, NA.widgetID);
     content.appendChild( container );
-    // Hide the result container by default
-    $(container).hide();
 
     // Add a container that gets displayed if no results could be found
     var no_results = createContainer("neuron_annotations_query_no_results" + NA.widgetID);
@@ -2180,8 +2178,24 @@ var WindowMaker = new function()
         }
       }
     }
+
     // Make it support autocompletion
     $select.combobox();
+
+    // Make annotation filter select support autocompletion and attach the
+    // selected event handler right away. Unfortunately, this can't be done
+    // later.
+    $filter_select.combobox({
+      selected: function(event, ui) {
+        // If not all annotations should be shown, display only those of the newly
+        // selected name.
+        var $filter_radio = $("input[name=neuron_annotations_display]:checked",
+            "#neuron_annotations_query_results_table" + NA.widgetID + " th"  );
+        if ($filter_radio.val() == 'show_user') {
+          NA.toggle_annotation_display(true, $(this).val());
+        }
+      }
+    });
     
     $( "#neuron_query_by_start_date" + NA.widgetID ).datepicker(
         { dateFormat: "yy-mm-dd" });
@@ -2196,16 +2210,11 @@ var WindowMaker = new function()
       NA.toggle_annotation_display($(this).val() == 'show_user',
           $filter_select.val());
     });
-    $("#neuron_annotations_query_results_table" + NA.widgetID +
-        " select[name=annotator_filter]").change( function() {
-      // If not all annotations should be shown, display only those of the newly
-      // selected name.
-      var $filter_radio = $("input[name=neuron_annotations_display]:checked",
-          "#neuron_annotations_query_results_table" + NA.widgetID + " th"  );
-      if ($filter_radio.val() == 'show_user') {
-        NA.toggle_annotation_display(true, $(this).val());
-      }
-    });
+
+    // Hide the result container by default. It would be more logical to do this
+    // right after the contaienr creation. However, adding auto completion to
+    // the filter select box doesn't work when it is hidden.
+    $(container).hide();
 
     return win;
   };

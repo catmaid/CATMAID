@@ -3,6 +3,7 @@ from django.db.models import Count
 
 from catmaid.models import *
 from catmaid.objects import *
+from catmaid.control.user_evaluation import _parse_date
 
 from datetime import timedelta, time
 
@@ -21,9 +22,15 @@ except:
 def plot_useranalytics(request):
 
     userid = request.GET.get('userid', -1)
+    start_date = request.GET.get('start')
+    end_date = request.GET.get('end')
+
+    print userid, start_date, end_date
 
     if request.user.is_superuser:
-        f = generateReport( userid, 10 )
+        end = _parse_date(end_date) if end_date else datetime.now()
+        start = _parse_date(start_date) if start_date else end - timedelta(end.isoweekday() + 7)
+        f = generateReport( userid, 10, start, end )
     else:
         f = figure(1, figsize=(6,6))
 
@@ -44,26 +51,26 @@ def eventTimes(user_id, start_date, end_date):
         review_time__range = (start_date, end_date)).values_list('review_time')
     return [t[0] for t in tns], [t[0] for t in cns], [t[0] for t in rns]    
     
-def eventsPerInterval(times,start_date,end_date,interval='day'):
-    daycount = (end_date-start_date).days
+def eventsPerInterval(times, start_date, end_date, interval='day'):
+    daycount = (end_date - start_date).days
     timeaxis = []
     if interval=='day':
         timebins = np.zeros( daycount )
-        for n in range( daycount ):
+        for n in xrange( daycount ):
             timeaxis.append( start_date + timedelta(n) )
         for t in times:
             timebins[ (t - start_date).days ] += 1
             
     elif interval=='hour':
         timebins = np.zeros( 24*daycount )
-        for n in range( 24*daycount ):
+        for n in xrange( 24*daycount ):
             timeaxis.append( start_date + n*timedelta(0,3600) )
         for t in times:
             timebins[ np.floor(np.divide((t - start_date).total_seconds(),3600)) ] += 1
     
     elif interval=='halfhour':
         timebins = np.zeros( 48*daycount )
-        for n in range( 48*daycount ):
+        for n in xrange( 48*daycount ):
             timeaxis.append( start_date + n*timedelta(0,1800) )
         for t in times:
             timebins[ np.floor(np.divide((t - start_date).total_seconds(),1800)) ] += 1
@@ -167,19 +174,20 @@ def splitBout(bout,increment):
         currtime = nexttime    
     return boutListOut
 
-def generateReport( user_id, activeTimeThresh ):
+def generateReport( user_id, activeTimeThresh, start_date, end_date ):
+    """ nts: node times
+        cts: connector times
+        rts: review times """
     # start_date = datetime.now() - timedelta( 7 + datetime.now().isoweekday() )
 #     end_date = datetime.now()
 #     
-    start_date = datetime.now() - timedelta( 7 + datetime.now().isoweekday() )
-    end_date = datetime.now()
-    
+
     nts, cts, rts = eventTimes( user_id, start_date, end_date )
 
     if len(nts) == 0:
         return figure(1, figsize=(6,6))
     
-    annotationEvents, ae_timeaxis = eventsPerInterval( nts+cts, start_date, end_date )
+    annotationEvents, ae_timeaxis = eventsPerInterval( nts + cts, start_date, end_date )
     reviewEvents, re_timeaxis = eventsPerInterval( rts, start_date, end_date )
 
     activeBouts, eventsInBout = activeTimes( nts+cts+rts, activeTimeThresh )
@@ -188,11 +196,12 @@ def generateReport( user_id, activeTimeThresh ):
     activeFraction, daytimeaxis = singleDayActiveness( activeBouts, 30, 8, 20 )
 
     dayformat = DateFormatter('%b %d')
-    
+
     fig = plt.figure(figsize=(12,10))
-    ax1 = fig.add_subplot(221)
+    ax1 = plt.subplot2grid((2,2), (0,0))
     an = ax1.bar( ae_timeaxis, annotationEvents, color='#0000AA')
     rv = ax1.bar( re_timeaxis, reviewEvents, bottom=annotationEvents, color='#AA0000')
+    ax1.set_xlim((start_date,end_date))
     
     ax1.legend( (an, rv), ('Annotated', 'Reviewed'), loc=2,frameon=False )
     ax1.set_ylabel('Nodes')
@@ -203,8 +212,9 @@ def generateReport( user_id, activeTimeThresh ):
     plt.setp(xl, rotation=30, fontsize=10)
     ax1.set_title('Edit events', fontsize=10)
 
-    ax2 = fig.add_subplot(222)
+    ax2 = plt.subplot2grid((2,2), (1,0))
     ax2.bar( at_timeaxis, netActiveTime, color='k')
+    ax2.set_xlim((start_date,end_date))
     ax2.set_ylabel('Hours')
     yl = ax2.get_yticklabels()
     plt.setp(yl, fontsize=10)
@@ -213,10 +223,12 @@ def generateReport( user_id, activeTimeThresh ):
     plt.setp(xl, rotation=30, fontsize=10)
     ax2.set_title('Net daily active time', fontsize=10)
 
+    """
     ax3 = fig.add_subplot(223)
     ax3 = eventsPerIntervalPerDayPlot(ax3, rts+nts+cts, start_date, end_date, 30 )
+    """
 
-    ax4 = fig.add_subplot(224)
+    ax4 = plt.subplot2grid((2,2), (0,1), rowspan=2)
     ax4 = dailyActivePlotFigure( activeBouts, ax4, start_date, end_date )
     ax4.xaxis.set_major_locator(DayLocator())
     
@@ -239,7 +251,7 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
     for i in range(12):
         ax.axhline( 2*i, color='#AAAAAA', linestyle = ':' )
     ax.axhspan(8,18,facecolor='#999999',alpha=0.25)
-    ax.set_yticks([2,4,6,8,10,12,14,16,18,20,22])
+    ax.set_yticks([0,2,4,6,8,10,12,14,16,18,20,22,24])
     for bout in activebouts:
         if bout[0].day == bout[1].day:
             isodate = bout[0].isocalendar()
@@ -247,7 +259,7 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
             daybegin.replace(hour=0,minute=0,second=0,microsecond=0)
             ax.bar( bout[0].replace(hour=0,minute=0,second=0,microsecond=0), np.true_divide( (bout[1]-bout[0]).total_seconds(), 3600 ),
                 bottom= bout[0].hour+ bout[0].minute/60.0 + bout[0].second/3600.0,alpha=0.5,color='#0000AA')
-    ax.set_ylim((7,19))
+    ax.set_ylim((0,24))
     ax.set_xlim((start_date,end_date))
     timeaxis = []
     for d in range( (end_date-start_date).days ):

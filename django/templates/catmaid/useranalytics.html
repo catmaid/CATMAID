@@ -2,6 +2,10 @@
 {% load i18n %}
 
 {% block extrahead %}
+<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.blockUI.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery-ui-1.10.1.custom.min.js"></script>
+<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/themes/smoothness/jquery-ui-1.10.1.custom.css" />
 {% endblock %}
 
 {% block breadcrumbs %}
@@ -14,12 +18,13 @@
 
 <h2>User Analytics</h2>
 
-<select id="logtable_username"></select>
-<button id="refresh" href="#">Refresh</button>
+<select id="logtable_username" type=""></select>
+<button id="refresh" >Refresh</button>
+Start date: <input type="text" id="start_date" />
+End date: <input type="text" id="end_date" />
 <br />
 <img src="{{ catmaid_url }}useranalytics" id="useranalyticsimg" />
 
-<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
 <script type="text/javascript">
 
   $.ajax({
@@ -28,32 +33,44 @@
     "cache": false,
     "url": '{{ catmaid_url }}user-list',
     "data": {},
-    "success": function( e ) {
-      console.log('success', e);
-      var new_users = document.getElementById("logtable_username");
-      while (new_users.length > 0)
-          new_users.remove(0);
-      for (var i in e) {
-        if( e.hasOwnProperty(i)) {
-            var new_users = document.getElementById("logtable_username");
-            while (new_users.length > 0)
-                new_users.remove(0);
-            for (var i in e) {
-                var option = document.createElement("option");
-                option.text = e[i].login + " (" + e[i].full_name + ")";
-                option.value = e[i].id;
-                new_users.appendChild(option);
-            }
-            new_users.size = e.length;
-        }
-      }
-      new_users.size = e.length;
+    "success": function( json ) {
+      var select = document.getElementById("logtable_username");
+      select.options.length = 0; // remove all elements
+      json.sort(function(u1, u2) {
+        return u1.last_name.toLowerCase() > u2.last_name.toLowerCase() ? 1 : -1;
+      }).forEach(function(user) {
+          var option = document.createElement("option");
+          if (-1 == user.id) return;
+          option.text = user.full_name + " (" + user.login + ")";
+          option.value = user.id;
+          select.options.add(option);
+      });
     }
   });
 
   $('#refresh').on('click', function() {
-    console.log('click');
-    document.getElementById("useranalyticsimg").src = "{{ catmaid_url }}useranalytics?userid=" + $('#logtable_username').val();
+      $.blockUI();
+      try {
+				var format = function(s) {
+					var v = s.split('/');
+					return v[2] + '-' + v[0] + '-' + v[1];
+				};
+
+        var start = format(document.getElementById('start_date').value),
+            end = format(document.getElementById('end_date').value);
+
+        document.getElementById("useranalyticsimg").src = "{{ catmaid_url }}useranalytics?userid=" + $('#logtable_username').val() + "&start=" + start + "&end=" + end;
+      } catch (e) {
+        alert(e);
+        console.log(e, e.stack);
+      }
+      $.unblockUI();
+  });
+
+	$(function() {
+		var today = new Date();
+    $("#start_date").datepicker();
+    $("#end_date").datepicker();
   });
 
 </script>

@@ -2116,8 +2116,9 @@ var WindowMaker = new function()
         '<p class="neuron_annotations_query_footer">' +
           '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
               'value="Annotate..." />' +
-          '<input type="button" id="neuron_annotations_add_to_selection{{NA-ID}}" ' +
-              'value="Sync to: " />' +
+          '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
+            'Sync to: ' +
+          '</label>' +
         '</p>' +
       '</div>';
     // Replace {{NA-ID}} with the actual widget ID
@@ -2154,11 +2155,9 @@ var WindowMaker = new function()
     }).bind(NA);
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);
-    var select = SkeletonListSources.createPushSelect(NA, '0');
-    $('#neuron_annotations_add_to_selection' + NA.widgetID).parent().append(
-        select);
-    $('#neuron_annotations_add_to_selection' + NA.widgetID)[0].onclick =
-        NA.syncLink.bind(NA, select);
+    var select = SkeletonListSources.createPushSelect(NA, 'link');
+    select.onchange = NA.syncLink.bind(NA, select);
+    $('#neuron_annotations_add_to_selection' + NA.widgetID).append(select);
 
     // Fill user select boxes
     var $select = $('tr #neuron_query_by_annotator' + NA.widgetID);

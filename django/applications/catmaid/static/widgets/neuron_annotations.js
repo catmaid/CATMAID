@@ -220,14 +220,29 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
           $(this).attr('annotation_id'));
   });
   // Add handler to the checkbox infront of each entity
-  var create_cb_handler = function(widget_id) {
+  var create_cb_handler = function(widget) {
     return function() {
-          // Due to expanded annotations, an entity can appear multiple times. Look
-          // therefore for copies of the current one to toggle it as well.
           var clicked_cb = this;
           var is_checked = $(this).is(':checked');
-          var entity_id = $(clicked_cb).attr('entity_id');
-          $("#neuron_annotations_query_results_table" + widget_id).find(
+          var entity_id = $(this).attr('entity_id');
+          // Update sync link
+          widget.updateLink(widget.getSelectedSkeletonModels());
+          // Potentially remove skeletons from link target
+          if (!is_checked && widget.linkTarget) {
+            var skids = widget.queryResults.reduce(function(o, e) {
+              if (e.id == entity_id) {
+                o = o.concat(e.skeleton_ids);
+              }
+              return o;
+            }, []);
+            // Prevent propagation loop by checking if the target has the skeletons anymore
+            if (skids.some(widget.linkTarget.hasSkeleton, widget.linkTarget)) {
+              widget.linkTarget.removeSkeletons(skids);
+            }
+          }
+          // Due to expanded annotations, an entity can appear multiple times. Look
+          // therefore for copies of the current one to toggle it as well.
+          $("#neuron_annotations_query_results_table" + widget.widgetID).find(
               'td input[entity_id=' + entity_id + ']').each(function() {
                   if (this != clicked_cb) {
                     // Set property without firing event
@@ -236,7 +251,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
               });
       };
   };
-  $(cb).change(create_cb_handler(this.widgetID));
+  $(cb).change(create_cb_handler(this));
 };
 
 NeuronAnnotations.prototype.query = function()
@@ -330,6 +345,21 @@ NeuronAnnotations.prototype.toggle_neuron_selections = function()
           function(i, element) {
             element.checked = newValue;
           });
+  // Update sync link
+  this.updateLink(this.getSelectedSkeletonModels());
+  // Potentially remove skeletons from link target
+  if (this.linkTarget) {
+    var unselected_skids = this.get_unselected_neurons().reduce(function(o, e) {
+      if (e.type === 'neuron') {
+        o = o.concat(e.skeleton_ids);
+      }
+      return o;
+    }, []);
+    // Prevent propagation loop by checking if the target has the skeletons anymore
+    if (unselected_skids.some(this.linkTarget.hasSkeleton, this.linkTarget)) {
+      this.linkTarget.removeSkeletons(unselected_skids);
+    }
+  }
 };
 
 /**

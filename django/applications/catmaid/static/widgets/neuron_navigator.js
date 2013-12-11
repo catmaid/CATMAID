@@ -260,7 +260,8 @@ NeuronNavigator.Node.prototype.add_menu_table = function(entries, container)
 };
 
 NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
-    table_id, annotation_filters, user_id_filter, neuron_id_filter)
+    table_id, annotation_filters, annotates_filters, user_id_filter,
+    neuron_id_filter)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_annotationlist_content' +
@@ -303,6 +304,16 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
           annotation_filters.forEach(function(annotation, i) {
             aoData.push({
                 'name': 'annotations[' + i + ']',
+                'value': annotation
+            });
+          });
+        }
+        // Annotates filter -- we are requesting annotations that are
+        // annotating entities given by this filter
+        if (annotates_filters) {
+          annotates_filters.forEach(function(annotation, i) {
+            aoData.push({
+                'name': 'annotates[' + i + ']',
                 'value': annotation
             });
           });
@@ -649,6 +660,7 @@ NeuronNavigator.AnnotationListNode.prototype.become_co_annotation_list =
 
 NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
 {
+  var annotates_filters = undefined;
   var annotation_filters = undefined;
   var user_id_filter = undefined;
 
@@ -657,7 +669,14 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
     // Only provide an annotation filter if no co-annotation should be
     // created.
     if (!this.creates_co_annotations && this.parent_node.annotation) {
-      annotation_filters = [this.parent_node.annotation];
+      if (this.is_meta_annotation) {
+        // If the parent is a meta annotation, an 'annotates' filter is created.
+        // This should restrict results to annotations that are annotated by it.
+        annotates_filters = [this.parent_node.annotation];
+      } else {
+        // Add parent annotation, if any
+        annotation_filters = [this.parent_node.annotation];
+      }
     }
     if (this.parent_node.user_id) {
       user_id_filter = this.parent_node.user_id;
@@ -668,7 +687,7 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
 
   // Add annotation data table based on filters above
   var datatable = this.add_annotation_list_table(container, table_id,
-      annotation_filters, user_id_filter);
+      annotation_filters, annotates_filters, user_id_filter);
 
   // Make self accessible in callbacks more easily
   var self = this;
@@ -685,6 +704,27 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
       self.navigator.select_node(annotations_node);
   });
 };
+
+/**
+ * The meta annotation list node of the navigator provides a list of all
+ * available annotations that are either annotated with the given class or that
+ * annotats it. If clicked on a listed annotations, it adds a new annotation
+ * filter node.
+ */
+NeuronNavigator.MetaAnnotationListNode = function(is_meta_annotation)
+{
+  if (is_meta_annotation) {
+    this.name = "Annotates";
+    this.is_meta_annotation = true;
+  } else {
+    this.name = "Annotated with";
+    this.is_meta_annotation = false;
+  }
+};
+
+NeuronNavigator.MetaAnnotationListNode.prototype = {};
+$.extend(NeuronNavigator.MetaAnnotationListNode.prototype,
+    new NeuronNavigator.AnnotationListNode(""));
 
 
 /**
@@ -879,7 +919,8 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container)
   var content = document.createElement('div');
 
   // Create menu and add it to container
-  var menu_entries = ['Annotations', 'Co-Annotations', 'Users', 'Neurons'];
+  var menu_entries = ['Annotates', 'Annotated with', 'Co-Annotations', 'Users',
+      'Neurons'];
   var table_rows = this.add_menu_table(menu_entries, content);
 
   // Add container to DOM
@@ -887,24 +928,30 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container)
 
   // Append click handler
   $(table_rows[0]).click($.proxy(function() {
-      // Show annotation list
-      var annotations_node = new NeuronNavigator.AnnotationListNode();
+      // Show annotation list for annotated annotations
+      var annotations_node = new NeuronNavigator.MetaAnnotationListNode(true);
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
   $(table_rows[1]).click($.proxy(function() {
+      // Show annotation list for meta annotations
+      var annotations_node = new NeuronNavigator.MetaAnnotationListNode(false);
+      annotations_node.link(this.navigator, this);
+      this.navigator.select_node(annotations_node);
+  }, this));
+  $(table_rows[2]).click($.proxy(function() {
       // Show co-annotation list
       var node = new NeuronNavigator.AnnotationListNode(true);
       node.link(this.navigator, this);
       this.navigator.select_node(node);
   }, this));
-  $(table_rows[2]).click($.proxy(function() {
+  $(table_rows[3]).click($.proxy(function() {
       // Show user list
       var users_node = new NeuronNavigator.UserListNode();
       users_node.link(this.navigator, this);
       this.navigator.select_node(users_node);
   }, this));
-  $(table_rows[3]).click($.proxy(function() {
+  $(table_rows[4]).click($.proxy(function() {
       // Show neuron list
       var node = new NeuronNavigator.NeuronListNode();
       node.link(this.navigator, this);
@@ -1169,6 +1216,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
   container.append(annotation_title);
 
   // Table filters and ID
+  var annotates_filters = undefined;
   var annotation_filters = undefined;
   var user_id_filter = undefined;
   var neuron_id_filter = this.neuron_id;
@@ -1177,8 +1225,8 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 
   // Add annotation data table based on filters above
   var annotation_datatable = this.add_annotation_list_table(container,
-      annotation_table_id, annotation_filters, user_id_filter,
-      neuron_id_filter);
+      annotation_table_id, annotation_filters, annotates_filters,
+      user_id_filter, neuron_id_filter);
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.

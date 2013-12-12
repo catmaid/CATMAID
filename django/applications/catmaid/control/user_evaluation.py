@@ -43,7 +43,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
     # merges: list of dictionary of user_id vs count
     # appended: similar to merges; list of dictionary of user_id vs count of nodes added by the reviewer within the review epoch
     # node_count: total number of nodes reviewed within the epoch.
-    EpochOps = namedtuple('EpochOps', ['reviewer_id', 'review_date_range', 'creation_date_range', 'user_node_counts', 'splits', 'merges', 'appended', 'node_count', 'n_pre', 'n_post', 'reviewer_n_pre', 'reviewer_n_post'])
+    EpochOps = namedtuple('EpochOps', ['reviewer_id', 'review_date_range', 'creation_date_range', 'user_node_counts', 'splits', 'merges', 'appended', 'node_count', 'n_pre', 'n_post', 'reviewer_n_pre', 'reviewer_n_post', 'newer_synapses_count'])
 
     # List of EpochOps, indexed like epochs
     epoch_ops = []
@@ -73,6 +73,9 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
         # Synapses for the set of nodes reviewed in this epoch, keyed by user_id and relation
         nodes_synapses = defaultdict(partial(defaultdict, list))
 
+        # Synapses, keyed by user, created by a user other than the user who created the treenode, after the treeenode's creation time
+        newer_synapses_count = defaultdict(int)
+
         for node in nodes:
             props = tree.node[node]
             # Find out review date range for this epoch
@@ -91,7 +94,11 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
             syns = all_synapses.get(node)
             if syns:
                 for s in syns:
-                    nodes_synapses[s.user_id][s.relation.id].append(s)
+                    nodes_synapses[s.user_id][s.relation_id].append(s)
+                    # Count synapses created by a user other than the user that created the treenode, after the treenode was created
+                    if s.user_id != user_id and s.creation_time > tc:
+                        newer_synapses_count[user_id] += 1
+
 
         def in_range(date):
             return start_date <= date <= end_date
@@ -110,14 +117,12 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
             if pre:
                 for s in pre:
                     if in_range(s.creation_time):
-                        reviewer_n_pre[tree.node[s.treenode.id]['user_id']] += 1
-                #reviewer_n_pre = sum(1 for s in pre if in_range(s.creation_time))
+                        reviewer_n_pre[tree.node[s.treenode_id]['user_id']] += 1
             post = reviewer_synapses.get(relations['postsynaptic_to'])
             if post:
                 for s in post:
                     if in_range(s.creation_time):
-                        reviewer_n_post[tree.node[s.treenode.id]['user_id']] += 1
-                #reviewer_n_post = sum(1 for s in post if in_range(s.creation_time))
+                        reviewer_n_post[tree.node[s.treenode_id]['user_id']] += 1
 
 
         date_range = [start_date, end_date]
@@ -141,7 +146,8 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
 
         epoch_ops.append(EpochOps(reviewer_id, date_range, user_ranges,
             user_node_counts, splits, merges, appended, len(nodes),
-            epoch_n_pre, epoch_n_post, reviewer_n_pre, reviewer_n_post))
+            epoch_n_pre, epoch_n_post, reviewer_n_pre, reviewer_n_post,
+            newer_synapses_count))
 
 
         for operation_type, location in log_ops:
@@ -191,10 +197,10 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
 
     return epoch_ops
 
-def _split_into_epochs(skeleton_id, tree):
+def _split_into_epochs(skeleton_id, tree, max_gap):
     """ Split the arbor into one or more review epochs.
-    An epoch is defined as a continuous range of time containing gaps of up to 3 days
-    and fully reviewed by the same reviewer.
+    An epoch is defined as a continuous range of time containing gaps
+    of up to max_gap (e.g. 3 days) and fully reviewed by the same reviewer.
     Treenodes reviewed within an epoch may not form a coherent subset of the arbor,
     given that different subsets of the arbor may have been joined at a later time. """
 
@@ -212,7 +218,6 @@ def _split_into_epochs(skeleton_id, tree):
 
     # Collect epochs
     epochs = [(last['reviewer_id'], epoch)]
-    max_gap = timedelta(3)
 
     # Iterate from second-oldest node forward in time
     for node, props in nodes:
@@ -228,14 +233,14 @@ def _split_into_epochs(skeleton_id, tree):
     return epochs
 
 
-def _evaluate_arbor(user_id, skeleton_id, tree, relations):
+def _evaluate_arbor(user_id, skeleton_id, tree, relations, max_gap):
     """ Split the arbor into review epochs and then evaluate each independently. """
-    epochs = _split_into_epochs(skeleton_id, tree)
+    epochs = _split_into_epochs(skeleton_id, tree, max_gap)
     epoch_ops = _evaluate_epochs(epochs, skeleton_id, tree, relations)
     return epoch_ops
 
 
-def _evaluate(project_id, user_id, start_date, end_date):
+def _evaluate(project_id, user_id, start_date, end_date, max_gap):
 
     # Obtain neurons that are fully reviewed at the moment
     # and to which the user contributed nodes within the date range.
@@ -276,7 +281,7 @@ def _evaluate(project_id, user_id, start_date, end_date):
     relations = dict(Relation.objects.filter(project_id=project_id, relation_name__in=['presynaptic_to', 'postsynaptic_to']).values_list('relation_name', 'id'))
 
     # 2. Load each fully reviewed skeleton one at a time
-    evaluations = {skid: _evaluate_arbor(user_id, skid, tree, relations) for skid, tree in lazy_load_trees(skeleton_ids, ('location', 'creation_time', 'user_id', 'reviewer_id', 'review_time', 'editor_id', 'edition_time'))}
+    evaluations = {skid: _evaluate_arbor(user_id, skid, tree, relations, max_gap) for skid, tree in lazy_load_trees(skeleton_ids, ('location', 'creation_time', 'user_id', 'reviewer_id', 'review_time', 'editor_id', 'edition_time'))}
 
     # 3. Extract evaluations for the user_id over time
     # Each evaluation contains an instance of EpochOps namedtuple, with members:
@@ -297,6 +302,7 @@ def _evaluate(project_id, user_id, start_date, end_date):
     #  * total number of postsynaptic relations of skeleton_id
     #  * number of presynaptic_to relations created by the reviewer within the review period onto treenodes created by user_id
     #  * number of postsynaptic_to relations created by the reviewer within the review period onto treenodes created by user_id
+    #  * newer_synapses: number of synapses created by someone else onto treenodes created by user_id, after the creation of the treenode
 
     d = []
 
@@ -306,18 +312,20 @@ def _evaluate(project_id, user_id, start_date, end_date):
                 # user did not contribute at all to this chunk
                 continue
             appended = epoch_ops.appended[user_id]
+            print appended
             d.append({'skeleton_id': skid,
                       'reviewer_id': epoch_ops.reviewer_id,
                       'timepoint': epoch_ops.creation_date_range[user_id]['end'],
                       'n_created_nodes': epoch_ops.user_node_counts[user_id],
                       'n_nodes': epoch_ops.node_count,
-                      'n_missed_nodes': sum(x for x in appended),
+                      'n_missed_nodes': sum(appended),
                       'n_splits': epoch_ops.splits[user_id],
                       'n_merges': epoch_ops.merges[user_id] + len(appended),
                       'n_pre': epoch_ops.n_pre,
                       'n_post': epoch_ops.n_post,
                       'reviewer_n_pre': epoch_ops.reviewer_n_pre.get(user_id, 0),
-                      'reviewer_n_post': epoch_ops.reviewer_n_post.get(user_id, 0)})
+                      'reviewer_n_post': epoch_ops.reviewer_n_post.get(user_id, 0),
+                      'newer_synapses': sum(c for uid, c in epoch_ops.newer_synapses_count.iteritems() if uid != user_id)})
 
             # TODO missing synapses added by other users (and not by the reviewer) after the user's creation_time of the treenode
 
@@ -330,10 +338,11 @@ def _parse_date(s):
 
 def evaluate_user(request, project_id=None):
     project_id = int(project_id)
-    user_id = request.POST.get('user_id')
+    user_id = int(request.POST.get('user_id'))
     # Dates as strings e.g. "2012-10-07"
     start_date = _parse_date(request.POST.get('start_date'))
     end_date = _parse_date(request.POST.get('end_date'))
+    max_gap = timedelta(int(request.POST.get('max_gap', 3)))
 
-    return HttpResponse(json.dumps(_evaluate(project_id, user_id, start_date, end_date)))
+    return HttpResponse(json.dumps(_evaluate(project_id, user_id, start_date, end_date, max_gap)))
 

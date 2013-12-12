@@ -68,9 +68,16 @@ End date: <input type="text" id="end_date" />
   });
 
 	$(function() {
-		var today = new Date();
-    $("#start_date").datepicker();
-    $("#end_date").datepicker();
+    var today = new Date();
+		var back = new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000);
+
+		var start_date = $("#start_date");
+		start_date.datepicker();
+		start_date.val(back.getMonth() + "/" + back.getDate() + "/" + back.getFullYear());
+
+		var end_date = $("#end_date");
+		end_date.datepicker();
+		end_date.val(today.getMonth() + "/" + today.getDate() + "/" + today.getFullYear());
   });
 
 </script>

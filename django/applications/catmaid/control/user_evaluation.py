@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
-from catmaid.models import Treenode, Log, Relation, TreenodeConnector
+from catmaid.models import Treenode, Log, Relation, TreenodeConnector, UserRole
 from catmaid.fields import Double3D
+from catmaid.control.authentication import requires_user_role
 from django.db.models import Count
 from django.http import HttpResponse
 from catmaid.control.tree_util import lazy_load_trees
@@ -43,7 +44,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
     # merges: list of dictionary of user_id vs count
     # appended: similar to merges; list of dictionary of user_id vs count of nodes added by the reviewer within the review epoch
     # node_count: total number of nodes reviewed within the epoch.
-    EpochOps = namedtuple('EpochOps', ['reviewer_id', 'review_date_range', 'creation_date_range', 'user_node_counts', 'splits', 'merges', 'appended', 'node_count', 'n_pre', 'n_post', 'reviewer_n_pre', 'reviewer_n_post', 'newer_synapses_count'])
+    EpochOps = namedtuple('EpochOps', ['reviewer_id', 'review_date_range', 'creation_date_range', 'user_node_counts', 'splits', 'merges', 'appended', 'node_count', 'n_pre', 'n_post', 'reviewer_n_pre', 'reviewer_n_post', 'newer_pre_count', 'newer_post_count'])
 
     # List of EpochOps, indexed like epochs
     epoch_ops = []
@@ -73,7 +74,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
         # Synapses for the set of nodes reviewed in this epoch, keyed by user_id and relation
         nodes_synapses = defaultdict(partial(defaultdict, list))
 
-        # Synapses, keyed by user, created by a user other than the user who created the treenode, after the treeenode's creation time
+        # Synapses, keyed by user and relation, created by a user other than the user who created the treenode, after the treeenode's creation time
         newer_synapses_count = defaultdict(int)
 
         for node in nodes:
@@ -97,7 +98,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
                     nodes_synapses[s.user_id][s.relation_id].append(s)
                     # Count synapses created by a user other than the user that created the treenode, after the treenode was created
                     if s.user_id != user_id and s.creation_time > tc:
-                        newer_synapses_count[user_id] += 1
+                        newer_synapses_count[s.relation_id] += 1
 
 
         def in_range(date):
@@ -147,7 +148,8 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
         epoch_ops.append(EpochOps(reviewer_id, date_range, user_ranges,
             user_node_counts, splits, merges, appended, len(nodes),
             epoch_n_pre, epoch_n_post, reviewer_n_pre, reviewer_n_post,
-            newer_synapses_count))
+            newer_synapses_count.get(relations['presynaptic_to'], 0),
+            newer_synapses_count.get(relations['postsynaptic_to'], 0)))
 
 
         for operation_type, location in log_ops:
@@ -240,7 +242,7 @@ def _evaluate_arbor(user_id, skeleton_id, tree, relations, max_gap):
     return epoch_ops
 
 
-def _evaluate(project_id, user_id, start_date, end_date, max_gap):
+def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
 
     # Obtain neurons that are fully reviewed at the moment
     # and to which the user contributed nodes within the date range.
@@ -253,8 +255,8 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap):
          .values_list('skeleton') \
          .annotate(Count('skeleton'))
 
-    # Pick only skeletons for which the user contributed more than one treenode
-    skeleton_ids = set(skid for skid, count in ts if count > 1)
+    # Pick only skeletons for which the user contributed at least min_nodes
+    skeleton_ids = set(skid for skid, count in ts if count > min_nodes)
 
     if not skeleton_ids:
         return None
@@ -315,7 +317,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap):
             print appended
             d.append({'skeleton_id': skid,
                       'reviewer_id': epoch_ops.reviewer_id,
-                      'timepoint': epoch_ops.creation_date_range[user_id]['end'],
+                      'timepoint': epoch_ops.creation_date_range[user_id]['end'].strftime('%Y-%m-%d'),
                       'n_created_nodes': epoch_ops.user_node_counts[user_id],
                       'n_nodes': epoch_ops.node_count,
                       'n_missed_nodes': sum(appended),
@@ -325,9 +327,8 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap):
                       'n_post': epoch_ops.n_post,
                       'reviewer_n_pre': epoch_ops.reviewer_n_pre.get(user_id, 0),
                       'reviewer_n_post': epoch_ops.reviewer_n_post.get(user_id, 0),
-                      'newer_synapses': sum(c for uid, c in epoch_ops.newer_synapses_count.iteritems() if uid != user_id)})
-
-            # TODO missing synapses added by other users (and not by the reviewer) after the user's creation_time of the treenode
+                      'newer_pre': epoch_ops.newer_pre_count,
+                      'newer_post': epoch_ops.newer_post_count})
 
     return d
 
@@ -336,13 +337,17 @@ def _parse_date(s):
     """ Accepts a date as e.g. '2012-10-07' """
     return datetime(*(imap(int, s.split('-'))))
 
+# TODO a better fit would be an admin or staff user
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def evaluate_user(request, project_id=None):
-    project_id = int(project_id)
     user_id = int(request.POST.get('user_id'))
     # Dates as strings e.g. "2012-10-07"
     start_date = _parse_date(request.POST.get('start_date'))
     end_date = _parse_date(request.POST.get('end_date'))
     max_gap = timedelta(int(request.POST.get('max_gap', 3)))
+    min_nodes = int(request.POST.get('min_nodes', 100))
+    if min_nodes < 1:
+        min_nodes = 1
 
-    return HttpResponse(json.dumps(_evaluate(project_id, user_id, start_date, end_date, max_gap)))
+    return HttpResponse(json.dumps(_evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes)))
 

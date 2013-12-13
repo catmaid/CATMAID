@@ -9,7 +9,7 @@ from guardian.admin import GuardedModelAdmin
 from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile, Overlay, StackSliceInfo
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
-from catmaid.views import UseranalyticsView
+from catmaid.views import UseranalyticsView, UserProficiencyView
 
 
 class ProjectStackInline(admin.TabularInline):
@@ -123,6 +123,7 @@ admin.site.register(User, CustomUserAdmin)
 # Register additional views
 admin.site.register_view('importer', importer_admin_view, 'Importer')
 admin.site.register_view('useranalytics', UseranalyticsView.as_view(), 'User Analytics')
+admin.site.register_view('userproficiency', UserProficiencyView.as_view(), 'User Proficiency')
 admin.site.register_view('classifcationadmin',
     classification_admin_view, 'Tag Based Classification Graph Linker')
 admin.site.register(Overlay)

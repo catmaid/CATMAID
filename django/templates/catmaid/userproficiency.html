@@ -1,0 +1,314 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.blockUI.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery-ui-1.10.1.custom.min.js"></script>
+<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/themes/smoothness/jquery-ui-1.10.1.custom.css" />
+<script type="text/javascript" src="{{ STATIC_URL }}libs/d3/d3.v2.js"></script>
+<style>
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url admin:index %}">Home</a> &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+
+<h2>User Proficiency</h2>
+<table>
+  <tr>
+    <td>User: <select id="logtable_username"></select></td>
+		<td rowspan="7">
+			<div id="splits-merges"></div>
+			<div id="synapses"></div>
+			<div id="nodes"></div>
+		</td>
+  </tr>
+  <tr><td>
+    Project: <select id="project"></select>
+  </td></tr>
+  <tr><td>
+    Start date: <input type="text" id="start_date" />
+  </td></tr>
+  <tr><td>
+    End date: <input type="text" id="end_date" />
+  </td></tr>
+  <tr><td>
+    Maximum gap (days) between review epochs: <select id="gap" />
+  </td></tr>
+  <tr><td>
+    Minimum number of nodes per neuron: <input type="text" id="min_nodes" value="100" />
+  </td></tr>
+  <tr><td>
+    <button id="refresh" >Update</button>
+  </td></tr>
+</table>
+
+<script type="text/javascript">
+
+	var users = {};
+
+  $.ajax({
+    "dataType": 'json',
+    "type": "GET",
+    "cache": false,
+    "url": '{{ catmaid_url }}user-list',
+    "data": {},
+    "success": function( json ) {
+      var select = document.getElementById("logtable_username");
+      select.options.length = 0; // remove all elements
+      json.sort(function(u1, u2) {
+        return u1.last_name.toLowerCase() > u2.last_name.toLowerCase() ? 1 : -1;
+      }).forEach(function(user) {
+          if (-1 == user.id) return;
+					users[user.id] = user;
+          select.options.add(new Option(user.full_name + " (" + user.login + ")", user.id));
+      });
+    }
+  });
+
+  $.ajax({
+      "dataType": 'json',
+      "type": "POST",
+      "cache": false,
+      "url": '{{ catmaid_url }}projects',
+      "data": {},
+      "success": function(json) {
+        var select = document.getElementById("project");
+        json.forEach(function(p) {
+          select.options.add(new Option(p.title, p.pid));
+        });
+      }
+  });
+
+  var gap = document.getElementById('gap');
+  for (var i=1; i<16; ++i) {
+    gap.options.add(new Option(i, i));
+  }
+  gap.selectedIndex = 2; // 3 days
+
+
+  $('#refresh').on('click', function() {
+      try {
+        var format = function(s) {
+          var v = s.split('/');
+          return v[2] + '-' + v[0] + '-' + v[1];
+        };
+
+        var start = format(document.getElementById('start_date').value),
+            end = format(document.getElementById('end_date').value),
+            max_gap = gap.value,
+            min_nodes = parseInt(document.getElementById('min_nodes').value);
+
+        update($('#project').val(), $('#logtable_username').val(), start, end, max_gap, min_nodes);
+      } catch (e) {
+        alert(e);
+        console.log(e, e.stack);
+        $.unblockUI();
+      }
+  });
+
+  $(function() {
+    var today = new Date();
+    var back = new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000);
+
+    var start_date = $("#start_date");
+    start_date.datepicker();
+    start_date.val(back.getMonth() + "/" + back.getDate() + "/" + back.getFullYear());
+
+    var end_date = $("#end_date");
+    end_date.datepicker();
+    end_date.val(today.getMonth() + "/" + today.getDate() + "/" + today.getFullYear());
+  });
+
+  var update = function(project_id, user_id, start, end, max_gap, min_nodes) {
+      $.blockUI();
+      try {
+        $.ajax({
+          "dataType": 'json',
+          "type": "POST",
+          "cache": false,
+          "url": '{{ catmaid_url }}' + project_id + '/userproficiency',
+          "data": {user_id: user_id,
+                   start_date: start,
+                   end_date: end,
+                   max_gap: max_gap,
+                   min_nodes: min_nodes},
+          "error": function(xml, msg, e) {
+            $.unblockUI();
+            alert("An error occurred. Check the console.\n" + msg);
+            if (e) console.log(e);
+          },
+          "success": draw
+        });
+      } catch (e) {
+        alert(e);
+        console.log(e, e.stack);
+        $.unblockUI();
+      }
+  };
+
+  var draw = function(json) {
+    if (!json) {
+      alert("No date for this user and time period!");
+      $.unblockUI();
+      return;
+    }
+
+    // Groups: three plots
+    var topo_keys = ['n_merges', 'n_splits'];
+    var node_keys = ['n_created_nodes', 'n_missed_nodes', 'n_nodes']; // maybe as percent of n_nodes?
+    var synapse_keys = ['n_pre', 'n_post', 'newer_pre', 'newer_post', 'reviewer_n_pre', 'reviewer_n_post'];
+
+		// Create a Date entry for each epoch
+    var parseDate = d3.time.format("%Y-%m-%d").parse;
+		json.forEach(function(epoch) {
+				epoch.date = parseDate(epoch.timepoint);
+		});
+
+		json.sort(function(a, b) {
+				if (a.date == b.date) return 0;
+				return a.date < b.date ? -1 : 1;
+		});
+
+		plot("nodes", node_keys, json);
+		plot("synapses", synapse_keys, json);
+		plot("splits-merges", topo_keys, json);
+	};
+
+	var plot = function(div_id, keys, json) {
+
+    try {
+			// Remove existing plot if any
+			$('#' + div_id).empty();
+
+      var margin = {top: 20, right: 80, bottom: 30, left: 50},
+          width = 960 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
+
+      var x = d3.time.scale()
+            .range([0, width]);
+
+      var y = d3.scale.linear()
+            .range([height, 0]);
+
+      var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom");
+
+      var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+      var svg = d3.select('#' + div_id).append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      // Reformat the array of epochs into separate plottable variables
+      var vars = keys.map(function(key) {
+          return {key: key,
+                  values: json.map(function(epoch) {
+                            return {date: epoch.date,
+                                    value: epoch[key],
+                                    skeleton_id: epoch.skeleton_id,
+                                    reviewer_id: epoch.reviewer_id};
+                                    })};
+      });
+
+      var color = d3.scale.category10().domain(keys);
+
+      x.domain(d3.extent(json, function(d) { return d.date; }));
+
+      y.domain([
+         d3.min(vars, function(v) { return d3.min(v.values, function(d) { return d.value; }); }),
+         d3.max(vars, function(v) { return d3.max(v.values, function(d) { return d.value; }); })
+      ]);
+
+			// Has to be outside the loop, or only one variable is added
+			var gvars = svg.selectAll(".dot");
+
+			vars.forEach(function(variable) {
+				var c = color(variable.key);
+				gvars.data(variable.values).enter()
+					.append('circle')
+					.attr('class', 'dot')
+					.attr('r', 4)
+					.attr('cx', function(d) { return x(d.date); })
+					.attr('cy', function(d) { return y(d.value); })
+					.style('fill', function(d) { return c; })
+					.style('stroke', 'grey')
+					.append('svg:title').text(function(d) { return "Reviewer: " + users[d.reviewer_id].full_name; });
+			});
+
+      svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
+      svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text(div_id);
+
+			var legend = svg.selectAll(".legend")
+					.data(keys)
+				.enter().append("g")
+					.attr("class", "legend")
+					.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+			legend.append("rect")
+					.attr("x", width - 18)
+					.attr("width", 18)
+					.attr("height", 18)
+					.style("fill", function(key) { return color(key); });
+
+			legend.append("text")
+					.attr("x", width - 24)
+					.attr("y", 9)
+					.attr("dy", ".35em")
+					.style("text-anchor", "end")
+					.text(function(key) { return key; });
+
+
+    } catch (e) {
+      alert(e);
+      console.log(e, e.stack);
+    }
+    $.unblockUI();
+  };
+
+</script>
+
+{% endblock %}
+
+

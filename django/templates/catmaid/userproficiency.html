@@ -41,11 +41,12 @@
 <table>
   <tr>
     <td>User: <select id="logtable_username"></select></td>
-		<td rowspan="7">
-			<div id="splits-merges"></div>
-			<div id="synapses"></div>
-			<div id="nodes"></div>
-		</td>
+    <td rowspan="7">
+      <div id="splits-merges"></div>
+			<div id="percent"></div>
+      <div id="synapses"></div>
+      <div id="nodes"></div>
+    </td>
   </tr>
   <tr><td>
     Project: <select id="project"></select>
@@ -69,7 +70,7 @@
 
 <script type="text/javascript">
 
-	var users = {};
+  var users = {};
 
   $.ajax({
     "dataType": 'json',
@@ -84,7 +85,7 @@
         return u1.last_name.toLowerCase() > u2.last_name.toLowerCase() ? 1 : -1;
       }).forEach(function(user) {
           if (-1 == user.id) return;
-					users[user.id] = user;
+          users[user.id] = user;
           select.options.add(new Option(user.full_name + " (" + user.login + ")", user.id));
       });
     }
@@ -183,27 +184,70 @@
     var node_keys = ['n_created_nodes', 'n_missed_nodes', 'n_nodes']; // maybe as percent of n_nodes?
     var synapse_keys = ['n_pre', 'n_post', 'newer_pre', 'newer_post', 'reviewer_n_pre', 'reviewer_n_post'];
 
-		// Create a Date entry for each epoch
+    // Create a Date entry for each epoch
     var parseDate = d3.time.format("%Y-%m-%d").parse;
-		json.forEach(function(epoch) {
-				epoch.date = parseDate(epoch.timepoint);
-		});
+    json.forEach(function(epoch) {
+        epoch.date = parseDate(epoch.timepoint);
+    });
 
-		json.sort(function(a, b) {
-				if (a.date == b.date) return 0;
-				return a.date < b.date ? -1 : 1;
-		});
+    json.sort(function(a, b) {
+        if (a.date == b.date) return 0;
+        return a.date < b.date ? -1 : 1;
+    });
 
-		plot("nodes", node_keys, json);
-		plot("synapses", synapse_keys, json);
-		plot("splits-merges", topo_keys, json);
-	};
+    var x_extent = d3.extent(json, function(d) { return d.date; });
 
-	var plot = function(div_id, keys, json) {
+    plot("nodes", node_keys, x_extent, reformat_vars(json, node_keys));
+    plot("synapses", synapse_keys, x_extent, reformat_vars(json, synapse_keys));
+    plot("splits-merges", topo_keys, x_extent, reformat_vars(json, topo_keys));
+
+    // Normalized versions:
+    // Fraction of missed presynaptic sites: 1 - (newer_pre / n_pre)
+    // Fraction of missed postsynaptic sites: 1 - (newer_post / n_post)
+    // Fraction of missed treenodes: n_missed_nodes / n_nodes
+    var normalized = [{key: "missed_nodes",
+                       values: json.map(function(epoch) {
+                         return {date: epoch.date,
+												         value: (epoch.n_missed_nodes / epoch.n_nodes) * 100,
+												         skeleton_id: epoch.skeleton_id,
+																 reviewer_id: epoch.reviewer_id};
+                       })},
+                      {key: "missed_pre",
+                       values: json.map(function(epoch) {
+                         return {date: epoch.date,
+                                 value: 0 === epoch.n_pre ? 0 : (epoch.newer_pre / epoch.n_pre) * 100,
+												         skeleton_id: epoch.skeleton_id,
+																 reviewer_id: epoch.reviewer_id};
+                       })},
+                      {key: "missed_post",
+                       values: json.map(function(epoch) {
+                         return {date: epoch.date,
+                                 value: 0 === epoch.n_post ? 0 : (epoch.newer_post / epoch.n_post) * 100,
+												         skeleton_id: epoch.skeleton_id,
+																 reviewer_id: epoch.reviewer_id};
+                       })}];
+
+		plot("percent", ["missed_nodes", "missed_pre", "missed_post"], x_extent, normalized);
+  };
+
+  var reformat_vars = function(json, keys) {
+    // Reformat the array of epochs into separate plottable variables
+    return keys.map(function(key) {
+        return {key: key,
+                values: json.map(function(epoch) {
+                          return {date: epoch.date,
+                                  value: epoch[key],
+                                  skeleton_id: epoch.skeleton_id,
+                                  reviewer_id: epoch.reviewer_id};
+                        })};
+    });
+  };
+
+  var plot = function(div_id, keys, x_extent, vars) {
 
     try {
-			// Remove existing plot if any
-			$('#' + div_id).empty();
+      // Remove existing plot if any
+      $('#' + div_id).empty();
 
       var margin = {top: 20, right: 80, bottom: 30, left: 50},
           width = 960 - margin.left - margin.right,
@@ -229,41 +273,30 @@
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-      // Reformat the array of epochs into separate plottable variables
-      var vars = keys.map(function(key) {
-          return {key: key,
-                  values: json.map(function(epoch) {
-                            return {date: epoch.date,
-                                    value: epoch[key],
-                                    skeleton_id: epoch.skeleton_id,
-                                    reviewer_id: epoch.reviewer_id};
-                                    })};
-      });
-
       var color = d3.scale.category10().domain(keys);
 
-      x.domain(d3.extent(json, function(d) { return d.date; }));
+      x.domain(x_extent);
 
       y.domain([
          d3.min(vars, function(v) { return d3.min(v.values, function(d) { return d.value; }); }),
          d3.max(vars, function(v) { return d3.max(v.values, function(d) { return d.value; }); })
       ]);
 
-			// Has to be outside the loop, or only one variable is added
-			var gvars = svg.selectAll(".dot");
+      // Has to be outside the loop, or only one variable is added
+      var gvars = svg.selectAll(".dot");
 
-			vars.forEach(function(variable) {
-				var c = color(variable.key);
-				gvars.data(variable.values).enter()
-					.append('circle')
-					.attr('class', 'dot')
-					.attr('r', 4)
-					.attr('cx', function(d) { return x(d.date); })
-					.attr('cy', function(d) { return y(d.value); })
-					.style('fill', function(d) { return c; })
-					.style('stroke', 'grey')
-					.append('svg:title').text(function(d) { return "Reviewer: " + users[d.reviewer_id].full_name; });
-			});
+      vars.forEach(function(variable) {
+        var c = color(variable.key);
+        gvars.data(variable.values).enter()
+          .append('circle')
+          .attr('class', 'dot')
+          .attr('r', 4)
+          .attr('cx', function(d) { return x(d.date); })
+          .attr('cy', function(d) { return y(d.value); })
+          .style('fill', function(d) { return c; })
+          .style('stroke', 'grey')
+          .append('svg:title').text(function(d) { return "Reviewer: " + users[d.reviewer_id].full_name; });
+      });
 
       svg.append("g")
         .attr("class", "x axis")
@@ -280,24 +313,24 @@
         .style("text-anchor", "end")
         .text(div_id);
 
-			var legend = svg.selectAll(".legend")
-					.data(keys)
-				.enter().append("g")
-					.attr("class", "legend")
-					.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+      var legend = svg.selectAll(".legend")
+          .data(keys)
+        .enter().append("g")
+          .attr("class", "legend")
+          .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
-			legend.append("rect")
-					.attr("x", width - 18)
-					.attr("width", 18)
-					.attr("height", 18)
-					.style("fill", function(key) { return color(key); });
+      legend.append("rect")
+          .attr("x", width - 18)
+          .attr("width", 18)
+          .attr("height", 18)
+          .style("fill", function(key) { return color(key); });
 
-			legend.append("text")
-					.attr("x", width - 24)
-					.attr("y", 9)
-					.attr("dy", ".35em")
-					.style("text-anchor", "end")
-					.text(function(key) { return key; });
+      legend.append("text")
+          .attr("x", width - 24)
+          .attr("y", 9)
+          .attr("dy", ".35em")
+          .style("text-anchor", "end")
+          .text(function(key) { return key; });
 
 
     } catch (e) {

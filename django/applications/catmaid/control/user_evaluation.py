@@ -75,7 +75,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
         nodes_synapses = defaultdict(partial(defaultdict, list))
 
         # Synapses, keyed by user and relation, created by a user other than the user who created the treenode, after the treeenode's creation time
-        newer_synapses_count = defaultdict(int)
+        newer_synapses_count = defaultdict(partial(defaultdict, int))
 
         for node in nodes:
             props = tree.node[node]
@@ -98,7 +98,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
                     nodes_synapses[s.user_id][s.relation_id].append(s)
                     # Count synapses created by a user other than the user that created the treenode, after the treenode was created
                     if s.user_id != user_id and s.creation_time > tc:
-                        newer_synapses_count[s.relation_id] += 1
+                        newer_synapses_count[s.relation_id][user_id] += 1
 
 
         def in_range(date):
@@ -148,8 +148,8 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
         epoch_ops.append(EpochOps(reviewer_id, date_range, user_ranges,
             user_node_counts, splits, merges, appended, len(nodes),
             epoch_n_pre, epoch_n_post, reviewer_n_pre, reviewer_n_post,
-            newer_synapses_count.get(relations['presynaptic_to'], 0),
-            newer_synapses_count.get(relations['postsynaptic_to'], 0)))
+            newer_synapses_count.get(relations['presynaptic_to'], {}),
+            newer_synapses_count.get(relations['postsynaptic_to'], {})))
 
 
         for operation_type, location in log_ops:
@@ -327,8 +327,8 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
                       'n_post': epoch_ops.n_post,
                       'reviewer_n_pre': epoch_ops.reviewer_n_pre.get(user_id, 0),
                       'reviewer_n_post': epoch_ops.reviewer_n_post.get(user_id, 0),
-                      'newer_pre': epoch_ops.newer_pre_count,
-                      'newer_post': epoch_ops.newer_post_count})
+                      'newer_pre': epoch_ops.newer_pre_count.get(user_id, 0),
+                      'newer_post': epoch_ops.newer_post_count.get(user_id, 0)})
 
     return d
 

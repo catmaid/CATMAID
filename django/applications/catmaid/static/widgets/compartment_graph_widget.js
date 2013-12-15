@@ -729,11 +729,9 @@ CompartmentGraphWidget.prototype.exportGML = function() {
     alert("Load a graph first!");
     return;
   }
-  var html = "<html><head><title>Graph as GML</title></head><body><pre><div id='myprintrecipe'>" + this.writeGML() + "</div></pre></body></html>";
-  var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
-  recipe.document.open();
-  recipe.document.write(html);
-  recipe.document.close();
+
+  var blob = new Blob([this.writeGML()], {type: "text/plain"});
+  saveAs(blob, "graph.gml");
 };
 
 CompartmentGraphWidget.prototype.growGraph = function() {
@@ -1114,11 +1112,8 @@ CompartmentGraphWidget.prototype.exportAdjacencyMatrix = function() {
     return names[m.skeleton_ids[i]] + ',' + row.join(',');
   }).join('\n');
 
-  var html = "<html><head><title>Adjacency Matrix</title></head><body><pre><div id='myprintrecipe'>" + csv + "</div></pre></body></html>";
-  var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
-  recipe.document.open();
-  recipe.document.write(html);
-  recipe.document.close();
+  var blob = new Blob([csv], {type: 'text/plain'});
+  saveAs(blob, "adjacency_matrix.csv");
 };
 
 CompartmentGraphWidget.prototype.openPlot = function() {

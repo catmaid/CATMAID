@@ -140,16 +140,12 @@ SkeletonAnnotations.exportSWC = function() {
     alert('Need to activate a treenode before exporting to SWC!');
     return;
   }
-  // Retrieve SWC file of currently active treenode's skeleton
-  var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
+  var skeleton_id = this.atn.skeleton_id;
 
-  requestQueue.register(django_url + project.id + '/skeleton/' + this.atn.skeleton_id + '/swc', "POST", {}, function (status, text, xml) {
+  requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/swc', "POST", {}, function (status, text, xml) {
     if (status === 200) {
-      $('#recipe1').clone().appendTo('#myprintrecipe');
-      var html = "<html><head><title>Skeleton as SWC</title></head><body><pre><div id='myprintrecipe'>" + text + "</div></pre></body></html>";
-      recipe.document.open();
-      recipe.document.write(html);
-      recipe.document.close();
+      var blob = new Blob([text], {type: "text/plain"});
+      saveAs(blob, skeleton_id + ".swc");
     }
   });
 };

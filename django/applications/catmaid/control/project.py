@@ -84,7 +84,7 @@ def extend_projects(user, projects):
     return result
 
 def get_project_qs_for_user(user):
-    """ Returns the query set of projects that are adminiserable and
+    """ Returns the query set of projects that are administrable and
     browsable by the given user.
     """
     perms=['can_administer', 'can_annotate', 'can_browse']

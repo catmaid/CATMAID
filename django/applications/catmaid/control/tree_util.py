@@ -4,7 +4,9 @@ from operator import itemgetter
 from networkx import Graph, DiGraph
 from collections import defaultdict
 from math import sqrt
-from itertools import izip
+from itertools import izip, islice, imap
+from catmaid.models import Treenode
+from catmaid.fields import Double3D
 
 def find_root(tree):
     """ Search and return the first node that has zero predecessors.
@@ -186,4 +188,44 @@ def cable_length(tree, locations):
     """ locations: a dictionary of nodeID vs iterable of node position (1d, 2d, 3d, ...)
     Returns the total cable length. """
     return sum(sqrt(sum(pow(loc2 - loc1, 2) for loc1, loc2 in izip(locations[a], locations[b]))) for a,b in tree.edges_iter())
+
+
+def lazy_load_trees(skeleton_ids, node_properties):
+    """ Return a lazy collection of pairs of (long, DiGraph)
+    representing (skeleton_id, tree).
+    The node_properties is a list of strings, each being a name of a column
+    in the django model of the Treenode table that is not the treenode id, parent_id
+    or skeleton_id. """
+
+    values_list = ('id', 'parent_id', 'skeleton_id')
+    props = tuple(set(node_properties) - set(values_list))
+    values_list += props
+
+    ts = Treenode.objects.filter(skeleton__in=skeleton_ids) \
+            .order_by('skeleton') \
+            .values_list(*values_list)
+    skid = None
+    tree = None
+    for t in ts:
+        if t[2] != skid:
+            if tree:
+                yield (skid, tree)
+            # Prepare for the next one
+            skid = t[2]
+            tree = DiGraph()
+
+        props = {k: v for k,v in izip(props, islice(t, 3, 3 + len(props)))}
+
+        # Hack: why doesn't django parse well the location?
+        loc = props.get('location')
+        if loc:
+            props['location'] = Double3D(*(imap(float, loc[1:-1].split(','))))
+        tree.add_node(t[0], props)
+
+        if t[1]:
+            # From child to parent
+            tree.add_edge(t[0], t[1])
+
+    if tree:
+        yield (skid, tree)
 

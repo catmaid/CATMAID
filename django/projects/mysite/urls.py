@@ -58,6 +58,7 @@ urlpatterns += patterns(
 
     # Views
     (r'^useranalytics$', 'catmaid.control.plot_useranalytics'),
+    (r'^(?P<project_id>\d+)/userproficiency$', 'catmaid.control.user_evaluation.evaluate_user'),
     (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
     (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
 

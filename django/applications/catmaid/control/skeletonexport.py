@@ -475,8 +475,8 @@ def skeletons_neuroml(request, project_id=None):
 def export_neuroml_level3_v181(request, project_id=None):
     """Export the NeuroML Level 3 version 1.8.1 representation of one or more skeletons.
     Considers synapses among the requested skeletons only. """
-    skeleton_ids = tuple(int(v) for v in request.GET.getlist('skids[]'))
-    mode = int(request.GET.get('mode'))
+    skeleton_ids = tuple(int(v) for v in request.POST.getlist('skids[]'))
+    mode = int(request.POST.get('mode'))
     skeleton_strings = ",".join(str(skid) for skid in skeleton_ids)
     cursor = connection.cursor()
 
@@ -540,7 +540,7 @@ def export_neuroml_level3_v181(request, project_id=None):
     else:
         if len(skeleton_ids) > 1:
             raise Exception("Expected a single skeleton for mode %s!" % mode)
-        input_ids = tuple(int(v) for v in request.GET.getlist('inputs[]', []))
+        input_ids = tuple(int(v) for v in request.POST.getlist('inputs[]', []))
         input_strings = ",".join(str(skid) for skid in input_ids)
         if 2 == mode:
             constraint = "AND tc2.skeleton_id IN (%s)" % input_strings

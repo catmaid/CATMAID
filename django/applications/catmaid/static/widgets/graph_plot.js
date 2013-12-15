@@ -252,9 +252,9 @@ CircuitGraphPlot.prototype.clearGUI = function() {
   $('#circuit_graph_plot_div' + this.widgetID).empty();
 };
 
-CircuitGraphPlot.prototype.redraw = function() {
+CircuitGraphPlot.prototype.getVectors = function() {
   if (!this.skeleton_ids || 0 === this.skeleton_ids.length) return;
-
+  
   var xSelect = $('#circuit_graph_plot_X_' + this.widgetID)[0],
       ySelect = $('#circuit_graph_plot_Y_' + this.widgetID)[0];
 
@@ -281,8 +281,19 @@ CircuitGraphPlot.prototype.redraw = function() {
 
   if (!xVector || !yVector) return;
 
-  this.draw(xVector, xSelect[xSelect.selectedIndex].text,
-            yVector, ySelect[ySelect.selectedIndex].text);
+  return {x: xVector, x_name: xSelect[xSelect.selectedIndex].text,
+          y: yVector, y_name: ySelect[ySelect.selectedIndex].text};
+};
+
+CircuitGraphPlot.prototype.redraw = function() {
+  if (!this.skeleton_ids || 0 === this.skeleton_ids.length) return;
+
+  var vs = this.getVectors();
+
+  if (!vs) return;
+
+  this.draw(vs.x, vs.x_name,
+            vs.y, vs.y_name);
 };
 
 CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
@@ -470,21 +481,41 @@ CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
      .attr('dx', function(d) { return 5; });
 
   // Insert the graphics for the axes (after the data, so that they draw on top)
-  svg.append("g")
+  var xg = svg.append("g")
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
-      .call(xAxis)
-    .append("text")
+      .attr("fill", "none")
+      .attr("stroke", "black")
+      .style("shape-rendering", "crispEdges")
+      .call(xAxis);
+  xg.selectAll("text")
+      .attr("fill", "black")
+      .attr("stroke", "none");
+  xg.append("text")
       .attr("x", width)
       .attr("y", -6)
+      .attr("fill", "black")
+      .attr("stroke", "none")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", "11px")
       .style("text-anchor", "end")
       .text(xTitle);
 
-  svg.append("g")
+  var yg = svg.append("g")
       .attr("class", "y axis")
-      .call(yAxis)
-    .append("text")
+      .attr("fill", "none")
+      .attr("stroke", "black")
+      .style("shape-rendering", "crispEdges")
+      .call(yAxis);
+  yg.selectAll("text")
+      .attr("fill", "black")
+      .attr("stroke", "none");
+  yg.append("text")
+      .attr("fill", "black")
+      .attr("stroke", "none")
       .attr("transform", "rotate(-90)")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", "11px")
       .attr("y", 6)
       .attr("dy", ".71em")
       .style("text-anchor", "end")
@@ -525,4 +556,29 @@ CircuitGraphPlot.prototype.update = function() {
 
 CircuitGraphPlot.prototype.highlight = function() {
   // TODO
+};
+
+CircuitGraphPlot.prototype.exportSVG = function() {
+  var div = document.getElementById('circuit_graph_plot_div' + this.widgetID);
+  if (!div) return; 
+  var svg = div.getElementsByTagName('svg');
+  if (svg && svg.length > 0) {
+    var xml = new XMLSerializer().serializeToString(svg[0]);
+    var blob = new Blob([xml], {type : 'text/xml'});
+    saveAs(blob, "circuit_plot.svg");
+  }
+};
+
+CircuitGraphPlot.prototype.exportCSV = function() {
+  var vs = this.getVectors();
+  if (!vs) return;
+  var csv = this.skeleton_ids.map(function(skid, i) {
+    var model = this.skeletons[skid];
+    return [model.baseName.replace(/,/g, ";"),
+            skid,
+            vs.x[i],
+            vs.y[i]].join(',');
+  }, this).join('\n');
+  var blob = new Blob(["neuron,skeleton_id," + vs.x_name + "," + vs.y_name + "\n", csv], {type :'text/plain'});
+  saveAs(blob, "circuit_plot.csv");
 };

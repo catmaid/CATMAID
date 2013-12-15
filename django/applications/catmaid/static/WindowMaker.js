@@ -939,6 +939,18 @@ var WindowMaker = new function()
     toggle.onclick = GP.toggleNamesVisible.bind(GP, toggle);
     buttons.appendChild(toggle);
 
+    var xml = document.createElement('input');
+    xml.setAttribute("type", "button");
+    xml.setAttribute("value", "Export SVG");
+    xml.onclick = GP.exportSVG.bind(GP);
+    buttons.appendChild(xml);
+
+    var csv = document.createElement('input');
+    csv.setAttribute("type", "button");
+    csv.setAttribute("value", "Export CSV");
+    csv.onclick = GP.exportCSV.bind(GP);
+    buttons.appendChild(csv);
+
     content.appendChild(buttons);
 
     var container = createContainer('circuit_graph_plot_div' + GP.widgetID);

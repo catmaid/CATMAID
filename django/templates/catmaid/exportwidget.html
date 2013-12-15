@@ -22,12 +22,8 @@
         dataType: "text",
         data: { skeleton_list: selectionTables[choiceST.selectedIndex].getSelectedSkeletons() },
         success: function (data) {
-          var recipe = window.open('', 'Export', 'width=600,height=600');
-          console.log(recipe);
-          recipe.document.open();
-          recipe.document.write(data);
-          recipe.document.close();
-          // window.open('{{ catmaid_url }}' + project.id + '/graphexport/nx_json', '_blank');
+					var blob = new Blob([data], {type: "text/plain"});
+					saveAs(blob, "networkx_graph.json");
         }
       });
     }
@@ -86,10 +82,16 @@
 					break;
 			}
 			post.mode = choice.selectedIndex;
-			$(function() {
-					// TODO: leaves behind a hidden iframe
-					var iframe = $("body").append('<iframe src="' + django_url + project.id + '/neuroml/neuroml_level3_v181?' + $.param(post) + '" style="display: none;" ></iframe>'); 
-			});
+
+      jQuery.ajax({
+        url: django_url + project.id + "/neuroml/neuroml_level3_v181",
+        type: "POST",
+        dataType: "text",
+        data: post,
+        success: function (json) {
+					var blob = new Blob([json], {type: "text/plain"});
+					saveAs(blob, "circuit.neuroml");
+				}});
 		};
 		dialog.show();
 	};

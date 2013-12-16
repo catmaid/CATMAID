@@ -80,10 +80,15 @@ def user_list_datatable(request):
         user_query = user_query.extra(order_by=[di + col for (di, col) in zip(
                 sorting_directions, sorting_cols)])
 
+    num_records = len(user_query)
     result = list(user_query[display_start:display_start + display_length])
 
-    response = {'iTotalRecords': len(result),
-            'iTotalDisplayRecords': len(result), 'aaData': []}
+    response = {
+        'iTotalRecords': num_records,
+        'iTotalDisplayRecords': num_records,
+        'aaData': []
+    }
+
     for user in result:
         response['aaData'] += [[
             user.username,

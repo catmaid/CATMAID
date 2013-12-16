@@ -120,10 +120,14 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
         neuron_query = neuron_query.extra(order_by=[di + col for (di, col) in zip(
                 sorting_directions, sorting_cols)])
 
+    num_records = len(neuron_query)
     result = list(neuron_query[display_start:display_start + display_length])
 
-    response = {'iTotalRecords': len(result),
-            'iTotalDisplayRecords': len(result), 'aaData': []}
+    response = {
+        'iTotalRecords': num_records,
+        'iTotalDisplayRecords': num_records,
+        'aaData': []
+    }
 
     entities = create_annotated_entity_list(p, result)
     for entity in entities:
@@ -380,10 +384,15 @@ def list_annotations_datatable(request, project_id=None):
     # due to the JOINS that are made).
     annotation_query = annotation_query.distinct()
 
+    num_records = len(annotation_query)
     result = list(annotation_query[display_start:display_start + display_length])
 
-    response = {'iTotalRecords': len(result),
-            'iTotalDisplayRecords': len(result), 'aaData': []}
+    response = {
+        'iTotalRecords': num_records,
+        'iTotalDisplayRecords': num_records,
+        'aaData': []
+    }
+
     for annotation in result:
         # Format last used time
         if annotation[2]:

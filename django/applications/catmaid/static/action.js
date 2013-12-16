@@ -511,16 +511,6 @@ var tracingWindowActions = [
   }),
 
   new Action({
-    helpText: "Show object tree",
-    buttonID: "data_button_tree",
-    buttonName: 'tree',
-    run: function (e) {
-      WindowMaker.show('object-tree');
-      return true;
-    }
-  }),
-
-  new Action({
     helpText: "Show search window",
     buttonID: "data_button_search",
     buttonName: 'search',

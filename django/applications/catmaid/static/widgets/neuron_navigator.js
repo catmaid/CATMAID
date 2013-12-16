@@ -1207,6 +1207,13 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
     }
   }, 0);
 
+  // Add click handler to skeleton to select it
+  $('#' + skeleton_table_id).on('click', ' tbody tr', function () {
+      var aData = skeleton_datatable.fnGetData(this);
+      var skeleton_id = aData[0];
+      TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton_id );
+  });
+
 
   /* Annotations */
 

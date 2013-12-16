@@ -32,7 +32,7 @@ CompartmentGraphWidget.prototype.getSelectedSkeletons = function() {
   // Collect unique, selected skeleton IDs
   var ids = {};
   this.cy.nodes(function(i, node) {
-    if (node.selected()) {
+    if (node.selected() && node.visible()) {
       ids[node.data("skeleton_id")] = null;
     }
   });
@@ -103,7 +103,7 @@ CompartmentGraphWidget.prototype.getSkeletonModels = function() {
 
 CompartmentGraphWidget.prototype.getSelectedSkeletonModels = function() {
   return this.cy.nodes().toArray().reduce(function(m, node) {
-    if (node.selected()) {
+    if (node.selected() && node.visible()) {
       var props = node.data();
       m[props.skeleton_id] = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color(props.color));
     }

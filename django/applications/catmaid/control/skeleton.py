@@ -169,7 +169,10 @@ def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
 
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):
-    """ The split is only possible if the user owns the treenode or the skeleton, or is superuser, or the skeleton is under Fragments.
+    """ The split is only possible if the neuron is not locked or if it is
+    locked by the current user or if the current user belongs to the group
+    of the user who locked it. Of course, the split is also possible if
+    the current user is a super-user.
     """
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
@@ -769,10 +772,10 @@ def _under_specific_groups(skeleton_id, specific_groups, group_id_test_fn):
 
 @requires_user_role(UserRole.Annotate)
 def join_skeleton(request, project_id=None):
-    """ An user with an Annotate role can join two skeletons if he owns the child
-    skeleton. A superuser can join any. Skeletons under the "Fragments" or "Isolated
-    Synaptic Terminals" can be joined by anyone. If all nodes fall within the user domain,
-    even though the skeleton is owned by someone else, the join is allowed.
+    """ An user with an Annotate role can join two skeletons if the neurons
+    modeled by these skeletons are not locked by another user or if the current
+    user belongs to the group of the user who locked the neurons. A super-user
+    can join any skeletons.
     """
     response_on_error = 'Failed to join'
     try:
@@ -818,25 +821,11 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         from_neuron = _get_neuronname_from_skeletonid( project_id, from_skid )
         to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
 
-        # Check if joining is allowed
-        if 1 == Treenode.objects.filter(skeleton_id=to_skid).count():
-            # Is an isolated node, so it can be joined freely
-            pass
-        # If the treenode is not isolated, the skeleton must be under fragments, or the user must own the skeleton or be superuser
-        else:
-            try:
-                # Make sure the user has permissions to edit both neurons
-                can_edit_class_instance_or_fail(
-                        request.user, from_neuron['neuronid'], 'neuron')
-                can_edit_class_instance_or_fail(
-                        request.user, to_neuron['neuronid'], 'neuron')
-            except Exception:
-                # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes are editable by the user (such a situation occurs when the user domain ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
-                if _under_fragments(to_skid) or _under_staging_area(to_skid, user):
-                    pass
-                elif Treenode.objects.filter(skeleton_id=to_skid).exclude(user__in=user_domain(cursor, user.id)).count() > 0:
-                    # There are at least some nodes that the user can't edit
-                    raise Exception("User %s with id #%s cannot join skeleton #%s, because the user doesn't own the skeleton or the skeleton contains nodes that belong to users outside of the user's domain." % (user.username, user.id, to_skid))
+        # Make sure the user has permissions to edit both neurons
+        can_edit_class_instance_or_fail(
+                request.user, from_neuron['neuronid'], 'neuron')
+        can_edit_class_instance_or_fail(
+                request.user, to_neuron['neuronid'], 'neuron')
 
         from_treenode_id = int(from_treenode_id)
         from_treenode = Treenode.objects.get(pk=from_treenode_id)

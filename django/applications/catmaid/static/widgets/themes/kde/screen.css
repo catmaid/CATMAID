@@ -333,7 +333,7 @@ div#classification_graph_object img.roiimage {
     width: 100%
 }
 
-.navigator_navi_bar .navigator_duplicate_button {
+.navigator_navi_bar .navigator_button {
     float: right;
     margin-right: 5px;
 }

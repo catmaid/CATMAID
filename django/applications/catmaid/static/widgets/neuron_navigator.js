@@ -82,7 +82,7 @@ NeuronNavigator.prototype.select_node = function(node)
 
   // Create a container where all the content of every node will be placed in
   var duplicate_button = document.createElement('div');
-  duplicate_button.setAttribute('class', 'navigator_duplicate_button');
+  duplicate_button.setAttribute('class', 'navigator_button');
   var duplicate_image = document.createElement('img');
   duplicate_image.setAttribute('src', STATIC_URL_JS +
       'widgets/themes/kde/duplicate_navigator.png');
@@ -90,7 +90,19 @@ NeuronNavigator.prototype.select_node = function(node)
   duplicate_button.appendChild(duplicate_image);
   $navi_bar.append(duplicate_button);
   $(duplicate_image).on('click', this.duplicate.bind(this));
-  
+
+  // Create a re-root button to remove all filters not in effect
+  var reroot_button = document.createElement('div');
+  reroot_button.setAttribute('class', 'navigator_button');
+  var reroot_image = document.createElement('img');
+  reroot_image.setAttribute('src', STATIC_URL_JS +
+      'widgets/themes/kde/reroot_navigator.png');
+  reroot_button.setAttribute('title',
+      'Remove all nodes not needed for current view');
+  reroot_button.appendChild(reroot_image);
+  $navi_bar.append(reroot_button);
+  $(reroot_image).on('click', this.reroot.bind(this));
+
   // Clear the content div, and let the node add content to it
   var $content = $('#navigator_content' + this.widgetID).empty();
   node.add_content($content);
@@ -111,6 +123,28 @@ NeuronNavigator.prototype.duplicate = function()
   NN.select_node(cloned_node);
 };
 
+/**
+ * The reroot method removes all nodes of the current chain that don't add any
+ * filtering effect.
+ */
+NeuronNavigator.prototype.reroot = function()
+{
+  // Find the last break in the filter chain
+  var node = this.current_node;
+  while (node.parent_node) {
+    if (node.breaks_filter_chain()) {
+      break;
+    }
+    node = node.parent_node;
+  }
+  // Add home node as starting point without any parent
+  var home_node = new NeuronNavigator.HomeNode(this.widgetID);
+  home_node.link(this, null);
+  // Prune node path to this node
+  node.parent_node = home_node;
+  // Refresh the current node
+  this.select_node(this.current_node);
+};
 
 /**
  * A class representing a node in the graph of the navigator.
@@ -179,6 +213,11 @@ NeuronNavigator.Node.prototype.create_path = function()
   } else {
     return [path_link];
   }
+};
+
+NeuronNavigator.Node.prototype.breaks_filter_chain = function()
+{
+  return false;
 };
 
 NeuronNavigator.Node.prototype.get_last_user = function()
@@ -915,6 +954,11 @@ NeuronNavigator.AnnotationFilterNode.prototype.collect_annotation_filters =
   return filters;
 };
 
+NeuronNavigator.AnnotationFilterNode.prototype.breaks_filter_chain = function()
+{
+  return !this.is_coannotation;
+};
+
 NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
@@ -981,6 +1025,11 @@ NeuronNavigator.UserFilterNode.prototype.get_last_user = function()
     return this.user_id;
 };
 
+NeuronNavigator.UserFilterNode.prototype.breaks_filter_chain = function()
+{
+  return true;
+};
+
 NeuronNavigator.UserFilterNode.prototype.add_content = function(container)
 {
   var content = document.createElement('div');
@@ -1023,6 +1072,11 @@ NeuronNavigator.NeuronNode = function(neuron)
 NeuronNavigator.NeuronNode.prototype = {};
 $.extend(NeuronNavigator.NeuronNode.prototype,
     new NeuronNavigator.Node("Neuron node"));
+
+NeuronNavigator.NeuronNode.prototype.breaks_filter_chain = function()
+{
+  return true;
+};
 
 NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 {

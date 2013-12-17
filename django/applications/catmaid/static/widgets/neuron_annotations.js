@@ -402,15 +402,28 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
   var annotation_input = dialog.appendField('Annotation: ', 'new-annotation', '');
   this.add_autocomplete_to_input(annotation_input);
   // Add button to toggle display of meta annotation input field
-  var meta_toggle = dialog.appendMessage("Click here to also add a meta annotation");
-  var meta_annotation_input = dialog.appendField('Meta annotation: ',
-      'new-meta-annotation', '');
-  this.add_autocomplete_to_input(meta_annotation_input);
+  var $meta_toggle = $(dialog.appendMessage(
+      "Click here to also add a meta annotation"));
+  dialog.meta_annotation_inputs = [];
+  // Have a method to create new meta annotation fields
+  var add_meta_annotation_fields = function(continuation) {
+    // Add meta annotation input field with autocompletion
+    var meta_annotation_input = dialog.appendField('Meta annotation: ',
+        'new-meta-annotation' + dialog.meta_annotation_inputs.length, '');
+    this.add_autocomplete_to_input(meta_annotation_input);
+    // Add text to append new field
+    var $new_meta_field = $(dialog.appendMessage(
+        "Click here to add another meta annotation"));
+    $new_meta_field.click(add_meta_annotation_fields.bind(this,
+        $new_meta_field.hide.bind($new_meta_field)));
+    // Increase meta annotation counter in dialog
+    dialog.meta_annotation_inputs.push(meta_annotation_input)
+    // Call continuation
+    continuation();
+  };
   // Add toggle functionalty to text and hide meta input box
-  $(meta_annotation_input).parent().hide();
-  $(meta_toggle).click(function() {
-    $(meta_annotation_input).parent().toggle();
-  });
+  $meta_toggle.click(add_meta_annotation_fields.bind(this,
+      $meta_toggle.hide.bind($meta_toggle)));
 
   dialog.onOK = function() {
     // Get annotation, if any
@@ -419,19 +432,15 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
     annotation = annotation.trim();
     if (0 === annotation.length) return; // can't annotate with nothing
     // Get meta annotation, if any
-    var meta_annotation = meta_annotation_input.value;
-    if (meta_annotation) {
-      meta_annotation = meta_annotation.trim();
-      if (0 === meta_annotation.length) {
-        meta_annotation = null;
-      } else {
-        meta_annotation = [meta_annotation];
+    var meta_annotations = this.meta_annotation_inputs.reduce(function(o, e) {
+      var ma = e.value.trim();
+      if (ma.length > 0) {
+        o.push(ma);
       }
-    } else {
-      meta_annotation = null;
-    }
+      return o;
+    }, []);
     // Call handler
-    success_fn([annotation], meta_annotation);
+    success_fn([annotation], meta_annotations);
   };
 
   dialog.show('auto', 'auto', true);

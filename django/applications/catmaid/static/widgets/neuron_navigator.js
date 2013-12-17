@@ -86,6 +86,7 @@ NeuronNavigator.prototype.select_node = function(node)
   var duplicate_image = document.createElement('img');
   duplicate_image.setAttribute('src', STATIC_URL_JS +
       'widgets/themes/kde/duplicate_navigator.png');
+  duplicate_button.setAttribute('title', 'Duplicate navigator window');
   duplicate_button.appendChild(duplicate_image);
   $navi_bar.append(duplicate_button);
   $(duplicate_image).on('click', this.duplicate.bind(this));

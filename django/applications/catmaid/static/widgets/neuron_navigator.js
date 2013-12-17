@@ -207,7 +207,8 @@ NeuronNavigator.Node.prototype.create_path = function()
 
   if (this.parent_node) {
     var path_elements = this.parent_node.create_path();
-    path_elements.push(document.createTextNode(" > "));
+    var delimiter = this.breaks_filter_chain() ? '|' : '>';
+    path_elements.push(document.createTextNode(" " + delimiter + " "));
     path_elements.push(path_link);
     return path_elements;
   } else {

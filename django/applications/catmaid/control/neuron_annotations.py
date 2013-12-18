@@ -123,6 +123,10 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
         neuron_query = neuron_query.extra(order_by=[di + col for (di, col) in zip(
                 sorting_directions, sorting_cols)])
 
+    # Make sure we get a distinct result (which otherwise might not be the case
+    # due to the JOINS that are made).
+    neuron_query = neuron_query.distinct()
+
     num_records = len(neuron_query)
     result = list(neuron_query[display_start:display_start + display_length])
 

@@ -540,7 +540,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
   var datatable = $(table).dataTable({
     // http://www.datatables.net/usage/options
     "bDestroy": true,
-    "sDom": '<"H"lr>t<"F"ip>',
+    "sDom": '<"H"lrf>t<"F"ip>',
     "bProcessing": true,
     "bServerSide": true,
     "bAutoWidth": false,
@@ -577,6 +577,9 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
         this.possibleLengths,
         this.possibleLengthsLabels
     ],
+    "oLanguage": {
+      "sSearch": "Search neuron names (regex):"
+    },
     "bJQueryUI": true,
     "aaSorting": [[ 1, "asc" ]],
     "aoColumns": [

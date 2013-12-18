@@ -103,6 +103,10 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
 
     neuron_query = create_basic_annotated_entity_query(p, request.POST)
 
+    search_term = request.POST.get('sSearch', '')
+    if len(search_term) > 0:
+        neuron_query = neuron_query.filter(name__regex=search_term)
+
     should_sort = request.POST.get('iSortCol_0', False)
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))

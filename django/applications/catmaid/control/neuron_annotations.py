@@ -281,6 +281,19 @@ def create_annotation_query(project_id, param_dict):
                 cici_via_a__relation__relation_name = 'annotated_with',
                           cici_via_a__class_instance_b__name = sub_annotation)
 
+    # If parallel_annotations is given, only annotations are returned, that
+    # are used alongside with these. This also removes the parallel annotations
+    # them self from the result set.
+    parallel_annotations = [v for k,v in param_dict.iteritems()
+            if k.startswith('parallel_annotations[')]
+    for p_annotation in parallel_annotations:
+        annotation_query = annotation_query.filter(
+                cici_via_b__class_instance_a__cici_via_a__relation__relation_name = \
+                        'annotated_with',
+                cici_via_b__class_instance_a__cici_via_a__class_instance_b__name = \
+                        p_annotation)
+        annotation_query = annotation_query.exclude(name=p_annotation)
+
     # Passing in a user ID causes the result set to only contain annotations
     # that are used by the respective user. The query filter could lead to
     # duplicate entries, therefore distinct() is added here.

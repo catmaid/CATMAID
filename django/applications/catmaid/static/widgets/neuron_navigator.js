@@ -358,6 +358,16 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
             });
           });
         }
+        // Parallel annotations -- all listed annotations do only appear
+        // together with these annotations
+        if (filters.parallel_annotations) {
+          filters.parallel_annotations.forEach(function(annotation, i) {
+            aoData.push({
+                'name': 'parallel_annotations[' + i + ']',
+                'value': annotation
+            });
+          });
+        }
         // User filter -- we are requesting annotations that are used by a
         // particular user.
         if (filters.user_id) {
@@ -707,9 +717,13 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
 
   // Use parent node provided filters, if available
   if (this.parent_node) {
-    // Only provide an annotation filter if no co-annotation should be
-    // created.
-    if (!this.creates_co_annotations && this.parent_node.annotation) {
+    /* If co-annotations are listed, all filters from before need to be
+     * collected and treated as 'parallel' filters. Only provide an annotation
+     * filter if no co-annotation should be created.
+     */
+    if (this.creates_co_annotations) {
+      filters.parallel_annotations = this.parent_node.collect_annotation_filters();
+    } else if (this.parent_node.annotation) {
       if (this.is_meta_annotation) {
         // If the parent is a meta annotation, an 'annotates' filter is created.
         // This should restrict results to annotations that are annotated by it.
@@ -783,7 +797,7 @@ NeuronNavigator.UserListNode.prototype.add_content = function(container)
 
   // Use parent node provided filters, if available
   if (this.parent_node) {
-    // Collect annotarion and co-annotation filters
+    // Collect annotation and co-annotation filters
     if (this.parent_node.collect_annotation_filters) {
       filters.annotations = this.parent_node.collect_annotation_filters();
     }

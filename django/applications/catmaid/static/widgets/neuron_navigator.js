@@ -392,7 +392,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
       "sSearch": "Search annotations (regex):"
     },
     "bJQueryUI": true,
-    "aaSorting": [[ 0, "desc" ]],
+    "aaSorting": [[ 0, "asc" ]],
     "aoColumns": [
       { // Annotation name
         "bSearchable": true,
@@ -481,7 +481,7 @@ NeuronNavigator.Node.prototype.add_user_list_table = function($container,
         this.possibleLengthsLabels
     ],
     "bJQueryUI": true,
-    "aaSorting": [[ 0, "desc" ]],
+    "aaSorting": [[ 0, "asc" ]],
     "aoColumns": [
       {
         "sClass": "center",
@@ -578,7 +578,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
         this.possibleLengthsLabels
     ],
     "bJQueryUI": true,
-    "aaSorting": [[ 1, "desc" ]],
+    "aaSorting": [[ 1, "asc" ]],
     "aoColumns": [
       {
         "sWidth": '5em',

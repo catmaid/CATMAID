@@ -37,6 +37,8 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
     4. Detect synapses added by the reviewer within the epoch. Unfortunately, the removal of synapses has not been logged.
     """
 
+    # TODO extended branches when the last node didn't have an ends tag prior to reviewing should not be considered an error.
+
     # review_date_range: list of two dates, for the oldest and newest node creation time.
     # creation_date_range: dictionary of user_id vs dictionary of 'start' and 'end' datetime instances for node creation.
     # user_node_counts: dictionary of user_id vs count of nodes created within the epoch

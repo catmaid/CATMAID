@@ -207,7 +207,7 @@ class Migration(SchemaMigration):
                         "choice to not setup tracing properly.")
             # Fix setup otherwise and continue. Use the first super user
             # available to do that.
-            super_user = User.objects.filter(is_superuser=True).order_by('id')
+            super_user = User.objects.filter(is_superuser=True).order_by('id')[0]
             setup_tracing(p.id, super_user)
             log("The missing bits have been added.", indent)
 
@@ -249,6 +249,9 @@ class Migration(SchemaMigration):
 
                 try:
                   self.test_tracing_setup(p, class_map, relation_map)
+                  # If any where added new, update
+                  class_map = get_class_to_id_map(p.id)
+                  relation_map = get_relation_to_id_map(p.id)
                 except RuntimeError as e:
                   log(e.message, 1)
                   continue

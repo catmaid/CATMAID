@@ -80,7 +80,7 @@ NeuronAnnotations.prototype.highlight = function(skeleton_id)
   if (neurons) {
     // Remove any highlighting
     $('[class^=neuron_annotation_result_row' + this.widgetID + '_]').css(
-        'background-color', 'white');
+        'background-color', '');
     // Highlight the neuron, containing the requested skeleton, if available.
     // Altough the code works for multiple neurons, it should be normally the
     // case that there is only one neuron, belonging to the skeleton.
@@ -207,6 +207,8 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
                   // The order of the query result array doesn't matter.
                   // It is therefore possible to just append the new results.
                   self.queryResults = self.queryResults.concat(e);
+                  // Update current result table classes
+                  self.update_result_row_classes();
                 }
               }
         });
@@ -287,6 +289,7 @@ NeuronAnnotations.prototype.query = function()
             if (this.queryResults.length > 0) {
               $('#neuron_annotations_query_no_results' + this.widgetID).hide();
               $('#neuron_annotations_query_results' + this.widgetID).show();
+              this.update_result_row_classes();
             } else {
               $('#neuron_annotations_query_results' + this.widgetID).hide();
               $('#neuron_annotations_query_no_results' + this.widgetID).show();
@@ -294,6 +297,16 @@ NeuronAnnotations.prototype.query = function()
           }
         }
       }, this));
+};
+
+NeuronAnnotations.prototype.update_result_row_classes = function()
+{
+  var $tableBody = $('#neuron_annotations_query_results' +
+      this.widgetID + ' tbody');
+  // First, remove all 'odd' classes
+  $("tr", $tableBody).removeClass("odd");
+  // Re-add class for currently 'odd' rows
+  $("tr:nth-child(odd)", $tableBody).addClass("odd");
 };
 
 NeuronAnnotations.prototype.add_query_field = function()

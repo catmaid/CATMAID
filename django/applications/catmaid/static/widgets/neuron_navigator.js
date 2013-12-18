@@ -641,20 +641,20 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container)
   // Add container to DOM
   container.append(content);
 
-  // Append click handler
-  $(table_rows[0]).click($.proxy(function() {
+  // Append double click handler
+  $(table_rows[0]).dblclick($.proxy(function() {
       // Show annotation list
       var annotations_node = new NeuronNavigator.AnnotationListNode();
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
-  $(table_rows[1]).click($.proxy(function() {
+  $(table_rows[1]).dblclick($.proxy(function() {
       // Show user list
       var users_node = new NeuronNavigator.UserListNode();
       users_node.link(this.navigator, this);
       this.navigator.select_node(users_node);
   }, this));
-  $(table_rows[2]).click($.proxy(function() {
+  $(table_rows[2]).dblclick($.proxy(function() {
       // Get active skeleton and request information about its neuron
       var skid = SkeletonAnnotations.getActiveSkeletonId();
       if (skid) {
@@ -688,8 +688,8 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container)
 
 /**
  * The annotation list node of the navigator provides a list of all available
- * annotations. If clicked on a listed annotations, it adds a new annotation
- * filter node.
+ * annotations. If double clicked on a listed annotations, it adds a new
+ * annotation filter node.
  */
 NeuronNavigator.AnnotationListNode = function(creates_co_annotations)
 {
@@ -749,7 +749,7 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
   // If an annotation is selected an annotation filter node is created and the
   // event is removed. If the annotation list node should create co-annotations,
   // a co-annotaion-filter is created.
-  $('#' + table_id).on('click', ' tbody tr', function () {
+  $('#' + table_id).on('dblclick', ' tbody tr', function () {
       var aData = datatable.fnGetData(this);
       var a = aData[0];
       var annotations_node = new NeuronNavigator.AnnotationFilterNode(a,
@@ -762,8 +762,8 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
 /**
  * The meta annotation list node of the navigator provides a list of all
  * available annotations that are either annotated with the given class or that
- * annotats it. If clicked on a listed annotations, it adds a new annotation
- * filter node.
+ * annotats it. If double clicked on a listed annotations, it adds a new
+ * annotation filter node.
  */
 NeuronNavigator.MetaAnnotationListNode = function(is_meta_annotation)
 {
@@ -783,7 +783,7 @@ $.extend(NeuronNavigator.MetaAnnotationListNode.prototype,
 
 /**
  * The user list node of the navigator provides a list of all existing users.
- * It will add a user filter node if clicked on one of them.
+ * It will add a user filter node if double clicked on one of them.
  */
 NeuronNavigator.UserListNode = function() {};
 
@@ -813,7 +813,7 @@ NeuronNavigator.UserListNode.prototype.add_content = function(container)
   var self = this;
   // If a user is selected a user filter node is created and the event is
   // removed.
-  $('#' + table_id).on('click', ' tbody tr', function () {
+  $('#' + table_id).on('dblclick', ' tbody tr', function () {
       var aData = datatable.fnGetData(this);
       var user = {
         'login': aData[0],
@@ -891,15 +891,15 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
     }
   });
 
-  // Add click handler for the select column's header to select/unselect all
-  // check boxes at once.
-  $('#' + table_id).on('click', 'thead th:first', function () {
+  // Add double click handler for the select column's header to select/unselect
+  // all check boxes at once.
+  $('#' + table_id).on('dblclick', 'thead th:first', function () {
     var checkboxes = $('#' + table_id).find('tbody td.selector_column input');
     checkboxes.prop("checked", !checkboxes.prop("checked"));
   });
 
-  // Add click handler for table cells containing a select check box
-  $('#' + table_id).on('click', 'tbody td.selector_column', function (event) {
+  // Add double click handler for table cells containing a select check box
+  $('#' + table_id).on('dblclick', 'tbody td.selector_column', function (event) {
       // Make sure the event doesn't bubble up, because otherwise it would reach
       // the click handler of the tr element.
       event.stopPropagation();
@@ -913,7 +913,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.
-  $('#' + table_id).on('click', 'tbody tr', function () {
+  $('#' + table_id).on('dblclick', 'tbody tr', function () {
       var aData = datatable.fnGetData(this);
       var n = {
         'name': aData[0],
@@ -979,32 +979,32 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container)
   // Add container to DOM
   container.append(content);
 
-  // Append click handler
-  $(table_rows[0]).click($.proxy(function() {
+  // Append double click handler
+  $(table_rows[0]).dblclick($.proxy(function() {
       // Show annotation list for annotated annotations
       var annotations_node = new NeuronNavigator.MetaAnnotationListNode(true);
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
-  $(table_rows[1]).click($.proxy(function() {
+  $(table_rows[1]).dblclick($.proxy(function() {
       // Show annotation list for meta annotations
       var annotations_node = new NeuronNavigator.MetaAnnotationListNode(false);
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
-  $(table_rows[2]).click($.proxy(function() {
+  $(table_rows[2]).dblclick($.proxy(function() {
       // Show co-annotation list
       var node = new NeuronNavigator.AnnotationListNode(true);
       node.link(this.navigator, this);
       this.navigator.select_node(node);
   }, this));
-  $(table_rows[3]).click($.proxy(function() {
+  $(table_rows[3]).dblclick($.proxy(function() {
       // Show user list
       var users_node = new NeuronNavigator.UserListNode();
       users_node.link(this.navigator, this);
       this.navigator.select_node(users_node);
   }, this));
-  $(table_rows[4]).click($.proxy(function() {
+  $(table_rows[4]).dblclick($.proxy(function() {
       // Show neuron list
       var node = new NeuronNavigator.NeuronListNode();
       node.link(this.navigator, this);
@@ -1049,14 +1049,14 @@ NeuronNavigator.UserFilterNode.prototype.add_content = function(container)
   // Add container to DOM
   container.append(content);
 
-  // Append click handler
-  $(table_rows[0]).click($.proxy(function() {
+  // Append double click handler
+  $(table_rows[0]).dblclick($.proxy(function() {
       // Show annotation list
       var annotations_node = new NeuronNavigator.AnnotationListNode();
       annotations_node.link(this.navigator, this);
       this.navigator.select_node(annotations_node);
   }, this));
-  $(table_rows[1]).click($.proxy(function() {
+  $(table_rows[1]).dblclick($.proxy(function() {
       // Show neuron list
       var node = new NeuronNavigator.NeuronListNode();
       node.link(this.navigator, this);
@@ -1270,8 +1270,8 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
     }
   }, 0);
 
-  // Add click handler to skeleton to select it
-  $('#' + skeleton_table_id).on('click', ' tbody tr', function () {
+  // Add double click handler to skeleton to select it
+  $('#' + skeleton_table_id).on('dblclick', ' tbody tr', function () {
       var aData = skeleton_datatable.fnGetData(this);
       var skeleton_id = aData[0];
       TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton_id );
@@ -1298,7 +1298,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.
-  $('#' + annotation_table_id).on('click', ' tbody tr', function () {
+  $('#' + annotation_table_id).on('dblclick', ' tbody tr', function () {
       var aData = annotation_datatable.fnGetData(this);
       var a = aData[0];
       var annotations_node = new NeuronNavigator.AnnotationFilterNode(a);

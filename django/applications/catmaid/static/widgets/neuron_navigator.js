@@ -301,8 +301,7 @@ NeuronNavigator.Node.prototype.add_menu_table = function(entries, container)
 };
 
 NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
-    table_id, annotation_filters, annotates_filters, user_id_filter,
-    neuron_id_filter)
+    table_id, filters)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_annotationlist_content' +
@@ -341,8 +340,8 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
     "fnServerData": function (sSource, aoData, fnCallback) {
         // Annotation filter -- we are requesting annotations that are
         // annotated with a specific filter
-        if (annotation_filters) {
-          annotation_filters.forEach(function(annotation, i) {
+        if (filters.annotations) {
+          filters.annotations.forEach(function(annotation, i) {
             aoData.push({
                 'name': 'annotations[' + i + ']',
                 'value': annotation
@@ -351,8 +350,8 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
         }
         // Annotates filter -- we are requesting annotations that are
         // annotating entities given by this filter
-        if (annotates_filters) {
-          annotates_filters.forEach(function(annotation, i) {
+        if (filters.annotates) {
+          filters.annotates.forEach(function(annotation, i) {
             aoData.push({
                 'name': 'annotates[' + i + ']',
                 'value': annotation
@@ -361,18 +360,18 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
         }
         // User filter -- we are requesting annotations that are used by a
         // particular user.
-        if (user_id_filter) {
+        if (filters.user_id) {
           aoData.push({
               'name': 'user_id',
-              'value': user_id_filter
+              'value': filters.user_id
           });
         }
         // Neuron filter -- we are requesting annotations that are used for
         // a particular neuron.
-        if (neuron_id_filter) {
+        if (filters.neuron_id) {
           aoData.push({
               'name': 'neuron_id',
-              'value': neuron_id_filter
+              'value': filters.neuron_id
           });
         }
         $.ajax({
@@ -413,7 +412,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
 };
 
 NeuronNavigator.Node.prototype.add_user_list_table = function($container,
-    table_id, annotation_filters, neuron_id_filter)
+    table_id, filters)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_users_content' +
@@ -451,8 +450,8 @@ NeuronNavigator.Node.prototype.add_user_list_table = function($container,
     "fnServerData": function (sSource, aoData, fnCallback) {
         // Annotation filter -- we are requesting users that have
         // used a certain annotation
-        if (annotation_filters) {
-          annotation_filters.forEach(function(annotation, i) {
+        if (filters.annotations) {
+          filters.annotations.forEach(function(annotation, i) {
             aoData.push({
                 'name': 'annotations[' + i + ']',
                 'value': annotation
@@ -461,10 +460,10 @@ NeuronNavigator.Node.prototype.add_user_list_table = function($container,
         }
         // Neuron filter -- only users who annotated this neuron
         // are shown.
-        if (neuron_id_filter) {
+        if (filters.neuron_id) {
           aoData.push({
               'name': 'neuron_id',
-              'value': neuron_id_filter
+              'value': filters.neuron_id
           });
         }
         $.ajax({
@@ -510,7 +509,7 @@ NeuronNavigator.Node.prototype.add_user_list_table = function($container,
 };
 
 NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
-    table_id, annotation_filters, user_id_filter)
+    table_id, filters)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_neuronlist_content' +
@@ -548,8 +547,8 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
     "sAjaxSource": django_url + project.id + '/neuron/table/query-by-annotations',
     "fnServerData": function (sSource, aoData, fnCallback) {
         // Annotation filter
-        if (annotation_filters) {
-          annotation_filters.forEach(function(annotation, i) {
+        if (filters.annotations) {
+          filters.annotations.forEach(function(annotation, i) {
             aoData.push({
                 'name': 'neuron_query_by_annotation[' + i + ']',
                 'value': annotation
@@ -558,10 +557,10 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
         }
         // User filter -- only show neurons that have been annotated by the
         // user in question
-        if (user_id_filter) {
+        if (filters.user_id) {
           aoData.push({
               'name': 'neuron_query_by_annotator',
-              'value': user_id_filter
+              'value': filters.user_id
           });
         }
         $.ajax({
@@ -704,9 +703,7 @@ NeuronNavigator.AnnotationListNode.prototype.become_co_annotation_list =
 
 NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
 {
-  var annotates_filters = undefined;
-  var annotation_filters = undefined;
-  var user_id_filter = undefined;
+  var filters = {};
 
   // Use parent node provided filters, if available
   if (this.parent_node) {
@@ -716,22 +713,21 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
       if (this.is_meta_annotation) {
         // If the parent is a meta annotation, an 'annotates' filter is created.
         // This should restrict results to annotations that are annotated by it.
-        annotates_filters = [this.parent_node.annotation];
+        filters.annotates = [this.parent_node.annotation];
       } else {
         // Add parent annotation, if any
-        annotation_filters = [this.parent_node.annotation];
+        filters.annotations = [this.parent_node.annotation];
       }
     }
     if (this.parent_node.user_id) {
-      user_id_filter = this.parent_node.user_id;
+      filters.user_id = this.parent_node.user_id;
     }
   }
 
   var table_id = 'navigator_annotationlist_table' + this.navigator.widgetID;
 
   // Add annotation data table based on filters above
-  var datatable = this.add_annotation_list_table(container, table_id,
-      annotation_filters, annotates_filters, user_id_filter);
+  var datatable = this.add_annotation_list_table(container, table_id, filters);
 
   // Make self accessible in callbacks more easily
   var self = this;
@@ -783,25 +779,21 @@ $.extend(NeuronNavigator.UserListNode.prototype,
 
 NeuronNavigator.UserListNode.prototype.add_content = function(container)
 {
-  var annotation_filters = undefined;
-  var neuron_id_filter = undefined;
+  var filters = {};
 
   // Use parent node provided filters, if available
   if (this.parent_node) {
     // Collect annotarion and co-annotation filters
     if (this.parent_node.collect_annotation_filters) {
-      annotation_filters = this.parent_node.collect_annotation_filters();
+      filters.annotations = this.parent_node.collect_annotation_filters();
     }
     if (this.parent_node.neuron_id) {
-      neuron_id_filter = this.parent_node.neuron_id;
+      filters.neuron_id = this.parent_node.neuron_id;
     }
   }
 
   var table_id = 'navigator_user_table' + this.navigator.widgetID;
-
-  // Add user data table based on filters above
-  var datatable = this.add_user_list_table(container, table_id,
-      annotation_filters, neuron_id_filter);
+  var datatable = this.add_user_list_table(container, table_id, filters);
 
   // Make self accessible in callbacks more easily
   var self = this;
@@ -852,16 +844,17 @@ NeuronNavigator.NeuronListNode.prototype.get_selected_neurons = function()
 
 NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
 {
-  var annotation_filters = undefined;
+  var filters = {};
+
   // Use parent node provided filters, if available
   if (this.parent_node) {
     // Collect annotarion and co-annotation filters
     if (this.parent_node.collect_annotation_filters) {
-      annotation_filters = this.parent_node.collect_annotation_filters();
+      filters.annotations = this.parent_node.collect_annotation_filters();
     }
   }
 
-  var user_id_filter = this.get_last_user();
+  filters.user_id = this.get_last_user();
 
   // Create annotate button
   var annotate_button = document.createElement('input');
@@ -870,10 +863,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
   container.append(annotate_button);
 
   var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
-
-  // Add neuron data table based on filters above
-  var datatable = this.add_neuron_list_table(container, table_id,
-      annotation_filters, user_id_filter);
+  var datatable = this.add_neuron_list_table(container, table_id, filters);
 
   // Make self accessible in callbacks more easily
   var self = this;
@@ -1282,17 +1272,15 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
   container.append(annotation_title);
 
   // Table filters and ID
-  var annotates_filters = undefined;
-  var annotation_filters = undefined;
-  var user_id_filter = undefined;
-  var neuron_id_filter = this.neuron_id;
+  var filters = {
+    neuron_id: this.neuron_id
+  }
   var annotation_table_id = 'navigator_annotationlist_table' +
       this.navigator.widgetID;
 
   // Add annotation data table based on filters above
   var annotation_datatable = this.add_annotation_list_table(container,
-      annotation_table_id, annotation_filters, annotates_filters,
-      user_id_filter, neuron_id_filter);
+      annotation_table_id, filters);
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.

@@ -811,40 +811,6 @@ SelectionTable.prototype.selectSkeleton = function( skeleton, vis ) {
   this.notifyLink(skeleton);
 };
 
-
-SelectionTable.prototype.save_skeleton_list = function() {
-  var shortname = prompt('Short name reference for skeleton list?');
-  if (!shortname) return;
-  shortname = shortname.trim();
-  if (0 === shortname.length) return; // can't save a no-name list
-  var self = this;
-  jQuery.ajax({
-    url: django_url + project.id + '/skeletonlist/save',
-    data: { 
-      shortname: shortname,
-      skeletonlist: self.getSelectedSkeletons()
-    },
-    type: "POST",
-    dataType: "json",
-    success: function () {}
-  });
-};
-
-SelectionTable.prototype.load_skeleton_list = function() {
-  var shortname = prompt('Short name reference?');
-  if (!shortname) return;
-  var self = this;
-  jQuery.ajax({
-    url: django_url + project.id + '/skeletonlist/load',
-    data: { shortname: shortname },
-    type: "POST",
-    dataType: "json",
-    success: function ( data ) {
-      self.addSkeletons(data['skeletonlist']);
-    }
-  });
-};
-
 SelectionTable.prototype.measure = function() {
   var skids = this.getSelectedSkeletons();
   if (0 === skids.length) return;

@@ -56,9 +56,6 @@ urlpatterns += patterns(
     (r'^classinstance/(?P<ci_id>\d+)/permissions$',
             'catmaid.control.get_object_permissions'),
 
-    (r'^(?P<project_id>\d+)/skeletonlist/save$', 'catmaid.control.save_skeletonlist'),
-    (r'^(?P<project_id>\d+)/skeletonlist/load$', 'catmaid.control.load_skeletonlist'),
-
     # Views
     (r'^useranalytics$', 'catmaid.control.plot_useranalytics'),
     (r'^(?P<project_id>\d+)/userproficiency$', 'catmaid.control.user_evaluation.evaluate_user'),

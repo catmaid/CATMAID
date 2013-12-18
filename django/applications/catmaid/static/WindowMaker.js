@@ -246,19 +246,6 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createElement('br'));
 
-    var save = document.createElement('input');
-    save.setAttribute("type", "button");
-    save.setAttribute("value", "Save list");
-    save.style.marginLeft = '1em';
-    save.onclick = ST.save_skeleton_list.bind(ST);
-    buttons.appendChild(save);
-
-    var load = document.createElement('input');
-    load.setAttribute("type", "button");
-    load.setAttribute("value", "Load list");
-    load.onclick = ST.load_skeleton_list.bind(ST);
-    buttons.appendChild(load);
-
     var annotate = document.createElement('input');
     annotate.setAttribute("type", "button");
     annotate.setAttribute("id", "annotate_skeleton_list");

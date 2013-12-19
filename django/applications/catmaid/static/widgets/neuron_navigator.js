@@ -301,14 +301,47 @@ NeuronNavigator.Node.prototype.add_menu_table = function(entries, container)
 };
 
 NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
-    table_id, filters)
+    table_id, filters, unlink_handler)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_annotationlist_content' +
       this.navigator.widgetID);
 
-  // Create annotation table
+  // Prepare column definition, depending on whether there is a removal handler
   var columns = ['Annotation', 'Last used', '# used'];
+  var column_params = [
+      { // Annotation name
+        "bSearchable": true,
+        "bSortable": true
+      },
+      { // Last used date
+        "bSearchable": false,
+        "bSortable": true
+      },
+      { // Usage
+        "bSearchable": false,
+        "bSortable": true
+      },
+    ];
+  if (unlink_handler) {
+    var self = this;
+    columns.push('Action');
+    column_params.push(
+      {
+        "sWidth": '5em',
+        "sClass": 'selector_column center',
+        "bSearchable": false,
+        "bSortable": false,
+        "mRender": function (data, type, full) {
+          var a_class = 'navigator_annotation_unlink_caller' +
+              self.navigator.widgetID;
+          return '<a href="#" class="' + a_class + '" annotation_id="' +
+              full[3] + '">unlink</>';
+      }
+    });
+  }
+
+  // Create annotation table
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
   var table_footer = document.createElement('tfoot');
@@ -326,6 +359,16 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
 
   // Add table to DOM
   $container.append(content);
+
+  // Add a general handler for this table to catch all clicks on the
+  // unlink links.
+  if (unlink_handler) {
+    $(table).on('click', ' a.navigator_annotation_unlink_caller' +
+        this.navigator.widgetID, function () {
+            var ann_id = $(this).attr('annotation_id');
+            unlink_handler(ann_id);
+        });
+  }
 
   // Fill annotation table
   var datatable = $(table).dataTable({
@@ -402,20 +445,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
     },
     "bJQueryUI": true,
     "aaSorting": [[ 0, "asc" ]],
-    "aoColumns": [
-      { // Annotation name
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // Last used date
-        "bSearchable": false,
-        "bSortable": true
-      },
-      { // Last used date
-        "bSearchable": false,
-        "bSortable": true
-      },
-    ]
+    "aoColumns": column_params
   });
 
   return datatable;
@@ -1294,7 +1324,16 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
 
   // Add annotation data table based on filters above
   var annotation_datatable = this.add_annotation_list_table(container,
-      annotation_table_id, filters);
+      annotation_table_id, filters, function(annotation_id) {
+          // Unlink the annotation from the current neuron
+          NeuronAnnotations.remove_annotation(self.neuron_id,
+              annotation_id, function(message) {
+                  // Display message returned by the server
+                  growlAlert('Information', message);
+                  // Refresh node
+                  self.navigator.select_node(self);
+              });
+      });
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.

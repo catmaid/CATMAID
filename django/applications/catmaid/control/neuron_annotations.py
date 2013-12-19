@@ -424,6 +424,7 @@ def list_annotations_datatable(request, project_id=None):
             annotation[1], # Name
             last_used, # Last used
             annotation[3], # Usage
+            annotation[0], # ID
         ]]
 
     return HttpResponse(json.dumps(response), mimetype='text/json')

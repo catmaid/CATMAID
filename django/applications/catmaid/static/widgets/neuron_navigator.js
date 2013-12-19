@@ -994,6 +994,12 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
     checkboxes.prop("checked", !checkboxes.prop("checked"));
   });
 
+  // Add a change handler for the check boxes in each row
+  $('#' + table_id).on('change', 'tbody td.selector_column input', (function() {
+    // Update sync link
+    this.navigator.updateLink(this.navigator.getSelectedSkeletonModels());
+  }).bind(this));
+
   // Add double click handler for table cells containing a select check box
   $('#' + table_id).on('dblclick', 'tbody td.selector_column', function (event) {
       // Make sure the event doesn't bubble up, because otherwise it would reach
@@ -1021,6 +1027,76 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
       self.navigator.select_node(node);
   });
 };
+
+/**
+ * Returns the IDs of the skeletons modeling the currently selected neurons.
+ */
+NeuronNavigator.NeuronListNode.prototype.getSelectedSkeletons = function() {
+  return this.get_entities(true).reduce(function(o, e) {
+    return o.concat(e.skeleton_ids);
+  }, []);
+};
+
+/**
+ * Tests if one the current list of neurons has a particular skeleton model.
+ */
+NeuronNavigator.NeuronListNode.prototype.hasSkeleton = function(skeleton_id) {
+  return this.listed_neurons.some(function(n) {
+    return n.skeleton_ids.indexOf(skeleton_id) != -1;
+  });
+};
+
+/**
+ * If a neuron in the current list is modeled by this particular skeleton ID, it
+ * will be highlighted.
+ */
+NeuronNavigator.NeuronListNode.prototype.highlight = function(skeleton_id)
+{
+  var $cells = $('#navigator_neuronlist_table' + this.navigator.widgetID +
+      ' tbody td');
+  // Remove any highlighting
+  $cells.css('background-color', '');
+  // Highlight corresponding row if present
+  this.listed_neurons.forEach(function(n) {
+    if (n.skeleton_ids.indexOf(skeleton_id) != -1) {
+      var $row_cells = $cells.find('input[neuron_id=' + n.id + ']').
+          parent().parent().find('td');
+      $row_cells.css('background-color',
+          SelectionTable.prototype.highlighting_color);
+    }
+  });
+};
+
+/**
+ * Retruns a skeleton model dictionary.
+ */
+NeuronNavigator.NeuronListNode.prototype.getSelectedSkeletonModels = function() {
+  return this.get_entities(true).reduce((function(o, n) {
+    n.skeleton_ids.forEach(function(skid) {
+      o[skid] = new SelectionTable.prototype.SkeletonModel(
+          skid, n.name, new THREE.Color().setRGB(1, 1, 0));
+    });
+    return o;
+  }).bind(this), {});
+};
+
+/**
+ * If passed true, this function returns a list of selected entities in the
+ * neuron list. Otherweise, a list of unselected entities is returned.
+ */
+NeuronNavigator.NeuronListNode.prototype.get_entities = function(checked)
+{
+  return this.listed_neurons.reduce((function(o, e) {
+      // Test if one of the checkboxes for a particular neuron is checked
+      var is_checked = $("#navigator_neuronlist_table" +
+          this.navigator.widgetID + ' tbody td.selector_column').find(
+              'input[neuron_id="' + e.id + '"]').is(':checked');
+      if (is_checked == checked) {
+          o.push(e);
+      }
+      return o;
+  }).bind(this), []);
+}
 
 
 /**

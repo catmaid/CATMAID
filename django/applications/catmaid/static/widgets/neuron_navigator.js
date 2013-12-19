@@ -589,7 +589,7 @@ NeuronNavigator.Node.prototype.add_user_list_table = function($container,
 };
 
 NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
-    table_id, filters)
+    table_id, filters, callback)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_neuronlist_content' +
@@ -649,7 +649,12 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
             "type": "POST",
             "url": sSource,
             "data": aoData,
-            "success": fnCallback
+            "success": function(result) {
+                fnCallback(result);
+                if (callback) {
+                  callback(result);
+                }
+            }
         });
     },
     "aLengthMenu": [
@@ -901,7 +906,10 @@ NeuronNavigator.UserListNode.prototype.add_content = function(container)
 /**
  * The neuron list node of the navigator lists all neurons.
  */
-NeuronNavigator.NeuronListNode = function() {};
+NeuronNavigator.NeuronListNode = function()
+{
+  this.listed_neurons = [];
+};
 
 NeuronNavigator.NeuronListNode.prototype = {};
 $.extend(NeuronNavigator.NeuronListNode.prototype,
@@ -946,8 +954,26 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
   annotate_button.setAttribute('value', 'Annotate');
   container.append(annotate_button);
 
+  // Callback for post-process data received from server
+  var post_process = (function(result)
+  {
+      // Reset the node's neuron list
+      this.listed_neurons = [];
+      // Save the new data in this node
+      result.aaData.forEach(function(e) {
+          this.listed_neurons.push({
+            name: e[0],
+            annotations: e[1],
+            skeleton_ids: e[2],
+            root_node_ids: e[3],
+            id: e[4]
+          });
+      }, this);
+  }).bind(this);
+
   var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
-  var datatable = this.add_neuron_list_table(container, table_id, filters);
+  var datatable = this.add_neuron_list_table(container, table_id, filters,
+      post_process);
 
   // Make self accessible in callbacks more easily
   var self = this;

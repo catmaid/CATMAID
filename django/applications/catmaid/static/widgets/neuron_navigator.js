@@ -1001,7 +1001,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
   }).bind(this));
 
   // Add double click handler for table cells containing a select check box
-  $('#' + table_id).on('dblclick', 'tbody td.selector_column', function (event) {
+  $('#' + table_id).on('click', 'tbody td.selector_column', function (event) {
       // Make sure the event doesn't bubble up, because otherwise it would reach
       // the click handler of the tr element.
       event.stopPropagation();

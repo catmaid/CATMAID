@@ -436,7 +436,7 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
     this.add_autocomplete_to_input(meta_annotation_input);
     // Add text to append new field
     var $new_meta_field = $(dialog.appendMessage(
-        "Click here to add another meta annotation"));
+        "Click to add another meta annotation to basic annotation"));
     $new_meta_field.click(add_meta_annotation_fields.bind(this,
         $new_meta_field.hide.bind($new_meta_field)));
     // Increase meta annotation counter in dialog

@@ -32,21 +32,24 @@ NeuronNavigator.prototype.clear = function(source_chain) {};
 NeuronNavigator.prototype.removeSkeletons = function() {};
 NeuronNavigator.prototype.updateModels = function() {};
 
-NeuronNavigator.prototype.getSelectedSkeletons = function() {
-  return [];
+NeuronNavigator.prototype.getSelectedSkeletons = function()
+{
+  return this.current_node.getSelectedSkeletons();
 };
 
-NeuronNavigator.prototype.hasSkeleton = function(skeleton_id) {
-  return false;
+NeuronNavigator.prototype.hasSkeleton = function(skeleton_id)
+{
+  return this.current_node.hasSkeleton(skeleton_id);
 };
 
-NeuronNavigator.prototype.getSelectedSkeletonModels = function() {
-  return {};
+NeuronNavigator.prototype.getSelectedSkeletonModels = function()
+{
+  return this.current_node.getSelectedSkeletonModels();
 };
 
 NeuronNavigator.prototype.highlight = function(skeleton_id)
 {
-  return;
+  this.current_node.highlight(skeleton_id);
 };
 
 /* Non-interface methods */
@@ -106,6 +109,9 @@ NeuronNavigator.prototype.select_node = function(node)
   // Clear the content div, and let the node add content to it
   var $content = $('#navigator_content' + this.widgetID).empty();
   node.add_content($content);
+
+  // Update sync link
+  this.updateLink(this.getSelectedSkeletonModels());
 };
 
 /**
@@ -160,6 +166,40 @@ NeuronNavigator.Node = function(name)
   this.possibleLengths = [25, 100, -1];
   this.possibleLengthsLabels = this.possibleLengths.map(
       function (n) { return (n === -1) ? "All" : n.toString() });
+};
+
+/**
+ * Default implementation for getting information for the skeleton source
+ * interface. It can be overridden by base classes.
+ */
+NeuronNavigator.Node.prototype.getSelectedSkeletons = function() {
+  return [];
+};
+
+/**
+ * Default implementation for getting information for the skeleton source
+ * interface. It can be overridden by base classes.
+ */
+NeuronNavigator.Node.prototype.hasSkeleton = function(skeleton_id) {
+  return false;
+};
+
+/**
+ * Default implementation for getting information for the skeleton source
+ * interface. It can be overridden by base classes.
+ */
+NeuronNavigator.Node.prototype.getSelectedSkeletonModels = function()
+{
+  return {};
+};
+
+/**
+ * Default implementation for getting information for the skeleton source
+ * interface. It can be overridden by base classes.
+ */
+NeuronNavigator.Node.prototype.highlight = function(skeleton_id)
+{
+  return;
 };
 
 NeuronNavigator.Node.prototype.link = function(navigator, parent_node)
@@ -1388,4 +1428,43 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
           }
         }
   }).bind(this));
+};
+
+/**
+ * Returns a list of skeleton IDs (usually one) modeling the current neuron.
+ */
+NeuronNavigator.NeuronNode.prototype.getSelectedSkeletons = function() {
+  return this.skeleton_ids;
+};
+
+/**
+ * Tests if the current neuron is modeled by a particular skeleton ID.
+ */
+NeuronNavigator.NeuronNode.prototype.hasSkeleton = function(skeleton_id) {
+  return this.skeleton_ids.indexOf(skeleton_id) != -1;
+};
+
+/**
+ * Highlights a row if it is representing the passed skeleton.
+ */
+NeuronNavigator.NeuronNode.prototype.highlight = function(skeleton_id)
+{
+  var $rows = $('#navigator_skeletonlist_table' +
+      this.navigator.widgetID + ' tbody tr');
+  // Remove any highlighting
+  $rows.css('background-color', '');
+  // Highlight corresponding row if present
+  $rows.find('td:contains(' + skeleton_id + ')').parent().css(
+      'background-color', SelectionTable.prototype.highlighting_color);
+};
+
+/**
+ * Retruns a skeleton model dictionary.
+ */
+NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
+  return this.skeleton_ids.reduce((function(o, skid) {
+    o[skid] = new SelectionTable.prototype.SkeletonModel(
+        skid, this.name, new THREE.Color().setRGB(1, 1, 0));
+    return o;
+  }).bind(this), {});
 };

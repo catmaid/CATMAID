@@ -2019,6 +2019,14 @@ var WindowMaker = new function()
       '<table cellpadding="0" cellspacing="0" border="0" ' +
           'class="neuron_annotations_query_fields" ' +
           'id="neuron_annotations_query_fields{{NA-ID}}">' +
+        '<tr id="neuron_query_by_name{{NA-ID}}">' +
+          '<td class="neuron_annotations_query_field_label">named as:</td> ' +
+          '<td class="neuron_annotations_query_field">' +
+            '<input type="text" name="neuron_query_by_name" ' +
+                'id="neuron_query_by_name{{NA-ID}}" value="" class="" />' +
+            '<em>(optional)</em>' +
+          '</td> ' +
+        '</tr>' +
         '<tr id="neuron_query_by_annotation{{NA-ID}}">' +
           '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
           '<td class="neuron_annotations_query_field">' +

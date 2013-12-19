@@ -218,8 +218,18 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   // Add click handlers to remove tags from nodes
   var NA = this;
   $(".remove_annotation", $(ul)).click( function() {
-      NA.remove_annotation($(this).attr('neuron_id'),
-          $(this).attr('annotation_id'));
+      var neuron_id = $(this).attr('neuron_id');
+      var annotation_id = $(this).attr('annotation_id');
+      NeuronAnnotations.remove_annotation(neuron_id,
+          annotation_id, (function(message) {
+              // Display message returned by the server
+              growlAlert('Information', message);
+              // Remove current annotation from displayed list
+              var result_tr = $('#neuron_annotations_query_results' +
+                  this.widgetID).find('.remove_annotation[neuron_id=' +
+                  neuron_id + '][annotation_id=' + annotation_id + ']');
+              result_tr.fadeOut(1000, function() { $(this).remove(); });
+          }).bind(NA));
   });
   // Add handler to the checkbox infront of each entity
   var create_cb_handler = function(widget) {
@@ -511,14 +521,19 @@ NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids,
   });
 };
 
-NeuronAnnotations.prototype.remove_annotation = function(neuron_id,
-    annotation_id)
+/**
+ * This neuron annotation namespace method removes an annotation from another
+ * entity. It is not dependent on any context, but asks the user for
+ * confirmation. A callback can be executed in the case of success.
+ */
+NeuronAnnotations.remove_annotation = function(neuron_id,
+    annotation_id, callback)
 {
   if (!confirm('Are you sure you want to remove this annotation?')) {
     return;
   }
 
-  requestQueue.register(django_url + this.pid + '/neuron/' + neuron_id +
+  requestQueue.register(django_url + project.id + '/neuron/' + neuron_id +
       '/annotation/' + annotation_id + '/remove',
       'POST', {}, $.proxy(function(status, text, xml) {
         if (status === 200) {
@@ -526,13 +541,7 @@ NeuronAnnotations.prototype.remove_annotation = function(neuron_id,
           if (e.error) {
             alert(e.error);
           } else {
-            // Display message returned by the server
-            growlAlert('Information', e.message);
-            // Remove current annotation from displayed list
-            var result_tr = $('#neuron_annotations_query_results' +
-                this.widgetID).find('.remove_annotation[neuron_id=' +
-                neuron_id + '][annotation_id=' + annotation_id + ']');
-            result_tr.fadeOut(1000, function() { $(this).remove(); });
+            if (callback) callback(e.message);
           }
         }
       }, this));

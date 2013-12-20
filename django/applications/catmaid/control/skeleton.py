@@ -714,27 +714,30 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
     response_on_error = ''
     try:
+        from_treenode_id = int(from_treenode_id)
         to_treenode_id = int(to_treenode_id)
-        cursor = connection.cursor()
-        cursor.execute('SELECT skeleton_id FROM treenode WHERE id = %s' % to_treenode_id)
-        rows = tuple(cursor.fetchall())
-        if not rows:
+
+        try:
+            from_treenode = Treenode.objects.get(pk=from_treenode_id)
+        except Treenode.DoesNotExist:
+            raise Exception("Could not find a skeleton for treenode #%s" % from_treenode_id)
+
+        try:
+            to_treenode = Treenode.objects.get(pk=to_treenode_id)
+        except Treenode.DoesNotExist:
             raise Exception("Could not find a skeleton for treenode #%s" % to_treenode_id)
 
-        to_skid = rows[0][0]
-
+        from_skid = from_treenode.skeleton_id
         from_neuron = _get_neuronname_from_skeletonid( project_id, from_skid )
+
+        to_skid = to_treenode.skeleton_id
         to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
 
         # Make sure the user has permissions to edit both neurons
         can_edit_class_instance_or_fail(
-                request.user, from_neuron['neuronid'], 'neuron')
+                user, from_neuron['neuronid'], 'neuron')
         can_edit_class_instance_or_fail(
-                request.user, to_neuron['neuronid'], 'neuron')
-
-        from_treenode_id = int(from_treenode_id)
-        from_treenode = Treenode.objects.get(pk=from_treenode_id)
-        from_skid = from_treenode.skeleton_id
+                user, to_neuron['neuronid'], 'neuron')
 
         if from_skid == to_skid:
             raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')

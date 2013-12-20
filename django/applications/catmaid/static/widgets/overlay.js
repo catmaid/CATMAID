@@ -2132,57 +2132,47 @@ SplitMergeDialog.prototype.populate = function(extension) {
 
   // Get all annotations for the first model and fill the list boxes
   var add_annotations_fn = function(skid, listboxes) {
-    requestQueue.register(django_url + project.id +  '/annotations/list',
-      'POST', {'skeleton_id': skid}, function(status, text) {
-        if (status !== 200) {
-          alert("Unexpected status code: " + status);
-          return false;
-        }
-        if (text && text !== " ") {
-          var json = $.parseJSON(text);
-          if (json.error) {
-            alert(json.error);
-          } else {
-            // Create annotation check boxes
-            json.annotations.forEach(function(aobj) {
-              var create_cb = function(a_info, checked) {
-                var cb_label = document.createElement('label');
-                cb_label.style.cssFloat = 'left';
-                cb_label.style.clear = 'left';
-                var cb = document.createElement('input');
-                cb.checked = checked;
-                cb.setAttribute('class', 'split_skeleton_annotation');
-                cb.setAttribute('annotation', a_info.name);
-                cb.setAttribute('type', 'checkbox');
-                cb_label.appendChild(cb);
-                // There should only be one user who has used this annotation
-                // with the current neuron.
-                cb_label.appendChild(document.createTextNode(
-                    a_info.name + ' (by ' + a_info.users[0].name + ')'));
-                return cb_label;
-              };
-              listboxes.forEach(function(lb) {
-                lb.obj.appendChild(create_cb(aobj, lb.checked));
-              });
+    NeuronAnnotations.retrieve_annotations_for_skeleton(skid,
+        function(annotations) {
+          // Create annotation check boxes
+          annotations.forEach(function(aobj) {
+            var create_cb = function(a_info, checked) {
+              var cb_label = document.createElement('label');
+              cb_label.style.cssFloat = 'left';
+              cb_label.style.clear = 'left';
+              var cb = document.createElement('input');
+              cb.checked = checked;
+              cb.setAttribute('class', 'split_skeleton_annotation');
+              cb.setAttribute('annotation', a_info.name);
+              cb.setAttribute('type', 'checkbox');
+              cb_label.appendChild(cb);
+              // There should only be one user who has used this annotation
+              // with the current neuron.
+              cb_label.appendChild(document.createTextNode(
+                  a_info.name + ' (by ' + a_info.users[0].name + ')'));
+              return cb_label;
+            };
+            listboxes.forEach(function(lb) {
+              lb.obj.appendChild(create_cb(aobj, lb.checked));
             });
-            // If there is no annotation, add a note
-            if (json.length == 0) {
-              var msg = "no annotations found";
-              listboxes.forEach(function(lb) {
-                lb.obj.appendChild(document.createTextNode(msg));
-              });
-            }
+          });
+          // If there is no annotation, add a note
+          if (annotations.length == 0) {
+            var msg = "no annotations found";
+            listboxes.forEach(function(lb) {
+              lb.obj.appendChild(document.createTextNode(msg));
+            });
           }
-        }
-      });
+        });
     };
-    if (this.in_merge_mode) {
-      add_annotations_fn(this.model1_id, [{obj: big, checked: true}]);
-      add_annotations_fn(this.model2_id, [{obj: small, checked: true}]);
-    } else {
-      add_annotations_fn(this.model1_id,
-          [{obj: big, checked: true}, {obj: small, checked: false}]);
-    }
+
+  if (this.in_merge_mode) {
+    add_annotations_fn(this.model1_id, [{obj: big, checked: true}]);
+    add_annotations_fn(this.model2_id, [{obj: small, checked: true}]);
+  } else {
+    add_annotations_fn(this.model1_id,
+        [{obj: big, checked: true}, {obj: small, checked: false}]);
+  }
 
   return this;
 };

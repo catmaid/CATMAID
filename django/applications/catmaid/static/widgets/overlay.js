@@ -223,21 +223,23 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
 SkeletonAnnotations.SVGOverlay.prototype = {};
 
 /**
-* Execute the function fn if the skeleton
-* has more than one node and the dialog is confirmed,
-* or has a single node (no dialog pops up).
-* The verb is the action to perform, as written as a question in a dialog
-* to confirm the action if the skeleton has a single node.
+* Execute the function fn if the skeleton has more than one node and the dialog
+* is confirmed, or has a single node (no dialog pops up).  The verb is the
+* action to perform, as written as a question in a dialog to confirm the action
+* if the skeleton has a single node.
 */
-SkeletonAnnotations.SVGOverlay.prototype.maybeExecuteIfSkeletonHasMoreThanOneNode = function(node_id, verb, fn) {
+SkeletonAnnotations.SVGOverlay.prototype.executeDependentOnNodeCount =
+    function(node_id, fn_one, fn_more)
+{
   this.submit(
       django_url + project.id + '/skeleton/node/' + node_id + '/node_count',
       {},
       function(json) {
-        if (json.count > 1 && !confirm("Do you really want to " + verb + " skeleton #" + json.skeleton_id + ", which has more than one node?")) {
-          return;
+        if (json.count > 1) {
+          fn_more();
+        } else {
+          fn_one();
         }
-        fn();
       });
 };
 
@@ -618,19 +620,15 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
       // skeleton.
       self.executeIfSkeletonEditable(from_model.id, function() {
         self.executeIfSkeletonEditable(to_skid, function() {
-          var to_color = new THREE.Color().setRGB(1, 0, 1);
-          var to_model = new SelectionTable.prototype.SkeletonModel(
-              to_skid, json['neuron_name'], to_color);
-          var dialog = new SplitMergeDialog(from_model, to_model);
-          dialog.onOK = function() {
-            if (!confirm("Do you really want to merge the skeletons?")) return;
+          // The function used to instruct the backend to do the merge
+          var merge = function(annotations) {
             // The call to join will reroot the target skeleton at the shift-clicked treenode
             self.submit(
               django_url + project.id + '/skeleton/join',
               {
                 from_id: fromid,
                 to_id: toid,
-                annotation_set: dialog.get_combined_annotation_set(),
+                annotation_set: annotations,
               },
               function (json) {
                 self.updateNodes(function() {
@@ -639,20 +637,59 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                 });
               },
               true); // block UI
+          }
+
+          // A method to use when the to-skeleton has multiple nodes
+          var merge_multiple_nodes = function() {
+            var to_color = new THREE.Color().setRGB(1, 0, 1);
+            var to_model = new SelectionTable.prototype.SkeletonModel(
+                to_skid, json['neuron_name'], to_color);
+            var dialog = new SplitMergeDialog(from_model, to_model);
+            dialog.onOK = function() {
+              if (!confirm("Do you really want to merge the skeletons?")) return;
+              merge(dialog.get_combined_annotation_set());
+            };
+            // Extend the display with the newly created line
+            var extension = {};
+            var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
+                c = self.nodes[toid];
+            extension[from_model.id] = [
+                new THREE.Vector3(self.pix2physX(p.x),
+                                  self.pix2physY(p.y),
+                                  self.pix2physZ(p.z)),
+                new THREE.Vector3(self.pix2physX(c.x),
+                                  self.pix2physY(c.y),
+                                  self.pix2physZ(c.z))
+            ];
+            dialog.show(extension);
           };
-          // Extend the display with the newly created line
-          var extension = {};
-          var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
-              c = self.nodes[toid];
-          extension[from_model.id] = [
-              new THREE.Vector3(self.pix2physX(p.x),
-                                self.pix2physY(p.y),
-                                self.pix2physZ(p.z)),
-              new THREE.Vector3(self.pix2physX(c.x),
-                                self.pix2physY(c.y),
-                                self.pix2physZ(c.z))
-          ];
-          dialog.show(extension);
+
+          // A method to use when the to-skeleton has only a single node
+          var merge_single_node = function() {
+            /* Retrieve annotations for the to-skeleton and show th dialog if
+             * there are some. Otherwise merge the single not without showing
+             * the dialog.
+             */
+            NeuronAnnotations.retrieve_annotations_for_skeleton(to_skid,
+                function(annotations) {
+                  if (annotations.length > 0) {
+                    merge_multiple_nodes();
+                  } else {
+                    NeuronAnnotations.retrieve_annotations_for_skeleton(
+                        from_model.id, function(annotations) {
+                            merge(annotations);
+                        });
+                  }
+                });
+          };
+
+          /* If the to-node contains more than one node, show the dialog.
+           * Otherwise, check if the to-node contains annotations. If so, show
+           * the dialog. Otherwise, merge it right away and keep the
+           * from-annotations.
+           */
+          self.executeDependentOnNodeCount(toid, merge_single_node,
+              merge_multiple_nodes);
         });
     });
   });
@@ -1562,6 +1599,25 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
         // skeleton.
         self.executeIfSkeletonEditable(atn_skid, function() {
           self.executeIfSkeletonEditable(nearestnode_skid, function() {
+            // The function used to instruct the backend to do the merge
+            var merge = function(annotations) {
+              // Take into account current local offset coordinates and scale
+              var pos_x = self.phys2pixX(self.coords.offsetXPhysical);
+              var pos_y = self.phys2pixY(self.coords.offsetYPhysical);
+              // At this point of the execution
+              // project.coordinates.z is not on the new z index, thus simulate it here
+              var pos_z = self.phys2pixZ(project.coordinates.z);
+              var phys_z = self.pix2physZ(pos_z);
+              // Get physical coordinates for node position creation
+              var phys_x = self.pix2physX(pos_x);
+              var phys_y = self.pix2physY(pos_y);
+              // Ask to join the two skeletons with interpolated nodes
+              self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
+                  nearestnode_id, annotations);
+            };
+
+            // A method to use when the to-skeleton has multiple nodes
+            var merge_multiple_nodes = function() {
             // Ask for merging
             // Get neuron name and id of the to-skeleton
             self.submit(
@@ -1575,21 +1631,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
                 var dialog = new SplitMergeDialog(from_model, to_model);
                 dialog.onOK = function() {
                   if (!confirm("Do you really want to merge the skeletons?")) return;
-                  // Take into account current local offset coordinates and scale
-                  var pos_x = self.phys2pixX(self.coords.offsetXPhysical);
-                  var pos_y = self.phys2pixY(self.coords.offsetYPhysical);
-                  // At this point of the execution
-                  // project.coordinates.z is not on the new z index, thus simulate it here
-                  var pos_z = self.phys2pixZ(project.coordinates.z);
-                  var phys_z = self.pix2physZ(pos_z);
-                  // Get physical coordinates for node position creation
-                  var phys_x = self.pix2physX(pos_x);
-                  var phys_y = self.pix2physY(pos_y);
-                  // Get annotation set for the joined neuron
-                  var annotation_set = dialog.get_combined_annotation_set();
-                  // Ask to join the two skeletons with interpolated nodes
-                  self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
-                      nearestnode_id, annotation_set);
+                  // Get annotation set for the joined skeletons and merge both
+                  merge(dialog.get_combined_annotation_set());
                 };
                 // Extend the display with the newly created line
                 var extension = {};
@@ -1605,6 +1648,34 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
                 ];
                 dialog.show(extension);
               });
+            };
+
+            // A method to use when the to-skeleton has only a single node
+            var merge_single_node = function() {
+              /* Retrieve annotations for the to-skeleton and show th dialog if
+               * there are some. Otherwise merge the single not without showing
+               * the dialog.
+               */
+              NeuronAnnotations.retrieve_annotations_for_skeleton(
+                  nearestnode_skid, function(to_annotations) {
+                    if (to_annotations.length > 0) {
+                      merge_multiple_nodes();
+                    } else {
+                      NeuronAnnotations.retrieve_annotations_for_skeleton(
+                          atn.skeleton_id, function(from_annotations) {
+                              merge(from_annotations);
+                          });
+                    }
+                  });
+            };
+
+            /* If the to-node contains more than one node, show the dialog.
+             * Otherwise, check if the to-node contains annotations. If so, show
+             * the dialog. Otherwise, merge it right away and keep the
+             * from-annotations.
+             */
+            self.executeDependentOnNodeCount(nearestnode.id, merge_single_node,
+                merge_multiple_nodes);
           });
         });
         return;

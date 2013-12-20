@@ -547,6 +547,29 @@ NeuronAnnotations.remove_annotation = function(neuron_id,
       }, this));
 };
 
+/**
+ * A neuron annotation namespac method to retrieve annotations from the backend
+ * for the neuron modeled by a particular skeleton. If the call was successfull,
+ * the passed handler is called with the annotation set as parameter.
+ */
+NeuronAnnotations.retrieve_annotations_for_skeleton = function(skid, handler) {
+  requestQueue.register(django_url + project.id +  '/annotations/list',
+    'POST', {'skeleton_id': skid}, function(status, text) {
+      if (status !== 200) {
+        alert("Unexpected status code: " + status);
+        return false;
+      }
+      if (text && text !== " ") {
+        var json = $.parseJSON(text);
+        if (json.error) {
+          alert(json.error);
+        } else if (handler) {
+          handler(json.annotations);
+        }
+      }
+    });
+};
+
 NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
 {
   // Get a JSON list with all available annotations and initialize

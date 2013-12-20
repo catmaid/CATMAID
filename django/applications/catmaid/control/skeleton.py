@@ -5,7 +5,7 @@ from catmaid.models import *
 from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
+from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query
 from catmaid.control.neuron_annotations import _annotate_neurons
 from catmaid.control.neuron_annotations import _update_neuron_annotations

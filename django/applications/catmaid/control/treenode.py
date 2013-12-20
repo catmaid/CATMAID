@@ -12,7 +12,7 @@ from catmaid.models import *
 from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
+from catmaid.control.neuron import _delete_if_empty
 import sys
 import math
 
@@ -350,7 +350,8 @@ def update_radius(request, project_id=None, treenode_id=None):
 # REMARK this function went from 1.6 seconds to 400 ms when de-modelized
 @requires_user_role(UserRole.Annotate)
 def delete_treenode(request, project_id=None):
-    """ If the skeleton has a single node, deletes the skeleton, and if so, if the skeleton is a model_of a neuron that was part_of group 'Isolated synaptic terminals', deletes the neuron. Returns the parent_id, if any."""
+    """ Deletes a treenode. If the skeleton has a single node, deletes the
+    skeleton and its neuron. Returns the parent_id, if any."""
     treenode_id = int(request.POST.get('treenode_id', -1))
     # Raise an Exception if the user doesn't have permission to edit the neuron
     # the skeleton of the treenode is modeling.
@@ -370,12 +371,10 @@ def delete_treenode(request, project_id=None):
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children, and other children become independent skeletons
                 raise Exception("You can't delete the root node when it has children.")
-            # Remove the original skeleton.
-            # It is OK to remove it if it only had one node,
-            # even if the skeleton's user does not match or the user is not superuser.
-            # Fetch the neuron id, if it was a placeholder under 'Isolated synaptic terminals' group
-            neuron_id = _in_isolated_synaptic_terminals(treenode.skeleton_id)
-            # Delete the skeleton, which triggers deleting the ClassInstanceClassInstance relationship with neuron_id
+            # Remove the original skeleton. It is OK to remove it if it only had
+            # one node, even if the skeleton's user does not match or the user
+            # is not superuser. Delete the skeleton, which triggers deleting
+            # the ClassInstanceClassInstance relationship with neuron_id
             response_on_error = 'Could not delete skeleton.'
             # Extra check for errors, like having two root nodes
             count = Treenode.objects.filter(skeleton_id=treenode.skeleton_id).count()
@@ -384,11 +383,10 @@ def delete_treenode(request, project_id=None):
             else:
                 return HttpResponse(json.dumps({"error": "Can't delete isolated node: erroneously, its skeleton contains more than one treenode! Check for multiple root nodes."}))
             
-            # If the neuron was part of the 'Isolated synaptic terminals' and no other skeleton is a model_of it, delete it
-            if neuron_id:
-                response_on_error = 'Could not delete neuron #%s' % neuron_id
-                if _delete_if_empty(neuron_id):
-                    pass #print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
+            # If the neuron modeled by the skeleton of the treenode is empty,
+            # delete it.
+            response_on_error = 'Could not delete neuron #%s' % neuron_id
+            _delete_if_empty(neuron_id)
 
         else:
             # Treenode is not root, it has a parent and perhaps children.

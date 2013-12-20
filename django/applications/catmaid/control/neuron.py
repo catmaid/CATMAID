@@ -124,15 +124,6 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
     # Update user_id of the skeleton(s)
     ClassInstance.objects.filter(pk__in=reduce(operator.add, skeletons.values())).update(user=target_user)
 
-    # 3. Move neuron from its current group to the target user's staging area
-    relation_map = get_relation_to_id_map(project_id)
-    class_map = get_class_to_id_map(project_id)
-    from treenode import _fetch_targetgroup
-    staging_group, is_new = _fetch_targetgroup(target_user, project_id, "Fragments", relation_map['part_of'], class_map)
-    ClassInstanceClassInstance.objects.filter(
-        class_instance_a=neuron_id,
-        relation__relation_name='part_of').update(class_instance_b=staging_group.id)
-
     return HttpResponse(json.dumps({'success':'Moved neuron #%s to %s staging area.'}))
 
 

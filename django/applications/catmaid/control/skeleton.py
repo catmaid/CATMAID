@@ -767,8 +767,8 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
         # Update linked annotations of neuron
         response_on_error = 'Could not update annotations of neuron ' \
-                'with ID %s' % neuron_id
-        _update_neuron_annotations(project_id, user, to_neuron['neuronid'],
+                'with ID %s' % from_neuron['neuronid']
+        _update_neuron_annotations(project_id, user, from_neuron['neuronid'],
                 annotation_set)
 
         insert_into_log(project_id, user.id, 'join_skeleton', from_treenode.location, 'Joined skeleton with ID %s (neuron: %s) into skeleton with ID %s (neuron: %s)' % (to_skid, to_neuron['neuronname'], from_skid, from_neuron['neuronname']) )

@@ -731,8 +731,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (phys_
       });
 };
 
-/** Create a new postsynaptic treenode from a connector. Store new skeleton/neuron in Isolated synaptic terminals
- *  We create the treenode first, then we create the link from the connector. */
+/**
+ * Create a new postsynaptic treenode from a connector. We create the treenode
+ * first, then we create the link from the connector.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
   this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "postsynaptic_to");
 };
@@ -762,8 +764,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (conn
        y: phys_y,
        z: phys_z,
        radius: radius,
-       confidence: confidence,
-       targetgroup: "Isolated synaptic terminals"},
+       confidence: confidence},
       function (jso) {
         var nid = parseInt(jso.treenode_id);
         // always create a new treenode which is the root of a new skeleton
@@ -817,9 +818,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
               requester(json.treenode_id, queue[0]);
             }
           }, json.treenode_id);
-        }
-        if (json.has_changed_group) {
-          ObjectTree.refresh();
         }
       }
     }
@@ -893,7 +891,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
        z: phys_z,
        radius: radius,
        confidence: confidence,
-       targetgroup: "Fragments",
        useneuron: useneuron},
       function(jso) {
         // add treenode to the display and update it
@@ -920,10 +917,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
         // from the Z coordinate of the parent node (which is the active by definition)
         if (active_node_z !== null && Math.abs(active_node_z - nn.z) > 1) {
           growlAlert('BEWARE', 'Node added beyond one section from its parent node!');
-        }
-
-        if (jso.has_changed_group) {
-          ObjectTree.refresh();
         }
       });
 };

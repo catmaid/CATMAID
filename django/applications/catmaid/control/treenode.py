@@ -33,93 +33,6 @@ def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id
     relation.save()
     return relation
 
-
-def _fetch_targetgroup(user, project_id, targetgroup, part_of_id, class_map):
-    """ Depending upon the value of targetgroup, will get or create
-    the staging folder for the user, or the Isolated synaptic terminals folder.
-    The targetgroup can hold two values: 'Fragments' and 'Isolated synaptic terminals'.
-    If 'Fragments', the staging group of the user is returned.
-    """
-    is_new = False
-    if 'Fragments' == targetgroup:
-        # Get the general staging folder
-        try:
-            # TODO this is fragile, should check the parent group chain.
-            staging_group = ClassInstance.objects.get(project=project_id, name='Staging')
-        except ObjectDoesNotExist as e:
-            # Doesn't exist, create it:
-            staging_group = ClassInstance()
-            staging_group.user = user # TODO should be an admin, but doesn't matter
-            staging_group.project_id = project_id
-            staging_group.class_column_id = class_map['group']
-            staging_group.name = 'Staging'
-            staging_group.save()
-            root = ClassInstance.objects.get(project=project_id, class_column=class_map['root'])
-
-            _create_relation(user, project_id, part_of_id, staging_group.id, root.id)
-
-        # Get the staging folder for the user doing the request
-        name = user.first_name + ' ' + user.last_name + ' (' + user.username + ')'
-        try:
-            # TODO this is fragile, should check the parent group chain.
-            group = ClassInstance.objects.get(project=project_id, name=name)
-        except ObjectDoesNotExist as e:
-            # Group does not exist: create it
-            group = ClassInstance()
-            group.user = user
-            group.project_id = project_id
-            group.class_column_id = class_map['group']
-            group.name = name
-            group.save()
-            _create_relation(user, project_id, part_of_id, group.id, staging_group.id)
-            is_new = True
-
-        return group, is_new
-    elif 'Isolated synaptic terminals' == targetgroup:
-        # Get the group
-        try:
-            ist_group = ClassInstance.objects.get(project=project_id, name='Isolated synaptic terminals')
-        except ObjectDoesNotExist as e:
-            # Doesn't exist, create it:
-            ist_group = ClassInstance()
-            ist_group.user = user # TODO should be an admin, but doesn't matter
-            ist_group.project_id = project_id
-            ist_group.class_column_id = class_map['group']
-            ist_group.name = 'Isolated synaptic terminals'
-            ist_group.save()
-            root = ClassInstance.objects.get(project=project_id, class_column=class_map['root'])
-
-            _create_relation(user, project_id, part_of_id, ist_group.id, root.id)
-            is_new = True
-        return ist_group, is_new
-
-def _is_isolated_synaptic_terminal(treenode_id):
-    """ Determine if the given treenode is an isolated synaptic terminal,
-    by checking if its skeleton is a model_of a neuron that is a part_of
-    the Isolated synaptic terminals group.
-    Despite the multiple table joins this function takes ~8 ms in a laptop and ~3 ms in a large server."""
-    cursor = connection.cursor()
-    cursor.execute('''
-    SELECT count(*)
-    FROM treenode,
-         class_instance_class_instance c1,
-         class_instance_class_instance c2,
-         class_instance c,
-         relation r1,
-         relation r2
-    WHERE treenode.id = %s
-      AND c1.class_instance_a = treenode.skeleton_id
-      AND c1.relation_id = r1.id
-      AND r1.relation_name = 'model_of'
-      AND c1.class_instance_b = c2.class_instance_a
-      AND c2.relation_id = r2.id
-      AND r2.relation_name = 'part_of'
-      AND c2.class_instance_b = c.id
-      AND c.name = 'Isolated synaptic terminals'
-    ''' % int(treenode_id))
-    return cursor.fetchone()[0] > 0
-
-
 @requires_user_role(UserRole.Annotate)
 def create_treenode(request, project_id=None):
     """
@@ -149,8 +62,7 @@ def create_treenode(request, project_id=None):
             'confidence': 0,
             'useneuron': -1,
             'parent_id': -1}
-    string_values = {
-            'targetgroup': 'none'}
+    string_values = {}
     for p in float_values.keys():
         params[p] = float(request.POST.get(p, float_values[p]))
     for p in int_values.keys():
@@ -184,20 +96,15 @@ def create_treenode(request, project_id=None):
     try:
         if -1 != int(params['parent_id']):  # A root node and parent node exist
             parent_treenode = Treenode.objects.get(pk=params['parent_id'])
-            has_changed_group = False
-            if parent_treenode.parent_id is None and 1 == Treenode.objects.filter(skeleton_id=parent_treenode.skeleton_id).count():
-                # Node is isolated. If it is a part_of 'Isolated synapatic terminals',
-                # then reassign the skeleton's and neuron's user_id to the user.
-                # The treenode remains the property of the original user.
-                neuron_id, skeleton_id = _maybe_move_terminal_to_staging(request.user, project_id, parent_treenode.id)
-                has_changed_group = True
 
             response_on_error = 'Could not insert new treenode!'
             skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)
             new_treenode = insert_new_treenode(params['parent_id'], skeleton)
 
-            return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': skeleton.id, 'has_changed_group': has_changed_group}))
-
+            return HttpResponse(json.dumps({
+                'treenode_id': new_treenode.id,
+                'skeleton_id': skeleton.id
+            }))
         else:
             # No parent node: We must create a new root node, which needs a
             # skeleton and a neuron to belong to.
@@ -217,7 +124,8 @@ def create_treenode(request, project_id=None):
                 if 0 == ClassInstance.objects.filter(pk=params['useneuron']).count():
                     params['useneuron'] = -1
 
-            if -1 != params['useneuron']:  # A neuron already exists, so we use it
+            if -1 != params['useneuron']:
+                # A neuron already exists, so we use it
                 response_on_error = 'Could not relate the neuron model to the new skeleton!'
                 relate_neuron_to_skeleton(params['useneuron'], new_skeleton.id)
 
@@ -230,13 +138,7 @@ def create_treenode(request, project_id=None):
                     'neuron_id': params['useneuron']}))
             else:
                 # A neuron does not exist, therefore we put the new skeleton
-                # into a new neuron, and put the new neuron into a group.
-                # Instead of placing the new neuron in the Fragments group,
-                # place the new neuron in the staging area of the user.
-
-                # Fetch the parent group: can be the user staging group
-                # or the Isolated synaptic terminals group
-                parent_group, is_new = _fetch_targetgroup(request.user, project_id, params['targetgroup'], relation_map['part_of'], class_map)
+                # into a new neuron.
                 response_on_error = 'Failed to insert new instance of a neuron.'
                 new_neuron = ClassInstance()
                 new_neuron.user = request.user
@@ -250,10 +152,6 @@ def create_treenode(request, project_id=None):
                 response_on_error = 'Could not relate the neuron model to the new skeleton!'
                 relate_neuron_to_skeleton(new_neuron.id, new_skeleton.id)
 
-                # Add neuron to the group
-                response_on_error = 'Failed to insert part_of relation between neuron id and fragments group.'
-                _create_relation(request.user, project_id, relation_map['part_of'], new_neuron.id, parent_group.id)
-
                 response_on_error = 'Failed to insert instance of treenode.'
                 new_treenode = insert_new_treenode(None, new_skeleton)
 
@@ -263,7 +161,6 @@ def create_treenode(request, project_id=None):
                 return HttpResponse(json.dumps({
                     'treenode_id': new_treenode.id,
                     'skeleton_id': new_skeleton.id,
-                    'refresh': is_new
                     }))
 
     except Exception as e:
@@ -592,74 +489,3 @@ def join_skeletons_interpolated(request, project_id=None):
             annotation_set)
 
     return HttpResponse(json.dumps({'treenode_id': params['to_id']}))
-
-
-def _maybe_move_terminal_to_staging(user, project_id, treenode_id):
-    """ Given a treenode_id, determine whether its skeleton is a model_of a neuron
-    that is currently a part_of the Isolated synaptic terminals group,
-    and if so, move the neuron to the user's staging group
-    and also change the ownership of the skeleton and neuron
-    to the user (realize these were just placeholders to wrap
-    the single treenode). The owner of the treenode remains the same.
-    Returns a tuple with the neuron_id, skeleton_id. """
-    treenode_id = int(treenode_id)
-    # Find the ID of the neuron (cc2.class_instance_a) for which the skeleton is a model_of
-    # and the ID of the cici (cc2.id) that declares the neuron to be a part_of Isolated synaptic terminals.
-    # If the neuron is not a part of Isolated synaptic terminals, then it will return zero rows.
-    cursor = connection.cursor();
-    cursor.execute('''
-    SELECT
-        cc2.class_instance_a,
-        cc2.id,
-        r2.id,
-        t.skeleton_id
-    FROM
-        class_instance_class_instance cc1,
-        class_instance_class_instance cc2,
-        class_instance,
-        relation r1,
-        relation r2,
-        treenode t
-    WHERE
-          t.id = %s
-      AND cc1.class_instance_a = t.skeleton_id
-      AND cc1.relation_id = r1.id
-      AND r1.relation_name = 'model_of'
-      AND cc1.class_instance_b = cc2.class_instance_a
-      AND cc2.relation_id = r2.id
-      AND r2.relation_name = 'part_of'
-      AND class_instance.id = cc2.class_instance_b
-      AND class_instance.name = 'Isolated synaptic terminals'
-    ''', [treenode_id])
-    rows = [row for row in cursor.fetchall()]
-    if not rows:
-        # treenode is not an isolated synaptic terminal
-        return -1, -1
-    if 1 != len(rows):
-        raise Exception('Found more than one skeleton or neuron for treenode #%s' % treenode_id)
-
-    neuron_id = rows[0][0]
-    cici_id = rows[0][1]
-    part_of_id = rows[0][2]
-    skeleton_id = rows[0][3]
-
-    # Remove the neuron from the group 'Isolated synaptic terminals'
-    cursor.execute('''
-    DELETE FROM class_instance_class_instance WHERE id=%s
-    ''', [cici_id])
-
-    # Obtain the user's staging group
-    group, is_new = _fetch_targetgroup(user, project_id, 'Fragments', part_of_id, get_class_to_id_map(project_id))
-
-    # Add the neuron to the user's staging group
-    _create_relation(user, project_id, part_of_id, neuron_id, group.id)
-
-    # Change ownership of the neuron and skeleton (which are placeholders) to the user
-    now = datetime.now()
-    ClassInstance.objects.filter(id__in=[skeleton_id, neuron_id]).update(
-            user=user,
-            creation_time=now,
-            edition_time=now)
-
-    return neuron_id, skeleton_id
-

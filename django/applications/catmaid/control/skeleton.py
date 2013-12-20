@@ -756,21 +756,10 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         TreenodeConnector.objects.filter(
             skeleton=to_skid).update(skeleton=from_skid)
 
-        # Determine if the neuron is part_of group 'Isolated synaptic terminals'
-        response_on_error = 'Could not find neuron of skeleton #%s.' % to_skid
-        neuron_id = _in_isolated_synaptic_terminals(to_skid)
-
         # Remove skeleton of to_id (deletes cicic part_of to neuron by cascade,
         # leaving the parent neuron dangling in the object tree).
         response_on_error = 'Could not delete skeleton with ID %s.' % to_skid
         ClassInstance.objects.filter(pk=to_skid).delete()
-
-        # Remove the neuron if it belongs to 'Isolated synaptic terminals'
-        # It is ok if the request.user doesn't match with the neuron's user_id or is not superuser.
-        if neuron_id:
-            response_on_error = 'Could not delete neuron with id %s.' % neuron_id
-            if _delete_if_empty(neuron_id):
-                pass #print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
 
         # Update the parent of to_treenode.
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id

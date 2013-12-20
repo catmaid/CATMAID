@@ -73,16 +73,15 @@ def _in_isolated_synaptic_terminals(skeleton_id):
         raise Exception('Found more than one "Isolated synaptic terminals" as parent of neuron #%s containing skeleton #%s' % (neuron_id, skeleton_id))
     return neuron_id if 1 == rows[0] else None
 
-
 def _delete_if_empty(neuron_id):
     """ Delete this neuron if no class_instance is a model_of it;
     which is to say, it contains no skeletons. """
-    if 0 == ClassInstanceClassInstance.objects.filter(
+    is_empty = not ClassInstanceClassInstance.objects.filter(
             class_instance_b=neuron_id,
-            relation__relation_name='model_of').count():
+            relation__relation_name='model_of').exists()
+    if is_empty:
         ClassInstance.objects.filter(pk=neuron_id).delete()
-        return True
-    return False
+    return is_empty
 
 @requires_user_role(UserRole.Annotate)
 def give_neuron_to_other_user(request, project_id=None, neuron_id=None):

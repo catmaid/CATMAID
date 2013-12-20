@@ -267,7 +267,7 @@ def split_skeleton(request, project_id=None):
     _update_neuron_annotations(project_id, request.user, neuron.id, over_annotation_set)
 
     # Update annotations of under skeleton
-    _annotate_neurons(project_id, request.user, [new_neuron], under_annotation_set)
+    _annotate_neurons(project_id, request.user, [new_neuron.id], under_annotation_set)
 
     # Log the location of the node at which the split was done
     insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )

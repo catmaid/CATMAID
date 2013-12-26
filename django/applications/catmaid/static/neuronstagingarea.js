@@ -223,11 +223,38 @@ SelectionTable.prototype.toggleSelectAllSkeletons = function() {
   this.skeletons.map(function(skeleton) {
     skeleton.setVisible(this.all_visible);
   }, this);
-  if (this.linkTarget) {
+  if (this.linkTarget && this.skeletons.length > 0) {
     this.updateLink(this.skeletons.reduce(function(o, skeleton) {
       o[skeleton.id] = skeleton.clone();
       return o;
     }, {}));
+  }
+};
+
+SelectionTable.prototype.toggleSelectAllSkeletonsUI = function() {
+  if (this.match) {
+    this.all_visible = !this.all_visible;
+    // Update only skeletons that match the text
+    var updated = {};
+    this.skeletons.filter(function(skeleton) {
+      return skeleton.baseName.indexOf(this.match) > -1;
+    }, this).forEach(function(skeleton) {
+        // Update checkboxes
+        $("#skeletonshow" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
+        $("#skeletonpre" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
+        $("#skeletonpost" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
+        if (!this.all_visible) {
+          $("#skeletontext" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
+        }
+        // Update model
+        skeleton.setVisible(this.all_visible);
+        updated[skeleton.id] = skeleton.clone();
+      }, this);
+    if (this.linkTarget && Object.keys(updated).length > 0) {
+      this.updateLink(updated);
+    }
+  } else {
+    this.toggleSelectAllSkeletons();
   }
 };
 
@@ -239,7 +266,7 @@ SelectionTable.prototype.init = function() {
     }
   }).bind(this));
 
-  $('#selection-table-show-all' + this.widgetID).click(this.toggleSelectAllSkeletons.bind(this));
+  $('#selection-table-show-all' + this.widgetID).click(this.toggleSelectAllSkeletonsUI.bind(this));
 
   // TODO add similar buttons and handlers for pre and post
 };

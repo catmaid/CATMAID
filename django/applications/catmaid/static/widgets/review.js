@@ -320,6 +320,10 @@ var ReviewSystem = new function()
             $('#counting-cache').text( total_count - imageArray.length + '/' + total_count );
             loadImageCallback( imageArray );
         };
+        image.onerror = function(e) {
+            $('#counting-cache').text( total_count - imageArray.length + '/' + total_count );
+            loadImageCallback( imageArray );
+        };
     }
 
     this.cacheImages = function() {

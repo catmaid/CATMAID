@@ -321,8 +321,8 @@ var WindowMaker = new function()
             '<td><img src="' + STATIC_URL_JS + 'widgets/themes/kde/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></td>' +
             '<td></td>' +
             '<td><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></td>' +
-            '<td></td>' +
-            '<td></td>' +
+            '<td><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked /></td>' +
+            '<td><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked /></td>' +
             '<td></td>' +
             '<td></td>' +
           '</tr>' +

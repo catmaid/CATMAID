@@ -10,6 +10,7 @@ var SelectionTable = function() {
   this.skeletons = [];
   this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
   this.all_visible = true;
+  this.all_synapses_visible = {pre: true, post: true};
   this.selected_skeleton_id = null;
   this.next_color_index = 0;
   this.gui = new this.GUI(this, 20);
@@ -258,6 +259,28 @@ SelectionTable.prototype.toggleSelectAllSkeletonsUI = function() {
   }
 };
 
+/** Where 'type' is 'pre' or 'post'. */
+SelectionTable.prototype.toggleSynapsesUI = function(type) {
+  var state = !this.all_synapses_visible[type];
+  this.all_synapses_visible[type] = state;
+  var skeletons = this.skeletons;
+  if (this.match) {
+    skeletons = this.skeletons.filter(function(skeleton) {
+      return skeleton.baseName.indexOf(this.match) > -1;
+    }, this);
+  }
+  skeletons.forEach(function(skeleton) {
+    $("#skeleton" + type + this.widgetID + "-" + skeleton.id).attr('checked', state);
+    skeleton[type + "_visible"] = state;
+  }, this);
+  if (this.linkTarget && skeletons.length > 0) {
+    this.updateLink(skeletons.reduce(function(o, skeleton) {
+      o[skeleton.id] = skeleton.clone();
+      return o;
+    }, {}));
+  }
+};
+
 /** setup button handlers */
 SelectionTable.prototype.init = function() {
   $('#selection-table-remove-all' + this.widgetID).click((function() {
@@ -267,8 +290,8 @@ SelectionTable.prototype.init = function() {
   }).bind(this));
 
   $('#selection-table-show-all' + this.widgetID).click(this.toggleSelectAllSkeletonsUI.bind(this));
-
-  // TODO add similar buttons and handlers for pre and post
+  $('#selection-table-show-all-pre' + this.widgetID).click(this.toggleSynapsesUI.bind(this, 'pre'));
+  $('#selection-table-show-all-post' + this.widgetID).click(this.toggleSynapsesUI.bind(this, 'post'));
 };
 
 /** sks: object with skeleton_id as keys and neuron names as values. */

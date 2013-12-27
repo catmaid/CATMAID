@@ -487,6 +487,13 @@ NeuronAnnotations.prototype.annotate_neurons = function(neuron_ids,
 NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids,
     callback)
 {
+  // Complain if there is no target
+  var has_target = (neuron_ids && neuron_ids.length > 0) ||
+      (skeleton_ids && skeleton_ids.length > 0);
+  if (!has_target) {
+    alert("Please select at least one neuron or skeleton!");
+    return;
+  }
   // Get annotation terms
   var annotations = this.prompt_for_annotations(function(annotations,
       meta_annotations) {

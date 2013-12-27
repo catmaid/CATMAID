@@ -376,7 +376,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
           var a_class = 'navigator_annotation_unlink_caller' +
               self.navigator.widgetID;
           return '<a href="#" class="' + a_class + '" annotation_id="' +
-              full[3] + '">unlink</>';
+              full[3] + '">de-annotate</>';
       }
     });
   }

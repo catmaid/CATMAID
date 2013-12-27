@@ -585,12 +585,22 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
     var dialog = new SplitMergeDialog(model);
     dialog.onOK = function() {
       if (!confirm("Do you really want to split the skeleton?")) return;
+      // Get upstream and downstream annotation set
+      var upstream_set, downstream_set;
+      if (this.upstream_is_small) {
+        upstream_set = dialog.get_under_annotation_set();
+        downstream_set = dialog.get_over_annotation_set();
+      } else {
+        upstream_set = dialog.get_over_annotation_set();
+        downstream_set = dialog.get_under_annotation_set();
+      }
+      // Call backend
       self.submit(
           django_url + project.id + '/skeleton/split',
           {
             treenode_id: nodeID,
-            over_annotation_set: dialog.get_over_annotation_set(),
-            under_annotation_set: dialog.get_under_annotation_set(),
+            upstream_annotation_set: upstream_set,
+            downstream_annotation_set: downstream_set,
           },
           function () {
             self.updateNodes();
@@ -2138,63 +2148,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
   this.dialog.appendChild(left);
   this.dialog.appendChild(right);
 
-  // Create a 3D View that is not a SkeletonSource neither in an instance registry
-  var W = function() {};
-  W.prototype = WebGLApplication.prototype;
-  this.webglapp = new W();
-  this.webglapp.init(this.width - leftWidth - 50, usable_height,
-      'dialog-3d-view'); // add to the right
-  this.webglapp.options.shading_method = 'active_node_split';
-  this.webglapp.look_at_active_node();
-  // Add skeletons and do things depending on the success of this in a
-  // callback function.
-  this.webglapp.addSkeletons(this.models, (function() {
-    // Splitting data
-    var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
-        arbor = skeleton.createArbor(),
-        under_count = arbor.subArbor(SkeletonAnnotations.getActiveNodeId()).countNodes(),
-        over_count = arbor.countNodes() - under_count;
-
-    // Add titles
-    titleBig.appendChild(document.createTextNode(over_count + " nodes"));
-    titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
-    // Color the small and big node cound boxes
-    titleBig.style.backgroundColor = '#' + skeleton.getActorColorAsHTMLHex();
-    if (this.in_merge_mode) {
-      var skeleton2 = this.webglapp.space.content.skeletons[this.model2_id];
-      titleSmall.style.backgroundColor = '#' + skeleton2.getActorColorAsHTMLHex();
-    } else {
-      var bc = this.webglapp.getSkeletonColor(this.model1_id);
-      // Convert the big arbor color to 8 bit and weight it by 0.5. Since the 3D
-      // viewer multiplies this weight by 0.9 and adds 0.1, we do the same.
-      var sc_8bit = [bc.r, bc.g, bc.b].map(function(c) {
-        return parseInt(c * 255 * 0.55);
-      });
-      titleSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
-    }
-
-    // Extend skeletons: Unfortunately, it is not possible right now to add new
-    // points to existing meshes in THREE. Therefore, a new line is created.
-    if (extension) {
-      var pairs = extension[this.model1_id];
-      if (pairs) {
-        // Create new line representing interpolated link
-        var geometry = new THREE.Geometry();
-        pairs.forEach(function(v) {
-          geometry.vertices.push(this.webglapp.space.toSpace(v.clone()));
-        }, this);
-        var material = new THREE.LineBasicMaterial({
-          color: 0x00ff00,
-          linewidth: 3,
-        });
-        skeleton.space.add(new THREE.Line(geometry, material, THREE.LinePieces));
-        // Update view
-        skeleton.space.render();
-      }
-    }
-  }).bind(this));
-
-  // Get all annotations for the first model and fill the list boxes
+  // Get all annotations for a skeleton and fill the list boxes
   var add_annotations_fn = function(skid, listboxes) {
     NeuronAnnotations.retrieve_annotations_for_skeleton(skid,
         function(annotations) {
@@ -2230,13 +2184,114 @@ SplitMergeDialog.prototype.populate = function(extension) {
         });
     };
 
-  if (this.in_merge_mode) {
-    add_annotations_fn(this.model1_id, [{obj: big, checked: true}]);
-    add_annotations_fn(this.model2_id, [{obj: small, checked: true}]);
-  } else {
-    add_annotations_fn(this.model1_id,
-        [{obj: big, checked: true}, {obj: small, checked: false}]);
-  }
+  // Create a 3D View that is not a SkeletonSource neither in an instance registry
+  var W = function() {};
+  W.prototype = WebGLApplication.prototype;
+  this.webglapp = new W();
+  this.webglapp.init(this.width - leftWidth - 50, usable_height,
+      'dialog-3d-view'); // add to the right
+  this.webglapp.options.shading_method = 'active_node_split';
+  this.webglapp.look_at_active_node();
+  // Add skeletons and do things depending on the success of this in a
+  // callback function.
+  this.webglapp.addSkeletons(this.models, (function() {
+    if (this.in_merge_mode) {
+      var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
+          skeleton2 = this.webglapp.space.content.skeletons[this.model2_id],
+          count1 = skeleton.createArbor().countNodes(),
+          count2 = skeleton2.createArbor().countNodes(),
+          over_count, under_count, over_skeleton, under_skeleton;
+      // Find larger skeleton
+      if (count1 > count2) {
+        this.over_model_id = this.model1_id;
+        this.under_model_id = this.model2_id;
+        over_count = count1;
+        under_count = count2;
+        over_skeleton = skeleton;
+        under_skeleton = skeleton2;
+      } else {
+        this.over_model_id = this.model2_id;
+        this.under_model_id = this.model1_id;
+        over_count = count2;
+        under_count = count1;
+        over_skeleton = skeleton2;
+        under_skeleton = skeleton;
+      }
+      // Update dialog title, name over count model first
+      var over_name = this.models[this.over_model_id].baseName;
+      var under_name = this.models[this.under_model_id].baseName;
+      var title = 'Merge skeletons "' + over_name + '" and "' + under_name + '"';
+      $(this.dialog).dialog('option', 'title', title);
+      // Add titles
+      titleBig.appendChild(document.createTextNode(over_count + " nodes"));
+      titleBig.setAttribute('title', over_name);
+      titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
+      titleSmall.setAttribute('title', under_name);
+      // Color the small and big node count boxes
+      titleBig.style.backgroundColor = '#' + over_skeleton.getActorColorAsHTMLHex();
+      titleSmall.style.backgroundColor = '#' + under_skeleton.getActorColorAsHTMLHex();
+      // Add annotations
+      add_annotations_fn(this.over_model_id, [{obj: big, checked: true}]);
+      add_annotations_fn(this.under_model_id, [{obj: small, checked: true}]);
+    } else {
+      var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
+          arbor = skeleton.createArbor(),
+          count1 = arbor.subArbor(SkeletonAnnotations.getActiveNodeId()).countNodes(),
+          count2 = arbor.countNodes() - count1,
+          over_count, under_count,
+          model_name = this.models[this.model1_id].baseName;
+      this.upstream_is_small = count1 > count2;
+      if (this.upstream_is_small) {
+        over_count = count1;
+        under_count = count2;
+        titleBig.setAttribute('title', "New");
+        titleSmall.setAttribute('title', model_name);
+      } else {
+        over_count = count2;
+        under_count = count1;
+        titleBig.setAttribute('title', model_name);
+        titleSmall.setAttribute('title', "New");
+      }
+      // Update dialog title
+      var title = 'Split skeleton "' + model_name + '"';
+      $(this.dialog).dialog('option', 'title', title);
+      // Add titles
+      titleBig.appendChild(document.createTextNode(over_count + " nodes"));
+      titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
+      // Color the small and big node count boxes
+      titleBig.style.backgroundColor = '#' + skeleton.getActorColorAsHTMLHex();
+      var bc = this.webglapp.getSkeletonColor(this.model1_id);
+      // Convert the big arbor color to 8 bit and weight it by 0.5. Since the 3D
+      // viewer multiplies this weight by 0.9 and adds 0.1, we do the same.
+      var sc_8bit = [bc.r, bc.g, bc.b].map(function(c) {
+        return parseInt(c * 255 * 0.55);
+      });
+      titleSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
+      // Add annotations
+      add_annotations_fn(this.model1_id,
+          [{obj: big, checked: true}, {obj: small, checked: false}]);
+    }
+
+    // Extend skeletons: Unfortunately, it is not possible right now to add new
+    // points to existing meshes in THREE. Therefore, a new line is created.
+    if (extension) {
+      var pairs = extension[this.model1_id];
+      if (pairs) {
+        // Create new line representing interpolated link
+        var geometry = new THREE.Geometry();
+        pairs.forEach(function(v) {
+          geometry.vertices.push(this.webglapp.space.toSpace(v.clone()));
+        }, this);
+        var material = new THREE.LineBasicMaterial({
+          color: 0x00ff00,
+          linewidth: 3,
+        });
+        skeleton.space.add(new THREE.Line(geometry, material, THREE.LinePieces));
+        // Update view
+        skeleton.space.render();
+      }
+    }
+  }).bind(this));
 
   return this;
 };

@@ -177,10 +177,10 @@ def split_skeleton(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
     skeleton_id = treenode.skeleton_id
-    over_annotation_set = frozenset([v for k,v in request.POST.iteritems()
-            if k.startswith('over_annotation_set[')])
-    under_annotation_set = frozenset([v for k,v in request.POST.iteritems()
-            if k.startswith('under_annotation_set[')])
+    upstream_annotation_set = frozenset([v for k,v in request.POST.iteritems()
+            if k.startswith('upstream_annotation_set[')])
+    downstream_annotation_set = frozenset([v for k,v in request.POST.iteritems()
+            if k.startswith('downstream_annotation_set[')])
     cursor = connection.cursor()
 
     # Check if the treenode is root!
@@ -189,7 +189,7 @@ def split_skeleton(request, project_id=None):
 
     # Check if annotations are valid
     if not check_annotations_on_split(project_id, skeleton_id,
-            over_annotation_set, under_annotation_set):
+            upstream_annotation_set, downstream_annotation_set):
         raise Exception("Annotation distribution is not valid for splitting. " \
           "One part has to keep the whole set of annotations!")
 
@@ -264,10 +264,12 @@ def split_skeleton(request, project_id=None):
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
 
     # Update annotations of existing neuron to have only over set
-    _update_neuron_annotations(project_id, request.user, neuron.id, over_annotation_set)
+    _update_neuron_annotations(project_id, request.user, neuron.id,
+            upstream_annotation_set)
 
     # Update annotations of under skeleton
-    _annotate_neurons(project_id, request.user, [new_neuron.id], under_annotation_set)
+    _annotate_neurons(project_id, request.user, [new_neuron.id],
+            downstream_annotation_set)
 
     # Log the location of the node at which the split was done
     insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )

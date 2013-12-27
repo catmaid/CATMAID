@@ -2119,6 +2119,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
   big.style.width = '95%';
   big.style.height = usable_height * 0.45 + 'px';
   big.style.overflowY = 'scroll';
+  big.style.marginBottom = usable_height * 0.05 + 'px';
   small.style.width = '95%';
   small.style.height = usable_height * 0.45 + 'px';
   small.style.overflowY = 'scroll';
@@ -2127,9 +2128,11 @@ SplitMergeDialog.prototype.populate = function(extension) {
   colorBig.style.width = '3%';
   colorBig.style.height = big.style.height;
   colorBig.style.cssFloat = 'left';
+  colorBig.style.marginRight = '0.3em';
   colorSmall.style.width = '3%';
   colorSmall.style.height = small.style.height;
   colorSmall.style.cssFloat = 'left';
+  colorSmall.style.marginRight = '0.3em';
 
   titleBig.style.padding = '0.1em';
   titleSmall.style.padding = '0.1em';
@@ -2148,13 +2151,10 @@ SplitMergeDialog.prototype.populate = function(extension) {
 
   // Layout left column
   left.appendChild(titleBig);
-  left.appendChild(document.createElement('br'));
   left.appendChild(colorBig);
   left.appendChild(big);
-  left.appendChild(document.createElement('br'));
   left.appendChild(colorSmall);
   left.appendChild(small);
-  left.appendChild(document.createElement('br'));
   left.appendChild(titleSmall);
 
   this.dialog.appendChild(left);

@@ -300,6 +300,9 @@ NeuronAnnotations.prototype.query = function()
               $('#neuron_annotations_query_no_results' + this.widgetID).hide();
               $('#neuron_annotations_query_results' + this.widgetID).show();
               this.update_result_row_classes();
+              if (this.last_annotation_display_filter) {
+                this.last_annotation_display_filter();
+              }
             } else {
               $('#neuron_annotations_query_results' + this.widgetID).hide();
               $('#neuron_annotations_query_no_results' + this.widgetID).show();
@@ -610,4 +613,12 @@ NeuronAnnotations.prototype.toggle_annotation_display = function(
   } else {
     $results.find('li').show();
   }
+
+  // Save last call to this function to re-apply it easily
+  var save_filter = function(s_show_only_user, s_user_id) {
+    return function() {
+      this.toggle_annotation_display(s_show_only_user, s_user_id);
+    }
+  };
+  this.last_annotation_display_filter = save_filter(show_only_user, user_id);
 };

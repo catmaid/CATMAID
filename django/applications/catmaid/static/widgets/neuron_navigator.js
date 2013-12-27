@@ -1598,7 +1598,7 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container)
 };
 
 /**
- * Highlights a row if it is representing the passed skeleton.
+ * Triggers a reload of this node with update skeleton ID data.
  */
 NeuronNavigator.ActiveNeuronNode.prototype.highlight = function(skeleton_id)
 {

@@ -319,12 +319,12 @@ var WindowMaker = new function()
         '<tbody>' +
           '<tr>' +
             '<td><img src="' + STATIC_URL_JS + 'widgets/themes/kde/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></td>' +
-            '<td></td>' +
+            '<td><input type="button" id="selection-table-sort-by-name' + ST.widgetID + '" value="Sort by name" /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked /></td>' +
             '<td></td>' +
-            '<td></td>' +
+            '<td><input type="button" id="selection-table-sort-by-color' + ST.widgetID + '" value="Sort by color" /></td>' +
           '</tr>' +
         '</tbody>';
     container.appendChild(tab);

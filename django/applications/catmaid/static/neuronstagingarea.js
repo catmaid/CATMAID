@@ -281,6 +281,48 @@ SelectionTable.prototype.toggleSynapsesUI = function(type) {
   }
 };
 
+SelectionTable.prototype.sort = function(sortingFn) {
+  this.skeletons.sort(sortingFn);
+
+  // Refresh indices
+  this.skeleton_ids = this.skeletons.reduce(function(o, sk, i) {
+    o[sk.id] = i;
+    return o;
+  }, {});
+
+  this.gui.update();
+};
+
+SelectionTable.prototype.sortByName = function() {
+  this.sort(function(sk1, sk2) {
+    var name1 = sk1.baseName.toLowerCase(),
+        name2 = sk2.baseName.toLowerCase();
+    return name1 == name2 ? 0 : (name1 < name2 ? -1 : 1);
+  });
+
+};
+
+/** Sort by hue, then saturation, then luminance. */
+SelectionTable.prototype.sortByColor = function() {
+  this.sort(function(sk1, sk2) {
+    var hsl1 = sk1.color.getHSL(),
+        hsl2 = sk2.color.getHSL();
+    if (hsl1.h === hsl2.h) {
+      if (hsl1.s === hsl2.s) {
+        if (hsl1.l === hsl2.l) {
+          return 0;
+        } else {
+          return hsl1.l < hsl2.l ? -1 : 1;
+        }
+      } else {
+        return hsl1.s < hsl2.s ? -1 : 1;
+      }
+    } else {
+      return hsl1.h < hsl2.h ? -1 : 1;
+    }
+  });
+};
+
 /** setup button handlers */
 SelectionTable.prototype.init = function() {
   $('#selection-table-remove-all' + this.widgetID).click((function() {
@@ -292,6 +334,9 @@ SelectionTable.prototype.init = function() {
   $('#selection-table-show-all' + this.widgetID).click(this.toggleSelectAllSkeletonsUI.bind(this));
   $('#selection-table-show-all-pre' + this.widgetID).click(this.toggleSynapsesUI.bind(this, 'pre'));
   $('#selection-table-show-all-post' + this.widgetID).click(this.toggleSynapsesUI.bind(this, 'post'));
+
+  $('#selection-table-sort-by-name' + this.widgetID).click(this.sortByName.bind(this));
+  $('#selection-table-sort-by-color' + this.widgetID).click(this.sortByColor.bind(this));
 };
 
 /** sks: object with skeleton_id as keys and neuron names as values. */

@@ -371,6 +371,11 @@ def delete_treenode(request, project_id=None):
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children, and other children become independent skeletons
                 raise Exception("You can't delete the root node when it has children.")
+            # Get the neuron before the skeleton is deleted. It can't be
+            # accessed otherwise anymore.
+            neuron = ClassInstance.objects.get(project_id=project_id,
+                        cici_via_b__relation__relation_name='model_of',
+                        cici_via_b__class_instance_a=treenode.skeleton)
             # Remove the original skeleton. It is OK to remove it if it only had
             # one node, even if the skeleton's user does not match or the user
             # is not superuser. Delete the skeleton, which triggers deleting
@@ -385,8 +390,8 @@ def delete_treenode(request, project_id=None):
             
             # If the neuron modeled by the skeleton of the treenode is empty,
             # delete it.
-            response_on_error = 'Could not delete neuron #%s' % neuron_id
-            _delete_if_empty(neuron_id)
+            response_on_error = 'Could not delete neuron #%s' % neuron.id
+            _delete_if_empty(neuron.id)
 
         else:
             # Treenode is not root, it has a parent and perhaps children.

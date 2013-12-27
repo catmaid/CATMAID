@@ -2104,6 +2104,8 @@ SplitMergeDialog.prototype.populate = function(extension) {
   // Annotation list boxes
   var titleBig = document.createElement('div'),
       titleSmall = document.createElement('div'),
+      colorBig = document.createElement('div'),
+      colorSmall = document.createElement('div'),
       big = document.createElement('div'),
       small = document.createElement('div');
 
@@ -2114,12 +2116,20 @@ SplitMergeDialog.prototype.populate = function(extension) {
   big.setAttribute('multiple', 'multiple');
   small.setAttribute('multiple', 'multiple');
 
-  big.style.width = '100%';
+  big.style.width = '95%';
   big.style.height = usable_height * 0.45 + 'px';
   big.style.overflowY = 'scroll';
-  small.style.width = '100%';
+  small.style.width = '95%';
   small.style.height = usable_height * 0.45 + 'px';
   small.style.overflowY = 'scroll';
+
+  // Color boxes
+  colorBig.style.width = '3%';
+  colorBig.style.height = big.style.height;
+  colorBig.style.cssFloat = 'left';
+  colorSmall.style.width = '3%';
+  colorSmall.style.height = small.style.height;
+  colorSmall.style.cssFloat = 'left';
 
   titleBig.style.padding = '0.1em';
   titleSmall.style.padding = '0.1em';
@@ -2139,8 +2149,10 @@ SplitMergeDialog.prototype.populate = function(extension) {
   // Layout left column
   left.appendChild(titleBig);
   left.appendChild(document.createElement('br'));
+  left.appendChild(colorBig);
   left.appendChild(big);
   left.appendChild(document.createElement('br'));
+  left.appendChild(colorSmall);
   left.appendChild(small);
   left.appendChild(document.createElement('br'));
   left.appendChild(titleSmall);
@@ -2228,8 +2240,8 @@ SplitMergeDialog.prototype.populate = function(extension) {
       titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
       titleSmall.setAttribute('title', under_name);
       // Color the small and big node count boxes
-      titleBig.style.backgroundColor = '#' + over_skeleton.getActorColorAsHTMLHex();
-      titleSmall.style.backgroundColor = '#' + under_skeleton.getActorColorAsHTMLHex();
+      colorBig.style.backgroundColor = '#' + over_skeleton.getActorColorAsHTMLHex();
+      colorSmall.style.backgroundColor = '#' + under_skeleton.getActorColorAsHTMLHex();
       // Add annotations
       add_annotations_fn(this.over_model_id, [{obj: big, checked: true}]);
       add_annotations_fn(this.under_model_id, [{obj: small, checked: true}]);
@@ -2259,14 +2271,14 @@ SplitMergeDialog.prototype.populate = function(extension) {
       titleBig.appendChild(document.createTextNode(over_count + " nodes"));
       titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
       // Color the small and big node count boxes
-      titleBig.style.backgroundColor = '#' + skeleton.getActorColorAsHTMLHex();
+      colorBig.style.backgroundColor = '#' + skeleton.getActorColorAsHTMLHex();
       var bc = this.webglapp.getSkeletonColor(this.model1_id);
       // Convert the big arbor color to 8 bit and weight it by 0.5. Since the 3D
       // viewer multiplies this weight by 0.9 and adds 0.1, we do the same.
       var sc_8bit = [bc.r, bc.g, bc.b].map(function(c) {
         return parseInt(c * 255 * 0.55);
       });
-      titleSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
+      colorSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
       // Add annotations
       add_annotations_fn(this.model1_id,
           [{obj: big, checked: true}, {obj: small, checked: false}]);

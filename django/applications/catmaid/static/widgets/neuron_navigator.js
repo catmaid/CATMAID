@@ -730,33 +730,10 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container)
       this.navigator.select_node(users_node);
   }, this));
   $(table_rows[2]).dblclick($.proxy(function() {
-      // Get active skeleton and request information about its neuron
-      var skid = SkeletonAnnotations.getActiveSkeletonId();
-      if (skid) {
-        requestQueue.register(django_url + project.id + '/skeleton/' + skid +
-            '/neuronname', 'POST', {}, (function(status, text) {
-              if (200 !== status) {
-                alert("Unexpected status code: " + status);
-              } else {
-                var json = $.parseJSON(text);
-                if (json.error) {
-                  alert(json.error);
-                } else {
-                  var active_neuron = {
-                    'name': json.neuronname,
-                    'skeleton_ids': [skid],
-                    'id': json.neuronid,
-                  };
-                  // Show active neuron
-                  var node = new NeuronNavigator.NeuronNode(active_neuron);
-                  node.link(this.navigator, this);
-                  this.navigator.select_node(node);
-                }
-              }
-        }).bind(this));
-      } else {
-        alert("There is currently no skeleton selected.");
-      }
+      // Show active neuron node
+      var users_node = new NeuronNavigator.ActiveNeuronNode();
+      users_node.link(this.navigator, this);
+      this.navigator.select_node(users_node);
   }, this));
 };
 
@@ -1570,3 +1547,61 @@ NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
     return o;
   }).bind(this), {});
 };
+
+
+/**
+ * A neuron node displays information about a particular node. It shows all the
+ * skeletons that are model for a neuron as well as all its annotations and the
+ * user that has locked it.
+ */
+NeuronNavigator.ActiveNeuronNode = function()
+{
+  // Check if there is currently an active skeleton
+  this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
+  this.name = 'Active Neuron';
+};
+
+NeuronNavigator.ActiveNeuronNode.prototype = {};
+$.extend(NeuronNavigator.ActiveNeuronNode.prototype,
+    new NeuronNavigator.NeuronNode({id: -1, name: '', skeleton_ids: []}));
+
+NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container)
+{
+  if (this.current_skid) {
+    requestQueue.register(django_url + project.id + '/skeleton/' +
+        this.current_skid + '/neuronname', 'POST', {}, (function(status, text) {
+          if (200 !== status) {
+            alert("Unexpected status code: " + status);
+          } else {
+            var json = $.parseJSON(text);
+            if (json.error) {
+              alert(json.error);
+            } else {
+              this.skeleton_ids = [this.current_skid];
+              this.neuron_id = json.neuronid;
+              // Call neuron node content creation
+              NeuronNavigator.NeuronNode.prototype.add_content.call(this,
+                  container);
+            }
+          }
+    }).bind(this));
+  } else {
+    // Reset neuron data
+    this.neuron_id = -1;
+    this.skeleton_ids = [];
+    // Print message
+    var message = document.createElement('em');
+    var text = 'There is currently no active node';
+    message.appendChild(document.createTextNode(text));
+    container.append(message);
+  }
+};
+
+/**
+ * Highlights a row if it is representing the passed skeleton.
+ */
+NeuronNavigator.ActiveNeuronNode.prototype.highlight = function(skeleton_id)
+{
+  this.current_skid = skeleton_id;
+  this.navigator.select_node(this);
+}

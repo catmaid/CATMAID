@@ -306,20 +306,26 @@ CompartmentGraphWidget.prototype.init = function() {
 /** Unlocks of locked nodes, if any, when done. */
 CompartmentGraphWidget.prototype.updateLayout = function(layout) {
   var index = layout ? layout.selectedIndex : 0;
-  var options;
+  var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'random', 'cose'][index];
+  var options = this.createLayoutOptions(name);
+  options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
+  this.cy.layout( options );
+};
 
-  if ( 2 === index ) {
+CompartmentGraphWidget.prototype.createLayoutOptions = function(name) {
+  var options;
+  if ('grid' === name) {
     options = {
       name: 'grid',
       fit: true, // whether to fit the viewport to the graph
       rows: undefined, // force num of rows in the grid
       columns: undefined, // force num of cols in the grid
     };
-  } else if ( 0 === index) {
+  } else if ('arbor' === name) {
     options = {
         name: 'arbor',
         liveUpdate: true, // whether to show the layout as it's running
-        maxSimulationTime: 4000, // max length in ms to run the layout
+        maxSimulationTime: 2000, // max length in ms to run the layout
         fit: true, // fit to viewport
         padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
         ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
@@ -346,7 +352,7 @@ CompartmentGraphWidget.prototype.updateLayout = function(layout) {
             return (e.max <= 0.5) || (e.mean <= 0.3);
         }
     };
-  } else if (3 === index) {
+  } else if ('circle' === name) {
       options = {
           name: 'circle',
           fit: true, // whether to fit the viewport to the graph
@@ -355,7 +361,7 @@ CompartmentGraphWidget.prototype.updateLayout = function(layout) {
           startAngle: 3/2 * Math.PI, // the position of the first node
           counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
       };
-  } else if (1 === index) {
+  } else if ('breadthfirst' === name) {
     options = {
         name: 'breadthfirst', // Hierarchical
         fit: true, // whether to fit the viewport to the graph
@@ -364,16 +370,48 @@ CompartmentGraphWidget.prototype.updateLayout = function(layout) {
         circle: false, // put depths in concentric circles if true, put depths top down if false
         roots: undefined // the roots of the trees
     };
-  } else if (4 === index) {
+  } else if ('random' === name) {
     options = {
         name: 'random',
         fit: true // whether to fit to viewport
     };
+  } else if ('cose' === name) {
+    options = {
+      name: 'cose',
+      // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
+      refresh: 0,
+      // Whether to fit the network view after when done
+      fit: true, 
+      // Whether to randomize node positions on the beginning
+      randomize: true,
+      // Whether to use the JS console to print debug messages
+      debug: false,
+
+      // Node repulsion (non overlapping) multiplier
+      nodeRepulsion: 10000,
+      // Node repulsion (overlapping) multiplier
+      nodeOverlap: 10,
+      // Ideal edge (non nested) length
+      idealEdgeLength: 10,
+      // Divisor to compute edge forces
+      edgeElasticity: 100,
+      // Nesting factor (multiplier) to compute ideal edge length for nested edges
+      nestingFactor: 5, 
+      // Gravity force (constant)
+      gravity: 250, 
+
+      // Maximum number of iterations to perform
+      numIter: 100,
+      // Initial temperature (maximum node displacement)
+      initialTemp: 200,
+      // Cooling factor (how the temperature is reduced between consecutive iterations)
+      coolingFactor: 0.95, 
+      // Lower temperature threshold (below this point the layout will end)
+      minTemp: 1
+    };
   }
 
-  options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
-
-  this.cy.layout( options );
+  return options;
 };
 
 CompartmentGraphWidget.prototype.updateGraph = function(json, models) {

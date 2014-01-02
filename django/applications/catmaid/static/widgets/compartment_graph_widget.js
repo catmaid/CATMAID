@@ -721,12 +721,12 @@ CompartmentGraphWidget.prototype.writeGML = function() {
   var items = ['Creator "CATMAID"\nVersion 1.0\ngraph ['];
 
   this.cy.nodes(function(i, node) {
+    if (node.hidden()) return;
     var props = node.data(); // props.id, props.color, props.skeleton_id, props.node_count, props.label,
     ids[props.id] = i;
     var p = node.position(); // pos.x, pos.y
     items.push(["node [",
                 "id " + i,
-                "skeleton_id " + props.skeleton_id,
                 ["graphics [",
                  "x " + p.x,
                  "y " + p.y,
@@ -737,25 +737,25 @@ CompartmentGraphWidget.prototype.writeGML = function() {
                  'outline "#000000"',
                  "outline_width 1"].join("\n      "),
                 "]",
-                'label "' + props.label + ' #' + props.id + '"'].join("\n    "));
+                'name "' + props.label + '"',
+                "skeleton_id " + props.skeleton_id].join("\n    "));
     items.push("]");
   });
 
   this.cy.edges(function(i, edge) {
+    if (edge.hidden()) return;
     var props = edge.data();
     items.push(["edge [",
                 "source " + ids[props.source],
                 "target " + ids[props.target],
                 ["graphics [",
-                 "width 1.5",
-                 'fill "' + props.color + '"',
                  'type "line"',
                  "Line [",
                  "]",
                  "source_arrow 0",
                  "target_arrow 3"].join("\n      "),
                 "]",
-                'label "' + props.weight + '"'].join("\n    "));
+                'weight ' + props.weight].join("\n    "));
     items.push("]");
   });
 

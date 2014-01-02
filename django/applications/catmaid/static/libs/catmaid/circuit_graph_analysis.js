@@ -110,7 +110,7 @@ CircuitGraphAnalysis.prototype.init = function(adjacency_matrix, maxiter, epsilo
 };
 
 CircuitGraphAnalysis.prototype.signalFlow = function(W, io_difference, pseudoinverse) {
-  // row sums of the symmetrized adjancey matrix, qualified by the sign of the I/O differences
+  // row sums of the symmetrized adjacency matrix, qualified by the sign of the I/O differences
   var b = numeric.mul(W, this._sign(io_difference)).map(function(row) {
     return [row.reduce(function(a, b) { return a + b; }, 0)];
   });
@@ -120,8 +120,6 @@ CircuitGraphAnalysis.prototype.signalFlow = function(W, io_difference, pseudoinv
 
   return z;
 };
-
-// 2) write the multiplication between W and the sign of the subtraction without creating a matrix of signs.
 
 /** Compute eigenvalues and eigenvectors of the graph Laplacian 'L',
  * normalized by the 1/sqrt(degree) of each node, 'D'. */

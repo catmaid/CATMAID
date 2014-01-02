@@ -2085,19 +2085,13 @@ var WindowMaker = new function()
             '<th>' +
               '<div class="result_annotations_column">Annotations</div>' +
               '<div>' +
-                '<input type="radio" name="neuron_annotations_display" ' +
-                    'id="neuron_annotations_all_filter{{NA-ID}}" ' +
-                    'value="show_all" checked />' +
-                '<label for="neuron_annotations_all_filter{{NA-ID}}">' +
-                    'Show all' +
-                '</label>' +
-                '<input type="radio" name="neuron_annotations_display" ' +
-                    'id="neuron_annotations_user_filter{{NA-ID}}" ' +
-                    'value="show_user" />' +
                 '<label for="neuron_annotations_user_filter{{NA-ID}}">' +
-                    'Show only ' +
+                    'By ' +
                 '</label>' +
-                '<select name="annotator_filter" class=""></select>' +
+                '<select name="annotator_filter" class="" ' +
+                    'id="neuron_annotations_user_filter{{NA-ID}}">' +
+                  '<option value="show_all" selected>Anyone</option>' +
+                '</select>' +
               '</div>' +
             '</th>' +
           '</tr>' +
@@ -2181,13 +2175,8 @@ var WindowMaker = new function()
     // later.
     $filter_select.combobox({
       selected: function(event, ui) {
-        // If not all annotations should be shown, display only those of the newly
-        // selected name.
-        var $filter_radio = $("input[name=neuron_annotations_display]:checked",
-            "#neuron_annotations_query_results_table" + NA.widgetID + " th"  );
-        if ($filter_radio.val() == 'show_user') {
-          NA.toggle_annotation_display(true, $(this).val());
-        }
+        var val = $(this).val();
+        NA.toggle_annotation_display(val != 'show_all', val);
       }
     });
     
@@ -2195,15 +2184,6 @@ var WindowMaker = new function()
         { dateFormat: "yy-mm-dd" });
     $( "#neuron_query_by_end_date" + NA.widgetID ).datepicker(
         { dateFormat: "yy-mm-dd" });
-    // Bind handlers to filter annotation by ownership
-    $( "#neuron_annotations_query_results_table" + NA.widgetID +
-        " th input[name=neuron_annotations_display]" ).change( function() {
-      // Display annotations according to the current choice
-      var $filter_select = $("#neuron_annotations_query_results_table" +
-          NA.widgetID + ' select[name=annotator_filter]');
-      NA.toggle_annotation_display($(this).val() == 'show_user',
-          $filter_select.val());
-    });
 
     // Hide the result container by default. It would be more logical to do this
     // right after the contaienr creation. However, adding auto completion to

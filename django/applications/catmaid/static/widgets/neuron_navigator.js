@@ -693,52 +693,6 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
 
 
 /**
- * The home node of the navigator. It links to annotation
- * and users nodes.
- */
-NeuronNavigator.HomeNode = function()
-{
-  // A home node acts as the root node and has therefore no parent.
-  this.link(null);
-};
-
-NeuronNavigator.HomeNode.prototype = {};
-$.extend(NeuronNavigator.HomeNode.prototype, new NeuronNavigator.Node("Home"));
-
-NeuronNavigator.HomeNode.prototype.add_content = function(container)
-{
-  var content = document.createElement('div');
-
-  // Create menu and add it to container
-  var menu_entries = ['Annotations', 'Users', 'Active Skeleton'];
-  var table_rows = this.add_menu_table(menu_entries, content);
-
-  // Add container to DOM
-  container.append(content);
-
-  // Append double click handler
-  $(table_rows[0]).dblclick($.proxy(function() {
-      // Show annotation list
-      var annotations_node = new NeuronNavigator.AnnotationListNode();
-      annotations_node.link(this.navigator, this);
-      this.navigator.select_node(annotations_node);
-  }, this));
-  $(table_rows[1]).dblclick($.proxy(function() {
-      // Show user list
-      var users_node = new NeuronNavigator.UserListNode();
-      users_node.link(this.navigator, this);
-      this.navigator.select_node(users_node);
-  }, this));
-  $(table_rows[2]).dblclick($.proxy(function() {
-      // Show active neuron node
-      var users_node = new NeuronNavigator.ActiveNeuronNode();
-      users_node.link(this.navigator, this);
-      this.navigator.select_node(users_node);
-  }, this));
-};
-
-
-/**
  * The annotation list node of the navigator provides a list of all available
  * annotations. If double clicked on a listed annotations, it adds a new
  * annotation filter node.
@@ -1605,3 +1559,60 @@ NeuronNavigator.ActiveNeuronNode.prototype.highlight = function(skeleton_id)
   this.current_skid = skeleton_id;
   this.navigator.select_node(this);
 }
+
+
+/**
+ * The home node of the navigator. It links to annotation and users nodes.
+ * Additionally, it allows to see the neuron of the active skeleton and displays
+ * a list of all neurons available. Therefore, it extends the neuron list node.
+ */
+NeuronNavigator.HomeNode = function()
+{
+  this.name = "Home";
+  // A home node acts as the root node and has therefore no parent.
+  this.link(null);
+};
+
+NeuronNavigator.HomeNode.prototype = {};
+$.extend(NeuronNavigator.HomeNode.prototype,
+    new NeuronNavigator.NeuronListNode());
+
+NeuronNavigator.HomeNode.prototype.add_content = function(container)
+{
+  var content = document.createElement('div');
+
+  // Create menu and add it to container
+  var menu_entries = ['Annotations', 'Users', 'Active Skeleton'];
+  var table_rows = this.add_menu_table(menu_entries, content);
+
+  // Add container to DOM
+  container.append(content);
+
+  // Append double click handler
+  $(table_rows[0]).dblclick($.proxy(function() {
+      // Show annotation list
+      var annotations_node = new NeuronNavigator.AnnotationListNode();
+      annotations_node.link(this.navigator, this);
+      this.navigator.select_node(annotations_node);
+  }, this));
+  $(table_rows[1]).dblclick($.proxy(function() {
+      // Show user list
+      var users_node = new NeuronNavigator.UserListNode();
+      users_node.link(this.navigator, this);
+      this.navigator.select_node(users_node);
+  }, this));
+  $(table_rows[2]).dblclick($.proxy(function() {
+      // Show active neuron node
+      var users_node = new NeuronNavigator.ActiveNeuronNode();
+      users_node.link(this.navigator, this);
+      this.navigator.select_node(users_node);
+  }, this));
+
+  // Add some space
+  var neuron_title = document.createElement('h4');
+  neuron_title.appendChild(document.createTextNode('All neurons'));
+  container.append(neuron_title);
+
+  // Add content from neuron list node
+  NeuronNavigator.NeuronListNode.prototype.add_content.call(this, container);
+};

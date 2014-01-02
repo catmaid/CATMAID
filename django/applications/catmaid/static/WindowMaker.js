@@ -732,6 +732,12 @@ var WindowMaker = new function()
     show.onclick = CGW.update.bind(CGW);
     contentbutton.appendChild(show);
 
+    var annotate = document.createElement('input');
+    annotate.setAttribute("type", "button");
+    annotate.setAttribute("value", "Annotate");
+    annotate.onclick = CGW.annotate_skeleton_list.bind(CGW);
+    contentbutton.appendChild(annotate);
+
     var props = document.createElement('input');
     props.setAttribute("type", "button");
     props.setAttribute("value", "Properties");
@@ -908,6 +914,12 @@ var WindowMaker = new function()
     update.setAttribute("value", "Refresh");
     update.onclick = GP.update.bind(GP);
     buttons.appendChild(update);
+
+    var annotate = document.createElement('input');
+    annotate.setAttribute("type", "button");
+    annotate.setAttribute("value", "Annotate");
+    annotate.onclick = GP.annotate_skeleton_list.bind(GP);
+    buttons.appendChild(annotate);
 
     buttons.appendChild(document.createTextNode(' - X:'));
 

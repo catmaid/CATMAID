@@ -587,3 +587,8 @@ CircuitGraphPlot.prototype.exportCSV = function() {
   var blob = new Blob(["neuron,skeleton_id," + vs.x_name + "," + vs.y_name + "\n", csv], {type :'text/plain'});
   saveAs(blob, "circuit_plot.csv");
 };
+
+CircuitGraphPlot.prototype.annotate_skeleton_list = function() {
+  var skeleton_ids = this.getSelectedSkeletons();
+  NeuronAnnotations.prototype.annotate_neurons_of_skeletons(skeleton_ids);
+};

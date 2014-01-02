@@ -12,10 +12,14 @@ from catmaid.control.common import *
 
 def create_basic_annotated_entity_query(project, params,
         allowed_classes=['neuron', 'annotation']):
-    # Let the default unsrestrcted result set contain all instances of
+    # Get IDs of constraining classes. Getting this ID in a separate query is
+    # usually cheaper than joining the class table based on the allowed names.
+    allowed_class_ids = Class.objects.filter(project_id=project.id,
+            class_name__in=allowed_classes).values_list('id', flat=True)
+    # Let the default unrestricted result set contain all instances of
     # the given set of allowed classes
     entities = ClassInstance.objects.filter(project = project,
-            class_column__class_name__in = allowed_classes)
+            class_column__id__in = allowed_class_ids)
 
     for key in params:
         if key.startswith('neuron_query_by_name'):

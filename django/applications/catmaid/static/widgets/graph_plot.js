@@ -60,6 +60,11 @@ CircuitGraphPlot.prototype.getSelectedSkeletonModels = function() {
 	}, {});
 };
 
+CircuitGraphPlot.prototype.getSelectedSkeletons = function() {
+  if (!this.svg) return [];
+  return Object.keys(this.selected);
+};
+
 CircuitGraphPlot.prototype.getSkeletonModels = CircuitGraphPlot.prototype.getSelectedSkeletonModels;
 
 CircuitGraphPlot.prototype.getSkeletonModel = function(skeleton_id) {

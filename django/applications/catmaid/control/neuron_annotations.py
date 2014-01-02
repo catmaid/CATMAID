@@ -400,7 +400,7 @@ def list_annotations_datatable(request, project_id=None):
         sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
                 sorting_directions)
 
-        fields = ['name', 'last_used', 'num_usage']
+        fields = ['name', 'last_used', 'num_usage', 'cici_via_b__user__username']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
                 for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
@@ -410,7 +410,7 @@ def list_annotations_datatable(request, project_id=None):
 
     # We only require ID, name, last used and usage number
     annotation_query = annotation_query.values_list(
-            'id', 'name', 'last_used', 'num_usage')
+            'id', 'name', 'last_used', 'num_usage', 'cici_via_b__user__username')
 
     # Make sure we get a distinct result (which otherwise might not be the case
     # due to the JOINS that are made).
@@ -436,6 +436,7 @@ def list_annotations_datatable(request, project_id=None):
             annotation[1], # Name
             last_used, # Last used
             annotation[3], # Usage
+            annotation[4], # Annotator
             annotation[0], # ID
         ]]
 

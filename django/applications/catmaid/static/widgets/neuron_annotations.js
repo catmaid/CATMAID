@@ -274,6 +274,28 @@ NeuronAnnotations.prototype.query = function()
         return o;
       }, {});
 
+  // Make sure that the result is constrained in some way and not all neurons
+  // are returned.
+  var has_constraints = false;
+  for (var field in form_data) {
+    if (form_data.hasOwnProperty(field)) {
+      // For the annotator field, 'no constraint' means value '-2'. The other
+      // fields need to be empty for this.
+      var empty_val = '';
+      if (field === 'neuron_query_by_annotator') {
+        empty_val = '-2';
+      }
+      if (form_data[field] != empty_val) {
+        has_constraints = true;
+        break;
+      }
+    }
+  }
+  if (!has_constraints) {
+    alert("Please add at least one constraint before querying!");
+    return;
+  }
+
   // Here, $.proxy is used to bind 'this' to the anonymous function
   requestQueue.register(django_url + this.pid + '/neuron/query-by-annotations',
       'POST', form_data, $.proxy( function(status, text, xml) {

@@ -392,3 +392,7 @@ div#classification_graph_object img.roiimage {
     margin-top: 2px;
     margin-bottom: 2px;
 }
+
+.ui-front {
+    z-index: 10000 !important;
+}

@@ -276,12 +276,20 @@ NeuronNavigator.Node.prototype.add_content = function(container)
   return undefined;
 };
 
-// A convenience helper for creating a table header
+/**
+ * A convenience helper for creating a table header. It procues text header
+ * nodes if strings are provided and will add objects directly to the TH tag
+ * otherwise.
+ */
 NeuronNavigator.Node.prototype.create_header_row = function(columns)
 {
   var tr = columns.reduce(function(tr, col) {
     var th = document.createElement('th');
-    th.appendChild(document.createTextNode(col));
+    if (typeof col == 'string') {
+      th.appendChild(document.createTextNode(col));
+    } else {
+      th.appendChild(col);
+    }
     tr.appendChild(th);
     return tr;
   }, document.createElement('tr'));
@@ -596,11 +604,16 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
       this.navigator.widgetID);
 
   // Create neuron table
-  var columns = ['Selected', 'Name'];
+  var selected_cb1 = document.createElement('input');
+  selected_cb1.setAttribute('type', 'checkbox');
+  var columns1 = [selected_cb1, 'Name'];
   var table_header = document.createElement('thead');
-  table_header.appendChild(this.create_header_row(columns));
+  table_header.appendChild(this.create_header_row(columns1));
+  var selected_cb2 = document.createElement('input');
+  selected_cb2.setAttribute('type', 'checkbox');
+  var columns2 = [selected_cb2, 'Name'];
   var table_footer = document.createElement('tfoot');
-  table_footer.appendChild(this.create_header_row(columns));
+  table_footer.appendChild(this.create_header_row(columns2));
   var table = document.createElement('table');
   table.setAttribute('id', table_id);
   table.setAttribute('class', 'display');
@@ -918,11 +931,21 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
     }
   });
 
-  // Add double click handler for the select column's header to select/unselect
+  // Add click handler for the select column's header to select/unselect
   // all check boxes at once.
-  $('#' + table_id).on('dblclick', 'thead th:first', function () {
+  $('#' + table_id).on('click', 'thead th input,tfoot th input', function (e) {
     var checkboxes = $('#' + table_id).find('tbody td.selector_column input');
-    checkboxes.prop("checked", !checkboxes.prop("checked"));
+    checkboxes.prop("checked", $(this).prop("checked"));
+    // Toggle second checkbox
+    var $cb1 = $('#' + table_id).find('thead th input');
+    var $cb2 = $('#' + table_id).find('tfoot th input');
+    if ($cb1.length > 0 && $cb2.length > 0) {
+      if (this === $cb1[0]) {
+        $cb2.prop('checked', !$cb2.prop('checked'));
+      } else if (this === $cb2[0]) {
+        $cb1.prop('checked', !$cb1.prop('checked'));
+      }
+    }
   });
 
   // Add a change handler for the check boxes in each row

@@ -44,7 +44,7 @@
         }
       }
 
-      input = $("<input style=\"width:" + theWidth + "px;\">")
+      input = this.input = $("<input style=\"width:" + theWidth + "px;\">")
         .appendTo(wrapper)
         .val(defaultValue)
         .attr("title", '' + theTitle + '')
@@ -121,6 +121,11 @@
     _destroy: function () {
       this.wrapper.remove();
       this.element.show();
+    },
+
+    set_value: function(value) {
+      this.element.val(value);
+      this.input.val($(this.element).find('option:selected').text());
     }
   });
 })(jQuery);

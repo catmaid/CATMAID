@@ -95,6 +95,10 @@ def create_treenode(request, project_id=None):
     response_on_error = ''
     try:
         if -1 != int(params['parent_id']):  # A root node and parent node exist
+            # Raise an Exception if the user doesn't have permission to edit the neuron
+            # the skeleton of the treenode is modeling.
+            can_edit_treenode_or_fail(request.user, project_id, params['parent_id'])
+
             parent_treenode = Treenode.objects.get(pk=params['parent_id'])
 
             response_on_error = 'Could not insert new treenode!'
@@ -125,6 +129,10 @@ def create_treenode(request, project_id=None):
                     params['useneuron'] = -1
 
             if -1 != params['useneuron']:
+                # Raise an Exception if the user doesn't have permission to edit
+                # the existing neuron.
+                can_edit_class_instance_or_fail(request.user, params['useneuron'], 'neuron')
+
                 # A neuron already exists, so we use it
                 response_on_error = 'Could not relate the neuron model to the new skeleton!'
                 relate_neuron_to_skeleton(params['useneuron'], new_skeleton.id)

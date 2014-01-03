@@ -184,7 +184,7 @@ def create_treenode(request, project_id=None):
 
     response_on_error = ''
     try:
-        if request.user == 17:#vito TGMMpaper user from adding any node (hack since if user can browse they can add nodes)
+        if str(request.user.username) == "TGMMpaper":#vito TGMMpaper user from adding any node (hack since if user can browse they can add nodes)
             response_on_error = 'You do not have permission to add new nodes'
             raise Exception("")
 
@@ -285,8 +285,11 @@ def create_treenode(request, project_id=None):
                     }))
 
     except Exception as e:
-        import traceback
-        raise Exception(response_on_error + ':' + str(e) + str(traceback.format_exc()))
+        if str(request.user.username) == "TGMMpaper":
+            raise Exception(response_on_error + ':' + str(e))
+        else:        
+            import traceback
+            raise Exception(response_on_error + ':' + str(e) + str(traceback.format_exc()))
 
 
 @requires_user_role(UserRole.Annotate)

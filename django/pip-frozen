@@ -17,6 +17,6 @@ django-guardian==1.0.4
 django-taggit==0.9.3
 django-adminplus==0.1.7
 python-libuuid==0.9.0
-pillow==1.7.8
+pillow==2.3.0
 south==0.7.6
 scipy==0.11.0

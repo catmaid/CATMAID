@@ -184,6 +184,10 @@ def create_treenode(request, project_id=None):
 
     response_on_error = ''
     try:
+        if request.user == 17:#vito TGMMpaper user from adding any node (hack since if user can browse they can add nodes)
+            response_on_error = 'You do not have permission to add new nodes'
+            raise Exception("")
+
         if -1 != int(params['parent_id']):  # A root node and parent node exist
             parent_treenode = Treenode.objects.get(pk=params['parent_id'])
             has_changed_group = False

@@ -2226,7 +2226,10 @@ SplitMergeDialog.prototype.populate = function(extension) {
   this.webglapp = new W();
   this.webglapp.init(this.width - leftWidth - 50, usable_height,
       'dialog-3d-view'); // add to the right
-  this.webglapp.options.shading_method = 'active_node_split';
+  // Activate downstream shading in split mode
+  if (!this.in_merge_mode) {
+    this.webglapp.options.shading_method = 'active_node_split';
+  }
   this.webglapp.look_at_active_node();
   // Add skeletons and do things depending on the success of this in a
   // callback function.

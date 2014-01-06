@@ -261,7 +261,7 @@ SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
           if (!permissions.can_edit) {
             alert("This skeleton is locked by another user and you are not " +
                 "part of the other user's group. You don't have permission " +
-                "to split it.");
+                "to modify it.");
             return;
           }
           // Execute continuation

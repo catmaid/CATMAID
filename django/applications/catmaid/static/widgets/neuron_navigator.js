@@ -1286,7 +1286,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
             if (200 === status) {
               var json = $.parseJSON(text);
               if (json.error) {
-                alert(json.error);
+                new ErrorDialog(json.error, json.detail).show();
               } else {
                 var nodes = json[1];
                 var tags = json[2];
@@ -1461,7 +1461,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
         } else {
           var json = $.parseJSON(text);
           if (json.error) {
-            alert(json.error);
+            new ErrorDialog(json.error, json.detail).show();
           } else {
             // Check if the neuron is locked and if so who did it
             var locked = json.annotations.filter(function(a) {
@@ -1562,7 +1562,7 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container)
           } else {
             var json = $.parseJSON(text);
             if (json.error) {
-              alert(json.error);
+              new ErrorDialog(json.error, json.detail).show();
             } else {
               this.skeleton_ids = [this.current_skid];
               this.neuron_id = json.neuronid;

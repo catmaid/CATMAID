@@ -193,7 +193,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
               if (status === 200) {
                 var e = $.parseJSON(text);
                 if (e.error) {
-                  alert(e.error);
+                  new ErrorDialog(e.error, e.detail).show();
                 } else {
                   //Append new content right after the current node
                   var appender = function(new_tr) {
@@ -302,7 +302,7 @@ NeuronAnnotations.prototype.query = function()
         if (status === 200) {
           var e = $.parseJSON(text);
           if (e.error) {
-            alert(e.error);
+            new ErrorDialog(e.error, e.detail).show();
           } else {
             var $tableBody = $('#neuron_annotations_query_results' +
                 this.widgetID).find('tbody');
@@ -539,7 +539,7 @@ NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids,
           if (status === 200) {
             var e = $.parseJSON(text);
             if (e.error) {
-              alert(e.error);
+              new ErrorDialog(e.error, e.detail).show();
             } else {
               if (annotations.length == 1)
                 growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
@@ -571,7 +571,7 @@ NeuronAnnotations.remove_annotation = function(neuron_id,
         if (status === 200) {
           var e = $.parseJSON(text);
           if (e.error) {
-            alert(e.error);
+            new ErrorDialog(e.error, e.detail).show();
           } else {
             if (callback) callback(e.message);
           }
@@ -594,7 +594,7 @@ NeuronAnnotations.retrieve_annotations_for_skeleton = function(skid, handler) {
       if (text && text !== " ") {
         var json = $.parseJSON(text);
         if (json.error) {
-          alert(json.error);
+          new ErrorDialog(json.error, json.detail).show();
         } else if (handler) {
           handler(json.annotations);
         }
@@ -614,7 +614,7 @@ NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
               status + ") " + "with error message:\n" + text);
         } else {
           if (e.error) {
-            alert(e.error);
+            new ErrorDialog(e.error, e.detail).show();
           } else {
             var annotation_names = e.annotations.map(function(a) {
               return a.name;

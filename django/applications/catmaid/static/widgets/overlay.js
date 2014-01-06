@@ -2060,7 +2060,8 @@ window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, v
   return choice;
 };
 
-window.OptionsDialog.prototype.appendField = function(title, fieldID, initialValue) {
+window.OptionsDialog.prototype.appendField = function(title, fieldID,
+    initialValue, submitOnEnter) {
   var p = document.createElement('p');
   p.innerHTML = title;
   var input = document.createElement('input');
@@ -2068,6 +2069,16 @@ window.OptionsDialog.prototype.appendField = function(title, fieldID, initialVal
   input.setAttribute("value", initialValue);
   p.appendChild(input);
   this.dialog.appendChild(p);
+  // Make this field press okay on Enter, if wanted
+  if (submitOnEnter) {
+    $(input).keypress((function(e) {
+      if (e.keyCode == $.ui.keyCode.ENTER) {
+        $(this.dialog).parent().find(
+            '.ui-dialog-buttonpane button:last').click();
+        return false;
+      }
+    }).bind(this));
+  }
   return input;
 };
 

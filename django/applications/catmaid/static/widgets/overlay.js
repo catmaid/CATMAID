@@ -259,9 +259,9 @@ SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
         } else {
           // Check permissions
           if (!permissions.can_edit) {
-            alert("This skeleton is locked by another user and you are not " +
-                "part of the other user's group. You don't have permission " +
-                "to modify it.");
+            new ErrorDialog("This skeleton is locked by another user and you " +
+                "are not part of the other user's group. You don't have " +
+                "permission to modify it.").show();
             return;
           }
           // Execute continuation

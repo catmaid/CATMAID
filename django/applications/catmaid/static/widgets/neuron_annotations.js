@@ -447,7 +447,8 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
   var dialog = new OptionsDialog("Add new annotation");
   dialog.appendMessage("Add a new annotation for the selected objects");
   // Add annotation input field supporting auto-completion
-  var annotation_input = dialog.appendField('Annotation: ', 'new-annotation', '');
+  var annotation_input = dialog.appendField('Annotation: ', 'new-annotation',
+      '', true);
   this.add_autocomplete_to_input(annotation_input);
   // Add button to toggle display of meta annotation input field
   var $meta_toggle = $(dialog.appendMessage(
@@ -457,7 +458,7 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
   var add_meta_annotation_fields = function(continuation) {
     // Add meta annotation input field with autocompletion
     var meta_annotation_input = dialog.appendField('Meta annotation: ',
-        'new-meta-annotation' + dialog.meta_annotation_inputs.length, '');
+        'new-meta-annotation' + dialog.meta_annotation_inputs.length, '', true);
     this.add_autocomplete_to_input(meta_annotation_input);
     // Add text to append new field
     var $new_meta_field = $(dialog.appendMessage(

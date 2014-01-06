@@ -167,6 +167,47 @@ def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
 
     return False
 
+def check_new_annotations(project_id, user, entity_id, annotation_set):
+    """ With respect to annotations, the new annotation set is only valid if the
+    user doesn't remove annotations for which (s)he has no permissions.
+    """
+    print("Testing %s" % entity_id)
+    # Get current annotation links
+    annotation_links = ClassInstanceClassInstance.objects.filter(
+            project_id=project_id,
+            class_instance_b__class_column__class_name='annotation',
+            relation__relation_name='annotated_with',
+            class_instance_a_id=entity_id).values_list(
+                    'class_instance_b__name', 'id', 'user')
+
+    # Build annotation name indexed dict to the link's id and user
+    annotations = {l[0]:(l[1], l[2]) for l in annotation_links}
+    current_annotation_set = frozenset(annotations.keys())
+    print(annotations)
+
+    # If the current annotation set is not included completely in the new
+    # set, we have to check if the user has permissions to edit the missing
+    # annotations.
+    removed_annotations = current_annotation_set - annotation_set
+    for rl in removed_annotations:
+        try:
+            can_edit_or_fail(user, annotations[rl][0],
+                        'class_instance_class_instance')
+        except:
+            return False
+
+    # Otherwise, everything is fine
+    return True
+
+
+def check_annotations_on_join(project_id, user, from_neuron_id, to_neuron_id,
+        ann_set):
+    """ With respect to annotations, a join is only correct if the user doesn't
+    remove annotations for which (s)he has no permissions.
+    """
+    return check_new_annotations(project_id, user, from_neuron_id, ann_set) and \
+           check_new_annotations(project_id, user, to_neuron_id, ann_set)
+
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):
     """ The split is only possible if the neuron is not locked or if it is
@@ -740,6 +781,12 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                 user, from_neuron['neuronid'], 'neuron')
         can_edit_class_instance_or_fail(
                 user, to_neuron['neuronid'], 'neuron')
+
+        # Check if annotations are valid
+        if not check_annotations_on_join(project_id, user,
+                from_neuron['neuronid'], to_neuron['neuronid'], annotation_set):
+            raise Exception("Annotation distribution is not valid for joining. " \
+              "Annotations for which you don't have permissions have to be kept!")
 
         if from_skid == to_skid:
             raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')

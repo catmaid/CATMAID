@@ -2161,7 +2161,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
   this.dialog.appendChild(right);
 
   // Get all annotations for a skeleton and fill the list boxes
-  var add_annotations_fn = function(skid, listboxes) {
+  var add_annotations_fn = function(skid, listboxes, disable_unpermitted) {
     NeuronAnnotations.retrieve_annotations_for_skeleton(skid,
         function(annotations) {
           // Create annotation check boxes
@@ -2180,6 +2180,16 @@ SplitMergeDialog.prototype.populate = function(extension) {
               // with the current neuron.
               cb_label.appendChild(document.createTextNode(
                   a_info.name + ' (by ' + a_info.users[0].name + ')'));
+              // The front end shouldn't allow the removal of annotations one
+              // hasn't permissions on in merge mode: If the current user has no
+              // permission to change this annotation, check and disable this
+              // checkbox.
+              if (disable_unpermitted &&
+                  a_info.users[0].id != session.userid &&
+                  user_groups.indexOf(a_info.users[0].name) == -1) {
+                cb.checked = true;
+                cb.disabled = true;
+              }
               return cb_label;
             };
             listboxes.forEach(function(lb) {
@@ -2243,8 +2253,8 @@ SplitMergeDialog.prototype.populate = function(extension) {
       colorBig.style.backgroundColor = '#' + over_skeleton.getActorColorAsHTMLHex();
       colorSmall.style.backgroundColor = '#' + under_skeleton.getActorColorAsHTMLHex();
       // Add annotations
-      add_annotations_fn(this.over_model_id, [{obj: big, checked: true}]);
-      add_annotations_fn(this.under_model_id, [{obj: small, checked: true}]);
+      add_annotations_fn(this.over_model_id, [{obj: big, checked: true}], true);
+      add_annotations_fn(this.under_model_id, [{obj: small, checked: true}], true);
     } else {
       var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
           arbor = skeleton.createArbor(),
@@ -2281,7 +2291,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
       colorSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
       // Add annotations
       add_annotations_fn(this.model1_id,
-          [{obj: big, checked: true}, {obj: small, checked: false}]);
+          [{obj: big, checked: true}, {obj: small, checked: false}], false);
     }
 
     // Extend skeletons: Unfortunately, it is not possible right now to add new

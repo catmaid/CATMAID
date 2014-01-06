@@ -2063,7 +2063,10 @@ window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, v
 window.OptionsDialog.prototype.appendField = function(title, fieldID,
     initialValue, submitOnEnter) {
   var p = document.createElement('p');
-  p.innerHTML = title;
+  var label = document.createElement('label');
+  label.setAttribute('for', fieldID);
+  label.appendChild(document.createTextNode(title));
+  p.appendChild(label);
   var input = document.createElement('input');
   input.setAttribute("id", fieldID);
   input.setAttribute("value", initialValue);

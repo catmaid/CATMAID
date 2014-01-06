@@ -116,7 +116,11 @@ def requires_user_role(roles):
                 # The user can execute the function.
                 return f(request, *args, **kwargs)
             else:
-                return json_error_response("The user '%s' does not have a necessary role in the project %d" % (u.first_name + ' ' + u.last_name, int(kwargs['project_id'])))
+                msg = "The user '%s' does not have a necessary role in the " \
+                        "project %d" % (u.first_name + ' ' + u.last_name, \
+                        int(kwargs['project_id']))
+                return HttpResponse(json.dumps({'error': msg,
+                        'permission_error': True}), mimetype='text/json')
             
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role

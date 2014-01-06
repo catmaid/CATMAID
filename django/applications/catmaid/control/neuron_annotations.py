@@ -253,8 +253,8 @@ def remove_annotation(request, project_id=None, neuron_id=None,
     # Get CICI instance representing the link
     cici_n_a = ClassInstanceClassInstance.objects.get(project=p,
             class_instance_a__id=neuron_id, class_instance_b__id=annotation_id)
-    # Make sure the current user has permissions to remove the annotation
-    can_edit_class_instance_or_fail(request.user, neuron_id, 'neuron')
+    # Make sure the current user has permissions to remove the annotation.
+    can_edit_or_fail(request.user, cici_n_a.id, 'class_instance_class_instance')
     # Remove link between neuron and annotation.
     cici_n_a.delete()
 

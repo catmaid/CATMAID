@@ -143,11 +143,14 @@ NeuronNavigator.prototype.reroot = function()
     }
     node = node.parent_node;
   }
-  // Add home node as starting point without any parent
-  var home_node = new NeuronNavigator.HomeNode(this.widgetID);
-  home_node.link(this, null);
-  // Prune node path to this node
-  node.parent_node = home_node;
+  // Only create a new home node if we didn't reach the actual home node.
+  if (node.parent_node) {
+    // Add home node as starting point without any parent
+    var home_node = new NeuronNavigator.HomeNode(this.widgetID);
+    home_node.link(this, null);
+    // Prune node path to this node
+    node.parent_node = home_node;
+  }
   // Refresh the current node
   this.select_node(this.current_node);
 };

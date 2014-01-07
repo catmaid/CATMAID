@@ -29,8 +29,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'catmaid.middleware.AnonymousAuthenticationMiddleware',
     'catmaid.middleware.AjaxExceptionMiddleware', 
-    'django.middleware.transaction.TransactionMiddleware',
-    )
+)
 
 ROOT_URLCONF = 'mysite.urls'
 

@@ -1,5 +1,6 @@
-Django==1.4.10
-django-devserver==0.7.0
+Django==1.6.2
+distribute==0.7.3
+git+https://github.com/fadur/django-devserver.git@d6f59e063639615343eaef8e57852b233209bb3a#egg=django-devserver
 h5py==2.2.1
 psycopg2==2.4.1
 sqlparse==0.1.3
@@ -11,11 +12,11 @@ django-celery==3.1.9
 kombu==3.0.12
 PyYAML==3.10
 python-dateutil==2.1
-django-guardian==1.0.4
-django-taggit==0.9.3
-django-adminplus==0.1.7
+django-guardian==1.1.1
+django-taggit==0.11.2
+django-adminplus==0.2.1
 python-libuuid==0.9.0
 pillow==2.3.0
-south==0.7.6
+south==0.8.4
 scipy==0.11.0
 mock==1.0.1

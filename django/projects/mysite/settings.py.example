@@ -8,6 +8,7 @@ import djcelery
 DATABASES = {
     'default': {
         'ENGINE': 'custom_postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'ATOMIC_REQUESTS': True,              # Wrap every request in a transaction
         'NAME': 'CATMAID_DATABASE_NAME',      # Or path to database file if using sqlite3.
         'USER': 'CATMAID_DATABASE_USERNAME',  # Not used with sqlite3.
         'PASSWORD': 'CATMAID_DATABASE_PASSWORD',  # Not used with sqlite3.
@@ -61,6 +62,11 @@ TIME_ZONE = 'CATMAID_TIMEZONE'
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-gb'
+
+# This is used as a security measure by Django by validating a request's Host
+# header. This setting is required when DEBUG is False. A dot in front of the
+# host name indicated that also subdomains are allowed.
+ALLOWED_HOSTS = ['.CATMAID_SERVERNAME']
 
 # Usually, CATMAID's Django back-end is not accessible on a domain's
 # root ('/'), but rather a sub-directory like 'catmaid'. Django needs

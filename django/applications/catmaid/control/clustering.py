@@ -17,7 +17,7 @@ from catmaid.models import Relation
 from catmaid.control.classification import ClassProxy
 from catmaid.control.classification import get_root_classes_qs, get_classification_links_qs
 
-import numpy, scipy
+from numpy import array as nparray
 import scipy.cluster.hierarchy as hier
 import scipy.spatial.distance as dist
 
@@ -175,7 +175,7 @@ class ClusteringWizard(SessionWizardView):
             features.append(self.features[int(f_id)])
 
         # Create binary matrix
-        bin_matrix = numpy.array(create_binary_matrix(graphs, features))
+        bin_matrix = nparray(create_binary_matrix(graphs, features))
         # Calculate the distance matrix
         dst_matrix = dist.pdist(bin_matrix, metric)
         # The distance matrix now has no redundancies, but we need the square form

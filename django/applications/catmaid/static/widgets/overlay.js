@@ -2200,7 +2200,8 @@ SplitMergeDialog.prototype.populate = function(extension) {
               // checkbox.
               if (disable_unpermitted &&
                   a_info.users[0].id != session.userid &&
-                  user_groups.indexOf(a_info.users[0].name) == -1) {
+                  user_groups.indexOf(a_info.users[0].name) == -1 &&
+                  !session.is_superuser) {
                 cb.checked = true;
                 cb.disabled = true;
               }

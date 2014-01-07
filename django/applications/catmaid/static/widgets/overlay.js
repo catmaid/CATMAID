@@ -223,22 +223,52 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
 SkeletonAnnotations.SVGOverlay.prototype = {};
 
 /**
-* Execute the function fn if the skeleton
-* has more than one node and the dialog is confirmed,
-* or has a single node (no dialog pops up).
-* The verb is the action to perform, as written as a question in a dialog
-* to confirm the action if the skeleton has a single node.
+* Execute the function fn if the skeleton has more than one node and the dialog
+* is confirmed, or has a single node (no dialog pops up).  The verb is the
+* action to perform, as written as a question in a dialog to confirm the action
+* if the skeleton has a single node.
 */
-SkeletonAnnotations.SVGOverlay.prototype.maybeExecuteIfSkeletonHasMoreThanOneNode = function(node_id, verb, fn) {
+SkeletonAnnotations.SVGOverlay.prototype.executeDependentOnNodeCount =
+    function(node_id, fn_one, fn_more)
+{
   this.submit(
       django_url + project.id + '/skeleton/node/' + node_id + '/node_count',
       {},
       function(json) {
-        if (json.count > 1 && !confirm("Do you really want to " + verb + " skeleton #" + json.skeleton_id + ", which has more than one node?")) {
-          return;
+        if (json.count > 1) {
+          fn_more();
+        } else {
+          fn_one();
         }
-        fn();
       });
+};
+
+SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
+    skeleton_id, fn) {
+  var url = django_url + project.id + '/skeleton/' + skeleton_id +
+      '/permissions';
+  requestQueue.register(url, 'POST', null, function(status, text) {
+      if (status !== 200) {
+        alert("Unexpected status code: " + status);
+        return false;
+      }
+      if (text && text !== " ") {
+        var permissions = $.parseJSON(text);
+        if (permissions.error) {
+          alert(permissions.error);
+        } else {
+          // Check permissions
+          if (!permissions.can_edit) {
+            new ErrorDialog("This skeleton is locked by another user and you " +
+                "are not part of the other user's group. You don't have " +
+                "permission to modify it.").show();
+            return;
+          }
+          // Execute continuation
+          fn();
+        }
+      }
+  });
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.updateNeuronNameLabel = function(stackID, skeletonID) {
@@ -546,17 +576,41 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
 
 SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
-  if (!confirm("Do you really want to split the skeleton?")) return;
+  // Get ID of the first model available
+  var model = SkeletonAnnotations.sourceView.createModel()
   var self = this;
-  this.submit(
-      django_url + project.id + '/skeleton/split',
-      { treenode_id: nodeID },
-      function () {
-        self.updateNodes();
-        ObjectTree.refresh();
-        self.selectNode(nodeID);
-      },
-      true); // block UI
+  // Make sure we have permissions to edit the neuron
+  this.executeIfSkeletonEditable(model.id, (function() {
+    /* Create the dialog */
+    var dialog = new SplitMergeDialog(model);
+    dialog.onOK = function() {
+      if (!confirm("Do you really want to split the skeleton?")) return;
+      // Get upstream and downstream annotation set
+      var upstream_set, downstream_set;
+      if (this.upstream_is_small) {
+        upstream_set = dialog.get_under_annotation_set();
+        downstream_set = dialog.get_over_annotation_set();
+      } else {
+        upstream_set = dialog.get_over_annotation_set();
+        downstream_set = dialog.get_under_annotation_set();
+      }
+      // Call backend
+      self.submit(
+          django_url + project.id + '/skeleton/split',
+          {
+            treenode_id: nodeID,
+            upstream_annotation_set: upstream_set,
+            downstream_annotation_set: downstream_set,
+          },
+          function () {
+            self.updateNodes();
+            ObjectTree.refresh();
+            self.selectNode(nodeID);
+          },
+          true); // block UI
+    };
+    dialog.show();
+  }).bind(this));
 };
 
 /** Used to join two skeletons together.
@@ -565,22 +619,90 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
   if (fromid === toid) return;
   if (!this.nodes.hasOwnProperty(toid)) return;
   var self = this;
-  this.maybeExecuteIfSkeletonHasMoreThanOneNode(
-      toid,
-      "join",
-      function() {
-        // The call to join will reroot the target skeleton at the shift-clicked treenode
-        self.submit(
-          django_url + project.id + '/skeleton/join',
-          {from_id: fromid,
-           to_id: toid},
-          function (json) {
-            self.updateNodes(function() {
-              ObjectTree.refresh();
-              self.selectNode(toid);
-            });
-          });
-      });
+  // Get neuron name and id of the to-skeleton
+  self.submit(
+    django_url + project.id + '/treenode/info',
+    {treenode_id: toid},
+    function(json) {
+      var from_model = SkeletonAnnotations.sourceView.createModel();
+      var to_skid = json['skeleton_id'];
+      // Make sure the user has permissions to edit both the from and the to
+      // skeleton.
+      self.executeIfSkeletonEditable(from_model.id, function() {
+        self.executeIfSkeletonEditable(to_skid, function() {
+          // The function used to instruct the backend to do the merge
+          var merge = function(annotations) {
+            // The call to join will reroot the target skeleton at the shift-clicked treenode
+            self.submit(
+              django_url + project.id + '/skeleton/join',
+              {
+                from_id: fromid,
+                to_id: toid,
+                annotation_set: annotations,
+              },
+              function (json) {
+                self.updateNodes(function() {
+                  ObjectTree.refresh();
+                  self.selectNode(toid);
+                });
+              },
+              true); // block UI
+          }
+
+          // A method to use when the to-skeleton has multiple nodes
+          var merge_multiple_nodes = function() {
+            var to_color = new THREE.Color().setRGB(1, 0, 1);
+            var to_model = new SelectionTable.prototype.SkeletonModel(
+                to_skid, json['neuron_name'], to_color);
+            var dialog = new SplitMergeDialog(from_model, to_model);
+            dialog.onOK = function() {
+              if (!confirm("Do you really want to merge the skeletons?")) return;
+              merge(dialog.get_combined_annotation_set());
+            };
+            // Extend the display with the newly created line
+            var extension = {};
+            var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
+                c = self.nodes[toid];
+            extension[from_model.id] = [
+                new THREE.Vector3(self.pix2physX(p.x),
+                                  self.pix2physY(p.y),
+                                  self.pix2physZ(p.z)),
+                new THREE.Vector3(self.pix2physX(c.x),
+                                  self.pix2physY(c.y),
+                                  self.pix2physZ(c.z))
+            ];
+            dialog.show(extension);
+          };
+
+          // A method to use when the to-skeleton has only a single node
+          var merge_single_node = function() {
+            /* Retrieve annotations for the to-skeleton and show th dialog if
+             * there are some. Otherwise merge the single not without showing
+             * the dialog.
+             */
+            NeuronAnnotations.retrieve_annotations_for_skeleton(to_skid,
+                function(annotations) {
+                  if (annotations.length > 0) {
+                    merge_multiple_nodes();
+                  } else {
+                    NeuronAnnotations.retrieve_annotations_for_skeleton(
+                        from_model.id, function(annotations) {
+                            merge(annotations);
+                        });
+                  }
+                });
+          };
+
+          /* If the to-node contains more than one node, show the dialog.
+           * Otherwise, check if the to-node contains annotations. If so, show
+           * the dialog. Otherwise, merge it right away and keep the
+           * from-annotations.
+           */
+          self.executeDependentOnNodeCount(toid, merge_single_node,
+              merge_multiple_nodes);
+        });
+    });
+  });
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, link_type) {
@@ -619,8 +741,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (phys_
       });
 };
 
-/** Create a new postsynaptic treenode from a connector. Store new skeleton/neuron in Isolated synaptic terminals
- *  We create the treenode first, then we create the link from the connector. */
+/**
+ * Create a new postsynaptic treenode from a connector. We create the treenode
+ * first, then we create the link from the connector.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
   this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "postsynaptic_to");
 };
@@ -650,8 +774,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (conn
        y: phys_y,
        z: phys_z,
        radius: radius,
-       confidence: confidence,
-       targetgroup: "Isolated synaptic terminals"},
+       confidence: confidence},
       function (jso) {
         var nid = parseInt(jso.treenode_id);
         // always create a new treenode which is the root of a new skeleton
@@ -706,9 +829,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
             }
           }, json.treenode_id);
         }
-        if (json.has_changed_group) {
-          ObjectTree.refresh();
-        }
       }
     }
     return true;
@@ -734,6 +854,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
       url = '/skeleton/join_interpolated';
       post.from_id = parent_id;
       post.to_id = q.nearestnode_id;
+      post.annotation_set = q.annotation_set;
     } else {
       url = '/treenode/create/interpolated';
       post.parent_id = parent_id;
@@ -741,11 +862,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
     requestQueue.register(django_url + project.id + url, "POST", post, handler);
   };
 
-  return function (phys_x, phys_y, phys_z, nearestnode_id) {
+  return function (phys_x, phys_y, phys_z, nearestnode_id, annotation_set) {
     queue.push({phys_x: phys_x,
                 phys_y: phys_y,
                 phys_z: phys_z,
                 nearestnode_id: nearestnode_id,
+                annotation_set: annotation_set,
                 self: this});
 
     if (queue.length > 1) {
@@ -779,7 +901,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
        z: phys_z,
        radius: radius,
        confidence: confidence,
-       targetgroup: "Fragments",
        useneuron: useneuron},
       function(jso) {
         // add treenode to the display and update it
@@ -806,10 +927,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
         // from the Z coordinate of the parent node (which is the active by definition)
         if (active_node_z !== null && Math.abs(active_node_z - nn.z) > 1) {
           growlAlert('BEWARE', 'Node added beyond one section from its parent node!');
-        }
-
-        if (jso.has_changed_group) {
-          ObjectTree.refresh();
         }
       });
 };
@@ -1473,7 +1590,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
           this.activateNode(nearestnode);
           return;
         }
-        // If the target skeleton has more than one node, ask for confirmation
         var nearestnode_id = nearestnode.id;
         var nearestnode_skid = nearestnode.skeleton_id;
         var atn_id = atn.id;
@@ -1482,10 +1598,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
         var atn_y = atn.y;
         var atn_z = atn.z;
         var self = this;
-        this.maybeExecuteIfSkeletonHasMoreThanOneNode(
-            nearestnode.id,
-            "join",
-            function() {
+        // Make sure the user has permissions to edit both the from and the to
+        // skeleton.
+        self.executeIfSkeletonEditable(atn_skid, function() {
+          self.executeIfSkeletonEditable(nearestnode_skid, function() {
+            // The function used to instruct the backend to do the merge
+            var merge = function(annotations) {
               // Take into account current local offset coordinates and scale
               var pos_x = self.phys2pixX(self.coords.offsetXPhysical);
               var pos_y = self.phys2pixY(self.coords.offsetYPhysical);
@@ -1497,8 +1615,72 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
               var phys_x = self.pix2physX(pos_x);
               var phys_y = self.pix2physY(pos_y);
               // Ask to join the two skeletons with interpolated nodes
-              self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z, nearestnode_id);
-            });
+              self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
+                  nearestnode_id, annotations);
+            };
+
+            // A method to use when the to-skeleton has multiple nodes
+            var merge_multiple_nodes = function() {
+            // Ask for merging
+            // Get neuron name and id of the to-skeleton
+            self.submit(
+              django_url + project.id + '/treenode/info',
+              {treenode_id: nearestnode_id},
+              function(json) {
+                var from_model = SkeletonAnnotations.sourceView.createModel();
+                var to_color = new THREE.Color().setRGB(1, 0, 1);
+                var to_model = new SelectionTable.prototype.SkeletonModel(
+                    json['skeleton_id'], json['neuron_name'], to_color);
+                var dialog = new SplitMergeDialog(from_model, to_model);
+                dialog.onOK = function() {
+                  if (!confirm("Do you really want to merge the skeletons?")) return;
+                  // Get annotation set for the joined skeletons and merge both
+                  merge(dialog.get_combined_annotation_set());
+                };
+                // Extend the display with the newly created line
+                var extension = {};
+                var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
+                    c = self.nodes[nearestnode_id];
+                extension[from_model.id] = [
+                    new THREE.Vector3(self.pix2physX(p.x),
+                                      self.pix2physY(p.y),
+                                      self.pix2physZ(p.z)),
+                    new THREE.Vector3(self.pix2physX(c.x),
+                                      self.pix2physY(c.y),
+                                      self.pix2physZ(c.z))
+                ];
+                dialog.show(extension);
+              });
+            };
+
+            // A method to use when the to-skeleton has only a single node
+            var merge_single_node = function() {
+              /* Retrieve annotations for the to-skeleton and show th dialog if
+               * there are some. Otherwise merge the single not without showing
+               * the dialog.
+               */
+              NeuronAnnotations.retrieve_annotations_for_skeleton(
+                  nearestnode_skid, function(to_annotations) {
+                    if (to_annotations.length > 0) {
+                      merge_multiple_nodes();
+                    } else {
+                      NeuronAnnotations.retrieve_annotations_for_skeleton(
+                          atn.skeleton_id, function(from_annotations) {
+                              merge(from_annotations);
+                          });
+                    }
+                  });
+            };
+
+            /* If the to-node contains more than one node, show the dialog.
+             * Otherwise, check if the to-node contains annotations. If so, show
+             * the dialog. Otherwise, merge it right away and keep the
+             * from-annotations.
+             */
+            self.executeDependentOnNodeCount(nearestnode.id, merge_single_node,
+                merge_multiple_nodes);
+          });
+        });
         return;
       } else {
         // If shift is not down, just select the node:
@@ -1526,7 +1708,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
   // Get physical coordinates for node position creation
   var phys_x = this.pix2physX(pos_x);
   var phys_y = this.pix2physY(pos_y);
-  this.createInterpolatedNode(phys_x, phys_y, phys_z, null);
+  this.createInterpolatedNode(phys_x, phys_y, phys_z, null, null);
 };
 
 
@@ -1850,10 +2032,11 @@ window.OptionsDialog.prototype.show = function(width, height, modal) {
   });
 };
 
-window.OptionsDialog.prototype.appendMessage = function(msg) {
+window.OptionsDialog.prototype.appendMessage = function(text) {
   var msg = document.createElement('p');
-  msg.innerHTML = msg;
+  msg.appendChild(document.createTextNode(text));
   this.dialog.appendChild(msg);
+  return msg;
 };
 
 window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, values, defaultValue) {
@@ -1877,14 +2060,378 @@ window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, v
   return choice;
 };
 
-window.OptionsDialog.prototype.appendField = function(title, fieldID, initialValue) {
+window.OptionsDialog.prototype.appendField = function(title, fieldID,
+    initialValue, submitOnEnter) {
   var p = document.createElement('p');
-  p.innerHTML = title;
+  var label = document.createElement('label');
+  label.setAttribute('for', fieldID);
+  label.appendChild(document.createTextNode(title));
+  p.appendChild(label);
   var input = document.createElement('input');
   input.setAttribute("id", fieldID);
   input.setAttribute("value", initialValue);
   p.appendChild(input);
   this.dialog.appendChild(p);
+  // Make this field press okay on Enter, if wanted
+  if (submitOnEnter) {
+    $(input).keypress((function(e) {
+      if (e.keyCode == $.ui.keyCode.ENTER) {
+        $(this.dialog).parent().find(
+            '.ui-dialog-buttonpane button:last').click();
+        return false;
+      }
+    }).bind(this));
+  }
   return input;
 };
 
+
+var SplitMergeDialog = function(model1, model2) {
+  // Models object
+  this.models = {};
+  this.models[model1.id] = model1;
+  this.model1_id = model1.id;
+  if (model2) {
+    this.models[model2.id] = model2;
+    this.model2_id = model2.id;
+    this.in_merge_mode = true;
+  } else {
+    this.in_merge_mode = false;
+  }
+  // Basic dialog setup
+  this.dialog = document.createElement('div');
+  this.dialog.setAttribute("id", "skeleton-split-merge-dialog");
+  if (this.in_merge_mode) {
+    this.dialog.setAttribute("title", "Merge skeletons");
+  } else {
+    this.dialog.setAttribute("title", "Split skeleton");
+  }
+  // Dialog dimensions
+  this.width = parseInt(UI.getFrameWidth() * 0.8);
+  this.height = parseInt(UI.getFrameHeight() * 0.8);
+};
+
+SplitMergeDialog.prototype = {};
+
+SplitMergeDialog.prototype.populate = function(extension) {
+  var usable_height = this.height - 100;
+  // Annotation list boxes
+  var titleBig = document.createElement('div'),
+      titleSmall = document.createElement('div'),
+      colorBig = document.createElement('div'),
+      colorSmall = document.createElement('div'),
+      big = document.createElement('div'),
+      small = document.createElement('div');
+
+  big.setAttribute('id', 'split_merge_dialog_over_annotations')
+  small.setAttribute('id', 'split_merge_dialog_under_annotations')
+
+  // Style annotation list boxes
+  big.setAttribute('multiple', 'multiple');
+  small.setAttribute('multiple', 'multiple');
+
+  big.style.width = '95%';
+  big.style.height = usable_height * 0.45 + 'px';
+  big.style.overflowY = 'scroll';
+  big.style.marginBottom = usable_height * 0.05 + 'px';
+  small.style.width = '95%';
+  small.style.height = usable_height * 0.45 + 'px';
+  small.style.overflowY = 'scroll';
+
+  // Color boxes
+  colorBig.style.width = '3%';
+  colorBig.style.height = big.style.height;
+  colorBig.style.cssFloat = 'left';
+  colorBig.style.marginRight = '0.3em';
+  colorSmall.style.width = '3%';
+  colorSmall.style.height = small.style.height;
+  colorSmall.style.cssFloat = 'left';
+  colorSmall.style.marginRight = '0.3em';
+
+  titleBig.style.padding = '0.1em';
+  titleSmall.style.padding = '0.1em';
+
+  var left = document.createElement('div'),
+      right = document.createElement('div'),
+      leftWidth = 250;
+
+  // Position columns
+  left.style.cssFloat = 'left';
+  left.style.width = leftWidth + 'px';
+  right.style.cssFloat = 'right';
+
+  right.setAttribute('id', 'dialog-3d-view');
+  right.style.backgroundColor = "#000000";
+
+  // Layout left column
+  left.appendChild(titleBig);
+  left.appendChild(colorBig);
+  left.appendChild(big);
+  left.appendChild(colorSmall);
+  left.appendChild(small);
+  left.appendChild(titleSmall);
+
+  this.dialog.appendChild(left);
+  this.dialog.appendChild(right);
+
+  // Get all annotations for a skeleton and fill the list boxes
+  var add_annotations_fn = function(skid, listboxes, disable_unpermitted) {
+    NeuronAnnotations.retrieve_annotations_for_skeleton(skid,
+        function(annotations) {
+          // Create annotation check boxes
+          annotations.forEach(function(aobj) {
+            var create_cb = function(a_info, checked) {
+              var cb_label = document.createElement('label');
+              cb_label.style.cssFloat = 'left';
+              cb_label.style.clear = 'left';
+              var cb = document.createElement('input');
+              cb.checked = checked;
+              cb.setAttribute('class', 'split_skeleton_annotation');
+              cb.setAttribute('annotation', a_info.name);
+              cb.setAttribute('type', 'checkbox');
+              cb_label.appendChild(cb);
+              // There should only be one user who has used this annotation
+              // with the current neuron.
+              cb_label.appendChild(document.createTextNode(
+                  a_info.name + ' (by ' + a_info.users[0].name + ')'));
+              // The front end shouldn't allow the removal of annotations one
+              // hasn't permissions on in merge mode: If the current user has no
+              // permission to change this annotation, check and disable this
+              // checkbox.
+              if (disable_unpermitted &&
+                  a_info.users[0].id != session.userid &&
+                  user_groups.indexOf(a_info.users[0].name) == -1 &&
+                  !session.is_superuser) {
+                cb.checked = true;
+                cb.disabled = true;
+              }
+              return cb_label;
+            };
+            listboxes.forEach(function(lb) {
+              lb.obj.appendChild(create_cb(aobj, lb.checked));
+            });
+          });
+          // If there is no annotation, add a note
+          if (annotations.length == 0) {
+            var msg = "no annotations found";
+            listboxes.forEach(function(lb) {
+              lb.obj.appendChild(document.createTextNode(msg));
+            });
+          }
+        });
+    };
+
+  // Create a 3D View that is not a SkeletonSource neither in an instance registry
+  var W = function() {};
+  W.prototype = WebGLApplication.prototype;
+  this.webglapp = new W();
+  this.webglapp.init(this.width - leftWidth - 50, usable_height,
+      'dialog-3d-view'); // add to the right
+  // Activate downstream shading in split mode
+  if (!this.in_merge_mode) {
+    this.webglapp.options.shading_method = 'active_node_split';
+  }
+  this.webglapp.look_at_active_node();
+  // Add skeletons and do things depending on the success of this in a
+  // callback function.
+  this.webglapp.addSkeletons(this.models, (function() {
+    if (this.in_merge_mode) {
+      var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
+          skeleton2 = this.webglapp.space.content.skeletons[this.model2_id],
+          count1 = skeleton.createArbor().countNodes(),
+          count2 = skeleton2.createArbor().countNodes(),
+          over_count, under_count, over_skeleton, under_skeleton;
+      // Find larger skeleton
+      if (count1 > count2) {
+        this.over_model_id = this.model1_id;
+        this.under_model_id = this.model2_id;
+        over_count = count1;
+        under_count = count2;
+        over_skeleton = skeleton;
+        under_skeleton = skeleton2;
+      } else {
+        this.over_model_id = this.model2_id;
+        this.under_model_id = this.model1_id;
+        over_count = count2;
+        under_count = count1;
+        over_skeleton = skeleton2;
+        under_skeleton = skeleton;
+      }
+      // Update dialog title, name over count model first
+      var over_name = this.models[this.over_model_id].baseName;
+      var under_name = this.models[this.under_model_id].baseName;
+      var title = 'Merge skeletons "' + over_name + '" and "' + under_name + '"';
+      $(this.dialog).dialog('option', 'title', title);
+      // Add titles
+      titleBig.appendChild(document.createTextNode(over_count + " nodes"));
+      titleBig.setAttribute('title', over_name);
+      titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
+      titleSmall.setAttribute('title', under_name);
+      // Color the small and big node count boxes
+      colorBig.style.backgroundColor = '#' + over_skeleton.getActorColorAsHTMLHex();
+      colorSmall.style.backgroundColor = '#' + under_skeleton.getActorColorAsHTMLHex();
+      // Add annotations
+      add_annotations_fn(this.over_model_id, [{obj: big, checked: true}], true);
+      add_annotations_fn(this.under_model_id, [{obj: small, checked: true}], true);
+    } else {
+      var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
+          arbor = skeleton.createArbor(),
+          count1 = arbor.subArbor(SkeletonAnnotations.getActiveNodeId()).countNodes(),
+          count2 = arbor.countNodes() - count1,
+          over_count, under_count,
+          model_name = this.models[this.model1_id].baseName;
+      this.upstream_is_small = count1 > count2;
+      if (this.upstream_is_small) {
+        over_count = count1;
+        under_count = count2;
+        titleBig.setAttribute('title', "New");
+        titleSmall.setAttribute('title', model_name);
+      } else {
+        over_count = count2;
+        under_count = count1;
+        titleBig.setAttribute('title', model_name);
+        titleSmall.setAttribute('title', "New");
+      }
+      // Update dialog title
+      var title = 'Split skeleton "' + model_name + '"';
+      $(this.dialog).dialog('option', 'title', title);
+      // Add titles
+      titleBig.appendChild(document.createTextNode(over_count + " nodes"));
+      titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
+      // Color the small and big node count boxes
+      colorBig.style.backgroundColor = '#' + skeleton.getActorColorAsHTMLHex();
+      var bc = this.webglapp.getSkeletonColor(this.model1_id);
+      // Convert the big arbor color to 8 bit and weight it by 0.5. Since the 3D
+      // viewer multiplies this weight by 0.9 and adds 0.1, we do the same.
+      var sc_8bit = [bc.r, bc.g, bc.b].map(function(c) {
+        return parseInt(c * 255 * 0.55);
+      });
+      colorSmall.style.backgroundColor = 'rgb(' + sc_8bit.join()  + ')';
+      // Add annotations
+      add_annotations_fn(this.model1_id,
+          [{obj: big, checked: true}, {obj: small, checked: false}], false);
+    }
+
+    // Extend skeletons: Unfortunately, it is not possible right now to add new
+    // points to existing meshes in THREE. Therefore, a new line is created.
+    if (extension) {
+      var pairs = extension[this.model1_id];
+      if (pairs) {
+        // Create new line representing interpolated link
+        var geometry = new THREE.Geometry();
+        pairs.forEach(function(v) {
+          geometry.vertices.push(this.webglapp.space.toSpace(v.clone()));
+        }, this);
+        var material = new THREE.LineBasicMaterial({
+          color: 0x00ff00,
+          linewidth: 3,
+        });
+        skeleton.space.add(new THREE.Line(geometry, material, THREE.LinePieces));
+        // Update view
+        skeleton.space.render();
+      }
+    }
+  }).bind(this));
+
+  return this;
+};
+
+SplitMergeDialog.prototype.get_annotation_set = function(over) {
+  var tag = over ? 'over' : 'under';
+  var over_checkboxes = $(this.dialog).find('#split_merge_dialog_' +
+      tag + '_annotations input[type=checkbox]').toArray();
+  var annotations = over_checkboxes.reduce(function(o, cb) {
+    if (cb.checked) o.push($(cb).attr('annotation'));
+    return o;
+  }, []);
+
+  return annotations;
+}
+
+SplitMergeDialog.prototype.get_over_annotation_set = function() {
+  return this.get_annotation_set(true);
+}
+
+SplitMergeDialog.prototype.get_under_annotation_set = function() {
+  return this.get_annotation_set(false);
+}
+
+SplitMergeDialog.prototype.get_combined_annotation_set = function() {
+  // Get both annotation sets
+  var over_set = this.get_over_annotation_set();
+  var under_set = this.get_under_annotation_set();
+  // Combine both, avoid duplicates
+  var combined_set = over_set;
+  under_set.forEach(function(a) {
+    if (combined_set.indexOf(a) === -1) {
+      combined_set.push(a);
+    }
+  });
+  return combined_set;
+}
+
+/**
+ * The annotation distribution for a split is only valid if one part keeps the
+ * whole set of annotations. This test verifies this agains the cached list of
+ * annotations. One part keeps all annotations if all its checkboxes are
+ * checked.
+ */
+SplitMergeDialog.prototype.check_split_annotations = function() {
+  // Define a test function every checkbox should be tested against
+  var checked_test = function(cb) {
+    return cb.checked;
+  };
+  // Test over annotation set
+  var $over_checkboxes = $(this.dialog).find(
+      '#split_merge_dialog_over_annotations input[type=checkbox]');
+  if ($over_checkboxes.toArray().every(checked_test)) {
+    return true;
+  }
+  // Test under annotation set
+  var $under_checkboxes = $(this.dialog).find(
+      '#split_merge_dialog_under_annotations input[type=checkbox]');
+  if ($under_checkboxes.toArray().every(checked_test)) {
+    return true;
+  }
+
+  return false;
+};
+
+SplitMergeDialog.prototype.check_merge_annotations = function() {
+  // At the moment, all combinations of annotations (even selecting none!) are
+  // allowed. If a user is shown the dialog, (s)he can do whatever (s)he wants.
+  return true;
+}
+
+SplitMergeDialog.prototype.show = function(extension) {
+  var self = this;
+  $(this.dialog).dialog({
+    width: self.width,
+    height: self.height,
+    modal: true,
+    buttons: {
+      "Cancel": function() {
+        if (self.webglapp) self.webglapp.space.destroy();
+        $(this).dialog("destroy");
+        if (self.onCancel) self.onCancel();
+      },
+      "OK": function() {
+        if (self.in_merge_mode && !self.check_merge_annotations()) {
+          alert("The selected annotation configuration isn't valid. " +
+              "No annotation can be lost.");
+        } else if (!self.in_merge_mode && !self.check_split_annotations()) {
+          alert("The selected annotation configuration isn't valid. " +
+              "One part has to keep all annotations.");
+        } else {
+          if (self.webglapp) self.webglapp.space.destroy();
+          $(this).dialog("destroy");
+          if (self.onOK) self.onOK();
+        }
+      }
+    }
+  });
+
+  // The dialog is populated after creation, since the 3D viewer expects
+  // elements to be added to the DOM.
+  this.populate(extension);
+};

@@ -11,7 +11,8 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset
 
-from catmaid.models import Project, UserRole
+from catmaid.models import Project, UserRole, ClassInstance
+from catmaid.models import ClassInstanceClassInstance
 from django.contrib.auth.models import User, Group
 
 from catmaid.control.common import json_error_response
@@ -50,6 +51,8 @@ def login_user(request):
                 # Add some context information
                 profile_context['id'] = request.session.session_key
                 profile_context['longname'] = user.get_full_name()
+                profile_context['userid'] = user.id
+                profile_context['is_superuser'] = user.is_superuser
                 return HttpResponse(json.dumps(profile_context))
             else:
                # Return a 'disabled account' error message
@@ -66,6 +69,8 @@ def login_user(request):
         if request.user.is_authenticated():
             profile_context['id'] = request.session.session_key
             profile_context['longname'] = request.user.get_full_name()
+            profile_context['userid'] = request.user.id
+            profile_context['is_superuser'] = request.user.is_superuser
             return HttpResponse(json.dumps(profile_context))
         else:
             # Return a 'not logged in' warning message.
@@ -113,7 +118,11 @@ def requires_user_role(roles):
                 # The user can execute the function.
                 return f(request, *args, **kwargs)
             else:
-                return json_error_response("The user '%s' does not have a necessary role in the project %d" % (u.first_name + ' ' + u.last_name, int(kwargs['project_id'])))
+                msg = "The user '%s' does not have a necessary role in the " \
+                        "project %d" % (u.first_name + ' ' + u.last_name, \
+                        int(kwargs['project_id']))
+                return HttpResponse(json.dumps({'error': msg,
+                        'permission_error': True}), mimetype='text/json')
             
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role
@@ -200,6 +209,49 @@ def user_project_permissions(request):
 
     return HttpResponse(json.dumps((result, groups)))
 
+def get_object_permissions(request, ci_id):
+    """ Tests editing permissions of a user on a class_instance and returns the
+    result as JSON object."""
+    try:
+        can_edit = can_edit_class_instance_or_fail(request.user, ci_id)
+    except:
+        can_edit = False
+
+    permissions = {
+        'can_edit': can_edit,
+    }
+
+    return HttpResponse(json.dumps(permissions))
+
+def can_edit_class_instance_or_fail(user, ci_id, name='object'):
+    """ Returns true if a) the class instance is not locked or b) if the class
+    instance is locked and the the user owns the link to the 'locked' annotation
+    or (s)he belongs to a group with the same name as the owner of the link.
+    Otherwise, false is returned. The name argument describes the class instance
+    and is only used in messages returned to the user.
+    """
+    ci_id = int(ci_id)
+    # Check if the class instance exists at all
+    if ClassInstance.objects.filter(id=ci_id).exists():
+        # Implicit: a super user belongs to all users' groups
+        if user.is_superuser:
+            return True
+        # Check if the class instance is locked by other users
+        locked_by_other = ClassInstanceClassInstance.objects.filter(
+                class_instance_a__id=ci_id,
+                relation__relation_name = 'annotated_with',
+                class_instance_b__name='locked').exclude(user=user)
+        if bool(locked_by_other):
+            # Check if the user belongs to a group with the name of the owner
+            if user_can_edit(connection.cursor(), user.id,
+                    locked_by_other[0].user_id):
+                return True
+
+            raise Exception('User %s with id #%s cannot edit %s #%s' % \
+                (user.username, user.id, name, ci_id))
+        # The class instance is locked by user or not locked at all
+        return True
+    raise ObjectDoesNotExist('Could not find %s #%s' % (name, ci_id))
 
 def can_edit_or_fail(user, ob_id, table_name):
     """ Returns true if the user owns the object or if the user is a superuser.

@@ -289,14 +289,19 @@ ActiveSkeleton.prototype.hasSkeleton = function(skeleton_id) {
 	return skeleton_id === SkeletonAnnotations.getActiveSkeletonId();
 };
 
-ActiveSkeleton.prototype.getSelectedSkeletonModels = function() {
+ActiveSkeleton.prototype.createModel = function() {
 	var active = SkeletonAnnotations.getActiveSkeletonId();
-	if (!active) return {};
+	if (!active) return null;
 	var name = $('#neuronname' + SkeletonAnnotations.getActiveStackId()).text();
 	name = name.substring(0, name.lastIndexOf(' (Sk'));
-	var o = {};
-	o[active] = new SelectionTable.prototype.SkeletonModel(active, name, new THREE.Color().setRGB(1, 1, 0));
-	return o;
+  return new SelectionTable.prototype.SkeletonModel(active, name, new THREE.Color().setRGB(1, 1, 0));
+};
+
+ActiveSkeleton.prototype.getSelectedSkeletonModels = function() {
+  var model = this.createModel(),
+          o = {};
+  if (model) o[model.id] = model;
+  return o;
 };
 
 ActiveSkeleton.prototype.getSkeletonModels = ActiveSkeleton.prototype.getSelectedSkeletonModels;

@@ -5,13 +5,32 @@ from catmaid.models import *
 from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
+from catmaid.control.neuron import _delete_if_empty
+from catmaid.control.neuron_annotations import create_annotation_query
+from catmaid.control.neuron_annotations import _annotate_neurons
+from catmaid.control.neuron_annotations import _update_neuron_annotations
 from collections import defaultdict
 import json
 from operator import itemgetter
 import networkx as nx
 from tree_util import reroot, edge_count_to_root
 
+
+def get_skeleton_permissions(request, project_id, skeleton_id):
+    """ Tests editing permissions of a user on a skeleton and returns the
+    result as JSON object."""
+    try:
+        nn = _get_neuronname_from_skeletonid( project_id, skeleton_id )
+        can_edit = can_edit_class_instance_or_fail(request.user,
+                nn['neuronid'])
+    except:
+        can_edit = False
+
+    permissions = {
+      'can_edit': can_edit,
+    }
+
+    return HttpResponse(json.dumps(permissions))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def last_openleaf(request, project_id=None, skeleton_id=None):
@@ -106,8 +125,12 @@ def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
                 relation__relation_name='model_of',
                 project=p,
                 class_instance_a=int(skeleton_id)).select_related("class_instance_b")
-    return {'neuronname': qs[0].class_instance_b.name,
-        'neuronid': qs[0].class_instance_b.id }
+    try:
+        return {'neuronname': qs[0].class_instance_b.name,
+            'neuronid': qs[0].class_instance_b.id }
+    except IndexError:
+        raise Exception("Couldn't find a neuron linking to a skeleton with " \
+                "ID %s" % skeleton_id)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronname(request, project_id=None, skeleton_id=None):
@@ -126,34 +149,90 @@ def neuronnames(request, project_id=None):
     skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
     return HttpResponse(json.dumps(_neuronnames(skeleton_ids, project_id)))
 
+def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
+        under_annotation_set):
+    """ With respect to annotations, a split is only correct if one part keeps
+    the whole set of annotations.
+    """
+    # Get current annotation set
+    annotation_query = create_annotation_query(project_id,
+        {'skeleton_id': skeleton_id})
+
+    # Check if current set is equal to under or over set
+    current_annotation_set = frozenset(a.name for a in annotation_query)
+    if not current_annotation_set.difference(over_annotation_set):
+      return True
+    if not current_annotation_set.difference(under_annotation_set):
+      return True
+
+    return False
+
+def check_new_annotations(project_id, user, entity_id, annotation_set):
+    """ With respect to annotations, the new annotation set is only valid if the
+    user doesn't remove annotations for which (s)he has no permissions.
+    """
+    print("Testing %s" % entity_id)
+    # Get current annotation links
+    annotation_links = ClassInstanceClassInstance.objects.filter(
+            project_id=project_id,
+            class_instance_b__class_column__class_name='annotation',
+            relation__relation_name='annotated_with',
+            class_instance_a_id=entity_id).values_list(
+                    'class_instance_b__name', 'id', 'user')
+
+    # Build annotation name indexed dict to the link's id and user
+    annotations = {l[0]:(l[1], l[2]) for l in annotation_links}
+    current_annotation_set = frozenset(annotations.keys())
+    print(annotations)
+
+    # If the current annotation set is not included completely in the new
+    # set, we have to check if the user has permissions to edit the missing
+    # annotations.
+    removed_annotations = current_annotation_set - annotation_set
+    for rl in removed_annotations:
+        try:
+            can_edit_or_fail(user, annotations[rl][0],
+                        'class_instance_class_instance')
+        except:
+            return False
+
+    # Otherwise, everything is fine
+    return True
+
+
+def check_annotations_on_join(project_id, user, from_neuron_id, to_neuron_id,
+        ann_set):
+    """ With respect to annotations, a join is only correct if the user doesn't
+    remove annotations for which (s)he has no permissions.
+    """
+    return check_new_annotations(project_id, user, from_neuron_id, ann_set) and \
+           check_new_annotations(project_id, user, to_neuron_id, ann_set)
+
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):
-    """ The split is only possible if the user owns the treenode or the skeleton, or is superuser, or the skeleton is under Fragments.
+    """ The split is only possible if the neuron is not locked or if it is
+    locked by the current user or if the current user belongs to the group
+    of the user who locked it. Of course, the split is also possible if
+    the current user is a super-user.
     """
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
     skeleton_id = treenode.skeleton_id
+    upstream_annotation_set = frozenset([v for k,v in request.POST.iteritems()
+            if k.startswith('upstream_annotation_set[')])
+    downstream_annotation_set = frozenset([v for k,v in request.POST.iteritems()
+            if k.startswith('downstream_annotation_set[')])
     cursor = connection.cursor()
 
     # Check if the treenode is root!
     if not treenode.parent:
         return HttpResponse(json.dumps({'error': 'Can\'t split at the root node: it doesn\'t have a parent.'}))
 
-    # The split is only possible if the user owns the treenode or the skeleton
-    # or the skeleton is under fragments or in the user's staging area
-    # Ordered from cheap to expensive query
-    try:
-        # Check if user can edit the skeleton
-        can_edit_or_fail(request.user, skeleton_id, "class_instance")
-    except:
-        try:
-            # Check if user can edit the treenode
-            can_edit_or_fail(request.user, treenode_id, "treenode")
-        except:
-            if not _under_fragments(skeleton_id):
-                # Check skeleton under user's staging area (indirect ownership)
-                if not _under_staging_area(skeleton_id, request.user):
-                    raise Exception("User '%s' can't edit skeleton #%s at node #%s:\nThe user doesn't own the skeleton or the node;\nthe skeleton is not under fragments;\nand the skeleton is not under the user's staging group." % (request.user.username, skeleton_id, treenode_id))
+    # Check if annotations are valid
+    if not check_annotations_on_split(project_id, skeleton_id,
+            upstream_annotation_set, downstream_annotation_set):
+        raise Exception("Annotation distribution is not valid for splitting. " \
+          "One part has to keep the whole set of annotations!")
 
     skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
     project_id=int(project_id)
@@ -162,6 +241,10 @@ def split_skeleton(request, project_id=None):
     neuron = ClassInstance.objects.get(
         cici_via_b__relation__relation_name='model_of',
         cici_via_b__class_instance_a_id=skeleton_id)
+
+    # Make sure the user has permissions to edit
+    can_edit_class_instance_or_fail(request.user, neuron.id, 'neuron')
+
     # retrieve the id, parent_id of all nodes in the skeleton
     # with minimal ceremony
     cursor.execute('''
@@ -191,10 +274,20 @@ def split_skeleton(request, project_id=None):
     new_skeleton.save()
     new_skeleton.name = 'Skeleton {0}'.format( new_skeleton.id ) # This could be done with a trigger in the database
     new_skeleton.save()
-    # Assign the skeleton to the same neuron
+    # Create new neuron
+    new_neuron = ClassInstance()
+    new_neuron.name = 'Neuron'
+    new_neuron.project_id = project_id
+    new_neuron.user = skeleton.user
+    new_neuron.class_column = Class.objects.get(class_name='neuron',
+            project_id=project_id)
+    new_neuron.save()
+    new_neuron.name = 'Neuron %s' % str(new_neuron.id)
+    new_neuron.save()
+    # Assign the skeleton to new neuron
     cici = ClassInstanceClassInstance()
     cici.class_instance_a = new_skeleton
-    cici.class_instance_b = neuron
+    cici.class_instance_b = new_neuron
     cici.relation = Relation.objects.get(relation_name='model_of', project_id=project_id)
     cici.user = skeleton.user # The same user that owned the skeleton to split
     cici.project_id = project_id
@@ -210,10 +303,19 @@ def split_skeleton(request, project_id=None):
     ).update(skeleton=new_skeleton)
     # setting new root treenode's parent to null
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
+
+    # Update annotations of existing neuron to have only over set
+    _update_neuron_annotations(project_id, request.user, neuron.id,
+            upstream_annotation_set)
+
+    # Update annotations of under skeleton
+    _annotate_neurons(project_id, request.user, [new_neuron.id],
+            downstream_annotation_set)
+
     # Log the location of the node at which the split was done
     insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
-    return HttpResponse(json.dumps({}), mimetype='text/json')
 
+    return HttpResponse(json.dumps({}), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def root_for_skeleton(request, project_id=None, skeleton_id=None):
@@ -616,113 +718,21 @@ def _root_as_parent(oid):
     ''' % int(oid))
     return 0 == cursor.fetchone()[0]
 
-def _staging_as_parent(oid):
-    """ Returns True if the parent is named Staging and its parent is the root group. """
-    cursor = connection.cursor()
-    cursor.execute('''
-    SELECT count(*)
-    FROM class_instance_class_instance cici1,
-         class_instance_class_instance cici2,
-         class_instance ci1,
-         class_instance ci2,
-         relation r,
-         class c
-    WHERE cici1.class_instance_a = %s
-      AND cici1.class_instance_b = ci1.id
-      AND ci1.name = 'Staging'
-      AND cici1.relation_id = r.id
-      AND r.relation_name = 'part_of'
-      AND cici2.class_instance_a = cici1.class_instance_b
-      AND cici2.class_instance_b = ci2.id
-      AND cici2.relation_id = r.id
-      AND ci2.class_id = c.id
-      AND c.class_name = 'root'
-    ''' % int(oid))
-    return 1 == cursor.fetchone()[0]
-
-def _under_fragments(skeleton_id):
-    """ Returns True if the skeleton_id is a model_of a neuron that is part_of
-    a group that is or is within the hierarchy downstream of the "Fragments" group
-    or the "Isolated synaptic terminals" group.
-    """
-    return _under_specific_groups(skeleton_id, set(['Fragments', 'Isolated synaptic terminals']), _root_as_parent)
-
-def _under_staging_area(skeleton_id, user):
-    """ Returns true if the skeleton_id is a model_of a neuron that is part_of
-    a group that is or is within the hierarchy downstream of the user's staging area,
-    defined by ther user.first_name and user.last_name.
-    """
-    return _under_specific_groups(skeleton_id, set(['%s %s (%s)' % (user.first_name, user.last_name, user.username)]), _staging_as_parent)
-
-def _under_specific_groups(skeleton_id, specific_groups, group_id_test_fn):
-    cursor = connection.cursor()
-    # Find the ID and name of the group for which the neuron is a part_of,
-    # where the skeleton is a model_of that neuron
-    cursor.execute('''
-    SELECT ci.id, ci.name
-    FROM class_instance_class_instance cici1,
-         class_instance_class_instance cici2,
-         class_instance ci,
-         relation r1,
-         relation r2
-    WHERE cici1.class_instance_a = %s
-      AND cici1.relation_id = r1.id
-      AND r1.relation_name = 'model_of'
-      AND cici1.class_instance_b = cici2.class_instance_a
-      AND cici2.relation_id = r2.id
-      AND r2.relation_name = 'part_of'
-      AND cici2.class_instance_b = ci.id
-    ''' % int(skeleton_id))
-    group_id, group_name = cursor.fetchone()
-
-    # To prevent issues with similarly named folders, check that
-    # the fragment folders are under the root group.
-    if group_name in specific_groups and group_id_test_fn(group_id):
-        return True
-
-    # Else, check the parent group until reaching the root (a group without parent)
-    # or reaching a group that has already been seen (an accidental circular relationship)
-    seen = set([group_id])
-    while True:
-        cursor.execute('''
-        SELECT ci.id, ci.name
-        FROM class_instance_class_instance cici,
-             class_instance ci,
-             relation r
-        WHERE cici.class_instance_a = %s
-          AND cici.class_instance_b = ci.id
-          AND cici.relation_id = r.id
-          AND r.relation_name = 'part_of'
-        ''' % group_id)
-        rows = list(cursor.fetchall())
-        if not rows:
-            # Reached root: no parent group
-            return False
-        #
-        group_id, group_name = rows[0]
-        if group_id in seen:
-            # Error: circular reference
-            raise Exception('Circular reference for group "%s" with id #%s was found when trying to determine if skeleton #%s is part of "Fragments" or "Isolated synaptic terminals"' % (group_name, group_id, skeleton_id))
-        #
-        if group_name in specific_groups and group_id_test_fn(group_id):
-            return True
-        # Else, keep climbing up the group relations
-        seen.add(group_id)
-
-
-
 @requires_user_role(UserRole.Annotate)
 def join_skeleton(request, project_id=None):
-    """ An user with an Annotate role can join two skeletons if he owns the child
-    skeleton. A superuser can join any. Skeletons under the "Fragments" or "Isolated
-    Synaptic Terminals" can be joined by anyone. If all nodes fall within the user domain,
-    even though the skeleton is owned by someone else, the join is allowed.
+    """ An user with an Annotate role can join two skeletons if the neurons
+    modeled by these skeletons are not locked by another user or if the current
+    user belongs to the group of the user who locked the neurons. A super-user
+    can join any skeletons.
     """
     response_on_error = 'Failed to join'
     try:
         from_treenode_id = int(request.POST.get('from_id', None))
         to_treenode_id = int(request.POST.get('to_id', None))
-        _join_skeleton(request.user, from_treenode_id, to_treenode_id, project_id)
+        annotation_set = frozenset([v for k,v in request.POST.iteritems()
+                if k.startswith('annotation_set[')])
+        _join_skeleton(request.user, from_treenode_id, to_treenode_id,
+                project_id, annotation_set)
 
         response_on_error = 'Could not log actions.'
 
@@ -735,51 +745,51 @@ def join_skeleton(request, project_id=None):
         raise Exception(response_on_error + ':' + str(e))
 
 
-def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
-    """ Take the IDs of two nodes, each belonging to a different skeleton,
-    and make to_treenode be a child of from_treenode,
-    and join the nodes of the skeleton of to_treenode
-    into the skeleton of from_treenode,
-    and delete the former skeleton of to_treenode."""
+def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
+        annotation_set):
+    """ Take the IDs of two nodes, each belonging to a different skeleton, and
+    make to_treenode be a child of from_treenode, and join the nodes of the
+    skeleton of to_treenode into the skeleton of from_treenode, and delete the
+    former skeleton of to_treenode. All annotations in annotation_set will be
+    linked to the skeleton of to_treenode."""
     if from_treenode_id is None or to_treenode_id is None:
         raise Exception('Missing arguments to _join_skeleton')
 
     response_on_error = ''
     try:
+        from_treenode_id = int(from_treenode_id)
         to_treenode_id = int(to_treenode_id)
-        cursor = connection.cursor()
-        cursor.execute('SELECT skeleton_id FROM treenode WHERE id = %s' % to_treenode_id)
-        rows = tuple(cursor.fetchall())
-        if not rows:
+
+        try:
+            from_treenode = Treenode.objects.get(pk=from_treenode_id)
+        except Treenode.DoesNotExist:
+            raise Exception("Could not find a skeleton for treenode #%s" % from_treenode_id)
+
+        try:
+            to_treenode = Treenode.objects.get(pk=to_treenode_id)
+        except Treenode.DoesNotExist:
             raise Exception("Could not find a skeleton for treenode #%s" % to_treenode_id)
 
-        to_skid = rows[0][0]
-
-        # Check if joining is allowed
-        if 1 == Treenode.objects.filter(skeleton_id=to_skid).count():
-            # Is an isolated node, so it can be joined freely
-            pass
-        # If the treenode is not isolated, the skeleton must be under fragments, or the user must own the skeleton or be superuser
-        else:
-            try:
-                can_edit_or_fail(user, to_skid, "class_instance")
-            except Exception:
-                # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes are editable by the user (such a situation occurs when the user domain ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
-                if _under_fragments(to_skid) or _under_staging_area(to_skid, user):
-                    pass
-                elif Treenode.objects.filter(skeleton_id=to_skid).exclude(user__in=user_domain(cursor, user.id)).count() > 0:
-                    # There are at least some nodes that the user can't edit
-                    raise Exception("User %s with id #%s cannot join skeleton #%s, because the user doesn't own the skeleton or the skeleton contains nodes that belong to users outside of the user's domain." % (user.username, user.id, to_skid))
-
-        from_treenode_id = int(from_treenode_id)
-        from_treenode = Treenode.objects.get(pk=from_treenode_id)
         from_skid = from_treenode.skeleton_id
+        from_neuron = _get_neuronname_from_skeletonid( project_id, from_skid )
+
+        to_skid = to_treenode.skeleton_id
+        to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
+
+        # Make sure the user has permissions to edit both neurons
+        can_edit_class_instance_or_fail(
+                user, from_neuron['neuronid'], 'neuron')
+        can_edit_class_instance_or_fail(
+                user, to_neuron['neuronid'], 'neuron')
+
+        # Check if annotations are valid
+        if not check_annotations_on_join(project_id, user,
+                from_neuron['neuronid'], to_neuron['neuronid'], annotation_set):
+            raise Exception("Annotation distribution is not valid for joining. " \
+              "Annotations for which you don't have permissions have to be kept!")
 
         if from_skid == to_skid:
             raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
-        
-        from_neuron = _get_neuronname_from_skeletonid( project_id, from_skid )
-        to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
 
         # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id
@@ -795,27 +805,29 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         TreenodeConnector.objects.filter(
             skeleton=to_skid).update(skeleton=from_skid)
 
-        # Determine if the neuron is part_of group 'Isolated synaptic terminals'
-        response_on_error = 'Could not find neuron of skeleton #%s.' % to_skid
-        neuron_id = _in_isolated_synaptic_terminals(to_skid)
-
         # Remove skeleton of to_id (deletes cicic part_of to neuron by cascade,
         # leaving the parent neuron dangling in the object tree).
         response_on_error = 'Could not delete skeleton with ID %s.' % to_skid
         ClassInstance.objects.filter(pk=to_skid).delete()
 
-        # Remove the neuron if it belongs to 'Isolated synaptic terminals'
-        # It is ok if the request.user doesn't match with the neuron's user_id or is not superuser.
-        if neuron_id:
-            response_on_error = 'Could not delete neuron with id %s.' % neuron_id
-            if _delete_if_empty(neuron_id):
-                pass #print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
+        # Remove the 'losing' neuron if it is empty
+        _delete_if_empty(to_neuron['neuronid'])
 
         # Update the parent of to_treenode.
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id
         Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id, editor=user)
 
-        insert_into_log(project_id, user.id, 'join_skeleton', from_treenode.location, 'Joined skeleton with ID %s (neuron: %s) into skeleton with ID %s (neuron: %s)' % (to_skid, to_neuron['neuronname'], from_skid, from_neuron['neuronname']) )
+        # Update linked annotations of neuron
+        response_on_error = 'Could not update annotations of neuron ' \
+                'with ID %s' % from_neuron['neuronid']
+        _update_neuron_annotations(project_id, user, from_neuron['neuronid'],
+                annotation_set)
+
+        insert_into_log(project_id, user.id, 'join_skeleton',
+                from_treenode.location, 'Joined skeleton with ID %s (neuron: ' \
+                '%s) into skeleton with ID %s (neuron: %s, annotations: %s)' % \
+                (to_skid, to_neuron['neuronname'], from_skid,
+                        from_neuron['neuronname'], ', '.join(annotation_set)))
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

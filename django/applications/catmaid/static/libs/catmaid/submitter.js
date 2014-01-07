@@ -47,10 +47,10 @@ var submitterFn = function() {
     }
   };
 
-  var reset = function(q, msg) {
+  var reset = function(q, error) {
     if (q.blockUI) $.unblockUI();
-    console.log(msg, q);
-    if (msg) alert(msg);
+    console.log(error, q);
+    if (error.error) new ErrorDialog(error.error, error.detail).show();
     queue.length = 0;
   };
 
@@ -76,7 +76,7 @@ var submitterFn = function() {
         if (q.replace && 'REPLACED' === json.error) {
           return complete(q);
         } else {
-          return reset(q, json.error);
+          return reset(q, json);
         }
       }
       invoke(q, json);

@@ -747,9 +747,17 @@ var ObjectTree = new function()
             "icon": {
               "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/neuron/neuron.png"
             },
-            "valid_children": ["skeleton", "assembly"],
+            "valid_children": ["skeleton", "assembly", "annotation"],
             "start_drag": true,
             "select_node": true
+          },
+          "annotation": {
+            "icon": {
+              "image": STATIC_URL_JS + "widgets/themes/kde/tags.png"
+            },
+            "valid_children": "none",
+            "start_drag": false,
+            "select_node": false
           },
           "skeleton": {
             "icon": {

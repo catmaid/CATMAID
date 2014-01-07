@@ -48,13 +48,13 @@ urlpatterns += patterns(
 
     (r'^projects$', 'catmaid.control.projects'),
     (r'^user-list$', 'catmaid.control.user_list'),
+    (r'^user-table-list$', 'catmaid.control.user_list_datatable'),
     (r'^permissions$', 'catmaid.control.user_project_permissions'),
     (r'^messages/list$', 'catmaid.control.list_messages'),
     (r'^messages/mark_read$', 'catmaid.control.read_message'),
     (r'^(?P<project_id>\d+)/stacks$', 'catmaid.control.stacks'),
-
-    (r'^(?P<project_id>\d+)/skeletonlist/save$', 'catmaid.control.save_skeletonlist'),
-    (r'^(?P<project_id>\d+)/skeletonlist/load$', 'catmaid.control.load_skeletonlist'),
+    (r'^classinstance/(?P<ci_id>\d+)/permissions$',
+            'catmaid.control.get_object_permissions'),
 
     # Views
     (r'^useranalytics$', 'catmaid.control.plot_useranalytics'),
@@ -141,10 +141,20 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'catmaid.control.reroot_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/analytics$', 'catmaid.control.analyze_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'catmaid.control.skeleton_connectors_by_partner'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
+            'catmaid.control.get_skeleton_permissions'),
 
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'catmaid.control.get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'catmaid.control.give_neuron_to_other_user'),
-
+    (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'catmaid.control.query_neurons_by_annotations'),
+    (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
+            'catmaid.control.query_neurons_by_annotations_datatable'),
+    (r'^(?P<project_id>\d+)/neuron/annotate$', 'catmaid.control.annotate_neurons'),
+    (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/annotation/(?P<annotation_id>\d+)/remove$',
+            'catmaid.control.remove_annotation'),
+    (r'^(?P<project_id>\d+)/annotations/list$', 'catmaid.control.list_annotations'),
+    (r'^(?P<project_id>\d+)/annotations/table-list$', 'catmaid.control.list_annotations_datatable'),
+    
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/confidence/update$', 'catmaid.control.update_confidence'),
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'catmaid.control.update_location_reviewer'),
     (r'^(?P<project_id>\d+)/node/most_recent$', 'catmaid.control.most_recent_treenode'),
@@ -168,8 +178,6 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/(?P<threshold>\d+)/get-skeletons', 'catmaid.control.collect_skeleton_ids'),
     (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'catmaid.control.instance_operation'),
     (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'catmaid.control.remove_empty_neurons'),
-    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/send-to-fragments-group', 'catmaid.control.send_to_fragments_group'),
-    (r'^(?P<project_id>\d+)/object-tree/send-small-to-fragments', 'catmaid.control.cleanup_fragments'),
 
     (r'^(?P<project_id>\d+)/link/create$', 'catmaid.control.create_link'),
     (r'^(?P<project_id>\d+)/link/delete$', 'catmaid.control.delete_link'),

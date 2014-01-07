@@ -13,7 +13,9 @@ needed_classes = {
     'label': "A label",
     'neuron': "A neuron representation",
     'root': "The root node for the tracing system",
-    'skeleton': "The representation of a skeleton"}
+    'skeleton': "The representation of a skeleton",
+    'annotation': "An arbitrary annotation",
+}
 
 # All relations needed by the tracing system alongside their
 # descriptions.
@@ -24,7 +26,9 @@ needed_relations = {
     'model_of': "Marks something as a model of something else.",
     'part_of': "One thing is part of something else.",
     'presynaptic_to': "Something is presynaptic to something else.",
-    'postsynaptic_to': "Something is postsynaptic to something else."}
+    'postsynaptic_to': "Something is postsynaptic to something else.",
+    'annotated_with': "Something is annotated by something else.",
+}
 
 def check_tracing_setup_view(request, project_id=None):
     all_good, mc, mr, mci = check_tracing_setup_detailed(project_id)

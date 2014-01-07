@@ -677,13 +677,6 @@ class Log(UserFocusedModel):
     location = Double3DField()
     freetext = models.TextField()
 
-class SkeletonlistDashboard(UserFocusedModel):
-    class Meta:
-        db_table = "skeletonlist_dashboard"
-    shortname = models.CharField(max_length=255)
-    skeleton_list = IntegerArrayField()
-    description = models.TextField()
-
 class Segments(UserFocusedModel):
 
     stack = models.ForeignKey(Stack)

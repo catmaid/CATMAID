@@ -1564,14 +1564,20 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 };
 */
 
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = function() {
+  return new Arbor().addEdges(this.geometry['neurite'].vertices,
+                              function(v) { return v.node_id; });
+}
+
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
   var node_weights;
 
   if ('none' === options.shading_method) {
     node_weights = null;
   } else {
-    var arbor =  new Arbor().addEdges(this.geometry['neurite'].vertices,
-                                      function(v) { return v.node_id; });
+    var arbor = this.createArbor(),
+        node_weights;
+
     if (-1 !== options.shading_method.lastIndexOf('centrality')) {
       // Darken the skeleton based on the betweenness calculation.
       var c = (0 === options.shading_method.indexOf('betweenness')) ?

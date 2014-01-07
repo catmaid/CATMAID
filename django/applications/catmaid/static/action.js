@@ -511,16 +511,6 @@ var tracingWindowActions = [
   }),
 
   new Action({
-    helpText: "Show object tree",
-    buttonID: "data_button_tree",
-    buttonName: 'tree',
-    run: function (e) {
-      WindowMaker.show('object-tree');
-      return true;
-    }
-  }),
-
-  new Action({
     helpText: "Show search window",
     buttonID: "data_button_search",
     buttonName: 'search',
@@ -529,6 +519,26 @@ var tracingWindowActions = [
     },
     run: function (e) {
       WindowMaker.show('search');
+      return true;
+    }
+  }),
+
+  new Action({
+    helpText: "Navigate Neurons",
+    buttonID: 'data_button_neuron_navigator',
+    buttonName: 'neuron_navigator_button',
+    run: function (e) {
+      WindowMaker.create('neuron-navigator');
+      return true;
+    }
+  }),
+
+  new Action({
+    helpText: "Query Neurons by Annotations",
+    buttonID: "data_button_query_neurons",
+    buttonName: 'query_neurons',
+    run: function (e) {
+      WindowMaker.create('neuron-annotations');
       return true;
     }
   }),

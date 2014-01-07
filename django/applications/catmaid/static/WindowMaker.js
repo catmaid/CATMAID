@@ -246,19 +246,14 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createElement('br'));
 
-    var save = document.createElement('input');
-    save.setAttribute("type", "button");
-    save.setAttribute("value", "Save list");
-    save.style.marginLeft = '1em';
-    save.onclick = ST.save_skeleton_list.bind(ST);
-    buttons.appendChild(save);
-
-    var load = document.createElement('input');
-    load.setAttribute("type", "button");
-    load.setAttribute("value", "Load list");
-    load.onclick = ST.load_skeleton_list.bind(ST);
-    buttons.appendChild(load);
-
+    var annotate = document.createElement('input');
+    annotate.setAttribute("type", "button");
+    annotate.setAttribute("id", "annotate_skeleton_list");
+    annotate.setAttribute("value", "Annotate");
+    annotate.style.marginLeft = '1em';
+    annotate.onclick = ST.annotate_skeleton_list.bind(ST);
+    buttons.appendChild(annotate);
+    
     var random = document.createElement('input');
     random.setAttribute("type", "button");
     random.setAttribute("value", "Randomize colors");
@@ -737,6 +732,12 @@ var WindowMaker = new function()
     show.onclick = CGW.update.bind(CGW);
     contentbutton.appendChild(show);
 
+    var annotate = document.createElement('input');
+    annotate.setAttribute("type", "button");
+    annotate.setAttribute("value", "Annotate");
+    annotate.onclick = CGW.annotate_skeleton_list.bind(CGW);
+    contentbutton.appendChild(annotate);
+
     var props = document.createElement('input');
     props.setAttribute("type", "button");
     props.setAttribute("value", "Properties");
@@ -913,6 +914,12 @@ var WindowMaker = new function()
     update.setAttribute("value", "Refresh");
     update.onclick = GP.update.bind(GP);
     buttons.appendChild(update);
+
+    var annotate = document.createElement('input');
+    annotate.setAttribute("type", "button");
+    annotate.setAttribute("value", "Annotate");
+    annotate.onclick = GP.annotate_skeleton_list.bind(GP);
+    buttons.appendChild(annotate);
 
     buttons.appendChild(document.createTextNode(' - X:'));
 
@@ -2008,6 +2015,220 @@ var WindowMaker = new function()
     return win;
   };
   
+  var createNeuronAnnotationsWindow = function()
+  {
+    var NA = new NeuronAnnotations();
+    var win = new CMWWindow(NA.getName());
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+    
+    var queryFields = document.createElement('div');
+    queryFields.setAttribute('id', 'neuron_annotations_query_fields' + NA.widgetID);
+    // Create the query fields HTML and use {{NA-ID}} as template for the
+    // actual NA.widgetID which will be replaced afterwards.
+    queryFields_html =
+      '<form id="neuron_query_by_annotations{{NA-ID}}">' +
+      '<table cellpadding="0" cellspacing="0" border="0" ' +
+          'class="neuron_annotations_query_fields" ' +
+          'id="neuron_annotations_query_fields{{NA-ID}}">' +
+        '<tr id="neuron_query_by_name{{NA-ID}}">' +
+          '<td class="neuron_annotations_query_field_label">named as:</td> ' +
+          '<td class="neuron_annotations_query_field">' +
+            '<input type="text" name="neuron_query_by_name" ' +
+                'id="neuron_query_by_name{{NA-ID}}" value="" class="" />' +
+            '<em>(optional)</em>' +
+          '</td> ' +
+        '</tr>' +
+        '<tr id="neuron_query_by_annotation{{NA-ID}}">' +
+          '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
+          '<td class="neuron_annotations_query_field">' +
+            '<input type="text" name="neuron_query_by_annotation" ' +
+                'id="neuron_query_by_annotation_name{{NA-ID}}" value="" class=""/>' +
+            '<input type="button" name="neuron_annotations_add_annotation" ' +
+                'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" ' +
+                'class="" />' +
+          '</td> ' +
+        '</tr>' +
+        '<tr id="neuron_query_by_annotator{{NA-ID}}">' +
+          '<td class="neuron_annotations_query_field_label">by:</td>' +
+          '<td class="neuron_annotations_query_field">' +
+            '<select name="neuron_query_by_annotator" ' +
+                'id="neuron_query_by_annotator{{NA-ID}}" class="">' +
+              '<option value="-2">Anyone</option>' +
+            '</select>' +
+          '</td>' +
+        '</tr>' +
+        '<tr id="neuron_query_by_date_range{{NA-ID}}">' +
+          '<td class="neuron_annotations_query_field_label">between:</td>' +
+          '<td class="neuron_annotations_query_field">' +
+            '<input type="text" name="neuron_query_by_start_date" ' +
+                'id="neuron_query_by_start_date{{NA-ID}}" size="10" ' +
+                'value="" class=""/>' +
+            ' and ' +
+            '<input type="text" name="neuron_query_by_end_date" ' +
+                'id="neuron_query_by_end_date{{NA-ID}}" size="10" ' +
+                'value="" class=""/> ' +
+          '</td>' +
+        '</tr>' +
+      '</table>' +
+      '<input type="submit" />' +
+      '</form>';
+    // Replace {{NA-ID}} with the actual widget ID
+    queryFields.innerHTML = queryFields_html.replace(/{{NA-ID}}/g, NA.widgetID);
+    content.appendChild(queryFields);
+    
+    var container = createContainer("neuron_annotations_query_results" + NA.widgetID);
+    // Create container HTML and use {{NA-ID}} as template for the
+    // actual NA.widgetID which will be replaced afterwards.
+    container_html =
+      '<table cellpadding="0" cellspacing="0" border="0" ' +
+            'class="neuron_annotations_query_results_table" ' +
+            'id="neuron_annotations_query_results_table{{NA-ID}}">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>' +
+              '<input type="checkbox" ' +
+                  'id="neuron_annotations_toggle_neuron_selections_checkbox{{NA-ID}}" />' +
+            '</th>' +
+            '<th>' +
+              'Entity Name' +
+            '</th>' +
+            '<th>Type</th>' +
+            '<th>' +
+              '<div class="result_annotations_column">Annotations</div>' +
+              '<div>' +
+                '<label for="neuron_annotations_user_filter{{NA-ID}}">' +
+                    'By ' +
+                '</label>' +
+                '<select name="annotator_filter" class="" ' +
+                    'id="neuron_annotations_user_filter{{NA-ID}}">' +
+                  '<option value="show_all" selected>Anyone</option>' +
+                '</select>' +
+              '</div>' +
+            '</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' +
+          '<tr><td colspan="3"></td></tr>' +
+        '</tbody>' +
+      '</table>' +
+      '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +
+          'class="neuron_annotations_query_footer">' +
+        '<p class="neuron_annotations_query_footer">' +
+          '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
+              'value="Annotate..." />' +
+          '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
+            'Sync to: ' +
+          '</label>' +
+        '</p>' +
+      '</div>';
+    // Replace {{NA-ID}} with the actual widget ID
+    container.innerHTML = container_html.replace(/{{NA-ID}}/g, NA.widgetID);
+    content.appendChild( container );
+
+    // Add a container that gets displayed if no results could be found
+    var no_results = createContainer("neuron_annotations_query_no_results" + NA.widgetID);
+    no_results.innerHTML = '<em>No results could be found.</em>';
+    content.appendChild(no_results);
+    $(no_results).hide();
+
+    
+    // Wire it up.
+    addListener(win, container, 'annotation_query_fields', NA.destroy.bind(NA));
+    addLogic(win);
+
+    // Add autocompletion to the first name input field
+    NA.add_autocomplete_to_input($('#neuron_query_by_annotation_name' +
+        NA.widgetID));
+
+    $('#neuron_annotations_add_annotation' + NA.widgetID)[0].onclick =
+        NA.add_query_field.bind(NA);
+    $('#neuron_query_by_annotations' + NA.widgetID).submit(function(event) {
+          NA.query.call(NA);
+          event.preventDefault();
+        });
+    $('#neuron_annotations_annotate' + NA.widgetID)[0].onclick = (function() {
+        // Get IDs of selected entities
+        var selected_entity_ids = this.get_selected_neurons().map( function(e) {
+          return e.id;
+        });;
+        this.annotate_neurons(selected_entity_ids);
+    }).bind(NA);
+    $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
+        NA.toggle_neuron_selections.bind(NA);
+    var select = SkeletonListSources.createPushSelect(NA, 'link');
+    select.onchange = NA.syncLink.bind(NA, select);
+    $('#neuron_annotations_add_to_selection' + NA.widgetID).append(select);
+
+    // Fill user select boxes
+    var $select = $('tr #neuron_query_by_annotator' + NA.widgetID);
+    var $filter_select = $("#neuron_annotations_query_results_table" +
+        NA.widgetID + ' select[name=annotator_filter]');
+    var users = User.all();
+    for (var userID in users) {
+      if (users.hasOwnProperty(userID) && userID !== "-1") {
+        var user = users[userID];
+        {
+          // Add entry to query select
+          var opts = {value: user.id, text: user.fullName}
+          $("<option />", opts).appendTo($select);
+          // Add entry to filter select and select current user by default
+          if (userID == session.userid) { opts.selected = true; }
+          $("<option />", opts).appendTo($filter_select);
+        }
+      }
+    }
+
+    // Make it support autocompletion
+    $select.combobox();
+
+    // Make annotation filter select support autocompletion and attach the
+    // selected event handler right away. Unfortunately, this can't be done
+    // later.
+    $filter_select.combobox({
+      selected: function(event, ui) {
+        var val = $(this).val();
+        NA.toggle_annotation_display(val != 'show_all', val);
+      }
+    });
+    
+    $( "#neuron_query_by_start_date" + NA.widgetID ).datepicker(
+        { dateFormat: "yy-mm-dd" });
+    $( "#neuron_query_by_end_date" + NA.widgetID ).datepicker(
+        { dateFormat: "yy-mm-dd" });
+
+    // Hide the result container by default. It would be more logical to do this
+    // right after the contaienr creation. However, adding auto completion to
+    // the filter select box doesn't work when it is hidden.
+    $(container).hide();
+
+    return win;
+  };
+
+  var createNeuronNavigatorWindow = function(new_nn_instance)
+  {
+    // If available, a new instance passed as parameter will be used.
+    var NN = new_nn_instance ? new_nn_instance : new NeuronNavigator();
+    var win = new CMWWindow(NN.getName());
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("neuron-navigator" + NN.widgetID);
+    container.setAttribute('class', 'navigator_widget');
+
+    // Add container to DOM
+    content.appendChild(container);
+
+    // Wire it up.
+    addListener(win, container, undefined, NN.destroy.bind(NN));
+    addLogic(win);
+
+    // Let the navigator initialize the interface within
+    // the created container.
+    NN.init_ui(container);
+
+    return win
+  };
   
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
@@ -2037,6 +2258,8 @@ var WindowMaker = new function()
     "notifications": createNotificationsWindow,
     "clustering-widget": createClusteringWidget,
     "circuit-graph-plot": createCircuitGraphPlot,
+    "neuron-annotations": createNeuronAnnotationsWindow,
+    "neuron-navigator": createNeuronNavigatorWindow,
   };
 
   /** If the window for the given name is already showing, just focus it.
@@ -2054,10 +2277,11 @@ var WindowMaker = new function()
     }
   };
 
-  /** Always create a new instance of the widget. */
-  this.create = function(name) {
+  /** Always create a new instance of the widget. The caller is allowed to hand
+   * in extra parameters that will be passed on to the actual creator method. */
+  this.create = function(name, init_params) {
     if (creators.hasOwnProperty(name)) {
-      windows[name] = creators[name]();
+      windows[name] = creators[name](init_params);
     } else {
       alert("No known window with name " + name);
     }

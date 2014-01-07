@@ -327,3 +327,72 @@ div#classification_graph_object img.roiimage {
 	border-width: 4px 0 4px 8px;
 	border-color: transparent transparent transparent #0000ff;
 }
+
+.navigator_navi_bar {
+    margin-top: 0.5em;
+    width: 100%
+}
+
+.navigator_navi_bar .navigator_button {
+    float: right;
+    margin-right: 5px;
+}
+
+.navigator_content {
+    clear: both;
+    margin-top: 1em;
+}
+
+.navigator_content_option {
+    float: left;
+    clear: both;
+}
+
+.navigator_content.multi_table_node .dataTables_wrapper {
+    min-height: 0px;
+    margin-bottom: 1em;
+}
+
+.neuron_annotations_query_results_table td {
+    padding: 2px;
+    vertical-align: top;
+}
+
+.neuron_annotations_query_results_table label input,
+.neuron_annotations_query_results_table label a {
+    margin-top: 0px;
+    vertical-align: top;
+}
+
+.neuron_annotations_query_results_table ul {
+    margin-top: 0px;
+}
+
+.neuron_annotations_query_results_table th input[type=checkbox] {
+    padding: 3px;
+    width: auto;
+    margin-left: 6px;
+    margin-right: -6px;
+    float: left;
+}
+
+.neuron_annotations_query_results_table th label {
+    font-weight: normal;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.neuron_annotations_query_results_table th input[type=radio] {
+    width: auto;
+}
+
+.neuron_annotations_query_results_table li.remove_annotation {
+    white-space: normal;
+    display: inline-block;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.ui-front {
+    z-index: 10000 !important;
+}

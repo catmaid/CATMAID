@@ -1165,3 +1165,8 @@ CompartmentGraphWidget.prototype.openPlot = function() {
       m = this.createAdjacencyMatrix();
   GP.plot(m.skeleton_ids, models, m.AdjM);
 };
+
+CompartmentGraphWidget.prototype.annotate_skeleton_list = function() {
+  var skeleton_ids = this.getSelectedSkeletons();
+  NeuronAnnotations.prototype.annotate_neurons_of_skeletons(skeleton_ids);
+};

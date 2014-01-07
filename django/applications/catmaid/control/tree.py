@@ -85,7 +85,7 @@ def instance_operation(request, project_id=None):
 
 
     def rename_node():
-        can_edit_or_fail(request.user, params['id'], 'class_instance')
+        can_edit_class_instance_or_fail(request.user, params['id'])
         # Do not allow '|' in name because it is used as string separator in NeuroHDF export
         if '|' in params['title']:
             raise Exception('Name should not contain pipe character!')
@@ -103,7 +103,7 @@ def instance_operation(request, project_id=None):
 
     def remove_node():
         # Can only remove the node if the user owns it or the user is a superuser
-        can_edit_or_fail(request.user, params['id'], 'class_instance')
+        can_edit_class_instance_or_fail(request.user, params['id'])
         # Check if node is a skeleton. If so, we have to remove its treenodes as well!
         if 0 == params['rel']:
             raise Exception('No relation given!')
@@ -146,7 +146,7 @@ def instance_operation(request, project_id=None):
         # Given that the parentid is 0 to signal root (but root has a non-zero id),
         # this implies that regular non-superusers cannot create nodes under root,
         # but only in their staging area.
-        can_edit_or_fail(request.user, params['parentid'], 'class_instance')
+        can_edit_class_instance_or_fail(request.user, params['parentid'])
 
         if params['classname'] not in class_map:
             raise Exception('Failed to select class.')
@@ -186,8 +186,8 @@ def instance_operation(request, project_id=None):
     def move_node():
         # Can only move the node if the user owns the node and the target node,
         # or the user is a superuser
-        can_edit_or_fail(request.user, params['src'], 'class_instance') # node to move
-        can_edit_or_fail(request.user, params['ref'], 'class_instance') # new parent node
+        can_edit_class_instance_or_fail(request.user, params['src'], 'node') # node to move
+        can_edit_class_instance_or_fail(request.user, params['ref'], 'node') # new parent node
         #
         if 0 == params['src'] or 0 == params['ref']:
             raise Exception('src (%s) or ref (%s) not set.' % (params['src'], params['ref']))
@@ -495,11 +495,13 @@ def tree_object_list(request, project_id=None):
                     ON ci.user_id = "auth_user".id
                 WHERE cici.class_instance_b = %s
                   AND (cici.relation_id = %s
+                       OR cici.relation_id = %s
                        OR cici.relation_id = %s)
                 ORDER BY ci.class_id DESC, ci.name ASC
                 LIMIT %s''', (
             parent_id,
             relation_map['model_of'],
+            relation_map['annotated_with'],
             relation_map['part_of'],
             max_nodes))
 
@@ -581,184 +583,3 @@ def remove_empty_neurons(request, project_id=None, group_id=None):
         message = 'No empty neurons found.'
 
     return HttpResponse(json.dumps({'message': message}))
-
-
-def _fragments_group_id(request, project_id, class_root_id, relation_part_of_id):
-    """ Returns the ID of the 'Fragments' group.
-    Creates the Fragments group if it doesn't exist.
-    """
-    cursor = connection.cursor()
-    cursor.execute('''
-    SELECT fragments.id
-    FROM class_instance root,
-         class_instance fragments,
-         class_instance_class_instance cici,
-         class,
-         relation r
-    WHERE fragments.project_id = %s
-      AND fragments.name = 'Fragments'
-      AND cici.class_instance_a = fragments.id
-      AND cici.relation_id = r.id
-      AND r.relation_name = 'part_of'
-      AND cici.class_instance_b = root.id
-      AND root.class_id = class.id
-      AND class.class_name = 'root'
-    ''' % project_id)
-    rows = cursor.fetchall()
-    if rows:
-        return rows[0][0]
-    else:
-        # If none, create a 'Fragments' group
-        fragments = ClassInstance()
-        fragments.user = request.user # TODO should be an admin, but doesn't matter
-        fragments.project_id = project_id
-        fragments.class_column_id = classes['group']
-        fragments.name = 'Fragments'
-        fragments.save()
-        root = ClassInstance.objects.get(project=project_id, class_column=class_root_id)
-        _create_relation(request.user, project_id, relation_part_of_id, fragments.id, root.id)
-        return fragments.id
-
-
-@requires_user_role(UserRole.Annotate)
-def send_to_fragments_group(request, project_id, node_id, node_type):
-    """ Anybody can send an owned neuron or group to the 'Fragments' group
-    """
-    can_edit_or_fail(request.user, node_id, 'class_instance')
-    
-    classes = dict(Class.objects.values_list('class_name', 'id').filter(project_id=project_id, class_name__in=('root', 'group', 'neuron', 'skeleton')))
-    relations = dict(Relation.objects.values_list('relation_name', 'id').filter(project_id=project_id, relation_name__in=('model_of', 'part_of')))
-    from treenode import _create_relation
-
-    # Obtain the ID of the group named 'Fragments' under the root group
-    fragments_id = _fragments_group_id(request, project_id, classes['root'], relations['part_of'])
-
-    # Check whether the node_id corresponds to a skeleton,
-    # and wrap it in a neuron if so:
-    if 'skeleton' == node_type:
-        q = ClassInstance.objects.filter(pk=node_id).values_list('class_column')
-        if q[0][0] != classes['skeleton']:
-            raise Exception('The id #%s does not correspond to a skeleton!' % node_id)
-
-        # Create a neuron first
-        neuron = ClassInstance()
-        neuron.user = request.user
-        neuron.project_id = project_id
-        neuron.class_column_id = classes['neuron']
-        neuron.name = 'neuron'
-        neuron.save()
-
-        # Put the skeleton into the new neuron by rewriting the relation to the prior neuron
-        # (Assumes all skeletons always exist under a neuron.)
-        ClassInstanceClassInstance.objects.filter(class_instance_a=node_id, relation=relations['model_of']).update(class_instance_b=neuron.id)
-
-        # Put the new neuron in the Fragments group
-        _create_relation(request.user, project_id, relations['part_of'], neuron.id, fragments_id)
-
-    else:
-        # Move the neuron or group to Fragments group
-        ClassInstanceClassInstance.objects.filter(class_instance_a=node_id, relation=relations['part_of']).update(class_instance_b=fragments_id)
-
-    return HttpResponse(json.dumps({'message': 'OK'}))
-
-@requires_user_role(UserRole.Annotate)
-def cleanup_fragments(request, project_id=None):
-    """ Send all skeletons smaller than the given number of nodes to the Fragments
-    folder, so that anyone can join them. """
-
-    project_id = int(project_id)
-    # The minimum number of treenodes for the skeleton not to be thrown into Fragments
-    min_treenodes = int(request.POST.get('min_treenodes'))
-    # The ID of a group or a neuron
-    node_id = int(request.POST.get('node_id'))
-
-    cursor = connection.cursor()
-
-    # Can cleanup only if the request.user has group-level permissions on the group or is superuser.
-    # NOTE: independently of whether neurons or skeletons within the group,
-    # recursively, are owned by the request.user.
-    can_edit_or_fail(request.user, node_id, 'class_instance')
-
-    cursor.execute('SELECT relation_name, id FROM relation WHERE project_id=%s' % project_id)
-    relations = dict(cursor.fetchall())
-    model_of = relations['model_of']
-
-    cursor.execute('SELECT class_name, id FROM class WHERE project_id=%s' % project_id)
-    classes = dict(cursor.fetchall())
-    skeleton_class = classes['skeleton']
-    group_class = classes['group']
-    neuron_class = classes['neuron']
-
-    srels = '%s,%s' % (relations['part_of'], relations['model_of'])
-
-    # Map of neuron ID vs set of skeleton IDs
-    neurons = defaultdict(set)
-
-    def extract(nodes):
-        # Each row has [parent ID, relation ID, child ID, child class ID]
-        cursor.execute('''
-        SELECT cici.class_instance_b, cici.relation_id, cici.class_instance_a, ci.class_id
-        FROM class_instance_class_instance cici,
-             class_instance ci
-        WHERE cici.class_instance_b IN (%s)
-          AND cici.relation_id IN (%s)
-          AND cici.class_instance_a = ci.id
-        ''' % (','.join(imap(str, nodes)), srels))
-        nxt = []
-        for row in cursor.fetchall():
-            if row[3] == group_class or row[3] == neuron_class:
-                nxt.append(row[2])
-            elif row[3] == skeleton_class and row[1] == model_of:
-                neurons[row[0]].add(row[2])
-        return nxt
-
-    nxt = extract([node_id])
-    while len(nxt) > 0:
-        nxt = extract(nxt)
-    
-    # find out the number of treenodes of all found skeletons
-    cursor.execute('''
-    SELECT skeleton_id, count(*)
-    FROM treenode
-    WHERE skeleton_id IN (%s)
-    GROUP BY skeleton_id
-    ''' % ','.join(str(skid) for skid in chain.from_iterable(neurons.itervalues())))
-    counts = dict(cursor.fetchall())
-
-    neurons_to_fragments = []
-    skeletons_to_fragments = []
-    for neuronID, skeletonIDs in neurons.iteritems():
-        smaller = [skid for skid in skeletonIDs if counts[skid] < min_treenodes]
-        if len(smaller) == len(skeletonIDs):
-            neurons_to_fragments.append(neuronID)
-        elif smaller:
-            skeletons_to_fragments.extend(smaller);
-
-    part_of = relations['part_of']
-    root_id = classes['root']
-    fragments_id = _fragments_group_id(request, project_id, root_id, part_of)
-
-    if neurons_to_fragments:
-        # Move all neurons with a single skeleton under min_treenodes to Fragments group
-        ClassInstanceClassInstance.objects.filter(class_instance_a__in=neurons_to_fragments, relation=part_of).update(class_instance_b=fragments_id)
-
-    if skeletons_to_fragments:
-        # Create a neuron titled Fragments
-        neuron = ClassInstance()
-        neuron.user = request.user
-        neuron.project_id = project_id
-        neuron.class_column_id = neuron_class
-        date = str(datetime.now())
-        date = date[:date.rfind(':')]
-        neuron.name = 'Fragments %s' % date
-        neuron.save()
-
-        # Move the neuron to Fragments group
-        ClassInstanceClassInstance.objects.filter(class_instance_a=neuron.id, relation=part_of).update(class_instance_b=fragments_id)
-
-        # Move all skeletons to the new neuron
-        ClassInstanceClassInstance.objects.filter(class_instance_a__in=skeletons_to_fragments, relation=model_of).update(class_instance_b=neuron.id)
-
-    return HttpResponse(json.dumps({'n_neurons': len(neurons_to_fragments),
-                                    'n_skeletons': len(skeletons_to_fragments)}))
-

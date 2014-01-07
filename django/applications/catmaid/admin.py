@@ -93,6 +93,7 @@ class ProfileInline(admin.StackedInline):
 class CustomUserAdmin(UserAdmin):
     inlines = [ProfileInline,]
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff')
+    filter_horizontal = ('groups', 'user_permissions')
     
     def changelist_view(self, request, extra_context=None):
         # Add a color column for superusers.

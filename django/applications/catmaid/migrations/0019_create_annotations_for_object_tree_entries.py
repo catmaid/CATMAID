@@ -2,7 +2,7 @@
 import datetime
 import traceback
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.conf import settings
 from django.db import models
 from django.db import transaction
@@ -163,7 +163,7 @@ class Traverser():
             self.traverse(ln, next_folder_annotations, path, depth+1,
                     annotations)
 
-class Migration(SchemaMigration):
+class Migration(DataMigration):
 
     def test_tracing_setup(self, p, class_map, relation_map):
         """ Tests if the given project is setup for tracing. If it seems it
@@ -280,8 +280,7 @@ class Migration(SchemaMigration):
             raise RuntimeError("Couldn't apply migration")
 
     def backwards(self, orm):
-        print("This migration cannot be reversed.")
-        #raise RuntimeError("Cannot reverse this migration.")
+        print("This data migration cannot be reversed.")
 
     models = {
         'auth.group': {

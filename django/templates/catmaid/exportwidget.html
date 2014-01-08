@@ -98,6 +98,11 @@
 		dialog.show();
 	};
 
+	function export_connectors() {
+		var dialog = new OptionsDialog("Export connectors");
+		dialog.show();
+	};
+
 </script>
 
 
@@ -122,6 +127,23 @@ summary statistics.
 	<li><a id='export-neuroml181' href='#'><strong>NeuroML 1.8.1 (Level 3, NetworkML)</strong></a></br />
 	For modeling with <a href="http://www.neuroconstruct.org/">neuroConstruct</a> and then e.g. the <a href="http://www.neuron.yale.edu/neuron/">NEURON</a> simulator.</li>
 
+</ul>
+
+In addition, it is possible to extract only the connectors of the selected
+neurons.
+
+<ul>
+  <li>
+    <a id='export-connector-archive' href='#'>
+            <strong>Connector archive</strong></a><br />
+    The generated <em>tar.gz</em> archive contains one folder for every
+    selected neuron, named after it's ID. Such a folder contains two folders:
+    <em>presynaptic</em> and <em>postsynaptic</em> for the respective connector
+    types. These in turn contain one folder for each connector, named after
+    their ID. The actual images are stored in such a connector folder. They are
+    named <em>x_y_z.tiff</em> and encode the image center coordinates in their
+    name.
+  </li>
 </ul>
 
 {% endblock %}

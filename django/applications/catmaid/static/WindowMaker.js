@@ -1677,6 +1677,11 @@ var WindowMaker = new function()
             $(this).find('#export-neuroml181').click(function() {
               graphexport_NeuroML181();
             });
+            // Bind connector export link to handler
+            $(this).find('#export-connector-archive').click(function() {
+              // Show dialog to select
+              export_connectors();
+            });
           }
         });
 

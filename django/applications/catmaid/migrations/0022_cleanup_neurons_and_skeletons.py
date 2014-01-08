@@ -149,18 +149,18 @@ class Migration(SchemaMigration):
                     relation_id=model_of_rel).values('class_instance_b').annotate(
                             sk_count=models.Count('class_instance_a'))
 
-            if (nr_neurons == len(skeleton_links)):
-                log("Number of neurons is now equal to number of skeleton links")
-            else:
-                raise RuntimeError("Number of neurons is not equal to number ' \
-                        'of skeleton links after this migration. Aborting.")
-
             for l in skeleton_links:
                 if l['sk_count'] != 1:
                     raise RuntimeError("Number of skeleton links for neurons %s ' \
                             'is %s instead of 1. Aborting." % l.class_instance_b)
             log("Each neuron of project #%s has now exactly one skeleton " \
                     "linked" % p.id)
+
+            if (nr_neurons == len(skeleton_links)):
+                log("Number of neurons is now equal to number of skeleton links")
+            else:
+                raise RuntimeError("Number of neurons is not equal to number ' \
+                        'of skeleton links after this migration. Aborting.")
 
         log("Done with data migration")
 

@@ -45,7 +45,7 @@ class Migration(SchemaMigration):
 
             # Prefetching the 'cici_via_a' and 'cici_via_b' takes unfortunately
             # too much memory.
-            neurons = orm.ClassInstance.objects.filter(
+            neurons = orm.ClassInstance.objects.filter(project_id=p.id,
                     class_column_id=neuron_cls)
 
             log("Processing %s neurons" % len(neurons))
@@ -141,11 +141,12 @@ class Migration(SchemaMigration):
 
             # Check if there are now only neurons with exactly one skeleton
             # linked.
-            nr_neurons = orm.ClassInstance.objects.filter(
-                    class_column__class_name='neuron').count()
+            nr_neurons = orm.ClassInstance.objects.filter(project_id=p.id,
+                    class_column_id=neuron_cls.id).count()
             skeleton_links = orm.ClassInstanceClassInstance.objects.filter(
+                    project_id=p.id,
                     class_instance_a__class_column_id=skeleton_cls.id,
-                    class_instance_b__class_column__id=neuron_cls.id,
+                    class_instance_b__class_column_id=neuron_cls.id,
                     relation_id=model_of_rel).values('class_instance_b').annotate(
                             sk_count=models.Count('class_instance_a'))
 

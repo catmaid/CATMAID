@@ -753,7 +753,7 @@ CompartmentGraphWidget.prototype.writeGML = function() {
                  "Line [",
                  "]",
                  "source_arrow 0",
-                 "target_arrow 3"].join("\n      "),
+                 "target_arrow " + (props.directed ? 3 : 0)].join("\n      "),
                 "]",
                 'weight ' + props.weight].join("\n    "));
     items.push("]");

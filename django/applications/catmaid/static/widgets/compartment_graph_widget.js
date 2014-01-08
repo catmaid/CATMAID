@@ -91,10 +91,17 @@ CompartmentGraphWidget.prototype.getSkeletonModel = function(skeleton_id) {
   return model;
 };
 
+/** Return a SkeletonModel for every skeleton ID, with the model selected if at least one of the nodes of that skeleton is visible. There could be more than one node when a skeleton is split by confidence or exploded by synapse clustering. */
 CompartmentGraphWidget.prototype.getSkeletonModels = function() {
   return this.cy.nodes().toArray().reduce(function(m, node) {
-    var props = node.data(),
-        model = CompartmentGraphWidget.prototype.createSkeletonModel(props);
+    var props = node.data();
+    if (props.branch) return m; // ignore branch nodes from neurons split by synapse clustering
+    if (m[props.skeleton_id]) {
+      // Already seen (there could be more than one when split by confidence or synapse clustering)
+      if (node.selected()) m[props.skeleton_id].setVisible(true);
+      return m;
+    }
+    var model = CompartmentGraphWidget.prototype.createSkeletonModel(props);
     model.setVisible(node.selected());
     m[props.skeleton_id] = model;
     return m;
@@ -105,6 +112,8 @@ CompartmentGraphWidget.prototype.getSelectedSkeletonModels = function() {
   return this.cy.nodes().toArray().reduce(function(m, node) {
     if (node.selected() && node.visible()) {
       var props = node.data();
+    if (props.branch) return m; // ignore branch nodes from neurons split by synapse clustering
+    if (m[props.skeleton_id]) return m; // already seen (there could be more than one when split by confidence or synapse clustering)
       m[props.skeleton_id] = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color(props.color));
     }
     return m;
@@ -1099,24 +1108,34 @@ CompartmentGraphWidget.prototype.createAdjacencyMatrix = function() {
   var unique_ids = {};
   this.cy.nodes(function(i, node) {
     if (node.hidden()) return;
-    unique_ids[node.data('skeleton_id')] = null;
+    unique_ids[node.data('skeleton_id')] = true;
   });
   var skeleton_ids = Object.keys(unique_ids).map(Number),
       indices = skeleton_ids.reduce(function(o, skid, i) { o[skid] = i; return o;}, {}),
       AdjM = skeleton_ids.map(function() { return skeleton_ids.map(function() { return 0; })}),
       edges = {};
+  // Handle synapse clustered sub-neurons and neurons split by confidence
+  var asNumericID = function(id) {
+    if (id.toFixed) return id; // is a number
+    var i_ = id.lastIndexOf('_');
+    if (-1 === i_) return parseInt(i_);
+    return parseInt(id.substring(0, i_));
+  };
   // Plan for potentially split neurons
   this.cy.edges().each(function(i, edge) {
     if (edge.hidden()) return;
     var e = edge.data();
-    var c = edges[e.source];
+    if (!e.directed) return; // intra-edge of a neuron split by synapse clustering
+    var source = asNumericID(e.source),
+        target = asNumericID(e.target),
+        c = edges[source];
     if (!c) {
-      edges[e.source] = {};
-      edges[e.source][e.target] = e.weight;
-    } else if (c[e.target]) {
-      c[e.target] += e.weight;
+      edges[source] = {};
+      edges[source][target] = e.weight;
+    } else if (c[target]) {
+      c[target] += e.weight;
     } else {
-      c[e.target] = e.weight;
+      c[target] = e.weight;
     }
   });
   Object.keys(edges).forEach(function(source) {

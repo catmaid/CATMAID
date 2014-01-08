@@ -2202,6 +2202,8 @@ var WindowMaker = new function()
     // the filter select box doesn't work when it is hidden.
     $(container).hide();
 
+    SkeletonListSources.updateGUI();
+
     return win;
   };
 
@@ -2226,6 +2228,8 @@ var WindowMaker = new function()
     // Let the navigator initialize the interface within
     // the created container.
     NN.init_ui(container);
+
+    SkeletonListSources.updateGUI();
 
     return win
   };

@@ -159,8 +159,9 @@ class Migration(SchemaMigration):
             if (nr_neurons == len(skeleton_links)):
                 log("Number of neurons is now equal to number of skeleton links")
             else:
-                raise RuntimeError("Number of neurons is not equal to number ' \
-                        'of skeleton links after this migration. Aborting.")
+                raise RuntimeError("Number of neurons (%s) is not equal to ' \
+                        'number of skeleton links (%s) after this migration. ' \
+                        'Aborting." % (nr_neurons, len(skeleton_links)))
 
         log("Done with data migration")
 

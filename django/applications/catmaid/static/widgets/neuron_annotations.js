@@ -10,6 +10,7 @@ var NeuronAnnotations = function()
 
   this.nextFieldID = 1;    // unique ID for annotation fields added by the "+" button
   this.queryResults = [];
+  this.entity_selection_map = {};
   this.pid = project.id;
 };
 
@@ -200,7 +201,9 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
                     $(tr).after(new_tr)
                   };
 
+                  // Mark entities as unselected and create result table rows
                   e.forEach((function(entity) {
+                    self.entity_selection_map[entity.id] = false;
                     self.add_result_table_row(entity, appender, indent + 1);
                   }).bind(self));
 
@@ -237,6 +240,8 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
           var clicked_cb = this;
           var is_checked = $(this).is(':checked');
           var entity_id = $(this).attr('entity_id');
+          // Update the entities selection state
+          widget.entity_selection_map[entity_id] = is_checked;
           // Update sync link
           widget.updateLink(widget.getSelectedSkeletonModels());
           // Potentially remove skeletons from link target
@@ -307,13 +312,16 @@ NeuronAnnotations.prototype.query = function()
             var $tableBody = $('#neuron_annotations_query_results' +
                 this.widgetID).find('tbody');
             $tableBody.empty();
+            // Empty selection map and store results
+            this.entity_selection_map = {};
             this.queryResults = e;
             // create appender function which adds rows to table
             var appender = function(tr) {
               $tableBody.append(tr);
             };
-            // Create result table rows
+            // Mark entities as unselected and create result table rows
             this.queryResults.forEach((function(entity) {
+              this.entity_selection_map[entity.id] = false;
               this.add_result_table_row(entity, appender, 0);
             }).bind(this));
 
@@ -386,6 +394,7 @@ NeuronAnnotations.prototype.remove_query_field = function(rowNum)
 
 NeuronAnnotations.prototype.toggle_neuron_selections = function()
 {
+  // Get current check state and update checkboxes and selection map
   var newValue = $("#neuron_annotations_toggle_neuron_selections_checkbox" +
       this.widgetID)[0].checked;
   $("#neuron_annotations_query_results_table" + this.widgetID).find(
@@ -393,6 +402,10 @@ NeuronAnnotations.prototype.toggle_neuron_selections = function()
           function(i, element) {
             element.checked = newValue;
           });
+  this.queryResults.forEach(function(e) {
+    this.entity_selection_map[e.id] = newValue;
+  }, this);
+
   // Update sync link
   this.updateLink(this.getSelectedSkeletonModels());
   // Potentially remove skeletons from link target
@@ -418,13 +431,9 @@ NeuronAnnotations.prototype.get_entities = function(checked)
 {
   var visited = {};
   return this.queryResults.reduce((function(o, e) {
-      // Test if one of the checkboxes for a particular neuron is checked
-      var is_checked = $("#neuron_annotations_query_results_table" +
-          this.widgetID).find('tr[type=neuron]').find('input[class=result' +
-              this.widgetID + '_' + e.id + ']').is(':checked');
       // Avoid duplicates if the same neuron is checked multiple times and
       // add it only if not yet present.
-      if (is_checked == checked && !(e.id in visited)) {
+      if (this.entity_selection_map[e.id] == checked && !(e.id in visited)) {
           o.push(e);
           visited[e.id] = true;
       }

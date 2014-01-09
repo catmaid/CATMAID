@@ -2134,7 +2134,7 @@ var WindowMaker = new function()
 
     
     // Wire it up.
-    addListener(win, container, 'annotation_query_fields', NA.destroy.bind(NA));
+    addListener(win, container, queryFields.id, NA.destroy.bind(NA));
     addLogic(win);
 
     // Add autocompletion to the first name input field

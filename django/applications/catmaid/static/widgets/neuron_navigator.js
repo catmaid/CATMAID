@@ -82,7 +82,7 @@ NeuronNavigator.prototype.set_annotation_node = function(annotation_name)
   var al_node = new NeuronNavigator.AnnotationListNode();
   al_node.link(this, home_node);
   var a_node = new NeuronNavigator.AnnotationFilterNode(
-      annotation_name, false);
+      annotation_name, false, false);
   a_node.link(this, al_node);
   // Select the annotation node
   this.select_node(a_node);
@@ -122,7 +122,10 @@ NeuronNavigator.prototype.select_node = function(node)
 
   // Clear the content div, and let the node add content to it
   var $content = $('#navigator_content' + this.widgetID).empty();
-  node.add_content($content);
+
+  // Get the current filter set and add content based on it
+  var filters = this.current_node.get_filter_set();
+  node.add_content($content, filters);
 
   // Update sync link
   this.updateLink(this.getSelectedSkeletonModels());
@@ -273,19 +276,81 @@ NeuronNavigator.Node.prototype.create_path = function()
   }
 };
 
+/**
+ * Collect filters of this and upstream nodes. This node adds all the known
+ * filters to a single object and puts it into a list, followed by the object
+ * from nodes coming before it.
+ */
+NeuronNavigator.Node.prototype.collect_filters = function()
+{
+  // Create this node's filter set
+  var filter = {};
+  filter.co_annotates = this.is_coannotation || false;
+  filter.annotation = this.annotation || null;
+  filter.neuron_id = this.neuron_id || null;
+  filter.user_id = this.user_id || null;
+
+  // Add upstream filters unless this node breaks the chain
+  var filters = [filter]
+  if (this.parent_node && !this.breaks_filter_chain()) {
+    filters = filters.concat(this.parent_node.collect_filters());
+  }
+
+  return filters;
+};
+
+/**
+ * Get the filter set valid for the current node. This consists of collecting
+ * all filters up to the next chain break and then condensing it to a single
+ * filter. The following rules are used for this:
+ * 1. Only the firs user found is used considered.
+ * 2. Only the first neuron found is considered.
+ */
+NeuronNavigator.Node.prototype.get_filter_set = function()
+{
+  var filters = this.collect_filters();
+  var final_filter = filters.reduce(function(o, f) {
+    // Use the first user filter available
+    if (!o.user_id && f.user_id) {
+      o.user_id = f.user_id;
+    }
+    // Use the first neuron available
+    if (!o.neuron_id && f.neuron_id) {
+      o.neuron_id = f.neuron_id;
+    }
+    // Add annotations, co-annotations and meta-annotations
+    if (f.annotation) {
+      // If the current filter adds a co-annotation, add a parallel annotation
+      // to the final filter.
+      if (f.co_annotates) {
+        o.parallel_annotations.push(f.annotation);
+      } else if (f.is_meta_annotation) {
+        // If the parent is a meta annotation, an 'annotates' filter is created.
+        // This should restrict results to annotations that are annotated by it.
+        o.annotates.push(f.annotation);
+      } else {
+        // Add parent annotation, if any
+        o.annotations.push(f.annotation);
+      }
+    }
+
+    // Increase parsed filter count
+    o.parsed_filters = o.parsed_filters + 1;
+
+    return o;
+  }, {
+    parsed_filters: 0,
+    parallel_annotations: [],
+    annotations: [],
+    annotates: [],
+  });
+
+  return final_filter;
+};
+
 NeuronNavigator.Node.prototype.breaks_filter_chain = function()
 {
   return false;
-};
-
-NeuronNavigator.Node.prototype.get_last_user = function()
-{
-  while (this.parent_node)
-  {
-    return this.parent_node.get_last_user();
-  }
-
-  return null;
 };
 
 NeuronNavigator.Node.prototype.add_content = function(container)
@@ -456,7 +521,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
     "sAjaxSource": django_url + project.id + '/annotations/table-list',
     "fnServerData": function (sSource, aoData, fnCallback) {
         // Annotation filter -- we are requesting annotations that are
-        // annotated with a specific filter
+        // annotated with specific annotations
         if (filters.annotations) {
           filters.annotations.forEach(function(annotation, i) {
             aoData.push({
@@ -756,30 +821,22 @@ NeuronNavigator.AnnotationListNode.prototype.become_co_annotation_list =
 {
 };
 
-NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
+NeuronNavigator.AnnotationListNode.prototype.create_annotation_filter =
+    function(annotation)
 {
-  var filters = {};
+  return new NeuronNavigator.AnnotationFilterNode(annotation,
+      this.creates_co_annotations, false);
+};
 
-  // Use parent node provided filters, if available
-  if (this.parent_node) {
-    /* If co-annotations are listed, all filters from before need to be
-     * collected and treated as 'parallel' filters. Only provide an annotation
-     * filter if no co-annotation should be created.
-     */
-    if (this.creates_co_annotations) {
-      filters.parallel_annotations = this.parent_node.collect_annotation_filters();
-    } else if (this.parent_node.annotation) {
-      if (this.is_meta_annotation) {
-        // If the parent is a meta annotation, an 'annotates' filter is created.
-        // This should restrict results to annotations that are annotated by it.
-        filters.annotates = [this.parent_node.annotation];
-      } else {
-        // Add parent annotation, if any
-        filters.annotations = [this.parent_node.annotation];
-      }
-    }
-    if (this.parent_node.user_id) {
-      filters.user_id = this.parent_node.user_id;
+NeuronNavigator.AnnotationListNode.prototype.add_content = function(container,
+    filters)
+{
+  // If this node should display co-annotations, it needs to remove the last
+  // annotation found in the filters and use it as a parallel annotation.
+  if (this.creates_co_annotations) {
+    if (filters.annotations && filters.annotations.length > 0) {
+      var last_annotation = filters.annotations.pop();
+      filters.parallel_annotations.push(last_annotation);
     }
   }
 
@@ -798,8 +855,7 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container)
   $('#' + table_id).on('dblclick', ' tbody tr', function () {
       var aData = datatable.fnGetData(this);
       var a = aData[0];
-      var annotations_node = new NeuronNavigator.AnnotationFilterNode(a,
-          self.creates_co_annotations);
+      var annotations_node = self.create_annotation_filter(a);
       annotations_node.link(self.navigator, self);
       self.navigator.select_node(annotations_node);
   });
@@ -824,7 +880,14 @@ NeuronNavigator.MetaAnnotationListNode = function(is_meta_annotation)
 
 NeuronNavigator.MetaAnnotationListNode.prototype = {};
 $.extend(NeuronNavigator.MetaAnnotationListNode.prototype,
-    new NeuronNavigator.AnnotationListNode(""));
+    new NeuronNavigator.AnnotationListNode(false));
+
+NeuronNavigator.MetaAnnotationListNode.prototype.create_annotation_filter =
+    function(annotation)
+{
+  return new NeuronNavigator.AnnotationFilterNode(a, false,
+      this.is_meta_annotation);
+};
 
 
 /**
@@ -837,21 +900,9 @@ NeuronNavigator.UserListNode.prototype = {};
 $.extend(NeuronNavigator.UserListNode.prototype,
     new NeuronNavigator.Node("Users"));
 
-NeuronNavigator.UserListNode.prototype.add_content = function(container)
+NeuronNavigator.UserListNode.prototype.add_content = function(container,
+    filters)
 {
-  var filters = {};
-
-  // Use parent node provided filters, if available
-  if (this.parent_node) {
-    // Collect annotation and co-annotation filters
-    if (this.parent_node.collect_annotation_filters) {
-      filters.annotations = this.parent_node.collect_annotation_filters();
-    }
-    if (this.parent_node.neuron_id) {
-      filters.neuron_id = this.parent_node.neuron_id;
-    }
-  }
-
   var table_id = 'navigator_user_table' + this.navigator.widgetID;
   var datatable = this.add_user_list_table(container, table_id, filters);
 
@@ -905,20 +956,9 @@ NeuronNavigator.NeuronListNode.prototype.get_selected_neurons = function()
   return selected_neurons;
 };
 
-NeuronNavigator.NeuronListNode.prototype.add_content = function(container)
+NeuronNavigator.NeuronListNode.prototype.add_content = function(container,
+    filters)
 {
-  var filters = {};
-
-  // Use parent node provided filters, if available
-  if (this.parent_node) {
-    // Collect annotarion and co-annotation filters
-    if (this.parent_node.collect_annotation_filters) {
-      filters.annotations = this.parent_node.collect_annotation_filters();
-    }
-  }
-
-  filters.user_id = this.get_last_user();
-
   // Create annotate button
   var annotate_button = document.createElement('input');
   annotate_button.setAttribute('type', 'button');
@@ -1086,10 +1126,11 @@ NeuronNavigator.NeuronListNode.prototype.get_entities = function(checked)
  * annotation and co-annotation links.
  */
 NeuronNavigator.AnnotationFilterNode = function(included_annotation,
-    is_coannotation)
+    is_coannotation, is_meta_annotation)
 {
   this.annotation = included_annotation
   this.is_coannotation = is_coannotation;
+  this.is_meta_annotation = is_meta_annotation;
   this.name = included_annotation;
 };
 
@@ -1097,30 +1138,13 @@ NeuronNavigator.AnnotationFilterNode.prototype = {};
 $.extend(NeuronNavigator.AnnotationFilterNode.prototype,
     new NeuronNavigator.Node("Empty Annotation Filter"));
 
-NeuronNavigator.AnnotationFilterNode.prototype.collect_annotation_filters =
-    function()
-{
-  var filters = [this.annotation];
-
-  // If this is a co-annotation, there have to be more annotations upstream.
-  if (this.is_coannotation) {
-    // Expect an annotation list as first parent, a filter as second
-    var prev_annotation_filter = this.parent_node.parent_node;
-    if (prev_annotation_filter.collect_annotation_filters) {
-      filters = filters.concat(
-          prev_annotation_filter.collect_annotation_filters());
-    }
-  }
-
-  return filters;
-};
-
 NeuronNavigator.AnnotationFilterNode.prototype.breaks_filter_chain = function()
 {
   return !this.is_coannotation;
 };
 
-NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container)
+NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
+    filters)
 {
   var content = document.createElement('div');
 
@@ -1181,17 +1205,13 @@ NeuronNavigator.UserFilterNode.prototype = {};
 $.extend(NeuronNavigator.UserFilterNode.prototype,
     new NeuronNavigator.Node("Empty User Filter"));
 
-NeuronNavigator.UserFilterNode.prototype.get_last_user = function()
-{
-    return this.user_id;
-};
-
 NeuronNavigator.UserFilterNode.prototype.breaks_filter_chain = function()
 {
   return true;
 };
 
-NeuronNavigator.UserFilterNode.prototype.add_content = function(container)
+NeuronNavigator.UserFilterNode.prototype.add_content = function(container,
+    filters)
 {
   var content = document.createElement('div');
 
@@ -1239,7 +1259,7 @@ NeuronNavigator.NeuronNode.prototype.breaks_filter_chain = function()
   return true;
 };
 
-NeuronNavigator.NeuronNode.prototype.add_content = function(container)
+NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
 {
   // Make self accessible in callbacks more easily
   var self = this;
@@ -1439,9 +1459,6 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container)
   container.append(annotation_title);
 
   // Table filters and ID
-  var filters = {
-    neuron_id: this.neuron_id
-  }
   var annotation_table_id = 'navigator_annotationlist_table' +
       this.navigator.widgetID;
 
@@ -1569,7 +1586,8 @@ NeuronNavigator.ActiveNeuronNode.prototype = {};
 $.extend(NeuronNavigator.ActiveNeuronNode.prototype,
     new NeuronNavigator.NeuronNode({id: -1, name: '', skeleton_ids: []}));
 
-NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container)
+NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
+    filters)
 {
   if (this.current_skid) {
     requestQueue.register(django_url + project.id + '/skeleton/' +
@@ -1585,7 +1603,7 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container)
               this.neuron_id = json.neuronid;
               // Call neuron node content creation
               NeuronNavigator.NeuronNode.prototype.add_content.call(this,
-                  container);
+                  container, filters);
             }
           }
     }).bind(this));
@@ -1627,7 +1645,7 @@ NeuronNavigator.HomeNode.prototype = {};
 $.extend(NeuronNavigator.HomeNode.prototype,
     new NeuronNavigator.NeuronListNode());
 
-NeuronNavigator.HomeNode.prototype.add_content = function(container)
+NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
 {
   var content = document.createElement('div');
 
@@ -1664,5 +1682,6 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container)
   container.append(neuron_title);
 
   // Add content from neuron list node
-  NeuronNavigator.NeuronListNode.prototype.add_content.call(this, container);
+  NeuronNavigator.NeuronListNode.prototype.add_content.call(this, container,
+      filters);
 };

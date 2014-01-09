@@ -143,16 +143,21 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   var ul = entity.annotations.reduce(
     function(o, e) {
       var li = document.createElement('li');
-      li.setAttribute('title', 'Remove annotation');
-      li.setAttribute('class', 'remove_annotation');
+      li.setAttribute('title', 'Show annotation in navigator');
+      li.setAttribute('class', 'show_annotation');
       li.setAttribute('neuron_id', entity.id);
       li.setAttribute('annotation_id', e.id);
       li.setAttribute('user_id', e.uid);
+
+      var remove_button = document.createElement('div');
+      remove_button.setAttribute('title', 'Remove annotation');
+      remove_button.setAttribute('class', 'remove_annotation');
       li.appendChild(document.createTextNode(e.name));
+      li.appendChild(remove_button);
       o.appendChild(li);
       return o;
     }, document.createElement('ul'));
-  ul.setAttribute('class', 'tagEditor');
+  ul.setAttribute('class', 'resultTags');
   td_ann.appendChild(ul);
   tr.appendChild(td_ann);
 
@@ -221,18 +226,30 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   // Add click handlers to remove tags from nodes
   var NA = this;
   $(".remove_annotation", $(ul)).click( function() {
-      var neuron_id = $(this).attr('neuron_id');
-      var annotation_id = $(this).attr('annotation_id');
+      var neuron_id = $(this).parent().attr('neuron_id');
+      var annotation_id = $(this).parent().attr('annotation_id');
       NeuronAnnotations.remove_annotation(neuron_id,
           annotation_id, (function(message) {
               // Display message returned by the server
               growlAlert('Information', message);
               // Remove current annotation from displayed list
               var result_tr = $('#neuron_annotations_query_results' +
-                  this.widgetID).find('.remove_annotation[neuron_id=' +
+                  this.widgetID).find('.show_annotation[neuron_id=' +
                   neuron_id + '][annotation_id=' + annotation_id + ']');
               result_tr.fadeOut(1000, function() { $(this).remove(); });
           }).bind(NA));
+  });
+  // Add click handlers to show an annotation in navigator
+  var NA = this;
+  $(".show_annotation", $(ul)).click( function() {
+      // Expect name to be the text content of the node
+      var annotation_name = $(this).text();;
+      // Create a new navigator and set it to an annotation filter node
+      var NN = new NeuronNavigator();
+      // Create a new window, based on the newly created navigator
+      WindowMaker.create('neuron-navigator', NN);
+      // Select the cloned node in the new navigator
+      NN.set_annotation_node(annotation_name);
   });
   // Add handler to the checkbox infront of each entity
   var create_cb_handler = function(widget) {

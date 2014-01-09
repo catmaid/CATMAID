@@ -2082,7 +2082,7 @@ var WindowMaker = new function()
     // actual NA.widgetID which will be replaced afterwards.
     container_html =
       '<table cellpadding="0" cellspacing="0" border="0" ' +
-            'class="neuron_annotations_query_results_table" ' +
+            'class="neuron_annotations_query_results_table display" ' +
             'id="neuron_annotations_query_results_table{{NA-ID}}">' +
         '<thead>' +
           '<tr>' +

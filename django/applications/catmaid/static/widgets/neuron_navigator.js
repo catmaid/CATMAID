@@ -74,6 +74,20 @@ NeuronNavigator.prototype.init_ui = function(container)
   this.select_node(home_node);
 };
 
+NeuronNavigator.prototype.set_annotation_node = function(annotation_name)
+{
+  // Create a home node, an annotation list node an an actual annotation node.
+  var home_node = new NeuronNavigator.HomeNode(this.widgetID);
+  home_node.link(this, null);
+  var al_node = new NeuronNavigator.AnnotationListNode();
+  al_node.link(this, home_node);
+  var a_node = new NeuronNavigator.AnnotationFilterNode(
+      annotation_name, false);
+  a_node.link(this, al_node);
+  // Select the annotation node
+  this.select_node(a_node);
+};
+
 NeuronNavigator.prototype.select_node = function(node)
 {
   // Remember this node as the current node

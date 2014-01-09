@@ -18,20 +18,7 @@
 }
 
 .neuron_annotations_query_footer {
-/* 
-    position: fixed;
-    bottom: 0px;
- */
-/* 
-   position:fixed;
-   left:0px;
-   bottom:0px;
-   height:30px;
-   width:100%;
-   background:#999;
- */
     position: relative;
-    margin-top: -50px; /* negative value of footer height */
-    height: 50px;
+    margin-top: 0.5em;
     clear:both;
 }

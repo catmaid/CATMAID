@@ -2081,6 +2081,14 @@ var WindowMaker = new function()
     // Create container HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
     container_html =
+      '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +
+          'class="neuron_annotations_query_footer">' +
+        '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
+            'value="Annotate..." />' +
+        '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
+          'Sync to: ' +
+        '</label>' +
+      '</div>' +
       '<table cellpadding="0" cellspacing="0" border="0" ' +
             'class="neuron_annotations_query_results_table display" ' +
             'id="neuron_annotations_query_results_table{{NA-ID}}">' +
@@ -2111,17 +2119,7 @@ var WindowMaker = new function()
         '<tbody>' +
           '<tr><td colspan="3"></td></tr>' +
         '</tbody>' +
-      '</table>' +
-      '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +
-          'class="neuron_annotations_query_footer">' +
-        '<p class="neuron_annotations_query_footer">' +
-          '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
-              'value="Annotate..." />' +
-          '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
-            'Sync to: ' +
-          '</label>' +
-        '</p>' +
-      '</div>';
+      '</table>';
     // Replace {{NA-ID}} with the actual widget ID
     container.innerHTML = container_html.replace(/{{NA-ID}}/g, NA.widgetID);
     content.appendChild( container );

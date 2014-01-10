@@ -1591,6 +1591,7 @@ NeuronNavigator.ActiveNeuronNode = function()
   // Check if there is currently an active skeleton
   this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
   this.name = 'Active Neuron';
+  this.sync_active_neuron = true;
 };
 
 NeuronNavigator.ActiveNeuronNode.prototype = {};
@@ -1600,6 +1601,22 @@ $.extend(NeuronNavigator.ActiveNeuronNode.prototype,
 NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
     filters)
 {
+  // Add checkbox to indicate if this node should update automatically if the
+  // active neuron changes.
+  var sync_checkbox = document.createElement('input');
+  sync_checkbox.setAttribute('type', 'checkbox');
+  if (this.sync_active_neuron) {
+    sync_checkbox.setAttribute('checked', 'checked');
+  }
+  var sync_label = document.createElement('label');
+  sync_label.appendChild(document.createTextNode('Sync active neuron'));
+  sync_label.appendChild(sync_checkbox);
+  sync_label.style.cssFloat = 'right';
+  container.append(sync_label);
+  $(sync_checkbox).change((function() {
+    this.sync_active_neuron = $(sync_checkbox).is(':checked');
+  }).bind(this));
+
   if (this.current_skid) {
     requestQueue.register(django_url + project.id + '/skeleton/' +
         this.current_skid + '/neuronname', 'POST', {}, (function(status, text) {
@@ -1635,8 +1652,10 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
  */
 NeuronNavigator.ActiveNeuronNode.prototype.highlight = function(skeleton_id)
 {
-  this.current_skid = skeleton_id;
-  this.navigator.select_node(this);
+  if (this.sync_active_neuron) {
+    this.current_skid = skeleton_id;
+    this.navigator.select_node(this);
+  }
 }
 
 

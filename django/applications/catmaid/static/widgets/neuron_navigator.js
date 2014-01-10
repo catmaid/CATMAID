@@ -1257,6 +1257,7 @@ NeuronNavigator.UserFilterNode.prototype.add_content = function(container,
 NeuronNavigator.NeuronNode = function(neuron)
 {
   this.neuron_id = neuron.id;
+  this.neuron_name = neuron.name;
   this.name = neuron.name;
   this.skeleton_ids = neuron.skeleton_ids;
 };
@@ -1327,7 +1328,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
 
   var skeleton_datatable = $(table).dataTable({
     "bDestroy": true,
-    "sDom": '<"H"r>t<"F">',
+    "sDom": '<"H"<"nodeneuronname">r>t<"F">',
     // default: <"H"lfr>t<"F"ip>
     "bProcessing": true,
     "bAutoWidth": false,
@@ -1335,6 +1336,9 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
     "bJQueryUI": true,
     "bSort": false
   });
+
+  // Add neuron name to caption
+  $('div.nodeneuronname', container).html('Name: ' + this.neuron_name);
 
   // Manually request compact-json object for skeleton
   var loader_fn = function(skeleton_id) {
@@ -1640,6 +1644,8 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
             } else {
               this.skeleton_ids = [this.current_skid];
               this.neuron_id = json.neuronid;
+              // Update the neuron name
+              this.neuron_name = json.neuronname;
               // Call neuron node content creation
               NeuronNavigator.NeuronNode.prototype.add_content.call(this,
                   container, filters);

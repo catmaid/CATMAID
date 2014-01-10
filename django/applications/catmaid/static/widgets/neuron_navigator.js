@@ -1661,7 +1661,7 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
   var content = document.createElement('div');
 
   // Create menu and add it to container
-  var menu_entries = ['Annotations', 'Users', 'Active Skeleton'];
+  var menu_entries = ['Annotations', 'Users', 'Active Neuron'];
   var table_rows = this.add_menu_table(menu_entries, content);
 
   // Add container to DOM

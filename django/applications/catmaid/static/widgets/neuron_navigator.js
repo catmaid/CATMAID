@@ -1187,6 +1187,17 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
       node.link(this.navigator, this);
       this.navigator.select_node(node);
   }, this));
+
+  // Add a list of neurons matching the current filter set including the current
+  // annotation filter node.
+  var neuron_title = document.createElement('h4');
+  neuron_title.appendChild(document.createTextNode('Neurons'));
+  container.append(neuron_title);
+
+  // Add content from neuron list node. As a currently needed hack, a copy
+  // of the current node has to be added.
+  NeuronNavigator.NeuronListNode.prototype.add_content.call(
+      this, container, filters);
 };
 
 

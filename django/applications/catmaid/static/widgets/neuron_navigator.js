@@ -1034,8 +1034,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container,
       }
   });
 
-  // If a user is selected an annotation filter node is created and the event
-  // is removed.
+  // If a neuron is selected an neuron filter node is created
   $('#' + table_id).on('dblclick', 'tbody tr', function () {
       var aData = datatable.fnGetData(this);
       var n = {

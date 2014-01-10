@@ -98,10 +98,123 @@
 		dialog.show();
 	};
 
-	function export_connectors() {
-		var dialog = new OptionsDialog("Export connectors");
-		dialog.show();
-	};
+  function export_connectors() {
+    // Add skeleton source message and controls
+    var dialog = new OptionsDialog("Export connectors");
+    dialog.appendMessage('Please select a source from where to get the ' +
+        'skeletons of which the connectors should be exported.');
+    var select = document.createElement('select');
+    SkeletonListSources.createOptions().forEach(function(option, i) {
+      select.options.add(option);
+      if (option.value === 'Active skeleton') select.selectedIndex = i;
+    });
+    var label_p = document.createElement('p');
+    var label = document.createElement('label');
+    label.appendChild(document.createTextNode('Source:'));
+    label.appendChild(select);
+    label_p.appendChild(label);
+    dialog.dialog.appendChild(label_p);
+
+    // Add image dimenension message and controls
+    dialog.appendMessage('A set of images will be created around every ' +
+        'connecetor. Please specify the size of each image in pixels and ' +
+        'how many slices you want to have in each set.');
+
+    // X/Y radius inputs -- default to 100px
+    var xy_radius = dialog.appendField('X/Y radius: ', 'c_export_xy_radius', '200');
+    var xy_radius_unit = document.createElement('select');
+    xy_radius_unit.appendChild(new Option("px", "px", true));
+    xy_radius_unit.appendChild(new Option("nm", "nm"));
+    xy_radius.parentNode.appendChild(xy_radius_unit);
+
+    // Z radius inputs -- default to 100px
+    var z_radius = dialog.appendField('Z radius: ', 'c_export_z_radius', '10');
+    var z_radius_unit = document.createElement('select');
+    z_radius_unit.appendChild(new Option("sections", "sections", true));
+    z_radius_unit.appendChild(new Option("nm", "nm"));
+    z_radius.parentNode.appendChild(z_radius_unit);
+
+    // Display total extent
+    var extent_info_p = document.createElement('p');
+    var extent_info = document.createTextNode('');
+    extent_info_p.appendChild(extent_info);
+    dialog.dialog.appendChild(extent_info_p);
+
+    // Add checkbox to create sample data for one connector
+    var sample_cb_p = document.createElement('p');
+    var sample_cb_l = document.createElement('label');
+    sample_cb_l.appendChild(document.createTextNode(
+        'Create single connector sample: '));
+    var sample_cb = document.createElement('input');
+    sample_cb.setAttribute('type', 'checkbox');
+    sample_cb_l.appendChild(sample_cb);
+    sample_cb_p.appendChild(sample_cb_l);
+    dialog.dialog.appendChild(sample_cb_p);
+
+    // Updates info text line
+    var update_info = function() {
+      // Get XY extent
+      var xy_extent_px = 2 * dialog.xy_radius;
+      var xy_extent_nm = 2 * dialog.xy_radius;
+      if (dialog.xy_in_px) {
+        // Round pixel extent up, if XY is in nm mode
+        xy_extent_nm = Math.round(xy_extent_px * stack.resolution.x);
+      } else {
+        xy_extent_px = Math.round(xy_extent_nm / stack.resolution.x + 0.5);
+      }
+
+      // Get Z extent
+      var z_extent_se = 2 * dialog.z_radius;
+      var z_extent_nm = 2 * dialog.z_radius;
+      if (dialog.z_in_sections) {
+        z_extent_nm = Math.round(z_extent_se * stack.resolution.z);
+      } else {
+        z_extent_se = Math.round(z_extent_nm / stack.resolution.z + 0.5);
+      }
+
+      extent_info.nodeValue = 'Output size of one connector: ' +  z_extent_se +
+          ' slices of ' + xy_extent_px + ' by ' + xy_extent_px + ' pixels ' +
+          '(X/Y: ' + xy_extent_nm + ' nm, Z: ' + z_extent_nm + ' nm).';
+    };
+
+    // Add initial data
+    dialog.xy_in_px = true;
+    dialog.z_in_sections = true;
+    dialog.xy_radius = 100;
+    dialog.z_radius = 10;
+
+    // Add update handler for XY input
+    $(xy_radius).bind('change keyup input', function() {
+      if (this.value.match(/[^0-9]/g)) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+      } else {
+        dialog.xy_radius = this.value;
+        update_info();
+      }
+    });
+    // Add update handler for Z input
+    $(z_radius).bind('change keyup input', function() {
+      if (this.value.match(/[^0-9]/g)) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+      } else {
+        dialog.z_radius = this.value;
+        update_info();
+      }
+    });
+    // Add update handler for XY unit
+    $(xy_radius_unit).change(function() {
+      dialog.xy_in_px = $(this).val() == 'px';
+      update_info();
+    });
+    // Add update handler for Z unit
+    $(z_radius_unit).change(function() {
+      dialog.z_in_sections = $(this).val() == 'sections';
+      update_info();
+    });
+
+    dialog.show(500, 370, true);
+    update_info();
+  };
 
 </script>
 

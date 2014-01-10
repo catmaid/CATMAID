@@ -1277,6 +1277,17 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
 
   container.addClass('multi_table_node');
 
+  // Create refresh button
+  var refresh_button = document.createElement('input');
+  refresh_button.setAttribute('type', 'button');
+  refresh_button.setAttribute('value', 'Refresh');
+  container.append(refresh_button);
+
+  // When clicked, the refresh button will reload this node
+  $(refresh_button).click((function() {
+    this.navigator.select_node(this);
+  }).bind(this));
+
   // Create annotate button
   var annotate_button = document.createElement('input');
   annotate_button.setAttribute('type', 'button');

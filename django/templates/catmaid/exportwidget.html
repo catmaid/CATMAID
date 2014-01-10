@@ -227,6 +227,21 @@
       update_info();
     });
 
+    // Add handler for initiating the export
+    dialog.onOK = function() {
+      // Get all selected skeletons from the selected source
+      var source = SkeletonListSources.getSource($(select).val());
+      var skeletons = source.getSelectedSkeletons();
+      // Cancel if there are no skeletons
+      if (skeletons.length == 0) {
+        alert("Please select at least one skelton in the selecte widget.");
+        return;
+      }
+      // Call backend and notify user
+      alert('The connector archive will be created. You will get a ' +
+          'notification once it is ready for download');
+    };
+
     dialog.show(500, 370, true);
     update_info();
   };

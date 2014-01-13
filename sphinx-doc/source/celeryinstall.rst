@@ -47,11 +47,17 @@ By default this is the number of CPUs available and the above line
 sets it to one.
 
 Then Celery and Django need some information about the message broker
-in use. Since we here refer to django-kombu, the following settings
+in use. Since we here refer to kombu, the following settings
 are important to get this specific broker to work::
 
-  INSTALLED_APPS += ("djkombu",)
-  BROKER_BACKEND = "djkombu.transport.DatabaseTransport"
+  INSTALLED_APPS += ("kombu",)
+  BROKER_RUL = 'django://'
+
+This will make kombu use the Django database for it's messages. Although,
+this is fine for a small and simple setup, it is recommended to use a
+different message broker for larger setups. There is more information on
+the limitations of and alternatives to this approach in
+`Celery's documentation<http://docs.celeryproject.org/en/latest/getting-started/brokers/django.html>`_.
 
 To initialize Celery, call the syncdb sub-command of your ``manage.py``
 (from within the virtualenv)::

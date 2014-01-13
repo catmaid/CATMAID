@@ -103,5 +103,5 @@ CATMAID_IMPORT_URL = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/data'
 djcelery.setup_loader()
 CELERYD_CONCURRENCY = 1
 # Simple django-kumbo message broker
-INSTALLED_APPS += ("djkombu",)
-BROKER_BACKEND = "djkombu.transport.DatabaseTransport"
+INSTALLED_APPS += ("kombu.transport.django",)
+BROKER_URL = 'django://'

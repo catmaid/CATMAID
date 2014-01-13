@@ -99,6 +99,21 @@
 	};
 
   function export_connectors() {
+    // Make sure there is only one stack open at the moment
+    var stacks = project.getStacks();
+    if (stacks.length != 1) {
+      alert("Please have only the stack open you want to use for the export!");
+      return;
+    }
+    var stack = stacks[0];
+
+    // Make sure X and Y have the same dimensions
+    if (stack.resolution.x != stack.resolution.y) {
+      alert("The export is currently only designed for stacks with the same " +
+          "X and Y resolution. This is not the case for the current stack.");
+      return;
+    }
+
     // Add skeleton source message and controls
     var dialog = new OptionsDialog("Export connectors");
     dialog.appendMessage('Please select a source from where to get the ' +

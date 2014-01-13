@@ -237,9 +237,36 @@
         alert("Please select at least one skelton in the selecte widget.");
         return;
       }
+
+      // Prepare query data
+      var query_data = {
+        stackid: stack.id,
+        skids: skeletons,
+        x_radius: dialog.xy_radius,
+        y_radius: dialog.xy_radius,
+        z_radius: dialog.z_radius,
+        sample: sample_cb.checked ? 1 : 0,
+      };
+      if (dialog.xy_in_px) {
+        query_data.x_radius = Math.round(query_data.x_radius * stack.resolution.x);
+        query_data.y_radius = Math.round(query_data.y_radius * stack.resolution.y);
+      }
+      if (dialog.z_in_sections) {
+        query_data.z_radius = Math.round(query_data.z_radius * stack.resolution.z);
+      }
+
       // Call backend and notify user
-      alert('The connector archive will be created. You will get a ' +
-          'notification once it is ready for download');
+      requestQueue.register(django_url + project.id + '/connector/export',
+            'POST', query_data, function(status, text, xml) {
+              if (status === 200) {
+                var e = $.parseJSON(text);
+                if (e.error) {
+                  new ErrorDialog(e.error, e.detail).show();
+                } else {
+                  alert(e.message);
+                }
+              }
+        });
     };
 
     dialog.show(500, 370, true);

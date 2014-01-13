@@ -12,8 +12,6 @@ from catmaid.control.common import *
 
 import numpy as np
 import urllib2 as urllib
-import string
-import random
 import os.path
 import glob
 from time import time
@@ -105,11 +103,6 @@ class ImagePart:
             box = Geometry( self.width, self.height, self.x_min_src, self.y_min_src )
             image.crop( box )
         return image
-
-def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
-    """ Creates a random string of the specified length.
-    """
-    return ''.join(random.choice(chars) for x in range(size))
 
 def to_x_index( x, job, enforce_bounds=True ):
     """ Converts a real world position to a x pixel position.

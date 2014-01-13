@@ -56,6 +56,7 @@ for f in ['', '_production']:
     data = re.sub('CATMAID_HDF5_SUBDIR', catmaid_hdf5_subdir, data)
     data = re.sub('CATMAID_CROP_SUBDIR', catmaid_crop_subdir, data)
     data = re.sub('CATMAID_ROI_SUBDIR', catmaid_roi_subdir, data)
+    data = re.sub('CATMAID_CONNECTOR_SUBDIR', catmaid_connector_subdir, data)
     data = re.sub('CATMAID_SERVERNAME', catmaid_servername, data)
     data = re.sub('CATMAID_SUBDIR', catmaid_subdirectory, data)
     # If CATMAID doesn't live in a sub-directery, double-slashes can occur

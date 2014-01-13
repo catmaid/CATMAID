@@ -1,11 +1,22 @@
 import json
 
+from django.conf import settings
 from django.http import HttpResponse
 
 from catmaid.control.authentication import requires_user_role
-from catmaid.models import UserRole
+from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
+from catmaid.control.common import json_error_response, id_generator
+from catmaid.models import TreenodeConnector, UserRole
 
 from celery.task import task
+
+import os.path
+
+# Prefix for stored archive files
+connector_file_prefix = "connector_archive_"
+# The path were archive files get stored in
+connector_output_path = os.path.join(settings.MEDIA_ROOT,
+    settings.MEDIA_CONNECTOR_SUBDIRECTORY)
 
 class ConnectorExportJob:
     """ A container with data needed for the creation of a connector archive.
@@ -63,6 +74,16 @@ def export_connectors(request, project_id=None):
     """ This will get parameters for a new connector exporting job from an HTTP
     request. Based on them this method will create and run a new exporting job.
     """
+    # Make sure we have write permssions to output directories
+    needed_permissions = (
+        os.path.exists(connector_output_path),
+        os.access(connector_output_path, os.W_OK)
+    )
+    if False in needed_permissions:
+        return json_error_response("Please make sure your output folder " \
+                "(MEDIA_ROOT and MEDIA_CONNECTOR_SUBDIRECTORY in " \
+                "settings.py) exists and is writable.")
+
     # Get stack ID and  skeleton IDs of which the connectors should be exported
     stack_id = request.POST.get('stackid', None);
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() \

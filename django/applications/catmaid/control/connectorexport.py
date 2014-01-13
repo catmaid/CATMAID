@@ -11,6 +11,9 @@ from catmaid.models import TreenodeConnector, UserRole
 from celery.task import task
 
 import os.path
+import shutil
+import tarfile
+
 
 # Prefix for stored archive files
 connector_file_prefix = "connector_archive_"
@@ -55,13 +58,85 @@ class ConnectorExportJob:
         self.z_radius = z_radius
         self.sample = sample
 
+        # Output path for this job will be initialized, when needed
+        self.output_path = None
+
+    def create_basic_output_path(self):
+        """ Will create a random <connector_file_prefix> prefixed output folder
+        name as well as the actual directory.
+        """
+        # Find non-existing random folder name
+        while True:
+            folder_name = connector_file_prefix + id_generator()
+            output_path = os.path.join(connector_output_path, folder_name)
+            if not os.path.exists(output_path):
+                break
+        # Create folder and store path as field
+        os.makedirs(output_path)
+        self.output_path = output_path
+
+def export_single_connector(job, connector):
+    """ Exports a single connector
+    """
+    pass
+
 @task()
 def process_connector_export_job(job):
     """ This method does the actual archive creation. It controls the data
     extraction and the creation of all sub-stacks. It can be executed as Celery
-    task.
+    task. If the job asks only for a sample, the first pre-synaptic connector
+    of the first skeleton will be used. If such a connector doesn't exist, the
+    first one found is used. Otherwise, if no sample should be taken, all
+    connectors of all skeletons are exported.
     """
-    return "Finished exporting a connector archive"
+    # Get relations and classes
+    relation_map = get_relation_to_id_map(job.project_id)
+    class_map = get_class_to_id_map(job.project_id)
+
+    if job.sample:
+        # First try to get a pre-synaptic connector, because these are usually a
+        # larger than the post-synaptic ones.
+        try:
+            connector = TreenodeConnector.objects.filter(
+                    project_id=job.project_id,
+                    relation_id=relation_map['presynaptic_to'],
+                    skeleton_id__in=job.skeleton_ids)[0]
+        except IndexError:
+            connector = None
+
+        # If there is no pre-synaptic treenode, ignore this constraint
+        if not connector:
+            try:
+                connector = TreenodeConnector.objects.filter(
+                        project_id=job.project_id,
+                        skeleton_id__in=job.skeleton_ids)[0]
+            except IndexError:
+                return "Could not find any connector to export"
+
+        connectors = [connector]
+        msg = "Exported sample connector archive"
+    else:
+        connectors = TreenodeConnector.objects.filter(
+                project_id=job.project_id,
+                skeleton_id__in=job.skeleton_ids)
+        msg = "Exported connector archive"
+
+    # Create a working directoy to create subfolders and images in
+    job.create_basic_output_path()
+
+    # Export every connector
+    for c in connectors:
+        export_single_connector(job, connector)
+
+    # Make working directory an archive
+    tar = tarfile.open(job.output_path.rstrip(os.sep) + '.tar.gz', 'w:gz')
+    tar.add(job.output_path, arcname=os.path.basename(job.output_path))
+    tar.close()
+
+    # Delete working directory
+    shutil.rmtree(job.output_path)
+
+    return msg
 
 def start_asynch_process( job ):
     """ It launches the data extraction and sub-stack building as a separate

@@ -63,7 +63,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
 
-def _skeleton_for_3d_viewer(skeleton_id):
+def _skeleton_for_3d_viewer(skeleton_id, with_connectors=True):
     skeleton_id = int(skeleton_id) # sanitize
     cursor = connection.cursor()
 
@@ -85,6 +85,8 @@ def _skeleton_for_3d_viewer(skeleton_id):
             raise Exception("No neuron found for skeleton #%s" % skeleton_id)
 
     name = row[0]
+
+    # TODO split into two fast queries, both tables have skeleton_id as a b-tree key
     
     # Fetch all nodes, with their tags if any
     cursor.execute(
@@ -102,30 +104,33 @@ def _skeleton_for_3d_viewer(skeleton_id):
         # properties: id, parent_id, user_id, reviewer_id, x, y, z, radius, confidence
         nodes.append((row[0], row[4], row[1], row[3], x, y, z, row[5], row[6]))
 
-    # Fetch all connectors with their partner treenode IDs
-    cursor.execute(
-        ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location, c.reviewer_id
-            FROM treenode_connector tc,
-                 connector c,
-                 relation r
-            WHERE tc.skeleton_id = %s
-              AND tc.connector_id = c.id
-              AND tc.relation_id = r.id
-        ''' % skeleton_id)
-    # Above, purposefully ignoring connector tags. Would require a left outer join on the inner join of connector_class_instance and class_instance, and frankly connector tags are pointless in the 3d viewer.
+    if with_connectors:
+        # Fetch all connectors with their partner treenode IDs
+        cursor.execute(
+            ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location, c.reviewer_id
+                FROM treenode_connector tc,
+                     connector c,
+                     relation r
+                WHERE tc.skeleton_id = %s
+                  AND tc.connector_id = c.id
+                  AND tc.relation_id = r.id
+            ''' % skeleton_id)
+        # Above, purposefully ignoring connector tags. Would require a left outer join on the inner join of connector_class_instance and class_instance, and frankly connector tags are pointless in the 3d viewer.
+        connectors = []
 
-    # List of (treenode_id, connector_id, relation_id, x, y, z)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
-    # 'presynaptic_to' has an 'r' at position 1:
-    connectors = []
-    for row in cursor.fetchall():
-        x, y, z = imap(float, row[3][1:-1].split(','))
-        connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
+        # List of (treenode_id, connector_id, relation_id, x, y, z)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
+        # 'presynaptic_to' has an 'r' at position 1:
+        for row in cursor.fetchall():
+            x, y, z = imap(float, row[3][1:-1].split(','))
+            connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
+        return name, nodes, tags, connectors
 
-    return name, nodes, tags, connectors
+    return name, nodes, tags
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
-    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id), separators=(',', ':')))
+    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id, with_connectors=request.POST.get('with_connectors', True)), separators=(',', ':')))
 
 
 def _measure_skeletons(skeleton_ids):

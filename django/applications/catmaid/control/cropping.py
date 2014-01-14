@@ -418,7 +418,7 @@ def rotate2d(degrees, point, origin):
     return newx,newyorz
 
 @task()
-def process_crop_job(job):
+def process_crop_job(job, create_message=True):
     """ This method does the actual cropping. It controls the data extraction
     and the creation of the sub-stack. It can be executed as Celery task.
     """
@@ -449,23 +449,24 @@ def process_crop_job(job):
         if os.path.exists( job.output_path ):
             os.remove( job.output_path )
 
-    # Create a notification message
-    bb_text = "( " + str(job.x_min) + ", " + str(job.y_min) + ", " + str(job.z_min) + " ) -> ( " + str(job.x_max) + ", " + str(job.y_max) + ", " + str(job.z_max) + " )"
+    if create_message:
+        # Create a notification message
+        bb_text = "( " + str(job.x_min) + ", " + str(job.y_min) + ", " + str(job.z_min) + " ) -> ( " + str(job.x_max) + ", " + str(job.y_max) + ", " + str(job.z_max) + " )"
 
-    msg = Message()
-    msg.user = User.objects.get(pk=int(job.user.id))
-    msg.read = False
-    if no_error_occured:
-        file_name = os.path.basename( job.output_path )
-        url = os.path.join( settings.CATMAID_URL, "crop/download/" + file_name + "/")
-        msg.title = "Microstack finished"
-        msg.text = "The requested microstack " + bb_text + " is finished. You can download it from this location: <a href='" + url + "'>" + url + "</a>"
-        msg.action = url
-    else:
-        msg.title = "Microstack could not be created"
-        msg.text = "The requested microstack " + bb_text + " could not be created due to an error while saving the result (" + error_message + ")."
-        msg.action = ""
-    msg.save()
+        msg = Message()
+        msg.user = User.objects.get(pk=int(job.user.id))
+        msg.read = False
+        if no_error_occured:
+            file_name = os.path.basename( job.output_path )
+            url = os.path.join( settings.CATMAID_URL, "crop/download/" + file_name + "/")
+            msg.title = "Microstack finished"
+            msg.text = "The requested microstack " + bb_text + " is finished. You can download it from this location: <a href='" + url + "'>" + url + "</a>"
+            msg.action = url
+        else:
+            msg.title = "Microstack could not be created"
+            msg.text = "The requested microstack " + bb_text + " could not be created due to an error while saving the result (" + error_message + ")."
+            msg.action = ""
+        msg.save()
 
 def start_asynch_process( job ):
     """ It launches the data extraction and sub-stack building as a seperate process.

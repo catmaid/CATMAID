@@ -1344,119 +1344,38 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
     requestQueue.register(django_url + project.id +
         '/skeleton/' + skeleton_id + '/compact-json', 'POST', {},
         function(status, text) {
-          try {
-            if (200 === status) {
-              var json = $.parseJSON(text);
-              if (json.error) {
-                new ErrorDialog(json.error, json.detail).show();
-              } else {
-                var nodes = json[1];
-                var tags = json[2];
-                var connectors = json[3];
-
-                // Map of node ID vs node properties array
-                var nodeProps = nodes.reduce(function(ob, node) {
-                  ob[node[0]] = node;
-                  return ob;
-                }, {});
-
-                // Cache for reusing Vector3d instances
-                var vs = {};
-
-                // Create edges between all skeleton nodes
-                var geometry = new THREE.Geometry();;
-                nodes.forEach(function(node) {
-                  // node[0]: treenode ID
-                  // node[1]: parent ID
-                  // node[2]: user ID
-                  // node[3]: reviewer ID
-                  // 4,5,6: x,y,z
-                  // node[7]: radius
-                  // node[8]: confidence
-                  // If node has a parent
-                  var v1;
-                  if (node[1]) {
-                    var p = nodeProps[node[1]];
-                    v1 = vs[node[0]];
-                    if (!v1) {
-                      v1 = new THREE.Vector3(node[4], node[5], node[6]);
-                      v1.node_id = node[0];
-                      v1.user_id = node[2];
-                      v1.reviewer_id = node[3];
-                      vs[node[0]] = v1;
-                    }
-                    var v2 = vs[p[0]];
-                    if (!v2) {
-                      v2 = new THREE.Vector3(p[4], p[5], p[6]);
-                      v2.node_id = p[0];
-                      v2.user_id = p[2];
-                      v2.reviewer_id = p[3];
-                      vs[p[0]] = v2;
-                    }
-                    geometry.vertices.push(v1);
-                    geometry.vertices.push(v2);
-                  }
-                }, this);
-
-                // Use arbor data structure to do measurements
-                var arbor = new Arbor().addEdges(geometry.vertices, function(v) {
-                  return v.node_id;
-                });
-
-                /* Calculate end point information */
-
-                // Find open and closed end nodes and convert to integers
-                var end_nodes = arbor.findEndNodes().map(function(n) {
-                  return +n
-                });
-                // See which end node tags are available at all
-                var end_tags = ['ends', 'uncertain end', 'not a branch', 'soma'];
-                var available_end_tags = end_tags.reduce(function(o, e) {
-                    if (e in tags) {
-                      o.push(e);
-                    }
-                    return o;
-                }, []);
-
-                var tagged_end_nodes = end_nodes.reduce(function(o, n) {
-                  var node_is_tagged = function(t) {
-                    return tags[t].indexOf(n) > -1;
-                  };
-                  if (available_end_tags.some(node_is_tagged)) {
-                    o.push(n);
-                  }
-                  return o;
-                }, []);
-
-                /* Calculate review percentage */
-
-                var num_reviewed = nodes.reduce(function(total, node) {
-                  if (node[3] != -1) {
-                    total = total + 1;
-                  }
-                  return total;
-                }, 0);
-                var percent_reviewed = (num_reviewed / nodes.length) * 100;
-                percent_reviewed = Math.round(percent_reviewed * 100) / 100;
-
-
-                // Put data into table
-                skeleton_datatable.fnAddData([
-                  skeleton_id,
-                  arbor.countNodes(),
-                  arbor.findBranchNodes().length,
-                  tagged_end_nodes.length,
-                  end_nodes.length - tagged_end_nodes.length,
-                  percent_reviewed + "%",
-                ]);
-              }
-            } else {
-              alert("Unexpected status code: " + status);
-            }
-          } catch(e) {
-              console.log(e, e.stack);
-              growlAlert("ERROR", "Problem loading skeleton " + skeleton_id);
+          if (200 !== status) return;
+          var json = $.parseJSON(text);
+          if (json.error) {
+            new ErrorDialog(json.error, json.detail).show();
+            return;
           }
+          var nodes = json[1],
+              tags = json[2],
+              arbor = new Arbor(),
+              n_reviewed = nodes.reduce(function(count, row) {
+            if (row[1]) arbor.edges[row[0]] = row[1];
+            else arbor.root = row[1];
+            return count + (row[3] !== -1 ? 1 : 0);
+          }, 0),
+              eb = arbor.findBranchAndEndNodes(),
+              tagged = ['ends', 'uncertain end', 'not a branch', 'soma'].reduce(function(o, tag) {
+                if (tag in tags) return tags[tag].reduce(function(o, nodeID) { o[nodeID] = true; return o; }, o);
+                return o;
+              }, []),
+              n_tagged_ends = eb.ends.reduce(function(count, nodeID) { return nodeID in tagged ? count + 1 : count; }, 0);
+
+          // TODO measure smoothed skeleton length: sum of distances from end to branh, branch to branch, and branch to root, with a moving three-point average, in nm
+
+          // Put data into table
+          skeleton_datatable.fnAddData([
+            skeleton_id,
+            nodes.length,
+            eb.branching.length,
+            eb.ends.length + 1, // count the soma
+            eb.ends.length + 1 - n_tagged_ends,
+            ((n_reviewed / nodes.length) * 100).toFixed(0) + "%",
+          ]);
         });
   };
 

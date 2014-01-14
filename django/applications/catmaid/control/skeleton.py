@@ -880,3 +880,15 @@ def reset_other_reviewer_ids(request, project_id=None, skeleton_id=None):
         return HttpResponse(json.dumps({"error": "Only a superuser can do that!"}))
     Treenode.objects.filter(skeleton_id=skeleton_id).exclude(reviewer_id=request.user.id).update(reviewer_id=-1)
     return HttpResponse(json.dumps({}), mimetype='text/json')
+
+@requires_user_role(UserRole.Annotate)
+def fetch_treenodes(request, skeleton_id=None, with_reviewer=None):
+    """ Fetch the topology only, optionally with the reviewer ID. """
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT id, parent_id %s
+    FROM treenode
+    WHERE skeleton_id = %s
+    ''' % (', reviewer_id' if with_reviewer else '', int(skeleton_id)))
+    return HttpResponse(json.dumps(tuple(cursor.fetchall())))
+

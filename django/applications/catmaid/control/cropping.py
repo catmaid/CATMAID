@@ -536,6 +536,8 @@ def process_crop_job(job, create_message=True):
             msg.action = ""
         msg.save()
 
+    return None if no_error_occured else e
+
 def start_asynch_process( job ):
     """ It launches the data extraction and sub-stack building as a seperate process.
     This process uses the addmessage command with manage.py to write a message for the

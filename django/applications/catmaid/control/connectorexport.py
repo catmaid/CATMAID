@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 
 from django.conf import settings
@@ -6,7 +8,8 @@ from django.http import HttpResponse
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.control.common import json_error_response, id_generator
-from catmaid.models import TreenodeConnector, UserRole
+from catmaid.models import ClassInstanceClassInstance, TreenodeConnector
+from catmaid.models import UserRole
 
 from celery.task import task
 
@@ -61,6 +64,13 @@ class ConnectorExportJob:
         # Output path for this job will be initialized, when needed
         self.output_path = None
 
+        # Cache for neuron and relation folder names
+        self.skid_to_neuron_folder = {}
+        self.relid_to_rel_folder = {}
+
+        # Get relation map
+        self.relation_map = get_relation_to_id_map(project_id)
+
     def create_basic_output_path(self):
         """ Will create a random <connector_file_prefix> prefixed output folder
         name as well as the actual directory.
@@ -75,10 +85,51 @@ class ConnectorExportJob:
         os.makedirs(output_path)
         self.output_path = output_path
 
+    def create_connector_path(self, connector):
+        """ Based on the output path, this function will create a folder
+        structure for a particular connector. Things that are supposedly
+        needed multiple times, will be cached. This function will also make
+        sure the path exists and is ready to be written to.
+        """
+        # Get (and create if needed) cache entry for string of neuron id
+        if connector.skeleton_id not in self.skid_to_neuron_folder:
+            neuron_cici = ClassInstanceClassInstance.objects.get(
+                    relation_id=self.relation_map['model_of'],
+                    project_id=self.project_id,
+                    class_instance_a=connector.skeleton.id)
+            self.skid_to_neuron_folder[connector.skeleton.id] = \
+                    str(neuron_cici.class_instance_b_id)
+        neuron_folder = self.skid_to_neuron_folder[connector.skeleton.id]
+
+        # get (and create if needed) cache entry for string of relation name
+        if connector.relation_id not in self.relid_to_rel_folder:
+            if connector.relation_id == self.relation_map['presynaptic_to']:
+                rel_folder = "presynaptic"
+            elif connector.relation_id == self.relation_map['postsynaptic_to']:
+                rel_folder = "postsynaptic"
+            else:
+                rel_folder = "unknown_" + str(connector.relation_id)
+            self.relid_to_rel_folder[connector.relation_id] = rel_folder
+        relation_folder =  self.relid_to_rel_folder[connector.relation_id]
+
+        # Create path output_path/neuron_id/relation_name/connector_id
+        connector_path = os.path.join(self.output_path, neuron_folder,
+                relation_folder, str(connector.id))
+        try:
+            os.makedirs(connector_path)
+        except OSError as e:
+            # Everything is fine if the path exists and is writable
+            if not os.path.exists(connector_path) or not \
+                    os.access(connector_path, os.W_OK):
+                raise e
+
+        return connector_path
+
 def export_single_connector(job, connector):
-    """ Exports a single connector
+    """ Exports a single connector and expects the output path to be existing
+    and writable.
     """
-    pass
+    connector_path = job.create_connector_path(connector)
 
 @task()
 def process_connector_export_job(job):
@@ -89,17 +140,13 @@ def process_connector_export_job(job):
     first one found is used. Otherwise, if no sample should be taken, all
     connectors of all skeletons are exported.
     """
-    # Get relations and classes
-    relation_map = get_relation_to_id_map(job.project_id)
-    class_map = get_class_to_id_map(job.project_id)
-
     if job.sample:
         # First try to get a pre-synaptic connector, because these are usually a
         # larger than the post-synaptic ones.
         try:
             connector = TreenodeConnector.objects.filter(
                     project_id=job.project_id,
-                    relation_id=relation_map['presynaptic_to'],
+                    relation_id=job.relation_map['presynaptic_to'],
                     skeleton_id__in=job.skeleton_ids)[0]
         except IndexError:
             connector = None
@@ -126,7 +173,7 @@ def process_connector_export_job(job):
 
     # Export every connector
     for c in connectors:
-        export_single_connector(job, connector)
+        export_single_connector(job, c)
 
     # Make working directory an archive
     tar = tarfile.open(job.output_path.rstrip(os.sep) + '.tar.gz', 'w:gz')

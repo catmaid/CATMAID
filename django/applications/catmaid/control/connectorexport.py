@@ -125,7 +125,7 @@ class ConnectorExportJob:
 
         return connector_path
 
-def export_single_connector(job, connector):
+def export_single_connector(job, connector_link):
     """ Exports a single connector and expects the output path to be existing
     and writable.
     """
@@ -144,36 +144,36 @@ def process_connector_export_job(job):
         # First try to get a pre-synaptic connector, because these are usually a
         # larger than the post-synaptic ones.
         try:
-            connector = TreenodeConnector.objects.filter(
+            connector_link = TreenodeConnector.objects.filter(
                     project_id=job.project_id,
                     relation_id=job.relation_map['presynaptic_to'],
                     skeleton_id__in=job.skeleton_ids)[0]
         except IndexError:
-            connector = None
+            connector_link = None
 
         # If there is no pre-synaptic treenode, ignore this constraint
-        if not connector:
+        if not connector_link:
             try:
-                connector = TreenodeConnector.objects.filter(
+                connector_link = TreenodeConnector.objects.filter(
                         project_id=job.project_id,
                         skeleton_id__in=job.skeleton_ids)[0]
             except IndexError:
                 return "Could not find any connector to export"
 
-        connectors = [connector]
+        connectors_links = [connector_link]
         msg = "Exported sample connector archive"
     else:
-        connectors = TreenodeConnector.objects.filter(
+        connectors_links = TreenodeConnector.objects.filter(
                 project_id=job.project_id,
-                skeleton_id__in=job.skeleton_ids)
+                skeleton_id__in=job.skeleton_ids).select_related('connector')
         msg = "Exported connector archive"
 
     # Create a working directoy to create subfolders and images in
     job.create_basic_output_path()
 
     # Export every connector
-    for c in connectors:
-        export_single_connector(job, c)
+    for cl in connectors_links:
+        export_single_connector(job, cl)
 
     # Make working directory an archive
     tar = tarfile.open(job.output_path.rstrip(os.sep) + '.tar.gz', 'w:gz')

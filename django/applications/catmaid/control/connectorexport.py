@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.control.common import json_error_response, id_generator
+from catmaid.control.cropping import CropJob, extract_substack, process_crop_job
 from catmaid.models import ClassInstanceClassInstance, TreenodeConnector
 from catmaid.models import UserRole
 
@@ -129,7 +130,27 @@ def export_single_connector(job, connector_link):
     """ Exports a single connector and expects the output path to be existing
     and writable.
     """
-    connector_path = job.create_connector_path(connector)
+    connector_path = job.create_connector_path(connector_link)
+    connector_image_path = os.path.join(connector_path, 'connector.tiff')
+    connector = connector_link.connector
+
+    # Calculate bounding box for current connector
+    x_min = connector.location.x - job.x_radius
+    x_max = connector.location.x + job.x_radius
+    y_min = connector.location.y - job.y_radius
+    y_max = connector.location.y + job.y_radius
+    z_min = connector.location.z - job.z_radius
+    z_max = connector.location.z + job.z_radius
+    rotation_cw = 0
+    zoom_level = 0
+
+    # Crop images as single multi-page TIFF
+    crop_job = CropJob(job.user, job.project_id, job.stack_id, x_min, x_max,
+            y_min, y_max, z_min, z_max, rotation_cw, zoom_level,
+            single_channel=True, output_path=connector_image_path)
+    error = process_crop_job(crop_job, create_message=False)
+    if error:
+        process_connector_export_job.get_logger().info("An error occured: " + e)
 
 @task()
 def process_connector_export_job(job):

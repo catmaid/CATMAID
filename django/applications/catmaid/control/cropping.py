@@ -177,9 +177,7 @@ def to_x_index( x, job, enforce_bounds=True ):
     """ Converts a real world position to a x pixel position.
     Also, makes sure the value is in bounds.
     """
-    # TODO: use correct stack_translation
-    translation = 0.0
-    zero_zoom = (x - translation) / job.ref_stack.resolution.x
+    zero_zoom = x / job.ref_stack.resolution.x
     if enforce_bounds:
         zero_zoom = min(max(zero_zoom, 0.0), job.ref_stack.dimension.x - 1.0)
     return int( zero_zoom / (2**job.zoom_level) + 0.5 )
@@ -188,9 +186,7 @@ def to_y_index( y, job, enforce_bounds=True ):
     """ Converts a real world position to a y pixel position.
     Also, makes sure the value is in bounds.
     """
-    # TODO: use correct stack_translation
-    translation = 0.0
-    zero_zoom = (y - translation) / job.ref_stack.resolution.y
+    zero_zoom = y / job.ref_stack.resolution.y
     if enforce_bounds:
         zero_zoom = min(max(zero_zoom, 0.0), job.ref_stack.dimension.y - 1.0)
     return int( zero_zoom / (2**job.zoom_level) + 0.5 )
@@ -199,9 +195,7 @@ def to_z_index( z, job, enforce_bounds=True ):
     """ Converts a real world position to a slice/section number.
     Also, makes sure the value is in bounds.
     """
-    # TODO: use correct stack_translation
-    translation = 0.0
-    section = (z - translation) / job.ref_stack.resolution.z + 0.5
+    section = z / job.ref_stack.resolution.z + 0.5
     if enforce_bounds:
         section = min(max(section, 0.0), job.ref_stack.dimension.z - 1.0)
     return int( section )
@@ -373,25 +367,59 @@ def extract_substack_no_rotation( job ):
     slice, starting on top.
     """
 
-    # Calculate the slice numbers and pixel positions
-    # bounded to the stack data.
-    px_x_min = to_x_index(job.x_min, job)
-    px_x_max = to_x_index(job.x_max, job)
-    px_y_min = to_y_index(job.y_min, job)
-    px_y_max = to_y_index(job.y_max, job)
+    # The actual bounding boxes used for creating the images of each stack
+    # depend not only on the request, but also on the translation of the stack
+    # wrt. the project. Therefore, a dictionary with bounding box information for
+    # each stack is created.
+    s_to_bb = {}
+    for stack in job.stacks:
+        # Retrieve translation relative to current project
+        translation = ProjectStack.objects.get(
+                project_id=job.project_id, stack_id=stack.id).translation
+        x_min_t = job.x_min - translation.x
+        x_max_t = job.x_max - translation.x
+        y_min_t = job.y_min - translation.y
+        y_max_t = job.y_max - translation.y
+        z_min_t = job.z_min - translation.z
+        z_max_t = job.z_max - translation.z
+        # Calculate the slice numbers and pixel positions
+        # bound to the stack data.
+        px_x_min = to_x_index(x_min_t, job)
+        px_x_max = to_x_index(x_max_t, job)
+        px_y_min = to_y_index(y_min_t, job)
+        px_y_max = to_y_index(y_max_t, job)
+        px_z_min = to_z_index(z_min_t, job)
+        px_z_max = to_z_index(z_max_t, job)
+        # Because it might be that the cropping goes over the
+        # stack bounds, we need to calculate the unbounded height,
+        # with and an offset.
+        px_x_min_nobound = to_x_index(x_min_t, job, False)
+        px_x_max_nobound = to_x_index(x_max_t, job, False)
+        px_y_min_nobound = to_y_index(y_min_t, job, False)
+        px_y_max_nobound = to_y_index(y_max_t, job, False)
+        width = px_x_max_nobound - px_x_min_nobound
+        height = px_y_max_nobound - px_y_min_nobound
+        px_x_offset = abs(px_x_min_nobound) if px_x_min_nobound < 0 else 0
+        px_y_offset = abs(px_y_min_nobound) if px_y_min_nobound < 0 else 0
+        # Create a dictionary entry with a simple object
+        class BB: pass
+        bb = BB()
+        bb.px_x_min = px_x_min
+        bb.px_x_max = px_x_max
+        bb.px_y_min = px_y_min
+        bb.px_y_max = px_y_max
+        bb.px_z_min = px_z_min
+        bb.px_z_max = px_z_max
+        bb.px_x_offset = px_x_offset
+        bb.px_y_offset = px_y_offset
+        bb.width = width
+        bb.height = height
+        s_to_bb[stack.id] = bb
+
+    # Get number of wanted slices
     px_z_min = to_z_index(job.z_min, job)
     px_z_max = to_z_index(job.z_max, job)
-    # Because it might be that the cropping goes over the
-    # stack bounds, we need to calculate the unbounded height,
-    # with and an offset.
-    px_x_min_nobound = to_x_index(job.x_min, job, False)
-    px_x_max_nobound = to_x_index(job.x_max, job, False)
-    px_y_min_nobound = to_y_index(job.y_min, job, False)
-    px_y_max_nobound = to_y_index(job.y_max, job, False)
-    width = px_x_max_nobound - px_x_min_nobound
-    height = px_y_max_nobound - px_y_min_nobound
-    px_x_offset = abs(px_x_min_nobound) if px_x_min_nobound < 0 else 0
-    px_y_offset = abs(px_y_min_nobound) if px_y_min_nobound < 0 else 0
+    n_slices = px_z_max + 1 - px_z_min
 
     # The images are generated per slice, so most of the following
     # calculations refer to 2d images.
@@ -401,43 +429,47 @@ def extract_substack_no_rotation( job ):
     # one slice are exported, then the next slice follows, etc.
     cropped_stack = []
     # Iterate over all slices
-    for z in range( px_z_min, px_z_max + 1):
+    for nz in range(n_slices):
         for stack in job.stacks:
+            bb = s_to_bb[stack.id]
+            # Shortcut for tile width and height
             tile_width = stack.tile_width
             tile_height = stack.tile_height
             # Get indices for bounding tiles (0 indexed)
-            tile_x_min = int(px_x_min / tile_width)
-            tile_x_max = int(px_x_max / tile_width)
-            tile_y_min = int(px_y_min / tile_height)
-            tile_y_max = int(px_y_max / tile_height)
+            tile_x_min = int(bb.px_x_min / tile_width)
+            tile_x_max = int(bb.px_x_max / tile_width)
+            tile_y_min = int(bb.px_y_min / tile_height)
+            tile_y_max = int(bb.px_y_max / tile_height)
             # Get the number of needed tiles for each direction
             num_x_tiles = tile_x_max - tile_x_min + 1
             num_y_tiles = tile_y_max - tile_y_min + 1
             # Associate image parts with all tiles
             image_parts = []
-            x_dst = px_x_offset
+            x_dst = bb.px_x_offset
             for nx, x in enumerate( range(tile_x_min, tile_x_max + 1) ):
                 # The min x,y for the image part in the current tile are 0
                 # for all tiles except the first one.
-                cur_px_x_min = 0 if nx > 0 else px_x_min - x * tile_width
+                cur_px_x_min = 0 if nx > 0 else bb.px_x_min - x * tile_width
                 # The max x,y for the image part of current tile are the tile
                 # size minus one except for the last one.
                 if nx < (num_x_tiles - 1):
                     cur_px_x_max = tile_width - 1
                 else:
-                    cur_px_x_max = px_x_max - x * tile_width
+                    cur_px_x_max = bb.px_x_max - x * tile_width
                 # Reset y destination component
-                y_dst = px_y_offset
+                y_dst = bb.px_y_offset
                 for ny, y in enumerate( range(tile_y_min, tile_y_max + 1) ):
-                    cur_px_y_min = 0 if ny > 0 else px_y_min - y * tile_height
+                    cur_px_y_min = 0 if ny > 0 else bb.px_y_min - y * tile_height
                     if ny < (num_y_tiles - 1):
                         cur_px_y_max = tile_height - 1
                     else:
-                        cur_px_y_max = px_y_max - y * tile_height
+                        cur_px_y_max = bb.px_y_max - y * tile_height
                     # Create an image part definition
-                    path = job.get_tile_path(stack, [x, y, z])
+                    z = bb.px_z_min + nz
+                    path = job.get_tile_path(stack, (x, y, z))
                     try:
-                        part = ImagePart(path, cur_px_x_min, cur_px_x_max, cur_px_y_min, cur_px_y_max, x_dst, y_dst)
+                        part = ImagePart(path, cur_px_x_min, cur_px_x_max,
+                                cur_px_y_min, cur_px_y_max, x_dst, y_dst)
                         image_parts.append( part )
                     except:
                         # ignore failed slices
@@ -448,7 +480,7 @@ def extract_substack_no_rotation( job ):
                 x_dst += cur_px_x_max - cur_px_x_min
 
             # Create a result image slice, painted black
-            cropped_slice = Image( Geometry( width, height ), Color("black") )
+            cropped_slice = Image( Geometry( bb.width, bb.height ), Color("black") )
             # write out the image parts
             for ip in image_parts:
                 # Get (correcly cropped) image

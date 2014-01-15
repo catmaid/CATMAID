@@ -86,6 +86,8 @@ class CropJob:
         for s in self.stacks:
             if s.tile_source_type == 1:
                 getter = self.get_tile_path_1
+            elif s.tile_source_type == 4:
+                getter = self.get_tile_path_4
             else:
                 getter = self.get_tile_path_unavailable
             self.stack_specific_path_getters[s.id] = getter
@@ -119,6 +121,20 @@ class CropJob:
             path += str(coord) + "/"
         path += "%s_%s_%s.%s" % (tile_coords[1], tile_coords[0],
                 self.zoom_level, stack.file_extension)
+        return path
+
+    def get_tile_path_4(self, stack, tile_coords):
+        """ Creates the full path to the tile at the specified coordinate index
+        for tile source type 4.
+        """
+        path = stack.image_base
+        n_coords = len(tile_coords)
+        for c in range( 2, n_coords ):
+            # the path is build beginning with the last component
+            coord = tile_coords[n_coords - c + 1]
+            path += str(coord) + "/"
+        path += "%s/%s_%s.%s" % (self.zoom_level, tile_coords[1],
+                tile_coords[0], stack.file_extension)
         return path
 
     def get_tile_path_unavailable(self, stack, tile_coords):

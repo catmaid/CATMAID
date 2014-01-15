@@ -547,7 +547,6 @@ def start_asynch_process( job ):
 
     # Create closing response
     closingResponse = HttpResponse(json.dumps(""), mimetype="text/json")
-    closingResponse['Connection'] = 'close'
 
     return closingResponse
 
@@ -585,7 +584,6 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min
         err_message = "Please make sure your output folder (MEDIA_ROOT and " \
                 "MEDIA_CROPPING_SUBDIRECTORY in settings.py) exists and is writable."
         err_response = json_error_response( err_message )
-        err_response['Connection'] = 'close'
         return err_response
 
     # Make a list out of the stack ids
@@ -613,7 +611,6 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min
             else:
                 err_message += ", " + str( n+1 ) + ". " + e
         err_response = json_error_response( err_message )
-        err_response['Connection'] = 'close'
         return err_response
         
     result = start_asynch_process( job )
@@ -651,7 +648,6 @@ def download_crop(request, file_path=None):
     if not os.path.exists(path):
         # Create error response
         err_response = HttpResponse("Sorry, the requested file (" + file_path + ") was not found.")
-        err_response['Connection'] = 'close'
         return err_response
 
     # Return the actual file content

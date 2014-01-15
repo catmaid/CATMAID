@@ -16,7 +16,6 @@ from object import *
 from project import *
 from search import *
 from skeletongroup import *
-from skeletonlist import *
 from skeletonexport import *
 from skeleton import *
 from stack import *

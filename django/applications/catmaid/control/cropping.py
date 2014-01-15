@@ -71,6 +71,59 @@ class CropJob:
             output_path = os.path.join(crop_output_path, file_name)
         self.single_channel = single_channel
         self.output_path = output_path
+        # State that extra initialization is needed
+        self.needs_initialization = True
+
+    def initialize(self):
+        """ This separate initialization method sets up methods to get the path
+        to the tiles of the stacks used. It needs to be called from the
+        process that actually does the cropping (e.g. a celery task), because
+        serializing function pointers isn't allowed. This would be needed if
+        this was done in the constructor of the job.
+        """
+        # Setup tile source specific path creation functions for each stack
+        self.stack_specific_path_getters = {}
+        for s in self.stacks:
+            if s.tile_source_type == 1:
+                getter = self.get_tile_path_1
+            else:
+                getter = self.get_tile_path_unavailable
+            self.stack_specific_path_getters[s.id] = getter
+        # Attach actual path getter
+        self.get_tile_path = self.get_tile_path_initialized
+        # Initialization is done
+        self.needs_initialization = False
+
+    def get_tile_path(self, stack, tile_coords):
+        """ This method returns the path of a tile from a specific stack on a
+        particular coordinate. It needs initialization where it will be replaced
+        by the actual getter that is aware of the available tile source types.
+        """
+        raise StandardError("The crop job in used hasn't been initialized.")
+
+    def get_tile_path_initialized(self, stack, tile_coords):
+        """ This method will be used when get_tile_path is called after the crop
+        job has been initialized.
+        """
+        return self.stack_specific_path_getters[stack.id](stack, tile_coords)
+
+    def get_tile_path_1(self, stack, tile_coords):
+        """ Creates the full path to the tile at the specified coordinate index
+        for tile source type 1.
+        """
+        path = stack.image_base
+        n_coords = len(tile_coords)
+        for c in range( 2, n_coords ):
+            # the path is build beginning with the last component
+            coord = tile_coords[n_coords - c + 1]
+            path += str(coord) + "/"
+        path += "%s_%s_%s.%s" % (tile_coords[1], tile_coords[0],
+                self.zoom_level, stack.file_extension)
+        return path
+
+    def get_tile_path_unavailable(self, stack, tile_coords):
+        raise StandardError("Tile source %s is currently not supported " \
+                "by cropping module" % stack.tile_source_type)
 
 class ImagePart:
     """ A part of a 2D image where height and width are not necessarily
@@ -137,18 +190,6 @@ def to_z_index( z, job, enforce_bounds=True ):
         section = min(max(section, 0.0), job.ref_stack.dimension.z - 1.0)
     return int( section )
 
-def get_tile_path(job, stack, tile_coords):
-    """ Creates the full path to the tile at the specified coordinate index.
-    """
-    path = stack.image_base
-    n_coords = len(tile_coords)
-    for c in range( 2, n_coords ):
-        # the path is build beginning with the last component
-        coord = tile_coords[n_coords - c + 1]
-        path += str(coord) + "/"
-    path += str(tile_coords[1]) + "_" + str(tile_coords[0]) + "_" + str(job.zoom_level) + "." + stack.file_extension
-    return path
-
 def addMetaData( path, job, result ):
     """ Use this method to add meta data to the image. Due to a bug in
     exiv2, its python wrapper pyexiv2 is of no use to us. This bug
@@ -208,6 +249,11 @@ def extract_substack( job ):
     rotation requests. A list of pgmagick images is returned -- one for each
     slice, starting on top.
     """
+
+    # Make sure tile source getters have been initialized on the job
+    if job.needs_initialization:
+        job.initialize()
+
     # Treat rotation requests special
     if abs(job.rotation_cw) < 0.00001:
         # No rotation, create the sub-stack
@@ -373,7 +419,7 @@ def extract_substack_no_rotation( job ):
                     else:
                         cur_px_y_max = px_y_max - y * tile_height
                     # Create an image part definition
-                    path = get_tile_path(job, stack, [x, y, z])
+                    path = job.get_tile_path(stack, [x, y, z])
                     try:
                         part = ImagePart(path, cur_px_x_min, cur_px_x_max, cur_px_y_min, cur_px_y_max, x_dst, y_dst)
                         image_parts.append( part )

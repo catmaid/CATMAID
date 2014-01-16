@@ -179,8 +179,8 @@
       }
 
       // Get Z extent
-      var z_extent_se = 2 * dialog.z_radius;
-      var z_extent_nm = 2 * dialog.z_radius;
+      var z_extent_se = 2 * dialog.z_radius + 1;
+      var z_extent_nm = 2 * dialog.z_radius + stack.resolution.z;
       if (dialog.z_in_sections) {
         z_extent_nm = Math.round(z_extent_se * stack.resolution.z);
       } else {

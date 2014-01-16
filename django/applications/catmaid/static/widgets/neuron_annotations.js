@@ -225,7 +225,10 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   }
   // Add click handlers to remove tags from nodes
   var NA = this;
-  $(".remove_annotation", $(ul)).click( function() {
+  $(".remove_annotation", $(ul)).click( function(event) {
+      // Prevent the event from bubbling up the DOM tree
+      event.stopPropagation();
+      // Handle click
       var neuron_id = $(this).parent().attr('neuron_id');
       var annotation_id = $(this).parent().attr('annotation_id');
       NeuronAnnotations.remove_annotation(neuron_id,

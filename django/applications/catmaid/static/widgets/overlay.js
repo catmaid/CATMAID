@@ -584,7 +584,6 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
     /* Create the dialog */
     var dialog = new SplitMergeDialog(model);
     dialog.onOK = function() {
-      if (!confirm("Do you really want to split the skeleton?")) return;
       // Get upstream and downstream annotation set
       var upstream_set, downstream_set;
       if (this.upstream_is_small) {
@@ -656,7 +655,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                 to_skid, json['neuron_name'], to_color);
             var dialog = new SplitMergeDialog(from_model, to_model);
             dialog.onOK = function() {
-              if (!confirm("Do you really want to merge the skeletons?")) return;
               merge(dialog.get_combined_annotation_set());
             };
             // Extend the display with the newly created line
@@ -1633,7 +1631,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
                     json['skeleton_id'], json['neuron_name'], to_color);
                 var dialog = new SplitMergeDialog(from_model, to_model);
                 dialog.onOK = function() {
-                  if (!confirm("Do you really want to merge the skeletons?")) return;
                   // Get annotation set for the joined skeletons and merge both
                   merge(dialog.get_combined_annotation_set());
                 };

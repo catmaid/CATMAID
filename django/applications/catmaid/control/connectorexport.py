@@ -226,12 +226,21 @@ def process_connector_export_job(job):
         return "An error occured during the connector export: %s" % str(e)
 
     # Make working directory an archive
-    tar = tarfile.open(job.output_path.rstrip(os.sep) + '.tar.gz', 'w:gz')
+    tarfile_path = job.output_path.rstrip(os.sep) + '.tar.gz'
+    tar = tarfile.open(tarfile_path, 'w:gz')
     tar.add(job.output_path, arcname=os.path.basename(job.output_path))
     tar.close()
 
     # Delete working directory
     shutil.rmtree(job.output_path)
+
+    # Create message
+    tarfile_name = os.path.basename(tarfile_path)
+    url = os.path.join(settings.CATMAID_URL, settings.MEDIA_URL,
+            settings.MEDIA_CONNECTOR_SUBDIRECTORY, tarfile_name)
+    msg = "Exporting a connector archive finished. You can download it from " \
+            "this location: <a href='%s'>%s</a>" % (url, url)
+    job.create_message("Connector export finished", msg, url)
 
     return msg
 

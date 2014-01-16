@@ -479,12 +479,21 @@ def extract_substack_no_rotation( job ):
                 # Update x component of destination postition
                 x_dst += cur_px_x_max - cur_px_x_min
 
-            # Create a result image slice, painted black
-            cropped_slice = Image( Geometry( bb.width, bb.height ), Color("black") )
             # write out the image parts
+            cropped_slice = None
             for ip in image_parts:
                 # Get (correcly cropped) image
                 image = ip.get_image()
+                # It is unfortunately not possible to create proper composite
+                # images based on a canvas image newly created like this:
+                # cropped_slice = Image( Geometry(bb.width, bb.height), Color("black"))
+                # Therefore, this workaround is used.
+                if not cropped_slice:
+                    cropped_slice = Image(image)
+                    cropped_slice.backgroundColor("black")
+                    cropped_slice.erase()
+                    # The '!' makes sure the aspect ration is ignored
+                    cropped_slice.scale('%sx%s!' % (bb.width, bb.height))
                 # Draw the image onto result image
                 cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
                 # Delete tile image - it's not needed anymore

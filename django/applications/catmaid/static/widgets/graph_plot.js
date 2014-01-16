@@ -233,6 +233,7 @@ CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
     select.options.add(new Option('Graph partition (cell types) mirror', 12));
 
     ['Cable length (nm)',
+     'Cable length w/o principal branch (nm)',
      'Num. input synapses',
      'Num. output synapses',
      'Num. input - Num. output'].forEach(function(name, k) {
@@ -315,17 +316,19 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             o[row[0]] = row;
             return o;
           }, {});
-          // 0: cable length
-          // 1: number of inputs
-          // 2: number of outputs
-          // 3: inputs minus outputs
-          var vs = [[], [], [], []];
+          // 0: smooth cable length
+          // 1: smooth cable length minus principal branch length
+          // 2: number of inputs
+          // 3: number of outputs
+          // 4: inputs minus outputs
+          var vs = [[], [], [], [], []];
           this.skeleton_ids.forEach(function(skeleton_id) {
             var row = rows[skeleton_id];
             vs[0].push(row[2]);
-            vs[1].push(row[3]);
-            vs[2].push(row[4]);
-            vs[3].push(row[3] - row[4]);
+            vs[1].push(row[2] - row[8]);
+            vs[2].push(row[3]);
+            vs[3].push(row[4]);
+            vs[4].push(row[3] - row[4]);
           });
           this.anatomy = vs;
           if (typeof(callback) === 'function') callback();

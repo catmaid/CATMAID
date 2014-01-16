@@ -10,7 +10,7 @@ from catmaid.control.common import *
 from catmaid.control import export_NeuroML_Level3
 
 import networkx as nx
-from tree_util import edge_count_to_root
+from tree_util import edge_count_to_root, partition
 try:
     from exportneuroml import neuroml_single_cell, neuroml_network
 except ImportError:
@@ -155,6 +155,7 @@ def _measure_skeletons(skeleton_ids):
             self.nodes = {}
             self.raw_cable = 0
             self.smooth_cable = 0
+            self.principal_branch_cable = 0
             self.n_ends = 0
             self.n_branch = 0
             self.n_pre = 0
@@ -182,11 +183,14 @@ def _measure_skeletons(skeleton_ids):
 
     for skeleton in skeletons.itervalues():
         nodes = skeleton.nodes
+        tree = nx.DiGraph()
+        root = None
         # Accumulate children
         for nodeID, node in nodes.iteritems():
             if not node.parent_id:
-                # root node
+                root = nodeID
                 continue
+            tree.add_edge(node.parent_id, nodeID)
             parent = nodes[node.parent_id]
             distance = sqrt(  pow(node.x - parent.x, 2)
                             + pow(node.y - parent.y, 2)
@@ -228,15 +232,20 @@ def _measure_skeletons(skeleton_ids):
             node.wx = node.x * 0.4 + wx * 0.6
             node.wy = node.y * 0.4 + wy * 0.6
             node.wz = node.z * 0.4 + wz * 0.6
-        # Compute smoothed cable length
+        # Find out nodes that belong to the principal branch
+        principal_branch_nodes = set(sorted(partition(tree, root), key=len)[-1])
+        # Compute smoothed cable length, also for principal branch
         for nodeID, node in nodes.iteritems():
             if not node.parent_id:
                 # root node
                 continue
             parent = nodes[node.parent_id]
-            skeleton.smooth_cable += sqrt(  pow(node.wx - parent.wx, 2)
-                                          + pow(node.wy - parent.wy, 2)
-                                          + pow(node.wz - parent.wz, 2))
+            length = sqrt(  pow(node.wx - parent.wx, 2)
+                          + pow(node.wy - parent.wy, 2)
+                          + pow(node.wz - parent.wz, 2))
+            skeleton.smooth_cable += length
+            if nodeID in principal_branch_nodes:
+                skeleton.principal_branch_cable += length
 
     # Count inputs
     cursor.execute('''
@@ -278,7 +287,7 @@ def _measure_skeletons(skeleton_ids):
 def measure_skeletons(request, project_id=None):
     skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
     def asRow(skid, sk):
-        return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_ends, sk.n_branch)
+        return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_ends, sk.n_branch, sk.principal_branch_cable)
     return HttpResponse(json.dumps([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).iteritems()]))
 
 

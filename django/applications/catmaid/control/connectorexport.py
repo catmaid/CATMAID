@@ -144,13 +144,22 @@ def export_single_connector(job, connector_link):
     rotation_cw = 0
     zoom_level = 0
 
-    # Crop images as single multi-page TIFF
+    # Create a single file for each section (instead of a mulipage TIFF)
     crop_job = CropJob(job.user, job.project_id, job.stack_id, x_min, x_max,
             y_min, y_max, z_min, z_max, rotation_cw, zoom_level,
-            single_channel=True, output_path=connector_image_path)
-    error = process_crop_job(crop_job, create_message=False)
-    if error:
-        process_connector_export_job.get_logger().info("An error occured: " + e)
+            single_channel=True)
+    cropped_stack = extract_substack(crop_job)
+    # Save each file in output path
+    connector_path = job.create_connector_path(connector_link)
+    for i, img in enumerate(cropped_stack):
+        # Save image in output path, named after the image center's coordinates,
+        # rounded to full integers.
+        x = int(connector.location.x + 0.5)
+        y = int(connector.location.y + 0.5)
+        z = int(z_min + i * crop_job.stacks[0].resolution.z  + 0.5)
+        image_name = "%s_%s_%s.tiff" % (x, y, z)
+        connector_image_path = os.path.join(connector_path, image_name)
+        img.write(connector_image_path)
 
 @task()
 def process_connector_export_job(job):

@@ -54,7 +54,7 @@ class CropJob:
         self.stacks = []
         for sid in self.stack_ids:
             self.stacks.append( get_object_or_404(Stack, pk=sid) )
-        # The referce stack is used to obtain e.g. resolution information
+        # The reference stack is used to obtain e.g. resolution information
         self.ref_stack = self.stacks[0]
         self.x_min = float(x_min)
         self.x_max = float(x_max)
@@ -157,18 +157,18 @@ class ImagePart:
         self.height = y_max_src - y_min_src
         # Complain if the width or the height is zero
         if self.width == 0 or self.height == 0:
-            raise ValueError( "An image part must have an area, hence no extent should be zero!" )
+            raise ValueError( "An image part must have an area, hence no " \
+                    "extent should be zero!" )
 
     def get_image( self ):
         # Open the image
         img_file = urllib.urlopen( self.path )
         blob = Blob( img_file.read() )
         image = Image( blob )
-        # Check if the whole image should be used and croped
-        # if necessary.
+        # Check if the whole image should be used and cropped if necessary.
         src_width = image.size().width()
         src_height = image.size().height()
-        if self.width !=  src_width or self.height != src_height:
+        if self.width != src_width or self.height != src_height:
             box = Geometry( self.width, self.height, self.x_min_src, self.y_min_src )
             image.crop( box )
         return image
@@ -204,8 +204,8 @@ def addMetaData( path, job, result ):
     """ Use this method to add meta data to the image. Due to a bug in
     exiv2, its python wrapper pyexiv2 is of no use to us. This bug
     (http://dev.exiv2.org/issues/762) hinders us to work on multi-page
-    TIFF files. Instead, we use a seperate tool called exiftool to write
-    meta data. Currently, there semms no better solution than this. If the
+    TIFF files. Instead, we use a separate tool called exiftool to write
+    meta data. Currently, there seems no better solution than this. If the
     tool is not found, no meta data is produced and no error is raised.
     """
     # Add resolution information in pixel per nanometer. The stack info
@@ -214,7 +214,8 @@ def addMetaData( path, job, result ):
     res_y_scaled = job.ref_stack.resolution.y * 2**job.zoom_level
     res_x_nm_px = 1.0 / res_x_scaled
     res_y_nm_px = 1.0 / res_y_scaled
-    res_args = "-EXIF:XResolution={0} -EXIF:YResolution={1} -EXIF:ResolutionUnit=None".format( str(res_x_nm_px), str(res_y_nm_px) )
+    res_args = "-EXIF:XResolution={0} -EXIF:YResolution={1} -EXIF:" \
+            "ResolutionUnit=None".format( str(res_x_nm_px), str(res_y_nm_px) )
 
     # ImageJ specific meta data to allow easy embedding of units and
     # display options.
@@ -229,13 +230,15 @@ def addMetaData( path, job, result ):
     if n_images > 1:
         n_channels = len(job.stacks)
         if n_images % n_channels != 0:
-            raise ValueError( "Meta data creation: the number of images modulo the channel count is not zero" )
+            raise ValueError( "Meta data creation: the number of images " \
+                    "modulo the channel count is not zero" )
         n_slices = n_images / n_channels
         ij_data += "images={1}{0}channels={2}{0}slices={3}{0}hyperstack=true{0}mode=color{0}".format( newline, str(n_images), str(n_channels), str(n_slices) )
     ij_args = "-EXIF:ImageDescription=\"{0}\"".format( ij_data )
 
     # Information about the software used
-    sw_args = "-EXIF:Software=\"Created with CATMAID and GraphicsMagic, processed with exiftool.\""
+    sw_args = "-EXIF:Software=\"Created with CATMAID and GraphicsMagic, " \
+            "processed with exiftool.\""
     # Build up the final tag changing arguments for each slice
     tag_args = "{0} {1} {2}".format( res_args, ij_args, sw_args )
     per_slice_tag_args = []
@@ -248,7 +251,7 @@ def addMetaData( path, job, result ):
     call = "exiftool -overwrite_original {0} {1}".format( final_tag_args, path )
     os.system( call )
 
-    # Resave the image with GraphicsMagick, otherwise ImageJ won't read the
+    # Re-save the image with GraphicsMagick, otherwise ImageJ won't read the
     # images directly.
     images = ImageList()
     images.readImages( path )
@@ -319,7 +322,7 @@ def extract_substack( job ):
             img.rotate(rotation_ccw)
 
         # Last, do a second crop to remove the not needed parts. The region
-        # to crop is defined by the relative original cropbox coordinates to
+        # to crop is defined by the relative original crop-box coordinates to
         # to the rotated bounding box.
         rot_bb_p1 = rotate2d(rotation_ccw,
             [job.x_min, job.y_min], center)
@@ -329,7 +332,7 @@ def extract_substack( job ):
             [job.x_max, job.y_max], center)
         rot_bb_p4 = rotate2d(rotation_ccw,
             [job.x_max, job.y_min], center)
-        # Get bounding box minumum coordinates in world space
+        # Get bounding box minimum coordinates in world space
         bb_x_min = min([rot_bb_p1[0], rot_bb_p2[0], rot_bb_p3[0], rot_bb_p4[0]])
         bb_y_min = min([rot_bb_p1[1], rot_bb_p2[1], rot_bb_p3[1], rot_bb_p4[1]])
         # Create relative final crop coordinates
@@ -424,7 +427,7 @@ def extract_substack_no_rotation( job ):
     # The images are generated per slice, so most of the following
     # calculations refer to 2d images.
 
-    # Each stack to export is treated as a seperate channel. The order
+    # Each stack to export is treated as a separate channel. The order
     # of the exported dimensions is XYCZ. This means all the channels of
     # one slice are exported, then the next slice follows, etc.
     cropped_stack = []
@@ -474,15 +477,15 @@ def extract_substack_no_rotation( job ):
                     except:
                         # ignore failed slices
                         pass
-                    # Update y component of destination postition
+                    # Update y component of destination position
                     y_dst += cur_px_y_max - cur_px_y_min
-                # Update x component of destination postition
+                # Update x component of destination position
                 x_dst += cur_px_x_max - cur_px_x_min
 
             # write out the image parts
             cropped_slice = None
             for ip in image_parts:
-                # Get (correcly cropped) image
+                # Get (correctly cropped) image
                 image = ip.get_image()
                 # It is unfortunately not possible to create proper composite
                 # images based on a canvas image newly created like this:
@@ -501,7 +504,7 @@ def extract_substack_no_rotation( job ):
             # Optionally, use only a single channel
             if job.single_channel:
                 cropped_slice.channel( ChannelType.RedChannel )
-            # Add the imag to the cropped stack
+            # Add the image to the cropped stack
             cropped_stack.append( cropped_slice )
 
     return cropped_stack
@@ -599,24 +602,27 @@ def sanity_check( job ):
     output_dir = os.path.dirname( job.output_path )
     if not os.path.exists( output_dir ) or not os.access( output_dir, os.W_OK ):
         errors.append( "the output folder is not accessible" )
-    # Test the cropping paramets
+    # Test the cropping parameters
     if job.x_min > job.x_max:
         errors.append( "x_min must no be larger than x_max" )
     if job.y_min > job.y_max:
         errors.append( "y_min must no be larger than y_max" )
     if job.z_min > job.z_max:
         errors.append( "z_min must no be larger than z_max" )
-    # If the number of zoom levels is defined explicitely,
+    # If the number of zoom levels is defined explicitly,
     # check if the requested level is not larger than that.
     allowed_zoom_level = job.ref_stack.num_zoom_levels
     if allowed_zoom_level >= 0 and job.zoom_level > allowed_zoom_level:
-        errors.append( "zoom_level must not be larger than what stacks allows (" + str(allowed_zoom_level) + ")" )
+        errors.append( "zoom_level must not be larger than what stacks " \
+                "allows (%s)" % str(allowed_zoom_level))
     if job.zoom_level < 0:
         errors.append( "zoom_level must not be smaller than 0" )
     return errors
 
 @login_required
-def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None, single_channel=None):
+def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None,
+        y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None,
+        single_channel=None):
     """ Crops out the specified region of the stack. The region is expected to
     be given in terms of real world units (e.g. nm).
     """
@@ -658,7 +664,7 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min
     return result
 
 def cleanup( max_age=1209600 ):
-    """ Cleans up the temporariy space of the cropped stacks.
+    """ Cleans up the temporarily space of the cropped stacks.
     Such a stack is deleted if it is older than max_age, which
     is specified in seconds and  defaults to two weeks (1209600). 
     """ 
@@ -688,7 +694,8 @@ def download_crop(request, file_path=None):
     path = os.path.join(crop_output_path, file_path)
     if not os.path.exists(path):
         # Create error response
-        err_response = HttpResponse("Sorry, the requested file (" + file_path + ") was not found.")
+        err_response = HttpResponse("Sorry, the requested file (%) was not " \
+                "found." % file_path)
         return err_response
 
     # Return the actual file content

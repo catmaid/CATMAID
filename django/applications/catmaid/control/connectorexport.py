@@ -10,13 +10,14 @@ from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.control.common import json_error_response, id_generator
 from catmaid.control.cropping import CropJob, extract_substack, process_crop_job
 from catmaid.models import ClassInstanceClassInstance, TreenodeConnector
-from catmaid.models import UserRole
+from catmaid.models import Message, User, UserRole
 
 from celery.task import task
 
 import os.path
 import shutil
 import tarfile
+from urllib2 import HTTPError
 
 
 # Prefix for stored archive files
@@ -126,12 +127,19 @@ class ConnectorExportJob:
 
         return connector_path
 
+    def create_message(self, title, message, url):
+        msg = Message()
+        msg.user = User.objects.get(pk=int(self.user.id))
+        msg.read = False
+        msg.title = title
+        msg.text = message
+        msg.action = url
+        msg.save()
+
 def export_single_connector(job, connector_link):
     """ Exports a single connector and expects the output path to be existing
     and writable.
     """
-    connector_path = job.create_connector_path(connector_link)
-    connector_image_path = os.path.join(connector_path, 'connector.tiff')
     connector = connector_link.connector
 
     # Calculate bounding box for current connector
@@ -201,9 +209,21 @@ def process_connector_export_job(job):
     # Create a working directoy to create subfolders and images in
     job.create_basic_output_path()
 
-    # Export every connector
-    for cl in connectors_links:
-        export_single_connector(job, cl)
+    try:
+        # Export every connector
+        for cl in connectors_links:
+            export_single_connector(job, cl)
+    except HTTPError as e:
+        msg = "The export of the data set has been aborted, because part " \
+                "of the data wasn't reachable: Code %s for %s" % \
+                (e.code, e.url)
+        job.create_message("Connector export failed", msg, '#')
+        return msg
+    except IOError as e:
+        msg = "The export of the data set has been aborted, because an " \
+                "error occured: %s" % str(e)
+        job.create_message("Connector export failed", msg, '#')
+        return "An error occured during the connector export: %s" % str(e)
 
     # Make working directory an archive
     tar = tarfile.open(job.output_path.rstrip(os.sep) + '.tar.gz', 'w:gz')

@@ -281,6 +281,24 @@ def remove_annotation(request, project_id=None, neuron_id=None,
     return HttpResponse(json.dumps({'message': message}), mimetype='text/json')
 
 def create_annotation_query(project_id, param_dict):
+    #annotation_query = ClassInstanceClassInstance.objects.filter(
+    #        project_id=project_id,
+    #        relation__relation_name = 'annotated_with',
+    #        class_instance_b__class_column__class_name='annotation')
+
+    ## Meta annotations are annotations that are used to annotate other
+    ## annotations.
+    #meta_annotations = [v for k,v in param_dict.iteritems()
+    #        if k.startswith('annotations[')]
+    #for meta_annotation in meta_annotations:
+    #    annotation_query = annotation_query.filter(
+    #            class_instance_b__cici_via_a__class_instance_b__class_column__class_name='annotation',
+    #            class_instance_b__cici_via_a__class_instance_b__name=meta_annotation,
+    #            class_instance_b__cici_via_a__relation__relation_name='annotated_with')
+
+
+
+
     annotation_query = ClassInstance.objects.filter(project_id=project_id,
             class_column__class_name='annotation')
 
@@ -421,8 +439,8 @@ def list_annotations_datatable(request, project_id=None):
     # due to the JOINS that are made).
     annotation_query = annotation_query.distinct()
 
+    #num_records = annotation_query.count() # len(annotation_query)
     num_records = len(annotation_query)
-    result = list(annotation_query[display_start:display_start + display_length])
 
     response = {
         'iTotalRecords': num_records,
@@ -430,7 +448,7 @@ def list_annotations_datatable(request, project_id=None):
         'aaData': []
     }
 
-    for annotation in result:
+    for annotation in annotation_query[display_start:display_start + display_length]:
         # Format last used time
         if annotation[2]:
             last_used = annotation[2].strftime("%Y-%m-%d %H:%M:%S")

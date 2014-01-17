@@ -690,6 +690,12 @@ NeuronNavigator.Node.prototype.add_user_list_table = function($container,
 NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
     table_id, filters, callback)
 {
+  // Create annotate button
+  var annotate_button = document.createElement('input');
+  annotate_button.setAttribute('type', 'button');
+  annotate_button.setAttribute('value', 'Annotate');
+  $container.append(annotate_button);
+
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_neuronlist_content' +
       this.navigator.widgetID);
@@ -790,6 +796,77 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
         "aDataSort": [ 0 ],
       },
     ]
+  });
+
+  // Wire up handlers
+
+  // Make self accessible in callbacks more easily
+  var self = this;
+
+  $(annotate_button).click(function() {
+    var cb_selector = '#navigator_neuronlist_table' +
+        self.navigator.widgetID + ' tbody td.selector_column input';
+    var selected_neurons = $(cb_selector).toArray().reduce(function(ret, cb) {
+      if ($(cb).prop('checked')) {
+        ret.push($(cb).attr('neuron_id'));
+      }
+      return ret;
+    }, []);
+
+    if (selected_neurons.length > 0) {
+      NeuronAnnotations.prototype.annotate_neurons(selected_neurons);
+    } else {
+      alert("Please select at least one neuron to annotate first!");
+    }
+  });
+
+  // Add click handler for the select column's header to select/unselect
+  // all check boxes at once.
+  $('#' + table_id).on('click', 'thead th input,tfoot th input', function (e) {
+    var checkboxes = $('#' + table_id).find('tbody td.selector_column input');
+    checkboxes.prop("checked", $(this).prop("checked"));
+    // Toggle second checkbox
+    var $cb1 = $('#' + table_id).find('thead th input');
+    var $cb2 = $('#' + table_id).find('tfoot th input');
+    if ($cb1.length > 0 && $cb2.length > 0) {
+      if (this === $cb1[0]) {
+        $cb2.prop('checked', !$cb2.prop('checked'));
+      } else if (this === $cb2[0]) {
+        $cb1.prop('checked', !$cb1.prop('checked'));
+      }
+    }
+  });
+
+  // Add a change handler for the check boxes in each row
+  $('#' + table_id).on('change', 'tbody td.selector_column input', (function() {
+    // Update sync link
+    this.navigator.updateLink(this.navigator.getSelectedSkeletonModels());
+  }).bind(this));
+
+  // Add double click handler for table cells containing a select check box
+  $('#' + table_id).on('click', 'tbody td.selector_column', function (event) {
+      // Make sure the event doesn't bubble up, because otherwise it would reach
+      // the click handler of the tr element.
+      event.stopPropagation();
+      // Toggle check box if the event target isn't the checkbox itself and was
+      // therefore triggered already.
+      if (!$(event.target).is('input')) {
+        var checkbox = $(this).find('input');
+        checkbox.prop("checked", !checkbox.prop("checked"));
+      }
+  });
+
+  // If a neuron is selected an neuron filter node is created
+  $('#' + table_id).on('dblclick', 'tbody tr', function () {
+      var aData = datatable.fnGetData(this);
+      var n = {
+        'name': aData[0],
+        'skeleton_ids': aData[2],
+        'id': aData[4],
+      };
+      var node = new NeuronNavigator.NeuronNode(n);
+      node.link(self.navigator, self);
+      self.navigator.select_node(node);
   });
 
   return datatable;
@@ -937,34 +1014,9 @@ NeuronNavigator.NeuronListNode.prototype = {};
 $.extend(NeuronNavigator.NeuronListNode.prototype,
     new NeuronNavigator.Node("Neurons"));
 
-/**
- * This method retrieves the currently selected neurons in the neuron list
- * node. It is required by the annotate button functionality which expects
- * this function to be available on the current instance.
- */
-NeuronNavigator.NeuronListNode.prototype.get_selected_neurons = function()
-{
-  var cb_selector = '#navigator_neuronlist_table' +
-      this.navigator.widgetID + ' tbody td.selector_column input';
-  var selected_neurons = $(cb_selector).toArray().reduce(function(ret, cb) {
-    if ($(cb).prop('checked')) {
-      ret.push($(cb).attr('neuron_id'));
-    }
-    return ret;
-  }, []);
-
-  return selected_neurons;
-};
-
 NeuronNavigator.NeuronListNode.prototype.add_content = function(container,
     filters)
 {
-  // Create annotate button
-  var annotate_button = document.createElement('input');
-  annotate_button.setAttribute('type', 'button');
-  annotate_button.setAttribute('value', 'Annotate');
-  container.append(annotate_button);
-
   // Callback for post-process data received from server
   var post_process = (function(result)
   {
@@ -985,67 +1037,6 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container,
   var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
   var datatable = this.add_neuron_list_table(container, table_id, filters,
       post_process);
-
-  // Make self accessible in callbacks more easily
-  var self = this;
-
-  $(annotate_button).click(function() {
-    var selected_neurons = self.get_selected_neurons();
-    if (selected_neurons.length > 0) {
-      NeuronAnnotations.prototype.annotate_neurons(selected_neurons);
-    } else {
-      alert("Please select at least one neuron to annotate first!");
-    }
-  });
-
-  // Add click handler for the select column's header to select/unselect
-  // all check boxes at once.
-  $('#' + table_id).on('click', 'thead th input,tfoot th input', function (e) {
-    var checkboxes = $('#' + table_id).find('tbody td.selector_column input');
-    checkboxes.prop("checked", $(this).prop("checked"));
-    // Toggle second checkbox
-    var $cb1 = $('#' + table_id).find('thead th input');
-    var $cb2 = $('#' + table_id).find('tfoot th input');
-    if ($cb1.length > 0 && $cb2.length > 0) {
-      if (this === $cb1[0]) {
-        $cb2.prop('checked', !$cb2.prop('checked'));
-      } else if (this === $cb2[0]) {
-        $cb1.prop('checked', !$cb1.prop('checked'));
-      }
-    }
-  });
-
-  // Add a change handler for the check boxes in each row
-  $('#' + table_id).on('change', 'tbody td.selector_column input', (function() {
-    // Update sync link
-    this.navigator.updateLink(this.navigator.getSelectedSkeletonModels());
-  }).bind(this));
-
-  // Add double click handler for table cells containing a select check box
-  $('#' + table_id).on('click', 'tbody td.selector_column', function (event) {
-      // Make sure the event doesn't bubble up, because otherwise it would reach
-      // the click handler of the tr element.
-      event.stopPropagation();
-      // Toggle check box if the event target isn't the checkbox itself and was
-      // therefore triggered already.
-      if (!$(event.target).is('input')) {
-        var checkbox = $(this).find('input');
-        checkbox.prop("checked", !checkbox.prop("checked"));
-      }
-  });
-
-  // If a neuron is selected an neuron filter node is created
-  $('#' + table_id).on('dblclick', 'tbody tr', function () {
-      var aData = datatable.fnGetData(this);
-      var n = {
-        'name': aData[0],
-        'skeleton_ids': aData[2],
-        'id': aData[4],
-      };
-      var node = new NeuronNavigator.NeuronNode(n);
-      node.link(self.navigator, self);
-      self.navigator.select_node(node);
-  });
 };
 
 /**

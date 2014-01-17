@@ -29,23 +29,27 @@ def create_basic_annotated_entity_query(project, params,
         if key.startswith('neuron_query_by_annotation'):
             tag = params[key].strip()
             if len(tag) > 0:
-                entities = entities.filter(cici_via_a__relation__relation_name = 'annotated_with',
-                                         cici_via_a__class_instance_b__name = tag)
+                entities = entities.filter(
+                        cici_via_a__relation__relation_name = 'annotated_with',
+                        cici_via_a__class_instance_b__name = tag)
         elif key == 'neuron_query_by_annotator':
             userID = int(params[key])
             if userID >= 0:
-                entities = entities.filter(cici_via_a__relation__relation_name = 'annotated_with',
-                                         cici_via_a__user = userID)
+                entities = entities.filter(
+                        cici_via_a__relation__relation_name = 'annotated_with',
+                        cici_via_a__user = userID)
         elif key == 'neuron_query_by_start_date':
             startDate = params[key].strip()
             if len(startDate) > 0:
-                entities = entities.filter(cici_via_a__relation__relation_name = 'annotated_with',
-                                         cici_via_a__creation_time__gte = startDate)
+                entities = entities.filter(
+                        cici_via_a__relation__relation_name = 'annotated_with',
+                        cici_via_a__creation_time__gte = startDate)
         elif key == 'neuron_query_by_end_date':
             endDate = params[key].strip()
             if len(endDate) > 0:
-                entities = entities.filter(cici_via_a__relation__relation_name = 'annotated_with',
-                                         cici_via_a__creation_time__lte = endDate)
+                entities = entities.filter(
+                        cici_via_a__relation__relation_name = 'annotated_with',
+                        cici_via_a__creation_time__lte = endDate)
 
     return entities
 
@@ -182,7 +186,8 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotations):
     to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \
         if name in to_delete)
 
-    ClassInstanceClassInstance.objects.filter(class_instance_b__in=to_delete_ids).delete()
+    ClassInstanceClassInstance.objects.filter(
+            class_instance_b__in=to_delete_ids).delete()
 
 
 def _annotate_neurons(project_id, user, neuron_ids, annotations):
@@ -286,7 +291,7 @@ def create_annotation_query(project_id, param_dict):
     for meta_annotation in meta_annotations:
         annotation_query = annotation_query.filter(
                 cici_via_b__relation__relation_name = 'annotated_with',
-                          cici_via_b__class_instance_a__name = meta_annotation)
+                cici_via_b__class_instance_a__name = meta_annotation)
 
     # If information about annotated annotations is found, the current query
     # will include only annotations that are meta annotations for it.
@@ -295,7 +300,7 @@ def create_annotation_query(project_id, param_dict):
     for sub_annotation in annotated_annotations:
         annotation_query = annotation_query.filter(
                 cici_via_a__relation__relation_name = 'annotated_with',
-                          cici_via_a__class_instance_b__name = sub_annotation)
+                cici_via_a__class_instance_b__name = sub_annotation)
 
     # If parallel_annotations is given, only annotations are returned, that
     # are used alongside with these. This also removes the parallel annotations

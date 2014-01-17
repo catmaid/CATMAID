@@ -1637,7 +1637,8 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
   neuron_title.appendChild(document.createTextNode('All neurons'));
   container.append(neuron_title);
 
-  // Add content from neuron list node
-  NeuronNavigator.NeuronListNode.prototype.add_content.call(this, container,
-      filters);
+  // Add neuron list table
+  var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
+  var datatable = this.add_neuron_list_table(container, table_id, filters,
+      null);
 };

@@ -53,45 +53,58 @@ def create_basic_annotated_entity_query(project, params,
 
     return entities
 
-def create_annotated_entity_list(project, entities):
+def create_annotated_entity_list(project, entities_qs, annotations=True):
+    """ Executes the expected class instance queryset in <entities> and expands
+    it to aquire more information.
+    """
+    # Cache class name
+    entities = entities_qs.select_related('class_column')
+    entity_ids = [e.id for e in entities]
+
+    # Make second query to retrieve annotations and skeletons
+    annotations = ClassInstanceClassInstance.objects.filter(
+        relation__relation_name = 'annotated_with',
+        class_instance_a__id__in = entity_ids).order_by('id').values_list(
+                'class_instance_a', 'class_instance_b',
+                'class_instance_b__name', 'user__id')
+
+    annotation_dict = {}
+    for a in annotations:
+        if a[0] not in annotation_dict:
+            annotation_dict[a[0]] = []
+        annotation_dict[a[0]].append(
+          {'id': a[1], 'name': a[2], 'uid': a[3]})
+
+    # Make third query to retrieve all skeletons and root nodes for entities (if
+    # they have such).
+    skeletons = ClassInstanceClassInstance.objects.filter(
+            relation__relation_name = 'model_of',
+            class_instance_b__in = entity_ids).order_by('id').values_list(
+                'class_instance_a', 'class_instance_b')
+
+    skeleton_dict = {}
+    for s in skeletons:
+        if s[1] not in skeleton_dict:
+            skeleton_dict[s[1]] = []
+        skeleton_dict[s[1]].append(s[0])
+
     annotated_entities = [];
-    for entity in entities:
-        try:
-            # Get all annotations linked to this entity
-            annotations = ClassInstance.objects.filter(
-                cici_via_b__relation__relation_name = 'annotated_with',
-                cici_via_b__class_instance_a__id = entity.id).values_list('id',
-                    'name', 'cici_via_b__user__id')
-            annotations = [{'id': a[0], 'name': a[1], 'uid': a[2]} \
-                for a in annotations]
-            class_name = entity.class_column.class_name
+    for e in entities:
+        class_name = e.class_column.class_name
+        annotations = annotation_dict[e.id] if e.id in annotation_dict else []
+        entity_info = {
+            'id': e.id,
+            'name': e.name,
+            'annotations': annotations,
+            'type': class_name,
+        }
 
-            entity_info = {
-                'id': entity.id,
-                'name': entity.name,
-                'annotations': annotations,
-                'type': class_name,
-            }
+        # Depending on the type of entity, some extra information is added.
+        if class_name == 'neuron':
+            entity_info['skeleton_ids'] = skeleton_dict[e.id] \
+                    if e.id in skeleton_dict else []
 
-            # Depending on the type of entity, some extra information is added.
-            if class_name == 'neuron':
-              cici_skeletons = ClassInstanceClassInstance.objects.filter(
-                  class_instance_b = entity,
-                  relation__relation_name = 'model_of').order_by('id')
-              skeleton_ids = [cici.class_instance_a.id for cici in cici_skeletons]
-              # Get treenode ids of all skeletons in the same order as the
-              # skeletons are. Under the assumption there is one treenode per
-              # skeleton, they should map nicely.
-              treenodes = Treenode.objects.filter(project=project,
-                  parent__isnull=True, skeleton_id__in=skeleton_ids).order_by(
-                      'skeleton__id')
-
-              entity_info['skeleton_ids'] = skeleton_ids
-              entity_info['root_node_ids'] = [tn.id for tn in treenodes]
-
-            annotated_entities += [entity_info]
-        except ClassInstanceClassInstance.DoesNotExist:
-            pass
+        annotated_entities.append(entity_info)
 
     return annotated_entities
 
@@ -159,7 +172,6 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
               entity['name'],
               entity['annotations'],
               entity['skeleton_ids'],
-              entity['root_node_ids'],
               entity['id'],
           ]]
 

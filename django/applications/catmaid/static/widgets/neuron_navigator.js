@@ -1028,8 +1028,7 @@ NeuronNavigator.NeuronListNode.prototype.add_content = function(container,
             name: e[0],
             annotations: e[1],
             skeleton_ids: e[2],
-            root_node_ids: e[3],
-            id: e[4]
+            id: e[3]
           });
       }, this);
   }).bind(this);

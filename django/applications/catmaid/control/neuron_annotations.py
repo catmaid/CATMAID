@@ -281,24 +281,6 @@ def remove_annotation(request, project_id=None, neuron_id=None,
     return HttpResponse(json.dumps({'message': message}), mimetype='text/json')
 
 def create_annotation_query(project_id, param_dict):
-    #annotation_query = ClassInstanceClassInstance.objects.filter(
-    #        project_id=project_id,
-    #        relation__relation_name = 'annotated_with',
-    #        class_instance_b__class_column__class_name='annotation')
-
-    ## Meta annotations are annotations that are used to annotate other
-    ## annotations.
-    #meta_annotations = [v for k,v in param_dict.iteritems()
-    #        if k.startswith('annotations[')]
-    #for meta_annotation in meta_annotations:
-    #    annotation_query = annotation_query.filter(
-    #            class_instance_b__cici_via_a__class_instance_b__class_column__class_name='annotation',
-    #            class_instance_b__cici_via_a__class_instance_b__name=meta_annotation,
-    #            class_instance_b__cici_via_a__relation__relation_name='annotated_with')
-
-
-
-
     annotation_query = ClassInstance.objects.filter(project_id=project_id,
             class_column__class_name='annotation')
 
@@ -407,6 +389,13 @@ def list_annotations_datatable(request, project_id=None):
             'class_instance_class_instance cici WHERE ' \
             'cici.class_instance_b = class_instance.id'})
 
+    # Annotate username of last user
+    annotation_query = annotation_query.extra(
+        select={'last_user': 'SELECT username FROM auth_user ' \
+            'WHERE id = (SELECT user_id FROM class_instance_class_instance cici ' \
+            'WHERE cici.class_instance_b = class_instance.id ' \
+            'ORDER BY edition_time DESC LIMIT 1)'})
+
     # Annotate usage count
     annotation_query = annotation_query.extra(
         select={'num_usage': 'SELECT COUNT(*) FROM ' \
@@ -423,7 +412,7 @@ def list_annotations_datatable(request, project_id=None):
         sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
                 sorting_directions)
 
-        fields = ['name', 'last_used', 'num_usage', 'cici_via_b__user__username']
+        fields = ['name', 'last_used', 'num_usage', 'last_user']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
                 for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
@@ -433,7 +422,7 @@ def list_annotations_datatable(request, project_id=None):
 
     # We only require ID, name, last used and usage number
     annotation_query = annotation_query.values_list(
-            'id', 'name', 'last_used', 'num_usage', 'cici_via_b__user__username')
+            'id', 'name', 'last_used', 'num_usage', 'last_user')
 
     # Make sure we get a distinct result (which otherwise might not be the case
     # due to the JOINS that are made).

@@ -1515,7 +1515,7 @@ NeuronNavigator.NeuronNode.prototype.highlight = function(skeleton_id)
 NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
   return this.skeleton_ids.reduce((function(o, skid) {
     o[skid] = new SelectionTable.prototype.SkeletonModel(
-        skid, this.name, new THREE.Color().setRGB(1, 1, 0));
+        skid, this.neuron_name, new THREE.Color().setRGB(1, 1, 0));
     return o;
   }).bind(this), {});
 };

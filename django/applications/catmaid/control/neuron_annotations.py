@@ -21,6 +21,7 @@ def create_basic_annotated_entity_query(project, params,
     entities = ClassInstance.objects.filter(project = project,
             class_column__id__in = allowed_class_ids)
 
+    # TODO don't loop, instead, put the keys in a set and try each
     for key in params:
         if key.startswith('neuron_query_by_name'):
             name = params[key].strip()

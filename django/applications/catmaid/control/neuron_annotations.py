@@ -126,7 +126,7 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
     if display_length < 0:
         display_length = 2000  # Default number of result rows
 
-    neuron_query = create_basic_annotated_entity_query(p, request.POST)
+    neuron_query = create_basic_annotated_entity_query(p, request.POST, allowed_classes=['neuron'])
 
     search_term = request.POST.get('sSearch', '')
     if len(search_term) > 0:

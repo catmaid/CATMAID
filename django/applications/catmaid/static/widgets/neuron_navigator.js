@@ -1096,16 +1096,12 @@ NeuronNavigator.NeuronListNode.prototype.getSelectedSkeletonModels = function() 
  */
 NeuronNavigator.NeuronListNode.prototype.get_entities = function(checked)
 {
-  return this.listed_neurons.reduce((function(o, e) {
+  return this.listed_neurons.filter(function(e) {
       // Test if one of the checkboxes for a particular neuron is checked
-      var is_checked = $("#navigator_neuronlist_table" +
+      return checked == $("#navigator_neuronlist_table" +
           this.navigator.widgetID + ' tbody td.selector_column').find(
               'input[neuron_id="' + e.id + '"]').is(':checked');
-      if (is_checked == checked) {
-          o.push(e);
-      }
-      return o;
-  }).bind(this), []);
+  }, this);
 }
 
 

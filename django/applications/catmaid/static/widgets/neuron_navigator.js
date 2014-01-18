@@ -962,7 +962,7 @@ $.extend(NeuronNavigator.MetaAnnotationListNode.prototype,
 NeuronNavigator.MetaAnnotationListNode.prototype.create_annotation_filter =
     function(annotation)
 {
-  return new NeuronNavigator.AnnotationFilterNode(a, false,
+  return new NeuronNavigator.AnnotationFilterNode(annotation, false,
       this.is_meta_annotation);
 };
 

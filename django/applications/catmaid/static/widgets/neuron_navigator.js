@@ -1423,7 +1423,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   /* User who locked the neuron */
 
   requestQueue.register(django_url + project.id + '/annotations/list',
-    'POST', {'neuron_id': this.neuron_id}, (function(status, text) {
+    'POST', {neuron_id: this.neuron_id}, (function(status, text) {
         if (200 !== status) {
           alert("Unexpected status code: " + status);
         } else {

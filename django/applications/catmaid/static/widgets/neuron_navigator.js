@@ -946,13 +946,8 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container,
  */
 NeuronNavigator.MetaAnnotationListNode = function(is_meta_annotation)
 {
-  if (is_meta_annotation) {
-    this.name = "Annotates";
-    this.is_meta_annotation = true;
-  } else {
-    this.name = "Annotated with";
-    this.is_meta_annotation = false;
-  }
+  this.is_meta_annotation = is_meta_annotation;
+  this.name = is_meta_annotation ? "Annotates" : "Annotated with";
 };
 
 NeuronNavigator.MetaAnnotationListNode.prototype = {};

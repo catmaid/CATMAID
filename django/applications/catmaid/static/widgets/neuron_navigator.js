@@ -1436,9 +1436,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
       self.navigator.select_node(annotations_node);
   });
 
-
-  /* User who locked the neuron */
-
+  // Find out who locked the neuron (by retrieving all annotations *again*, which is overkill). TODO implement as a post-processing function to the table of annotations above.
   requestQueue.register(django_url + project.id + '/annotations/list',
     'POST', {neuron_id: this.neuron_id}, (function(status, text) {
         if (200 !== status) {

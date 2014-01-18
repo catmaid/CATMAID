@@ -862,7 +862,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
       var n = {
         'name': aData[0],
         'skeleton_ids': aData[2],
-        'id': aData[4],
+        'id': aData[3],
       };
       var node = new NeuronNavigator.NeuronNode(n);
       node.link(self.navigator, self);

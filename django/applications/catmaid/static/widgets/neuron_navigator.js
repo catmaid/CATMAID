@@ -287,6 +287,12 @@ NeuronNavigator.Node.prototype.collect_filters = function()
   var filter = {};
   filter.co_annotates = this.is_coannotation || false;
   filter.annotation = this.annotation || null;
+  if (this.is_meta_annotation) {
+    filter.is_meta_annotation = true;
+    if (this.parent_node && !this.breaks_filter_chain()) {
+      filter.annotation = this.parent_node.annotation || null;
+    }
+  }
   filter.neuron_id = this.neuron_id || null;
   filter.user_id = this.user_id || null;
 
@@ -318,6 +324,7 @@ NeuronNavigator.Node.prototype.get_filter_set = function()
     if (!o.neuron_id && f.neuron_id) {
       o.neuron_id = f.neuron_id;
     }
+
     // Add annotations, co-annotations and meta-annotations
     if (f.annotation) {
       // If the current filter adds a co-annotation, add a parallel annotation
@@ -336,6 +343,9 @@ NeuronNavigator.Node.prototype.get_filter_set = function()
 
     // Increase parsed filter count
     o.parsed_filters = o.parsed_filters + 1;
+
+    // FIX ME: remove annotations when there are meta-annotations. The login above is not clean.
+    if (o.annotates.length > 0) o.annotations = [];
 
     return o;
   }, {

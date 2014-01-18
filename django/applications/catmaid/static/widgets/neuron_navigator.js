@@ -1019,28 +1019,30 @@ NeuronNavigator.NeuronListNode.prototype = {};
 $.extend(NeuronNavigator.NeuronListNode.prototype,
     new NeuronNavigator.Node("Neurons"));
 
-NeuronNavigator.NeuronListNode.prototype.add_content = function(container,
-    filters)
-{
+/** Generate a function that will use the list of neurons as its 'this'. */
+NeuronNavigator.NeuronListNode.prototype.post_process_fn = function(listed_neurons) {
   // Callback for post-process data received from server
-  var post_process = (function(result)
-  {
-      // Reset the node's neuron list
-      this.listed_neurons = [];
-      // Save the new data in this node
+  return (function(result) {
+      // Reset the neuron list
+      this.length = 0;
+      // Store the new neurons in the list
       result.aaData.forEach(function(e) {
-          this.listed_neurons.push({
+          this.push({
             name: e[0],
             annotations: e[1],
             skeleton_ids: e[2],
             id: e[3]
           });
       }, this);
-  }).bind(this);
+  }).bind(listed_neurons);
+};
 
+NeuronNavigator.NeuronListNode.prototype.add_content = function(container,
+    filters)
+{
   var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
   var datatable = this.add_neuron_list_table(container, table_id, filters,
-      post_process);
+      this.post_process_fn(this.listed_neurons));
 };
 
 /**
@@ -1101,13 +1103,17 @@ NeuronNavigator.NeuronListNode.prototype.getSelectedSkeletonModels = function() 
  */
 NeuronNavigator.NeuronListNode.prototype.get_entities = function(checked)
 {
-  return this.listed_neurons.filter(function(e) {
-      // Test if one of the checkboxes for a particular neuron is checked
-      return checked == $("#navigator_neuronlist_table" +
-          this.navigator.widgetID + ' tbody td.selector_column').find(
-              'input[neuron_id="' + e.id + '"]').is(':checked');
-  }, this);
-}
+  if (!this.listed_neurons) return [];
+
+  var checked_neuron_IDs = $('#navigator_neuronlist_table' + this.navigator.widgetID + ' tbody input')
+    .filter(function(i, cb) { return cb.checked; })
+    .toArray()
+    .reduce(function(o, cb) { o[cb.getAttribute('neuron_id')] = true; return o; }, {});
+
+  return this.listed_neurons.filter(function(neuron) {
+    return neuron.id in checked_neuron_IDs;
+  });
+};
 
 
 /**
@@ -1122,11 +1128,21 @@ NeuronNavigator.AnnotationFilterNode = function(included_annotation,
   this.is_coannotation = is_coannotation;
   this.is_meta_annotation = is_meta_annotation;
   this.name = included_annotation;
+
+  this.neuron_list_node = new NeuronNavigator.NeuronListNode();
 };
 
 NeuronNavigator.AnnotationFilterNode.prototype = {};
 $.extend(NeuronNavigator.AnnotationFilterNode.prototype,
     new NeuronNavigator.Node("Empty Annotation Filter"));
+
+NeuronNavigator.AnnotationFilterNode.prototype.getSelectedSkeletonModels = function() {
+  return this.neuron_list_node.getSelectedSkeletonModels();
+};
+
+NeuronNavigator.AnnotationFilterNode.prototype.getSelectedSkeletons = function() {
+  return this.neuron_list_node.getSelectedSkeletons();
+};
 
 NeuronNavigator.AnnotationFilterNode.prototype.breaks_filter_chain = function()
 {
@@ -1186,8 +1202,8 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
 
   // Add content from neuron list node. As a currently needed hack, a copy
   // of the current node has to be added.
-  NeuronNavigator.NeuronListNode.prototype.add_content.call(
-      this, container, filters);
+  this.neuron_list_node.navigator = this.navigator; // informal link
+  this.neuron_list_node.add_content(container, filters);
 };
 
 
@@ -1595,11 +1611,17 @@ NeuronNavigator.HomeNode = function()
   this.name = "Home";
   // A home node acts as the root node and has therefore no parent.
   this.link(null);
+
+  this.neuron_list_node = new NeuronNavigator.NeuronListNode();
 };
 
 NeuronNavigator.HomeNode.prototype = {};
 $.extend(NeuronNavigator.HomeNode.prototype,
     new NeuronNavigator.NeuronListNode());
+
+NeuronNavigator.HomeNode.prototype.get_entities = function(checked) {
+  return this.neuron_list_node.get_entities(checked);
+};
 
 NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
 {
@@ -1638,7 +1660,6 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
   container.append(neuron_title);
 
   // Add neuron list table
-  var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
-  var datatable = this.add_neuron_list_table(container, table_id, filters,
-      null);
+  this.neuron_list_node.navigator = this.navigator; // informal link
+  this.neuron_list_node.add_content(container, filters);
 };

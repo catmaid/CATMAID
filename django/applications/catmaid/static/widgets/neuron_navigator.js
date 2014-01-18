@@ -1526,7 +1526,6 @@ NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
  */
 NeuronNavigator.ActiveNeuronNode = function()
 {
-  // Check if there is currently an active skeleton
   this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
   this.name = 'Active Neuron';
   this.sync_active_neuron = true;
@@ -1569,6 +1568,7 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
               this.neuron_id = json.neuronid;
               // Update the neuron name
               this.neuron_name = json.neuronname;
+              filters.neuron_id = json.neuronid; // TODO a patch to an error elsewhere
               // Call neuron node content creation
               NeuronNavigator.NeuronNode.prototype.add_content.call(this,
                   container, filters);
@@ -1596,7 +1596,7 @@ NeuronNavigator.ActiveNeuronNode.prototype.highlight = function(skeleton_id)
     this.current_skid = skeleton_id;
     this.navigator.select_node(this);
   }
-}
+};
 
 
 /**

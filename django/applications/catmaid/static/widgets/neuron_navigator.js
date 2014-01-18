@@ -783,10 +783,10 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
         "bSearchable": false,
         "bSortable": false,
         "mRender": function (data, type, full) {
-          var cb_id = 'navigator_neuron_' + full[4] + '_selection' +
+          var cb_id = 'navigator_neuron_' + full[3] + '_selection' +
               self.navigator.widgetID;
           return '<input type="checkbox" id="' + cb_id +
-              '" name="someCheckbox" neuron_id="' + full[4] + '" />';
+              '" name="someCheckbox" neuron_id="' + full[3] + '" />';
       },
       },
       {

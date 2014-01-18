@@ -158,7 +158,6 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
     # alternative would be to get all neurons for counting and limiting on the
     # Python side. This, however, is too expensive when there are many neurons.
     num_records = neuron_query.count()
-    result = list(neuron_query[display_start:display_start + display_length])
 
     response = {
         'iTotalRecords': num_records,
@@ -166,7 +165,8 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
         'aaData': []
     }
 
-    entities = create_annotated_entity_list(p, result)
+    entities = create_annotated_entity_list(p,
+            neuron_query[display_start:display_start + display_length])
     for entity in entities:
         if entity['type'] == 'neuron':
           response['aaData'] += [[

@@ -378,7 +378,7 @@ def list_annotations(request, project_id=None):
         if an not in annotation_dict:
             annotation_dict[an] = []
         annotation_dict[an].append({'id': uid, 'name': un})
-    # Flatten dictoray to list
+    # Flatten dictionary to list
     annotations = [{'name': k, 'users': v} for k, v in \
             annotation_dict.iteritems()]
     return HttpResponse(json.dumps({'annotations': annotations}),

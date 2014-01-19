@@ -10,7 +10,7 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 
 
-def create_basic_annotated_entity_query(project, params,
+def create_basic_annotated_entity_query(project, params, relations,
         allowed_classes=['neuron', 'annotation']):
     # Get IDs of constraining classes. Getting this ID in a separate query is
     # usually cheaper than joining the class table based on the allowed names.
@@ -20,6 +20,8 @@ def create_basic_annotated_entity_query(project, params,
     # the given set of allowed classes
     entities = ClassInstance.objects.filter(project = project,
             class_column__id__in = allowed_class_ids)
+
+    annotated_with = relations['annotated_with']
 
     # TODO don't loop, instead, put the keys in a set and try each
     for key in params:
@@ -31,30 +33,30 @@ def create_basic_annotated_entity_query(project, params,
             tag = params[key].strip()
             if len(tag) > 0:
                 entities = entities.filter(
-                        cici_via_a__relation__relation_name = 'annotated_with',
+                        cici_via_a__relation_id = annotated_with,
                         cici_via_a__class_instance_b__name = tag)
         elif key == 'neuron_query_by_annotator':
             userID = int(params[key])
             if userID >= 0:
                 entities = entities.filter(
-                        cici_via_a__relation__relation_name = 'annotated_with',
+                        cici_via_a__relation_id = annotated_with,
                         cici_via_a__user = userID)
         elif key == 'neuron_query_by_start_date':
             startDate = params[key].strip()
             if len(startDate) > 0:
                 entities = entities.filter(
-                        cici_via_a__relation__relation_name = 'annotated_with',
+                        cici_via_a__relation_id = annotated_with,
                         cici_via_a__creation_time__gte = startDate)
         elif key == 'neuron_query_by_end_date':
             endDate = params[key].strip()
             if len(endDate) > 0:
                 entities = entities.filter(
-                        cici_via_a__relation__relation_name = 'annotated_with',
+                        cici_via_a__relation_id = annotated_with,
                         cici_via_a__creation_time__lte = endDate)
 
     return entities
 
-def create_annotated_entity_list(project, entities_qs, annotations=True):
+def create_annotated_entity_list(project, entities_qs, relations, annotations=True):
     """ Executes the expected class instance queryset in <entities> and expands
     it to aquire more information.
     """
@@ -64,7 +66,7 @@ def create_annotated_entity_list(project, entities_qs, annotations=True):
 
     # Make second query to retrieve annotations and skeletons
     annotations = ClassInstanceClassInstance.objects.filter(
-        relation__relation_name = 'annotated_with',
+        relation_id = relations['annotated_with'],
         class_instance_a__id__in = entity_ids).order_by('id').values_list(
                 'class_instance_a', 'class_instance_b',
                 'class_instance_b__name', 'user__id')
@@ -79,7 +81,7 @@ def create_annotated_entity_list(project, entities_qs, annotations=True):
     # Make third query to retrieve all skeletons and root nodes for entities (if
     # they have such).
     skeletons = ClassInstanceClassInstance.objects.filter(
-            relation__relation_name = 'model_of',
+            relation_id = relations['model_of'],
             class_instance_b__in = entity_ids).order_by('id').values_list(
                 'class_instance_a', 'class_instance_b')
 
@@ -113,21 +115,26 @@ def create_annotated_entity_list(project, entities_qs, annotations=True):
 def query_neurons_by_annotations(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
 
-    query = create_basic_annotated_entity_query(p, request.POST)
+    relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
+
+    query = create_basic_annotated_entity_query(p, request.POST, relations)
     query = query.order_by('id').distinct()
-    dump = create_annotated_entity_list(p, query)
+    dump = create_annotated_entity_list(p, query, relations)
 
     return HttpResponse(json.dumps(dump))
 
 @requires_user_role([UserRole.Browse])
 def query_neurons_by_annotations_datatable(request, project_id=None):
     p = get_object_or_404(Project, pk = project_id)
+
+    relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
+
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
     if display_length < 0:
         display_length = 2000  # Default number of result rows
 
-    neuron_query = create_basic_annotated_entity_query(p, request.POST, allowed_classes=['neuron'])
+    neuron_query = create_basic_annotated_entity_query(p, request.POST, relations, allowed_classes=['neuron'])
 
     search_term = request.POST.get('sSearch', '')
     if len(search_term) > 0:
@@ -166,7 +173,7 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
     }
 
     entities = create_annotated_entity_list(p,
-            neuron_query[display_start:display_start + display_length])
+            neuron_query[display_start:display_start + display_length], relations)
     for entity in entities:
         if entity['type'] == 'neuron':
           response['aaData'] += [[
@@ -294,8 +301,12 @@ def remove_annotation(request, project_id=None, neuron_id=None,
     return HttpResponse(json.dumps({'message': message}), mimetype='text/json')
 
 def create_annotation_query(project_id, param_dict):
+
+    classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
+    relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
+
     annotation_query = ClassInstance.objects.filter(project_id=project_id,
-            class_column__class_name='annotation')
+            class_column__id=classes['annotation'])
 
     # Meta annotations are annotations that are used to annotate other
     # annotations.
@@ -303,7 +314,7 @@ def create_annotation_query(project_id, param_dict):
             if k.startswith('annotations[')]
     for meta_annotation in meta_annotations:
         annotation_query = annotation_query.filter(
-                cici_via_b__relation__relation_name = 'annotated_with',
+                cici_via_b__relation_id = relations['annotated_with'],
                 cici_via_b__class_instance_a__name = meta_annotation)
 
     # If information about annotated annotations is found, the current query
@@ -312,7 +323,7 @@ def create_annotation_query(project_id, param_dict):
             if k.startswith('annotates[')]
     for sub_annotation in annotated_annotations:
         annotation_query = annotation_query.filter(
-                cici_via_a__relation__relation_name = 'annotated_with',
+                cici_via_a__relation_id = relations['annotated_with'],
                 cici_via_a__class_instance_b__name = sub_annotation)
 
     # If parallel_annotations is given, only annotations are returned, that
@@ -322,8 +333,7 @@ def create_annotation_query(project_id, param_dict):
             if k.startswith('parallel_annotations[')]
     for p_annotation in parallel_annotations:
         annotation_query = annotation_query.filter(
-                cici_via_b__class_instance_a__cici_via_a__relation__relation_name = \
-                        'annotated_with',
+                cici_via_b__class_instance_a__cici_via_a__relation_id = relations['annotated_with'],
                 cici_via_b__class_instance_a__cici_via_a__class_instance_b__name = \
                         p_annotation)
         annotation_query = annotation_query.exclude(name=p_annotation)
@@ -342,7 +352,7 @@ def create_annotation_query(project_id, param_dict):
     neuron_id = param_dict.get('neuron_id', None)
     if neuron_id:
         annotation_query = annotation_query.filter(
-                cici_via_b__relation__relation_name = 'annotated_with',
+                cici_via_b__relation_id = relations['annotated_with'],
                 cici_via_b__class_instance_a__id=neuron_id)
 
     # Instead of a neuron a user can also use to skeleton id to constrain the
@@ -350,8 +360,8 @@ def create_annotation_query(project_id, param_dict):
     skeleton_id = param_dict.get('skeleton_id', None)
     if skeleton_id:
         annotation_query = annotation_query.filter(
-                cici_via_b__relation__relation_name = 'annotated_with',
-                cici_via_b__class_instance_a__cici_via_b__relation__relation_name = 'model_of',
+                cici_via_b__relation_id = relations['annotated_with'],
+                cici_via_b__class_instance_a__cici_via_b__relation_id = relations['model_od'],
                 cici_via_b__class_instance_a__cici_via_b__class_instance_a__id = skeleton_id)
 
     # If annotations to ignore are passed in, they won't appear in the

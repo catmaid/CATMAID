@@ -537,7 +537,8 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
 
 
     cursor = connection.cursor()
-    cursor.execute("SELECT count(*) " + rest, entries)
+
+    cursor.execute("SELECT count(DISTINCT a.id) " + rest, entries)
     num_records = cursor.fetchone()[0]
 
     response = {
@@ -549,8 +550,6 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
     rest += '\nLIMIT %s OFFSET %s'
     entries.append(display_length) # total to return
     entries.append(display_start) # offset
-
-    print select + rest
 
     cursor.execute(select + rest, entries)
 

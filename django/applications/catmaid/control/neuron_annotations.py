@@ -16,6 +16,11 @@ def create_basic_annotated_entity_query(project, params, relations,
     # usually cheaper than joining the class table based on the allowed names.
     allowed_class_ids = Class.objects.filter(project_id=project.id,
             class_name__in=allowed_classes).values_list('id', flat=True)
+
+    #TODO above, replace the string search in a set, with class_id, for numeric search
+    # Reduces memory and increases speed.
+
+
     # Let the default unrestricted result set contain all instances of
     # the given set of allowed classes
     entities = ClassInstance.objects.filter(project = project,
@@ -30,11 +35,10 @@ def create_basic_annotated_entity_query(project, params, relations,
             if len(name):
                 entities = entities.filter(name__regex=name)
         if key.startswith('neuron_query_by_annotation'):
-            tag = params[key].strip()
-            if len(tag) > 0:
-                entities = entities.filter(
-                        cici_via_a__relation_id = annotated_with,
-                        cici_via_a__class_instance_b__name = tag)
+            tag = int(params[key])
+            entities = entities.filter(
+                    cici_via_a__relation_id = annotated_with,
+                    cici_via_a__class_instance_b = tag)
         elif key == 'neuron_query_by_annotator':
             userID = int(params[key])
             if userID >= 0:
@@ -315,7 +319,7 @@ def create_annotation_query(project_id, param_dict):
     for meta_annotation in meta_annotations:
         annotation_query = annotation_query.filter(
                 cici_via_b__relation_id = relations['annotated_with'],
-                cici_via_b__class_instance_a__name = meta_annotation)
+                cici_via_b__class_instance_a = meta_annotation)
 
     # If information about annotated annotations is found, the current query
     # will include only annotations that are meta annotations for it.
@@ -324,19 +328,19 @@ def create_annotation_query(project_id, param_dict):
     for sub_annotation in annotated_annotations:
         annotation_query = annotation_query.filter(
                 cici_via_a__relation_id = relations['annotated_with'],
-                cici_via_a__class_instance_b__name = sub_annotation)
+                cici_via_a__class_instance_b = sub_annotation)
 
     # If parallel_annotations is given, only annotations are returned, that
     # are used alongside with these. This also removes the parallel annotations
-    # them self from the result set.
+    # themselves from the result set.
     parallel_annotations = [v for k,v in param_dict.iteritems()
             if k.startswith('parallel_annotations[')]
     for p_annotation in parallel_annotations:
         annotation_query = annotation_query.filter(
                 cici_via_b__class_instance_a__cici_via_a__relation_id = relations['annotated_with'],
-                cici_via_b__class_instance_a__cici_via_a__class_instance_b__name = \
-                        p_annotation)
-        annotation_query = annotation_query.exclude(name=p_annotation)
+                cici_via_b__class_instance_a__cici_via_a__class_instance_b = p_annotation)
+        # TODO why is it necessary to exclude them?
+        annotation_query = annotation_query.exclude(id=p_annotation)
 
     # Passing in a user ID causes the result set to only contain annotations
     # that are used by the respective user. The query filter could lead to
@@ -414,10 +418,10 @@ def list_annotations_datatable(request, project_id=None):
 
     # Annotate username of last user
     annotation_query = annotation_query.extra(
-        select={'last_user': 'SELECT username FROM auth_user ' \
-            'WHERE id = (SELECT user_id FROM class_instance_class_instance cici ' \
+        select={'last_user': 'SELECT username FROM auth_user, class_instance_class_instance cici ' \
             'WHERE cici.class_instance_b = class_instance.id ' \
-            'ORDER BY edition_time DESC LIMIT 1)'})
+            'AND cici.user_id = auth_user.id ' \
+            'ORDER BY cici.edition_time DESC LIMIT 1'})
 
     # Annotate usage count
     annotation_query = annotation_query.extra(

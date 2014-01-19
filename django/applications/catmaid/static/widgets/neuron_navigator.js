@@ -286,11 +286,11 @@ NeuronNavigator.Node.prototype.collect_filters = function()
   // Create this node's filter set
   var filter = {};
   filter.co_annotates = this.is_coannotation || false;
-  filter.annotation = this.annotation || null;
+  filter.annotation_id = this.annotation_id || null;
   if (this.is_meta_annotation) {
     filter.is_meta_annotation = true;
     if (this.parent_node && !this.breaks_filter_chain()) {
-      filter.annotation = this.parent_node.annotation || null;
+      filter.annotation_id = this.parent_node.annotation_id || null;
     }
   }
   filter.neuron_id = this.neuron_id || null;
@@ -309,7 +309,7 @@ NeuronNavigator.Node.prototype.collect_filters = function()
  * Get the filter set valid for the current node. This consists of collecting
  * all filters up to the next chain break and then condensing it to a single
  * filter. The following rules are used for this:
- * 1. Only the firs user found is used considered.
+ * 1. Only the first user found is used considered.
  * 2. Only the first neuron found is considered.
  */
 NeuronNavigator.Node.prototype.get_filter_set = function()
@@ -326,25 +326,25 @@ NeuronNavigator.Node.prototype.get_filter_set = function()
     }
 
     // Add annotations, co-annotations and meta-annotations
-    if (f.annotation) {
+    if (f.annotation_id) {
       // If the current filter adds a co-annotation, add a parallel annotation
       // to the final filter.
       if (f.co_annotates) {
-        o.parallel_annotations.push(f.annotation);
+        o.parallel_annotations.push(f.annotation_id);
       } else if (f.is_meta_annotation) {
         // If the parent is a meta annotation, an 'annotates' filter is created.
         // This should restrict results to annotations that are annotated by it.
-        o.annotates.push(f.annotation);
+        o.annotates.push(f.annotation_id);
       } else {
         // Add parent annotation, if any
-        o.annotations.push(f.annotation);
+        o.annotations.push(f.annotation_id);
       }
     }
 
     // Increase parsed filter count
     o.parsed_filters = o.parsed_filters + 1;
 
-    // FIX ME: remove annotations when there are meta-annotations. The login above is not clean.
+    // TODO FIXME: remove annotations when there are meta-annotations. The logic above is not clean.
     if (o.annotates.length > 0) o.annotations = [];
 
     return o;
@@ -533,30 +533,30 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
         // Annotation filter -- we are requesting annotations that are
         // annotated with specific annotations
         if (filters.annotations) {
-          filters.annotations.forEach(function(annotation, i) {
+          filters.annotations.forEach(function(annotation_id, i) {
             aoData.push({
                 'name': 'annotations[' + i + ']',
-                'value': annotation
+                'value': annotation_id
             });
           });
         }
         // Annotates filter -- we are requesting annotations that are
         // annotating entities given by this filter
         if (filters.annotates) {
-          filters.annotates.forEach(function(annotation, i) {
+          filters.annotates.forEach(function(annotation_id, i) {
             aoData.push({
                 'name': 'annotates[' + i + ']',
-                'value': annotation
+                'value': annotation_id
             });
           });
         }
         // Parallel annotations -- all listed annotations do only appear
         // together with these annotations
         if (filters.parallel_annotations) {
-          filters.parallel_annotations.forEach(function(annotation, i) {
+          filters.parallel_annotations.forEach(function(annotation_id, i) {
             aoData.push({
                 'name': 'parallel_annotations[' + i + ']',
-                'value': annotation
+                'value': annotation_id
             });
           });
         }
@@ -747,11 +747,21 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
     "sAjaxSource": django_url + project.id + '/neuron/table/query-by-annotations',
     "fnServerData": function (sSource, aoData, fnCallback) {
         // Annotation filter
-        if (filters.annotations) {
-          filters.annotations.forEach(function(annotation, i) {
+        // TODO below, fixing improperly constructed chain of filters
+        //      For example, when there are parallel_annotations, one of them is for some reason stored in the annotations array.
+        var anns = [];
+        if (filters.parallel_annotations && filters.parallel_annotations.length > 0) {
+          anns = anns.concat(filters.parallel_annotations);
+        } else if (filters.meta_annotations && filters.meta_annotations.length > 0) {
+          anns = anns.concat(filters.meta_annotations);
+        }
+        if (filters.annotations) anns = anns.concat(filters.annotations);
+
+        if (anns.length > 0) {
+          anns.forEach(function(annotation_id, i) {
             aoData.push({
                 'name': 'neuron_query_by_annotation[' + i + ']',
-                'value': annotation
+                'value': annotation_id
             });
           });
         }
@@ -909,9 +919,9 @@ NeuronNavigator.AnnotationListNode.prototype.become_co_annotation_list =
 };
 
 NeuronNavigator.AnnotationListNode.prototype.create_annotation_filter =
-    function(annotation)
+    function(annotation, annotation_id)
 {
-  return new NeuronNavigator.AnnotationFilterNode(annotation,
+  return new NeuronNavigator.AnnotationFilterNode(annotation, annotation_id,
       this.creates_co_annotations, false);
 };
 
@@ -941,8 +951,9 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container,
   // a co-annotaion-filter is created.
   $('#' + table_id).on('dblclick', ' tbody tr', function () {
       var aData = datatable.fnGetData(this);
-      var a = aData[0];
-      var annotations_node = self.create_annotation_filter(a);
+      var annotation = aData[0];
+      var annotation_id = aData[4];
+      var annotations_node = self.create_annotation_filter(annotation, annotation_id);
       annotations_node.link(self.navigator, self);
       self.navigator.select_node(annotations_node);
   });
@@ -965,9 +976,9 @@ $.extend(NeuronNavigator.MetaAnnotationListNode.prototype,
     new NeuronNavigator.AnnotationListNode(false));
 
 NeuronNavigator.MetaAnnotationListNode.prototype.create_annotation_filter =
-    function(annotation)
+    function(annotation, annotation_id)
 {
-  return new NeuronNavigator.AnnotationFilterNode(annotation, false,
+  return new NeuronNavigator.AnnotationFilterNode(annotation, annotation_id, false,
       this.is_meta_annotation);
 };
 
@@ -1121,13 +1132,14 @@ NeuronNavigator.NeuronListNode.prototype.get_entities = function(checked)
  * existence of an annotations. The content it creates lists user, neuron,
  * annotation and co-annotation links.
  */
-NeuronNavigator.AnnotationFilterNode = function(included_annotation,
+NeuronNavigator.AnnotationFilterNode = function(annotation, annotation_id,
     is_coannotation, is_meta_annotation)
 {
-  this.annotation = included_annotation
+  this.annotation = annotation;
+  this.annotation_id = annotation_id;
   this.is_coannotation = is_coannotation;
   this.is_meta_annotation = is_meta_annotation;
-  this.name = included_annotation;
+  this.name = annotation;
 
   this.neuron_list_node = new NeuronNavigator.NeuronListNode();
 };

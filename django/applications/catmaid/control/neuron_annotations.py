@@ -4,10 +4,13 @@ from string import upper
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Max
+from django.db import connection
 
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
+
+from itertools import chain, imap, izip
 
 
 def create_basic_annotated_entity_query(project, params, relations,
@@ -28,7 +31,6 @@ def create_basic_annotated_entity_query(project, params, relations,
 
     annotated_with = relations['annotated_with']
 
-    # TODO don't loop, instead, put the keys in a set and try each
     for key in params:
         if key.startswith('neuron_query_by_name'):
             name = params[key].strip()
@@ -378,6 +380,112 @@ def create_annotation_query(project_id, param_dict):
 
     return annotation_query
 
+
+def generate_annotation_intersection_query(project_id, annotations):
+    if not annotations:
+        return
+
+    tables = []
+    where = []
+
+    for i, annotation in enumerate(annotations):
+        tables.append("""
+        class_instance c%s,
+        class_instance_class_instance cc%s""" % (i, i))
+
+        where.append("""
+        AND c%s.name = '%s'
+        AND c%s.id = cc%s.class_instance_b
+        AND cc%s.relation_id = r.id""" % (i, annotation, i, i, i))
+
+    q = """
+        SELECT c.id,
+               c.name
+
+        FROM class_instance c,
+             relation r,
+             %s
+
+        WHERE r.relation_name = 'annotated_with'
+        AND c.project_id = %s
+             %s
+
+             %s
+        """ % (',\n    '.join(tables),
+               project_id,
+               '\n'.join(where),
+               '\n        '.join('AND cc%s.class_instance_a = c.id' % i for i in xrange(len(annotations))))
+
+    return q
+
+
+def generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relationIDs):
+    if not co_annotation_ids:
+        return
+
+    tables = []
+    where = []
+
+    annotation_class = classIDs['annotation']
+    annotated_with = relationIDs['annotated_with']
+
+    for i, annotation_id in enumerate(co_annotation_ids):
+        tables.append("""
+        class_instance a%s,
+        class_instance_class_instance cc%s""" % (i, i))
+
+        where.append("""
+        AND a%s.project_id = %s
+        AND a%s.class_id = %s
+        AND cc%s.class_instance_a = neuron.id
+        AND cc%s.relation_id = %s
+        AND cc%s.class_instance_b = a%s.id
+        AND a%s.id = '%s'
+        """ % (i, project_id,
+               i, annotation_class,
+               i,
+               i, annotated_with,
+               i, i,
+               i, annotation_id))
+
+    select = """
+    SELECT DISTINCT
+        a.id,
+        a.name,
+        (SELECT username FROM auth_user, class_instance_class_instance cici
+          WHERE cici.class_instance_b = cc.id
+            AND cici.user_id = auth_user.id
+            ORDER BY cici.edition_time DESC LIMIT 1) AS "last_user",
+        (SELECT MAX(edition_time) FROM class_instance_class_instance cici WHERE cici.class_instance_b = a.id) AS "last_used",
+        (SELECT count(*) FROM class_instance_class_instance cici WHERE cici.class_instance_b = a.id) AS "num_usage"
+    """
+
+    rest = """
+    FROM 
+        class_instance a,
+        class_instance_class_instance cc,
+        class_instance neuron,
+        %s
+    WHERE
+            neuron.class_id = %s
+        AND a.class_id = %s
+        AND a.project_id = %s
+        AND a.id NOT IN (%s)
+        AND cc.class_instance_a = neuron.id
+        AND cc.relation_id = %s
+        AND cc.class_instance_b = a.id
+    %s
+    """ % (',\n'.join(tables),
+           classIDs['neuron'],
+           annotation_class,
+           project_id,
+           ','.join(co_annotation_ids),
+           annotated_with,
+           ''.join(where))
+
+    return select, rest
+
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_annotations(request, project_id=None):
     """ Creates a list of objects containing an annotation name and the user
@@ -400,12 +508,86 @@ def list_annotations(request, project_id=None):
     annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.iteritems())
     return HttpResponse(json.dumps({'annotations': annotations}), mimetype="text/json")
 
+def _fast_co_annotations(request, project_id, display_start, display_length):
+    classIDs = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
+    relationIDs = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
+    co_annotation_ids = set(v for k, v in request.POST.iteritems() if k.startswith('parallel_annotations'))
+
+    select, rest = generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relationIDs)
+
+    entries = []
+
+    search_term = request.POST.get('sSearch', '').strip()
+    if search_term:
+        rest += "\nAND a.name ~ '%s'"
+        entries.append(search_term)
+
+    # Sorting?
+    sorting = request.POST.get('iSortCol_0', False)
+    sorter = ''
+    if sorting:
+        column_count = int(request.POST.get('iSortingCols', 0))
+        sorting_directions = (request.POST.get('sSortDir_%d' % d, 'DESC') for d in xrange(column_count))
+
+        fields = ('a.name', 'last_used', 'num_usage', 'last_user')
+        sorting_index = (int(request.POST.get('iSortCol_%d' % d)) for d in xrange(column_count))
+        sorting_cols = (fields[i] for i in sorting_index)
+
+        sorter = '\nORDER BY ' + ','.join('%s %s' % u for u in izip(sorting_cols, sorting_directions))
+
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT count(*) " + rest, entries)
+    num_records = cursor.fetchone()[0]
+
+    response = {
+        'iTotalRecords': num_records,
+        'iTotalDisplayRecords': num_records,
+    }
+
+    rest += sorter
+    rest += '\nLIMIT %s OFFSET %s'
+    entries.append(display_length) # total to return
+    entries.append(display_start) # offset
+
+    print select + rest
+
+    cursor.execute(select + rest, entries)
+
+    # 0: a.id
+    # 1: a.name
+    # 2: last_user
+    # 3: last_used
+    # 4: num_usage
+    aaData = []
+    for row in cursor.fetchall():
+        last_used = row[3]
+        if last_used:
+            last_used = last_used.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            last_used = 'never'
+        aaData.append([row[1], # Annotation name
+                       last_used,
+                       row[4], # Last use
+                       row[2], # Last annotator
+                       row[0]])
+
+    response['aaData'] = aaData
+    return HttpResponse(json.dumps(response), mimetype='text/json')
+
+
 @requires_user_role([UserRole.Browse])
 def list_annotations_datatable(request, project_id=None):
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
     if display_length < 0:
         display_length = 2000  # Default number of result rows
+
+    
+    # Speed hack
+    if 'parallel_annotations[0]' in request.POST:
+        return _fast_co_annotations(request, project_id, display_start, display_length)
+
 
     annotation_query = create_annotation_query(project_id, request.POST)
 
@@ -437,13 +619,13 @@ def list_annotations_datatable(request, project_id=None):
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
-                for d in range(column_count)]
+                for d in xrange(column_count)]
         sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
                 sorting_directions)
 
         fields = ['name', 'last_used', 'num_usage', 'last_user']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
-                for d in range(column_count)]
+                for d in xrange(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
 
         annotation_query = annotation_query.extra(order_by=[di + col for (di, col) in zip(
@@ -473,12 +655,11 @@ def list_annotations_datatable(request, project_id=None):
         else:
             last_used = 'never'
         # Build datatable data structure
-        response['aaData'] += [[
+        response['aaData'].append([
             annotation[1], # Name
             last_used, # Last used
             annotation[3], # Usage
             annotation[4], # Annotator
-            annotation[0], # ID
-        ]]
+            annotation[0]]) # ID
 
     return HttpResponse(json.dumps(response), mimetype='text/json')

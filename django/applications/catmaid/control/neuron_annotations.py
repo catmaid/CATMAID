@@ -519,7 +519,7 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
 
     search_term = request.POST.get('sSearch', '').strip()
     if search_term:
-        rest += "\nAND a.name ~ '%s'"
+        rest += "\nAND a.name ~ %s" # django will escape and quote the string
         entries.append(search_term)
 
     # Sorting?

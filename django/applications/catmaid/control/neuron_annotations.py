@@ -479,7 +479,7 @@ def generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relati
            classIDs['neuron'],
            annotation_class,
            project_id,
-           ','.join(co_annotation_ids),
+           ','.join(str(x) for x in co_annotation_ids),
            annotated_with,
            ''.join(where))
 
@@ -511,9 +511,9 @@ def list_annotations(request, project_id=None):
 def _fast_co_annotations(request, project_id, display_start, display_length):
     classIDs = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relationIDs = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
-    co_annotation_ids = set(v for k, v in request.POST.iteritems() if k.startswith('parallel_annotations'))
+    co_annotation_ids = set(int(v) for k, v in request.POST.iteritems() if k.startswith('parallel_annotations'))
 
-    select, rest = generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relationIDs)
+    select, rest = generate_co_annotation_query(int(project_id), co_annotation_ids, classIDs, relationIDs)
 
     entries = []
 

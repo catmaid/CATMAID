@@ -14,7 +14,7 @@ var LogTable = new function()
     var self = this;
     var asInitValsSyn = new Array();
 
-    var possibleLengths = [25, 100, -1];
+    var possibleLengths = [25, 100, 500, 2000, -1];
     var possibleLengthsLabels = possibleLengths.map(
         function (n) { return (n === -1) ? "All" : n.toString() });
 

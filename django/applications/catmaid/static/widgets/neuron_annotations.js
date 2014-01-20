@@ -645,16 +645,18 @@ NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
   // Get a JSON list with all available annotations and initialize
   // autocompletion for the name field.
 
-  var names = Object.keys(this.annotation_ids);
-  if (names.length > 0) {
-    $(input).autocomplete({
-      source: names
-    });
-    return;
-  }
-
-  // Fill in the map
+  // 'annotation_ids' does not exist when this function is invoked by other widgets as a prototype function.
   var annotation_ids = this.annotation_ids;
+
+  if (annotation_ids) {
+    var names = Object.keys(annotation_ids);
+    if (names.length > 0) {
+      $(input).autocomplete({
+        source: names
+      });
+      return;
+    }
+  }
 
   requestQueue.register(django_url + project.id + '/annotations/list',
       'POST', {}, function (status, data, text) {
@@ -666,11 +668,16 @@ NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
           if (e.error) {
             new ErrorDialog(e.error, e.detail).show();
           } else {
-            // Create the array of names, and populate the cached list as a side effect.
-            var names = e.annotations.map(function(a) {
-              annotation_ids[a.name] = a.id;
-              return a.name;
-            });
+            var names;
+            if (annotation_ids) {
+              // Create the array of names, and populate the cached list as a side effect.
+              names = e.annotations.map(function(a) {
+                annotation_ids[a.name] = a.id;
+                return a.name;
+              });
+            } else {
+              names = e.annotations.map(function(a) { return a.name; });
+            }
             $(input).autocomplete({
               source: names
             });

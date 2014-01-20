@@ -367,7 +367,7 @@ def create_annotation_query(project_id, param_dict):
     if skeleton_id:
         annotation_query = annotation_query.filter(
                 cici_via_b__relation_id = relations['annotated_with'],
-                cici_via_b__class_instance_a__cici_via_b__relation_id = relations['model_od'],
+                cici_via_b__class_instance_a__cici_via_b__relation_id = relations['model_of'],
                 cici_via_b__class_instance_a__cici_via_b__class_instance_a__id = skeleton_id)
 
     # If annotations to ignore are passed in, they won't appear in the

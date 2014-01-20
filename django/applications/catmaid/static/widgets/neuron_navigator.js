@@ -733,18 +733,8 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
     "sAjaxSource": django_url + project.id + '/neuron/table/query-by-annotations',
     "fnServerData": function (sSource, aoData, fnCallback) {
         // Annotation filter
-        // TODO below, fixing improperly constructed chain of filters
-        //      For example, when there are parallel_annotations, one of them is for some reason stored in the annotations array.
-        var anns = [];
-        if (filters.parallel_annotations && filters.parallel_annotations.length > 0) {
-          anns = anns.concat(filters.parallel_annotations);
-        } else if (filters.meta_annotations && filters.meta_annotations.length > 0) {
-          anns = anns.concat(filters.meta_annotations);
-        }
-        if (filters.annotations) anns = anns.concat(filters.annotations);
-
-        if (anns.length > 0) {
-          anns.forEach(function(annotation_id, i) {
+        if (filters.annotations) {
+          filters.annotations.forEach(function(annotation_id, i) {
             aoData.push({
                 'name': 'neuron_query_by_annotation[' + i + ']',
                 'value': annotation_id
@@ -862,7 +852,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
       }
   });
 
-  // If a neuron is selected an neuron filter node is created
+  // If a neuron is selected a neuron filter node is created
   $('#' + table_id).on('dblclick', 'tbody tr', function () {
       var aData = datatable.fnGetData(this);
       var n = {

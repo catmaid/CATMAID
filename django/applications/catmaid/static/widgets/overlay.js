@@ -630,14 +630,14 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
       self.executeIfSkeletonEditable(from_model.id, function() {
         self.executeIfSkeletonEditable(to_skid, function() {
           // The function used to instruct the backend to do the merge
-          var merge = function(annotations) {
+          var merge = function(annotation_set) {
             // The call to join will reroot the target skeleton at the shift-clicked treenode
             self.submit(
               django_url + project.id + '/skeleton/join',
               {
                 from_id: fromid,
                 to_id: toid,
-                annotation_set: annotations,
+                annotation_set: annotation_set,
               },
               function (json) {
                 self.updateNodes(function() {
@@ -680,12 +680,14 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
              */
             NeuronAnnotations.retrieve_annotations_for_skeleton(to_skid,
                 function(annotations) {
+                  console.log("to skid:", to_skid, annotations);
                   if (annotations.length > 0) {
                     merge_multiple_nodes();
                   } else {
                     NeuronAnnotations.retrieve_annotations_for_skeleton(
                         from_model.id, function(annotations) {
-                            merge(annotations);
+                            console.log("from skid:", from_model.id, annotations);
+                            merge(annotations.map(function(e) { return e.name; }));
                         });
                   }
                 });
@@ -2364,6 +2366,10 @@ SplitMergeDialog.prototype.get_combined_annotation_set = function() {
       combined_set.push(a);
     }
   });
+
+
+  console.log(over_set, under_set, combined_set);
+
   return combined_set;
 }
 

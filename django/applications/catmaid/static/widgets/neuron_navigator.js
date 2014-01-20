@@ -49,6 +49,7 @@ NeuronNavigator.prototype.getSelectedSkeletonModels = function()
 
 NeuronNavigator.prototype.highlight = function(skeleton_id)
 {
+  if (!skeleton_id) return;
   this.current_node.highlight(skeleton_id);
 };
 

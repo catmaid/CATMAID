@@ -1291,6 +1291,59 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
         (function() { this.navigator.select_node(this); }).bind(this));
   }).bind(this));
 
+  var rename_button = document.createElement('input');
+  rename_button.setAttribute('type', 'button');
+  rename_button.setAttribute('value', 'Rename');
+  container.append(rename_button);
+
+  rename_button.onclick = (function() {
+    var new_name = prompt("Rename", this.neuron_name);
+    if (!new_name) return;
+    requestQueue.register(django_url + project.id + '/object-tree/instance-operation',
+      'POST',
+      {operation: "rename_node",
+       id: this.neuron_id,
+       title: new_name,
+       classname: "neuron",
+       pid: project.id},
+      (function(status, text) {
+        if (200 !== status) return;
+        var json = $.parseJSON(text);
+        if (json.error) return new ErrorDialog(json.error, json.detail).show();
+        // Update UI
+        if (this.skeleton_ids.some(function(skid) { return skid === SkeletonAnnotations.getActiveSkeletonId();})) {
+          SkeletonAnnotations.setNeuronNameInTopbar(project.focusedStack.id, new_name, SkeletonAnnotations.getActiveSkeletonId());
+        }
+        $('div.nodeneuronname', container).html('Name: ' + new_name);
+        this.neuron_name = new_name;
+      }).bind(this));
+  }).bind(this);
+
+  var activate_button = document.createElement('input');
+  activate_button.setAttribute('type', 'button');
+  activate_button.setAttribute('value', 'Go to nearest node');
+  container.append(activate_button);
+
+  activate_button.onclick = (function() {
+    TracingTool.goToNearestInNeuronOrSkeleton('neuron', this.neuron_id);
+  }).bind(this);
+
+  var root_button = document.createElement('input');
+  root_button.setAttribute('type', 'button');
+  root_button.setAttribute('value', 'Go to root node');
+  container.append(root_button);
+
+  root_button.onclick = (function() {
+    requestQueue.register(django_url + project.id + '/skeleton/' + this.skeleton_ids[0] + '/get-root', "POST", { pid: project.id }, function (status, text) {
+      if (200 !== status) return;
+      var json = $.parseJSON(text);
+      if (json.error) return new ErrorDialog(json.error, json.detail).show();
+      SkeletonAnnotations.staticMoveTo(json.z, json.y, json.x, function() {
+        SkeletonAnnotations.staticSelectNode(json.root_id);
+      });
+    });
+  }).bind(this);
+
   /* Skeletons: Request compact JSON data */
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_skeletonlist_content' +

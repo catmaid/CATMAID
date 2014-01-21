@@ -24,8 +24,14 @@ class Migration(DataMigration):
             raise RuntimeError("Migration stopped by user")
 
         # Get a super user, to create new classes or relations
-        super_user = orm['auth.User'].objects.filter(
-                is_superuser=True).order_by('id')[0]
+        try:
+            super_user = orm['auth.User'].objects.filter(
+                    is_superuser=True).order_by('id')[0]
+        except IndexError:
+            raise RuntimeError("Apparently, there is no super-user " \
+                    "configured. However, this migration requires one. So " \
+                    "please use 'manage.py createsuperuser' to create one " \
+                    "and re-run the migration.")
 
         # Get all skeleton lists, independent of the project
         for sl in orm.SkeletonlistDashboard.objects.all():

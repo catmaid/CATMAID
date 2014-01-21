@@ -318,7 +318,7 @@ NeuronAnnotations.prototype.query = function()
       if (field === 'neuron_query_by_annotator') {
         empty_val = '-2';
       }
-      if (form_data[field] != empty_val) {
+      if (form_data[field] && form_data[field] != empty_val) {
         has_constraints = true;
         break;
       }

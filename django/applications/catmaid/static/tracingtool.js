@@ -785,7 +785,6 @@ function TracingTool()
               return false;
           }
           if (e.shiftKey) tracingLayer.svgOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
-          else ObjectTree.renameCurrentActiveNode();
           return true;
       }
   }) );

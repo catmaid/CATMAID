@@ -1477,8 +1477,10 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   // is removed.
   $('#' + annotation_table_id).on('dblclick', ' tbody tr', function () {
       var aData = annotation_datatable.fnGetData(this);
-      var a = aData[0];
-      var annotations_node = new NeuronNavigator.AnnotationFilterNode(a);
+      var a_name = aData[0];
+      var a_id = aData[4];
+      var annotations_node = new NeuronNavigator.AnnotationFilterNode(
+          a_name, a_id);
       annotations_node.link(self.navigator, self);
       self.navigator.select_node(annotations_node);
   });

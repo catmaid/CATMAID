@@ -871,6 +871,116 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
 
 
 /**
+ * This mixin introduces fields and functions to have and work with a list
+ * neurons. It supports the interface to retrieve and highlight selected
+ * skeletons.
+ */
+NeuronNavigator.NeuronListMixin = function()
+{
+  this.listed_neurons = [];
+}
+
+/**
+ * Returns the IDs of the skeletons modeling the currently selected neurons.
+ */
+NeuronNavigator.NeuronListMixin.prototype.getSelectedSkeletons = function() {
+  return this.get_entities(true).reduce(function(o, e) {
+    return o.concat(e.skeleton_ids);
+  }, []);
+};
+
+/**
+ * Tests if one the current list of neurons has a particular skeleton model.
+ */
+NeuronNavigator.NeuronListMixin.prototype.hasSkeleton = function(skeleton_id) {
+  return this.listed_neurons.some(function(n) {
+    return n.skeleton_ids.indexOf(skeleton_id) != -1;
+  });
+};
+
+/**
+ * If a neuron in the current list is modeled by this particular skeleton ID, it
+ * will be highlighted.
+ */
+NeuronNavigator.NeuronListMixin.prototype.highlight = function(skeleton_id)
+{
+  var $cells = $('#navigator_neuronlist_table' + this.navigator.widgetID +
+      ' tbody td');
+  // Remove any highlighting
+  $cells.css('background-color', '');
+  // Highlight corresponding row if present
+  this.listed_neurons.forEach(function(n) {
+    if (n.skeleton_ids.indexOf(skeleton_id) != -1) {
+      var $row_cells = $cells.find('input[neuron_id=' + n.id + ']').
+          parent().parent().find('td');
+      $row_cells.css('background-color',
+          SelectionTable.prototype.highlighting_color);
+    }
+  });
+};
+
+/**
+ * Retruns a skeleton model dictionary.
+ */
+NeuronNavigator.NeuronListMixin.prototype.getSelectedSkeletonModels = function() {
+  return this.get_entities(true).reduce((function(o, n) {
+    n.skeleton_ids.forEach(function(skid) {
+      o[skid] = new SelectionTable.prototype.SkeletonModel(
+          skid, n.name, new THREE.Color().setRGB(1, 1, 0));
+    });
+    return o;
+  }).bind(this), {});
+};
+
+
+/**
+ * If passed true, this function returns a list of selected entities in the
+ * neuron list. Otherweise, a list of unselected entities is returned.
+ */
+NeuronNavigator.NeuronListMixin.prototype.get_entities = function(checked)
+{
+  if (!this.listed_neurons) return [];
+
+  var checked_neuron_IDs = $('#navigator_neuronlist_table' + this.navigator.widgetID + ' tbody input')
+    .filter(function(i, cb) { return cb.checked; })
+    .toArray()
+    .reduce(function(o, cb) { o[cb.getAttribute('neuron_id')] = true; return o; }, {});
+
+  return this.listed_neurons.filter(function(neuron) {
+    return neuron.id in checked_neuron_IDs;
+  });
+};
+
+/**
+ * Generate a function that will use the list of neurons as its 'this'.
+ */
+NeuronNavigator.NeuronListMixin.prototype.post_process_fn = function(listed_neurons) {
+  // Callback for post-process data received from server
+  return (function(result) {
+      // Reset the neuron list
+      this.length = 0;
+      // Store the new neurons in the list
+      result.aaData.forEach(function(e) {
+          this.push({
+            name: e[0],
+            annotations: e[1],
+            skeleton_ids: e[2],
+            id: e[3]
+          });
+      }, this);
+  }).bind(listed_neurons);
+};
+
+NeuronNavigator.NeuronListMixin.prototype.add_neuronlist_content =
+    function(container, filters)
+{
+  var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
+  var datatable = this.add_neuron_list_table(container, table_id, filters,
+      this.post_process_fn(this.listed_neurons));
+}
+
+
+/**
  * The annotation list node of the navigator provides a list of all available
  * annotations. If double clicked on a listed annotations, it adds a new
  * annotation filter node.
@@ -990,111 +1100,21 @@ NeuronNavigator.UserListNode.prototype.add_content = function(container,
 
 
 /**
- * The neuron list node of the navigator lists all neurons.
+ * The neuron list node of the navigator lists all neurons. It is the simplest
+ * user of the neuron list mixin.
  */
-NeuronNavigator.NeuronListNode = function()
-{
-  this.listed_neurons = [];
-};
+NeuronNavigator.NeuronListNode = function() {};
 
 NeuronNavigator.NeuronListNode.prototype = {};
 $.extend(NeuronNavigator.NeuronListNode.prototype,
     new NeuronNavigator.Node("Neurons"));
-
-/** Generate a function that will use the list of neurons as its 'this'. */
-NeuronNavigator.NeuronListNode.prototype.post_process_fn = function(listed_neurons) {
-  // Callback for post-process data received from server
-  return (function(result) {
-      // Reset the neuron list
-      this.length = 0;
-      // Store the new neurons in the list
-      result.aaData.forEach(function(e) {
-          this.push({
-            name: e[0],
-            annotations: e[1],
-            skeleton_ids: e[2],
-            id: e[3]
-          });
-      }, this);
-  }).bind(listed_neurons);
-};
+$.extend(NeuronNavigator.NeuronListNode.prototype,
+    new NeuronNavigator.NeuronListMixin());
 
 NeuronNavigator.NeuronListNode.prototype.add_content = function(container,
     filters)
 {
-  var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
-  var datatable = this.add_neuron_list_table(container, table_id, filters,
-      this.post_process_fn(this.listed_neurons));
-};
-
-/**
- * Returns the IDs of the skeletons modeling the currently selected neurons.
- */
-NeuronNavigator.NeuronListNode.prototype.getSelectedSkeletons = function() {
-  return this.get_entities(true).reduce(function(o, e) {
-    return o.concat(e.skeleton_ids);
-  }, []);
-};
-
-/**
- * Tests if one the current list of neurons has a particular skeleton model.
- */
-NeuronNavigator.NeuronListNode.prototype.hasSkeleton = function(skeleton_id) {
-  return this.listed_neurons.some(function(n) {
-    return n.skeleton_ids.indexOf(skeleton_id) != -1;
-  });
-};
-
-/**
- * If a neuron in the current list is modeled by this particular skeleton ID, it
- * will be highlighted.
- */
-NeuronNavigator.NeuronListNode.prototype.highlight = function(skeleton_id)
-{
-  var $cells = $('#navigator_neuronlist_table' + this.navigator.widgetID +
-      ' tbody td');
-  // Remove any highlighting
-  $cells.css('background-color', '');
-  // Highlight corresponding row if present
-  this.listed_neurons.forEach(function(n) {
-    if (n.skeleton_ids.indexOf(skeleton_id) != -1) {
-      var $row_cells = $cells.find('input[neuron_id=' + n.id + ']').
-          parent().parent().find('td');
-      $row_cells.css('background-color',
-          SelectionTable.prototype.highlighting_color);
-    }
-  });
-};
-
-/**
- * Retruns a skeleton model dictionary.
- */
-NeuronNavigator.NeuronListNode.prototype.getSelectedSkeletonModels = function() {
-  return this.get_entities(true).reduce((function(o, n) {
-    n.skeleton_ids.forEach(function(skid) {
-      o[skid] = new SelectionTable.prototype.SkeletonModel(
-          skid, n.name, new THREE.Color().setRGB(1, 1, 0));
-    });
-    return o;
-  }).bind(this), {});
-};
-
-/**
- * If passed true, this function returns a list of selected entities in the
- * neuron list. Otherweise, a list of unselected entities is returned.
- */
-NeuronNavigator.NeuronListNode.prototype.get_entities = function(checked)
-{
-  if (!this.listed_neurons) return [];
-
-  var checked_neuron_IDs = $('#navigator_neuronlist_table' + this.navigator.widgetID + ' tbody input')
-    .filter(function(i, cb) { return cb.checked; })
-    .toArray()
-    .reduce(function(o, cb) { o[cb.getAttribute('neuron_id')] = true; return o; }, {});
-
-  return this.listed_neurons.filter(function(neuron) {
-    return neuron.id in checked_neuron_IDs;
-  });
+  this.add_neuronlist_content(container, filters);
 };
 
 
@@ -1111,21 +1131,13 @@ NeuronNavigator.AnnotationFilterNode = function(annotation, annotation_id,
   this.is_coannotation = is_coannotation;
   this.is_meta_annotation = is_meta_annotation;
   this.name = annotation;
-
-  this.neuron_list_node = new NeuronNavigator.NeuronListNode();
 };
 
 NeuronNavigator.AnnotationFilterNode.prototype = {};
 $.extend(NeuronNavigator.AnnotationFilterNode.prototype,
     new NeuronNavigator.Node("Empty Annotation Filter"));
-
-NeuronNavigator.AnnotationFilterNode.prototype.getSelectedSkeletonModels = function() {
-  return this.neuron_list_node.getSelectedSkeletonModels();
-};
-
-NeuronNavigator.AnnotationFilterNode.prototype.getSelectedSkeletons = function() {
-  return this.neuron_list_node.getSelectedSkeletons();
-};
+$.extend(NeuronNavigator.AnnotationFilterNode.prototype,
+    new NeuronNavigator.NeuronListMixin());
 
 NeuronNavigator.AnnotationFilterNode.prototype.breaks_filter_chain = function()
 {
@@ -1185,8 +1197,7 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
 
   // Add content from neuron list node. As a currently needed hack, a copy
   // of the current node has to be added.
-  this.neuron_list_node.navigator = this.navigator; // informal link
-  this.neuron_list_node.add_content(container, filters);
+  this.add_neuronlist_content(container, filters);
 };
 
 
@@ -1642,20 +1653,15 @@ NeuronNavigator.ActiveNeuronNode.prototype.highlight = function(skeleton_id)
  */
 NeuronNavigator.HomeNode = function()
 {
-  this.name = "Home";
   // A home node acts as the root node and has therefore no parent.
   this.link(null);
-
-  this.neuron_list_node = new NeuronNavigator.NeuronListNode();
 };
 
 NeuronNavigator.HomeNode.prototype = {};
 $.extend(NeuronNavigator.HomeNode.prototype,
-    new NeuronNavigator.NeuronListNode());
-
-NeuronNavigator.HomeNode.prototype.get_entities = function(checked) {
-  return this.neuron_list_node.get_entities(checked);
-};
+    new NeuronNavigator.Node("Home"));
+$.extend(NeuronNavigator.HomeNode.prototype,
+    new NeuronNavigator.NeuronListMixin());
 
 NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
 {
@@ -1694,6 +1700,5 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
   container.append(neuron_title);
 
   // Add neuron list table
-  this.neuron_list_node.navigator = this.navigator; // informal link
-  this.neuron_list_node.add_content(container, filters);
+  this.add_neuronlist_content(container, filters);
 };

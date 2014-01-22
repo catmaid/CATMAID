@@ -33,6 +33,23 @@ User.all = function()
 };
 
 
+/**
+ * Gets the user object belonging the passed ID and calls the passed function
+ * with this as parameter. If the user object is not available, an update of
+ * the user cache is scheduled before.
+ */
+User.auto_update_call = function(user_id, fn)
+{
+  if (user_id in User.prototype.users) {
+    fn(User.prototype.users[user_id]);
+  } else {
+    User.getUsers(function() {
+      // Expect it to be there after the update
+      fn(User.prototype.users[user_id]);
+    });
+  }
+};
+
 User.getUsers = function(completionCallback)
 {
 	// Asynchronously request the list of users from the server.

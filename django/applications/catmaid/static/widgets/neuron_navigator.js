@@ -428,7 +428,7 @@ NeuronNavigator.Node.prototype.add_menu_table = function(entries, container)
 };
 
 NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
-    table_id, filters, display_annotator, unlink_handler)
+    table_id, filters, display_annotator, unlink_handler, callback)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_annotationlist_content' +
@@ -570,7 +570,12 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
             "type": "POST",
             "url": sSource,
             "data": aoData,
-            "success": fnCallback
+            "success": function(result) {
+                fnCallback(result);
+                if (callback) {
+                  callback(result);
+                }
+            }
         });
     },
     "aLengthMenu": [
@@ -1022,7 +1027,7 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container,
 
   // Add annotation data table based on filters above
   var datatable = this.add_annotation_list_table(container, table_id, filters,
-      false, null);
+      false, null, null);
 
   // Make self accessible in callbacks more easily
   var self = this;
@@ -1472,7 +1477,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
                   // Refresh node
                   self.navigator.select_node(self);
               });
-      });
+      }, null);
 
   // If a user is selected an annotation filter node is created and the event
   // is removed.

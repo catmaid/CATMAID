@@ -456,7 +456,10 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
       column_params.push(
         { // Annotator username
           "bSearchable": true,
-          "bSortable": true
+          "bSortable": true,
+          "mRender": function(data, type, full) {
+            return full[3] in User.all() ? User.all()[full[3]].login : "unknown";
+          }
         });
   }
   if (unlink_handler) {

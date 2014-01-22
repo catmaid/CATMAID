@@ -601,7 +601,8 @@ def list_annotations_datatable(request, project_id=None):
 
     # Annotate username of last user
     annotation_query = annotation_query.extra(
-        select={'last_user': 'SELECT username FROM auth_user, class_instance_class_instance cici ' \
+        select={'last_user': 'SELECT auth_user.id FROM auth_user, ' \
+            'class_instance_class_instance cici ' \
             'WHERE cici.class_instance_b = class_instance.id ' \
             'AND cici.user_id = auth_user.id ' \
             'ORDER BY cici.edition_time DESC LIMIT 1'})
@@ -658,7 +659,7 @@ def list_annotations_datatable(request, project_id=None):
             annotation[1], # Name
             last_used, # Last used
             annotation[3], # Usage
-            annotation[4], # Annotator
+            annotation[4], # Annotator ID
             annotation[0]]) # ID
 
     return HttpResponse(json.dumps(response), mimetype='text/json')

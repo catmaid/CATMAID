@@ -13,16 +13,10 @@ from catmaid.control.common import *
 from itertools import chain, imap, izip
 
 
-def create_basic_annotated_entity_query(project, params, relations,
+def create_basic_annotated_entity_query(project, params, relations, classes,
         allowed_classes=['neuron', 'annotation']):
-    # Get IDs of constraining classes. Getting this ID in a separate query is
-    # usually cheaper than joining the class table based on the allowed names.
-    allowed_class_ids = Class.objects.filter(project_id=project.id,
-            class_name__in=allowed_classes).values_list('id', flat=True)
-
-    #TODO above, replace the string search in a set, with class_id, for numeric search
-    # Reduces memory and increases speed.
-
+    # Get IDs of constraining classes.
+    allowed_class_ids = [classes[c] for c in allowed_classes]
 
     # Let the default unrestricted result set contain all instances of
     # the given set of allowed classes
@@ -121,9 +115,11 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
 def query_neurons_by_annotations(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
 
+    classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
 
-    query = create_basic_annotated_entity_query(p, request.POST, relations)
+    query = create_basic_annotated_entity_query(p, request.POST, relations,
+            classes)
     query = query.order_by('id').distinct()
     dump = create_annotated_entity_list(p, query, relations)
 
@@ -133,6 +129,7 @@ def query_neurons_by_annotations(request, project_id = None):
 def query_neurons_by_annotations_datatable(request, project_id=None):
     p = get_object_or_404(Project, pk = project_id)
 
+    classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
 
     display_start = int(request.POST.get('iDisplayStart', 0))
@@ -140,7 +137,8 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
     if display_length < 0:
         display_length = 2000  # Default number of result rows
 
-    neuron_query = create_basic_annotated_entity_query(p, request.POST, relations, allowed_classes=['neuron'])
+    neuron_query = create_basic_annotated_entity_query(p, request.POST,
+            relations, classes, allowed_classes=['neuron'])
 
     search_term = request.POST.get('sSearch', '')
     if len(search_term) > 0:

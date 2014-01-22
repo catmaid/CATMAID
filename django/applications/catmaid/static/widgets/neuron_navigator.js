@@ -183,9 +183,9 @@ NeuronNavigator.Node = function(name)
   /* Because some nodes use tables to display data, some common options are
    * kept on the abstract node level.
    */
-  this.possibleLengths = [25, 100, -1];
+  this.possibleLengths = [25, 100, 500, 2000];
   this.possibleLengthsLabels = this.possibleLengths.map(
-      function (n) { return (n === -1) ? "All" : n.toString() });
+      function (n) { return n.toString() });
 };
 
 /**

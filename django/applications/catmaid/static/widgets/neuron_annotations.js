@@ -249,12 +249,13 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   $(".show_annotation", $(ul)).click( function() {
       // Expect name to be the text content of the node
       var annotation_name = $(this).text();;
+      var annotation_id = $(this).attr('annotation_id');
       // Create a new navigator and set it to an annotation filter node
       var NN = new NeuronNavigator();
       // Create a new window, based on the newly created navigator
       WindowMaker.create('neuron-navigator', NN);
       // Select the cloned node in the new navigator
-      NN.set_annotation_node(annotation_name);
+      NN.set_annotation_node(annotation_name, annotation_id);
   });
   // Add handler to the checkbox infront of each entity
   var create_cb_handler = function(widget) {

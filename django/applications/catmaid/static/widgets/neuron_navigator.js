@@ -1633,10 +1633,11 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
               this.neuron_id = json.neuronid;
               // Update the neuron name
               this.neuron_name = json.neuronname;
-              filters.neuron_id = json.neuronid; // TODO a patch to an error elsewhere
-              // Call neuron node content creation
+              // Call neuron node content creation. The neuron ID changed and we
+              // want the content to reflect that. Therefore, the filters have
+              // to be re-created.
               NeuronNavigator.NeuronNode.prototype.add_content.call(this,
-                  container, filters);
+                  container, this.get_filter_set());
             }
           }
     }).bind(this));

@@ -331,16 +331,13 @@ def create_annotation_query(project_id, param_dict):
                 cici_via_a__class_instance_b = sub_annotation)
 
     # If parallel_annotations is given, only annotations are returned, that
-    # are used alongside with these. This also removes the parallel annotations
-    # themselves from the result set.
+    # are used alongside with these.
     parallel_annotations = [v for k,v in param_dict.iteritems()
             if k.startswith('parallel_annotations[')]
     for p_annotation in parallel_annotations:
         annotation_query = annotation_query.filter(
                 cici_via_b__class_instance_a__cici_via_a__relation_id = relations['annotated_with'],
                 cici_via_b__class_instance_a__cici_via_a__class_instance_b = p_annotation)
-        # TODO why is it necessary to exclude them?
-        annotation_query = annotation_query.exclude(id=p_annotation)
 
     # Passing in a user ID causes the result set to only contain annotations
     # that are used by the respective user. The query filter could lead to
@@ -468,7 +465,6 @@ def generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relati
             neuron.class_id = %s
         AND a.class_id = %s
         AND a.project_id = %s
-        AND a.id NOT IN (%s)
         AND cc.class_instance_a = neuron.id
         AND cc.relation_id = %s
         AND cc.class_instance_b = a.id
@@ -477,7 +473,6 @@ def generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relati
            classIDs['neuron'],
            annotation_class,
            project_id,
-           ','.join(str(x) for x in co_annotation_ids),
            annotated_with,
            ''.join(where))
 

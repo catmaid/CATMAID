@@ -574,6 +574,20 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
             "url": sSource,
             "data": aoData,
             "success": function(result) {
+                // Filter all previously chosen co-annotations to not display
+                // them in the list for new co-annotations.
+                if (!filters.is_meta) {
+                  var newAaData = result.aaData.filter(function(e) {
+                    return !filters.annotations.some(function(a_id) {
+                      return e[4] === a_id;
+                    });
+                  });
+
+                  result.aaData = newAaData;
+                  result.iTotalDisplayRecords = newAaData.length;
+                  result.iTotalRecords = newAaData.length;
+                }
+                // Regular datatable processing and callback
                 fnCallback(result);
                 if (callback) {
                   callback(result);

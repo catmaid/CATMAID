@@ -30,7 +30,7 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
             name = params[key].strip()
             if len(name):
                 entities = entities.filter(name__iregex=name)
-        if key.startswith('neuron_query_by_annotation'):
+        elif key.startswith('neuron_query_by_annotation'):
             tag = int(params[key])
             entities = entities.filter(
                     cici_via_a__relation_id = annotated_with,

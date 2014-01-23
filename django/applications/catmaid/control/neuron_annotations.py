@@ -18,43 +18,107 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     # Get IDs of constraining classes.
     allowed_class_ids = [classes[c] for c in allowed_classes]
 
-    # Let the default unrestricted result set contain all instances of
-    # the given set of allowed classes
-    entities = ClassInstance.objects.filter(project = project,
-            class_column__id__in = allowed_class_ids)
-
     annotated_with = relations['annotated_with']
+
+    # Annotations of which subannotations should be included
+    annotations_to_expand = set()
+
+    # Construct three Q objects to represent the final query: general filters,
+    # annotation filters and sub-annotation filters. The result will match the
+    # general filters that are annotated by the annotation filters or the
+    # sub-annotation filters.
+    general_q = Q()
+    annotation_q = Q()
+    subannotation_q = Q()
 
     for key in params:
         if key.startswith('neuron_query_by_name'):
             name = params[key].strip()
             if len(name):
-                entities = entities.filter(name__iregex=name)
+                general_q = general_q & Q(name__iregex=name)
         elif key.startswith('neuron_query_by_annotation'):
             tag = int(params[key])
-            entities = entities.filter(
+            annotation_q = annotation_q & Q(
                     cici_via_a__relation_id = annotated_with,
                     cici_via_a__class_instance_b = tag)
+        elif key.startswith('neuron_query_include_subannotation'):
+            annotations_to_expand.add(int(params[key]))
         elif key == 'neuron_query_by_annotator':
             userID = int(params[key])
             if userID >= 0:
-                entities = entities.filter(
+                general_q = general_q & Q(
                         cici_via_a__relation_id = annotated_with,
                         cici_via_a__user = userID)
         elif key == 'neuron_query_by_start_date':
             startDate = params[key].strip()
             if len(startDate) > 0:
-                entities = entities.filter(
+                general_q = general_q & Q(
                         cici_via_a__relation_id = annotated_with,
                         cici_via_a__creation_time__gte = startDate)
         elif key == 'neuron_query_by_end_date':
             endDate = params[key].strip()
             if len(endDate) > 0:
-                entities = entities.filter(
+                general_q = general_q & Q(
                         cici_via_a__relation_id = annotated_with,
                         cici_via_a__creation_time__lte = endDate)
 
-    return entities
+    # Find sub-annotations of annotations to expand and add found IDs to query
+    sub_annotation_ids = get_sub_annotation_ids(project, annotations_to_expand,
+            relations, classes)
+    sub_annotation_q = Q(
+            cici_via_a__relation_id = annotated_with,
+            cici_via_a__class_instance_b__in = sub_annotation_ids)
+
+    # Combine sub-queries by making sure that the general filters are applied
+    # to both annotations and sub-annotation filters.
+    combined_filter = general_q & (annotation_q | sub_annotation_q)
+
+    # Create final query. Without any restriction, the result set will contain
+    # all instances of the given set of allowed classes.
+    return ClassInstance.objects.filter(combined_filter, project = project,
+            class_column__id__in = allowed_class_ids)
+
+def get_sub_annotation_ids(project_id, annotation_set, relations, classes):
+    """ Sub-annotations are annotations that are annotated with an annotation
+    from the annotation_set passed. Additionally, transivitely annotated
+    annotations are returned as well.
+    """
+    aaa_tuples = ClassInstanceClassInstance.objects.filter(
+            project_id=project_id,
+            class_instance_a__class_column=classes['annotation'],
+            class_instance_b__class_column=classes['annotation'],
+            relation_id = relations['annotated_with']).values_list(
+                    'class_instance_b', 'class_instance_a')
+
+    # A set wrapper to keep a set in a dictionary
+    class set_wrapper:
+        def __init__(self):
+            self.data = set()
+
+    # Create a dictionary of all annotations annotating a set of annotations
+    aaa = {}
+    for aa in aaa_tuples:
+        sa_set = aaa.get(aa[0])
+        if sa_set is None:
+            sa_set = set_wrapper()
+            aaa[aa[0]] = sa_set
+        sa_set.data.add(aa[1])
+
+    # Collect all sub-annotations by following the annotation hierarchy for
+    # every annotation in the annotation set passed.
+    sa_ids = set()
+    working_set = annotation_set.copy()
+    while working_set:
+        parent_id = working_set.pop()
+        # Try to get the sub-annotations for this parent
+        child_ids = aaa.get(parent_id) or set_wrapper()
+        for child_id in child_ids.data:
+            if child_id not in sa_ids:
+                # Add all children as sub annotations
+                sa_ids.add(child_id)
+                working_set.add(child_id)
+
+    return sa_ids
 
 def create_annotated_entity_list(project, entities_qs, relations, annotations=True):
     """ Executes the expected class instance queryset in <entities> and expands

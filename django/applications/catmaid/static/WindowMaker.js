@@ -2044,6 +2044,9 @@ var WindowMaker = new function()
           '<td class="neuron_annotations_query_field">' +
             '<input type="text" name="neuron_query_by_annotation" ' +
                 'id="neuron_query_by_annotation_name{{NA-ID}}" value="" class=""/>' +
+            '<input type="checkbox" name="neuron_query_include_subannotation" ' +
+                'id="neuron_query_include_subannotation{{NA-ID}}" value="" class=""/>' +
+            'Include sub-annotations ' +
             '<input type="button" name="neuron_annotations_add_annotation" ' +
                 'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" ' +
                 'class="" />' +

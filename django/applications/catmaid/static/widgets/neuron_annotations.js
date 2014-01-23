@@ -305,6 +305,11 @@ NeuronAnnotations.prototype.query = function()
       this.widgetID).serializeArray().reduce(function(o, e) {
         if (0 === e.name.indexOf('neuron_query_by_annotation')) {
           o[e.name] = annotation_ids[e.value];
+        } else if (0 === e.name.indexOf('neuron_query_include_subannotation')) {
+          // Expect the annotation field to be read out before this
+          var ann_input_name = e.name.replace(new RegExp(e.name),
+              'neuron_query_by_annotation');
+          o[e.name] = o[ann_input_name];
         } else {
           o[e.name] = e.value;
         }
@@ -414,6 +419,9 @@ NeuronAnnotations.prototype.add_query_field = function()
   $button.attr('value', '-');
   $button.click(this.remove_query_field.bind(this, this.nextFieldID));
   $("#neuron_query_by_annotator" + this.widgetID).before($newRow);
+
+  // By default, sub-annotations should not be included
+  $newRow.find('input[type=checkbox]').attr('checked', false);
 
   this.nextFieldID += 1;
 };

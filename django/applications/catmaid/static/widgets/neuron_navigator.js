@@ -1172,6 +1172,12 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
 {
   var content = document.createElement('div');
 
+  // Add 'Annotate annotation' button
+  var annotate_button = document.createElement('input');
+  annotate_button.setAttribute('type', 'button');
+  annotate_button.setAttribute('value', 'Annotate annotation');
+  container.append(annotate_button);
+
   // Create menu and add it to container
   var menu_entries = ['Annotates', 'Annotated with', 'Co-Annotations', 'Users',
       'Neurons'];
@@ -1179,6 +1185,12 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
 
   // Add container to DOM
   container.append(content);
+
+  // Handle annotation of annotations
+  $(annotate_button).click((function() {
+    NeuronAnnotations.prototype.annotate_neurons([this.annotation_id],
+        (function() { this.navigator.select_node(this); }).bind(this));
+  }).bind(this));
 
   // Append double click handler
   $(table_rows[0]).dblclick($.proxy(function() {

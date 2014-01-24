@@ -278,7 +278,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotations):
             class_instance_b__in=to_delete_ids).delete()
 
 
-def _annotate_entities(project_id, user, neuron_ids, annotations):
+def _annotate_entities(project_id, user, entity_ids, annotations):
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')
 
@@ -292,15 +292,14 @@ def _annotate_entities(project_id, user, neuron_ids, annotations):
                 class_column=annotation_class,
                 defaults={'user': user});
         annotation_objects.append(ci)
-        # Annotate each of the neurons. Avoid duplicates for the current user,
+        # Annotate each of the entities. Avoid duplicates for the current user,
         # but it's OK for multiple users to annotate with the same instance.
-        for neuron_id in neuron_ids:
+        for entity_id in entity_ids:
             cici, created = ClassInstanceClassInstance.objects.get_or_create(
                     project_id=project_id, relation=r,
-                    class_instance_a__id=neuron_id,
-                    class_instance_a__class_column__class_name='neuron',
+                    class_instance_a__id=entity_id,
                     class_instance_b=ci, user=user,
-                    defaults={'class_instance_a_id': neuron_id})
+                    defaults={'class_instance_a_id': entity_id})
             cici.save() # update the last edited time
 
     return annotation_objects

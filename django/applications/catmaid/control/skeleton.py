@@ -7,7 +7,7 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query
-from catmaid.control.neuron_annotations import _annotate_neurons
+from catmaid.control.neuron_annotations import _annotate_entities
 from catmaid.control.neuron_annotations import _update_neuron_annotations
 from collections import defaultdict
 import json
@@ -309,7 +309,7 @@ def split_skeleton(request, project_id=None):
             upstream_annotation_set)
 
     # Update annotations of under skeleton
-    _annotate_neurons(project_id, request.user, [new_neuron.id],
+    _annotate_entities(project_id, request.user, [new_neuron.id],
             downstream_annotation_set)
 
     # Log the location of the node at which the split was done

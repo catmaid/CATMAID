@@ -2153,7 +2153,7 @@ var WindowMaker = new function()
         var selected_entity_ids = this.get_selected_neurons().map( function(e) {
           return e.id;
         });;
-        this.annotate_neurons(selected_entity_ids);
+        this.annotate_entities(selected_entity_ids);
     }).bind(NA);
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);

@@ -550,20 +550,20 @@ NeuronAnnotations.prototype.annotate_neurons_of_skeletons = function(
   this.annotate(null, skeleton_ids, callback);
 };
 
-NeuronAnnotations.prototype.annotate_neurons = function(neuron_ids,
+NeuronAnnotations.prototype.annotate_entities = function(entity_ids,
     callback)
 {
-  this.annotate(neuron_ids, null, callback);
+  this.annotate(entity_ids, null, callback);
 };
 
-NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids,
+NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
     callback)
 {
   // Complain if there is no target
-  var has_target = (neuron_ids && neuron_ids.length > 0) ||
+  var has_target = (entity_ids && entity_ids.length > 0) ||
       (skeleton_ids && skeleton_ids.length > 0);
   if (!has_target) {
-    alert("Please select at least one neuron or skeleton!");
+    alert("Please select at least one annotation, neuron or skeleton!");
     return;
   }
   // Get annotation terms
@@ -577,14 +577,14 @@ NeuronAnnotations.prototype.annotate = function(neuron_ids, skeleton_ids,
     if (meta_annotations) {
       data.meta_annotations = meta_annotations;
     }
-    if (neuron_ids) {
-        data.neuron_ids = neuron_ids;
+    if (entity_ids) {
+        data.entity_ids = entity_ids;
     }
     if (skeleton_ids) {
         data.skeleton_ids = skeleton_ids;
     }
     // Do request
-    requestQueue.register(django_url + project.id + '/neuron/annotate',
+    requestQueue.register(django_url + project.id + '/annotations/add',
         'POST', data, function(status, text, xml) {
           if (status === 200) {
             var e = $.parseJSON(text);

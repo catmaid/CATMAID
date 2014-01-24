@@ -834,7 +834,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
     }, []);
 
     if (selected_neurons.length > 0) {
-      NeuronAnnotations.prototype.annotate_neurons(selected_neurons);
+      NeuronAnnotations.prototype.annotate_entities(selected_neurons);
     } else {
       alert("Please select at least one neuron to annotate first!");
     }
@@ -1188,7 +1188,7 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
 
   // Handle annotation of annotations
   $(annotate_button).click((function() {
-    NeuronAnnotations.prototype.annotate_neurons([this.annotation_id],
+    NeuronAnnotations.prototype.annotate_entities([this.annotation_id],
         (function() { this.navigator.select_node(this); }).bind(this));
   }).bind(this));
 
@@ -1382,7 +1382,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   // When clicked, the annotate button should prompt for a new annotation and
   // reload the node
   $(annotate_button).click((function() {
-    NeuronAnnotations.prototype.annotate_neurons([this.neuron_id],
+    NeuronAnnotations.prototype.annotate_entities([this.neuron_id],
         (function() { this.navigator.select_node(this); }).bind(this));
   }).bind(this));
 

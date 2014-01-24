@@ -268,7 +268,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotations):
     existing = set(existing_annotations.iterkeys())
 
     missing = annotations - existing
-    _annotate_neurons(project_id, user, [neuron_id], missing)
+    _annotate_entities(project_id, user, [neuron_id], missing)
 
     to_delete = existing - annotations
     to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \
@@ -278,7 +278,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotations):
             class_instance_b__in=to_delete_ids).delete()
 
 
-def _annotate_neurons(project_id, user, neuron_ids, annotations):
+def _annotate_entities(project_id, user, neuron_ids, annotations):
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')
 
@@ -306,32 +306,32 @@ def _annotate_neurons(project_id, user, neuron_ids, annotations):
     return annotation_objects
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def annotate_neurons(request, project_id = None):
+def annotate_entities(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
 
     annotations = [v for k,v in request.POST.iteritems()
             if k.startswith('annotations[')]
     meta_annotations = [v for k,v in request.POST.iteritems()
             if k.startswith('meta_annotations[')]
-    neuron_ids = [int(v) for k,v in request.POST.iteritems()
-            if k.startswith('neuron_ids[')]
+    entity_ids = [int(v) for k,v in request.POST.iteritems()
+            if k.startswith('entity_ids[')]
     skeleton_ids = [int(v) for k,v in request.POST.iteritems()
             if k.startswith('skeleton_ids[')]
     
     if any(skeleton_ids):
-        neuron_ids += ClassInstance.objects.filter(project = p,
+        entity_ids += ClassInstance.objects.filter(project = p,
                 class_column__class_name = 'neuron',
                 cici_via_b__relation__relation_name = 'model_of',
                 cici_via_b__class_instance_a__in = skeleton_ids).values_list(
                         'id', flat=True)
 
-    # Annotate neurons
-    annotations = _annotate_neurons(project_id, request.user, neuron_ids,
+    # Annotate enties
+    annotations = _annotate_entities(project_id, request.user, entity_ids,
             annotations)
     # Annotate annotations
     if meta_annotations:
         annotation_ids = [a.id for a in annotations]
-        _annotate_neurons(project_id, request.user, annotation_ids,
+        _annotate_entities(project_id, request.user, annotation_ids,
                 meta_annotations)
 
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')

@@ -337,21 +337,21 @@ def annotate_entities(request, project_id = None):
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_annotation(request, project_id=None, neuron_id=None,
-        annotation_id=None):
-    """ Removes an annotation from a neuron.
+def remove_annotation(request, project_id=None, annotation_id=None,
+        entity_id=None):
+    """ Removes an annotation from an entity.
     """
     p = get_object_or_404(Project, pk=project_id)
 
     # Get CICI instance representing the link
     cici_n_a = ClassInstanceClassInstance.objects.get(project=p,
-            class_instance_a__id=neuron_id, class_instance_b__id=annotation_id)
+            class_instance_a__id=entity_id, class_instance_b__id=annotation_id)
     # Make sure the current user has permissions to remove the annotation.
     can_edit_or_fail(request.user, cici_n_a.id, 'class_instance_class_instance')
-    # Remove link between neuron and annotation.
+    # Remove link between entity and annotation.
     cici_n_a.delete()
 
-    message = "Removed annotation from neuron."
+    message = "Removed annotation from entity."
 
     # Remove the annotation class instance, regardless of the owner, if there
     # are no more links to it

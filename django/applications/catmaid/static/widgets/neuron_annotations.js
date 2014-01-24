@@ -608,15 +608,15 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
  * entity. It is not dependent on any context, but asks the user for
  * confirmation. A callback can be executed in the case of success.
  */
-NeuronAnnotations.remove_annotation = function(neuron_id,
+NeuronAnnotations.remove_annotation = function(entity_id,
     annotation_id, callback)
 {
   if (!confirm('Are you sure you want to remove this annotation?')) {
     return;
   }
 
-  requestQueue.register(django_url + project.id + '/neuron/' + neuron_id +
-      '/annotation/' + annotation_id + '/remove',
+  requestQueue.register(django_url + project.id + '/annotations/' +
+      annotation_id + '/entity/' + entity_id + '/remove',
       'POST', {}, $.proxy(function(status, text, xml) {
         if (status === 200) {
           var e = $.parseJSON(text);

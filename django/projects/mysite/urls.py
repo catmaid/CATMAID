@@ -145,14 +145,14 @@ urlpatterns += patterns(
             'catmaid.control.get_skeleton_permissions'),
 
     (r'^(?P<project_id>\d+)/annotations/add$', 'catmaid.control.annotate_entities'),
+    (r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/entity/(?P<entity_id>\d+)/remove$',
+            'catmaid.control.remove_annotation'),
 
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'catmaid.control.get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'catmaid.control.give_neuron_to_other_user'),
     (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'catmaid.control.query_neurons_by_annotations'),
     (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
             'catmaid.control.query_neurons_by_annotations_datatable'),
-    (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/annotation/(?P<annotation_id>\d+)/remove$',
-            'catmaid.control.remove_annotation'),
     (r'^(?P<project_id>\d+)/annotations/list$', 'catmaid.control.list_annotations'),
     (r'^(?P<project_id>\d+)/annotations/table-list$', 'catmaid.control.list_annotations_datatable'),
     

@@ -344,10 +344,11 @@ def remove_annotation(request, project_id=None, annotation_id=None,
     p = get_object_or_404(Project, pk=project_id)
 
     # Get CICI instance representing the link
-    cici_n_a = ClassInstanceClassInstance.objects.get(project=p,
+    cici_n_a = ClassInstanceClassInstance.objects.filter(project=p,
             class_instance_a__id=entity_id, class_instance_b__id=annotation_id)
     # Make sure the current user has permissions to remove the annotation.
-    can_edit_or_fail(request.user, cici_n_a.id, 'class_instance_class_instance')
+    for cici in cici_n_a:
+        can_edit_or_fail(request.user, cici.id, 'class_instance_class_instance')
     # Remove link between entity and annotation.
     cici_n_a.delete()
 

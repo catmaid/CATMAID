@@ -398,6 +398,7 @@ NeuronAnnotations.prototype.query = function()
             $tableBody.empty();
             // Empty selection map and store results
             this.entity_selection_map = {};
+            this.queryResults = [];
             this.queryResults[0] = e;
             // create appender function which adds rows to table
             var appender = function(tr) {

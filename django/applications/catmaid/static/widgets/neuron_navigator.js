@@ -577,15 +577,16 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
                 // Filter all previously chosen co-annotations to not display
                 // them in the list for new co-annotations.
                 if (!filters.is_meta) {
-                  var newAaData = result.aaData.filter(function(e) {
+                  var new_aaData = result.aaData.filter(function(e) {
                     return !filters.annotations.some(function(a_id) {
                       return e[4] === a_id;
                     });
                   });
-
-                  result.aaData = newAaData;
-                  result.iTotalDisplayRecords = newAaData.length;
-                  result.iTotalRecords = newAaData.length;
+                  var n_entries = result.iTotalRecords -
+                          new_aaData.length + result.aaData.length;
+                  result.iTotalDisplayRecords = n_entries;
+                  result.iTotalRecords = n_entries;
+                  result.aaData = new_aaData;
                 }
                 // Regular datatable processing and callback
                 fnCallback(result);

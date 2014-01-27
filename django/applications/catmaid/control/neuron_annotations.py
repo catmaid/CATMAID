@@ -275,7 +275,9 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotations):
         if name in to_delete)
 
     ClassInstanceClassInstance.objects.filter(
-            class_instance_b__in=to_delete_ids).delete()
+            class_instance_a_id=neuron_id,
+            relation__relation_name='annotated_with',
+            class_instance_b_id__in=to_delete_ids).delete()
 
 
 def _annotate_entities(project_id, user, entity_ids, annotations):

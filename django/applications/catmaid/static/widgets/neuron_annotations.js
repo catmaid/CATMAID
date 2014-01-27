@@ -9,7 +9,10 @@ var NeuronAnnotations = function()
   this.registerSource();
 
   this.nextFieldID = 1;    // unique ID for annotation fields added by the "+" button
+  // Results of main and sub queries. The main query will be index 0,
+  // sub-queries will take the next free slot.
   this.queryResults = [];
+
   this.entity_selection_map = {};
   this.pid = project.id;
 
@@ -49,9 +52,11 @@ NeuronAnnotations.prototype.getSelectedSkeletons = function() {
 };
 
 NeuronAnnotations.prototype.hasSkeleton = function(skeleton_id) {
-  return this.queryResults.some(function(e) {
-    return e.type === 'neuron' && e.skeleton_ids.some(function(id) {
-      return id === skeleton_id;
+  return this.queryResults.some(function(qs) {
+    return qs.some(function(e) {
+      return e.type === 'neuron' && e.skeleton_ids.some(function(id) {
+        return id === skeleton_id;
+      });
     });
   });
 };
@@ -74,15 +79,19 @@ NeuronAnnotations.prototype.highlight = function(skeleton_id)
   if (!skeleton_id) return;
 
   // Find neuron containing this skeleton_id
-  var neurons = this.queryResults.filter(function(e) {
-    if (e.type == 'neuron') {
-      return e.skeleton_ids.some(function(s) {
-        return s == skeleton_id;
-      });
-    } else {
-      return false;
-    }
-  });
+  var neurons = this.queryResults.reduce((function(o, qs) {
+    o = o.concat(qs.filter(function(e) {
+      if (e.type == 'neuron') {
+        return e.skeleton_ids.some(function(s) {
+          return s == skeleton_id;
+        });
+      } else {
+        return false;
+      }
+    }));
+
+    return o;
+  }).bind(this), []);
 
   if (neurons) {
     // Remove any highlighting
@@ -191,10 +200,44 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
     $(a).click(function() {
       // If expanded, collapse it. Expand it otherwise.
       if ($(this).is('[expanded]')) {
-        // TODO: Collapse it
+        // Get sub-expansion ID an mark link not expanded
+        var sub_id = $(this).attr('expanded');
+        this.removeAttribute('expanded');
+        // Find all rows that have an attribute called 'expansion' and delete
+        // them.
+        var removed_entities = [];
+        while (true) {
+          var next = $(tr).next();
+          if (next.is('[expansion_' + entity.id + ']')) {
+            next.remove();
+          } else {
+            break;
+          }
+        }
+        // Delete sub-expansion query result
+        delete self.queryResults[sub_id];
+
+        // Update current result table classes
+        self.update_result_row_classes();
       } else {
+        // Find a valid sub query ID as reference
+        var sub_id = (function(results, count) {
+          while (true) {
+            if (results[count] === undefined) {
+              // Stop, if a valid ID has been found
+              return count;
+            } else {
+              // Increase counter, if the current ID is in use
+              ++count;
+            }
+          }
+        })(self.queryResults, 0);
         // Mark link expanded
-        this.setAttribute('expanded', 'true');
+        this.setAttribute('expanded', sub_id);
+        // Make sure the slot in results array is used for this sub-query by
+        // assigning 'null' to it (which is not 'undefined').
+        self.queryResults[sub_id] = null;
+
         // Request entities that are annotated with this annotation
         // and replace the clicked on annotation with the result.
         var query_data = {
@@ -207,8 +250,10 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
                 if (e.error) {
                   new ErrorDialog(e.error, e.detail).show();
                 } else {
-                  //Append new content right after the current node
+                  // Append new content right after the current node and save a
+                  // reference for potential removal.
                   var appender = function(new_tr) {
+                    new_tr.setAttribute('expansion_' + entity.id, 'true');
                     $(tr).after(new_tr)
                   };
 
@@ -220,7 +265,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
 
                   // The order of the query result array doesn't matter.
                   // It is therefore possible to just append the new results.
-                  self.queryResults = self.queryResults.concat(e);
+                  self.queryResults[sub_id] = e;
                   // Update current result table classes
                   self.update_result_row_classes();
                 }
@@ -272,10 +317,12 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
           widget.updateLink(widget.getSelectedSkeletonModels());
           // Potentially remove skeletons from link target
           if (!is_checked && widget.linkTarget) {
-            var skids = widget.queryResults.reduce(function(o, e) {
-              if (e.id == entity_id) {
-                o = o.concat(e.skeleton_ids);
-              }
+            var skids = widget.queryResults.reduce(function(o, qs) {
+              qs.forEach(function(e) {
+                if (e.id == entity_id) {
+                  o = o.concat(e.skeleton_ids);
+                }
+              });
               return o;
             }, []);
             // Prevent propagation loop by checking if the target has the skeletons anymore
@@ -351,19 +398,19 @@ NeuronAnnotations.prototype.query = function()
             $tableBody.empty();
             // Empty selection map and store results
             this.entity_selection_map = {};
-            this.queryResults = e;
+            this.queryResults[0] = e;
             // create appender function which adds rows to table
             var appender = function(tr) {
               $tableBody.append(tr);
             };
             // Mark entities as unselected and create result table rows
-            this.queryResults.forEach((function(entity) {
+            this.queryResults[0].forEach((function(entity) {
               this.entity_selection_map[entity.id] = false;
               this.add_result_table_row(entity, appender, 0);
             }).bind(this));
 
             // If there are results, display the result table
-            if (this.queryResults.length > 0) {
+            if (this.queryResults[0].length > 0) {
               $('#neuron_annotations_query_no_results' + this.widgetID).hide();
               $('#neuron_annotations_query_results' + this.widgetID).show();
               this.update_result_row_classes();
@@ -442,8 +489,10 @@ NeuronAnnotations.prototype.toggle_neuron_selections = function()
           function(i, element) {
             element.checked = newValue;
           });
-  this.queryResults.forEach(function(e) {
-    this.entity_selection_map[e.id] = newValue;
+  this.queryResults.forEach(function(qs) {
+    qs.forEach(function(e) {
+      this.entity_selection_map[e.id] = newValue;
+    }, this);
   }, this);
 
   // Update sync link
@@ -470,13 +519,15 @@ NeuronAnnotations.prototype.toggle_neuron_selections = function()
 NeuronAnnotations.prototype.get_entities = function(checked)
 {
   var visited = {};
-  return this.queryResults.reduce((function(o, e) {
-      // Avoid duplicates if the same neuron is checked multiple times and
-      // add it only if not yet present.
-      if (this.entity_selection_map[e.id] == checked && !(e.id in visited)) {
-          o.push(e);
-          visited[e.id] = true;
-      }
+  return this.queryResults.reduce((function(o, qs) {
+      qs.forEach(function(e) {
+          // Avoid duplicates if the same neuron is checked multiple times and
+          // add it only if not yet present.
+          if (this.entity_selection_map[e.id] == checked && !(e.id in visited)) {
+              o.push(e);
+              visited[e.id] = true;
+          }
+        }, this);
       return o;
     }).bind(this), []);
 }

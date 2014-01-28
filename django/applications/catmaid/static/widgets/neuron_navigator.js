@@ -548,6 +548,13 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
                 'name': 'parallel_annotations[' + i + ']',
                 'value': annotation_id
             });
+            // Additionally, increase the number of annotations page, because
+            // co-annotations will be filtered out in the response handler.
+            aoData.forEach(function(e) {
+              if (e.name == 'iDisplayLength') {
+                e.value += filters.annotations.length;
+              }
+            });
           });
         }
 
@@ -583,7 +590,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
                     });
                   });
                   var n_entries = result.iTotalRecords -
-                          new_aaData.length + result.aaData.length;
+                      filters.annotations.length;
                   result.iTotalDisplayRecords = n_entries;
                   result.iTotalRecords = n_entries;
                   result.aaData = new_aaData;

@@ -550,7 +550,6 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
   // Add annotation input field supporting auto-completion
   var annotation_input = dialog.appendField('Annotation: ', 'new-annotation',
       '', true);
-  this.add_autocomplete_to_input(annotation_input);
   // Add button to toggle display of meta annotation input field
   var $meta_toggle = $(dialog.appendMessage(
       "Click here to also add a meta annotation"));
@@ -594,6 +593,11 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
   };
 
   dialog.show('auto', 'auto', true);
+
+  // Auto-completion has to be added after the dialog has been created to ensure
+  // the auto completion controls com after the dialog in the DOM (to display
+  // them above the dialog).
+  this.add_autocomplete_to_input(annotation_input);
 }
 
 NeuronAnnotations.prototype.annotate_neurons_of_skeletons = function(

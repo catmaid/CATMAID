@@ -1663,7 +1663,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
                     } else {
                       NeuronAnnotations.retrieve_annotations_for_skeleton(
                           atn.skeleton_id, function(from_annotations) {
-                              merge(from_annotations);
+                              merge(from_annotations.map(function(e) { return e.name; }));
                           });
                     }
                   });

@@ -18,6 +18,11 @@ var NeuronAnnotations = function()
 
   // Map of annotation name vs its ID
   this.annotation_ids = {};
+
+  // Limit the result set
+  this.display_length = 50;
+  this.display_start = 0;
+  this.total_n_results = 0;
 };
 
 NeuronAnnotations.prototype = {};
@@ -239,7 +244,8 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
         self.queryResults[sub_id] = null;
 
         // Request entities that are annotated with this annotation
-        // and replace the clicked on annotation with the result.
+        // and replace the clicked on annotation with the result. Pagination
+        // will not be applied to expansions.
         var query_data = {
           'neuron_query_by_annotation': self.annotation_ids[$(this).attr('annotation')],
         };
@@ -258,14 +264,14 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
                   };
 
                   // Mark entities as unselected and create result table rows
-                  e.forEach((function(entity) {
+                  e.entities.forEach((function(entity) {
                     self.entity_selection_map[entity.id] = false;
                     self.add_result_table_row(entity, appender, indent + 1);
                   }).bind(self));
 
                   // The order of the query result array doesn't matter.
                   // It is therefore possible to just append the new results.
-                  self.queryResults[sub_id] = e;
+                  self.queryResults[sub_id] = e.entities;
                   // Update current result table classes
                   self.update_result_row_classes();
                 }
@@ -344,8 +350,13 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   $(cb).change(create_cb_handler(this));
 };
 
-NeuronAnnotations.prototype.query = function()
+NeuronAnnotations.prototype.query = function(initialize)
 {
+  if (initialize) {
+    this.display_start = 0;
+    this.total_n_results = 0;
+  }
+
   var annotation_ids = this.annotation_ids;
 
   var form_data = $('#neuron_query_by_annotations' +
@@ -385,6 +396,10 @@ NeuronAnnotations.prototype.query = function()
     return;
   }
 
+  // Augment form data with offset and limit information
+  form_data.display_start = this.display_start;
+  form_data.display_length = this.display_length;
+
   // Here, $.proxy is used to bind 'this' to the anonymous function
   requestQueue.register(django_url + this.pid + '/neuron/query-by-annotations',
       'POST', form_data, $.proxy( function(status, text, xml) {
@@ -399,7 +414,8 @@ NeuronAnnotations.prototype.query = function()
             // Empty selection map and store results
             this.entity_selection_map = {};
             this.queryResults = [];
-            this.queryResults[0] = e;
+            this.queryResults[0] = e.entities;
+            this.total_n_results = e.total_n_records;
             // create appender function which adds rows to table
             var appender = function(tr) {
               $tableBody.append(tr);
@@ -409,6 +425,16 @@ NeuronAnnotations.prototype.query = function()
               this.entity_selection_map[entity.id] = false;
               this.add_result_table_row(entity, appender, 0);
             }).bind(this));
+
+            // Update pagination information
+            var last_n_displayed = this.display_start + e.entities.length;
+            $('#neuron_annotations_paginattion' + this.widgetID).text(
+                "[" + this.display_start + ", " + last_n_displayed + "] of " +
+                this.total_n_results);
+            $('#neuron_annotation_prev_page' + this.widgetID).prop('disabled',
+                this.display_start == 0);
+            $('#neuron_annotation_next_page' + this.widgetID).prop('disabled',
+                this.total_n_results == last_n_displayed);
 
             // If there are results, display the result table
             if (this.queryResults[0].length > 0) {
@@ -769,4 +795,27 @@ NeuronAnnotations.prototype.toggle_annotation_display = function(
   } else {
     $results.find('li').show();
   }
+};
+
+/**
+ * Go the previous result display page, if any.
+ */
+NeuronAnnotations.prototype.prev_page = function()
+{
+  if (this.display_start >= this.display_length) {
+    this.display_start -= this.display_length;
+    this.query(false);
+  };
+};
+
+/**
+ * Go the next result display page, if any.
+ */
+NeuronAnnotations.prototype.next_page = function()
+{
+  var new_display_start = this.display_start + this.display_length;
+  if (this.total_n_results >= new_display_start) {
+    this.display_start = new_display_start;
+    this.query(false);
+  };
 };

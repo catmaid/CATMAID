@@ -2088,6 +2088,9 @@ var WindowMaker = new function()
           'class="neuron_annotations_query_footer">' +
         '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
             'value="Annotate..." />' +
+        '<input id="neuron_annotation_prev_page{{NA-ID}}" type="button" value="<" />' +
+        '<span id="neuron_annotations_paginattion{{NA-ID}}">[0, 0] of 0</span>' +
+        '<input id="neuron_annotation_next_page{{NA-ID}}" type="button" value=">" />' +
         '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
           'Sync to: ' +
         '</label>' +
@@ -2145,7 +2148,7 @@ var WindowMaker = new function()
     $('#neuron_annotations_add_annotation' + NA.widgetID)[0].onclick =
         NA.add_query_field.bind(NA);
     $('#neuron_query_by_annotations' + NA.widgetID).submit(function(event) {
-          NA.query.call(NA);
+          NA.query.call(NA, true);
           event.preventDefault();
         });
     $('#neuron_annotations_annotate' + NA.widgetID)[0].onclick = (function() {
@@ -2155,6 +2158,11 @@ var WindowMaker = new function()
         });;
         this.annotate_entities(selected_entity_ids);
     }).bind(NA);
+    $('#neuron_annotation_prev_page' + NA.widgetID)[0].onclick =
+        NA.prev_page.bind(NA);
+    $('#neuron_annotation_next_page' + NA.widgetID)[0].onclick =
+        NA.next_page.bind(NA);
+
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);
     var select = SkeletonListSources.createPushSelect(NA, 'link');

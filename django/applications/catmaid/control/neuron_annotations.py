@@ -189,12 +189,27 @@ def query_neurons_by_annotations(request, project_id = None):
     classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
 
+    display_start = int(request.POST.get('display_start', 0))
+    display_length = int(request.POST.get('display_length', -1))
+    if display_length < 0:
+        display_length = 2000  # Default number of result rows
+
     query = create_basic_annotated_entity_query(p, request.POST, relations,
             classes)
     query = query.order_by('id').distinct()
+
+    # Get total number of results
+    num_records = query.count()
+
+    # Limit and offset result to display range
+    query = query[display_start:display_start + display_length]
+
     dump = create_annotated_entity_list(p, query, relations)
 
-    return HttpResponse(json.dumps(dump))
+    return HttpResponse(json.dumps({
+      'entities': dump,
+      'total_n_records': num_records,
+    }))
 
 @requires_user_role([UserRole.Browse])
 def query_neurons_by_annotations_datatable(request, project_id=None):

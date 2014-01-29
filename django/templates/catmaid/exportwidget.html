@@ -116,6 +116,14 @@
 
     // Add skeleton source message and controls
     var dialog = new OptionsDialog("Export connectors");
+
+    // Add initial data
+    dialog.xy_in_px = true;
+    dialog.z_in_sections = true;
+    dialog.xy_radius = 100;
+    dialog.z_radius = 10;
+
+    // Add user interface
     dialog.appendMessage('Please select a source from where to get the ' +
         'skeletons of which the connectors should be exported.');
     var select = document.createElement('select');
@@ -136,17 +144,21 @@
         'how many slices you want to have in each set.');
 
     // X/Y radius inputs -- default to 100px
-    var xy_radius = dialog.appendField('X/Y radius: ', 'c_export_xy_radius', '200');
+    var xy_radius = dialog.appendField('X/Y radius: ', 'c_export_xy_radius',
+        dialog.xy_radius);
     var xy_radius_unit = document.createElement('select');
-    xy_radius_unit.appendChild(new Option("px", "px", true));
-    xy_radius_unit.appendChild(new Option("nm", "nm"));
+    xy_radius_unit.appendChild(new Option("px", "px", dialog.xy_in_px));
+    xy_radius_unit.appendChild(new Option("nm", "nm", !dialog.xy_in_px));
     xy_radius.parentNode.appendChild(xy_radius_unit);
 
     // Z radius inputs -- default to 100px
-    var z_radius = dialog.appendField('Z radius: ', 'c_export_z_radius', '10');
+    var z_radius = dialog.appendField('Z radius: ', 'c_export_z_radius',
+        dialog.z_radius);
     var z_radius_unit = document.createElement('select');
-    z_radius_unit.appendChild(new Option("sections", "sections", true));
-    z_radius_unit.appendChild(new Option("nm", "nm"));
+    z_radius_unit.appendChild(new Option("sections", "sections",
+        dialog.z_in_sections));
+    z_radius_unit.appendChild(new Option("nm", "nm",
+        !dialog.z_in_sections));
     z_radius.parentNode.appendChild(z_radius_unit);
 
     // Display total extent
@@ -191,12 +203,6 @@
           ' slices of ' + xy_extent_px + ' by ' + xy_extent_px + ' pixels ' +
           '(X/Y: ' + xy_extent_nm + ' nm, Z: ' + z_extent_nm + ' nm).';
     };
-
-    // Add initial data
-    dialog.xy_in_px = true;
-    dialog.z_in_sections = true;
-    dialog.xy_radius = 100;
-    dialog.z_radius = 10;
 
     // Add update handler for XY input
     $(xy_radius).bind('change keyup input', function() {

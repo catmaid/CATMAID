@@ -1447,6 +1447,37 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
     });
   }).bind(this);
 
+  var delete_button = document.createElement('input');
+  delete_button.setAttribute('type', 'button');
+  delete_button.setAttribute('value', 'Delete');
+  container.append(delete_button);
+
+  delete_button.onclick = (function() {
+    if (confirm("Are you sure that neuron '" + this.neuron_name +
+        "' and its skeleton should get deleted?")) {
+      requestQueue.register(django_url + project.id + '/neuron/' +
+          this.neuron_id + '/delete', 'GET', {}, (function(status, text) {
+            if (200 !== status) {
+              return new ErrorDialog("Unexpected status: " + 400).show();
+            }
+            var json = $.parseJSON(text);
+            if (json.error) {
+              return new ErrorDialog(json.error, json.detail).show();
+            }
+            growlAlert("Delete successful", "The neuron with ID " +
+                this.neuron_id + " has been succesfully deleted.") ;
+            // Expect a parent node
+            this.navigator.select_node(this.parent_node);
+            // Refresh tracing layer to reflect the removed neuron
+            var tool = project.getTool();
+            if (tool) {
+              if (tool.deselectActiveNode) tool.deselectActiveNode();
+              if (tool.updateLayer) tool.updateLayer();
+            }
+          }).bind(this));
+    }
+  }).bind(this);
+
   /* Skeletons: Request compact JSON data */
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_skeletonlist_content' +

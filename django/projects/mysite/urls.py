@@ -150,6 +150,7 @@ urlpatterns += patterns(
 
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'catmaid.control.get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'catmaid.control.give_neuron_to_other_user'),
+    (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/delete$', 'catmaid.control.delete_neuron'),
     (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'catmaid.control.query_neurons_by_annotations'),
     (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
             'catmaid.control.query_neurons_by_annotations_datatable'),

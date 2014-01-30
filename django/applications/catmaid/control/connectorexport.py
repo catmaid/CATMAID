@@ -209,16 +209,26 @@ def process_connector_export_job(job):
     # Create a working directoy to create subfolders and images in
     job.create_basic_output_path()
 
+    # Store error codes and URLs for unreachable images for each failed link
+    error_urls = {}
     try:
         # Export every connector
         for cl in connectors_links:
-            export_single_connector(job, cl)
-    except HTTPError as e:
-        msg = "The export of the data set has been aborted, because part " \
-                "of the data wasn't reachable: Code %s for %s" % \
-                (e.code, e.url)
-        job.create_message("Connector export failed", msg, '#')
-        return msg
+            try:
+                export_single_connector(job, cl)
+            except HTTPError as e:
+                error_urls[cl] = (e.code, e.url)
+
+        # Create error log, if needed
+        if error_urls:
+            error_path = os.path.join(job.output_path, "error_log.txt")
+            with open(error_path, 'w') as f:
+                f.write("The following connectors couldn't be exported. At " \
+                        "least one image URL of each of them couldn't be " \
+                        "reached.\n")
+                f.write("connector-id http-error-code url\n")
+                for cl, eu in error_urls.items():
+                    f.write("%s %s %s\n" % (cl.id, eu[0], eu[1]))
     except IOError as e:
         msg = "The export of the data set has been aborted, because an " \
                 "error occured: %s" % str(e)
@@ -238,8 +248,13 @@ def process_connector_export_job(job):
     tarfile_name = os.path.basename(tarfile_path)
     url = os.path.join(settings.CATMAID_URL, settings.MEDIA_URL,
             settings.MEDIA_CONNECTOR_SUBDIRECTORY, tarfile_name)
-    msg = "Exporting a connector archive finished. You can download it from " \
-            "this location: <a href='%s'>%s</a>" % (url, url)
+    if error_urls:
+        error_msg = " However, errors occured on the export of some " \
+                "connectors and an error log is available in the archive."
+    else:
+        error_msg = ""
+    msg = "Exporting a connector archive finished.%s You can download it from " \
+            "this location: <a href='%s'>%s</a>" % (error_msg, url, url)
     job.create_message("Connector export finished", msg, url)
 
     return msg

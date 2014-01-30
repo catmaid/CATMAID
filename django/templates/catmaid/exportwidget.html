@@ -98,6 +98,10 @@
 		dialog.show();
 	};
 
+  function export_treenodes() {
+
+  };
+
   function export_connectors() {
     // Make sure there is only one stack open at the moment
     var stacks = project.getStacks();
@@ -305,10 +309,23 @@ summary statistics.
 
 </ul>
 
-In addition, it is possible to extract only the connectors of the selected
-neurons.
+In addition, it is possible to extract the tree nodes or only it's connectors of
+the selected neurons.
 
 <ul>
+  <li>
+    <a id='export-treenode-archive' href='#'>
+            <strong>Treenode archive</strong></a><br />
+    The generated <em>tar.gz</em> archive contains one folder for every
+    selected neuron, named after it's ID. Such a folder contains image files for
+    every treenode of the neuron's skeleton(s), named <em>treenode-id.tiff</em>.
+    Along those files a meta data file, named <em>metadata.csv</em>, is created.
+    It contains a table with meta data for every treenode ID (first column). The
+    remaining columns are <em>parent-id</em>, <em># presynaptic sites</em>,
+    <em># postsynaptic sites</em>, <em>x</em>, <em>y</em> and <em>z</em>. The
+    root node has no parent and it's entry will have <em>null</em> in the
+    corresponding field in the meta data file.
+  </li>
   <li>
     <a id='export-connector-archive' href='#'>
             <strong>Connector archive</strong></a><br />

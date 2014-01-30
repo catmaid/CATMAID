@@ -37,4 +37,4 @@ from tracing import *
 from clustering import *
 from circles import *
 from neuron_annotations import *
-from connectorexport import *
+from treenodeexport import *

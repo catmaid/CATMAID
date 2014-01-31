@@ -10,7 +10,7 @@ from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.control.common import json_error_response, id_generator
 from catmaid.control.cropping import CropJob, extract_substack, process_crop_job
 from catmaid.models import ClassInstanceClassInstance, TreenodeConnector
-from catmaid.models import Message, User, UserRole
+from catmaid.models import Message, User, UserRole, Treenode
 
 from celery.task import task
 
@@ -100,14 +100,78 @@ class TreenodeExporter:
         os.makedirs(output_path)
         self.output_path = output_path
 
-    def get_entities_to_export(self):
-        raise Exception("get_entities_to_export not implemented")
-
     def create_path(self, treenode):
-        raise Exception("create_path not implemented")
+        """ Based on the output path, this function will create a folder
+        structure for a particular skeleton. Things that are supposedly
+        needed multiple times, will be cached. This function will also make
+        sure the path exists and is ready to be written to.
+        """
+        # Get (and create if needed) cache entry for string of neuron id
+        if treenode.skeleton_id not in self.skid_to_neuron_folder:
+            neuron_cici = ClassInstanceClassInstance.objects.get(
+                    relation_id=self.relation_map['model_of'],
+                    project_id=self.job.project_id,
+                    class_instance_a=treenode.skeleton.id)
+            self.skid_to_neuron_folder[treenode.skeleton.id] = \
+                    str(neuron_cici.class_instance_b_id)
+        neuron_folder = self.skid_to_neuron_folder[treenode.skeleton.id]
 
-    def export_single_node(self, node):
-        raise Exception("export_single_node not implemented")
+        # Create path output_path/neuron_id
+        treenode_path = os.path.join(self.output_path, neuron_folder)
+
+        try:
+            os.makedirs(treenode_path)
+        except OSError as e:
+            # Everything is fine if the path exists and is writable
+            if not os.path.exists(treenode_path) or not \
+                    os.access(treenode_path, os.W_OK):
+                raise e
+
+        return treenode_path
+
+    def get_entities_to_export(self):
+        """ Returns a list of treenode links. If the job asks only for a
+        sample, the first treenode of the first skeleton will be used.
+        Otherwise, if no sample should be taken, all treempdes of all
+        skeletons are exported.
+        """
+        if self.job.sample:
+            try:
+                tn = Treenode.objects.filter(project_id=self.job.project_id,
+                        skeleton_id__in=self.skeleton_ids)[0]
+                return [tn]
+            except IndexError:
+                return []
+        else:
+            return Treenode.objects.filter(project_id=self.job.project_id,
+                    skeleton_id__in=self.job.skeleton_ids)
+
+    def export_single_node(self, treenode):
+        """ Exports a treenode and expects the output path to be existing
+        and writable.
+        """
+        # Calculate bounding box for current connector
+        x_min = treenode.location.x - self.job.x_radius
+        x_max = treenode.location.x + self.job.x_radius
+        y_min = treenode.location.y - self.job.y_radius
+        y_max = treenode.location.y + self.job.y_radius
+        z_min = treenode.location.z - self.job.z_radius
+        z_max = treenode.location.z + self.job.z_radius
+        rotation_cw = 0
+        zoom_level = 0
+
+        # Create a single file for each section (instead of a mulipage TIFF)
+        crop_self = CropJob(self.job.user, self.job.project_id,
+                self.job.stack_id, x_min, x_max, y_min, y_max, z_min, z_max,
+                rotation_cw, zoom_level, single_channel=True)
+        cropped_stack = extract_substack(crop_self)
+        # Save each file in output path
+        output_path = self.create_path(treenode)
+        for i, img in enumerate(cropped_stack):
+            # Save image in output path, named <treenode-id>.tiff
+            image_name = "%s.tiff" % treenode.id
+            treenode_image_path = os.path.join(output_path, image_name)
+            img.write(treenode_image_path)
 
 
 class ConnectorExporter(TreenodeExporter):

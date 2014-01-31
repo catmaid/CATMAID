@@ -58,9 +58,9 @@ MEDIA_CROPPING_SUBDIRECTORY = 'CATMAID_CROP_SUBDIR'
 # subdirectory of MEDIA_ROOT.
 MEDIA_ROI_SUBDIRECTORY = 'CATMAID_ROI_SUBDIR'
 
-# Static path to store exported connector archives (needs to be writable) as
-# subdirectory of MEDIA_ROOT.
-MEDIA_CONNECTOR_SUBDIRECTORY = 'CATMAID_CONNECTOR_SUBDIR'
+# Static path to store exported treenode and connector archives (needs to be
+# writable) as subdirectory of MEDIA_ROOT.
+MEDIA_TREENODE_SUBDIRECTORY = 'CATMAID_TREENODE_SUBDIR'
 
 # The URL where static files can be accessed, relative to the domain's root
 STATIC_URL = '/CATMAID_SUBDIR/static/'

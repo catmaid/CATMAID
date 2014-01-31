@@ -20,14 +20,12 @@ import tarfile
 from urllib2 import HTTPError
 
 
-# Prefix for stored archive files
-connector_file_prefix = "connector_archive_"
 # The path were archive files get stored in
-connector_output_path = os.path.join(settings.MEDIA_ROOT,
-    settings.MEDIA_CONNECTOR_SUBDIRECTORY)
+treenode_output_path = os.path.join(settings.MEDIA_ROOT,
+    settings.MEDIA_TREENODE_SUBDIRECTORY)
 
-class ConnectorExportJob:
-    """ A container with data needed for the creation of a connector archive.
+class SkeletonExportJob:
+    """ A container with data needed for exporting things related to skeletons.
     """
     def __init__(self, user, project_id, stack_id, skeleton_ids,
             x_radius, y_radius, z_radius, sample):
@@ -63,6 +61,12 @@ class ConnectorExportJob:
         self.z_radius = z_radius
         self.sample = sample
 
+class TreenodeExporter:
+    def __init__(self, job):
+        self.job = job
+        # The name of entities that are exported
+        self.entity_name = "treenode"
+
         # Output path for this job will be initialized, when needed
         self.output_path = None
 
@@ -71,23 +75,51 @@ class ConnectorExportJob:
         self.relid_to_rel_folder = {}
 
         # Get relation map
-        self.relation_map = get_relation_to_id_map(project_id)
+        self.relation_map = get_relation_to_id_map(job.project_id)
+
+    def create_message(self, title, message, url):
+        msg = Message()
+        msg.user = User.objects.get(pk=int(self.job.user.id))
+        msg.read = False
+        msg.title = title
+        msg.text = message
+        msg.action = url
+        msg.save()
 
     def create_basic_output_path(self):
-        """ Will create a random <connector_file_prefix> prefixed output folder
+        """ Will create a random output folder name prefixed with the entity
         name as well as the actual directory.
         """
         # Find non-existing random folder name
         while True:
-            folder_name = connector_file_prefix + id_generator()
-            output_path = os.path.join(connector_output_path, folder_name)
+            folder_name = self.entity_name + '_archive_' + id_generator()
+            output_path = os.path.join(treenode_output_path, folder_name)
             if not os.path.exists(output_path):
                 break
         # Create folder and store path as field
         os.makedirs(output_path)
         self.output_path = output_path
 
-    def create_connector_path(self, connector):
+    def get_entities_to_export(self):
+        raise Exception("get_entities_to_export not implemented")
+
+    def create_path(self, treenode):
+        raise Exception("create_path not implemented")
+
+    def export_single_node(self, node):
+        raise Exception("export_single_node not implemented")
+
+
+class ConnectorExporter(TreenodeExporter):
+    """ Most of the infrastructure can be used for both treenodes and
+    connecotors. This job class overrides the things that differ.
+    """
+
+    def __init__(self, *args, **kwargs):
+        TreenodeExporter.__init__(self, *args, **kwargs)
+        self.entity_name = "connector"
+
+    def create_path(self, connector):
         """ Based on the output path, this function will create a folder
         structure for a particular connector. Things that are supposedly
         needed multiple times, will be cached. This function will also make
@@ -97,7 +129,7 @@ class ConnectorExportJob:
         if connector.skeleton_id not in self.skid_to_neuron_folder:
             neuron_cici = ClassInstanceClassInstance.objects.get(
                     relation_id=self.relation_map['model_of'],
-                    project_id=self.project_id,
+                    project_id=self.job.project_id,
                     class_instance_a=connector.skeleton.id)
             self.skid_to_neuron_folder[connector.skeleton.id] = \
                     str(neuron_cici.class_instance_b_id)
@@ -127,178 +159,206 @@ class ConnectorExportJob:
 
         return connector_path
 
-    def create_message(self, title, message, url):
-        msg = Message()
-        msg.user = User.objects.get(pk=int(self.user.id))
-        msg.read = False
-        msg.title = title
-        msg.text = message
-        msg.action = url
-        msg.save()
-
-def export_single_connector(job, connector_link):
-    """ Exports a single connector and expects the output path to be existing
-    and writable.
-    """
-    connector = connector_link.connector
-
-    # Calculate bounding box for current connector
-    x_min = connector.location.x - job.x_radius
-    x_max = connector.location.x + job.x_radius
-    y_min = connector.location.y - job.y_radius
-    y_max = connector.location.y + job.y_radius
-    z_min = connector.location.z - job.z_radius
-    z_max = connector.location.z + job.z_radius
-    rotation_cw = 0
-    zoom_level = 0
-
-    # Create a single file for each section (instead of a mulipage TIFF)
-    crop_job = CropJob(job.user, job.project_id, job.stack_id, x_min, x_max,
-            y_min, y_max, z_min, z_max, rotation_cw, zoom_level,
-            single_channel=True)
-    cropped_stack = extract_substack(crop_job)
-    # Save each file in output path
-    connector_path = job.create_connector_path(connector_link)
-    for i, img in enumerate(cropped_stack):
-        # Save image in output path, named after the image center's coordinates,
-        # rounded to full integers.
-        x = int(connector.location.x + 0.5)
-        y = int(connector.location.y + 0.5)
-        z = int(z_min + i * crop_job.stacks[0].resolution.z  + 0.5)
-        image_name = "%s_%s_%s.tiff" % (x, y, z)
-        connector_image_path = os.path.join(connector_path, image_name)
-        img.write(connector_image_path)
-
-@task()
-def process_connector_export_job(job):
-    """ This method does the actual archive creation. It controls the data
-    extraction and the creation of all sub-stacks. It can be executed as Celery
-    task. If the job asks only for a sample, the first pre-synaptic connector
-    of the first skeleton will be used. If such a connector doesn't exist, the
-    first one found is used. Otherwise, if no sample should be taken, all
-    connectors of all skeletons are exported.
-    """
-    if job.sample:
-        # First try to get a pre-synaptic connector, because these are usually a
-        # larger than the post-synaptic ones.
-        try:
-            connector_link = TreenodeConnector.objects.filter(
-                    project_id=job.project_id,
-                    relation_id=job.relation_map['presynaptic_to'],
-                    skeleton_id__in=job.skeleton_ids)[0]
-        except IndexError:
-            connector_link = None
-
-        # If there is no pre-synaptic treenode, ignore this constraint
-        if not connector_link:
+    def get_entities_to_export(self):
+        """ Returns a list of connector links. If the job asks only for a
+        sample, the first pre-synaptic connector of the first skeleton will be
+        used. If such a connector doesn't exist, the first one found is used.
+        Otherwise, if no sample should be taken, all connectors of all
+        skeletons are exported.
+        """
+        if self.job.sample:
+            # First try to get a pre-synaptic connector, because these are usually a
+            # larger than the post-synaptic ones.
             try:
                 connector_link = TreenodeConnector.objects.filter(
-                        project_id=job.project_id,
-                        skeleton_id__in=job.skeleton_ids)[0]
+                        project_id=self.job.project_id,
+                        relation_id=self.relation_map['presynaptic_to'],
+                        skeleton_id__in=self.skeleton_ids)[0]
             except IndexError:
-                return "Could not find any connector to export"
+                connector_link = None
 
-        connectors_links = [connector_link]
-        msg = "Exported sample connector archive"
-    else:
-        connectors_links = TreenodeConnector.objects.filter(
-                project_id=job.project_id,
-                skeleton_id__in=job.skeleton_ids).select_related('connector')
-        msg = "Exported connector archive"
+            # If there is no pre-synaptic treenode, ignore this constraint
+            if not connector_link:
+                try:
+                    connector_link = TreenodeConnector.objects.filter(
+                            project_id=self.job.project_id,
+                            skeleton_id__in=self.skeleton_ids)[0]
+                except IndexError:
+                    return "Could not find any connector to export"
+
+            connector_links = [connector_link]
+        else:
+            connector_links = TreenodeConnector.objects.filter(
+                    project_id=self.job.project_id,
+                    skeleton_id__in=self.job.skeleton_ids).select_related(
+                            'connector')
+
+        return connector_links
+
+    def export_single_node(self, connector_link):
+        """ Exports a single connector and expects the output path to be existing
+        and writable.
+        """
+        connector = connector_link.connector
+
+        # Calculate bounding box for current connector
+        x_min = connector.location.x - self.job.x_radius
+        x_max = connector.location.x + self.job.x_radius
+        y_min = connector.location.y - self.job.y_radius
+        y_max = connector.location.y + self.job.y_radius
+        z_min = connector.location.z - self.job.z_radius
+        z_max = connector.location.z + self.job.z_radius
+        rotation_cw = 0
+        zoom_level = 0
+
+        # Create a single file for each section (instead of a mulipage TIFF)
+        crop_self = CropJob(self.job.user, self.job.project_id,
+                self.job.stack_id, x_min, x_max, y_min, y_max, z_min, z_max,
+                rotation_cw, zoom_level, single_channel=True)
+        cropped_stack = extract_substack(crop_self)
+        # Save each file in output path
+        connector_path = self.create_path(connector_link)
+        for i, img in enumerate(cropped_stack):
+            # Save image in output path, named after the image center's coordinates,
+            # rounded to full integers.
+            x = int(connector.location.x + 0.5)
+            y = int(connector.location.y + 0.5)
+            z = int(z_min + i * crop_self.stacks[0].resolution.z  + 0.5)
+            image_name = "%s_%s_%s.tiff" % (x, y, z)
+            connector_image_path = os.path.join(connector_path, image_name)
+            img.write(connector_image_path)
+
+@task()
+def process_export_job(exporter):
+    """ This method does the actual archive creation. It controls the data
+    extraction and the creation of all sub-stacks. It can be executed as Celery
+    task.
+    """
+    nodes = exporter.get_entities_to_export()
+
+    # Abort if there are no nodes to process
+    if not nodes:
+        msg = "No %ss matching the requirements have been found. Therefore, " \
+                "nothing was exported." % exporter.entity_name
+        exporter.create_message("Nothing to export", msg, '#')
+        return msg
 
     # Create a working directoy to create subfolders and images in
-    job.create_basic_output_path()
+    exporter.create_basic_output_path()
 
     # Store error codes and URLs for unreachable images for each failed link
     error_urls = {}
     try:
-        # Export every connector
-        for cl in connectors_links:
+        # Export every node
+        for node in nodes:
             try:
-                export_single_connector(job, cl)
+                exporter.export_single_node(node)
             except HTTPError as e:
-                error_urls[cl] = (e.code, e.url)
+                error_urls[node] = (e.code, e.url)
 
         # Create error log, if needed
         if error_urls:
-            error_path = os.path.join(job.output_path, "error_log.txt")
+            error_path = os.path.join(exporter.output_path, "error_log.txt")
             with open(error_path, 'w') as f:
-                f.write("The following connectors couldn't be exported. At " \
+                f.write("The following %ss couldn't be exported. At " \
                         "least one image URL of each of them couldn't be " \
-                        "reached.\n")
-                f.write("connector-id http-error-code url\n")
-                for cl, eu in error_urls.items():
-                    f.write("%s %s %s\n" % (cl.id, eu[0], eu[1]))
+                        "reached.\n" % exporter.entity_name)
+                f.write("%s-id http-error-code url\n" % exporter.entity_name)
+                for node, eu in error_urls.items():
+                    f.write("%s %s %s\n" % (node.id, eu[0], eu[1]))
     except IOError as e:
         msg = "The export of the data set has been aborted, because an " \
                 "error occured: %s" % str(e)
-        job.create_message("Connector export failed", msg, '#')
-        return "An error occured during the connector export: %s" % str(e)
+        exporter.create_message("The %s export failed" % exporter.entity_name,
+                msg, '#')
+        return "An error occured during the %s export: %s" % \
+                (exporter.entity_name, str(e))
 
     # Make working directory an archive
-    tarfile_path = job.output_path.rstrip(os.sep) + '.tar.gz'
+    tarfile_path = exporter.output_path.rstrip(os.sep) + '.tar.gz'
     tar = tarfile.open(tarfile_path, 'w:gz')
-    tar.add(job.output_path, arcname=os.path.basename(job.output_path))
+    tar.add(exporter.output_path, arcname=os.path.basename(exporter.output_path))
     tar.close()
 
     # Delete working directory
-    shutil.rmtree(job.output_path)
+    shutil.rmtree(exporter.output_path)
 
     # Create message
     tarfile_name = os.path.basename(tarfile_path)
     url = os.path.join(settings.CATMAID_URL, settings.MEDIA_URL,
-            settings.MEDIA_CONNECTOR_SUBDIRECTORY, tarfile_name)
+            settings.MEDIA_TREENODE_SUBDIRECTORY, tarfile_name)
     if error_urls:
-        error_msg = " However, errors occured on the export of some " \
-                "connectors and an error log is available in the archive."
+        error_msg = " However, errors occured during the export of some " \
+                "images and an error log is available in the archive."
     else:
         error_msg = ""
-    msg = "Exporting a connector archive finished.%s You can download it from " \
-            "this location: <a href='%s'>%s</a>" % (error_msg, url, url)
-    job.create_message("Connector export finished", msg, url)
+    msg = "Exporting a %s archive finished.%s You can download it from " \
+            "this location: <a href='%s'>%s</a>" % \
+            (exporter.entity_name, error_msg, url, url)
+    exporter.create_message("Export of %ss finished" % exporter.entity_name,
+            msg, url)
 
     return msg
 
-def start_asynch_process( job ):
+def start_asynch_process(exporter):
     """ It launches the data extraction and sub-stack building as a separate
     process. Celery is used for this and it it returns a AsyncResult object.
     """
-    return process_connector_export_job.delay( job )
+    return process_export_job.delay(exporter)
 
-@requires_user_role(UserRole.Browse)
-def export_connectors(request, project_id=None):
-    """ This will get parameters for a new connector exporting job from an HTTP
+def create_request_based_export_job(request, project_id):
+    """ This will get parameters for a new treenode exporting job from an HTTP
     request. Based on them this method will create and run a new exporting job.
     """
     # Make sure we have write permssions to output directories
     needed_permissions = (
-        os.path.exists(connector_output_path),
-        os.access(connector_output_path, os.W_OK)
+        os.path.exists(treenode_output_path),
+        os.access(treenode_output_path, os.W_OK)
     )
     if False in needed_permissions:
-        return json_error_response("Please make sure your output folder " \
-                "(MEDIA_ROOT and MEDIA_CONNECTOR_SUBDIRECTORY in " \
+        raise Exception("Please make sure your output folder " \
+                "(MEDIA_ROOT and MEDIA_TREENODE_SUBDIRECTORY in " \
                 "settings.py) exists and is writable.")
 
-    # Get stack ID and  skeleton IDs of which the connectors should be exported
+    # Get stack ID and  skeleton IDs of which the nodes should be exported
     stack_id = request.POST.get('stackid', None);
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() \
             if k.startswith('skids['))
-    # Width, height and depth of each connector image stack needs to be known.
+    # Width, height and depth of each node image stack needs to be known.
     x_radius = request.POST.get('x_radius', None)
     y_radius = request.POST.get('y_radius', None)
     z_radius = request.POST.get('z_radius', None)
     # Determine if a sample should be created
     sample = request.POST.get('sample', None)
 
-    # Create a new export job and queue it
-    job = ConnectorExportJob(request.user, project_id, stack_id, skeleton_ids,
+    # Create a new export job
+    return SkeletonExportJob(request.user, project_id, stack_id, skeleton_ids,
             x_radius, y_radius, z_radius, sample)
-    proc = start_asynch_process(job)
+
+@requires_user_role(UserRole.Browse)
+def export_connectors(request, project_id=None):
+    """ This will create a new connector exporting job based on an HTTP request.
+    Based on them this method will create and run a new exporting job.
+    """
+    job = create_request_based_export_job(request, project_id)
+    proc = start_asynch_process(ConnectorExporter(job))
     if proc.failed():
         raise Exception("Something went wrong while queuing the export: " + \
                 proc.result)
-
     json_data = json.dumps({'message': 'The connector archive is currently ' \
+            'exported. You will be notified once it is ready for download.'})
+    return HttpResponse(json_data, mimetype='text/json')
+
+@requires_user_role(UserRole.Browse)
+def export_treenodes(request, project_id=None):
+    """ This will create a new treenode exporting job based on an HTTP request.
+    Based on them this method will create and run a new exporting job.
+    """
+    job = create_request_based_export_job(request, project_id)
+    proc = start_asynch_process(TreenodeExporter(job))
+    if proc.failed():
+        raise Exception("Something went wrong while queuing the export: " + \
+                proc.result)
+    json_data = json.dumps({'message': 'The treenode archive is currently ' \
             'exported. You will be notified once it is ready for download.'})
     return HttpResponse(json_data, mimetype='text/json')

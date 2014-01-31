@@ -25,7 +25,7 @@ catmaid_writable_path = ''
 catmaid_hdf5_subdir = 'hdf5'
 catmaid_crop_subdir = 'cropping'
 catmaid_roi_subdir = 'roi'
-catmaid_connector_subdir = 'connector_archive'
+catmaid_treenode_subdir = 'treenode_archive'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

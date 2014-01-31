@@ -4,6 +4,7 @@ import json
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.db.models import Count
 
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
@@ -77,6 +78,9 @@ class TreenodeExporter:
         # Get relation map
         self.relation_map = get_relation_to_id_map(job.project_id)
 
+        # Store meta data for each node
+        self.metadata = {}
+
     def create_message(self, title, message, url):
         msg = Message()
         msg.user = User.objects.get(pk=int(self.job.user.id))
@@ -107,27 +111,27 @@ class TreenodeExporter:
         sure the path exists and is ready to be written to.
         """
         # Get (and create if needed) cache entry for string of neuron id
-        if treenode.skeleton_id not in self.skid_to_neuron_folder:
+        treenode_path = self.skid_to_neuron_folder.get(treenode.skeleton_id)
+        if treenode_path:
+            return treenode_path
+        else:
             neuron_cici = ClassInstanceClassInstance.objects.get(
                     relation_id=self.relation_map['model_of'],
                     project_id=self.job.project_id,
                     class_instance_a=treenode.skeleton.id)
-            self.skid_to_neuron_folder[treenode.skeleton.id] = \
-                    str(neuron_cici.class_instance_b_id)
-        neuron_folder = self.skid_to_neuron_folder[treenode.skeleton.id]
+            treenode_path = os.path.join(self.output_path,
+                    str(neuron_cici.class_instance_b_id))
+            self.skid_to_neuron_folder[treenode.skeleton.id] = treenode_path
 
-        # Create path output_path/neuron_id
-        treenode_path = os.path.join(self.output_path, neuron_folder)
-
-        try:
-            os.makedirs(treenode_path)
-        except OSError as e:
-            # Everything is fine if the path exists and is writable
-            if not os.path.exists(treenode_path) or not \
-                    os.access(treenode_path, os.W_OK):
-                raise e
-
-        return treenode_path
+            # Create path output_path/neuron_id
+            try:
+                os.makedirs(treenode_path)
+                return treenode_path
+            except OSError as e:
+                # Everything is fine if the path exists and is writable
+                if not os.path.exists(treenode_path) or not \
+                        os.access(treenode_path, os.W_OK):
+                    raise e
 
     def get_entities_to_export(self):
         """ Returns a list of treenode links. If the job asks only for a
@@ -138,7 +142,7 @@ class TreenodeExporter:
         if self.job.sample:
             try:
                 tn = Treenode.objects.filter(project_id=self.job.project_id,
-                        skeleton_id__in=self.skeleton_ids)[0]
+                        skeleton_id__in=self.job.skeleton_ids)[0]
                 return [tn]
             except IndexError:
                 return []
@@ -173,6 +177,57 @@ class TreenodeExporter:
             treenode_image_path = os.path.join(output_path, image_name)
             img.write(treenode_image_path)
 
+    def post_process(self, nodes):
+      """ Create a meta data file for all the nodes passed (usually all of the
+      ones queries before). This file is a table with the following columns:
+      <treenode id> <parent id> <#presynaptic sites> <#postsynaptic sites> <x> <y> <z>
+      """
+      # Get pre- and post synaptic sites
+      presynaptic_to_rel = self.relation_map['presynaptic_to']
+      postsynaptic_to_rel = self.relation_map['postsynaptic_to']
+      connector_links = TreenodeConnector.objects.filter(
+              project_id=self.job.project_id,
+              relation_id__in=[presynaptic_to_rel, postsynaptic_to_rel],
+              skeleton_id__in=self.job.skeleton_ids).values('treenode',
+                      'relation').annotate(relcount=Count('relation'))
+
+      presynaptic_map = {}
+      postsynaptic_map = {}
+      for cl in connector_links:
+          if cl['relation'] == presynaptic_to_rel:
+              presynaptic_map[cl['treenode']] = cl['relcount']
+          elif cl['relation'] == postsynaptic_to_rel:
+              postsynaptic_map[cl['treenode']] = cl['relcount']
+          else:
+              raise Exception("Unexpected relation encountered")
+
+      # Create log info for each treenode. Each line will contain treenode-id,
+      # parent-id, nr. presynaptic sites, nr. postsynaptic sites, x, y, z
+      skid_to_metadata = {}
+      for n in nodes:
+        ls = skid_to_metadata.get(n.skeleton.id)
+        if not ls:
+            ls = []
+            skid_to_metadata[n.skeleton.id] = ls
+        p = n.parent.id if n.parent else 'null'
+        n_pre = presynaptic_map.get(n.id, 0)
+        n_post = postsynaptic_map.get(n.id, 0)
+        x = n.location.x
+        y = n.location.y
+        z = n.location.z
+        line = ', '.join([str(e) for e in (n.id, p, n_pre, n_post, x, y, z)])
+        ls.append(line)
+
+      # Save metdata for each skeleton to files
+      for skid, metadata in skid_to_metadata.items():
+          path = self.skid_to_neuron_folder.get(skid)
+          with open(os.path.join(path, 'metadata.csv'), 'w') as f:
+              f.write("This CSV file contains meta data for CATMAID skeleton " \
+                      "%s. The columns represent the following data:\n" % skid)
+              f.write("treenode-id, parent-id, # presynaptic sites, " \
+                      "# postsynaptic sites, x, y, z\n")
+              for line in metadata:
+                  f.write("%s\n" % line)
 
 class ConnectorExporter(TreenodeExporter):
     """ Most of the infrastructure can be used for both treenodes and
@@ -292,6 +347,9 @@ class ConnectorExporter(TreenodeExporter):
             connector_image_path = os.path.join(connector_path, image_name)
             img.write(connector_image_path)
 
+    def post_process(self, nodes):
+      pass
+
 @task()
 def process_export_job(exporter):
     """ This method does the actual archive creation. It controls the data
@@ -337,6 +395,9 @@ def process_export_job(exporter):
                 msg, '#')
         return "An error occured during the %s export: %s" % \
                 (exporter.entity_name, str(e))
+
+    # Give an exporter the chance to do some postprocessing
+    exporter.post_process(nodes)
 
     # Make working directory an archive
     tarfile_path = exporter.output_path.rstrip(os.sep) + '.tar.gz'

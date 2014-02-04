@@ -89,7 +89,7 @@ CircuitGraphPlot.prototype.append = function(models) {
 		var model = models[skid];
 		if (model) {
 			if (model.selected) {
-				this.skeletons[skid] = model;
+				this.skeletons[skid] = model.clone();
 			} else {
 				delete this.skeletons[skid];
 			}

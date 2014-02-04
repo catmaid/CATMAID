@@ -141,6 +141,12 @@ class CropJob:
         raise StandardError("Tile source %s is currently not supported " \
                 "by cropping module" % stack.tile_source_type)
 
+class ImageRetrievalError(IOError):
+    def __init__(self, path, error):
+        IOError.__init__(self, "Couldn't access %s" % (path))
+        self.path = path
+        self.error = error
+
 class ImagePart:
     """ A part of a 2D image where height and width are not necessarily
     of the same size. Provides readout of the defined sub-area of the image.
@@ -162,7 +168,13 @@ class ImagePart:
 
     def get_image( self ):
         # Open the image
-        img_file = urllib.urlopen( self.path )
+        try:
+            img_file = urllib.urlopen( self.path )
+        except urllib.HTTPError as e:
+            raise ImageRetrievalError(self.path, "Error code: %s" % e.code)
+        except urllib.URLError as e:
+            raise ImageRetrievalError(self.path, e.reason)
+
         blob = Blob( img_file.read() )
         image = Image( blob )
         # Check if the whole image should be used and cropped if necessary.

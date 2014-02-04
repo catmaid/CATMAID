@@ -10,6 +10,7 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.control.common import json_error_response, id_generator
 from catmaid.control.cropping import CropJob, extract_substack, process_crop_job
+from catmaid.control.cropping import ImageRetrievalError
 from catmaid.models import ClassInstanceClassInstance, TreenodeConnector
 from catmaid.models import Message, User, UserRole, Treenode
 
@@ -18,7 +19,6 @@ from celery.task import task
 import os.path
 import shutil
 import tarfile
-from urllib2 import HTTPError
 
 
 # The path were archive files get stored in
@@ -375,9 +375,8 @@ def process_export_job(exporter):
         for node in nodes:
             try:
                 exporter.export_single_node(node)
-            except HTTPError as e:
-                error_urls[node] = (e.code, e.url)
-
+            except ImageRetrievalError as e:
+                error_urls[node] = (e.error, e.path)
         # Create error log, if needed
         if error_urls:
             error_path = os.path.join(exporter.output_path, "error_log.txt")

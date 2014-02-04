@@ -133,6 +133,7 @@ WebGLApplication.prototype.Options = function() {
   this.shading_method = 'none';
   this.color_method = 'none';
   this.connector_color = 'cyan-red';
+  this.lean_mode = false;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -370,6 +371,7 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
   var i = 0;
   var missing = [];
   var unloadable = [];
+  var options = this.options;
 
   var fnMissing = function() {
     if (missing.length > 0 && confirm("Skeletons " + missing.join(', ') + " do not exist. Remove them from selections?")) {
@@ -382,7 +384,7 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
 
   var fn = function(skeleton_id) {
     // NOTE: cannot use 'submit': on error, it would abort the chain of calls and show an alert
-    requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json', 'POST', {},
+    requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json', 'POST', {lean: options.lean_mode ? 1 : 0},
         function(status, text) {
           try {
             if (200 === status) {
@@ -397,7 +399,7 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
                   unloadable.push(skeleton_id);
                 }
               } else {
-                var sk = self.space.updateSkeleton(models[skeleton_id], json);
+                var sk = self.space.updateSkeleton(models[skeleton_id], json, options);
                 if (sk) sk.show(self.options);
               }
             } else {
@@ -616,6 +618,15 @@ WebGLApplication.prototype.configureParameters = function() {
 	dialog.appendChild(document.createTextNode('Toggle Background Color'));
 	dialog.appendChild(document.createElement("br"));
 
+  var blean = document.createElement('input');
+  blean.setAttribute("type", "checkbox");
+  blean.setAttribute("id", "toggle_lean");
+  if( options.lean_mode )
+    blean.setAttribute("checked", "true");
+  dialog.appendChild(blean);
+  dialog.appendChild(document.createTextNode('Toggle lean mode (no synapses, no tags)'));
+  dialog.appendChild(document.createElement("br"));
+
   var submit = this.submit;
 
 	$(dialog).dialog({
@@ -644,6 +655,7 @@ WebGLApplication.prototype.configureParameters = function() {
 				options.show_active_node = bactive.checked;
 				options.show_meshes = bmeshes.checked;
         options.meshes_color = options.validateOctalString("#meshes-color", options.meshes_color);
+        options.lean_mode = blean.checked;
 
 				space.staticContent.adjust(options, space);
 				space.content.adjust(options, space, submit);
@@ -1338,12 +1350,11 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 	this.mesh.position.set(c.x, c.y, c.z);
 };
 
-WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json) {
-  if (this.content.skeletons.hasOwnProperty(skeletonmodel.id)) {
-    this.content.skeletons[skeletonmodel.id].reinit_actor(skeletonmodel, json);
-  } else {
-    this.content.skeletons[skeletonmodel.id] = new this.Skeleton(this, skeletonmodel, json);
+WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json, options) {
+  if (!this.content.skeletons.hasOwnProperty(skeletonmodel.id)) {
+    this.content.skeletons[skeletonmodel.id] = new this.Skeleton(this, skeletonmodel, json[0]);
   }
+  this.content.skeletons[skeletonmodel.id].reinit_actor(skeletonmodel, json, options);
   return this.content.skeletons[skeletonmodel.id];
 };
 
@@ -1360,13 +1371,13 @@ WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmod
  *  When visualizing only the connectors among the skeletons visible in the WebGL space, the geometries of the pre- and postsynaptic edges are hidden away, and a new pair of geometries are created to represent just the edges that converge onto connectors also related to by the other skeletons.
  *
  */
-WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmodel, json) {
+WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmodel, name) {
+  // TODO id, baseName, actorColor are all redundant with the skeletonmodel
 	this.space = space;
 	this.id = skeletonmodel.id;
-	this.baseName = json[0];
+	this.baseName = name;
   this.synapticColors = space.staticContent.synapticColors;
   this.skeletonmodel = skeletonmodel;
-	this.reinit_actor(skeletonmodel, json);
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
@@ -2009,18 +2020,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphe
 };
 
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = function(skeletonmodel, skeleton_data) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = function(skeletonmodel, skeleton_data, options) {
 	if (this.actor) {
 		this.destroy();
 	}
-  this.skeletonmodel = skeletonmodel; // updating properties
+  this.skeletonmodel = skeletonmodel; // updating properties TODO should update baseName, color ...?
 	this.initialize_objects();
 
 	var nodes = skeleton_data[1];
 	var tags = skeleton_data[2];
 	var connectors = skeleton_data[3];
 
-	var scale = this.space.scale;
+	var scale = this.space.scale,
+      lean = options.lean_mode;
 
 	// Map of node ID vs node properties array
 	var nodeProps = nodes.reduce(function(ob, node) {
@@ -2103,7 +2115,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			  this.createNodeSphere(v1, node[7] * scale, material);
       }
 		}
-		if (node[8] < 5) {
+		if (!lean && node[8] < 5) {
 			// Edge with confidence lower than 5
 			this.createLabelSphere(v1, this.space.staticContent.labelColors.uncertain);
 		}

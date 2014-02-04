@@ -91,7 +91,8 @@ SkeletonConnectivity.prototype.highlight = function(skeleton_id) {
 };
 
 SkeletonConnectivity.prototype.getSelectedSkeletons = function() {
-  return Object.keys(this.skeletons).map(Number);
+  // TODO refactor to avoid unnecessary operations
+  return Object.keys(this.getSelectedSkeletonModels());
 };
 
 SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {

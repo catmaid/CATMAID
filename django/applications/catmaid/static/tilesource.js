@@ -4,7 +4,8 @@
 function getTileSource( tileSourceType, baseURL, fileExtension )
 {
     var tileSources = [DefaultTileSource, RequestTileSource,
-        HDF5TileSource, BackslashTileSource, LargeDataTileSource];
+        HDF5TileSource, BackslashTileSource, LargeDataTileSource,
+        DVIDTileSource];
 
     if (tileSourceType > 0 && tileSourceType <= tileSources.length)
     {
@@ -157,6 +158,28 @@ function LargeDataTileSource( baseURL, fileExtension )
     }
 }
 
+/*
+* Simple tile source type for DVID.
+* see https://github.com/janelia-flyem/dvid
+* (only for xy plane, no multi-scale, no overview thubnail image)
+* use as image base: http://<HOST>/api/node/<UUID>/<DATASETNAME>/0,1/
+*
+* Source type: 6
+*/
+function DVIDTileSource( baseURL, fileExtension )
+{
+    this.getTileURL = function( project, stack, baseName,
+        tileWidth, tileHeight, col, row, zoom_level )
+    {
+        return baseURL + "/" + tileWidth + "," + tileHeight + "/" + col * tileWidth + "," + 
+            row * tileHeight + "," + stack.z + "/" + fileExtension;
+    }
+
+    this.getOverviewLayer = function( layer )
+    {
+        return new DummyOverviewLayer();
+    }
+}
 
 /**
  * This is an overview layer that doesn't display anything.

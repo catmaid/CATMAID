@@ -24,7 +24,7 @@ urlpatterns = patterns('',
 
 # Neuron Catalog
 urlpatterns += patterns('',
-    url(r'vncbrowser/', include('vncbrowser.urls')),
+    url(r'^vncbrowser/', include('vncbrowser.urls')),
 )
 
 # Django CATMAID API

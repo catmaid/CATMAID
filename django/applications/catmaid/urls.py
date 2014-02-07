@@ -12,12 +12,13 @@ intlist = r'[0-9]+(,[0-9]+)*'
 
 # Add the main index.html page at the root:
 urlpatterns = patterns('',
-    (r'^$', HomepageView.as_view()))
+    (r'^$', HomepageView.as_view())
+)
 
 # Django CATMAID API
 urlpatterns += patterns(
     '',
-    
+
     (r'^login$', 'catmaid.control.login_vnc'),
     (r'^accounts/login$', 'catmaid.control.login_user'),
     (r'^accounts/logout$', 'catmaid.control.logout_user'),
@@ -44,14 +45,12 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/tracing/setup/rebuild$', 'catmaid.control.rebuild_tracing_setup_view'),
     (r'^(?P<project_id>\d+)/tracing/setup/test$', 'catmaid.control.check_tracing_setup_view'),
 
-
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'catmaid.control.adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'catmaid.control.skeletonlist_subgraph'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'catmaid.control.graph2.skeleton_graph'),
     (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'catmaid.control.all_shared_connectors'),
     (r'^(?P<project_id>\d+)/graph/circlesofhell', 'catmaid.control.circles.circles_of_hell'),
     (r'^(?P<project_id>\d+)/graph/directedpaths', 'catmaid.control.circles.find_directed_paths'),
-
 
     # Segmentation tool
     (r'^(?P<project_id>\d+)/assembly/create-assembly-and-neuron$', 'catmaid.control.create_assembly_and_neuron'),
@@ -61,7 +60,7 @@ urlpatterns += patterns(
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-cog$', 'catmaid.control.slices_cog'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-tiles$', 'catmaid.control.get_slices_tiles'),
-    
+
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-at-location$', 'catmaid.control.slices_at_location'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice$', 'catmaid.control.get_slice'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/delete-slice-from-assembly$', 'catmaid.control.delete_slice_from_assembly'),
@@ -71,7 +70,6 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice-left$', 'catmaid.control.segments_for_slice_left'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/constraint/constraintset-for-segment$', 'catmaid.control.constraintset_for_segment'),
     
-
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-components$', 'catmaid.control.put_components'),
 
@@ -88,9 +86,6 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-view$', 'catmaid.control.get_saved_drawings_by_view'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-drawing-enum$', 'catmaid.control.get_drawing_enum'),
-
-
-    # ------
 
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', 'catmaid.control.node_count'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', 'catmaid.control.neuronname'),
@@ -174,7 +169,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/stats-summary$', 'catmaid.control.stats_summary'),
     (r'^(?P<project_id>\d+)/stats-history$', 'catmaid.control.stats_history'),
     (r'^(?P<project_id>\d+)/stats-user-history$', 'catmaid.control.stats_user_history'),
-    
+
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'catmaid.control.stack_info'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'catmaid.control.stack_models'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'catmaid.control.get_tile'),
@@ -201,13 +196,13 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'catmaid.control.one_to_many_synapses'),
     (r'^(?P<project_id>\d+)/connector/skeletons$', 'catmaid.control.connector_skeletons'),
 
-    )
+)
 
 # Cropping
 urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/(?P<single_channel>[0|1])/$' % (intlist, num, num, num, num, num, num), 'catmaid.control.crop'),
     (r'^crop/download/(?P<file_path>.*)/$', 'catmaid.control.download_crop')
-    )
+)
 
 # Tagging
 urlpatterns += patterns('',
@@ -217,7 +212,7 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/list$', 'catmaid.control.list_stack_tags'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/clear$', 'catmaid.control.update_stack_tags'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/(?P<tags>.*)/update$', 'catmaid.control.update_stack_tags'),
-    )
+)
 
 # Data views
 urlpatterns += patterns('',
@@ -227,7 +222,7 @@ urlpatterns += patterns('',
     (r'^dataviews/show/default$', 'catmaid.control.get_default_data_view'),
     (r'^dataviews/type/comment$', 'catmaid.control.get_data_view_type_comment'),
     (r'^dataviews/type/(?P<data_view_id>\d+)$', 'catmaid.control.get_data_view_type'),
-    )
+)
 
 # Ontologies
 urlpatterns += patterns('',
@@ -272,7 +267,7 @@ urlpatterns += patterns('',
         'catmaid.control.remove_restriction'),
     (r'^(?P<project_id>%s)/ontology/restrictions/(?P<restriction>[^/]*)/types$' % (integer),
         'catmaid.control.get_restriction_types'),
-    )
+)
 
 # Classification
 urlpatterns += patterns('',
@@ -305,14 +300,14 @@ urlpatterns += patterns('',
         'catmaid.control.link_classification_graph', name='link_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/stack/(?P<stack_id>{0})/linkroi/(?P<ci_id>{0})/$'.format(integer),
         'catmaid.control.link_roi_to_classification', name='link_roi_to_classification'),
-    )
+)
 
 # Notifications
 urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/notifications/list$', 'catmaid.control.list_notifications'),
     (r'^(?P<project_id>\d+)/changerequest/approve$', 'catmaid.control.approve_change_request'),
     (r'^(?P<project_id>\d+)/changerequest/reject$', 'catmaid.control.reject_change_request'),
-    )
+)
 
 # Regions of interest
 urlpatterns += patterns('',
@@ -324,7 +319,7 @@ urlpatterns += patterns('',
         'catmaid.control.remove_roi_link', name='remove_roi_link'),
     url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer),
         'catmaid.control.get_roi_image', name='get_roi_image'),
-    )
+)
 
 # Clustering
 urlpatterns += patterns('',
@@ -333,4 +328,4 @@ urlpatterns += patterns('',
     url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),
         TemplateView.as_view(template_name="catmaid/clustering/display.html"),
         name="clustering_display"),
-    )
+)

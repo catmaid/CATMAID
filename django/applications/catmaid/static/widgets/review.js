@@ -316,11 +316,7 @@ var ReviewSystem = new function()
         var src = imageArray.pop();
         var image = new Image();
         image.src = src;
-        image.onload = function(e) {
-            $('#counting-cache').text( total_count - imageArray.length + '/' + total_count );
-            loadImageCallback( imageArray );
-        };
-        image.onerror = function(e) {
+        image.onload = image.onerror = function(e) {
             $('#counting-cache').text( total_count - imageArray.length + '/' + total_count );
             loadImageCallback( imageArray );
         };

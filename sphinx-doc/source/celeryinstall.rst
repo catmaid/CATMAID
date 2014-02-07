@@ -14,8 +14,10 @@ As long as the message broker is around, CATMAID will accept tasks
 (e.g a cropping job). They will get executed when Celery is running
 again.
 
-This section guides you through the setup of Celery and the simple
-message broker django-kombu.
+This first section guides you through the setup of Celery and the
+simplest message broker provided by Kombu, it used Django's database
+to store messages. Afterwards, an alternative broker, RabbitMQ, is
+described.
 
 Prerequisites
 -------------
@@ -67,6 +69,48 @@ automatically. There are is a ``init`` script available in the Celery code
 base that could be used here. Also, make sure that this Celery daemon
 process has the permissions to write to the temporary directory
 (``TMP_DIR``).
+
+Message Brokers
+---------------
+
+It is the so called message broker who takes tasks and tells Celery to execute
+them. There are several ones around and the section uses RabbitMQ as an
+alternative to the simple Django based one used above. RabbitMQ is very fast
+and reliable and can be configured to be manageable through Django's admin
+interface.
+
+First, the RabbitMQ server has to be installed::
+
+   sudo apt-get install rabbitmq-server
+
+This should start it automatically. RabbitMQ comes with a plugin infrastructure
+and one particular useful plugin is one that adds support for management
+commands. Based on this one is able to get information on Celery workers through
+the broker from within Django's admin interface. To enable it, call:
+
+  sudo /usr/lib/rabbitmq/lib/rabbitmq-server-3.2.3/sbin/rabbitmq-plugins enable rabbitmq_management
+
+After enabling or disabling plugins, RabbitMQ has to be restarted::
+
+  sudo service rabbitmq-server restart
+
+To display a list of all available plugin and whether they are enabled, call::
+
+  sudo /usr/lib/rabbitmq/lib/rabbitmq-server-3.2.3/sbin/rabbitmq-plugins list
+
+This also enables a web-interface will be available on port 15672. The default
+user and password combination is guest/guest.
+
+To collect worker events, one has to start ``celeryd`` with the ``-E`` argument,
+e.g.::
+
+    python manage.py celeryd -l info -E
+
+And to retrieve event snapshots from all workers, start ``celerycam``::
+
+    python manage.py celerycam
+
+All tasks will then be manageable from with Django's admin interface.
 
 .. _sec-celery-periodic-tasks:
 

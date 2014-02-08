@@ -13,6 +13,13 @@ class Migration(DataMigration):
         migration. It expects the tracing system to be set up for all tracing
         projects.
         """
+        # Get a list of all skeleton lists. If there are no lists, return
+        # without doing anything. This avoids trouble with a missing super user
+        # and confusing questions on new setups.
+        skeletonlists = orm.SkeletonlistDashboard.objects.all()
+        if len(skeletonlists) == 0:
+            return
+
         answer = None
         while answer not in ['yes', 'no', 'skip']:
             answer = raw_input("This migration will create new data " \
@@ -34,7 +41,7 @@ class Migration(DataMigration):
                     "and re-run the migration.")
 
         # Get all skeleton lists, independent of the project
-        for sl in orm.SkeletonlistDashboard.objects.all():
+        for sl in skeletonlists:
             # Get or create the annotation class
             annotation_class, created = orm.Class.objects.get_or_create(
                     project_id=sl.project.id, class_name='annotation',

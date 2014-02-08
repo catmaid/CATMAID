@@ -217,6 +217,11 @@ class Migration(DataMigration):
         replace the object tree. For details on how every project is handled,
         have a look at the 'migrate_project' method.
         """
+        # Return without doing anything, if there are no class instances at all.
+        # In such a case there isn't anything to migrate and the questsion below
+        # could cause confusion.
+        if orm.ClassInstance.objects.all().count() == 0:
+            return
 
         answer = None
         while answer not in ['yes', 'no', 'skip']:

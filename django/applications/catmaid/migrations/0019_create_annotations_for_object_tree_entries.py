@@ -11,9 +11,6 @@ import re
 
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.control.tracing import check_tracing_setup_detailed, setup_tracing
-from catmaid.models import ClassInstance, ClassInstanceClassInstance, Project
-from catmaid.models import User
-
 
 def log(msg, indent=0):
     """ Provides basic log output.
@@ -90,7 +87,7 @@ class Traverser():
         for a in annotations:
             # Make sure the annotation's class instance exists.
             if a not in self.annotation_cache:
-                ci, created = ClassInstance.objects.get_or_create(
+                ci, created = orm.ClassInstance.objects.get_or_create(
                       project_id=self.p.id, name=a,
                       class_column_id=self.class_map['annotation'],
                       defaults={'user_id': neuron.link_user_id});
@@ -99,7 +96,7 @@ class Traverser():
             a_id = self.annotation_cache[a]
 
             # Link the annotation
-            cici, created = ClassInstanceClassInstance.objects.get_or_create(
+            cici, created = orm.ClassInstanceClassInstance.objects.get_or_create(
                     project_id=self.p.id,
                     relation_id=self.relation_map['annotated_with'],
                     class_instance_a_id=neuron.id,
@@ -154,7 +151,7 @@ class Traverser():
 
         # Get linked nodes, annotated whether they are neurons,  and
         # traverse them
-        linked_nodes = ClassInstance.objects.filter(project=self.p.id,
+        linked_nodes = orm.ClassInstance.objects.filter(project=self.p.id,
                 cici_via_a__relation=self.relation_map['part_of'],
                 cici_via_a__class_instance_b=node).extra(select={
                     'link_user_id': 'class_instance_class_instance.user_id'
@@ -174,7 +171,7 @@ class Migration(DataMigration):
         """
         # First check if the project qualifies for further steps by testing
         # whether it actually has a tracing root node. If not, it is skipped.
-        if not ('root' in class_map and ClassInstance.objects.filter(
+        if not ('root' in class_map and orm.ClassInstance.objects.filter(
                 class_column=class_map['root'], project_id=p.id).exists()):
             raise RuntimeError("Skipping project #%s, because tracing isn't " \
                     "set up for it" % p.id)
@@ -207,7 +204,7 @@ class Migration(DataMigration):
                         "choice to not setup tracing properly.")
             # Fix setup otherwise and continue. Use the first super user
             # available to do that.
-            super_user = User.objects.filter(is_superuser=True).order_by('id')[0]
+            super_user = orm['auth.User'].objects.filter(is_superuser=True).order_by('id')[0]
             setup_tracing(p.id, super_user)
             log("The missing bits have been added.", indent)
 
@@ -242,7 +239,7 @@ class Migration(DataMigration):
 
         try:
             # Migrate every available project
-            for p in Project.objects.order_by('id'):
+            for p in orm.Project.objects.order_by('id'):
                 if p.id == settings.ONTOLOGY_DUMMY_PROJECT_ID:
                     log("Skipping special purpose project #%s: %s" % (p.id, p.title))
                     continue
@@ -267,7 +264,7 @@ class Migration(DataMigration):
                 # traversed in a similar way to how the CATMAID front-end works.
 
                 # Start at the root node and traverse all folder in there
-                root_node = ClassInstance.objects.filter(project=p.id,
+                root_node = orm.ClassInstance.objects.filter(project=p.id,
                         class_column=class_map['root']).get()
                 traverser = Traverser(p, class_map, relation_map)
                 traverser.run(root_node)

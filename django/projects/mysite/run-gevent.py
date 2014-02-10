@@ -2,7 +2,7 @@
 
 # Import gevent monkey and patch everything
 from gevent import monkey
-monkey.patch_all(httplib=True)
+monkey.patch_all()
 
 # Import the rest
 from django.core.handlers.wsgi import WSGIHandler as DjangoWSGIApp

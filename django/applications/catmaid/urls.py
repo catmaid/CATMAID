@@ -52,41 +52,6 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/graph/circlesofhell', 'catmaid.control.circles.circles_of_hell'),
     (r'^(?P<project_id>\d+)/graph/directedpaths', 'catmaid.control.circles.find_directed_paths'),
 
-    # Segmentation tool
-    (r'^(?P<project_id>\d+)/assembly/create-assembly-and-neuron$', 'catmaid.control.create_assembly_and_neuron'),
-    (r'^(?P<project_id>\d+)/assembly/(?P<assembly_id>\d+)/neuronname$', 'catmaid.control.update_assembly_neuronname'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/assembly/save$', 'catmaid.control.save_assembly'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice-info$', 'catmaid.control.slice_info'),
-
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-cog$', 'catmaid.control.slices_cog'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-tiles$', 'catmaid.control.get_slices_tiles'),
-
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-at-location$', 'catmaid.control.slices_at_location'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice$', 'catmaid.control.get_slice'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/delete-slice-from-assembly$', 'catmaid.control.delete_slice_from_assembly'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour$', 'catmaid.control.slice_contour'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour-highres$', 'catmaid.control.slice_contour_highres'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice-right$', 'catmaid.control.segments_for_slice_right'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice-left$', 'catmaid.control.segments_for_slice_left'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/constraint/constraintset-for-segment$', 'catmaid.control.constraintset_for_segment'),
-    
-
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-components$', 'catmaid.control.put_components'),
-
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-of-assembly-for-section$', 'catmaid.control.slices_of_assembly_for_section'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-of-assembly$', 'catmaid.control.slices_of_assembly'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-of-assembly$', 'catmaid.control.segments_of_assembly'),
-
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/generate-segmentation-file$', 'catmaid.control.create_segmentation_file'),
-
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-drawing$', 'catmaid.control.put_drawing'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/delete-drawing$', 'catmaid.control.delete_drawing'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-component-id$', 'catmaid.control.get_saved_drawings_by_component_id'),
-
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-view$', 'catmaid.control.get_saved_drawings_by_view'),
-
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-drawing-enum$', 'catmaid.control.get_drawing_enum'),
-
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', 'catmaid.control.node_count'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', 'catmaid.control.neuronname'),
     (r'^(?P<project_id>\d+)/skeleton/neuronnames$', 'catmaid.control.neuronnames'),

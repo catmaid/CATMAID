@@ -592,7 +592,6 @@ function handle_openProjectStack( status, text, xml )
 
 			var tools = {
 				navigator: Navigator,
-				canvastool: CanvasTool,
 				tracingtool: TracingTool,
 				segmentationtool: SegmentationTool,
 				classification_editor: null

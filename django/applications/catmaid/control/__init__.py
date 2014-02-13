@@ -1,6 +1,3 @@
-__author__ = 'stephan'
-
-from assembly import *
 from authentication import *
 from common import *
 from connector import *
@@ -27,13 +24,9 @@ from treenode import *
 from treenodetable import *
 from user import *
 from wiringdiagram import *
-from segmentation import *
 from data_view import *
 from analytics import *
 from importer import *
-from slice import *
-from drawing import *
-from contraint import *
 from graph import *
 from ontology import *
 from useranalytics import *

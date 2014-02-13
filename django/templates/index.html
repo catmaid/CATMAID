@@ -13,7 +13,7 @@
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/keyboard-shortcuts.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/textlabel.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/svgoverlay.css" />
-    <link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/canvasoverlay.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/canvasoverlay.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/css/demo_table.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/themes/smoothness/jquery-ui-1.10.1.custom.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/resize_handle.css" />
@@ -84,11 +84,8 @@
 		<script type="text/javascript" src="{{ STATIC_URL }}croppingtool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}tracingtool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}tracinglayer.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}segmentationannotations.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}segmentationtool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}neuronstagingarea.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/canvastool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/canvaslayer.js"></script>
 
 		<!--[if gte IE 5]>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/excanvas/excanvas.js"></script>
@@ -209,47 +206,6 @@
 			<!--
 			*******************************************************************
 			-->
-
-			<!-- Segmentation/Canvas
-			*******************************************************************
-			-->
-			<div id="toolbar_seg" class="toolbar" style="display:none;">
-
-
-				<div id="sliders_box_seg"></div>
-                <div class="box">
-                    <button id="button_mode_component"  name="button_mode_component" style="height:20px;width: 80px; margin-top: 6px;" class="button_active">Components</button>
-                    <button id="button_mode_free_drawing" name="button_mode_free_drawing"  style=";width: 80px;height:20px;background-color: #e0ffff;margin-top: 6px;" >Labeling</button>
-                </div>
-                <div class="box">
-                    <button id="button_clear_canvas" name="button_clear_canvas"  style="width: 80px;height:20px;background-color: #f08080; margin-top: 6px;" >Clear canvas</button>
-                </div>
-                <div style="width:1px;height:32px;background-color:black;float:left;"></div>
-
-                <div class="box" id="component_controls">
-                    <button id="button_init_components" name="button_init_components" style="height:20px; margin-top: 6px;"  >Initialize components</button>
-                    <button id="button_save_components" name="button_save_components" style="height:20px;margin-top: 6px;" >Save components</button>
-                    <button id="button_color_wheel" name="button_color_wheel" style="height:20px;margin-top: 6px;" >Component Color</button>
-
-
-                    <button id="button_drawing_mode" name="button_drawing_mode" style="height:20px;margin-top: 6px;"  >Correction Mode</button>
-                </div>
-
-                <div class="box" id="free_drawing_controls">
-                    <select id="select_drawing_type" style="height:100%; background-color: #e0ffff;"></select>
-
-
-                </div>
-
-                <div class="box" id="drawing_controls">
-
-
-                </div>
-                <div id="sliders_box_brush_size"><span>&nbsp; Brush size:</span></div>
-
-
-				<div class="toolbar_fill"></div>
-			</div>
 
 			<!-- Segmentation Tool
 			*******************************************************************

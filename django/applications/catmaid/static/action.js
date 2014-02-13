@@ -269,23 +269,7 @@ var createEditToolActions = function() {
          keyShortcuts: {
          },
          run: function (e) {
-            requestQueue.register(django_url + project.id + '/stack/' + project.focusedStack.id + '/slice-info', "POST", {},
-             function (status, text, xml) {
-                    if (status === 200) {
-                        if (text && text !== " ") {
-                            var e = $.parseJSON(text);
-                            if (e.error) {
-                                alert(e.error);
-                            } else {
-                                /*if( project.focusedStack.s !== 1 ) {
-                                  alert('Segmentation Tool only works on zoom-level 1!');
-                                  return;
-                                }*/
-                                project.setTool( new SegmentationTool() );
-                            }
-                        }
-                    }
-            });
+            project.setTool( new SegmentationTool() );
          }
       }));
   }
@@ -345,45 +329,6 @@ var createEditToolActions = function() {
 var editToolActions = new Array();
 
 var segmentationWindowActions = [
-
-  new Action({
-    helpText: "Show segments table",
-    buttonID: "segmentation_button_sliceinfo",
-    buttonName: 'table_segments',
-    run: function (e) {
-      WindowMaker.show('sliceinfo-widget');
-      return true;
-    }
-  }),
-
-  /*new Action({
-    helpText: "Show assembly graph",
-    buttonID: "assembly_graph_button",
-    buttonName: 'table_segments',
-    run: function (e) {
-      WindowMaker.show('assemblygraph-widget');
-      return true;
-    }
-  }),*/
-
-  new Action({
-    helpText: "Show 3D WebGL view",
-    buttonID: "view_3d_webgl_button",
-    buttonName: '3d-view-webgl',
-    run: function (e) {
-      WindowMaker.create('3d-webgl-view');
-    }
-  }),
-
-  new Action({
-    helpText: "Show object tree",
-    buttonID: "data_button_tree",
-    buttonName: 'tree',
-    run: function (e) {
-      WindowMaker.show('object-tree');
-      return true;
-    }
-  }),
 
 ];
 

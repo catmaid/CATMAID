@@ -6,7 +6,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
-from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile, Overlay, StackSliceInfo
+from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile, Overlay
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.views import UseranalyticsView, UserProficiencyView

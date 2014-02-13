@@ -128,4 +128,3 @@ admin.site.register_view('userproficiency', UserProficiencyView.as_view(), 'User
 admin.site.register_view('classifcationadmin',
     classification_admin_view, 'Tag Based Classification Graph Linker')
 admin.site.register(Overlay)
-admin.site.register(StackSliceInfo)

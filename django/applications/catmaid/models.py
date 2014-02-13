@@ -71,12 +71,6 @@ class Stack(models.Model):
     def __unicode__(self):
         return self.title
 
-class StackSliceInfo(models.Model):
-    stack = models.ForeignKey(Stack)
-    slice_base_url = models.TextField()
-    slice_base_path = models.TextField()
-    file_extension = models.TextField(null=True)
-
 class ProjectStack(models.Model):
     class Meta:
         db_table = "project_stack"

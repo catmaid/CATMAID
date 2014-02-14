@@ -41,13 +41,12 @@
 				{% endif %}
 				{% for p in tprojects %}
 					{% with stacks=p.stacks|order_by:'id'|filter_stacks:linked_stacks %}
-					{% with tags=p.tags.all %}
 
 					{# Make the project name a link if we are not forced to have #}
 					{# a stack list and only one stack is available. Draw a definiton #}
 					{# list otherwise. #}
 					{% if not force_stack_list and stacks|length == 1 and not sample_images %}
-						<a {% if p|has_tag:highlight_tags %}class="highlight"{% endif %} href="#" onclick="openProjectStack({{p.id}}, {{stacks.0.id}})">{{ p.title }}</a><br />
+						<a {% if p|has_tag:highlight_tags %}class="highlight" {% endif %} href="#" onclick="openProjectStack({{p.id}}, {{stacks.0.id}})">{{ p.title }}</a><br />
 					{% elif sample_images %}
 						{% for s in stacks %}
 							{% with slice=s|get_slice:sample_slice %}
@@ -64,7 +63,7 @@
 						<dl>
 							<dt>{{ p.title }}</dt>
 							{% for s in stacks %}
-							<dd><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})" title="{{ s.comment }}">{{ s.title }}</a></dd>
+							<dd><a {% if p|has_tag:highlight_tags %}class="highlight" {% endif %}href="#" onclick="openProjectStack({{p.id}}, {{s.id}})" title="{{ s.comment }}">{{ s.title }}</a></dd>
 							{% endfor %}
 							{# Optionally, add the the neuron catalogue link #}
 							{% if p.is_catalogueable and catalogue_link %}
@@ -73,7 +72,6 @@
 						</dl>
 					{% endif %}
 
-					{% endwith %}
 					{% endwith %}
 					{% endfor %}
 					{% if tprojects|length == 0 %}

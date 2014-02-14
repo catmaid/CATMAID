@@ -291,6 +291,7 @@ Name                 Options                                    Default
 ``col_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
 ``linked_stacks``    ``stack index, "first", "last", "all"``    ``"all"``
 ``force_stack_list`` ``true, false``                            ``false``
+``highlight_tags``   ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
 ``sample_images``    ``true, false``                            ``false``
 ``sample_slice``     ``slice index, "first", "center", "last"`` ``"center"``
 ``sample_width``     ``width in pixel, e.g. 50 or 75``          ``orig. width``
@@ -311,6 +312,10 @@ Is there only one stack (selected or at all), then the link to open it is
 rendered solely as the project title and no list is displayed. If this is not
 wanted, the ``force_stack_list`` option can be set to true to get a list with
 one entry.
+
+It may be desirable to highlight a group of projects which have the same tags.
+This can be achieved by providing ``highlight_tags``. All projects tagged with
+at least one of those tags will be displayed in bold.
 
 Like with the other data types, one can opt for showing images instead of stack
 names. To do so, employ the ``sample_images`` option. These images will then

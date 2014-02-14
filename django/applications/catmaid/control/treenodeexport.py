@@ -303,7 +303,7 @@ class ConnectorExporter(TreenodeExporter):
                             project_id=self.job.project_id,
                             skeleton_id__in=self.job.skeleton_ids)[0]
                 except IndexError:
-                    return "Could not find any connector to export"
+                    raise RuntimeError("Could not find any connector to export")
 
             connector_links = [connector_link]
         else:

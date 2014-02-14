@@ -4,6 +4,7 @@
 
 {% with sort=config|get_or_none:"sort"|default_if_none:1 %}
 {% with filter_tags=config|get_or_none:"filter_tags"|default_if_none:0 %}
+{% with highlight_tags=config|get_or_none:"highlight_tags"|default_if_none:0 %}
 {% with row_tags=config|get_or_none:"row_tags"|default_if_none:0 %}
 {% with col_tags=config|get_or_none:"col_tags"|default_if_none:0 %}
 {% with linked_stacks=config|get_or_none:"linked_stacks"|default_if_none:"all" %}
@@ -18,6 +19,7 @@
 	There are no row or no column tags defined. Without these, this
   data view can't be rendered. Please adjust your configuration.
 {% else %}
+{% if highlight_tags %}<p>(Highlighted tags: {{ highlight_tags|join:", " }})</p>{% endif %}
 <table>
 	<tr>
 		{# Have one empty field in the upper left corner #}
@@ -39,12 +41,13 @@
 				{% endif %}
 				{% for p in tprojects %}
 					{% with stacks=p.stacks|order_by:'id'|filter_stacks:linked_stacks %}
+					{% with tags=p.tags.all %}
 
 					{# Make the project name a link if we are not forced to have #}
 					{# a stack list and only one stack is available. Draw a definiton #}
 					{# list otherwise. #}
 					{% if not force_stack_list and stacks|length == 1 and not sample_images %}
-						<a href="#" onclick="openProjectStack({{p.id}}, {{stacks.0.id}})">{{ p.title }}</a><br />
+						<a {% if p|has_tag:highlight_tags %}class="highlight"{% endif %} href="#" onclick="openProjectStack({{p.id}}, {{stacks.0.id}})">{{ p.title }}</a><br />
 					{% elif sample_images %}
 						{% for s in stacks %}
 							{% with slice=s|get_slice:sample_slice %}
@@ -71,6 +74,7 @@
 					{% endif %}
 
 					{% endwith %}
+					{% endwith %}
 					{% endfor %}
 					{% if tprojects|length == 0 %}
 						-
@@ -82,6 +86,7 @@
 	</table>
 {% endif %}
 
+{% endwith %}
 {% endwith %}
 {% endwith %}
 {% endwith %}

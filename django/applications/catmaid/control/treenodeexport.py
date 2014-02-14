@@ -292,7 +292,7 @@ class ConnectorExporter(TreenodeExporter):
                 connector_link = TreenodeConnector.objects.filter(
                         project_id=self.job.project_id,
                         relation_id=self.relation_map['presynaptic_to'],
-                        skeleton_id__in=self.skeleton_ids)[0]
+                        skeleton_id__in=self.job.skeleton_ids)[0]
             except IndexError:
                 connector_link = None
 
@@ -301,7 +301,7 @@ class ConnectorExporter(TreenodeExporter):
                 try:
                     connector_link = TreenodeConnector.objects.filter(
                             project_id=self.job.project_id,
-                            skeleton_id__in=self.skeleton_ids)[0]
+                            skeleton_id__in=self.job.skeleton_ids)[0]
                 except IndexError:
                     return "Could not find any connector to export"
 

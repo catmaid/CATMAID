@@ -1,3 +1,5 @@
+import string
+import random
 from collections import defaultdict
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
@@ -210,3 +212,8 @@ def urljoin(a, b):
     if b[0] == '/':
         b = b[1:]
     return a + b
+
+def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
+    """ Creates a random string of the specified length.
+    """
+    return ''.join(random.choice(chars) for x in range(size))

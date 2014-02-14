@@ -1666,7 +1666,29 @@ var WindowMaker = new function()
 
       addLogic(win);
 
-      $('#project_export_widget').load( django_url + project.id + '/exportwidget' )
+      $('#project_export_widget').load(django_url + project.id + '/exportwidget',
+        function(response, status, xhr) {
+          if (status == "success") {
+            // Bind NetworkX JSON link to handler
+            $(this).find('#export-networkx').click(function() {
+              graphexport_nxjson();
+            });
+            // Bind NeuroML link to handler
+            $(this).find('#export-neuroml181').click(function() {
+              graphexport_NeuroML181();
+            });
+            // Bind treenode export link to handler
+            $(this).find('#export-treenode-archive').click(function() {
+              // Show dialog to select
+              export_treenodes();
+            });
+            // Bind connector export link to handler
+            $(this).find('#export-connector-archive').click(function() {
+              // Show dialog to select
+              export_connectors();
+            });
+          }
+        });
 
       return win;
   };

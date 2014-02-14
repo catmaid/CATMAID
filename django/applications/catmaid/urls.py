@@ -161,6 +161,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'catmaid.control.one_to_many_synapses'),
     (r'^(?P<project_id>\d+)/connector/skeletons$', 'catmaid.control.connector_skeletons'),
 
+    (r'^(?P<project_id>\d+)/connectorarchive/export$', 'catmaid.control.export_connectors'),
+    (r'^(?P<project_id>\d+)/treenodearchive/export$', 'catmaid.control.export_treenodes'),
 )
 
 # Cropping

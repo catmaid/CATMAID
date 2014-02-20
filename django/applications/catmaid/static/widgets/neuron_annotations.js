@@ -708,7 +708,7 @@ NeuronAnnotations.remove_annotation = function(entity_id,
 };
 
 /**
- * A neuron annotation namespac method to retrieve annotations from the backend
+ * A neuron annotation namespace method to retrieve annotations from the backend
  * for the neuron modeled by a particular skeleton. If the call was successfull,
  * the passed handler is called with the annotation set as parameter.
  */

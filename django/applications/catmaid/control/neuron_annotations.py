@@ -349,15 +349,22 @@ def annotate_entities(request, project_id = None):
                         'id', flat=True)
 
     # Annotate enties
-    annotations = _annotate_entities(project_id, request.user, entity_ids,
-            annotations)
+    annotation_objs = set(_annotate_entities(project_id, request.user, entity_ids,
+            annotations))
     # Annotate annotations
     if meta_annotations:
-        annotation_ids = [a.id for a in annotations]
-        _annotate_entities(project_id, request.user, annotation_ids,
-                meta_annotations)
+        annotation_ids = [a.id for a in annotation_objs]
+        meta_annotation_objs = _annotate_entities(project_id, request.user,
+                annotation_ids, meta_annotations)
+        # Update used annotation objects set
+        annotation_objs.add(meta_annotation_objs)
 
-    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+    result = {
+        'message': 'success',
+        'annotations': [{'name': a.name, 'id': a.id} for a in annotation_objs],
+    }
+
+    return HttpResponse(json.dumps(result), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_annotation(request, project_id=None, annotation_id=None,

@@ -668,10 +668,11 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
             if (e.error) {
               new ErrorDialog(e.error, e.detail).show();
             } else {
-              if (annotations.length == 1)
-                growlAlert('Information', 'Annotation ' + annotations[0] + ' added.');
+              var ann_names = e.annotations.map(function(a) { return a.name; });
+              if (e.annotations.length == 1)
+                growlAlert('Information', 'Annotation ' + ann_names[0] + ' added.');
               else
-                growlAlert('Information', 'Annotations ' + annotations.join(', ') + ' added.');
+                growlAlert('Information', 'Annotations ' + ann_names.join(', ') + ' added.');
               // Execute callback, if any
               if (callback) callback();
             }

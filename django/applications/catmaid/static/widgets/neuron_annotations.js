@@ -742,11 +742,9 @@ NeuronAnnotations.retrieve_annotations_for_skeleton = function(skid, handler) {
  * Refresh display and auto-completion with updated annotation information.
  */
 NeuronAnnotations.prototype.refresh_annotations = function() {
-  annotations.update((function() {
-    // Update auto completion for input fields
-    $('.neuron_query_by_annotation_name' + this.widgetID).autocomplete(
-        "option", {source: annotations.getAllNames()});
-  }).bind(this));
+  // Update auto completion for input fields
+  $('.neuron_query_by_annotation_name' + this.widgetID).autocomplete(
+      "option", {source: annotations.getAllNames()});
 };
 
 NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)

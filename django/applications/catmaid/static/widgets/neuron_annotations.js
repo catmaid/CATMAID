@@ -688,7 +688,8 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
 NeuronAnnotations.remove_annotation = function(entity_id,
     annotation_id, callback)
 {
-  if (!confirm('Are you sure you want to remove this annotation?')) {
+  if (!confirm('Are you sure you want to remove annotation "' +
+        annotations.getName(annotation_id) + '"?')) {
     return;
   }
 

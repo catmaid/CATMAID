@@ -673,6 +673,13 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
                 growlAlert('Information', 'Annotation ' + ann_names[0] + ' added.');
               else
                 growlAlert('Information', 'Annotations ' + ann_names.join(', ') + ' added.');
+              // Update the annotation cache with new annotations, if any
+              try {
+                window.annotations.push(e.annotations);
+              } catch(err) {
+                new ErrorDialog("There was a problem updating the annotation " +
+                    "cache, please close and re-open the tool", err).show();
+              }
               // Execute callback, if any
               if (callback) callback();
             }

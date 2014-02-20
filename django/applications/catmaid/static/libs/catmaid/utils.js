@@ -364,4 +364,25 @@ AnnotationCache.prototype.update = function(callback) {
       }).bind(this));
 };
 
+/**
+ * Adds new annotations from the given list to the cache. The list should
+ * contain objects, each with an 'id' and a 'name' field.
+ */
+AnnotationCache.prototype.push = function(annotationList) {
+  annotationList.forEach(function(a) {
+    var known_id = this.annotation_ids.hasOwnProperty(a.name) === -1;
+    var known_name = this.annotation_names.hasOwnProperty(a.id) === -1;
+    if (!known_id && !known_name) {
+      // Add annotation if it isn't already contained in the list.
+      this.annotation_ids[a.name] = a.id;
+      this.annotation_names[a.id] = a.name;
+    } else if (known_id && known_name) {
+      // Nothing to do, if the annotation is already known.
+    } else {
+      // If only the ID or the name is known, something is odd.
+      throw "Annotation already known with different id/name"
+    }
+  }, this)
+};
+
 var annotations = new AnnotationCache();

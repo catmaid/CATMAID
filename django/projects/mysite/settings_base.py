@@ -102,6 +102,15 @@ ROI_AUTO_CREATE_IMAGE = False
 IMPORTER_DEFAULT_TILE_WIDTH = 256
 IMPORTER_DEFAULT_TILE_HEIGHT = 256
 
+# Some tools and widgets create files (e.g. cropping, ROIs, NeuroHDF5 and
+# treenode export). These files will be created in a folder for each tool
+# relative to the path defined in Django's MEDIA_ROOT variable. These are
+# the default sub-folders, all of them need to be writable:
+MEDIA_HDF5_SUBDIRECTORY = 'hdf5'
+MEDIA_CROPPING_SUBDIRECTORY = 'cropping'
+MEDIA_ROI_SUBDIRECTORY = 'roi'
+MEDIA_TREENODE_SUBDIRECTORY = 'treenode_archives'
+
 # A couple of functions useful for generating default directories to
 # be used in the settings files:
 

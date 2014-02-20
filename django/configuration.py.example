@@ -18,15 +18,6 @@ catmaid_database_password = ''
 
 catmaid_writable_path = ''
 
-# The HDF5 and the cropping tools write files into a subrirectory of
-# the writable path above. Make sure these folders exist there (or
-# adjust them to existing folders you like):
-
-catmaid_hdf5_subdir = 'hdf5'
-catmaid_crop_subdir = 'cropping'
-catmaid_roi_subdir = 'roi'
-catmaid_treenode_subdir = 'treenode_archive'
-
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.

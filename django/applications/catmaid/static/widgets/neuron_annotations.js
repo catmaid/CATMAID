@@ -16,9 +16,6 @@ var NeuronAnnotations = function()
   this.entity_selection_map = {};
   this.pid = project.id;
 
-  // Map of annotation name vs its ID
-  this.annotation_ids = {};
-
   // Limit the result set
   this.display_length = 50;
   this.display_start = 0;
@@ -247,7 +244,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
         // and replace the clicked on annotation with the result. Pagination
         // will not be applied to expansions.
         var query_data = {
-          'neuron_query_by_annotation': self.annotation_ids[$(this).attr('annotation')],
+          'neuron_query_by_annotation': annotations.getID($(this).attr('annotation')),
         };
         requestQueue.register(django_url + project.id + '/neuron/query-by-annotations',
             'POST', query_data, function(status, text, xml) {
@@ -357,12 +354,10 @@ NeuronAnnotations.prototype.query = function(initialize)
     this.total_n_results = 0;
   }
 
-  var annotation_ids = this.annotation_ids;
-
   var form_data = $('#neuron_query_by_annotations' +
       this.widgetID).serializeArray().reduce(function(o, e) {
         if (0 === e.name.indexOf('neuron_query_by_annotation')) {
-          o[e.name] = annotation_ids[e.value];
+          o[e.name] = annotations.getID(e.value);
         } else if (0 === e.name.indexOf('neuron_query_include_subannotation')) {
           // Expect the annotation field to be read out before this
           var ann_input_name = e.name.replace(new RegExp(e.name),
@@ -736,48 +731,10 @@ NeuronAnnotations.retrieve_annotations_for_skeleton = function(skid, handler) {
 
 NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
 {
-  // Get a JSON list with all available annotations and initialize
-  // autocompletion for the name field.
-
-  // 'annotation_ids' does not exist when this function is invoked by other widgets as a prototype function.
-  var annotation_ids = this.annotation_ids;
-
-  if (annotation_ids) {
-    var names = Object.keys(annotation_ids);
-    if (names.length > 0) {
-      $(input).autocomplete({
-        source: names
-      });
-      return;
-    }
-  }
-
-  requestQueue.register(django_url + project.id + '/annotations/list',
-      'POST', {}, function (status, data, text) {
-        var e = $.parseJSON(data);
-        if (status !== 200) {
-            alert("The server returned an unexpected status (" +
-              status + ") " + "with error message:\n" + text);
-        } else {
-          if (e.error) {
-            new ErrorDialog(e.error, e.detail).show();
-          } else {
-            var names;
-            if (annotation_ids) {
-              // Create the array of names, and populate the cached list as a side effect.
-              names = e.annotations.map(function(a) {
-                annotation_ids[a.name] = a.id;
-                return a.name;
-              });
-            } else {
-              names = e.annotations.map(function(a) { return a.name; });
-            }
-            $(input).autocomplete({
-              source: names
-            });
-          }
-        }
-      });
+  // Expects the annotation cache to be up-to-date
+  $(input).autocomplete({
+    source: annotations.getAllNames()
+  });
 };
 
 /**

@@ -309,3 +309,59 @@ ActiveSkeleton.prototype.getSkeletonModels = ActiveSkeleton.prototype.getSelecte
 ActiveSkeleton.prototype.highlight = function(skeleton_id) {
 	TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
 };
+
+
+/**
+ * The annotation cache provides annotation names and their IDs.
+ */
+var AnnotationCache = function() {
+  // Map of annotation name vs its ID and vice versa
+  this.annotation_ids = {};
+  this.annotation_names = {};
+};
+
+AnnotationCache.prototype.getName = function(id) {
+  return this.annotation_names[id];
+};
+
+AnnotationCache.prototype.getAllNames = function() {
+  return Object.keys(this.annotation_ids);
+};
+
+AnnotationCache.prototype.getID = function(name) {
+  return this.annotation_ids[name];
+};
+
+AnnotationCache.prototype.getAllIDs = function() {
+  return Object.keys(this.annotation_names);
+};
+
+AnnotationCache.prototype.update = function(callback) {
+  requestQueue.register(django_url + project.id + '/annotations/list',
+      'POST', {}, (function (status, data, text) {
+        var e = $.parseJSON(data);
+        if (status !== 200) {
+            alert("The server returned an unexpected status (" +
+              status + ") " + "with error message:\n" + text);
+        } else {
+          if (e.error) {
+            new ErrorDialog(e.error, e.detail).show();
+          } else {
+            // Empty cache
+            this.annotation_ids = {};
+            this.annotation_names = {};
+            // Populate cache
+            e.annotations.forEach((function(a) {
+             this.annotation_ids[a.name] = a.id;
+             this.annotation_names[a.id] = a.name;
+            }).bind(this));
+            // Call back, if requested
+            if (callback) {
+              callback();
+            }
+          }
+        }
+      }).bind(this));
+};
+
+var annotations = new AnnotationCache();

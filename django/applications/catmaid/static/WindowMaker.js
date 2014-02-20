@@ -2163,9 +2163,11 @@ var WindowMaker = new function()
     addListener(win, container, queryFields.id, NA.destroy.bind(NA));
     addLogic(win);
 
-    // Add autocompletion to the first name input field
-    NA.add_autocomplete_to_input($('#neuron_query_by_annotation_name' +
-        NA.widgetID));
+    // Update annotation cache and add autocompletion to annotation input field
+    annotations.update(function() {
+      NA.add_autocomplete_to_input($('#neuron_query_by_annotation_name' +
+          NA.widgetID));
+    });
 
     $('#neuron_annotations_add_annotation' + NA.widgetID)[0].onclick =
         NA.add_query_field.bind(NA);

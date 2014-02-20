@@ -122,6 +122,9 @@ function TracingTool()
 
     setupSubTools();
 
+    // Update annotation cache for the current project
+    annotations.update();
+
     if (tracingLayer && stack) {
       if (stack !== parentStack) {
         // If the tracing layer exists and it belongs to a different stack, replace it

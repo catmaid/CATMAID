@@ -656,10 +656,13 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None,
     """
     # Make sure tmp dir exists and is writable
     if not os.path.exists( crop_output_path ) or not os.access( crop_output_path, os.W_OK ):
-        err_message = "Please make sure your output folder (MEDIA_ROOT and " \
-                "MEDIA_CROPPING_SUBDIRECTORY in settings.py) exists and is writable."
-        err_response = json_error_response( err_message )
-        return err_response
+        if request.user.is_superuser:
+            err_message = "Please make sure your output folder (%s) exists " \
+                    "is writable." % crop_output_path
+        else:
+            err_message = "Sorry, the output path for the cropping tool " \
+                    "isn't set up correctly. Please contact an administrator."
+        return json_error_response(err_message)
 
     # Make a list out of the stack ids
     string_list = stack_ids.split(",")

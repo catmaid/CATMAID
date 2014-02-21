@@ -23,8 +23,11 @@ function TilelayerControl( stack )
    */
   self.setOpacity = function ( key, val )
   {
-    if(self.layers.hasOwnProperty(key))
-      self.layers[key].setOpacity( val / 100 );
+    // Get current set of layers
+    var layers = stack.getLayers();
+
+    if(layers.hasOwnProperty(key))
+      layers[key].setOpacity( val / 100 );
   }
 
   /**
@@ -32,11 +35,14 @@ function TilelayerControl( stack )
    */
   self.refresh = function()
   {
+    // Get current set of layers
+    var layers = stack.getLayers();
+
     // Empty container
     $(view).empty()
 
     // Add slider for each layer
-    for( var key in self.layers)
+    for(var key in layers)
     {
 
       var container = document.createElement("div");
@@ -48,7 +54,8 @@ function TilelayerControl( stack )
         return;
       }
 
-      self.layers[key].updateOpacity();
+      // Make layer re-evaluate it's opacity
+      layers[key].setOpacity(layers[key].getOpacity());
 
       var slider = new Slider(
           SLIDER_HORIZONTAL,
@@ -56,7 +63,7 @@ function TilelayerControl( stack )
           1,
           100,
           100,
-          self.layers[key].getOpacity() * 100,
+          layers[key].getOpacity() * 100,
           setOpac );
 
       slider.idd = key;
@@ -66,8 +73,6 @@ function TilelayerControl( stack )
       view.appendChild(container);
     }
   };
-
-  self.layers = stack.getLayers();
 
   var view = document.createElement( "div" );
   view.className = "TilelayerControl";

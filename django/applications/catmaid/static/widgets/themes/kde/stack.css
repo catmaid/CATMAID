@@ -144,6 +144,12 @@ div.TilelayerControl
     color:#FFFFFF;
 }
 
+div.TilelayerControl .layerControl
+{
+	/*border:solid 2px #0000FF;*/
+	margin:0 0 10px 0;
+}
+
 div.sliceView div.sliceMouseCatcher
 {
 	position:absolute;

@@ -9,6 +9,7 @@ function TracingLayer( stack )
 
   var self = this;
 
+  self.opacity = 1.0; // in the range [0,1]
   this.svgOverlay = new SkeletonAnnotations.SVGOverlay(stack);
 
   this.resize = function ( width, height )
@@ -22,8 +23,14 @@ function TracingLayer( stack )
     this.svgOverlay.updateNodeCoordinatesinDB(completionCallback);
   }
 
+  this.getOpacity = function()
+  {
+    return self.opacity;
+  }
+
   this.setOpacity = function ( val )
   {
+    self.opacity = val;
     self.svgOverlay.view.style.opacity = val+"";
   };
 

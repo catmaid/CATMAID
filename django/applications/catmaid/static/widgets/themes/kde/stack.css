@@ -361,3 +361,6 @@ div.sliceView div.cropBox p.close
 	cursor: pointer;
 }
 
+.clear {
+  clear: both;
+}

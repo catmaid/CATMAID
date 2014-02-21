@@ -73,6 +73,13 @@ function TilelayerControl( stack )
       container.appendChild(document.createElement("strong").appendChild(
           document.createTextNode(layer_name)));
       container.appendChild( slider.getView() );
+
+      // A clearing div is needed, because sliders are usually floating.
+      // See i.e. http://stackoverflow.com/questions/14758932
+      var clearing = document.createElement('div');
+      clearing.setAttribute('class', 'clear');
+      container.appendChild(clearing);
+
       view.appendChild(container);
     }
   };

@@ -73,8 +73,7 @@ function OntologyTool()
 	 */
 	this.register = function( parentStack )
     {
-      $("#edit_button_ontology").addClass("button_active");
-      $("#edit_button_ontology").removeClass("button");
+      $("#edit_button_ontology").switchClass("button", "button_active", 0);
       setupSubTools();
       $("#toolbox_ontology").show();
       $("#toolbar_ontology").show();
@@ -129,8 +128,7 @@ function OntologyTool()
 	{
         $("#toolbox_ontology").hide();
         $("#toolbar_ontology").hide();
-        $("#edit_button_ontology").removeClass("button_active");
-        $("#edit_button_ontology").addClass("button");
+        $("#edit_button_ontology").switchClass("button_active", "button", 0);
     }
 
     this.redraw = function()

@@ -646,6 +646,7 @@ function Stack(
 		if ( layers[ key ] )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
+		self.tilelayercontrol.refresh();
 		return;
 	}
 

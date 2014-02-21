@@ -1,3 +1,6 @@
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+
 "use strict";
 
 /**
@@ -5,68 +8,64 @@
  */
 function TilelayerControl( stack )
 {
-
-	var self = this;
-
-	/**
-	 * get the view object
-	 */
-	self.getView = function()
-	{
-		return view;
-	}
+  var self = this;
 
   /**
-	 * set opacity for a layer
-	 */
-	self.setOpacity = function ( key, val )
-	{
-		if(self.layers.hasOwnProperty(key))
-			self.layers[key].setOpacity( val / 100 );
-	}
+   * get the view object
+   */
+  self.getView = function()
+  {
+    return view;
+  }
 
-	self.refresh = function()
-	{
-		for( var key in self.layers)
-		{
-			
-			var container = document.createElement("div");
+  /**
+   * set opacity for a layer
+   */
+  self.setOpacity = function ( key, val )
+  {
+    if(self.layers.hasOwnProperty(key))
+      self.layers[key].setOpacity( val / 100 );
+  }
 
-			var setOpac = function ( val )
-			{
-				self.setOpacity( this.idd, val );
-				stack.redraw();
-				return;
-			}
-			
-			self.layers[key].updateOpacity();
+  self.refresh = function()
+  {
+    for( var key in self.layers)
+    {
 
-			var slider = new Slider(
-							SLIDER_HORIZONTAL,
-							false,
-							1,
-							100,
-							100,
-							self.layers[key].getOpacity() * 100,
-							setOpac );
+      var container = document.createElement("div");
 
-			slider.idd = key;
-			container.setAttribute("id", key + "-container");
-			container.appendChild( document.createElement("strong").appendChild( document.createTextNode(key)) );
-			container.appendChild( slider.getView() );
-			view.appendChild(container);
+      var setOpac = function ( val )
+      {
+        self.setOpacity( this.idd, val );
+        stack.redraw();
+        return;
+      }
 
-		}
-	};
+      self.layers[key].updateOpacity();
 
-	self.layers = stack.getLayers();
+      var slider = new Slider(
+          SLIDER_HORIZONTAL,
+          false,
+          1,
+          100,
+          100,
+          self.layers[key].getOpacity() * 100,
+          setOpac );
 
-	var view = document.createElement( "div" );
-	view.className = "TilelayerControl";
-	view.id = "TilelayerControl";
-	view.style.zIndex = 8;
+      slider.idd = key;
+      container.setAttribute("id", key + "-container");
+      container.appendChild( document.createElement("strong").appendChild( document.createTextNode(key)) );
+      container.appendChild( slider.getView() );
+      view.appendChild(container);
+    }
+  };
 
-	stack.getView().appendChild( view );
+  self.layers = stack.getLayers();
 
-}
+  var view = document.createElement( "div" );
+  view.className = "TilelayerControl";
+  view.id = "TilelayerControl";
+  view.style.zIndex = 8;
 
+  stack.getView().appendChild( view );
+};

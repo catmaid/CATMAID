@@ -1,3 +1,5 @@
+"use strict";
+
 /**
  * The tilelayer control element on the top-left of the stack window
  */

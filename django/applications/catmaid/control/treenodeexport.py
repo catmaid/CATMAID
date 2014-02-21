@@ -440,9 +440,13 @@ def create_request_based_export_job(request, project_id):
         os.access(treenode_output_path, os.W_OK)
     )
     if False in needed_permissions:
-        raise Exception("Please make sure your output folder " \
-                "(MEDIA_ROOT and MEDIA_TREENODE_SUBDIRECTORY in " \
-                "settings.py) exists and is writable.")
+        if request.user.is_superuser:
+            raise Exception("Please make sure your output folder (%s) exists " \
+                    "and is writable. It is configured by MEDIA_ROOT and " \
+                    "MEDIA_TREENODE_SUBDIRECTORY in settings.py.")
+        else:
+            raise Exception("Sorry, the output path for the node export tool " \
+                    "isn't set up correctly. Please contact an administrator.")
 
     # Get stack ID and  skeleton IDs of which the nodes should be exported
     stack_id = request.POST.get('stackid', None);

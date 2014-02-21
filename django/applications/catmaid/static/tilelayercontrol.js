@@ -27,8 +27,15 @@ function TilelayerControl( stack )
       self.layers[key].setOpacity( val / 100 );
   }
 
+  /**
+   * removes existing layer controls and re-creates them.
+   */
   self.refresh = function()
   {
+    // Empty container
+    $(view).empty()
+
+    // Add slider for each layer
     for( var key in self.layers)
     {
 

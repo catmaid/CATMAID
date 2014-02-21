@@ -392,3 +392,10 @@ function BoxSelectionLayer( stack, tool, crop_box)
         stack.getView().appendChild( view );
 };
 
+/**
+ * Return friendly name of this layer.
+ */
+BoxSelectionLayer.prototype.getLayerName = function()
+{
+  return "Rectangular selection";
+};

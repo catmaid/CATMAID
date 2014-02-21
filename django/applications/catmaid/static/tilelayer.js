@@ -59,6 +59,14 @@ function TileLayer(
 		)
 {
 	/**
+	 * Return friendly name of this layer.
+	 */
+	this.getLayerName = function()
+	{
+		return "Image data";
+	};
+
+	/**
 	 * initialise the tiles array
 	 */
 	var initTiles = function( rows, cols )

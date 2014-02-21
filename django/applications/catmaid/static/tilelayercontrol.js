@@ -68,7 +68,10 @@ function TilelayerControl( stack )
 
       slider.idd = key;
       container.setAttribute("id", key + "-container");
-      container.appendChild( document.createElement("strong").appendChild( document.createTextNode(key)) );
+
+      var layer_name = layers[key].getLayerName ? layers[key].getLayerName() : key;
+      container.appendChild(document.createElement("strong").appendChild(
+          document.createTextNode(layer_name)));
       container.appendChild( slider.getView() );
       view.appendChild(container);
     }

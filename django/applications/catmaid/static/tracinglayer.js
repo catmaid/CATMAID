@@ -12,6 +12,14 @@ function TracingLayer( stack )
   self.opacity = 1.0; // in the range [0,1]
   this.svgOverlay = new SkeletonAnnotations.SVGOverlay(stack);
 
+  /**
+   * Return friendly name of this layer.
+   */
+  this.getLayerName = function()
+  {
+    return "Neuron tracing";
+  };
+
   this.resize = function ( width, height )
   {
     self.svgOverlay.redraw( stack );

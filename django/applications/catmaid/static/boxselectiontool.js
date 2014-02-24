@@ -384,7 +384,7 @@ function BoxSelectionLayer( stack, tool, crop_box)
     view.appendChild( textScreen );
 
     // internal opacity variable
-    var opacity = 100;
+    var opacity = 1;
     this.visible = true;
 
     // add view to DOM

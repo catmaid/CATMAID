@@ -2180,7 +2180,18 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.show = function(op
   if ('cyan-red' !== options.connector_color) this.space.updateConnectorColors(options, [this]);
 };
 
-WebGLApplication.prototype.usercolormap_dialog = function() {
+/**
+ * Toggles the display of a JQuery UI dialog that shows which user has which
+ * color assigned.
+ */
+WebGLApplication.prototype.toggle_usercolormap_dialog = function() {
+  // In case a color dialog exists already, close it and return.
+  if ($('#user-colormap-dialog').length > 0) {
+      $('#user-colormap-dialog').remove();
+      return;
+  }
+
+  // Create a new color dialog
   var dialog = document.createElement('div');
   dialog.setAttribute("id", "user-colormap-dialog");
   dialog.setAttribute("title", "User colormap");

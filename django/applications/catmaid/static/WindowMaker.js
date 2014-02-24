@@ -528,7 +528,7 @@ var WindowMaker = new function()
     map.setAttribute("type", "button");
     map.setAttribute("value", "User colormap");
     map.style.marginLeft = '1em';
-    map.onclick = WA.usercolormap_dialog.bind(WA);
+    map.onclick = WA.toggle_usercolormap_dialog.bind(WA);
     buttons.appendChild(map);
 
     var canvas = document.createElement('div');

@@ -6,11 +6,17 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
-from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile, Overlay
+from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile
+from catmaid.models import BrokenSlice, Overlay
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.views import UseranalyticsView, UserProficiencyView
 
+
+class BrokenSliceAdmin(GuardedModelAdmin):
+    list_display = ('stack', 'index')
+    search_fields = ('stack', 'index')
+    list_editable = ('index',)
 
 class ProjectStackInline(admin.TabularInline):
     model = ProjectStack
@@ -113,6 +119,7 @@ color.allow_tags = True
 User.color = color
 
 # Add model admin views
+admin.site.register(BrokenSlice, BrokenSliceAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(DataView, DataViewAdmin)
 admin.site.register(Stack, StackAdmin)

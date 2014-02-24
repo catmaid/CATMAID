@@ -364,6 +364,8 @@ SkeletonAnnotations.SVGOverlay.prototype.ensureFocused = function() {
 
 SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
   this.unregister();
+  // Show warning in case of pending request
+
   this.submit = null;
   // Release
   if (this.graphics) {

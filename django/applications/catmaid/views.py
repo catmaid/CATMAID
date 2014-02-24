@@ -6,7 +6,7 @@ class HomepageView(TemplateView):
     """ This view returns the index page of CATMAID and passes some
     extra context to its template.
     """
-    template_name = "index.html"
+    template_name = "catmaid/index.html"
 
     def get_context_data(self, **kwargs):
         context = super(self.__class__, self).get_context_data(**kwargs)

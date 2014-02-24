@@ -74,7 +74,7 @@ class DataViewAdmin(GuardedModelAdmin):
     # configuraiton information. Since django-guardian is used, which
     # provides a custiom change_form.html template as well, we need
     # to explicitely refer to our wanted template.
-    change_form_template = 'admin/catmaid/dataview/change_form.html'
+    change_form_template = 'catmaid/admin/dataview/change_form.html'
 
 class ProfileInline(admin.StackedInline):
     model = UserProfile

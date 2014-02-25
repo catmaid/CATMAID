@@ -50,10 +50,12 @@ file and could look like this for the example above::
            metadata: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
+           zoomlevels: 2
+           fileextension: "jpg"
            overlays:
              - name: "Channel 2 overlay"
                folder: "stack2"
-               defaultopacity: 50
+               defaultopacity: 0.5
                fileextension: "jpg"
              - name: "Remote overlay"
                url: "http://my.other.server.net/overlaystack/"
@@ -66,6 +68,7 @@ file and could look like this for the example above::
            zoomlevels: 2
            fileextension: "jpg"
          - url: "http://my.other.server.net/examplestack/"
+           name: "Remote stack"
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
            zoomlevels: 3
@@ -114,7 +117,7 @@ is not needed for overlays. For folder based overlays, you can, but
 don't need to, provide a ``fileextension``. If you don't, the import
 tries to find it on its own. Besides that, a default opacity for
 displaying an overlay can be provided, by using the ``defaultopacity``
-key word. If not provided, it defaults to zero.
+key word. It ranges from zero to one. If not provided, it defaults to zero.
 
 Also, it wouldn't confuse the tool if there is more YAML data in the
 project file than needed. It only uses what is depicted in the sample

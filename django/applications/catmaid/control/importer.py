@@ -232,7 +232,10 @@ def check_http_accessibility( image_base, file_extension ):
     """
     slice_zero_url = urljoin(image_base, "0")
     first_file_url = urljoin(slice_zero_url, "0_0_0." + file_extension)
-    code = urllib.urlopen(first_file_url).getcode()
+    try:
+        code = urllib.urlopen(first_file_url).getcode()
+    except IOError:
+        return False
     return code == 200
 
 def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):

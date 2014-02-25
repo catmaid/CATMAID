@@ -63,7 +63,7 @@ class ImageBaseMixin:
         """ Sets the image_base, num_zoom_levels, file_extension fields
         of the calling object. Favor a URL field, if there is one. A URL
         field, however, also requires the existence of the
-        'fileextension' and and 'zoomlevels' field.
+        'fileextension' and 'zoomlevels' field.
         """
         if 'url' in info_object:
             # Make sure all required data is available
@@ -85,7 +85,7 @@ class ImageBaseMixin:
             folder = info_object['folder']
             self.image_base = urljoin(project_url, folder)
             # Favor 'zoomlevel' and 'fileextension' fields, if
-            # available, but try to find this information if thosa
+            # available, but try to find this information if those
             # fields are not present.
             zoom_available = 'zoomlevels' in info_object
             ext_available = 'fileextension' in info_object
@@ -326,7 +326,7 @@ class ImportingWizard(SessionWizardView):
             group_perm_tuples = get_element_permission_tuples(group_permissions)
             form.fields['group_permissions'].choices = group_perm_tuples
         elif current_step == 'classification':
-            # Get tag set and all projecs within it
+            # Get tag set and all projects within it
             tags = self.get_cleaned_data_for_step('projectselection')['tags']
             tags = frozenset([t.strip() for t in tags.split(',')])
             # Get all projects that have all those tags
@@ -357,7 +357,7 @@ class ImportingWizard(SessionWizardView):
                 # Create form field tuples
                 name = "%s (%s)" % (cr.name, cr.id)
                 cgraphs.append( (cr.id, name) )
-                # Create ID to classificatin graph mapping
+                # Create ID to classification graph mapping
                 self.id_to_cls_graph[cr.id] = cr
             form.fields['classification_graph_suggestions'].choices = cgraphs
             #form.fields['classification_graph_suggestions'].initial = [cg[0] for cg in cgraphs]
@@ -623,7 +623,7 @@ def create_classification_linking_form():
             root_ids.append(link.id)
 
     class ClassificationLinkingForm(forms.Form):
-        # A checkbox for each project, checked by default
+        # A check-box for each project, checked by default
         classification_graph_suggestions = forms.MultipleChoiceField(required=False,
             widget=forms.CheckboxSelectMultiple(),
             help_text="Only selected classification graphs will be linked to the new projects.")
@@ -679,7 +679,7 @@ def import_projects( user, pre_projects, make_public, tags, permissions,
             p = Project.objects.create(
                 title=pp.name,
                 public=make_public)
-            # Assig permissions to project
+            # Assign permissions to project
             assigned_permissions = []
             for user_or_group, perm in permissions:
                 assigned_perm = assign( perm.codename, user_or_group, p )

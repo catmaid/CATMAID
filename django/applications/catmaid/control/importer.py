@@ -66,6 +66,15 @@ class ImageBaseMixin:
         'fileextension' and and 'zoomlevels' field.
         """
         if 'url' in info_object:
+            # Make sure all required data is available
+            required_fields = ['fileextension',]
+            if needs_zoom:
+                required_fields.append('zoomlevels')
+            for f in required_fields:
+                if f not in info_object:
+                    raise RuntimeError("Missing required stack/overlay " \
+                            "field '%s'" % f)
+            # Read out data
             self.image_base = info_object['url']
             if needs_zoom:
                 self.num_zoom_levels = info_object['zoomlevels']
@@ -91,11 +100,20 @@ class ImageBaseMixin:
                     data_folder, folder, needs_zoom )
                 # If there is no zoom level provided, use the found one
                 if not zoom_available and needs_zoom:
+                    if not zoom_levels:
+                        raise RuntimeError("Missing required stack/overlay " \
+                                "field 'zoomlevels' and couldn't retrieve " \
+                                "this information from image data.")
                     self.num_zoom_levels = zoom_levels
                 # If there is no file extension level provided, use the
                 # found one
                 if not ext_available:
+                    if not file_ext:
+                        raise RuntimeError("Missing required stack/overlay " \
+                                "field 'fileextension' and couldn't retrieve " \
+                                "this information from image data.")
                     self.file_extension = file_ext
+
         # Make sure the image base has a trailing slash, because this is expected
         if self.image_base[-1] != '/':
             self.image_base = self.image_base + '/'
@@ -116,6 +134,12 @@ class PreOverlay(ImageBaseMixin):
 
 class PreStack(ImageBaseMixin):
     def __init__(self, info_object, project_url, data_folder, only_unknown):
+        # Make sure everything is there
+        required_fields = ['name', 'dimension', 'resolution']
+        for f in required_fields:
+            if f not in info_object:
+                raise RuntimeError("Missing required stack field '%s'" % f)
+        # Read out data
         self.name = info_object['name']
         # Set 'image_base', 'num_zoom_levels' and 'fileextension'
         self.set_image_fields(info_object, project_url, data_folder, True)
@@ -139,7 +163,17 @@ class PreProject:
     def __init__(self, info_file, project_url, data_folder, only_unknown):
         self.info_file = info_file
         info = yaml.load(open(info_file))
+
+        # Make sure everything is there
+        if 'project' not in info:
+            raise RuntimeError("Missing required container field '%s'" % f)
+        # Read out data
         p = info['project']
+
+        # Make sure everything is there
+        if 'name' not in p:
+            raise RuntimeError("Missing required project field '%s'" % f)
+        # Read out data
         self.name = p['name']
         self.stacks = []
         self.has_been_imported = False

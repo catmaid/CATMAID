@@ -172,9 +172,8 @@ details requested.  Then you should run::
     ./create_configuration.py
 
 This will output some suggested Apache configuration in the
-terminal, and generate the files ``django.wsgi``,
-``settings.py`` and ``settings_production.py`` in
-``/home/alice/catmaid/django/projects/mysite``.
+terminal, and generate the files ``django.wsgi`` and ``settings.py``
+in ``/home/alice/catmaid/django/projects/mysite``.
 
 5. Create the database tables
 #############################

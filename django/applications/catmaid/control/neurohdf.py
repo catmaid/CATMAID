@@ -237,7 +237,7 @@ def get_temporary_neurohdf_filename_and_url():
     fname = ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789(-_=+)') for i in range(50)])
     hdf_path = os.path.join(settings.MEDIA_ROOT, settings.MEDIA_HDF5_SUBDIRECTORY)
     if not os.path.exists( hdf_path ):
-        raise Exception('Need to configure writable path MEDIA_HDF5_SUBDIRECTORY in settings_production.py')
+        raise Exception('Need to configure writable path MEDIA_HDF5_SUBDIRECTORY in settings.py')
     filename = os.path.join('%s.h5' % fname)
     host = settings.CATMAID_URL.lstrip('http://').split('/')[0]
     return os.path.join(hdf_path, filename), "http://{0}{1}".format( host, os.path.join(settings.MEDIA_URL,

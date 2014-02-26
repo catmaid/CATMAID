@@ -94,8 +94,8 @@ def generateConfigFiles():
         o.write( data )
         o.close()
 
-        in_configfile = op.join('../../django/projects/mysite/settings_apache.py.example')
-        out_configfile = op.join( tempfile.gettempdir(), 'settings_apache.py')
+        in_configfile = op.join('../../django/projects/mysite/settings.py.example')
+        out_configfile = op.join( tempfile.gettempdir(), 'settings.py')
 
         o = open( out_configfile ,'w')
         data = open( in_configfile, 'r' ).read()
@@ -171,9 +171,9 @@ def installDjangoBackend():
                 run('pip install PyYAML==3.10')
                 run('pip install python-dateutil==2.1')
 
-        # settings_apache.py
-        put(op.join( tempfile.gettempdir(), 'settings_apache.py'))
-        sudo('mv -vf /home/ubuntu/settings_apache.py /home/ubuntu/CATMAID/django/projects/mysite/settings_apache.py')
+        # settings.py
+        put(op.join( tempfile.gettempdir(), 'settings.py'))
+        sudo('mv -vf /home/ubuntu/settings.py /home/ubuntu/CATMAID/django/projects/mysite/settings.py')
 
         # django.wsgi
         put(op.join( tempfile.gettempdir(), 'django.wsgi'))
@@ -186,7 +186,7 @@ def installDjangoBackend():
         # and make it writable for the apache process
 
         # remove files in local temporary folder
-        for file in ['settings_apache.py', 'django.wsgi']:
+        for file in ['settings.py', 'django.wsgi']:
             os.remove( op.join( tempfile.gettempdir(), file ) )
 
 

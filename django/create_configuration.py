@@ -41,35 +41,34 @@ o.close()
 alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
 catmaid_secret_key = ''.join([choice(alphabet) for i in range(50)])
 
-for f in ['', '_production']:
-    in_configfile = op.join('projects/mysite/settings{0}.py.example'.format(f))
-    out_configfile = op.join('projects/mysite/settings{0}.py'.format(f))
-    o = open( out_configfile ,'w')
-    data = open( in_configfile, 'r' ).read()
-    data = re.sub('CATMAIDPATH', abs_catmaid_path, data)
-    data = re.sub('CATMAID_DATABASE_NAME', catmaid_database_name, data)
-    data = re.sub('CATMAID_DATABASE_USERNAME', catmaid_database_username, data)
-    data = re.sub('CATMAID_DATABASE_PASSWORD', catmaid_database_password, data)
-    data = re.sub('CATMAID_SECRET_KEY', catmaid_secret_key, data)
-    data = re.sub('CATMAID_TIMEZONE', catmaid_timezone, data)
-    data = re.sub('CATMAID_WRITABLE_PATH', catmaid_writable_path, data)
-    data = re.sub('CATMAID_SERVERNAME', catmaid_servername, data)
-    data = re.sub('CATMAID_SUBDIR', catmaid_subdirectory, data)
-    # If CATMAID doesn't live in a sub-directery, double-slashes can occur
-    # in the generated configurations. Remove those, if they are not part
-    # of a recognized protocol specification:
-    known_protocols = ["http", "https", "ftp", "ssh", "nfs", "smb"]
-    known_protocols = ["(?<!%s:)" % p for p in known_protocols]
-    known_protocols = ''.join(known_protocols)
-    data = re.sub('%s//' % known_protocols, '/', data)
-    # If CATMAID doesn't live in a sub-directory, the FORCE_SCRIPT_NAME setting
-    # has to be commented out. Otherwise, it would add an extra slash in
-    # redirects.
-    if len(catmaid_subdirectory) == 0:
-      data = re.sub(r'^FORCE_SCRIPT_NAME', '# FORCE_SCRIPT_NAME', data, flags=re.M)
-    # Write out the configuration
-    o.write( data )
-    o.close()
+in_configfile = op.join('projects/mysite/settings.py.example')
+out_configfile = op.join('projects/mysite/settings.py')
+o = open( out_configfile ,'w')
+data = open( in_configfile, 'r' ).read()
+data = re.sub('CATMAIDPATH', abs_catmaid_path, data)
+data = re.sub('CATMAID_DATABASE_NAME', catmaid_database_name, data)
+data = re.sub('CATMAID_DATABASE_USERNAME', catmaid_database_username, data)
+data = re.sub('CATMAID_DATABASE_PASSWORD', catmaid_database_password, data)
+data = re.sub('CATMAID_SECRET_KEY', catmaid_secret_key, data)
+data = re.sub('CATMAID_TIMEZONE', catmaid_timezone, data)
+data = re.sub('CATMAID_WRITABLE_PATH', catmaid_writable_path, data)
+data = re.sub('CATMAID_SERVERNAME', catmaid_servername, data)
+data = re.sub('CATMAID_SUBDIR', catmaid_subdirectory, data)
+# If CATMAID doesn't live in a sub-directery, double-slashes can occur
+# in the generated configurations. Remove those, if they are not part
+# of a recognized protocol specification:
+known_protocols = ["http", "https", "ftp", "ssh", "nfs", "smb"]
+known_protocols = ["(?<!%s:)" % p for p in known_protocols]
+known_protocols = ''.join(known_protocols)
+data = re.sub('%s//' % known_protocols, '/', data)
+# If CATMAID doesn't live in a sub-directory, the FORCE_SCRIPT_NAME setting
+# has to be commented out. Otherwise, it would add an extra slash in
+# redirects.
+if len(catmaid_subdirectory) == 0:
+  data = re.sub(r'^FORCE_SCRIPT_NAME', '# FORCE_SCRIPT_NAME', data, flags=re.M)
+# Write out the configuration
+o.write( data )
+o.close()
 
 
 out = """

@@ -96,10 +96,10 @@ class RGBAWidget(forms.MultiWidget):
 
     def format_output(self, rendered_widgets):
         return  (u'R: %s G: %s B: %s A: %s' % tuple(rendered_widgets) + 
-            u'''<div id="id_userprofile-0-color-swatch"
-                    style="background-color:#000000; border-style:inset;
-                        border-width:thin; padding-left:1em; width:100px;
-                        height:20px; display:inline-block;">&nbsp;</div>
+            u'''<input id="id_userprofile-0-color-swatch"
+                    type="text" disabled="disabled"
+                    style="background-color:#000000; margin-left:1em;">
+                </input>
                 <script>update_color_swatch = function() {
                     var r = parseInt(parseFloat(document.getElementById(
                             "id_userprofile-0-color_0").value) * 255),

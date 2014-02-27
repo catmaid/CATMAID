@@ -81,7 +81,9 @@ class RGBAWidget(forms.MultiWidget):
     def decompress(self, value):
         from catmaid.fields import RGBA
         if value:
-            if isinstance(value, str) or isinstance(value, unicode):
+            if isinstance(value, tuple) or isinstance(value, list):
+                return value
+            elif isinstance(value, str) or isinstance(value, unicode):
                 try:
                    # Expect value to be of the form '(0,0,0,0)'
                    str_list = value.replace('(', '').replace(')', '').split(',')

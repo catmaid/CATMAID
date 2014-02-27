@@ -30,11 +30,7 @@ from importer import *
 from graph import *
 from ontology import *
 from useranalytics import *
-from classification import *
-from notifications import *
-from roi import *
 from tracing import *
-from clustering import *
 from circles import *
 from neuron_annotations import *
 from treenodeexport import *

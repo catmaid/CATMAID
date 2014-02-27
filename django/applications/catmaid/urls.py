@@ -235,7 +235,7 @@ urlpatterns += patterns('catmaid.control',
 )
 
 # Classification
-urlpatterns += patterns('catmaid.control',
+urlpatterns += patterns('catmaid.control.classification',
     (r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/number$'.format(integer),
         'get_classification_number'),
     (r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/show$'.format(integer),
@@ -268,14 +268,14 @@ urlpatterns += patterns('catmaid.control',
 )
 
 # Notifications
-urlpatterns += patterns('catmaid.control',
+urlpatterns += patterns('catmaid.control.notifications',
     (r'^(?P<project_id>\d+)/notifications/list$', 'list_notifications'),
     (r'^(?P<project_id>\d+)/changerequest/approve$', 'approve_change_request'),
     (r'^(?P<project_id>\d+)/changerequest/reject$', 'reject_change_request'),
 )
 
 # Regions of interest
-urlpatterns += patterns('catmaid.control',
+urlpatterns += patterns('catmaid.control.roi',
     url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/info$'.format(integer),
         'get_roi_info', name='get_roi_info'),
     url(r'^(?P<project_id>{0})/roi/link/(?P<relation_id>{0})/stack/(?P<stack_id>{0})/ci/(?P<ci_id>{0})/$'.format(integer),
@@ -287,7 +287,7 @@ urlpatterns += patterns('catmaid.control',
 )
 
 # Clustering
-urlpatterns += patterns('catmaid.control',
+urlpatterns += patterns('catmaid.control.clustering',
     url(r'^clustering/(?P<workspace_pid>{0})/setup$'.format(integer),
         'setup_clustering', name="clustering_setup"),
     url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),

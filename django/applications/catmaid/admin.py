@@ -42,7 +42,7 @@ class DataViewConfigWidget(forms.widgets.Textarea):
         return mark_safe(output)
 
 class DataViewAdminForm(forms.ModelForm):
-    """ As custom validation is needed for a data views's configuration
+    """ As custom validation is needed for a data view's configuration
     field (it must be JSON data), a custom form is needed, too.
     """
     class Meta:
@@ -66,7 +66,9 @@ class DataViewAdminForm(forms.ModelForm):
             import json
             json_data = json.loads( config )
         except:
-            raise ValidationError( "Couldn't parse the configuration as JSON data. See e.g. http://en.wikipedia.org/wiki/JSON for examples." )
+            raise ValidationError("Couldn't parse the configuration as JSON " \
+                    "data. See e.g. http://en.wikipedia.org/wiki/JSON for " \
+                    "examples." )
 
         return config
 
@@ -88,8 +90,10 @@ class ProfileInline(admin.StackedInline):
     max_num = 1
     
     def get_formset(self, request, obj=None, **kwargs):
-        # Exclude the color field for non-superusers.
-        # It's not important to override exactly this method, we just need some method that gets the request object.
+        """ Exclude the color field for non-superusers. It's not important to
+        override exactly this method, we just need some method that gets the
+        request object.
+        """
         if request.user.is_superuser:
             self.exclude = ()
         else:
@@ -102,16 +106,21 @@ class CustomUserAdmin(UserAdmin):
     filter_horizontal = ('groups', 'user_permissions')
     
     def changelist_view(self, request, extra_context=None):
-        # Add a color column for superusers.
-        # It's not important to override exactly this method, we just need some method that gets the request object.
+        """ Add a color column for superusers. It's not important to override
+        exactly this method, we just need some method that gets the request
+        object.
+        """
         if request.user.is_superuser and self.list_display[-1] != 'color':
             self.list_display = self.list_display + ('color',)
-        return super(CustomUserAdmin, self).changelist_view(request, extra_context=extra_context)
+        return super(CustomUserAdmin, self).changelist_view(request,
+                extra_context=extra_context)
 
 def color(self):
     try:
         up = UserProfile.objects.get(user=self)
-        return mark_safe('<div style="background-color:%s; border-style:inset; border-width:thin; margin-left:1em; width:100px; height:100%%;">&nbsp;</div>' % up.color.hex_color())
+        return mark_safe('<div style="background-color:%s; border-style:' \
+                'inset; border-width:thin; margin-left:1em; width:100px; ' \
+                'height:100%%;">&nbsp;</div>' % up.color.hex_color())
     except Exception as e:
         return mark_safe('<div>%s</div>' % str(e))
 
@@ -130,8 +139,10 @@ admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 # Register additional views
 admin.site.register_view('importer', importer_admin_view, 'Importer')
-admin.site.register_view('useranalytics', UseranalyticsView.as_view(), 'User Analytics')
-admin.site.register_view('userproficiency', UserProficiencyView.as_view(), 'User Proficiency')
+admin.site.register_view('useranalytics',
+    UseranalyticsView.as_view(), 'User Analytics')
+admin.site.register_view('userproficiency',
+    UserProficiencyView.as_view(), 'User Proficiency')
 admin.site.register_view('classifcationadmin',
     classification_admin_view, 'Tag Based Classification Graph Linker')
 admin.site.register(Overlay)

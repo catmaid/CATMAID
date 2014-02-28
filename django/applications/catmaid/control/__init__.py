@@ -1,4 +1,3 @@
-from authentication import *
 from common import *
 from connector import *
 from label import *

@@ -15,22 +15,25 @@ urlpatterns = patterns('',
     (r'^$', HomepageView.as_view())
 )
 
-# Django CATMAID API
-urlpatterns += patterns('catmaid.control',
+# Authentication and permissions
+urlpatterns += patterns('catmaid.control.authentication',
     (r'^login$', 'login_vnc'),
     (r'^accounts/login$', 'login_user'),
     (r'^accounts/logout$', 'logout_user'),
     (r'^accounts/(?P<project_id>\d+)/all-usernames$', 'all_usernames'),
+    (r'^permissions$', 'user_project_permissions'),
+    (r'^classinstance/(?P<ci_id>\d+)/permissions$',
+            'get_object_permissions'),
+)
 
+# Django CATMAID API
+urlpatterns += patterns('catmaid.control',
     (r'^projects$', 'projects'),
     (r'^user-list$', 'user_list'),
     (r'^user-table-list$', 'user_list_datatable'),
-    (r'^permissions$', 'user_project_permissions'),
     (r'^messages/list$', 'list_messages'),
     (r'^messages/mark_read$', 'read_message'),
     (r'^(?P<project_id>\d+)/stacks$', 'stacks'),
-    (r'^classinstance/(?P<ci_id>\d+)/permissions$',
-            'get_object_permissions'),
 
     # Views
     (r'^useranalytics$', 'plot_useranalytics'),

@@ -19,4 +19,3 @@ from wiringdiagram import *
 from analytics import *
 from graph import *
 from circles import *
-from neuron_annotations import *

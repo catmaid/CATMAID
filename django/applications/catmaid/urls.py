@@ -74,6 +74,18 @@ urlpatterns += patterns('catmaid.control.stats',
     (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
 )
 
+# Annotations
+urlpatterns += patterns('catmaid.control.neuron_annotations',
+    (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'query_neurons_by_annotations'),
+    (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
+            'query_neurons_by_annotations_datatable'),
+    (r'^(?P<project_id>\d+)/annotations/list$', 'list_annotations'),
+    (r'^(?P<project_id>\d+)/annotations/table-list$', 'list_annotations_datatable'),
+    (r'^(?P<project_id>\d+)/annotations/add$', 'annotate_entities'),
+    (r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/entity/(?P<entity_id>\d+)/remove$',
+            'remove_annotation'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     # User analytics and proficiency
@@ -121,18 +133,9 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
             'get_skeleton_permissions'),
 
-    (r'^(?P<project_id>\d+)/annotations/add$', 'annotate_entities'),
-    (r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/entity/(?P<entity_id>\d+)/remove$',
-            'remove_annotation'),
-
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'give_neuron_to_other_user'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/delete$', 'delete_neuron'),
-    (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'query_neurons_by_annotations'),
-    (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
-            'query_neurons_by_annotations_datatable'),
-    (r'^(?P<project_id>\d+)/annotations/list$', 'list_annotations'),
-    (r'^(?P<project_id>\d+)/annotations/table-list$', 'list_annotations_datatable'),
     
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/confidence/update$', 'update_confidence'),
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'update_location_reviewer'),

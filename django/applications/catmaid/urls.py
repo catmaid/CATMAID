@@ -86,6 +86,14 @@ urlpatterns += patterns('catmaid.control.neuron_annotations',
             'remove_annotation'),
 )
 
+# Text labels
+urlpatterns += patterns('catmaid.control.textlabel',
+    (r'^(?P<project_id>\d+)/textlabel/create$', 'create_textlabel'),
+    (r'^(?P<project_id>\d+)/textlabel/delete$', 'delete_textlabel'),
+    (r'^(?P<project_id>\d+)/textlabel/update$', 'update_textlabel'),
+    (r'^(?P<project_id>\d+)/textlabel/all', 'textlabels'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     # User analytics and proficiency
@@ -163,11 +171,6 @@ urlpatterns += patterns('catmaid.control',
 
     (r'^(?P<project_id>\d+)/link/create$', 'create_link'),
     (r'^(?P<project_id>\d+)/link/delete$', 'delete_link'),
-
-    (r'^(?P<project_id>\d+)/textlabel/create$', 'create_textlabel'),
-    (r'^(?P<project_id>\d+)/textlabel/delete$', 'delete_textlabel'),
-    (r'^(?P<project_id>\d+)/textlabel/update$', 'update_textlabel'),
-    (r'^(?P<project_id>\d+)/textlabel/all', 'textlabels'),
 
     (r'^(?P<project_id>\d+)/search$', 'search'),
 

@@ -6,7 +6,6 @@ from neurohdf import *
 from neuron import *
 from node import *
 from object import *
-from project import *
 from search import *
 from skeletongroup import *
 from skeletonexport import *

@@ -43,6 +43,11 @@ urlpatterns += patterns('catmaid.control.message',
     (r'^messages/mark_read$', 'read_message'),
 )
 
+# General project model access
+urlpatterns += patterns('catmaid.control.project',
+    (r'^projects$', 'projects'),
+)
+
 # Tracing general
 urlpatterns += patterns('catmaid.control.tracing',
     (r'^(?P<project_id>\d+)/tracing/setup/rebuild$', 'rebuild_tracing_setup_view'),
@@ -51,7 +56,6 @@ urlpatterns += patterns('catmaid.control.tracing',
 
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
-    (r'^projects$', 'projects'),
     (r'^(?P<project_id>\d+)/stacks$', 'stacks'),
 
     # Views

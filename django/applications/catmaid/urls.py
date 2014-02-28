@@ -65,9 +65,10 @@ urlpatterns += patterns('catmaid.control.tracing',
 
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
-    # Views
-    (r'^useranalytics$', 'plot_useranalytics'),
+    # User analytics and proficiency
+    (r'^useranalytics$', 'useranalytics.plot_useranalytics'),
     (r'^(?P<project_id>\d+)/userproficiency$', 'user_evaluation.evaluate_user'),
+
     (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
     (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
 

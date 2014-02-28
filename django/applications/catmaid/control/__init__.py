@@ -19,6 +19,5 @@ from treenodetable import *
 from wiringdiagram import *
 from analytics import *
 from graph import *
-from useranalytics import *
 from circles import *
 from neuron_annotations import *

@@ -26,6 +26,11 @@ urlpatterns += patterns('catmaid.control.authentication',
             'get_object_permissions'),
 )
 
+# Log
+urlpatterns += patterns('catmaid.control.log',
+    (r'^(?P<project_id>\d+)/logs/list$', 'list_logs'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     (r'^projects$', 'projects'),
@@ -127,7 +132,6 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/textlabel/update$', 'update_textlabel'),
     (r'^(?P<project_id>\d+)/textlabel/all', 'textlabels'),
 
-    (r'^(?P<project_id>\d+)/logs/list$', 'list_logs'),
     (r'^(?P<project_id>\d+)/search$', 'search'),
     (r'^(?P<project_id>\d+)/stats$', 'stats'),
     (r'^(?P<project_id>\d+)/stats-editor$', 'stats_editor'),

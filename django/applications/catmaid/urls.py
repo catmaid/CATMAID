@@ -26,6 +26,12 @@ urlpatterns += patterns('catmaid.control.authentication',
             'get_object_permissions'),
 )
 
+# Users
+urlpatterns += patterns('catmaid.control.user',
+    (r'^user-list$', 'user_list'),
+    (r'^user-table-list$', 'user_list_datatable'),
+)
+
 # Log
 urlpatterns += patterns('catmaid.control.log',
     (r'^(?P<project_id>\d+)/logs/list$', 'list_logs'),
@@ -40,8 +46,6 @@ urlpatterns += patterns('catmaid.control.message',
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     (r'^projects$', 'projects'),
-    (r'^user-list$', 'user_list'),
-    (r'^user-table-list$', 'user_list_datatable'),
     (r'^(?P<project_id>\d+)/stacks$', 'stacks'),
 
     # Views

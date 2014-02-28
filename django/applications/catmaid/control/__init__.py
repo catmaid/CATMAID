@@ -17,4 +17,3 @@ from treenodetable import *
 from wiringdiagram import *
 from analytics import *
 from graph import *
-from circles import *

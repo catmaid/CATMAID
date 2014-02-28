@@ -164,23 +164,25 @@ urlpatterns += patterns('catmaid.control',
 )
 
 # Cropping
-urlpatterns += patterns('catmaid.control',
+urlpatterns += patterns('catmaid.control.cropping',
     (r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/(?P<single_channel>[0|1])/$' % (intlist, num, num, num, num, num, num), 'crop'),
     (r'^crop/download/(?P<file_path>.*)/$', 'download_crop')
 )
 
 # Tagging
-urlpatterns += patterns('catmaid.control',
+urlpatterns += patterns('catmaid.control.project',
     (r'^(?P<project_id>\d+)/tags/list$', 'list_project_tags'),
     (r'^(?P<project_id>\d+)/tags/clear$', 'update_project_tags'),
     (r'^(?P<project_id>\d+)/tags/(?P<tags>.*)/update$', 'update_project_tags'),
+)
+urlpatterns += patterns('catmaid.control.stack',
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/list$', 'list_stack_tags'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/clear$', 'update_stack_tags'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/(?P<tags>.*)/update$', 'update_stack_tags'),
 )
 
 # Data views
-urlpatterns += patterns('catmaid.control',
+urlpatterns += patterns('catmaid.control.data_view',
     (r'^dataviews/list$', 'get_available_data_views'),
     (r'^dataviews/default$', 'get_default_properties'),
     (r'^dataviews/show/(?P<data_view_id>\d+)$', 'get_data_view'),
@@ -190,7 +192,7 @@ urlpatterns += patterns('catmaid.control',
 )
 
 # Ontologies
-urlpatterns += patterns('catmaid.control',
+urlpatterns += patterns('catmaid.control.ontology',
     (r'^ontology/knownroots$', 'get_known_ontology_roots'),
     (r'^(?P<project_id>%s)/ontology/list$' % (integer),
         'list_ontology'),

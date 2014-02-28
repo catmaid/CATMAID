@@ -180,8 +180,10 @@ urlpatterns += patterns('catmaid.control',
 
     (r'^(?P<project_id>\d+)/search$', 'search'),
 
-    (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'export_wiring_diagram'),
-    (r'^(?P<project_id>\d+)/wiringdiagram/nx_json$', 'export_wiring_diagram_nx'),
+    # Wiring diagram export
+    (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'wiringdiagram.export_wiring_diagram'),
+    (r'^(?P<project_id>\d+)/wiringdiagram/nx_json$', 'wiringdiagram.export_wiring_diagram_nx'),
+
     (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'convert_annotations_to_networkx'),
     (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'microcircuit_neurohdf'),
 

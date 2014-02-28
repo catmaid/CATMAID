@@ -14,4 +14,3 @@ from tile import *
 from tree import *
 from treenode import *
 from treenodetable import *
-from wiringdiagram import *

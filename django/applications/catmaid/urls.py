@@ -107,8 +107,10 @@ urlpatterns += patterns('catmaid.control',
 
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),
-    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'graph2.skeleton_graph'),
     (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'all_shared_connectors'),
+
+    # Graphs
+    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'graph2.skeleton_graph'),
 
     # Circles
     (r'^(?P<project_id>\d+)/graph/circlesofhell', 'circles.circles_of_hell'),

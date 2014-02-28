@@ -138,10 +138,12 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/skeleton/join$', 'join_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'join_skeletons_interpolated'),
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'reroot_skeleton'),
-    (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analyze_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
             'get_skeleton_permissions'),
+
+    # Analytics
+    (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),
 
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'give_neuron_to_other_user'),

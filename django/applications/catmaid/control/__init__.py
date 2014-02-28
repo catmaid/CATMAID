@@ -2,7 +2,6 @@ from common import *
 from connector import *
 from label import *
 from link import *
-from message import *
 from neurohdf import *
 from neuron import *
 from node import *

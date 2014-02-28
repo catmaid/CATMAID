@@ -31,13 +31,17 @@ urlpatterns += patterns('catmaid.control.log',
     (r'^(?P<project_id>\d+)/logs/list$', 'list_logs'),
 )
 
+# Messages
+urlpatterns += patterns('catmaid.control.message',
+    (r'^messages/list$', 'list_messages'),
+    (r'^messages/mark_read$', 'read_message'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     (r'^projects$', 'projects'),
     (r'^user-list$', 'user_list'),
     (r'^user-table-list$', 'user_list_datatable'),
-    (r'^messages/list$', 'list_messages'),
-    (r'^messages/mark_read$', 'read_message'),
     (r'^(?P<project_id>\d+)/stacks$', 'stacks'),
 
     # Views

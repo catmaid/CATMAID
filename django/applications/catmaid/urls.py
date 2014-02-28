@@ -158,7 +158,10 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'graphedge_list'),
     (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'one_to_many_synapses'),
     (r'^(?P<project_id>\d+)/connector/skeletons$', 'connector_skeletons'),
+)
 
+# Treende export
+urlpatterns += patterns('catmaid.control.treenodeexport',
     (r'^(?P<project_id>\d+)/connectorarchive/export$', 'export_connectors'),
     (r'^(?P<project_id>\d+)/treenodearchive/export$', 'export_treenodes'),
 )

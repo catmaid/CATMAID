@@ -48,6 +48,15 @@ urlpatterns += patterns('catmaid.control.project',
     (r'^projects$', 'projects'),
 )
 
+# General stack model access
+urlpatterns += patterns('catmaid.control.stack',
+    (r'^(?P<project_id>\d+)/stacks$', 'stacks'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'stack_info'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'stack_models'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'get_tile'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put_tile$', 'put_tile'),
+)
+
 # Tracing general
 urlpatterns += patterns('catmaid.control.tracing',
     (r'^(?P<project_id>\d+)/tracing/setup/rebuild$', 'rebuild_tracing_setup_view'),
@@ -56,8 +65,6 @@ urlpatterns += patterns('catmaid.control.tracing',
 
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
-    (r'^(?P<project_id>\d+)/stacks$', 'stacks'),
-
     # Views
     (r'^useranalytics$', 'plot_useranalytics'),
     (r'^(?P<project_id>\d+)/userproficiency$', 'user_evaluation.evaluate_user'),
@@ -155,11 +162,6 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/stats-summary$', 'stats_summary'),
     (r'^(?P<project_id>\d+)/stats-history$', 'stats_history'),
     (r'^(?P<project_id>\d+)/stats-user-history$', 'stats_user_history'),
-
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'stack_info'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'stack_models'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'get_tile'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put_tile$', 'put_tile'),
 
     (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'export_wiring_diagram'),
     (r'^(?P<project_id>\d+)/wiringdiagram/nx_json$', 'export_wiring_diagram_nx'),

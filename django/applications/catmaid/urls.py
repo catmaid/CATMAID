@@ -63,6 +63,17 @@ urlpatterns += patterns('catmaid.control.tracing',
     (r'^(?P<project_id>\d+)/tracing/setup/test$', 'check_tracing_setup_view'),
 )
 
+# Statistics
+urlpatterns += patterns('catmaid.control.stats',
+    (r'^(?P<project_id>\d+)/stats$', 'stats'),
+    (r'^(?P<project_id>\d+)/stats-editor$', 'stats_editor'),
+    (r'^(?P<project_id>\d+)/stats-reviewer$', 'stats_reviewer'),
+    (r'^(?P<project_id>\d+)/stats-summary$', 'stats_summary'),
+    (r'^(?P<project_id>\d+)/stats-history$', 'stats_history'),
+    (r'^(?P<project_id>\d+)/stats-user-history$', 'stats_user_history'),
+    (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     # User analytics and proficiency
@@ -70,7 +81,6 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/userproficiency$', 'user_evaluation.evaluate_user'),
 
     (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
-    (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
 
     (r'^(?P<project_id>\d+)/graphexport/json$', 'graphexport.export_jsongraph' ),
     (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'skeletonexport.export_neuroml_level3_v181'),
@@ -157,12 +167,6 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/textlabel/all', 'textlabels'),
 
     (r'^(?P<project_id>\d+)/search$', 'search'),
-    (r'^(?P<project_id>\d+)/stats$', 'stats'),
-    (r'^(?P<project_id>\d+)/stats-editor$', 'stats_editor'),
-    (r'^(?P<project_id>\d+)/stats-reviewer$', 'stats_reviewer'),
-    (r'^(?P<project_id>\d+)/stats-summary$', 'stats_summary'),
-    (r'^(?P<project_id>\d+)/stats-history$', 'stats_history'),
-    (r'^(?P<project_id>\d+)/stats-user-history$', 'stats_user_history'),
 
     (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'export_wiring_diagram'),
     (r'^(?P<project_id>\d+)/wiringdiagram/nx_json$', 'export_wiring_diagram_nx'),

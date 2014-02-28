@@ -10,7 +10,6 @@ from search import *
 from skeletongroup import *
 from skeletonexport import *
 from skeleton import *
-from stats import *
 from textlabel import *
 from tile import *
 from tree import *

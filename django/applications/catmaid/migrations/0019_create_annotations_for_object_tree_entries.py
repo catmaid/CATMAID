@@ -4,6 +4,7 @@ import traceback
 from south.db import db
 from south.v2 import DataMigration
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import models
 from django.db import transaction
 
@@ -42,7 +43,8 @@ class Traverser():
        the owner of the part_of node-node link.
     """
 
-    def __init__(self, project, class_map, relation_map):
+    def __init__(self, orm, project, class_map, relation_map):
+        self.orm = orm
         self.p = project
         self.class_map = class_map
         self.relation_map = relation_map
@@ -87,7 +89,7 @@ class Traverser():
         for a in annotations:
             # Make sure the annotation's class instance exists.
             if a not in self.annotation_cache:
-                ci, created = orm.ClassInstance.objects.get_or_create(
+                ci, created = self.orm.ClassInstance.objects.get_or_create(
                       project_id=self.p.id, name=a,
                       class_column_id=self.class_map['annotation'],
                       defaults={'user_id': neuron.link_user_id});
@@ -96,7 +98,7 @@ class Traverser():
             a_id = self.annotation_cache[a]
 
             # Link the annotation
-            cici, created = orm.ClassInstanceClassInstance.objects.get_or_create(
+            cici, created = self.orm.ClassInstanceClassInstance.objects.get_or_create(
                     project_id=self.p.id,
                     relation_id=self.relation_map['annotated_with'],
                     class_instance_a_id=neuron.id,
@@ -151,7 +153,7 @@ class Traverser():
 
         # Get linked nodes, annotated whether they are neurons,  and
         # traverse them
-        linked_nodes = orm.ClassInstance.objects.filter(project=self.p.id,
+        linked_nodes = self.orm.ClassInstance.objects.filter(project=self.p.id,
                 cici_via_a__relation=self.relation_map['part_of'],
                 cici_via_a__class_instance_b=node).extra(select={
                     'link_user_id': 'class_instance_class_instance.user_id'
@@ -162,7 +164,7 @@ class Traverser():
 
 class Migration(DataMigration):
 
-    def test_tracing_setup(self, p, class_map, relation_map):
+    def test_tracing_setup(self, orm, p, class_map, relation_map):
         """ Tests if the given project is setup for tracing. If it seems it
         should be (i.e. it has a root class and a root node instance), but is
         missing some needed things, the user is given the option to get this
@@ -204,7 +206,7 @@ class Migration(DataMigration):
                         "choice to not setup tracing properly.")
             # Fix setup otherwise and continue. Use the first super user
             # available to do that.
-            super_user = orm['auth.User'].objects.filter(is_superuser=True).order_by('id')[0]
+            super_user = User.objects.filter(is_superuser=True).order_by('id')[0]
             setup_tracing(p.id, super_user)
             log("The missing bits have been added.", indent)
 
@@ -250,7 +252,7 @@ class Migration(DataMigration):
                 relation_map = get_relation_to_id_map(p.id)
 
                 try:
-                  self.test_tracing_setup(p, class_map, relation_map)
+                  self.test_tracing_setup(orm, p, class_map, relation_map)
                   # If any where added new, update
                   class_map = get_class_to_id_map(p.id)
                   relation_map = get_relation_to_id_map(p.id)
@@ -266,7 +268,7 @@ class Migration(DataMigration):
                 # Start at the root node and traverse all folder in there
                 root_node = orm.ClassInstance.objects.filter(project=p.id,
                         class_column=class_map['root']).get()
-                traverser = Traverser(p, class_map, relation_map)
+                traverser = Traverser(orm, p, class_map, relation_map)
                 traverser.run(root_node)
 
                 # Let user know we are done with this project

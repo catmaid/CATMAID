@@ -116,10 +116,14 @@ initial_colors = [(1, 0, 0, 1),
 
 
 def distinct_user_color():
-    users = User.objects.exclude(id__exact=-1).order_by('id')
-    
-    if len(users) < len(initial_colors):
-        distinct_color = initial_colors[len(users)]
+    """ Returns a color for a new user. If there are less users registered than
+    entries in the initial_colors list, the next free color is used. Otherwise,
+    a random color is generated.
+    """
+    nr_users = User.objects.exclude(id__exact=-1).count()
+
+    if nr_users < len(initial_colors):
+        distinct_color = initial_colors[nr_users]
     else:
         distinct_color = colorsys.hsv_to_rgb(random(), random(), 1.0) + (1,)
     

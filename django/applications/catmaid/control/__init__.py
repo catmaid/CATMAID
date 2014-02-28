@@ -23,6 +23,5 @@ from analytics import *
 from importer import *
 from graph import *
 from useranalytics import *
-from tracing import *
 from circles import *
 from neuron_annotations import *

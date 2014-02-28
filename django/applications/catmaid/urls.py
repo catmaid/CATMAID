@@ -43,6 +43,12 @@ urlpatterns += patterns('catmaid.control.message',
     (r'^messages/mark_read$', 'read_message'),
 )
 
+# Tracing general
+urlpatterns += patterns('catmaid.control.tracing',
+    (r'^(?P<project_id>\d+)/tracing/setup/rebuild$', 'rebuild_tracing_setup_view'),
+    (r'^(?P<project_id>\d+)/tracing/setup/test$', 'check_tracing_setup_view'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     (r'^projects$', 'projects'),
@@ -56,8 +62,6 @@ urlpatterns += patterns('catmaid.control',
 
     (r'^(?P<project_id>\d+)/graphexport/json$', 'graphexport.export_jsongraph' ),
     (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'skeletonexport.export_neuroml_level3_v181'),
-    (r'^(?P<project_id>\d+)/tracing/setup/rebuild$', 'rebuild_tracing_setup_view'),
-    (r'^(?P<project_id>\d+)/tracing/setup/test$', 'check_tracing_setup_view'),
 
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),

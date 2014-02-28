@@ -96,20 +96,6 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
 
     return result
 
-
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def slice_info(request, project_id=None, stack_id=None):
-    """ Return the infos about slices for the stack.
-    """
-    s = get_object_or_404(Stack, pk=stack_id)
-    sliceinfo = StackSliceInfo.objects.filter(stack=s)
-    if len(sliceinfo) == 0:
-        return HttpResponse(json.dumps({'error': 'This tool is not setup for this stack ID %i.'%s.id}))
-    else:
-        return HttpResponse(json.dumps({'slice_base_url': sliceinfo[0].slice_base_url,
-            'slice_filename_extension': sliceinfo[0].file_extension}))
-
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_stack_tags(request, project_id=None, stack_id=None):
     """ Return the tags associated with the stack.

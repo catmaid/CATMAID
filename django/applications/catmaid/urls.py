@@ -191,9 +191,11 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/treenode/create/interpolated$', 'create_interpolated_treenode'),
     (r'^(?P<project_id>\d+)/treenode/delete$', 'delete_treenode'),
     (r'^(?P<project_id>\d+)/treenode/info$', 'treenode_info'),
-    (r'^(?P<project_id>\d+)/treenode/table/list$', 'list_treenode_table'),
-    (r'^(?P<project_id>\d+)/treenode/table/update$', 'update_treenode_table'),
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'update_radius'),
+
+    # Treenode table
+    (r'^(?P<project_id>\d+)/treenode/table/list$', 'treenodetable.list_treenode_table'),
+    (r'^(?P<project_id>\d+)/treenode/table/update$', 'treenodetable.update_treenode_table'),
 
     (r'^(?P<project_id>\d+)/connector/create$', 'create_connector'),
     (r'^(?P<project_id>\d+)/connector/delete$', 'delete_connector'),

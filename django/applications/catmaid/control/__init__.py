@@ -13,4 +13,3 @@ from skeleton import *
 from tile import *
 from tree import *
 from treenode import *
-from treenodetable import *

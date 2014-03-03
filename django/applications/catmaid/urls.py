@@ -107,6 +107,12 @@ urlpatterns += patterns('catmaid.control.label',
     (r'^(?P<project_id>\d+)/label/remove$', 'label_remove'),
 )
 
+# Links
+urlpatterns += patterns('catmaid.control.link',
+    (r'^(?P<project_id>\d+)/link/create$', 'create_link'),
+    (r'^(?P<project_id>\d+)/link/delete$', 'delete_link'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     # User analytics and proficiency
@@ -181,9 +187,6 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/(?P<threshold>\d+)/get-skeletons', 'collect_skeleton_ids'),
     (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'instance_operation'),
     (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'remove_empty_neurons'),
-
-    (r'^(?P<project_id>\d+)/link/create$', 'create_link'),
-    (r'^(?P<project_id>\d+)/link/delete$', 'delete_link'),
 
     (r'^(?P<project_id>\d+)/search$', 'search'),
 

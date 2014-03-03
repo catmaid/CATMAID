@@ -1,6 +1,5 @@
 from common import *
 from connector import *
-from link import *
 from neurohdf import *
 from neuron import *
 from node import *

@@ -130,6 +130,20 @@ urlpatterns += patterns('catmaid.control.neuron',
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/delete$', 'delete_neuron'),
 )
 
+# Node access
+urlpatterns += patterns('catmaid.control.node',
+    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'update_location_reviewer'),
+    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/confidence/update$', 'update_confidence'),
+    (r'^(?P<project_id>\d+)/node/most_recent$', 'most_recent_treenode'),
+    (r'^(?P<project_id>\d+)/node/nearest$', 'node_nearest'),
+    (r'^(?P<project_id>\d+)/node/update$', 'node_update'),
+    (r'^(?P<project_id>\d+)/node/list$', 'node_list_tuples'),
+    (r'^(?P<project_id>\d+)/node/previous_branch_or_root$', 'find_previous_branchnode_or_root'),
+    (r'^(?P<project_id>\d+)/node/next_branch_or_end$', 'find_next_branchnode_or_end'),
+    (r'^(?P<project_id>\d+)/node/get_location$', 'get_location'),
+    (r'^(?P<project_id>\d+)/node/user-info$', 'user_info'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     # User analytics and proficiency
@@ -182,17 +196,6 @@ urlpatterns += patterns('catmaid.control',
 
     # Analytics
     (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),
-    
-    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/confidence/update$', 'update_confidence'),
-    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'update_location_reviewer'),
-    (r'^(?P<project_id>\d+)/node/most_recent$', 'most_recent_treenode'),
-    (r'^(?P<project_id>\d+)/node/nearest$', 'node_nearest'),
-    (r'^(?P<project_id>\d+)/node/update$', 'node_update'),
-    (r'^(?P<project_id>\d+)/node/list$', 'node_list_tuples'),
-    (r'^(?P<project_id>\d+)/node/previous_branch_or_root$', 'find_previous_branchnode_or_root'),
-    (r'^(?P<project_id>\d+)/node/next_branch_or_end$', 'find_next_branchnode_or_end'),
-    (r'^(?P<project_id>\d+)/node/get_location$', 'get_location'),
-    (r'^(?P<project_id>\d+)/node/user-info$', 'user_info'),
 
     (r'^(?P<project_id>\d+)/object-tree/expand$', 'tree_object_expand'),
     (r'^(?P<project_id>\d+)/object-tree/list', 'tree_object_list'),

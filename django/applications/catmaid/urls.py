@@ -188,7 +188,8 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'instance_operation'),
     (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'remove_empty_neurons'),
 
-    (r'^(?P<project_id>\d+)/search$', 'search'),
+    # Search
+    (r'^(?P<project_id>\d+)/search$', 'search.search'),
 
     # Wiring diagram export
     (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'wiringdiagram.export_wiring_diagram'),

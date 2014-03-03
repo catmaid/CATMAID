@@ -153,7 +153,7 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'skeletons_neuroml'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'skeleton_json'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/compact-json$', 'skeleton_for_3d_viewer'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'skeleton_neurohdf'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'neurohdf.skeleton_neurohdf'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-all$', 'reset_reviewer_ids'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-own$', 'reset_own_reviewer_ids'),
@@ -208,7 +208,8 @@ urlpatterns += patterns('catmaid.control',
     # Annotation graph export
     (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'object.convert_annotations_to_networkx'),
 
-    (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'microcircuit_neurohdf'),
+    # Microcircuit NeuroHDF export
+    (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'neurohdf.microcircuit_neurohdf'),
 
     (r'^(?P<project_id>\d+)/treenode/create$', 'create_treenode'),
     (r'^(?P<project_id>\d+)/treenode/create/interpolated$', 'create_interpolated_treenode'),

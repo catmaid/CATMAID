@@ -1,5 +1,4 @@
 from common import *
-from neurohdf import *
 from neuron import *
 from node import *
 from skeletongroup import *

@@ -239,7 +239,7 @@ function handle_profile_update(e) {
   }
   // update the edit tool actions and its div container
   createEditToolActions();
-  new_edit_actions = createButtonsFromActions(editToolActions,
+  var new_edit_actions = createButtonsFromActions(editToolActions,
     'toolbox_edit', '');
   $('#toolbox_edit').replaceWith(new_edit_actions);
   $('#toolbox_edit').hide();
@@ -704,7 +704,7 @@ function handle_message( status, text, xml )
 				for ( var i in e )
 				{
 					if (e [ i ].id == -1) {
-						notifications_count = e [ i ].notification_count;
+						var notifications_count = e [ i ].notification_count;
 						var notifications_button_img = $('#data_button_notifications_img');
 						if (notifications_button_img !== undefined) {
 							if (notifications_count > 0)
@@ -821,7 +821,7 @@ function handle_dataviews(status, text, xml) {
 		else
 		{
 			// a function for creating data view menu handlers
-			create_handler = function( id, code_type ) {
+			var create_handler = function( id, code_type ) {
 				return function() {
 					// close any open project and its windows
 					rootWindow.closeAllChildren();

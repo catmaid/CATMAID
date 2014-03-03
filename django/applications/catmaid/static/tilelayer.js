@@ -117,8 +117,8 @@ function TileLayer(
 			zoom = 0;
 		}
 
-		effectiveTileWidth = tileWidth * mag;
-		effectiveTileHeight = tileHeight * mag;
+		var effectiveTileWidth = tileWidth * mag;
+		var effectiveTileHeight = tileHeight * mag;
 
 		var fr = Math.floor( stack.yc / effectiveTileHeight );
 		var fc = Math.floor( stack.xc / effectiveTileWidth );

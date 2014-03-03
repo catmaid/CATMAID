@@ -144,6 +144,15 @@ urlpatterns += patterns('catmaid.control.node',
     (r'^(?P<project_id>\d+)/node/user-info$', 'user_info'),
 )
 
+# Treenode access
+urlpatterns += patterns('catmaid.control.treenode',
+    (r'^(?P<project_id>\d+)/treenode/create$', 'create_treenode'),
+    (r'^(?P<project_id>\d+)/treenode/create/interpolated$', 'create_interpolated_treenode'),
+    (r'^(?P<project_id>\d+)/treenode/delete$', 'delete_treenode'),
+    (r'^(?P<project_id>\d+)/treenode/info$', 'treenode_info'),
+    (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'update_radius'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     # User analytics and proficiency
@@ -188,7 +197,7 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/get-root$', 'root_for_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/ancestry$', 'skeleton_ancestry'),
     (r'^(?P<project_id>\d+)/skeleton/join$', 'join_skeleton'),
-    (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'join_skeletons_interpolated'),
+    (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'treenode.join_skeletons_interpolated'),
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'reroot_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
@@ -216,12 +225,6 @@ urlpatterns += patterns('catmaid.control',
 
     # Microcircuit NeuroHDF export
     (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'neurohdf.microcircuit_neurohdf'),
-
-    (r'^(?P<project_id>\d+)/treenode/create$', 'create_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/create/interpolated$', 'create_interpolated_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/delete$', 'delete_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/info$', 'treenode_info'),
-    (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'update_radius'),
 
     # Treenode table
     (r'^(?P<project_id>\d+)/treenode/table/list$', 'treenodetable.list_treenode_table'),

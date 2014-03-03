@@ -153,6 +153,16 @@ urlpatterns += patterns('catmaid.control.treenode',
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'update_radius'),
 )
 
+# Object tree
+urlpatterns += patterns('catmaid.control.tree',
+    (r'^(?P<project_id>\d+)/object-tree/expand$', 'tree_object_expand'),
+    (r'^(?P<project_id>\d+)/object-tree/list', 'tree_object_list'),
+    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/get-all-skeletons', 'objecttree_get_all_skeletons'),
+    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/(?P<threshold>\d+)/get-skeletons', 'collect_skeleton_ids'),
+    (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'instance_operation'),
+    (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'remove_empty_neurons'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     # User analytics and proficiency
@@ -205,13 +215,6 @@ urlpatterns += patterns('catmaid.control',
 
     # Analytics
     (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),
-
-    (r'^(?P<project_id>\d+)/object-tree/expand$', 'tree_object_expand'),
-    (r'^(?P<project_id>\d+)/object-tree/list', 'tree_object_list'),
-    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/get-all-skeletons', 'objecttree_get_all_skeletons'),
-    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/(?P<threshold>\d+)/get-skeletons', 'collect_skeleton_ids'),
-    (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'instance_operation'),
-    (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'remove_empty_neurons'),
 
     # Search
     (r'^(?P<project_id>\d+)/search$', 'search.search'),

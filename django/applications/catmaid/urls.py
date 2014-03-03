@@ -113,6 +113,16 @@ urlpatterns += patterns('catmaid.control.link',
     (r'^(?P<project_id>\d+)/link/delete$', 'delete_link'),
 )
 
+# Connector access
+urlpatterns += patterns('catmaid.control.connector',
+    (r'^(?P<project_id>\d+)/connector/create$', 'create_connector'),
+    (r'^(?P<project_id>\d+)/connector/delete$', 'delete_connector'),
+    (r'^(?P<project_id>\d+)/connector/table/list$', 'list_connector'),
+    (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'graphedge_list'),
+    (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'one_to_many_synapses'),
+    (r'^(?P<project_id>\d+)/connector/skeletons$', 'connector_skeletons'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     # User analytics and proficiency
@@ -209,14 +219,6 @@ urlpatterns += patterns('catmaid.control',
     # Treenode table
     (r'^(?P<project_id>\d+)/treenode/table/list$', 'treenodetable.list_treenode_table'),
     (r'^(?P<project_id>\d+)/treenode/table/update$', 'treenodetable.update_treenode_table'),
-
-    (r'^(?P<project_id>\d+)/connector/create$', 'create_connector'),
-    (r'^(?P<project_id>\d+)/connector/delete$', 'delete_connector'),
-    (r'^(?P<project_id>\d+)/connector/table/list$', 'list_connector'),
-
-    (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'graphedge_list'),
-    (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'one_to_many_synapses'),
-    (r'^(?P<project_id>\d+)/connector/skeletons$', 'connector_skeletons'),
 )
 
 # Treende export

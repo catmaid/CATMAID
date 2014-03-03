@@ -3,7 +3,6 @@ from connector import *
 from neurohdf import *
 from neuron import *
 from node import *
-from object import *
 from skeletongroup import *
 from skeletonexport import *
 from skeleton import *

@@ -195,7 +195,9 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'wiringdiagram.export_wiring_diagram'),
     (r'^(?P<project_id>\d+)/wiringdiagram/nx_json$', 'wiringdiagram.export_wiring_diagram_nx'),
 
-    (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'convert_annotations_to_networkx'),
+    # Annotation graph export
+    (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'object.convert_annotations_to_networkx'),
+
     (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'microcircuit_neurohdf'),
 
     (r'^(?P<project_id>\d+)/treenode/create$', 'create_treenode'),

@@ -833,6 +833,7 @@ TextlabelLayer = function(
 	var parentTool = parentTool;
 	var textlabels = new Array();
 	var stackWindow = stack.getWindow();
+	var opacity = 1.0;
 
   this.resize = function ( width, height )
   {
@@ -851,9 +852,15 @@ TextlabelLayer = function(
 
   this.setOpacity = function ( val )
   {
+    opacity = val;
     for(var t in textlabels ) {
       textlabels[t].setOpacity( val );
     }
+  };
+
+  this.getOpacity = function ( val )
+  {
+    return opacity;
   };
 
   this.removeTextlabels = function() {

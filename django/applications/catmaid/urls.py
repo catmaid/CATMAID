@@ -53,6 +53,10 @@ urlpatterns += patterns('catmaid.control.stack',
     (r'^(?P<project_id>\d+)/stacks$', 'stacks'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'stack_info'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'stack_models'),
+)
+
+# Tile access
+urlpatterns += patterns('catmaid.control.tile',
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'get_tile'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put_tile$', 'put_tile'),
 )

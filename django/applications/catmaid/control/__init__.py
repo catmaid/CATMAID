@@ -10,6 +10,5 @@ from search import *
 from skeletongroup import *
 from skeletonexport import *
 from skeleton import *
-from tile import *
 from tree import *
 from treenode import *

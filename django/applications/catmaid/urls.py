@@ -98,6 +98,15 @@ urlpatterns += patterns('catmaid.control.textlabel',
     (r'^(?P<project_id>\d+)/textlabel/all', 'textlabels'),
 )
 
+# Treenode labels
+urlpatterns += patterns('catmaid.control.label',
+    (r'^(?P<project_id>\d+)/labels-all$', 'labels_all'),
+    (r'^(?P<project_id>\d+)/labels-for-nodes$', 'labels_for_nodes'),
+    (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'labels_for_node'),
+    (r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', 'label_update'),
+    (r'^(?P<project_id>\d+)/label/remove$', 'label_remove'),
+)
+
 # Django CATMAID API
 urlpatterns += patterns('catmaid.control',
     # User analytics and proficiency
@@ -165,12 +174,6 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/node/next_branch_or_end$', 'find_next_branchnode_or_end'),
     (r'^(?P<project_id>\d+)/node/get_location$', 'get_location'),
     (r'^(?P<project_id>\d+)/node/user-info$', 'user_info'),
-
-    (r'^(?P<project_id>\d+)/labels-all$', 'labels_all'),
-    (r'^(?P<project_id>\d+)/labels-for-nodes$', 'labels_for_nodes'),
-    (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'labels_for_node'),
-    (r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', 'label_update'),
-    (r'^(?P<project_id>\d+)/label/remove$', 'label_remove'),
 
     (r'^(?P<project_id>\d+)/object-tree/expand$', 'tree_object_expand'),
     (r'^(?P<project_id>\d+)/object-tree/list', 'tree_object_list'),

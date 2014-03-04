@@ -399,6 +399,10 @@ function Stack(
 		for ( var key in layers ) {
 			if (layers.hasOwnProperty(key)) {
 				layer = layers[key];
+				// If a layer is invisble, continue with the next one.
+				if (layer.hasOwnProperty('visible') && !layer.visible) {
+					continue;
+				}
 				++ semaphore;
 				layer.redraw(onAnyCompletion);
 			}

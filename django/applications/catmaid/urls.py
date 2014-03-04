@@ -175,6 +175,18 @@ urlpatterns += patterns('catmaid.control.skeleton',
             'get_skeleton_permissions'),
 )
 
+# Skeleton export
+urlpatterns += patterns('catmaid.control.skeletonexport',
+    (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'skeletonexport.export_neuroml_level3_v181'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'skeleton_swc'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'skeletons_neuroml'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'skeleton_json'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/compact-json$', 'skeleton_for_3d_viewer'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
+    (r'^(?P<project_id>\d+)/skeletons/measure$', 'measure_skeletons'),
+    (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
+)
+
 # Object tree
 urlpatterns += patterns('catmaid.control.tree',
     (r'^(?P<project_id>\d+)/object-tree/expand$', 'tree_object_expand'),
@@ -194,7 +206,6 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
 
     (r'^(?P<project_id>\d+)/graphexport/json$', 'graphexport.export_jsongraph' ),
-    (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'skeletonexport.export_neuroml_level3_v181'),
 
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),
@@ -208,15 +219,8 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/graph/directedpaths', 'circles.find_directed_paths'),
 
     # Other skeleton related API
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'skeleton_swc'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'skeletons_neuroml'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'skeleton_json'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/compact-json$', 'skeleton_for_3d_viewer'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'neurohdf.skeleton_neurohdf'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
-    (r'^(?P<project_id>\d+)/skeletons/measure$', 'measure_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'treenode.join_skeletons_interpolated'),
-    (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
 
     # Analytics
     (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),

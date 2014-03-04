@@ -255,36 +255,6 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
-
-@requires_user_role(UserRole.Annotate)
-def update_treenode_table(request, project_id=None):
-    property_name = request.POST.get('type', None)
-    treenode_id = request.POST.get('id', None)
-    property_value = request.POST.get('value', None)
-
-    if None in [property_name, treenode_id, property_value]:
-        raise Exception('Need type, treenode id and value.')
-    else:
-        treenode_id = int(treenode_id)
-        property_value = int(property_value)
-
-    if property_name not in ['confidence', 'radius']:
-        raise Exception('Can only modify confidence and radius.')
-
-    response_on_error = ''
-    try:
-        response_on_error = 'Could not find treenode with ID %s.' % treenode_id
-        treenode = get_object_or_404(Treenode, project=project_id, id=treenode_id)
-        response_on_error = 'Could not update %s for treenode with ID %s.' % (property_name, treenode_id)
-        setattr(treenode, property_name, property_value)
-        treenode.editor = request.user
-        treenode.save()
-
-        return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
-
-    except Exception as e:
-        raise Exception(response_on_error + ':' + str(e))
-
 @requires_user_role(UserRole.Annotate)
 def update_radius(request, project_id=None, treenode_id=None):
     treenode_id = int(treenode_id)

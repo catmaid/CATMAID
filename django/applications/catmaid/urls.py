@@ -177,7 +177,7 @@ urlpatterns += patterns('catmaid.control.skeleton',
 
 # Skeleton export
 urlpatterns += patterns('catmaid.control.skeletonexport',
-    (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'skeletonexport.export_neuroml_level3_v181'),
+    (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'export_neuroml_level3_v181'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'skeleton_swc'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'skeletons_neuroml'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'skeleton_json'),

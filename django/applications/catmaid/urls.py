@@ -187,6 +187,13 @@ urlpatterns += patterns('catmaid.control.skeletonexport',
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
 )
 
+# Skeleton group access
+urlpatterns += patterns('catmaid.control.skeletongroup',
+    (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
+    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),
+    (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'all_shared_connectors'),
+)
+
 # Object tree
 urlpatterns += patterns('catmaid.control.tree',
     (r'^(?P<project_id>\d+)/object-tree/expand$', 'tree_object_expand'),
@@ -206,10 +213,6 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
 
     (r'^(?P<project_id>\d+)/graphexport/json$', 'graphexport.export_jsongraph' ),
-
-    (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
-    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),
-    (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'all_shared_connectors'),
 
     # Graphs
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'graph2.skeleton_graph'),

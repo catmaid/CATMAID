@@ -204,48 +204,6 @@ urlpatterns += patterns('catmaid.control.tree',
     (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'remove_empty_neurons'),
 )
 
-# Django CATMAID API
-urlpatterns += patterns('catmaid.control',
-    # User analytics and proficiency
-    (r'^useranalytics$', 'useranalytics.plot_useranalytics'),
-    (r'^(?P<project_id>\d+)/userproficiency$', 'user_evaluation.evaluate_user'),
-
-    (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
-
-    (r'^(?P<project_id>\d+)/graphexport/json$', 'graphexport.export_jsongraph' ),
-
-    # Graphs
-    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'graph2.skeleton_graph'),
-
-    # Circles
-    (r'^(?P<project_id>\d+)/graph/circlesofhell', 'circles.circles_of_hell'),
-    (r'^(?P<project_id>\d+)/graph/directedpaths', 'circles.find_directed_paths'),
-
-    # Other skeleton related API
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'neurohdf.skeleton_neurohdf'),
-    (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'treenode.join_skeletons_interpolated'),
-
-    # Analytics
-    (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),
-
-    # Search
-    (r'^(?P<project_id>\d+)/search$', 'search.search'),
-
-    # Wiring diagram export
-    (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'wiringdiagram.export_wiring_diagram'),
-    (r'^(?P<project_id>\d+)/wiringdiagram/nx_json$', 'wiringdiagram.export_wiring_diagram_nx'),
-
-    # Annotation graph export
-    (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'object.convert_annotations_to_networkx'),
-
-    # Microcircuit NeuroHDF export
-    (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'neurohdf.microcircuit_neurohdf'),
-
-    # Treenode table
-    (r'^(?P<project_id>\d+)/treenode/table/list$', 'treenodetable.list_treenode_table'),
-    (r'^(?P<project_id>\d+)/treenode/table/update$', 'treenodetable.update_treenode_table'),
-)
-
 # Treende export
 urlpatterns += patterns('catmaid.control.treenodeexport',
     (r'^(?P<project_id>\d+)/connectorarchive/export$', 'export_connectors'),
@@ -384,4 +342,48 @@ urlpatterns += patterns('catmaid.control.clustering',
     url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),
         TemplateView.as_view(template_name="catmaid/clustering/display.html"),
         name="clustering_display"),
+)
+
+# Collection of various parts of the CATMAID API. These methods are usually
+# one- or two-liners and having them in a separate statement would not improve
+# readability. Therefore, they are all declared in this general statement.
+urlpatterns += patterns('catmaid.control',
+    # User analytics and proficiency
+    (r'^useranalytics$', 'useranalytics.plot_useranalytics'),
+    (r'^(?P<project_id>\d+)/userproficiency$', 'user_evaluation.evaluate_user'),
+
+    (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
+
+    (r'^(?P<project_id>\d+)/graphexport/json$', 'graphexport.export_jsongraph' ),
+
+    # Graphs
+    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'graph2.skeleton_graph'),
+
+    # Circles
+    (r'^(?P<project_id>\d+)/graph/circlesofhell', 'circles.circles_of_hell'),
+    (r'^(?P<project_id>\d+)/graph/directedpaths', 'circles.find_directed_paths'),
+
+    # Other skeleton related API
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'neurohdf.skeleton_neurohdf'),
+    (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'treenode.join_skeletons_interpolated'),
+
+    # Analytics
+    (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),
+
+    # Search
+    (r'^(?P<project_id>\d+)/search$', 'search.search'),
+
+    # Wiring diagram export
+    (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'wiringdiagram.export_wiring_diagram'),
+    (r'^(?P<project_id>\d+)/wiringdiagram/nx_json$', 'wiringdiagram.export_wiring_diagram_nx'),
+
+    # Annotation graph export
+    (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'object.convert_annotations_to_networkx'),
+
+    # Microcircuit NeuroHDF export
+    (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'neurohdf.microcircuit_neurohdf'),
+
+    # Treenode table
+    (r'^(?P<project_id>\d+)/treenode/table/list$', 'treenodetable.list_treenode_table'),
+    (r'^(?P<project_id>\d+)/treenode/table/update$', 'treenodetable.update_treenode_table'),
 )

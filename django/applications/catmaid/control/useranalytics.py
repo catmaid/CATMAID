@@ -46,16 +46,18 @@ def eventTimes(user_id, start_date, end_date):
     edition times and tree node review times within the date range specified
     where the editor/reviewer is the given user.
     """
+    dr = (start_date, end_date)
     tns = Treenode.objects.filter(
         editor_id = user_id,
-        edition_time__range = (start_date, end_date)).values_list('edition_time')
+        edition_time__range=dr).values_list('edition_time', flat=True)
     cns = Connector.objects.filter(
         editor_id = user_id,
-        edition_time__range = (start_date, end_date)).values_list('edition_time')
+        edition_time__range=dr).values_list('edition_time', flat=True)
     rns = Treenode.objects.filter(
         reviewer_id = user_id,
-        review_time__range = (start_date, end_date)).values_list('review_time')
-    return [t[0] for t in tns], [t[0] for t in cns], [t[0] for t in rns]    
+        review_time__range=dr).values_list('review_time', flat=True)
+
+    return list(tns), list(cns), list(rns)
     
 def eventsPerInterval(times, start_date, end_date, interval='day'):
     daycount = (end_date - start_date).days

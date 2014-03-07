@@ -20,7 +20,9 @@ except:
     pass
 
 def plot_useranalytics(request):
-
+    """ Creates a PNG image containing different plots for analzing the
+    performance of individual users over time.
+    """
     userid = request.GET.get('userid', -1)
     start_date = request.GET.get('start')
     end_date = request.GET.get('end')
@@ -40,6 +42,10 @@ def plot_useranalytics(request):
     return response
 
 def eventTimes(user_id, start_date, end_date):
+    """ Returns a tuple containing a list of tree node edition times, connector
+    edition times and tree node review times within the date range specified
+    where the editor/reviewer is the given user.
+    """
     tns = Treenode.objects.filter(
         editor_id = user_id,
         edition_time__range = (start_date, end_date)).values_list('edition_time')
@@ -80,16 +86,26 @@ def eventsPerInterval(times, start_date, end_date, interval='day'):
         return
     
     return timebins, timeaxis
-       
+
 def activeTimes( alltimes, gapThresh ):
+    """ Goes through the sorted array of time differences between all events
+    stored in <alltimes>. If two events are closer together than <gapThresh>
+    minutes, they are counted as events within one bout. A tuple containing a
+    list of bout start dates as well as a list with total numbers of events for
+    each bout is returned.
+    """
+    # Sort all events and create a list of (time) differences between them
     alltimes.sort()
     dts = np.diff(alltimes)
-    active_times = []
+    # The total number of events for every bout
+    events_in_bout = []
+    # All events for every bout, initialized for the first
     ind = 0
     active_bouts = []
-    events_in_bout = []
     active_bouts.append([])
+    # Indicates whether we are currently in a bout
     activerun = False
+    # Collect all bouts and their events
     for i, dt in enumerate(dts):
         if dt.total_seconds() < 60 * gapThresh:
             if activerun == False:
@@ -104,20 +120,37 @@ def activeTimes( alltimes, gapThresh ):
                 active_bouts[ind].append(alltimes[i-1])
                 ind += 1
                 active_bouts.append([])
+    # If the last bout contains only one event,
+    # append the last event (again) to it.
     if len(active_bouts[-1])==1:
         active_bouts[-1].append( alltimes[-1] )
+
+    # Return a tuple containing a list of all bouts
+    # and the number of their events.
     return active_bouts, events_in_bout
     
 def activeTimesPerDay(active_bouts):
+    """ Creates a tuple containing the active time in hours for every day
+    between the first event of the first bout and the last event of the last
+    bout as well as a list with the date for every day.
+    """
+    # Find first event of first bout
     daystart = active_bouts[0][0].replace(hour=0,minute=0,second=0,microsecond=0)
+    # Find last event of last bout
     dayend = active_bouts[-1][1]
-    numdays = (dayend-daystart).days+1
-    timeaxis = [daystart.date()+timedelta(d) for d in range(numdays)]
-    
+    # Get total number of between first event and last event
+    numdays = (dayend - daystart).days + 1
+    # Create a list of dates for every day between first and last event
+    timeaxis = [daystart.date() + timedelta(d) for d in range(numdays)]
+
+    # Calculate the netto active time for each day
     net_active_time = np.array(np.zeros(numdays))
     for bout in active_bouts:
         net_active_time[ (bout[0]-daystart).days ] += (bout[1]-bout[0]).total_seconds()
-    return np.divide(net_active_time,3600), timeaxis
+
+    # Return a tuple containing the active time for every
+    # day in hours and the list of days.
+    return np.divide(net_active_time, 3600), timeaxis
 
 def singleDayEvents( alltimes, start_hour, end_hour ):
     alltimes.sort()
@@ -134,6 +167,7 @@ def singleDayActiveness( activebouts, increment, start_hour, end_hour ):
         print 'Increments must divide 60 evenly'
         return
     starttime = datetime.now()
+    # FIXME: replace doesn't replace in place, but returns a new object
     starttime.replace(hour=start_hour,minute=0,second=0,microsecond=0)
     timeaxis = [starttime + timedelta(0,0,0,0,n*increment) for n in range(60/increment*(end_hour - start_hour+1))]
     durPerPeriod = np.zeros((60/increment)*(end_hour-start_hour+1))
@@ -142,7 +176,9 @@ def singleDayActiveness( activebouts, increment, start_hour, end_hour ):
     for d in range(daysConsidered):
         if (activebouts[0][0]+timedelta(d)).isoweekday() == 0 or (activebouts[0][0]+timedelta(d)).isoweekday() == 6:
             weekendCorrection += 1
-    
+
+    # Initialize list for minutes per period with zeros
+    durPerPeriod = np.zeros(stepsPerHour * hoursConsidered)
     for bout in activebouts:
         if bout[0].hour > end_hour:
             continue
@@ -158,9 +194,10 @@ def singleDayActiveness( activebouts, increment, start_hour, end_hour ):
     return np.true_divide(durPerPeriod,increment * (daysConsidered-weekendCorrection) ), timeaxis
                     
 def splitBout(bout,increment):
-    if np.mod(60,increment)>0:
-        print 'Increments must divide 60 evenly'
-        return
+    """ Splits one bout in periods of <increment> minutes.
+    """
+    if np.mod(60, increment) > 0:
+        raise RuntimeError('Increments must divide 60 evenly')
     
     boutListOut = []
     currtime = bout[0]
@@ -186,10 +223,6 @@ def generateReport( user_id, activeTimeThresh, start_date, end_date ):
     """ nts: node times
         cts: connector times
         rts: review times """
-    # start_date = datetime.now() - timedelta( 7 + datetime.now().isoweekday() )
-#     end_date = datetime.now()
-#     
-
     nts, cts, rts = eventTimes( user_id, start_date, end_date )
 
     # If no nodes have been found, return an image with a descriptive text.
@@ -203,11 +236,11 @@ def generateReport( user_id, activeTimeThresh, start_date, end_date ):
     activeBouts, eventsInBout = activeTimes( nts+cts+rts, activeTimeThresh )
     netActiveTime, at_timeaxis = activeTimesPerDay( activeBouts )
 
-    activeFraction, daytimeaxis = singleDayActiveness( activeBouts, 30, 8, 20 )
-
     dayformat = DateFormatter('%b %d')
 
     fig = plt.figure(figsize=(12,10))
+
+    # Top left plot: created and edited nodes per day
     ax1 = plt.subplot2grid((2,2), (0,0))
     an = ax1.bar( ae_timeaxis, annotationEvents, color='#0000AA')
     rv = ax1.bar( re_timeaxis, reviewEvents, bottom=annotationEvents, color='#AA0000')
@@ -222,6 +255,7 @@ def generateReport( user_id, activeTimeThresh, start_date, end_date ):
     plt.setp(xl, rotation=30, fontsize=10)
     ax1.set_title('Edit events', fontsize=10)
 
+    # Bottom left plot: net active time per day
     ax2 = plt.subplot2grid((2,2), (1,0))
     ax2.bar( at_timeaxis, netActiveTime, color='k')
     ax2.set_xlim((start_date,end_date))
@@ -238,9 +272,9 @@ def generateReport( user_id, activeTimeThresh, start_date, end_date ):
     ax3 = eventsPerIntervalPerDayPlot(ax3, rts+nts+cts, start_date, end_date, 30 )
     """
 
+    # Right column plot: bouts over days
     ax4 = plt.subplot2grid((2,2), (0,1), rowspan=2)
     ax4 = dailyActivePlotFigure( activeBouts, ax4, start_date, end_date )
-    ax4.xaxis.set_major_locator(DayLocator())
     
     yl = ax4.get_yticklabels()
     plt.setp(yl, fontsize=10)
@@ -255,13 +289,19 @@ def generateReport( user_id, activeTimeThresh, start_date, end_date ):
     return fig
     
 def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
-
-    today = datetime.now().isocalendar()
-
+    """ Draws a plot of all bouts during each day between <start_date> and
+    <end_date> to the plot given by <ax>.
+    """
+    # Y axis: Draw a line for each two hours in a day and set ticks accordingly
     for i in range(12):
-        ax.axhline( 2*i, color='#AAAAAA', linestyle = ':' )
+        ax.axhline(2 * i, color='#AAAAAA', linestyle = ':')
     ax.axhspan(8,18,facecolor='#999999',alpha=0.25)
     ax.set_yticks([0,2,4,6,8,10,12,14,16,18,20,22,24])
+
+    # X axis: Ticks and labels for every day
+    ax.xaxis.set_major_locator(DayLocator())
+
+    # Draw all bouts
     for bout in activebouts:
         if bout[0].day == bout[1].day:
             isodate = bout[0].isocalendar()
@@ -276,7 +316,6 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
         timeaxis.append(start_date + timedelta(d) )
 
     return ax
-
 
 def eventsPerIntervalPerDayPlot(ax,times,start_date,end_date,interval=60):
     if np.mod(24*60,interval) > 0:

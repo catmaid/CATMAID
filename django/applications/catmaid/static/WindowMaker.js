@@ -862,7 +862,15 @@ var WindowMaker = new function()
 
     content.appendChild( contentbutton );
 
+    /* Create graph container and assure that it's overflow setting is set to
+     * 'hidden'. This is required, because cytoscape.js' redraw can be delayed
+     * (e.g. due to animation). When the window's size is reduced, it can happen
+     * that the cytoscape canvas is bigger than the container. The default
+     * 'auto' setting then introduces scrollbars, triggering another resize.
+     * This somehow confuses cytoscape.js and causes the graph to disappear.
+     */
     var container = createContainer("compartment_graph_widget" + CGW.widgetID);
+    container.style.overflow = 'hidden';
     content.appendChild(container);
 
     var graph = document.createElement('div');
@@ -872,7 +880,8 @@ var WindowMaker = new function()
     graph.style.backgroundColor = "#FFFFF0";
     container.appendChild(graph);
 
-    addListener(win, container, 'compartment_graph_window_buttons' + CGW.widgetID, CGW.destroy.bind(CGW));
+    addListener(win, container, 'compartment_graph_window_buttons' + CGW.widgetID,
+        CGW.destroy.bind(CGW), CGW.resize.bind(CGW));
 
     addLogic(win);
 

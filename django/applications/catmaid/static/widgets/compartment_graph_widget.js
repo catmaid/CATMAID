@@ -17,6 +17,9 @@ var CompartmentGraphWidget = function() {
   this.color_circles_of_hell = this.colorCirclesOfHell.bind(this);
 
   this.setState('color_mode', 'source');
+
+  // stores re-layout timeout when resizing
+  this.relayoutTimeout = null;
 }
 
 CompartmentGraphWidget.prototype = {};
@@ -1188,4 +1191,21 @@ CompartmentGraphWidget.prototype.openPlot = function() {
 CompartmentGraphWidget.prototype.annotate_skeleton_list = function() {
   var skeleton_ids = this.getSelectedSkeletons();
   NeuronAnnotations.prototype.annotate_neurons_of_skeletons(skeleton_ids);
+};
+
+CompartmentGraphWidget.prototype.resize = function() {
+  if (this.cy) {
+    // Schedule a re-layout after 400ms and override it automatically if
+    // resizing isn't finished, yet.
+    if (this.relayoutTimeout) {
+      clearTimeout(this.relayoutTimeout);
+    }
+    this.relayoutTimeout = setTimeout((function() {
+      // Update the layout accordingly
+      var layoutSelect = document.getElementById(
+          'compartment_graph_window_buttons' + this.widgetID +
+              '_compartment_layout');
+      this.updateLayout(layoutSelect);
+    }).bind(this), 400);
+  }
 };

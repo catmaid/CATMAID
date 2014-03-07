@@ -174,6 +174,14 @@ def splitBout(bout,increment):
         currtime = nexttime    
     return boutListOut
 
+def generateErrorImage(msg):
+    """ Creates an empty image (based on image nr. 1) and adds a message to it.
+    """
+    fig = figure(1, figsize=(6,6))
+    fig.clf()
+    fig.suptitle(msg)
+    return fig
+
 def generateReport( user_id, activeTimeThresh, start_date, end_date ):
     """ nts: node times
         cts: connector times
@@ -184,8 +192,10 @@ def generateReport( user_id, activeTimeThresh, start_date, end_date ):
 
     nts, cts, rts = eventTimes( user_id, start_date, end_date )
 
+    # If no nodes have been found, return an image with a descriptive text.
     if len(nts) == 0:
-        return figure(1, figsize=(6,6))
+        return generateErrorImage("No tree nodes were edited during the " +
+                "defined period if time.")
     
     annotationEvents, ae_timeaxis = eventsPerInterval( nts + cts, start_date, end_date )
     reviewEvents, re_timeaxis = eventsPerInterval( rts, start_date, end_date )

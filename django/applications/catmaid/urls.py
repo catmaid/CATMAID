@@ -173,6 +173,7 @@ urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'reroot_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
             'get_skeleton_permissions'),
+    (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'join_skeletons_interpolated'),
 )
 
 # Skeleton export
@@ -365,7 +366,6 @@ urlpatterns += patterns('catmaid.control',
 
     # Other skeleton related API
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'neurohdf.skeleton_neurohdf'),
-    (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'treenode.join_skeletons_interpolated'),
 
     # Analytics
     (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),

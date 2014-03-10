@@ -112,10 +112,8 @@ def eventsPerInterval(times, start_date, end_date, interval='day'):
             timeaxis.append( start_date + n*timedelta(0,1800) )
         for t in times:
             timebins[ np.floor(np.divide((t - start_date).total_seconds(),1800)) ] += 1
-
     else:
-        print('Options are day, hour, or halfhour')
-        return
+        raise ValueError('Interval options are day, hour, or halfhour')
     
     return timebins, timeaxis
 
@@ -197,7 +195,7 @@ def singleDayActiveness( activebouts, increment, start_hour, end_hour ):
         return [], []
     # Make sure 60 can be cleanly devided by <incement>
     if np.mod(60, increment) > 0:
-        raise RuntimeError('Increments must divide 60 evenly')
+        raise ValueError('Increments must divide 60 evenly')
 
     # Some constants
     stepsPerHour = 60 / increment
@@ -379,9 +377,8 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
     return ax
 
 def eventsPerIntervalPerDayPlot(ax,times,start_date,end_date,interval=60):
-    if np.mod(24*60,interval) > 0:
-        print('Interval in minutes must divide the day evenly')
-        return
+    if np.mod(24 * 60, interval) > 0:
+        raise ValueError('Interval in minutes must divide the day evenly')
         
     daycount = (end_date-start_date).days
     timebins = {}

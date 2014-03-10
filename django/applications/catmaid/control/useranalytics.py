@@ -90,30 +90,33 @@ def eventTimes(user_id, start_date, end_date):
     return list(tns), list(cns), list(rns)
     
 def eventsPerInterval(times, start_date, end_date, interval='day'):
-    daycount = (end_date - start_date).days
-    timeaxis = []
+    """ Creates a histogram of how many events fall into all intervals between
+    <start_data> and <end_date>. The interval type can be day, hour and
+    halfhour. Returned is a tuple containing two elemens: the histogram and a
+    time axis, labeling every bin.
+    """
     if interval=='day':
-        timebins = np.zeros( daycount )
-        for n in xrange( daycount ):
-            timeaxis.append( start_date + timedelta(n) )
-        for t in times:
-            timebins[ (t - start_date).days ] += 1
-            
+        intervalsPerDay = 1
+        secondsPerInterval = 86400
     elif interval=='hour':
-        timebins = np.zeros( 24*daycount )
-        for n in xrange( 24*daycount ):
-            timeaxis.append( start_date + n*timedelta(0,3600) )
-        for t in times:
-            timebins[ np.floor(np.divide((t - start_date).total_seconds(),3600)) ] += 1
-    
+        intervalsPerDay = 24
+        secondsPerInterval = 3600
     elif interval=='halfhour':
-        timebins = np.zeros( 48*daycount )
-        for n in xrange( 48*daycount ):
-            timeaxis.append( start_date + n*timedelta(0,1800) )
-        for t in times:
-            timebins[ np.floor(np.divide((t - start_date).total_seconds(),1800)) ] += 1
+        intervalsPerDay = 48
+        secondsPerInterval = 1800
     else:
         raise ValueError('Interval options are day, hour, or halfhour')
+
+    # Generate axis
+    daycount = (end_date - start_date).days
+    dt = timedelta(0, secondsPerInterval)
+    timeaxis = [start_date + n*dt for n in xrange(intervalsPerDay * daycount)]
+    # Calculate bins
+    timebins = np.zeros(intervalsPerDay * daycount)
+    intervalsPerSecond = 1.0 / secondsPerInterval
+    for t in times:
+        i = int((t - start_date).total_seconds() * intervalsPerSecond)
+        timebins[i] += 1
     
     return timebins, timeaxis
 

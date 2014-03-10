@@ -19,6 +19,36 @@ try:
 except:
     pass
 
+class Bout(object):
+    """ Represents one bout, based on a list of events. The first event ist the
+    start date/time, the last event the end.
+    """
+    def __init__(self, start, end=None):
+        self.events = [start]
+        if end:
+            self.events.append(end)
+
+    def addEvent(self, e):
+        """ Increments the event counter.
+        """
+        self.events.append(e)
+
+    @property
+    def nrEvents(self):
+        return len(self.events)
+
+    @property
+    def start(self):
+        return self.events[0]
+
+    @property
+    def end(self):
+        return self.events[-1]
+
+    def __str__(self):
+        return "Bout with %s events [%s, %s]" % \
+                (self.nrEvents, self.start, self.end)
+
 def plot_useranalytics(request):
     """ Creates a PNG image containing different plots for analzing the
     performance of individual users over time.
@@ -99,37 +129,29 @@ def activeTimes( alltimes, gapThresh ):
     # Sort all events and create a list of (time) differences between them
     alltimes.sort()
     dts = np.diff(alltimes)
-    # The total number of events for every bout
-    events_in_bout = []
-    # All events for every bout, initialized for the first
-    ind = 0
-    active_bouts = []
-    active_bouts.append([])
-    # Indicates whether we are currently in a bout
-    activerun = False
-    # Collect all bouts and their events
-    for i, dt in enumerate(dts):
-        if dt.total_seconds() < 60 * gapThresh:
-            if activerun == False:
-                active_bouts[ind].append(alltimes[i])
-                activerun = True
-                events_in_bout.append( 1 )
-            else:
-                events_in_bout[-1] += 1
+    # Threshold between to events to be counted as separate bouts (seconds)
+    threshold = 60 * gapThresh
+    # Indicates whether we are currently in a bout and since we haven't even
+    # looked at the first event, we are initially not.
+    bout = None
+    # Go through all events
+    for i, e in enumerate(alltimes):
+        if i > 0 and dts[i-1].total_seconds() < threshold:
+            # Increment current bout's event counter and continue with the
+            # next element as long as the time difference to the next
+            # element is below our threshold.
+            bout.addEvent(e)
+            continue
         else:
-            if activerun == True:
-                activerun = False
-                active_bouts[ind].append(alltimes[i-1])
-                ind += 1
-                active_bouts.append([])
-    # If the last bout contains only one event,
-    # append the last event (again) to it.
-    if len(active_bouts[-1])==1:
-        active_bouts[-1].append( alltimes[-1] )
+            # Return current bout (not available in first iteration) and create
+            # a new one.
+            if bout:
+                yield bout
+            bout = Bout(e)
 
-    # Return a tuple containing a list of all bouts
-    # and the number of their events.
-    return active_bouts, events_in_bout
+    # Return last bout, if it hasn't been returned, yet
+    if bout:
+        yield bout
     
 def activeTimesPerDay(active_bouts):
     """ Creates a tuple containing the active time in hours for every day
@@ -137,9 +159,10 @@ def activeTimesPerDay(active_bouts):
     bout as well as a list with the date for every day.
     """
     # Find first event of first bout
-    daystart = active_bouts[0][0].replace(hour=0,minute=0,second=0,microsecond=0)
+    daystart = active_bouts[0].start.replace(
+            hour=0, minute=0, second=0, microsecond=0)
     # Find last event of last bout
-    dayend = active_bouts[-1][1]
+    dayend = active_bouts[-1].end
     # Get total number of between first event and last event
     numdays = (dayend - daystart).days + 1
     # Create a list of dates for every day between first and last event
@@ -148,7 +171,8 @@ def activeTimesPerDay(active_bouts):
     # Calculate the netto active time for each day
     net_active_time = np.array(np.zeros(numdays))
     for bout in active_bouts:
-        net_active_time[ (bout[0]-daystart).days ] += (bout[1]-bout[0]).total_seconds()
+        active_time = (bout.end - bout.start).total_seconds()
+        net_active_time[(bout.start - daystart).days] += active_time
 
     # Return a tuple containing the active time for every
     # day in hours and the list of days.
@@ -165,35 +189,69 @@ def singleDayEvents( alltimes, start_hour, end_hour ):
     return np.true_divide(activity,(alltimes[-1] - alltimes[0]).days), timeaxis
     
 def singleDayActiveness( activebouts, increment, start_hour, end_hour ):
-    if np.mod(60,increment)>0:
-        print 'Increments must divide 60 evenly'
-        return
+    """ Returns a ... for all bouts between <start_hour> and <end_hour> of the
+    day.
+    """
+    # Return right away, when there are no bouts given
+    if not activebouts:
+        return [], []
+    # Make sure 60 can be cleanly devided by <incement>
+    if np.mod(60, increment) > 0:
+        raise RuntimeError('Increments must divide 60 evenly')
+
+    # Some constants
+    stepsPerHour = 60 / increment
+    hoursConsidered = (end_hour - start_hour) + 1
+    daysConsidered = (activebouts[-1].end - activebouts[0].start).days + 1
+
+    # Get start of current day
     starttime = datetime.now()
     # FIXME: replace doesn't replace in place, but returns a new object
     starttime.replace(hour=start_hour,minute=0,second=0,microsecond=0)
-    timeaxis = [starttime + timedelta(0,0,0,0,n*increment) for n in range(60/increment*(end_hour - start_hour+1))]
-    durPerPeriod = np.zeros((60/increment)*(end_hour-start_hour+1))
-    daysConsidered = (activebouts[-1][1]-activebouts[0][0]).days+1
+    # Create time axis list with entry for every <increment> minutes between
+    # <start_hour> and <end_hour>.
+    timeaxis = [starttime + timedelta(0, 0, 0, 0, n * increment) \
+            for n in range(stepsPerHour * hoursConsidered)]
+
+    # Loop through all days considered to find number of weekend days
     weekendCorrection = 0
     for d in range(daysConsidered):
-        if (activebouts[0][0]+timedelta(d)).isoweekday() == 0 or (activebouts[0][0]+timedelta(d)).isoweekday() == 6:
+        # TODO: Why is 0 and 6 used for comparison?
+        saturday = (activebouts[0].start + timedelta(d)).isoweekday() == 0
+        sunday = (activebouts[0].start + timedelta(d)).isoweekday() == 6
+        if saturday or sunday:
             weekendCorrection += 1
 
     # Initialize list for minutes per period with zeros
     durPerPeriod = np.zeros(stepsPerHour * hoursConsidered)
     for bout in activebouts:
-        if bout[0].hour > end_hour:
+        # Ignore bouts what start after requested <end_hour> or end before
+        # requested <start_hour>.
+        if bout.start.hour > end_hour:
             continue
-        elif bout[1].hour < start_hour:
+        elif bout.end.hour < start_hour:
             continue
-        elif bout[0].hour < start_hour:
-            bout[0].replace(hour=start_hour,minute=0,second=0,microsecond=0)
-        elif bout[1].hour > end_hour:
-            bout[1].replace(hour=end_hour,minute=0,second=0,microsecond=0)
-            
+        # Crop start and end times of every valid bout to request period
+        elif bout.start.hour < start_hour:
+            # FIXME: replace doesn't replace in place, but returns a new object
+            bout.start.replace(hour=start_hour,minute=0,second=0,microsecond=0)
+        elif bout.end.hour > end_hour:
+            # FIXME: replace doesn't replace in place, but returns a new object
+            bout.end.replace(hour=end_hour,minute=0,second=0,microsecond=0)
+
+        # Go through every sub bout, defined by periods if <increment> minutes,
+        # and store the number of minutes for every time-fraction considered.
         for subbout in splitBout(bout,increment):
-            durPerPeriod[(60/increment) * (subbout[0].hour-start_hour)+ subbout[0].minute/increment] += np.true_divide((subbout[1]-subbout[0]).total_seconds(), 60)
-    return np.true_divide(durPerPeriod,increment * (daysConsidered-weekendCorrection) ), timeaxis
+            subboutSeconds = (subbout.end - subbout.start).total_seconds()
+            i = stepsPerHour * (subbout.start.hour - start_hour) + \
+                    subbout.start.minute / increment
+            durPerPeriod[i] += np.true_divide(subboutSeconds, 60)
+
+    # Divide each period (in seconds) by ?
+    n = increment * (daysConsidered - weekendCorrection)
+    durations = np.true_divide(durPerPeriod, n)
+    # Return a tuple containing a list durations and a list of timepoints
+    return durations, timeaxis
                     
 def splitBout(bout,increment):
     """ Splits one bout in periods of <increment> minutes.
@@ -202,14 +260,14 @@ def splitBout(bout,increment):
         raise RuntimeError('Increments must divide 60 evenly')
     
     boutListOut = []
-    currtime = bout[0]
-    nexttime = bout[0]
-    while nexttime < bout[1]:
+    currtime = bout.start
+    nexttime = bout.start
+    while nexttime < bout.end:
         basemin = increment * ( currtime.minute / increment )
         nexttime = currtime.replace(minute=0,second=0,microsecond=0) + timedelta(0,0,0,0,basemin+increment)
-        if nexttime > bout[1]:
-            nexttime = bout[1]
-        boutListOut.append([currtime, nexttime])
+        if nexttime > bout.end:
+            nexttime = bout.end
+        boutListOut.append(Bout(currtime, nexttime))
         currtime = nexttime    
     return boutListOut
 
@@ -235,7 +293,7 @@ def generateReport( user_id, activeTimeThresh, start_date, end_date ):
     annotationEvents, ae_timeaxis = eventsPerInterval( nts + cts, start_date, end_date )
     reviewEvents, re_timeaxis = eventsPerInterval( rts, start_date, end_date )
 
-    activeBouts, eventsInBout = activeTimes( nts+cts+rts, activeTimeThresh )
+    activeBouts = list(activeTimes( nts+cts+rts, activeTimeThresh ))
     netActiveTime, at_timeaxis = activeTimesPerDay( activeBouts )
 
     dayformat = DateFormatter('%b %d')
@@ -305,17 +363,18 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
 
     # Draw all bouts
     for bout in activebouts:
-        if bout[0].day == bout[1].day:
-            isodate = bout[0].isocalendar()
-            daybegin = copy.copy(bout[0])
-            daybegin.replace(hour=0,minute=0,second=0,microsecond=0)
-            ax.bar( bout[0].replace(hour=0,minute=0,second=0,microsecond=0), np.true_divide( (bout[1]-bout[0]).total_seconds(), 3600 ),
-                bottom= bout[0].hour+ bout[0].minute/60.0 + bout[0].second/3600.0,alpha=0.5,color='#0000AA')
-    ax.set_ylim((0,24))
-    ax.set_xlim((start_date,end_date))
-    timeaxis = []
-    for d in range( (end_date-start_date).days ):
-        timeaxis.append(start_date + timedelta(d) )
+        # Ignore bouts that span accross midnight
+        # TODO: Draw midnight spanning bouts, too.
+        if bout.start.day == bout.end.day:
+            isodate = bout.start.isocalendar()
+            ax.bar( bout.start.replace(hour=0,minute=0,second=0,microsecond=0),
+                    np.true_divide((bout.end-bout.start).total_seconds(), 3600),
+                    bottom=bout.start.hour + bout.start.minute/60.0 + bout.start.second/3600.0,
+                    alpha=0.5, color='#0000AA')
+
+    # Set Axis limits
+    ax.set_ylim((0, 24))
+    ax.set_xlim((start_date, end_date))
 
     return ax
 

@@ -159,6 +159,10 @@ def activeTimesPerDay(active_bouts):
     between the first event of the first bout and the last event of the last
     bout as well as a list with the date for every day.
     """
+    # Return right away if there are no bouts
+    if not active_bouts:
+      return [], []
+
     # Find first event of first bout
     daystart = active_bouts[0].start.replace(
             hour=0, minute=0, second=0, microsecond=0)

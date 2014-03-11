@@ -817,7 +817,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
           // Start a new continuation to update the nodes,
           // ensuring that the desired active node will be loaded
           // (Could not be loaded if the user scrolled away between
-          // the creation of the node and its activation)
+          // the creation of the node and its activation).
+          // FIXME: This continuation is problematic if the callback is never
+          // executed. This is the case if the request made by updateNodes()
+          // gets reset. This leads to queue.shift() to be never executed and
+          // renders the queue therefore unusable. See issue #598 for more
+          // details.
           var q = queue[0];
           q.self.updateNodes(function () {
             q.self.selectNode(json.treenode_id);

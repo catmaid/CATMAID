@@ -1,6 +1,7 @@
 div.project-stats {
 	float: left;
 	margin: 4px;
+	width: 100%;
 }
 
 table.project-stats {

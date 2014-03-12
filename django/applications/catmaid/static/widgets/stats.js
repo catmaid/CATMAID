@@ -65,25 +65,86 @@ var ProjectStatistics = new function()
 
   var update_piechart = function(data, chart_name) {
     $(chart_name).empty();
-    var rpie = Raphael(chart_name, 500, 200);
-    var pie = rpie.piechart(90, 100, 80, data.values, { legend: data.users, legendpos: "east", colors:['red', 'blue', 'green', 'yellow', 'orange', 'black', 'gray']});
-    pie.hover(function () {
-      // scale everything up
-      this.sector.stop();
-      this.sector.scale(1.1, 1.1, this.cx, this.cy);
-      if (this.label) {
-        this.label[0].stop();
-        this.label[0].attr({ r: 7.5 });
-        this.label[1].attr({"font-weight": 800});
-      }
-    }, function () {
-      this.sector.animate({ transform: "s1 1 " + this.cx + " " + this.cy }, 500, "bounce");
-      if (this.label) {
-        this.label[0].animate({ r: 5 }, 500, "bounce");
-        this.label[1].attr({"font-weight": 400});
-      }
+    var x = 90, y = 100, radius = 80, height = 200;
+    // Create basic pie chart without any labels
+    var rpie = Raphael(chart_name, '100%', height);
+    var pie = rpie.piechart(x, y, radius, data.values, {
+        colors: ['red', 'blue', 'green', 'yellow', 'orange', 'black', 'gray'],
     });
-  }
+
+    /* Manually draw labels, because the legend can easily grow to large and
+     * Raphael has no way of dealing with this properly. Therefore, name columns
+     * are created manually if the list grows too long in Y. Of course, also the
+     * X can be maxed out and this is the reason the SVG's width is set to 100%.
+     */
+    pie.labels = rpie.set();
+    // Top left corner of the whole lefend
+    var legend_x = x + radius + 16;
+    var legend_y = y - radius;
+    // The height of one legend line
+    var line_height = 17;
+    // Shifting is needed for making columns if the list grows to long
+    var shift_x = 0, shift_y = 0;
+    // The current maximum label lengths, can increase over time
+    var max_label_width = 0;
+    // Draw all labels, including a colored circle in front of it
+    data.values.forEach(function(e, i, values) {
+      var circ_r = 5;
+      var text_indent = 2 * circ_r + 10;
+      var l_x = legend_x + shift_x;
+      var l_y = legend_y + i * line_height + shift_y;
+      // Make name columns if names don't fit under below each other
+      if (l_y + line_height > y + radius) {
+        shift_x = shift_x + max_label_width + text_indent + 16;
+        shift_y = shift_y - l_y;
+      }
+
+      var color = pie.series[i].attrs.fill;
+      // Draw leading color circle
+      var circle = rpie.circle(l_x + circ_r, l_y + circ_r, circ_r)
+          .attr({
+              'stroke': color,
+              'fill': color,
+          });
+      // Draw label
+      var text = rpie.text(l_x + 2 * circ_r + 10, l_y + circ_r, data.users[i])
+          .attr({
+              'text-anchor': 'start',
+              'font': '12px Arial, sans-serif',
+          });
+      // Find maximum text width
+      var bb = text.getBBox();
+      if (bb.width > max_label_width) {
+          max_label_width = bb.width;
+      }
+      // Remember label
+      pie.labels.push(rpie.set());
+      pie.labels[i].push(circle);
+      pie.labels[i].push(text);
+    });
+
+    // Add hover functionality
+    var current_label = null;
+    pie.hover(
+      function () {
+        // Scale everything up
+        this.sector.stop();
+        this.sector.scale(1.1, 1.1, this.cx, this.cy);
+        if (this.label) {
+          this.label[0].stop();
+          this.label[0].attr({ r: 7.5 });
+          this.label[1].attr({"font-weight": 800});
+        }
+      },
+      function () {
+        // Scale everything back to normal
+        this.sector.animate({ transform: "s1 1 " + this.cx + " " + this.cy }, 500, "bounce");
+        if (this.label) {
+          this.label[0].animate({ r: 5 }, 500, "bounce");
+          this.label[1].attr({"font-weight": 400});
+        }
+      });
+  };
   
   var parseDate = function(d) {
     var d_s = d.toString();

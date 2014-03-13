@@ -36,9 +36,9 @@ var ProjectStatistics = new function()
     $('#project_stats_history_table').empty();
     var header = '';
     header += '<tr>';
-    header += '<td>username</td>';
+    header += '<th>username</th>';
     for(var i = 0; i < data['days'].length; i++ ) {
-      header += '<td>'+data['daysformatted'][i]+'</td>';
+      header += '<th>'+data['daysformatted'][i]+'</th>';
     }
     header += '</tr>';
     $('#project_stats_history_table').append( header );

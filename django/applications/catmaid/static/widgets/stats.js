@@ -42,9 +42,10 @@ var ProjectStatistics = new function()
     }
     header += '</tr>';
     $('#project_stats_history_table').append( header );
+    var odd_row = true;
     for(var username in data['stats_table']) {
       var row = '', weekpointcount = 0;
-      row += '<tr>';
+      row += '<tr class="' + (odd_row ? "odd" : "") + '">';
       if( data['stats_table'].hasOwnProperty( username ) ) {
         row += '<td>' + username + '</td>';
         for(var i = 0; i < data['days'].length; i++ ) {
@@ -58,6 +59,9 @@ var ProjectStatistics = new function()
       if( weekpointcount === 0 ) {
         continue;
       } else {
+        // Flip odd row marker
+        odd_row = !odd_row;
+        // Add row
         $('#project_stats_history_table').append( row );
       }
     }

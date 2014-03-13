@@ -79,6 +79,7 @@ User.prototype.handleGetUsers = function(status, text, xml)
 	}
 	else
 	{
-		alert("The list of users could not be retrieved:\n\n\t" + text + "\n\n(" + status + ")");
+		new ErrorDialog("The list of users could not be retrieved.",
+			text + "\n\n(Status: " + status + ")").show();
 	}
 };

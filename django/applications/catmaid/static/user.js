@@ -87,3 +87,37 @@ User.prototype.handleGetUsers = function(status, text, xml)
       text + "\n\n(Status: " + status + ")").show();
   }
 };
+
+/**
+ * This userprofile class represents options that are set for a particular user.
+ */
+var Userprofile = function(profile) {
+  // Store all recognized options as a member
+  for (var field in this.getOptions()) {
+    // Raise an error if an expected field does not exist.
+    if (profile[field] === undefined || profile[field] === null) {
+      throw "The initialization data for the user profile is lacking the '" +
+          field + "' option!";
+    }
+    // Store the data if it is available
+    this[field] = profile[field];
+  }
+};
+
+/**
+ * Returns an object with all user profile members along with an option
+ * indicating whether users are allowed to modify these themselves.
+ */
+Userprofile.prototype.getOptions = function() {
+  return {
+    inverse_mouse_wheel: false,
+    display_stack_reference_lines: false,
+    independent_ontology_workspace_is_default: false,
+    show_text_label_tool: false,
+    show_tagging_tool: false,
+    show_cropping_tool: false,
+    show_segmentation_tool: false,
+    show_tracing_tool: false,
+    show_ontology_tool: false,
+  };
+};

@@ -54,7 +54,7 @@ var messageWindow = null;
 var rootWindow;
 
 // an object to store user profile properties
-var userprofile = {};
+var userprofile = null;
 
 var user_permissions = null;
 var user_groups = null;
@@ -232,11 +232,22 @@ function handle_logout(status, text, xml) {
  * tools in the toolbar.
  */
 function handle_profile_update(e) {
-  if (e.userprofile) {
-      userprofile = e.userprofile;
-  } else {
-      alert("The server returned no valid user profile.");
+  try {
+    if (e.userprofile) {
+      userprofile = new Userprofile(e.userprofile);
+    } else {
+      throw "The server returned no valid user profile.";
+    }
+  } catch (error) {
+    /* A valid user profile is needed to start CATMAID. This is a severe error
+     * and a message box will tell the user to report this problem.
+     */
+    new ErrorDialog("The user profile couldn't be loaded. This, however, is " +
+        "required to start CATMAID. Please report this problem to your " +
+        "administrator and try again later.", error).show();
+    return;
   }
+
   // update the edit tool actions and its div container
   createEditToolActions();
   var new_edit_actions = createButtonsFromActions(editToolActions,

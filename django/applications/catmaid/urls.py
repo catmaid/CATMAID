@@ -30,6 +30,7 @@ urlpatterns += patterns('catmaid.control.authentication',
 urlpatterns += patterns('catmaid.control.user',
     (r'^user-list$', 'user_list'),
     (r'^user-table-list$', 'user_list_datatable'),
+    (r'^user-profile/update$', 'update_user_profile'),
 )
 
 # Log

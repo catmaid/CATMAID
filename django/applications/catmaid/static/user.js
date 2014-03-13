@@ -111,7 +111,7 @@ var Userprofile = function(profile) {
 Userprofile.prototype.getOptions = function() {
   return {
     inverse_mouse_wheel: false,
-    display_stack_reference_lines: false,
+    display_stack_reference_lines: true,
     independent_ontology_workspace_is_default: false,
     show_text_label_tool: false,
     show_tagging_tool: false,
@@ -120,4 +120,42 @@ Userprofile.prototype.getOptions = function() {
     show_tracing_tool: false,
     show_ontology_tool: false,
   };
+};
+
+/**
+ * Makes the current user profile settings persistent in the back-end. Only
+ * settings that the user is actually allowed to modify are saved.
+ */
+Userprofile.prototype.saveAll = function(success, error) {
+  // Find all options that can be modified by the user
+  var options_to_save = {};
+  var option_permissions = this.getOptions();
+  for (var field in option_permissions) {
+    if (option_permissions[field]) {
+      options_to_save[field] = this[field] ? 1 : 0;
+    }
+  }
+  // Make the current set persistent
+  requestQueue.register(django_url + 'user-profile/update',
+      'POST',
+      options_to_save,
+      function (status, text, xml) {
+        if (status == 200 && text) {
+            var e = $.parseJSON(text);
+            if (e.error) {
+              new ErrorDialog("Couldn't update user settings!", e.error).show();
+              if (error) {
+                  error();
+              }
+            } else if (success){
+                success();
+            }
+        } else {
+            new ErrorDialog("Couldn't update user settings!", "Updating the " +
+                "user profile returned an unexpected status: " + status).show();
+            if (error) {
+                error();
+            }
+        }
+      });
 };

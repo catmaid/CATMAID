@@ -530,7 +530,18 @@ function Navigator()
 		self.checkbox_reflines.checked = userprofile.display_stack_reference_lines;
 		self.checkbox_reflines.onchange = function( e )
 		{
-			self.stack.showReferenceLines( this.checked );
+			// Save current user profile state
+			userprofile.display_stack_reference_lines = this.checked;
+			userprofile.saveAll(
+					(function() {
+						// Success, toggle lines
+						self.stack.showReferenceLines( this.checked );
+					}).bind(this),
+					(function() {
+						// Error, reset checkbox
+						this.checked = !this.checked;
+					}).bind(this));
+
 			return true;
 		};
 		

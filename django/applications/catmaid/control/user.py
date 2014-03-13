@@ -128,3 +128,28 @@ def distinct_user_color():
         distinct_color = colorsys.hsv_to_rgb(random(), random(), 1.0) + (1,)
     
     return distinct_color
+
+def update_user_profile(request):
+    """ Allows users to update some of their user settings, e.g. whether
+    reference lines should be visible. If the request is done by the anonymous
+    user, nothing is updated, but no error is raised.
+    """
+    # Ignore anonymous user
+    if request.user.is_anonymous():
+        return HttpResponse(json.dumps({'success': "The user profile of the " +
+                "anonymous user won't be updated"}), mimetype='text/json')
+
+    # Display stack reference lines
+    display_stack_reference_lines = request.POST.get(
+            'display_stack_reference_lines', None)
+    if display_stack_reference_lines:
+        display_stack_reference_lines = bool(int(display_stack_reference_lines))
+        # Set new user profile values
+        request.user.userprofile.display_stack_reference_lines = \
+                display_stack_reference_lines
+
+    # Save user profile
+    request.user.userprofile.save()
+
+    return HttpResponse(json.dumps({'success': 'Updated user profile'}),
+            mimetype='text/json')

@@ -157,7 +157,8 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
 
 SkeletonConnectivity.prototype._clearGUI = function() {
   // Clear table and plots
-  ["table", "plot_Upstream", "plot_Downstream"].forEach(function(name) {
+  var names = ["widget_name_list", "table", "plot_Upstream", "plot_Downstream"];
+  names.forEach(function(name) {
       var s = $('#connectivity_' + name + this.widgetID);
       if (s.length > 0) s.remove();
   }, this);
@@ -219,6 +220,37 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     // Clear table and plots
     this._clearGUI();
 
+    // Support function for creating a neuron/skeleton name link element in the
+    // neuron list and both pre- and postsynaptic tables.
+    var createNameElement = function(name, skeleton_id) {
+      var a = document.createElement('a');
+      a.innerText = name + ' #' + skeleton_id;
+      a.setAttribute('href', '#');
+      a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
+      a.onclick = function() {
+        TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
+        return false;
+      };
+      a.onmouseover = onmouseover;
+      a.onmouseout = onmouseout;
+      a.style.color = 'black';
+      a.style.textDecoration = 'none';
+      return a;
+    };
+
+    // Create neuron list
+    var neuronList = document.createElement("ul");
+    neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
+    Object.keys(this.skeletons).forEach(function(skid) {
+        var li = document.createElement("li");
+        li.setAttribute('id', 'li-connectivity-table-' + widgetID + '-' + skid);
+        li.appendChild(createNameElement(this.skeletons[skid], skid));
+        neuronList.appendChild(li);
+    }, this);
+
+    $("#connectivity_widget" + widgetID).prepend(neuronList);
+
+    // Create table for pre and postsynaptic partners
     var bigtable = $('<table />').attr('cellpadding', '0').attr('cellspacing', '0').attr('width', '100%').attr('id', 'connectivity_table' + widgetID).attr('border', '0');
     var row = $('<tr />')
     var incoming = $('<td />').attr('id', 'incoming_field').attr('valign', 'top');
@@ -248,22 +280,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
 
     var onmouseover = function() { this.style.textDecoration = 'underline'; }
     var onmouseout = function() { this.style.textDecoration = 'none'; };
-
-    var createNameElement = function(name, skeleton_id) {
-        var a = document.createElement('a');
-        a.innerText = name + ' #' + skeleton_id;
-        a.setAttribute('href', '#');
-        a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
-        a.onclick = function() {
-            TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
-            return false;
-        };
-        a.onmouseover = onmouseover;
-        a.onmouseout = onmouseout;
-        a.style.color = 'black';
-        a.style.textDecoration = 'none';
-        return a;
-    };
 
     var getBackgroundColor = function(reviewed) {
         if (100 === reviewed) {
@@ -427,17 +443,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     add_select_all_fn('up', table_incoming);
     add_select_all_fn('down', table_outgoing);
 
-    var neuronList = document.createElement("ul");
-    neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
-    Object.keys(this.skeletons).forEach(function(skid) {
-        var li = document.createElement("li");
-        li.setAttribute('id', 'li-connectivity-table-' + widgetID + '-' + skid);
-        li.appendChild(createNameElement(this.skeletons[skid], skid));
-        neuronList.appendChild(li);
-    }, this);
-
-    $("#connectivity_table" + widgetID).prepend(neuronList);
-            
     this.createSynapseDistributionPlots(json);
 };
 

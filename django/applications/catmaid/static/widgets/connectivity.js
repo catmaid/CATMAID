@@ -638,3 +638,47 @@ SkeletonConnectivity.prototype.createSynapseDistributionPlots = function(json) {
     makeMultipleBarChart(json.incoming, "#connectivity_widget" + this.widgetID, "Upstream" + this.widgetID);
     makeMultipleBarChart(json.outgoing, "#connectivity_widget" + this.widgetID, "Downstream" + this.widgetID);
 };
+
+SkeletonConnectivity.prototype.openPlot = function() {
+  if (0 === this.skeletons.length) {
+    alert("Load a graph first!");
+    return;
+  }
+  WindowMaker.create('connectivity-graph-plot', this.skeletons);
+  /*
+  var GP = CircuitGraphPlot.prototype.getLastInstance(),
+      models = this.getSkeletonModels(),
+      m = this.createAdjacencyMatrix();
+  GP.plot(m.skeleton_ids, models, m.AdjM);
+  */
+};
+
+/**
+ * A small widget to display a graph, plotting the number of upstream/downstream
+ * partners against the number of synapses. A list of skeleton_ids has to be
+ * passed to the constructor to display plots for these skeletons right away.
+ */
+var ConnectivityGraphPlot = function(skeletonIDs) {
+  this.skeletonIDs = skeletonIDs;
+  this.widgetID = this.registerInstance();
+};
+
+ConnectivityGraphPlot.prototype = {};
+$.extend(ConnectivityGraphPlot.prototype, new InstanceRegistry());
+
+// Implementation of InstanceRegistry and SkeletonSource interfaces
+
+ConnectivityGraphPlot.prototype.getName = function() {
+	return "Connectivity Graph Plot " + this.widgetID;
+};
+
+ConnectivityGraphPlot.prototype.destroy = function() {
+  this.unregisterInstance();
+
+  Object.keys(this).forEach(function(key) { delete this[key]; }, this);
+};
+
+ConnectivityGraphPlot.prototype.resize = function() {};
+
+ConnectivityGraphPlot.prototype.exportSVG = function() {};
+ConnectivityGraphPlot.prototype.exportCSV = function() {};

@@ -1620,6 +1620,12 @@ var WindowMaker = new function()
         link.onchange = SC.syncLink.bind(SC, link);
         contentbutton.appendChild(link);
 
+        var plot = document.createElement('input');
+        plot.setAttribute("type", "button");
+        plot.setAttribute("value", "Open plot");
+        plot.onclick = SC.openPlot.bind(SC);
+        contentbutton.appendChild(plot);
+
         content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" + widgetID );
@@ -1634,6 +1640,47 @@ var WindowMaker = new function()
         return win;
     };
 
+  var createConnectivityGraphPlot = function(instance) {
+    var GP = instance ? instance : new ConnectivityGraphPlot();
+
+    var win = new CMWWindow(GP.getName());
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var buttons = document.createElement('div');
+    buttons.setAttribute('id', 'connectivity_graph_plot_buttons' + GP.widgetID);
+
+    var xml = document.createElement('input');
+    xml.setAttribute("type", "button");
+    xml.setAttribute("value", "Export SVG");
+    xml.onclick = GP.exportSVG.bind(GP);
+    buttons.appendChild(xml);
+
+    var csv = document.createElement('input');
+    csv.setAttribute("type", "button");
+    csv.setAttribute("value", "Export CSV");
+    csv.onclick = GP.exportCSV.bind(GP);
+    buttons.appendChild(csv);
+
+    content.appendChild(buttons);
+
+    var container = createContainer('connectivity_graph_plot_div' + GP.widgetID);
+    content.appendChild(container);
+
+    var plot = document.createElement('div');
+    plot.setAttribute('id', 'connectivity_graph_plot' + GP.widgetID);
+    plot.style.width = "100%";
+    plot.style.height = "100%";
+    plot.style.backgroundColor = "#FFFFFF";
+    container.appendChild(plot);
+
+    addListener(win, container, 'connectivity_graph_plot_buttons' + GP.widgetID,
+            GP.destroy.bind(GP), GP.resize.bind(GP));
+
+    addLogic(win);
+
+    return win;
+  };
 
     var createAdjacencyMatrixWindow = function()
     {
@@ -2295,6 +2342,7 @@ var WindowMaker = new function()
     "create-connector-selection": createConnectorSelectionWindow,
     "skeleton-measurements-table": createSkeletonMeasurementsTable,
     "compartment-graph-widget": createCompartmentGraphWindow,
+    "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,
     "object-tree": createObjectTreeWindow,

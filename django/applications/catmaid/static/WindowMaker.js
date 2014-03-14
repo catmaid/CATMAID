@@ -746,7 +746,9 @@ var WindowMaker = new function()
 
     contentbutton.appendChild(document.createTextNode(' - '));
 
-    var layout = appendSelect(contentbutton, "compartment_layout", ["Force-directed", "Hierarchical", "Grid", "Circle", "Random", "Compound Spring Embedder" ]);
+    var layout = appendSelect(contentbutton, "compartment_layout",
+        ["Force-directed", "Hierarchical", "Grid", "Circle", "Random",
+            "Compound Spring Embedder", "Manual"]);
 
     var trigger = document.createElement('input');
     trigger.setAttribute('type', 'button');

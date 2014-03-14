@@ -318,7 +318,7 @@ CompartmentGraphWidget.prototype.init = function() {
 /** Unlocks of locked nodes, if any, when done. */
 CompartmentGraphWidget.prototype.updateLayout = function(layout) {
   var index = layout ? layout.selectedIndex : 0;
-  var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'random', 'cose'][index];
+  var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'random', 'cose', 'preset'][index];
   var options = this.createLayoutOptions(name);
   options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
   this.cy.layout( options );
@@ -420,6 +420,14 @@ CompartmentGraphWidget.prototype.createLayoutOptions = function(name) {
       coolingFactor: 0.95, 
       // Lower temperature threshold (below this point the layout will end)
       minTemp: 1
+    };
+  } else if ('preset' === name) {
+    options = {
+      name: 'preset',
+      // whether to fit to viewport
+      fit: true,
+      // padding on fit
+      padding: 30
     };
   }
 

@@ -116,15 +116,22 @@ SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
 };
 
 SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
+  var widgetID = this.widgetID;
   var skeletons = this.skeletons;
+  // Read out skeletons from neuron list
   var models = Object.keys(this.skeletons).reduce(function(o, skid) {
-    var name = skeletons[skid];
-    name = name.substring(0, name.lastIndexOf(' '));
-    o[skid] = new SelectionTable.prototype.SkeletonModel(skid, skeletons[skid], new THREE.Color().setRGB(1, 1, 0));
+    // Test if checked
+    var cb = $('#li-connectivity-table-' + widgetID + '-' + skid +
+        ' input[type=checkbox]');
+    if (cb.is(':checked')) {
+      var name = skeletons[skid];
+      name = name.substring(0, name.lastIndexOf(' '));
+      o[skid] = new SelectionTable.prototype.SkeletonModel(skid,
+          skeletons[skid], new THREE.Color().setRGB(1, 1, 0));
+    }
     return o;
   }, {});
 
-  var widgetID = this.widgetID;
   var colors = [new THREE.Color().setRGB(1, 0.4, 0.4),
                 new THREE.Color().setRGB(0.5, 1, 1),
                 new THREE.Color().setRGB(0.8, 0.6, 1)];
@@ -244,11 +251,17 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     Object.keys(this.skeletons).forEach(function(skid) {
         var li = document.createElement("li");
         li.setAttribute('id', 'li-connectivity-table-' + widgetID + '-' + skid);
-        li.appendChild(createNameElement(this.skeletons[skid], skid));
+        var cb = document.createElement("input");
+        cb.setAttribute("type", "checkbox");
+        cb.setAttribute("checked", "checked");
+        var label = document.createElement("label");
+        label.appendChild(cb);
+        label.appendChild(createNameElement(this.skeletons[skid], skid));
+        li.appendChild(label);
         neuronList.appendChild(li);
     }, this);
 
-    $("#connectivity_widget" + widgetID).prepend(neuronList);
+    $("#connectivity_widget" + widgetID).append(neuronList);
 
     // Create table for pre and postsynaptic partners
     var bigtable = $('<table />').attr('cellpadding', '0').attr('cellspacing', '0').attr('width', '100%').attr('id', 'connectivity_table' + widgetID).attr('border', '0');

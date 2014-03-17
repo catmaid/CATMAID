@@ -25,7 +25,7 @@ class SimpleTest(TestCase):
         self.assertEqual(1 + 1, 2)
 
 class TransactionTests(TransactionTestCase):
-    fixtures = ['testdata']
+    fixtures = ['catmaid_testdata']
 
     def test_successful_commit(self):
         def insert_user():
@@ -108,7 +108,7 @@ class TransactionTests(TransactionTestCase):
 
 
 class InsertionTest(TestCase):
-    fixtures = ['testdata']
+    fixtures = ['catmaid_testdata']
 
     def insert_project(self):
         p = Project()
@@ -156,7 +156,7 @@ class InsertionTest(TestCase):
 
 
 class RelationQueryTests(TestCase):
-    fixtures = ['testdata']
+    fixtures = ['catmaid_testdata']
 
     def setUp(self):
         self.test_project_id = 3
@@ -232,7 +232,7 @@ def swc_string_to_sorted_matrix(s):
 
 
 class ViewPageTests(TestCase):
-    fixtures = ['testdata']
+    fixtures = ['catmaid_testdata']
 
     def setUp(self):
         self.test_project_id = 3
@@ -2496,7 +2496,7 @@ class ViewPageTests(TestCase):
 
 
 class TreenodeTests(TestCase):
-    fixtures = ['testdata']
+    fixtures = ['catmaid_testdata']
 
     def setUp(self):
         self.test_project_id = 3

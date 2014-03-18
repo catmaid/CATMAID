@@ -577,7 +577,8 @@ ConnectivityGraphPlot.prototype.draw = function() {
    * partners that receive/make that many synapses from/onto the skeletons
    * involved (the active or the selected ones).
    */
-  var makeMultipleBarChart = function(skeletons, partners, container, title) {
+  var makeMultipleBarChart = function(skeletons, partners, container, title,
+        container_width) {
     // Cancel drawing if there is no data
     if (0 === Object.keys(partners).length) return null;
 
@@ -609,10 +610,15 @@ ConnectivityGraphPlot.prototype.draw = function() {
       return array;
     }, []);
 
+    // Don't let the canvas be less than 400px wide
+    if (container_width < 400) {
+      container_width = 400;
+    }
+
     // The SVG element representing the plot
     var margin = {top: 20, right: 20, bottom: 30, left: 40},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+        width = container_width - margin.left - margin.right,
+        height = container_width / 2 - margin.top - margin.bottom;
 
     var svg = d3.select(container).append("svg")
         .attr("id", "connectivity_plot_" + title) // already has widgetID in it
@@ -711,11 +717,12 @@ ConnectivityGraphPlot.prototype.draw = function() {
 
   // Clear existing plot, if any
   var containerID = '#connectivity_graph_plot_div' + this.widgetID;
-  $(containerID).empty();
+  var container = $(containerID);
+  container.empty()
 
   // Draw plots
   makeMultipleBarChart(this.skeletons, this.incoming, containerID,
-      "Upstream" + this.widgetID);
+      "Upstream" + this.widgetID, container.width());
   makeMultipleBarChart(this.skeletons, this.outgoing, containerID,
-      "Downstream" + this.widgetID);
+      "Downstream" + this.widgetID, container.width());
 };

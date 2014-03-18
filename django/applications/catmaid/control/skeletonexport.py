@@ -63,7 +63,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
 
-def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=0):
+def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=0, all_field=False):
     """ with_connectors: when False, connectors are not returned
         lean: when not zero, both connectors and tags are returned as empty arrays. """
     skeleton_id = int(skeleton_id) # sanitize
@@ -88,12 +88,17 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
     name = row[0]
 
+    if all_field:
+        added_fields = ', creation_time, edition_time, review_time'
+    else:
+        added_fields = ''
+
     # Fetch all nodes, with their tags if any
     cursor.execute(
-        '''SELECT id, parent_id, user_id, reviewer_id, (location).x, (location).y, (location).z, radius, confidence
+        '''SELECT id, parent_id, user_id, reviewer_id, (location).x, (location).y, (location).z, radius, confidence %s
           FROM treenode
           WHERE skeleton_id = %s
-        ''' % skeleton_id)
+        ''' % (added_fields, skeleton_id) )
 
     # array of properties: id, parent_id, user_id, reviewer_id, x, y, z, radius, confidence
     nodes = tuple(cursor.fetchall())
@@ -119,16 +124,21 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             tags[row[1]].append(row[0])
 
         if with_connectors:
+                if all_field:
+                    added_fields = ', c.creation_time, c.review_time'
+                else:
+                    added_fields = ''
+
             # Fetch all connectors with their partner treenode IDs
             cursor.execute(
-                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location, c.reviewer_id
+                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location, c.reviewer_id %s
                     FROM treenode_connector tc,
                          connector c,
                          relation r
                     WHERE tc.skeleton_id = %s
                       AND tc.connector_id = c.id
                       AND tc.relation_id = r.id
-                ''' % skeleton_id)
+                ''' % (added_fields, skeleton_id) )
             # Above, purposefully ignoring connector tags. Would require a left outer join on the inner join of connector_class_instance and class_instance, and frankly connector tags are pointless in the 3d viewer.
 
             # List of (treenode_id, connector_id, relation_id, x, y, z)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
@@ -143,7 +153,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
-    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=request.POST.get('with_connectors', True), lean=int(request.POST.get('lean', 0))), separators=(',', ':')))
+    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=request.POST.get('with_connectors', True), lean=int(request.POST.get('lean', 0)), all_field=request.POST.get('all_fields', False)), separators=(',', ':')))
 
 
 def _measure_skeletons(skeleton_ids):
@@ -302,6 +312,7 @@ def measure_skeletons(request, project_id=None):
     def asRow(skid, sk):
         return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_ends, sk.n_branch, sk.principal_branch_cable)
     return HttpResponse(json.dumps([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).iteritems()]))
+
 
 def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     skeleton_id = int(skeleton_id) # sanitize

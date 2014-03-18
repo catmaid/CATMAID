@@ -1656,12 +1656,6 @@ var WindowMaker = new function()
     xml.onclick = GP.exportSVG.bind(GP);
     buttons.appendChild(xml);
 
-    var csv = document.createElement('input');
-    csv.setAttribute("type", "button");
-    csv.setAttribute("value", "Export CSV");
-    csv.onclick = GP.exportCSV.bind(GP);
-    buttons.appendChild(csv);
-
     content.appendChild(buttons);
 
     var container = createContainer('connectivity_graph_plot_div' + GP.widgetID);

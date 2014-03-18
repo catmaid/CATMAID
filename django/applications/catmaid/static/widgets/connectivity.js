@@ -537,8 +537,6 @@ ConnectivityGraphPlot.prototype.exportSVG = function() {
   saveAs(blob, 'downstream_connectivity_chart.svg');
 };
 
-ConnectivityGraphPlot.prototype.exportCSV = function() {};
-
 /**
  * Creates two distribution d3 plots, one for up stream and the other ones for
  * downstream neurons.

@@ -1814,8 +1814,8 @@ var SkeletonAnnotations = new function()
 
       //adaptively calculate nearest neighbor to set a bounding box in the search      
       var xCurr = self.pix2physX(nodes[treenode_id].x);
-      var yCurr = self.pix2physX(nodes[treenode_id].y);
-      var zCurr = self.pix2physX(nodes[treenode_id].z);
+      var yCurr = self.pix2physY(nodes[treenode_id].y);
+      var zCurr = self.pix2physZ(nodes[treenode_id].z);
       var tCurr = nodes[treenode_id].t;
 
       var xdiff, ydiff, zdiff, distsq, nearestnode = null, mindistsq = 1e32, node, nodeid;
@@ -1894,8 +1894,8 @@ var SkeletonAnnotations = new function()
 
       //adaptively calculate nearest neighbor to set a bounding box in the search      
       var xCurr = self.pix2physX(nodes[treenode_id].x);
-      var yCurr = self.pix2physX(nodes[treenode_id].y);
-      var zCurr = self.pix2physX(nodes[treenode_id].z);
+      var yCurr = self.pix2physY(nodes[treenode_id].y);
+      var zCurr = self.pix2physZ(nodes[treenode_id].z);
       var tCurr = nodes[treenode_id].t;
 
       var xdiff, ydiff, zdiff, distsq, nearestnode = null, mindistsq = 1e32, node, nodeid;

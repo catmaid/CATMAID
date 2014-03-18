@@ -515,7 +515,28 @@ ConnectivityGraphPlot.prototype.resize = function() {
   this.draw();
 };
 
-ConnectivityGraphPlot.prototype.exportSVG = function() {};
+/**
+ * Makes the browser download the upstream and downstream SVGs as two separate
+ * files.
+ */
+ConnectivityGraphPlot.prototype.exportSVG = function() {
+  var div = document.getElementById('connectivity_graph_plot_div' + this.widgetID);
+  if (!div) return;
+  var images = div.getElementsByTagName('svg');
+  if (!images || images.length != 2) {
+    alert("Couldn't find expected number of images");
+    return;
+  }
+  // Export upstream image
+  var xml = new XMLSerializer().serializeToString(images[0]);
+  var blob = new Blob([xml], {type : 'text/xml'});
+  saveAs(blob, 'upstream_connectivity_chart.svg');
+  // Export downstream image
+  xml = new XMLSerializer().serializeToString(images[1]);
+  blob = new Blob([xml], {type : 'text/xml'});
+  saveAs(blob, 'downstream_connectivity_chart.svg');
+};
+
 ConnectivityGraphPlot.prototype.exportCSV = function() {};
 
 /**

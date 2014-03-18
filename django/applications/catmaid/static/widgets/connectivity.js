@@ -5,6 +5,8 @@
 
 var SkeletonConnectivity = function() {
   this.skeletons = {}; // skeletonID, skeletonTitle;
+  this.incoming = {};
+  this.outgoing = {};
   this.widgetID = this.registerInstance();
   this.registerSource();
 };
@@ -164,7 +166,7 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
 
 SkeletonConnectivity.prototype._clearGUI = function() {
   // Clear table and plots
-  var names = ["widget_name_list", "table", "plot_Upstream", "plot_Downstream"];
+  var names = ["widget_name_list", "table"];
   names.forEach(function(name) {
       var s = $('#connectivity_' + name + this.widgetID);
       if (s.length > 0) s.remove();
@@ -216,9 +218,15 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     if (200 !== status) { return; }
     var json = $.parseJSON(text);
     if (json.error) {
+        this.incoming = {};
+        this.outgoing = {};
         alert(json.error);
         return;
     }
+
+    // Save reference of incoming and outcoming nodes
+    this.incoming = json.incoming;
+    this.outgoing = json.outgoing
 
     var widgetID = this.widgetID;
     var getLinkTarget = this.getLinkTarget.bind(this);
@@ -455,202 +463,19 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
 
     add_select_all_fn('up', table_incoming);
     add_select_all_fn('down', table_outgoing);
-
-    this.createSynapseDistributionPlots(json);
-};
-
-SkeletonConnectivity.prototype.createSynapseDistributionPlots = function(json) {
-    // A grouped bar chart plot from d3.js
-    
-    var skeletons = this.skeletons;
-
-    /** Generate a distribution of number of Y partners that have X synapses,
-     * for each partner. The distribution then takes the form of an array of blocks,
-     * where every block is an array of objects like {skid: <skeleton_id>, count: <partner count>}.
-     * The skeleton_node_count_threshold is used to avoid skeletons whose node count is too small, like e.g. a single node. */
-    var distribution = function(partners, skeleton_node_count_threshold) {
-        var d = Object.keys(partners)
-            .reduce(function(ob, partnerID) {
-                var props = partners[partnerID];
-                if (props.num_nodes < skeleton_node_count_threshold) {
-                    return ob;
-                }
-                var skids = props.skids;
-                return Object.keys(skids)
-                    .reduce(function(ob, skid) {
-                        if (!ob.hasOwnProperty(skid)) ob[skid] = [];
-                        var synapse_count = skids[skid];
-                        if (!ob[skid].hasOwnProperty(synapse_count)) ob[skid][synapse_count] = 1;
-                        else ob[skid][synapse_count] += 1;
-                        return ob;
-                    }, ob);
-                }, {});
-
-        // Find out which is the longest array
-        var max_length = Object.keys(d).reduce(function(length, skid) {
-            return Math.max(length, d[skid].length);
-        }, 0);
-
-        // Reformat to an array of arrays where the index of the array is the synaptic count minus 1 (arrays are zero-based), and each inner array has objects with {skid, count} keys
-        var a = [];
-        var skids = Object.keys(d);
-        for (var i = 1; i < max_length; ++i) {
-            a[i-1] = skids.reduce(function(block, skid) {
-                var count = d[skid][i];
-                if (count) block.push({skid: skid, count: count});
-                return block;
-            }, []);
-        }
-
-        return a;
-    };
-
-    /** A multiple bar chart that shows the number of synapses vs the number of partners that receive/make that many synapses from/onto the skeletons involved (the active or the selected ones). */
-    var makeMultipleBarChart = function(partners, container, title) {
-        if (0 === Object.keys(partners).length) return null;
-
-        // Prepare data: (skip skeletons with less than 2 nodes)
-        var a = distribution(partners, 2);
-
-        // The skeletons involved (the active, or the selected and visible)
-        var skids = Object.keys(a.reduce(function(unique, block) {
-            if (block) block.forEach(function(ob) { unique[ob.skid] = null; });
-            return unique;
-        }, {}));
-
-        if (0 === skids.length) return null;
-
-        // Colors: an array of hex values
-        var zeroPad = function(s) { return ("0" + s).slice(-2); }
-        var colors = skids.reduce(function(array, skid, i) {
-            // Start at Red 255, decrease towards 0
-            //          Green 100, increase towards 255
-            //          Blue 200, decrease towards 50
-            var ratio = (skids.length - i) / skids.length;
-            var red = 255 * ratio;
-            var green = 100 + 155 * (1 - ratio);
-            var blue = 50 + 150 * ratio;
-            array.push("#"
-                + zeroPad(Number(red | 0).toString(16))
-                + zeroPad(Number(green | 0).toString(16))
-                + zeroPad(Number(blue | 0).toString(16))); // as hex
-            return array;
-        }, []);
-
-        // The SVG element representing the plot
-        var margin = {top: 20, right: 20, bottom: 30, left: 40},
-            width = 960 - margin.left - margin.right,
-            height = 500 - margin.top - margin.bottom;
-
-        var svg = d3.select(container).append("svg")
-            .attr("id", "connectivity_plot_" + title) // already has widgetID in it
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-        // Define the data domains/axes
-        var x0 = d3.scale.ordinal().rangeRoundBands([0, width], .1);
-        var x1 = d3.scale.ordinal();
-        var y = d3.scale.linear().range([height, 0]);
-        var xAxis = d3.svg.axis().scale(x0)
-                                 .orient("bottom");
-        var yAxis = d3.svg.axis().scale(y)
-                                 .orient("left")
-                                 .tickFormat(d3.format("d")); // "d" means integer, see https://github.com/mbostock/d3/wiki/Formatting#wiki-d3_format
-
-
-        // Define the ranges of the axes
-        // x0: For the counts of synapses
-        x0.domain(a.map(function(block, i) { return i+1; }));
-        // x1: For the IDs of the skeletons within each synapse count bin
-        x1.domain(skids).rangeRoundBands([0, x0.rangeBand()]);
-        // y: the number of partners that have that number of synapses
-        var max_count = a.reduce(function(c, block) {
-            return block.reduce(function(c, sk) {
-                return Math.max(c, sk.count);
-            }, c);
-        }, 0);
-        y.domain([0, max_count]);
-
-        // Color for the bar chart bars
-        var color = d3.scale.ordinal().range(colors);
-
-        // Insert the data
-        var state = svg.selectAll(".state")
-            .data(a)
-          .enter().append('g')
-            .attr('class', 'g')
-            .attr('transform', function(a, i) { return "translate(" + x0(i+1) + ", 0)"; }); // x0(i+1) has a +1 because the array is 0-based
-
-        // Define how each bar of the bar chart is drawn
-        state.selectAll("rect")
-            .data(function(block) { return block; })
-          .enter().append("rect")
-            .attr("width", x1.rangeBand())
-            .attr("x", function(sk) { return x1(sk.skid); })
-            .attr("y", function(sk) { return y(sk.count); })
-            .attr("height", function(sk) { return height - y(sk.count); })
-            .style("fill", function(sk) { return color(sk.skid); });
-
-        // Insert the graphics for the axes (after the data, so that they draw on top)
-        svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis)
-          .append("text")
-            .attr("x", width)
-            .attr("y", -6)
-            .style("text-anchor", "end")
-            .text("N synapses");
-
-        svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-          .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".71em")
-            .style("text-anchor", "end")
-            .text("N " + title + " Partners");
-
-        // The legend: which skeleton is which
-        var legend = svg.selectAll(".legend")
-            .data(skids.map(function(skid) { return skeletons[skid]; } ))
-          .enter().append("g")
-            .attr("class", "legend")
-            .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-        legend.append("rect")
-            .attr("x", width - 18)
-            .attr("width", 18)
-            .attr("height", 18)
-            .style("fill", color);
-
-        legend.append("text")
-            .attr("x", width - 24)
-            .attr("y", 9)
-            .attr("dy", ".35em")
-            .style("text-anchor", "end")
-            .text(function(d) { return d; });
-    };
-
-    makeMultipleBarChart(json.incoming, "#connectivity_widget" + this.widgetID, "Upstream" + this.widgetID);
-    makeMultipleBarChart(json.outgoing, "#connectivity_widget" + this.widgetID, "Downstream" + this.widgetID);
 };
 
 SkeletonConnectivity.prototype.openPlot = function() {
-  if (0 === this.skeletons.length) {
-    alert("Load a graph first!");
+  if (0 === Object.keys(this.skeletons).length) {
+    alert("Load at least one skeleton first!");
     return;
   }
-  WindowMaker.create('connectivity-graph-plot', this.skeletons);
-  /*
-  var GP = CircuitGraphPlot.prototype.getLastInstance(),
-      models = this.getSkeletonModels(),
-      m = this.createAdjacencyMatrix();
-  GP.plot(m.skeleton_ids, models, m.AdjM);
-  */
+  // Create a new connectivity graph plot and hand it to the window maker to
+  // show it in a new widget.
+  var GP = new ConnectivityGraphPlot(this.skeletons, this.incoming,
+      this.outgoing);
+  WindowMaker.create('connectivity-graph-plot', GP);
+  GP.draw();
 };
 
 /**
@@ -658,27 +483,239 @@ SkeletonConnectivity.prototype.openPlot = function() {
  * partners against the number of synapses. A list of skeleton_ids has to be
  * passed to the constructor to display plots for these skeletons right away.
  */
-var ConnectivityGraphPlot = function(skeletonIDs) {
-  this.skeletonIDs = skeletonIDs;
+var ConnectivityGraphPlot = function(skeletons, incoming, outgoing) {
+  this.skeletons = skeletons;
+  this.incoming = incoming;
+  this.outgoing = outgoing;
   this.widgetID = this.registerInstance();
 };
 
 ConnectivityGraphPlot.prototype = {};
 $.extend(ConnectivityGraphPlot.prototype, new InstanceRegistry());
 
-// Implementation of InstanceRegistry and SkeletonSource interfaces
-
+/**
+ * Return name of this widget.
+ */
 ConnectivityGraphPlot.prototype.getName = function() {
 	return "Connectivity Graph Plot " + this.widgetID;
 };
 
+/**
+ * Custom destrpy handler, that deletes all fields of this instance when called.
+ */
 ConnectivityGraphPlot.prototype.destroy = function() {
   this.unregisterInstance();
-
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
 
-ConnectivityGraphPlot.prototype.resize = function() {};
+/**
+ * Custom resize handler, that redraws the graphs when called.
+ */
+ConnectivityGraphPlot.prototype.resize = function() {
+  this.draw();
+};
 
 ConnectivityGraphPlot.prototype.exportSVG = function() {};
 ConnectivityGraphPlot.prototype.exportCSV = function() {};
+
+/**
+ * Creates two distribution d3 plots, one for up stream and the other ones for
+ * downstream neurons.
+ */
+ConnectivityGraphPlot.prototype.draw = function() {
+  /**
+   * Generate a distribution of number of Y partners that have X synapses, for
+   * each partner. The distribution then takes the form of an array of blocks,
+   * where every block is an array of objects like {skid: <skeleton_id>,
+   * count: <partner count>}.  The skeleton_node_count_threshold is used to
+   * avoid skeletons whose node count is too small, like e.g. a single node.
+   */
+  var distribution = function(partners, skeleton_node_count_threshold) {
+    var d = Object.keys(partners)
+        .reduce(function(ob, partnerID) {
+          var props = partners[partnerID];
+          if (props.num_nodes < skeleton_node_count_threshold) {
+            return ob;
+          }
+          var skids = props.skids;
+          return Object.keys(skids)
+              .reduce(function(ob, skid) {
+                if (!ob.hasOwnProperty(skid)) ob[skid] = [];
+                var synapse_count = skids[skid];
+                if (!ob[skid].hasOwnProperty(synapse_count)) {
+                  ob[skid][synapse_count] = 1;
+                } else {
+                  ob[skid][synapse_count] += 1;
+                }
+                return ob;
+              }, ob);
+          }, {});
+
+    // Find out which is the longest array
+    var max_length = Object.keys(d).reduce(function(length, skid) {
+      return Math.max(length, d[skid].length);
+    }, 0);
+
+    /* Reformat to an array of arrays where the index of the array is the
+     * synaptic count minus 1 (arrays are zero-based), and each inner array
+     * has objects with {skid, count} keys. */
+    var a = [];
+    var skids = Object.keys(d);
+    for (var i = 1; i < max_length; ++i) {
+      a[i-1] = skids.reduce(function(block, skid) {
+        var count = d[skid][i];
+        if (count) block.push({skid: skid, count: count});
+        return block;
+      }, []);
+    }
+
+    return a;
+  };
+
+  /**
+   * A multiple bar chart that shows the number of synapses vs the number of
+   * partners that receive/make that many synapses from/onto the skeletons
+   * involved (the active or the selected ones).
+   */
+  var makeMultipleBarChart = function(skeletons, partners, container, title) {
+    // Cancel drawing if there is no data
+    if (0 === Object.keys(partners).length) return null;
+
+    // Prepare data: (skip skeletons with less than 2 nodes)
+    var a = distribution(partners, 2);
+
+    // The skeletons involved (the active, or the selected and visible)
+    var skids = Object.keys(a.reduce(function(unique, block) {
+      if (block) block.forEach(function(ob) { unique[ob.skid] = null; });
+      return unique;
+    }, {}));
+
+    if (0 === skids.length) return null;
+
+    // Colors: an array of hex values
+    var zeroPad = function(s) { return ("0" + s).slice(-2); }
+    var colors = skids.reduce(function(array, skid, i) {
+      // Start at Red 255, decrease towards 0
+      //          Green 100, increase towards 255
+      //          Blue 200, decrease towards 50
+      var ratio = (skids.length - i) / skids.length;
+      var red = 255 * ratio;
+      var green = 100 + 155 * (1 - ratio);
+      var blue = 50 + 150 * ratio;
+      array.push("#"
+          + zeroPad(Number(red | 0).toString(16))
+          + zeroPad(Number(green | 0).toString(16))
+          + zeroPad(Number(blue | 0).toString(16))); // as hex
+      return array;
+    }, []);
+
+    // The SVG element representing the plot
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var svg = d3.select(container).append("svg")
+        .attr("id", "connectivity_plot_" + title) // already has widgetID in it
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Define the data domains/axes
+    var x0 = d3.scale.ordinal().rangeRoundBands([0, width], .1);
+    var x1 = d3.scale.ordinal();
+    var y = d3.scale.linear().range([height, 0]);
+    var xAxis = d3.svg.axis().scale(x0)
+                             .orient("bottom");
+    // "d" means integer, see
+    // https://github.com/mbostock/d3/wiki/Formatting#wiki-d3_format
+    var yAxis = d3.svg.axis().scale(y)
+                             .orient("left")
+                             .tickFormat(d3.format("d"));
+
+
+    // Define the ranges of the axes
+    // x0: For the counts of synapses
+    x0.domain(a.map(function(block, i) { return i+1; }));
+    // x1: For the IDs of the skeletons within each synapse count bin
+    x1.domain(skids).rangeRoundBands([0, x0.rangeBand()]);
+    // y: the number of partners that have that number of synapses
+    var max_count = a.reduce(function(c, block) {
+      return block.reduce(function(c, sk) {
+        return Math.max(c, sk.count);
+      }, c);
+    }, 0);
+    y.domain([0, max_count]);
+
+    // Color for the bar chart bars
+    var color = d3.scale.ordinal().range(colors);
+
+    // Insert the data
+    var state = svg.selectAll(".state")
+        .data(a)
+      .enter().append('g')
+        .attr('class', 'g')
+        .attr('transform', function(a, i) { return "translate(" + x0(i+1) + ", 0)"; }); // x0(i+1) has a +1 because the array is 0-based
+
+    // Define how each bar of the bar chart is drawn
+    state.selectAll("rect")
+        .data(function(block) { return block; })
+      .enter().append("rect")
+        .attr("width", x1.rangeBand())
+        .attr("x", function(sk) { return x1(sk.skid); })
+        .attr("y", function(sk) { return y(sk.count); })
+        .attr("height", function(sk) { return height - y(sk.count); })
+        .style("fill", function(sk) { return color(sk.skid); });
+
+    // Insert the graphics for the axes (after the data, so that they draw on top)
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+      .append("text")
+        .attr("x", width)
+        .attr("y", -6)
+        .style("text-anchor", "end")
+        .text("N synapses");
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+      .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("N " + title + " Partners");
+
+    // The legend: which skeleton is which
+    var legend = svg.selectAll(".legend")
+        .data(skids.map(function(skid) { return skeletons[skid]; } ))
+      .enter().append("g")
+        .attr("class", "legend")
+        .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+    legend.append("rect")
+        .attr("x", width - 18)
+        .attr("width", 18)
+        .attr("height", 18)
+        .style("fill", color);
+
+    legend.append("text")
+        .attr("x", width - 24)
+        .attr("y", 9)
+        .attr("dy", ".35em")
+        .style("text-anchor", "end")
+        .text(function(d) { return d; });
+  };
+
+  // Clear existing plot, if any
+  var containerID = '#connectivity_graph_plot_div' + this.widgetID;
+  $(containerID).empty();
+
+  // Draw plots
+  makeMultipleBarChart(this.skeletons, this.incoming, containerID,
+      "Upstream" + this.widgetID);
+  makeMultipleBarChart(this.skeletons, this.outgoing, containerID,
+      "Downstream" + this.widgetID);
+};

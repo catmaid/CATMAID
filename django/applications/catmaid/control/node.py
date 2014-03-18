@@ -360,8 +360,8 @@ def update_confidence(request, project_id=None, node_id=0):
     can_edit_or_fail(request.user, tnid, 'treenode')
 
     new_confidence = int(request.POST.get('new_confidence', 0))
-    if new_confidence < 1 or new_confidence > 5:
-        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
+    if new_confidence < 0 or new_confidence > 5:
+        return HttpResponse(json.dumps({'error': 'Confidence not in range 0-5 inclusive.'}))
     to_connector = request.POST.get('to_connector', 'false') == 'true'
     if to_connector:
         # Could be more than one. The GUI doesn't allow for specifying to which one.
@@ -699,8 +699,144 @@ def find_previous_branchnode_or_root(request, project_id=None):
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_previous_likely_lineage_error(request, project_id=None):
+    try:
+        tnid = int(request.POST['tnid'])
+        max_dist = float(request.POST['max_dist'])#distance to search around the lineage
+        zres = float(request.POST['zres'])
+        skid = Treenode.objects.get(pk=tnid).skeleton_id
+        graph = _skeleton_as_graph(skid)
+        # Travel upstream until finding a parent node with more than one child 
+        # or reaching the root node
+        while True:
+            parents = graph.predecessors(tnid)
+            #change confidence to 5 since this is the guidance system            
+            Treenode.objects.filter(id=tnid).update(confidence=5,editor=request.user)
+            if parents: # list of parents is not empty
+                tnid = parents[0] # Can only have one parent
+                #check if confidence of this node is already zero (so we do not have to look around)
+                qs = Treenode.objects.get(pk=tnid)
+                if qs.confidence == 0:
+                    break
+                #check for neighbors around it to see if there low confidence ones            
+                #find info about neighboring nodes
+                params = {}                                
+                params['project_id'] = project_id
+                params['zUpper'] = qs.location.z + 3 * zres + 0.0001
+                params['zLower'] = qs.location.z - 3 * zres - 0.0001
+                params['xUpper'] = qs.location.x + max_dist
+                params['xLower'] = qs.location.x - max_dist
+                params['yUpper'] = qs.location.y + max_dist
+                params['yLower'] = qs.location.y - max_dist
+                params['channel'] = qs.location_c
+                params['tCurr'] = qs.location_t
+                
 
+                cursor = connection.cursor()
+                # Fetch treenodes which are in the bounding box,
+                # which in z it includes the full thickess of the prior section
+                # and of the next section (therefore the '<' and not '<=' for zhigh)
+                response_on_error = 'Failed to query treenodes'
+                cursor.execute('''
+                SELECT
+                    count(id)                    
+                FROM treenode                
+                WHERE 
+                    project_id = %(project_id)s
+                    AND (location).z <= %(zUpper)s
+                    AND (location).z >= %(zLower)s
+                    AND (location).x <= %(xUpper)s
+                    AND (location).x >= %(xLower)s
+                    AND (location).y <= %(yUpper)s
+                    AND (location).y >= %(yLower)s
+                    AND location_t = %(tCurr)s
+                    AND location_c = %(channel)s
+                    AND confidence = 0
+                    ''', params)
 
+                #just count if the query retrieved any element
+                count = cursor.fetchone()
+                if count[0] > 0:
+                    break;#We need to stop since we found a neighbor with low confidence
+            else:
+                break # Found the root node
+
+        
+
+        return HttpResponse(json.dumps(_fetch_location(tnid)))
+    except Exception as e:
+        raise Exception('Could not obtain previous branch node or root:' + str(e))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_next_likely_lineage_error(request, project_id=None):
+    try:
+        tnid = int(request.POST['tnid'])
+        max_dist = float(request.POST['max_dist'])#distance to search around the lineage
+        zres = float(request.POST['zres'])
+        skid = Treenode.objects.get(pk=tnid).skeleton_id
+        graph = _skeleton_as_graph(skid)
+        
+        # Travel downstream until finding a child node with more than one child
+        # or reaching an end node
+        while True:
+            #change confidence to 5 since this is the guidance system            
+            Treenode.objects.filter(id=tnid).update(confidence=5,editor=request.user)
+
+            children = graph.successors(tnid)
+            if 1 == len(children):
+                tnid = children[0]
+            else:
+                break # Found an end node or a branch node
+            #check if confidence of this node is already zero (so we do not have to look around)
+            qs = Treenode.objects.get(pk=tnid)
+            if qs.confidence == 0:
+                break
+                
+            #check for neighbors around it to see if there low confidence ones            
+            #find info about neighboring nodes
+            params = {}                                
+            params['project_id'] = project_id
+            params['zUpper'] = qs.location.z + 3 * zres + 0.0001
+            params['zLower'] = qs.location.z - 3 * zres - 0.0001
+            params['xUpper'] = qs.location.x + max_dist
+            params['xLower'] = qs.location.x - max_dist
+            params['yUpper'] = qs.location.y + max_dist
+            params['yLower'] = qs.location.y - max_dist
+            params['channel'] = qs.location_c
+            params['tCurr'] = qs.location_t
+            
+
+            cursor = connection.cursor()
+            # Fetch treenodes which are in the bounding box,
+            # which in z it includes the full thickess of the prior section
+            # and of the next section (therefore the '<' and not '<=' for zhigh)
+            response_on_error = 'Failed to query treenodes'
+            cursor.execute('''
+            SELECT
+                count(id)                    
+            FROM treenode                
+            WHERE 
+                project_id = %(project_id)s
+                AND (location).z <= %(zUpper)s
+                AND (location).z >= %(zLower)s
+                AND (location).x <= %(xUpper)s
+                AND (location).x >= %(xLower)s
+                AND (location).y <= %(yUpper)s
+                AND (location).y >= %(yLower)s
+                AND location_t = %(tCurr)s
+                AND location_c = %(channel)s
+                AND confidence = 0
+                ''', params)
+
+            #just count if the query retrieved any element
+            count = cursor.fetchone()
+            if count[0] > 0:
+                break;#We need to stop since we found a neighbor with low confidence            
+
+        return HttpResponse(json.dumps(_fetch_location(tnid)))
+    except Exception as e:
+        raise Exception('Could not obtain previous branch node or root:' + str(e))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def find_next_lowest_confidence(request, project_id=None):

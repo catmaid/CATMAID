@@ -775,6 +775,19 @@ this.addAction( new Action({
   }) );
 
   this.addAction( new Action({
+    helpText: "Error guidance system: go backwards in lineage to find a node likely to contain an error (Ctrl: forward in time)",
+    keyShortcuts: {
+      "C": [ 67 ]
+    },
+    run: function (e) {
+      if (!mayEdit())
+        return false;
+      tracingLayer.svgOverlay.tracingCommand('selectlikelyerror',e);
+      return true;   
+    }
+  }) );
+
+  this.addAction( new Action({
     helpText: "Create treenode with z axis interpolation (Shift on another node: interpolate and join)",
     keyShortcuts: {
       'Z': [ 90 ]
@@ -799,6 +812,21 @@ this.addAction( new Action({
       return true;
     }
   }) );
+
+
+  this.addAction( new Action({
+    helpText: "Set confidence in node link to 0 (Alt: with a connector)",
+    keyShortcuts: {
+      '0': [ 48 ]
+    },
+    run: function (e) {
+      if (!mayEdit())
+        return false;
+      tracingLayer.svgOverlay.setConfidence(0, e.altKey);
+      return true;
+    }
+  }) );
+
 
   this.addAction( new Action({
     helpText: "Set confidence in node link to 1 (Alt: with a connector)",

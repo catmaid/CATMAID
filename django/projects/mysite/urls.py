@@ -129,6 +129,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/node/update$', 'catmaid.control.node_update'),
     (r'^(?P<project_id>\d+)/node/list$', 'catmaid.control.node_list_tuples'),
     (r'^(?P<project_id>\d+)/node/previous_branch_or_root$', 'catmaid.control.find_previous_branchnode_or_root'),
+    (r'^(?P<project_id>\d+)/node/previous_likely_lineage_error$', 'catmaid.control.find_previous_likely_lineage_error'),
+    (r'^(?P<project_id>\d+)/node/next_likely_lineage_error$', 'catmaid.control.find_next_likely_lineage_error'),
     (r'^(?P<project_id>\d+)/node/next_branch_or_end$', 'catmaid.control.find_next_branchnode_or_end'),
     (r'^(?P<project_id>\d+)/node/next_child$', 'catmaid.control.find_next_child'),
     (r'^(?P<project_id>\d+)/node/get_location$', 'catmaid.control.get_location'),

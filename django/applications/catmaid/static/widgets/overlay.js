@@ -409,7 +409,7 @@ var SkeletonAnnotations = new function()
               distsq = 1e32;//infinite
           }
 
-          if (distsq < mindistsq) {
+          if (distsq < mindistsq ) {
             mindistsq = distsq;
             nearestnode = node;
           }
@@ -1810,6 +1810,166 @@ var SkeletonAnnotations = new function()
     };
 
 
+    this.goToPreviousLikelyLineageError = function(treenode_id) {
+
+      //adaptively calculate nearest neighbor to set a bounding box in the search      
+      var xCurr = self.pix2physX(nodes[treenode_id].x);
+      var yCurr = self.pix2physX(nodes[treenode_id].y);
+      var zCurr = self.pix2physX(nodes[treenode_id].z);
+      var tCurr = nodes[treenode_id].t;
+
+      var xdiff, ydiff, zdiff, distsq, nearestnode = null, mindistsq = 1e32, node, nodeid;
+      for (nodeid in nodes) {
+        if (nodes.hasOwnProperty(nodeid) && nodeid != treenode_id && nodes[nodeid].t == tCurr) {
+          node = nodes[nodeid];
+          xdiff = xCurr - self.pix2physX(node.x);
+          ydiff = yCurr - self.pix2physY(node.y);
+          zdiff = zCurr - self.pix2physZ(node.z);
+          distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
+          
+
+          if (distsq < mindistsq) {
+            mindistsq = distsq;
+            nearestnode = node;
+          }
+        }
+      }
+
+      var max_dist_radius;
+      if (nearestnode) {
+        max_dist_radius = 2.5 * Math.sqrt( mindistsq );//For 90% of points, the first 10 nearest neighbors are included in 2.5*NN_distance (empyrically measured)        
+
+      } else{
+        max_dist_radius = 40.0 * stack.resolution.x;//default value: 40 pixels in X resolution
+      }
+      
+
+      requestQueue.register(
+          django_url + project.id + "/node/previous_likely_lineage_error",
+          "POST",
+          {tnid: treenode_id,
+           max_dist: max_dist_radius,
+           zres: stack.resolution.z},
+          function(status, text) {
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert("Error when trying to find previous branch or root node:" + json.error);
+              } else {
+                // json is a tuple:
+                // json[0]: treenode id
+                // json[1], [2], [3]: x, y, z in calibrated world units
+                if (treenode_id === json[0]) {
+                  // Already at the root node
+                  $('#growl-alert').growlAlert({
+                    autoShow: true,
+                    content: "You are already at the root node",
+                    title: 'Already there',
+                    position: 'top-right',
+                    delayTime: 2000,
+                    onComplete: function() { g.remove(); }
+                  });
+                } else {
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    stack.getProject().moveTo5D(json[3], json[2], json[1], undefined,json[5], json[6],
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                   }else{   
+                  stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                  }
+
+                }
+              }
+            }
+          });
+    };
+
+
+    this.goToNextLikelyLineageError = function(treenode_id) {
+
+      //adaptively calculate nearest neighbor to set a bounding box in the search      
+      var xCurr = self.pix2physX(nodes[treenode_id].x);
+      var yCurr = self.pix2physX(nodes[treenode_id].y);
+      var zCurr = self.pix2physX(nodes[treenode_id].z);
+      var tCurr = nodes[treenode_id].t;
+
+      var xdiff, ydiff, zdiff, distsq, nearestnode = null, mindistsq = 1e32, node, nodeid;
+      for (nodeid in nodes) {
+        if (nodes.hasOwnProperty(nodeid) && nodeid != treenode_id && nodes[nodeid].t == tCurr) {
+          node = nodes[nodeid];
+          xdiff = xCurr - self.pix2physX(node.x);
+          ydiff = yCurr - self.pix2physY(node.y);
+          zdiff = zCurr - self.pix2physZ(node.z);
+          distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
+          
+
+          if (distsq < mindistsq) {
+            mindistsq = distsq;
+            nearestnode = node;
+          }
+        }
+      }
+
+      var max_dist_radius;
+      if (nearestnode) {
+        max_dist_radius = 2.5 * Math.sqrt( mindistsq );//For 90% of points, the first 10 nearest neighbors are included in 2.5*NN_distance (empyrically measured)        
+
+      } else{
+        max_dist_radius = 40.0 * stack.resolution.x;//default value: 40 pixels in X resolution
+      }
+      
+
+      requestQueue.register(
+          django_url + project.id + "/node/next_likely_lineage_error",
+          "POST",
+          {tnid: treenode_id,
+           max_dist: max_dist_radius,
+           zres: stack.resolution.z},
+          function(status, text) {
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert("Error when trying to find previous branch or root node:" + json.error);
+              } else {
+                // json is a tuple:
+                // json[0]: treenode id
+                // json[1], [2], [3]: x, y, z in calibrated world units
+                if (treenode_id === json[0]) {
+                  // Already at the root node
+                  $('#growl-alert').growlAlert({
+                    autoShow: true,
+                    content: "You are already at the root node",
+                    title: 'Already there',
+                    position: 'top-right',
+                    delayTime: 2000,
+                    onComplete: function() { g.remove(); }
+                  });
+                } else {
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    stack.getProject().moveTo5D(json[3], json[2], json[1], undefined,json[5], json[6],
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                   }else{   
+                  stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                  }
+
+                }
+              }
+            }
+          });
+    };
+
+
     //global variables to control asynchronous flow of gotoRandomLocation
     var nextIterRandomLocation = -1;
     var lastIterRandomLocation = -1;
@@ -2279,6 +2439,18 @@ var SkeletonAnnotations = new function()
           self.goToPreviousBranchOrRootNode(atn.id, arguments[1]);
         }
         break;
+      case "selectlikelyerror":
+        if (atn.id !== null) {
+          if( arguments[1].ctrlKey === true )
+          {
+            self.goToNextLikelyLineageError(atn.id);
+          }else{
+            self.goToPreviousLikelyLineageError(atn.id);
+          }
+        }else {
+          alert('Need to activate a treenode before running error guidance system!');
+        }
+        break;  
       case "skelsplitting":
         if (atn.id !== null) {
           self.splitSkeleton(arguments[1]);

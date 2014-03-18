@@ -108,8 +108,9 @@ class TransactionTests(TransactionTestCase):
 
 
 class InsertionTest(TestCase):
-    fixtures = ['catmaid_testdata']
-
+    """ This test case insers various model objects and tests if this is done as
+    expected. No fixture data is needed for this test.
+    """
     def insert_project(self):
         p = Project()
         p.title = "Example Project"

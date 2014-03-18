@@ -365,9 +365,6 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/graph/circlesofhell', 'circles.circles_of_hell'),
     (r'^(?P<project_id>\d+)/graph/directedpaths', 'circles.find_directed_paths'),
 
-    # Other skeleton related API
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'neurohdf.skeleton_neurohdf'),
-
     # Analytics
     (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),
 
@@ -380,9 +377,6 @@ urlpatterns += patterns('catmaid.control',
 
     # Annotation graph export
     (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'object.convert_annotations_to_networkx'),
-
-    # Microcircuit NeuroHDF export
-    (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'neurohdf.microcircuit_neurohdf'),
 
     # Treenode table
     (r'^(?P<project_id>\d+)/treenode/table/list$', 'treenodetable.list_treenode_table'),

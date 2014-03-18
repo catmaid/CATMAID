@@ -731,17 +731,26 @@ def find_previous_likely_lineage_error(request, project_id=None):
                 params['yLower'] = qs.location.y - max_dist
                 params['channel'] = qs.location_c
                 params['tCurr'] = qs.location_t
+                params['xCurr'] = qs.location.x
+                params['yCurr'] = qs.location.y
+                params['zCurr'] = qs.location.z
                 
 
                 cursor = connection.cursor()
                 # Fetch treenodes which are in the bounding box,
                 # which in z it includes the full thickess of the prior section
                 # and of the next section (therefore the '<' and not '<=' for zhigh)
-                response_on_error = 'Failed to query treenodes'
+                response_on_error = 'Failed to query treenodes for nearest neighbors'
+                
+                #find 7 nearest neighbors within a max_dist ball
                 cursor.execute('''
-                SELECT
-                    count(id)                    
-                FROM treenode                
+                SELECT  
+                    ( sqrt( ((treenode.location).x-%(xCurr)s)*((treenode.location).x-%(xCurr)s) + 
+                    ((treenode.location).y-%(yCurr)s)*((treenode.location).y-%(yCurr)s) +
+                    ((treenode.location).z-%(zCurr)s)*((treenode.location).z-%(zCurr)s)
+                    ) ) as dist,
+                    confidence
+                FROM treenode
                 WHERE 
                     project_id = %(project_id)s
                     AND (location).z <= %(zUpper)s
@@ -752,13 +761,19 @@ def find_previous_likely_lineage_error(request, project_id=None):
                     AND (location).y >= %(yLower)s
                     AND location_t = %(tCurr)s
                     AND location_c = %(channel)s
-                    AND confidence = 0
-                    ''', params)
+                ORDER BY dist ASC
+                LIMIT 7
+                ''', params)
 
-                #just count if the query retrieved any element
-                count = cursor.fetchone()
-                if count[0] > 0:
-                    break;#We need to stop since we found a neighbor with low confidence
+                #just count if the query retrieved any element            
+                error = 0
+                for row in cursor.fetchall():
+                    if row[1] == 0:
+                        error = 1
+                        break
+                
+                if error == 1:
+                    break;#We need to stop since we found a neighbor with low confidence       
             else:
                 break # Found the root node
 
@@ -792,7 +807,7 @@ def find_next_likely_lineage_error(request, project_id=None):
             qs = Treenode.objects.get(pk=tnid)
             if qs.confidence == 0:
                 break
-                
+
             #check for neighbors around it to see if there low confidence ones            
             #find info about neighboring nodes
             params = {}                                
@@ -805,17 +820,26 @@ def find_next_likely_lineage_error(request, project_id=None):
             params['yLower'] = qs.location.y - max_dist
             params['channel'] = qs.location_c
             params['tCurr'] = qs.location_t
+            params['xCurr'] = qs.location.x
+            params['yCurr'] = qs.location.y
+            params['zCurr'] = qs.location.z
             
 
             cursor = connection.cursor()
             # Fetch treenodes which are in the bounding box,
             # which in z it includes the full thickess of the prior section
             # and of the next section (therefore the '<' and not '<=' for zhigh)
-            response_on_error = 'Failed to query treenodes'
+            response_on_error = 'Failed to query treenodes for nearest neighbors'
+            
+            #find 7 nearest neighbors within a max_dist ball
             cursor.execute('''
-            SELECT
-                count(id)                    
-            FROM treenode                
+            SELECT  
+                ( sqrt( ((treenode.location).x-%(xCurr)s)*((treenode.location).x-%(xCurr)s) + 
+                ((treenode.location).y-%(yCurr)s)*((treenode.location).y-%(yCurr)s) +
+                ((treenode.location).z-%(zCurr)s)*((treenode.location).z-%(zCurr)s)
+                ) ) as dist,
+                confidence
+            FROM treenode
             WHERE 
                 project_id = %(project_id)s
                 AND (location).z <= %(zUpper)s
@@ -826,13 +850,19 @@ def find_next_likely_lineage_error(request, project_id=None):
                 AND (location).y >= %(yLower)s
                 AND location_t = %(tCurr)s
                 AND location_c = %(channel)s
-                AND confidence = 0
-                ''', params)
+            ORDER BY dist ASC
+            LIMIT 7
+            ''', params)
 
-            #just count if the query retrieved any element
-            count = cursor.fetchone()
-            if count[0] > 0:
-                break;#We need to stop since we found a neighbor with low confidence            
+            #just count if the query retrieved any element            
+            error = 0
+            for row in cursor.fetchall():
+                if row[1] == 0:
+                    error = 1
+                    break
+            
+            if error == 1:
+                break;#We need to stop since we found a neighbor with low confidence                        
 
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:

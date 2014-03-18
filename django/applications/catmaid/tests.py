@@ -9,12 +9,12 @@ import urllib
 import json
 import datetime
 
-from models import Project, Stack, Integer3D, Double3D, ProjectStack
-from models import ClassInstance, Session, Log, Message, TextlabelLocation
+from models import Project, Stack, ProjectStack
+from models import ClassInstance, Log, Message, TextlabelLocation
 from models import Treenode, Connector, TreenodeConnector, User
 from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
-from .fields import Double3D
-from views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
+from .fields import Double3D, Integer3D
+from control.common import get_relation_to_id_map, get_class_to_id_map
 
 
 class SimpleTest(TestCase):
@@ -24,40 +24,8 @@ class SimpleTest(TestCase):
         """
         self.assertEqual(1 + 1, 2)
 
-
-def ensure_schema_and_data_exist():
-    """
-    This function will create the CATMAID schema is it doesn't seem to
-    exist yet (based on the presence or not of the 'project' table).
-    If it needs to add the schema, it will also add testing data.
-    """
-    cursor = connection.cursor()
-    # See if the project table has been created:
-    cursor.execute("SELECT count(*) FROM pg_tables WHERE tablename = 'project'")
-    row = cursor.fetchone()
-    if row[0] == 1:
-        return
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(current_directory, "tables_and_data.sql")) as fp:
-        cursor.execute(fp.read())
-
-
-def remove_example_data():
-    """
-    This function will remove example data from the database, without touching
-    the schema. Warning: This takes a long time to run.
-    """
-    tables = connection.introspection.table_names()
-    cursor = connection.cursor()
-    for table in tables:
-        cursor.execute('TRUNCATE TABLE "%s" RESTART IDENTITY CASCADE' % table)
-
-
 class TransactionTests(TransactionTestCase):
-
-    def setUp(self):
-        ensure_schema_and_data_exist()
-        remove_example_data()
+    fixtures = ['catmaid_testdata']
 
     def test_successful_commit(self):
         def insert_user():
@@ -140,11 +108,9 @@ class TransactionTests(TransactionTestCase):
 
 
 class InsertionTest(TestCase):
-
-    def setUp(self):
-        ensure_schema_and_data_exist()
-        remove_example_data()
-
+    """ This test case insers various model objects and tests if this is done as
+    expected. No fixture data is needed for this test.
+    """
     def insert_project(self):
         p = Project()
         p.title = "Example Project"
@@ -191,9 +157,9 @@ class InsertionTest(TestCase):
 
 
 class RelationQueryTests(TestCase):
+    fixtures = ['catmaid_testdata']
 
     def setUp(self):
-        ensure_schema_and_data_exist()
         self.test_project_id = 3
 
     def test_find_all_neurons(self):
@@ -267,21 +233,17 @@ def swc_string_to_sorted_matrix(s):
 
 
 class ViewPageTests(TestCase):
+    fixtures = ['catmaid_testdata']
 
     def setUp(self):
-        ensure_schema_and_data_exist()
         self.test_project_id = 3
         self.client = Client()
 
+        user = User.objects.create_user('temporary',
+            'temporary@gmail.com', 'temporary')
+
     def fake_authentication(self):
-        session = Session()
-        session.session_id = 'f9v85q77vuvamsr0tlnv5inkk5'
-        session.data = 'id|s:1:"3";key|s:54:"7gtmcy8g03457xg3hmuxdgregtyu45ty57ycturemuzm934etmvo56";'
-        session.last_accessed = datetime.datetime.now()
-        session.save()
-        # And insert the corresponding cookie:
-        self.client.cookies['PHPSESSID'] = 'f9v85q77vuvamsr0tlnv5inkk5'
-        self.client.cookies['PHPSESSID']['path'] = '/'
+        self.client.login(username='temporary', password='temporary')
 
     def compare_swc_data(self, s1, s2):
         m1 = swc_string_to_sorted_matrix(s1)
@@ -2535,9 +2497,9 @@ class ViewPageTests(TestCase):
 
 
 class TreenodeTests(TestCase):
+    fixtures = ['catmaid_testdata']
 
     def setUp(self):
-        ensure_schema_and_data_exist()
         self.test_project_id = 3
 
     def test_find_all_treenodes(self):

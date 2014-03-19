@@ -9,6 +9,8 @@ var SkeletonConnectivity = function() {
   this.outgoing = {};
   this.widgetID = this.registerInstance();
   this.registerSource();
+  // Default table layout to be side by side
+  this.tablesSideBySide = true;
 };
 
 SkeletonConnectivity.prototype = {};
@@ -252,7 +254,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     // neuron list and both pre- and postsynaptic tables.
     var createNameElement = function(name, skeleton_id) {
       var a = document.createElement('a');
-      a.innerText = name + ' #' + skeleton_id;
+      a.appendChild(document.createTextNode(name + ' #' + skeleton_id));
       a.setAttribute('href', '#');
       a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
       a.onclick = function() {
@@ -285,8 +287,10 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     }, this);
 
     // Toggle for alignen tables next to each other
-    var layoutToggle = $('<input />').attr('type', 'checkbox')
-            .attr('checked', 'checked');
+    var layoutToggle = $('<input />').attr('type', 'checkbox');
+    if (this.tablesSideBySide) {
+        layoutToggle.attr('checked', 'checked');
+    }
     var layoutLabel = $('<label />').attr('class', 'header right')
             .append(document.createTextNode('Tables side by side'))
             .append(layoutToggle);
@@ -306,13 +310,15 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         incoming.css('width', sideBySide ? '50%' : '100%');
         outgoing.css('width', sideBySide ? '50%' : '100%');
     };
-    // Default to tables next to each other
-    layoutTables(true);
+    layoutTables(this.tablesSideBySide);
 
     // Add handler to layout toggle
-    layoutToggle.change(function() {
-        layoutTables(this.checked);
-    });
+    layoutToggle.change((function(widget) {
+        return function() {
+            widget.tablesSideBySide = this.checked;
+            layoutTables(this.checked);
+        };
+    })(this));
 
     var synaptic_count = function(skids_dict) {
         return Object.keys(skids_dict).reduce(function(sum, skid) {
@@ -409,7 +415,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
             var td = document.createElement('td');
             var a = document.createElement('a');
             td.appendChild(a);
-            a.innerText = partner.synaptic_count;
+            a.appendChild(document.createTextNode(partner.synaptic_count));
             a.setAttribute('href', '#');
             a.style.color = 'black';
             a.style.textDecoration = 'none';
@@ -423,13 +429,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
             // Cell with percent reviewed of partner neuron
             var td = document.createElement('td');
-            td.innerText = partner.reviewed;
+            td.appendChild(document.createTextNode(partner.reviewed));
             td.style.backgroundColor = getBackgroundColor(partner.reviewed);
             tr.appendChild(td);
 
             // Cell with number of nodes of partner neuron
             var td = document.createElement('td');
-            td.innerText = partner.num_nodes;
+            td.appendChild(document.createTextNode(partner.num_nodes));
             tr.appendChild(td);
 
             // Cell with checkbox for adding to Selection Table

@@ -199,7 +199,34 @@ SkeletonConnectivity.prototype.update = function() {
            'threshold': $('#connectivity_count_threshold' + this.widgetID).val(),
            'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
           function(status, text) {
-            self.createConnectivityTable(status, text);
+            var handle = function(status, text) {
+              if (200 !== status) {
+                self.incoming = {};
+                self.outgoing = {};
+                new ErrorDialog("Couldn't load connectivity information",
+                    "The server returned an unexpected status code: " +
+                        status).show();
+                return;
+              }
+              var json = $.parseJSON(text);
+              if (json.error) {
+                self.incoming = {};
+                self.outgoing = {};
+                new ErrorDialog("Couldn't load connectivity information",
+                    json.error).show();
+                return;
+              }
+
+              // Save reference of incoming and outgoing nodes. These are needed to open
+              // the connectivity plots in a separate widget.
+              self.incoming = json.incoming;
+              self.outgoing = json.outgoing
+              // Create connectivity tables
+              self.createConnectivityTable();
+            };
+
+            // Handle result and create tables, if possible
+            handle(status, text);
             // Restore checkbox state
             checkboxes.forEach(function(c, i) {
               var relation = relations[i];
@@ -214,21 +241,7 @@ SkeletonConnectivity.prototype.update = function() {
           'update_connectivity_table');
 };
 
-SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) {
-    if (200 !== status) { return; }
-    var json = $.parseJSON(text);
-    if (json.error) {
-        this.incoming = {};
-        this.outgoing = {};
-        alert(json.error);
-        return;
-    }
-
-    // Save reference of incoming and outcoming nodes. These are needed to open
-    // the connectivity plots in a separate widget.
-    this.incoming = json.incoming;
-    this.outgoing = json.outgoing
-
+SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var widgetID = this.widgetID;
     var getLinkTarget = this.getLinkTarget.bind(this);
     var getSkeletonModel = this.getSkeletonModel.bind(this);
@@ -414,8 +427,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     };
 
 
-    var table_incoming = create_table(to_sorted_array(json.incoming), 'Up', 'presynaptic_to');
-    var table_outgoing = create_table(to_sorted_array(json.outgoing), 'Down', 'postsynaptic_to');
+    var table_incoming = create_table(to_sorted_array(this.incoming), 'Up', 'presynaptic_to');
+    var table_outgoing = create_table(to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to');
 
     incoming.append(table_incoming);
     outgoing.append(table_outgoing);

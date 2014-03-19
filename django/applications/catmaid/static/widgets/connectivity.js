@@ -269,6 +269,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     // Create neuron list
     var neuronList = document.createElement("ul");
     neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
+    neuronList.setAttribute('class', 'header');
     Object.keys(this.skeletons).forEach(function(skid) {
         var li = document.createElement("li");
         li.setAttribute('id', 'li-connectivity-table-' + widgetID + '-' + skid);
@@ -276,23 +277,42 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         cb.setAttribute("type", "checkbox");
         cb.setAttribute("checked", "checked");
         var label = document.createElement("label");
+        label.setAttribute('class', 'left');
         label.appendChild(cb);
         label.appendChild(createNameElement(this.skeletons[skid], skid));
         li.appendChild(label);
         neuronList.appendChild(li);
     }, this);
 
+    // Toggle for alignen tables next to each other
+    var layoutToggle = $('<input />').attr('type', 'checkbox')
+            .attr('checked', 'checked');
+    var layoutLabel = $('<label />').attr('class', 'header right')
+            .append(document.createTextNode('Tables side by side'))
+            .append(layoutToggle);
     $("#connectivity_widget" + widgetID).append(neuronList);
+    $("#connectivity_widget" + widgetID).append(layoutLabel);
 
-    // Create table for pre and postsynaptic partners
-    var bigtable = $('<table />').attr('cellpadding', '0').attr('cellspacing', '0').attr('width', '100%').attr('id', 'connectivity_table' + widgetID).attr('border', '0');
-    var row = $('<tr />')
-    var incoming = $('<td />').attr('id', 'incoming_field').attr('valign', 'top');
-    row.append( incoming );
-    var outgoing = $('<td />').attr('id', 'outgoing_field').attr('valign', 'top');
-    row.append( outgoing );
-    bigtable.append( row );
-    $("#connectivity_widget" + widgetID).append( bigtable );
+    // Create containers for pre and postsynaptic partners
+    var incoming = $('<div />').attr('class', 'left');
+    var outgoing = $('<div />').attr('class', 'left');
+    var tables = $('<div />').attr('width', '100%').attr('class', 'clear')
+           .append(incoming)
+           .append(outgoing);
+    $("#connectivity_widget" + widgetID).append(tables);
+
+    // Updates the layout of the tables
+    var layoutTables = function(sideBySide) {
+        incoming.css('width', sideBySide ? '50%' : '100%');
+        outgoing.css('width', sideBySide ? '50%' : '100%');
+    };
+    // Default to tables next to each other
+    layoutTables(true);
+
+    // Add handler to layout toggle
+    layoutToggle.change(function() {
+        layoutTables(this.checked);
+    });
 
     var synaptic_count = function(skids_dict) {
         return Object.keys(skids_dict).reduce(function(sum, skid) {
@@ -351,16 +371,17 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         }
       };
 
-        var table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'incoming_connectivity_table' + widgetID).attr('border', '1');
+        var table = $('<table />').attr('id', 'incoming_connectivity_table' + widgetID)
+                .attr('class', 'partner_table');
         // create header
         var thead = $('<thead />');
         table.append( thead );
         var row = $('<tr />')
-        row.append( $('<td />').text(title + "stream neuron") );
-        row.append( $('<td />').text("syn count") );
-        row.append( $('<td />').text("reviewed") );
-        row.append( $('<td />').text("node count") );
-        row.append( $('<td />').text("select") );
+        row.append( $('<th />').text(title + "stream neuron") );
+        row.append( $('<th />').text("syn count") );
+        row.append( $('<th />').text("reviewed") );
+        row.append( $('<th />').text("node count") );
+        row.append( $('<th />').text("select") );
         thead.append( row );
         row = $('<tr />')
         row.append( $('<td />').text("ALL (" + partners.length + " neurons)") );

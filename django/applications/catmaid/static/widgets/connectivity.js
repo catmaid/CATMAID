@@ -164,13 +164,12 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
   return models;
 };
 
+/**
+ * Clears the widgets content container.
+ */
 SkeletonConnectivity.prototype._clearGUI = function() {
-  // Clear table and plots
-  var names = ["widget_name_list", "table"];
-  names.forEach(function(name) {
-      var s = $('#connectivity_' + name + this.widgetID);
-      if (s.length > 0) s.remove();
-  }, this);
+  // Clear widget
+  $("#connectivity_widget" + this.widgetID).empty();
 };
 
 SkeletonConnectivity.prototype.update = function() {

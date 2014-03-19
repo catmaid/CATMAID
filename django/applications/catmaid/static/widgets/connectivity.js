@@ -224,7 +224,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
         return;
     }
 
-    // Save reference of incoming and outcoming nodes
+    // Save reference of incoming and outcoming nodes. These are needed to open
+    // the connectivity plots in a separate widget.
     this.incoming = json.incoming;
     this.outgoing = json.outgoing
 
@@ -232,7 +233,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function(status, text) 
     var getLinkTarget = this.getLinkTarget.bind(this);
     var getSkeletonModel = this.getSkeletonModel.bind(this);
 
-    // Clear table and plots
+    // Clear table
     this._clearGUI();
 
     // Support function for creating a neuron/skeleton name link element in the
@@ -501,7 +502,7 @@ ConnectivityGraphPlot.prototype.getName = function() {
 };
 
 /**
- * Custom destrpy handler, that deletes all fields of this instance when called.
+ * Custom destroy handler, that deletes all fields of this instance when called.
  */
 ConnectivityGraphPlot.prototype.destroy = function() {
   this.unregisterInstance();
@@ -680,7 +681,8 @@ ConnectivityGraphPlot.prototype.draw = function() {
         .data(a)
       .enter().append('g')
         .attr('class', 'g')
-        .attr('transform', function(a, i) { return "translate(" + x0(i+1) + ", 0)"; }); // x0(i+1) has a +1 because the array is 0-based
+        // x0(i+1) has a +1 because the array is 0-based
+        .attr('transform', function(a, i) { return "translate(" + x0(i+1) + ", 0)"; });
 
     // Define how each bar of the bar chart is drawn
     state.selectAll("rect")

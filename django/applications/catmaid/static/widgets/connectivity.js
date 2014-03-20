@@ -11,6 +11,9 @@ var SkeletonConnectivity = function() {
   this.registerSource();
   // Default table layout to be side by side
   this.tablesSideBySide = true;
+  // Default upstream and downstream tables to be not collapsed
+  this.upstreamCollapsed = false;
+  this.downstreamCollapsed = false;
 };
 
 SkeletonConnectivity.prototype = {};
@@ -351,8 +354,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         }
     };
 
-    var create_table = function(partners, title, relation) {
-
+    var create_table = function(partners, title, relation, collapsed,
+              collapsedCallback) {
       var set_as_selected = function(ev) {
         var skelid = parseInt( ev.target.value );
         var checked = $('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked');
@@ -390,19 +393,52 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         row.append( $('<th />').text("select") );
         thead.append( row );
         row = $('<tr />')
-        row.append( $('<td />').text("ALL (" + partners.length + " neurons)") );
+        var titleClass = collapsed ? "extend-box-closed" : "extend-box-open";
+        var titleCell = $('<td />').html('<span class="' + titleClass +
+                '"></span>ALL (' + partners.length + 'neurons)')
+        row.append(titleCell);
         row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.synaptic_count; }, 0) ));
         var average = (partners.reduce(function(sum, partner) { return sum + partner.reviewed; }, 0 ) / partners.length) | 0;
         row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));
         row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.num_nodes; }, 0) ));
         var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
         row.append( $('<td />').append( el ) );
-        thead.append( row );
         var tbody = $('<tbody />');
         table.append( tbody );
+        tbody.append( row );
+
+        // Add collapsing functionality
+        var toggleRowsBelow = function($element) {
+            $element.nextAll('tr').toggle().promise().done(
+                function() {
+                    // Change open/close indidicator box
+                    var open_elements = $(".extend-box-open", $element);
+                    if (open_elements.length > 0) {
+                        open_elements.attr('class', 'extend-box-closed');
+                    } else {
+                        var close_elements = $(".extend-box-closed", $element);
+                        if (close_elements.length > 0) {
+                            close_elements.attr('class', 'extend-box-open');
+                        }
+                    }
+                });
+        };
+
+        // Add handler to first row
+        titleCell.click(function() {
+            // Toggle visibility of all rows below the current one
+            toggleRowsBelow($(this).parent('tr'));
+            // Call back, if wanted
+            if (collapsedCallback) {
+                collapsedCallback();
+            }
+        });
 
         partners.forEach(function(partner) {
             var tr = document.createElement('tr');
+            if (collapsed) {
+              tr.style.display = "none";
+            }
             tbody.append(tr);
 
             // Cell with partner neuron name
@@ -453,8 +489,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     };
 
 
-    var table_incoming = create_table(to_sorted_array(this.incoming), 'Up', 'presynaptic_to');
-    var table_outgoing = create_table(to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to');
+    var table_incoming = create_table(to_sorted_array(this.incoming), 'Up',
+            'presynaptic_to', this.upstreamCollapsed, (function() {
+                this.upstreamCollapsed = !this.upstreamCollapsed;
+            }).bind(this));
+    var table_outgoing = create_table(to_sorted_array(this.outgoing), 'Down',
+            'postsynaptic_to', this.downstreamCollapsed, (function() {
+                this.downstreamCollapsed = !this.downstreamCollapsed;
+            }).bind(this));
 
     incoming.append(table_incoming);
     outgoing.append(table_outgoing);

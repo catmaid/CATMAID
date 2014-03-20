@@ -1203,17 +1203,18 @@ CompartmentGraphWidget.prototype.annotate_skeleton_list = function() {
 
 CompartmentGraphWidget.prototype.resize = function() {
   if (this.cy) {
-    // Schedule a re-layout after 400ms and override it automatically if
-    // resizing isn't finished, yet.
+    // Schedule a re-layout without chaning the node position after 400ms and
+    // override it automatically if resizing isn't finished, yet.
     if (this.relayoutTimeout) {
       clearTimeout(this.relayoutTimeout);
     }
     this.relayoutTimeout = setTimeout((function() {
       // Update the layout accordingly
-      var layoutSelect = document.getElementById(
-          'compartment_graph_window_buttons' + this.widgetID +
-              '_compartment_layout');
-      this.updateLayout(layoutSelect);
+      var options = {
+        name: 'preset',
+        fit: false,
+      };
+      this.cy.layout( options );
     }).bind(this), 400);
   }
 };

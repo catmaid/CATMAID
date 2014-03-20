@@ -111,6 +111,14 @@ MEDIA_CROPPING_SUBDIRECTORY = 'cropping'
 MEDIA_ROI_SUBDIRECTORY = 'roi'
 MEDIA_TREENODE_SUBDIRECTORY = 'treenode_archives'
 
+# A sequence of modules that contain Celery tasks which we want Celery to know
+# about automatically.
+CELERY_IMPORTS = (
+    'catmaid.control.cropping',
+    'catmaid.control.roi',
+    'catmaid.control.treenodeexport',
+)
+
 # A couple of functions useful for generating default directories to
 # be used in the settings files:
 

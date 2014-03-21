@@ -149,3 +149,11 @@ def tagged_projects( parser, token ):
 		var_name = parts[ nr_parts - 1 ]
 		tags = parts[ 1:nr_parts - 2 ]
 	return ProjectListVarNode( var_name, tags, sort )
+
+@register.filter
+def has_tag( project, tags ):
+	# print project, project.tags.all()[0].name, tags
+	for tag in project.tags.all():
+		if tag.name in tags:
+			return True
+	return False

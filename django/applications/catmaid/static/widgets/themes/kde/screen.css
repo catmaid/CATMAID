@@ -210,6 +210,11 @@ div#data_view td.head
 	background-color: #FFFFFF;
 }
 
+div#data_view .highlight
+{
+	font-weight:bold;
+}
+
 div#data_view figure
 {
 	margin-top: 0px;

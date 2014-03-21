@@ -165,7 +165,7 @@ function CroppingTool() {
 		var z_min = self.slider_crop_top_z.val * stack.resolution.z + stack.translation.z;
 		var z_max = self.slider_crop_bottom_z.val * stack.resolution.z + stack.translation.z;
 		var zoom_level = self.slider_crop_s.val;
-		var single_channels = self.check_rgb_slices.val ? 0 : 1;
+		var single_channels = self.check_rgb_slices.checked ? 0 : 1;
 
 		var str = "The generated stack will have " + nStacks + " channel(s) with " + numSections + " section(s) each.\n";
 		str += "Each section will have a size of " + pixelWidth + "x" + pixelHeight + "px.\n";

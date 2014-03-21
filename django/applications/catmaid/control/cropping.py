@@ -673,7 +673,7 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None,
 
     # Should an output slice contain all channels of the source tiles
     # or only a single (the red) one?
-    single_channel = bool(single_channel)
+    single_channel = bool(int(single_channel))
 
     # Crate a new cropping job
     job = CropJob(request.user, project_id, stack_ids, x_min, x_max,

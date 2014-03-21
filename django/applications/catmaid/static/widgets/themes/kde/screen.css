@@ -417,6 +417,20 @@ div#classification_graph_object img.roiimage {
   vertical-align: middle;
 }
 
+.connectivity_widget .table_container_half {
+  display: table-cell;
+  width: 50%;
+}
+
+.connectivity_widget .table_container_wide {
+  width: 100%;
+}
+
+.connectivity_widget .content {
+  display: table;
+  clear: both;
+}
+
 .connectivity_widget .partner_table {
   padding: 3px;
   border-collapse: collapse;

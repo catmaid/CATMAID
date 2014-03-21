@@ -301,17 +301,19 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     $("#connectivity_widget" + widgetID).append(layoutLabel);
 
     // Create containers for pre and postsynaptic partners
-    var incoming = $('<div />').attr('class', 'left');
-    var outgoing = $('<div />').attr('class', 'left');
-    var tables = $('<div />').attr('width', '100%').attr('class', 'clear')
+    var incoming = $('<div />');
+    var outgoing = $('<div />');
+    var tables = $('<div />').css('width', '100%').attr('class', 'content')
            .append(incoming)
            .append(outgoing);
     $("#connectivity_widget" + widgetID).append(tables);
 
     // Updates the layout of the tables
     var layoutTables = function(sideBySide) {
-        incoming.css('width', sideBySide ? '50%' : '100%');
-        outgoing.css('width', sideBySide ? '50%' : '100%');
+        incoming.toggleClass('table_container_half', sideBySide);
+        incoming.toggleClass('table_container_wide', !sideBySide);
+        outgoing.toggleClass('table_container_half', sideBySide);
+        outgoing.toggleClass('table_container_wide', !sideBySide);
     };
     layoutTables(this.tablesSideBySide);
 

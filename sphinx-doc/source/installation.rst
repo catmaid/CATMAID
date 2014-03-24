@@ -60,7 +60,8 @@ Some of these Python packages depend on system-wide libraries
 that you will need to install in advance, however.  You can do
 this with::
 
-    sudo apt-get install gcc apt-file python2.7-dev postgresql-common \
+    sudo apt-get install gcc gfortran apt-file \
+                         python2.7-dev postgresql-common \
                          libpq-dev libgraphicsmagick++1-dev \
                          libhdf5-serial-dev libboost1.48-dev \
                          libboost-python1.48-dev uuid-dev \

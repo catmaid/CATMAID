@@ -246,15 +246,16 @@ SkeletonConnectivity.prototype.update = function() {
 };
 
 SkeletonConnectivity.prototype.createConnectivityTable = function() {
+  // Simplify access to this widget's ID in sub functions
   var widgetID = this.widgetID;
+  // Simplify access to pre-bound skeleton source and instance registry methods
   var getLinkTarget = this.getLinkTarget.bind(this);
   var getSkeletonModel = this.getSkeletonModel.bind(this);
 
-  // Clear table
-  this._clearGUI();
-
-  // Support function for creating a neuron/skeleton name link element in the
-  // neuron list and both pre- and postsynaptic tables.
+  /**
+   * Support function for creating a neuron/skeleton name link element in the
+   * neuron list and both pre- and postsynaptic tables.
+   */
   var createNameElement = function(name, skeleton_id) {
     var a = document.createElement('a');
     a.appendChild(document.createTextNode(name + ' #' + skeleton_id));
@@ -271,66 +272,28 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     return a;
   };
 
-  // Create neuron list
-  var neuronList = document.createElement("ul");
-  neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
-  neuronList.setAttribute('class', 'header');
-  Object.keys(this.skeletons).forEach(function(skid) {
-    var li = document.createElement("li");
-    li.setAttribute('id', 'li-connectivity-table-' + widgetID + '-' + skid);
-    var cb = document.createElement("input");
-    cb.setAttribute("type", "checkbox");
-    cb.setAttribute("checked", "checked");
-    var label = document.createElement("label");
-    label.setAttribute('class', 'left');
-    label.appendChild(cb);
-    label.appendChild(createNameElement(this.skeletons[skid], skid));
-    li.appendChild(label);
-    neuronList.appendChild(li);
-  }, this);
-
-  // Toggle for alignen tables next to each other
-  var layoutToggle = $('<input />').attr('type', 'checkbox');
-  if (this.tablesSideBySide) {
-    layoutToggle.attr('checked', 'checked');
-  }
-  var layoutLabel = $('<label />').attr('class', 'header right')
-      .append(document.createTextNode('Tables side by side'))
-      .append(layoutToggle);
-  $("#connectivity_widget" + widgetID).append(neuronList);
-  $("#connectivity_widget" + widgetID).append(layoutLabel);
-
-  // Create containers for pre and postsynaptic partners
-  var incoming = $('<div />');
-  var outgoing = $('<div />');
-  var tables = $('<div />').css('width', '100%').attr('class', 'content')
-     .append(incoming)
-     .append(outgoing);
-  $("#connectivity_widget" + widgetID).append(tables);
-
-  // Updates the layout of the tables
+  /**
+   * Support function to updates the layout of the tables.
+   */
   var layoutTables = function(sideBySide) {
     incoming.toggleClass('table_container_half', sideBySide);
     incoming.toggleClass('table_container_wide', !sideBySide);
     outgoing.toggleClass('table_container_half', sideBySide);
     outgoing.toggleClass('table_container_wide', !sideBySide);
   };
-  layoutTables(this.tablesSideBySide);
 
-  // Add handler to layout toggle
-  layoutToggle.change((function(widget) {
-    return function() {
-      widget.tablesSideBySide = this.checked;
-      layoutTables(this.checked);
-    };
-  })(this));
-
+  /**
+   * Helper to get the synpatic count of a skeleton ID dictionary.
+   */
   var synaptic_count = function(skids_dict) {
     return Object.keys(skids_dict).reduce(function(sum, skid) {
       return sum + skids_dict[skid];
     }, 0);
   };
 
+  /**
+   * Helper to sort an array.
+   */
   var to_sorted_array = function(partners) {
     return Object.keys(partners).reduce(function(list, skid) {
       var partner = partners[skid];
@@ -346,6 +309,9 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   var onmouseover = function() { this.style.textDecoration = 'underline'; }
   var onmouseout = function() { this.style.textDecoration = 'none'; };
 
+  /**
+   * Support function for selecting a background color based on review state.
+   */
   var getBackgroundColor = function(reviewed) {
     if (100 === reviewed) {
       return '#6fff5c';
@@ -356,8 +322,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     }
   };
 
+  /**
+   * Support function for creating a partner table.
+   */
   var create_table = function(partners, title, relation, collapsed,
         collapsedCallback) {
+    /**
+     * Helper to handle selection of a neuron.
+     */
     var set_as_selected = function(ev) {
       var skelid = parseInt( ev.target.value );
       var checked = $('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked');
@@ -489,18 +461,9 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     return table;
   };
 
-  var table_incoming = create_table(to_sorted_array(this.incoming), 'Up',
-      'presynaptic_to', this.upstreamCollapsed, (function() {
-        this.upstreamCollapsed = !this.upstreamCollapsed;
-      }).bind(this));
-  var table_outgoing = create_table(to_sorted_array(this.outgoing), 'Down',
-      'postsynaptic_to', this.downstreamCollapsed, (function() {
-        this.downstreamCollapsed = !this.downstreamCollapsed;
-      }).bind(this));
-
-  incoming.append(table_incoming);
-  outgoing.append(table_outgoing);
-
+  /**
+   * Support function to add a 'seclect all' checkbox.
+   */
   var add_select_all_fn = function(name, table) {
     $('#' + name + 'stream-selectall' + widgetID).click(function( event ) {
       var rows = table[0].childNodes[1].childNodes; // all tr elements
@@ -543,6 +506,69 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     });
   };
 
+  // Clear table
+  this._clearGUI();
+
+  // Create neuron list
+  var neuronList = document.createElement("ul");
+  neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
+  neuronList.setAttribute('class', 'header');
+  Object.keys(this.skeletons).forEach(function(skid) {
+    var li = document.createElement("li");
+    li.setAttribute('id', 'li-connectivity-table-' + widgetID + '-' + skid);
+    var cb = document.createElement("input");
+    cb.setAttribute("type", "checkbox");
+    cb.setAttribute("checked", "checked");
+    var label = document.createElement("label");
+    label.setAttribute('class', 'left');
+    label.appendChild(cb);
+    label.appendChild(createNameElement(this.skeletons[skid], skid));
+    li.appendChild(label);
+    neuronList.appendChild(li);
+  }, this);
+
+  // Toggle for alignen tables next to each other
+  var layoutToggle = $('<input />').attr('type', 'checkbox');
+  if (this.tablesSideBySide) {
+    layoutToggle.attr('checked', 'checked');
+  }
+  var layoutLabel = $('<label />').attr('class', 'header right')
+      .append(document.createTextNode('Tables side by side'))
+      .append(layoutToggle);
+  $("#connectivity_widget" + widgetID).append(neuronList);
+  $("#connectivity_widget" + widgetID).append(layoutLabel);
+
+  // Create containers for pre and postsynaptic partners
+  var incoming = $('<div />');
+  var outgoing = $('<div />');
+  var tables = $('<div />').css('width', '100%').attr('class', 'content')
+     .append(incoming)
+     .append(outgoing);
+  $("#connectivity_widget" + widgetID).append(tables);
+  layoutTables(this.tablesSideBySide);
+
+  // Add handler to layout toggle
+  layoutToggle.change((function(widget) {
+    return function() {
+      widget.tablesSideBySide = this.checked;
+      layoutTables(this.checked);
+    };
+  })(this));
+
+  // Create incomining and outgoing tables
+  var table_incoming = create_table(to_sorted_array(this.incoming), 'Up',
+      'presynaptic_to', this.upstreamCollapsed, (function() {
+        this.upstreamCollapsed = !this.upstreamCollapsed;
+      }).bind(this));
+  var table_outgoing = create_table(to_sorted_array(this.outgoing), 'Down',
+      'postsynaptic_to', this.downstreamCollapsed, (function() {
+        this.downstreamCollapsed = !this.downstreamCollapsed;
+      }).bind(this));
+
+  incoming.append(table_incoming);
+  outgoing.append(table_outgoing);
+
+  // Add 'select all' checkboxes
   add_select_all_fn('up', table_incoming);
   add_select_all_fn('down', table_outgoing);
 };

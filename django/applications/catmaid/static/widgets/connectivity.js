@@ -523,7 +523,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     cb.setAttribute("type", "checkbox");
     cb.setAttribute("checked", "checked");
     var label = document.createElement("label");
-    label.setAttribute('class', 'left');
     label.appendChild(cb);
     label.appendChild(createNameElement(this.skeletons[skid], skid));
     li.appendChild(label);

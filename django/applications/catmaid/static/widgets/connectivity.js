@@ -325,8 +325,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   /**
    * Support function for creating a partner table.
    */
-  var create_table = function(partners, title, relation, collapsed,
-        collapsedCallback) {
+  var create_table = function(skeletons, partners, title, relation, collapsed,
+      collapsedCallback) {
     /**
      * Helper to handle selection of a neuron.
      */
@@ -354,27 +354,51 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       }
     };
 
+    var skids = Object.keys(skeletons);
+
     var table = $('<table />').attr('id', 'incoming_connectivity_table' + widgetID)
             .attr('class', 'partner_table');
-    // create header
+
+    /* The table header will be slightly different if there is more than one
+     * neuron currently looked at. In this case, the 'syn count' column will
+     * have sub columns for the sum and the respective individual columns. */
+    var extraCols = skids.length > 1;
+    var headerRows = extraCols ? 2 : 1;
+
+    // The table header
     var thead = $('<thead />');
     table.append( thead );
     var row = $('<tr />')
-    row.append( $('<th />').text(title + "stream neuron").attr('rowspan', '2'));
-    row.append( $('<th />').text("syn count").attr('rowspan', '1'));
-    row.append( $('<th />').text("reviewed").attr('rowspan', '2'));
-    row.append( $('<th />').text("node count").attr('rowspan', '2'));
-    row.append( $('<th />').text("select").attr('rowspan', '2'));
+    row.append( $('<th />').text(title + "stream neuron").attr('rowspan',
+        headerRows));
+    row.append( $('<th />').text("syn count").attr('rowspan', 1).attr('colspan',
+        extraCols ? skids.length + 1 : 1));
+    row.append( $('<th />').text("reviewed").attr('rowspan', headerRows));
+    row.append( $('<th />').text("node count").attr('rowspan', headerRows));
+    row.append( $('<th />').text("select").attr('rowspan', headerRows));
     thead.append( row );
+    if (extraCols) {
+      row = $('<tr />');
+      row.append( $('<th />').text("Sum").attr('rowspan', '1').attr('colspan', '1'));
+      skids.forEach(function(s, i) {
+        this.append( $('<th />').text(i+1 + ".").attr('rowspan', '1').attr('colspan', '1'));
+      }, row);
+      thead.append(row);
+    }
     row = $('<tr />');
-    row.append( $('<th />').text("Sum").attr('rowspan', '1').attr('colspan', '1'));
-    thead.append(row);
-    row = $('<tr />')
     var titleClass = collapsed ? "extend-box-closed" : "extend-box-open";
     var titleCell = $('<td />').html('<span class="' + titleClass +
             '"></span>ALL (' + partners.length + 'neurons)')
     row.append(titleCell);
     row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.synaptic_count; }, 0) ));
+    if (extraCols) {
+      skids.forEach(function(skid) {
+        var count = partners.reduce(function(sum, partner) {
+          return sum + (partner.skids[skid] || 0);
+        }, 0)
+        this.append($('<td />').text(count));
+      }, row);
+    }
     var average = (partners.reduce(function(sum, partner) { return sum + partner.reviewed; }, 0 ) / partners.length) | 0;
     row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));
     row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.num_nodes; }, 0) ));
@@ -410,6 +434,30 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       }
     });
 
+    /**
+     * Support function to add a table cell that links to a connector selection,
+     * displaying a connector count.
+     */
+    function createSynapseCountCell(count, partner, skids) {
+      var td = document.createElement('td');
+      var a = document.createElement('a');
+      td.appendChild(a);
+      a.appendChild(document.createTextNode(count));
+      a.setAttribute('href', '#');
+      a.style.color = 'black';
+      a.style.textDecoration = 'none';
+      //showSharedConnectorsFn(partner.id, Object.keys(partner.skids), relation);
+      a.onclick = ConnectorSelection.show_shared_connectors.bind(
+          ConnectorSelection, partner.id, skids, relation);
+      a.onmouseover = function() {
+          a.style.textDecoration = 'underline';
+          // TODO should show a div with the list of partners, with their names etc.
+      };
+      a.onmouseout = onmouseout;
+      return td;
+    }
+
+    // Create a table row for every partner
     partners.forEach(function(partner) {
       var tr = document.createElement('tr');
       if (collapsed) {
@@ -424,20 +472,15 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       tr.appendChild(td);
 
       // Cell with synapses with partner neuron
-      var td = document.createElement('td');
-      var a = document.createElement('a');
-      td.appendChild(a);
-      a.appendChild(document.createTextNode(partner.synaptic_count));
-      a.setAttribute('href', '#');
-      a.style.color = 'black';
-      a.style.textDecoration = 'none';
-      a.onclick = ConnectorSelection.show_shared_connectors.bind(ConnectorSelection, partner.id, Object.keys(partner.skids), relation); //showSharedConnectorsFn(partner.id, Object.keys(partner.skids), relation);
-      a.onmouseover = function() {
-          a.style.textDecoration = 'underline';
-          // TODO should show a div with the list of partners, with their names etc.
-      };
-      a.onmouseout = onmouseout;
-      tr.appendChild(td);
+      tr.appendChild(createSynapseCountCell(partner.synaptic_count,
+          partner, Object.keys(partner.skids)));
+      // Extra columns for individual neurons
+      if (extraCols) {
+        skids.forEach(function(skid) {
+          this.appendChild(createSynapseCountCell(partner.skids[skid] || 0,
+              partner, [skid]));
+        }, tr);
+      }
 
       // Cell with percent reviewed of partner neuron
       var td = document.createElement('td');
@@ -558,12 +601,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   })(this));
 
   // Create incomining and outgoing tables
-  var table_incoming = create_table(to_sorted_array(this.incoming), 'Up',
-      'presynaptic_to', this.upstreamCollapsed, (function() {
+  var table_incoming = create_table(this.skeletons,
+      to_sorted_array(this.incoming), 'Up', 'presynaptic_to',
+      this.upstreamCollapsed, (function() {
         this.upstreamCollapsed = !this.upstreamCollapsed;
       }).bind(this));
-  var table_outgoing = create_table(to_sorted_array(this.outgoing), 'Down',
-      'postsynaptic_to', this.downstreamCollapsed, (function() {
+  var table_outgoing = create_table(this.skeletons,
+      to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to',
+      this.downstreamCollapsed, (function() {
         this.downstreamCollapsed = !this.downstreamCollapsed;
       }).bind(this));
 

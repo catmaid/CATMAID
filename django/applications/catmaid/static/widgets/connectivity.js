@@ -360,12 +360,15 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var thead = $('<thead />');
     table.append( thead );
     var row = $('<tr />')
-    row.append( $('<th />').text(title + "stream neuron") );
-    row.append( $('<th />').text("syn count") );
-    row.append( $('<th />').text("reviewed") );
-    row.append( $('<th />').text("node count") );
-    row.append( $('<th />').text("select") );
+    row.append( $('<th />').text(title + "stream neuron").attr('rowspan', '2'));
+    row.append( $('<th />').text("syn count").attr('rowspan', '1'));
+    row.append( $('<th />').text("reviewed").attr('rowspan', '2'));
+    row.append( $('<th />').text("node count").attr('rowspan', '2'));
+    row.append( $('<th />').text("select").attr('rowspan', '2'));
     thead.append( row );
+    row = $('<tr />');
+    row.append( $('<th />').text("Sum").attr('rowspan', '1').attr('colspan', '1'));
+    thead.append(row);
     row = $('<tr />')
     var titleClass = collapsed ? "extend-box-closed" : "extend-box-open";
     var titleCell = $('<td />').html('<span class="' + titleClass +

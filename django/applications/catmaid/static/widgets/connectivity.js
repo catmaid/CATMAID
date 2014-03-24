@@ -515,18 +515,22 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   /**
    * Support function to add a 'seclect all' checkbox.
    */
-  var add_select_all_fn = function(name, table) {
+  var add_select_all_fn = function(name, table, nSkeletons) {
+    // Offset of checkbox column due to extra columns.
+    var cbOffset = nSkeletons > 1 ? nSkeletons : 0;
+    // Assign 'select all' checkbox handler
     $('#' + name + 'stream-selectall' + widgetID).click(function( event ) {
       var rows = table[0].childNodes[1].childNodes; // all tr elements
       var linkTarget = getLinkTarget();
 
-      if($('#' + name + 'stream-selectall' + widgetID).is(':checked') ) {
-       var skids = [];
-       for (var i=rows.length-1; i > -1; --i) {
-         var checkbox = rows[i].childNodes[4].childNodes[0];
-         checkbox.checked = true;
-         skids.push(parseInt(checkbox.value));
-       };
+      var skids = [];
+      for (var i=rows.length-1; i > -1; --i) {
+        var checkbox = rows[i].childNodes[4 + cbOffset].childNodes[0];
+        checkbox.checked = this.checked;
+        skids.push(parseInt(checkbox.value));
+      };
+
+      if (this.checked) {
        if (linkTarget) {
          linkTarget.updateModels(skids.reduce(function(o, skid) {
            // See if the target has the model and update only its selection state
@@ -538,12 +542,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
          }, {}));
        }
      } else {
-       var skids = [];
-       for (var i=rows.length-1; i > -1; --i) {
-         var checkbox = rows[i].childNodes[4].childNodes[0];
-         checkbox.checked = false;
-         skids.push(parseInt(checkbox.value));
-       };
        if (linkTarget) {
          linkTarget.updateModels(skids.reduce(function(o, skid) {
            var model = linkTarget.getSkeletonModel(skid);
@@ -621,8 +619,9 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   outgoing.append(table_outgoing);
 
   // Add 'select all' checkboxes
-  add_select_all_fn('up', table_incoming);
-  add_select_all_fn('down', table_outgoing);
+  var nSkeletons = Object.keys(this.skeletons).length;
+  add_select_all_fn('up', table_incoming, nSkeletons);
+  add_select_all_fn('down', table_outgoing, nSkeletons);
 };
 
 SkeletonConnectivity.prototype.openPlot = function() {

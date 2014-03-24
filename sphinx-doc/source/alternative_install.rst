@@ -188,17 +188,18 @@ and can serve as the middle layer between Nginx and CATMAID.
 
 On Ubuntu 12.04, install nginx and uwsgi::
 
-  sudo apt-get install nginx uwsgi uwsgi-python
+  sudo apt-get install nginx uwsgi uwsgi-plugin-python
 
 Here is a sample uWSGI configuration file.  On Ubuntu, this can be saved as 
 */etc/uwsgi/apps-available/catmaid.ini*, with a soft link to */etc/uwsgi/apps-enabled/catmaid.ini*::
 
   ; uWSGI instance configuration for CATMAID
   [uwsgi]
-  virtualenv = <CATMAID-path>/django/env
-  chdir = <CATMAID-path>/django
+  virtualenv = /home/alice/.virtualenvs/catmaid
+  chdir = <CATMAID-PATH>/django
   socket = /run/uwsgi/app/catmaid/socket
   mount = /=<CATMAID-path>/django/projects/mysite/django.wsgi
+  plugins = python
   ; manage-script-name is required if CATMAID will be run in a subdirectory
   manage-script-name = true
 
@@ -211,27 +212,20 @@ You now be able to start uWSGI manually with one of the following::
 Here is a sample nginx configuration file::
 
   server {
-      listen 80;
-      server_name <CATMAID-host>
+      listen 8080;
+      server_name <CATMAID-HOST>;
 
-      # Serve CATMAID static files directly
-      location /dj-static/ {
-         alias <CATMAID-path>/django/static/;
+      # Give access to Django's static files
+      location /catmaid/static/ {
+         alias <CATMAID-PATH>/django/static/;
       }
 
       # Route all CATMAID Django WSGI requests to uWSGI
-      location / {
+      location /catmaid/ {
           include uwsgi_params;
           uwsgi_pass unix:///run/uwsgi/app/catmaid/socket;
       }
   }
-
-Quirks:
-#######
-
-A `quirk <https://code.djangoproject.com/ticket/19615>`_ in uWSGI prevents data from being
-sent back to the client unless POST arguments are read.  If you are hit by this,
-add ``post-buffering = 1`` to your uWSGI configuration file.
 
 Setup based on Nginx and Gunicorn
 ---------------------------------

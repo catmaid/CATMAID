@@ -438,7 +438,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
      * Support function to add a table cell that links to a connector selection,
      * displaying a connector count.
      */
-    function createSynapseCountCell(count, partner, skids) {
+    function createSynapseCountCell(count, partner, skids, title) {
       var td = document.createElement('td');
       var a = document.createElement('a');
       td.appendChild(a);
@@ -454,6 +454,9 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
           // TODO should show a div with the list of partners, with their names etc.
       };
       a.onmouseout = onmouseout;
+      // Create tool-tip
+      a.setAttribute('title', title)
+      td.setAttribute('title', title)
       return td;
     }
 
@@ -473,12 +476,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
       // Cell with synapses with partner neuron
       tr.appendChild(createSynapseCountCell(partner.synaptic_count,
-          partner, Object.keys(partner.skids)));
+          partner, Object.keys(partner.skids), partner.synaptic_count +
+          " synapses for all selected neurons."));
       // Extra columns for individual neurons
       if (extraCols) {
-        skids.forEach(function(skid) {
-          this.appendChild(createSynapseCountCell(partner.skids[skid] || 0,
-              partner, [skid]));
+        skids.forEach(function(skid, i) {
+          var count = partner.skids[skid] || 0;
+          this.appendChild(createSynapseCountCell(count, partner, [skid],
+              count + " synapses for neuron '" + skeletons[skid]  + "."));
         }, tr);
       }
 

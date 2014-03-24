@@ -103,23 +103,23 @@ SkeletonConnectivity.prototype.getSelectedSkeletons = function() {
 };
 
 SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
-    var e_name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
-    if (0 === e_name.length) return null;
-    var name = e_name.text();
-    name = name.substring(0, name.lastIndexOf(' '));
+  var e_name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
+  if (0 === e_name.length) return null;
+  var name = e_name.text();
+  name = name.substring(0, name.lastIndexOf(' '));
 
-    var pre = $("#presynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
-    var post = $("#postsynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
+  var pre = $("#presynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
+  var post = $("#postsynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
 
-    var color = new THREE.Color();
-    if (pre.length > 0) {
-      if (post.length > 0) color.setRGB(0.8, 0.6, 1); // both
-      else color.setRGB(1, 0.4, 0.4); // pre
-    } else if (post.length > 0) color.setRGB(0.5, 1, 1); // post
+  var color = new THREE.Color();
+  if (pre.length > 0) {
+    if (post.length > 0) color.setRGB(0.8, 0.6, 1); // both
+    else color.setRGB(1, 0.4, 0.4); // pre
+  } else if (post.length > 0) color.setRGB(0.5, 1, 1); // post
 
-    var model = new SelectionTable.prototype.SkeletonModel(skeleton_id, name, color);
-    model.selected = pre.is(':checked') || post.is(':checked');
-    return model;
+  var model = new SelectionTable.prototype.SkeletonModel(skeleton_id, name, color);
+  model.selected = pre.is(':checked') || post.is(':checked');
+  return model;
 };
 
 SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
@@ -197,356 +197,354 @@ SkeletonConnectivity.prototype.update = function() {
   var self = this;
 
   requestQueue.replace(
-          django_url + project.id + '/skeleton/connectivity',
-          'POST',
-          {'source': skids,
-           'threshold': $('#connectivity_count_threshold' + this.widgetID).val(),
-           'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
-          function(status, text) {
-            var handle = function(status, text) {
-              if (200 !== status) {
-                self.incoming = {};
-                self.outgoing = {};
-                new ErrorDialog("Couldn't load connectivity information",
-                    "The server returned an unexpected status code: " +
-                        status).show();
-                return;
-              }
-              var json = $.parseJSON(text);
-              if (json.error) {
-                self.incoming = {};
-                self.outgoing = {};
-                new ErrorDialog("Couldn't load connectivity information",
-                    json.error).show();
-                return;
-              }
+      django_url + project.id + '/skeleton/connectivity',
+      'POST',
+      {'source': skids,
+       'threshold': $('#connectivity_count_threshold' + this.widgetID).val(),
+       'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
+      function(status, text) {
+        var handle = function(status, text) {
+          if (200 !== status) {
+            self.incoming = {};
+            self.outgoing = {};
+            new ErrorDialog("Couldn't load connectivity information",
+                "The server returned an unexpected status code: " +
+                    status).show();
+            return;
+          }
+          var json = $.parseJSON(text);
+          if (json.error) {
+            self.incoming = {};
+            self.outgoing = {};
+            new ErrorDialog("Couldn't load connectivity information",
+                json.error).show();
+            return;
+          }
 
-              // Save reference of incoming and outgoing nodes. These are needed to open
-              // the connectivity plots in a separate widget.
-              self.incoming = json.incoming;
-              self.outgoing = json.outgoing
-              // Create connectivity tables
-              self.createConnectivityTable();
-            };
+          // Save reference of incoming and outgoing nodes. These are needed to open
+          // the connectivity plots in a separate widget.
+          self.incoming = json.incoming;
+          self.outgoing = json.outgoing
+          // Create connectivity tables
+          self.createConnectivityTable();
+        };
 
-            // Handle result and create tables, if possible
-            handle(status, text);
-            // Restore checkbox state
-            checkboxes.forEach(function(c, i) {
-              var relation = relations[i];
-              Object.keys(c).forEach(function(skeleton_id) {
-                var sel = $('#' + relation + '-show-skeleton-' + self.widgetID + '-' + skeleton_id);
-                if (sel.length > 0) {
-                  sel.attr('checked', c[skeleton_id]);
-                }
-              });
-            });
-          },
-          'update_connectivity_table');
+        // Handle result and create tables, if possible
+        handle(status, text);
+        // Restore checkbox state
+        checkboxes.forEach(function(c, i) {
+          var relation = relations[i];
+          Object.keys(c).forEach(function(skeleton_id) {
+            var sel = $('#' + relation + '-show-skeleton-' + self.widgetID + '-' + skeleton_id);
+            if (sel.length > 0) {
+              sel.attr('checked', c[skeleton_id]);
+            }
+          });
+        });
+      },
+      'update_connectivity_table');
 };
 
 SkeletonConnectivity.prototype.createConnectivityTable = function() {
-    var widgetID = this.widgetID;
-    var getLinkTarget = this.getLinkTarget.bind(this);
-    var getSkeletonModel = this.getSkeletonModel.bind(this);
+  var widgetID = this.widgetID;
+  var getLinkTarget = this.getLinkTarget.bind(this);
+  var getSkeletonModel = this.getSkeletonModel.bind(this);
 
-    // Clear table
-    this._clearGUI();
+  // Clear table
+  this._clearGUI();
 
-    // Support function for creating a neuron/skeleton name link element in the
-    // neuron list and both pre- and postsynaptic tables.
-    var createNameElement = function(name, skeleton_id) {
-      var a = document.createElement('a');
-      a.appendChild(document.createTextNode(name + ' #' + skeleton_id));
-      a.setAttribute('href', '#');
-      a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
-      a.onclick = function() {
-        TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
-        return false;
-      };
-      a.onmouseover = onmouseover;
-      a.onmouseout = onmouseout;
-      a.style.color = 'black';
-      a.style.textDecoration = 'none';
-      return a;
+  // Support function for creating a neuron/skeleton name link element in the
+  // neuron list and both pre- and postsynaptic tables.
+  var createNameElement = function(name, skeleton_id) {
+    var a = document.createElement('a');
+    a.appendChild(document.createTextNode(name + ' #' + skeleton_id));
+    a.setAttribute('href', '#');
+    a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
+    a.onclick = function() {
+      TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
+      return false;
     };
+    a.onmouseover = onmouseover;
+    a.onmouseout = onmouseout;
+    a.style.color = 'black';
+    a.style.textDecoration = 'none';
+    return a;
+  };
 
-    // Create neuron list
-    var neuronList = document.createElement("ul");
-    neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
-    neuronList.setAttribute('class', 'header');
-    Object.keys(this.skeletons).forEach(function(skid) {
-        var li = document.createElement("li");
-        li.setAttribute('id', 'li-connectivity-table-' + widgetID + '-' + skid);
-        var cb = document.createElement("input");
-        cb.setAttribute("type", "checkbox");
-        cb.setAttribute("checked", "checked");
-        var label = document.createElement("label");
-        label.setAttribute('class', 'left');
-        label.appendChild(cb);
-        label.appendChild(createNameElement(this.skeletons[skid], skid));
-        li.appendChild(label);
-        neuronList.appendChild(li);
-    }, this);
+  // Create neuron list
+  var neuronList = document.createElement("ul");
+  neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
+  neuronList.setAttribute('class', 'header');
+  Object.keys(this.skeletons).forEach(function(skid) {
+    var li = document.createElement("li");
+    li.setAttribute('id', 'li-connectivity-table-' + widgetID + '-' + skid);
+    var cb = document.createElement("input");
+    cb.setAttribute("type", "checkbox");
+    cb.setAttribute("checked", "checked");
+    var label = document.createElement("label");
+    label.setAttribute('class', 'left');
+    label.appendChild(cb);
+    label.appendChild(createNameElement(this.skeletons[skid], skid));
+    li.appendChild(label);
+    neuronList.appendChild(li);
+  }, this);
 
-    // Toggle for alignen tables next to each other
-    var layoutToggle = $('<input />').attr('type', 'checkbox');
-    if (this.tablesSideBySide) {
-        layoutToggle.attr('checked', 'checked');
+  // Toggle for alignen tables next to each other
+  var layoutToggle = $('<input />').attr('type', 'checkbox');
+  if (this.tablesSideBySide) {
+    layoutToggle.attr('checked', 'checked');
+  }
+  var layoutLabel = $('<label />').attr('class', 'header right')
+      .append(document.createTextNode('Tables side by side'))
+      .append(layoutToggle);
+  $("#connectivity_widget" + widgetID).append(neuronList);
+  $("#connectivity_widget" + widgetID).append(layoutLabel);
+
+  // Create containers for pre and postsynaptic partners
+  var incoming = $('<div />');
+  var outgoing = $('<div />');
+  var tables = $('<div />').css('width', '100%').attr('class', 'content')
+     .append(incoming)
+     .append(outgoing);
+  $("#connectivity_widget" + widgetID).append(tables);
+
+  // Updates the layout of the tables
+  var layoutTables = function(sideBySide) {
+    incoming.toggleClass('table_container_half', sideBySide);
+    incoming.toggleClass('table_container_wide', !sideBySide);
+    outgoing.toggleClass('table_container_half', sideBySide);
+    outgoing.toggleClass('table_container_wide', !sideBySide);
+  };
+  layoutTables(this.tablesSideBySide);
+
+  // Add handler to layout toggle
+  layoutToggle.change((function(widget) {
+    return function() {
+      widget.tablesSideBySide = this.checked;
+      layoutTables(this.checked);
+    };
+  })(this));
+
+  var synaptic_count = function(skids_dict) {
+    return Object.keys(skids_dict).reduce(function(sum, skid) {
+      return sum + skids_dict[skid];
+    }, 0);
+  };
+
+  var to_sorted_array = function(partners) {
+    return Object.keys(partners).reduce(function(list, skid) {
+      var partner = partners[skid];
+      partner['id'] = parseInt(skid);
+      partner['synaptic_count'] = synaptic_count(partner.skids);
+      list.push(partner);
+      return list;
+    }, []).sort(function(a, b) {
+      return b.synaptic_count - a.synaptic_count;
+    });
+  };
+
+  var onmouseover = function() { this.style.textDecoration = 'underline'; }
+  var onmouseout = function() { this.style.textDecoration = 'none'; };
+
+  var getBackgroundColor = function(reviewed) {
+    if (100 === reviewed) {
+      return '#6fff5c';
+    } else if (0 === reviewed) {
+      return '#ff8c8c';
+    } else {
+      return '#ffc71d';
     }
-    var layoutLabel = $('<label />').attr('class', 'header right')
-            .append(document.createTextNode('Tables side by side'))
-            .append(layoutToggle);
-    $("#connectivity_widget" + widgetID).append(neuronList);
-    $("#connectivity_widget" + widgetID).append(layoutLabel);
+  };
 
-    // Create containers for pre and postsynaptic partners
-    var incoming = $('<div />');
-    var outgoing = $('<div />');
-    var tables = $('<div />').css('width', '100%').attr('class', 'content')
-           .append(incoming)
-           .append(outgoing);
-    $("#connectivity_widget" + widgetID).append(tables);
+  var create_table = function(partners, title, relation, collapsed,
+        collapsedCallback) {
+    var set_as_selected = function(ev) {
+      var skelid = parseInt( ev.target.value );
+      var checked = $('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked');
+      // Update the checkbox for the same skeleton on the other table, if any
+      var r = {presynaptic_to: 'postsynaptic_to',
+               postsynaptic_to: 'presynaptic_to'}[relation];
+      $('#' + r + '-show-skeleton-' + widgetID + '-' + skelid).attr('checked', checked);
 
-    // Updates the layout of the tables
-    var layoutTables = function(sideBySide) {
-        incoming.toggleClass('table_container_half', sideBySide);
-        incoming.toggleClass('table_container_wide', !sideBySide);
-        outgoing.toggleClass('table_container_half', sideBySide);
-        outgoing.toggleClass('table_container_wide', !sideBySide);
-    };
-    layoutTables(this.tablesSideBySide);
+      var linkTarget = getLinkTarget();
+      if (!linkTarget) return;
 
-    // Add handler to layout toggle
-    layoutToggle.change((function(widget) {
-        return function() {
-            widget.tablesSideBySide = this.checked;
-            layoutTables(this.checked);
-        };
-    })(this));
-
-    var synaptic_count = function(skids_dict) {
-        return Object.keys(skids_dict).reduce(function(sum, skid) {
-            return sum + skids_dict[skid];
-        }, 0);
-    };
-
-    var to_sorted_array = function(partners) {
-        return Object.keys(partners).reduce(function(list, skid) {
-            var partner = partners[skid];
-            partner['id'] = parseInt(skid);
-            partner['synaptic_count'] = synaptic_count(partner.skids);
-            list.push(partner);
-            return list;
-        }, []).sort(function(a, b) {
-            return b.synaptic_count - a.synaptic_count;
-        });
-    };
-
-    var onmouseover = function() { this.style.textDecoration = 'underline'; }
-    var onmouseout = function() { this.style.textDecoration = 'none'; };
-
-    var getBackgroundColor = function(reviewed) {
-        if (100 === reviewed) {
-            return '#6fff5c';
-        } else if (0 === reviewed) {
-            return '#ff8c8c';
-        } else {
-            return '#ffc71d';
-        }
-    };
-
-    var create_table = function(partners, title, relation, collapsed,
-              collapsedCallback) {
-      var set_as_selected = function(ev) {
-        var skelid = parseInt( ev.target.value );
-        var checked = $('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked');
-        // Update the checkbox for the same skeleton on the other table, if any
-        var r = {presynaptic_to: 'postsynaptic_to',
-                 postsynaptic_to: 'presynaptic_to'}[relation];
-        $('#' + r + '-show-skeleton-' + widgetID + '-' + skelid).attr('checked', checked);
-
-        var linkTarget = getLinkTarget();
-        if (!linkTarget) return;
-
-        var model = linkTarget.getSkeletonModel(skelid);
-        if (checked) {
-          if (!model) model = getSkeletonModel(skelid);
-          else model.setVisible(true);
+      var model = linkTarget.getSkeletonModel(skelid);
+      if (checked) {
+        if (!model) model = getSkeletonModel(skelid);
+        else model.setVisible(true);
+        linkTarget.updateOneModel(model);
+      } else {
+        if (model) {
+          model.setVisible(false);
           linkTarget.updateOneModel(model);
+        }
+      }
+    };
+
+    var table = $('<table />').attr('id', 'incoming_connectivity_table' + widgetID)
+            .attr('class', 'partner_table');
+    // create header
+    var thead = $('<thead />');
+    table.append( thead );
+    var row = $('<tr />')
+    row.append( $('<th />').text(title + "stream neuron") );
+    row.append( $('<th />').text("syn count") );
+    row.append( $('<th />').text("reviewed") );
+    row.append( $('<th />').text("node count") );
+    row.append( $('<th />').text("select") );
+    thead.append( row );
+    row = $('<tr />')
+    var titleClass = collapsed ? "extend-box-closed" : "extend-box-open";
+    var titleCell = $('<td />').html('<span class="' + titleClass +
+            '"></span>ALL (' + partners.length + 'neurons)')
+    row.append(titleCell);
+    row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.synaptic_count; }, 0) ));
+    var average = (partners.reduce(function(sum, partner) { return sum + partner.reviewed; }, 0 ) / partners.length) | 0;
+    row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));
+    row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.num_nodes; }, 0) ));
+    var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
+    row.append( $('<td />').append( el ) );
+    var tbody = $('<tbody />');
+    table.append( tbody );
+    tbody.append( row );
+
+    // Add collapsing functionality
+    var toggleRowsBelow = function($element) {
+      $element.nextAll('tr').toggle().promise().done(function() {
+        // Change open/close indidicator box
+        var open_elements = $(".extend-box-open", $element);
+        if (open_elements.length > 0) {
+          open_elements.attr('class', 'extend-box-closed');
         } else {
-          if (model) {
-            model.setVisible(false);
-            linkTarget.updateOneModel(model);
+          var close_elements = $(".extend-box-closed", $element);
+          if (close_elements.length > 0) {
+            close_elements.attr('class', 'extend-box-open');
           }
         }
+      });
+    };
+
+    // Add handler to first row
+    titleCell.click(function() {
+      // Toggle visibility of all rows below the current one
+      toggleRowsBelow($(this).parent('tr'));
+      // Call back, if wanted
+      if (collapsedCallback) {
+        collapsedCallback();
+      }
+    });
+
+    partners.forEach(function(partner) {
+      var tr = document.createElement('tr');
+      if (collapsed) {
+        tr.style.display = "none";
+      }
+      tbody.append(tr);
+
+      // Cell with partner neuron name
+      var td = document.createElement('td');
+      var a = createNameElement(partner.name, partner.id);
+      td.appendChild(a);
+      tr.appendChild(td);
+
+      // Cell with synapses with partner neuron
+      var td = document.createElement('td');
+      var a = document.createElement('a');
+      td.appendChild(a);
+      a.appendChild(document.createTextNode(partner.synaptic_count));
+      a.setAttribute('href', '#');
+      a.style.color = 'black';
+      a.style.textDecoration = 'none';
+      a.onclick = ConnectorSelection.show_shared_connectors.bind(ConnectorSelection, partner.id, Object.keys(partner.skids), relation); //showSharedConnectorsFn(partner.id, Object.keys(partner.skids), relation);
+      a.onmouseover = function() {
+          a.style.textDecoration = 'underline';
+          // TODO should show a div with the list of partners, with their names etc.
       };
+      a.onmouseout = onmouseout;
+      tr.appendChild(td);
 
-        var table = $('<table />').attr('id', 'incoming_connectivity_table' + widgetID)
-                .attr('class', 'partner_table');
-        // create header
-        var thead = $('<thead />');
-        table.append( thead );
-        var row = $('<tr />')
-        row.append( $('<th />').text(title + "stream neuron") );
-        row.append( $('<th />').text("syn count") );
-        row.append( $('<th />').text("reviewed") );
-        row.append( $('<th />').text("node count") );
-        row.append( $('<th />').text("select") );
-        thead.append( row );
-        row = $('<tr />')
-        var titleClass = collapsed ? "extend-box-closed" : "extend-box-open";
-        var titleCell = $('<td />').html('<span class="' + titleClass +
-                '"></span>ALL (' + partners.length + 'neurons)')
-        row.append(titleCell);
-        row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.synaptic_count; }, 0) ));
-        var average = (partners.reduce(function(sum, partner) { return sum + partner.reviewed; }, 0 ) / partners.length) | 0;
-        row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));
-        row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.num_nodes; }, 0) ));
-        var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
-        row.append( $('<td />').append( el ) );
-        var tbody = $('<tbody />');
-        table.append( tbody );
-        tbody.append( row );
+      // Cell with percent reviewed of partner neuron
+      var td = document.createElement('td');
+      td.appendChild(document.createTextNode(partner.reviewed));
+      td.style.backgroundColor = getBackgroundColor(partner.reviewed);
+      tr.appendChild(td);
 
-        // Add collapsing functionality
-        var toggleRowsBelow = function($element) {
-            $element.nextAll('tr').toggle().promise().done(
-                function() {
-                    // Change open/close indidicator box
-                    var open_elements = $(".extend-box-open", $element);
-                    if (open_elements.length > 0) {
-                        open_elements.attr('class', 'extend-box-closed');
-                    } else {
-                        var close_elements = $(".extend-box-closed", $element);
-                        if (close_elements.length > 0) {
-                            close_elements.attr('class', 'extend-box-open');
-                        }
-                    }
-                });
-        };
+      // Cell with number of nodes of partner neuron
+      var td = document.createElement('td');
+      td.appendChild(document.createTextNode(partner.num_nodes));
+      tr.appendChild(td);
 
-        // Add handler to first row
-        titleCell.click(function() {
-            // Toggle visibility of all rows below the current one
-            toggleRowsBelow($(this).parent('tr'));
-            // Call back, if wanted
-            if (collapsedCallback) {
-                collapsedCallback();
-            }
-        });
+      // Cell with checkbox for adding to Selection Table
+      var td = document.createElement('td');
+      var input = document.createElement('input');
+      input.setAttribute('id', relation + '-show-skeleton-' + widgetID + '-' + partner.id);
+      input.setAttribute('type', 'checkbox');
+      input.setAttribute('value', partner.id);
+      input.onclick = set_as_selected;
+      td.appendChild(input);
+      tr.appendChild(td);
+    });
 
-        partners.forEach(function(partner) {
-            var tr = document.createElement('tr');
-            if (collapsed) {
-              tr.style.display = "none";
-            }
-            tbody.append(tr);
+    return table;
+  };
 
-            // Cell with partner neuron name
-            var td = document.createElement('td');
-            var a = createNameElement(partner.name, partner.id);
-            td.appendChild(a);
-            tr.appendChild(td);
+  var table_incoming = create_table(to_sorted_array(this.incoming), 'Up',
+      'presynaptic_to', this.upstreamCollapsed, (function() {
+        this.upstreamCollapsed = !this.upstreamCollapsed;
+      }).bind(this));
+  var table_outgoing = create_table(to_sorted_array(this.outgoing), 'Down',
+      'postsynaptic_to', this.downstreamCollapsed, (function() {
+        this.downstreamCollapsed = !this.downstreamCollapsed;
+      }).bind(this));
 
-            // Cell with synapses with partner neuron
-            var td = document.createElement('td');
-            var a = document.createElement('a');
-            td.appendChild(a);
-            a.appendChild(document.createTextNode(partner.synaptic_count));
-            a.setAttribute('href', '#');
-            a.style.color = 'black';
-            a.style.textDecoration = 'none';
-            a.onclick = ConnectorSelection.show_shared_connectors.bind(ConnectorSelection, partner.id, Object.keys(partner.skids), relation); //showSharedConnectorsFn(partner.id, Object.keys(partner.skids), relation);
-            a.onmouseover = function() {
-                a.style.textDecoration = 'underline';
-                // TODO should show a div with the list of partners, with their names etc.
-            };
-            a.onmouseout = onmouseout;
-            tr.appendChild(td);
+  incoming.append(table_incoming);
+  outgoing.append(table_outgoing);
 
-            // Cell with percent reviewed of partner neuron
-            var td = document.createElement('td');
-            td.appendChild(document.createTextNode(partner.reviewed));
-            td.style.backgroundColor = getBackgroundColor(partner.reviewed);
-            tr.appendChild(td);
+  var add_select_all_fn = function(name, table) {
+    $('#' + name + 'stream-selectall' + widgetID).click(function( event ) {
+      var rows = table[0].childNodes[1].childNodes; // all tr elements
+      var linkTarget = getLinkTarget();
 
-            // Cell with number of nodes of partner neuron
-            var td = document.createElement('td');
-            td.appendChild(document.createTextNode(partner.num_nodes));
-            tr.appendChild(td);
+      if($('#' + name + 'stream-selectall' + widgetID).is(':checked') ) {
+       var skids = [];
+       for (var i=rows.length-1; i > -1; --i) {
+         var checkbox = rows[i].childNodes[4].childNodes[0];
+         checkbox.checked = true;
+         skids.push(parseInt(checkbox.value));
+       };
+       if (linkTarget) {
+         linkTarget.updateModels(skids.reduce(function(o, skid) {
+           // See if the target has the model and update only its selection state
+           var model = linkTarget.getSkeletonModel(skid);
+           if (!model) model = getSkeletonModel(skid);
+           else model.setVisible(true);
+           o[skid] = model;
+           return o;
+         }, {}));
+       }
+     } else {
+       var skids = [];
+       for (var i=rows.length-1; i > -1; --i) {
+         var checkbox = rows[i].childNodes[4].childNodes[0];
+         checkbox.checked = false;
+         skids.push(parseInt(checkbox.value));
+       };
+       if (linkTarget) {
+         linkTarget.updateModels(skids.reduce(function(o, skid) {
+           var model = linkTarget.getSkeletonModel(skid);
+           if (!model) return o;
+           model.setVisible(false);
+           o[skid] = model;
+           return o;
+         }, {}));
+       }
+     }
+    });
+  };
 
-            // Cell with checkbox for adding to Selection Table
-            var td = document.createElement('td');
-            var input = document.createElement('input');
-            input.setAttribute('id', relation + '-show-skeleton-' + widgetID + '-' + partner.id);
-            input.setAttribute('type', 'checkbox');
-            input.setAttribute('value', partner.id);
-            input.onclick = set_as_selected;
-            td.appendChild(input);
-            tr.appendChild(td);
-        });
-
-        return table;
-    };
-
-
-    var table_incoming = create_table(to_sorted_array(this.incoming), 'Up',
-            'presynaptic_to', this.upstreamCollapsed, (function() {
-                this.upstreamCollapsed = !this.upstreamCollapsed;
-            }).bind(this));
-    var table_outgoing = create_table(to_sorted_array(this.outgoing), 'Down',
-            'postsynaptic_to', this.downstreamCollapsed, (function() {
-                this.downstreamCollapsed = !this.downstreamCollapsed;
-            }).bind(this));
-
-    incoming.append(table_incoming);
-    outgoing.append(table_outgoing);
-
-    var add_select_all_fn = function(name, table) {
-         $('#' + name + 'stream-selectall' + widgetID).click( function( event ) {
-             var rows = table[0].childNodes[1].childNodes; // all tr elements
-             var linkTarget = getLinkTarget();
-
-            if($('#' + name + 'stream-selectall' + widgetID).is(':checked') ) {
-                var skids = [];
-                for (var i=rows.length-1; i > -1; --i) {
-                    var checkbox = rows[i].childNodes[4].childNodes[0];
-                    checkbox.checked = true;
-                    skids.push(parseInt(checkbox.value));
-                };
-                if (linkTarget) {
-                  linkTarget.updateModels(skids.reduce(function(o, skid) {
-                    // See if the target has the model and update only its selection state
-                    var model = linkTarget.getSkeletonModel(skid);
-                    if (!model) model = getSkeletonModel(skid);
-                    else model.setVisible(true);
-                    o[skid] = model;
-                    return o;
-                  }, {}));
-                }
-            } else {
-                var skids = [];
-                for (var i=rows.length-1; i > -1; --i) {
-                    var checkbox = rows[i].childNodes[4].childNodes[0];
-                    checkbox.checked = false;
-                    skids.push(parseInt(checkbox.value));
-                };
-                if (linkTarget) {
-                  linkTarget.updateModels(skids.reduce(function(o, skid) {
-                    var model = linkTarget.getSkeletonModel(skid);
-                    if (!model) return o;
-                    model.setVisible(false);
-                    o[skid] = model;
-                    return o;
-                  }, {}));
-                }
-            }
-        });
-    };
-
-    add_select_all_fn('up', table_incoming);
-    add_select_all_fn('down', table_outgoing);
+  add_select_all_fn('up', table_incoming);
+  add_select_all_fn('down', table_outgoing);
 };
 
 SkeletonConnectivity.prototype.openPlot = function() {

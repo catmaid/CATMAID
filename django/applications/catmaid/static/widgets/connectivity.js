@@ -558,6 +558,9 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // Clear table
   this._clearGUI();
 
+  // The content container
+  var content = $("#connectivity_widget" + widgetID);
+
   // Create neuron list
   var neuronList = document.createElement("ul");
   neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
@@ -583,8 +586,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   var layoutLabel = $('<label />').attr('class', 'header right')
       .append(document.createTextNode('Tables side by side'))
       .append(layoutToggle);
-  $("#connectivity_widget" + widgetID).append(neuronList);
-  $("#connectivity_widget" + widgetID).append(layoutLabel);
+  content.append(neuronList);
+  content.append(layoutLabel);
 
   // Create containers for pre and postsynaptic partners
   var incoming = $('<div />');
@@ -592,7 +595,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   var tables = $('<div />').css('width', '100%').attr('class', 'content')
      .append(incoming)
      .append(outgoing);
-  $("#connectivity_widget" + widgetID).append(tables);
+  content.append(tables);
   layoutTables(this.tablesSideBySide);
 
   // Add handler to layout toggle

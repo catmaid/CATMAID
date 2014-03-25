@@ -200,7 +200,6 @@ SkeletonConnectivity.prototype.update = function() {
       django_url + project.id + '/skeleton/connectivity',
       'POST',
       {'source': skids,
-       'threshold': $('#connectivity_count_threshold' + this.widgetID).val(),
        'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
       function(status, text) {
         var handle = function(status, text) {
@@ -325,8 +324,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   /**
    * Support function for creating a partner table.
    */
-  var create_table = function(skeletons, partners, title, relation, collapsed,
-      collapsedCallback) {
+  var create_table = function(skeletons, threshold, partners, title, relation,
+      collapsed, collapsedCallback) {
     /**
      * Helper to handle selection of a neuron.
      */
@@ -462,6 +461,15 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
     // Create a table row for every partner
     partners.forEach(function(partner) {
+      // Ignore this line if all its synapse counts are below the threshold
+      var ignore = Object.keys(partner.skids).every(function(skid) {
+        // Return true if object is below threshold
+        return (partner.skids[skid] || 0) < threshold;
+      });
+      if (ignore) {
+        return;
+      }
+
       var tr = document.createElement('tr');
       if (collapsed) {
         tr.style.display = "none";
@@ -555,6 +563,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     });
   };
 
+  /**
+   * Support function to get the threshold.
+   */
+  var getThreshold = function() {
+    return $('#connectivity_count_threshold' + widgetID).val();
+  };
+
   // Clear table
   this._clearGUI();
 
@@ -607,12 +622,12 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   })(this));
 
   // Create incomining and outgoing tables
-  var table_incoming = create_table(this.skeletons,
+  var table_incoming = create_table(this.skeletons, getThreshold(),
       to_sorted_array(this.incoming), 'Up', 'presynaptic_to',
       this.upstreamCollapsed, (function() {
         this.upstreamCollapsed = !this.upstreamCollapsed;
       }).bind(this));
-  var table_outgoing = create_table(this.skeletons,
+  var table_outgoing = create_table(this.skeletons, getThreshold(),
       to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to',
       this.downstreamCollapsed, (function() {
         this.downstreamCollapsed = !this.downstreamCollapsed;

@@ -492,7 +492,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     return partners
 
-def _skeleton_info_raw(project_id, skeletons, synaptic_count_high_pass, op):
+def _skeleton_info_raw(project_id, skeletons, op):
     cursor = connection.cursor()
 
     # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
@@ -510,15 +510,10 @@ def _skeleton_info_raw(project_id, skeletons, synaptic_count_high_pass, op):
     incoming = _connected_skeletons(skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
     outgoing = _connected_skeletons(skeletons, op, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
 
-    # TODO this filtering should be done in the client
-    # Remove skeleton IDs under synaptic_count_high_pass and jsonize class instances
     def prepare(partners):
         for partnerID in partners.keys():
             partner = partners[partnerID]
             skids = partner.skids
-            for skid in skids.keys():
-                if skids[skid] < synaptic_count_high_pass:
-                    del skids[skid]
             # jsonize: swap class instance by its dict of members vs values
             if skids:
                 partners[partnerID] = partner.__dict__
@@ -535,11 +530,10 @@ def skeleton_info_raw(request, project_id=None):
     # sanitize arguments
     project_id = int(project_id)
     skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source['))
-    synaptic_count_high_pass = int( request.POST.get( 'threshold', 0 ) )
     op = request.POST.get('boolean_op') # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op[6:]] # sanitize
 
-    incoming, outgoing = _skeleton_info_raw(project_id, skeletons, synaptic_count_high_pass, op)
+    incoming, outgoing = _skeleton_info_raw(project_id, skeletons, op)
 
     return HttpResponse(json.dumps({'incoming': incoming, 'outgoing': outgoing}), mimetype='text/json')
 

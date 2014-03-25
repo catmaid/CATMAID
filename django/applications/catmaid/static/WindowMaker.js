@@ -1573,6 +1573,7 @@ var WindowMaker = new function()
         content.style.backgroundColor = "#ffffff";
 
         var contentbutton = document.createElement('div');
+        contentbutton.setAttribute("class", "buttonpanel");
         contentbutton.setAttribute("id", 'skeleton_connectivity_buttons' + widgetID);
 
         contentbutton.appendChild(document.createTextNode('From'));
@@ -1625,6 +1626,20 @@ var WindowMaker = new function()
         plot.setAttribute("value", "Open plot");
         plot.onclick = SC.openPlot.bind(SC);
         contentbutton.appendChild(plot);
+
+        var layoutToggle = document.createElement('input');
+        layoutToggle.setAttribute('id', 'connectivity-layout-toggle-' + widgetID);
+        layoutToggle.setAttribute('type', 'checkbox');
+        if (SC.tablesSideBySide) {
+          layoutToggle.setAttribute('checked', 'checked');
+        }
+        layoutToggle.onchange = (function() {
+          this.tablesSideBySide = this.checked;
+        }).bind(SC);
+        var layoutLabel = document.createElement('label');
+        layoutLabel.appendChild(document.createTextNode('Tables side by side'));
+        layoutLabel.appendChild(layoutToggle);
+        contentbutton.appendChild(layoutLabel);
 
         content.appendChild( contentbutton );
 

@@ -593,16 +593,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   }, this);
   content.append(neuronTable);
 
-  // Toggle for alignen tables next to each other
-  var layoutToggle = $('<input />').attr('type', 'checkbox');
-  if (this.tablesSideBySide) {
-    layoutToggle.attr('checked', 'checked');
-  }
-  var layoutLabel = $('<label />').attr('class', 'header right')
-      .append(document.createTextNode('Tables side by side'))
-      .append(layoutToggle);
-  content.append(layoutLabel);
-
   // Create containers for pre and postsynaptic partners
   var incoming = $('<div />');
   var outgoing = $('<div />');
@@ -613,12 +603,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   layoutTables(this.tablesSideBySide);
 
   // Add handler to layout toggle
-  layoutToggle.change((function(widget) {
-    return function() {
-      widget.tablesSideBySide = this.checked;
-      layoutTables(this.checked);
-    };
-  })(this));
+  $('#connectivity-layout-toggle-' + widgetID).unbind('change')
+      .change((function(widget) {
+        return function() {
+          widget.tablesSideBySide = this.checked;
+          layoutTables(this.checked);
+        };
+      })(this));
 
   // Create incomining and outgoing tables
   var table_incoming = create_table(this.skeletons, getThreshold(),

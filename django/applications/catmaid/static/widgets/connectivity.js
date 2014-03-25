@@ -457,7 +457,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       a.setAttribute('title', title)
       td.setAttribute('title', title)
       return td;
-    }
+    };
 
     // Create a table row for every partner
     partners.forEach(function(partner) {
@@ -834,7 +834,6 @@ ConnectivityGraphPlot.prototype.draw = function() {
                              .orient("left")
                              .tickFormat(d3.format("d"));
 
-
     // Define the ranges of the axes
     // x0: For the counts of synapses
     x0.domain(a.map(function(block, i) { return i+1; }));
@@ -914,7 +913,7 @@ ConnectivityGraphPlot.prototype.draw = function() {
   // Clear existing plot, if any
   var containerID = '#connectivity_graph_plot_div' + this.widgetID;
   var container = $(containerID);
-  container.empty()
+  container.empty();
 
   // Draw plots
   makeMultipleBarChart(this.skeletons, this.incoming, containerID,

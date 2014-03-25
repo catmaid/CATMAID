@@ -406,9 +406,8 @@ div#classification_graph_object img.roiimage {
   margin: 1em 0 1em 0;
 }
 
-.connectivity_widget ul {
-  list-style: none;
-  float: left;
+.connectivity_widget .header input {
+  margin: 0 3px 0 3px;
 }
 
 .connectivity_widget label {
@@ -418,13 +417,12 @@ div#classification_graph_object img.roiimage {
   text-indent: -22px;
 }
 
-.connectivity_widget ul label {
-  float: left;
-  clear: left;
-}
-
 .connectivity_widget input {
   vertical-align: middle;
+}
+
+.connectivity_widget .input-container {
+  text-align: center;
 }
 
 .connectivity_widget .table_container_half {

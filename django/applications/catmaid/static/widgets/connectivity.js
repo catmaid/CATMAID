@@ -128,8 +128,8 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
   // Read out skeletons from neuron list
   var models = Object.keys(this.skeletons).reduce(function(o, skid) {
     // Test if checked
-    var cb = $('#li-connectivity-table-' + widgetID + '-' + skid +
-        ' input[type=checkbox]');
+    var cb = $('input#neuron-selector-' + widgetID + '-' + skid +
+        '[type=checkbox]');
     if (cb.is(':checked')) {
       var name = skeletons[skid];
       name = name.substring(0, name.lastIndexOf(' '));
@@ -576,22 +576,22 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // The content container
   var content = $("#connectivity_widget" + widgetID);
 
-  // Create neuron list
-  var neuronList = document.createElement("ul");
-  neuronList.setAttribute('id', 'connectivity_widget_name_list' + widgetID);
-  neuronList.setAttribute('class', 'header');
+  // Create list of selected neurons
+  var neuronTable = $('<table />').attr('class', 'header left')
+        .append($('<thead />').append($('<tr />')
+            .append($('<th />').text('Selected'))
+            .append($('<th />').text('Neuron'))));
   Object.keys(this.skeletons).forEach(function(skid) {
-    var li = document.createElement("li");
-    li.setAttribute('id', 'li-connectivity-table-' + widgetID + '-' + skid);
-    var cb = document.createElement("input");
-    cb.setAttribute("type", "checkbox");
-    cb.setAttribute("checked", "checked");
-    var label = document.createElement("label");
-    label.appendChild(cb);
-    label.appendChild(createNameElement(this.skeletons[skid], skid));
-    li.appendChild(label);
-    neuronList.appendChild(li);
+    var row = $('<tr />')
+        .append($('<td />').attr('class', 'input-container')
+            .append($('<input />')
+                .attr('id', 'neuron-selector-' + this.widgetID + '-' + skid)
+                .attr('type', 'checkbox').attr('checked', 'checked')))
+        .append($('<td />').append(
+            createNameElement(this.skeletons[skid], skid)));
+    neuronTable.append(row);
   }, this);
+  content.append(neuronTable);
 
   // Toggle for alignen tables next to each other
   var layoutToggle = $('<input />').attr('type', 'checkbox');
@@ -601,7 +601,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   var layoutLabel = $('<label />').attr('class', 'header right')
       .append(document.createTextNode('Tables side by side'))
       .append(layoutToggle);
-  content.append(neuronList);
   content.append(layoutLabel);
 
   // Create containers for pre and postsynaptic partners

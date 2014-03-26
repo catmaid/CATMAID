@@ -603,12 +603,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // Create list of selected neurons
   var neuronTable = $('<table />').attr('class', 'header left')
         .append($('<thead />').append($('<tr />')
+            .append($('<th />'))
             .append($('<th />').text('Selected'))
             .append($('<th />').text('Neuron'))
             .append($('<th />').text('Threshold Up'))
             .append($('<th />').text('Threshold Down'))));
   // Add a row for each neuron looked at
-  skids.forEach(function(skid) {
+  skids.forEach(function(skid, i) {
     var id = this.widgetID + '-' + skid;
     var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
         this.upThresholds[skid] || 1, 21);
@@ -631,6 +632,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
     // Create and append row for current skeleton
     var row = $('<tr />')
+        .append($('<td />').append((i + 1) + '.'))
         .append($('<td />').attr('class', 'input-container')
             .append($('<input />')
                 .attr('id', 'neuron-selector-' + id)
@@ -667,6 +669,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     })(this));
     // Create and append footer for current skeleton
     var row = $('<tfoot />').append($('<tr />')
+        .append($('<td />'))
         .append($('<td />'))
         .append($('<td />').text('Sum'))
         .append($('<td />').append($upThrSelector)

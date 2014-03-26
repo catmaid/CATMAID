@@ -414,10 +414,12 @@ div#classification_graph_object img.roiimage {
 
 .connectivity_widget .header {
   margin: 1em 0 1em 1em;
+  clear: left;
 }
 
 .connectivity_widget .header input {
   margin: 0 3px 0 3px;
+  vertical-align: middle;
 }
 
 .connectivity_widget .header th {

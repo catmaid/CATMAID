@@ -17,6 +17,8 @@ var SkeletonConnectivity = function() {
   // Thresholds for current skeleton set
   this.upThresholds = {};
   this.downThresholds = {};
+  // Indicates whether single nodes should be hidden
+  this.hideSingleNodePartners = false;
 };
 
 SkeletonConnectivity.prototype = {};
@@ -330,7 +332,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
    * Support function for creating a partner table.
    */
   var create_table = function(skeletons, thresholds, partners, title, relation,
-      collapsed, collapsedCallback) {
+      hideSingles, collapsed, collapsedCallback) {
     /**
      * Helper to handle selection of a neuron.
      */
@@ -474,6 +476,10 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         return (partner.skids[skid] || 0) < thresholds[skid];
       });
       ignore = ignore || partner.synaptic_count < thresholds['sum'];
+      // Ignore partner if it has only a single node, if requested
+      if (hideSingles) {
+        ignore = ignore || partner.num_nodes == 1;
+      }
       if (ignore) {
         return;
       }
@@ -670,6 +676,23 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     neuronTable.append(row);
   }
 
+  // Add a checkbox to toggle display of single-node neurons
+  var singleNeuronToggle = $('<input />').attr('type', 'checkbox')
+      .change((function(widget) {
+        return function() {
+          widget.hideSingleNodePartners = this.checked;
+          widget.createConnectivityTable();
+        };
+      })(this));
+  if (this.hideSingleNodePartners) {
+    singleNeuronToggle.attr('checked', 'checked');
+  }
+  var singleNeuronToggleContainer = $('<label />')
+      .attr('class', 'header')
+      .append(singleNeuronToggle)
+      .append('Hide single node partners');
+  content.append(singleNeuronToggleContainer);
+
   // Create containers for pre and postsynaptic partners
   var incoming = $('<div />');
   var outgoing = $('<div />');
@@ -691,12 +714,12 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // Create incomining and outgoing tables
   var table_incoming = create_table(this.skeletons, this.upThresholds,
       to_sorted_array(this.incoming), 'Up', 'presynaptic_to',
-      this.upstreamCollapsed, (function() {
+      this.hideSingleNodePartners, this.upstreamCollapsed, (function() {
         this.upstreamCollapsed = !this.upstreamCollapsed;
       }).bind(this));
   var table_outgoing = create_table(this.skeletons, this.downThresholds,
       to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to',
-      this.downstreamCollapsed, (function() {
+      this.hideSingleNodePartners, this.downstreamCollapsed, (function() {
         this.downstreamCollapsed = !this.downstreamCollapsed;
       }).bind(this));
 

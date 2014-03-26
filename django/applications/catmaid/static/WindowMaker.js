@@ -1793,6 +1793,31 @@ var WindowMaker = new function()
     return win;
   };
 
+  var createOntologySearchWidget = function(osInstance)
+  {
+    // If available, a new instance passed as parameter will be used.
+    var OS = osInstance ? osInstance : new OntologySearch();
+    var win = new CMWWindow(OS.getName());
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("ontology-search" + OS.widgetID);
+    container.setAttribute('class', 'ontology_search');
+
+    // Add container to DOM
+    content.appendChild(container);
+
+    // Wire it up.
+    addListener(win, container, undefined, OS.destroy.bind(OS));
+    addLogic(win);
+
+    // Let the ontology search initialize the interface within the created
+    // container.
+    OS.init_ui(container);
+
+    return win
+  };
+
   var createClassificationWidget = function()
   {
     var win = new CMWWindow( "Classification editor" );
@@ -2349,6 +2374,7 @@ var WindowMaker = new function()
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
     "ontology-editor": createOntologyWidget,
+    "ontology-search": createOntologySearchWidget,
     "classification-editor": createClassificationWidget,
     "notifications": createNotificationsWindow,
     "clustering-widget": createClusteringWidget,

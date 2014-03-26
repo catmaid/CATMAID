@@ -54,6 +54,17 @@ function OntologyTool()
         }
     }));
 
+    this.addAction( new Action({
+        helpText: "Show ontology search widget",
+        buttonName: 'search',
+        buttonID: "ontology_search_button",
+        run: function (e) {
+            WindowMaker.create('ontology-search');
+            self.update_workspace_in_widgets();
+            return true;
+        }
+    }));
+
     /**
      * Adds tools to the ontology tool box.
      */

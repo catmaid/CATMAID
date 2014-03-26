@@ -124,10 +124,10 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             tags[row[1]].append(row[0])
 
         if with_connectors:
-                if all_field:
-                    added_fields = ', c.creation_time, c.review_time'
-                else:
-                    added_fields = ''
+            if all_field:
+                added_fields = ', c.creation_time, c.review_time'
+            else:
+                added_fields = ''
 
             # Fetch all connectors with their partner treenode IDs
             cursor.execute(

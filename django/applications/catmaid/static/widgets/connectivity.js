@@ -613,11 +613,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     $upThrSelector.change((function(widget, skid) {
       return function() {
         widget.upThresholds[skid] = parseInt(this.value);
+        widget.createConnectivityTable();
       };
     })(this, skid));
     $downThrSelector.change((function(widget, skid) {
       return function() {
         widget.downThresholds[skid] = parseInt(this.value);
+        widget.createConnectivityTable();
       };
     })(this, skid));
 
@@ -648,11 +650,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     $upThrSelector.change((function(widget) {
       return function() {
         widget.upThresholds['sum'] = parseInt(this.value);
+        widget.createConnectivityTable();
       };
     })(this));
     $downThrSelector.change((function(widget, skid) {
       return function() {
         widget.downThresholds['sum'] = parseInt(this.value);
+        widget.createConnectivityTable();
       };
     })(this));
     // Create and append footer for current skeleton

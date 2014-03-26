@@ -606,8 +606,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
             .append($('<th />'))
             .append($('<th />').text('Selected'))
             .append($('<th />').text('Neuron'))
-            .append($('<th />').text('Threshold Up'))
-            .append($('<th />').text('Threshold Down'))));
+            .append($('<th />').text('Upstream Threshold'))
+            .append($('<th />').text('Downstream Threshold'))));
   // Add a row for each neuron looked at
   skids.forEach(function(skid, i) {
     var id = this.widgetID + '-' + skid;

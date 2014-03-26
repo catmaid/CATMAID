@@ -1603,19 +1603,6 @@ var WindowMaker = new function()
         update.onclick = SC.update.bind(SC);
         contentbutton.appendChild(update);
 
-        var threshold_label = document.createTextNode(' Synapse threshold: ');
-        contentbutton.appendChild(threshold_label);
-
-        var threshold = document.createElement('select');
-        threshold.setAttribute("id", "connectivity_count_threshold" + widgetID);
-        for (var i = 0; i < 21; i++) {
-          var option = document.createElement("option");
-          option.text = i.toString();
-          option.value = i;
-          threshold.appendChild(option);
-        }
-        contentbutton.appendChild(threshold);
-
         contentbutton.appendChild(document.createTextNode(' Sync to:'));
         var link = SkeletonListSources.createPushSelect(SC, 'link');
         link.onchange = SC.syncLink.bind(SC, link);

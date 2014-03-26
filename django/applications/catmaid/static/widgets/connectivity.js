@@ -14,6 +14,9 @@ var SkeletonConnectivity = function() {
   // Default upstream and downstream tables to be not collapsed
   this.upstreamCollapsed = false;
   this.downstreamCollapsed = false;
+  // Thresholds for current skeleton set
+  this.upThresholds = {};
+  this.downThresholds = {};
 };
 
 SkeletonConnectivity.prototype = {};
@@ -69,6 +72,8 @@ SkeletonConnectivity.prototype.destroy = function() {
 
 SkeletonConnectivity.prototype.clear = function(source_chain) {
   this.skeletons = {};
+  this.upThresholds = {};
+  this.downThresholds = {};
   this.update();
   this.clearLink(source_chain);
 };
@@ -324,7 +329,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   /**
    * Support function for creating a partner table.
    */
-  var create_table = function(skeletons, threshold, partners, title, relation,
+  var create_table = function(skeletons, thresholds, partners, title, relation,
       collapsed, collapsedCallback) {
     /**
      * Helper to handle selection of a neuron.
@@ -464,7 +469,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       // Ignore this line if all its synapse counts are below the threshold
       var ignore = Object.keys(partner.skids).every(function(skid) {
         // Return true if object is below threshold
-        return (partner.skids[skid] || 0) < threshold;
+        return (partner.skids[skid] || 0) < thresholds[skid];
       });
       if (ignore) {
         return;
@@ -564,10 +569,18 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   };
 
   /**
-   * Support function to get the threshold.
+   * Support function to create a threshold selector element.
    */
-  var getThreshold = function() {
-    return $('#connectivity_count_threshold' + widgetID).val();
+  var createThresholdSelector = function(id, selected, max) {
+    var select = $('<select />');
+    for (var i=1; i < max; ++i) {
+      var option = $('<option />').val(i).text(i);
+      if (selected === i) {
+        option.attr('selected', 'selected');
+      }
+      select.append(option);
+    }
+    return select;
   };
 
   // Clear table
@@ -575,20 +588,47 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
   // The content container
   var content = $("#connectivity_widget" + widgetID);
+  // A list of of skeleton IDs we currently deal with
+  var skids = Object.keys(this.skeletons);
 
   // Create list of selected neurons
   var neuronTable = $('<table />').attr('class', 'header left')
         .append($('<thead />').append($('<tr />')
             .append($('<th />').text('Selected'))
-            .append($('<th />').text('Neuron'))));
-  Object.keys(this.skeletons).forEach(function(skid) {
+            .append($('<th />').text('Neuron'))
+            .append($('<th />').text('Threshold Up'))
+            .append($('<th />').text('Threshold Down'))));
+  skids.forEach(function(skid) {
+    var id = this.widgetID + '-' + skid;
+    var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
+        this.upThresholds[skid] || 1, 21);
+    var $downThrSelector = createThresholdSelector('neuron-down-threshold-' + id,
+        this.downThresholds[skid] || 1, 21)
+    // Create and attach handlers to threshold selectors. Generate the function
+    // to avoid the creation of a closure.
+    $upThrSelector.change((function(widget, skid) {
+      return function() {
+        widget.upThresholds[skid] = parseInt(this.value);
+      };
+    })(this, skid));
+    $downThrSelector.change((function(widget, skid) {
+      return function() {
+        widget.downThresholds[skid] = parseInt(this.value);
+      };
+    })(this, skid));
+
+    // Create and append row for current skeleton
     var row = $('<tr />')
         .append($('<td />').attr('class', 'input-container')
             .append($('<input />')
-                .attr('id', 'neuron-selector-' + this.widgetID + '-' + skid)
+                .attr('id', 'neuron-selector-' + id)
                 .attr('type', 'checkbox').attr('checked', 'checked')))
         .append($('<td />').append(
-            createNameElement(this.skeletons[skid], skid)));
+            createNameElement(this.skeletons[skid], skid)))
+        .append($('<td />').append($upThrSelector)
+            .attr('class', 'input-container'))
+        .append($('<td />').append($downThrSelector)
+            .attr('class', 'input-container'));
     neuronTable.append(row);
   }, this);
   content.append(neuronTable);
@@ -612,12 +652,12 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       })(this));
 
   // Create incomining and outgoing tables
-  var table_incoming = create_table(this.skeletons, getThreshold(),
+  var table_incoming = create_table(this.skeletons, this.upThresholds,
       to_sorted_array(this.incoming), 'Up', 'presynaptic_to',
       this.upstreamCollapsed, (function() {
         this.upstreamCollapsed = !this.upstreamCollapsed;
       }).bind(this));
-  var table_outgoing = create_table(this.skeletons, getThreshold(),
+  var table_outgoing = create_table(this.skeletons, this.downThresholds,
       to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to',
       this.downstreamCollapsed, (function() {
         this.downstreamCollapsed = !this.downstreamCollapsed;

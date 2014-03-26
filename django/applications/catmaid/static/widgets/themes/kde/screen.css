@@ -406,12 +406,27 @@ div#classification_graph_object img.roiimage {
   vertical-align: middle;
 }
 
+.connectivity_widget table {
+  padding: 3px;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+
 .connectivity_widget .header {
   margin: 1em 0 1em 0;
 }
 
 .connectivity_widget .header input {
   margin: 0 3px 0 3px;
+}
+
+.connectivity_widget .header th {
+  border-bottom: 1px solid black;
+}
+
+.connectivity_widget .header tfoot td {
+  border-top: 1px solid #ccc;
+  font-style: italic;
 }
 
 .connectivity_widget label {

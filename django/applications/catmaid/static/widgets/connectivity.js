@@ -466,11 +466,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
     // Create a table row for every partner
     partners.forEach(function(partner) {
-      // Ignore this line if all its synapse counts are below the threshold
+      // Ignore this line if all its synapse counts are below the threshold. If
+      // the threshold is 'undefined', false is returned and to semantics of
+      // this test.
       var ignore = Object.keys(partner.skids).every(function(skid) {
         // Return true if object is below threshold
         return (partner.skids[skid] || 0) < thresholds[skid];
       });
+      ignore = ignore || partner.synaptic_count < thresholds['sum'];
       if (ignore) {
         return;
       }
@@ -598,6 +601,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
             .append($('<th />').text('Neuron'))
             .append($('<th />').text('Threshold Up'))
             .append($('<th />').text('Threshold Down'))));
+  // Add a row for each neuron looked at
   skids.forEach(function(skid) {
     var id = this.widgetID + '-' + skid;
     var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
@@ -632,6 +636,35 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     neuronTable.append(row);
   }, this);
   content.append(neuronTable);
+  // If there is more than one neuron looked at, add a sum row
+  if (skids.length > 1) {
+    var id = this.widgetID + '-sum';
+    var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
+        this.upThresholds['sum'] || 1, 21);
+    var $downThrSelector = createThresholdSelector('neuron-down-threshold-' + id,
+        this.downThresholds['sum'] || 1, 21)
+    // Create and attach handlers to threshold selectors. Generate the function
+    // to avoid the creation of a closure.
+    $upThrSelector.change((function(widget) {
+      return function() {
+        widget.upThresholds['sum'] = parseInt(this.value);
+      };
+    })(this));
+    $downThrSelector.change((function(widget, skid) {
+      return function() {
+        widget.downThresholds['sum'] = parseInt(this.value);
+      };
+    })(this));
+    // Create and append footer for current skeleton
+    var row = $('<tfoot />').append($('<tr />')
+        .append($('<td />'))
+        .append($('<td />').text('Sum'))
+        .append($('<td />').append($upThrSelector)
+            .attr('class', 'input-container'))
+        .append($('<td />').append($downThrSelector)
+            .attr('class', 'input-container')));
+    neuronTable.append(row);
+  }
 
   // Create containers for pre and postsynaptic partners
   var incoming = $('<div />');

@@ -426,7 +426,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));
     row.append( $('<td />').text(total_node_count));
     var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
-    row.append( $('<td />').append( el ) );
+    row.append( $('<td />').addClass('input-container').append( el ) );
     var tbody = $('<tbody />');
     table.append( tbody );
     tbody.append( row );
@@ -541,6 +541,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
       // Cell with checkbox for adding to Selection Table
       var td = document.createElement('td');
+      td.setAttribute('class', 'input-container');
       var input = document.createElement('input');
       input.setAttribute('id', relation + '-show-skeleton-' + widgetID + '-' + partner.id);
       input.setAttribute('type', 'checkbox');

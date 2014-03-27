@@ -427,35 +427,37 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     row.append( $('<td />').text(total_node_count));
     var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
     row.append( $('<td />').addClass('input-container').append( el ) );
+    thead.append(row);
+
     var tbody = $('<tbody />');
     table.append( tbody );
-    tbody.append( row );
-
-    // Add collapsing functionality
-    var toggleRowsBelow = function($element) {
-      $element.nextAll('tr').toggle().promise().done(function() {
-        // Change open/close indidicator box
-        var open_elements = $(".extend-box-open", $element);
-        if (open_elements.length > 0) {
-          open_elements.attr('class', 'extend-box-closed');
-        } else {
-          var close_elements = $(".extend-box-closed", $element);
-          if (close_elements.length > 0) {
-            close_elements.attr('class', 'extend-box-open');
-          }
-        }
-      });
-    };
+    if (collapsed) {
+      tbody.css('display', "none");
+    }
 
     // Add handler to first row
-    titleCell.click(function() {
-      // Toggle visibility of all rows below the current one
-      toggleRowsBelow($(this).parent('tr'));
-      // Call back, if wanted
-      if (collapsedCallback) {
-        collapsedCallback();
-      }
-    });
+    titleCell.click((function(element) {
+      return function() {
+        var $title = $(this);
+        // Toggle visibility of the complete table body
+        element.toggle(200, function() {
+          // Change open/close indidicator box
+          var open_elements = $(".extend-box-open", $title);
+          if (open_elements.length > 0) {
+            open_elements.attr('class', 'extend-box-closed');
+          } else {
+            var close_elements = $(".extend-box-closed", $title);
+            if (close_elements.length > 0) {
+              close_elements.attr('class', 'extend-box-open');
+            }
+          }
+        });
+        // Call back, if wanted
+        if (collapsedCallback) {
+          collapsedCallback();
+        }
+      };
+    })(tbody));
 
     /**
      * Support function to add a table cell that links to a connector selection,
@@ -504,9 +506,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       }
 
       var tr = document.createElement('tr');
-      if (collapsed) {
-        tr.style.display = "none";
-      }
       tbody.append(tr);
 
       // Cell with partner neuron name

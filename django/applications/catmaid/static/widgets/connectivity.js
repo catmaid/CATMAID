@@ -413,13 +413,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var titleCell = $('<td />').html('<span class="' + titleClass +
             '"></span>ALL (' + partners.length + 'neurons)')
     row.append(titleCell);
-    row.append($('<td />').text(total_synaptic_count));
+    row.append($('<td />').addClass('syncount').text(total_synaptic_count));
     if (extraCols) {
       skids.forEach(function(skid) {
         var count = partners.reduce(function(sum, partner) {
           return sum + (partner.skids[skid] || 0);
         }, 0)
-        this.append($('<td />').text(count));
+        this.append($('<td />').addClass('syncount').text(count));
       }, row);
     }
     var average = (total_reviewed / partners.length) | 0;
@@ -463,6 +463,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
      */
     function createSynapseCountCell(count, partner, skids, title) {
       var td = document.createElement('td');
+      td.setAttribute('class', 'syncount');
       var a = document.createElement('a');
       td.appendChild(a);
       a.appendChild(document.createTextNode(count));
@@ -565,14 +566,15 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       var $tr = $('<tr />')
           .append($('<td />').append('Hidden partners'))
           // Synapse count sum column
-          .append($('<td />').append(filtered_synaptic_count));
+          .append($('<td />').addClass('syncount')
+              .append(filtered_synaptic_count));
       // Synapse count single neuron columns
       if (extraCols) {
         skids.forEach(function(skid, i) {
           var count = filtered.reduce(function(sum, partner) {
             return sum + (partner.skids[skid] || 0);
           }, 0)
-          $tr.append($('<td />').append(count));
+          $tr.append($('<td />').addClass('syncount').append(count));
         });
       }
       // Review column

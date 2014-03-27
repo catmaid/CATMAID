@@ -474,6 +474,10 @@ div#classification_graph_object img.roiimage {
   border: 1px solid black;
 }
 
+.connectivity_widget .partner_table .syncount {
+  text-align: center;
+}
+
 .connectivity_widget .partner_table tfoot {
   color: grey;
 }

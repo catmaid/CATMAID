@@ -4,11 +4,13 @@
 "use strict";
 
 var SkeletonConnectivity = function() {
-  this.skeletons = {}; // skeletonID, skeletonTitle;
-  this.incoming = {};
-  this.outgoing = {};
   this.widgetID = this.registerInstance();
   this.registerSource();
+  // An (per se unordered) object mapping skeletonIDs to skeleton names
+  this.skeletons = {};
+  // Incoming an outgoing connections of current neurons
+  this.incoming = {};
+  this.outgoing = {};
   // Default table layout to be side by side
   this.tablesSideBySide = true;
   // Default upstream and downstream tables to be not collapsed

@@ -371,6 +371,21 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var extraCols = skids.length > 1;
     var headerRows = extraCols ? 2 : 1;
 
+    /**
+     * Support function to sum up fields of elemends of an array.
+     */
+    var getSum = function(elements, field) {
+      return elements.reduce(function(sum, e) {
+        return sum + e[field];
+      }, 0);
+    }
+    // The total synapse count
+    var total_synaptic_count = getSum(partners, 'synaptic_count');
+    // The total review count
+    var total_reviewed = getSum(partners, 'reviewed');
+    // The total node count
+    var total_node_count = getSum(partners, 'num_nodes');
+
     // The table header
     var thead = $('<thead />');
     table.append( thead );
@@ -391,12 +406,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       }, row);
       thead.append(row);
     }
+
+    // The aggregate row
     row = $('<tr />');
     var titleClass = collapsed ? "extend-box-closed" : "extend-box-open";
     var titleCell = $('<td />').html('<span class="' + titleClass +
             '"></span>ALL (' + partners.length + 'neurons)')
     row.append(titleCell);
-    row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.synaptic_count; }, 0) ));
+    row.append($('<td />').text(total_synaptic_count));
     if (extraCols) {
       skids.forEach(function(skid) {
         var count = partners.reduce(function(sum, partner) {
@@ -405,9 +422,9 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         this.append($('<td />').text(count));
       }, row);
     }
-    var average = (partners.reduce(function(sum, partner) { return sum + partner.reviewed; }, 0 ) / partners.length) | 0;
+    var average = (total_reviewed / partners.length) | 0;
     row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));
-    row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.num_nodes; }, 0) ));
+    row.append( $('<td />').text(total_node_count));
     var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
     row.append( $('<td />').append( el ) );
     var tbody = $('<tbody />');
@@ -466,8 +483,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       return td;
     };
 
-    // Create a table row for every partner
-    partners.forEach(function(partner) {
+    // Create a table row for every partner and remember the ignored ones
+    var filtered = partners.reduce(function(filtered, partner) {
       // Ignore this line if all its synapse counts are below the threshold. If
       // the threshold is 'undefined', false is returned and to semantics of
       // this test.
@@ -481,7 +498,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         ignore = ignore || partner.num_nodes == 1;
       }
       if (ignore) {
-        return;
+        filtered.push(partner);
+        return filtered;
       }
 
       var tr = document.createElement('tr');
@@ -529,7 +547,44 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       input.onclick = set_as_selected;
       td.appendChild(input);
       tr.appendChild(td);
-    });
+
+      return filtered;
+    }, []);
+
+    // If some partners have been filtered (e.g. due to thresholding, hidden
+    // one-node-neurons), add another table row to provide information about
+    // this.
+    if (filtered.length > 0) {
+      // The filtered synapse count
+      var filtered_synaptic_count = getSum(filtered, 'synaptic_count');
+      // The filtered review count
+      var filtered_reviewed = getSum(filtered, 'reviewed');
+      // The filtered node count
+      var filtered_node_count = getSum(filtered, 'num_nodes');
+      // Build the row
+      var $tr = $('<tr />')
+          .append($('<td />').append('Hidden partners'))
+          // Synapse count sum column
+          .append($('<td />').append(filtered_synaptic_count));
+      // Synapse count single neuron columns
+      if (extraCols) {
+        skids.forEach(function(skid, i) {
+          var count = filtered.reduce(function(sum, partner) {
+            return sum + (partner.skids[skid] || 0);
+          }, 0)
+          $tr.append($('<td />').append(count));
+        });
+      }
+      // Review column
+      $tr.append($('<td />').append((filtered_reviewed / filtered.length) | 0));
+      // Node count column
+      $tr.append($('<td />').append(filtered_node_count));
+      // Select column
+      $tr.append($('<td />'));
+
+      // Add column to footer of table
+      $(table).append($('<tfoot />').append($tr));
+    }
 
     return table;
   };

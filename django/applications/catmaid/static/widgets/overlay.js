@@ -1284,7 +1284,8 @@ SkeletonAnnotations.SVGOverlay.prototype.hide = function () {
 /** Update treeline nodes by querying them from the server
  * with the bounding volume of the current view.
  * Will also push editions (if any) to nodes to the database. */
-SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback, future_active_node_id) {
+SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
+    future_active_node_id, errCallback) {
   var self = this;
 
   this.updateNodeCoordinatesinDB(function () {
@@ -1340,7 +1341,8 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback, futur
         }
       },
       false,
-      true);
+      true,
+      errCallback);
   });
 };
 

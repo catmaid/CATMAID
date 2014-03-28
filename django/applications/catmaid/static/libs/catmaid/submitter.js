@@ -51,7 +51,22 @@ var submitterFn = function() {
     if (q.blockUI) $.unblockUI();
     console.log(error, q);
     if (error.error) new ErrorDialog(error.error, error.detail).show();
+    // Collect all error callbacks from all queued items. The current item is
+    // expected to be still the first element.
+    var callbacks = queue.reduce(function(o, e) {
+      if (e.errCallback) {
+        o.push(e.errCallback);
+      }
+      return o;
+    }, []);
+
+    // Reset queue
     queue.length = 0;
+
+    // Call all callbacks
+    callbacks.forEach(function(errCallback) {
+      errCallback();
+    });
   };
 
   var handlerFn = function(q) {
@@ -106,12 +121,13 @@ var submitterFn = function() {
     }
   };
 
-  return function(url, post, fn, blockUI, replace) {
+  return function(url, post, fn, blockUI, replace, errCallback) {
     queue.push({url: url,
           post: post,
           fn: fn,
           blockUI: blockUI,
-          replace: replace});
+          replace: replace,
+          errCallback: errCallback});
     // Invoke if the queue contains only the new entry
     if (1 === queue.length) {
       next();

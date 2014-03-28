@@ -1171,7 +1171,9 @@ CompartmentGraphWidget.prototype.exportAdjacencyMatrix = function() {
   var m = this.createAdjacencyMatrix(),
       models = this.getSkeletonModels(),
       names = m.skeleton_ids.reduce(function(o, skid) {
-        o[skid] = '"' + models[skid].baseName.replace(/"/g, '\\"') + ' #' + skid + '"';
+        var name = models[skid].baseName
+            .replace(/\\/g, '\\\\').replace(/"/g,'\\"');
+        o[skid] = '"' + name + ' #' + skid + '"';
         return o;
       }, {});
 

@@ -814,25 +814,38 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
           // Invoke the oldest of any accumulated calls
           requester(json.treenode_id, queue[0]);
         } else {
-          // Start a new continuation to update the nodes,
-          // ensuring that the desired active node will be loaded
-          // (Could not be loaded if the user scrolled away between
-          // the creation of the node and its activation).
-          // FIXME: This continuation is problematic if the callback is never
-          // executed. This is the case if the request made by updateNodes()
-          // gets reset. This leads to queue.shift() to be never executed and
-          // renders the queue therefore unusable. See issue #598 for more
-          // details.
+          var handleLastRequest = function(q, retries) {
+            // If the node update was successful, handle the last queue element.
+            var success = function () {
+              q.self.selectNode(json.treenode_id);
+              // Remove this call now that the active node is set properly
+              queue.shift();
+              // Invoke the oldest of any accumulated calls
+              if (queue.length > 0) {
+                requester(json.treenode_id, queue[0]);
+              }
+            };
+            // This error call back makes sure there is no dead-lock when
+            // updateNodes() (or another request in the submitter queue it
+            // is in) fails.
+            var error = function() {
+              if (retries > 0) {
+                handleLastRequest(q, retries - 1);
+              } else {
+                new ErrorDialog("A required update of the node failed. " +
+                    "Please reload CATMAID.").show();
+              }
+            };
+            // Start a new continuation to update the nodes,
+            // ensuring that the desired active node will be loaded
+            // (Could not be loaded if the user scrolled away between
+            // the creation of the node and its activation).
+            q.self.updateNodes(success, json.treenode_id, error);
+          };
+
+          // Try three times to update the node data and finish the queue
           var q = queue[0];
-          q.self.updateNodes(function () {
-            q.self.selectNode(json.treenode_id);
-            // Remove this call now that the active node is set properly
-            queue.shift();
-            // Invoke the oldest of any accumulated calls
-            if (queue.length > 0) {
-              requester(json.treenode_id, queue[0]);
-            }
-          }, json.treenode_id);
+          handleLastRequest(q, 3);
         }
       }
     }

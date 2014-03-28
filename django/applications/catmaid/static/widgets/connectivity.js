@@ -6,6 +6,8 @@
 var SkeletonConnectivity = function() {
   this.widgetID = this.registerInstance();
   this.registerSource();
+  // An ordered list of neurons/skeletons for display
+  this.ordered_skeleton_ids = [];
   // An (per se unordered) object mapping skeletonIDs to skeleton names
   this.skeletons = {};
   // Incoming an outgoing connections of current neurons
@@ -61,6 +63,9 @@ SkeletonConnectivity.prototype.append = function(models) {
   
   // Update existing ones and add new ones
   $.extend(this.skeletons, new_skeletons);
+  for (var skid in new_skeletons) {
+    this.ordered_skeleton_ids.push(skid);
+  }
   this.update();
   this.updateLink(models);
 };
@@ -76,6 +81,7 @@ SkeletonConnectivity.prototype.destroy = function() {
 
 SkeletonConnectivity.prototype.clear = function(source_chain) {
   this.skeletons = {};
+  this.ordered_skeleton_ids = [];
   this.upThresholds = {};
   this.downThresholds = {};
   this.update();
@@ -85,6 +91,10 @@ SkeletonConnectivity.prototype.clear = function(source_chain) {
 SkeletonConnectivity.prototype.removeSkeletons = function(skeleton_ids) {
   skeleton_ids.forEach(function(skid) {
     delete this.skeletons[skid];
+    var index = this.ordered_skeleton_ids.indexOf(skid);
+    if (index > -1) {
+      this.ordered_skeleton_ids.splice(index, 1);
+    }
   }, this);
   this.update();
   this.updateLink(this.getSelectedSkeletonModels());
@@ -333,7 +343,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   /**
    * Support function for creating a partner table.
    */
-  var create_table = function(skeletons, thresholds, partners, title, relation,
+  var create_table = function(skids, skeletons, thresholds, partners, title, relation,
       hideSingles, collapsed, collapsedCallback) {
     /**
      * Helper to handle selection of a neuron.
@@ -361,8 +371,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         }
       }
     };
-
-    var skids = Object.keys(skeletons);
 
     var table = $('<table />').attr('id', 'incoming_connectivity_table' + widgetID)
             .attr('class', 'partner_table');
@@ -656,8 +664,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
   // The content container
   var content = $("#connectivity_widget" + widgetID);
-  // A list of of skeleton IDs we currently deal with
-  var skids = Object.keys(this.skeletons);
 
   // Create list of selected neurons
   var neuronTable = $('<table />').attr('class', 'header left')
@@ -668,7 +674,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
             .append($('<th />').text('Upstream Threshold'))
             .append($('<th />').text('Downstream Threshold'))));
   // Add a row for each neuron looked at
-  skids.forEach(function(skid, i) {
+  this.ordered_skeleton_ids.forEach(function(skid, i) {
     var id = this.widgetID + '-' + skid;
     var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
         this.upThresholds[skid] || 1, 21);
@@ -706,7 +712,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   }, this);
   content.append(neuronTable);
   // If there is more than one neuron looked at, add a sum row
-  if (skids.length > 1) {
+  if (this.ordered_skeleton_ids.length > 1) {
     var id = this.widgetID + '-sum';
     var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
         this.upThresholds['sum'] || 1, 21);
@@ -774,13 +780,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       })(this));
 
   // Create incomining and outgoing tables
-  var table_incoming = create_table(this.skeletons, this.upThresholds,
-      to_sorted_array(this.incoming), 'Up', 'presynaptic_to',
+  var table_incoming = create_table(this.ordered_skeleton_ids, this.skeletons,
+      this.upThresholds, to_sorted_array(this.incoming), 'Up', 'presynaptic_to',
       this.hideSingleNodePartners, this.upstreamCollapsed, (function() {
         this.upstreamCollapsed = !this.upstreamCollapsed;
       }).bind(this));
-  var table_outgoing = create_table(this.skeletons, this.downThresholds,
-      to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to',
+  var table_outgoing = create_table(this.ordered_skeleton_ids, this.skeletons,
+      this.downThresholds, to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to',
       this.hideSingleNodePartners, this.downstreamCollapsed, (function() {
         this.downstreamCollapsed = !this.downstreamCollapsed;
       }).bind(this));

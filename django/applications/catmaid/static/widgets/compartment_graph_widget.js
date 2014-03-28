@@ -745,6 +745,8 @@ CompartmentGraphWidget.prototype.writeGML = function() {
     var props = node.data(); // props.id, props.color, props.skeleton_id, props.node_count, props.label,
     ids[props.id] = i;
     var p = node.position(); // pos.x, pos.y
+    // node name with escaped \ and "
+    var name = props.label.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');
     items.push(["node [",
                 "id " + i,
                 ["graphics [",
@@ -757,7 +759,7 @@ CompartmentGraphWidget.prototype.writeGML = function() {
                  'outline "#000000"',
                  "outline_width 1"].join("\n      "),
                 "]",
-                'name "' + props.label + '"',
+                'name "' + name + '"',
                 "skeleton_id " + props.skeleton_id].join("\n    "));
     items.push("]");
   });

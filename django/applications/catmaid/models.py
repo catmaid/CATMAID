@@ -469,6 +469,18 @@ class TreenodeConnector(UserFocusedModel):
     skeleton = models.ForeignKey(ClassInstance)
     confidence = models.IntegerField(default=5)
 
+class Review(models.Model):
+    """ This model represents the review of a user of one particular tree node
+    of a specific skeleton. Technically, the treenode ID is enough to get the
+    skeleton. The skeleton is, however, included for performance reasons.
+    """
+    class Meta:
+        db_table = "review"
+    reviewer = models.ForeignKey(User)
+    review_time = models.DateTimeField(default=datetime.now)
+    skeleton = models.ForeignKey(ClassInstance)
+    treenode = models.ForeignKey(Treenode)
+
 class RegionOfInterest(UserFocusedModel):
     class Meta:
         db_table = "region_of_interest"

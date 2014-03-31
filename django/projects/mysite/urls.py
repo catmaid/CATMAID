@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, include, url
+from django.conf.urls import patterns, include, url
 from django.conf import settings
 
 from catmaid.views import *
@@ -8,7 +8,7 @@ import vncbrowser
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
-from adminplus import AdminSitePlus
+from adminplus.sites import AdminSitePlus
 admin.site = AdminSitePlus()
 admin.autodiscover()
 

@@ -660,11 +660,15 @@ def user_info(request, project_id=None):
         if not ts:
             return HttpResponse(json.dumps({'error': 'Object #%s is not a treenode or a connector' % treenode_id}))
     t = ts[0]
-    reviewer = None
-    review_time = None
-    if -1 != t.reviewer_id:
-        reviewer = User.objects.filter(pk=t.reviewer_id).values('username', 'first_name', 'last_name')[0]
-        review_time = str(datetime.date(t.review_time))
+    # Get all reviews for this treenode
+    reviewers = []
+    review_times = []
+    for r, rt in Review.objects.filter(treenode=t) \
+            .values_list('reviewer', 'review_time'):
+        reviewers.append(User.objects.filter(pk=r) \
+                .values('username', 'first_name', 'last_name')[0])
+        review_times.append(str(datetime.date(rt)))
+    # Build result
     return HttpResponse(json.dumps({'user': {'username': t.user.username,
                                              'first_name': t.user.first_name,
                                              'last_name': t.user.last_name},
@@ -673,7 +677,7 @@ def user_info(request, project_id=None):
                                                'first_name': t.editor.first_name,
                                                'last_name': t.editor.last_name},
                                     'edition_time': str(datetime.date(t.edition_time)),
-                                    'reviewer': reviewer,
-                                    'review_time': review_time}))
+                                    'reviewers': reviewers,
+                                    'review_times': review_times}))
 
 

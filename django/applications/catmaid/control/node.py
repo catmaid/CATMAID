@@ -711,6 +711,7 @@ def find_previous_likely_lineage_error(request, project_id=None):
         # or reaching the root node
         while True:
             parents = graph.predecessors(tnid)
+            children = graph.successors(tnid)
             #change confidence to 5 since this is the guidance system            
             Treenode.objects.filter(id=tnid).update(confidence=5,editor=request.user)
             if parents: # list of parents is not empty
@@ -718,6 +719,8 @@ def find_previous_likely_lineage_error(request, project_id=None):
                 #check if confidence of this node is already zero (so we do not have to look around)
                 qs = Treenode.objects.get(pk=tnid)
                 if qs.confidence == 0:
+                    break
+                if len(children) > 1:
                     break
                 #check for neighbors around it to see if there low confidence ones            
                 #find info about neighboring nodes
@@ -779,7 +782,10 @@ def find_previous_likely_lineage_error(request, project_id=None):
 
         
 
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
+        #return HttpResponse(json.dumps(_fetch_location(tnid)))
+        ff = _fetch_location(tnid)
+        ff += (len(children),)
+        return HttpResponse(json.dumps(ff) )
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
 
@@ -864,7 +870,11 @@ def find_next_likely_lineage_error(request, project_id=None):
             if error == 1:
                 break;#We need to stop since we found a neighbor with low confidence                        
 
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
+        #return HttpResponse(json.dumps(_fetch_location(tnid)))
+        ff = _fetch_location(tnid)
+        ff += (len(children),)
+        return HttpResponse(json.dumps(ff) )
+
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
 

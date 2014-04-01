@@ -1882,7 +1882,8 @@ var SkeletonAnnotations = new function()
                       SkeletonAnnotations.staticSelectNode(json[0], json[4]);
                     });
                   }
-
+                  if( json[7] > 1)
+                    growlAlert("WARNING", "Node has more than one child");
                 }
               }
             }
@@ -1962,7 +1963,8 @@ var SkeletonAnnotations = new function()
                       SkeletonAnnotations.staticSelectNode(json[0], json[4]);
                     });
                   }
-
+                  if( json[7] > 1)
+                    growlAlert("WARNING", "Node has more than one child");    
                 }
               }
             }

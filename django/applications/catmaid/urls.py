@@ -317,6 +317,8 @@ urlpatterns += patterns('catmaid.control.classification',
         'link_classification_graph', name='link_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/stack/(?P<stack_id>{0})/linkroi/(?P<ci_id>{0})/$'.format(integer),
         'link_roi_to_classification', name='link_roi_to_classification'),
+    url(r'^classification/(?P<workspace_pid>{0})/search$'.format(integer),
+        'search', name='search_classifications'),
 )
 
 # Notifications

@@ -2,6 +2,7 @@ import json
 
 from django import forms
 from django.conf import settings
+from django.contrib.formtools.wizard.views import SessionWizardView
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404, render_to_response
@@ -1210,3 +1211,62 @@ def link_roi_to_classification(request, project_id=None, workspace_pid=None,
 
     return link_roi_to_class_instance(request, project_id=project_id,
         relation_id=rel.id, stack_id=stack_id, ci_id=ci_id)
+
+class ClassificationSearchWizard(SessionWizardView):
+    """ This search wizard guides the user through searching for classification
+    graphs (i.e. realizations of ontologies). The first step asks the user for
+    defining ontology features which the result classifications must contain. In
+    a second step the user can layout the result display.
+    """
+    template_name = 'catmaid/classification/search.html'
+    workspace_pid = None
+
+    def get_context_data(self, form, **kwargs):
+        context = super(ClassificationSearchWizard, self).get_context_data(
+                form=form, **kwargs)
+        extra_context = {'workspace_pid': self.workspace_pid}
+
+        if self.steps.current == 'features':
+            extra_context['description'] = \
+                "Please select the features that should be respected for " \
+                "your search. Features within the <em>same</em> ontology " \
+                "are combined with a logical <em>AND</em>. Feature sets of " \
+                "<em>different</em> ontologies are combined with a " \
+                "logical <em>OR</em>."
+        elif self.steps.current == 'layout':
+            extra_context['description'] = \
+                "This steps allows you to specify the layout of the search " \
+                "result. To do this, you can select a data view and adjust " \
+                "it's settings to your liking."
+
+        # Update context with extra information and return ir
+        context.update(extra_context)
+        return context
+
+    def done(self, form_list, **kwargs):
+        return HttpResponse("TODO: Generate report")
+
+class FeatureSetupForm(forms.Form):
+    """ This form displays all available classification_root based ontologies
+    in one tree structure. All ontologies can be graphs per se, but this form
+    will cut all loops. Every level of the tee is kept in a UL element with LI
+    elements as nodes.
+    """
+    #features = forms.MultipleChoiceField(choices=[],
+    #        widget=CheckboxSelectMultiple(attrs={'class': 'autoselectable'}))
+
+class LayoutSetupForm(forms.Form):
+    """ This form lets the user specify the result output layout.
+    """
+    pass
+
+def search(request, workspace_pid=None):
+    """ This view simplifies the creation of a new ontology search wizard and
+    its view.
+    """
+    workspace_pid = int(workspace_pid)
+    forms = [('features', FeatureSetupForm),
+             ('layout', LayoutSetupForm)]
+    view = ClassificationSearchWizard.as_view(forms,
+                                              workspace_pid=workspace_pid)
+    return view(request)

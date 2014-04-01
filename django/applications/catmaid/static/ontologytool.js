@@ -59,8 +59,10 @@ function OntologyTool()
         buttonName: 'search',
         buttonID: "ontology_search_button",
         run: function (e) {
-            WindowMaker.create('ontology-search');
-            self.update_workspace_in_widgets();
+            var widget = new OntologySearch();
+            widget.workspacePid = self.workspace_mode === "classification" ? -1 : project.id;
+            WindowMaker.create('ontology-search', widget);
+            //self.update_workspace_in_widgets();
             return true;
         }
     }));

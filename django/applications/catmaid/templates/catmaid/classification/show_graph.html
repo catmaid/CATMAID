@@ -8,9 +8,9 @@
 {% get_obj_perms user for project as "project_perms" %}
 {% if "can_annotate" in project_perms %}
     &nbsp; Edit tools <input type="checkbox" id="display_edit_tools" checked="yes" /><br />
-    &nbsp; <a id="remove_classification_link" href="{% url remove_classification_graph project.id workspace.id graph_id %}">Remove this graph</a>
-    &nbsp; <a id="add_classification_link" href="{% url add_classification_graph project.id workspace.id %}">Add/Link new graph</a>
-    &nbsp; <a id="autofill_classification_link" href="{% url autofill_classification_graph project.id workspace.id graph_id %}">Auto fill this graph</a>
+    &nbsp; <a id="remove_classification_link" href="{% url 'remove_classification_graph' project.id workspace.id graph_id %}">Remove this graph</a>
+    &nbsp; <a id="add_classification_link" href="{% url 'add_classification_graph' project.id workspace.id %}">Add/Link new graph</a>
+    &nbsp; <a id="autofill_classification_link" href="{% url 'autofill_classification_graph' project.id workspace.id graph_id %}">Auto fill this graph</a>
 {% endif %}
 <br clear="all" />
 <div id="classification_graph_object"></div>

@@ -1863,7 +1863,7 @@ var SkeletonAnnotations = new function()
                   // Already at the root node
                   $('#growl-alert').growlAlert({
                     autoShow: true,
-                    content: "You are already at the root node",
+                    content: "Same point as before. Move back one point in time with letter P",
                     title: 'Already there',
                     position: 'top-right',
                     delayTime: 2000,
@@ -1944,7 +1944,7 @@ var SkeletonAnnotations = new function()
                   // Already at the root node
                   $('#growl-alert').growlAlert({
                     autoShow: true,
-                    content: "You are already at the root node",
+                    content: "Same point as before. Move forward one point in time with letter O",
                     title: 'Already there',
                     position: 'top-right',
                     delayTime: 2000,

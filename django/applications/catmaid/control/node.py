@@ -300,13 +300,19 @@ def node_list_tuples(request, project_id=None):
 @requires_user_role(UserRole.Annotate)
 def update_location_reviewer(request, project_id=None, node_id=None):
     """ Updates the reviewer id and review time of a node """
-    p = get_object_or_404(Project, pk=project_id)
-    loc = Location.objects.get(
-        pk=node_id,
-        project=p)
-    loc.reviewer_id=request.user.id
-    loc.review_time=datetime.now()
-    loc.save()
+    try:
+        # Try to get the review object. If this fails we create a new one. Doing
+        # it in a try/except instead of get_or_create allows us to retrieve the
+        # skeleton ID only if needed.
+        r = Review.objects.get(treenode_id=node_id, reviewer=request.user)
+    except Review.DoesNotExist:
+        r = Review(treenode_id=node_id, reviewer=request.user)
+        # Find the skeleton
+        r.skeleton = Treenode.objects.get(pk=node_id).skeleton
+
+    r.review_time = datetime.now()
+    r.save()
+
     return HttpResponse(json.dumps({'reviewer_id': request.user.id}), mimetype='text/json')
 
 

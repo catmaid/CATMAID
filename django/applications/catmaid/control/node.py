@@ -710,12 +710,13 @@ def find_previous_likely_lineage_error(request, project_id=None):
         # Travel upstream until finding a parent node with more than one child 
         # or reaching the root node
         while True:
-            parents = graph.predecessors(tnid)
+            parents = graph.predecessors(tnid)            
             children = graph.successors(tnid)
             #change confidence to 5 since this is the guidance system            
             Treenode.objects.filter(id=tnid).update(confidence=5,editor=request.user)
             if parents: # list of parents is not empty
                 tnid = parents[0] # Can only have one parent
+                children = graph.successors(tnid)
                 #check if confidence of this node is already zero (so we do not have to look around)
                 qs = Treenode.objects.get(pk=tnid)
                 if qs.confidence == 0:

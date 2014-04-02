@@ -111,11 +111,12 @@ var ProjectStatistics = new function()
               'fill': color,
           });
       // Draw label
-      var text = rpie.text(l_x + 2 * circ_r + 10, l_y + circ_r, data.users[i])
-          .attr({
-              'text-anchor': 'start',
-              'font': '12px Arial, sans-serif',
-          });
+      var text = rpie.text(l_x + 2 * circ_r + 10, l_y + circ_r,
+          e.others ? "Others" : data.users[e.order])
+              .attr({
+                  'text-anchor': 'start',
+                  'font': '12px Arial, sans-serif',
+              });
       // Find maximum text width
       var bb = text.getBBox();
       if (bb.width > max_label_width) {

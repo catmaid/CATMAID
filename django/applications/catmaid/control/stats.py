@@ -13,6 +13,9 @@ from catmaid.control.common import *
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats(request, project_id=None):
+    return HttpResponse(json.dumps(_stats(project_id)), mimetype='text/json')
+
+def _stats(project_id):
     qs = Treenode.objects.filter(project=project_id)
     qs = qs.values('user__username').annotate(count=Count('user__username'))
     result = {'users': [],
@@ -21,7 +24,8 @@ def stats(request, project_id=None):
         result['values'].append(d['count'])
         user_name = '%s (%d)' % (d['user__username'], d['count'])
         result['users'].append(user_name)
-    return HttpResponse(json.dumps(result), mimetype='text/json')
+
+    return result
 
 def _process(query, minus1name):
     cursor = connection.cursor()

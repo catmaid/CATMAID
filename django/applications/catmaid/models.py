@@ -289,7 +289,7 @@ class Relation(models.Model):
     relation_name = models.CharField(max_length=255)
     uri = models.TextField()
     description = models.TextField()
-    isreciprocal = models.BooleanField()
+    isreciprocal = models.BooleanField(default=False)
 
 class RelationInstance(models.Model):
     class Meta:

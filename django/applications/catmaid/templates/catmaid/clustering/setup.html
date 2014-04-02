@@ -20,7 +20,7 @@
     </p>
 {% endif %}
 <form method="post" id="clustering-setup-form"
-      action="{% url clustering_setup workspace_pid %}">
+      action="{% url "clustering_setup" workspace_pid %}">
 {% csrf_token %}
 {{ wizard.management_form }}
 

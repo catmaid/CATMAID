@@ -6,7 +6,7 @@
 
 {% block breadcrumbs %}
   <div class="breadcrumbs">
-    <a href="{% url admin:index %}">Home</a> &rsaquo; {{ title }}
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; {{ title }}
   </div>
 {% endblock %}
 
@@ -31,7 +31,7 @@
             <li>{{ p.name }}</li>
         {% endfor %}
         </ul></p>
-        <p><a href="{% url admin:index %}">Return to the administration home page.</a></p>
+        <p><a href="{% url "admin:index" %}">Return to the administration home page.</a></p>
     {% endif %}
   </div>
 {% endblock %}

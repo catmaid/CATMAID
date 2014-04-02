@@ -6,7 +6,7 @@
 
 {% block breadcrumbs %}
   <div class="breadcrumbs">
-    <a href="{% url admin:index %}">Home</a> &rsaquo; Tag Based Classification Graph Linker
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; Tag Based Classification Graph Linker
   </div>
 {% endblock %}
 
@@ -49,7 +49,7 @@
             {% endfor %}
         </table>
     {% endif %}
-    <p><a href="{% url admin:index %}">Return to the administration home page.</a></p>
+    <p><a href="{% url "admin:index" %}">Return to the administration home page.</a></p>
   </div>
 {% endblock %}
 

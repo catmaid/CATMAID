@@ -138,11 +138,11 @@ admin.site.register(ProjectStack)
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 # Register additional views
-admin.site.register_view('importer', importer_admin_view, 'Importer')
-admin.site.register_view('useranalytics',
-    UseranalyticsView.as_view(), 'User Analytics')
-admin.site.register_view('userproficiency',
-    UserProficiencyView.as_view(), 'User Proficiency')
+admin.site.register_view('importer', 'Importer', view=importer_admin_view)
+admin.site.register_view('useranalytics', 'User Analytics',
+    view=UseranalyticsView.as_view())
+admin.site.register_view('userproficiency', 'User Proficiency',
+    view=UserProficiencyView.as_view())
 admin.site.register_view('classifcationadmin',
-    classification_admin_view, 'Tag Based Classification Graph Linker')
+    'Tag Based Classification Graph Linker', view=classification_admin_view)
 admin.site.register(Overlay)

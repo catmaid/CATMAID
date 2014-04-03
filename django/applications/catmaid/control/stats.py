@@ -15,6 +15,7 @@ from catmaid.control.common import *
 def stats(request, project_id=None):
     return HttpResponse(json.dumps(_stats(project_id)), mimetype='text/json')
 
+
 def _stats(project_id):
     qs = Treenode.objects.filter(project=project_id)
     qs = qs.values('user__username').annotate(count=Count('user__username'))
@@ -27,6 +28,7 @@ def _stats(project_id):
 
     return result
 
+
 def _process(query, minus1name):
     cursor = connection.cursor()
     cursor.execute(query)
@@ -38,15 +40,21 @@ def _process(query, minus1name):
         result['users'].append('%s (%d)' % s)
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_reviewer(request, project_id=None):
     # Can't reuse stats function with 'reviewer_username' because the Treenode
-    # class doesn't contain a revier as a model of a User, but directly a reviewer_id
-    # given that it can be -1, meaning no one rather than the anonymous user.
-    # In any case the direct SQL command is arguably clearer.
+    # class doesn't contain a revier as a model of a User, but directly a
+    # reviewer_id given that it can be -1, meaning no one rather than the
+    # anonymous user.  In any case the direct SQL command is arguably clearer.
     return _process('''
-    SELECT username, count(reviewer_id) FROM treenode, auth_user WHERE project_id=%s AND reviewer_id=auth_user.id GROUP BY username
+    SELECT username, count(reviewer_id)
+    FROM treenode, auth_user
+    WHERE project_id=%s
+      AND reviewer_id=auth_user.id
+     GROUP BY username
     ''' % int(project_id), "*unreviewed*")
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_editor(request, project_id=None):
@@ -59,6 +67,7 @@ def stats_editor(request, project_id=None):
     GROUP BY username
     ''' % int(project_id), "*unedited*")
 
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_summary(request, project_id=None):
     startdate = datetime.today()
@@ -69,7 +78,8 @@ def stats_summary(request, project_id=None):
             creation_time__year=startdate.year,
             creation_time__month=startdate.month,
             creation_time__day=startdate.day).count(),
-        'connectors_created': Connector.objects.filter(project=project_id,
+        'connectors_created': Connector.objects.filter(
+            project=project_id,
             user=request.user.id,
             creation_time__year=startdate.year,
             creation_time__month=startdate.month,
@@ -77,8 +87,8 @@ def stats_summary(request, project_id=None):
             ).count(),
     }
     for key, class_name in [
-        ('skeletons_created', 'skeleton')
-        ]:
+            ('skeletons_created', 'skeleton')
+            ]:
         result[key] = ClassInstance.objects.filter(
             project=project_id,
             user=request.user.id,
@@ -91,27 +101,38 @@ def stats_summary(request, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_history(request, project_id=None):
-    # Get the start and end dates for the query, defaulting to the last 30 days.
+    # Get the start and end dates for the query, defaulting to the last 30
+    # days.
     start_date = request.GET.get('start_date', datetime.now() - timedelta(30))
     end_date = request.GET.get('end_date', datetime.now())
-    
-    # Look up all tree nodes for the project in the given date range.
-    # Also add a computed field which is just the day of the last edited date/time.
-    tree_nodes = Treenode.objects.filter(
-        project = project_id, 
-        edition_time__range = (start_date, end_date)).extra(select={ 'date' : 'to_char("treenode"."edition_time", \'YYYYMMDD\')' }).order_by('user', 'date')
-    
-    # Get the count of tree nodes for each user/day combination.
-    stats = tree_nodes.values('user__username', 'date').annotate(count = Count('id'))
-    
-    # Change the 'user__username' field name to just 'name'.
-    # (If <https://code.djangoproject.com/ticket/12222> ever gets implemented then this wouldn't be necessary.)
-    stats = [{'name':stat['user__username'], 'date':stat['date'], 'count':stat['count']} for stat in stats]
-    
-    return HttpResponse(json.dumps(stats), mimetype='text/json')
-    
-def stats_user_history(request, project_id=None):
 
+    # Look up all tree nodes for the project in the given date range.
+    # Also add a computed field which is just the day of the last edited
+    # date/time.
+    tree_nodes = Treenode.objects \
+        .filter(
+            project=project_id,
+            edition_time__range=(start_date, end_date)) \
+        .extra(select={
+            'date': 'to_char("treenode"."edition_time", \'YYYYMMDD\')'}) \
+        .order_by('user', 'date')
+
+    # Get the count of tree nodes for each user/day combination.
+    stats = tree_nodes.values('user__username', 'date') \
+        .annotate(count=Count('id'))
+
+    # Change the 'user__username' field name to just 'name'.
+    # (If <https://code.djangoproject.com/ticket/12222> ever gets implemented
+    # then this wouldn't be necessary.)
+    stats = [{
+        'name': stat['user__username'],
+        'date': stat['date'],
+        'count': stat['count']} for stat in stats]
+
+    return HttpResponse(json.dumps(stats), mimetype='text/json')
+
+
+def stats_user_history(request, project_id=None):
     relation_map = get_relation_to_id_map(project_id)
     last_x_days = 10
     # Get the start and end dates for the query, defaulting to the last 30 days.
@@ -128,46 +149,78 @@ def stats_user_history(request, project_id=None):
     daysformatted = []
     for i in range(last_x_days+1):
         tmp_date = start_date + timedelta(days=i)
-        days.append( tmp_date.strftime("%Y%m%d") )
-        daysformatted.append( tmp_date.strftime("%a %d, %h %Y") )
+        days.append(tmp_date.strftime("%Y%m%d"))
+        daysformatted.append(tmp_date.strftime("%a %d, %h %Y"))
     stats_table = {}
     for userid in map_userid_to_name.keys():
         if userid == -1:
             continue
-        stats_table[ map_userid_to_name[userid] ] = {}
+        stats_table[map_userid_to_name[userid]] = {}
         for i in range(last_x_days+1):
-            tmp_date = start_date + timedelta(days=i)
-            stats_table[ map_userid_to_name[userid] ][ tmp_date.strftime("%Y%m%d") ] = {}
+            name = map_userid_to_name[userid]
+            date = (start_date + timedelta(days=i)).strftime("%Y%m%d")
+            stats_table[name][date] = {}
 
-    # Look up all tree nodes for the project in the given date range.
-    # Also add a computed field which is just the day of the last edited date/time.
-    tree_nodes = Treenode.objects.filter(
-        project = project_id, 
-        creation_time__range = (start_date, end_date)).extra(select={ 'date' : 'to_char("treenode"."creation_time", \'YYYYMMDD\')' }).order_by('user', 'date')
+    # Look up all tree nodes for the project in the given date range. Also add
+    # a computed field which is just the day of the last edited date/time.
+    tree_nodes = Treenode.objects \
+        .filter(
+            project=project_id,
+            creation_time__range=(start_date, end_date)) \
+        .extra(select={
+            'date': 'to_char("treenode"."creation_time", \'YYYYMMDD\')'}) \
+        .order_by('user', 'date')
     # Get the count of tree nodes for each user/day combination.
-    treenode_stats = tree_nodes.values('user__username', 'date', 'user__id').annotate(count = Count('id'))
-    # Change the 'user__username' field name to just 'name'.
-    # (If <https://code.djangoproject.com/ticket/12222> ever gets implemented then this wouldn't be necessary.)
-    treenode_stats = [{'username':stat['user__username'], 'userid': stat['user__id'], 'date':stat['date'], 'count':stat['count']} for stat in treenode_stats]
-    
-    connector_nodes = Connector.objects.filter(
-    project = project_id, 
-    creation_time__range = (start_date, end_date)).extra(select={ 'date' : 'to_char("connector"."creation_time", \'YYYYMMDD\')' }).order_by('user', 'date')
-    connector_stats = connector_nodes.values('user__username', 'date', 'user__id').annotate(count = Count('id'))
-    connector_stats = [{'username':stat['user__username'], 'userid': stat['user__id'], 'date':stat['date'], 'count':stat['count']} for stat in connector_stats]
+    treenode_stats = tree_nodes.values('user__username', 'date', 'user__id') \
+        .annotate(count=Count('id'))
+    # Change the 'user__username' field name to just 'name'. (If
+    # <https://code.djangoproject.com/ticket/12222> ever gets implemented then
+    # this wouldn't be necessary.)
+    treenode_stats = [{
+        'username': stat['user__username'],
+        'userid': stat['user__id'],
+        'date':stat['date'],
+        'count':stat['count']} for stat in treenode_stats]
 
-    tree_reviewed_nodes = Treenode.objects.filter(
-        project = project_id,
-        review_time__range = (start_date, end_date)).select_related('user').exclude(reviewer_id=-1).extra(select={ 'date' : 'to_char("treenode"."review_time", \'YYYYMMDD\')' }).order_by('date').values('reviewer_id', 'date').annotate(count = Count('id'))
+    connector_nodes = Connector.objects \
+        .filter(
+            project=project_id,
+            creation_time__range=(start_date, end_date)) \
+        .extra(select={
+            'date': 'to_char("connector"."creation_time", \'YYYYMMDD\')'}) \
+        .order_by('user', 'date')
+    connector_stats = connector_nodes.values('user__username', 'date', 'user__id') \
+        .annotate(count=Count('id'))
+    connector_stats = [{
+        'username': stat['user__username'],
+        'userid': stat['user__id'],
+        'date': stat['date'],
+        'count': stat['count']} for stat in connector_stats]
+
+    tree_reviewed_nodes = Treenode.objects \
+        .filter(
+            project=project_id,
+            review_time__range=(start_date, end_date)) \
+        .select_related('user') \
+        .exclude(reviewer_id=-1) \
+        .extra(select={
+            'date': 'to_char("treenode"."review_time", \'YYYYMMDD\')'}) \
+        .order_by('date') \
+        .values('reviewer_id', 'date') \
+        .annotate(count = Count('id'))
 
     for di in treenode_stats:
-        stats_table[ di['username'] ][ di['date'] ]['new_treenodes'] = di['count']
+        stats_table[di['username']][di['date']]['new_treenodes'] = di['count']
 
     for di in connector_stats:
-        stats_table[ di['username'] ][ di['date'] ]['new_connectors'] = di['count']
+        stats_table[di['username']][di['date']]['new_connectors'] = di['count']
 
     for di in tree_reviewed_nodes:
-        stats_table[ map_userid_to_name[di['reviewer_id']] ][ di['date'] ]['new_reviewed_nodes'] = di['count']
+        name = map_userid_to_name[di['reviewer_id']]
+        stats_table[name][di['date']]['new_reviewed_nodes'] = di['count']
 
-    return HttpResponse(json.dumps({ 'stats_table': stats_table, 'days': days, 'daysformatted': daysformatted}), mimetype='text/json')
-    
+    return HttpResponse(json.dumps({
+        'stats_table': stats_table,
+        'days': days,
+        'daysformatted': daysformatted}), mimetype='text/json')
+

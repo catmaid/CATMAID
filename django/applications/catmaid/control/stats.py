@@ -9,29 +9,6 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def stats(request, project_id=None):
-    return HttpResponse(json.dumps(_stats(project_id)), mimetype='text/json')
-
-
-def _stats(project_id):
-    # Find out how many nodes have been created by each user
-    qs = Treenode.objects.filter(project=project_id) \
-        .values('user').annotate(count=Count('user'))
-    # Get name dictonary separatly to avaoid joining the user table to the
-    # treenode table, which in turn improves performance.
-    names = dict(User.objects.values_list('id', 'username'))
-
-    result = {'users': [],
-              'values': []}
-    for d in qs:
-        result['values'].append(d['count'])
-        user_name = '%s (%d)' % (names[d['user']], d['count'])
-        result['users'].append(user_name)
-
-    return result
-
-
 def _process(query, minus1name):
     cursor = connection.cursor()
     cursor.execute(query)
@@ -50,11 +27,17 @@ def _process(query, minus1name):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+def stats_nodecount(request, project_id=None):
+    return _process('''
+    SELECT user_id, count(user_id)
+    FROM treenode
+    WHERE project_id=%s
+    GROUP BY user_id
+    ''' % int(project_id), "*anonymous*")
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_reviewer(request, project_id=None):
-    # Can't reuse stats function with 'reviewer_username' because the Treenode
-    # class doesn't contain a revier as a model of a User, but directly a
-    # reviewer_id given that it can be -1, meaning no one rather than the
-    # anonymous user.  In any case the direct SQL command is arguably clearer.
     return _process('''
     SELECT reviewer_id, count(reviewer_id)
     FROM treenode

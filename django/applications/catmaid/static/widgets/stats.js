@@ -270,7 +270,7 @@ var ProjectStatistics = new function()
     //   return true;
     // });
 
-    requestQueue.register(django_url + project.id + '/stats', "GET", {
+    requestQueue.register(django_url + project.id + '/stats-nodecount', "GET", {
     }, function (status, text, xml) {
       if (status == 200) {
         if (text && text != " ") {

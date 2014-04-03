@@ -254,67 +254,14 @@ var ProjectStatistics = new function()
   }
   
   var refresh_project_statistics = function() {
-    // requestQueue.register(django_url + project.id + '/stats/summary', "GET", {
-    // }, function (status, text, xml) {
-    //   if (status == 200) {
-    //     if (text && text != " ") {
-    //       var jso = $.parseJSON(text);
-    //       if (jso.error) {
-    //         alert(jso.error);
-    //       }
-    //       else {
-    //         update_stats_fields(jso);
-    //       }
-    //     }
-    //   }
-    //   return true;
-    // });
+    refresh_nodecount();
+    refresh_reviewers();
+    refresh_history();
 
-    requestQueue.register(django_url + project.id + '/stats/nodecount', "GET", {
-    }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
-          var jso = $.parseJSON(text);
-          if (jso.error) {
-            alert(jso.error);
-          } else {
-            update_piechart(jso, "piechart_treenode_holder");
-          }
-        }
-      }
-      return true;
-    });
+    // d3.json(django_url + project.id + '/stats/history', update_linegraph);
+  }
 
-    // requestQueue.register(django_url + project.id + '/stats/editor', "GET",{
-    // }, function (status, text, xml) {
-    //   if (status == 200) {
-    //     if (text && text != " ") {
-    //       var jso = $.parseJSON(text);
-    //       if (jso.error) {
-    //         alert(jso.error);
-    //       } else {
-    //         update_piechart(jso, "piechart_editor_holder");
-    //       }
-    //     }
-    //   }
-    //   return true;
-    // });
-
-    requestQueue.register(django_url + project.id + '/stats/reviewer', "GET", {
-    }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
-          var jso = $.parseJSON(text);
-          if (jso.error) {
-            alert(jso.error);
-          } else {
-            update_piechart(jso, "piechart_reviewer_holder");
-          }
-        }
-      }
-      return true;
-    });
-
+  var refresh_history = function() {
     requestQueue.register(django_url + project.id + '/stats/user-history', "POST", {
       "pid": project.id
     }, function (status, text, xml) {
@@ -330,9 +277,76 @@ var ProjectStatistics = new function()
       }
       return true;
     });
-    
-    // d3.json(django_url + project.id + '/stats/history', update_linegraph);
-  }
+  };
+
+  var refresh_reviewers = function() {
+    requestQueue.register(django_url + project.id + '/stats/reviewer', "GET", {
+    }, function (status, text, xml) {
+      if (status == 200) {
+        if (text && text != " ") {
+          var jso = $.parseJSON(text);
+          if (jso.error) {
+            alert(jso.error);
+          } else {
+            update_piechart(jso, "piechart_reviewer_holder");
+          }
+        }
+      }
+      return true;
+    });
+  };
+
+  var refresh_editors = function() {
+    requestQueue.register(django_url + project.id + '/stats/editor', "GET",{
+    }, function (status, text, xml) {
+      if (status == 200) {
+        if (text && text != " ") {
+          var jso = $.parseJSON(text);
+          if (jso.error) {
+            alert(jso.error);
+          } else {
+            update_piechart(jso, "piechart_editor_holder");
+          }
+        }
+      }
+      return true;
+    });
+  };
+
+  var refresh_nodecount = function() {
+    requestQueue.register(django_url + project.id + '/stats/nodecount', "GET", {
+    }, function (status, text, xml) {
+      if (status == 200) {
+        if (text && text != " ") {
+          var jso = $.parseJSON(text);
+          if (jso.error) {
+            alert(jso.error);
+          } else {
+            update_piechart(jso, "piechart_treenode_holder");
+          }
+        }
+      }
+      return true;
+    });
+  };
+
+  var refresh_summary = function() {
+    requestQueue.register(django_url + project.id + '/stats/summary', "GET", {
+    }, function (status, text, xml) {
+      if (status == 200) {
+        if (text && text != " ") {
+          var jso = $.parseJSON(text);
+          if (jso.error) {
+            alert(jso.error);
+          }
+          else {
+            update_stats_fields(jso);
+          }
+        }
+      }
+      return true;
+    });
+  };
 
   /**
    * Initialized the statistics widget by asking the backend to create the basic

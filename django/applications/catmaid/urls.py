@@ -70,12 +70,12 @@ urlpatterns += patterns('catmaid.control.tracing',
 
 # Statistics
 urlpatterns += patterns('catmaid.control.stats',
-    (r'^(?P<project_id>\d+)/stats-nodecount$', 'stats_nodecount'),
-    (r'^(?P<project_id>\d+)/stats-editor$', 'stats_editor'),
-    (r'^(?P<project_id>\d+)/stats-reviewer$', 'stats_reviewer'),
-    (r'^(?P<project_id>\d+)/stats-summary$', 'stats_summary'),
-    (r'^(?P<project_id>\d+)/stats-history$', 'stats_history'),
-    (r'^(?P<project_id>\d+)/stats-user-history$', 'stats_user_history'),
+    (r'^(?P<project_id>\d+)/stats/nodecount$', 'stats_nodecount'),
+    (r'^(?P<project_id>\d+)/stats/editor$', 'stats_editor'),
+    (r'^(?P<project_id>\d+)/stats/reviewer$', 'stats_reviewer'),
+    (r'^(?P<project_id>\d+)/stats/summary$', 'stats_summary'),
+    (r'^(?P<project_id>\d+)/stats/history$', 'stats_history'),
+    (r'^(?P<project_id>\d+)/stats/user-history$', 'stats_user_history'),
     (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
 )
 

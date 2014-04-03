@@ -254,7 +254,7 @@ var ProjectStatistics = new function()
   }
   
   var refresh_project_statistics = function() {
-    // requestQueue.register(django_url + project.id + '/stats-summary', "GET", {
+    // requestQueue.register(django_url + project.id + '/stats/summary', "GET", {
     // }, function (status, text, xml) {
     //   if (status == 200) {
     //     if (text && text != " ") {
@@ -270,7 +270,7 @@ var ProjectStatistics = new function()
     //   return true;
     // });
 
-    requestQueue.register(django_url + project.id + '/stats-nodecount', "GET", {
+    requestQueue.register(django_url + project.id + '/stats/nodecount', "GET", {
     }, function (status, text, xml) {
       if (status == 200) {
         if (text && text != " ") {
@@ -285,7 +285,7 @@ var ProjectStatistics = new function()
       return true;
     });
 
-    // requestQueue.register(django_url + project.id + '/stats-editor', "GET",{
+    // requestQueue.register(django_url + project.id + '/stats/editor', "GET",{
     // }, function (status, text, xml) {
     //   if (status == 200) {
     //     if (text && text != " ") {
@@ -300,7 +300,7 @@ var ProjectStatistics = new function()
     //   return true;
     // });
 
-    requestQueue.register(django_url + project.id + '/stats-reviewer', "GET", {
+    requestQueue.register(django_url + project.id + '/stats/reviewer', "GET", {
     }, function (status, text, xml) {
       if (status == 200) {
         if (text && text != " ") {
@@ -315,7 +315,7 @@ var ProjectStatistics = new function()
       return true;
     });
 
-    requestQueue.register(django_url + project.id + '/stats-user-history', "POST", {
+    requestQueue.register(django_url + project.id + '/stats/user-history', "POST", {
       "pid": project.id
     }, function (status, text, xml) {
       if (status == 200) {
@@ -331,7 +331,7 @@ var ProjectStatistics = new function()
       return true;
     });
     
-    // d3.json(django_url + project.id + '/stats-history', update_linegraph);
+    // d3.json(django_url + project.id + '/stats/history', update_linegraph);
   }
 
   this.init = function () {

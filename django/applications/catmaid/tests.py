@@ -523,7 +523,7 @@ class ViewPageTests(TestCase):
 
     def test_treenode_stats(self):
         self.fake_authentication()
-        response = self.client.get('/%d/stats-nodecount' % (self.test_project_id,))
+        response = self.client.get('/%d/stats/nodecount' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         values = parsed_response['values']
@@ -539,7 +539,7 @@ class ViewPageTests(TestCase):
 
     def test_stats_summary(self):
         self.fake_authentication()
-        response = self.client.get('/%d/stats-summary' % (self.test_project_id,))
+        response = self.client.get('/%d/stats/summary' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
         expected_result = {u"proj_users": 2,
                            u'proj_presyn': 0,

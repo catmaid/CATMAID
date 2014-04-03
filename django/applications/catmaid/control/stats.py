@@ -1,10 +1,9 @@
 import json
-from datetime import timedelta, datetime, date
+from datetime import timedelta, datetime
 
 from django.http import HttpResponse
 from django.db.models import Count
 from django.db import connection
-from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -133,7 +132,6 @@ def stats_history(request, project_id=None):
 
 
 def stats_user_history(request, project_id=None):
-    relation_map = get_relation_to_id_map(project_id)
     last_x_days = 10
     # Get the start and end dates for the query, defaulting to the last 30 days.
     # start_date = request.GET.get('start_date', datetime.now() - timedelta(last_x_days))

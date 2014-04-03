@@ -15,13 +15,18 @@ def stats(request, project_id=None):
 
 
 def _stats(project_id):
-    qs = Treenode.objects.filter(project=project_id)
-    qs = qs.values('user__username').annotate(count=Count('user__username'))
+    # Find out how many nodes have been created by each user
+    qs = Treenode.objects.filter(project=project_id) \
+        .values('user').annotate(count=Count('user'))
+    # Get name dictonary separatly to avaoid joining the user table to the
+    # treenode table, which in turn improves performance.
+    names = dict(User.objects.values_list('id', 'username'))
+
     result = {'users': [],
               'values': []}
     for d in qs:
         result['values'].append(d['count'])
-        user_name = '%s (%d)' % (d['user__username'], d['count'])
+        user_name = '%s (%d)' % (names[d['user']], d['count'])
         result['users'].append(user_name)
 
     return result

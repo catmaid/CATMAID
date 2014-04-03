@@ -1,5 +1,6 @@
 import json
 from datetime import timedelta, datetime
+from dateutil import parser as dateparser
 
 from django.http import HttpResponse
 from django.db.models import Count
@@ -122,20 +123,29 @@ def stats_history(request, project_id=None):
 
 
 def stats_user_history(request, project_id=None):
-    last_x_days = 10
-    # Get the start and end dates for the query, defaulting to the last 30 days.
-    # start_date = request.GET.get('start_date', datetime.now() - timedelta(last_x_days))
-    # end_date = request.GET.get('end_date', datetime.now())
-    start_date = datetime.now() - timedelta(last_x_days)
+    # Get the start date for the query, defaulting to 10 days ago.
+    start_date = request.GET.get('start_date', None)
+    if start_date:
+        start_date = dateparser.parse(start_date)
+        print(start_date)
+    else:
+        start_date = datetime.now() - timedelta(10)
+    # Get the end date for the query, defaulting to now.
+    end_date = request.GET.get('end_date', None)
+    if end_date:
+        end_date = dateparser.parse(end_date)
+    else:
+        end_date = datetime.now()
+    # Calculate number of days between (including) start and end
+    daydelta = (end_date + timedelta(days=1) - start_date).days
 
-    end_date = datetime.now()
     all_users = User.objects.filter().values('username', 'id')
     map_userid_to_name = {}
     for user in all_users:
         map_userid_to_name[user['id']] = user['username']
     days = []
     daysformatted = []
-    for i in range(last_x_days+1):
+    for i in range(daydelta):
         tmp_date = start_date + timedelta(days=i)
         days.append(tmp_date.strftime("%Y%m%d"))
         daysformatted.append(tmp_date.strftime("%a %d, %h %Y"))
@@ -144,7 +154,7 @@ def stats_user_history(request, project_id=None):
         if userid == -1:
             continue
         stats_table[map_userid_to_name[userid]] = {}
-        for i in range(last_x_days+1):
+        for i in range(daydelta):
             name = map_userid_to_name[userid]
             date = (start_date + timedelta(days=i)).strftime("%Y%m%d")
             stats_table[name][date] = {}

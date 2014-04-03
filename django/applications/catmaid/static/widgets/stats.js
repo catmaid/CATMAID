@@ -262,9 +262,14 @@ var ProjectStatistics = new function()
   }
 
   var refresh_history = function() {
-    requestQueue.register(django_url + project.id + '/stats/user-history', "POST", {
-      "pid": project.id
+    // disable the refresh button until finished
+    $(".stats-history-setting").prop('disabled', true);
+    requestQueue.register(django_url + project.id + '/stats/user-history', "GET", {
+      "pid": project.id,
+      "start_date": $("#stats-history-start-date").val(),
+      "end_date": $("#stats-history-end-date").val(),
     }, function (status, text, xml) {
+      $(".stats-history-setting").prop('disabled', false);
       if (status == 200) {
         if (text && text != " ") {
           var jso = $.parseJSON(text);
@@ -355,6 +360,19 @@ var ProjectStatistics = new function()
   this.init = function () {
     $('#project_stats_widget').load(django_url + project.id + '/stats', null,
         function() {
+          // Make the contribution record input fields date selectors
+          $("#stats-history-start-date")
+              .datepicker({ dateFormat: "yy-mm-dd", defaultDate: -10 })
+              .datepicker('setDate', "-10");
+          $("#stats-history-end-date")
+              .datepicker({ dateFormat: "yy-mm-dd", defaultDate: 0 })
+              .datepicker('setDate', "0");
+          // Attach handler to history refresh button
+          $("#stats-history-refresh").click(function() {
+              refresh_history();
+          });
+
+          // Updae the actual statistics
           refresh_project_statistics();
         });
   };

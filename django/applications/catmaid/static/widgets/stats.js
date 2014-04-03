@@ -353,7 +353,9 @@ var ProjectStatistics = new function()
    * layout.
    */
   this.init = function () {
-    $('#project_stats_widget').load(django_url + project.id + '/stats')
-    refresh_project_statistics();
+    $('#project_stats_widget').load(django_url + project.id + '/stats', null,
+        function() {
+          refresh_project_statistics();
+        });
   };
 };

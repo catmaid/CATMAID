@@ -35,11 +35,16 @@ def _stats(project_id):
 def _process(query, minus1name):
     cursor = connection.cursor()
     cursor.execute(query)
+
+    # Get name dictonary separatly to avaoid joining the user table to the
+    # treenode table, which in turn improves performance.
+    names = dict(User.objects.values_list('id', 'username'))
+
     result = {'users': [],
               'values': []}
     for row in cursor.fetchall():
         result['values'].append(row[1])
-        s = row if "AnonymousUser" != row[0] else (minus1name, row[1])
+        s = (names[row[0]], row[1]) if -1 != row[0] else (minus1name, row[1])
         result['users'].append('%s (%d)' % s)
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
@@ -51,22 +56,20 @@ def stats_reviewer(request, project_id=None):
     # reviewer_id given that it can be -1, meaning no one rather than the
     # anonymous user.  In any case the direct SQL command is arguably clearer.
     return _process('''
-    SELECT username, count(reviewer_id)
-    FROM treenode, auth_user
+    SELECT reviewer_id, count(reviewer_id)
+    FROM treenode
     WHERE project_id=%s
-      AND reviewer_id=auth_user.id
-     GROUP BY username
+    GROUP BY reviewer_id
     ''' % int(project_id), "*unreviewed*")
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_editor(request, project_id=None):
     return _process('''
-    SELECT username, count(editor_id)
-    FROM treenode, auth_user
+    SELECT editor_id, count(editor_id)
+    FROM treenode
     WHERE project_id=%s
       AND editor_id != user_id
-      AND editor_id=auth_user.id
     GROUP BY username
     ''' % int(project_id), "*unedited*")
 

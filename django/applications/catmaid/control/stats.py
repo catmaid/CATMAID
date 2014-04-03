@@ -5,9 +5,8 @@ from django.http import HttpResponse
 from django.db.models import Count
 from django.db import connection
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.control.authentication import requires_user_role
+from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

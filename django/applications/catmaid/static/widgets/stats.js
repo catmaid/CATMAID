@@ -334,11 +334,12 @@ var ProjectStatistics = new function()
     // d3.json(django_url + project.id + '/stats/history', update_linegraph);
   }
 
+  /**
+   * Initialized the statistics widget by asking the backend to create the basic
+   * layout.
+   */
   this.init = function () {
-
-    $('#project_stats_widget').load( django_url + project.id + '/statisticswidget' )
-
+    $('#project_stats_widget').load(django_url + project.id + '/stats')
     refresh_project_statistics();
-
   };
 };

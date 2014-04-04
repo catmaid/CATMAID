@@ -159,7 +159,6 @@ function handle_login(status, text, xml, completionCallback) {
 
       document.getElementById("message_box").style.display = "block";
 
-      document.getElementById("project_menu_new").style.display = "block";
 
       //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
       message();
@@ -212,8 +211,6 @@ function handle_logout(status, text, xml) {
 	document.getElementById( "session_box" ).style.display = "none";
 	
 	document.getElementById( "message_box" ).style.display = "none";
-	
-	document.getElementById( "project_menu_new" ).style.display = "none";
 	
 	if ( project && project.id ) project.setTool( new Navigator() );
 
@@ -758,51 +755,6 @@ function handle_message( status, text, xml )
 }
 
 /**
- * update the lists of users
- */
-
-function updateUsers() {
-  document.getElementById("new_project_form").elements[3].style.display = "none";
-  document.getElementById("new_project_owners_wait").style.display = "block";
-  requestQueue.register(django_url + 'user-list', 'GET', undefined, handle_updateUsers);
-  return;
-}
-
-/**
- * handle a lists of users update response
- */
-
-function handle_updateUsers(status, text, xml) {
-  if (!session) return;
-
-  if (status == 200 && text) {
-    var e = eval("(" + text + ")");
-    if (e.error) {
-      alert(e.error);
-    } else {
-      var new_project_owners = document.getElementById("new_project_form").elements[3];
-      while (new_project_owners.length > 0)
-      new_project_owners.remove(0);
-      for (var i in e) {
-        var option = document.createElement("option");
-        option.text = e[i].longname;
-        option.value = e[i].id;
-        if (e[i].id == session.id) {
-          option.selected = true;
-        }
-        new_project_owners.appendChild(option);
-      }
-      new_project_owners.size = e.length;
-
-    }
-  }
-  document.getElementById("new_project_owners_wait").style.display = "none";
-  document.getElementById("new_project_form").elements[3].style.display = "block";
-
-  return;
-}
-
-/**
  * mark a message as read
  */
 
@@ -1128,26 +1080,12 @@ var realInit = function()
 		{
 			0 :
 			{
-				title : "New",
-				id : "project_menu_new",
-				action : function()
-				{
-					if ( project ) project.destroy();
-					document.getElementById( "project list" ).style.display = "none";
-					document.getElementById( "new_project_dialog" ).style.display = "block";
-					updateUsers();
-					return;
-				},
-				note : ""
-			},
-			1 :
-			{
 				title : "Open",
 				id : "project_menu_open",
 				action : {},
 				note : ""
 			},
-			2 :
+			1 :
 			{
 				title : "Current",
 				id : "project_menu_current",
@@ -1159,7 +1097,6 @@ var realInit = function()
 	document.getElementById( "project_menu" ).appendChild( project_menu.getView() );
 	
 	project_menu_open = project_menu.getPulldown( "Open" );
-	document.getElementById( "project_menu_new" ).style.display = "none";
 	//project_menu_open.appendChild( project_menu_open.getView() );
 	project_menu_current = project_menu.getPulldown( "Current" );
 	document.getElementById( "project_menu_current" ).style.display = "none";

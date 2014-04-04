@@ -1,12 +1,13 @@
 import json
 import math
+from collections import defaultdict
 from string import upper
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 
-from catmaid.models import ProjectStack, Stack, Treenode
+from catmaid.models import ProjectStack, Stack, Treenode, Review
 from catmaid.models import TreenodeClassInstance, User, UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
@@ -214,14 +215,22 @@ def list_treenode_table(request, project_id=None):
             filter_nodetype = upper(filter_nodetype)
             treenodes = [t for t in treenodes if t.nodetype in filter_nodetype]
 
+        users = dict(User.objects.all().values_list('id', 'username'))
+        users[-1] = "None"  # Rather than AnonymousUser
+
+        # Get all reviews for the current treenode set
+        treenode_ids = [t.id for t in treenodes]
+        reviews = Review.objects.filter(treenode_id__in=treenode_ids) \
+            .values_list('treenode_id', 'reviewer_id')
+        treenode_to_reviews = defaultdict(list)
+        for tid, rid in reviews:
+            treenode_to_reviews[tid].append(users[rid])
+
         response_on_error = 'Could not retrieve resolution and translation ' \
             'parameters for project.'
         resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
         translation = get_object_or_404(ProjectStack,
             stack=int(stack_id), project=project_id).translation
-
-        users = dict(User.objects.all().values_list('id', 'username'))
-        users[-1] = "None"  # Rather than AnonymousUser
 
         def formatTreenode(tn):
             row = [str(tn.tid)]
@@ -238,7 +247,7 @@ def list_treenode_table(request, project_id=None):
             row.append(str(tn.radius))
             row.append(tn.username)
             row.append(tn.last_modified)
-            row.append(str(users.get(tn.last_reviewer, "Unknown")))
+            row.append(', '.join(treenode_to_reviews.get(tn.id, ["None"])))
             return row
 
         result = {'iTotalRecords': row_count, 'iTotalDisplayRecords': row_count}

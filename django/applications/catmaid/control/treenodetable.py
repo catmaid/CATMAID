@@ -6,9 +6,10 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import ProjectStack, Stack, Treenode
+from catmaid.models import TreenodeClassInstance, User, UserRole
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map
 
 
 @requires_user_role(UserRole.Annotate)

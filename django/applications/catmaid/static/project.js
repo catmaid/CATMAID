@@ -276,7 +276,8 @@ function Project( pid )
 		self.id = 0;
 		document.onkeydown = null;
 		document.getElementById( "content" ).style.display = "block";
-		document.getElementById( "project_menu_current" ).style.display = "none";
+		document.getElementById( "stackmenu_box" ).style.display = "none";
+		document.getElementById( "stack_menu" ).style.display = "none";
 		// TODO: bars should be unset by tool on unregister
 		document.getElementById("toolbox_edit").style.display = "none";
 		document.getElementById("toolbox_data").style.display = "none";

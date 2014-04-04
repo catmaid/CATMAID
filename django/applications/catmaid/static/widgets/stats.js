@@ -255,7 +255,6 @@ var ProjectStatistics = new function()
   
   var refresh_project_statistics = function() {
     refresh_nodecount();
-    refresh_reviewers();
     refresh_history();
 
     // d3.json(django_url + project.id + '/stats/history', update_linegraph);
@@ -277,23 +276,6 @@ var ProjectStatistics = new function()
             alert(jso.error);
           } else {
             update_user_history(jso);
-          }
-        }
-      }
-      return true;
-    });
-  };
-
-  var refresh_reviewers = function() {
-    requestQueue.register(django_url + project.id + '/stats/reviewer', "GET", {
-    }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
-          var jso = $.parseJSON(text);
-          if (jso.error) {
-            alert(jso.error);
-          } else {
-            update_piechart(jso, "piechart_reviewer_holder");
           }
         }
       }

@@ -205,7 +205,7 @@ def list_treenode_table(request, project_id=None):
         resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
         translation = get_object_or_404(ProjectStack, stack=int(stack_id), project=project_id).translation
 
-        users = {u[0]: u[1] for u in User.objects.filter().values_list('id', 'username')}
+        users = dict(User.objects.all().values_list('id', 'username'))
         users[-1] = "None" # Rather than AnonymousUser
 
         def formatTreenode(tn):

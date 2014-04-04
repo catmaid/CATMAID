@@ -38,16 +38,6 @@ def stats_nodecount(request, project_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def stats_reviewer(request, project_id=None):
-    return _process('''
-    SELECT reviewer_id, count(reviewer_id)
-    FROM treenode
-    WHERE project_id=%s
-    GROUP BY reviewer_id
-    ''' % int(project_id), "*unreviewed*")
-
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_editor(request, project_id=None):
     return _process('''
     SELECT editor_id, count(editor_id)

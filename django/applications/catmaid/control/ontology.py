@@ -705,7 +705,7 @@ def get_feature_paths_remote( ontology, workspace_pid, add_nonleafs=False, depth
             class_a = classes[link_data[0]]
             class_b = classes[link_data[1]]
             relation = relations[link_data[2]]
-            super_a = link_data[3] if classes[link_data[3]] else None
+            super_a = classes.get(link_data[3], None)
             fl = FeatureLink(class_a, class_b, relation, super_a)
             feature.append(fl)
         features.append(feature)

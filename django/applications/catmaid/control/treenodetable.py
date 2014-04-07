@@ -7,10 +7,11 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 
-from catmaid.models import ProjectStack, Stack, Treenode, Review
+from catmaid.models import ProjectStack, Stack, Treenode
 from catmaid.models import TreenodeClassInstance, User, UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
+from catmaid.control.review import get_treenodes_to_reviews
 
 
 @requires_user_role(UserRole.Annotate)
@@ -220,11 +221,8 @@ def list_treenode_table(request, project_id=None):
 
         # Get all reviews for the current treenode set
         treenode_ids = [t.id for t in treenodes]
-        reviews = Review.objects.filter(treenode_id__in=treenode_ids) \
-            .values_list('treenode_id', 'reviewer_id')
-        treenode_to_reviews = defaultdict(list)
-        for tid, rid in reviews:
-            treenode_to_reviews[tid].append(users[rid])
+        treenode_to_reviews = get_treenodes_to_reviews(treenode_ids,
+            umap=lambda r: users[r])
 
         response_on_error = 'Could not retrieve resolution and translation ' \
             'parameters for project.'

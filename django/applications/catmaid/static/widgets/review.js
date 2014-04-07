@@ -214,9 +214,9 @@ var ReviewSystem = new function()
         thead = $('<thead />');
         table.append( thead );
         row = $('<tr />')
-        row.append( $('<td />').text("") );
-        row.append( $('<td />').text("Status") );
-        row.append( $('<td />').text("# nodes") );
+        row.append( $('<th />').text("") );
+        row.append( $('<th />').text("Status") );
+        row.append( $('<th />').text("# nodes") );
         thead.append( row );
         tbody = $('<tbody />');
         table.append( tbody );

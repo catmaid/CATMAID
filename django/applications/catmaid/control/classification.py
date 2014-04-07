@@ -3,6 +3,7 @@ import json
 from django import forms
 from django.conf import settings
 from django.contrib.formtools.wizard.views import SessionWizardView
+from django.forms.widgets import CheckboxSelectMultiple
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404, render_to_response
@@ -12,7 +13,7 @@ from django.db.models import Count
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.common import insert_into_log
 from catmaid.control.ajax_templates import *
-from catmaid.control.ontology import get_class_links_qs
+from catmaid.control.ontology import get_class_links_qs, get_features
 from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
 from catmaid.models import Relation, UserRole, Project, Restriction, Stack
 from catmaid.models import CardinalityRestriction, RegionOfInterest
@@ -1243,6 +1244,37 @@ class ClassificationSearchWizard(SessionWizardView):
         context.update(extra_context)
         return context
 
+    def get_form(self, step=None, data=None, files=None):
+        form = super(ClassificationSearchWizard, self) \
+            .get_form(step, data, files)
+        current_step = step or self.steps.current
+        if current_step == 'features':
+            # We want all ontologies represented (which are Class objects) that
+            # live under the classification_root node.
+            class_ids = get_root_classes_qs(self.workspace_pid)
+            ontologies = Class.objects.filter(id__in=class_ids)
+            # Featurs are abstract concepts (classes) and graphs will be
+            # checked which classes they have instanciated.
+            raw_features = []
+            for o in ontologies:
+                raw_features = raw_features + get_features(o,
+                    self.workspace_pid, graphs=None, add_nonleafs=True,
+                    only_used_features=False)
+            self.features = raw_features
+            # Build form array
+            features = []
+            for i, f in enumerate(raw_features):
+                name =  "%s: %s" % (f.links[0].class_b.class_name, f.name)
+                features.append((i, name))
+            # Add form array to form field
+            form.fields['features'].choices = features
+            print(class_ids)
+            print(ontologies)
+            print(raw_features)
+            print(features)
+
+        return form
+
     def done(self, form_list, **kwargs):
         return HttpResponse("TODO: Generate report")
 
@@ -1252,8 +1284,9 @@ class FeatureSetupForm(forms.Form):
     will cut all loops. Every level of the tee is kept in a UL element with LI
     elements as nodes.
     """
-    #features = forms.MultipleChoiceField(choices=[],
-    #        widget=CheckboxSelectMultiple(attrs={'class': 'autoselectable'}))
+    features = forms.MultipleChoiceField(choices=[],
+            widget=CheckboxSelectMultiple(attrs={'class': 'autoselectable'}))
+
 
 class LayoutSetupForm(forms.Form):
     """ This form lets the user specify the result output layout.

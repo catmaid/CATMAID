@@ -50,10 +50,10 @@ Then Celery and Django need some information about the message broker
 in use. Since we here refer to kombu, the following settings
 are important to get this specific broker to work::
 
-  INSTALLED_APPS += ("kombu",)
-  BROKER_RUL = 'django://'
+  INSTALLED_APPS += ("kombu.transport.django",)
+  BROKER_URL = 'django://'
 
-This will make kombu use the Django database for it's messages. Although,
+This will make kombu use the Django database for its messages. Although,
 this is fine for a small and simple setup, it is recommended to use a
 different message broker for larger setups. There is more information on
 the limitations of and alternatives to this approach in

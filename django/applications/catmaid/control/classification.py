@@ -1,8 +1,11 @@
 import json
 
+from collections import defaultdict
+
 from django import forms
 from django.db.models import Q
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.forms.widgets import CheckboxSelectMultiple
 from django.http import HttpResponse
@@ -16,11 +19,13 @@ from catmaid.control.common import insert_into_log
 from catmaid.control.ajax_templates import *
 from catmaid.control.ontology import get_class_links_qs, get_features
 from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
-from catmaid.models import Relation, UserRole, Project, Restriction, Stack
+from catmaid.models import Relation, UserRole, Project, Restriction, Stack, User
 from catmaid.models import CardinalityRestriction, RegionOfInterest
-from catmaid.models import RegionOfInterestClassInstance
+from catmaid.models import RegionOfInterestClassInstance, ProjectStack
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.roi import link_roi_to_class_instance
+
+from taggit.models import TaggedItem
 
 # All needed classes by the classification system alongside their
 # descriptions.
@@ -1341,8 +1346,10 @@ class ClassificationSearchWizard(SessionWizardView):
         elif self.steps.current == 'layout':
             extra_context['description'] = \
                 "This steps allows you to specify the layout of the search " \
-                "result. To do this, you can select a data view and adjust " \
-                "it's settings to your liking."
+                "result. Currently, only a tag based table layout is " \
+                "supported. Below you can configure general filter tags and " \
+                "tags that are used to organize all results in rows and " \
+                "columns."
 
         # Update context with extra information and return ir
         context.update(extra_context)
@@ -1372,15 +1379,116 @@ class ClassificationSearchWizard(SessionWizardView):
                 features.append((i, name))
             # Add form array to form field
             form.fields['features'].choices = features
-            print(class_ids)
-            print(ontologies)
-            print(raw_features)
-            print(features)
 
         return form
 
     def done(self, form_list, **kwargs):
-        return HttpResponse("TODO: Generate report")
+        """ All matching classifications are fetched and organized in a
+        result data view.
+        """
+        cleaned_data = [form.cleaned_data for form in form_list]
+        selected_feature_ids = cleaned_data[0].get('features')
+        # Get selected features
+        features = []
+        for f_id in selected_feature_ids:
+            features.append(self.features[int(f_id)])
+        # All classification graphs in this workspace will be respected
+        ontologies = get_root_classes_qs(self.workspace_pid)
+        graphs = ClassInstanceProxy.objects.filter(class_column__in=ontologies)
+        # Iterate through all graphs and find those that realize all of the
+        # selected features in their respective ontology.
+        matching_graphs = []
+        for g in graphs:
+            matches = True
+            for f in features:
+                # TODO: Separate features by ontology and only test those for
+                # the matching ontology.
+                if graph_instanciates_feature(g, f):
+                    continue
+                else:
+                    matches = False
+                    break
+            # Remember the graph if all relevant features match
+            if matches:
+                matching_graphs.append(g)
+        # Find projects that are linked to the matching graphs and build
+        # indices for their tags.
+        classification_project_c_q = Class.objects.get(
+            project_id=self.workspace_pid, class_name='classification_project')
+        classification_project_cis_q = ClassInstance.objects.filter(
+                class_column=classification_project_c_q)
+        # Query to get the 'classified_by' relation
+        classified_by_rel = Relation.objects.filter(
+                project_id=self.workspace_pid, relation_name='classified_by')
+        # Find all 'classification_project' class instances of all requested
+        # projects that link to the matched graphs. They are the
+        #'class_instance_a' instances of these links.
+        mg_index = {}
+        for mg in matching_graphs:
+            mg_index[mg.id] = mg
+        cici_q = ClassInstanceClassInstance.objects.filter(
+            project_id=self.workspace_pid, relation__in=classified_by_rel,
+            class_instance_b_id__in=mg_index.keys(),
+            class_instance_a__in=classification_project_cis_q)
+
+        # Build index from classification project class instance ID to PID
+        cp_to_pid = {}
+        for cp in classification_project_cis_q:
+            cp_to_pid[cp.id] = cp.project_id
+
+        # Build project index
+        project_ids = set()
+        cg_to_pids = defaultdict(list)
+        pid_to_cgs = defaultdict(list)
+        for cgid, cpid in cici_q.values_list('class_instance_b_id',
+                                            'class_instance_a_id'):
+            pid = cp_to_pid[cpid]
+            cg_to_pids[cgid].append(pid)
+            pid_to_cgs[pid].append(cgid)
+            project_ids.add(pid)
+
+        # Build tag index
+        ct = ContentType.objects.get_for_model(Project)
+        tag_links = TaggedItem.objects.filter(content_type=ct) \
+            .values_list('object_id', 'tag__name')
+        tag_index = defaultdict(set)
+        for pid, t in tag_links:
+            if pid in project_ids:
+                tag_index[t].add(pid)
+
+        # To actually open a result, the stacks are required as well. So we
+        # need to build a stack index.
+        pid_to_sids = defaultdict(list)
+        for pid, sid in ProjectStack.objects.order_by('id') \
+                .values_list('project_id', 'stack_id'):
+            pid_to_sids[pid].append(sid)
+
+        # Get row and column tags
+        col_tags = [t.strip() for t in cleaned_data[1].get('column_tags').split(',')]
+        row_tags = [t.strip() for t in cleaned_data[1].get('row_tags').split(',')]
+        filter_tags = [t.strip() for t in cleaned_data[1].get('filter_tags').split(',')]
+
+        # Build project index
+        project_index = dict([(p.id, p) for p in Project.objects.all()])
+
+        # Get the default request context and add custom data
+        context = RequestContext(self.request)
+        context.update({
+            'project_ids': project_ids,
+            'matching_graphs': matching_graphs,
+            'cg_to_pids': cg_to_pids,
+            'pid_to_cgs': pid_to_cgs,
+            'mg_index': mg_index,
+            'tag_index': tag_index,
+            'col_tags': col_tags,
+            'row_tags': row_tags,
+            'filter_tags': filter_tags,
+            'project_index': project_index,
+            'pid_to_sids': pid_to_sids,
+        })
+
+        return render_to_response('catmaid/classification/search_report.html',
+                                  context)
 
 class FeatureSetupForm(forms.Form):
     """ This form displays all available classification_root based ontologies
@@ -1395,7 +1503,16 @@ class FeatureSetupForm(forms.Form):
 class LayoutSetupForm(forms.Form):
     """ This form lets the user specify the result output layout.
     """
-    pass
+    filter_tags = forms.CharField(required=False,
+                                  help_text="A comma-sepaarated list of tag"
+                                  "names that all results have to be linked"
+                                  "to, regardless of where they will placed")
+    row_tags = forms.CharField(required=False, help_text="A comma-separated "
+                               "list of tag names that organize all results "
+                               "in diferent rows.")
+    column_tags = forms.CharField(required=False, help_text="A comma-separated "
+                                  "list of tag names that organize all results "
+                                  "in different columns.")
 
 def search(request, workspace_pid=None):
     """ This view simplifies the creation of a new ontology search wizard and

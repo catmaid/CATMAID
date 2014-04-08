@@ -494,3 +494,9 @@ div#classification_graph_object img.roiimage {
 .right {
   float: right;
 }
+
+.ontology_search .helptext {
+  display: block;
+  color: #888;
+  font-style:italic;
+}

@@ -10,7 +10,7 @@
     <script src="{{ static }}js/treelines.js" type="text/javascript" charset="utf-8"></script>
     <script type="text/javascript">
         {% if project_id %}
-            var projectIndexURL = "{% url vncbrowser.views.index project_id=project_id %}";
+            var projectIndexURL = "{% url 'vncbrowser.views.index' project_id=project_id %}";
         {% endif %}
     </script>
     {% block extrascript %}
@@ -27,8 +27,8 @@
        Not logged in
     {% endif %}
     {% if project_id %}
-    <a href="{% url vncbrowser.views.index project_id=project_id %}">All neurons (text)</a>
-    | <a href="{% url vncbrowser.views.visual_index project_id=project_id %}">All neurons (visual)</a>
+    <a href="{% url 'vncbrowser.views.index' project_id=project_id %}">All neurons (text)</a>
+    | <a href="{% url 'vncbrowser.views.visual_index' project_id=project_id %}">All neurons (visual)</a>
     {% endif %}
   </div>
 

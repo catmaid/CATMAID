@@ -9,7 +9,7 @@
 		update_data_view_comment = function() {
 			$.ajax({
 				type: 'POST',
-				url: "{% url catmaid.control.data_view.get_data_view_type_comment %}",
+				url: "{% url 'catmaid.control.data_view.get_data_view_type_comment' %}",
 				data: {'data_view_type_id': $('#id_data_view_type').val()},
 				success: function(data, status) {
 					$('#data_view_config_help').text(data.comment);

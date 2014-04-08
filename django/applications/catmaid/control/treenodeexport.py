@@ -238,36 +238,36 @@ class ConnectorExporter(TreenodeExporter):
         TreenodeExporter.__init__(self, *args, **kwargs)
         self.entity_name = "connector"
 
-    def create_path(self, connector):
+    def create_path(self, connector_link):
         """ Based on the output path, this function will create a folder
         structure for a particular connector. Things that are supposedly
         needed multiple times, will be cached. This function will also make
         sure the path exists and is ready to be written to.
         """
         # Get (and create if needed) cache entry for string of neuron id
-        if connector.skeleton_id not in self.skid_to_neuron_folder:
+        if connector_link.skeleton_id not in self.skid_to_neuron_folder:
             neuron_cici = ClassInstanceClassInstance.objects.get(
                     relation_id=self.relation_map['model_of'],
                     project_id=self.job.project_id,
-                    class_instance_a=connector.skeleton.id)
-            self.skid_to_neuron_folder[connector.skeleton.id] = \
+                    class_instance_a=connector_link.skeleton.id)
+            self.skid_to_neuron_folder[connector_link.skeleton.id] = \
                     str(neuron_cici.class_instance_b_id)
-        neuron_folder = self.skid_to_neuron_folder[connector.skeleton.id]
+        neuron_folder = self.skid_to_neuron_folder[connector_link.skeleton.id]
 
         # get (and create if needed) cache entry for string of relation name
-        if connector.relation_id not in self.relid_to_rel_folder:
-            if connector.relation_id == self.relation_map['presynaptic_to']:
+        if connector_link.relation_id not in self.relid_to_rel_folder:
+            if connector_link.relation_id == self.relation_map['presynaptic_to']:
                 rel_folder = "presynaptic"
-            elif connector.relation_id == self.relation_map['postsynaptic_to']:
+            elif connector_link.relation_id == self.relation_map['postsynaptic_to']:
                 rel_folder = "postsynaptic"
             else:
-                rel_folder = "unknown_" + str(connector.relation_id)
-            self.relid_to_rel_folder[connector.relation_id] = rel_folder
-        relation_folder =  self.relid_to_rel_folder[connector.relation_id]
+                rel_folder = "unknown_" + str(connector_link.relation_id)
+            self.relid_to_rel_folder[connector_link.relation_id] = rel_folder
+        relation_folder =  self.relid_to_rel_folder[connector_link.relation_id]
 
         # Create path output_path/neuron_id/relation_name/connector_id
         connector_path = os.path.join(self.output_path, neuron_folder,
-                relation_folder, str(connector.id))
+                relation_folder, str(connector_link.connector.id))
         try:
             os.makedirs(connector_path)
         except OSError as e:
@@ -286,7 +286,7 @@ class ConnectorExporter(TreenodeExporter):
         skeletons are exported.
         """
         if self.job.sample:
-            # First try to get a pre-synaptic connector, because these are usually a
+            # First try to get a pre-synaptic connector, because these are usually
             # larger than the post-synaptic ones.
             try:
                 connector_link = TreenodeConnector.objects.filter(

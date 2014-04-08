@@ -231,7 +231,7 @@ class TreenodeExporter:
 
 class ConnectorExporter(TreenodeExporter):
     """ Most of the infrastructure can be used for both treenodes and
-    connecotors. This job class overrides the things that differ.
+    connectors. This job class overrides the things that differ.
     """
 
     def __init__(self, *args, **kwargs):

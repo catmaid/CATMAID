@@ -207,7 +207,7 @@ urlpatterns += patterns('catmaid.control.tree',
     (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'remove_empty_neurons'),
 )
 
-# Treende export
+# Treenode and Connector image stack archive export
 urlpatterns += patterns('catmaid.control.treenodeexport',
     (r'^(?P<project_id>\d+)/connectorarchive/export$', 'export_connectors'),
     (r'^(?P<project_id>\d+)/treenodearchive/export$', 'export_treenodes'),

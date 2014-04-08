@@ -1,15 +1,20 @@
 import json
 
+from collections import defaultdict
+
 from django.conf import settings
 from django.db import models
 from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template import Context, loader
+from django.contrib.contenttypes.models import ContentType
 
 from catmaid.control.common import makeJSON_legacy_list
 from catmaid.control.project import get_project_qs_for_user, extend_projects
-from catmaid.models import DataView, DataViewType, Project
+from catmaid.models import DataView, DataViewType, Project, Stack, ProjectStack
+
+from taggit.models import TaggedItem
 
 import re
 
@@ -99,6 +104,14 @@ def get_data_view( request, data_view_id ):
         projects = projects.filter( tags__name__in=filter_tags ).annotate(
             repeat_count=Count("id") ).filter( repeat_count=len(filter_tags) )
 
+    # Build a stack index
+    stacks = list(Stack.objects.all())
+    stack_index = dict([(s.id, s) for s in stacks])
+    stacks_of = defaultdict(list)
+    for pid, sid in ProjectStack.objects.filter(project__in=projects) \
+            .order_by('stack__id').values_list('project_id', 'stack_id'):
+        stacks_of[pid].append(stack_index[sid])
+
     # Extend the project list with additional information like editabilty
     projects = extend_projects( request.user, projects )
 
@@ -106,11 +119,28 @@ def get_data_view( request, data_view_id ):
     if "sort" not in config or config["sort"] == True:
         projects = natural_sort( projects, "title" )
 
+    # Build project index
+    project_index = dict([(p.id, p) for p in projects])
+    project_ids = set(project_index.keys())
+
+    # Build tag index
+    ct = ContentType.objects.get_for_model(Project)
+    tag_links = TaggedItem.objects.filter(content_type=ct) \
+        .values_list('object_id', 'tag__name')
+    tag_index = defaultdict(set)
+    for pid, t in tag_links:
+        if pid in project_ids:
+            tag_index[t].add(pid)
+
     context = Context({
         'data_view': dv,
         'projects': projects,
         'config': config,
-        'settings': settings
+        'settings': settings,
+        'tag_index': tag_index,
+        'project_index': project_index,
+        'stack_index': stack_index,
+        'stacks_of': stacks_of,
     })
 
     return HttpResponse( template.render( context ) );

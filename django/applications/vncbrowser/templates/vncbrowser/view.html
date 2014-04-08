@@ -28,7 +28,7 @@
 
       <div id="lines">
       <h4>GAL4 Lines</h4>
-      <form action="{% url vncbrowser.views.lines_add project_id=project_id %}" method="post">
+      <form action="{% url 'vncbrowser.views.lines_add' project_id=project_id %}" method="post">
       <p><label for="id_name">Line: </label><input type="text" name="line_name"></input>
       <input type="submit" value="Add"></input><input type="hidden" name="neuron_id" value="{{neuron.id}}"></input>
       </p>
@@ -36,7 +36,7 @@
     {% if lines %}
         <ul>
         {% for l in lines %}
-            <li><a href="{% url vncbrowser.views.line project_id=project_id, line_id=l.id %}">{{ l.name }}</a> <form action="{% url vncbrowser.views.lines_delete project_id=project_id %}" method="POST" class="delete-form inline-form">
+            <li><a href="{% url 'vncbrowser.views.line' project_id=project_id, line_id=l.id %}">{{ l.name }}</a> <form action="{% url 'vncbrowser.views.lines_delete' project_id=project_id %}" method="POST" class="delete-form inline-form">
                                <input type="hidden" name="neuron_id" value="{{neuron.id}}">
                                <input type="hidden" name="line_name" value="{{l.name}}">
                                <input class="delete-submit" type="submit" value="delete">
@@ -50,7 +50,7 @@
 
         <div id="cell-body-location">
         <h4>Cell Body Location</h4>
-        <form action="{% url vncbrowser.views.set_cell_body %}" method="POST">
+        <form action="{% url 'vncbrowser.views.set_cell_body' %}" method="POST">
            {% for choice in cell_body_choices %}
              <input type="radio" {% ifequal choice.1 neuron.cell_body_location %}CHECKED{% endifequal %} name="cell-body-choice" id="choice-{{ choice.0 }}" value="{{ choice.0 }}">
              <input type="hidden" name="neuron_id" value="{{neuron.id}}">
@@ -77,7 +77,7 @@
 
     <p>
         {% for skeleton in skeletons %}
-        <a href="{% url catmaid.control.skeleton_swc skeleton_id=skeleton.id, project_id=project_id %}">Save SWC file (for
+        <a href="{% url 'catmaid.control.skeleton_swc' skeleton_id=skeleton.id, project_id=project_id %}">Save SWC file (for
             skeleton {{skeleton.id}} of neuron "{{neuron.name}}")</a><br>
         {% endfor %}
         <br />
@@ -94,7 +94,7 @@
             {% for c in incoming %}
             <tr>
                 <td>{{ c.id__count }}</td>
-                <td><a href="{% url vncbrowser.views.view project_id=project_id, neuron_id=c.id %}">{{c.name}}</a></td>
+                <td><a href="{% url 'vncbrowser.views.view' project_id=project_id, neuron_id=c.id %}">{{c.name}}</a></td>
                 <td><input type="checkbox" class="show-neuron" id="p{{project_id}}c{{c.id}}"></td>
             </tr>
             {% endfor %}
@@ -110,7 +110,7 @@
     {% for c in outgoing %}
     <tr>
       <td>{{ c.id__count }}</td>
-      <td><a href="{% url vncbrowser.views.view project_id=project_id, neuron_id=c.id %}">{{c.name}}</a></td>
+      <td><a href="{% url 'vncbrowser.views.view' project_id=project_id, neuron_id=c.id %}">{{c.name}}</a></td>
       <td><input type="checkbox" class="show-neuron" id="p{{project_id}}c{{c.id}}"></td>
     </tr>
     {% endfor %}

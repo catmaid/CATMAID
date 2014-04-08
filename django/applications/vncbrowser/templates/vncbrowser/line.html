@@ -7,7 +7,7 @@
 <h4>Linked with the following neurons:</h4>
 <ul>
 {% for n in neurons %}
-<li><a href="{% url vncbrowser.views.view project_id=project_id, neuron_id=n.id %}">{{ n.name }}</a></li>
+<li><a href="{% url 'vncbrowser.views.view' project_id=project_id neuron_id=n.id %}">{{ n.name }}</a></li>
 {% endfor %}
 </ul>
 

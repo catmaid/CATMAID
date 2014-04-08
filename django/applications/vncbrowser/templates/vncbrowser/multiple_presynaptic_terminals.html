@@ -18,7 +18,7 @@
               <td>{{ cc.number }}</td>
               <td>
                  {% for s in stacks %}
-                    <a href="{% url vncbrowser.views.goto_connector project_id=project_id, connector_id=cc.connector, stack_id=s.id %}">View in stack {{ s.title }}</a><br>
+                    <a href="{% url 'vncbrowser.views.goto_connector' project_id=project_id connector_id=cc.connector stack_id=s.id %}">View in stack {{ s.title }}</a><br>
                  {% endfor %}
               </td>
           </tr>

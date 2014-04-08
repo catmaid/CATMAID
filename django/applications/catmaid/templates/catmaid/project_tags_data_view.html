@@ -32,21 +32,28 @@
 		<tr class="{% cycle 'even' 'odd' %}">
 			<td class="head">{{ rt }}</td>
 			{% for ct in col_tags %}
-				{% tagged_projects ct rt filter_tags as tprojects sort %}
+				{% with row_set=tag_index|get:rt %}
+				{% with tpids=tag_index|get:ct|intersect:row_set %}
+				{% pids_to_projects tpids project_index sort as tprojects %}
 				{% cycle 'even' 'odd' as rowtype silent %}
 				{% if sample_images %}
-					<td class="{{ rowtype }}-stackimage" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
+					<td class="{{ rowtype }}-stackimage"
+						title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
 				{% else %}
-					<td class="{{ rowtype }}-stackname" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
+					<td class="{{ rowtype }}-stackname"
+						title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
 				{% endif %}
 				{% for p in tprojects %}
-					{% with stacks=p.stacks|order_by:'id'|filter_stacks:linked_stacks %}
+					{% with stacks=stacks_of|get:p.id|sort|filter_stacks:linked_stacks %}
+					{% is_highlighted p.id highlight_tags tag_index as highlight %}
 
 					{# Make the project name a link if we are not forced to have #}
 					{# a stack list and only one stack is available. Draw a definiton #}
 					{# list otherwise. #}
 					{% if not force_stack_list and stacks|length == 1 and not sample_images %}
-						<a {% if highlight_tags and p|has_tag:highlight_tags %}class="highlight" {% endif %} href="#" onclick="openProjectStack({{p.id}}, {{stacks.0.id}})">{{ p.title }}</a><br />
+						<a {% if highlight %}class="highlight" {% endif %}
+							href="#" onclick="openProjectStack({{p.id}},
+								{{stacks.0.id}})">{{ p.title }}</a><br />
 					{% elif sample_images %}
 						{% for s in stacks %}
 							{% with slice=s|get_slice:sample_slice %}
@@ -63,7 +70,10 @@
 						<dl>
 							<dt>{{ p.title }}</dt>
 							{% for s in stacks %}
-							<dd><a {% if highlight_tags and p|has_tag:highlight_tags %}class="highlight" {% endif %}href="#" onclick="openProjectStack({{p.id}}, {{s.id}})" title="{{ s.comment }}">{{ s.title }}</a></dd>
+							<dd><a {% if highlight %}class="highlight" {% endif %}
+								href="#" onclick="openProjectStack({{p.id}}, {{s.id}})"
+								title="{{ s.comment }}">{{ s.title }}</a>
+							</dd>
 							{% endfor %}
 							{# Optionally, add the the neuron catalogue link #}
 							{% if p.is_catalogueable and catalogue_link %}
@@ -78,6 +88,8 @@
 						-
 					{% endif %}
 				</td>
+				{% endwith %}
+				{% endwith %}
 			{% endfor %}
 		</tr>
 	{% endfor %}

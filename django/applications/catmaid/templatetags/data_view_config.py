@@ -13,7 +13,7 @@ def get_stack(stacks, pos):
 	determined by pos. This can either be an integer index
 	or the string "first" or "last".
 	"""
-	num_stacks = stacks.count()
+	num_stacks = len(stacks)
 	# Just return if we got no stacks at all
 	if num_stacks == 0:
 		return None
@@ -21,13 +21,13 @@ def get_stack(stacks, pos):
 	pos_type = type(pos)
 	if is_string_type( pos_type ):
 		if pos == "first":
-			return stacks.order_by('id')[0]
+			return stacks[0]
 		elif pos == "last":
-			return stacks.order_by('id')[num_stacks - 1]
+			return stacks[num_stacks - 1]
 	elif pos_type == int:
 		# Make sure we are in bounds
 		if pos >= 0 and pos < num_stacks:
-			return stacks.order_by('id')[pos]
+			return stacks[pos]
 	# Return None if nothing else matched
 	return None
 
@@ -39,7 +39,7 @@ def filter_stacks(stacks, pos):
 	the last stack (pos is "first" or "last").
 	"""
 	if is_string_type( type(pos) ) and pos == "all":
-		return stacks.order_by('id')
+		return stacks
 	else:
 		s = get_stack( stacks, pos )
 		if s is None:
@@ -155,5 +155,31 @@ def has_tag( project, tags ):
 	# print project, project.tags.all()[0].name, tags
 	for tag in project.tags.all():
 		if tag.name in tags:
+			return True
+	return False
+
+@register.assignment_tag
+def pids_to_projects(pids, project_index, sort=False):
+	""" Returns a list of project objects that correspond to the PID list
+	passed as parameter. If sort is specified, the returning list is sorted
+	by title.
+	"""
+	projects = [project_index[pid] for pid in pids]
+	if sort:
+		return natural_sort(projects, "title")
+	else:
+		return projects
+
+@register.assignment_tag
+def is_highlighted(pid, highlight_tags, tag_index):
+	""" Expects <args> to be a list where the first element is a list of tags
+	to test against and the second element is a project ID. Based on that, this
+	filter tests whether at least one test tag is linked to a project ID by
+	using the tag index.
+	"""
+	if not highlight_tags:
+		return
+	for t in highlight_tags:
+		if pid in tag_index[t]:
 			return True
 	return False

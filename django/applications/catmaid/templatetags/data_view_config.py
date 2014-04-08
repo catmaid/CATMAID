@@ -157,3 +157,29 @@ def has_tag( project, tags ):
 		if tag.name in tags:
 			return True
 	return False
+
+@register.assignment_tag
+def pids_to_projects(pids, project_index, sort=False):
+	""" Returns a list of project objects that correspond to the PID list
+	passed as parameter. If sort is specified, the returning list is sorted
+	by title.
+	"""
+	projects = [project_index[pid] for pid in pids]
+	if sort:
+		return natural_sort(projects, "title")
+	else:
+		return projects
+
+@register.assignment_tag
+def is_highlighted(pid, highlight_tags, tag_index):
+	""" Expects <args> to be a list where the first element is a list of tags
+	to test against and the second element is a project ID. Based on that, this
+	filter tests whether at least one test tag is linked to a project ID by
+	using the tag index.
+	"""
+	if not highlight_tags:
+		return
+	for t in highlight_tags:
+		if pid in tag_index[t]:
+			return True
+	return False

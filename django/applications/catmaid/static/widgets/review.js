@@ -298,10 +298,6 @@ var ReviewSystem = new function()
             });
     };
 
-    this.resetAllRevisions = function() {
-        resetFn("reset-all");
-    };
-
     this.resetOwnRevisions = function() {
         resetFn("reset-own");
     };

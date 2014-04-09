@@ -1511,13 +1511,6 @@ var WindowMaker = new function()
         container.style.backgroundColor = "#ffffff";
         content.appendChild(container);
 
-        var reset = document.createElement('input');
-        reset.setAttribute("type", "button");
-        reset.setAttribute("id", "reset_skeleton_review");
-        reset.setAttribute("value", "Reset revisions");
-        reset.onclick = ReviewSystem.resetAllRevisions;
-        contentbutton.appendChild(reset);
-
         var resetOwns = document.createElement('input');
         resetOwns.setAttribute("type", "button");
         resetOwns.setAttribute("id", "reset_skeleton_review_owns");

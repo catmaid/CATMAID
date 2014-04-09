@@ -302,10 +302,6 @@ var ReviewSystem = new function()
         resetFn("reset-own");
     };
 
-    this.resetRevisionsByOthers = function() {
-        resetFn("reset-others");
-    };
-
     var loadImageCallback = function( imageArray ) {
         if( imageArray.length == 0 )
             return;

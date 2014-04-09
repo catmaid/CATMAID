@@ -1518,13 +1518,6 @@ var WindowMaker = new function()
         resetOwns.onclick = ReviewSystem.resetOwnRevisions;
         contentbutton.appendChild(resetOwns);
 
-        var resetOthers = document.createElement('input');
-        resetOthers.setAttribute("type", "button");
-        resetOthers.setAttribute("id", "reset_skeleton_review_owns");
-        resetOthers.setAttribute("value", "Reset revisions by others");
-        resetOthers.onclick = ReviewSystem.resetRevisionsByOthers;
-        contentbutton.appendChild(resetOthers);
-
         var cacheImages = document.createElement('input');
         cacheImages.setAttribute("type", "button");
         cacheImages.setAttribute("id", "cache_images_of_skeleton");

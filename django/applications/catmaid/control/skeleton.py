@@ -880,15 +880,6 @@ def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
     Treenode.objects.filter(skeleton_id=skeleton_id, user=request.user).update(reviewer_id=-1)
     return HttpResponse(json.dumps({}), mimetype='text/json')
 
-@requires_user_role(UserRole.Annotate)
-def reset_other_reviewer_ids(request, project_id=None, skeleton_id=None):
-    """ Reset the reviewer_id column to -1 for all nodes not owned by the user.
-    """
-    skeleton_id = int(skeleton_id) # sanitize
-    if not request.user.is_superuser:
-        return HttpResponse(json.dumps({"error": "Only a superuser can do that!"}))
-    Treenode.objects.filter(skeleton_id=skeleton_id).exclude(reviewer_id=request.user.id).update(reviewer_id=-1)
-    return HttpResponse(json.dumps({}), mimetype='text/json')
 
 @requires_user_role(UserRole.Annotate)
 def fetch_treenodes(request, skeleton_id=None, with_reviewer=None):

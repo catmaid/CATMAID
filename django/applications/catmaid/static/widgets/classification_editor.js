@@ -212,42 +212,46 @@ var ClassificationEditor = new function()
                                       this.rename(obj);
                                     }
                                   };
-                            } else if (node_type === "element") {
-                                // Add entry for linking a region of interest
-                                menu['link_roi'] = {
-                                    "separator_before": true,
-                                    "separator_after": false,
-                                    "_class": "wider-context-menu",
-                                    "label": "Link new region of interest",
-                                    "action": function (obj) {
-                                        var node_id = obj.attr("id").replace("node_", "");
-                                        self.link_roi(tree_id, node_id);
-                                    }
-                                };
-                                // Add entry and submenu for removing a region of interest
-                                var rois = JSON.parse(obj.attr("rois"));
-                                var submenu = {}
-                                for (i=0; i<rois.length; i++) {
-                                    var roi = rois[i];
-                                    submenu['remove_roi_' + roi] = {
-                                        "separator_before": false,
-                                        "separator_after": false,
-                                        "label": "" + (i + 1) + ". Roi (" + roi + ")",
-                                        "action": function (r_id) {
-                                            return function (obj) {
-                                                self.remove_roi(tree_id, r_id);
-                                            }
-                                        }(roi)
-                                    };
+                            }
+
+                            // Add entry for linking a region of interest
+                            menu['link_roi'] = {
+                                "separator_before": true,
+                                "separator_after": false,
+                                "_class": "wider-context-menu",
+                                "label": "Link new region of interest",
+                                "action": function (obj) {
+                                    var node_id = obj.attr("id").replace("node_", "");
+                                    self.link_roi(tree_id, node_id);
                                 }
-                                menu['remove_roi'] = {
+                            };
+
+                            // Add entry and submenu for removing a region of interest
+                            var rois = JSON.parse(obj.attr("rois"));
+                            var submenu = {}
+                            for (i=0; i<rois.length; i++) {
+                                var roi = rois[i];
+                                submenu['remove_roi_' + roi] = {
                                     "separator_before": false,
                                     "separator_after": false,
-                                    "label": "Remove region of interest",
-                                    "_class": "wider-context-menu",
-                                    "_disabled": rois.length == 0,
-                                    "submenu": submenu,
+                                    "label": "" + (i + 1) + ". Roi (" + roi + ")",
+                                    "action": function (r_id) {
+                                        return function (obj) {
+                                            self.remove_roi(tree_id, r_id);
+                                        }
+                                    }(roi)
                                 };
+                            }
+                            menu['remove_roi'] = {
+                                "separator_before": false,
+                                "separator_after": false,
+                                "label": "Remove region of interest",
+                                "_class": "wider-context-menu",
+                                "_disabled": rois.length == 0,
+                                "submenu": submenu,
+                            };
+
+                            if (node_type === "element") {
                                 // Add removing entry
                                 menu["remove_element"] = {
                                     "separator_before": true,

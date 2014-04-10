@@ -181,13 +181,25 @@ var ReviewSystem = new function()
     };
 
     this.selectNextSegment = function( ev ) {
+        var followed_rids = getFollowedReviewers();
         if (self.skeleton_segments) {
             // Find out the index of the current segment
             var index = self.current_segment ? self.skeleton_segments.indexOf(self.current_segment) : -1;
-            // Define helper functions
+            /**
+             * Support function to test whether a node hasn't been reviewed by
+             * any of the followed reviewers. This is the case if the list of
+             * reviewers is empty or no followed reviewer appears in it.
+             */
             var unreviewed_nodes = function(node) {
-                return -1 === node['rids'].indexOf(session.userid);
+                return 0 === node['rids'].length || followed_rids.every(function(rid) {
+                    return -1 === node['rids'].indexOf(rid);
+                });
             };
+            /**
+             * Support function to test whether a sgement has't been reviewed by
+             * any of the followed reviewers. If it has not been reviewed, a new
+             * review for it is started as a side effect.
+             */
             var unreviewed_segments = function(segment, i) {
                 if( segment['status'] !== "100.00") {
                     // only check for segments with less than 100 percent reviewed
@@ -291,7 +303,14 @@ var ReviewSystem = new function()
           row = $('<tr />');
           // Start with user columns, current user first
           for (var i=0; i<reviewers.length; ++i) {
-              row.append( $('<th />').text(users[reviewers[i]].name) );
+            var cb = $('<input />').attr('type', 'checkbox')
+                .attr('data-rid', reviewers[i]);
+            if (i === 0) {
+                // Have the current user checked by default
+                cb.attr('checked', 'checked');
+            }
+            row.append( $('<th />').append($('<label />')
+                .append(cb).append(users[reviewers[i]].name)));
           }
           // Union column last
           row.append( $('<th />').text('Union') );
@@ -343,6 +362,18 @@ var ReviewSystem = new function()
         table.append( $('<br /><br /><br /><br />') );
         $("#project_review_widget").append( table );
 
+    };
+
+    /**
+     * Returns a list of reviewer IDs that are followed, i.e. that have their
+     * follow checkbox in the table header checked.
+     */
+    var getFollowedReviewers = function() {
+        var followed_rids = [];
+        $('#review_segment_table th input:checked').each(function(i) {
+            followed_rids.push(parseInt($(this).attr('data-rid')));
+        });
+        return followed_rids;
     };
 
     var checkSkeletonID = function() {

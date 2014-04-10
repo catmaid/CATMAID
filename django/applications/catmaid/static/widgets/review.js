@@ -39,6 +39,11 @@ var ReviewSystem = new function()
         self.current_segment_index = 0;
         self.goToNodeIndexOfSegmentSequence( 0 );
         end_puffer_count = 0;
+        // Highlight current segement in table
+        var $rows = $('table#review_segment_table tr.review-segment');
+        $rows.removeClass('highlight');
+        var $cur_row = $rows.filter('tr[data-sgid=' + id + ']');
+        $cur_row.addClass('highlight');
     };
 
     this.goToNodeIndexOfSegmentSequence = function( idx ) {
@@ -297,7 +302,9 @@ var ReviewSystem = new function()
         // create a row
         for(var e in skeleton_data ) {
             var sd = skeleton_data[e];
-            row = $('<tr />');
+            row = $('<tr />')
+                .attr('class', 'review-segment')
+                .attr('data-sgid', sd.id);
             // Index
             row.append( $('<td />').text(skeleton_data[e]['id'] ) );
             // Single user status

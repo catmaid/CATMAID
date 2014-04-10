@@ -31,8 +31,10 @@ var current_dataview;
 var dataview_menu;
 
 var project_menu;
-var project_menu_open;
-var project_menu_current;
+//var project_menu_open;
+//var project_menu_current;
+
+var stack_menu;
 
 var message_menu;
 
@@ -159,7 +161,6 @@ function handle_login(status, text, xml, completionCallback) {
 
       document.getElementById("message_box").style.display = "block";
 
-      document.getElementById("project_menu_new").style.display = "block";
 
       //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
       message();
@@ -212,8 +213,6 @@ function handle_logout(status, text, xml) {
 	document.getElementById( "session_box" ).style.display = "none";
 	
 	document.getElementById( "message_box" ).style.display = "none";
-	
-	document.getElementById( "project_menu_new" ).style.display = "none";
 	
 	if ( project && project.id ) project.setTool( new Navigator() );
 
@@ -275,7 +274,7 @@ function updateProjects(completionCallback) {
 	}, 'json');
 
 	//ui.catchEvents( "wait" );
-	project_menu_open.update(null);
+	project_menu.update(null);
 
 	document.getElementById("projects_h").style.display = "none";
 	document.getElementById("project_filter_form").style.display = "none";
@@ -318,7 +317,7 @@ function handle_updateProjects(status, text, xml) {
 		var keep_project_editable = false;
 
 		if (e.error) {
-			project_menu_open.update();
+			project_menu.update();
 			alert(e.error);
 		} else {
 			cachedProjectsInfo = e;
@@ -329,7 +328,7 @@ function handle_updateProjects(status, text, xml) {
 				load_default_dataview();
 			}
 			// update the project > open menu
-			project_menu_open.update(cachedProjectsInfo);
+			project_menu.update(cachedProjectsInfo);
 		}
 		if (project) {
 			if (keep_project_alive) {
@@ -480,7 +479,7 @@ function updateProjectListFromCache() {
   } else if (matchingProjects === 0) {
     updateProjectListMessage("No projects matched '"+searchString+"'");
   }
-  project_menu_open.update(cachedProjectsInfo);
+  project_menu.update(cachedProjectsInfo);
 }
 
 /**
@@ -650,16 +649,16 @@ function handle_openProjectStack( status, text, xml )
 					project.setTool( new tool() );
 			}
 
-			/* Update the projects "current project" menu. If there is more
+			/* Update the projects stack menu. If there is more
 			than one stack linked to the current project, a submenu for easy
 			access is generated. */
-			project_menu_current.update();
+			stack_menu.update();
 			getStackMenuInfo(project.id, function(stacks) {
 				if (stacks.length > 1)
 				{
-					var current_menu_content = new Array();
+					var stack_menu_content = new Array();
 					$.each(stacks, function(i, s) {
-						current_menu_content.push(
+						stack_menu_content.push(
 							{
 								id : s.id,
 								title : s.title,
@@ -668,8 +667,9 @@ function handle_openProjectStack( status, text, xml )
 							}
 						);
 					});
-					project_menu_current.update( current_menu_content );
-					document.getElementById( "project_menu_current" ).style.display = "block";
+
+					stack_menu.update( stack_menu_content );
+					document.getElementById( "stackmenu_box" ).style.display = "block";
 				}
 			});
 		}
@@ -755,51 +755,6 @@ function handle_message( status, text, xml )
 	msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
 	
 	return;
-}
-
-/**
- * update the lists of users
- */
-
-function updateUsers() {
-  document.getElementById("new_project_form").elements[3].style.display = "none";
-  document.getElementById("new_project_owners_wait").style.display = "block";
-  requestQueue.register(django_url + 'user-list', 'GET', undefined, handle_updateUsers);
-  return;
-}
-
-/**
- * handle a lists of users update response
- */
-
-function handle_updateUsers(status, text, xml) {
-  if (!session) return;
-
-  if (status == 200 && text) {
-    var e = eval("(" + text + ")");
-    if (e.error) {
-      alert(e.error);
-    } else {
-      var new_project_owners = document.getElementById("new_project_form").elements[3];
-      while (new_project_owners.length > 0)
-      new_project_owners.remove(0);
-      for (var i in e) {
-        var option = document.createElement("option");
-        option.text = e[i].longname;
-        option.value = e[i].id;
-        if (e[i].id == session.id) {
-          option.selected = true;
-        }
-        new_project_owners.appendChild(option);
-      }
-      new_project_owners.size = e.length;
-
-    }
-  }
-  document.getElementById("new_project_owners_wait").style.display = "none";
-  document.getElementById("new_project_form").elements[3].style.display = "block";
-
-  return;
 }
 
 /**
@@ -1124,46 +1079,11 @@ var realInit = function()
 	dataviews();
 	
 	project_menu = new Menu();
-	project_menu.update(
-		{
-			0 :
-			{
-				title : "New",
-				id : "project_menu_new",
-				action : function()
-				{
-					if ( project ) project.destroy();
-					document.getElementById( "project list" ).style.display = "none";
-					document.getElementById( "new_project_dialog" ).style.display = "block";
-					updateUsers();
-					return;
-				},
-				note : ""
-			},
-			1 :
-			{
-				title : "Open",
-				id : "project_menu_open",
-				action : {},
-				note : ""
-			},
-			2 :
-			{
-				title : "Current",
-				id : "project_menu_current",
-				action : {},
-				note : ""
-			}
-		}
-	);
 	document.getElementById( "project_menu" ).appendChild( project_menu.getView() );
 	
-	project_menu_open = project_menu.getPulldown( "Open" );
-	document.getElementById( "project_menu_new" ).style.display = "none";
-	//project_menu_open.appendChild( project_menu_open.getView() );
-	project_menu_current = project_menu.getPulldown( "Current" );
-	document.getElementById( "project_menu_current" ).style.display = "none";
-
+	stack_menu = new Menu();
+	document.getElementById( "stack_menu" ).appendChild( stack_menu.getView() );
+	
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 

@@ -155,18 +155,24 @@
 			*******************************************************************
 			-->
 			<div id="toolbar_login" class="toolbar">
-				<div id="home_box" class="box">
-					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';">
-						<p><a href="" onclick="rootWindow.closeAllChildren(); return false;">Home</a></p>
-						<div class="pulldown" id="dataview_menu"></div></div>
-				</div>
-				<div id="menu_box" class="box">
-					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Projects</a></p>
-						<div class="pulldown" id="project_menu"></div></div>
-				</div>
-				<div id="message_box" class="box" style="display:none">
-					<div class="menu_item" onclick="showMessages();" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p id="message_menu_text"><a>Messages</a>&nbsp;&nbsp;</p>
-						<div class="pulldown" id="message_menu"></div></div>
+				<div class="menu">
+					<div id="home_box" class="box">
+						<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';">
+							<p><a href="" onclick="rootWindow.closeAllChildren(); return false;">Home</a></p>
+							<div class="pulldown" id="dataview_menu"></div></div>
+					</div>
+					<div id="projectmenu_box" class="box">
+						<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Projects</a></p>
+							<div class="pulldown" id="project_menu"></div></div>
+					</div>
+					<div id="stackmenu_box" class="box" style="display:none">
+						<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Stacks</a></p>
+							<div class="pulldown" id="stack_menu"></div></div>
+					</div>
+					<div id="message_box" class="box" style="display:none">
+						<div class="menu_item" onclick="showMessages();" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p id="message_menu_text"><a>Messages</a>&nbsp;&nbsp;</p>
+							<div class="pulldown" id="message_menu"></div></div>
+					</div>
 				</div>
 
 				<div class="box" id="toolbox_project" style="display:none"></div>
@@ -298,54 +304,6 @@
 					<dl id="projects_dl"><dt></dt><dd></dd></dl>
 					<p id="project_list_message"></p>
 				</div>
-			</div>
-
-			<div id="new_project_dialog" class="form">
-				<form name="new_project_form" id="new_project_form" action="">
-				<h2>Create new project</h2>
-				<table>
-					<tr>
-						<td><p>Title:</p></td><td><textarea name="title" rows="3" cols="80">New Project</textarea></td>
-					</tr>
-					<tr>
-						<td><p>Visibiliy:</p></td><td><input type="radio" name="public" value="1" checked="checked" /> public &nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="public" value="0" /> private</td>
-					</tr>
-					<tr>
-						<td><p>Owners:</p></td><td><p id="new_project_owners_wait" class="wait_bgwhite">loading ...</p><select name="owners" id="new_project_owners" multiple="multiple"><option></option></select></td>
-			
-					</tr>
-					<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
-					<tr><td></td>
-						<td><input type="button" value=" Register Project " onclick="register_project();" />
-						<input type="reset" value=" Cancel " /></td>
-					</tr>
-				</table>
-				</form>
-			</div>
-
-			<div id="new_user_dialog" class="form">
-			<form name="new_user_form" id="new_user_form" action="">
-			<h2>Create new user</h2>
-			<table>
-				<tr>
-					<td><p>Username:</p></td><td><input type="text" name="uname" id="user_name" /></td>
-				</tr>
-				<tr>
-					<td><p>Longname:</p></td><td><input type="text" name="ulongname" id="user_longname" /></td>
-				</tr>
-				<tr>
-					<td><p>Password:</p></td><td><input type="password" name="upassword" id="user_pwd" /></td>
-				</tr>
-				<tr>
-					<td><p>E-Mail:</p></td><td><input type="text" name="uemail" id="user_email" /></td>
-				</tr>
-				<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
-				<tr><td></td><td>
-					<input type="button" value=" Register User " onclick="register_user();" />
-					<input type="reset" value=" Cancel " />
-				</td></tr>
-			</table>
-			</form>
 			</div>
 		</div>
 		

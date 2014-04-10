@@ -1,6 +1,7 @@
 import json
 
 from django import forms
+from django.db.models import Q
 from django.conf import settings
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.forms.widgets import CheckboxSelectMultiple
@@ -44,6 +45,16 @@ class ClassProxy(Class):
 
     def __unicode__(self):
         return "{0} ({1})".format(self.class_name, str(self.id))
+
+class ClassInstanceProxy(ClassInstance):
+    """ A proxy class to allow custom labeling of class instances in
+    model forms.
+    """
+    class Meta:
+        proxy=True
+
+    def __unicode__(self):
+        return "{0} ({1})".format(self.name, str(self.id))
 
 class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
     """ A proxy class to allow custom labeling of links between class
@@ -1212,6 +1223,99 @@ def link_roi_to_classification(request, project_id=None, workspace_pid=None,
 
     return link_roi_to_class_instance(request, project_id=project_id,
         relation_id=rel.id, stack_id=stack_id, ci_id=ci_id)
+
+def graph_instanciates_feature(graph, feature):
+    return graph_instanciates_feature_complex(graph, feature)
+
+def graph_instanciates_feature_simple(graph, feature, idx=0):
+    """ Traverses a class instance graph, starting from the passed node.
+    It recurses into child graphs and tests on every class instance if it
+    is linked to an ontology node. If it does, the function returns true.
+    """
+    # An empty feature is always true
+    num_features = len(feature)
+    if num_features == idx:
+        return True
+    f_head = feature.links[idx]
+
+    # Check for a link to the first feature component
+    link_q = ClassInstanceClassInstance.objects.filter(
+        class_instance_b=graph, class_instance_a__class_column=f_head.class_a,
+        relation=f_head.relation)
+    # Get number of links wth. of len(), because it is doesn't hurt performance
+    # if there are no results, but it improves performance if there is exactly
+    # one result (saves one query). More than one link should not happen often.
+    num_links = len(link_q)
+    # Make sure there is the expected child link
+    if num_links == 0:
+        return False
+    elif num_links > 1:
+        # More than one?
+        raise Exception('Found more than one ontology node link of one class instance.')
+
+    # Continue with checking children, if any
+    return graph_instanciates_feature_simple(link_q[0].class_instance_a, feature, idx+1)
+
+def graph_instanciates_feature_complex(graph, feature):
+    """ Creates one complex query that thest if the feature is matched as a
+    whole.
+    """
+    # Build Q objects for to query whole feature instantiation at once. Start
+    # with query that makes sure the passed graph is the root.
+    Qr = Q(class_instance_b=graph)
+    for n,fl in enumerate(feature.links):
+        # Add constraints for each link
+        cia = "class_instance_a__cici_via_b__" * n
+        q_cls = Q(**{cia + "class_instance_a__class_column": fl.class_a})
+        q_rel = Q(**{cia + "relation": fl.relation})
+        # Combine all sub-queries with logical AND
+        Qr = Qr & q_cls & q_rel
+
+    link_q = ClassInstanceClassInstance.objects.filter(Qr).distinct()
+    num_links = link_q.count()
+    # Make sure there is the expected child link
+    if num_links == 0:
+        return False
+    elif num_links == 1:
+        return True
+    else:
+        # More than one?
+        raise Exception('Found more than one ontology node link of one class instance.')
+
+def graphs_instanciate_feature(graphlist, feature):
+    """ A delegate method to be able to use different implementations in a
+    simple manner. Benchmarks show that the complex query is faster.
+    """
+    return graphs_instanciate_feature_complex(graphlist, feature)
+
+def graphs_instanciate_feature_simple(graphs, feature):
+    """ Creates a simple query for each graph to test wheter it instantiates
+    a given featuren.
+    """
+    for g in graphs:
+        # Improvement: graphs could be sorted according to how many
+        # class instances they have.
+        if graph_instanciates_feature(g, feature):
+            return True
+    return False
+
+def graphs_instanciate_feature_complex(graphlist, feature):
+    """ Creates one complex query that thest if the feature is matched as a
+    whole.
+    """
+    # Build Q objects for to query whole feature instantiation at once. Start
+    # with query that makes sure the passed graph is the root.
+    Qr = Q(class_instance_b__in=graphlist)
+    for n,fl in enumerate(feature.links):
+        # Add constraints for each link
+        cia = "class_instance_a__cici_via_b__" * n
+        q_cls = Q(**{cia + "class_instance_a__class_column": fl.class_a})
+        q_rel = Q(**{cia + "relation": fl.relation})
+        # Combine all sub-queries with logical AND
+        Qr = Qr & q_cls & q_rel
+
+    link_q = ClassInstanceClassInstance.objects.filter(Qr).distinct()
+    return link_q.count() != 0
 
 class ClassificationSearchWizard(SessionWizardView):
     """ This search wizard guides the user through searching for classification

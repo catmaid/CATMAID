@@ -14,8 +14,9 @@ from django.template import RequestContext
 
 from catmaid.models import Class, ClassInstance, ClassClass, ClassInstanceClassInstance
 from catmaid.models import Relation
-from catmaid.control.classification import ClassProxy
+from catmaid.control.classification import ClassProxy, ClassInstanceProxy
 from catmaid.control.classification import get_root_classes_qs, get_classification_links_qs
+from catmaid.control.classification import graph_instanciates_feature
 from catmaid.control.ontology import get_features
 
 from numpy import array as nparray
@@ -37,16 +38,6 @@ linkages = (
     ('median', 'Median'),
     ('ward', 'Ward'),
 )
-
-class ClassInstanceProxy(ClassInstance):
-    """ A proxy class to allow custom labeling of class instances in
-    model forms.
-    """
-    class Meta:
-        proxy=True
-
-    def __unicode__(self):
-        return "{0} ({1})".format(self.name, str(self.id))
 
 def create_ontology_selection_form( workspace_pid, class_ids=None ):
     """ Creates a new SelectOntologyForm class with an up-to-date
@@ -227,145 +218,6 @@ def setup_clustering(request, workspace_pid=None):
              ('clustering', ClusteringSetupMath)]
     view = ClusteringWizard.as_view(forms, workspace_pid=workspace_pid)
     return view(request)
-
-def graph_instanciates_feature(graph, feature):
-    return graph_instanciates_feature_complex(graph, feature)
-
-def graph_instanciates_feature_simple(graph, feature, idx=0):
-    """ Traverses a class instance graph, starting from the passed node.
-    It recurses into child graphs and tests on every class instance if it
-    is linked to an ontology node. If it does, the function returns true.
-    """
-    # An empty feature is always true
-    num_features = len(feature)
-    if num_features == idx:
-        return True
-    f_head = feature.links[idx]
-
-    # Check for a link to the first feature component
-    link_q = ClassInstanceClassInstance.objects.filter(
-        class_instance_b=graph, class_instance_a__class_column=f_head.class_a,
-        relation=f_head.relation)
-    # Get number of links wth. of len(), because it is doesn't hurt performance
-    # if there are no results, but it improves performance if there is exactly
-    # one result (saves one query). More than one link should not happen often.
-    num_links = len(link_q)
-    # Make sure there is the expected child link
-    if num_links == 0:
-        return False
-    elif num_links > 1:
-        # More than one?
-        raise Exception('Found more than one ontology node link of one class instance.')
-
-    # Continue with checking children, if any
-    return graph_instanciates_feature_simple(link_q[0].class_instance_a, feature, idx+1)
-
-def graph_instanciates_feature_complex(graph, feature):
-    """ Creates one complex query that thest if the feature is matched as a
-    whole.
-    """
-    # Build Q objects for to query whole feature instantiation at once. Start
-    # with query that makes sure the passed graph is the root.
-    Qr = Q(class_instance_b=graph)
-    for n,fl in enumerate(feature.links):
-        # Add constraints for each link
-        cia = "class_instance_a__cici_via_b__" * n
-        q_cls = Q(**{cia + "class_instance_a__class_column": fl.class_a})
-        q_rel = Q(**{cia + "relation": fl.relation})
-        # Combine all sub-queries with logical AND
-        Qr = Qr & q_cls & q_rel
-
-    link_q = ClassInstanceClassInstance.objects.filter(Qr).distinct()
-    num_links = link_q.count()
-    # Make sure there is the expected child link
-    if num_links == 0:
-        return False
-    elif num_links == 1:
-        return True
-    else:
-        # More than one?
-        raise Exception('Found more than one ontology node link of one class instance.')
-
-def graphs_instanciate_feature(graphlist, feature):
-    """ A delegate method to be able to use different implementations in a
-    simple manner. Benchmarks show that the complex query is faster.
-    """
-    return graphs_instanciate_feature_complex(graphlist, feature)
-
-def graphs_instanciate_feature_simple(graphs, feature):
-    """ Creates a simple query for each graph to test wheter it instantiates
-    a given featuren.
-    """
-    for g in graphs:
-        # Improvement: graphs could be sorted according to how many
-        # class instances they have.
-        if graph_instanciates_feature(g, feature):
-            return True
-    return False
-
-def graphs_instanciate_feature_complex(graphlist, feature):
-    """ Creates one complex query that thest if the feature is matched as a
-    whole.
-    """
-    # Build Q objects for to query whole feature instantiation at once. Start
-    # with query that makes sure the passed graph is the root.
-    Qr = Q(class_instance_b__in=graphlist)
-    for n,fl in enumerate(feature.links):
-        # Add constraints for each link
-        cia = "class_instance_a__cici_via_b__" * n
-        q_cls = Q(**{cia + "class_instance_a__class_column": fl.class_a})
-        q_rel = Q(**{cia + "relation": fl.relation})
-        # Combine all sub-queries with logical AND
-        Qr = Qr & q_cls & q_rel
-
-    link_q = ClassInstanceClassInstance.objects.filter(Qr).distinct()
-    return link_q.count() != 0
-
-def get_by_graphs_instantiated_features(graphs, features):
-    """ Creates one complex query that thest which feature are instanciated in one of
-    the graphs.
-    """
-
-    # Find maximum feature length
-    max_links = 0
-    for f in features:
-        if len(f.links) > max_links:
-            max_links = len(f.links)
-
-    # Create feature array
-    normalized_features = []
-    for f in features:
-        links = []
-        for i in range(max_links):
-            if i < len(f.links):
-                fl = f.links[i]
-                links.append( '[%s,%s]' % (fl.class_a.id, fl.relation.id))
-            else:
-                links.append( '[-1,-1]' )
-        normalized_features.append(links)
-
-    # Build query with custom ID arrays: An array of graph ids and an array
-    # of features. Those features are arrays of links and those links are
-    # each an array of the class a ID and the relation ID of that link. All
-    # features need to have the same number of links in the array. So if they
-    # have actually less, pad with [-1, -1] elements.
-    query = "SELECT * FROM filter_used_features(ARRAY[%s], ARRAY[%s] );" % \
-        (",".join([str(g.id) for g in graphs]),
-         ",".join(['[%s]' % ','.join(f) for f in normalized_features]))
-
-    # Run query
-    cursor = connection.cursor()
-    cursor.execute(query)
-
-    # Parse result
-    used_features = []
-    rows = cursor.fetchall()
-    for r in rows:
-        # PostgreSQL uses one based indexing, subtract 1 to get 0 based indices
-        idx = r[0] - 1
-        used_features.append( features[idx] )
-
-    return used_features
 
 def create_binary_matrix(graphs, features):
     """ Creates a binary matrix for the graphs passed."""

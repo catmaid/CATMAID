@@ -498,3 +498,9 @@ div#classification_graph_object img.roiimage {
 #review_segment_table tr.highlight {
 	font-weight:bold;
 }
+
+#review_segment_table th {
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-bottom: 1px solid black;
+}

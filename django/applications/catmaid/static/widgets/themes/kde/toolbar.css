@@ -115,6 +115,11 @@ div.toolbar div.box_right select
 
 /* menu */
 
+div.menu div.box
+{
+	padding:0px;
+}
+
 div.toolbar div.menu_item p
 {
 	padding-left:1em;

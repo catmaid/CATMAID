@@ -269,11 +269,6 @@ var ReviewSystem = new function()
             return s;
         }, "");
 
-        /* This widget shows the review of every user involded and a union
-         * column if there is more than one reviewer. */
-        var extraStatusCols = reviewers.length > 1;
-        var headerRows = extraStatusCols ? 2 : 1;
-
         /**
          * Support function for selecting a background color based on review state.
          */
@@ -290,34 +285,27 @@ var ReviewSystem = new function()
         $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID + " -- " + user_revisions );
         table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
         // create header
-        thead = $('<thead />');
-        table.append( thead );
         row = $('<tr />');
-        row.append( $('<th />').attr('rowspan', headerRows));
-        row.append( $('<th />')
-                .attr('colspan', extraStatusCols ? reviewers.length + 1 : 1)
-                .text("Status") );
-        row.append( $('<th />').attr('rowspan', headerRows).text("# nodes") );
-        thead.append( row );
-        if (extraStatusCols) {
-          row = $('<tr />');
-          // Start with user columns, current user first
-          for (var i=0; i<reviewers.length; ++i) {
-            var cb = $('<input />').attr('type', 'checkbox')
-                .attr('data-rid', reviewers[i]);
-            if (i === 0) {
-                // Have the current user checked by default
-                cb.attr('checked', 'checked');
-            }
-            row.append( $('<th />').append($('<label />')
-                .append(cb).append(users[reviewers[i]].name)));
+        row.append($('<th />'));
+        // Start with user columns, current user first
+        for (var i=0; i<reviewers.length; ++i) {
+          var cb = $('<input />').attr('type', 'checkbox')
+              .attr('data-rid', reviewers[i]);
+          if (i === 0) {
+              // Have the current user checked by default
+              cb.attr('checked', 'checked');
           }
-          // Union column last
-          row.append( $('<th />').text('Union') );
-          thead.append( row );
+          row.append( $('<th />').append($('<label />')
+              .append(cb).append(users[reviewers[i]].name)));
         }
-        tbody = $('<tbody />');
-        table.append( tbody );
+        // Union column last
+        if (reviewers.length > 1) {
+            row.append( $('<th />').text('Union') );
+        }
+        table.append( row );
+        row.append( $('<th />').text("# nodes"));
+        row.append($('<th />'));
+        table.append( row );
         // create a row
         for(var e in skeleton_data ) {
             var sd = skeleton_data[e];
@@ -327,7 +315,7 @@ var ReviewSystem = new function()
             // Index
             row.append( $('<td />').text(skeleton_data[e]['id'] ) );
             // Single user status
-            if (extraStatusCols) {
+            if (reviewers.length > 1) {
               // The reviewers array contains oneself as first element
               reviewers.forEach(function(r) {
                   var seg_status = (100 * users[r].segment_count[sd.id] /
@@ -353,12 +341,12 @@ var ReviewSystem = new function()
             butt.click( function() {
                 self.initReviewSegment( this.id.replace("reviewbutton_", "") );
             });
-            row.append( butt );
-            tbody.append( row );
+            row.append( $('<td />').append(butt) );
+            table.append( row );
         }
         // empty row
         row = $('<tr />');
-        tbody.append( row );
+        table.append( row );
         table.append( $('<br /><br /><br /><br />') );
         $("#project_review_widget").append( table );
 

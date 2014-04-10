@@ -874,11 +874,12 @@ def join_skeletons_interpolated(request, project_id=None):
 
 @requires_user_role(UserRole.Annotate)
 def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
-    """ Reset the reviewer_id column to -1 for all nodes owned by the user.
+    """ Remove all reviews done by the requsting user in the skeleten with ID
+    <skeleton_id>.
     """
     skeleton_id = int(skeleton_id) # sanitize
-    Treenode.objects.filter(skeleton_id=skeleton_id, user=request.user).update(reviewer_id=-1)
-    return HttpResponse(json.dumps({}), mimetype='text/json')
+    Review.objects.filter(skeleton_id=skeleton_id, reviewer=request.user).delete();
+    return HttpResponse(json.dumps({'status': 'success'}), mimetype='text/json')
 
 
 @requires_user_role(UserRole.Annotate)

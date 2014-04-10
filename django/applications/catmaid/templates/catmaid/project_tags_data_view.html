@@ -44,7 +44,7 @@
 						title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
 				{% endif %}
 				{% for p in tprojects %}
-					{% with stacks=stacks_of|get:p.id|sort|filter_stacks:linked_stacks %}
+					{% with stacks=stacks_of|get:p.id|filter_stacks:linked_stacks %}
 					{% is_highlighted p.id highlight_tags tag_index as highlight %}
 
 					{# Make the project name a link if we are not forced to have #}

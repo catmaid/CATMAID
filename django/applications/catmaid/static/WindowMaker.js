@@ -1926,6 +1926,24 @@ var WindowMaker = new function()
     var win = new CMWWindow( "Keyboard Shortcuts" );
     var container = self.setKeyShortcuts(win);
 
+    $(container)
+      .append($('<h4 />').text('Contributors'))
+      .append('CATMAID v0.24, &copy;&nbsp;2007&ndash;2014 ' +
+          '<a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, ' +
+          '<a href="http://www.unidesign.ch/">Stephan Gerhard</a>, ' +
+          '<a href="http://longair.net/mark/">Mark Longair</a>, ' +
+          '<a href="http://albert.rierol.net/">Albert Cardona</a> and ' +
+          'Tom Kazimiers.<br /><br />' +
+          'Funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">' +
+          'Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and ' +
+          '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +
+          'HHMI Janelia Farm, U.S..<br /><br />' +
+          'Visit the <a href="http://www.catmaid.org/" target="_blank">' +
+          'CATMAID homepage</a> for further information. You can find the ' +
+          'source code on <a href="https://github.com/acardona/CATMAID">' +
+          'GitHub</a>, where you can also <a href="https://github.com/acardona/CATMAID/issues">' +
+          'report</a> bugs and problems.');
+
     addListener(win, container);
 
     addLogic(win);
@@ -1981,30 +1999,6 @@ var WindowMaker = new function()
     addLogic(win);
 
     ObjectTree.init( project.getId() );
-
-    return win;
-  };
-
-  var createDisclaimerWindow = function()
-  {
-    var win = new CMWWindow( "Disclaimer" );
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer( "disclaimer_widget" );
-    content.appendChild( container );
-
-    container.innerHTML =
-      '<p>CATMAID v0.24, &copy;&nbsp;2007&ndash;2012 <a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>,' +
-      '<a href="http://www.unidesign.ch/">Stephan Gerhard</a> and <a href="http://longair.net/mark/">Mark Longair</a><br />' +
-      'Funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and' +
-      ' <a href="http://albert.rierol.net/">Albert Cardona</a>, Uni/ETH, Z&uuml;rich, Switzerland.<br />' +
-      '<br />' +
-      'Visit the <a href="http://www.catmaid.org/" target="_blank">CATMAID homepage</a> for further information.</p>';
-
-    addListener(win, container);
-
-    addLogic(win);
 
     return win;
   };
@@ -2343,7 +2337,6 @@ var WindowMaker = new function()
     "sliceinfo-widget": createSliceInfoWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
-    "disclaimer": createDisclaimerWindow,
     "review-system": createReviewWindow,
     "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,

@@ -201,17 +201,6 @@ var toolActions = [
 			return true;
 		}
 	}),
-
-  new Action({
-    helpText: "Disclaimer",
-    buttonID: "disclaimer_button",
-    buttonName: 'disclaimer',
-    run: function (e) {
-      WindowMaker.show('disclaimer');
-      return true;
-    }
-  })
-
 ];
 
 /**

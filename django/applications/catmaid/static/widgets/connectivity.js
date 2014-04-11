@@ -452,7 +452,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       }, row);
     }
     var average = (100 * total_reviewed / total_node_count).toFixed(0) | 0;
-    row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));
+    row.append( $('<td />').text(average + "%")
+        .css('background-color', getBackgroundColor(average)));
     row.append( $('<td />').text(total_node_count));
     var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
     row.append( $('<td />').addClass('input-container').append( el ) );
@@ -560,7 +561,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       var pReviewed = parseInt((100 * getNrReviews([partner], reviewFilter) /
           partner.num_nodes).toFixed(0));
       var td = document.createElement('td');
-      td.appendChild(document.createTextNode(pReviewed));
+      td.appendChild(document.createTextNode(pReviewed + "%"));
       td.style.backgroundColor = getBackgroundColor(pReviewed);
       tr.appendChild(td);
 

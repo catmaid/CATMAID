@@ -408,7 +408,8 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
         def __init__(self):
             self.name = None
             self.num_nodes = 0
-            self.reviewed = 0 # percentage reviewed
+            self.union_reviewed = 0 # total number reviewed nodes
+            self.reviewed = {} # number of reviewed nodes per reviewer
             self.skids = defaultdict(int) # skid vs synapse count
 
     # Dictionary of partner skeleton ID vs Partner
@@ -458,24 +459,27 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     for row in cursor.fetchall():
         partners[row[0]].num_nodes = row[1]
 
-    # Count reviewed nodes of each skeleton
+    # Count nodes that have been reviewed by each user in each partner skeleton
+    cursor.execute('''
+    SELECT skeleton_id, reviewer_id, count(skeleton_id)
+    FROM review
+    WHERE skeleton_id IN (%s)
+    GROUP BY reviewer_id, skeleton_id
+    ''' % skids_string) # no need to sanitize
+    for row in cursor.fetchall():
+        partner = partners[row[0]]
+        partner.reviewed[row[1]] = row[2]
+
+    # Count total number of reviewed nodes per skeleton
     cursor.execute('''
     SELECT skeleton_id, count(skeleton_id)
-    FROM treenode
+    FROM review
     WHERE skeleton_id IN (%s)
-      AND reviewer_id=-1
     GROUP BY skeleton_id
     ''' % skids_string) # no need to sanitize
-    seen = set()
     for row in cursor.fetchall():
-        seen.add(row[0])
         partner = partners[row[0]]
-        partner.reviewed = int(100.0 * (1 - float(row[1]) / partner.num_nodes))
-    # If 100%, it will not be there, so add it
-    for partnerID in set(partners.keys()) - seen:
-        partner = partners[partnerID]
-        if 0 == partner.reviewed:
-            partner.reviewed = 100
+        partner.union_reviewed = row[1]
 
     # Obtain name of each skeleton's neuron
     cursor.execute('''
@@ -515,7 +519,7 @@ def _skeleton_info_raw(project_id, skeletons, op):
             partner = partners[partnerID]
             skids = partner.skids
             # jsonize: swap class instance by its dict of members vs values
-            if skids:
+            if partner.skids or partner.reviewed:
                 partners[partnerID] = partner.__dict__
             else:
                 del partners[partnerID]

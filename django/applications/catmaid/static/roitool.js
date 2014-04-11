@@ -69,10 +69,10 @@ RoiTool.prototype.updateControls = function()
  * Handles redraw events and calls the redraw method of the base class and
  * triggers an update of UI elements.
  */
-RoiTool.prototype.redraw = function()
+RoiTool.prototype.redraw = function(completionCallback)
 {
     // call register of super class
-    RoiTool.superproto.redraw.call( this );
+    RoiTool.superproto.redraw.call( this, completionCallback );
     this.updateControls();
 };
 

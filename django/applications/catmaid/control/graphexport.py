@@ -25,7 +25,6 @@ def export_jsongraph(request, project_id):
     cable_spread = float(request.POST.get('cable_spread', 2500)) # in nanometers
     path_confluence = int(request.POST.get('path_confluence', 10)) # a count
     compute_risk = 1 == int(request.POST.get('risk', 0))
-    synaptic_count_high_pass = int(request.POST.get('synaptic_count_high_pass', 0))
     order = int(request.POST.get('order', 0))
     skeletonlist = map(int, skeletonlist)
 
@@ -33,7 +32,7 @@ def export_jsongraph(request, project_id):
       order = 0
 
     while order != 0:
-      incoming, outgoing = _skeleton_info_raw( project_id, skeletonlist, synaptic_count_high_pass, 'logic-OR' )
+      incoming, outgoing = _skeleton_info_raw( project_id, skeletonlist, 'logic-OR' )
       skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
       order -= 1
     

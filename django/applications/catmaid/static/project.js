@@ -300,14 +300,14 @@ function Project( pid )
 			document.getElementById("toolbox_edit").style.display = "block";
 			//document.getElementById("toolbox_data").style.display = "block";
 			//document.getElementById("toolbox_segmentation").style.display = "block";
-			document.getElementById("toolbox_data").style.display = "block";
+			//document.getElementById("toolbox_data").style.display = "block";
 		}
 		else 
 		{
 			document.getElementById("toolbox_edit").style.display = "none";
 			//document.getElementById("toolbox_data").style.display = "none";
 			//document.getElementById("toolbox_segmentation").style.display = "none";
-			document.getElementById("toolbox_data").style.display = "none";
+			//document.getElementById("toolbox_data").style.display = "none";
 		}
 		window.onresize();
 		

@@ -211,14 +211,23 @@ function TileLayer(
 		{
 			if (artificialZoom)
 			{
-				LAST_XT = Math.floor( ( stack.dimension.x - 1 ) / tileWidth );
-				LAST_YT = Math.floor( ( stack.dimension.y - 1 ) / tileHeight );
+				// Adjust last tile index to display to the one intersecting the bottom right
+				// of the field of view. The purpose: to set the URL of images beyond the edges
+				// to the black gif URL further below.
+				LAST_XT = Math.floor((stack.x * stack.scale + stack.viewWidth) / effectiveTileWidth);
+				LAST_YT = Math.floor((stack.y * stack.scale + stack.viewHeight) / effectiveTileHeight);
 			}
 			else
 			{
 				LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 				LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 			}
+		}
+
+		// Fix panning
+		if (artificialZoom) {
+			LAST_XT += xd;
+			LAST_YT += yd;
 		}
 
 		var top;

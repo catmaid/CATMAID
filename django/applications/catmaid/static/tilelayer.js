@@ -123,18 +123,22 @@ function TileLayer(
 		var xd = 0;
 		var yd = 0;
 		
+		// If panning only (no scaling, no browsing through z)
 		if ( stack.z == stack.old_z && stack.s == stack.old_s )
 		{
 			var old_fr = Math.floor( stack.old_yc / effectiveTileHeight );
 			var old_fc = Math.floor( stack.old_xc / effectiveTileWidth );
 			
+			// Compute panning in X and Y
 			xd = fc - old_fc;
 			yd = fr - old_fr;
 
-			
 			// re-order the tiles array on demand
 			if ( xd < 0 )
 			{
+				// Panning to the left:
+				// Remove existing last image from each row
+				// and preppend a new one pointing to the black tile URL.
 				for ( var i = 0; i < tiles.length; ++i )
 				{
 					tilesContainer.removeChild( tiles[ i ].pop() );
@@ -148,6 +152,9 @@ function TileLayer(
 			}
 			else if ( xd > 0 )
 			{
+				// Panning to the right:
+				// Remove existing first image from each row
+				// and append a new one pointing to the black tile URL.
 				for ( var i = 0; i < tiles.length; ++i )
 				{
 					tilesContainer.removeChild( tiles[ i ].shift() );
@@ -161,6 +168,9 @@ function TileLayer(
 			}
 			else if ( yd < 0 )
 			{
+				// Panning to the top:
+				// Remove the last row of tiles
+				// and preppend a new row of tiles, all pointing to the black image URL.
 				var old_row = tiles.pop();
 				var new_row = new Array();
 				for ( var i = 0; i < tiles[ 0 ].length; ++i )
@@ -177,6 +187,9 @@ function TileLayer(
 			}
 			else if ( yd > 0 )
 			{
+				// Panning to the bottom:
+				// Remove the first row of tiles
+				// and append a new row of tiles, all pointing to the black image URL.
 				var old_row = tiles.shift();
 				var new_row = new Array();
 				for ( var i = 0; i < tiles[ 0 ].length; ++i )
@@ -193,7 +206,8 @@ function TileLayer(
 			}
 		}
 
-		if ( stack.s != stack.old_s)
+		// If changing magnification
+		if ( stack.s != stack.old_s )
 		{
 			if (artificialZoom)
 			{
@@ -259,8 +273,8 @@ function TileLayer(
             }
           }
 					*/
-
 				}
+
 				tiles[ i ][ j ].style.top = t + "px";
 				tiles[ i ][ j ].style.left = l + "px";
 				tiles[ i ][ j ].style.visibility = "visible";

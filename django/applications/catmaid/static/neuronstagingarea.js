@@ -156,21 +156,21 @@ SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
 
 SelectionTable.prototype.COLORS = [[1, 1, 0], // yellow
                                    [1, 0, 1], // magenta
-                                   [0.5, 0.5, 1], // light blue
-                                   [1, 0, 0], // red
-                                   [1, 1, 1], // white
+                                   [0, 0, 1], // blue
                                    [0, 1, 0], // green
+                                   [1, 1, 1], // white
                                    [0, 1, 1], // cyan
                                    [1, 0.5, 0], // orange
-                                   [0, 0, 1], // blue
+                                   [0.5, 1, 0], // light green
+                                   [0.5, 0.5, 0.5], // grey
+                                   [0, 1, 0.5], // pale green
+                                   [1, 0, 0], // red
+                                   [0.5, 0.5, 1], // light blue
                                    [0.75, 0.75, 0.75], // silver
                                    [1, 0.5, 0.5], // pinkish
                                    [0.5, 1, 0.5], // light cyan
-                                   [0.5, 1, 0], // light green
-                                   [0, 1, 0.5], // pale green
                                    [1, 0, 0.5], // purplish
                                    [0.5, 0, 0], // maroon
-                                   [0.5, 0.5, 0.5], // grey
                                    [0.5, 0, 0.5], // purple
                                    [0, 0, 0.5], // navy blue
                                    [1, 0.38, 0.28], // tomato

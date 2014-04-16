@@ -3,12 +3,15 @@ from itertools import combinations
 
 from django import forms
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.shortcuts import render_to_response
 
 from catmaid.control.classification import get_classification_links_qs
 from catmaid.control.classification import link_existing_classification
 from catmaid.models import ClassInstance, Project
+
+from taggit.models import TaggedItem
 
 TEMPLATES = {"settings": "catmaid/classification/admin_settings.html",
              "taggroups": "catmaid/classification/admin_setup_tag_groups.html",
@@ -38,25 +41,21 @@ class ConfirmationForm(forms.Form):
 def get_tag_sets(add_supersets=False, prefetch=True):
     tag_sets=defaultdict(set)
     tag_supersets=defaultdict(set)
-    project_ids = []
+    project_ids = list(Project.objects.all().values_list('id', flat=True))
+
+    # Build tag index
+    ct = ContentType.objects.get_for_model(Project)
+    tag_links = TaggedItem.objects.filter(content_type=ct) \
+        .values_list('object_id', 'tag__name')
+    tag_index = defaultdict(set)
+    for pid, t in tag_links:
+        tag_index[pid].add(t)
 
     # Build up data structure that maps tag sets to
     # projects. These projects include projects with
     # tag supersets.
-    #
-    # The query retrieval can be made much faster
-    # when the package django-batch-select is used:
-    # for p in Project.objects.batch_select('tags'):
-    #     tags = p.tags_all
-    #     ...
-    # However, this new dependency isn't justified if
-    # only used here (in an admin tool).
-    for p in Project.objects.all():
-        project_ids.append(p.id)
-        tags = p.tags.all()
-        if len(tags) == 0:
-            continue
-        tag_sets[frozenset(tags)].add(p)
+    for p, ts in tag_index.items():
+        tag_sets[frozenset(ts)].add(p)
 
     if add_supersets:
         for a, b in combinations(tag_sets, 2):
@@ -77,7 +76,13 @@ def generate_tag_groups(add_supersets=True, respect_superset_graphs=False):
 
     # Get a query set that retrieves all CiCi links for all project ids at once
     workspace = settings.ONTOLOGY_DUMMY_PROJECT_ID
-    links_qs = get_classification_links_qs(workspace, project_ids)
+
+    # We are retrieving the classification links of *all* projects. The query
+    # will therefore be much faster, if we get the inverse set of the empty
+    # set instead of explicitely requesting the project_ids to be in
+    # project_ids..
+    links_qs = get_classification_links_qs(workspace, [], inverse=True)
+
     # Make sure the the project ids and the classification root ids are
     # prefetched
     links_qs = links_qs.select_related('class_instance_a__project__id',
@@ -85,10 +90,11 @@ def generate_tag_groups(add_supersets=True, respect_superset_graphs=False):
     # Execute the query set to build a look up table
     projects_to_cls_links = {}
     for cici in links_qs:
-        if cici.class_instance_a.project.id not in projects_to_cls_links:
-            projects_to_cls_links[cici.class_instance_a.project.id] = set()
-        projects_to_cls_links[cici.class_instance_a.project.id].add(
-            cici.class_instance_b.id)
+        cls_links = projects_to_cls_links.get(cici.class_instance_a.project.id)
+        if not cls_links:
+            cls_links = set()
+            projects_to_cls_links[cici.class_instance_a.project.id] = cls_links
+        cls_links.add(cici.class_instance_b.id)
 
     # Test which groups of projects belonging to a particular tag group,
     # have non-uniform classification graph links
@@ -99,45 +105,45 @@ def generate_tag_groups(add_supersets=True, respect_superset_graphs=False):
         cg_roots = set()
         projects_cgroots = {}
         # Collect all classification roots in this tag group
-        for p in projects:
+        for pid in projects:
             try:
-                # Get set of CiCi links for current project
-                croots = projects_to_cls_links[p.id]
+                # Get set of CiCi links for current project ID
+                croots = projects_to_cls_links[pid]
             except KeyError:
                 # Use an empty set if there are no CiCi links for the
                 # current project.
                 croots = set()
 
             # Remember roots for this projects
-            projects_cgroots[p] = {
+            projects_cgroots[pid] = {
                 'linked': croots,
                 'missing': [],
                 'workspace': workspace,
             }
             # Add classification graphs introduced by supersets to the expected
             # graphs in this tag set.
-            if p not in tag_supersets[tags] or respect_superset_graphs:
+            if pid not in tag_supersets[tags] or respect_superset_graphs:
                     cg_roots.update(croots)
         # Check if there are updates needed for some projects
         num_differing = 0
         meta = []
-        for p in projects_cgroots:
-            croots = projects_cgroots[p]['linked']
+        for pid in projects_cgroots:
+            croots = projects_cgroots[pid]['linked']
             diff = cg_roots - croots
             if len(diff) > 0:
                 differs = True
-                projects_cgroots[p]['missing'] = diff
+                projects_cgroots[pid]['missing'] = diff
                 num_differing = num_differing + 1
                 strdiff = ", ".join([str(cg) for cg in diff])
-                meta.append("[PID: %s Missing: %s]" % (p.id, strdiff))
+                meta.append("[PID: %s Missing: %s]" % (pid, strdiff))
         # If there is a difference, offer this tag group
         # for selection.
         if differs:
             # Generate a string representation of the tags and use
             # it as index for a project classification.
             taglist = list(tags)
-            taglist.sort(key=lambda x: x.id)
-            name = ", ".join([t.name for t in taglist])
+            taglist.sort()
+            name = ", ".join([t for t in taglist])
             # Fill data structure for later use
             available_tag_groups[name] = {
                 'project_cgroots': projects_cgroots,
@@ -159,7 +165,8 @@ class ClassificationAdminWizard(SessionWizardView):
         # The project links selection needs some extra context
         extra_context = {}
         if self.steps.current == "taggroups":
-            extra_context['num_tag_groups'] = len(self.get_tag_group_list())
+            tag_groups = generate_tag_groups(True, False)
+            extra_context['num_tag_groups'] = len(self.get_tag_group_list(tag_groups))
         if self.steps.current == "confirmation":
             # Get all selected tag groups
             extra_context['tag_groups'] = self.get_selected_tag_groups()
@@ -167,18 +174,13 @@ class ClassificationAdminWizard(SessionWizardView):
 
         return context
 
-    def get_tag_group_list(self, add_supersets=True, respect_superset_graphs=False):
+    def get_tag_group_list(self, available_tag_groups):
         """ Returns a list of tuples that represent the currently
         available tag groups.
         """
-        # Set up the tag groups only once
-        #if not self.request.session.get('available_tag_groups'):
-        available_tag_groups = generate_tag_groups(add_supersets, respect_superset_graphs)
-        self.request.session['available_tag_groups'] = available_tag_groups
         # Create the tag group tuple list
         tag_group_list = []
-        tag_groups = self.request.session.get('available_tag_groups')
-        for eg, group in tag_groups.items():
+        for eg, group in available_tag_groups.items():
             name = eg + " (" + str(group['num_differing']) + "/" + \
                 str(len(group['project_cgroots'])) + " differ: " + \
                 ", ".join(group['meta']) + ")"
@@ -195,23 +197,19 @@ class ClassificationAdminWizard(SessionWizardView):
             # Update the tag groups list and select all by default
             add_supersets = self.get_cleaned_data_for_step('settings')['add_supersets']
             respect_superset_graphs = self.get_cleaned_data_for_step('settings')['respect_superset_graphs']
-            tag_groups_tuples = self.get_tag_group_list(add_supersets,
+            # Store all available tag groups to be usable in the result page
+            self.available_tag_groups = generate_tag_groups(add_supersets,
                 respect_superset_graphs)
+            tag_groups_tuples = self.get_tag_group_list(self.available_tag_groups)
             form.fields["tag_groups"].choices = tag_groups_tuples
             form.fields['tag_groups'].initial = [tg[0] for tg in tag_groups_tuples]
         return form
 
-    def clear_cache(self):
-        # Delete tag groups stored in session
-        del self.request.session['available_tag_groups']
-        self.request.modified = True
-
     def get_selected_tag_groups(self):
         tag_group_ids = self.get_cleaned_data_for_step('taggroups')['tag_groups']
-        available_tag_groups = self.request.session.get('available_tag_groups')
         selected_tag_groups = {}
         for tid in tag_group_ids:
-            selected_tag_groups[tid] = available_tag_groups[tid]
+            selected_tag_groups[tid] = self.available_tag_groups[tid]
         return selected_tag_groups
 
     def done(self, form_list, **kwargs):
@@ -222,20 +220,19 @@ class ClassificationAdminWizard(SessionWizardView):
         num_added_links = 0
         failed_links = {}
         for eg, group in tag_groups.items():
-            for p, pdata in group['project_cgroots'].items():
+            for pid, pdata in group['project_cgroots'].items():
                 # Iterate missing links
                 for ml in pdata['missing']:
                     try:
                         # Add missing link
                         wid = pdata['workspace']
                         oroot = ClassInstance.objects.get(pk=ml)
+                        p = Project.objects.get(pk=pid)
                         link_existing_classification(wid, self.request.user, p, oroot)
                         unified_tag_groups[eg] = group
                         num_added_links = num_added_links + 1
                     except Exception as e:
                         failed_links[ml] = e
-        # Delete tag groups stored in session
-        self.clear_cache()
 
         # Show final page
         return render_to_response('catmaid/classification/admin_done.html', {

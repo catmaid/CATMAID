@@ -206,28 +206,22 @@ function TileLayer(
 			}
 		}
 
-		// If changing magnification
-		if ( stack.s != stack.old_s )
+		// Adjust the last tile to render with an URL rather than with the black gif.
+		// Must run when changing scale, or when changing the size of the canvas window.
+		// Considering how inexpensive it is, it is made to run always.
+		if (artificialZoom)
 		{
-			if (artificialZoom)
-			{
-				// Adjust last tile index to display to the one intersecting the bottom right
-				// of the field of view. The purpose: to set the URL of images beyond the edges
-				// to the black gif URL further below.
-				LAST_XT = Math.floor((stack.x * stack.scale + stack.viewWidth) / effectiveTileWidth);
-				LAST_YT = Math.floor((stack.y * stack.scale + stack.viewHeight) / effectiveTileHeight);
-			}
-			else
-			{
-				LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
-				LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
-			}
+			// Adjust last tile index to display to the one intersecting the bottom right
+			// of the field of view. The purpose: to set the URL of images beyond the edges
+			// to the black gif URL further below.
+			// Notice that we add the panning xd, yd as well (which is already in tile units).
+			LAST_XT = Math.floor((stack.x * stack.scale + stack.viewWidth) / effectiveTileWidth) + xd;
+			LAST_YT = Math.floor((stack.y * stack.scale + stack.viewHeight) / effectiveTileHeight) + yd;
 		}
-
-		// Fix panning
-		if (artificialZoom) {
-			LAST_XT += xd;
-			LAST_YT += yd;
+		else
+		{
+			LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
+			LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 		}
 
 		var top;

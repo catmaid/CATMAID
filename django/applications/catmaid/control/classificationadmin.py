@@ -165,7 +165,8 @@ class ClassificationAdminWizard(SessionWizardView):
         # The project links selection needs some extra context
         extra_context = {}
         if self.steps.current == "taggroups":
-            extra_context['num_tag_groups'] = len(self.get_tag_group_list())
+            tag_groups = generate_tag_groups(True, False)
+            extra_context['num_tag_groups'] = len(self.get_tag_group_list(tag_groups))
         if self.steps.current == "confirmation":
             # Get all selected tag groups
             extra_context['tag_groups'] = self.get_selected_tag_groups()
@@ -173,18 +174,13 @@ class ClassificationAdminWizard(SessionWizardView):
 
         return context
 
-    def get_tag_group_list(self, add_supersets=True, respect_superset_graphs=False):
+    def get_tag_group_list(self, available_tag_groups):
         """ Returns a list of tuples that represent the currently
         available tag groups.
         """
-        # Set up the tag groups only once
-        #if not self.request.session.get('available_tag_groups'):
-        available_tag_groups = generate_tag_groups(add_supersets, respect_superset_graphs)
-        self.request.session['available_tag_groups'] = available_tag_groups
         # Create the tag group tuple list
         tag_group_list = []
-        tag_groups = self.request.session.get('available_tag_groups')
-        for eg, group in tag_groups.items():
+        for eg, group in available_tag_groups.items():
             name = eg + " (" + str(group['num_differing']) + "/" + \
                 str(len(group['project_cgroots'])) + " differ: " + \
                 ", ".join(group['meta']) + ")"
@@ -201,23 +197,19 @@ class ClassificationAdminWizard(SessionWizardView):
             # Update the tag groups list and select all by default
             add_supersets = self.get_cleaned_data_for_step('settings')['add_supersets']
             respect_superset_graphs = self.get_cleaned_data_for_step('settings')['respect_superset_graphs']
-            tag_groups_tuples = self.get_tag_group_list(add_supersets,
+            # Store all available tag groups to be usable in the result page
+            self.available_tag_groups = generate_tag_groups(add_supersets,
                 respect_superset_graphs)
+            tag_groups_tuples = self.get_tag_group_list(self.available_tag_groups)
             form.fields["tag_groups"].choices = tag_groups_tuples
             form.fields['tag_groups'].initial = [tg[0] for tg in tag_groups_tuples]
         return form
 
-    def clear_cache(self):
-        # Delete tag groups stored in session
-        del self.request.session['available_tag_groups']
-        self.request.modified = True
-
     def get_selected_tag_groups(self):
         tag_group_ids = self.get_cleaned_data_for_step('taggroups')['tag_groups']
-        available_tag_groups = self.request.session.get('available_tag_groups')
         selected_tag_groups = {}
         for tid in tag_group_ids:
-            selected_tag_groups[tid] = available_tag_groups[tid]
+            selected_tag_groups[tid] = self.available_tag_groups[tid]
         return selected_tag_groups
 
     def done(self, form_list, **kwargs):
@@ -241,8 +233,6 @@ class ClassificationAdminWizard(SessionWizardView):
                         num_added_links = num_added_links + 1
                     except Exception as e:
                         failed_links[ml] = e
-        # Delete tag groups stored in session
-        self.clear_cache()
 
         # Show final page
         return render_to_response('catmaid/classification/admin_done.html', {

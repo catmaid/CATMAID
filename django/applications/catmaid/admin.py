@@ -152,7 +152,7 @@ admin.site.register_view('useranalytics', 'User Analytics',
                          view=UseranalyticsView.as_view())
 admin.site.register_view('userproficiency', 'User Proficiency',
                          view=UserProficiencyView.as_view())
-admin.site.register_view('classifcationadmin',
+admin.site.register_view('classificationadmin',
                          'Tag Based Classification Graph Linker',
                          view=classification_admin_view)
 admin.site.register(Overlay)

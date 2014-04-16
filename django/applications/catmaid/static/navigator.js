@@ -251,7 +251,7 @@ function Navigator()
 	{
 		if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
 		changeSliceDelayedParam = { z : val };
-		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
+		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 30 );
 	}
 	
 	this.changeSlice = function( val )

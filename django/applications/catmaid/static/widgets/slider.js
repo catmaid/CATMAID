@@ -213,7 +213,7 @@ Slider = function(
   var decrease = function()
   {
     setByIndex( Math.max( 0, ind - 1 ) );
-    timer = window.setTimeout( decrease, 250 );
+    timer = window.setTimeout( decrease, 100 );
     return;
   }
   
@@ -239,7 +239,7 @@ Slider = function(
   var increase = function()
   {
     setByIndex( Math.min( values.length - 1, ind + 1 ) );
-    timer = window.setTimeout( increase, 250 );
+    timer = window.setTimeout( increase, 100 );
     return;
   }
   

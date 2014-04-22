@@ -1575,10 +1575,36 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 };
 */
 
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseDistanceMap = function() {
+  return new SynapseClustering().distanceMap(this.createArbor(), this.createSynapseMap(), this.geometry['neurite'].vertices);
+};
+
+/** Returns a map of treenode ID keys and lists of connector IDs as values.
+ * Does not differentiate pre and post relationships. */
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseMap = function() {
+  var o = {};
+
+  this.synapticTypes.forEach(function(type) {
+    var vs = this.geometry[type].vertices;
+    for (var i=0, l=vs.length; i<l; i+=2) {
+      var treenode_id = vs[i+1].node_id,
+          connector_id = vs[i].node_id,
+          list = o[treenode_id];
+      if (!list) {
+        o[treenode_id] = [connector_id]
+      } else {
+        list.push(connector_id);
+      }
+    }
+  }, this);
+
+  return o;
+};
+
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = function() {
   return new Arbor().addEdges(this.geometry['neurite'].vertices,
                               function(v) { return v.node_id; });
-}
+};
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
   var node_weights;

@@ -195,7 +195,7 @@ Arbor.prototype.nodesOrderFrom = function(root) {
 	return this.nodesDistanceTo(root, function() { return 1; }).distances;
 };
 
-/** Measure distance of every node to root, by using the given
+/** Measure distance of every node to root in O(2n), by using the given
  * distanceFn which takes two nodes (child and parent) as arguments and returns a number.
  * Returns an object containing the distances and the maximum distance. */
 Arbor.prototype.nodesDistanceTo = function(root, distanceFn) {
@@ -266,7 +266,7 @@ Arbor.prototype.countNodes = function() {
 /** Returns an array of arrays, unsorted, where the longest array contains the linear
  * path between the furthest end node and the root node, and all other arrays are shorter
  * paths always starting at an end node and finishing at a node already included in
- * another path. Runs in O(3n) time. */
+ * another path. Runs in O(4n + nlog(n)) time. */
 Arbor.prototype.partition = function() {
 	var ends = this.findEndNodes(),
 		  distances = this.nodesOrderFrom(this.root),

@@ -3,16 +3,34 @@
 
 "use strict";
 
-var SynapseClustering = function() {};
+/**
+ * arbor: an instance of Arbor: each node is a treenode ID.
+ * locations: map of treenode ID vs Vector3.
+ * synapses: map of treenode ID vs list of connector IDs.
+ *
+ * Computes and stores as members the Arbor partitions and the distance map.
+ */
+var SynapseClustering = function(arbor, locations, synapses) {
+  this.arbor = arbor;
+  this.synapses = synapses;
+  // List of lists of treenode IDs, sorted from smaller to larger lists
+  this.partitions = arbor.partitionSorted();
+
+  var distanceFn = (function(child, paren) {
+    return this[child].distanceTo(this[paren]);
+  }).bind(locations);
+
+  // Map of treenode ID vs calibrated distance to the root node
+  this.distancesToRoot = arbor.nodesDistanceTo(arbor.root, distanceFn).distances;
+  // A map of treenode ID vs list of calibrated distances to synapses. In other words, the return value of function distanceMap.
+  this.Ds = this.distanceMap();
+};
 
 SynapseClustering.prototype = {};
 
 /**
  * Compute and return a distance map, where each skeleton treenode is a key,
- * and its value is an array of calibrated cable distances to the root node.
- *
- * arbor: an instance of Arbor, representing the Skeleton.
- * synapses: a map of treenode ID vs list of connector IDs.
+ * and its value is an array of calibrated cable distances to all arbor synapses.
  *
  * Operates in O((3 + 2 + 4 + 2 + 2 + 1)n + nlog(n) + n*m) time,
  * with n being the number of treenodes and m being the number of synapses.
@@ -21,31 +39,17 @@ SynapseClustering.prototype = {};
  * Algorithm by Casey Schneider-Mizell.
  *
  */
-SynapseClustering.prototype.distanceMap = function(arbor, all_synapses, vertices) {
+SynapseClustering.prototype.distanceMap = function() {
 
   // Map of treenode ID vs list of distances to treenodes with synapses
   var Ds = {};
-
-  // List of lists of treenode IDs, sorted from smaller to larger lists
-  var partitions = arbor.partitionSorted();
-
-  var locations = vertices.reduce(function(vs, v) {
-    vs[v.node_id] = v;
-    return vs;
-  }, {});
-
-  var distanceFn = (function(child, paren) {
-    return this[child].distanceTo(this[paren]);
-  }).bind(locations);
- 
-  var distancesToRoot = arbor.nodesDistanceTo(arbor.root, distanceFn).distances;
 
   // Map of treenode ID that is a branch vs list of treenode IDs upstream of it.
   // Entries get removed once the branch treenode has been visited as part of a partition
   // where it is not the last treenode of the partition.
   var seen_downstream_nodes = {};
 
-  partitions.forEach(function(partition) {
+  this.partitions.forEach(function(partition) {
     // Update synapses for the previous node, and upstream nodes for the current node.
     
     // Treenodes downstream of the current treenode: includes priorly in the partition
@@ -63,7 +67,7 @@ SynapseClustering.prototype.distanceMap = function(arbor, all_synapses, vertices
 
       downstream_nodes.push(prev_treenode_id);
 
-      var synapses = all_synapses[prev_treenode_id],
+      var synapses = this.synapses[prev_treenode_id],
           prev_ds = Ds[prev_treenode_id];
 
       if (!prev_ds) { // prev_ds may already be defined for a branch node
@@ -74,21 +78,21 @@ SynapseClustering.prototype.distanceMap = function(arbor, all_synapses, vertices
       if (synapses) {
         // Record the distance to the synapse in every downstream node:
         // (which include prev_treenode_id)
-        var d = distancesToRoot[prev_treenode_id];
+        var d = this.distancesToRoot[prev_treenode_id];
         downstream_nodes.forEach(function(child_id) {
           var ds = Ds[child_id],
-              distance_child_to_synapse = distancesToRoot[child_id] - d;
+              distance_child_to_synapse = this.distancesToRoot[child_id] - d;
           for (var k = 0, sl=synapses.length; k<sl; ++k) {
             ds.push(distance_child_to_synapse);
           }
-        });
+        }, this);
       }
 
       // If treenode_id is a branch, append all its children to downstream_nodes.
       // It is a branch if we have already seen it, therefore it is in seen_downstream_nodes
       var seen = seen_downstream_nodes[treenode_id],
-          distance_to_root = distancesToRoot[treenode_id],
-          distance_prev_to_current = distancesToRoot[prev_treenode_id] - distance_to_root;
+          distance_to_root = this.distancesToRoot[treenode_id],
+          distance_prev_to_current = this.distancesToRoot[prev_treenode_id] - distance_to_root;
 
       if (seen) {
         // current_ds will exist, if seen exists
@@ -98,20 +102,20 @@ SynapseClustering.prototype.distanceMap = function(arbor, all_synapses, vertices
         // Append to downstream nodes' Ds the distances to synapses in the branch just found in treenode_id
         downstream_nodes.forEach(function(child_id) {
           var child_ds = Ds[child_id],
-              distance = distancesToRoot[child_id] - distance_to_root;
+              distance = this.distancesToRoot[child_id] - distance_to_root;
           for (var k=0, cl=current_ds.length; k<cl; ++k) {
             child_ds.push(current_ds[k] + distance);
           }
-        });
+        }, this);
 
         // Append to the seen nodes' Ds the distances to synapses collected along the downstream_nodes
         seen.forEach(function(child_id) {
           var child_ds = Ds[child_id],
-              distance = distancesToRoot[child_id] + distance_prev_to_current - distance_to_root;
+              distance = this.distancesToRoot[child_id] + distance_prev_to_current - distance_to_root;
           for (var k=0, pl=prev_ds.length; k<pl; ++k) {
             child_ds.push(prev_ds[k] + distance);
           }
-        });
+        }, this);
 
         // Update list of children
         downstream_nodes = downstream_nodes.concat(seen);
@@ -125,7 +129,7 @@ SynapseClustering.prototype.distanceMap = function(arbor, all_synapses, vertices
             return distance + distance_prev_to_current;
           });
 
-      Ds[treenode_id] = current_ds ? current_ds.concat(translated_prev_ds) : translated_prev_ds;
+      Ds[treenode_id] = undefined !== current_ds ? current_ds.concat(translated_prev_ds) : translated_prev_ds;
 
       // Reset for next iteration of the partition
       prev_treenode_id = treenode_id;
@@ -135,18 +139,136 @@ SynapseClustering.prototype.distanceMap = function(arbor, all_synapses, vertices
     var last_treenode_id = partition[partition.length -1];
     seen_downstream_nodes[last_treenode_id] = downstream_nodes;
 
-  });
+  }, this);
 
   // Update the last node: the root
-  var synapses_at_root = all_synapses[arbor.root];
+  var synapses_at_root = this.synapses[this.arbor.root];
   if (synapses_at_root) {
     Object.keys(Ds).forEach(function(treenode_id) {
       var ds = Ds[treenode_id];
       for (var k=0; k<synapses_at_root.length; ++k) {
-        ds.push(distancesToRoot[treenode_id]);
+        ds.push(this.distancesToRoot[treenode_id]);
       }
-    });
+    }, this);
   }
  
   return Ds;
+};
+
+/**
+ * Return a map of treenode ID vs cluster index, computed from the distance map.
+ *
+ * lambda: the bandwidth parameter.
+ *
+ * Algorithm by Casey Schneider-Mizell.
+ */
+SynapseClustering.prototype.densityHillMap = function(lambda) {
+  // Map of treenode ID vs synapse cluster index.
+  // Contains entries for all nodes, and therefore may contain more clusters
+  // than the subset of nodes pointing to a synapse.
+  var density_hill_map = {};
+
+  var lambda_sq = lambda * lambda,
+      density = Object.keys(this.Ds).reduce((function(o, treenode_id) {
+    o[treenode_id] = this[treenode_id].reduce(function(sum, d) { // this == Ds
+      return sum + Math.exp( - (d*d / lambda_sq) );
+    }, 0);
+    return o;
+  }).bind(this.Ds), {});
+
+  var max_density_index = 0;
+
+  var children = this.arbor.allSuccessors(),
+      parents = this.arbor.edges;
+
+  var getNeighbors = function(treenode_id) {
+    var c = children[treenode_id],
+        p = parents[treenode_id];
+    if (p) {
+      var a = c.slice(); // clone array
+      a.push(p);
+      return a;
+    }
+    return c;
+  };
+
+  // Root node will always be in cluster 0.
+  density_hill_map[this.arbor.root] = 0;
+
+  // Iterate partitions from longest to shortest: copy and reverse the copy first.
+  // This iteration order ensure never working on the same density hill from two directions.
+  this.partitions.slice().reverse().forEach(function(partition) {
+    // Iterate each partition in reverse, from branch node or root to end node.
+    // Branch nodes will always be pre-visited, so just check if their child within
+    // the current partition has also been visited. If it hasn't, continue with the
+    // existing density hill; otherwise use the value that's already been seeded
+    // into the child.
+    
+    var index = partition.length -1;
+ 
+    // If a partition root has been seen before, it and its immediate child will
+    // both already have a density hill index.
+    // Note that partitions have at least a length of 2, by definition.
+    var dhm = density_hill_map[partition[index -1]];
+    var density_hill_index = undefined === dhm ? density_hill_map[partition[index]] : dhm;
+
+    for (; index > -1; --index) {
+      var treenode_id = partition[index];
+
+      // Give the current node the value of the hill index we're on.
+      density_hill_map[treenode_id] = density_hill_index;
+
+      // See if the current node has multiple neighbors, since leaf nodes are trivially maxima.
+      var neighbors = getNeighbors(treenode_id);
+      if (neighbors.length > 1) {
+        // If a pair of neighbors has a higher density than the current node,
+        // the current node is a boundary between the domains of each.
+        var self_density = density[treenode_id],
+            delta_density = neighbors.map(function(id) { return density[id] - self_density; });
+
+        // See if more than one neighbor has a delta density over zero (i.e. the current node has a smaller density than two or more of its neighbors).
+        if (delta_density.filter(function(d) { return d > 0; }).length > 1) {
+            
+          // Certain nodes need new hill indices (split_inds)
+          // and others need to adopt whatever index will go into the current node.
+          var split_inds = neighbors.filter(function(id, i) { return delta_density[i] >= 0; }),
+              flow_inds =  neighbors.filter(function(id, i) { return delta_density[i] < 0; });
+
+          // Gradient: the change in density divided by the change in location
+          var distance_to_current = this.distancesToRoot[treenode_id],
+              delta_distance = neighbors.map(function(id) { return Math.abs(this.distancesToRoot[id] - distance_to_current); }, this);
+
+          // First, add as many new indices as needed (usually one, but maybe more)
+          // if the node is a minimum at a branch point. Only need them for the
+          // children of the current node, since we came from the parent and already gave
+          // it an index value.
+          var successors = children[treenode_id];
+          var new_hill_seeds = successors.filter(function(id) { return -1 !== split_inds.indexOf(id); });
+
+          new_hill_seeds.forEach(function(id) {
+            ++max_density_index;
+            density_hill_map[id] = max_density_index;
+          });
+
+          var steepest_ind;
+          for (var k=0, l=delta_density.length, max=0; k<l; ++k) {
+            var m = delta_density[k] / delta_distance[k];
+            if (m > max) {
+              max = m;
+              steepest_ind = k;
+            }
+          }
+
+          var steepest = density_hill_map[neighbors[steepest_ind]];
+          density_hill_map[treenode_id] = steepest;
+          flow_inds.forEach(function(id) { density_hill_map[id] = steepest; });
+
+          density_hill_index = density_hill_map[partition[index -1]]; // Array index can't go lower than zero, because the node at 0 is an end node, which does not have more than one neighbors.
+        }
+      }
+    }
+
+  }, this);
+
+  return density_hill_map;
 };

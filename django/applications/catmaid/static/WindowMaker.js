@@ -521,6 +521,7 @@ var WindowMaker = new function()
     var synColors = document.createElement('select');
     synColors.options.add(new Option('Type: pre/red, post/cyan', 'cyan-red'));
     synColors.options.add(new Option('N with partner: pre[red > blue], post[yellow > cyan]', 'by-amount'));
+    synColors.options.add(new Option('Synapse clusters', 'synapse-clustering'));
     synColors.onchange = WA.updateConnectorColors.bind(WA, synColors);
     buttons.appendChild(synColors);
 

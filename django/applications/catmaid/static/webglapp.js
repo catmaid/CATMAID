@@ -1575,8 +1575,14 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 };
 */
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseDistanceMap = function() {
-  return new SynapseClustering().distanceMap(this.createArbor(), this.createSynapseMap(), this.geometry['neurite'].vertices);
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClustering = function() {
+  var invScale = 1.0 / this.space.scale,
+      locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
+    vs[v.node_id] = v.clone().multiplyScalar(invScale); // correct for scale
+    return vs;
+  }, {});
+  
+  return new SynapseClustering(this.createArbor(), locations, this.createSynapseMap());
 };
 
 /** Returns a map of treenode ID keys and lists of connector IDs as values.
@@ -1639,6 +1645,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         return vs;
       }, {});
 
+      // NOTE: distances are scaled down by 'scale', but it doesn't matter here.
       var distanceFn = (function(child, paren) {
         return this[child].distanceTo(this[paren]);
       }).bind(locations);
@@ -1824,6 +1831,27 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
           }
           $.unblockUI();
         }).bind(this));
+  } else if ('synapse-clustering') {
+
+    if (skeletons.length > 1) $.blockUI();
+
+    try {
+
+      skeletons.forEach(function(skeleton) {
+        var distance_map = skeleton.createSynapseDistanceMap();
+
+        // TODO
+        // Read bandwith parameter from options
+        // Find minima to split at
+  
+      });
+
+    } catch (e) {
+      console.log(e, e.stack);
+      alert(e);
+    }
+
+    $.unblockUI();
   }
 };
 
@@ -2075,6 +2103,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 
 	// Reused for all meshes
 	var material = new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
+  material.opacity = this.skeletonmodel.opacity;
+  material.transparent = material.opacity !== 1;
+
+  console.log(material.opacity, material.transparent);
 
 	// Create edges between all skeleton nodes
 	// and a sphere on the node if radius > 0

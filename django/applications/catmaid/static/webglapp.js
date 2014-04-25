@@ -134,7 +134,7 @@ WebGLApplication.prototype.Options = function() {
   this.color_method = 'none';
   this.connector_color = 'cyan-red';
   this.lean_mode = false;
-  this.synapse_clustering_bandwidth = 500;
+  this.synapse_clustering_bandwidth = 5000;
 };
 
 WebGLApplication.prototype.Options.prototype = {};

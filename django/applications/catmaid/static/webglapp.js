@@ -134,6 +134,7 @@ WebGLApplication.prototype.Options = function() {
   this.color_method = 'none';
   this.connector_color = 'cyan-red';
   this.lean_mode = false;
+  this.synapse_clustering_bandwidth = 500;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -627,6 +628,15 @@ WebGLApplication.prototype.configureParameters = function() {
   dialog.appendChild(document.createTextNode('Toggle lean mode (no synapses, no tags)'));
   dialog.appendChild(document.createElement("br"));
 
+	dialog.appendChild(document.createTextNode('Synapse clustering bandwidth: '));
+	var ibandwidth = document.createElement('input');
+	ibandwidth.setAttribute('type', 'text');
+	ibandwidth.setAttribute('id', 'synapse-clustering-bandwidth');
+	ibandwidth.setAttribute('value', options.synapse_clustering_bandwidth);
+	ibandwidth.setAttribute('size', '7');
+  dialog.appendChild(ibandwidth);
+  dialog.appendChild(document.createTextNode(' nanometers.'));
+
   var submit = this.submit;
 
 	$(dialog).dialog({
@@ -657,8 +667,19 @@ WebGLApplication.prototype.configureParameters = function() {
         options.meshes_color = options.validateOctalString("#meshes-color", options.meshes_color);
         options.lean_mode = blean.checked;
 
+
+        var old_bandwidth = options.synapse_clustering_bandwidth,
+            new_bandwidth = old_bandwidth;
+        try {
+          new_bandwidth = parseInt(ibandwidth.value);
+          if (new_bandwidth > 0) options.synapse_clustering_bandwidth = new_bandwidth;
+          else alert("Synapse clustering bandwidth must be larger than zero.");
+        } catch (e) {
+          alert("Invalid value for synapse clustering bandwidth: '" + ibandwidth.value + "'");
+        }
+
 				space.staticContent.adjust(options, space);
-				space.content.adjust(options, space, submit);
+				space.content.adjust(options, space, submit, old_bandwidth);
 
         space.render();
 
@@ -1103,8 +1124,8 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.newJSONLoader = fun
   return new THREE.JSONLoader(true);
 };
 
-/** Adjust visibility of static content according to the persistent options. */
-WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit) {
+/** Adjust content according to the persistent options. */
+WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit, old_bandwidth) {
 	if (options.show_meshes) {
     if (0 === this.meshes.length) {
 		  this.loadMeshes(space, submit, options.createMeshMaterial());
@@ -1115,6 +1136,11 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
 	}
 
 	this.active_node.setVisible(options.show_active_node);
+
+  if (old_bandwidth !== options.synapse_clustering_bandwidth
+      && 'synapse-clustering' === options.connector_color) {
+    space.updateConnectorColors(options, Object.keys(this.skeletons).map(function(skid) { return this.skeletons[skid]; }, this));
+  }
 };
 
 
@@ -1576,9 +1602,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 */
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClustering = function() {
+  // Correct the scale of the vertices
   var invScale = 1.0 / this.space.scale,
       locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
-    vs[v.node_id] = v.clone().multiplyScalar(invScale); // correct for scale
+    vs[v.node_id] = v.clone().multiplyScalar(invScale);
     return vs;
   }, {});
   
@@ -1588,23 +1615,39 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClust
 /** Returns a map of treenode ID keys and lists of connector IDs as values.
  * Does not differentiate pre and post relationships. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseMap = function() {
-  var o = {};
-
-  this.synapticTypes.forEach(function(type) {
+  return this.synapticTypes.reduce((function(o, type) {
     var vs = this.geometry[type].vertices;
     for (var i=0, l=vs.length; i<l; i+=2) {
-      var treenode_id = vs[i+1].node_id,
-          connector_id = vs[i].node_id,
+      var connector_id = vs[i].node_id,
+          treenode_id = vs[i+1].node_id,
           list = o[treenode_id];
-      if (!list) {
-        o[treenode_id] = [connector_id]
-      } else {
+      if (list) {
         list.push(connector_id);
+      } else {
+        o[treenode_id] = [connector_id]
       }
     }
-  }, this);
+    return o;
+  }).bind(this), {});
+};
 
-  return o;
+/** Returns a map of connector ID keys and a list of treenode ID values.
+ */
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createInverseSynapseMap = function() {
+  return this.synapticTypes.reduce((function(o, type) {
+    var vs = this.geometry[type].vertices;
+    for (var i=0, l=vs.length; i<l; i+=2) {
+      var connector_id = vs[i].node_id,
+          treenode_id = vs[i+1].node_id,
+          list = o[connector_id];
+      if (list) {
+        list.push(connector_id);
+      } else {
+        o[connector_id] = [treenode_id];
+      }
+    }
+    return o;
+  }).bind(this), {});
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = function() {
@@ -1805,7 +1848,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
 
     if (callback) callback();
 
-  } else if ('by-amount') {
+  } else if ('by-amount' === options.connector_color) {
 
     var skids = skeletons.map(function(skeleton) { return skeleton.id; });
     
@@ -1831,21 +1874,17 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
           }
           $.unblockUI();
         }).bind(this));
-  } else if ('synapse-clustering') {
+  } else if ('synapse-clustering' === options.connector_color) {
 
     if (skeletons.length > 1) $.blockUI();
 
     try {
 
       skeletons.forEach(function(skeleton) {
-        var distance_map = skeleton.createSynapseDistanceMap();
-
-        // TODO
-        // Read bandwith parameter from options
-        // Find minima to split at
-  
+        skeleton.completeUpdateConnectorColor(options);
       });
 
+      if (callback) callback();
     } catch (e) {
       console.log(e, e.stack);
       alert(e);
@@ -1880,7 +1919,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
       return 0.16 + 0.34 * (1 - ratio); //  0.5 (cyan) to 0.16 (yellow)
     };
 
-    this.CTYPES.slice(1).forEach(function(type, k) {
+    this.CTYPES.slice(1).forEach(function(type) {
       var partners = json[type];
       if (!partners) return;
       var connectors = Object.keys(partners).reduce(function(o, skid) {
@@ -1894,53 +1933,94 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
           }, 0),
           range = ranges[type];
 
-      // Set colors per-vertex
-
-      var seen = {},
-          seen_materials = {},
-          colors = [],
-          vertices = this.geometry[type].vertices;
-
-      for (var i=0; i<vertices.length; i+=2) {
-        var node_id = vertices[i+1].node_id,
-            connector_id = vertices[i].node_id,
-            value = connectors[connector_id];
-
+      var fnConnectorValue = function(node_id, connector_id) {
+        var value = connectors[connector_id];
         if (!value) value = 1; // connector without partner skeleton
-        
-        var color = seen[value];
+        return value;
+      };
 
-        if (!color) {
-          color = new THREE.Color().setHSL(1 === max ? range(0) : range((value -1) / (max -1)), 1, 0.5);
-          seen[value] = color;
-        }
+      var fnMakeColor = function(value) {
+        return new THREE.Color().setHSL(1 === max ? range(0) : range((value -1) / (max -1)), 1, 0.5);
+      };
 
-        // twice: for treenode and for connector
-        colors.push(color);
-        colors.push(color);
+      this._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
 
-        var mesh = this.synapticSpheres[node_id];
-        if (mesh) {
-          mesh.material.color = color;
-          mesh.material.needsUpdate = true;
-          var material = seen_materials[value];
-          if (!material) {
-            material = mesh.material.clone();
-            material.color = color;
-            seen_materials[value] = material;
-          }
-          mesh.setMaterial(material);
-        }
-      }
+    }, this);
 
-      this.geometry[type].colors = colors;
-      this.geometry[type].colorsNeedUpdate = true;
-      var material = new THREE.LineBasicMaterial({color: 0xffffff, opacity: 1.0, linewidth: 6});
-      material.vertexColors = THREE.VertexColors;
-      material.needsUpdate = true;
-      this.actor[type].material = material;
+  } else if ('synapse-clustering' === options.connector_color) {
+    var sc = this.createSynapseClustering(),
+        density_hill_map = sc.densityHillMap(options.synapse_clustering_bandwidth),
+        clusters = sc.clusterSizes(density_hill_map),
+        colorizer = new Colorizer(),
+        cluster_colors = Object.keys(clusters)
+          .map(function(cid) { return [cid, clusters[cid]]; })
+          .sort(function(a, b) {
+            var la = a[1].length,
+                lb = b[1].length;
+            return la === lb ? 0 : (la > lb ? -1 : 1);
+          })
+          .reduce(function(o, c) {
+            o[c[0]] = colorizer.pickColor();
+            return o;
+          }, {});
+
+    var fnConnectorValue = function(node_id, connector_id) {
+      return density_hill_map[node_id];
+    };
+
+    var fnMakeColor = function(value) {
+      return cluster_colors[value];
+    };
+
+    this.CTYPES.slice(1).forEach(function(type) {
+      this._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
     }, this);
   }
+};
+
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype._colorConnectorsBy = function(type, fnConnectorValue, fnMakeColor) {
+  // Set colors per-vertex
+  var seen = {},
+      seen_materials = {},
+      colors = [],
+      vertices = this.geometry[type].vertices;
+
+  for (var i=0; i<vertices.length; i+=2) {
+    var connector_id = vertices[i].node_id,
+        node_id = vertices[i+1].node_id,
+        value = fnConnectorValue(node_id, connector_id);
+
+    var color = seen[value];
+
+    if (!color) {
+      color = fnMakeColor(value);
+      seen[value] = color;
+    }
+
+    // twice: for treenode and for connector
+    colors.push(color);
+    colors.push(color);
+
+    var mesh = this.synapticSpheres[node_id];
+    if (mesh) {
+      mesh.material.color = color;
+      mesh.material.needsUpdate = true;
+      var material = seen_materials[value];
+      if (!material) {
+        material = mesh.material.clone();
+        material.color = color;
+        seen_materials[value] = material;
+      }
+      mesh.setMaterial(material);
+    }
+  }
+
+  this.geometry[type].colors = colors;
+  this.geometry[type].colorsNeedUpdate = true;
+  var material = new THREE.LineBasicMaterial({color: 0xffffff, opacity: 1.0, linewidth: 6});
+  material.vertexColors = THREE.VertexColors;
+  material.needsUpdate = true;
+  this.actor[type].material = material;
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.addCompositeActorToScene = function() {

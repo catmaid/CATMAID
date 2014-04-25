@@ -63,6 +63,7 @@ SelectionTable.prototype.SkeletonModel = function( id, neuronname, color ) {
     this.post_visible = true;
     this.text_visible = false;
     this.color = color;
+    this.opacity = 1; // from 0 to 1
 };
 
 SelectionTable.prototype.SkeletonModel.prototype = {};
@@ -80,6 +81,7 @@ SelectionTable.prototype.SkeletonModel.prototype.clone = function() {
   m.pre_visible = this.pre_visible;
   m.post_visible = this.post_visible;
   m.text_visible = this.text_visible;
+  m.opacity = this.opacity;
   return m;
 };
 

@@ -2186,8 +2186,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
   material.opacity = this.skeletonmodel.opacity;
   material.transparent = material.opacity !== 1;
 
-  console.log(material.opacity, material.transparent);
-
 	// Create edges between all skeleton nodes
 	// and a sphere on the node if radius > 0
 	nodes.forEach(function(node) {

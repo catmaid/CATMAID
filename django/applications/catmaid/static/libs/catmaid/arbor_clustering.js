@@ -272,3 +272,35 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
 
   return density_hill_map;
 };
+
+
+SynapseClustering.prototype._clusters = function(density_hill_map, newEntryFn, appendFn) {
+  return Object.keys(density_hill_map).reduce(function(o, treenode_id) {
+    var cluster_id = density_hill_map[treenode_id],
+        cluster = o[cluster_id];
+    if (cluster) o[cluster_id] = appendFn(cluster, treenode_id);
+    else o[cluster_id] = newEntryFn(treenode_id);
+    return o;
+  }, {});
+};
+
+/** Given a density_hill_map computed with densityHillMap(lambda),
+ * return a map of cluster ID vs array of treenode IDs.
+ */
+SynapseClustering.prototype.clusters = function(density_hill_map) {
+  return this._clusters(density_hill_map,
+                        function(treenode_id) { return [treenode_id]; },
+                        function(entry, treenode_id) {
+                          entry.push(treenode_id);
+                          return entry;
+                        });
+};
+
+/** Given a density_hill_map computed with densityHillMap(lambda),
+ * return a map of cluster ID vs cluster size (number of treenode IDs labeled).
+ */
+SynapseClustering.prototype.clusterSizes = function(density_hill_map) {
+  return this._clusters(density_hill_map,
+                        function(treenode_id) { return 1; },
+                        function(entry, treenode_id) { return entry + 1; });
+};

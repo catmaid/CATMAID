@@ -70,7 +70,8 @@ WebGLApplication.prototype.highlight = function(skeleton_id) {
 
 WebGLApplication.prototype.resizeView = function(w, h) {
   if (!this.space) {
-    this.init(w, h);
+    // WebGLView has not been initialized, can't resize!
+    return;
   }
 
   var canvasWidth = w,

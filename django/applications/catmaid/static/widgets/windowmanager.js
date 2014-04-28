@@ -209,11 +209,20 @@ CMWRootNode.prototype.constructor = CMWRootNode;
 
 CMWRootNode.prototype.getRootNode = function(){ return this; }
 
+/**
+ * Closes all children of the root node. Because closing one node can
+ * implicitly cause the closing of other windows (e.g. if a project is
+ * destroyed), each window to close is fetched one after the other.
+ * This prevents closing a window object twice.
+ */
 CMWRootNode.prototype.closeAllChildren = function()
 {
 	var windows = this.getWindows();
-	for ( var i = 0; i < windows.length; ++i )
-		windows[ i ].close();
+	while (windows.length > 0) {
+		windows[0].close();
+		// Refresh list of windows still open
+		windows = this.getWindows();
+	}
 	return;
 }
 

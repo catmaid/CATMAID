@@ -539,8 +539,14 @@ var WindowMaker = new function()
     canvas.style.backgroundColor = "#000000";
     container.appendChild(canvas);
 
-
-    // addListener(win, container);
+    // Add window to DOM, init WebGLView (requires element in DOM) and
+    // create a staging list. The listeners are added last to prevent
+    // the execution of the RESIZE handler before the canvas is
+    // initialized.
+    addLogic(win);
+    WA.init( 800, 600, canvas.getAttribute("id") );
+    // Create a Selection Table, preset as the sync target
+    createStagingListWindow( win, WA.getName() );
 
     win.addListener(
       function(callingWindow, signal) {
@@ -579,13 +585,7 @@ var WindowMaker = new function()
         return true;
       });
 
-
-    addLogic(win);
-
-    // Create a Selection Table, preset as the sync target
-    createStagingListWindow( win, WA.getName() );
-
-    WA.init( 800, 600, canvas.getAttribute("id") );
+    // Resize WebGLView after staging list has been added
     win.callListeners( CMWWindow.RESIZE );
 
     SkeletonListSources.updateGUI();

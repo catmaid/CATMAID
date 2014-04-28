@@ -206,7 +206,7 @@
 				<div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#ymap" /></p></div>
 				<div id="sliders_box"></div>
 				<div class="box" id="zoom_level_box"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
-				<div class="box"><p>display reference lines&nbsp;</p><p><input type="checkbox" id="displayreflines" name="displayreflines" checked="checked" /></p></div>
+				<div class="box"><p><input type="checkbox" id="displayreflines" name="displayreflines" checked="checked" /></p><p><label for="displayreflines">display reference lines</label></p></div>
 				<div class="box_right"><p><a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="">URL to this view</a></p></div>
 				<div class="toolbar_fill"></div>
 			</div>
@@ -274,10 +274,10 @@
 			<div id="toolbar_ontology" class="toolbar" style="display:none">
 				<div id="ontology_workspace" class="box">
 					<p>Work space:&nbsp;</p>
-					<p><input type="radio" name="ontology_space" value="project" checked /></p>
-					<p>&nbsp;project specific</p>
-					<p><input type="radio" name="ontology_space" value="classification" />
-					<p>&nbsp;project independent</p>
+					<p><input type="radio" id="ontology_workspace_project_specific" name="ontology_space" value="project" checked /></p>
+					<p><label for="ontology_workspace_project_specific">&nbsp;project specific</label></p>
+					<p><input type="radio" name="ontology_space" id="ontology_workspace_project_independent" value="classification" />
+					<p><label for="ontology_workspace_project_independent">&nbsp;project independent</label></p>
 				</div>
 				<div class="toolbar_fill"></div>
 			</div>

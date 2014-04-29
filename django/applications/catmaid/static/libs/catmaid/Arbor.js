@@ -159,6 +159,33 @@ Arbor.prototype.allSuccessors = function() {
 	}, {});
 };
 
+/** Return an object with each nodes as keys and arrays of children plus the parent as values, or an empty array for an isolated root node. Runs in O(2n) time.*/
+Arbor.prototype.allNeighbors = function() {
+	var edges = this.edges,
+			nodes = Object.keys(edges); // except the root
+	// Handle corner cases
+	if (0 === nodes.length) {
+		if (this.root) {
+			var a = {};
+			a[this.root] = [];
+			return a;
+		}
+		return {};
+	}
+	return nodes.reduce(function(o, node) {
+		var paren = edges[node], // always exists in well-formed arbors; root node not included in nodes
+		    neighbors = o[node],
+				paren_neighbors = o[paren];
+	  // Add paren as neighbor of node
+	  if (neighbors) neighbors.push(paren);
+		else o[node] = [paren];
+		// Add node as neighbor of parent
+		if (paren_neighbors) paren_neighbors.push(node);
+		else o[paren] = [node];
+		return o;
+	}, {});
+};
+
 /** Find branch and end nodes in O(4*n) time. */
 Arbor.prototype.findBranchAndEndNodes = function() {
 	var edges = this.edges,
@@ -308,6 +335,17 @@ Arbor.prototype.successors = function(node) {
 		if (edges[child] === node) a.push(child);
 		return a;
 	}, []);
+};
+
+/** Returns an array of child nodes plus the parent node in O(n) time.
+ * See also this.allNeighbors() to get them all in one single shot at O(2n) time. */
+Arbor.prototype.neighbors = function(node) {
+	var edges = this.edges,
+			paren = this.edges[node];
+	return Object.keys(edges).reduce(function(a, child) {
+		if (edges[child] === node) a.push(child);
+		return a;
+	}, undefined === paren ? [] : [paren]);
 };
 
 /** Return a new Arbor that has all nodes in the array of nodes to preserve,

@@ -1711,6 +1711,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
       node_weights = distances;
 
+    } else if ('downstream_amount' === options.shading_method) {
+      var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
+        vs[v.node_id] = v;
+        return vs;
+      }, {});
+
+      // NOTE: distances are scaled down by 'scale', but it doesn't matter here.
+      var distanceFn = (function(paren, child) {
+        return this[child].distanceTo(this[paren]);
+      }).bind(locations);
+
+      node_weights = arbor.downstreamAmount(distanceFn, true);
+
     } else if ('active_node_split' === options.shading_method) {
       var atn = SkeletonAnnotations.getActiveNodeId();
       if (arbor.contains(atn)) {

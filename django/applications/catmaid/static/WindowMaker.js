@@ -502,6 +502,7 @@ var WindowMaker = new function()
     shadingMenu.setAttribute("id", "skeletons_shading" + WA.widgetID);
     $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
     $('<option/>', {value : 'active_node_split', text: 'Active node split'}).appendTo(shadingMenu);
+    $('<option/>', {value : 'downstream_amount', text: 'Downstream cable'}).appendTo(shadingMenu);
     $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
     $('<option/>', {value : 'slab_centrality', text: 'Slab centrality'}).appendTo(shadingMenu);
     $('<option/>', {value : 'distance_to_root', text: 'Distance to root'}).appendTo(shadingMenu);

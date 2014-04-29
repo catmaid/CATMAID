@@ -580,3 +580,36 @@ Arbor.prototype.subArbor = function(new_root) {
 
 	return sub;
 };
+
+/** Return a map of node vs amount of arbor downstream of the node,
+ * where the amountFn is a function that takes two arguments: parent and child.
+ * To obtain a map of node vs number of nodes downstream, amountFn is a function
+ * that returns the value 1. For cable, amountFn returns the length of the cable
+ * between parent and child.
+ * If normalize is defined and true, all values are divided by the maximum value,
+ * which is the value at the root node. */
+Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
+	// Iterate partitions from smallest to largest
+	var values = this.partitionSorted().reduce(function(values, partition) {
+		var child = partition[0],
+			  val = 0;
+		values[child] = 0; // a leaf node by definition
+		for (var k=1, l=partition.length; k<l; ++k) {
+			var paren = partition[k],
+			    amount = amountFn(paren, child),
+			    accumulated = values[paren];
+			val += amount + (undefined === accumulated ? 0 : accumulated);
+	    values[paren] = val;
+		}
+		return values;
+	}, {});
+
+	if (normalize) {
+		var max = values[this.root];
+		Object.keys(values).forEach(function(node) {
+			values[node] = values[node] / max;
+		});
+	}
+
+	return values;
+};

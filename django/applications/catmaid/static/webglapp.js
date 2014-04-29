@@ -9,6 +9,8 @@
 var WebGLApplication = function() {
   this.widgetID = this.registerInstance();
   this.registerSource();
+  // Indicates whether init has been called
+  this.initialized = false;
 };
 
 WebGLApplication.prototype = {};
@@ -16,6 +18,9 @@ $.extend(WebGLApplication.prototype, new InstanceRegistry());
 $.extend(WebGLApplication.prototype, new SkeletonSource());
 
 WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
+	if (this.initialized) {
+		return;
+	}
 	this.divID = divID;
 	this.container = document.getElementById(divID);
 	this.stack = project.focusedStack;
@@ -24,6 +29,7 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.options = new WebGLApplication.prototype.OPTIONS.clone();
 	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.scale);
   this.updateActiveNodePosition();
+	this.initialized = true;
 };
 
 WebGLApplication.prototype.getName = function() {
@@ -70,7 +76,8 @@ WebGLApplication.prototype.highlight = function(skeleton_id) {
 
 WebGLApplication.prototype.resizeView = function(w, h) {
   if (!this.space) {
-    this.init(w, h);
+    // WebGLView has not been initialized, can't resize!
+    return;
   }
 
   var canvasWidth = w,

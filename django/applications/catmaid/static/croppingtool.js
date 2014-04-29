@@ -123,15 +123,18 @@ function CroppingTool() {
 	//! RGB slices/single channel checkbox
 	var rgb_slices_container = create_tb_box();
 	var rgb_slices_p1 = document.createElement("p");
-	rgb_slices_p1.innerHTML = "RGB slices&nbsp;";
+	var rgb_slices_label = document.createElement("label");
+	rgb_slices_label.setAttribute("for", "check_crop_rgb_slices")
+	rgb_slices_label.innerHTML = "RGB slices";
+	rgb_slices_p1.appendChild(rgb_slices_label);
 	this.check_rgb_slices = document.createElement("input");
 	this.check_rgb_slices.setAttribute("type", "checkbox");
 	this.check_rgb_slices.setAttribute("id", "check_crop_rgb_slices");
 	var rgb_slices_p2 = document.createElement("p");
 	rgb_slices_p2.appendChild(this.check_rgb_slices);
 	// fill containers
-	rgb_slices_container.appendChild(rgb_slices_p1);
 	rgb_slices_container.appendChild(rgb_slices_p2);
+	rgb_slices_container.appendChild(rgb_slices_p1);
 	// add container to the toolbar
 	toolbar.insertBefore(rgb_slices_container, toolbar_button);
 	added_elements.push(rgb_slices_container);

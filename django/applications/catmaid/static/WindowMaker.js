@@ -513,7 +513,8 @@ var WindowMaker = new function()
     var colorMenu = document.createElement('select');
     $('<option/>', {value : 'none', text: 'Source', selected: true}).appendTo(colorMenu);
     $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
-    $('<option/>', {value : 'reviewer', text: 'By Reviewer'}).appendTo(colorMenu);
+    $('<option/>', {value : 'all-reviewed', text: 'All Reviewed'}).appendTo(colorMenu);
+    $('<option/>', {value : 'own-reviewed', text: 'Own Reviewed'}).appendTo(colorMenu);
     colorMenu.onchange = WA.updateSkeletonColors.bind(WA, colorMenu);
     buttons.appendChild(colorMenu);
 

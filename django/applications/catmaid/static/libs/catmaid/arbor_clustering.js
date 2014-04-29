@@ -178,6 +178,8 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
 
   var max_density_index = 0;
 
+  // TODO: to remove one array creation for every node, create new function Arbor.allNeighbors. Later, skip the parent when only wanting to use the children.
+  //
   var children = this.arbor.allSuccessors(),
       parents = this.arbor.edges;
 
@@ -215,7 +217,7 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
     for (; index > -1; --index) {
       var treenode_id = partition[index];
 
-      // Give the current node the value of the hill index we're on.
+      // Give the current node the value of the hill index we are on.
       density_hill_map[treenode_id] = density_hill_index;
 
       // See if the current node has multiple neighbors, since leaf nodes are trivially maxima.
@@ -224,44 +226,55 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
         // If a pair of neighbors has a higher density than the current node,
         // the current node is a boundary between the domains of each.
         var self_density = density[treenode_id],
-            delta_density = neighbors.map(function(id) { return density[id] - self_density; });
+            n_over_zero = 0,
+            delta_density = {};
+
+        for (var k=0, l=neighbors.length; k<l; ++k) {
+          var id = neighbors[k];
+          var d = density[id] - self_density;
+          if (d > 0) n_over_zero += 1;
+          delta_density[id] = d;
+        }
 
         // See if more than one neighbor has a delta density over zero (i.e. the current node has a smaller density than two or more of its neighbors).
-        if (delta_density.filter(function(d) { return d > 0; }).length > 1) {
+        if (n_over_zero > 1) {
             
-          // Certain nodes need new hill indices (split_inds)
-          // and others need to adopt whatever index will go into the current node.
-          var split_inds = neighbors.filter(function(id, i) { return delta_density[i] >= 0; }),
-              flow_inds =  neighbors.filter(function(id, i) { return delta_density[i] < 0; });
-
-          // Gradient: the change in density divided by the change in location
-          var distance_to_current = this.distancesToRoot[treenode_id],
-              delta_distance = neighbors.map(function(id) { return Math.abs(this.distancesToRoot[id] - distance_to_current); }, this);
+          // Nodes with delta_density[id] >= 0 will need new hill indices.
+          // Nodes with delta_density[id] < 0 will adopt whatever index goes into the current node.
 
           // First, add as many new indices as needed (usually one, but maybe more)
           // if the node is a minimum at a branch point. Only need them for the
           // children of the current node, since we came from the parent and already gave
           // it an index value.
           var successors = children[treenode_id];
-          var new_hill_seeds = successors.filter(function(id) { return -1 !== split_inds.indexOf(id); });
-
-          new_hill_seeds.forEach(function(id) {
+          for (var k=0, l=successors.length; k<l; ++k) {
+            var id = successors[k];
+            if (delta_density[id] < 0) return;
+            // if delta_density[id] >= 0:
             ++max_density_index;
             density_hill_map[id] = max_density_index;
-          });
+          }
 
-          var steepest_ind;
-          for (var k=0, l=delta_density.length, max=0; k<l; ++k) {
-            var m = delta_density[k] / delta_distance[k];
+          // Gradient: the change in density divided by the change in location
+          var distance_to_current = this.distancesToRoot[treenode_id],
+              steepest_id;
+
+          for (var k=0, l=neighbors.length, max=Number.MIN_VALUE; k<0; ++k) {
+            var id = neighbors[k],
+                m = delta_density[id] / Math.abs(this.distancesToRoot[id] - distance_to_current);
             if (m > max) {
               max = m;
-              steepest_ind = k;
+              steepest_id = id;
             }
           }
 
-          var steepest = density_hill_map[neighbors[steepest_ind]];
+          var steepest = density_hill_map[steepest_id];
           density_hill_map[treenode_id] = steepest;
-          flow_inds.forEach(function(id) { density_hill_map[id] = steepest; });
+
+          for (var k=0, l=neighbors.length; k<l; ++k) {
+            var id = neighbors[k];
+            if (delta_density[id] < 0) density_hill_map[id] = steepest;
+          }
 
           density_hill_index = density_hill_map[partition[index -1]]; // Array index can't go lower than zero, because the node at 0 is an end node, which does not have more than one neighbors.
         }

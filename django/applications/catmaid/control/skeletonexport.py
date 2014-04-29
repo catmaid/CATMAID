@@ -90,7 +90,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
     name = row[0]
 
     if all_field:
-        added_fields = ', creation_time, edition_time, review_time'
+        added_fields = ', creation_time, edition_time'
     else:
         added_fields = ''
 
@@ -101,11 +101,14 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
           WHERE skeleton_id = %s
         ''' % (added_fields, skeleton_id) )
 
-    # array of properties: id, parent_id, user_id, reviewer_id, x, y, z, radius, confidence
+    # array of properties: id, parent_id, user_id, x, y, z, radius, confidence
     nodes = tuple(cursor.fetchall())
 
     tags = defaultdict(list) # node ID vs list of tags
     connectors = []
+
+    # Get all reviews for this skeleton
+    reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
 
     if 0 == lean: # meaning not lean
         # Text tags
@@ -147,9 +150,9 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             for row in cursor.fetchall():
                 x, y, z = imap(float, row[3][1:-1].split(','))
                 connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
-            return name, nodes, tags, connectors
+            return name, nodes, tags, connectors, reviews
 
-    return name, nodes, tags, connectors
+    return name, nodes, tags, connectors, reviews
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

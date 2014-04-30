@@ -96,7 +96,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
     # Fetch all nodes, with their tags if any
     cursor.execute(
-        '''SELECT id, parent_id, user_id, reviewer_id, (location).x, (location).y, (location).z, radius, confidence %s
+        '''SELECT id, parent_id, user_id, (location).x, (location).y, (location).z, radius, confidence %s
           FROM treenode
           WHERE skeleton_id = %s
         ''' % (added_fields, skeleton_id) )
@@ -129,13 +129,13 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
         if with_connectors:
             if all_field:
-                added_fields = ', c.creation_time, c.review_time'
+                added_fields = ', c.creation_time'
             else:
                 added_fields = ''
 
             # Fetch all connectors with their partner treenode IDs
             cursor.execute(
-                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location, c.reviewer_id %s
+                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location %s
                     FROM treenode_connector tc,
                          connector c,
                          relation r
@@ -149,7 +149,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
                 x, y, z = imap(float, row[3][1:-1].split(','))
-                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
+                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z))
             return name, nodes, tags, connectors, reviews
 
     return name, nodes, tags, connectors, reviews

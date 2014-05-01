@@ -99,7 +99,7 @@ def list_treenode_table(request, project_id=None):
 
             fields = ['tid', 'type', '"treenode"."labels"', 'confidence',
                       'x', 'y', 'z', '"treenode"."section"', 'radius',
-                      'username', 'last_modified', 'last_reviewer']
+                      'username', 'last_modified']
             # TODO type field not supported.
             sorting_index = [int(request.POST.get('iSortCol_%d' % d)) \
                 for d in range(column_count)]
@@ -125,7 +125,6 @@ def list_treenode_table(request, project_id=None):
                     'y': '("treenode"."location")."y"',
                     'z': '("treenode"."location")."z"',
                     'username': '"auth_user"."username"',
-                    'last_reviewer': '"treenode"."reviewer_id"',
                     'last_modified': 'to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\')'
                 }) \
             .distinct()

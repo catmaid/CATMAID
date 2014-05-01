@@ -47,3 +47,56 @@ def get_review_count(skeleton_ids):
         reviews[row[0]][row[1]] = row[2]
 
     return reviews
+
+def get_review_status(skeleton_ids, user_ids=None):
+    """ Returns a dictionary that maps skeleton IDs to their review
+    status as a value between 0 and 100 (integers). If <user_ids>
+    evaluates to false a union review is returned. Otherwise a list
+    of user IDs is expected to create a review status for a sub-union
+    or a single user.
+    """
+    cursor = connection.cursor()
+
+    class Skeleton:
+        num_nodes = 0
+        num_reviewed = 0
+    skeletons = defaultdict(Skeleton)
+
+    # Count nodes of each skeleton
+    cursor.execute('''
+    SELECT skeleton_id, count(skeleton_id)
+    FROM treenode
+    WHERE skeleton_id IN (%s)
+    GROUP BY skeleton_id
+    ''' % ",".join(str(skid) for skid in skeleton_ids))
+    for row in cursor.fetchall():
+        skeletons[row[0]].num_nodes = row[1]
+
+    # Optionally, add a user filter
+    if user_ids:
+        # Count number of nodes reviewed by a certain set of users,
+        # per skeleton.
+        user_filter = " AND reviewer_id IN (%s)" % \
+            ",".join(str(uid) for uid in user_ids)
+    else:
+        # Count total number of reviewed nodes per skeleton, regardless
+        # of reviewer.
+        user_filter = ""
+
+    cursor.execute('''
+    SELECT skeleton_id, count(skeleton_id)
+    FROM (SELECT skeleton_id, treenode_id
+          FROM review
+          WHERE skeleton_id IN (%s)%s
+          GROUP BY skeleton_id, treenode_id) AS sub
+    GROUP BY skeleton_id
+    ''' % (",".join(str(skid) for skid in skeleton_ids), user_filter))
+    for row in cursor.fetchall():
+        skeletons[row[0]].num_reviewed = row[1]
+
+    status = {}
+    for skid, s in skeletons.iteritems():
+        ratio = int(100 * s.num_reviewed / s.num_nodes)
+        status[skid] = ratio
+
+    return status

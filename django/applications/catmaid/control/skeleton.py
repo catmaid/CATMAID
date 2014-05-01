@@ -9,7 +9,7 @@ from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query
 from catmaid.control.neuron_annotations import _annotate_entities
 from catmaid.control.neuron_annotations import _update_neuron_annotations
-from catmaid.control.review import get_treenodes_to_reviews
+from catmaid.control.review import get_treenodes_to_reviews, get_review_status
 from catmaid.control.treenode import _create_interpolated_treenode
 from collections import defaultdict
 
@@ -601,49 +601,7 @@ def review_status(request, project_id=None):
     as a value between 0 and 100 (integers). """
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
     user_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('user_ids['))
-    cursor = connection.cursor()
-
-    class Skeleton:
-        num_nodes = 0
-        num_reviewd = 0
-    skeletons = defaultdict(Skeleton)
-
-    # Count nodes of each skeleton
-    cursor.execute('''
-    SELECT skeleton_id, count(skeleton_id)
-    FROM treenode
-    WHERE skeleton_id IN (%s)
-    GROUP BY skeleton_id
-    ''' % ",".join(str(skid) for skid in skeleton_ids))
-    for row in cursor.fetchall():
-        skeletons[row[0]].num_nodes = row[1]
-
-    # Optionally, add a user filter
-    if user_ids:
-        # Count number of nodes reviewed by a certain set of users,
-        # per skeleton.
-        user_filter = " AND reviewer_id IN (%s)" % \
-            ",".join(str(uid) for uid in user_ids)
-    else:
-        # Count total number of reviewed nodes per skeleton, regardless
-        # of reviewer.
-        user_filter = ""
-
-    cursor.execute('''
-    SELECT skeleton_id, count(skeleton_id)
-    FROM (SELECT skeleton_id, treenode_id
-          FROM review
-          WHERE skeleton_id IN (%s)%s
-          GROUP BY skeleton_id, treenode_id) AS sub
-    GROUP BY skeleton_id
-    ''' % (",".join(str(skid) for skid in skeleton_ids), user_filter))
-    for row in cursor.fetchall():
-        skeletons[row[0]].num_reviewed = row[1]
-
-    status = {}
-    for skid, s in skeletons.iteritems():
-        ratio = int(100 * s.num_reviewed / s.num_nodes)
-        status[skid] = ratio
+    status = get_review_status(skeleton_ids, user_ids)
 
     return HttpResponse(json.dumps(status))
 

@@ -912,13 +912,13 @@ def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-def fetch_treenodes(request, skeleton_id=None, with_reviewer=None):
-    """ Fetch the topology only, optionally with the reviewer ID. """
+def fetch_treenodes(request, skeleton_id=None):
+    """ Fetch the topology only. """
     cursor = connection.cursor()
     cursor.execute('''
-    SELECT id, parent_id %s
+    SELECT id, parent_id
     FROM treenode
     WHERE skeleton_id = %s
-    ''' % (', reviewer_id' if with_reviewer else '', int(skeleton_id)))
+    ''' % int(skeleton_id))
     return HttpResponse(json.dumps(tuple(cursor.fetchall())))
 

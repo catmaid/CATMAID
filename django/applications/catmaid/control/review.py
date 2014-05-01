@@ -2,6 +2,8 @@ from collections import defaultdict
 
 from catmaid.models import Review
 
+from django.db import connection
+
 
 def get_treenodes_to_reviews(treenode_ids=None, skeleton_ids=None,
                              umap=lambda r: r):
@@ -26,3 +28,22 @@ def get_treenodes_to_reviews(treenode_ids=None, skeleton_ids=None,
         treenode_to_reviews[tid].append(umap(rid))
 
     return treenode_to_reviews
+
+def get_review_count(skeleton_ids):
+    """ Returns a dictionary that maps skelton IDs to dictonaries that map
+    user_ids to a review count for this particular skeleton.
+    """
+    # Count nodes that have been reviewed by each user in each partner skeleton
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT skeleton_id, reviewer_id, count(skeleton_id)
+    FROM review
+    WHERE skeleton_id IN (%s)
+    GROUP BY reviewer_id, skeleton_id
+    ''' % ",".join(str(skid) for skid in skeleton_ids))
+    # Build dictionary
+    reviews = defaultdict(lambda: defaultdict(int))
+    for row in cursor.fetchall():
+        reviews[row[0]][row[1]] = row[2]
+
+    return reviews

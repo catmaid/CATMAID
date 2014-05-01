@@ -451,7 +451,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         this.append($('<td />').addClass('syncount').text(count));
       }, row);
     }
-    var average = (100 * total_reviewed / total_node_count).toFixed(0) | 0;
+    var average = Math.floor(100 * total_reviewed / total_node_count) | 0;
     row.append( $('<td />').text(average + "%")
         .css('background-color', getBackgroundColor(average)));
     row.append( $('<td />').text(total_node_count));
@@ -558,8 +558,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       }
 
       // Cell with percent reviewed of partner neuron
-      var pReviewed = parseInt((100 * getNrReviews([partner], reviewFilter) /
-          partner.num_nodes).toFixed(0));
+      var pReviewed = parseInt(Math.floor((100 *
+          getNrReviews([partner], reviewFilter) / partner.num_nodes)));
       var td = document.createElement('td');
       td.appendChild(document.createTextNode(pReviewed + "%"));
       td.style.backgroundColor = getBackgroundColor(pReviewed);

@@ -836,7 +836,8 @@ var WindowMaker = new function()
     var color = document.createElement('select');
     color.setAttribute('id', 'graph_color_choice' + CGW.widgetID);
     color.options.add(new Option('source', 'source'));
-    color.options.add(new Option('review status', 'review'));
+    color.options.add(new Option('review status (union)', 'union-review'));
+    color.options.add(new Option('review status (own)', 'own-review'));
     color.options.add(new Option('input/output', 'I/O'));
     color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
     color.options.add(new Option('circles of hell', 'circles_of_hell')); // inspired by Tom Jessell's comment

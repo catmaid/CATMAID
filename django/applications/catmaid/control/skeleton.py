@@ -9,6 +9,7 @@ from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query
 from catmaid.control.neuron_annotations import _annotate_entities
 from catmaid.control.neuron_annotations import _update_neuron_annotations
+from catmaid.control.review import get_treenodes_to_reviews
 from catmaid.control.treenode import _create_interpolated_treenode
 from collections import defaultdict
 
@@ -912,13 +913,23 @@ def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-def fetch_treenodes(request, skeleton_id=None):
-    """ Fetch the topology only. """
+def fetch_treenodes(request, project_id=None, skeleton_id=None, with_reviewers=None):
+    """ Fetch the topology only, optionally with the reviewer IDs. """
+    skeleton_id = int(skeleton_id)
+
     cursor = connection.cursor()
     cursor.execute('''
     SELECT id, parent_id
     FROM treenode
     WHERE skeleton_id = %s
-    ''' % int(skeleton_id))
-    return HttpResponse(json.dumps(tuple(cursor.fetchall())))
+    ''' % skeleton_id)
+
+    if with_reviewers:
+        reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
+        treenode_data = tuple([r[0], r[1], reviews.get(r[0], [])] \
+                for r in cursor.fetchall())
+    else:
+        treenode_data = tuple(cursor.fetchall())
+
+    return HttpResponse(json.dumps(treenode_data))
 

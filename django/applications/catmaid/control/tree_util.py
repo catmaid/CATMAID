@@ -214,13 +214,13 @@ def lazy_load_trees(skeleton_ids, node_properties):
             skid = t[2]
             tree = DiGraph()
 
-        props = {k: v for k,v in izip(props, islice(t, 3, 3 + len(props)))}
+        fields = {k: v for k,v in izip(props, islice(t, 3, 3 + len(props)))}
 
         # Hack: why doesn't django parse well the location?
-        loc = props.get('location')
+        loc = fields.get('location')
         if loc:
-            props['location'] = Double3D(*(imap(float, loc[1:-1].split(','))))
-        tree.add_node(t[0], props)
+            fields['location'] = Double3D(*(imap(float, loc[1:-1].split(','))))
+        tree.add_node(t[0], fields)
 
         if t[1]:
             # From child to parent

@@ -7,7 +7,7 @@ from django.db.models import Count
 from django.db import connection
 
 from catmaid.control.authentication import requires_user_role
-from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole
+from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, Review
 
 
 def _process(query, minus1name):
@@ -185,17 +185,15 @@ def stats_user_history(request, project_id=None):
         'date': stat['date'],
         'count': stat['count']} for stat in connector_stats]
 
-    tree_reviewed_nodes = Treenode.objects \
+    tree_reviewed_nodes = Review.objects \
         .filter(
-            project=project_id,
+            treenode__project_id=project_id,
             review_time__range=(start_date, end_date)) \
-        .select_related('user') \
-        .exclude(reviewer_id=-1) \
         .extra(select={
-            'date': 'to_char("treenode"."review_time", \'YYYYMMDD\')'}) \
+            'date': 'to_char("review"."review_time", \'YYYYMMDD\')'}) \
         .order_by('date') \
         .values('reviewer_id', 'date') \
-        .annotate(count = Count('id'))
+        .annotate(count = Count('treenode'))
 
     for di in treenode_stats:
         stats_table[di['username']][di['date']]['new_treenodes'] = di['count']

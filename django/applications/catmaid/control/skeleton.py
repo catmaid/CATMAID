@@ -473,8 +473,10 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     # Count total number of reviewed nodes per skeleton
     cursor.execute('''
     SELECT skeleton_id, count(skeleton_id)
-    FROM review
-    WHERE skeleton_id IN (%s)
+    FROM (SELECT skeleton_id, treenode_id
+          FROM review
+          WHERE skeleton_id IN (%s)
+          GROUP BY skeleton_id, treenode_id) AS sub
     GROUP BY skeleton_id
     ''' % skids_string) # no need to sanitize
     for row in cursor.fetchall():

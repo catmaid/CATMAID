@@ -597,27 +597,50 @@ def review_status(request, project_id=None):
     """ Return the review status for each skeleton in the request
     as a value between 0 and 100 (integers). """
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    user_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('user_ids['))
     cursor = connection.cursor()
+
+    class Skeleton:
+        num_nodes = 0
+        num_reviewd = 0
+    skeletons = defaultdict(Skeleton)
+
+    # Count nodes of each skeleton
     cursor.execute('''
-    SELECT skeleton_id, reviewer_id, count(*)
+    SELECT skeleton_id, count(skeleton_id)
     FROM treenode
     WHERE skeleton_id IN (%s)
-    GROUP BY skeleton_id, reviewer_id
+    GROUP BY skeleton_id
     ''' % ",".join(str(skid) for skid in skeleton_ids))
-
-    s = defaultdict(dict)
     for row in cursor.fetchall():
-        s[row[0]][row[1]] = row[2]
+        skeletons[row[0]].num_nodes = row[1]
+
+    # Optionally, add a user filter
+    if user_ids:
+        # Count number of nodes reviewed by a certain set of users,
+        # per skeleton.
+        user_filter = " AND reviewer_id IN (%s)" % \
+            ",".join(str(uid) for uid in user_ids)
+    else:
+        # Count total number of reviewed nodes per skeleton, regardless
+        # of reviewer.
+        user_filter = ""
+
+    cursor.execute('''
+    SELECT skeleton_id, count(skeleton_id)
+    FROM (SELECT skeleton_id, treenode_id
+          FROM review
+          WHERE skeleton_id IN (%s)%s
+          GROUP BY skeleton_id, treenode_id) AS sub
+    GROUP BY skeleton_id
+    ''' % (",".join(str(skid) for skid in skeleton_ids), user_filter))
+    for row in cursor.fetchall():
+        skeletons[row[0]].num_reviewed = row[1]
 
     status = {}
-    for skid, reviewers in s.iteritems():
-        pending = reviewers.get(-1, 0)
-        if 0 == pending:
-            status[skid] = 100
-        elif pending > 0 and 1 == len(reviewers):
-            status[skid] = 0
-        else:
-            status[skid] = int(100 * (1 - (float(pending) / sum(reviewers.itervalues()))))
+    for skid, s in skeletons.iteritems():
+        ratio = int(100 * s.num_reviewed / s.num_nodes)
+        status[skid] = ratio
 
     return HttpResponse(json.dumps(status))
 

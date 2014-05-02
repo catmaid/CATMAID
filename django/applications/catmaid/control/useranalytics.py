@@ -83,12 +83,12 @@ def eventTimes(user_id, start_date, end_date):
     cns = Connector.objects.filter(
         editor_id = user_id,
         edition_time__range=dr).values_list('edition_time', flat=True)
-    rns = Treenode.objects.filter(
+    rns = Review.objects.filter(
         reviewer_id = user_id,
         review_time__range=dr).values_list('review_time', flat=True)
 
     return list(tns), list(cns), list(rns)
-    
+
 def eventsPerInterval(times, start_date, end_date, interval='day'):
     """ Creates a histogram of how many events fall into all intervals between
     <start_data> and <end_date>. The interval type can be day, hour and

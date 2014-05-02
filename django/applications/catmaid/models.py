@@ -414,8 +414,6 @@ class Location(UserFocusedModel):
         db_table = "location"
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
     location = Double3DField()
-    reviewer_id = models.IntegerField(default=-1)
-    review_time = models.DateTimeField()
 
 class Treenode(UserFocusedModel):
     class Meta:
@@ -426,8 +424,6 @@ class Treenode(UserFocusedModel):
     radius = models.FloatField()
     confidence = models.IntegerField(default=5)
     skeleton = models.ForeignKey(ClassInstance)
-    reviewer_id = models.IntegerField(default=-1)
-    review_time = models.DateTimeField()
 
 
 class Connector(UserFocusedModel):
@@ -436,8 +432,6 @@ class Connector(UserFocusedModel):
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
     location = Double3DField()
     confidence = models.IntegerField(default=5)
-    reviewer_id = models.IntegerField(default=-1)
-    review_time = models.DateTimeField()
 
 
 class TreenodeClassInstance(UserFocusedModel):

@@ -127,7 +127,6 @@ def skeleton_graph(connection, project_id, skeleton_id):
     # 3: connector.location.x
     # 4: connector.location.y
     # 5: connector.location.z
-    # 6: connector.reviewer_id
     relations = {0: 'presynaptic_to',
                  1: 'postsynaptic_to'}
     for synapse in d[3]:

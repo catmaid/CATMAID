@@ -48,13 +48,16 @@ def get_review_count(skeleton_ids):
 
     return reviews
 
-def get_review_status(skeleton_ids, user_ids=None):
+def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
     """ Returns a dictionary that maps skeleton IDs to their review
     status as a value between 0 and 100 (integers). If <user_ids>
     evaluates to false a union review is returned. Otherwise a list
     of user IDs is expected to create a review status for a sub-union
     or a single user.
     """
+    if user_ids and excluding_user_ids:
+        raise ValueError("user_ids and excluding_user_ids can't be used at the same time")
+
     cursor = connection.cursor()
 
     class Skeleton:
@@ -78,6 +81,11 @@ def get_review_status(skeleton_ids, user_ids=None):
         # per skeleton.
         user_filter = " AND reviewer_id IN (%s)" % \
             ",".join(str(uid) for uid in user_ids)
+    elif excluding_user_ids:
+        # Count number of nodes reviewed by all users excluding the
+        # specified ones, per skeleton.
+        user_filter = " AND reviewer_id NOT IN (%s)" % \
+            ",".join(str(uid) for uid in excluding_user_ids)
     else:
         # Count total number of reviewed nodes per skeleton, regardless
         # of reviewer.

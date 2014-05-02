@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
-from catmaid.models import Treenode, Log, Relation, TreenodeConnector, UserRole
+from catmaid.control.review import get_review_count, get_review_status
+from catmaid.models import Treenode, Log, Relation, TreenodeConnector, UserRole, Review
 from catmaid.fields import Double3D
 from catmaid.control.authentication import requires_user_role
 from django.db.models import Count
@@ -28,7 +29,7 @@ def _find_nearest(tree, nodes, loc1):
 def _parse_location(loc):
     return Double3D(*(imap(float, loc[1:-1].split(','))))
 
-def _evaluate_epochs(epochs, skeleton_id, tree, relations):
+def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
     """ Evaluate each epoch:
     1. Detect merges done by the reviewer: one of the two nodes is edited by the reviewer within the review epoch (but not both: could be a reroot then), with a corresponding join_skeleton entry in the log table. Perhaps the latter is enough, if the x,y,z of the log corresponds to that of the node (plus/minus a tiny bit, may have moved).
     2. Detect additions by the reviewer (a kind of merge), where the reviewer's node is newer than the other node, and it was created within the review epoch. These nodes would have been created and reviewed by the reviewer within the review epoch.
@@ -81,8 +82,9 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
 
         for node in nodes:
             props = tree.node[node]
-            # Find out review date range for this epoch
-            tr = props['review_time']
+            # Find out review date range for this epoch, based on most recent
+            # reviews
+            tr = reviews[node][0].review_time
             start_date = min(start_date, tr)
             end_date = max(end_date, tr)
             # Count nodes created by each user
@@ -201,46 +203,54 @@ def _evaluate_epochs(epochs, skeleton_id, tree, relations):
 
     return epoch_ops
 
-def _split_into_epochs(skeleton_id, tree, max_gap):
+def _split_into_epochs(skeleton_id, tree, reviews, max_gap):
     """ Split the arbor into one or more review epochs.
     An epoch is defined as a continuous range of time containing gaps
     of up to max_gap (e.g. 3 days) and fully reviewed by the same reviewer.
     Treenodes reviewed within an epoch may not form a coherent subset of the arbor,
     given that different subsets of the arbor may have been joined at a later time. """
 
-    # Sort nodes by date
+    # Sort nodes by date of most recent review (first in list)
     def get_review_time(e):
-        return e[1]['review_time']
+        return reviews[e[0]][0].review_time
     nodes = sorted(tree.nodes_iter(data=True), key=get_review_time)
 
     # Grab the oldest node
     oldest = nodes[0]
-    last = oldest[1] # props of first node 
+    last_id = oldest[0] # id of first node
+    last = oldest[1] # props of first node
 
     # First epoch contains the oldest node
-    epoch = [oldest[0]] # id of first node
+    epoch = [last_id]
+
+    # Most recent review of first node
+    last_review = reviews[last_id][0]
 
     # Collect epochs
-    epochs = [(last['reviewer_id'], epoch)]
+    epochs = [(last_review.reviewer_id, epoch)]
 
     # Iterate from second-oldest node forward in time
     for node, props in nodes:
-        if props['reviewer_id'] == last['reviewer_id'] and props['review_time'] - last['review_time'] < max_gap:
+        # Most recent review of current node
+        node_review = reviews[node][0]
+        # Add to current epoch if same reviewer and we are within max_gap
+        if node_review.reviewer_id == last_review.reviewer_id and \
+                node_review.review_time - last_review.review_time < max_gap:
             epoch.append(node)
         else:
             # Start new epoch
             epoch = [node]
-            epochs.append((props['reviewer_id'], epoch))
+            epochs.append((node_review.reviewer_id, epoch))
 
-        last = props
+        last_review = reviews[node][0]
 
     return epochs
 
 
-def _evaluate_arbor(user_id, skeleton_id, tree, relations, max_gap):
+def _evaluate_arbor(user_id, skeleton_id, tree, reviews, relations, max_gap):
     """ Split the arbor into review epochs and then evaluate each independently. """
-    epochs = _split_into_epochs(skeleton_id, tree, max_gap)
-    epoch_ops = _evaluate_epochs(epochs, skeleton_id, tree, relations)
+    epochs = _split_into_epochs(skeleton_id, tree, reviews, max_gap)
+    epoch_ops = _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations)
     return epoch_ops
 
 
@@ -263,18 +273,12 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
     if not skeleton_ids:
         return None
 
-    # Find the subset of fully reviewed skeletons
-    ts = Treenode.objects.filter(skeleton__in=skeleton_ids) \
-         .values_list('skeleton', 'reviewer_id') \
-         .annotate(Count('reviewer_id'))
-
-    review_status = defaultdict(partial(defaultdict, int))
-    for skid, reviewer_id, count in ts:
-        review_status[skid][reviewer_id] = count
+    # Find the subset of fully reviewed (union without evaluated user) skeletons
+    review_status = get_review_status(skeleton_ids)
 
     not_fully_reviewed = set()
-    for skid, reviewers in review_status.iteritems():
-        if -1 in reviewers:
+    for skid, status in review_status.iteritems():
+        if status != 100:
             not_fully_reviewed.add(skid)
 
     skeleton_ids = skeleton_ids - not_fully_reviewed
@@ -282,10 +286,22 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
     if not skeleton_ids:
         return None
 
+    # Get review information and organize it by skeleton ID and treenode ID
+    reviews = defaultdict(lambda: defaultdict(list))
+    for r in Review.objects.filter(skeleton_id__in=skeleton_ids):
+        reviews[r.skeleton_id][r.treenode_id].append(r)
+
+    # Sort all reviews of all treenodes by review time, most recent first
+    for skid, tid_to_rs in reviews.iteritems():
+        for tid, rs in tid_to_rs.iteritems():
+            rs.sort(key=lambda r: r.review_time)
+            rs.reverse()
+
     relations = dict(Relation.objects.filter(project_id=project_id, relation_name__in=['presynaptic_to', 'postsynaptic_to']).values_list('relation_name', 'id'))
 
     # 2. Load each fully reviewed skeleton one at a time
-    evaluations = {skid: _evaluate_arbor(user_id, skid, tree, relations, max_gap) for skid, tree in lazy_load_trees(skeleton_ids, ('location', 'creation_time', 'user_id', 'reviewer_id', 'review_time', 'editor_id', 'edition_time'))}
+    evaluations = {skid: _evaluate_arbor(user_id, skid, tree, reviews[skid], relations, max_gap) \
+        for skid, tree in lazy_load_trees(skeleton_ids, ('location', 'creation_time', 'user_id', 'editor_id', 'edition_time'))}
 
     # 3. Extract evaluations for the user_id over time
     # Each evaluation contains an instance of EpochOps namedtuple, with members:

@@ -414,8 +414,6 @@ class Location(UserFocusedModel):
         db_table = "location"
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
     location = Double3DField()
-    reviewer_id = models.IntegerField(default=-1)
-    review_time = models.DateTimeField()
 
 class Treenode(UserFocusedModel):
     class Meta:
@@ -426,8 +424,6 @@ class Treenode(UserFocusedModel):
     radius = models.FloatField()
     confidence = models.IntegerField(default=5)
     skeleton = models.ForeignKey(ClassInstance)
-    reviewer_id = models.IntegerField(default=-1)
-    review_time = models.DateTimeField()
 
 
 class Connector(UserFocusedModel):
@@ -436,8 +432,6 @@ class Connector(UserFocusedModel):
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
     location = Double3DField()
     confidence = models.IntegerField(default=5)
-    reviewer_id = models.IntegerField(default=-1)
-    review_time = models.DateTimeField()
 
 
 class TreenodeClassInstance(UserFocusedModel):
@@ -468,6 +462,20 @@ class TreenodeConnector(UserFocusedModel):
     connector = models.ForeignKey(Connector)
     skeleton = models.ForeignKey(ClassInstance)
     confidence = models.IntegerField(default=5)
+
+class Review(models.Model):
+    """ This model represents the review of a user of one particular tree node
+    of a specific skeleton. Technically, the treenode ID is enough to get the
+    skeleton and the project. However, both of them are included for
+    performance reasons (to avoid a join in the database for retrieval).
+    """
+    class Meta:
+        db_table = "review"
+    project = models.ForeignKey(Project)
+    reviewer = models.ForeignKey(User)
+    review_time = models.DateTimeField(default=datetime.now)
+    skeleton = models.ForeignKey(ClassInstance)
+    treenode = models.ForeignKey(Treenode)
 
 class RegionOfInterest(UserFocusedModel):
     class Meta:

@@ -1,14 +1,17 @@
 import json
 import math
+from collections import defaultdict
 from string import upper
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import ProjectStack, Stack, Treenode
+from catmaid.models import TreenodeClassInstance, User, UserRole
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map
+from catmaid.control.review import get_treenodes_to_reviews
 
 
 @requires_user_role(UserRole.Annotate)
@@ -38,13 +41,14 @@ def update_treenode_table(request, project_id=None):
     response_on_error = ''
     try:
         response_on_error = 'Could not find treenode with ID %s.' % treenode_id
-        treenode = get_object_or_404(Treenode, project=project_id, id=treenode_id)
-        response_on_error = 'Could not update %s for treenode with ID %s.' % (property_name, treenode_id)
+        treenode = get_object_or_404(Treenode, project=project_id,
+                                     id=treenode_id)
+        response_on_error = 'Could not update %s for treenode with ID %s.' % \
+            (property_name, treenode_id)
         setattr(treenode, property_name, property_value)
         treenode.user = request.user
         treenode.save()
 
-        # return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
         return HttpResponse(property_value)
 
     except Exception as e:
@@ -81,46 +85,56 @@ def list_treenode_table(request, project_id=None):
                 'iTotalDisplayRecords': 0,
                 'aaData': []}))
         else:
-            response_on_error = 'Could not fetch %s skeleton IDs.' % specified_skeleton_count
-            skeleton_ids = [int(request.POST.get('skeleton_%s' % i, 0)) for i in range(int(specified_skeleton_count))]
+            response_on_error = 'Could not fetch %s skeleton IDs.' % \
+                specified_skeleton_count
+            skeleton_ids = [int(request.POST.get('skeleton_%s' % i, 0)) \
+                for i in range(int(specified_skeleton_count))]
 
         if should_sort:
             column_count = int(request.POST.get('iSortingCols', 0))
-            sorting_directions = [request.POST.get('sSortDir_%d' % d) for d in range(column_count)]
-            sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '', sorting_directions)
+            sorting_directions = [request.POST.get('sSortDir_%d' % d) \
+                for d in range(column_count)]
+            sorting_directions = map(lambda d: \
+                '-' if upper(d) == 'DESC' else '', sorting_directions)
 
-            fields = ['tid', 'type', '"treenode"."labels"', 'confidence', 'x', 'y', 'z', '"treenode"."section"', 'radius', 'username', 'last_modified', 'last_reviewer']
+            fields = ['tid', 'type', '"treenode"."labels"', 'confidence',
+                      'x', 'y', 'z', '"treenode"."section"', 'radius',
+                      'username', 'last_modified']
             # TODO type field not supported.
-            sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]
+            sorting_index = [int(request.POST.get('iSortCol_%d' % d)) \
+                for d in range(column_count)]
             sorting_cols = map(lambda i: fields[i], sorting_index)
 
         response_on_error = 'Could not get the list of treenodes.'
-        t = Treenode.objects.filter(
-            project = project_id,
-            skeleton_id__in = skeleton_ids).extra(
-            tables=['auth_user'],
-            where=[
-                '"treenode"."user_id" = "auth_user"."id"'],
-            select={
-                'tid': '"treenode"."id"',
-                'radius': '"treenode"."radius"',
-                'confidence': '"treenode"."confidence"',
-                'parent_id': '"treenode"."parent_id"',
-                'user_id': '"treenode"."user_id"',
-                'edition_time': '"treenode"."edition_time"',
-                'x': '("treenode"."location")."x"',
-                'y': '("treenode"."location")."y"',
-                'z': '("treenode"."location")."z"',
-                'username': '"auth_user"."username"',
-                'last_reviewer': '"treenode"."reviewer_id"',
-                'last_modified': 'to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\')'
-            }).distinct()
+        t = Treenode.objects \
+            .filter(
+                project=project_id,
+                skeleton_id__in=skeleton_ids) \
+            .extra(
+                tables=['auth_user'],
+                where=[
+                    '"treenode"."user_id" = "auth_user"."id"'],
+                select={
+                    'tid': '"treenode"."id"',
+                    'radius': '"treenode"."radius"',
+                    'confidence': '"treenode"."confidence"',
+                    'parent_id': '"treenode"."parent_id"',
+                    'user_id': '"treenode"."user_id"',
+                    'edition_time': '"treenode"."edition_time"',
+                    'x': '("treenode"."location")."x"',
+                    'y': '("treenode"."location")."y"',
+                    'z': '("treenode"."location")."z"',
+                    'username': '"auth_user"."username"',
+                    'last_modified': 'to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\')'
+                }) \
+            .distinct()
         # Rationale for using .extra():
         # Since we don't use .order_by() for ordering, extra fields are not
         # included in the SELECT statement, and so .distinct() will work as
         # intended. See http://tinyurl.com/dj-distinct
         if should_sort:
-            t = t.extra(order_by=[di + col for (di, col) in zip(sorting_directions, sorting_cols)])
+            t = t.extra(order_by=[di + col \
+                for (di, col) in zip(sorting_directions, sorting_cols)])
 
         if int(display_length) == -1:
             treenodes = list(t[display_start:])
@@ -184,29 +198,36 @@ def list_treenode_table(request, project_id=None):
         # Determine type
         for treenode in treenodes:
             if None == treenode.parent_id:
-                treenode.nodetype = 'R' # Root
+                treenode.nodetype = 'R'  # Root
                 continue
             children = child_count.get(treenode.tid, 0)
             if children == 1:
-                treenode.nodetype = 'S' # Slab
+                treenode.nodetype = 'S'  # Slab
             elif children == 0:
-                treenode.nodetype = 'L' # Leaf
+                treenode.nodetype = 'L'  # Leaf
             elif children > 1:
-                treenode.nodetype = 'B' # Branch
+                treenode.nodetype = 'B'  # Branch
             else:
-                treenode.nodetype = 'X' # Unknown, can never happen
+                treenode.nodetype = 'X'  # Unknown, can never happen
 
         # Now that we've assigned node types, filter based on them:
         if filter_nodetype:
             filter_nodetype = upper(filter_nodetype)
             treenodes = [t for t in treenodes if t.nodetype in filter_nodetype]
 
-        response_on_error = 'Could not retrieve resolution and translation parameters for project.'
-        resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
-        translation = get_object_or_404(ProjectStack, stack=int(stack_id), project=project_id).translation
+        users = dict(User.objects.all().values_list('id', 'username'))
+        users[-1] = "None"  # Rather than AnonymousUser
 
-        users = {u[0]: u[1] for u in User.objects.filter().values_list('id', 'username')}
-        users[-1] = "None" # Rather than AnonymousUser
+        # Get all reviews for the current treenode set
+        treenode_ids = [t.id for t in treenodes]
+        treenode_to_reviews = get_treenodes_to_reviews(treenode_ids,
+            umap=lambda r: users[r])
+
+        response_on_error = 'Could not retrieve resolution and translation ' \
+            'parameters for project.'
+        resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
+        translation = get_object_or_404(ProjectStack,
+            stack=int(stack_id), project=project_id).translation
 
         def formatTreenode(tn):
             row = [str(tn.tid)]
@@ -223,7 +244,7 @@ def list_treenode_table(request, project_id=None):
             row.append(str(tn.radius))
             row.append(tn.username)
             row.append(tn.last_modified)
-            row.append(str(users.get(tn.last_reviewer, "Unknown")))
+            row.append(', '.join(treenode_to_reviews.get(tn.id, ["None"])))
             return row
 
         result = {'iTotalRecords': row_count, 'iTotalDisplayRecords': row_count}

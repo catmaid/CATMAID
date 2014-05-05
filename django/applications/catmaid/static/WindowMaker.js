@@ -304,6 +304,7 @@ var WindowMaker = new function()
           '<tr>' +
             '<th width="60px">action</th>' +
             '<th>name</th>' +
+            '<th>% reviewed</th>' +
             '<th>selected</th>' +
             '<th>pre</th>' +
             '<th>post</th>' +
@@ -315,6 +316,7 @@ var WindowMaker = new function()
           '<tr>' +
             '<td><img src="' + STATIC_URL_JS + 'widgets/themes/kde/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></td>' +
             '<td><input type="button" id="selection-table-sort-by-name' + ST.widgetID + '" value="Sort by name" /></td>' +
+            '<td></td>' +
             '<td><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked /></td>' +
@@ -514,7 +516,8 @@ var WindowMaker = new function()
     var colorMenu = document.createElement('select');
     $('<option/>', {value : 'none', text: 'Source', selected: true}).appendTo(colorMenu);
     $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
-    $('<option/>', {value : 'reviewer', text: 'By Reviewer'}).appendTo(colorMenu);
+    $('<option/>', {value : 'all-reviewed', text: 'All Reviewed'}).appendTo(colorMenu);
+    $('<option/>', {value : 'own-reviewed', text: 'Own Reviewed'}).appendTo(colorMenu);
     colorMenu.onchange = WA.updateSkeletonColors.bind(WA, colorMenu);
     buttons.appendChild(colorMenu);
 
@@ -837,7 +840,8 @@ var WindowMaker = new function()
     var color = document.createElement('select');
     color.setAttribute('id', 'graph_color_choice' + CGW.widgetID);
     color.options.add(new Option('source', 'source'));
-    color.options.add(new Option('review status', 'review'));
+    color.options.add(new Option('review status (union)', 'union-review'));
+    color.options.add(new Option('review status (own)', 'own-review'));
     color.options.add(new Option('input/output', 'I/O'));
     color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
     color.options.add(new Option('circles of hell', 'circles_of_hell')); // inspired by Tom Jessell's comment
@@ -1513,26 +1517,12 @@ var WindowMaker = new function()
         container.style.backgroundColor = "#ffffff";
         content.appendChild(container);
 
-        var reset = document.createElement('input');
-        reset.setAttribute("type", "button");
-        reset.setAttribute("id", "reset_skeleton_review");
-        reset.setAttribute("value", "Reset revisions");
-        reset.onclick = ReviewSystem.resetAllRevisions;
-        contentbutton.appendChild(reset);
-
         var resetOwns = document.createElement('input');
         resetOwns.setAttribute("type", "button");
         resetOwns.setAttribute("id", "reset_skeleton_review_owns");
         resetOwns.setAttribute("value", "Reset own revisions");
         resetOwns.onclick = ReviewSystem.resetOwnRevisions;
         contentbutton.appendChild(resetOwns);
-
-        var resetOthers = document.createElement('input');
-        resetOthers.setAttribute("type", "button");
-        resetOthers.setAttribute("id", "reset_skeleton_review_owns");
-        resetOthers.setAttribute("value", "Reset revisions by others");
-        resetOthers.onclick = ReviewSystem.resetRevisionsByOthers;
-        contentbutton.appendChild(resetOthers);
 
         var cacheImages = document.createElement('input');
         cacheImages.setAttribute("type", "button");

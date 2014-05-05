@@ -946,14 +946,22 @@ CompartmentGraphWidget.prototype.colorBy = function(mode, select) {
     });
     this.removeState('colors');
 
-  } else if ('review' === mode) {
-    // Color by review status like in the connectivity widget:
+  } else if ('union-review' === mode || 'own-review' === mode) {
+    // Color by review status like in the connectivity widget (either
+    // by union or by own reviews):
     // greenish '#6fff5c': fully reviewed
     // orange '#ffc71d': review started
     // redish '#ff8c8c': not reviewed at all
     var cy = this.cy;
+    // Create post data with review parameters. If user_ids isn't specified, a
+    // union status is returned.
+    var postData = {skeleton_ids: this.getSkeletons()};
+    if ('own-review' === mode) {
+      postData['user_ids'] = [session.userid];
+    }
+    // Request review status
     requestQueue.register(django_url + project.id + "/skeleton/review-status", "POST",
-        {skeleton_ids: this.getSkeletons()},
+        postData,
         function(status, text) {
           if (status !== 200) return;
           var json = $.parseJSON(text);

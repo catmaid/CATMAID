@@ -1485,7 +1485,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
 
   // Create skeleton table
   var columns = ['Skeleton ID', 'N nodes', 'N branch nodes', 'N end nodes',
-      'N open end nodes', '% reviewed'];
+      'N open end nodes'];
   var table_header = document.createElement('thead');
   table_header.appendChild(this.create_header_row(columns));
   var skeleton_table_id = 'navigator_skeletonlist_table' + this.navigator.widgetID;
@@ -1530,11 +1530,6 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
           var nodes = json[1],
               tags = json[2],
               arbor = new Arbor(),
-              n_reviewed = nodes.reduce(function(count, row) {
-            if (row[1]) arbor.edges[row[0]] = row[1];
-            else arbor.root = row[1];
-            return count + (row[3] !== -1 ? 1 : 0);
-          }, 0),
               eb = arbor.findBranchAndEndNodes(),
               tagged = ['ends', 'uncertain end', 'not a branch', 'soma'].reduce(function(o, tag) {
                 if (tag in tags) return tags[tag].reduce(function(o, nodeID) { o[nodeID] = true; return o; }, o);
@@ -1551,7 +1546,6 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
             eb.branching.length,
             eb.ends.length + 1, // count the soma
             eb.ends.length + 1 - n_tagged_ends,
-            ((n_reviewed / nodes.length) * 100).toFixed(0) + "%",
           ]);
         });
   };

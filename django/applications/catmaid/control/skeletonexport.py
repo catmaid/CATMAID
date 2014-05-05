@@ -8,6 +8,7 @@ from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control import export_NeuroML_Level3
+from catmaid.control.review import get_treenodes_to_reviews
 
 import networkx as nx
 from tree_util import edge_count_to_root, partition
@@ -89,22 +90,25 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
     name = row[0]
 
     if all_field:
-        added_fields = ', creation_time, edition_time, review_time'
+        added_fields = ', creation_time, edition_time'
     else:
         added_fields = ''
 
     # Fetch all nodes, with their tags if any
     cursor.execute(
-        '''SELECT id, parent_id, user_id, reviewer_id, (location).x, (location).y, (location).z, radius, confidence %s
+        '''SELECT id, parent_id, user_id, (location).x, (location).y, (location).z, radius, confidence %s
           FROM treenode
           WHERE skeleton_id = %s
         ''' % (added_fields, skeleton_id) )
 
-    # array of properties: id, parent_id, user_id, reviewer_id, x, y, z, radius, confidence
+    # array of properties: id, parent_id, user_id, x, y, z, radius, confidence
     nodes = tuple(cursor.fetchall())
 
     tags = defaultdict(list) # node ID vs list of tags
     connectors = []
+
+    # Get all reviews for this skeleton
+    reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
 
     if 0 == lean: # meaning not lean
         # Text tags
@@ -125,13 +129,13 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
         if with_connectors:
             if all_field:
-                added_fields = ', c.creation_time, c.review_time'
+                added_fields = ', c.creation_time'
             else:
                 added_fields = ''
 
             # Fetch all connectors with their partner treenode IDs
             cursor.execute(
-                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location, c.reviewer_id %s
+                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location %s
                     FROM treenode_connector tc,
                          connector c,
                          relation r
@@ -145,10 +149,10 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
                 x, y, z = imap(float, row[3][1:-1].split(','))
-                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
-            return name, nodes, tags, connectors
+                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z))
+            return name, nodes, tags, connectors, reviews
 
-    return name, nodes, tags, connectors
+    return name, nodes, tags, connectors, reviews
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -488,16 +492,24 @@ def skeleton_json(*args, **kwargs):
     return export_extended_skeleton_response(*args, **kwargs)
 
 def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
-    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'location', 'parent_id', 'reviewer_id')
+    """ Returns a list of segments for the requested skeleton. Each segment
+    contains information about the review status of this part of the skeleton.
+    """
+    # Get all treenodes of the requested skeleton
+    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'location', 'parent_id')
+    # Get all reviews for the requested skeleton
+    reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
 
+    # Add each treenode to a networkx graph and attach reviewer information to
+    # it.
     g = nx.DiGraph()
     reviewed = set()
     for t in treenodes:
         loc = Double3D.from_str(t[1])
-        # While at it, send the reviewer ID, which is useful to iterate fwd
+        # While at it, send the reviewer IDs, which is useful to iterate fwd
         # to the first unreviewed node in the segment.
-        g.add_node(t[0], {'id': t[0], 'x': loc.x, 'y': loc.y, 'z': loc.z, 'rid': t[3]})
-        if -1 != t[3]:
+        g.add_node(t[0], {'id': t[0], 'x': loc.x, 'y': loc.y, 'z': loc.z, 'rids': reviews[t[0]]})
+        if reviews[t[0]]:
             reviewed.add(t[0])
         if t[2]: # if parent
             g.add_edge(t[2], t[0]) # edge from parent to child
@@ -523,6 +535,8 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
 
         if len(sequence) > 1:
             sequences.append(sequence)
+
+    # Calculate status
 
     segments = []
     for sequence in sorted(sequences, key=len, reverse=True):

@@ -9,6 +9,7 @@ var SelectionTable = function() {
 
   this.skeletons = [];
   this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
+  this.reviews = {};  // skeleton_id vs review percentage
   this.all_visible = true;
   this.all_synapses_visible = {pre: true, post: true};
   this.selected_skeleton_id = null;
@@ -336,19 +337,34 @@ SelectionTable.prototype.append = function(models) {
     growlAlert("Info", "No skeletons selected!"); // at source
     return;
   }
-  skeleton_ids.forEach(function(skeleton_id) {
-    if (skeleton_id in this.skeleton_ids) {
-      // Update skeleton
-      this.skeletons[this.skeleton_ids[skeleton_id]] = models[skeleton_id];
-      return;
-    }
-    this.skeletons.push(models[skeleton_id]);
-    this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
-  }, this);
 
-  this.gui.update();
+  // Retrieve review status before doing anything else
+  requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
+    {skeleton_ids: skeleton_ids},
+    (function(status, text) {
+      if (200 !== status) return;
+      var json = $.parseJSON(text);
+      if (json.error) {
+        new ErrorDialog(json.error, json.detail).show();
+        return;
+      }
 
-  this.updateLink(models);
+      skeleton_ids.forEach(function(skeleton_id) {
+        if (skeleton_id in this.skeleton_ids) {
+          // Update skeleton
+          this.skeletons[this.skeleton_ids[skeleton_id]] = models[skeleton_id];
+          return;
+        }
+        this.skeletons.push(models[skeleton_id]);
+        this.reviews[skeleton_id] = parseInt(json[skeleton_id]);
+        this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
+      }, this);
+
+
+      this.gui.update();
+
+      this.updateLink(models);
+    }).bind(this));
 };
 
 /** ids: an array of Skeleton IDs. */
@@ -393,6 +409,7 @@ SelectionTable.prototype.removeSkeletons = function(ids) {
 SelectionTable.prototype.clear = function(source_chain) {
   this.skeletons = [];
   this.skeleton_ids = {};
+  this.reviews = {};
   this.gui.clear();
   this.selected_skeleton_id = null;
   this.next_color_index = 0;
@@ -620,6 +637,12 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   rowElement.append(
     $(document.createElement("td")).text( skeleton.baseName + ' #' + skeleton.id )
   );
+
+  // percent reviewed
+  rowElement.append($('<td/>')
+      .text(this.table.reviews[skeleton.id] + "%")
+      .css('background-color',
+          ReviewSystem.getBackgroundColor(this.table.reviews[skeleton.id])));
 
   // show skeleton
   rowElement.append(

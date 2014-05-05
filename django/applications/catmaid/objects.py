@@ -136,9 +136,14 @@ class Skeleton(object):
         # retrieve all nodes of the skeleton
         treenode_qs = Treenode.objects.filter(
             skeleton_id=self.skeleton_id)
+        # retrieve all reviews
+        tid_to_reviews = defaultdict(list)
+        for r in Review.objects.filter(skeleton_id=self.skeleton_id):
+            tid_to_reviews[r.id].append(r)
         # build the networkx graph from it
         graph = nx.DiGraph()
         for e in treenode_qs:
+            reviews = tid_to_reviews[e.id]
             graph.add_node( e.id )
             # TODO: add attributes
             graph.node[e.id] = {
@@ -146,8 +151,8 @@ class Skeleton(object):
                 'creation_time': e.creation_time,
                 'edition_time': e.edition_time,
                 'location': np.array([e.location.x, e.location.y, e.location.z], dtype=np.float32),
-                'reviewer_id': e.reviewer_id,
-                'review_time': e.review_time,
+                'reviewer_ids': [r.reviewer_id for r in reviews],
+                'review_times': [r.review_time for r in reviews],
                 'radius': e.radius,
                 'tags': []
             }
@@ -204,7 +209,7 @@ class Skeleton(object):
         """ Measure the percent of nodes that have been reviewed. """
         node_count_reviewed = 0
         for k,v in self.graph.nodes(data=True):
-            if v['reviewer_id'] != -1:
+            if v['reviewer_ids']:
                 node_count_reviewed += 1
         if node_count_reviewed:
             return 100.0 * node_count_reviewed / self.node_count()

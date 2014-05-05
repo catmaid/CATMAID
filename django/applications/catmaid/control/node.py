@@ -300,13 +300,19 @@ def node_list_tuples(request, project_id=None):
 @requires_user_role(UserRole.Annotate)
 def update_location_reviewer(request, project_id=None, node_id=None):
     """ Updates the reviewer id and review time of a node """
-    p = get_object_or_404(Project, pk=project_id)
-    loc = Location.objects.get(
-        pk=node_id,
-        project=p)
-    loc.reviewer_id=request.user.id
-    loc.review_time=datetime.now()
-    loc.save()
+    try:
+        # Try to get the review object. If this fails we create a new one. Doing
+        # it in a try/except instead of get_or_create allows us to retrieve the
+        # skeleton ID only if needed.
+        r = Review.objects.get(treenode_id=node_id, reviewer=request.user)
+    except Review.DoesNotExist:
+        r = Review(project_id=project_id, treenode_id=node_id, reviewer=request.user)
+        # Find the skeleton
+        r.skeleton = Treenode.objects.get(pk=node_id).skeleton
+
+    r.review_time = datetime.now()
+    r.save()
+
     return HttpResponse(json.dumps({'reviewer_id': request.user.id}), mimetype='text/json')
 
 
@@ -654,11 +660,15 @@ def user_info(request, project_id=None):
         if not ts:
             return HttpResponse(json.dumps({'error': 'Object #%s is not a treenode or a connector' % treenode_id}))
     t = ts[0]
-    reviewer = None
-    review_time = None
-    if -1 != t.reviewer_id:
-        reviewer = User.objects.filter(pk=t.reviewer_id).values('username', 'first_name', 'last_name')[0]
-        review_time = str(datetime.date(t.review_time))
+    # Get all reviews for this treenode
+    reviewers = []
+    review_times = []
+    for r, rt in Review.objects.filter(treenode=t) \
+            .values_list('reviewer', 'review_time'):
+        reviewers.append(User.objects.filter(pk=r) \
+                .values('username', 'first_name', 'last_name')[0])
+        review_times.append(str(datetime.date(rt)))
+    # Build result
     return HttpResponse(json.dumps({'user': {'username': t.user.username,
                                              'first_name': t.user.first_name,
                                              'last_name': t.user.last_name},
@@ -667,7 +677,7 @@ def user_info(request, project_id=None):
                                                'first_name': t.editor.first_name,
                                                'last_name': t.editor.last_name},
                                     'edition_time': str(datetime.date(t.edition_time)),
-                                    'reviewer': reviewer,
-                                    'review_time': review_time}))
+                                    'reviewers': reviewers,
+                                    'review_times': review_times}))
 
 

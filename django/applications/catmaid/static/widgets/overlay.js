@@ -1581,8 +1581,15 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID) {
                 ", last edited by " + jso.editor.first_name + " " + jso.editor.last_name + " (" + jso.editor.username +
                 ") on " + jso.edition_time +
                 ", reviewed by ";
-        if (jso.reviewer) {
-          msg += jso.reviewer.first_name + " " + jso.reviewer.last_name + " (" + jso.reviewer.username + ") on " + jso.review_time;
+        // Add review information
+        if (jso.reviewers.length > 0) {
+          var reviews = []
+          for (var i=0; i<jso.reviewers.length; ++i) {
+            reviews.push(jso.reviewers[i].first_name + " " +
+                jso.reviewers[i].last_name + " (" +
+                jso.reviewers[i].username + ") on " + jso.review_times[i]);
+          }
+          msg += reviews.join(', ');
         } else {
           msg += "no one";
         }

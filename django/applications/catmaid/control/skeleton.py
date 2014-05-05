@@ -9,6 +9,7 @@ from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query
 from catmaid.control.neuron_annotations import _annotate_entities
 from catmaid.control.neuron_annotations import _update_neuron_annotations
+from catmaid.control.review import get_treenodes_to_reviews, get_review_status
 from catmaid.control.treenode import _create_interpolated_treenode
 from collections import defaultdict
 
@@ -408,7 +409,8 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
         def __init__(self):
             self.name = None
             self.num_nodes = 0
-            self.reviewed = 0 # percentage reviewed
+            self.union_reviewed = 0 # total number reviewed nodes
+            self.reviewed = {} # number of reviewed nodes per reviewer
             self.skids = defaultdict(int) # skid vs synapse count
 
     # Dictionary of partner skeleton ID vs Partner
@@ -458,24 +460,29 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     for row in cursor.fetchall():
         partners[row[0]].num_nodes = row[1]
 
-    # Count reviewed nodes of each skeleton
+    # Count nodes that have been reviewed by each user in each partner skeleton
+    cursor.execute('''
+    SELECT skeleton_id, reviewer_id, count(skeleton_id)
+    FROM review
+    WHERE skeleton_id IN (%s)
+    GROUP BY reviewer_id, skeleton_id
+    ''' % skids_string) # no need to sanitize
+    for row in cursor.fetchall():
+        partner = partners[row[0]]
+        partner.reviewed[row[1]] = row[2]
+
+    # Count total number of reviewed nodes per skeleton
     cursor.execute('''
     SELECT skeleton_id, count(skeleton_id)
-    FROM treenode
-    WHERE skeleton_id IN (%s)
-      AND reviewer_id=-1
+    FROM (SELECT skeleton_id, treenode_id
+          FROM review
+          WHERE skeleton_id IN (%s)
+          GROUP BY skeleton_id, treenode_id) AS sub
     GROUP BY skeleton_id
     ''' % skids_string) # no need to sanitize
-    seen = set()
     for row in cursor.fetchall():
-        seen.add(row[0])
         partner = partners[row[0]]
-        partner.reviewed = int(100.0 * (1 - float(row[1]) / partner.num_nodes))
-    # If 100%, it will not be there, so add it
-    for partnerID in set(partners.keys()) - seen:
-        partner = partners[partnerID]
-        if 0 == partner.reviewed:
-            partner.reviewed = 100
+        partner.union_reviewed = row[1]
 
     # Obtain name of each skeleton's neuron
     cursor.execute('''
@@ -515,7 +522,7 @@ def _skeleton_info_raw(project_id, skeletons, op):
             partner = partners[partnerID]
             skids = partner.skids
             # jsonize: swap class instance by its dict of members vs values
-            if skids:
+            if partner.skids or partner.reviewed:
                 partners[partnerID] = partner.__dict__
             else:
                 del partners[partnerID]
@@ -593,27 +600,8 @@ def review_status(request, project_id=None):
     """ Return the review status for each skeleton in the request
     as a value between 0 and 100 (integers). """
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
-    cursor = connection.cursor()
-    cursor.execute('''
-    SELECT skeleton_id, reviewer_id, count(*)
-    FROM treenode
-    WHERE skeleton_id IN (%s)
-    GROUP BY skeleton_id, reviewer_id
-    ''' % ",".join(str(skid) for skid in skeleton_ids))
-
-    s = defaultdict(dict)
-    for row in cursor.fetchall():
-        s[row[0]][row[1]] = row[2]
-
-    status = {}
-    for skid, reviewers in s.iteritems():
-        pending = reviewers.get(-1, 0)
-        if 0 == pending:
-            status[skid] = 100
-        elif pending > 0 and 1 == len(reviewers):
-            status[skid] = 0
-        else:
-            status[skid] = int(100 * (1 - (float(pending) / sum(reviewers.itervalues()))))
+    user_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('user_ids['))
+    status = get_review_status(skeleton_ids, user_ids)
 
     return HttpResponse(json.dumps(status))
 
@@ -871,62 +859,35 @@ def join_skeletons_interpolated(request, project_id=None):
 
     return HttpResponse(json.dumps({'treenode_id': params['to_id']}))
 
-@requires_user_role(UserRole.Annotate)
-def reset_reviewer_ids(request, project_id=None, skeleton_id=None):
-    """ Reset the reviewer_id column to -1 for all nodes of the skeleton.
-    Only a superuser can do it when all nodes are not own by the user.
-    """
-    skeleton_id = int(skeleton_id) # sanitize
-    if not request.user.is_superuser:
-        # Check that the user owns all the treenodes to edit
-        cursor = connection.cursor()
-        cursor.execute('''
-        SELECT treenode.user_id,
-               count(treenode.user_id) c,
-               "auth_user".username
-        FROM treenode,
-             "auth_user"
-        WHERE skeleton_id=%s
-          AND treenode.user_id = "auth_user".id
-        GROUP BY user_id, "auth_user".username
-        ORDER BY c DESC''' % skeleton_id)
-        rows = tuple(cursor.fetchall())
-        if rows:
-            if 1 == len(rows) and rows[0] == request.user.id:
-                pass # All skeleton nodes are owned by the user
-            else:
-                total = "/" + str(sum(row[1] for row in rows))
-                return HttpResponse(json.dumps({"error": "User %s does not own all nodes.\nOnwership: %s" % (request.user.username, {str(row[2]): str(row[1]) + total for row in rows})}))
-    # Reset reviewer_id to -1
-    Treenode.objects.filter(skeleton_id=skeleton_id).update(reviewer_id=-1)
-    return HttpResponse(json.dumps({}), mimetype='text/json')
 
 @requires_user_role(UserRole.Annotate)
 def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
-    """ Reset the reviewer_id column to -1 for all nodes owned by the user.
+    """ Remove all reviews done by the requsting user in the skeleten with ID
+    <skeleton_id>.
     """
     skeleton_id = int(skeleton_id) # sanitize
-    Treenode.objects.filter(skeleton_id=skeleton_id, user=request.user).update(reviewer_id=-1)
-    return HttpResponse(json.dumps({}), mimetype='text/json')
+    Review.objects.filter(skeleton_id=skeleton_id, reviewer=request.user).delete();
+    return HttpResponse(json.dumps({'status': 'success'}), mimetype='text/json')
+
 
 @requires_user_role(UserRole.Annotate)
-def reset_other_reviewer_ids(request, project_id=None, skeleton_id=None):
-    """ Reset the reviewer_id column to -1 for all nodes not owned by the user.
-    """
-    skeleton_id = int(skeleton_id) # sanitize
-    if not request.user.is_superuser:
-        return HttpResponse(json.dumps({"error": "Only a superuser can do that!"}))
-    Treenode.objects.filter(skeleton_id=skeleton_id).exclude(reviewer_id=request.user.id).update(reviewer_id=-1)
-    return HttpResponse(json.dumps({}), mimetype='text/json')
+def fetch_treenodes(request, project_id=None, skeleton_id=None, with_reviewers=None):
+    """ Fetch the topology only, optionally with the reviewer IDs. """
+    skeleton_id = int(skeleton_id)
 
-@requires_user_role(UserRole.Annotate)
-def fetch_treenodes(request, skeleton_id=None, with_reviewer=None):
-    """ Fetch the topology only, optionally with the reviewer ID. """
     cursor = connection.cursor()
     cursor.execute('''
-    SELECT id, parent_id %s
+    SELECT id, parent_id
     FROM treenode
     WHERE skeleton_id = %s
-    ''' % (', reviewer_id' if with_reviewer else '', int(skeleton_id)))
-    return HttpResponse(json.dumps(tuple(cursor.fetchall())))
+    ''' % skeleton_id)
+
+    if with_reviewers:
+        reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
+        treenode_data = tuple([r[0], r[1], reviews.get(r[0], [])] \
+                for r in cursor.fetchall())
+    else:
+        treenode_data = tuple(cursor.fetchall())
+
+    return HttpResponse(json.dumps(treenode_data))
 

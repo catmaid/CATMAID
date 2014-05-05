@@ -23,6 +23,8 @@ var SkeletonConnectivity = function() {
   this.downThresholds = {};
   // Indicates whether single nodes should be hidden
   this.hideSingleNodePartners = false;
+  // ID of the user who is currently reviewing or null for 'union'
+  this.reviewFilter = null;
 };
 
 SkeletonConnectivity.prototype = {};
@@ -344,7 +346,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
    * Support function for creating a partner table.
    */
   var create_table = function(skids, skeletons, thresholds, partners, title, relation,
-      hideSingles, collapsed, collapsedCallback) {
+      hideSingles, reviewFilter, collapsed, collapsedCallback) {
     /**
      * Helper to handle selection of a neuron.
      */
@@ -391,10 +393,27 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     }
     // The total synapse count
     var total_synaptic_count = getSum(partners, 'synaptic_count');
-    // The total review count
-    var total_reviewed = getSum(partners, 'reviewed');
     // The total node count
     var total_node_count = getSum(partners, 'num_nodes');
+
+    /**
+     * Support function to accumulate the number of reviews for a set of
+     * synaptic partners.
+     */
+    var getNrReviews = function(synPartners, filter) {
+      if (filter) {
+        return synPartners.reduce(function(sum, e) {
+          var reviews = e.reviewed[filter];
+          return reviews ? sum + reviews : sum;
+        }, 0);
+      } else {
+        return synPartners.reduce(function(sum, e) {
+          return sum + e.union_reviewed;
+        }, 0);
+      }
+    };
+    // The total review count
+    var total_reviewed = getNrReviews(partners, reviewFilter);
 
     // The table header
     var thead = $('<thead />');
@@ -432,8 +451,9 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         this.append($('<td />').addClass('syncount').text(count));
       }, row);
     }
-    var average = (total_reviewed / partners.length) | 0;
-    row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));
+    var average = Math.floor(100 * total_reviewed / total_node_count) | 0;
+    row.append( $('<td />').text(average + "%")
+        .css('background-color', getBackgroundColor(average)));
     row.append( $('<td />').text(total_node_count));
     var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
     row.append( $('<td />').addClass('input-container').append( el ) );
@@ -538,9 +558,11 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       }
 
       // Cell with percent reviewed of partner neuron
+      var pReviewed = parseInt(Math.floor((100 *
+          getNrReviews([partner], reviewFilter) / partner.num_nodes)));
       var td = document.createElement('td');
-      td.appendChild(document.createTextNode(partner.reviewed));
-      td.style.backgroundColor = getBackgroundColor(partner.reviewed);
+      td.appendChild(document.createTextNode(pReviewed + "%"));
+      td.style.backgroundColor = getBackgroundColor(pReviewed);
       tr.appendChild(td);
 
       // Cell with number of nodes of partner neuron
@@ -744,6 +766,10 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     neuronTable.append(row);
   }
 
+  // Add a separate table settings container
+  var tableSettings = $('<div />').attr('class', 'header');
+  content.append(tableSettings);
+
   // Add a checkbox to toggle display of single-node neurons
   var singleNeuronToggle = $('<input />').attr('type', 'checkbox')
       .change((function(widget) {
@@ -756,10 +782,52 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     singleNeuronToggle.attr('checked', 'checked');
   }
   var singleNeuronToggleContainer = $('<label />')
-      .attr('class', 'header')
+      .attr('class', 'left')
       .append(singleNeuronToggle)
       .append('Hide single node partners');
-  content.append(singleNeuronToggleContainer);
+  tableSettings.append(singleNeuronToggleContainer);
+
+  // Add a drop-down menu to select a review focus. It defaults to 'Union'
+  // if nothing else was selected before.
+  var reviewFilter = $('<select />')
+      .append($('<option />').attr('value', 'union').append('All (union)'))
+      .change((function(widget) {
+        return function() {
+          widget.reviewFilter = this.value === 'union' ? null : this.value;
+          widget.createConnectivityTable();
+        };
+      })(this));
+  // Support function to extract reviewer IDs from partners
+  var collectReviewers = function(o, collection) {
+    for (var p in o) {
+      if (o.hasOwnProperty(p)) {
+        for (var r in o[p].reviewed) {
+          r = parseInt(r);
+          if (o[p].reviewed.hasOwnProperty(r) && collection.indexOf(r) === -1) {
+            collection.push(r);
+          }
+        }
+      }
+    }
+  };
+  // Get reviewer IDs
+  var reviewers = [];
+  collectReviewers(this.incoming, reviewers);
+  collectReviewers(this.outgoing, reviewers);
+  // Build select options
+  reviewers.forEach(function(r) {
+    var u = User.all()[r];
+    var opt = $('<option />').attr('value', r).append(u ? u.fullName : r);
+    if (this.reviewFilter == r) {
+      opt.attr('selected', 'selected')
+    }
+    reviewFilter.append(opt);
+  }, this);
+  var reviewFilterContainer = $('<label />')
+      .attr('class', 'right')
+      .append('Reviewed by')
+      .append(reviewFilter);
+  tableSettings.append(reviewFilterContainer);
 
   // Create containers for pre and postsynaptic partners
   var incoming = $('<div />');
@@ -782,12 +850,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // Create incomining and outgoing tables
   var table_incoming = create_table(this.ordered_skeleton_ids, this.skeletons,
       this.upThresholds, to_sorted_array(this.incoming), 'Up', 'presynaptic_to',
-      this.hideSingleNodePartners, this.upstreamCollapsed, (function() {
+      this.hideSingleNodePartners, this.reviewFilter, this.upstreamCollapsed,
+      (function() {
         this.upstreamCollapsed = !this.upstreamCollapsed;
       }).bind(this));
   var table_outgoing = create_table(this.ordered_skeleton_ids, this.skeletons,
       this.downThresholds, to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to',
-      this.hideSingleNodePartners, this.downstreamCollapsed, (function() {
+      this.hideSingleNodePartners, this.reviewFilter, this.downstreamCollapsed,
+      (function() {
         this.downstreamCollapsed = !this.downstreamCollapsed;
       }).bind(this));
 

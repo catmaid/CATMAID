@@ -7,7 +7,7 @@ from django.db.models import Count
 from django.db import connection
 
 from catmaid.control.authentication import requires_user_role
-from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole
+from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, Review
 
 
 def _process(query, minus1name):
@@ -35,16 +35,6 @@ def stats_nodecount(request, project_id=None):
     WHERE project_id=%s
     GROUP BY user_id
     ''' % int(project_id), "*anonymous*")
-
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def stats_reviewer(request, project_id=None):
-    return _process('''
-    SELECT reviewer_id, count(reviewer_id)
-    FROM treenode
-    WHERE project_id=%s
-    GROUP BY reviewer_id
-    ''' % int(project_id), "*unreviewed*")
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -133,7 +123,9 @@ def stats_user_history(request, project_id=None):
     # Get the end date for the query, defaulting to now.
     end_date = request.GET.get('end_date', None)
     if end_date:
-        end_date = dateparser.parse(end_date)
+        # We need to set the end date to the last second of the day to get all
+        # events.
+        end_date = dateparser.parse(end_date) + timedelta(days=1) - timedelta(seconds=1)
     else:
         end_date = datetime.now()
     # Calculate number of days between (including) start and end
@@ -195,17 +187,15 @@ def stats_user_history(request, project_id=None):
         'date': stat['date'],
         'count': stat['count']} for stat in connector_stats]
 
-    tree_reviewed_nodes = Treenode.objects \
+    tree_reviewed_nodes = Review.objects \
         .filter(
-            project=project_id,
+            project_id=project_id,
             review_time__range=(start_date, end_date)) \
-        .select_related('user') \
-        .exclude(reviewer_id=-1) \
         .extra(select={
-            'date': 'to_char("treenode"."review_time", \'YYYYMMDD\')'}) \
+            'date': 'to_char("review"."review_time", \'YYYYMMDD\')'}) \
         .order_by('date') \
         .values('reviewer_id', 'date') \
-        .annotate(count = Count('id'))
+        .annotate(count = Count('treenode'))
 
     for di in treenode_stats:
         stats_table[di['username']][di['date']]['new_treenodes'] = di['count']

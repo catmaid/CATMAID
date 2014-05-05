@@ -1773,10 +1773,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     var pickColor;
     var actorColor = this.actorColor;
+    var unreviewedColor = new THREE.Color().setRGB(0.2, 0.2, 0.2);
+    var reviewedColor = new THREE.Color().setRGB(1.0, 0.0, 1.0);
     if ('creator' === options.color_method) {
       pickColor = function(vertex) { return User(vertex.user_id).color; };
-    } else if ('reviewer' === options.color_method) {
-      pickColor = function(vertex) { return User(vertex.reviewer_id).color; };
+    } else if ('all-reviewed' === options.color_method) {
+      pickColor = function(vertex) {
+        return vertex.reviewer_ids.length > 0 ? reviewedColor : unreviewedColor;
+      };
+    } else if ('own-reviewed' === options.color_method) {
+      pickColor = function(vertex) {
+        return vertex.reviewer_ids.indexOf(session.userid) != -1 ?
+            reviewedColor : unreviewedColor;
+      };
     } else {
       pickColor = function() { return actorColor; };
     }
@@ -2184,6 +2193,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 	var nodes = skeleton_data[1];
 	var tags = skeleton_data[2];
 	var connectors = skeleton_data[3];
+	var reviews = skeleton_data[4];
 
 	var scale = this.space.scale,
       lean = options.lean_mode;
@@ -2212,34 +2222,33 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 		// node[0]: treenode ID
 		// node[1]: parent ID
     // node[2]: user ID
-    // node[3]: reviewer ID
-    // 4,5,6: x,y,z
-		// node[7]: radius
-		// node[8]: confidence
+    // 3,4,5: x,y,z
+		// node[6]: radius
+		// node[7]: confidence
 		// If node has a parent
     var v1;
 		if (node[1]) {
 			var p = nodeProps[node[1]];
       v1 = vs[node[0]];
       if (!v1) {
-			  v1 = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6]));
+			  v1 = this.space.toSpace(new THREE.Vector3(node[3], node[4], node[5]));
         v1.node_id = node[0];
         v1.user_id = node[2];
-        v1.reviewer_id = node[3];
+        v1.reviewer_ids = reviews[node[0]] || [];
         vs[node[0]] = v1;
       }
       var v2 = vs[p[0]];
       if (!v2) {
-			  v2 = this.space.toSpace(new THREE.Vector3(p[4], p[5], p[6]));
+			  v2 = this.space.toSpace(new THREE.Vector3(p[3], p[4], p[5]));
         v2.node_id = p[0];
         v2.user_id = p[2];
-        v2.reviewer_id = p[3];
+        v2.reviewer_ids = reviews[p[0]] || [];
         vs[p[0]] = v2;
       }
 			var nodeID = node[0];
-			if (node[7] > 0 && p[7] > 0) {
+			if (node[6] > 0 && p[6] > 0) {
 				// Create cylinder using the node's radius only (not the parent) so that the geometry can be reused
-				var scaled_radius = node[7] * scale;
+				var scaled_radius = node[6] * scale;
 				this.createCylinder(v1, v2, scaled_radius, material);
 				// Create skeleton line as well
 				this.createEdge(v1, v2, 'neurite');
@@ -2248,30 +2257,30 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 				this.createEdge(v1, v2, 'neurite');
 				// Create sphere
 				if (node[7] > 0) {
-					this.createNodeSphere(v1, node[7] * scale, material);
+					this.createNodeSphere(v1, node[6] * scale, material);
 				}
 			}
 		} else {
 			// For the root node, which must be added to vs
 			v1 = vs[node[0]];
       if (!v1) {
-        v1 = this.space.toSpace(new THREE.Vector3(node[4], node[5], node[6]));
+        v1 = this.space.toSpace(new THREE.Vector3(node[3], node[4], node[5]));
         v1.node_id = node[0];
         v1.user_id = node[2];
-        v1.reviewer_id = node[3];
+        v1.reviewer_ids = reviews[node[0]] || [];
         vs[node[0]] = v1;
       }
-      if (node[7] > 0) {
+      if (node[6] > 0) {
         // Clear the slot for a sphere at the root
         var mesh = this.radiusVolumes[v1.node_id];
         if (mesh) {
           this.space.remove(mesh);
           delete this.radiusVolumes[v1.node_id];
         }
-			  this.createNodeSphere(v1, node[7] * scale, material);
+			  this.createNodeSphere(v1, node[6] * scale, material);
       }
 		}
-		if (!lean && node[8] < 5) {
+		if (!lean && node[7] < 5) {
 			// Edge with confidence lower than 5
 			this.createLabelSphere(v1, this.space.staticContent.labelColors.uncertain);
 		}

@@ -39,6 +39,11 @@ var ReviewSystem = new function()
         self.current_segment_index = 0;
         self.goToNodeIndexOfSegmentSequence( 0 );
         end_puffer_count = 0;
+        // Highlight current segement in table
+        var $rows = $('table#review_segment_table tr.review-segment');
+        $rows.removeClass('highlight');
+        var $cur_row = $rows.filter('tr[data-sgid=' + id + ']');
+        $cur_row.addClass('highlight');
     };
 
     this.goToNodeIndexOfSegmentSequence = function( idx ) {
@@ -112,12 +117,12 @@ var ReviewSystem = new function()
 
         if (evt.shiftKey) {
             // Advance current_segment_index to the first node that is not reviewed
-            // which is a node with rid (reviewer id) of -1.
+            // which is a node with no reviewer of the current user.
             var i = self.current_segment_index;
             var seq = self.current_segment['sequence'];
             var len = seq.length;
             while (i < len) {
-                if (-1 === seq[i].rid) {
+                if (-1 === seq[i].rids.indexOf(session.userid)) {
                     self.current_segment_index = i;
                     break;
                 }
@@ -128,15 +133,27 @@ var ReviewSystem = new function()
         if (self.current_segment_index < self.current_segment['sequence'].length -1) {
             // Check if the remainder of the segment was complete at an earlier time
             // and perhaps now the whole segment is done:
-            var i = self.current_segment_index;
+            var i_user = self.current_segment_index;
+            var i_union = self.current_segment_index;
             var seq = self.current_segment['sequence'];
             var len = seq.length;
-            while (i < len && -1 !== seq[i].rid) {
-                i += 1;
+            while (i_user < len && -1 !== seq[i_user].rids.indexOf(session.userid)) {
+                i_user += 1;
             }
-            if (i === len) {
+            while (i_union < len && 0 !== seq[i_union].rids.length) {
+                i_union += 1;
+            }
+            if (i_user === len) {
                 growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
-                var cell = $('#rev-status-cell-' + self.current_segment['id']);
+                var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-' + session.userid);
+                cell.text('100.00%');
+                cell.css('background-color', '#6fff5c');
+                self.current_segment['status'] = '100.00';
+                // Don't startSkeletonToReview, because self.current_segment_index
+                // would be lost, losing state for q/w navigation.
+            }
+            if (i_union === len) {
+                var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-union');
                 cell.text('100.00%');
                 cell.css('background-color', '#6fff5c');
                 self.current_segment['status'] = '100.00';
@@ -151,15 +168,38 @@ var ReviewSystem = new function()
     var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
 
     this.markAsReviewed = function( node_ob ) {
-        submit(django_url+projectID+"/node/" + node_ob['id'] + "/reviewed", {}, function(json) { node_ob['rid'] = json.reviewer_id;} );
+        submit(django_url+projectID+"/node/" + node_ob['id'] + "/reviewed", {},
+                function(json) {
+                    if (json.reviewer_id) {
+                        // Append the new review to the list of reviewers of
+                        // this node, if not already present.
+                        if (node_ob['rids'].indexOf(json.reviewer_id) === -1) {
+                            node_ob['rids'].push(json.reviewer_id);
+                        };
+                    }
+                });
     };
 
     this.selectNextSegment = function( ev ) {
+        var followed_rids = getFollowedReviewers();
         if (self.skeleton_segments) {
             // Find out the index of the current segment
             var index = self.current_segment ? self.skeleton_segments.indexOf(self.current_segment) : -1;
-            // Define helper functions
-            var unreviewed_nodes = function (node) { return -1 === node['rid']; };
+            /**
+             * Support function to test whether a node hasn't been reviewed by
+             * any of the followed reviewers. This is the case if the list of
+             * reviewers is empty or no followed reviewer appears in it.
+             */
+            var unreviewed_nodes = function(node) {
+                return 0 === node['rids'].length || followed_rids.every(function(rid) {
+                    return -1 === node['rids'].indexOf(rid);
+                });
+            };
+            /**
+             * Support function to test whether a sgement has't been reviewed by
+             * any of the followed reviewers. If it has not been reviewed, a new
+             * review for it is started as a side effect.
+             */
             var unreviewed_segments = function(segment, i) {
                 if( segment['status'] !== "100.00") {
                     // only check for segments with less than 100 percent reviewed
@@ -190,64 +230,125 @@ var ReviewSystem = new function()
         // Count which user reviewed how many nodes
         // Map of user ID vs object containing name and count:
         var users = users.reduce(function(map, u) {
-            map[u[0]] = {name: u[1], count: 0};
+            // Create an empty segment count object
+            var seg_count = skeleton_data.reduce(function(o, s) {
+                o[s.id] = 0;
+                return o;
+            }, {});
+            // Create a new count object for this user
+            map[u[0]] = {name: u[1], count: 0, segment_count: seg_count};
             return map;
         }, {});
         // TODO count is wrong because branch points are repeated. Would have to create sets and then count the number of keys.
-        users[-1] = {name: 'unreviewed', count: 0};
+        users[-1] = {name: '3lunreviewed', count: 0};
+
         // Fill in the users count:
         skeleton_data.forEach(function(segment) {
             segment['sequence'].forEach(function(node) {
-                users[node['rid']].count += 1;
+               node['rids'].forEach(function(rid) {
+                    users[rid].count += 1;
+                    users[rid].segment_count[segment.id] += 1;
+                });
             });
         });
+        // Create a list of all users who have reviewed this neuron. Add the
+        // current useser as first element, regardless of his/her review status.
+        var reviewers = Object.keys(users).filter(function(u) {
+            // u is a string, so rely on != for comparing to (integer) user ID.
+            return this[u].count > 0 && u != session.userid;
+        }, users);
+        // Prepend user ID
+        reviewers = [session.userid].concat(reviewers);
+        // Make sure all IDs are actual numbers
+        reviewers = reviewers.map(function(u){ return parseInt(u); });
+
         // Create string with user's reviewed counts:
-        var user_revisions = Object.keys(users).reduce(function(s, u) {
+        var user_revisions = reviewers.reduce(function(s, u) {
             u = users[u];
-            if (u.count > 0) { s += u.name + ": " + u.count + "; "; }
+            s += u.name + ": " + u.count + "; ";
             return s;
         }, "");
 
         $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID + " -- " + user_revisions );
         table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
         // create header
-        thead = $('<thead />');
-        table.append( thead );
-        row = $('<tr />')
-        row.append( $('<td />').text("") );
-        row.append( $('<td />').text("Status") );
-        row.append( $('<td />').text("# nodes") );
-        thead.append( row );
-        tbody = $('<tbody />');
-        table.append( tbody );
+        row = $('<tr />');
+        row.append($('<th />'));
+        // Start with user columns, current user first
+        for (var i=0; i<reviewers.length; ++i) {
+          var cb = $('<input />').attr('type', 'checkbox')
+              .attr('data-rid', reviewers[i]);
+          if (i === 0) {
+              // Have the current user checked by default
+              cb.attr('checked', 'checked');
+          }
+          row.append( $('<th />').append($('<label />')
+              .append(cb).append(users[reviewers[i]].name)));
+        }
+        // Union column last
+        if (reviewers.length > 1) {
+            row.append( $('<th />').text('Union') );
+        }
+        table.append( row );
+        row.append( $('<th />').text("# nodes"));
+        row.append($('<th />'));
+        table.append( row );
         // create a row
         for(var e in skeleton_data ) {
-            row = $('<tr />');
-            row.append( $('<td />').text( skeleton_data[e]['id'] ) );
-            var status = $('<td id="rev-status-cell-' + skeleton_data[e]['id'] + '" />').text( skeleton_data[e]['status']+'%' );
-            row.append( status );
-            row.append( $('<td align="right" />').text( skeleton_data[e]['nr_nodes'] ) );
-            if( parseInt( skeleton_data[e]['status']) === 0 ) {
-                status.css('background-color', '#ff8c8c');
-            } else if( parseInt( skeleton_data[e]['status']) === 100 ) {
-                status.css('background-color', '#6fff5c');
-            } else {
-                status.css('background-color', '#ffc71d');
+            var sd = skeleton_data[e];
+            row = $('<tr />')
+                .attr('class', 'review-segment')
+                .attr('data-sgid', sd.id);
+            // Index
+            row.append( $('<td />').text(skeleton_data[e]['id'] ) );
+            // Single user status
+            if (reviewers.length > 1) {
+              // The reviewers array contains oneself as first element
+              reviewers.forEach(function(r) {
+                  var seg_status = (100 * users[r].segment_count[sd.id] /
+                          sd.nr_nodes).toFixed(2);
+                  this.append($('<td />').text(seg_status + '%')
+                          .attr('id', 'rev-status-cell-' + sd.id + '-' + r)
+                          .css('background-color',
+                                  ReviewSystem.getBackgroundColor(Math.round(seg_status))));
+              }, row);
             }
+            // Union status
+            var status = $('<td />')
+                    .attr('id', 'rev-status-cell-' + sd.id + '-union')
+                    .text( skeleton_data[e]['status']+'%' )
+                    .css('background-color',
+                            ReviewSystem.getBackgroundColor(parseInt(sd.status)));
+            row.append( status );
+            // Number of nodes
+            row.append( $('<td align="right" />').text( skeleton_data[e]['nr_nodes'] ) );
+            // Review button
             butt = $('<button />').text( "Review" );
             butt.attr( 'id', 'reviewbutton_'+skeleton_data[e]['id'] );
             butt.click( function() {
                 self.initReviewSegment( this.id.replace("reviewbutton_", "") );
             });
-            row.append( butt );
-            tbody.append( row );
+            row.append( $('<td />').append(butt) );
+            table.append( row );
         }
         // empty row
         row = $('<tr />');
-        tbody.append( row );
+        table.append( row );
         table.append( $('<br /><br /><br /><br />') );
         $("#project_review_widget").append( table );
 
+    };
+
+    /**
+     * Returns a list of reviewer IDs that are followed, i.e. that have their
+     * follow checkbox in the table header checked.
+     */
+    var getFollowedReviewers = function() {
+        var followed_rids = [];
+        $('#review_segment_table th input:checked').each(function(i) {
+            followed_rids.push(parseInt($(this).attr('data-rid')));
+        });
+        return followed_rids;
     };
 
     var checkSkeletonID = function() {
@@ -298,16 +399,8 @@ var ReviewSystem = new function()
             });
     };
 
-    this.resetAllRevisions = function() {
-        resetFn("reset-all");
-    };
-
     this.resetOwnRevisions = function() {
         resetFn("reset-own");
-    };
-
-    this.resetRevisionsByOthers = function() {
-        resetFn("reset-others");
     };
 
     var loadImageCallback = function( imageArray ) {
@@ -340,7 +433,7 @@ var ReviewSystem = new function()
                     startsegment = idx;
                 var seq = self.skeleton_segments[idx]['sequence'];
                 for(var i = 0; i < self.skeleton_segments[idx]['nr_nodes']; i++ ) {
-                    if( seq[i]['rid'] == -1 ) {
+                    if(-1 === seq[i]['rids'].indexOf(session.userid)) {
                         var c = parseInt( seq[i].x / stack.resolution.x / tileWidth),
                             r = parseInt( seq[i].y / stack.resolution.y / tileHeight );
                         for( var rowidx = r-1; rowidx <= r+1; rowidx++ ) {
@@ -364,4 +457,17 @@ var ReviewSystem = new function()
         loadImageCallback( s );
     }
 
+};
+
+/**
+ * Support function for selecting a background color based on review state.
+ */
+ReviewSystem.getBackgroundColor = function(reviewed) {
+  if (100 === reviewed) {
+    return '#6fff5c';
+  } else if (0 === reviewed) {
+    return '#ff8c8c';
+  } else {
+    return '#ffc71d';
+  }
 };

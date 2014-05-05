@@ -123,7 +123,9 @@ def stats_user_history(request, project_id=None):
     # Get the end date for the query, defaulting to now.
     end_date = request.GET.get('end_date', None)
     if end_date:
-        end_date = dateparser.parse(end_date)
+        # We need to set the end date to the last second of the day to get all
+        # events.
+        end_date = dateparser.parse(end_date) + timedelta(days=1) - timedelta(seconds=1)
     else:
         end_date = datetime.now()
     # Calculate number of days between (including) start and end

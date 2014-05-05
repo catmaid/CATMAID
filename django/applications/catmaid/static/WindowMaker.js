@@ -304,6 +304,7 @@ var WindowMaker = new function()
           '<tr>' +
             '<th width="60px">action</th>' +
             '<th>name</th>' +
+            '<th>% reviewed</th>' +
             '<th>selected</th>' +
             '<th>pre</th>' +
             '<th>post</th>' +
@@ -315,6 +316,7 @@ var WindowMaker = new function()
           '<tr>' +
             '<td><img src="' + STATIC_URL_JS + 'widgets/themes/kde/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></td>' +
             '<td><input type="button" id="selection-table-sort-by-name' + ST.widgetID + '" value="Sort by name" /></td>' +
+            '<td></td>' +
             '<td><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked /></td>' +

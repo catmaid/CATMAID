@@ -269,19 +269,6 @@ var ReviewSystem = new function()
             return s;
         }, "");
 
-        /**
-         * Support function for selecting a background color based on review state.
-         */
-        var getBackgroundColor = function(reviewed) {
-          if (100 === reviewed) {
-            return '#6fff5c';
-          } else if (0 === reviewed) {
-            return '#ff8c8c';
-          } else {
-            return '#ffc71d';
-          }
-        };
-
         $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID + " -- " + user_revisions );
         table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
         // create header
@@ -323,7 +310,7 @@ var ReviewSystem = new function()
                   this.append($('<td />').text(seg_status + '%')
                           .attr('id', 'rev-status-cell-' + sd.id + '-' + r)
                           .css('background-color',
-                                  getBackgroundColor(Math.round(seg_status))));
+                                  ReviewSystem.getBackgroundColor(Math.round(seg_status))));
               }, row);
             }
             // Union status
@@ -331,7 +318,7 @@ var ReviewSystem = new function()
                     .attr('id', 'rev-status-cell-' + sd.id + '-union')
                     .text( skeleton_data[e]['status']+'%' )
                     .css('background-color',
-                            getBackgroundColor(parseInt(sd.status)));
+                            ReviewSystem.getBackgroundColor(parseInt(sd.status)));
             row.append( status );
             // Number of nodes
             row.append( $('<td align="right" />').text( skeleton_data[e]['nr_nodes'] ) );
@@ -470,4 +457,17 @@ var ReviewSystem = new function()
         loadImageCallback( s );
     }
 
+};
+
+/**
+ * Support function for selecting a background color based on review state.
+ */
+ReviewSystem.getBackgroundColor = function(reviewed) {
+  if (100 === reviewed) {
+    return '#6fff5c';
+  } else if (0 === reviewed) {
+    return '#ff8c8c';
+  } else {
+    return '#ffc71d';
+  }
 };

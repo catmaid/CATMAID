@@ -210,7 +210,7 @@ var TreenodeTable = new function()
       }, // last modified
       {
           "bSearchable": false,
-          "bSortable": true
+          "bSortable": false
       } // reviewer
       ]
     });

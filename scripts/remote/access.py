@@ -91,26 +91,25 @@ def skeleton_graph(connection, project_id, skeleton_id):
     # 0: treenode.id
     # 1: treenode.parent_id
     # 2: treenode.user_id
-    # 3: treenode.reviewer_id
-    # 4: treenode.location.x
-    # 5: treenode.location.y
-    # 6: treenode.location.z
-    # 7: treenode.radius
-    # 8: treenode.confidence
+    # 3: treenode.location.x
+    # 4: treenode.location.y
+    # 5: treenode.location.z
+    # 6: treenode.radius
+    # 7: treenode.confidence
     for treenode in d[1]:
         if treenode[1]:
             # Will create the nodes when not existing yet
-            g.add_edge(treenode[1], treenode[0], {'confidence': treenode[8]})
+            g.add_edge(treenode[1], treenode[0], {'confidence': treenode[7]})
         else:
             # The root node
             g.add_node(treenode[0])
         properties = g[treenode[0]]
         properties['user_id'] = treenode[2]
-        properties['reviewer_id'] = treenode[3]
-        properties['radius'] = treenode[7]
-        properties['x'] = treenode[4]
-        properties['y'] = treenode[5]
-        properties['z'] = treenode[6]
+        properties['radius'] = treenode[6]
+        properties['x'] = treenode[3]
+        properties['y'] = treenode[4]
+        properties['z'] = treenode[5]
+        properties['reviewer_ids'] = d[4].get(treenode[0], [])
 
     # tags are text vs list of treenode IDs
     for tag, treenodes in d[2].iteritems():
@@ -128,7 +127,6 @@ def skeleton_graph(connection, project_id, skeleton_id):
     # 3: connector.location.x
     # 4: connector.location.y
     # 5: connector.location.z
-    # 6: connector.reviewer_id
     relations = {0: 'presynaptic_to',
                  1: 'postsynaptic_to'}
     for synapse in d[3]:

@@ -1,6 +1,6 @@
 Django==1.6.2
 distribute==0.7.3
-git+https://github.com/fadur/django-devserver.git@d6f59e063639615343eaef8e57852b233209bb3a#egg=django-devserver
+django-devserver==0.8.0
 h5py==2.2.1
 psycopg2==2.4.1
 sqlparse==0.1.3

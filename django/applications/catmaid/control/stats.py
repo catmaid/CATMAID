@@ -187,7 +187,9 @@ def stats_user_history(request, project_id=None):
 
     tree_reviewed_nodes = Review.objects \
         .filter(
-            treenode__project_id=project_id,
+            # Joining the class_instance table (skeleton) is usually faster
+            # than joining the treenode table to test the project ID.
+            skeleton__project_id=project_id,
             review_time__range=(start_date, end_date)) \
         .extra(select={
             'date': 'to_char("review"."review_time", \'YYYYMMDD\')'}) \

@@ -24,7 +24,7 @@ var ProjectStatistics = new function()
       entry += ' 0 /';
     };
     if( data.hasOwnProperty('new_reviewed_nodes') ) {
-      entry += ' ' + data['new_reviewed_nodes'] + ' /';
+      entry += ' ' + data['new_reviewed_nodes'];
       points += data['new_reviewed_nodes'];
     } else {
       entry += ' 0';

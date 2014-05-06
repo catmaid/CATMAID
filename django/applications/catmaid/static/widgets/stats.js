@@ -1,8 +1,15 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+"use strict";
+
 var ProjectStatistics = new function()
 {
+  // Store retrieved data locally to change time unit on the fly
+  var statisticsData = null;
+  // The time interval for the contribution table, default to days
+  var timeUnit = "day";
+
   var update_stats_fields = function(data) {
     $("#skeletons_created").text(data.skeletons_created);
     $("#treenodes_created").text(data.treenodes_created);
@@ -32,25 +39,79 @@ var ProjectStatistics = new function()
     return {'entry': entry, 'points': points};
   }
 
-  var update_user_history = function(data) {
+  /**
+   * (Re)creates the summary table at the top of the widget, based on the data
+   * object passed as parameter. The <timeinterval> parameter allows to
+   * summarize multiple days, e.g. in weeks when <timeinterval> is 7. For
+   * displaying days, it has to be 1.
+   */
+  var update_user_history = function(data, timeunit) {
+    // Select time interval, default to days
+    var timeinterval;
+    if ("year" === timeunit) {
+      timeinterval = 365
+    } else if ("month" === timeunit) {
+      timeinterval = 30
+    } else if ("week" === timeunit) {
+      timeinterval = 7
+    } else {
+      timeinterval = 1
+    }
+    // Find interval remainder of timespan in days
+    var intervalRemainder = data['days'].length % timeinterval;
+
+    // Draw table header, showing only the first day of each interval
     $('#project_stats_history_table').empty();
     var header = '';
     header += '<tr>';
     header += '<th>username</th>';
-    for(var i = 0; i < data['days'].length; i++ ) {
-      header += '<th>'+data['daysformatted'][i]+'</th>';
+    for(var i = 0; i < data['days'].length; i=i+timeinterval ) {
+      // Add interval start date as column header, add "+ X days" if
+      // interval is > 1.
+      var text = data['daysformatted'][i];
+      if (timeinterval > 1) {
+        // Show remainder instead of full interval on last column, but only if
+        // there is more than one day shown.
+        if (i + timeinterval < data['days'].length) {
+          text += " + " + (timeinterval - 1) + " days";
+        } else if (intervalRemainder > 1) {
+          text += " + " + (intervalRemainder - 1) + " days";
+        }
+      }
+      header += '<th>' + text + '</th>';
     }
     header += '</tr>';
     $('#project_stats_history_table').append( header );
+
+    // Draw table body, add up numbers for each interval
     var odd_row = true;
     for(var username in data['stats_table']) {
       var row = '', weekpointcount = 0;
       row += '<tr class="' + (odd_row ? "odd" : "") + '">';
       if( data['stats_table'].hasOwnProperty( username ) ) {
         row += '<td>' + username + '</td>';
-        for(var i = 0; i < data['days'].length; i++ ) {
-          var datekey = data['days'][i],
-              formated = get_formated_entry( data['stats_table'][ username ][ datekey ] );
+        // Print statistics cells, wrt. time interval
+        for (var i = 0; i < data['days'].length; i=i+timeinterval) {
+          var intervalData = {
+            new_treenodes: 0,
+            new_connectors: 0,
+            new_reviewed_nodes: 0,
+          }
+          // Aggregate statistics for current time interval
+          for (var j = 0; j< timeinterval; ++j) {
+              // Cancel iteration after last entry
+              if (i + j > data['days'].length - 1) {
+                break;
+              }
+              // Add current day's data
+              var datekey = data['days'][i + j];
+              var stats = data['stats_table'][username][datekey];
+              intervalData.new_treenodes += stats.new_treenodes || 0;
+              intervalData.new_connecotrs += stats.new_connectors || 0;
+              intervalData.new_reviewed_nodes += stats.new_reviewed_nodes || 0;
+          }
+          // Print table cell
+          var formated = get_formated_entry(intervalData);
           row += '<td>'+ formated['entry'] +'</td>';
           weekpointcount += formated['points'];
         }
@@ -269,13 +330,15 @@ var ProjectStatistics = new function()
       "end_date": $("#stats-history-end-date").val(),
     }, function (status, text, xml) {
       $(".stats-history-setting").prop('disabled', false);
+      statisticsData = null;
       if (status == 200) {
         if (text && text != " ") {
           var jso = $.parseJSON(text);
           if (jso.error) {
             alert(jso.error);
           } else {
-            update_user_history(jso);
+            statisticsData = jso;
+            update_user_history(jso, timeUnit);
           }
         }
       }
@@ -336,6 +399,15 @@ var ProjectStatistics = new function()
   };
 
   /**
+   * Recreates the summary table based on the selected time unit. It can be
+   * one of "day", "week", "month" or "year".
+   */
+  var refresh_timeunit = function(unit) {
+    timeUnit = unit;
+    update_user_history(statisticsData, timeUnit)
+  };
+
+  /**
    * Initialized the statistics widget by asking the backend to create the basic
    * layout.
    */
@@ -352,6 +424,10 @@ var ProjectStatistics = new function()
           // Attach handler to history refresh button
           $("#stats-history-refresh").click(function() {
               refresh_history();
+          });
+          // Attach handler to time unit selector
+          $("#stats-time-unit").change(function() {
+            refresh_timeunit(this.options[this.selectedIndex].value);
           });
 
           // Updae the actual statistics

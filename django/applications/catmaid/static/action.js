@@ -190,6 +190,16 @@ var toolActions = [
 	}),
 
 	new Action({
+		helpText: "Show settings",
+		buttonID: 'settings_button',
+		buttonName: "settings",
+		run: function (e) {
+		WindowMaker.show('settings');
+			return true;
+		}
+	}),
+
+	new Action({
 		helpText: "Show keyboard shortcut help",
 		buttonID: 'key_help_button',
 		buttonName: "help",

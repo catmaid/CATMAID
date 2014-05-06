@@ -2309,6 +2309,21 @@ var WindowMaker = new function()
 
     return win
   };
+
+  var createSettingsWindow = function()
+  {
+    var win = new CMWWindow("Settings");
+    var content = win.getFrame();
+    var container = createContainer("settings");
+    content.appendChild( container );
+    content.style.backgroundColor = "#ffffff";
+
+    // Wire it up
+    addListener(win, container);
+    addLogic(win);
+
+    return win;
+  };
   
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
@@ -2340,6 +2355,7 @@ var WindowMaker = new function()
     "circuit-graph-plot": createCircuitGraphPlot,
     "neuron-annotations": createNeuronAnnotationsWindow,
     "neuron-navigator": createNeuronNavigatorWindow,
+    "settings": createSettingsWindow,
   };
 
   /** If the window for the given name is already showing, just focus it.

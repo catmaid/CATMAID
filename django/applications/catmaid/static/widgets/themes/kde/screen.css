@@ -504,3 +504,7 @@ div#classification_graph_object img.roiimage {
   vertical-align: baseline;
   border-bottom: 1px solid black;
 }
+
+#settings_widget .title {
+  font-weight: bold;
+}

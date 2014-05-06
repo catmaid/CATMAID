@@ -2315,12 +2315,17 @@ var WindowMaker = new function()
     var win = new CMWWindow("Settings");
     var content = win.getFrame();
     var container = createContainer("settings");
+    container.setAttribute('id', 'settings_widget');
     content.appendChild( container );
     content.style.backgroundColor = "#ffffff";
 
     // Wire it up
     addListener(win, container);
     addLogic(win);
+
+    // Initialize settings window with container added to the DOM
+    var SW = new SettingsWidget();
+    SW.init(container);
 
     return win;
   };

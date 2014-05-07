@@ -34,6 +34,39 @@ SettingsWidget.prototype.init = function(container)
     return content;
   };
 
+  /**
+   * Helper function to create a checkbox with label.
+   */
+  var createCheckboxSetting = function(name, handler)
+  {
+    var cb = $('<input/>').attr('type', 'checkbox');
+    if (handler) {
+      cb.change(handler);
+    }
+    var label = $('<label/>').append(cb).append(name);
+
+    return label;
+  };
+
+
+  // Display settings
+  var ds = addSettingsContainer("Display settings");
+  $(ds).append($('<div/>')
+    .attr('id', 'display-grid')
+    .append(createCheckboxSetting("Show grid", function() {
+        // Add a grid layer to all open stacks
+        if (this.checked) {
+          project.getStacks().forEach(function(s) {
+            s.addLayer("grid", new GridLayer(s));
+            s.redraw();
+          });
+        } else {
+          project.getStacks().forEach(function(s) {
+            s.removeLayer("grid");
+          });
+        }
+      })));
+
 
   // Add collapsing support to all settings containers
   $("p.title", container).click(function() {

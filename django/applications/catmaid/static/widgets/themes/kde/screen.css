@@ -508,3 +508,7 @@ div#classification_graph_object img.roiimage {
 #settings_widget .title {
   font-weight: bold;
 }
+
+#settings_widget .content {
+  margin-left: 1.5em;
+}

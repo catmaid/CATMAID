@@ -15,7 +15,7 @@ SettingsWidget.prototype.init = function(container)
   /**
    * Helper function to create a collapsible settings container.
    */
-  var addSettingsContainer = function(name, closed)
+  var addSettingsContainer = function(parent, name, closed)
   {
     var content = $('<div/>').addClass('content');
     if (closed) {
@@ -29,7 +29,7 @@ SettingsWidget.prototype.init = function(container)
         .append(name))
       .append(content);
 
-    $(container).append(sc);
+    $(parent).append(sc);
 
     return content;
   };
@@ -43,17 +43,31 @@ SettingsWidget.prototype.init = function(container)
     if (handler) {
       cb.change(handler);
     }
-    var label = $('<label/>').append(cb).append(name);
+    var label = $('<div/>')
+      .addClass('setting')
+      .append($('<label/>').append(cb).append(name));
+
+    return label;
+  };
+
+  /**
+   * Helper function to create a text input field with label.
+   */
+  var createInputSetting = function(name, val, handler)
+  {
+    var input = $('<input/>').attr('type', 'text').val(val);
+    var label = $('<div/>')
+      .addClass('setting')
+      .append($('<label/>').append(name).append(input));
 
     return label;
   };
 
 
-  // Display settings
-  var ds = addSettingsContainer("Display settings");
-  $(ds).append($('<div/>')
-    .attr('id', 'display-grid')
-    .append(createCheckboxSetting("Show grid", function() {
+  // Grid settings
+  var ds = addSettingsContainer(container, "Grid overlay");
+  // General grid visibility
+  $(ds).append(createCheckboxSetting("Show grid on open stacks", function() {
         // Add a grid layer to all open stacks
         if (this.checked) {
           project.getStacks().forEach(function(s) {
@@ -65,7 +79,36 @@ SettingsWidget.prototype.init = function(container)
             s.removeLayer("grid");
           });
         }
-      })));
+      }))
+  // Grid cell dimensions and offset
+  var gridCellWidth = createInputSetting("Cell width (nm)", 1000);
+  var gridCellHeight = createInputSetting("Cell height (nm)", 1000);
+  var gridCellXOffset = createInputSetting("X offset (nm)", 0);
+  var gridCellYOffset = createInputSetting("Y offset (nm)", 0);
+  $(ds).append(gridCellWidth);
+  $(ds).append(gridCellHeight);
+  $(ds).append(gridCellXOffset);
+  $(ds).append(gridCellYOffset);
+  var gridUpdate = function() {
+    // Get current settings
+    var cellWidth = parseInt($("input", gridCellWidth).val());
+    var cellHeight = parseInt($("input", gridCellHeight).val());
+    var xOffset = parseInt($("input", gridCellXOffset).val());
+    var yOffset = parseInt($("input", gridCellYOffset).val());
+    // Update grid, if visible
+    project.getStacks().forEach(function(s) {
+      var grid = s.getLayer("grid");
+      if (grid) {
+        grid.setOptions(cellWidth, cellHeight, xOffset, yOffset);
+        s.redraw();
+      }
+    });
+  }
+  $("input[type=text]", ds).spinner({
+    min: 0,
+    change: gridUpdate,
+    stop: gridUpdate
+  });
 
 
   // Add collapsing support to all settings containers

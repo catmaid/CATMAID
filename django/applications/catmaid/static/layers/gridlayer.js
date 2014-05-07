@@ -51,6 +51,17 @@ GridLayer.prototype.getOpacity = function()
     return this.opacity;
 }
 
+/**
+ * Allows to set all grid options at once
+ */
+GridLayer.prototype.setOptions = function(cellWidth, cellHeight, xOffset, yOffset)
+{
+  if (cellWidth) this.cellWidth = cellWidth;
+  if (cellHeight) this.cellHeight = cellHeight;
+  if (xOffset) this.xOffset = xOffset;
+  if (yOffset) this.yOffset = yOffset;
+};
+
 GridLayer.prototype.resize = function()
 {
   this.redraw();

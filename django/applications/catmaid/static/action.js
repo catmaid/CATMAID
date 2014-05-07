@@ -146,7 +146,8 @@ function createButtonsFromActions(actions, boxID, iconPrefix) {
       a.onclick = action.run;
       img = document.createElement('img');
       img.setAttribute('id', buttonID + '_img');
-      img.setAttribute('src', STATIC_URL_JS + 'widgets/themes/kde/' + iconPrefix + action.getButtonName() + '.png');
+      img.setAttribute('src', STATIC_URL_JS + 'widgets/themes/kde/' + iconPrefix + action.getButtonName() + '.svg');
+      img.setAttribute('onerror', "this.src='" + STATIC_URL_JS + 'widgets/themes/kde/' + iconPrefix + action.getButtonName() + ".png'");
       img.setAttribute('alt', action.getHelpText());
       shortcuts = action.getKeyShortcutsString();
       if (shortcuts.length === 0) {

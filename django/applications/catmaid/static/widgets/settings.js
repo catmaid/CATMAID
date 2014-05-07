@@ -58,7 +58,9 @@ SettingsWidget.prototype.init = function(container)
     var input = $('<input/>').attr('type', 'text').val(val);
     var label = $('<div/>')
       .addClass('setting')
-      .append($('<label/>').append(name).append(input));
+      .append($('<label/>')
+        .append($('<span/>').addClass('description').append(name))
+        .append(input));
 
     return label;
   };

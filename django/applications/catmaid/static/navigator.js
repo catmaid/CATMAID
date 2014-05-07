@@ -62,7 +62,7 @@ function Navigator()
 	slider_z_box.className = "box";
 	slider_z_box.id = "slider_z_box";
 	var slider_z_box_label = document.createElement( "p" );
-	slider_z_box_label.appendChild( document.createTextNode( "z-index" + "   " ) );
+	slider_z_box_label.appendChild( document.createTextNode( "z-index" + "\u00a0\u00a0" ) );
     slider_z_box.appendChild( slider_z_box_label );
 	slider_z_box.appendChild( self.slider_z.getView() );
 	slider_z_box.appendChild( self.slider_z.getInputView() );

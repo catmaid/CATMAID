@@ -42,6 +42,7 @@ urlpatterns += patterns('catmaid.control.log',
 urlpatterns += patterns('catmaid.control.message',
     (r'^messages/list$', 'list_messages'),
     (r'^messages/mark_read$', 'read_message'),
+    (r'^messages/latestunreaddate', 'get_latest_unread_date'),
 )
 
 # General project model access

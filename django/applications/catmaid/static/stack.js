@@ -273,12 +273,12 @@ function Stack(
 		return {
 			min : {
 				x : self.x - w2,
-				y : self.y - w2,
+				y : self.y - h2,
 				z : self.z - 0.5
 			},
 			max : {
 				x : self.x + w2,
-				y : self.y + w2,
+				y : self.y + h2,
 				z : self.z + 0.5
 			}
 		}

@@ -563,6 +563,8 @@ function Stack(
 	/**
 	 * Move to project-coordinates and execute a completion callback when
 	 * finished.
+	 * 
+	 * @Deprecated Do not use this method as it mixes project coordinates with a stack-dependent scale level parameter
 	 */
 	this.moveTo = function( zp, yp, xp, sp, completionCallback )
 	{
@@ -582,16 +584,55 @@ function Stack(
 		self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
 	};
 
+	var bestScaleLevel = function( res )
+	{
+		var l = ( res / resolution.x );
+		var sp;
+		if ( l >= 1 )
+			for ( sp = 0; l > 1; l >>= 1, ++sp );
+		else
+		{
+			l = ( resolution.x / res );
+			for ( sp = 0; l > 1; l >>= 1, --sp );
+		}
+		return sp;
+	}
+
+	/**
+	 * move to project-coordinates passing project coordinates and resolution
+	 * 
+	 * This assumes that all layers have identical scale levels and
+	 * resolution, i.e. that of the stack, fix as needed.
+	 *
+	 * @param res spatial resolution in units per pixel
+	 */
+	this.moveToProject = function( zp, yp, xp, res, completionCallback )
+	{
+		var sp = bestScaleLevel( res );
+		var layersWithBeforeMove = [], l;
+		for ( var key in layers ) {
+			if (layers.hasOwnProperty(key)) {
+				l = layers[key];
+				// if (l.beforeMove) {
+				if( typeof l.beforeMove === 'function') {
+					layersWithBeforeMove.push(l);
+				}
+			}
+		}
+
+		self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
+	}
+
 	/**
 	 * move to pixel coordinates
 	 */
 	this.moveToPixel = function( zs, ys, xs, ss )
 	{
-		project.moveTo(
+		project.moveToProject(
 			self.stackToProjectZ( zs, ys, xs ),
 			self.stackToProjectY( zs, ys, xs ),
 			self.stackToProjectX( zs, ys, xs ),
-			ss );
+			ss >= 0 ? resolution.x * ( 1 << ss ) : resolution.x / ( 1 << -ss ) );
 
 		return true;
 	};
@@ -921,7 +962,7 @@ function Stack(
 	self.xc = 0;
 
 	self.scale = 1 / Math.pow( 2, self.s );
-	self.old_scale = self.scale;
+ 	self.old_scale = self.scale;
 
 	self.is_trackem2_stack = trakem2_project;
 	self.orientation = orientation;
@@ -980,4 +1021,3 @@ Stack.SCALE_BAR_UNITS = new Array(
 			unescape( "%u03BCm" ),
 			"mm",
 			"m" );
-

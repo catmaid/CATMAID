@@ -343,7 +343,9 @@ function Project( pid )
 	}
 
 	/**
-	 * move all stacks to the physical coordinates
+	 * move all stacks to the physical coordinates, except sp, sp is a
+	 * stack specific scale level that cannot be traced back to where it
+	 * came from, so we just pass it through 
 	 */
 	this.moveTo = function(
 		zp,
@@ -364,6 +366,60 @@ function Project( pid )
 		}
 
 		self.moveToInStacks( zp, yp, xp, sp, stacksToMove, completionCallback );
+	};
+
+
+	this.moveToProjectInStacks = function(
+		zp,
+		yp,
+		xp,
+		res,
+		stacks,
+		completionCallback)
+	{
+		var stackToMove;
+		if (stacks.length === 0) {
+			// FIXME: do we need a callback for tool.redraw as well?
+			if ( tool && tool.redraw )
+				tool.redraw();
+			if (typeof completionCallback !== "undefined") {
+				completionCallback();
+			}
+		} else {
+			stackToMove = stacks.shift();
+			stackToMove.moveToProject( zp,
+					    yp,
+					    xp,
+					    res,
+					    function () {
+						    self.moveToProjectInStacks( zp, yp, xp, res, stacks, completionCallback );
+					    });
+		}
+	}
+
+	/**
+	 * move all stacks to the physical coordinates, at a given resolution
+	 * in units per pixels
+	 */
+	this.moveToProject = function(
+		zp,
+		yp,
+		xp,
+		res,
+		completionCallback)
+	{
+		var stacksToMove = [];
+		self.coordinates.x = xp;
+		self.coordinates.y = yp;
+		self.coordinates.z = zp;
+
+		
+		for ( var i = 0; i < stacks.length; ++i )
+		{
+			stacksToMove.push( stacks[ i ] );
+		}
+
+		self.moveToProjectInStacks( zp, yp, xp, res, stacksToMove, completionCallback );
 	};
 
   this.updateTool = function()

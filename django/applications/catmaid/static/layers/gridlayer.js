@@ -7,16 +7,18 @@
  * A GridLayer object can render a SVG grid to a view. Its offset is relative to
  * the project's origin.
  */
-var GridLayer = function(stack) {
+var GridLayer = function(stack, options) {
   this.stack = stack;
+  // Make sure there is an options object
+  options = options || {};
   this.opacity = 1;
-  this.lineColor = '#FFFFFF';
-  this.lineWidth = 2;
+  this.lineColor = options.lineColor || '#FFFFFF';
+  this.lineWidth = options.lineWidth || 2;
   // Cell width and cell height in nanometers
-  this.cellWidth = 1000;
-  this.cellHeight = 1000;
-  this.xOffset = 0;
-  this.yOffset = 0;
+  this.cellWidth = options.cellWidth || 1000;
+  this.cellHeight = options.cellHeight || 1000;
+  this.xOffset = options.xOffset || 0;
+  this.yOffset = options.yOffset || 0;
 
   // Create grid view, aligned to the upper left
   this.view = document.createElement("div");

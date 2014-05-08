@@ -6,6 +6,7 @@ div.toolbar_container
 	width:100%;
 	border:none;
 	background:url(bar32_bg.gif) repeat left top;
+	background-image:url(bar32_bg.svg), none;
 }
 
 div.toolbar
@@ -18,6 +19,7 @@ div.toolbar
 	/*border-bottom:solid 4px #000000;*/
 	/*background:#000000;*/
 	background:url(bar32_bg.gif) repeat left top;
+	background-image:url(bar32_bg.svg), none;
 }
 
 div.toolbar div.toolbar_fill
@@ -38,6 +40,7 @@ div.toolbar div.box
 	white-space:nowrap;
 	float:left;
 	background:url(bar32_bg.gif) repeat-x left top;
+	background-image:url(bar32_bg.svg), none;
 }
 
 div.toolbar div.box_right
@@ -48,6 +51,7 @@ div.toolbar div.box_right
 	white-space:nowrap;
 	float:right;
 	background:url(bar32_bg.gif) repeat-x left top;
+	background-image:url(bar32_bg.svg), none;
 }
 
 div.toolbar div.box p,
@@ -97,11 +101,13 @@ div.toolbar div.box a.button_active,
 div.toolbar div.box_right a.button_active
 {
 	background:url(button_down.gif) no-repeat left center;
+	background-image:url(button_down.svg), none;
 }
 div.toolbar div.box a.button:hover,
 div.toolbar div.box_right a.button:hover
 {
 	background:url(button_over.gif) no-repeat left center;
+	background-image:url(button_over.svg), none;
 }
 
 div.toolbar div.box input,

@@ -20,6 +20,7 @@ div.vSliderHandle
 	height:24px;
 	cursor:pointer;
 	background:url(handle.gif) no-repeat center;
+	background-image:url(handle.svg), none;
 	/*
 	background:#0000FF;
 	*/
@@ -53,6 +54,7 @@ div.hSliderHandle
 	cursor:pointer;
 	z-index:8;
 	background:url(hslider_handle.gif) no-repeat center;
+	background-image:url(hslider_handle.svg), none;
 	/*
 	background:#0000FF;
 	*/
@@ -68,6 +70,7 @@ div.vSliderBarTop_2
 	height:50%;
 	overflow:hidden;
 	background:url(bar_top.gif) no-repeat center top;
+	background-image:url(bar_top.svg), none;
 }
 
 div.vSliderBarBottom,
@@ -78,6 +81,7 @@ div.vSliderBarBottom_2
 	width:100%;
 	height:50%;
 	background:url(bar_bottom.gif) no-repeat center bottom;
+	background-image:url(bar_bottom.svg), none;
 }
 
 div.hSliderBarTop,
@@ -96,11 +100,13 @@ div.hSliderBarTop_2
 div.hSliderBarTop
 {
 	background:url(hslider_bar_left_b.gif) no-repeat left center;
+	background-image:url(hslider_bar_left_b.svg), none;
 }
 
 div.hSliderBarTop_2
 {
 	background:url(hslider_bar_left_o.gif) no-repeat left center;
+	background-image:url(hslider_bar_left_o.svg), none;
 }
 
 div.hSliderBarBottom,
@@ -114,4 +120,5 @@ div.hSliderBarBottom_2
 	width:50%;
 	height:100%;
 	background:url(hslider_bar_right_b.gif) no-repeat right center;
+	background-image:url(hslider_bar_right_b.svg), none;
 }

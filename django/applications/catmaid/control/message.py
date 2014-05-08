@@ -7,6 +7,23 @@ from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
+
+@login_required
+def get_latest_unread_date(request):
+    """ This method creates a response containing the date of the most recent
+    message added. It is formatted as epoch time.
+    """
+    try:
+        latest_date = int(Message.objects \
+            .filter(user=request.user, read=False) \
+            .order_by('-time') \
+            .values_list('time', flat=True)[0].strftime('%s'))
+    except IndexError:
+        latest_date = None
+
+    return HttpResponse(json.dumps({'latest_unread_date': latest_date}))
+
+
 @login_required
 def list_messages(request, project_id=None):
     messages = Message.objects.filter(
@@ -29,12 +46,12 @@ def list_messages(request, project_id=None):
         }
 
     messages = map(message_to_dict, messages)
-    
+
     # Add a dummy message that includes the count of open notifications.
     # This is used to add the red badge to the notifications icon.
     crs = ChangeRequest.objects.filter(recipient = request.user, status = ChangeRequest.OPEN);
     messages += [{'id': -1, 'notification_count': len(crs)}];
-    
+
     return HttpResponse(json.dumps(makeJSON_legacy_list(messages)))
 
 

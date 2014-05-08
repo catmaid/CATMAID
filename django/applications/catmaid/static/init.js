@@ -52,6 +52,7 @@ var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
 var messageWindow = null;
+var latest_message_date = null;
 
 var rootWindow;
 
@@ -161,9 +162,8 @@ function handle_login(status, text, xml, completionCallback) {
 
       document.getElementById("message_box").style.display = "block";
 
-
-      //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
-      message();
+      // Check for unread messages
+      check_messages();
       
       // Asynchronously get the full list of users.
       // TODO: how to handle failure of this call?
@@ -679,11 +679,38 @@ function handle_openProjectStack( status, text, xml )
 };
 
 /**
+ * Check, if there are new messages for the current user.
+ */
+
+function check_messages() {
+  requestQueue.register(django_url + 'messages/latestunreaddate', 'GET',
+      undefined, jsonResponseHandler(function(data) {
+        // If there is a newer latest message than we know of, get all
+        // messages to display them in the message menu and widget.
+        if (data.latest_unread_date) {
+          if (!latest_message_date || latest_message_date < data.latest_unread_date) {
+            // Save the date and get all messages
+            latest_message_date = data.latest_unread_date;
+            get_messages();
+          } else {
+            // Check again later
+            msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
+          }
+        } else {
+          // Check again later
+          msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
+        }
+      }));
+
+  return;
+}
+
+/**
  * look for user messages
  */
 
-function message() {
-  requestQueue.register( django_url + 'messages/list', 'GET', undefined, handle_message);
+function get_messages() {
+  requestQueue.register(django_url + 'messages/list', 'GET', undefined, handle_message);
   return;
 }
 
@@ -752,7 +779,7 @@ function handle_message( status, text, xml )
 		}
 	}
 	
-	msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
+	msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
 	
 	return;
 }

@@ -97,17 +97,26 @@ SettingsWidget.prototype.init = function(container)
     var cellHeight = parseInt($("input", gridCellHeight).val());
     var xOffset = parseInt($("input", gridCellXOffset).val());
     var yOffset = parseInt($("input", gridCellYOffset).val());
+    var lineWidth = parseInt($("input", gridLineWidth).val());
     // Update grid, if visible
     project.getStacks().forEach(function(s) {
       var grid = s.getLayer("grid");
       if (grid) {
-        grid.setOptions(cellWidth, cellHeight, xOffset, yOffset);
+        grid.setOptions(cellWidth, cellHeight, xOffset, yOffset, lineWidth);
         s.redraw();
       }
     });
   }
   $("input[type=text]", ds).spinner({
     min: 0,
+    change: gridUpdate,
+    stop: gridUpdate
+  });
+  // Grid line width
+  var gridLineWidth = createInputSetting("Line width (px)", 1);
+  $(ds).append(gridLineWidth);
+  $("input[type=text]", gridLineWidth).spinner({
+    min: 1,
     change: gridUpdate,
     stop: gridUpdate
   });

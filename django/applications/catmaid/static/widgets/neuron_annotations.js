@@ -352,6 +352,9 @@ NeuronAnnotations.prototype.query = function(initialize)
   if (initialize) {
     this.display_start = 0;
     this.total_n_results = 0;
+    // Reset "select all" check box
+    $('#neuron_annotations_toggle_neuron_selections_checkbox' + this.widgetID)
+        .prop('checked', false);
   }
 
   var form_data = $('#neuron_query_by_annotations' +

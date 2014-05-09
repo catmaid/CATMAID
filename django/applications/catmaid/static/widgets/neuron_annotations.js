@@ -357,7 +357,7 @@ NeuronAnnotations.prototype.query = function(initialize)
         .prop('checked', false);
     // Reset "sync to" select box
     $('#neuron_annotations_add_to_selection' + this.widgetID + ' select')
-        .val("None");
+        .val("None").trigger("change");
   }
 
   var form_data = $('#neuron_query_by_annotations' +

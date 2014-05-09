@@ -69,10 +69,20 @@ this with::
                          libtiff-dev virtualenvwrapper \
                          libblas-dev liblapack-dev
 
-Virtual Env Wrapper needs to source your environment. Start a new terminal
+Virtualenv Wrapper needs to source your environment. Start a new terminal
 or if you are using the bash::
 
     source ~/.bashrc
+
+Please test if ``virtualenvwrapper`` is set up correctly, by executing::
+
+    mkvirtualenv --version
+
+If it gives you a version, everything is fine. Otherwise, e.g. if the command
+``mkvirtualenv`` is not found, add the following line to your ``~/.bashrc`` file
+and call ``source ~/.bashrc`` again::
+
+    source /etc/bash_completion.d/virtualenvwrapper
 
 To create a new virtualenv for CATMAID's Python dependencies,
 you can do::

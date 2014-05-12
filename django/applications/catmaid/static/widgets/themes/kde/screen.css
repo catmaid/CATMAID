@@ -530,3 +530,9 @@ div#classification_graph_object img.roiimage {
   margin-bottom: 0;
   bottom: -0.2em;
 }
+
+.settings-container {
+  clear: both;
+  float: left;
+  display: inline-block;
+}

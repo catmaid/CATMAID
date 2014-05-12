@@ -22,6 +22,7 @@ SettingsWidget.prototype.init = function(space)
       content.css('display', 'none');
     }
     var sc = $('<div/>')
+      .addClass('settings-container')
       .append($('<p/>')
         .addClass('title')
         .append($('<span/>')

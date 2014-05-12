@@ -536,3 +536,12 @@ div#classification_graph_object img.roiimage {
   float: left;
   display: inline-block;
 }
+
+
+#settings_widget select {
+  min-width:  20em;
+}
+
+#settings_widget select.multiline {
+  height: 8em;
+}

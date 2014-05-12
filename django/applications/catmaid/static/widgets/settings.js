@@ -139,10 +139,95 @@ SettingsWidget.prototype.init = function(space)
     });
   };
 
+  var addTracingSettings = function(container)
+  {
+    var ds = addSettingsContainer(container, "Annotations");
+    // Add explanatory text
+    ds.append($('<div/>').addClass('setting').append("Many widgets of " +
+        "the tracing tool display neurons in one way or another. This " +
+        "setting allows you to change the way neurons are named in these " +
+        "widgets. Neurons are usually annotated and below you can choose " +
+        "if and how these annotations should be used for labeling a neuron. " +
+        "You can add different representations to a fallback list, in case " +
+        "a desired representation isn't available for a neuron."));
+
+    // Get all available options
+    var namingOptions = neuronNameService.getOptions();
+    // Add naming option select box
+    var select = $('<select/>');
+    namingOptions.forEach(function(o) {
+      this.append(new Option(o.name, o.id))
+    }, select);
+    ds.append(createLabeledControl('Neuron label', select));
+
+    // Create 'Add' button and fallback list
+    var fallbackList = $('<select/>').addClass('multiline').attr('size', '4')[0];
+    var addButton = $('<button/>').text('Add labeling').click(function() {
+      var newLabel = select.val();
+      // The function to be called to actually add the label
+      var addLabeling = function(metaAnnotation) {
+        if (metaAnnotation) {
+          neuronNameService.addLabeling(newLabel, metaAnnotation);
+        } else {
+          neuronNameService.addLabeling(newLabel);
+        }
+        updateFallbackList();
+      };
+
+      // Get current labeling selection and ask for a meta annotation if
+      // required.
+      if (newLabel === 'all-meta' || newLabel === 'own-meta') {
+        // Ask for meta annotation
+        var dialog = new OptionsDialog("Please enter meta annotation");
+        var field = dialog.appendField("Meta annotation", 'meta-annotation',
+            '', true);
+        dialog.onOK = function() {
+          addLabeling($(field).val());
+        };
+
+        // Update all annotations before, showing the dialog
+        annotations.update(function() {
+          dialog.show();
+          // Add auto complete to input field
+          $(field).autocomplete({
+            source: annotations.getAllNames()
+          });
+        });
+      } else {
+        addLabeling();
+      };
+    });
+    var removeButton = $('<button/>').text('Remove labeling').click(function() {
+      if (fallbackList.selectedIndex) {
+        neuronNameService.removeLabeling(fallbackList.selectedIndex);
+        updateFallbackList();
+      }
+    });
+    ds.append(createLabeledControl('', addButton));
+    ds.append(createLabeledControl('', fallbackList));
+    ds.append(createLabeledControl('', removeButton));
+
+    var updateFallbackList = function() {
+      $(fallbackList).empty();
+      neuronNameService.getFallbackList().forEach(function(o, i) {
+        // Add each fallback list element to the select control. The first
+        // element ist disabled by default.
+        var optionElement = $('<option/>').attr('value', o.id)
+            .text(o.name);
+        if (i==0) {
+          optionElement.attr('disabled', 'disabled')
+        }
+        $(fallbackList).append(optionElement);
+      });
+    };
+    // Initialize fallback ist
+    updateFallbackList();
+  };
+
 
   // Add all settings
   addGridSettings(space);
-
+  addTracingSettings(space);
 
   // Add collapsing support to all settings containers
   $("p.title", space).click(function() {

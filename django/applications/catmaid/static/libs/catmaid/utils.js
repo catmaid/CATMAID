@@ -388,6 +388,100 @@ AnnotationCache.prototype.push = function(annotationList) {
 var annotations = new AnnotationCache();
 
 
+/**
+ * The neuron name service creates a name for a specific neuron. Based on the
+ * user's settings, the name is the regular neuron name or based on annotations.
+ * It can be configured with the help of the settings widget.
+ */
+var NeuronNameService = function()
+{
+  // All available naming options. If an entry needs a parameter and includes
+  // the pattern "..." in its name, this pattern will be replaced by the
+  // parameter when added to the actual fallback list.
+  var options = [
+    {id: 'neuronname', name: "Neuron name", needsParam: false},
+    {id: 'all', name: "All annotations", needsParam: false},
+    {id: 'all-meta', name: "All annotations annotated with ...", needsParam: true},
+    {id: 'own', name: "Own annotations", needsParam: false},
+    {id: 'own-meta', name: "Own annotations annotated with ...", needsParam: true},
+  ];
+  // The current fallback/naming list
+  var fallbackList = [
+    {id: 'neuronname', name: "Neuron name"}
+  ];
+
+  /**
+   * Returns copy of all available naming options.
+   */
+  this.getOptions = function()
+  {
+    return $.extend(true, [], options);
+  };
+
+  /**
+   * Returns a copy of the internal fallback list.
+   */
+  this.getFallbackList = function()
+  {
+    return $.extend(true, [], fallbackList);
+  };
+
+  /**
+   * Adds a labeling option to the fall back list.
+   */
+  this.addLabeling = function(id, option)
+  {
+    // Make sure there is an option with the given ID
+    var type = options.filter(function(o) { return o.id === id; });
+    // Return if no type was found
+    if (type.length === 0) {
+      return;
+    } else {
+      // Expect only one element
+      type = type[0];
+    }
+
+    // Cancel if this type needs a parameter, but non was given
+    if (type.needsParam && !option) {
+      return;
+    }
+
+    // Create new labeling
+    var newLabeling = {id: id};
+    if (option) {
+      newLabeling.option = option;
+      if (type.needsParam) {
+        // If this type needs a parameter, replace '...' in its name with the
+        // given parameter
+        newLabeling.name = type.name.replace(/\.\.\./, "\"" + option + "\"");
+      } else {
+        newLabeling.name = type.name;
+      }
+    } else {
+      newLabeling.name = type.name;
+    }
+
+    // Add new labeling to list
+    fallbackList.push(newLabeling);
+  };
+
+  /**
+   * Removes the labeling at the given index from the fallback list. All items
+   * but the fist on can be removed.
+   */
+  this.removeLabeling = function(index)
+  {
+    if (index < 1 || index >= fallbackList.length) {
+      return;
+    }
+
+    fallbackList.splice(index, 1);
+  };
+};
+
+var neuronNameService = new NeuronNameService();
+
+
 /** Adds ability to pick colors almost randomly, keeping state. */
 var Colorizer = function() {};
 

@@ -36,6 +36,17 @@ SettingsWidget.prototype.init = function(space)
   };
 
   /**
+   * Helper function to add a labeled control.
+   */
+  var createLabeledControl = function(name, control)
+  {
+    return $('<div/>').addClass('setting')
+      .append($('<label/>')
+        .append($('<span/>').addClass('description').append(name))
+        .append(control));
+  };
+
+  /**
    * Helper function to create a checkbox with label.
    */
   var createCheckboxSetting = function(name, handler)
@@ -57,13 +68,7 @@ SettingsWidget.prototype.init = function(space)
   var createInputSetting = function(name, val, handler)
   {
     var input = $('<input/>').attr('type', 'text').val(val);
-    var label = $('<div/>')
-      .addClass('setting')
-      .append($('<label/>')
-        .append($('<span/>').addClass('description').append(name))
-        .append(input));
-
-    return label;
+    return createLabeledControl(name, input);
   };
 
   /*

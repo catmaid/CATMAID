@@ -366,7 +366,8 @@ NeuronAnnotations.prototype.query = function(initialize)
           o[e.name] = annotations.getID(e.value);
         } else if (0 === e.name.indexOf('neuron_query_include_subannotation')) {
           // Expect the annotation field to be read out before this
-          var ann_input_name = e.name.replace(new RegExp(e.name),
+          var ann_input_name = e.name.replace(
+              new RegExp('neuron_query_include_subannotation'),
               'neuron_query_by_annotation');
           o[e.name] = o[ann_input_name];
         } else {
@@ -496,7 +497,13 @@ NeuronAnnotations.prototype.add_query_field = function()
   $("#neuron_query_by_annotator" + this.widgetID).before($newRow);
 
   // By default, sub-annotations should not be included
-  $newRow.find('input[type=checkbox]').attr('checked', false);
+  $newRow.find('input[type=checkbox]').attr({
+      checked: false,
+      id: 'neuron_query_include_subannotation' + this.widgetID + '_' +
+          this.nextFieldID,
+      name: 'neuron_query_include_subannotation' + this.widgetID + '_' +
+          this.nextFieldID,
+  });
 
   this.nextFieldID += 1;
 };

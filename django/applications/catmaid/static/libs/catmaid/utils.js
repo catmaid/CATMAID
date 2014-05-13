@@ -405,10 +405,19 @@ var NeuronNameService = function()
     {id: 'own', name: "Own annotations", needsParam: false},
     {id: 'own-meta', name: "Own annotations annotated with ...", needsParam: true},
   ];
+
   // The current fallback/naming list
   var fallbackList = [
     {id: 'neuronname', name: "Neuron name"}
   ];
+
+  // An object mapping skeleton IDs to objects that contain the current name and
+  // a list of clients, inerested in the particular skeleton.
+  var managedSkeletons = [];
+
+  // A list of all clients
+  var clients = [];
+
 
   /**
    * Returns copy of all available naming options.
@@ -463,6 +472,9 @@ var NeuronNameService = function()
 
     // Add new labeling to list
     fallbackList.push(newLabeling);
+
+    // Update the name representation of all neurons
+    this.updateNames(null, this.notifyClients.bind(this));
   };
 
   /**
@@ -476,10 +488,168 @@ var NeuronNameService = function()
     }
 
     fallbackList.splice(index, 1);
+
+    // Update the name representation of all neurons
+    this.updateNames(null, this.notifyClients.bind(this));
+  };
+
+  /**
+   * Convenience method to make a single skeleton model known to the naming
+   * service and to register the given client as linked to it.
+   */
+  this.register = function(client, model, callback)
+  {
+    this.registerAll(client, [model], callback);
+  }
+
+  /**
+   * Makes all given skeletons known to the naming service and registers the
+   * given client as linked to these skeletons.
+   */
+  this.registerAll = function(client, models, callback)
+  {
+    // Link all skeleton IDs to the client and create a list of unknown
+    // skeletons.
+    var unknownSkids = [];
+    for (var skid in models) {
+      if (skid in managedSkeletons) {
+        managedSkeletons[skid].clients.push(client);
+      } else {
+        managedSkeletons[skid] = {
+          clients: [client],
+          name: null,
+          model: models[skid],
+        };
+        unknownSkids.push(skid);
+      }
+    };
+
+    // Add client to the list of known clients.
+    if (-1 === clients.indexOf(client)) {
+      clients.push(client);
+    }
+
+    if (0 === unknownSkids.length) {
+      // Execute callback and return if here is no unknown skeleton ID
+      if (callback) {
+        callback();
+      }
+      return;
+    } else {
+      this.updateNames(unknownSkids, callback);
+    }
+  };
+
+  /**
+   * Removes all references to the given client.
+   */
+  this.unregister = function(client)
+  {
+    for (var skid in managedSkeletons) {
+      var cIdx =  managedSkeletons[skid].clients.indexOf(client);
+      if (-1 !== cIdx) {
+        // Remove whole skeleton from managed list, if this is the only client
+        // linked to it.
+        if (1 ===managedSkeletons[skid].clients.length) {
+          delete managedSkeletons[skid];
+        } else {
+          // Delete client from list
+          managedSkeletons[skid].clients.splice(cIdx, 1);
+        }
+      }
+    }
+
+    var cIdx = clients.indexOf(client);
+    if (-1 !== cIdx) {
+      clients.splice(cIdx, 1);
+    }
+  };
+
+  /**
+   * Tries to let every registered client know that there was an update in the
+   * name representation.
+   */
+  this.notifyClients = function() {
+    clients.forEach(function(c) {
+      // If a client has a method called 'updateNeuronNames', call it
+      if (c.updateNeuronNames) {
+        c.updateNeuronNames();
+      }
+    });
+  };
+
+  /**
+   * Updates the name of all known skeletons, if no list of skeleton IDs is
+   * passed.  Otherwise, only the given skeletons will be updated. Can execute a
+   * callback, when the names were successfully updated.
+   */
+  this.updateNames = function(skids, callback)
+  {
+    // TODO: Get all data that is needed for the fallback list
+
+    var name = function(skid) {
+      var skeleton = managedSkeletons[skid];
+      // Walk backwars through fallback list to name the current skeleton
+      for (var i=fallbackList.length - 1; i > -1; --i) {
+        var l = fallbackList[i];
+        if ('neuronname' === l.id) {
+          return skeleton.model.baseName;
+        } else if ('all' === l.id) {
+          // TODO
+        } else if ('all-meta' === l.id) {
+          // TODO
+        } else if ('own' === l.id) {
+          // TODO
+        } else if ('own-meta' === l.id) {
+          // TODO
+        }
+      }
+
+      // Return the skeleton ID as last option
+      return "" + skid;
+    };
+
+    if (skids) {
+      skids.forEach(function(skid) {
+        managedSkeletons[skid].name = name(skid);
+      });
+    } else {
+      for (var skid in managedSkeletons) {
+        managedSkeletons[skid].name = name(skid);
+      }
+    }
+
+    // Execute callback, if available
+    if (callback) {
+      callback();
+    }
+  };
+
+  /**
+   * Returns the name for the given skeleton ID, if available. Otherwise, return
+   * null.
+   */
+  this.getName = function(skid)
+  {
+    if (skid in managedSkeletons) {
+      return managedSkeletons[skid].name;
+    } else {
+      return null;
+    }
   };
 };
 
 var neuronNameService = new NeuronNameService();
+
+
+/**
+ * This a convience constructor to make it very easy to use the neuron name
+ * service.
+ */
+var NameServiceClient = function()
+{
+
+};
 
 
 /** Adds ability to pick colors almost randomly, keeping state. */

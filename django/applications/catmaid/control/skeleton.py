@@ -188,7 +188,6 @@ def check_new_annotations(project_id, user, entity_id, annotation_set):
     # Build annotation name indexed dict to the link's id and user
     annotations = {l[0]:(l[1], l[2]) for l in annotation_links}
     current_annotation_set = frozenset(annotations.keys())
-    print(annotations)
 
     # If the current annotation set is not included completely in the new
     # set, we have to check if the user has permissions to edit the missing

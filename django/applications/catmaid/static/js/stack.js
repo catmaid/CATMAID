@@ -234,7 +234,7 @@ function Stack(
 
 	/**
 	 * Write the limiting coordinates of the current stack view's bounding box
-	 * into stackBox.  Faster tthan creating an ew box.
+	 * into stackBox.  Faster than creating a new box.
 	 *
 	 *  @param stackBox {min {x, y, z}, max{x, y, z}}
 	 */

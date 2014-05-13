@@ -600,8 +600,8 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
           django_url + project.id + '/skeleton/split',
           {
             treenode_id: nodeID,
-            upstream_annotation_set: upstream_set,
-            downstream_annotation_set: downstream_set,
+            upstream_annotation_map: JSON.stringify(upstream_set),
+            downstream_annotation_map: JSON.stringify(downstream_set),
           },
           function () {
             self.updateNodes();
@@ -639,7 +639,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
               {
                 from_id: fromid,
                 to_id: toid,
-                annotation_set: annotation_set,
+                annotation_set: JSON.stringify(annotation_set),
               },
               function (json) {
                 self.updateNodes(function() {
@@ -885,7 +885,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
                 phys_y: phys_y,
                 phys_z: phys_z,
                 nearestnode_id: nearestnode_id,
-                annotation_set: annotation_set,
+                annotation_set: JSON.stringify(annotation_set),
                 self: this});
 
     if (queue.length > 1) {
@@ -2214,6 +2214,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
               cb.checked = checked;
               cb.setAttribute('class', 'split_skeleton_annotation');
               cb.setAttribute('annotation', a_info.name);
+              cb.setAttribute('annotator', a_info.users[0].id);
               cb.setAttribute('type', 'checkbox');
               cb_label.appendChild(cb);
               // There should only be one user who has used this annotation
@@ -2367,9 +2368,13 @@ SplitMergeDialog.prototype.get_annotation_set = function(over) {
   var over_checkboxes = $(this.dialog).find('#split_merge_dialog_' +
       tag + '_annotations input[type=checkbox]').toArray();
   var annotations = over_checkboxes.reduce(function(o, cb) {
-    if (cb.checked) o.push($(cb).attr('annotation'));
+    // Create a list of objects, containing each the annotation an its
+    // annotator ID.
+    if (cb.checked) {
+      o[$(cb).attr('annotation')] = parseInt($(cb).attr('annotator'));
+    }
     return o;
-  }, []);
+  }, {});
 
   return annotations;
 }
@@ -2388,11 +2393,12 @@ SplitMergeDialog.prototype.get_combined_annotation_set = function() {
   var under_set = this.get_under_annotation_set();
   // Combine both, avoid duplicates
   var combined_set = over_set;
-  under_set.forEach(function(a) {
-    if (combined_set.indexOf(a) === -1) {
-      combined_set.push(a);
+  for (var a in under_set) {
+    if (combined_set.hasOwnProperty(a)) {
+      continue;
     }
-  });
+    combined_set[a] = under_set[a];
+  }
 
   return combined_set;
 }

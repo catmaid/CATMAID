@@ -223,10 +223,8 @@ def split_skeleton(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
     skeleton_id = treenode.skeleton_id
-    upstream_annotation_set = frozenset([v for k,v in request.POST.iteritems()
-            if k.startswith('upstream_annotation_set[')])
-    downstream_annotation_set = frozenset([v for k,v in request.POST.iteritems()
-            if k.startswith('downstream_annotation_set[')])
+    upstream_annotation_map = json.loads(request.POST.get('upstream_annotation_map'))
+    downstream_annotation_map = json.loads(request.POST.get('downstream_annotation_map'))
     cursor = connection.cursor()
 
     # Check if the treenode is root!
@@ -235,7 +233,8 @@ def split_skeleton(request, project_id=None):
 
     # Check if annotations are valid
     if not check_annotations_on_split(project_id, skeleton_id,
-            upstream_annotation_set, downstream_annotation_set):
+            frozenset(upstream_annotation_map.keys()),
+            frozenset(downstream_annotation_map.keys())):
         raise Exception("Annotation distribution is not valid for splitting. " \
           "One part has to keep the whole set of annotations!")
 
@@ -311,11 +310,11 @@ def split_skeleton(request, project_id=None):
 
     # Update annotations of existing neuron to have only over set
     _update_neuron_annotations(project_id, request.user, neuron.id,
-            upstream_annotation_set)
+            upstream_annotation_map)
 
     # Update annotations of under skeleton
     _annotate_entities(project_id, request.user, [new_neuron.id],
-            downstream_annotation_set)
+            downstream_annotation_map)
 
     # Log the location of the node at which the split was done
     insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
@@ -715,8 +714,8 @@ def join_skeleton(request, project_id=None):
     try:
         from_treenode_id = int(request.POST.get('from_id', None))
         to_treenode_id = int(request.POST.get('to_id', None))
-        annotation_set = frozenset([v for k,v in request.POST.iteritems()
-                if k.startswith('annotation_set[')])
+        annotation_set = json.loads(request.POST.get('annotation_set'))
+
         _join_skeleton(request.user, from_treenode_id, to_treenode_id,
                 project_id, annotation_set)
 
@@ -732,12 +731,14 @@ def join_skeleton(request, project_id=None):
 
 
 def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
-        annotation_set):
+        annotation_map):
     """ Take the IDs of two nodes, each belonging to a different skeleton, and
     make to_treenode be a child of from_treenode, and join the nodes of the
     skeleton of to_treenode into the skeleton of from_treenode, and delete the
     former skeleton of to_treenode. All annotations in annotation_set will be
-    linked to the skeleton of to_treenode."""
+    linked to the skeleton of to_treenode. It is expected that <annotation_map>
+    is a dictionary, mapping an annotation to an annotator ID.
+    """
     if from_treenode_id is None or to_treenode_id is None:
         raise Exception('Missing arguments to _join_skeleton')
 
@@ -770,7 +771,8 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
         # Check if annotations are valid
         if not check_annotations_on_join(project_id, user,
-                from_neuron['neuronid'], to_neuron['neuronid'], annotation_set):
+                from_neuron['neuronid'], to_neuron['neuronid'],
+                frozenset(annotation_map.keys())):
             raise Exception("Annotation distribution is not valid for joining. " \
               "Annotations for which you don't have permissions have to be kept!")
 
@@ -807,13 +809,13 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         response_on_error = 'Could not update annotations of neuron ' \
                 'with ID %s' % from_neuron['neuronid']
         _update_neuron_annotations(project_id, user, from_neuron['neuronid'],
-                annotation_set)
+                annotation_map)
 
         insert_into_log(project_id, user.id, 'join_skeleton',
                 from_treenode.location, 'Joined skeleton with ID %s (neuron: ' \
                 '%s) into skeleton with ID %s (neuron: %s, annotations: %s)' % \
                 (to_skid, to_neuron['neuronname'], from_skid,
-                        from_neuron['neuronname'], ', '.join(annotation_set)))
+                        from_neuron['neuronname'], ', '.join(annotation_map.keys())))
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

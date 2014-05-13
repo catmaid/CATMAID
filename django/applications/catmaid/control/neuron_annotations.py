@@ -275,8 +275,10 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
 
     return HttpResponse(json.dumps(response), mimetype='text/json')
 
-def _update_neuron_annotations(project_id, user, neuron_id, annotations):
+def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
     """ Ensure that the neuron is annotated_with only the annotations given.
+    These annotations are expected to come as dictornary of annotation name
+    versus annotator ID.
     """
     qs = ClassInstanceClassInstance.objects.filter(
             class_instance_a__id=neuron_id,
@@ -286,13 +288,13 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotations):
 
     existing_annotations = dict(qs)
 
-    annotations = set(annotations)
+    update = set(annotation_map.iterkeys())
     existing = set(existing_annotations.iterkeys())
 
-    missing = annotations - existing
+    missing = {k:v for k,v in annotation_map.items() if k in update - existing}
     _annotate_entities(project_id, user, [neuron_id], missing)
 
-    to_delete = existing - annotations
+    to_delete = existing - update
     to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \
         if name in to_delete)
 
@@ -302,19 +304,23 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotations):
             class_instance_b_id__in=to_delete_ids).delete()
 
 
-def _annotate_entities(project_id, user, entity_ids, annotations):
+def _annotate_entities(project_id, user, entity_ids, annotation_map):
+    """ Annotate the entities with the given <entity_ids> with the given
+    annotations. These annotations are expected to come as dictornary of
+    annotation name versus annotator ID.
+    """
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')
 
     annotation_class = Class.objects.get(project_id = project_id,
                                          class_name = 'annotation')
     annotation_objects = []
-    for annotation in annotations:
+    for annotation, annotator_id in annotation_map.items():
         # Make sure the annotation's class instance exists.
         ci, created = ClassInstance.objects.get_or_create(
                 project_id=project_id, name=annotation,
                 class_column=annotation_class,
-                defaults={'user': user});
+                defaults={'user_id': annotator_id});
         annotation_objects.append(ci)
         # Annotate each of the entities. Avoid duplicates for the current user,
         # but it's OK for multiple users to annotate with the same instance.
@@ -322,7 +328,7 @@ def _annotate_entities(project_id, user, entity_ids, annotations):
             cici, created = ClassInstanceClassInstance.objects.get_or_create(
                     project_id=project_id, relation=r,
                     class_instance_a__id=entity_id,
-                    class_instance_b=ci, user=user,
+                    class_instance_b=ci, user_id=annotator_id,
                     defaults={'class_instance_a_id': entity_id})
             cici.save() # update the last edited time
 
@@ -349,13 +355,15 @@ def annotate_entities(request, project_id = None):
                         'id', flat=True)
 
     # Annotate enties
+    annotation_map = {a: request.user.id for a in annotations}
     annotation_objs = set(_annotate_entities(project_id, request.user, entity_ids,
-            annotations))
+            annotation_map))
     # Annotate annotations
     if meta_annotations:
         annotation_ids = [a.id for a in annotation_objs]
+        meta_annotation_map = {ma: request.user.id for ma in meta_annotations}
         meta_annotation_objs = _annotate_entities(project_id, request.user,
-                annotation_ids, meta_annotations)
+                annotation_ids, meta_annotation_map)
         # Update used annotation objects set
         annotation_objs.add(meta_annotation_objs)
 

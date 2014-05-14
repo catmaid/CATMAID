@@ -312,8 +312,7 @@ def split_skeleton(request, project_id=None):
             upstream_annotation_map)
 
     # Update annotations of under skeleton
-    _annotate_entities(project_id, request.user, [new_neuron.id],
-            downstream_annotation_map)
+    _annotate_entities(project_id, [new_neuron.id], downstream_annotation_map)
 
     # Log the location of the node at which the split was done
     insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )

@@ -292,7 +292,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
     existing = set(existing_annotations.iterkeys())
 
     missing = {k:v for k,v in annotation_map.items() if k in update - existing}
-    _annotate_entities(project_id, user, [neuron_id], missing)
+    _annotate_entities(project_id, [neuron_id], missing)
 
     to_delete = existing - update
     to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \
@@ -304,7 +304,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
             class_instance_b_id__in=to_delete_ids).delete()
 
 
-def _annotate_entities(project_id, user, entity_ids, annotation_map):
+def _annotate_entities(project_id, entity_ids, annotation_map):
     """ Annotate the entities with the given <entity_ids> with the given
     annotations. These annotations are expected to come as dictornary of
     annotation name versus annotator ID.
@@ -356,14 +356,14 @@ def annotate_entities(request, project_id = None):
 
     # Annotate enties
     annotation_map = {a: request.user.id for a in annotations}
-    annotation_objs = set(_annotate_entities(project_id, request.user, entity_ids,
+    annotation_objs = set(_annotate_entities(project_id, entity_ids,
             annotation_map))
     # Annotate annotations
     if meta_annotations:
         annotation_ids = [a.id for a in annotation_objs]
         meta_annotation_map = {ma: request.user.id for ma in meta_annotations}
-        meta_annotation_objs = _annotate_entities(project_id, request.user,
-                annotation_ids, meta_annotation_map)
+        meta_annotation_objs = _annotate_entities(project_id, annotation_ids,
+                meta_annotation_map)
         # Update used annotation objects set
         annotation_objs.add(meta_annotation_objs)
 

@@ -10,10 +10,15 @@ var ReviewSystem = new function()
     self.current_segment_index = 0;
     var tile_image_counter = 0,
         total_count = 0,
-        end_puffer_count = 0;
+        end_puffer_count = 0,
+        autoCentering = true;
 
     this.init = function() {
         projectID = project.id;
+    };
+
+    this.setAutoCentering = function(centering) {
+        autoCentering = centering ? true : false;
     };
 
     this.validSegment = function() {
@@ -50,10 +55,13 @@ var ReviewSystem = new function()
         if (self.skeleton_segments===null)
             return;
         var node = self.current_segment['sequence'][idx];
-        SkeletonAnnotations.staticMoveTo(node.z, node.y, node.x,
-         function () {
-            SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
-         });
+        SkeletonAnnotations.staticMoveTo(
+            node.z,
+            autoCentering ? node.y : project.coordinates.y,
+            autoCentering ? node.x : project.coordinates.x,
+            function () {
+               SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
+            });
     };
 
     this.moveNodeInSegmentBackward = function() {

@@ -1531,6 +1531,18 @@ var WindowMaker = new function()
         cacheImages.onclick = ReviewSystem.cacheImages;
         contentbutton.appendChild(cacheImages);
 
+        var autoCenter = document.createElement('input');
+        autoCenter.setAttribute('type', 'checkbox');
+        autoCenter.setAttribute('id', 'review_auto_center');
+        autoCenter.setAttribute('checked', 'checked');
+        autoCenter.onchange = function() {
+          ReviewSystem.setAutoCentering(this.checked);
+        };
+        var autoCenterLabel = document.createElement('label');
+        autoCenterLabel.appendChild(autoCenter);
+        autoCenterLabel.appendChild(document.createTextNode('Auto centering'));
+        contentbutton.appendChild(autoCenterLabel);
+
         var sync = document.createElement('input');
         sync.setAttribute('type', 'checkbox');
         sync.setAttribute('id', 'remote_review_skeleton');

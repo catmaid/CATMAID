@@ -307,7 +307,8 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
 def _annotate_entities(project_id, entity_ids, annotation_map):
     """ Annotate the entities with the given <entity_ids> with the given
     annotations. These annotations are expected to come as dictornary of
-    annotation name versus annotator ID.
+    annotation name versus annotator ID. A listof all annotation class
+    instances that have been used is returned.
     """
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')

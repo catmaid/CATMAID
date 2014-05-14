@@ -321,7 +321,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
         ci, created = ClassInstance.objects.get_or_create(
                 project_id=project_id, name=annotation,
                 class_column=annotation_class,
-                defaults={'user_id': annotator_id});
+                defaults={'user_id': annotator_id})
         annotation_objects.append(ci)
         # Annotate each of the entities. Avoid duplicates for the current user,
         # but it's OK for multiple users to annotate with the same instance.

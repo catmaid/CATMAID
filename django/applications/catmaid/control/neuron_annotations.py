@@ -346,7 +346,7 @@ def annotate_entities(request, project_id = None):
             if k.startswith('entity_ids[')]
     skeleton_ids = [int(v) for k,v in request.POST.iteritems()
             if k.startswith('skeleton_ids[')]
-    
+
     if any(skeleton_ids):
         entity_ids += ClassInstance.objects.filter(project = p,
                 class_column__class_name = 'neuron',
@@ -559,7 +559,7 @@ def generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relati
     """
 
     rest = """
-    FROM 
+    FROM
         class_instance a,
         class_instance_class_instance cc,
         class_instance neuron,
@@ -678,7 +678,7 @@ def list_annotations_datatable(request, project_id=None):
     if display_length < 0:
         display_length = 2000  # Default number of result rows
 
-    
+
     # Speed hack
     if 'parallel_annotations[0]' in request.POST:
         return _fast_co_annotations(request, project_id, display_start, display_length)

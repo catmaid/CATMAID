@@ -161,7 +161,7 @@ var ProjectStatistics = new function()
       // Make name columns if names don't fit under below each other
       if (l_y + line_height > y + radius) {
         shift_x = shift_x + max_label_width + text_indent + 16;
-        shift_y = shift_y - (i + 1) * line_height;
+        shift_y = -1 * (i + 1) * line_height;
       }
 
       var color = pie.series[i].attrs.fill;

@@ -682,10 +682,27 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
               new ErrorDialog(e.error, e.detail).show();
             } else {
               var ann_names = e.annotations.map(function(a) { return a.name; });
+              var used_annotations = e.annotations.reduce(function(o, a) {
+                if (a.entities.length > 0) o.push(a.name);
+                return o;
+              }, []);
               if (e.annotations.length == 1)
-                growlAlert('Information', 'Annotation ' + ann_names[0] + ' added.');
+                if (used_annotations.length > 0) {
+                  growlAlert('Information', 'Annotation ' + ann_names[0] +
+                      ' added to ' + e.annotations[0].entities.length +
+                       (e.annotations[0].entities.length > 1 ? ' entities.' : ' entity.'));
+                } else {
+                  growlAlert('Information', 'Couldn\'t add annotation ' +
+                      ann_names[0] + '.');
+                }
               else
-                growlAlert('Information', 'Annotations ' + ann_names.join(', ') + ' added.');
+                if (used_annotations.length > 0) {
+                  growlAlert('Information', 'Annotations ' +
+                      used_annotations.join(', ') + ' added.');
+                } else {
+                  growlAlert('Information', 'Couldn\'t add any of the annotations' +
+                      ann_names.join(', ') + '.');
+                }
               // Update the annotation cache with new annotations, if any
               try {
                 window.annotations.push(e.annotations);

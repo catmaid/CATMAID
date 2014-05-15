@@ -315,23 +315,25 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
 
     annotation_class = Class.objects.get(project_id = project_id,
                                          class_name = 'annotation')
-    annotation_objects = []
+    annotation_objects = {}
     for annotation, annotator_id in annotation_map.items():
         # Make sure the annotation's class instance exists.
         ci, created = ClassInstance.objects.get_or_create(
                 project_id=project_id, name=annotation,
                 class_column=annotation_class,
                 defaults={'user_id': annotator_id})
-        annotation_objects.append(ci)
-        # Annotate each of the entities. Avoid duplicates for the current user,
-        # but it's OK for multiple users to annotate with the same instance.
+        newly_annotated = set()
+        # Annotate each of the entities. Don't allow duplicates.
         for entity_id in entity_ids:
             cici, created = ClassInstanceClassInstance.objects.get_or_create(
                     project_id=project_id, relation=r,
-                    class_instance_a__id=entity_id,
-                    class_instance_b=ci, user_id=annotator_id,
-                    defaults={'class_instance_a_id': entity_id})
-            cici.save() # update the last edited time
+                    class_instance_a__id=entity_id, class_instance_b=ci,
+                    defaults={'class_instance_a_id': entity_id,
+                              'user_id': annotator_id})
+            if created:
+                newly_annotated.add(entity_id)
+        # Remember which entities got newly annotated
+        annotation_objects[ci] = newly_annotated
 
     return annotation_objects
 
@@ -357,20 +359,25 @@ def annotate_entities(request, project_id = None):
 
     # Annotate enties
     annotation_map = {a: request.user.id for a in annotations}
-    annotation_objs = set(_annotate_entities(project_id, entity_ids,
-            annotation_map))
+    annotation_objs = _annotate_entities(project_id, entity_ids, annotation_map)
     # Annotate annotations
     if meta_annotations:
-        annotation_ids = [a.id for a in annotation_objs]
+        annotation_ids = [a.id for a in annotation_objs.keys()]
         meta_annotation_map = {ma: request.user.id for ma in meta_annotations}
         meta_annotation_objs = _annotate_entities(project_id, annotation_ids,
-                meta_annotation_map)
+                meta_annotation_map).keys()
         # Update used annotation objects set
-        annotation_objs.add(meta_annotation_objs)
+        for ma, me in meta_annotation_objs.items():
+            entities = annotation_objs.get(ma)
+            if entities:
+                entities.update(me)
+            else:
+                annotation_objs[ma] = me
 
     result = {
         'message': 'success',
-        'annotations': [{'name': a.name, 'id': a.id} for a in annotation_objs],
+        'annotations': [{'name': a.name, 'id': a.id, 'entities': list(e)} \
+                for a,e in annotation_objs.items()],
     }
 
     return HttpResponse(json.dumps(result), mimetype='text/json')

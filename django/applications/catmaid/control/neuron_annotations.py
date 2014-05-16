@@ -697,25 +697,37 @@ def list_annotations_datatable(request, project_id=None):
     should_sort = request.POST.get('iSortCol_0', False)
     search_term = request.POST.get('sSearch', '')
 
-    # Annotate last used time
+
+    # Additional information should also be constrained by neurons and user
+    # names. E.g., when viewing the annotation list for a user, the usage count
+    # should only display the number of times the user has used an annotation.
+    conditions = ""
+    if request.POST.get('neuron_id'):
+        conditions += "AND cici.class_instance_a = %s " % \
+                request.POST.get('neuron_id')
+    if request.POST.get('user_id'):
+        conditions += "AND cici.user_id = %s " % \
+                request.POST.get('user_id')
+
+    # Add last used time
     annotation_query = annotation_query.extra(
         select={'last_used': 'SELECT MAX(edition_time) FROM ' \
             'class_instance_class_instance cici WHERE ' \
-            'cici.class_instance_b = class_instance.id'})
+            'cici.class_instance_b = class_instance.id %s' % conditions})
 
-    # Annotate username of last user
+    # Add user ID of last user
     annotation_query = annotation_query.extra(
         select={'last_user': 'SELECT auth_user.id FROM auth_user, ' \
             'class_instance_class_instance cici ' \
             'WHERE cici.class_instance_b = class_instance.id ' \
-            'AND cici.user_id = auth_user.id ' \
-            'ORDER BY cici.edition_time DESC LIMIT 1'})
+            'AND cici.user_id = auth_user.id %s' \
+            'ORDER BY cici.edition_time DESC LIMIT 1' % conditions})
 
-    # Annotate usage count
+    # Add usage count
     annotation_query = annotation_query.extra(
         select={'num_usage': 'SELECT COUNT(*) FROM ' \
             'class_instance_class_instance cici WHERE ' \
-            'cici.class_instance_b = class_instance.id'})
+            'cici.class_instance_b = class_instance.id %s' % conditions})
 
     if len(search_term) > 0:
         annotation_query = annotation_query.filter(name__regex=search_term)

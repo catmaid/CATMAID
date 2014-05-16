@@ -65,7 +65,6 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
             relations, classes)
     # Build annotation query by ANDing every annotation. If an annotation should
     # get expanded, AND this annotation OR it's sub-annotations.
-    annotation_q = Q()
     for a in annotations:
         ls_a = [a]
         # Add sub annotations, if requested

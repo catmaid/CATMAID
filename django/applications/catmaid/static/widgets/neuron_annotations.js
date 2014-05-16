@@ -388,8 +388,11 @@ NeuronAnnotations.prototype.query = function(initialize)
         empty_val = '-2';
       }
       if (form_data[field] && form_data[field] != empty_val) {
+        // We found at least one constraint
         has_constraints = true;
-        break;
+      } else {
+        // Delete empty fields
+        delete form_data[field];
       }
     }
   }

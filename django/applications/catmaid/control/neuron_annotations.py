@@ -3,7 +3,7 @@ from string import upper
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.db import connection
 
 from catmaid.models import *
@@ -32,33 +32,22 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     entities =  ClassInstance.objects.filter(project = project,
             class_column_id__in = allowed_class_ids)
 
+    # Get name, annotator and time constraints, if available
+    name = params.get('neuron_query_by_name', "").strip()
+    annotator_id = params.get('neuron_query_by_annotator', None)
+    start_date = params.get('neuron_query_by_start_date', "").strip()
+    end_date = params.get('neuron_query_by_end_date', "").strip()
+
+    # Collect annotations and sub-annotation information
     for key in params:
-        if key.startswith('neuron_query_by_name'):
-            name = params[key].strip()
-            if len(name):
-                entities = entities.filter(name__iregex=name)
-        elif key.startswith('neuron_query_by_annotation'):
+        if key.startswith('neuron_query_by_annotation'):
             annotations.add(int(params[key]))
         elif key.startswith('neuron_query_include_subannotation'):
             annotations_to_expand.add(int(params[key]))
-        elif key == 'neuron_query_by_annotator':
-            userID = int(params[key])
-            if userID >= 0:
-                entities = entities.filter(
-                        cici_via_a__relation_id = annotated_with,
-                        cici_via_a__user = userID)
-        elif key == 'neuron_query_by_start_date':
-            startDate = params[key].strip()
-            if len(startDate) > 0:
-                entities = entities.filter(
-                        cici_via_a__relation_id = annotated_with,
-                        cici_via_a__creation_time__gte = startDate)
-        elif key == 'neuron_query_by_end_date':
-            endDate = params[key].strip()
-            if len(endDate) > 0:
-                entities = entities.filter(
-                        cici_via_a__relation_id = annotated_with,
-                        cici_via_a__creation_time__lte = endDate)
+
+    # If a name is given, add this to the query
+    if name:
+        entities = entities.filter(name__iregex=name)
 
     # Get map of annotations to expand and their sub-annotations
     sub_annotation_ids = get_sub_annotation_ids(project, annotations_to_expand,
@@ -71,9 +60,21 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
         sa_ids = sub_annotation_ids.get(a)
         if sa_ids and len(sa_ids):
             ls_a += sa_ids
-        entities = entities.filter(
-                cici_via_a__relation_id=annotated_with,
-                cici_via_a__class_instance_b_id__in=ls_a)
+
+        # Create basic annotation filter
+        annotation_filter = Q(
+            cici_via_a__relation_id=annotated_with,
+            cici_via_a__class_instance_b_id__in=ls_a)
+
+        # Add annotator and time constraints, if available
+        if annotator_id:
+            annotation_filter &= Q(cici_via_a__user=annotator_id)
+        if start_date:
+            annotation_filter &= Q(cici_via_a__creation_time__gte=start_date)
+        if end_date:
+            annotation_filter &= Q(cici_via_a__creation_time__lte=end_date)
+
+        entities = entities.filter(annotation_filter)
 
     # Create final query. Without any restriction, the result set will contain
     # all instances of the given set of allowed classes.

@@ -30,7 +30,7 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     # general filters that are annotated by the annotation filters or the
     # sub-annotation filters.
     entities =  ClassInstance.objects.filter(project = project,
-            class_column__id__in = allowed_class_ids)
+            class_column_id__in = allowed_class_ids)
 
     for key in params:
         if key.startswith('neuron_query_by_name'):

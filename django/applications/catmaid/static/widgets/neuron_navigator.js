@@ -428,7 +428,7 @@ NeuronNavigator.Node.prototype.add_menu_table = function(entries, container)
 };
 
 NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
-    table_id, filters, display_annotator, unlink_handler, callback)
+    table_id, filters, display_usage, display_annotator, unlink_handler, callback)
 {
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_annotationlist_content' +
@@ -436,7 +436,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
 
   // Prepare column definition, depending on whether there is a removal handler
   // and if the annotator should be displayed.
-  var columns = ['Annotation', 'Last used', '# used'];
+  var columns = ['Annotation', 'Last used'];
   var column_params = [
       { // Annotation name
         "bSearchable": true,
@@ -445,12 +445,16 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
       { // Last used date
         "bSearchable": false,
         "bSortable": true
-      },
-      { // Usage
-        "bSearchable": false,
-        "bSortable": true
-      },
+      }
     ];
+  if (display_usage) {
+      columns.push('# used');
+      column_params.push(
+        { // Usage
+          "bSearchable": false,
+          "bSortable": true
+        });
+  }
   if (display_annotator) {
       columns.push('Annotator');
       column_params.push(
@@ -1052,7 +1056,7 @@ NeuronNavigator.AnnotationListNode.prototype.add_content = function(container,
 
   // Add annotation data table based on filters above
   var datatable = this.add_annotation_list_table(container, table_id, filters,
-      false, null, null);
+      true, false, null, null);
 
   // Make self accessible in callbacks more easily
   var self = this;
@@ -1579,7 +1583,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
 
   // Add annotation data table based on filters above
   var annotation_datatable = this.add_annotation_list_table(container,
-      annotation_table_id, filters, true, function(annotation_id) {
+      annotation_table_id, filters, false, true, function(annotation_id) {
           // Unlink the annotation from the current neuron
           NeuronAnnotations.remove_annotation(self.neuron_id,
               annotation_id, function(message) {

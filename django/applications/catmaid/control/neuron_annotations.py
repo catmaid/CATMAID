@@ -84,6 +84,9 @@ def get_sub_annotation_ids(project_id, annotation_set, relations, classes):
     from the annotation_set passed. Additionally, transivitely annotated
     annotations are returned as well.
     """
+    if not annotation_set:
+        return {}
+
     aaa_tuples = ClassInstanceClassInstance.objects.filter(
             project_id=project_id,
             class_instance_a__class_column=classes['annotation'],

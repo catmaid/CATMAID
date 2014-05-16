@@ -244,6 +244,7 @@ function Project( pid )
 	 */
 	this.register = function()
 	{
+		document.getElementById("toolbox_edit").style.display = "block";
 		document.getElementById( "content" ).style.display = "none";
 		document.body.appendChild( view );
 		ui.registerEvent( "onresize", resize );
@@ -287,30 +288,6 @@ function Project( pid )
 
 		project = null;
 
-		return;
-	}
-	
-	/**
-	 * set the project to be editable or not
-	 */
-	this.setEditable = function(bool)
-	{
-		editable = bool;
-		if (editable) {
-			document.getElementById("toolbox_edit").style.display = "block";
-			//document.getElementById("toolbox_data").style.display = "block";
-			//document.getElementById("toolbox_segmentation").style.display = "block";
-			//document.getElementById("toolbox_data").style.display = "block";
-		}
-		else 
-		{
-			document.getElementById("toolbox_edit").style.display = "none";
-			//document.getElementById("toolbox_data").style.display = "none";
-			//document.getElementById("toolbox_segmentation").style.display = "none";
-			//document.getElementById("toolbox_data").style.display = "none";
-		}
-		window.onresize();
-		
 		return;
 	}
 
@@ -547,7 +524,6 @@ function Project( pid )
 	var stacks = new Array();	//!< a list of stacks related to the project
 	this.focusedStack;
 	
-	var editable = false;
 	var mode = "move";
 	var show_textlabels = true;
 	

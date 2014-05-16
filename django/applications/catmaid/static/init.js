@@ -313,9 +313,6 @@ function handle_updateProjects(status, text, xml) {
 	if (status == 200 && text) {
 		var e = $.parseJSON(text);
 
-		var keep_project_alive = false;
-		var keep_project_editable = false;
-
 		if (e.error) {
 			project_menu.update();
 			alert(e.error);
@@ -331,12 +328,8 @@ function handle_updateProjects(status, text, xml) {
 			project_menu.update(cachedProjectsInfo);
 		}
 		if (project) {
-			if (keep_project_alive) {
-				project.setEditable(keep_project_editable);
-			} else {
-				project.destroy();
-				delete project;
-			}
+			project.destroy();
+			delete project;
 		}
 	}
 	ui.releaseEvents();
@@ -420,10 +413,6 @@ function updateProjectListFromCache() {
     p = cachedProjectsInfo[i];
     display = false;
     toappend = [];
-    if (project && project.id == i) {
-      keep_project_alive = true;
-      keep_project_editable = p.editable;
-    }
 
     dt = document.createElement("dt");
 
@@ -533,9 +522,6 @@ function handle_openProjectStack( status, text, xml )
 				project_view = project.getView();
 				project.register();
 			}
-
-			// TODO: need to check permission of the user to decide on what to display
-			project.setEditable( e.editable );
 
 			var labelupload = '';
 

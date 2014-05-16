@@ -332,43 +332,6 @@ function Stack(
 		};
 	};
 
-
-	/**
-	 * Get the top and left coordinates in physical project coordinates of
-	 * stack's window
-	 *
-	 * TODO This method doesn't conceptually conform with coordinate transforms
-	 */
-	this.getWorldTopLeft = function()
-	{
-		return {
-			worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
-			worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
-			scale : self.scale };
-	};
-
-  /**
-   * Get stacks width and height
-   *
-   * TODO This method doesn't conceptually conform with coordinate transforms
-   */
-  this.getFieldOfViewInPixel = function()
-  {
-    var l =
-	{
-	    stackDivWidth : self.viewWidth,
-		stackDivHeight : self.viewHeight,
-        stackScaledWidth : Math.floor(self.dimension.x * self.scale ),
-        stackScaledHeight : Math.floor(self.dimension.y * self.scale ),
-        worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ),
-        worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ),
-        scale : self.scale,
-        worldTopC : self.yc,
-        worldLeftC : self.xc
-    };
-    return l;
-  };
-
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */

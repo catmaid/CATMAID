@@ -368,7 +368,7 @@ def annotate_entities(request, project_id = None):
         annotation_ids = [a.id for a in annotation_objs.keys()]
         meta_annotation_map = {ma: request.user.id for ma in meta_annotations}
         meta_annotation_objs = _annotate_entities(project_id, annotation_ids,
-                meta_annotation_map).keys()
+                meta_annotation_map)
         # Update used annotation objects set
         for ma, me in meta_annotation_objs.items():
             entities = annotation_objs.get(ma)

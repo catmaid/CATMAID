@@ -1968,45 +1968,6 @@ var WindowMaker = new function()
   };
 
 
-  var createObjectTreeWindow = function()
-  {
-    var win = new CMWWindow( "Object Tree" );
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer( "object_tree_widget" );
-    content.appendChild( container );
-
-    var refresh = document.createElement('input');
-    refresh.setAttribute('type', 'button');
-    refresh.setAttribute('value', 'Refresh');
-    refresh.onclick = ObjectTree.refresh.bind(ObjectTree);
-    container.appendChild(refresh);
-
-    container.appendChild(document.createTextNode(' Synchronize '));
-
-    var sync = document.createElement('input');
-    sync.setAttribute('type', 'checkbox');
-    sync.setAttribute('id', 'synchronize_object_tree');
-    sync.checked = true;
-    container.appendChild(sync);
-
-    container.appendChild(document.createTextNode(' - Push to:'));
-    container.appendChild(SkeletonListSources.createPushSelect(ObjectTree, 'link'));
-
-    var div = document.createElement('div');
-    div.setAttribute('id', 'tree_object');
-    container.appendChild(div);
-
-    addListener(win, container, undefined, ObjectTree.destroy.bind(ObjectTree));
-
-    addLogic(win);
-
-    ObjectTree.init( project.getId() );
-
-    return win;
-  };
-
   var createStatisticsWindow = function()
   {
     var win = new CMWWindow( "Statistics" );
@@ -2359,7 +2320,6 @@ var WindowMaker = new function()
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,
-    "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "review-system": createReviewWindow,
     "connectivity-widget": createConnectivityWindow,

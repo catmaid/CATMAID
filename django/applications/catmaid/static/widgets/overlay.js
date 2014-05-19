@@ -127,14 +127,6 @@ SkeletonAnnotations.getActiveStackId = function() {
   return this.atn.stack_id;
 };
 
-/**
- * Open the skeleton node in the Object Tree if the Object Tree is visible
- * and if the Object Tree synchronize_object_tree checkbox is checked.
- */
-SkeletonAnnotations.maybeOpenSkeletonNodeInObjectTree = function(node) {
-  if (node) ObjectTree.maybeOpenTreePath(node.skeleton_id);
-};
-
 SkeletonAnnotations.exportSWC = function() {
   if (!this.atn.id || !this.atn.skeleton_id) {
     alert('Need to activate a treenode before exporting to SWC!');
@@ -437,9 +429,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
       statusBar.replaceLast("Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id);
       // If changing skeletons:
       if (atn.skeleton_id !== node.skeleton_id) {
-        // 1. Open the object tree node if synchronizing:
-        SkeletonAnnotations.maybeOpenSkeletonNodeInObjectTree(node);
-        // 2. Update the status with the ancestry of that skeleton:
+        // Update the status with the ancestry of that skeleton:
         var stackID = this.stack.getId();
         this.submit(
             django_url + project.id + '/skeleton/ancestry',
@@ -605,7 +595,6 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
           },
           function () {
             self.updateNodes();
-            ObjectTree.refresh();
             self.selectNode(nodeID);
           },
           true); // block UI
@@ -643,7 +632,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
               },
               function (json) {
                 self.updateNodes(function() {
-                  ObjectTree.refresh();
                   self.selectNode(toid);
                 });
               },
@@ -1194,7 +1182,6 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
       statusBar.replaceLast("Deactivated node #" + atn.id);
     }
     $('#neuronName').text('');
-    ObjectTree.deselectAll();
     this.activateNode(null);
     if (!e.shiftKey) {
       e.stopPropagation();
@@ -1855,8 +1842,6 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteTreenode = function (node, wasAct
             } else {
               self.activateNode(null);
             }
-            // Refresh object tree as well, given that the node had no parent and therefore the deletion of its skeleton perhaps was triggered
-            ObjectTree.refresh();
           }
         }
         // capture ID prior to refreshing nodes and connectors

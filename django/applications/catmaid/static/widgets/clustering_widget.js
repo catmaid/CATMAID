@@ -146,9 +146,6 @@ var ClusteringWidget = new function()
                 if (root_class) {
                   parameters["rootclass"] = root_class;
                 }
-                if (ObjectTree.currentExpandRequest) {
-                  parameters['expandtarget'] = ObjectTree.currentExpandRequest.join(',');
-                }
                 if (n[0]) {
                   parameters['parentname'] = n[0].innerText;
                 }

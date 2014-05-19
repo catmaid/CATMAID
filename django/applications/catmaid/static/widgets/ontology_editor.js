@@ -74,9 +74,6 @@ var OntologyEditor = new function()
                 if (root_class) {
                   parameters["rootclass"] = root_class;
                 }
-                if (ObjectTree.currentExpandRequest) {
-                  parameters['expandtarget'] = ObjectTree.currentExpandRequest.join(',');
-                }
                 if (n[0]) {
                   parameters['parentname'] = n[0].innerText;
                 }
@@ -355,9 +352,6 @@ var OntologyEditor = new function()
                   "pid": pid,
                   "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
                 };
-                if (ObjectTree.currentExpandRequest) {
-                  parameters['expandtarget'] = ObjectTree.currentExpandRequest.join(',');
-                }
                 return parameters;
               },
               "success": function (e) {
@@ -512,9 +506,6 @@ var OntologyEditor = new function()
                   "roots": 0, // show root classes (0 or 1)?
                   "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
                 };
-                if (ObjectTree.currentExpandRequest) {
-                  parameters['expandtarget'] = ObjectTree.currentExpandRequest.join(',');
-                }
                 return parameters;
               },
               "success": function (e) {

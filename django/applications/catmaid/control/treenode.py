@@ -1,20 +1,15 @@
-import json
-
 import decimal
-from django.http import HttpResponse
-from datetime import datetime
+import json
+import math
 
 from django.db import connection
-from django.shortcuts import get_object_or_404
-from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
 
 from catmaid.models import *
 from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.neuron import _delete_if_empty
-import sys
-import math
 
 
 def can_edit_treenode_or_fail(user, project_id, treenode_id):
@@ -22,6 +17,7 @@ def can_edit_treenode_or_fail(user, project_id, treenode_id):
     the treenode models."""
     info = _treenode_info(project_id, treenode_id)
     return can_edit_class_instance_or_fail(user, info['neuron_id'], 'neuron')
+
 
 def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
     relation = ClassInstanceClassInstance()
@@ -33,6 +29,7 @@ def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id
     relation.save()
     return relation
 
+
 @requires_user_role(UserRole.Annotate)
 def create_treenode(request, project_id=None):
     """
@@ -40,16 +37,17 @@ def create_treenode(request, project_id=None):
     ----------------------------------
 
     1. Add new treenode for a given skeleton id. Parent should not be empty.
-    return: new treenode id
+       return: new treenode id
        If the parent's skeleton has a single node and belongs to the
        'Isolated synaptic terminals' group, then reassign ownership
        of the skeleton and the neuron to the user. The treenode remains
        property of the original user who created it.
 
-    2. Add new treenode (root) and create a new skeleton (maybe for a given neuron)
-    return: new treenode id and skeleton id.
+    2. Add new treenode (root) and create a new skeleton (maybe for a given
+       neuron) return: new treenode id and skeleton id.
 
-    If a neuron id is given, use that one to create the skeleton as a model of it.
+    If a neuron id is given, use that one to create the skeleton as a model of
+    it.
     """
 
     params = {}
@@ -74,13 +72,17 @@ def create_treenode(request, project_id=None):
     class_map = get_class_to_id_map(project_id)
 
     def insert_new_treenode(parent_id=None, skeleton=None):
-        """ If the parent_id is not None and the skeleton_id of the parent does not match with the skeleton.id, then the database will throw an error given that the skeleton_id, being defined as foreign key in the treenode table, will not meet the being-foreign requirement.
+        """ If the parent_id is not None and the skeleton_id of the parent does
+        not match with the skeleton.id, then the database will throw an error
+        given that the skeleton_id, being defined as foreign key in the
+        treenode table, will not meet the being-foreign requirement.
         """
         new_treenode = Treenode()
         new_treenode.user = request.user
         new_treenode.editor = request.user
         new_treenode.project_id = project_id
-        new_treenode.location = Double3D(float(params['x']), float(params['y']), float(params['z']))
+        new_treenode.location = Double3D(float(params['x']),
+                float(params['y']), float(params['z']))
         new_treenode.radius = int(params['radius'])
         new_treenode.skeleton = skeleton
         new_treenode.confidence = int(params['confidence'])
@@ -90,13 +92,14 @@ def create_treenode(request, project_id=None):
         return new_treenode
 
     def relate_neuron_to_skeleton(neuron, skeleton):
-        return _create_relation(request.user, project_id, relation_map['model_of'], skeleton, neuron)
+        return _create_relation(request.user, project_id,
+                                relation_map['model_of'], skeleton, neuron)
 
     response_on_error = ''
     try:
         if -1 != int(params['parent_id']):  # A root node and parent node exist
-            # Raise an Exception if the user doesn't have permission to edit the neuron
-            # the skeleton of the treenode is modeling.
+            # Raise an Exception if the user doesn't have permission to edit
+            # the neuron the skeleton of the treenode is modeling.
             can_edit_treenode_or_fail(request.user, project_id, params['parent_id'])
 
             parent_treenode = Treenode.objects.get(pk=params['parent_id'])
@@ -129,12 +132,14 @@ def create_treenode(request, project_id=None):
                     params['useneuron'] = -1
 
             if -1 != params['useneuron']:
-                # Raise an Exception if the user doesn't have permission to edit
-                # the existing neuron.
-                can_edit_class_instance_or_fail(request.user, params['useneuron'], 'neuron')
+                # Raise an Exception if the user doesn't have permission to
+                # edit the existing neuron.
+                can_edit_class_instance_or_fail(request.user,
+                                                params['useneuron'], 'neuron')
 
                 # A neuron already exists, so we use it
-                response_on_error = 'Could not relate the neuron model to the new skeleton!'
+                response_on_error = 'Could not relate the neuron model to ' \
+                                    'the new skeleton!'
                 relate_neuron_to_skeleton(params['useneuron'], new_skeleton.id)
 
                 response_on_error = 'Could not insert new treenode!'
@@ -157,14 +162,18 @@ def create_treenode(request, project_id=None):
                 new_neuron.name = 'neuron %d' % new_neuron.id
                 new_neuron.save()
 
-                response_on_error = 'Could not relate the neuron model to the new skeleton!'
+                response_on_error = 'Could not relate the neuron model to ' \
+                                    'the new skeleton!'
                 relate_neuron_to_skeleton(new_neuron.id, new_skeleton.id)
 
                 response_on_error = 'Failed to insert instance of treenode.'
                 new_treenode = insert_new_treenode(None, new_skeleton)
 
                 response_on_error = 'Failed to write to logs.'
-                insert_into_log(project_id, request.user.id, 'create_neuron', new_treenode.location, 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
+                insert_into_log(project_id, request.user.id, 'create_neuron',
+                                new_treenode.location, 'Create neuron %d and '
+                                'skeleton %d' % (new_neuron.id,
+                                                 new_skeleton.id))
 
                 return HttpResponse(json.dumps({
                     'treenode_id': new_treenode.id,
@@ -173,38 +182,40 @@ def create_treenode(request, project_id=None):
 
     except Exception as e:
         import traceback
-        raise Exception(response_on_error + ':' + str(e) + str(traceback.format_exc()))
+        raise Exception("%s: %s %s" % (response_on_error, str(e),
+                                       str(traceback.format_exc())))
 
 
 @requires_user_role(UserRole.Annotate)
 def create_interpolated_treenode(request, project_id=None):
     params = {}
     decimal_values = {
-            'x': 0,
-            'y': 0,
-            'z': 0,
-            'resx': 0,
-            'resy': 0,
-            'resz': 0,
-            'stack_translation_z': 0,
-            'radius': -1}
+        'x': 0,
+        'y': 0,
+        'z': 0,
+        'resx': 0,
+        'resy': 0,
+        'resz': 0,
+        'stack_translation_z': 0,
+        'radius': -1}
     int_values = {
-            'parent_id': 0,
-            'stack_id': 0,
-            'confidence': 5}
+        'parent_id': 0,
+        'stack_id': 0,
+        'confidence': 5}
     for p in decimal_values.keys():
         params[p] = decimal.Decimal(request.POST.get(p, decimal_values[p]))
     for p in int_values.keys():
         params[p] = int(request.POST.get(p, int_values[p]))
 
-    last_treenode_id, skeleton_id = _create_interpolated_treenode(request, params, project_id, False)
+    last_treenode_id, skeleton_id = _create_interpolated_treenode(request, \
+         params, project_id, False)
     return HttpResponse(json.dumps({'treenode_id': last_treenode_id}))
 
 
 def _create_interpolated_treenode(request, params, project_id, skip_last):
-    """ Create interpolated treenodes between the 'parent_id' and the clicked x,y,z
-    coordinate. The skip_last is to prevent the creation of the last node, used by
-    the join_skeletons_interpolated. """
+    """ Create interpolated treenodes between the 'parent_id' and the clicked
+    x,y,z coordinate. The skip_last is to prevent the creation of the last
+    node, used by the join_skeletons_interpolated. """
     response_on_error = 'Could not create interpolated treenode'
     try:
         parent = Treenode.objects.get(pk=params['parent_id'])
@@ -214,7 +225,8 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
         parent_y = decimal.Decimal(loc.y)
         parent_z = decimal.Decimal(loc.z)
 
-        steps = abs((params['z'] - parent_z) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
+        steps = abs((params['z'] - parent_z) / params['resz']) \
+            .quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         if steps == decimal.Decimal(0):
             steps = decimal.Decimal(1)
 
@@ -222,13 +234,15 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
         dy = (params['y'] - parent_y) / steps
         dz = (params['z'] - parent_z) / steps
 
-        broken_slices = set(int(bs.index) for bs in BrokenSlice.objects.filter(stack=params['stack_id']))
+        broken_slices = set(int(bs.index) for bs in \
+            BrokenSlice.objects.filter(stack=params['stack_id']))
         sign = -1 if dz < 0 else 1
 
         # Loop the creation of treenodes in z resolution steps until target
         # section is reached
         parent_id = params['parent_id']
-        atn_slice_index = ((parent_z - params['stack_translation_z']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
+        atn_slice_index = ((parent_z - params['stack_translation_z']) / params['resz']) \
+            .quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         for i in range(1, steps + (0 if skip_last else 1)):
             if (atn_slice_index + i * sign) in broken_slices:
                 continue
@@ -238,9 +252,9 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
             new_treenode.editor_id = request.user.id
             new_treenode.project_id = project_id
             new_treenode.location = Double3D(
-                    float(parent_x + dx * i),
-                    float(parent_y + dy * i),
-                    float(parent_z + dz * i))
+                float(parent_x + dx * i),
+                float(parent_y + dy * i),
+                float(parent_z + dz * i))
             new_treenode.radius = params['radius']
             new_treenode.skeleton_id = parent_skeleton_id
             new_treenode.confidence = params['confidence']
@@ -255,6 +269,7 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
+
 @requires_user_role(UserRole.Annotate)
 def update_radius(request, project_id=None, treenode_id=None):
     treenode_id = int(treenode_id)
@@ -266,15 +281,18 @@ def update_radius(request, project_id=None, treenode_id=None):
 
     if 0 == option:
         # Update radius only for the treenode
-        Treenode.objects.filter(pk=treenode_id).update(editor=request.user, radius=radius)
+        Treenode.objects.filter(pk=treenode_id).update(editor=request.user,
+                                                       radius=radius)
         return HttpResponse(json.dumps({'success': True}))
-    
+
     cursor.execute('''
-    SELECT id, parent_id FROM treenode WHERE skeleton_id = (SELECT t.skeleton_id FROM treenode t WHERE id = %s)
+    SELECT id, parent_id
+    FROM treenode
+    WHERE skeleton_id = (SELECT t.skeleton_id FROM treenode t WHERE id = %s)
     ''' % treenode_id)
 
     if 1 == option:
-        # Update radius from treenode_id to the next branch or end node (included)
+        # Update radius from treenode_id to next branch or end node (included)
         children = defaultdict(list)
         for row in cursor.fetchall():
             children[row[1]].append(row[0])
@@ -286,11 +304,12 @@ def update_radius(request, project_id=None, treenode_id=None):
             include.append(child)
             c = children[child]
 
-        Treenode.objects.filter(pk__in=include).update(editor=request.user, radius=radius)
+        Treenode.objects.filter(pk__in=include).update(editor=request.user,
+                                                       radius=radius)
         return HttpResponse(json.dumps({'success': True}))
-    
+
     if 2 == option:
-        # Update radius from treenode_id to the previous branch node or root (excluded)
+        # Update radius from treenode_id to prev branch node or root (excluded)
         parents = {}
         children = defaultdict(list)
         for row in cursor.fetchall():
@@ -303,7 +322,8 @@ def update_radius(request, project_id=None, treenode_id=None):
             include.append(parent)
             parent = parents[parent]
 
-        Treenode.objects.filter(pk__in=include).update(editor=request.user, radius=radius)
+        Treenode.objects.filter(pk__in=include).update(editor=request.user,
+                                                       radius=radius)
         return HttpResponse(json.dumps({'success': True}))
 
     if 3 == option:
@@ -316,12 +336,17 @@ def update_radius(request, project_id=None, treenode_id=None):
             include.append(parent)
             parent = parents[parent]
 
-        Treenode.objects.filter(pk__in=include).update(editor=request.user, radius=radius)
+        Treenode.objects.filter(pk__in=include).update(editor=request.user,
+                                                       radius=radius)
         return HttpResponse(json.dumps({'success': True}))
 
     if 4 == option:
         # Update radius of all nodes (in a single query)
-        Treenode.objects.filter(skeleton_id=Treenode.objects.filter(pk=treenode_id).values('skeleton_id')).update(editor=request.user, radius=radius)
+        Treenode.objects \
+            .filter(skeleton_id=Treenode.objects \
+                .filter(pk=treenode_id) \
+                .values('skeleton_id')) \
+            .update(editor=request.user, radius=radius)
         return HttpResponse(json.dumps({'success': True}))
 
 
@@ -334,21 +359,22 @@ def delete_treenode(request, project_id=None):
     # Raise an Exception if the user doesn't have permission to edit the neuron
     # the skeleton of the treenode is modeling.
     can_edit_treenode_or_fail(request.user, project_id, treenode_id)
-    #
     treenode = Treenode.objects.get(pk=treenode_id)
     parent_id = treenode.parent_id
 
     response_on_error = ''
     try:
-        cursor = connection.cursor()
         if not parent_id:
             # This treenode is root.
-            response_on_error = 'Could not retrieve children for treenode #%s' % treenode_id
+            response_on_error = 'Could not retrieve children for ' \
+                'treenode #%s' % treenode_id
             n_children = Treenode.objects.filter(parent=treenode).count()
             response_on_error = "Can't delete root node when it has children"
             if n_children > 0:
-                # TODO yes you can, the new root is the first of the children, and other children become independent skeletons
-                raise Exception("You can't delete the root node when it has children.")
+                # TODO yes you can, the new root is the first of the children,
+                # and other children become independent skeletons
+                raise Exception("You can't delete the root node when it "
+                                "has children.")
             # Get the neuron before the skeleton is deleted. It can't be
             # accessed otherwise anymore.
             neuron = ClassInstance.objects.get(project_id=project_id,
@@ -360,12 +386,17 @@ def delete_treenode(request, project_id=None):
             # the ClassInstanceClassInstance relationship with neuron_id
             response_on_error = 'Could not delete skeleton.'
             # Extra check for errors, like having two root nodes
-            count = Treenode.objects.filter(skeleton_id=treenode.skeleton_id).count()
+            count = Treenode.objects.filter(skeleton_id=treenode.skeleton_id) \
+                .count()
             if 1 == count:
-                ClassInstance.objects.filter(pk=treenode.skeleton_id).delete() # deletes as well treenodes that refer to the skeleton
+                # deletes as well treenodes that refer to the skeleton
+                ClassInstance.objects.filter(pk=treenode.skeleton_id) \
+                    .delete()
             else:
-                return HttpResponse(json.dumps({"error": "Can't delete isolated node: erroneously, its skeleton contains more than one treenode! Check for multiple root nodes."}))
-            
+                return HttpResponse(json.dumps({"error": "Can't delete " \
+                    "isolated node: erroneously, its skeleton contains more " \
+                    "than one treenode! Check for multiple root nodes."}))
+
             # If the neuron modeled by the skeleton of the treenode is empty,
             # delete it.
             response_on_error = 'Could not delete neuron #%s' % neuron.id
@@ -375,7 +406,8 @@ def delete_treenode(request, project_id=None):
             # Treenode is not root, it has a parent and perhaps children.
             # Reconnect all the children to the parent.
             response_on_error = 'Could not update parent id of children nodes'
-            Treenode.objects.filter(parent=treenode).update(parent=treenode.parent)
+            Treenode.objects.filter(parent=treenode) \
+                .update(parent=treenode.parent)
 
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
@@ -384,6 +416,7 @@ def delete_treenode(request, project_id=None):
 
     except Exception as e:
         raise Exception(response_on_error + ': ' + str(e))
+
 
 def _treenode_info(project_id, treenode_id):
     c = connection.cursor()
@@ -409,15 +442,17 @@ def _treenode_info(project_id, treenode_id):
       AND r.relation_name = 'model_of'
     """, (project_id, treenode_id))
     results = [
-            dict(zip([col[0] for col in c.description], row))
-            for row in c.fetchall()
-            ]
+        dict(zip([col[0] for col in c.description], row))
+        for row in c.fetchall()
+    ]
     if (len(results) > 1):
-        raise Exception('Found more than one skeleton and neuron for treenode %s' % treenode_id)
+        raise Exception('Found more than one skeleton and neuron for '
+                        'treenode %s' % treenode_id)
     elif (len(results) == 0):
         raise Exception('No skeleton and neuron for treenode %s' % treenode_id)
 
     return results[0]
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def treenode_info(request, project_id=None):

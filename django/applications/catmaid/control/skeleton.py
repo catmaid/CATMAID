@@ -613,10 +613,13 @@ def reroot_skeleton(request, project_id=None):
     try:
         if treenode:
             response_on_error = 'Failed to log reroot.'
-            insert_into_log(project_id, request.user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
+            insert_into_log(project_id, request.user.id, 'reroot_skeleton',
+                            treenode.location, 'Rerooted skeleton for '
+                            'treenode with ID %s' % treenode.id)
             return HttpResponse(json.dumps({'newroot': treenode.id}))
         # Else, already root
-        return HttpResponse(json.dumps({'error': 'Node #%s is already root!' % treenode_id}))
+        return HttpResponse(json.dumps({'error': 'Node #%s is already '
+                                                 'root!' % treenode_id}))
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 

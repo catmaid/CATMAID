@@ -976,8 +976,6 @@ def join_skeletons_interpolated(request, project_id=None):
             'x': 0,
             'y': 0,
             'z': 0,
-            'resx': 0,
-            'resy': 0,
             'resz': 0,
             'stack_translation_z': 0,
             'radius': -1}

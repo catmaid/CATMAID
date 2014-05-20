@@ -586,45 +586,86 @@ var NeuronNameService = function()
    */
   this.updateNames = function(skids, callback)
   {
-    // TODO: Get all data that is needed for the fallback list
+    /**
+     * The actual update function---see below for call.
+     */
+    var update = function(data) {
+      var name = function(skid) {
+        var skeleton = managedSkeletons[skid];
+        // Walk backwars through fallback list to name the current skeleton
+        for (var i=fallbackList.length - 1; i > -1; --i) {
+          var l = fallbackList[i];
+          if ('neuronname' === l.id) {
+            return skeleton.model.baseName;
+          } else if ('skeletonid' === l.id) {
+            return '' + skid;
+          } else if ('all' === l.id) {
+            if (skid in data.skeletons) {
+              return data.skeletons[skid].annotations.map(function(a) {
+                return data.annotations[a.id];
+              }).join(', ');
+            }
+          } else if ('all-meta' === l.id) {
+            // TODO
+          } else if ('own' === l.id) {
+            if (skid in data.skeletons) {
+              // Collect own annotations
+              var oa = data.skeletons[skid].annotations.reduce(function(o, a) {
+                if (a.uid === session.userid) {
+                  o.push(data.annotations[a.id]);
+                }
+                return o;
+              }, []);
+              // Return only if there are own annotations
+              if (oa.length > 0) {
+                return oa.join(', ');
+              }
+            }
+          } else if ('own-meta' === l.id) {
+            // TODO
+          }
+        }
 
-    var name = function(skid) {
-      var skeleton = managedSkeletons[skid];
-      // Walk backwars through fallback list to name the current skeleton
-      for (var i=fallbackList.length - 1; i > -1; --i) {
-        var l = fallbackList[i];
-        if ('neuronname' === l.id) {
-          return skeleton.model.baseName;
-        } else if ('skeletonid' === l.id) {
-          return '' + skid;
-        } else if ('all' === l.id) {
-          // TODO
-        } else if ('all-meta' === l.id) {
-          // TODO
-        } else if ('own' === l.id) {
-          // TODO
-        } else if ('own-meta' === l.id) {
-          // TODO
+        // Return the skeleton ID as last option
+        return "" + skid;
+      };
+
+      if (skids) {
+        skids.forEach(function(skid) {
+          managedSkeletons[skid].name = name(skid);
+        });
+      } else {
+        for (var skid in managedSkeletons) {
+          managedSkeletons[skid].name = name(skid);
         }
       }
 
-      // Return the skeleton ID as last option
-      return "" + skid;
+      // Execute callback, if available
+      if (callback) {
+        callback();
+      }
     };
 
-    if (skids) {
-      skids.forEach(function(skid) {
-        managedSkeletons[skid].name = name(skid);
-      });
-    } else {
-      for (var skid in managedSkeletons) {
-        managedSkeletons[skid].name = name(skid);
-      }
-    }
+    // Request information only, if needed
+    var needsNoBackend = 0 === fallbackList.filter(function(l) {
+        return 'neuronname' !== l.id && 'skeletonid' !== l.id;
+    }).length;
 
-    // Execute callback, if available
-    if (callback) {
-      callback();
+    if (needsNoBackend) {
+      // If no back-end is needed, call the update method right away, without
+      // any data.
+      update(null);
+    } else {
+      // Get all data that is needed for the fallback list
+      requestQueue.register(django_url + project.id + '/skeleton/annotationlist',
+        'POST',
+        {
+          skeleton_ids: Object.keys(managedSkeletons),
+          metaannotations: 1,
+        },
+        jsonResponseHandler(function(json) {
+          update(json);
+        }));
     }
   };
 

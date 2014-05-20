@@ -400,6 +400,7 @@ var NeuronNameService = function()
   // parameter when added to the actual fallback list.
   var options = [
     {id: 'neuronname', name: "Neuron name", needsParam: false},
+    {id: 'skeletonid', name: "Skeleton ID", needsParam: false},
     {id: 'all', name: "All annotations", needsParam: false},
     {id: 'all-meta', name: "All annotations annotated with ...", needsParam: true},
     {id: 'own', name: "Own annotations", needsParam: false},
@@ -594,6 +595,8 @@ var NeuronNameService = function()
         var l = fallbackList[i];
         if ('neuronname' === l.id) {
           return skeleton.model.baseName;
+        } else if ('skeletonid' === l.id) {
+          return '' + skid;
         } else if ('all' === l.id) {
           // TODO
         } else if ('all-meta' === l.id) {

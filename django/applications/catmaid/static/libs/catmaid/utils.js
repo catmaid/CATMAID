@@ -514,7 +514,9 @@ var NeuronNameService = function()
     var unknownSkids = [];
     for (var skid in models) {
       if (skid in managedSkeletons) {
-        managedSkeletons[skid].clients.push(client);
+        if (-1 !== managedSkeletons[skid].clients.indexOf(client)) {
+          managedSkeletons[skid].clients.push(client);
+        }
       } else {
         managedSkeletons[skid] = {
           clients: [client],

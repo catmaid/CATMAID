@@ -44,7 +44,8 @@ SkeletonConnectivity.prototype.append = function(models) {
       if (model.selected) {
         // Update name
         skeletons[skid] = model.baseName;
-        $('#a-connectivity-table-' + widgetID + '-' + skid).html(model.baseName + ' #' + skid);
+        $('#a-connectivity-table-' + widgetID + '-' + skid).html(
+            neuronNameService.getName(skid));
       } else {
         // Remove
         delete skeletons[skid];
@@ -68,8 +69,12 @@ SkeletonConnectivity.prototype.append = function(models) {
   for (var skid in new_skeletons) {
     this.ordered_skeleton_ids.push(skid);
   }
-  this.update();
-  this.updateLink(models);
+
+  // Add skeletons
+  neuronNameService.registerAll(this, models, (function() {
+    this.update();
+    this.updateLink(models);
+  }).bind(this));
 };
 
 SkeletonConnectivity.prototype.getName = function() {
@@ -79,6 +84,7 @@ SkeletonConnectivity.prototype.getName = function() {
 SkeletonConnectivity.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
+  neuronNameService.unregister(this);
 };
 
 SkeletonConnectivity.prototype.clear = function(source_chain) {
@@ -205,16 +211,6 @@ SkeletonConnectivity.prototype.update = function() {
     return;
   };
 
-  // Record the state of checkboxes
-  var checkboxes = [{}, {}],
-      widgetID = this.widgetID,
-      relations = ['presynaptic_to', 'postsynaptic_to'];
-  relations.forEach(function(relation, index) {
-    $("[id^='" + relation + "-show-skeleton-" + widgetID + "-']").each(function(_, checkbox) {
-      checkboxes[index][checkbox.value] = checkbox.checked;
-    });
-  });
-
   var self = this;
 
   requestQueue.replace(
@@ -245,24 +241,65 @@ SkeletonConnectivity.prototype.update = function() {
           // the connectivity plots in a separate widget.
           self.incoming = json.incoming;
           self.outgoing = json.outgoing
-          // Create connectivity tables
-          self.createConnectivityTable();
+
+          // Register this widget with the name service for all neurons
+          var createPartnerModels = function(partners, result) {
+            for (var skid in partners) {
+              result[skid] = new SelectionTable.prototype.SkeletonModel(skid,
+                  partners[skid].name, null);
+            }
+          };
+          var partnerModels = {};
+          createPartnerModels(self.incoming, partnerModels);
+          createPartnerModels(self.outgoing, partnerModels);
+
+          // Make all partners known to the name service
+          neuronNameService.registerAll(self, partnerModels, function() {
+            // Create connectivity tables
+            self.redraw();
+          });
         };
 
         // Handle result and create tables, if possible
         handle(status, text);
-        // Restore checkbox state
-        checkboxes.forEach(function(c, i) {
-          var relation = relations[i];
-          Object.keys(c).forEach(function(skeleton_id) {
-            var sel = $('#' + relation + '-show-skeleton-' + self.widgetID + '-' + skeleton_id);
-            if (sel.length > 0) {
-              sel.attr('checked', c[skeleton_id]);
-            }
-          });
-        });
       },
       'update_connectivity_table');
+};
+
+SkeletonConnectivity.prototype.redraw = function() {
+
+  // Record the state of checkboxes
+  var checkboxes = [{}, {}],
+      widgetID = this.widgetID,
+      relations = ['presynaptic_to', 'postsynaptic_to'];
+  relations.forEach(function(relation, index) {
+    $("[id^='" + relation + "-show-skeleton-" + widgetID + "-']").each(function(_, checkbox) {
+      checkboxes[index][checkbox.value] = checkbox.checked;
+    });
+  });
+
+  // Create connectivity tables
+  this.createConnectivityTable();
+
+  // Restore checkbox state
+  checkboxes.forEach((function(c, i) {
+    var relation = relations[i];
+    Object.keys(c).forEach((function(skeleton_id) {
+      var sel = $('#' + relation + '-show-skeleton-' + this.widgetID + '-' + skeleton_id);
+      if (sel.length > 0) {
+        sel.attr('checked', c[skeleton_id]);
+      }
+    }).bind(this));
+  }).bind(this));
+};
+
+/**
+ * This method is called from the neuron name service, if neuron names are
+ * changed.
+ */
+SkeletonConnectivity.prototype.updateNeuronNames = function() {
+  //this.update();
+  this.redraw();
 };
 
 SkeletonConnectivity.prototype.createConnectivityTable = function() {
@@ -278,7 +315,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
    */
   var createNameElement = function(name, skeleton_id) {
     var a = document.createElement('a');
-    a.appendChild(document.createTextNode(name + ' #' + skeleton_id));
+    a.appendChild(document.createTextNode(neuronNameService.getName(skeleton_id)));
     a.setAttribute('href', '#');
     a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
     a.onclick = function() {

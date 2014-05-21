@@ -69,8 +69,8 @@ SettingsWidget.prototype.init = function(container)
   // Grid settings
   var ds = addSettingsContainer(container, "Grid overlay");
   // Grid cell dimensions and offset
-  var gridCellWidth = createInputSetting("Cell width (nm)", 1000);
-  var gridCellHeight = createInputSetting("Cell height (nm)", 1000);
+  var gridCellWidth = createInputSetting("Grid width (nm)", 1000);
+  var gridCellHeight = createInputSetting("Grid height (nm)", 1000);
   var gridCellXOffset = createInputSetting("X offset (nm)", 0);
   var gridCellYOffset = createInputSetting("Y offset (nm)", 0);
   var gridLineWidth = createInputSetting("Line width (px)", 1);

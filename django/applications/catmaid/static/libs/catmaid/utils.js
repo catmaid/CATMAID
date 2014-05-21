@@ -591,7 +591,41 @@ var NeuronNameService = function()
      */
     var update = function(data) {
       var name = function(skid) {
+        /**
+         * Support function to creat a label, based on meta annotations. Id a
+         * user ID is provided, it is also checked for the user ID. If a label
+         * can't be created, null is returned.
+         */
+        var metaLabel = function(maID, userID) {
+            var ma = data.skeletons[skid].annotations.reduce(function(o, a) {
+              // Test if current annotation has meta annotations
+              if (a.id in data.metaannotations) {
+                var hasID = function(ma) {
+                  return ma.id === maID;
+                };
+                // Remember this annotation for display if is annotated with
+                // the requested meta annotation.
+                if (data.metaannotations[a.id].annotations.some(hasID)) {
+                  // Also test against user ID, if provided
+                  if (undefined === userID) {
+                    o.push(data.annotations[a.id]);
+                  } else if (a.uid === userID) {
+                    o.push(data.annotations[a.id]);
+                  }
+                }
+              }
+              return o;
+            }, []);
+            // Return only if there are own annotations
+            if (ma.length > 0) {
+              return ma.join(', ');
+            }
+
+            return null;
+        };
+
         var skeleton = managedSkeletons[skid];
+
         // Walk backwars through fallback list to name the current skeleton
         for (var i=fallbackList.length - 1; i > -1; --i) {
           var l = fallbackList[i];
@@ -606,7 +640,14 @@ var NeuronNameService = function()
               }).join(', ');
             }
           } else if ('all-meta' === l.id) {
-            // TODO
+            if (skid in data.skeletons) {
+              // Collect all annotations annotated with the requested meta
+              // annotation.
+              var label = metaLabel(annotations.getID(l.option));
+              if (null !== label) {
+                return label
+              }
+            }
           } else if ('own' === l.id) {
             if (skid in data.skeletons) {
               // Collect own annotations
@@ -622,7 +663,14 @@ var NeuronNameService = function()
               }
             }
           } else if ('own-meta' === l.id) {
-            // TODO
+            if (skid in data.skeletons) {
+              // Collect all annotations that are annotated with requested meta
+              // annotation.
+              var label = metaLabel(annotations.getID(l.option), session.userid);
+              if (null !== label) {
+                return label
+              }
+            }
           }
         }
 
@@ -656,12 +704,17 @@ var NeuronNameService = function()
       // any data.
       update(null);
     } else {
+      // Check if we need meta annotations
+      var needsMetaAnnotations = fallbackList.some(function(l) {
+          return 'all-meta' ===  l.id || 'own-meta' === l.id;
+      });
+
       // Get all data that is needed for the fallback list
       requestQueue.register(django_url + project.id + '/skeleton/annotationlist',
         'POST',
         {
           skeleton_ids: Object.keys(managedSkeletons),
-          metaannotations: 1,
+          metaannotations: needsMetaAnnotations ? 1 : 0,
         },
         jsonResponseHandler(function(json) {
           update(json);

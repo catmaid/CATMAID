@@ -938,6 +938,42 @@ def annotation_list(request, project_id=None):
             'id': aid,
         })
 
-    return HttpResponse(json.dumps({
+    # Assemble response
+    response = {
         'annotations': annotations,
-        'skeletons': skeletons}), mimetype="text/json")
+        'skeletons': skeletons,
+    }
+
+    # If wanted, get the meta annotations for each annotation
+    if metaannotations:
+        # Get only annotations of the given project
+        metaannotation_query = ClassInstance.objects.filter(project_id=project_id,
+                class_column__id=classes['annotation'])
+
+        # Query for meta annotations on the given annotations
+        metaannotation_query = metaannotation_query.filter(
+                cici_via_b__relation_id=relations['annotated_with'],
+                cici_via_b__class_instance_a__in=annotations.keys())
+
+        # Request only ID of annotated annotation, annotator ID, meta
+        # annotation ID, meta annotation Name
+        metaannotation_query = metaannotation_query.values_list(
+            'cici_via_b__class_instance_a', 'cici_via_b__user__id',
+            'id', 'name')
+
+        # Add this to the response
+        metaannotations = {}
+        for aaid, auid, maid, maname in metaannotation_query:
+            if maid not in annotations:
+                annotations[maid] = maname
+            annotation = metaannotations.get(aaid)
+            if not annotation:
+                annotation = {'annotations': []}
+                metaannotations[aaid] = annotation
+            annotation['annotations'].append({
+                'uid': auid,
+                'id': maid,
+            })
+        response['metaannotations'] = metaannotations
+
+    return HttpResponse(json.dumps(response), mimetype="text/json")

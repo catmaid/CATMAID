@@ -1606,11 +1606,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
         }
         var nearestnode_id = nearestnode.id;
         var nearestnode_skid = nearestnode.skeleton_id;
-        var atn_id = atn.id;
         var atn_skid = atn.skeleton_id;
-        var atn_x = atn.x;
-        var atn_y = atn.y;
-        var atn_z = atn.z;
         var self = this;
         // Make sure the user has permissions to edit both the from and the to
         // skeleton.

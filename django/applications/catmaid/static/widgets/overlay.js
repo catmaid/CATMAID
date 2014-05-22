@@ -7,7 +7,10 @@
 var SkeletonAnnotations = {
   atn_fillcolor : "rgb(0, 255, 0)",
 
-  /** Data of the active Treenode or ConnectorNode */
+  /**
+   * Data of the active Treenode or ConnectorNode. Its position is stored in
+   * unscaled stack space coordinates.
+   */
   atn : {
     id: null,
     type: null,
@@ -28,13 +31,19 @@ var SkeletonAnnotations = {
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 
+/**
+ * Sets the active node, if node is not null. Otherwise, the active node is
+ * cleared. Since the node passed is expected to come in scaled (!) stack space
+ * coordinates, its position has to be unscaled.
+ */
 SkeletonAnnotations.atn.set = function(node, stack_id) {
   if (node) {
+    var stack = project.getStack(stack_id);
     this.id = node.id;
     this.skeleton_id = node.skeleton_id;
     this.type = node.type;
-    this.x = node.x;
-    this.y = node.y;
+    this.x = node.x / stack.scale;
+    this.y = node.y / stack.scale;
     this.z = node.z;
     this.parent_id = node.parent ? node.parent.id : null;
     this.stack_id = stack_id;
@@ -115,6 +124,10 @@ SkeletonAnnotations.getActiveNodeColor = function() {
   return this.atn_fillcolor;
 };
 
+/**
+ * Returns the positon of the active node in unscaled stack space coordinates.
+ * If there is no active node, null is returned.
+ */
 SkeletonAnnotations.getActiveNodePosition = function() {
   if (null === this.atn.id) {
     return null;
@@ -1906,7 +1919,11 @@ SkeletonAnnotations.Tag = new (function() {
 
   this.handle_tagbox = function(atn, svgOverlay) {
     var atnID = SkeletonAnnotations.getActiveNodeId();
-    this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " + atn.x + "px; top: " + atn.y + "px;' />");
+    var stack = project.getStack(atn.stack_id);
+    var screenPos = [atn.x * stack.scale, atn.y * stack.scale];
+    this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID +
+        "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " +
+        screenPos[0] + "px; top: " + screenPos[1] + "px;' />");
     this.tagbox.append("Tag: ");
     var input = $("<input id='Tags" + atnID + "' name='Tags' type='text' value='' />");
     this.tagbox.append(input).append("<div style='color:#949494'>(Save&Close: Enter)</div>");

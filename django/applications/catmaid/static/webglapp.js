@@ -1374,8 +1374,9 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 	var stack = space.stack,
       t = stack.translation,
 			r = stack.resolution,
-			c = new THREE.Vector3(t.x + (pos.x / stack.scale) * r.x,
-			                      t.y + (pos.y / stack.scale) * r.y,
+			// Get world coordinates of active node (which is already unscaled)
+			c = new THREE.Vector3(t.x + pos.x * r.x,
+														t.y + pos.y * r.y,
 														t.z + pos.z * r.z);
 
 	space.toSpace(c);

@@ -1402,24 +1402,14 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   rename_button.onclick = (function() {
     var new_name = prompt("Rename", this.neuron_name);
     if (!new_name) return;
-    requestQueue.register(django_url + project.id + '/object-tree/instance-operation',
-      'POST',
-      {operation: "rename_node",
-       id: this.neuron_id,
-       title: new_name,
-       classname: "neuron",
-       pid: project.id},
-      (function(status, text) {
-        if (200 !== status) return;
-        var json = $.parseJSON(text);
-        if (json.error) return new ErrorDialog(json.error, json.detail).show();
+    neuronNameService.renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
         // Update UI
         if (this.skeleton_ids.some(function(skid) { return skid === SkeletonAnnotations.getActiveSkeletonId();})) {
           SkeletonAnnotations.setNeuronNameInTopbar(project.focusedStack.id, new_name, SkeletonAnnotations.getActiveSkeletonId());
         }
         $('div.nodeneuronname', container).html('Name: ' + new_name);
         this.neuron_name = new_name;
-      }).bind(this));
+    }).bind(this));
   }).bind(this);
 
   var activate_button = document.createElement('input');

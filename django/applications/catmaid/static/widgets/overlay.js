@@ -290,16 +290,11 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
       function(json) {
           var new_name = prompt("Change neuron name", json['neuronname']);
           if (!new_name) return;
-          self.submit(
-            django_url + project.id + '/object-tree/instance-operation',
-            {operation: "rename_node",
-             id: json['neuronid'],
-             title: new_name,
-             classname: "neuron",
-             pid: project.id},
-            function(json) {
-              SkeletonAnnotations.setNeuronNameInTopbar(self.stack.id, new_name, skeletonID);
-            });
+          neuronNameService.renameNeuron(json['neuronid'], [skeletonID],
+              new_name, function() {
+                  SkeletonAnnotations.setNeuronNameInTopbar(self.stack.id,
+                          new_name, skeletonID);
+              });
       });
 };
 

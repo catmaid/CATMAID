@@ -736,6 +736,51 @@ var NeuronNameService = function()
       return null;
     }
   };
+
+  /**
+   * This is a convenience method to rename a neuron. If the neuron in question
+   * is managed by the name service, an update event will be triggered and all
+   * registered widgets will be notified.
+   */
+  this.renameNeuron = function(neuronId, skeletonIds, newName, callback)
+  {
+    requestQueue.register(django_url + project.id + '/object-tree/instance-operation',
+      'POST',
+      {operation: "rename_node",
+       id: neuronId,
+       title: newName,
+       classname: "neuron",
+       pid: project.id
+      },
+      jsonResponseHandler((function(data) {
+        // Update all skeletons of the current neuron that are managed
+        var updatedSkeletons = skeletonIds.filter(function(skid) {
+          if (skid in managedSkeletons) {
+            // Update skeleton model
+            managedSkeletons[skid].model.baseName = newName;
+            return true;
+          }
+          return false;
+        });
+
+        // Only update the names if there was indeed a skeleton update.
+        // Otherwise, execute callback directly.
+        if (updatedSkeletons.length > 0) {
+          // Update the names of the affected skeleton IDs and notify clients if
+          // there was a change. And finally execute the callback.
+          this.updateNames(updatedSkeletons, (function() {
+            this.notifyClients();
+            if (callback) {
+              callback();
+            }
+          }).bind(this));
+        } else {
+          if (callback) {
+            callback();
+          }
+        }
+      }).bind(this)));
+  };
 };
 
 var neuronNameService = new NeuronNameService();

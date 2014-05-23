@@ -1214,7 +1214,10 @@ CompartmentGraphWidget.prototype.openPlot = function() {
   var GP = CircuitGraphPlot.prototype.getLastInstance(),
       models = this.getSkeletonModels(),
       m = this.createAdjacencyMatrix();
-  GP.plot(m.skeleton_ids, models, m.AdjM);
+  // Make sure, the plot widget is registered with the naming service
+  neuronNameService.registerAll(GP, models, function() {
+    GP.plot(m.skeleton_ids, models, m.AdjM);
+  });
 };
 
 CompartmentGraphWidget.prototype.annotate_skeleton_list = function() {

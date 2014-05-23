@@ -42,6 +42,7 @@ CircuitGraphPlot.prototype.getName = function() {
 CircuitGraphPlot.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
+  neuronNameService.unregister(this);
   
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
@@ -112,23 +113,34 @@ CircuitGraphPlot.prototype.append = function(models) {
     return;
   }
 
-	// fetch connectivity data, create adjacency matrix and plot it
-	requestQueue.register(django_url + project.id + '/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'POST',
-			{skeleton_list: this.skeleton_ids},
-			(function(status, text) {
-				if (200 !== status) return;
-				var json = $.parseJSON(text);
-				if (json.error) { alert(json.error); return; }
-				// Create adjacency matrix
-				var AdjM = this.skeleton_ids.map(function(skid) { return this.skeleton_ids.map(function(skid) { return 0; }); }, this);
-				// Populate adjacency matrix
-				var indices = this.skeleton_ids.reduce(function(o, skid, i) { o[skid] = i; return o; }, {});
-				json.edges.forEach(function(edge) {
-					AdjM[indices[edge[0]]][indices[edge[1]]] = edge[2];
-				});
-        // Update data and GUI
-        this.plot(this.skeleton_ids, this.skeletons, AdjM);
-			}).bind(this));
+  // register with name service before we go about the plot
+  neuronNameService.registerAll(this, models, (function() {
+    // fetch connectivity data, create adjacency matrix and plot it
+    requestQueue.register(django_url + project.id + '/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'POST',
+        {skeleton_list: this.skeleton_ids},
+        (function(status, text) {
+          if (200 !== status) return;
+          var json = $.parseJSON(text);
+          if (json.error) { alert(json.error); return; }
+          // Create adjacency matrix
+          var AdjM = this.skeleton_ids.map(function(skid) { return this.skeleton_ids.map(function(skid) { return 0; }); }, this);
+          // Populate adjacency matrix
+          var indices = this.skeleton_ids.reduce(function(o, skid, i) { o[skid] = i; return o; }, {});
+          json.edges.forEach(function(edge) {
+            AdjM[indices[edge[0]]][indices[edge[1]]] = edge[2];
+          });
+          // Update data and GUI
+          this.plot(this.skeleton_ids, this.skeletons, AdjM);
+        }).bind(this));
+  }).bind(this));
+};
+
+/**
+ * This method is called from the neuron name service, if neuron names are
+ * changed.
+ */
+CircuitGraphPlot.prototype.updateNeuronNames = function() {
+  this.redraw();
 };
 
 CircuitGraphPlot.prototype._add_graph_partition = function(mirror) {
@@ -395,7 +407,7 @@ CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
   var data = this.skeleton_ids.map(function(skid, i) {
     var model = this.skeletons[skid];
     return {skid: skid,
-            name: model.baseName,
+            name: neuronNameService.getName(skid),
             hex: '#' + model.color.getHexString(),
             x: xVector[i],
             y: yVector[i]};

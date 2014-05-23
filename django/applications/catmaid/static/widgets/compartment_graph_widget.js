@@ -70,6 +70,7 @@ CompartmentGraphWidget.prototype.getSkeletonColor = function(skeleton_id) {
 CompartmentGraphWidget.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
+  neuronNameService.unregister(this);
 };
 
 CompartmentGraphWidget.prototype.updateModels = function(models) {
@@ -434,6 +435,10 @@ CompartmentGraphWidget.prototype.createLayoutOptions = function(name) {
   return options;
 };
 
+CompartmentGraphWidget.prototype.updateNeuronNames = function() {
+  this.update();
+};
+
 CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
 
   var data = {};
@@ -485,7 +490,7 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
             model = models[skeleton_id];
         return {data: {id: nodeID, // MUST be a string, or fails
                        skeleton_id: parseInt(skeleton_id),
-                       label: model.baseName,
+                       label: neuronNameService.getName(skeleton_id),
                        node_count: 0,
                        color: '#' + model.color.getHexString()}};
     };
@@ -651,7 +656,8 @@ CompartmentGraphWidget.prototype.append = function(models) {
     if (model) {
       if (model.selected) {
         // Update name only if present
-        if (model.baseName) node.data('label', model.baseName);
+        var name = neuronNameService.getName(model.id);
+        if (name) node.data('label', name);
         node.data('color', '#' + model.color.getHexString());
         set[skid] = model;
       } else {
@@ -675,7 +681,10 @@ CompartmentGraphWidget.prototype.append = function(models) {
 
   if (0 === additions) return; // all updating and removing done above
 
-  this.load(Object.keys(set), set);
+  // Register with name service before we attempt to load the graph
+  neuronNameService.registerAll(this, models, (function() {
+    this.load(Object.keys(set), set);
+  }).bind(this));
 };
 
 CompartmentGraphWidget.prototype.update = function() {
@@ -1179,7 +1188,7 @@ CompartmentGraphWidget.prototype.exportAdjacencyMatrix = function() {
   var m = this.createAdjacencyMatrix(),
       models = this.getSkeletonModels(),
       names = m.skeleton_ids.reduce(function(o, skid) {
-        var name = models[skid].baseName
+        var name = neuronNameService.getName(skid)
             .replace(/\\/g, '\\\\').replace(/"/g,'\\"');
         o[skid] = '"' + name + ' #' + skid + '"';
         return o;

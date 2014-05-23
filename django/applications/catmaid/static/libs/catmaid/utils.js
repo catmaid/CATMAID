@@ -412,6 +412,9 @@ var NeuronNameService = function()
     {id: 'neuronname', name: "Neuron name"}
   ];
 
+  // Indicates if the skeleton ID should be appended to every label
+  var appendSkeletonId = false;
+
   // An object mapping skeleton IDs to objects that contain the current name and
   // a list of clients, inerested in the particular skeleton.
   var managedSkeletons = [];
@@ -419,6 +422,18 @@ var NeuronNameService = function()
   // A list of all clients
   var clients = [];
 
+
+  /**
+   * Allows the caller to select whether the skeleton ID should be appende to
+   * every label or not.
+   */
+  this.setAppendSkeletonId = function(append)
+  {
+    appendSkeletonId = append ? true: false;
+
+    // Update the name representation of all neurons
+    this.updateNames(null, this.notifyClients.bind(this));
+  };
 
   /**
    * Returns copy of all available naming options.
@@ -682,11 +697,13 @@ var NeuronNameService = function()
 
       if (skids) {
         skids.forEach(function(skid) {
-          managedSkeletons[skid].name = name(skid);
+          managedSkeletons[skid].name = name(skid) +
+               (appendSkeletonId ? " #" + skid : "");
         });
       } else {
         for (var skid in managedSkeletons) {
-          managedSkeletons[skid].name = name(skid);
+          managedSkeletons[skid].name = name(skid) +
+               (appendSkeletonId ? " #" + skid : "");
         }
       }
 

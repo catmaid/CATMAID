@@ -151,6 +151,9 @@ SettingsWidget.prototype.init = function(space)
         "You can add different representations to a fallback list, in case " +
         "a desired representation isn't available for a neuron."));
 
+    ds.append(createCheckboxSetting("Append Skeleton ID", function() {
+      neuronNameService.setAppendSkeletonId(this.checked);
+    }));
     // Get all available options
     var namingOptions = neuronNameService.getOptions();
     // Add naming option select box

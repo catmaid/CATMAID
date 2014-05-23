@@ -744,13 +744,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     $upThrSelector.change((function(widget, skid) {
       return function() {
         widget.upThresholds[skid] = parseInt(this.value);
-        widget.createConnectivityTable();
+        widget.redraw();
       };
     })(this, skid));
     $downThrSelector.change((function(widget, skid) {
       return function() {
         widget.downThresholds[skid] = parseInt(this.value);
-        widget.createConnectivityTable();
+        widget.redraw();
       };
     })(this, skid));
 

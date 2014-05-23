@@ -33,6 +33,7 @@ SelectionTable.prototype.destroy = function() {
   this.clear(); // clear after clearing linkTarget, so it doesn't get cleared
   this.unregisterInstance();
   this.unregisterSource();
+  neuronNameService.unregister(this);
 };
 
 SelectionTable.prototype.updateModels = function(models, source_chain) {
@@ -257,8 +258,8 @@ SelectionTable.prototype.sort = function(sortingFn) {
 
 SelectionTable.prototype.sortByName = function() {
   this.sort(function(sk1, sk2) {
-    var name1 = sk1.baseName.toLowerCase(),
-        name2 = sk2.baseName.toLowerCase();
+    var name1 = neuronNameService.getName(sk1.id).toLowerCase(),
+        name2 = neuronNameService.getName(sk2.id).toLowerCase();
     return name1 == name2 ? 0 : (name1 < name2 ? -1 : 1);
   });
 
@@ -360,11 +361,20 @@ SelectionTable.prototype.append = function(models) {
         this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
       }, this);
 
-
-      this.gui.update();
+      // Add skeletons
+      neuronNameService.registerAll(this, models,
+          this.gui.update.bind(this.gui));
 
       this.updateLink(models);
     }).bind(this));
+};
+
+/**
+ * This method is called from the neuron name service, if neuron names are
+ * changed.
+ */
+SelectionTable.prototype.updateNeuronNames = function() {
+  this.gui.update();
 };
 
 /** ids: an array of Skeleton IDs. */
@@ -634,9 +644,10 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   );
   rowElement.append( td );
 
-  rowElement.append(
-    $(document.createElement("td")).text( skeleton.baseName + ' #' + skeleton.id )
-  );
+  // name
+  var name = neuronNameService.getName(skeleton.id);
+  rowElement.append($(document.createElement("td")).text(
+        name ? name : 'undefined'));
 
   // percent reviewed
   rowElement.append($('<td/>')

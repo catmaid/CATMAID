@@ -894,3 +894,89 @@ def fetch_treenodes(request, project_id=None, skeleton_id=None, with_reviewers=N
 
     return HttpResponse(json.dumps(treenode_data))
 
+
+@requires_user_role(UserRole.Annotate)
+def annotation_list(request, project_id=None):
+    """ Returns a JSON serialized object that contains information about the
+    given skeletons.
+    """
+    skeleton_ids = [v for k,v in request.POST.iteritems()
+            if k.startswith('skeleton_ids[')]
+    annotations = bool(int(request.POST.get("annotations", 0)))
+    metaannotations = bool(int(request.POST.get("metaannotations", 0)))
+
+    classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
+    relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
+
+    annotation_query = ClassInstance.objects.filter(project_id=project_id,
+            class_column__id=classes['annotation'])
+
+    # Query for annotations of the given skeletons
+    annotation_query = annotation_query.filter(
+            cici_via_b__relation_id = relations['annotated_with'],
+            cici_via_b__class_instance_a__cici_via_b__relation_id = relations['model_of'],
+            cici_via_b__class_instance_a__cici_via_b__class_instance_a__id__in = skeleton_ids)
+
+    # Request only skeleton ID, annotation ID, annotation Name
+    annotation_query = annotation_query.values_list(
+        'cici_via_b__class_instance_a__cici_via_b__class_instance_a',
+        'cici_via_b__user__id',
+        'id',
+        'name')
+
+    # Build result dictionaries: one that maps annotation IDs to annotation
+    # names and another one that lists annotation IDs and annotator IDs for
+    # each skeleton ID.
+    annotations = {}
+    skeletons = {}
+    for skid, auid, aid, aname in annotation_query:
+        if aid not in annotations:
+            annotations[aid] = aname
+        skeleton = skeletons.get(skid)
+        if not skeleton:
+            skeleton = {'annotations': []}
+            skeletons[skid] = skeleton
+        skeleton['annotations'].append({
+            'uid': auid,
+            'id': aid,
+        })
+
+    # Assemble response
+    response = {
+        'annotations': annotations,
+        'skeletons': skeletons,
+    }
+
+    # If wanted, get the meta annotations for each annotation
+    if metaannotations:
+        # Get only annotations of the given project
+        metaannotation_query = ClassInstance.objects.filter(project_id=project_id,
+                class_column__id=classes['annotation'])
+
+        # Query for meta annotations on the given annotations
+        metaannotation_query = metaannotation_query.filter(
+                cici_via_b__relation_id=relations['annotated_with'],
+                cici_via_b__class_instance_a__in=annotations.keys())
+
+        # Request only ID of annotated annotation, annotator ID, meta
+        # annotation ID, meta annotation Name
+        metaannotation_query = metaannotation_query.values_list(
+            'cici_via_b__class_instance_a', 'cici_via_b__user__id',
+            'id', 'name')
+
+        # Add this to the response
+        metaannotations = {}
+        for aaid, auid, maid, maname in metaannotation_query:
+            if maid not in annotations:
+                annotations[maid] = maname
+            annotation = metaannotations.get(aaid)
+            if not annotation:
+                annotation = {'annotations': []}
+                metaannotations[aaid] = annotation
+            annotation['annotations'].append({
+                'uid': auid,
+                'id': maid,
+            })
+        response['metaannotations'] = metaannotations
+
+    return HttpResponse(json.dumps(response), mimetype="text/json")

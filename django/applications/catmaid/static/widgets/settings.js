@@ -198,8 +198,11 @@ SettingsWidget.prototype.init = function(space)
       };
     });
     var removeButton = $('<button/>').text('Remove labeling').click(function() {
-      if (fallbackList.selectedIndex) {
-        neuronNameService.removeLabeling(fallbackList.selectedIndex);
+      // The last element cannot be removed
+      if (fallbackList.selectedIndex < fallbackList.length - 1) {
+        // We display the fallback list reversed, therefore we need to mirror
+        // the index.
+        neuronNameService.removeLabeling(fallbackList.length - fallbackList.selectedIndex - 1);
         updateFallbackList();
       }
     });
@@ -209,15 +212,21 @@ SettingsWidget.prototype.init = function(space)
 
     var updateFallbackList = function() {
       $(fallbackList).empty();
-      neuronNameService.getFallbackList().forEach(function(o, i) {
-        // Add each fallback list element to the select control. The first
-        // element ist disabled by default.
+      var options = neuronNameService.getFallbackList().map(function(o, i) {
+        // Add each fallback list element to the select control. The last
+        // element is disabled by default.
         var optionElement = $('<option/>').attr('value', o.id)
             .text(o.name);
         if (i==0) {
           optionElement.attr('disabled', 'disabled')
         }
-        $(fallbackList).append(optionElement);
+        return optionElement[0];
+      });
+      // We want to display the last fall back list element first, so we need
+      // to reverse the options, before we add it.
+      options.reverse();
+      options.forEach(function(o) {
+        fallbackList.appendChild(o);
       });
     };
     // Initialize fallback ist

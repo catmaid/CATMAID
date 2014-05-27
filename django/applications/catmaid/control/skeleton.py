@@ -853,12 +853,11 @@ def join_skeletons_interpolated(request, project_id=None):
     last_treenode_id, skeleton_id = _create_interpolated_treenode(request, params, project_id, True)
 
     # Get set of annoations the combinet skeleton should have
-    annotation_set = frozenset([v for k,v in request.POST.iteritems()
-            if k.startswith('annotation_set[')])
+    annotation_map = json.loads(request.POST.get('annotation_set'))
 
     # Link last_treenode_id to to_id
     _join_skeleton(request.user, last_treenode_id, params['to_id'], project_id,
-            annotation_set)
+            annotation_map)
 
     return HttpResponse(json.dumps({'treenode_id': params['to_id']}))
 

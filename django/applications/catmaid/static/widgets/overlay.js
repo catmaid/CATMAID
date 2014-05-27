@@ -683,7 +683,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                   } else {
                     NeuronAnnotations.retrieve_annotations_for_skeleton(
                         from_model.id, function(annotations) {
-                            merge(annotations.map(function(e) { return e.name; }));
+                            merge(annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
                         });
                   }
                 });
@@ -1683,7 +1683,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
                     } else {
                       NeuronAnnotations.retrieve_annotations_for_skeleton(
                           atn.skeleton_id, function(from_annotations) {
-                              merge(from_annotations.map(function(e) { return e.name; }));
+                              merge(from_annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
                           });
                     }
                   });

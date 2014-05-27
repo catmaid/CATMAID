@@ -217,7 +217,8 @@ def split_skeleton(request, project_id=None):
     """ The split is only possible if the neuron is not locked or if it is
     locked by the current user or if the current user belongs to the group
     of the user who locked it. Of course, the split is also possible if
-    the current user is a super-user.
+    the current user is a super-user. Also, all reviews of the treenodes in the
+    new neuron are updated to refer to the new skeleton.
     """
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
@@ -310,6 +311,10 @@ def split_skeleton(request, project_id=None):
     # Update annotations of existing neuron to have only over set
     _update_neuron_annotations(project_id, request.user, neuron.id,
             upstream_annotation_map)
+
+    # Update all reviews of the treenodes that are moved to a new neuron to
+    # refer to the new skeleton.
+    Review.objects.filter(treenode_id__in=change_list).update(skeleton=new_skeleton)
 
     # Update annotations of under skeleton
     _annotate_entities(project_id, [new_neuron.id], downstream_annotation_map)
@@ -738,7 +743,9 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
     skeleton of to_treenode into the skeleton of from_treenode, and delete the
     former skeleton of to_treenode. All annotations in annotation_set will be
     linked to the skeleton of to_treenode. It is expected that <annotation_map>
-    is a dictionary, mapping an annotation to an annotator ID.
+    is a dictionary, mapping an annotation to an annotator ID. Also, all
+    reviews of the skeleton that changes ID are changed to refer to the new
+    skeleton ID.
     """
     if from_treenode_id is None or to_treenode_id is None:
         raise Exception('Missing arguments to _join_skeleton')
@@ -793,6 +800,10 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         response_on_error = 'Could not update TreenodeConnector table.'
         TreenodeConnector.objects.filter(
             skeleton=to_skid).update(skeleton=from_skid)
+
+        # Update reviews from 'losing' neuron to now belong to the new neuron
+        response_on_error = 'Couldn not update reviews with new skeleton IDs for joined treenodes.'
+        Review.objects.filter(skeleton_id=to_skid).update(skeleton=from_skid)
 
         # Remove skeleton of to_id (deletes cicic part_of to neuron by cascade,
         # leaving the parent neuron dangling in the object tree).

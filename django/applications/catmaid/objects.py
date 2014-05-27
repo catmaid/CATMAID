@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from models import *
 
 import numpy as np

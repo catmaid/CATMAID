@@ -1190,14 +1190,17 @@ GroupGraph.prototype.colorBy = function(mode, select) {
     });
     this.removeState('colors');
 
-  } else if ('review' === mode) {
+  } else if (-1 !== mode.indexOf("review")) {
     // Color by review status like in the connectivity widget:
     // greenish '#6fff5c': fully reviewed
     // orange '#ffc71d': review started
     // redish '#ff8c8c': not reviewed at all
-    var cy = this.cy;
+    var cy = this.cy,
+        postData = {skeleton_ids: this.getSkeletons()};
+    // if user_ids is not specified, returns the union
+    if ('own-review' === mode) postData['user_ids'] = [session.userid];
     requestQueue.register(django_url + project.id + "/skeleton/review-status", "POST",
-        {skeleton_ids: this.getSkeletons()},
+        postData,
         function(status, text) {
           if (status !== 200) return;
           var json = $.parseJSON(text);

@@ -2257,7 +2257,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 				// Create line
 				this.createEdge(v1, v2, 'neurite');
 				// Create sphere
-				if (node[7] > 0) {
+				if (node[6] > 0) {
 					this.createNodeSphere(v1, node[6] * scale, material);
 				}
 			}

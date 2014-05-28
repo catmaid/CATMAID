@@ -2045,12 +2045,12 @@ window.OptionsDialog.prototype.show = function(width, height, modal) {
     modal: modal ? modal : true,
     buttons: {
       "Cancel": function() {
-        $(this).dialog("close");
         if (self.onCancel) self.onCancel();
+        $(this).dialog("destroy");
       },
       "OK": function() {
-        $(this).dialog("close");
         if (self.onOK) self.onOK();
+        $(this).dialog("destroy");
       }
     }
   });

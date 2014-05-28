@@ -426,11 +426,11 @@ var tracingWindowActions = [
   }),
 
   new Action({
-      helpText: "Compartment Graph widget",
+      helpText: "Graph widget",
       buttonID: "data_button_compartment_graph_widget",
       buttonName: 'graph_widget',
       run: function (e) {
-          WindowMaker.create('compartment-graph-widget');
+          WindowMaker.create('graph-widget');
           return true;
       }
   }),

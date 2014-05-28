@@ -7,11 +7,15 @@ var CircuitGraphPlot = function() {
   this.widgetID = this.registerInstance();
   this.registerSource();
 
-	// SkeletonModel instances
-	this.skeletons = {};
-  // Skeleton IDs, each has a model in this.skeletons
+	// Each entry has an array of one or more SkeletonModel instances
+	this.models = [];
+
+  // Node ids, each has one or more models in this.models
   // and the order corresponds with that of the adjacency matrix.
-  this.skeleton_ids = [];
+  this.ids = [];
+
+  // Name of each node
+  this.names = [];
 
   this.AdjM = null;
 
@@ -27,7 +31,7 @@ var CircuitGraphPlot = function() {
 
   this.names_visible = true;
 
-  // Skeleton ID vs true
+  // Node ID vs true
   this.selected = {};
 };
 
@@ -53,83 +57,144 @@ CircuitGraphPlot.prototype.updateModels = function(models) {
 /** Returns a clone of all skeleton models, keyed by skeleton ID. */
 CircuitGraphPlot.prototype.getSelectedSkeletonModels = function() {
   if (!this.svg) return {};
-	var skeletons = this.skeletons;
-	return Object.keys(this.selected).reduce(function(o, skid) {
-		o[skid] = skeletons[skid].clone();
-		return o;
-	}, {});
+  var models = this.models,
+      selected = this.selected;
+	return this.ids.reduce(function(o, id, i) {
+    if (selected[id]) {
+      return models[i].reduce(function(o, model) {
+        o[model.id] = model.clone();
+        return o;
+      }, o);
+    }
+    return o;
+  }, {});
 };
 
 CircuitGraphPlot.prototype.getSelectedSkeletons = function() {
   if (!this.svg) return [];
-  return Object.keys(this.selected);
+  var models = this.models,
+      selected = this.selected;
+	return this.ids.reduce(function(a, id, i) {
+    if (selected[id]) {
+      return a.concat(models[i].map(function(model) { return model.id; }));
+    }
+    return a;
+  }, []);
 };
 
-CircuitGraphPlot.prototype.getSkeletonModels = CircuitGraphPlot.prototype.getSelectedSkeletonModels;
+CircuitGraphPlot.prototype.getSkeletons = function() {
+  if (!this.svg) return [];
+  var models = this.models;
+	return this.ids.reduce(function(a, id, i) {
+    return a.concat(models[i].map(function(model) { return model.id; }));
+  }, []);
+};
+
+CircuitGraphPlot.prototype.getSkeletonModels = function() {
+  if (!this.svg) return [];
+  var models = this.models;
+	return this.ids.reduce(function(a, id, i) {
+    return a.concat(models[i]);
+  }, []);
+};
 
 CircuitGraphPlot.prototype.getSkeletonModel = function(skeleton_id) {
-  var model = this.skeletons[skeleton_id];
-  return model ? model.clone() : null;
+  for (var i=0; i<this.models.length; ++i) {
+    if (skeleton_id === this.models[i].id) return this.models[i].clone();
+  }
+  return null;
 };
 
 CircuitGraphPlot.prototype.hasSkeleton = function(skeleton_id) {
-  return skeleton_id in this.skeleton_ids;
+  return this.models.some(function(ms) {
+    return ms.some(function(model) {
+      return skeleton_id === model.id;
+    });
+  });
 };
 
 CircuitGraphPlot.prototype.clear = function() {
-	this.skeletons = {};
-  this.skeleton_ids = [];
+	this.models = [];
+  this.ids = [];
+  this.names = [];
   this.selected = {};
   this.clearGUI();
 };
 
 CircuitGraphPlot.prototype.append = function(models) {
-	// Update names and colors if present, remove when deselected
-	Object.keys(this.skeletons).forEach(function(skid) {
-		var model = models[skid];
-		if (model) {
-			if (model.selected) {
-				this.skeletons[skid] = model.clone();
-			} else {
-				delete this.skeletons[skid];
-			}
-		}
-	}, this);
-
-  Object.keys(models).forEach(function(skid) {
-    if (skid in this.skeletons) return;
-    var model = models[skid];
-    if (model.selected) {
-      this.skeletons[skid] = model.clone();
+	// Update names and colors when already present, or remove when deselected
+  var skeleton_ids = {};
+	this.models = this.models.filter(function(ms, i) {
+    ms = ms.filter(function(m, k) {
+      skeleton_ids[m.id] = true;
+      //
+      var model = models[m.id];
+      if (!model) return true;
+      if (model.selected) {
+        ms[k] = model.clone(); // replace first
+        if (1 === ms.length) this.names[i] = model.baseName;
+        return true;
+      }
+      return false; // remove skeleton from group
+    }, this);
+    if (0 === ms.length) {
+      // Remove group
+      this.ids.splice(k, 1);
+      this.names.splice(k, 1);
+      return false; // removes from this.models
     }
   }, this);
 
-	this.skeleton_ids = Object.keys(this.skeletons);
+  // Add new ones
+  Object.keys(models).forEach(function(skid) {
+    if (skid in skeleton_ids) return;
+    var model = models[skid];
+    if (model.selected) {
+      skeleton_ids[model.id] = true;
+      //
+      this.ids.push(model.id);
+      this.names.push(model.baseName);
+      this.models.push([model]);
+    }
+  }, this);
 
-  if (1 === this.skeleton_ids.length) {
+  var skids = Object.keys(skeleton_ids);
+
+  if (1 === skids.length) {
     this.clearGUI();
     growlAlert('Need more than one', 'Add at least another skeleton!');
     return;
   }
 
+  this._refresh(skids);
+};
+
+CircuitGraphPlot.prototype._refresh = function(skids) {
 	// fetch connectivity data, create adjacency matrix and plot it
 	requestQueue.register(django_url + project.id + '/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'POST',
-			{skeleton_list: this.skeleton_ids},
+			{skeleton_list: skids},
 			(function(status, text) {
 				if (200 !== status) return;
 				var json = $.parseJSON(text);
 				if (json.error) { alert(json.error); return; }
 				// Create adjacency matrix
-				var AdjM = this.skeleton_ids.map(function(skid) { return this.skeleton_ids.map(function(skid) { return 0; }); }, this);
-				// Populate adjacency matrix
-				var indices = this.skeleton_ids.reduce(function(o, skid, i) { o[skid] = i; return o; }, {});
+				var AdjM = this.ids.map(function(id) { return this.ids.map(function(id) { return 0; }); }, this);
+        // Create indices from skeleton ID to group index in this.ids array
+				var indices = this.models.reduce(function(o, ms, i) {
+          return ms.reduce(function(o, model) {
+            o[model.id] = i;
+            return o;
+          }, o);
+        }, {});
+				// Populate adjacency matrix, accumulating edge synapse counts for groups
 				json.edges.forEach(function(edge) {
-					AdjM[indices[edge[0]]][indices[edge[1]]] = edge[2];
+					AdjM[indices[edge[0]]][indices[edge[1]]] += edge[2];
 				});
         // Update data and GUI
-        this.plot(this.skeleton_ids, this.skeletons, AdjM);
+        this.plot(this.ids, this.names, this.models, AdjM);
 			}).bind(this));
 };
+
 
 CircuitGraphPlot.prototype._add_graph_partition = function(mirror) {
   if (this.vectors.length > 2) {
@@ -177,10 +242,10 @@ CircuitGraphPlot.prototype._add_graph_partition = function(mirror) {
         return vs[v > 0 ? indices[0] : indices[1]][i]; 
       }, this)]);
     } else {
-      this.vectors.push([-1, this.skeleton_ids.map(function() { return 0; })]);
+      this.vectors.push([-1, this.ids.map(function() { return 0; })]);
     }
   } else {
-    this.vectors.push([-1, this.skeleton_ids.map(function() { return 0; })]);
+    this.vectors.push([-1, this.ids.map(function() { return 0; })]);
   }
 
 };
@@ -189,12 +254,13 @@ CircuitGraphPlot.prototype._add_graph_partition = function(mirror) {
  * and an array of arrays representing the adjacency matrix where the order
  * in rows and columns corresponds to the order in the array of skeleton IDs.
  * Clears the existing plot and replaces it with the new data. */
-CircuitGraphPlot.prototype.plot = function(skeleton_ids, models, AdjM) {
+CircuitGraphPlot.prototype.plot = function(ids, names, models, AdjM) {
   // Set the new data
-  this.skeleton_ids = skeleton_ids;
-  this.skeletons = models;
-  this.selected = {};
+  this.ids = ids;
+  this.names = names;
+  this.models = models;
   this.AdjM = AdjM;
+  this.selected = {};
 
   // Compute signal flow and eigenvectors
   try {
@@ -259,7 +325,7 @@ CircuitGraphPlot.prototype.clearGUI = function() {
 };
 
 CircuitGraphPlot.prototype.getVectors = function() {
-  if (!this.skeleton_ids || 0 === this.skeleton_ids.length) return;
+  if (!this.ids || 0 === this.ids.length) return;
   
   var xSelect = $('#circuit_graph_plot_X_' + this.widgetID)[0],
       ySelect = $('#circuit_graph_plot_Y_' + this.widgetID)[0];
@@ -292,7 +358,7 @@ CircuitGraphPlot.prototype.getVectors = function() {
 };
 
 CircuitGraphPlot.prototype.redraw = function() {
-  if (!this.skeleton_ids || 0 === this.skeleton_ids.length) return;
+  if (!this.ids || 0 === this.ids.length) return;
 
   var vs = this.getVectors();
 
@@ -305,7 +371,7 @@ CircuitGraphPlot.prototype.redraw = function() {
 CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
   $.blockUI();
   requestQueue.register(django_url + project.id + '/skeletons/measure', "POST",
-      {skeleton_ids: this.skeleton_ids},
+      {skeleton_ids: this.getSkeletons()},
       (function(status, text) {
         try {
           if (200 !== status) return;
@@ -322,14 +388,36 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
           // 3: number of outputs
           // 4: inputs minus outputs
           var vs = [[], [], [], [], []];
-          this.skeleton_ids.forEach(function(skeleton_id) {
-            var row = rows[skeleton_id];
-            vs[0].push(row[2]);
-            vs[1].push(row[2] - row[8]);
-            vs[2].push(row[3]);
-            vs[3].push(row[4]);
-            vs[4].push(row[3] - row[4]);
+          this.models.forEach(function(models) {
+            if (1 === models) {
+              var row = rows[skeleton_id];
+              vs[0].push(row[2]);
+              vs[1].push(row[2] - row[8]);
+              vs[2].push(row[3]);
+              vs[3].push(row[4]);
+              vs[4].push(row[3] - row[4]);
+            } else {
+              var v0 = 0,
+                  v1 = 0,
+                  v2 = 0,
+                  v3 = 0,
+                  v4 = 0;
+              models.forEach(function(model) {
+                var row = rows[model.id];
+                v0 += row[2];
+                v1 += row[2] - row[8];
+                v2 += row[3];
+                v3 += row[4];
+                v4 += row[3] - row[4];
+              });
+              vs[0].push(v0);
+              vs[1].push(v1);
+              vs[2].push(v2);
+              vs[3].push(v3);
+              vs[4].push(v4);
+            }
           });
+
           this.anatomy = vs;
           if (typeof(callback) === 'function') callback();
         } catch (e) {
@@ -345,15 +433,15 @@ CircuitGraphPlot.prototype.loadBetweennessCentrality = function(callback) {
   try {
     var graph = jsnx.DiGraph();
     this.AdjM.forEach(function(row, i) {
-      var source = this.skeleton_ids[i];
+      var source = this.ids[i];
       row.forEach(function(count, j) {
         if (0 === count) return;
-        var target = this.skeleton_ids[j];
+        var target = this.ids[j];
         graph.add_edge(source, target, {weight: count});
       }, this);
     }, this);
 
-    if (this.skeleton_ids.length > 10) {
+    if (this.ids.length > 10) {
       $.blockUI();
     }
 
@@ -366,8 +454,8 @@ CircuitGraphPlot.prototype.loadBetweennessCentrality = function(callback) {
     // Handle edge case
     if (0 === max) max = 1;
 
-    this.centralities[0] = this.skeleton_ids.map(function(skeleton_id) {
-      return bc[skeleton_id] / max;
+    this.centralities[0] = this.ids.map(function(id) {
+      return bc[id] / max;
     });
 
     if (typeof(callback) === 'function') callback();
@@ -392,11 +480,10 @@ CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
       height = container.height() - margin.top - margin.bottom;
 
   // Package data
-  var data = this.skeleton_ids.map(function(skid, i) {
-    var model = this.skeletons[skid];
-    return {skid: skid,
-            name: model.baseName,
-            hex: '#' + model.color.getHexString(),
+  var data = this.ids.map(function(id, i) {
+    return {id: id,
+            name: this.names[i],
+            hex: '#' + this.models[i][0].color.getHexString(),
             x: xVector[i],
             y: yVector[i]};
   }, this);
@@ -456,27 +543,27 @@ CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
   // Assign the zooming behavior to the encapsulating root group
   svg.call(zoom);
 
-  var setSelected = (function(skid, b) {
-    if (b) this.selected[skid] = true;
-    else delete this.selected[skid];
+  var setSelected = (function(id, b) {
+    if (b) this.selected[id] = true;
+    else delete this.selected[id];
   }).bind(this);
 
   var selected = this.selected;
 
   elems.append('circle')
      .attr('class', 'dot')
-     .attr('r', function(d) { return selected[d.skid] ? 6 : 3; })
+     .attr('r', function(d) { return selected[d.id] ? 6 : 3; })
      .style('fill', function(d) { return d.hex; })
-     .style('stroke', function(d) { return selected[d.skid] ? 'black' : 'grey'; })
+     .style('stroke', function(d) { return selected[d.id] ? 'black' : 'grey'; })
      .on('click', function(d) {
        // Toggle selected:
        var c = d3.select(this);
        if (3 === Number(c.attr('r'))) {
          c.attr('r', 6).style('stroke', 'black');
-         setSelected(d.skid, true);
+         setSelected(d.id, true);
        } else {
          c.attr('r', 3).style('stroke', 'grey');
-         setSelected(d.skid, false);
+         setSelected(d.id, false);
        }
      })
    .append('svg:title')
@@ -559,7 +646,7 @@ CircuitGraphPlot.prototype.toggleNamesVisible = function(checkbox) {
 
 /** Implements the refresh button. */
 CircuitGraphPlot.prototype.update = function() {
-  this.append(this.skeletons);
+  this.append(this.getSkeletons());
 };
 
 CircuitGraphPlot.prototype.highlight = function() {
@@ -580,10 +667,9 @@ CircuitGraphPlot.prototype.exportSVG = function() {
 CircuitGraphPlot.prototype.exportCSV = function() {
   var vs = this.getVectors();
   if (!vs) return;
-  var csv = this.skeleton_ids.map(function(skid, i) {
-    var model = this.skeletons[skid];
-    return [model.baseName.replace(/,/g, ";"),
-            skid,
+  var csv = this.ids.map(function(id, i) {
+    return [this.names[i].replace(/,/g, ";"),
+            id,
             vs.x[i],
             vs.y[i]].join(',');
   }, this).join('\n');

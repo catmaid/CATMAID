@@ -3,7 +3,7 @@
 
 "use strict";
 
-var CompartmentGraphWidget = function() {
+var GroupGraph = function() {
   this.widgetID = this.registerInstance();
   this.registerSource();
 
@@ -20,46 +20,70 @@ var CompartmentGraphWidget = function() {
 
   // stores re-layout timeout when resizing
   this.relayoutTimeout = null;
-}
 
-CompartmentGraphWidget.prototype = {};
-$.extend(CompartmentGraphWidget.prototype, new InstanceRegistry());
-$.extend(CompartmentGraphWidget.prototype, new SkeletonSource());
+  this.groups = {}; // groupID vs Group instances, where groupID is e.g. g0, g1, g2, ...
+};
 
-CompartmentGraphWidget.prototype.getName = function() {
+GroupGraph.prototype = {};
+$.extend(GroupGraph.prototype, new InstanceRegistry());
+$.extend(GroupGraph.prototype, new SkeletonSource());
+
+GroupGraph.prototype.getName = function() {
   return "Graph " + this.widgetID;
 };
 
-CompartmentGraphWidget.prototype.getSelectedSkeletons = function() {
+GroupGraph.prototype.destroy = function() {
+  this.unregisterInstance();
+  this.unregisterSource();
+};
+
+GroupGraph.prototype.nextGroupID = function() {
+  var keys = Object.keys(this.groups).map(function(key) {
+    return parseInt(key.substr(1));
+  }).sort(function(a, b) {
+    return a === b ? 0 : (a < b ? -1 : 1);
+  });
+  if (0 === keys.length) return 1;
+  return 'g' + keys[keys.length -1] + 1;
+};
+
+GroupGraph.prototype.getSelectedSkeletons = function() {
   if (!this.cy) return [];
   // Collect unique, selected skeleton IDs
   var ids = {};
   this.cy.nodes(function(i, node) {
     if (node.selected() && node.visible()) {
-      ids[node.data("skeleton_id")] = null;
+			node.data("skeletons").forEach(function(skeleton) {
+				ids[skeleton.id] = true;
+			});
     }
   });
   return Object.keys(ids).map(Number);
 };
 
-CompartmentGraphWidget.prototype.getSkeletons = function() {
+GroupGraph.prototype.getSkeletons = function() {
   if (!this.cy) return [];
   // Collect unique skeleton IDs
   var ids = {};
   this.cy.nodes(function(i, node) {
-    ids[node.data('skeleton_id')] = null;
+		node.data("skeletons").forEach(function(skeleton) {
+			ids[skeleton.id] = true;
+		});
   });
   return Object.keys(ids).map(Number);
 };
 
-/** One or more for each skeleton_id, depending on the synapse clustering bandwidth. */
-CompartmentGraphWidget.prototype.getNodes = function(skeleton_id) {
+/** One or more for each skeleton_id, depending on the synapse clustering bandwidth and the confidence value for splitting up skeletons at low-confidence edges. */
+GroupGraph.prototype.getNodes = function(skeleton_id) {
   return this.cy.nodes().filter(function(i, node) {
-    return skeleton_id === node.data("skeleton_id");
+		return node.data("skeletons").some(function(skeleton) {
+			return skeleton_id === skeleton.id;
+		});
   });
 };
 
-CompartmentGraphWidget.prototype.getSkeletonColor = function(skeleton_id) {
+/** Return the color of the first node found, or a default magenta color. */
+GroupGraph.prototype.getSkeletonColor = function(skeleton_id) {
   var nodes = this.getNodes(skeleton_id);
   if (nodes.length > 0) {
     return new THREE.Color(nodes[0].data("color"));
@@ -67,63 +91,56 @@ CompartmentGraphWidget.prototype.getSkeletonColor = function(skeleton_id) {
   return new THREE.Color().setRGB(1, 0, 1);
 };
 
-CompartmentGraphWidget.prototype.destroy = function() {
-  this.unregisterInstance();
-  this.unregisterSource();
-};
-
-CompartmentGraphWidget.prototype.updateModels = function(models) {
+GroupGraph.prototype.updateModels = function(models) {
   this.append(models);
 };
 
-CompartmentGraphWidget.prototype.hasSkeleton = function(skeleton_id) {
+GroupGraph.prototype.hasSkeleton = function(skeleton_id) {
   return this.getNodes(skeleton_id).length > 0;
 };
 
-CompartmentGraphWidget.prototype.createSkeletonModel = function(props) {
+GroupGraph.prototype.createSkeletonModel = function(props) {
   return new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color().setHex(parseInt('0x' + props.color.substring(1))));
 };
 
-CompartmentGraphWidget.prototype.getSkeletonModel = function(skeleton_id) {
+GroupGraph.prototype.getSkeletonModel = function(skeleton_id) {
   var nodes = this.getNodes(skeleton_id);
   if (0 === nodes.length) return null;
   var node = nodes[0],
       props = node.data(),
-      model = this.createSkeletonModel(props);
+      model = props.skeletons[0].clone();
+	model.color = new THREE.Color().setHex(parseInt('0x' + props.color.substring(1)));
   model.setVisible(node.selected());
   return model;
 };
 
-/** Return a SkeletonModel for every skeleton ID, with the model selected if at least one of the nodes of that skeleton is visible. There could be more than one node when a skeleton is split by confidence or exploded by synapse clustering. */
-CompartmentGraphWidget.prototype.getSkeletonModels = function() {
-  return this.cy.nodes().toArray().reduce(function(m, node) {
-    var props = node.data();
-    if (props.branch) return m; // ignore branch nodes from neurons split by synapse clustering
-    if (m[props.skeleton_id]) {
-      // Already seen (there could be more than one when split by confidence or synapse clustering)
-      if (node.selected()) m[props.skeleton_id].setVisible(true);
-      return m;
-    }
-    var model = CompartmentGraphWidget.prototype.createSkeletonModel(props);
-    model.setVisible(node.selected());
-    m[props.skeleton_id] = model;
-    return m;
-  }, {});
+GroupGraph.prototype.getSkeletonModels = function() {
+  return this.cy.nodes().toArray().reduce(this._asModels, {});
 };
 
-CompartmentGraphWidget.prototype.getSelectedSkeletonModels = function() {
+GroupGraph.prototype.getSelectedSkeletonModels = function() {
   return this.cy.nodes().toArray().reduce(function(m, node) {
     if (node.selected() && node.visible()) {
-      var props = node.data();
-    if (props.branch) return m; // ignore branch nodes from neurons split by synapse clustering
-    if (m[props.skeleton_id]) return m; // already seen (there could be more than one when split by confidence or synapse clustering)
-      m[props.skeleton_id] = new SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color(props.color));
+      GroupGraph.prototype._asModels(m, node);
     }
     return m;
   }, {});
 };
 
-CompartmentGraphWidget.prototype.toggle_show_node_labels = function() {
+GroupGraph.prototype._asModels = function(m, node) {
+  var props = node.data(),
+      color = new THREE.Color().setHex(parseInt('0x' + props.color.substring(1))),
+      selected = node.selected();
+  return props.skeletons.reduce(function(m, skeleton) {
+    var copy = skeleton.clone();
+    copy.color = color.clone();
+    copy.setVisible(selected);
+    m[copy.id] = copy;
+    return m;
+  }, m);
+};
+
+GroupGraph.prototype.toggle_show_node_labels = function() {
   if (this.show_node_labels) {
     this.show_node_labels = false;
     this.cy.nodes().css('text-opacity', 0);
@@ -133,7 +150,7 @@ CompartmentGraphWidget.prototype.toggle_show_node_labels = function() {
   }
 };
 
-CompartmentGraphWidget.prototype.graph_properties = function() {
+GroupGraph.prototype.graph_properties = function() {
   var dialog = document.createElement('div');
   dialog.setAttribute("id", "dialog-graph-confirm");
   dialog.setAttribute("title", "Graph properties");
@@ -141,15 +158,15 @@ CompartmentGraphWidget.prototype.graph_properties = function() {
   var label = document.createTextNode('Keep edges with confidence');
   dialog.appendChild(label);
 
-  var sync = document.createElement('select');
-  sync.setAttribute("id", "confidence_threshold");
+  var conf = document.createElement('select');
+  conf.setAttribute("id", "confidence_threshold");
   for (var i = 0; i < 6; ++i) {
     var option = document.createElement("option");
     option.text = i.toString();
     option.value = i;
-    sync.appendChild(option);
+    conf.appendChild(option);
   }
-  dialog.appendChild(sync);
+  dialog.appendChild(conf);
   // TODO: set confidence_threshold
   dialog.appendChild( document.createElement("br"));
 
@@ -176,7 +193,7 @@ CompartmentGraphWidget.prototype.graph_properties = function() {
   dialog.appendChild(risk);
   dialog.appendChild( document.createElement("br"));
 
-  var label = document.createTextNode('Keep edges with weight ');
+  var label = document.createTextNode('Keep edges with ');
   dialog.appendChild(label);
   var syncount = document.createElement('input');
   syncount.setAttribute('id', 'synaptic_count_edge_filter');
@@ -184,7 +201,7 @@ CompartmentGraphWidget.prototype.graph_properties = function() {
   syncount.setAttribute('value', this.synaptic_count_edge_filter );
   syncount.style.width = "30px";
   dialog.appendChild(syncount);
-  label = document.createTextNode(' or higher.');
+  label = document.createTextNode(' or more synapses.');
   dialog.appendChild(label);
   dialog.appendChild( document.createElement("br"));
 
@@ -215,28 +232,44 @@ CompartmentGraphWidget.prototype.graph_properties = function() {
     modal: true,
     buttons: {
       "OK": function() {
-        // TODO: fixme, does not return correct value after update
         self.clustering_bandwidth = bandwidth.value;
-        self.confidence_threshold = sync.value;
-        self.synaptic_count_edge_filter = syncount.value;
-        self.compute_risk = risk.checked;
+
+        if (!self.confidence_threshold && conf.value) {
+          if (Object.keys(self.groups).length > 0) {
+            if (confirm("Splitting by confidence ungroups all groups: proceed?")) {
+              self.confidence_threshold = conf.value;
+              self.resetGroups();
+            }
+          } else {
+            self.confidence_threshold = conf.value;
+          }
+        }
+
+
+        self.synaptic_count_edge_filter = syncount.value; // TODO not used?
+
+
+        if (!self.compute_risk && risk.checked) {
+          if (Object.keys(self.groups).length > 0) {
+            if (confirm("Computing the synapse risk ungroups all groups: proceed?")) {
+              self.compute_risk = risk.checked;
+              self.resetGroups();
+            }
+          } else {
+            self.compute_risk = risk.checked;
+          }
+        }
+
         $(this).dialog("close");
       }
     },
-    close: function(event, ui) { 
+    close: function(event, ui) {
       $('#dialog-graph-confirm').remove();
     }
   });
 };
 
-CompartmentGraphWidget.prototype.init = function() {
-  // TODO what is this?
-  $("#edgecount_threshold").bind("keyup paste", function(){
-      setTimeout(jQuery.proxy(function() {
-          this.val(this.val().replace(/[^0-9]/g, ''));
-      }, $(this)), 0);
-  });
-
+GroupGraph.prototype.init = function() {
   var options = {
     ready: function() {},
     style: cytoscape.stylesheet()
@@ -315,8 +348,8 @@ CompartmentGraphWidget.prototype.init = function() {
   });
 };
 
-/** Unlocks of locked nodes, if any, when done. */
-CompartmentGraphWidget.prototype.updateLayout = function(layout) {
+/** Unlocks locked nodes, if any, when done. */
+GroupGraph.prototype.updateLayout = function(layout) {
   var index = layout ? layout.selectedIndex : 0;
   var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'random', 'cose', 'preset'][index];
   var options = this.createLayoutOptions(name);
@@ -324,7 +357,7 @@ CompartmentGraphWidget.prototype.updateLayout = function(layout) {
   this.cy.layout( options );
 };
 
-CompartmentGraphWidget.prototype.createLayoutOptions = function(name) {
+GroupGraph.prototype.createLayoutOptions = function(name) {
   var options;
   if ('grid' === name) {
     options = {
@@ -352,7 +385,7 @@ CompartmentGraphWidget.prototype.createLayoutOptions = function(name) {
 
         // static numbers or functions that dynamically return what these
         // values should be for each element
-        nodeMass: undefined, 
+        nodeMass: undefined,
         edgeLength: undefined,
 
         stepSize: 1, // size of timestep in simulation
@@ -360,7 +393,7 @@ CompartmentGraphWidget.prototype.createLayoutOptions = function(name) {
         // function that returns true if the system is stable to indicate
         // that the layout can be stopped
         stableEnergy: function( energy ){
-            var e = energy; 
+            var e = energy;
             return (e.max <= 0.5) || (e.mean <= 0.3);
         }
     };
@@ -393,7 +426,7 @@ CompartmentGraphWidget.prototype.createLayoutOptions = function(name) {
       // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
       refresh: 0,
       // Whether to fit the network view after when done
-      fit: true, 
+      fit: true,
       // Whether to randomize node positions on the beginning
       randomize: true,
       // Whether to use the JS console to print debug messages
@@ -408,16 +441,16 @@ CompartmentGraphWidget.prototype.createLayoutOptions = function(name) {
       // Divisor to compute edge forces
       edgeElasticity: 100,
       // Nesting factor (multiplier) to compute ideal edge length for nested edges
-      nestingFactor: 5, 
+      nestingFactor: 5,
       // Gravity force (constant)
-      gravity: 250, 
+      gravity: 250,
 
       // Maximum number of iterations to perform
       numIter: 100,
       // Initial temperature (maximum node displacement)
       initialTemp: 200,
       // Cooling factor (how the temperature is reduced between consecutive iterations)
-      coolingFactor: 0.95, 
+      coolingFactor: 0.95,
       // Lower temperature threshold (below this point the layout will end)
       minTemp: 1
     };
@@ -434,16 +467,22 @@ CompartmentGraphWidget.prototype.createLayoutOptions = function(name) {
   return options;
 };
 
-CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
+/** There is a model for every skeleton ID included in json.
+ *  But there could be models for which there isn't a skeleton_id in json: these are disconnected nodes. */
+GroupGraph.prototype.updateGraph = function(json, models) {
+  // A neuron that is split cannot be part of a group anymore: makes no sense.
+  // Neither by confidence nor by synapse clustering.
+  // Also, when computing the risk there can't be any groups.
 
   var data = {};
 
+  // TODO move the risk computation to the client, and only for selected nodes with other selected nodes.
   if (this.compute_risk) {
     data = json;
 
     // Color nodes
     data.nodes.forEach(function(node) {
-      node.data.color = '#' + models[node.data.skeleton_id].color.getHexString();
+      node.data.color = '#' + models[node.data.skeletons[0].id].color.getHexString();
     });
 
     // Set color of new edges
@@ -453,7 +492,7 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
         /*
         var hsv = [0,
                    d.risk > 0.75 ? 0 : 1 - d.risk / 0.75,
-                   d.risk > 0.75 ? 0.267 : 1.267 - d.risk / 0.75]; 
+                   d.risk > 0.75 ? 0.267 : 1.267 - d.risk / 0.75];
         */
         // TODO how to convert HSV to RGB hex?
         d.color = '#444';
@@ -484,7 +523,7 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
             skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
             model = models[skeleton_id];
         return {data: {id: nodeID, // MUST be a string, or fails
-                       skeleton_id: parseInt(skeleton_id),
+                       skeletons: [model.clone()],
                        label: model.baseName,
                        node_count: 0,
                        color: '#' + model.color.getHexString()}};
@@ -545,6 +584,19 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
                        weight: 10}}; // default weight for intraedge
       }));
     }
+
+    // Group neurons, if any groups exist, skipping splitted neurons
+    // (Neurons may have been splitted either by synapse clustering or at low-confidence edges.)
+    var splitted = {};
+    if (data.nodes) {
+      splitted = data.nodes.reduce(function(o, nodeID) {
+        nodeID = nodeID + '';
+        var i_ = nodeID.lastIndexOf('_');
+        if (-1 !== i_) o[nodeID.substring(0, i_)] = true;
+        return o;
+      }, {});
+    }
+    this._regroup(data, splitted, models);
   }
 
   // Store positions of current nodes and their selected state
@@ -600,7 +652,26 @@ CompartmentGraphWidget.prototype.updateGraph = function(json, models) {
   this.updateLayout();
 };
 
-CompartmentGraphWidget.prototype.toggleTrimmedNodeLabels = function() {
+
+						// TODO for new function appendAsGroup(skeleton_models):
+						// I need a map of groups vs properties: colors and label
+						// And updating the graph will have to consider groups.
+						// And groups should be expandable to their constituent nodes.
+						// And selected sets of nodes should be groupable.
+						// Will need a dialog with a color wheel and a text field
+						// to choose a name. All skeletons and their annotations should
+						// be listed for clarity and for finding inspiration towards a name.
+            // A suggested name could be an annotation common to all or most members.
+						// Additionally, groups should be creatable not from selected nodes
+						// but from common annotations: discover groups, basically, by common
+						// annotations.
+
+						// In the new design, each node contains an array of skeleton models,
+						// which reduces to the old design by having a single model in the array
+						// and getting its id.
+
+
+GroupGraph.prototype.toggleTrimmedNodeLabels = function() {
   if (this.originalNames) {
     this.trim_node_labels = false;
     // Restore
@@ -629,37 +700,91 @@ CompartmentGraphWidget.prototype.toggleTrimmedNodeLabels = function() {
   }
 };
 
-CompartmentGraphWidget.prototype.clear = function() {
+GroupGraph.prototype.clear = function() {
   if (this.cy) this.cy.elements("node").remove();
 };
 
-CompartmentGraphWidget.prototype.removeSkeletons = function(skeleton_ids) {
-  var models = this.getSkeletonModels();
-  skeleton_ids.forEach(function(skid) {
-    delete models[skid];
-  });
-  this.load(Object.keys(models), models);
+GroupGraph.prototype.removeSkeletons = function(skeleton_ids) {
+	// Convert array values into object keys
+	var skids = skeleton_ids.reduce(function(o, skid) {
+		o[skid] = true;
+		return o;
+	}, {});
+
+  var groups = this.groups;
+
+	// Inspect each node, remove node if all its skeletons are to be removed
+	this.cy.nodes().each(function(i, node) {
+		var models = node.data('skeletons'),
+        sks = models.filter(function(model) {
+			return !skids[model.id];
+		});
+		if (0 === sks.length) {
+      node.remove();
+      if (models.length > 1) {
+        // Remove the corresponding group
+        delete groups[node.id()];
+      }
+    }
+	});
 };
 
-CompartmentGraphWidget.prototype.append = function(models) {
+GroupGraph.prototype.append = function(models) {
+  var set = {},
+      removed_from_group = 0,
+      added_to_group = 0;
 
-  var set = {};
+  var member_of = Object.keys(this.groups).reduce((function(o, gid) {
+    return Object.keys(this.groups[gid].models).reduce(function(o, skid) {
+      o[skid] = gid;
+      return o;
+    }, o);
+  }).bind(this), {});
 
+	// Determine which nodes to update, which to remove, and which to add anew
   this.cy.nodes().each(function(i, node) {
-    var skid = node.data('skeleton_id'),
-        model = models[skid];
-    if (model) {
-      if (model.selected) {
-        // Update name only if present
-        if (model.baseName) node.data('label', model.baseName);
-        node.data('color', '#' + model.color.getHexString());
-        set[skid] = model;
-      } else {
-        node.remove();
+
+    var skeletons = node.data('skeletons'),
+        one = 1 === skeletons.length;
+
+    // Iterate a copy of the node's skeleton models
+		skeletons.slice(0).forEach(function(skeleton, i) {
+			var new_model = models[skeleton.id];
+
+      // Nothing to do:
+			if (!new_model) {
+        // Keep the same model
+        set[skeleton.id] = skeleton;
+        return;
       }
-    } else {
-      set[skid] = CompartmentGraphWidget.prototype.createSkeletonModel(node.data());
-    }
+
+      if (new_model.selected) {
+        // Update node properties
+
+        if (new_model.baseName) node.data('label', new_model.baseName);
+        skeleton.color = new_model.color.clone();
+
+        if (one) {
+          // Update color in the case of singleton nodes
+          node.data('color', '#' + skeleton.color.getHexString());
+        }
+
+        var gid = member_of[skeleton.id];
+        if (gid && gid !== node.id()) added_to_group += 1;
+
+        set[skeleton.id] = new_model;
+
+      } else {
+        // Remove
+        if (one) node.remove();
+        else {
+          // Remove model from the lists of skeletons of the node representing a group
+          skeletons.remove(skeleton);
+          removed_from_group += 1; // must reload its contribution to the group's edges
+        }
+      }
+
+		});
   });
 
   var additions = 0;
@@ -673,17 +798,115 @@ CompartmentGraphWidget.prototype.append = function(models) {
     }
   });
 
-  if (0 === additions) return; // all updating and removing done above
+  if (0 === additions && 0 === removed_from_group && 0 === added_to_group) return; // all updating and removing done above
 
-  this.load(Object.keys(set), set);
+  this.load(set);
 };
 
-CompartmentGraphWidget.prototype.update = function() {
+GroupGraph.prototype.appendAsGroup = function() {
+  var models = SkeletonListSources.getSelectedSkeletonModels(this);
+  if (0 === models.length) {
+    growlAlert('Info', 'Selected source is empty.');
+    return;
+  } else if (1 === models.length) {
+    this.append(models);
+    return;
+  }
+  this.appendGroup(models);
+};
+
+GroupGraph.prototype.appendGroup = function(models) {
+  var f = (function (status, text) {
+    if (200 !== status) return;
+    var json = $.parseJSON(text);
+    if (json.error) return alert(json.error);
+
+    // Find common annotations, if any
+    var skids = Object.keys(json);
+    var common = json[skids[0]].filter(function(annotation) {
+      return skids.reduce(function(all, skid) {
+        return all && annotation in json[skid];
+      }, true);
+    }).sort();
+
+    // Find set of all annotations
+    var all = Object.keys(skids.reduce(function(o, skid) {
+      return json[skid].reduce(function(o, annotation) {
+        o[annotation] = true;
+        return o;
+      }, o);
+    }, {})).sort();
+
+    // All neuron names
+    var names = Object.keys(models).map(function(skid) {
+      return models[skid].baseName;
+    }).sort();
+
+    common.unshift("--");
+    all.unshift("--");
+    names.unshift("--");
+
+    var options = new OptionsDialog("Group properties");
+    options.appendMessage("Choose a group name from:");
+    options.appendMessage("(Will pick first non-empty match.)");
+    options.appendChoice("Common annotations: ", "gg-common", common, common, common[0]);
+    options.appendChoice("All annotations: ", "gg-all", all, all, all[0]);
+    options.appendChoice("All neuron names: ", "gg-names", names, names, names[0]);
+    options.appendField("Or type a new name: ", "gg-typed", "", null);
+    options.appendMessage("Choose group color:");
+    var display = document.createElement('input');
+    display.setAttribute('type', 'button');
+    display.setAttribute('id', 'gg-color');
+    display.setAttribute('value', 'Color');
+    var default_color = '#aaaaff';
+    $(display).css("background-color", default_color);
+    options.dialog.appendChild(display);
+    var div = document.createElement('div');
+    options.dialog.appendChild(div);
+    var cw = Raphael.colorwheel(div, 150);
+    cw.color(default_color);
+    var parseColor = function(color) {
+      return new THREE.Color().setRGB(parseInt(color.r) / 255.0,
+                                      parseInt(color.g) / 255.0,
+                                      parseInt(color.b) / 255.0);
+    };
+    cw.onchange(function(color) {
+      $(display).css("background-color", '#' + parseColor(color).getHexString());
+    });
+
+    var self = this;
+
+    options.onOK = function() {
+      var label = ['typed', 'common', 'all', 'names'].reduce(function(s, tag) {
+        if (s) return s;
+        var text = $('#gg-' + tag).val().trim();
+        if (text.length > 0 && "--" !== text) return text;
+        return s;
+      }, null);
+
+      if (!label) return alert("You must choose a name!");
+
+      var gid = self.nextGroupID();
+      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColor(cw.color()));
+      self.append(models); // will remove/add/group nodes as appropriate
+    };
+
+    options.show(300, 600, true);
+
+  }).bind(this);
+
+  requestQueue.register(django_url + project.id + "/annotations/skeletons/list", "POST",
+                        {skids: Object.keys(models)}, f);
+};
+
+GroupGraph.prototype.update = function() {
   var models = this.getSkeletonModels();
-  this.load(Object.keys(models), models);
+  this.load(models);
 };
 
-CompartmentGraphWidget.prototype.load = function(skeleton_ids, models) {
+/** Fetch data from the database and remake the graph. */
+GroupGraph.prototype.load = function(models) {
+  var skeleton_ids = Object.keys(models);
   if (0 === skeleton_ids.length) {
     growlAlert("Info", "Nothing to load!");
     return;
@@ -718,7 +941,7 @@ CompartmentGraphWidget.prototype.load = function(skeleton_ids, models) {
       "graph_widget_request");
 };
 
-CompartmentGraphWidget.prototype.highlight = function(skeleton_id) {
+GroupGraph.prototype.highlight = function(skeleton_id) {
   var nodes = this.getNodes(skeleton_id),
       css = {};
   if (0 === nodes.length) return;
@@ -736,7 +959,7 @@ CompartmentGraphWidget.prototype.highlight = function(skeleton_id) {
                  });}});
 };
 
-CompartmentGraphWidget.prototype.writeGML = function() {
+GroupGraph.prototype.writeGML = function() {
   var ids = {};
   var items = ['Creator "CATMAID"\nVersion 1.0\ngraph ['];
 
@@ -760,12 +983,11 @@ CompartmentGraphWidget.prototype.writeGML = function() {
                  "outline_width 1"].join("\n      "),
                 "]",
                 'name "' + name + '"',
-                "skeleton_id " + props.skeleton_id].join("\n    "));
+                "unit_id " + props.id].join("\n    "));
     items.push("]");
   });
 
   this.cy.edges(function(i, edge) {
-    if (edge.hidden()) return;
     var props = edge.data();
     items.push(["edge [",
                 "source " + ids[props.source],
@@ -784,7 +1006,7 @@ CompartmentGraphWidget.prototype.writeGML = function() {
   return items.join("\n  ") + "\n]";
 };
 
-CompartmentGraphWidget.prototype.exportGML = function() {
+GroupGraph.prototype.exportGML = function() {
   if (0 === this.cy.nodes().size()) {
     alert("Load a graph first!");
     return;
@@ -794,15 +1016,15 @@ CompartmentGraphWidget.prototype.exportGML = function() {
   saveAs(blob, "graph.gml");
 };
 
-CompartmentGraphWidget.prototype.growGraph = function() {
+GroupGraph.prototype.growGraph = function() {
   this.grow('circlesofhell', 1);
 };
 
-CompartmentGraphWidget.prototype.growPaths = function() {
+GroupGraph.prototype.growPaths = function() {
   this.grow('directedpaths', 2);
 };
 
-CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
+GroupGraph.prototype.grow = function(subURL, minimum) {
   var skeleton_ids = this.getSelectedSkeletons();
   if (skeleton_ids.length < minimum) {
     growlAlert("Information", "Need at least " + minimum + " skeletons selected!");
@@ -815,7 +1037,7 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
 
   var self = this;
   requestQueue.register(django_url + project.id + "/graph/" + subURL,
-      "POST", 
+      "POST",
       {skeleton_ids: skeleton_ids,
        n_circles: n_circles,
        min_pre: min_pre,
@@ -833,15 +1055,15 @@ CompartmentGraphWidget.prototype.grow = function(subURL, minimum) {
         }
         var color = new THREE.Color().setHex(0xffae56);
         self.append(json[0].reduce(function(m, skid) {
-          m[skid] = {selected: true,
-                     color: color,
-                     baseName: json[1][skid]};
+          var model = new SelectionTable.prototype.SkeletonModel(skid, json[1][skid], color);
+          model.selected = true;
+          m[skid] = model;
           return m;
         }, {}));
       });
 };
 
-CompartmentGraphWidget.prototype.hideSelected = function() {
+GroupGraph.prototype.hideSelected = function() {
   if (!this.cy) return;
   var hidden = 0;
   this.cy.elements().each(function(i, e) {
@@ -863,7 +1085,7 @@ CompartmentGraphWidget.prototype.hideSelected = function() {
   $('#graph_show_hidden' + this.widgetID).val('Show hidden' + (0 === hidden ? '' : ' (' + hidden + ')')).prop('disabled', false);
 };
 
-CompartmentGraphWidget.prototype.showHidden = function() {
+GroupGraph.prototype.showHidden = function() {
   if (!this.cy) return;
   this.cy.elements().show();
   if (this.show_node_labels) {
@@ -874,53 +1096,56 @@ CompartmentGraphWidget.prototype.showHidden = function() {
   $('#graph_show_hidden' + this.widgetID).val('Show hidden').prop('disabled', true);
 };
 
-CompartmentGraphWidget.prototype.getState = function() {
+GroupGraph.prototype.getState = function() {
   return this.state ? this.state : {};
 };
 
-CompartmentGraphWidget.prototype.setState = function(key, value) {
+GroupGraph.prototype.setState = function(key, value) {
   if (!this.state) this.state = {};
   this.state[key] = value;
 };
 
-CompartmentGraphWidget.prototype.removeState = function(key) {
+GroupGraph.prototype.removeState = function(key) {
   if (this.state) delete this.state[key];
 };
 
-CompartmentGraphWidget.prototype.resetState = function() {
+GroupGraph.prototype.resetState = function() {
   delete this.state;
 };
 
-CompartmentGraphWidget.prototype.getSkeletonHexColors = function() {
+GroupGraph.prototype.getSkeletonHexColors = function() {
   var colors = {};
   this.cy.nodes().each(function(i, node) {
-    var id = node.data('skeleton_id');
-    if (!colors[id]) colors[id] = node.data('color');
+    var color = node.data('color');
+    node.data('skeletons').forEach(function(model) {
+      if (!colors[id]) colors[id] = color;
+    });
   });
   return colors;
 };
 
 /** Return an object with skeleton ID as keys and a {inputs: <total-inputs>, outputs: <total-outputs>} as values. */
-CompartmentGraphWidget.prototype.getSkeletonsIO = function() {
-  var nodes = this.getSkeletons().reduce(function(o, skid) {
-    o[skid] = {inputs: 0, outputs: 0};
-    return o;
-  }, {});
+GroupGraph.prototype.getNodesIO = function() {
+  var io = {};
+  this.cy.nodes().each(function(i, node) {
+    io[node.id()] = {inputs: 0,
+                     outputs: 0};
+  });
   this.cy.edges().each(function(i, edge) {
     var e = edge.data();
     if (e.directed) {
-      nodes[e.target].inputs += e.weight;
-      nodes[e.source].outputs += e.weight;
+      io[e.target].inputs += e.weight;
+      io[e.source].outputs += e.weight;
     }
   });
-  return nodes;
+  return io;
 };
 
-CompartmentGraphWidget.prototype._colorize = function(select) {
+GroupGraph.prototype._colorize = function(select) {
   this.colorBy(select.value, select);
 };
 
-CompartmentGraphWidget.prototype.colorBy = function(mode, select) {
+GroupGraph.prototype.colorBy = function(mode, select) {
   var current_mode = this.getState().color_mode;
   if (mode === current_mode) return;
 
@@ -942,31 +1167,27 @@ CompartmentGraphWidget.prototype.colorBy = function(mode, select) {
       return;
     }
     this.cy.nodes().each(function(i, node) {
-      node.data('color', colors[node.data('skeleton_id')]);
+      node.data('color', colors[node.data('skeletons')[0]]); // use first skeleton
     });
     this.removeState('colors');
 
-  } else if ('union-review' === mode || 'own-review' === mode) {
-    // Color by review status like in the connectivity widget (either
-    // by union or by own reviews):
+  } else if ('review' === mode) {
+    // Color by review status like in the connectivity widget:
     // greenish '#6fff5c': fully reviewed
     // orange '#ffc71d': review started
     // redish '#ff8c8c': not reviewed at all
     var cy = this.cy;
-    // Create post data with review parameters. If user_ids isn't specified, a
-    // union status is returned.
-    var postData = {skeleton_ids: this.getSkeletons()};
-    if ('own-review' === mode) {
-      postData['user_ids'] = [session.userid];
-    }
-    // Request review status
     requestQueue.register(django_url + project.id + "/skeleton/review-status", "POST",
-        postData,
+        {skeleton_ids: this.getSkeletons()},
         function(status, text) {
           if (status !== 200) return;
           var json = $.parseJSON(text);
           cy.nodes().each(function(i, node) {
-            var percent_reviewed = json[node.data('skeleton_id')],
+            var skeletons = node.data("skeletons");
+            // Compute average
+            var percent_reviewed = skeletons.reduce(function(sum, model) {
+              return sum + json[model.id];
+            }, 0) / skeletons.length,
                 hex = '#ff8c8c';
             if (100 === percent_reviewed) hex = '#6fff5c';
             else if (percent_reviewed > 0) hex = '#ffc71d';
@@ -979,10 +1200,10 @@ CompartmentGraphWidget.prototype.colorBy = function(mode, select) {
     // where purely output nodes are red,
     // and purely input nodes are green,
     // and mixed nodes span the hue axis from red to green, with balanced input/output nodes being yellow.
-    var ios = this.getSkeletonsIO();
+    var ios = this.getNodesIO();
     var color = new THREE.Color();
     this.cy.nodes().each(function(i, node) {
-      var io = ios[node.data('skeleton_id')];
+      var io = ios[node.id()];
       var hex;
       if (0 === io.inputs) {
         if (0 === io.outputs) hex = '#FFF'; // white
@@ -1038,13 +1259,11 @@ CompartmentGraphWidget.prototype.colorBy = function(mode, select) {
   }
 };
 
-CompartmentGraphWidget.prototype.colorCirclesOfHell = function() {
-  var selected = this.getSelectedSkeletons();
+GroupGraph.prototype.colorCirclesOfHell = function() {
+  var selected = this.cy.nodes().toArray().filter(function(node) { return node.selected(); });
   if (1 !== selected.length) {
-    growlAlert("Info", "Need 1 (and only 1) selected neuron!");
-    this.cy.nodes().each(function(i, node) {
-      node.data('color', '#fff');
-    });
+    growlAlert("Info", "Need 1 (and only 1) selected node!");
+    this.cy.nodes().data('color', '#fff');
     return;
   }
 
@@ -1054,34 +1273,35 @@ CompartmentGraphWidget.prototype.colorCirclesOfHell = function() {
       next,
       consumed = {},
       n_consumed = 1,
-      n = 0;
+      n = 0,
+      indices = m.ids.reduce(function(o, id, i) { o[id] = i; return o; }, {});
 
-  current[selected[0]] = true;
+  current[selected[0].id()] = true;
   circles.push(current);
-  consumed[selected[0]] = true;
+  consumed[selected[0].id()] = true;
 
-  while (n_consumed < m.skeleton_ids.length) {
+  while (n_consumed < m.ids.length) {
     current = circles[circles.length -1];
     next = {};
     n = 0;
-    Object.keys(current).forEach(function(skid1) {
-      var k = m.indices[skid1];
+    Object.keys(current).forEach(function(id1) {
+      var k = indices[id1];
       // Downstream:
       m.AdjM[k].forEach(function(count, i) {
         if (0 === count) return;
-        var skid2 = m.skeleton_ids[i];
-        if (consumed[skid2]) return;
-        next[skid2] = true;
-        consumed[skid2] = true;
+        var id2 = m.ids[i];
+        if (consumed[id2]) return;
+        next[id2] = true;
+        consumed[id2] = true;
         n += 1;
       });
       // Upstream:
       m.AdjM.forEach(function(row, i) {
         if (0 === row[k]) return;
-        var skid2 = m.skeleton_ids[i];
-        if (consumed[skid2]) return;
-        next[skid2] = true;
-        consumed[skid2] = true;
+        var id2 = m.ids[i];
+        if (consumed[id2]) return;
+        next[id2] = true;
+        consumed[id2] = true;
         n += 1;
       });
     });
@@ -1090,9 +1310,9 @@ CompartmentGraphWidget.prototype.colorCirclesOfHell = function() {
     circles.push(next);
   }
 
-  var disconnected = m.skeleton_ids.reduce(function(o, skid) {
-    if (skid in consumed) return o;
-    o[skid] = true;
+  var disconnected = m.ids.reduce(function(o, id) {
+    if (id in consumed) return o;
+    o[id] = true;
     return o;
   }, {});
 
@@ -1108,10 +1328,10 @@ CompartmentGraphWidget.prototype.colorCirclesOfHell = function() {
   circles.push(disconnected);
 
   this.cy.nodes().each(function(i, node) {
-    var skid = node.data('skeleton_id');
     circles.some(function(circle, i) {
-      if (skid in circle) {
-        node.data('color', colors[i]); 
+      // Use the lowest circle found
+      if (node.id() in circle) {
+        node.data('color', colors[i]);
         return true; // break
       }
       return false; // continue
@@ -1119,36 +1339,37 @@ CompartmentGraphWidget.prototype.colorCirclesOfHell = function() {
   });
 };
 
-/** Includes only visible nodes and edges. */
-CompartmentGraphWidget.prototype.createAdjacencyMatrix = function() {
+/** Includes only visible nodes and edges.
+ *  Split or grouped skeletons are considered as they are: many nodes or one node. */
+GroupGraph.prototype.createAdjacencyMatrix = function() {
   if (0 === this.cy.nodes().size()) {
-    return {skeleton_ids: [],
-            AdjM: []};
+    return {ids: [],
+            skeletons: [],
+            AdjM: [],
+            names: []};
   }
-  // Collect unique, visible skeleton IDs
-  var unique_ids = {};
-  this.cy.nodes(function(i, node) {
+  // Collect unique, visible node IDs
+  var ids = [],
+      skeletons = [],
+      names = [],
+      indices = {};
+  this.cy.nodes().each(function(i, node) {
     if (node.hidden()) return;
-    unique_ids[node.data('skeleton_id')] = true;
+    var id = node.id();
+    ids.push(id);
+    indices[id] = i;
+    skeletons.push(node.data("skeletons"));
+    names.push(node.data('label'));
   });
-  var skeleton_ids = Object.keys(unique_ids).map(Number),
-      indices = skeleton_ids.reduce(function(o, skid, i) { o[skid] = i; return o;}, {}),
-      AdjM = skeleton_ids.map(function() { return skeleton_ids.map(function() { return 0; })}),
+  var AdjM = ids.map(function() { return ids.map(function() { return 0; })}),
       edges = {};
-  // Handle synapse clustered sub-neurons and neurons split by confidence
-  var asNumericID = function(id) {
-    if (id.toFixed) return id; // is a number
-    var i_ = id.lastIndexOf('_');
-    if (-1 === i_) return parseInt(i_);
-    return parseInt(id.substring(0, i_));
-  };
   // Plan for potentially split neurons
   this.cy.edges().each(function(i, edge) {
     if (edge.hidden()) return;
     var e = edge.data();
     if (!e.directed) return; // intra-edge of a neuron split by synapse clustering
-    var source = asNumericID(e.source),
-        target = asNumericID(e.target),
+    var source = e.source,
+        target = e.target,
         c = edges[source];
     if (!c) {
       edges[source] = {};
@@ -1165,57 +1386,51 @@ CompartmentGraphWidget.prototype.createAdjacencyMatrix = function() {
       AdjM[indices[source]][indices[target]] = c[target];
     });
   });
-  return {skeleton_ids: skeleton_ids,
-          indices: indices,
-          AdjM: AdjM};
+  return {ids: ids, // list of node IDs
+          AdjM: AdjM,
+          skeletons: skeletons, // list of models
+          names: names}; // list of strings
 };
 
-CompartmentGraphWidget.prototype.exportAdjacencyMatrix = function() {
+GroupGraph.prototype.exportAdjacencyMatrix = function() {
   if (0 === this.cy.nodes().size()) {
     alert("Load a graph first!");
     return;
   }
 
   var m = this.createAdjacencyMatrix(),
-      models = this.getSkeletonModels(),
-      names = m.skeleton_ids.reduce(function(o, skid) {
-        var name = models[skid].baseName
-            .replace(/\\/g, '\\\\').replace(/"/g,'\\"');
-        o[skid] = '"' + name + ' #' + skid + '"';
-        return o;
+      names = m.names.map(function(o, name) {
+        return '"' + name.replace(/\\/g, '\\\\').replace(/"/g,'\\"');
       }, {});
 
   // First row and first column take the neuron names plus the #<skeleton_id>
-  var csv = '"Neurons",' + m.skeleton_ids.map(function(skid) {
-    return names[skid];
-  }).join(',') + '\n' + m.AdjM.map(function(row, i) {
-    return names[m.skeleton_ids[i]] + ',' + row.join(',');
+  var csv = '"Neurons",' + names.join(',') + '\n' + m.AdjM.map(function(row, i) {
+    return names[i] + ',' + row.join(',');
   }).join('\n');
 
   var blob = new Blob([csv], {type: 'text/plain'});
   saveAs(blob, "adjacency_matrix.csv");
 };
 
-CompartmentGraphWidget.prototype.openPlot = function() {
+GroupGraph.prototype.openPlot = function() {
   if (0 === this.cy.nodes().size()) {
     alert("Load a graph first!");
     return;
   }
   WindowMaker.create('circuit-graph-plot');
   var GP = CircuitGraphPlot.prototype.getLastInstance(),
-      models = this.getSkeletonModels(),
       m = this.createAdjacencyMatrix();
-  GP.plot(m.skeleton_ids, models, m.AdjM);
+  GP.plot(m.ids, m.names, m.skeletons, m.AdjM);
 };
 
-CompartmentGraphWidget.prototype.annotate_skeleton_list = function() {
+GroupGraph.prototype.annotate_skeleton_list = function() {
   var skeleton_ids = this.getSelectedSkeletons();
   NeuronAnnotations.prototype.annotate_neurons_of_skeletons(skeleton_ids);
 };
 
-CompartmentGraphWidget.prototype.resize = function() {
+GroupGraph.prototype.resize = function() {
   if (this.cy) {
-    // Schedule a re-layout without chaning the node position after 400ms and
+    // Schedule a re-layout without changing the node position after 400ms and
     // override it automatically if resizing isn't finished, yet.
     if (this.relayoutTimeout) {
       clearTimeout(this.relayoutTimeout);
@@ -1229,4 +1444,142 @@ CompartmentGraphWidget.prototype.resize = function() {
       this.cy.layout( options );
     }).bind(this), 400);
   }
+};
+
+GroupGraph.prototype.resetGroups = function() {
+  this.nextGroupID = 0;
+  this.groups = {};
+};
+
+GroupGraph.prototype.Group = function(gid, models, label, color) {
+  this.id = gid;
+  this.label = label;
+  this.models = models; // skeleton id vs model
+  this.color = color;
+};
+
+/** Reformat in place the data object, to:
+ * 1) Group some of the nodes if any groups exist.
+ * 2) Exclude from existing groups any splitted neurons, removing them from the group.
+ *
+ * Arguments:
+ *
+ * - data: the datastructure with nodes and edges required by cytoscapejs,
+ * with two top-level entries "nodes" and "edges", each consisting of an array
+ * of {data: {...}} objects.
+ *
+ * - splitted: an object of nodeID vs {data: {...}}, containing future nodes for skeletons that have been splitted up by synapse clustering or at low-confidence edges.
+ *
+ * - models: one for every skeleton_id in data.
+ */
+GroupGraph.prototype._regroup = function(data, splitted, models) {
+  var groupIDs = Object.keys(this.groups);
+  if (0 === groupIDs.length) return;
+
+  // Remove splitted neurons from existing groups when necessary,
+  // construct member_of: a map of skeleton ID vs group ID,
+  // and reset the group's nodes list.
+  var member_of = {};
+
+  groupIDs.forEach(function(gid) {
+    var group = this.groups[gid],
+        gmodels = group.models;
+
+    Object.keys(gmodels).forEach(function(skid) {
+      if (skid in splitted) {
+        // Remove from the group
+        delete gmodels[skid];
+        return;
+      }
+      member_of[skid] = gid;
+    });
+
+    if (0 === gmodels.length) {
+      // Remove empty group
+      delete this.groups[gid];
+      return;
+    }
+  }, this);
+
+  // Update: empty ones have been removed
+  groupIDs = Object.keys(this.groups);
+  if (0 === groupIDs.length) return;
+
+  // Remove nodes that have been assigned to groups
+  data.nodes = data.nodes.filter(function(node) {
+    return !member_of[node.data.id];
+  });
+
+  // Create one node for each group
+  var gnodes = Object.keys(this.groups).map(function(gid) {
+    var group = this.groups[gid];
+    return {data: {id: gid,
+                   skeletons: Object.keys(group.models).map(function(skid) { return group.models[skid];}),
+                   label: group.label,
+                   color: '#' + group.color.getHexString()}};
+  }, this);
+
+  // map of edge_id vs edge, involving groups
+  var gedges = {};
+
+  // Remove edges from grouped nodes,
+  // and reassign them to new edges involving groups.
+  data.edges = data.edges.filter(function(edge) {
+    var d = edge.data,
+        source = member_of[d.source],
+        target = member_of[d.target];
+    if (source || target) {
+      source = source ? source : d.source;
+      target = target ? target : d.target;
+      // Edge between skeletons, with at least one of them belonging to a group
+      var id = source + '_' + target;
+      var gedge = gedges[id];
+      if (gedge) {
+        // Just append the synapse count to the already existing edge
+        gedge.data.weight += d.weight;
+        gedge.data.label = gedge.data.weight;
+      } else {
+        // Reuse edge
+        d.id = id;
+        d.source = source;
+        d.target = target;
+        gedges[id] = edge;
+      }
+      return false;
+    }
+
+    // Keep only edges among ungrouped nodes
+    return true;
+  }, this);
+
+  data.nodes = data.nodes.concat(gnodes);
+  data.edges = data.edges.concat(Object.keys(gedges).map(function(gid) { return gedges[gid]; }));
+};
+
+/** Group selected nodes into a single node. */
+GroupGraph.prototype.group = function() {
+  var models = this.cy.nodes().filter(function(i, node) {
+    return node.selected();
+  }).toArray().reduce(function(o, node) {
+    return node.data('skeletons').reduce(function(o, model) {
+      o[model.id] = model;
+      return o;
+    }, o);
+  }, {});
+  if (Object.keys(models).length > 1) this.appendGroup(models);
+  else growlAlert("Information", "Select at least 2 nodes!");
+};
+
+/** Split nodes representing groups into their constituent nodes, one per skeleton. */
+GroupGraph.prototype.ungroup = function() {
+  var groups = this.groups;
+  var count = 0;
+  this.cy.nodes().each(function(i, node) {
+    if (node.selected() && node.data('skeletons').length > 1) {
+      delete groups[node.id()];
+      count += 1;
+    }
+  });
+  if (count > 0) this.update();
+  else growlAlert("Information", "Nothing to ungroup!");
 };

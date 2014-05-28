@@ -705,51 +705,57 @@ var WindowMaker = new function()
     return win;
   };
 
-  var createCompartmentGraphWindow = function()
+  var createGraphWindow = function()
   {
-    var CGW = new CompartmentGraphWidget();
+    var GG = new GroupGraph();
 
-    var win = new CMWWindow(CGW.getName());
+    var win = new CMWWindow(GG.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
     var contentbutton = document.createElement('div');
-    contentbutton.setAttribute("id", 'compartment_graph_window_buttons' + CGW.widgetID);
+    contentbutton.setAttribute("id", 'compartment_graph_window_buttons' + GG.widgetID);
 
     contentbutton.appendChild(document.createTextNode('From'));
-    contentbutton.appendChild(SkeletonListSources.createSelect(CGW));
+    contentbutton.appendChild(SkeletonListSources.createSelect(GG));
 
-    var show = document.createElement('input');
-    show.setAttribute("type", "button");
-    show.setAttribute("value", "Append");
-    show.onclick = CGW.loadSource.bind(CGW);
-    contentbutton.appendChild(show);
+    var append = document.createElement('input');
+    append.setAttribute("type", "button");
+    append.setAttribute("value", "Append");
+    append.onclick = GG.loadSource.bind(GG);
+    contentbutton.appendChild(append);
 
-    var show = document.createElement('input');
-    show.setAttribute("type", "button");
-    show.setAttribute("value", "Clear");
-    show.onclick = CGW.clear.bind(CGW);
-    contentbutton.appendChild(show);
+    var asgroup = document.createElement('input');
+    asgroup.setAttribute("type", "button");
+    asgroup.setAttribute("value", "Append as group");
+    asgroup.onclick = GG.appendAsGroup.bind(GG);
+    contentbutton.appendChild(asgroup);
 
-    var show = document.createElement('input');
-    show.setAttribute("type", "button");
-    show.setAttribute("value", "Refresh");
-    show.onclick = CGW.update.bind(CGW);
-    contentbutton.appendChild(show);
+    var clear = document.createElement('input');
+    clear.setAttribute("type", "button");
+    clear.setAttribute("value", "Clear");
+    clear.onclick = GG.clear.bind(GG);
+    contentbutton.appendChild(clear);
+
+    var refresh = document.createElement('input');
+    refresh.setAttribute("type", "button");
+    refresh.setAttribute("value", "Refresh");
+    refresh.onclick = GG.update.bind(GG);
+    contentbutton.appendChild(refresh);
 
     var annotate = document.createElement('input');
     annotate.setAttribute("type", "button");
     annotate.setAttribute("value", "Annotate");
-    annotate.onclick = CGW.annotate_skeleton_list.bind(CGW);
+    annotate.onclick = GG.annotate_skeleton_list.bind(GG);
     contentbutton.appendChild(annotate);
 
     var props = document.createElement('input');
     props.setAttribute("type", "button");
     props.setAttribute("value", "Properties");
-    props.onclick = CGW.graph_properties.bind(CGW);
+    props.onclick = GG.graph_properties.bind(GG);
     contentbutton.appendChild(props);
 
-    contentbutton.appendChild(document.createTextNode(' - '));
+    contentbutton.appendChild(document.createElement('br'));
 
     var layout = appendSelect(contentbutton, "compartment_layout",
         ["Force-directed", "Hierarchical", "Grid", "Circle", "Random",
@@ -758,8 +764,22 @@ var WindowMaker = new function()
     var trigger = document.createElement('input');
     trigger.setAttribute('type', 'button');
     trigger.setAttribute('value', 'Re-layout');
-    trigger.onclick = CGW.updateLayout.bind(CGW, layout);
+    trigger.onclick = GG.updateLayout.bind(GG, layout);
     contentbutton.appendChild(trigger);
+
+    contentbutton.appendChild(document.createTextNode(' - '));
+
+    var group = document.createElement('input');
+    group.setAttribute('type', 'button');
+    group.setAttribute('value', 'Group');
+    group.onclick = GG.group.bind(GG);
+    contentbutton.appendChild(group);
+
+    var ungroup = document.createElement('input');
+    ungroup.setAttribute('type', 'button');
+    ungroup.setAttribute('value', 'Ungroup');
+    ungroup.onclick = GG.ungroup.bind(GG);
+    contentbutton.appendChild(ungroup);
 
     contentbutton.appendChild(document.createElement('br'));
 
@@ -768,7 +788,7 @@ var WindowMaker = new function()
     var circles = document.createElement('input');
     circles.setAttribute("type", "button");
     circles.setAttribute("value", "Circles");
-    circles.onclick = CGW.growGraph.bind(CGW);
+    circles.onclick = GG.growGraph.bind(GG);
     contentbutton.appendChild(circles);
 
     contentbutton.appendChild(document.createTextNode(" or "));
@@ -776,13 +796,13 @@ var WindowMaker = new function()
     var paths = document.createElement('input');
     paths.setAttribute("type", "button");
     paths.setAttribute("value", "Paths");
-    paths.onclick = CGW.growPaths.bind(CGW);
+    paths.onclick = GG.growPaths.bind(GG);
     contentbutton.appendChild(paths);
 
     contentbutton.appendChild(document.createTextNode(" by "));
 
     var n_circles = document.createElement('select');
-    n_circles.setAttribute("id", "n_circles_of_hell" + CGW.widgetID);
+    n_circles.setAttribute("id", "n_circles_of_hell" + GG.widgetID);
     [1, 2, 3, 4, 5].forEach(function(title, i) {
       var option = document.createElement("option");
       option.text = title;
@@ -796,7 +816,7 @@ var WindowMaker = new function()
 
     var f = function(name) {
       var e = document.createElement('select');
-      e.setAttribute("id", "n_circles_min_" + name + CGW.widgetID);
+      e.setAttribute("id", "n_circles_min_" + name + GG.widgetID);
       var option = document.createElement("option");
       option.text = "All " + name;
       option.value = 0;
@@ -823,29 +843,29 @@ var WindowMaker = new function()
     var hide = document.createElement('input');
     hide.setAttribute('type', 'button');
     hide.setAttribute('value', 'Hide selected');
-    hide.onclick = CGW.hideSelected.bind(CGW);
+    hide.onclick = GG.hideSelected.bind(GG);
     contentbutton.appendChild(hide);
 
     var show = document.createElement('input');
     show.setAttribute('type', 'button');
-    show.setAttribute('id', 'graph_show_hidden' + CGW.widgetID);
+    show.setAttribute('id', 'graph_show_hidden' + GG.widgetID);
     show.setAttribute('value', 'Show hidden');
     show.setAttribute('disabled', true);
-    show.onclick = CGW.showHidden.bind(CGW);
+    show.onclick = GG.showHidden.bind(GG);
     contentbutton.appendChild(show);
 
     contentbutton.appendChild(document.createElement('br'));
 
     contentbutton.appendChild(document.createTextNode('Color:'));
     var color = document.createElement('select');
-    color.setAttribute('id', 'graph_color_choice' + CGW.widgetID);
+    color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
     color.options.add(new Option('source', 'source'));
     color.options.add(new Option('review status (union)', 'union-review'));
     color.options.add(new Option('review status (own)', 'own-review'));
     color.options.add(new Option('input/output', 'I/O'));
     color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
     color.options.add(new Option('circles of hell', 'circles_of_hell')); // inspired by Tom Jessell's comment
-    color.onchange = CGW._colorize.bind(CGW, color);
+    color.onchange = GG._colorize.bind(GG, color);
     contentbutton.appendChild(color);
 
     contentbutton.appendChild(document.createTextNode(' - '));
@@ -853,19 +873,19 @@ var WindowMaker = new function()
     var gml = document.createElement('input');
     gml.setAttribute("type", "button");
     gml.setAttribute("value", "Export GML");
-    gml.onclick = CGW.exportGML.bind(CGW);
+    gml.onclick = GG.exportGML.bind(GG);
     contentbutton.appendChild(gml);
 
     var adj = document.createElement('input');
     adj.setAttribute("type", "button");
     adj.setAttribute("value", "Export Adjacency Matrix");
-    adj.onclick = CGW.exportAdjacencyMatrix.bind(CGW);
+    adj.onclick = GG.exportAdjacencyMatrix.bind(GG);
     contentbutton.appendChild(adj);
 
     var plot = document.createElement('input');
     plot.setAttribute("type", "button");
     plot.setAttribute("value", "Open plot");
-    plot.onclick = CGW.openPlot.bind(CGW);
+    plot.onclick = GG.openPlot.bind(GG);
     contentbutton.appendChild(plot);
 
     content.appendChild( contentbutton );
@@ -877,23 +897,23 @@ var WindowMaker = new function()
      * 'auto' setting then introduces scrollbars, triggering another resize.
      * This somehow confuses cytoscape.js and causes the graph to disappear.
      */
-    var container = createContainer("compartment_graph_widget" + CGW.widgetID);
+    var container = createContainer("graph_widget" + GG.widgetID);
     container.style.overflow = 'hidden';
     content.appendChild(container);
 
     var graph = document.createElement('div');
-    graph.setAttribute("id", "cyelement" + CGW.widgetID);
+    graph.setAttribute("id", "cyelement" + GG.widgetID);
     graph.style.width = "100%";
     graph.style.height = "100%";
     graph.style.backgroundColor = "#FFFFF0";
     container.appendChild(graph);
 
-    addListener(win, container, 'compartment_graph_window_buttons' + CGW.widgetID,
-        CGW.destroy.bind(CGW), CGW.resize.bind(CGW));
+    addListener(win, container, 'compartment_graph_window_buttons' + GG.widgetID,
+        GG.destroy.bind(GG), GG.resize.bind(GG));
 
     addLogic(win);
 
-    CGW.init();
+    GG.init();
 
     SkeletonListSources.updateGUI();
 
@@ -1011,7 +1031,6 @@ var WindowMaker = new function()
     add.setAttribute("type", "button");
     add.setAttribute("id", "testbutton");
     add.setAttribute("value", "Show graph");
-    // add.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
     contentbutton.appendChild(add);
 
     content.appendChild( contentbutton );
@@ -1062,47 +1081,6 @@ var WindowMaker = new function()
     addListener(win, container);
 
     addLogic(win);
-
-    return win;
-  };
-
-  var createGraphWindow = function()
-  {
-    var win = new CMWWindow("Graph Widget");
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var contentbutton = document.createElement('div');
-    contentbutton.setAttribute("id", 'graph_window_buttons');
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "show_neurons_from_3d_view");
-    add.setAttribute("value", "Show graph of selected 3D viewer neuron(s)");
-    add.onclick = GraphWidget.updateGraphFrom3DViewer;
-    contentbutton.appendChild(add);
-
-    var exp = document.createElement('input');
-    exp.setAttribute("type", "button");
-    exp.setAttribute("id", "export_graphml");
-    exp.setAttribute("value", "Export GraphML");
-    exp.onclick = GraphWidget.exportGraphML;
-    contentbutton.appendChild(exp);
-
-    content.appendChild( contentbutton );
-
-    var container = createContainer("graph_widget");
-    content.appendChild(container);
-
-    var graph = document.createElement('div');
-    graph.innerHTML = '<div id="cytoscapeweb"></div>';
-    container.appendChild(graph);
-
-    addListener(win, container, 'graph_window_buttons');
-
-    addLogic(win);
-
-    GraphWidget.init();
 
     return win;
   };
@@ -2312,11 +2290,10 @@ var WindowMaker = new function()
     "connector-table": createConnectorTableWindow,
     "log-table": createLogTableWindow,
     "export-widget": createExportWidget,
-    "graph-widget": createGraphWindow,
     "neuron-staging-area": createStagingListWindow,
     "create-connector-selection": createConnectorSelectionWindow,
     "skeleton-measurements-table": createSkeletonMeasurementsTable,
-    "compartment-graph-widget": createCompartmentGraphWindow,
+    "graph-widget": createGraphWindow,
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,

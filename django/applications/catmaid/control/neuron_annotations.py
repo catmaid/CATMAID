@@ -782,3 +782,32 @@ def list_annotations_datatable(request, project_id=None):
             annotation[0]]) # ID
 
     return HttpResponse(json.dumps(response), mimetype='text/json')
+
+
+@requires_user_role([UserRole.Browse])
+def annotations_for_skeletons(request, project_id=None):
+    skids = tuple(int(skid) for key, skid in request.POST.iteritems() if key.startswith('skids['))
+    cursor = connection.cursor()
+    cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='annotated_with'" % int(project_id))
+    annotated_with_id = cursor.fetchone()[0]
+
+    # Select pairs of skeleton_id vs annotation name
+    cursor.execute('''
+    SELECT skeleton_neuron.class_instance_a,
+           annotation.name
+    FROM class_instance_class_instance skeleton_neuron,
+         class_instance_class_instance neuron_annotation,
+         class_instance annotation
+    WHERE skeleton_neuron.class_instance_a IN (%s)
+      AND skeleton_neuron.class_instance_b = neuron_annotation.class_instance_a
+      AND neuron_annotation.relation_id = %s
+      AND neuron_annotation.class_instance_b = annotation.id
+    ''' % (",".join(str(skid) for skid in skids), annotated_with_id))
+
+    # Group by skeleton ID
+    m = defaultdict(list)
+    for skid, name in cursor.fetchall():
+        m[skid].append(name)
+
+    return HttpResponse(json.dumps(m, separators=(',', ':')))
+

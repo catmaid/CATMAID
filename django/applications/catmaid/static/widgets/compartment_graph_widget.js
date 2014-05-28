@@ -35,6 +35,7 @@ GroupGraph.prototype.getName = function() {
 GroupGraph.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
+  neuronNameService.unregister(this);
 };
 
 GroupGraph.prototype.nextGroupID = function() {
@@ -467,12 +468,21 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
   return options;
 };
 
+GroupGraph.prototype.updateNeuronNames = function() {
+  this.cy.nodes().each(function(i, node) {
+    var models = node.data('skeletons');
+    // skip groups
+    if (1 == models.length) node.data('label', neuronNameService.getName(models[0].id));
+  });
+};
+
 /** There is a model for every skeleton ID included in json.
  *  But there could be models for which there isn't a skeleton_id in json: these are disconnected nodes. */
 GroupGraph.prototype.updateGraph = function(json, models) {
   // A neuron that is split cannot be part of a group anymore: makes no sense.
   // Neither by confidence nor by synapse clustering.
   // Also, when computing the risk there can't be any groups.
+
 
   var data = {};
 
@@ -524,7 +534,7 @@ GroupGraph.prototype.updateGraph = function(json, models) {
             model = models[skeleton_id];
         return {data: {id: nodeID, // MUST be a string, or fails
                        skeletons: [model.clone()],
-                       label: model.baseName,
+                       label: neuronNameService.getName(model.id),
                        node_count: 0,
                        color: '#' + model.color.getHexString()}};
     };
@@ -743,7 +753,6 @@ GroupGraph.prototype.append = function(models) {
 
 	// Determine which nodes to update, which to remove, and which to add anew
   this.cy.nodes().each(function(i, node) {
-
     var skeletons = node.data('skeletons'),
         one = 1 === skeletons.length;
 
@@ -761,7 +770,10 @@ GroupGraph.prototype.append = function(models) {
       if (new_model.selected) {
         // Update node properties
 
-        if (new_model.baseName) node.data('label', new_model.baseName);
+        if (new_model.baseName) {
+          var name = neuronNameService.getName(model.id);
+          node.data('label', name ? name : new_model.baseName);
+        }
         skeleton.color = new_model.color.clone();
 
         if (one) {
@@ -904,8 +916,15 @@ GroupGraph.prototype.update = function() {
   this.load(models);
 };
 
-/** Fetch data from the database and remake the graph. */
 GroupGraph.prototype.load = function(models) {
+  // Register with name service before we attempt to load the graph
+  neuronNameService.registerAll(this, models, (function() {
+    this._load(models);
+  }).bind(this));
+};
+
+/** Fetch data from the database and remake the graph. */
+GroupGraph.prototype._load = function(models) {
   var skeleton_ids = Object.keys(models);
   if (0 === skeleton_ids.length) {
     growlAlert("Info", "Nothing to load!");
@@ -1399,7 +1418,9 @@ GroupGraph.prototype.exportAdjacencyMatrix = function() {
   }
 
   var m = this.createAdjacencyMatrix(),
-      names = m.names.map(function(o, name) {
+      names = m.names.map(function(o, name, i) {
+        var managed = neuronNameService.getName(m.ids[i]);
+        if (managed) name = managed;
         return '"' + name.replace(/\\/g, '\\\\').replace(/"/g,'\\"');
       }, {});
 

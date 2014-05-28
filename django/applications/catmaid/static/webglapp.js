@@ -1412,6 +1412,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmo
 	this.baseName = name;
   this.synapticColors = space.staticContent.synapticColors;
   this.skeletonmodel = skeletonmodel;
+  // This is an index mapping treenode IDs to lists of reviewers. Attaching them
+  // directly to the nodes is too much of a performance hit.
+  this.reviews = {};
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
@@ -1779,14 +1782,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     if ('creator' === options.color_method) {
       pickColor = function(vertex) { return User(vertex.user_id).color; };
     } else if ('all-reviewed' === options.color_method) {
-      pickColor = function(vertex) {
-        return vertex.reviewer_ids.length > 0 ? reviewedColor : unreviewedColor;
-      };
-    } else if ('own-reviewed' === options.color_method) {
-      pickColor = function(vertex) {
-        return vertex.reviewer_ids.indexOf(session.userid) != -1 ?
+      pickColor = (function(vertex) {
+        var reviews = this.reviews[vertex.node_id];
+        return typeof reviews !== 'undefined' && reviews.length > 0 ?
             reviewedColor : unreviewedColor;
-      };
+      }).bind(this);
+    } else if ('own-reviewed' === options.color_method) {
+      pickColor = (function(vertex) {
+        var reviews = this.reviews[vertex.node_id];
+        return typeof reviews !== 'undefined' && reviews.indexOf(session.userid) != -1 ?
+            reviewedColor : unreviewedColor;
+      }).bind(this);
     } else {
       pickColor = function() { return actorColor; };
     }
@@ -2194,7 +2200,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 	var nodes = skeleton_data[1];
 	var tags = skeleton_data[2];
 	var connectors = skeleton_data[3];
-	var reviews = skeleton_data[4];
+	// Store reviews so that some shading methods can access it.
+	this.reviews = skeleton_data[4];
 
 	var scale = this.space.scale,
       lean = options.lean_mode;
@@ -2235,7 +2242,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			  v1 = this.space.toSpace(new THREE.Vector3(node[3], node[4], node[5]));
         v1.node_id = node[0];
         v1.user_id = node[2];
-        v1.reviewer_ids = reviews[node[0]] || [];
         vs[node[0]] = v1;
       }
       var v2 = vs[p[0]];
@@ -2243,7 +2249,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			  v2 = this.space.toSpace(new THREE.Vector3(p[3], p[4], p[5]));
         v2.node_id = p[0];
         v2.user_id = p[2];
-        v2.reviewer_ids = reviews[p[0]] || [];
         vs[p[0]] = v2;
       }
 			var nodeID = node[0];
@@ -2257,7 +2262,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 				// Create line
 				this.createEdge(v1, v2, 'neurite');
 				// Create sphere
-				if (node[7] > 0) {
+				if (node[6] > 0) {
 					this.createNodeSphere(v1, node[6] * scale, material);
 				}
 			}
@@ -2268,7 +2273,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
         v1 = this.space.toSpace(new THREE.Vector3(node[3], node[4], node[5]));
         v1.node_id = node[0];
         v1.user_id = node[2];
-        v1.reviewer_ids = reviews[node[0]] || [];
         vs[node[0]] = v1;
       }
       if (node[6] > 0) {

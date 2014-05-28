@@ -42,7 +42,7 @@ var ReviewSystem = new function()
     this.initReviewSegment = function( id ) {
         self.current_segment = self.skeleton_segments[id];
         self.current_segment_index = 0;
-        self.goToNodeIndexOfSegmentSequence( 0 );
+        self.goToNodeIndexOfSegmentSequence(0, true);
         end_puffer_count = 0;
         // Highlight current segement in table
         var $rows = $('table#review_segment_table tr.review-segment');
@@ -51,14 +51,14 @@ var ReviewSystem = new function()
         $cur_row.addClass('highlight');
     };
 
-    this.goToNodeIndexOfSegmentSequence = function( idx ) {
+    this.goToNodeIndexOfSegmentSequence = function(idx, forceCentering) {
         if (self.skeleton_segments===null)
             return;
         var node = self.current_segment['sequence'][idx];
         SkeletonAnnotations.staticMoveTo(
             node.z,
-            autoCentering ? node.y : project.coordinates.y,
-            autoCentering ? node.x : project.coordinates.x,
+            autoCentering || forceCentering ? node.y : project.coordinates.y,
+            autoCentering || forceCentering ? node.x : project.coordinates.x,
             function () {
                SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
             });

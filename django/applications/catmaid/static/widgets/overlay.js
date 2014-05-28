@@ -295,16 +295,11 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
       function(json) {
           var new_name = prompt("Change neuron name", json['neuronname']);
           if (!new_name) return;
-          self.submit(
-            django_url + project.id + '/object-tree/instance-operation',
-            {operation: "rename_node",
-             id: json['neuronid'],
-             title: new_name,
-             classname: "neuron",
-             pid: project.id},
-            function(json) {
-              SkeletonAnnotations.setNeuronNameInTopbar(self.stack.id, new_name, skeletonID);
-            });
+          neuronNameService.renameNeuron(json['neuronid'], [skeletonID],
+              new_name, function() {
+                  SkeletonAnnotations.setNeuronNameInTopbar(self.stack.id,
+                          new_name, skeletonID);
+              });
       });
 };
 
@@ -688,7 +683,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                   } else {
                     NeuronAnnotations.retrieve_annotations_for_skeleton(
                         from_model.id, function(annotations) {
-                            merge(annotations.map(function(e) { return e.name; }));
+                            merge(annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
                         });
                   }
                 });
@@ -1688,7 +1683,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
                     } else {
                       NeuronAnnotations.retrieve_annotations_for_skeleton(
                           atn.skeleton_id, function(from_annotations) {
-                              merge(from_annotations.map(function(e) { return e.name; }));
+                              merge(from_annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
                           });
                     }
                   });

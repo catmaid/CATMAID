@@ -46,6 +46,7 @@ CircuitGraphPlot.prototype.getName = function() {
 CircuitGraphPlot.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
+  neuronNameService.unregister(this);
   
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
@@ -166,12 +167,9 @@ CircuitGraphPlot.prototype.append = function(models) {
     return;
   }
 
-  this._refresh(skids);
-};
-
-CircuitGraphPlot.prototype._refresh = function(skids) {
 	// fetch connectivity data, create adjacency matrix and plot it
-	requestQueue.register(django_url + project.id + '/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'POST',
+  // register with name service before we go about the plot
+  requestQueue.register(django_url + project.id + '/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'POST',
 			{skeleton_list: skids},
 			(function(status, text) {
 				if (200 !== status) return;
@@ -192,7 +190,15 @@ CircuitGraphPlot.prototype._refresh = function(skids) {
 				});
         // Update data and GUI
         this.plot(this.ids, this.names, this.models, AdjM);
-			}).bind(this));
+		}).bind(this));
+};
+
+/**
+ * This method is called from the neuron name service, if neuron names are
+ * changed.
+ */
+CircuitGraphPlot.prototype.updateNeuronNames = function() {
+  this.redraw();
 };
 
 
@@ -255,6 +261,12 @@ CircuitGraphPlot.prototype._add_graph_partition = function(mirror) {
  * in rows and columns corresponds to the order in the array of skeleton IDs.
  * Clears the existing plot and replaces it with the new data. */
 CircuitGraphPlot.prototype.plot = function(ids, names, models, AdjM) {
+  neuronNameService.registerAll(this, models, (function() {
+    this._plot(ids, names, models, AdjM);
+  }).bind(this));
+};
+
+CircuitGraphPlot.prototype._plot = function(ids, names, models, AdjM) {
   // Set the new data
   this.ids = ids;
   this.names = names;
@@ -481,8 +493,9 @@ CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
 
   // Package data
   var data = this.ids.map(function(id, i) {
+    var models = this.models[i];
     return {id: id,
-            name: this.names[i],
+            name: (models.length > 1 ? this.names[i] : neuronNameService.getName(id)), // groups retain their name
             hex: '#' + this.models[i][0].color.getHexString(),
             x: xVector[i],
             y: yVector[i]};

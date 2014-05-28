@@ -175,6 +175,7 @@ urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
             'get_skeleton_permissions'),
     (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'join_skeletons_interpolated'),
+    (r'^(?P<project_id>\d+)/skeleton/annotationlist$', 'annotation_list'),
 )
 
 # Skeleton export

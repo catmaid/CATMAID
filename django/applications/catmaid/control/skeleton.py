@@ -217,7 +217,8 @@ def split_skeleton(request, project_id=None):
     """ The split is only possible if the neuron is not locked or if it is
     locked by the current user or if the current user belongs to the group
     of the user who locked it. Of course, the split is also possible if
-    the current user is a super-user.
+    the current user is a super-user. Also, all reviews of the treenodes in the
+    new neuron are updated to refer to the new skeleton.
     """
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
@@ -310,6 +311,10 @@ def split_skeleton(request, project_id=None):
     # Update annotations of existing neuron to have only over set
     _update_neuron_annotations(project_id, request.user, neuron.id,
             upstream_annotation_map)
+
+    # Update all reviews of the treenodes that are moved to a new neuron to
+    # refer to the new skeleton.
+    Review.objects.filter(treenode_id__in=change_list).update(skeleton=new_skeleton)
 
     # Update annotations of under skeleton
     _annotate_entities(project_id, [new_neuron.id], downstream_annotation_map)
@@ -738,7 +743,9 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
     skeleton of to_treenode into the skeleton of from_treenode, and delete the
     former skeleton of to_treenode. All annotations in annotation_set will be
     linked to the skeleton of to_treenode. It is expected that <annotation_map>
-    is a dictionary, mapping an annotation to an annotator ID.
+    is a dictionary, mapping an annotation to an annotator ID. Also, all
+    reviews of the skeleton that changes ID are changed to refer to the new
+    skeleton ID.
     """
     if from_treenode_id is None or to_treenode_id is None:
         raise Exception('Missing arguments to _join_skeleton')
@@ -793,6 +800,10 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         response_on_error = 'Could not update TreenodeConnector table.'
         TreenodeConnector.objects.filter(
             skeleton=to_skid).update(skeleton=from_skid)
+
+        # Update reviews from 'losing' neuron to now belong to the new neuron
+        response_on_error = 'Couldn not update reviews with new skeleton IDs for joined treenodes.'
+        Review.objects.filter(skeleton_id=to_skid).update(skeleton=from_skid)
 
         # Remove skeleton of to_id (deletes cicic part_of to neuron by cascade,
         # leaving the parent neuron dangling in the object tree).
@@ -853,12 +864,11 @@ def join_skeletons_interpolated(request, project_id=None):
     last_treenode_id, skeleton_id = _create_interpolated_treenode(request, params, project_id, True)
 
     # Get set of annoations the combinet skeleton should have
-    annotation_set = frozenset([v for k,v in request.POST.iteritems()
-            if k.startswith('annotation_set[')])
+    annotation_map = json.loads(request.POST.get('annotation_set'))
 
     # Link last_treenode_id to to_id
     _join_skeleton(request.user, last_treenode_id, params['to_id'], project_id,
-            annotation_set)
+            annotation_map)
 
     return HttpResponse(json.dumps({'treenode_id': params['to_id']}))
 
@@ -894,3 +904,89 @@ def fetch_treenodes(request, project_id=None, skeleton_id=None, with_reviewers=N
 
     return HttpResponse(json.dumps(treenode_data))
 
+
+@requires_user_role(UserRole.Annotate)
+def annotation_list(request, project_id=None):
+    """ Returns a JSON serialized object that contains information about the
+    given skeletons.
+    """
+    skeleton_ids = [v for k,v in request.POST.iteritems()
+            if k.startswith('skeleton_ids[')]
+    annotations = bool(int(request.POST.get("annotations", 0)))
+    metaannotations = bool(int(request.POST.get("metaannotations", 0)))
+
+    classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
+    relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
+
+    annotation_query = ClassInstance.objects.filter(project_id=project_id,
+            class_column__id=classes['annotation'])
+
+    # Query for annotations of the given skeletons
+    annotation_query = annotation_query.filter(
+            cici_via_b__relation_id = relations['annotated_with'],
+            cici_via_b__class_instance_a__cici_via_b__relation_id = relations['model_of'],
+            cici_via_b__class_instance_a__cici_via_b__class_instance_a__id__in = skeleton_ids)
+
+    # Request only skeleton ID, annotation ID, annotation Name
+    annotation_query = annotation_query.values_list(
+        'cici_via_b__class_instance_a__cici_via_b__class_instance_a',
+        'cici_via_b__user__id',
+        'id',
+        'name')
+
+    # Build result dictionaries: one that maps annotation IDs to annotation
+    # names and another one that lists annotation IDs and annotator IDs for
+    # each skeleton ID.
+    annotations = {}
+    skeletons = {}
+    for skid, auid, aid, aname in annotation_query:
+        if aid not in annotations:
+            annotations[aid] = aname
+        skeleton = skeletons.get(skid)
+        if not skeleton:
+            skeleton = {'annotations': []}
+            skeletons[skid] = skeleton
+        skeleton['annotations'].append({
+            'uid': auid,
+            'id': aid,
+        })
+
+    # Assemble response
+    response = {
+        'annotations': annotations,
+        'skeletons': skeletons,
+    }
+
+    # If wanted, get the meta annotations for each annotation
+    if metaannotations:
+        # Get only annotations of the given project
+        metaannotation_query = ClassInstance.objects.filter(project_id=project_id,
+                class_column__id=classes['annotation'])
+
+        # Query for meta annotations on the given annotations
+        metaannotation_query = metaannotation_query.filter(
+                cici_via_b__relation_id=relations['annotated_with'],
+                cici_via_b__class_instance_a__in=annotations.keys())
+
+        # Request only ID of annotated annotation, annotator ID, meta
+        # annotation ID, meta annotation Name
+        metaannotation_query = metaannotation_query.values_list(
+            'cici_via_b__class_instance_a', 'cici_via_b__user__id',
+            'id', 'name')
+
+        # Add this to the response
+        metaannotations = {}
+        for aaid, auid, maid, maname in metaannotation_query:
+            if maid not in annotations:
+                annotations[maid] = maname
+            annotation = metaannotations.get(aaid)
+            if not annotation:
+                annotation = {'annotations': []}
+                metaannotations[aaid] = annotation
+            annotation['annotations'].append({
+                'uid': auid,
+                'id': maid,
+            })
+        response['metaannotations'] = metaannotations
+
+    return HttpResponse(json.dumps(response), mimetype="text/json")

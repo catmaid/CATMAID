@@ -1137,7 +1137,7 @@ GroupGraph.prototype.getSkeletonHexColors = function() {
   this.cy.nodes().each(function(i, node) {
     var color = node.data('color');
     node.data('skeletons').forEach(function(model) {
-      if (!colors[id]) colors[id] = color;
+      if (!colors[model.id]) colors[model.id] = color;
     });
   });
   return colors;

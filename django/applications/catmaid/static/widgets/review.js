@@ -281,6 +281,7 @@ var ReviewSystem = new function()
         for (var i=0; i<reviewers.length; ++i) {
           var cb = $('<input />').attr('type', 'checkbox')
               .attr('data-rid', reviewers[i])
+              .attr('title', "When checked, column will be respected when next segment is selected.")
               .click(function() {
                  var rid = parseInt($(this).attr('data-rid'));
                  var idx = followedUsers.indexOf(rid);

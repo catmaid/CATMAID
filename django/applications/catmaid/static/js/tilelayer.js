@@ -81,16 +81,24 @@ function TileLayer(
 		};
 		
 		tiles = [];
+
+		tiles_buf = [];
+
 		
 		for ( var i = 0; i < rows; ++i )
 		{
 			tiles[ i ] = [];
+			tiles_buf[ i ] = [];
 			for ( var j = 0; j < cols; ++j )
 			{
 				tiles[ i ][ j ] = document.createElement( "img" );
 				tiles[ i ][ j ].alt = "";
 				tiles[ i ][ j ].style.visibility = "hidden";
 				tiles[ i ][ j ].onload = tileOnload;
+
+				tiles_buf[ i ][ j ] = document.createElement( "img" );
+				tiles_buf[ i ][ j ].alt = "";
+				tiles_buf[ i ][ j ].visibility = "hidden";
 				
 				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
@@ -223,6 +231,56 @@ function TileLayer(
 		var t = top;
 		var l = left;
 
+		// Detect if moving to a new Z. If so, attempt to preload images to
+		// paint at once (but let regular code run for new stacks.)
+		var z_loading = stack.z !== stack.old_z && stack.s === stack.old_s;
+
+		var to_buffer = 0;
+		var buffered = 0;
+		for ( var i = 0; i < tiles.length; ++i )
+		{
+			var r = fr + i;
+			for ( var j = 0; j < tiles[ 0 ].length; ++j )
+			{
+				var c = fc + j;
+				if ( r >= 0 && c >= 0 && r <= LAST_YT && c <= LAST_XT )
+				{
+					to_buffer = to_buffer + 1;
+				}
+			}
+		}
+
+		// Helper function to swap source images from tiles_buf into tiles
+		var swapLayers = function ()
+		{
+			for ( var i = 0; i < tiles.length; ++i )
+			{
+				var r = fr + i;
+				for ( var j = 0; j < tiles[ 0 ].length; ++j )
+				{
+					var c = fc + j;
+					if ( r >= 0 && c >= 0 && r <= LAST_YT && c <= LAST_XT &&
+						tiles_buf[ i ][ j ].src && !tiles[ i ][ j ].alt)
+					{
+						tiles[i][j].src = tiles_buf[i][j].src;
+					}
+				}
+			}
+		};
+
+		// Callback to deal with buffered image loading. Calls swapLayers once
+		// all requested images have been loaded in the tile buffer.
+		function bufferLoadDeferred()
+		{
+			return function() {
+				buffered = buffered + 1;
+				if (buffered === to_buffer)
+				{
+					swapLayers();
+				}
+			};
+		}
+
 		// update the images sources
 		for ( var i = 0; i < tiles.length; ++i )
 		{
@@ -250,8 +308,17 @@ function TileLayer(
 					}
 					else
 					{
-						tile.alt = "";
-						tile.src = source;
+						tile.alt = ""; // Mark that the correct image for this
+									   // tile has not yet loaded.
+						if (z_loading)
+						{
+							tiles_buf[ i ][ j ].onload = bufferLoadDeferred();
+							tiles_buf[ i ][ j ].src = source;
+						}
+						else
+						{
+							tile.src = source;
+						}
 					}
 
 					tile.style.top = t + "px";

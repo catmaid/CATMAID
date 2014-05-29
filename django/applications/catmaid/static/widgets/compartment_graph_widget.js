@@ -44,8 +44,7 @@ GroupGraph.prototype.nextGroupID = function() {
   }).sort(function(a, b) {
     return a === b ? 0 : (a < b ? -1 : 1);
   });
-  if (0 === keys.length) return 1;
-  return 'g' + keys[keys.length -1] + 1;
+  return 'g' + (0 === keys.length ? 1 : keys[keys.length -1] + 1);
 };
 
 GroupGraph.prototype.getSelectedSkeletons = function() {
@@ -1471,7 +1470,6 @@ GroupGraph.prototype.resize = function() {
 };
 
 GroupGraph.prototype.resetGroups = function() {
-  this.nextGroupID = 0;
   this.groups = {};
 };
 

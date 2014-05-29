@@ -11,10 +11,12 @@ var ReviewSystem = new function()
     var tile_image_counter = 0,
         total_count = 0,
         end_puffer_count = 0,
-        autoCentering = true;
+        autoCentering = true,
+        followedUsers = [];
 
     this.init = function() {
         projectID = project.id;
+        followedUsers = [session.userid];
     };
 
     this.setAutoCentering = function(centering) {
@@ -22,11 +24,7 @@ var ReviewSystem = new function()
     };
 
     this.validSegment = function() {
-        if(self.current_segment !== null) {
-            return true;
-        } else {
-            return false;
-        }
+        return self.current_segment !== null;
     };
 
     this.endReview = function() {
@@ -189,7 +187,6 @@ var ReviewSystem = new function()
     };
 
     this.selectNextSegment = function( ev ) {
-        var followed_rids = getFollowedReviewers();
         if (self.skeleton_segments) {
             // Find out the index of the current segment
             var index = self.current_segment ? self.skeleton_segments.indexOf(self.current_segment) : -1;
@@ -199,7 +196,7 @@ var ReviewSystem = new function()
              * reviewers is empty or no followed reviewer appears in it.
              */
             var unreviewed_nodes = function(node) {
-                return 0 === node['rids'].length || followed_rids.every(function(rid) {
+                return 0 === node['rids'].length || followedUsers.every(function(rid) {
                     return -1 === node['rids'].indexOf(rid);
                 });
             };
@@ -209,13 +206,11 @@ var ReviewSystem = new function()
              * review for it is started as a side effect.
              */
             var unreviewed_segments = function(segment, i) {
-                if( segment['status'] !== "100.00") {
-                    // only check for segments with less than 100 percent reviewed
-                    if (segment['sequence'].some(unreviewed_nodes)) {
-                        // Side effect:
-                        self.initReviewSegment(i);
-                        return true;
-                    }                    
+                if (segment['sequence'].some(unreviewed_nodes)) {
+                    // Side effect which actually triggers the selection of the
+                    // next segment.
+                    self.initReviewSegment(i);
+                    return true;
                 }
                 return false;
             };
@@ -285,9 +280,22 @@ var ReviewSystem = new function()
         // Start with user columns, current user first
         for (var i=0; i<reviewers.length; ++i) {
           var cb = $('<input />').attr('type', 'checkbox')
-              .attr('data-rid', reviewers[i]);
-          if (i === 0) {
-              // Have the current user checked by default
+              .attr('data-rid', reviewers[i])
+              .attr('title', "When checked, column will be respected when next segment is selected.")
+              .click(function() {
+                 var rid = parseInt($(this).attr('data-rid'));
+                 var idx = followedUsers.indexOf(rid);
+                 if (-1 !== idx && !this.checked) {
+                    // Remove from follower list if in list and the name was
+                    // unchecked.
+                    followedUsers.splice(idx, 1);
+                 } else if (-1 === idx && this.checked) {
+                    // Add to follower list if not already there and the name
+                    // was checked.
+                    followedUsers.push(rid);
+                 }
+              });
+          if (-1 !== followedUsers.indexOf(reviewers[i])) {
               cb.attr('checked', 'checked');
           }
           row.append( $('<th />').append($('<label />')
@@ -345,18 +353,6 @@ var ReviewSystem = new function()
         table.append( $('<br /><br /><br /><br />') );
         $("#project_review_widget").append( table );
 
-    };
-
-    /**
-     * Returns a list of reviewer IDs that are followed, i.e. that have their
-     * follow checkbox in the table header checked.
-     */
-    var getFollowedReviewers = function() {
-        var followed_rids = [];
-        $('#review_segment_table th input:checked').each(function(i) {
-            followed_rids.push(parseInt($(this).attr('data-rid')));
-        });
-        return followed_rids;
     };
 
     var checkSkeletonID = function() {

@@ -107,7 +107,7 @@ var ProjectStatistics = new function()
               var datekey = data['days'][i + j];
               var stats = data['stats_table'][username][datekey];
               intervalData.new_treenodes += stats.new_treenodes || 0;
-              intervalData.new_connecotrs += stats.new_connectors || 0;
+              intervalData.new_connectors += stats.new_connectors || 0;
               intervalData.new_reviewed_nodes += stats.new_reviewed_nodes || 0;
           }
           // Print table cell

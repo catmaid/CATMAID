@@ -661,25 +661,6 @@ GroupGraph.prototype.updateGraph = function(json, models) {
   this.updateLayout();
 };
 
-
-						// TODO for new function appendAsGroup(skeleton_models):
-						// I need a map of groups vs properties: colors and label
-						// And updating the graph will have to consider groups.
-						// And groups should be expandable to their constituent nodes.
-						// And selected sets of nodes should be groupable.
-						// Will need a dialog with a color wheel and a text field
-						// to choose a name. All skeletons and their annotations should
-						// be listed for clarity and for finding inspiration towards a name.
-            // A suggested name could be an annotation common to all or most members.
-						// Additionally, groups should be creatable not from selected nodes
-						// but from common annotations: discover groups, basically, by common
-						// annotations.
-
-						// In the new design, each node contains an array of skeleton models,
-						// which reduces to the old design by having a single model in the array
-						// and getting its id.
-
-
 GroupGraph.prototype.toggleTrimmedNodeLabels = function() {
   if (this.originalNames) {
     this.trim_node_labels = false;

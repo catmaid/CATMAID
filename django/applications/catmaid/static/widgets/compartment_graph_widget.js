@@ -771,7 +771,7 @@ GroupGraph.prototype.append = function(models) {
         // Update node properties
 
         if (new_model.baseName) {
-          var name = neuronNameService.getName(model.id);
+          var name = neuronNameService.getName(new_model.id);
           node.data('label', name ? name : new_model.baseName);
         }
         skeleton.color = new_model.color.clone();

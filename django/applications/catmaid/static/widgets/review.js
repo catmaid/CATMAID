@@ -22,11 +22,7 @@ var ReviewSystem = new function()
     };
 
     this.validSegment = function() {
-        if(self.current_segment !== null) {
-            return true;
-        } else {
-            return false;
-        }
+        return self.current_segment !== null;
     };
 
     this.endReview = function() {

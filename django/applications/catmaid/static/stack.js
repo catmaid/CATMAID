@@ -842,14 +842,6 @@ function Stack(
 	indicatorbar.id = "indicatorbar";
 	view.appendChild( indicatorbar );
 
-	var neuronnameDisplay = document.createElement( "p" );
-	neuronnameDisplay.className = "neuronname";
-	var spanName = document.createElement( "span" );
-	spanName.id = "neuronName";
-	spanName.appendChild( document.createTextNode( "" ) );
-	neuronnameDisplay.appendChild( spanName );
-	view.appendChild( neuronnameDisplay );
-
 	// Display horizontal and vertical reference lines if wanted.
 	var vert = document.createElement( "div" );
 	var horr = document.createElement( "div" );

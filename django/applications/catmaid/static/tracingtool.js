@@ -100,14 +100,12 @@ function TracingTool()
     };
 
     // Insert a text div for the neuron name in the canvas window title bar
-    var neuronnameDisplay = document.createElement( "div" );
-    neuronnameDisplay.setAttribute('id', 'neuronname' + stack.getId());
+    var neuronnameDisplay = document.createElement( "p" );
     neuronnameDisplay.className = "neuronname";
-    neuronnameDisplay.appendChild( document.createElement( "p" ) );
     var spanName = document.createElement( "span" );
     spanName.id = "neuronName" + stack.getId();
-    neuronnameDisplay.firstChild.appendChild( spanName );
-    neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
+    spanName.appendChild( document.createTextNode( "" ) );
+    neuronnameDisplay.appendChild( spanName );
     stack.getWindow().getFrame().appendChild( neuronnameDisplay );
     tracingLayer.svgOverlay.updateNeuronNameLabel(stack.getId(), SkeletonAnnotations.getActiveSkeletonId());
   };

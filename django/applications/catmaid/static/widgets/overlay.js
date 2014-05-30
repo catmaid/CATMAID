@@ -177,6 +177,9 @@ SkeletonAnnotations.setNeuronNameInTopbar = function(stackID, neuronName, skelet
   $('#neuronName' + stackID).text(neuronName + ' (Skeleton ID: '+ skeletonID +')');
 };
 
+SkeletonAnnotations.clearTopbar = function(stackID) {
+  $('#neuronName' + stackID).text("");
+};
 
 /** The constructor for SVGOverlay. */
 SkeletonAnnotations.SVGOverlay = function(stack) {
@@ -466,12 +469,9 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
   } else {
     // Deselect
     atn.set(null, null);
-    // Deselect all from Object Tree. It is necessary because the neuron ID
-    // would be used to create the next skeleton, and it would fail
-    // if the neuron doesn't exist.
     project.setSelectObject( null, null );
-    $('#tree_object').jstree("deselect_all");
     this.recolorAllNodes();
+    SkeletonAnnotations.clearTopbar(this.stack.getId());
   }
 
   // (de)highlight in SkeletonSource instances if any if different from the last activated skeleton
@@ -1189,7 +1189,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     if (null !== atn.id) {
       statusBar.replaceLast("Deactivated node #" + atn.id);
     }
-    $('#neuronName').text('');
+    SkeletonAnnotations.clearTopbar(this.stack.getId());
     this.activateNode(null);
     if (!e.shiftKey) {
       e.stopPropagation();

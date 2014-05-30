@@ -846,6 +846,7 @@ GroupGraph.prototype.appendGroup = function(models) {
     options.appendChoice("All annotations: ", "gg-all", all, all, all[0]);
     options.appendChoice("All neuron names: ", "gg-names", names, names, names[0]);
     options.appendField("Or type a new name: ", "gg-typed", "", null);
+    options.appendCheckbox("Hide intragroup edges", "gg-edges", true);
     options.appendMessage("Choose group color:");
     var display = document.createElement('input');
     display.setAttribute('type', 'button');
@@ -880,11 +881,11 @@ GroupGraph.prototype.appendGroup = function(models) {
       if (!label) return alert("You must choose a name!");
 
       var gid = self.nextGroupID();
-      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColor(cw.color()));
+      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColor(cw.color()), $('#gg-edges').is(':checked'));
       self.append(models); // will remove/add/group nodes as appropriate
     };
 
-    options.show(300, 600, true);
+    options.show(300, 500, true);
 
   }).bind(this);
 
@@ -1455,11 +1456,12 @@ GroupGraph.prototype.resetGroups = function() {
   this.groups = {};
 };
 
-GroupGraph.prototype.Group = function(gid, models, label, color) {
+GroupGraph.prototype.Group = function(gid, models, label, color, hide_self_edges) {
   this.id = gid;
   this.label = label;
   this.models = models; // skeleton id vs model
   this.color = color;
+  this.hide_self_edges = hide_self_edges;
 };
 
 /** Reformat in place the data object, to:
@@ -1532,7 +1534,8 @@ GroupGraph.prototype._regroup = function(data, splitted, models) {
   data.edges = data.edges.filter(function(edge) {
     var d = edge.data,
         source = member_of[d.source],
-        target = member_of[d.target];
+        target = member_of[d.target],
+        intragroup = undefined !== source && undefined !== target;
     if (source || target) {
       source = source ? source : d.source;
       target = target ? target : d.target;
@@ -1544,6 +1547,8 @@ GroupGraph.prototype._regroup = function(data, splitted, models) {
         gedge.data.weight += d.weight;
         gedge.data.label = gedge.data.weight;
       } else {
+        // Don't show self-edge if desired
+        if (intragroup && this.groups[source].hide_self_edges) return false;
         // Reuse edge
         d.id = id;
         d.source = source;

@@ -520,7 +520,7 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
       padding: 30, // the padding on fit
       startAngle: 3/2 * Math.PI, // the position of the first node
       counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
-      minNodeSpacing: 40, // min spacing between outside of nodes (used for radius adjustment)
+      minNodeSpacing: 80, // min spacing between outside of nodes (used for radius adjustment)
       height: undefined, // height of layout area (overrides container height)
       width: undefined, // width of layout area (overrides container width)
       levelWidth: function(nodes) { // the variation of concentric values in each level

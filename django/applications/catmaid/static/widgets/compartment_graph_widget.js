@@ -1520,7 +1520,8 @@ GroupGraph.prototype._regroup = function(data, splitted, models) {
     return {data: {id: gid,
                    skeletons: Object.keys(group.models).map(function(skid) { return group.models[skid];}),
                    label: group.label,
-                   color: '#' + group.color.getHexString()}};
+                   color: '#' + group.color.getHexString(),
+                   shape: 'hexagon'}};
   }, this);
 
   // map of edge_id vs edge, involving groups

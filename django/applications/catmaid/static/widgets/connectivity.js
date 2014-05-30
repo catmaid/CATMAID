@@ -533,22 +533,26 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     function createSynapseCountCell(count, partner, skids, title) {
       var td = document.createElement('td');
       td.setAttribute('class', 'syncount');
-      var a = document.createElement('a');
-      td.appendChild(a);
-      a.appendChild(document.createTextNode(count));
-      a.setAttribute('href', '#');
-      a.style.color = 'black';
-      a.style.textDecoration = 'none';
-      //showSharedConnectorsFn(partner.id, Object.keys(partner.skids), relation);
-      a.onclick = ConnectorSelection.show_shared_connectors.bind(
-          ConnectorSelection, partner.id, skids, relation);
-      a.onmouseover = function() {
-          a.style.textDecoration = 'underline';
-          // TODO should show a div with the list of partners, with their names etc.
-      };
-      a.onmouseout = onmouseout;
-      // Create tool-tip
-      a.setAttribute('title', title)
+      // Only add the actual count as text if it is greater zero. This reduces
+      // the visual noise for larger tables.
+      if (count > 0) {
+        var a = document.createElement('a');
+        td.appendChild(a);
+        a.appendChild(document.createTextNode(count));
+        a.setAttribute('href', '#');
+        a.style.color = 'black';
+        a.style.textDecoration = 'none';
+        //showSharedConnectorsFn(partner.id, Object.keys(partner.skids), relation);
+        a.onclick = ConnectorSelection.show_shared_connectors.bind(
+            ConnectorSelection, partner.id, skids, relation);
+        a.onmouseover = function() {
+            a.style.textDecoration = 'underline';
+            // TODO should show a div with the list of partners, with their names etc.
+        };
+        a.onmouseout = onmouseout;
+        // Create tool-tip
+        a.setAttribute('title', title)
+      }
       td.setAttribute('title', title)
       return td;
     };

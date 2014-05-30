@@ -177,6 +177,9 @@ SkeletonAnnotations.setNeuronNameInTopbar = function(stackID, neuronName, skelet
   $('#neuronName' + stackID).text(neuronName + ' (Skeleton ID: '+ skeletonID +')');
 };
 
+SkeletonAnnotations.clearTopbar = function(stackID) {
+  $('#neuronName' + stackID).text("");
+};
 
 /** The constructor for SVGOverlay. */
 SkeletonAnnotations.SVGOverlay = function(stack) {
@@ -468,6 +471,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     atn.set(null, null);
     project.setSelectObject( null, null );
     this.recolorAllNodes();
+    SkeletonAnnotations.clearTopbar(this.stack.getId());
   }
 
   // (de)highlight in SkeletonSource instances if any if different from the last activated skeleton
@@ -1185,7 +1189,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     if (null !== atn.id) {
       statusBar.replaceLast("Deactivated node #" + atn.id);
     }
-    $('#neuronName').text('');
+    SkeletonAnnotations.clearTopbar(this.stack.getId());
     this.activateNode(null);
     if (!e.shiftKey) {
       e.stopPropagation();

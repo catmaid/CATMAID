@@ -861,3 +861,9 @@ Colorizer.prototype.pickColor = function() {
   return color;
 };
 
+/** Parse into a THREE.Color the color object returned from a Raphael color wheel. */
+var parseColorWheel = function(color) {
+  return new THREE.Color().setRGB(parseInt(color.r) / 255.0,
+                                  parseInt(color.g) / 255.0,
+                                  parseInt(color.b) / 255.0);
+};

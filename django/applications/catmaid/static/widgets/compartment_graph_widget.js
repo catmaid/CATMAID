@@ -955,7 +955,7 @@ GroupGraph.prototype.appendGroup = function(models) {
       if (!label) return alert("You must choose a name!");
 
       var gid = self.nextGroupID();
-      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColor(cw.color()), $('#gg-edges').is(':checked'));
+      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColorWheel(cw.color()), $('#gg-edges').is(':checked'));
       self.append(models); // will remove/add/group nodes as appropriate
     };
 

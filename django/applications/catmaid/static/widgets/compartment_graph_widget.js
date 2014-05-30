@@ -400,7 +400,7 @@ GroupGraph.prototype.init = function() {
 /** Unlocks locked nodes, if any, when done. */
 GroupGraph.prototype.updateLayout = function(layout) {
   var index = layout ? layout.selectedIndex : 0;
-  var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'random', 'cose', 'preset'][index];
+  var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'concentric', 'concentric out', 'concentric in', 'random', 'cose', 'preset'][index];
   var options = this.createLayoutOptions(name);
   options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
   this.cy.layout( options );
@@ -511,6 +511,27 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
       // padding on fit
       padding: 30
     };
+  } else if (0 === name.indexOf('concentric')) {
+    options = {
+      name: 'concentric',
+      fit: true, // whether to fit the viewport to the graph
+      ready: undefined, // callback on layoutready
+      stop: undefined, // callback on layoutstop
+      padding: 30, // the padding on fit
+      startAngle: 3/2 * Math.PI, // the position of the first node
+      counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
+      minNodeSpacing: 40, // min spacing between outside of nodes (used for radius adjustment)
+      height: undefined, // height of layout area (overrides container height)
+      width: undefined, // width of layout area (overrides container width)
+      levelWidth: function(nodes) { // the variation of concentric values in each level
+        return nodes.maxDegree() / 4;
+      }
+    };
+
+    // Define the concentric value function: returns numeric value for each node, placing higher nodes in levels towards the centre
+    if      ('concentric'     === name) options.concentric = function() { return this.degree(); };
+    else if ('concentric in ' === name) options.concentric = function() { return this.indegree(); };
+    else if ('concentric out' === name) options.concentric = function() { return this.outdegree(); };
   }
 
   return options;

@@ -466,11 +466,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
   } else {
     // Deselect
     atn.set(null, null);
-    // Deselect all from Object Tree. It is necessary because the neuron ID
-    // would be used to create the next skeleton, and it would fail
-    // if the neuron doesn't exist.
     project.setSelectObject( null, null );
-    $('#tree_object').jstree("deselect_all");
     this.recolorAllNodes();
   }
 

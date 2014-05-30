@@ -16,6 +16,13 @@ var GroupGraph = function() {
 
   this.color_circles_of_hell = this.colorCirclesOfHell.bind(this);
 
+  this.edge_color = '#555';
+  this.edge_opacity = 1.0;
+  this.edge_text_opacity = 1.0;
+  // Edge width is computed as edge_min_width + edge_width_function(weight)
+  this.edge_min_width = 0;
+  this.edge_width_function = "sqrt"; // choices: identity, log, log10, sqrt
+
   this.setState('color_mode', 'source');
 
   // stores re-layout timeout when resizing
@@ -225,6 +232,33 @@ GroupGraph.prototype.graph_properties = function() {
   dialog.appendChild(check);
   dialog.appendChild(document.createElement("br"));
 
+  var p = document.createElement('p');
+  p.appendChild(document.createTextNode('Edge properties:'));
+  p.appendChild(document.createElement("br"));
+  var props = ["opacity", "text opacity", "min width"].map(function(prop) {
+    var field = document.createElement('input');
+    field.setAttribute('value', this["edge_" + prop.replace(/ /g, "_")]);
+    field.style.width = "40px";
+    p.appendChild(document.createTextNode("Edge " + prop + ": "));
+    p.appendChild(field);
+    p.appendChild(document.createElement("br"));
+    return field;
+  }, this);
+  p.appendChild(document.createTextNode('Edge width as '));
+  var edgeFnNames = ["identity", "log", "log10", "sqrt"];
+  var edgeFnSel = document.createElement('select');
+  edgeFnNames.forEach(function(name) { edgeFnSel.appendChild(new Option(name, name)); });
+  edgeFnSel.selectedIndex = edgeFnNames.indexOf(this.edge_width_function);
+  p.appendChild(edgeFnSel);
+  p.appendChild(document.createTextNode(' of the synapse count.'));
+  p.appendChild(document.createElement("br"));
+  var cw_div = document.createElement('div');
+  var edge_cw = Raphael.colorwheel(cw_div, 150);
+  edge_cw.color(this.edge_color);
+  p.appendChild(cw_div);
+  dialog.appendChild(p);
+
+
   var self = this;
 
   $(dialog).dialog({
@@ -260,6 +294,16 @@ GroupGraph.prototype.graph_properties = function() {
           }
         }
 
+        var edge_opacity = Number(props[0].value.trim());
+        if (!Number.isNaN(edge_opacity) && edge_opacity >= 0 && edge_opacity <= 1) self.edge_opacity = edge_opacity;
+        var edge_text_opacity = Number(props[1].value.trim());
+        if (!Number.isNaN(edge_text_opacity) && edge_text_opacity >= 0 && edge_text_opacity <= 1) self.edge_text_opacity = edge_text_opacity;
+        var edge_min_width = Number(props[2].value.trim());
+        if (!Number.isNaN(edge_min_width)) self.edge_min_width = edge_min_width;
+        self.edge_width_function = edgeFnNames[edgeFnSel.selectedIndex];
+        self.edge_color = '#' + parseColorWheel(edge_cw.color()).getHexString();
+        self.updateEdgeGraphics();
+
         $(this).dialog("close");
       }
     },
@@ -286,12 +330,17 @@ GroupGraph.prototype.init = function() {
         .selector("edge")
           .css({
             "content": "data(label)",
-            "width": "data(weight)", //mapData(weight, 0, 100, 10, 50)",
+            "width": "data(width)", //mapData(weight, 0, 100, 10, 50)",
             "target-arrow-shape": "data(arrow)",
+            "target-arrow-color": "data(color)",
             // "source-arrow-shape": "circle",
             "line-color": "data(color)",
-            "opacity": 0.4,
-            "text-opacity": 1.0
+            "opacity": 1.0,
+            "text-opacity": 1.0,
+            "text-outline-color": "#fff",
+            "text-outline-opacity": 1.0,
+            "text-outline-width": 0.2,
+            "color": "data(color)", // color of the text label
           })
         .selector(":selected")
           .css({
@@ -515,12 +564,13 @@ GroupGraph.prototype.updateGraph = function(json, models) {
     });
 
   } else {
+    var edge_color = this.edge_color;
     var asEdge = function(edge) {
         return {data: {directed: true,
                        arrow: 'triangle',
                        id: edge[0] + '_' + edge[1],
                        label: edge[2],
-                       color: '#444',
+                       color: edge_color,
                        source: edge[0],
                        target: edge[1],
                        weight: edge[2]}};
@@ -607,6 +657,14 @@ GroupGraph.prototype.updateGraph = function(json, models) {
     }
     this._regroup(data, splitted, models);
   }
+
+  // Compute edge width for rendering the edge width
+
+  var edgeWidth = this.edgeWidthFn();
+
+  data.edges.forEach(function(edge) {
+    edge.data.width = this.edge_min_width + edgeWidth(edge.data.weight);
+  }, this);
 
   // Store positions of current nodes and their selected state
   var positions = {},
@@ -859,13 +917,8 @@ GroupGraph.prototype.appendGroup = function(models) {
     options.dialog.appendChild(div);
     var cw = Raphael.colorwheel(div, 150);
     cw.color(default_color);
-    var parseColor = function(color) {
-      return new THREE.Color().setRGB(parseInt(color.r) / 255.0,
-                                      parseInt(color.g) / 255.0,
-                                      parseInt(color.b) / 255.0);
-    };
     cw.onchange(function(color) {
-      $(display).css("background-color", '#' + parseColor(color).getHexString());
+      $(display).css("background-color", '#' + parseColorWheel(color).getHexString());
     });
 
     var self = this;
@@ -958,6 +1011,34 @@ GroupGraph.prototype.highlight = function(skeleton_id) {
                    node.css('width', p.w)
                        .css('height', p.h);
                  });}});
+};
+
+GroupGraph.prototype.edgeWidthFn = function() {
+  return {identity: function(w) { return w; },
+          sqrt: Math.sqrt,
+          log10: function(w) { return Math.log(w) / Math.LN10; },
+          log: Math.log}[this.edge_width_function];
+};
+
+GroupGraph.prototype.updateEdgeGraphics = function() {
+  if (!this.cy) return;
+  var directed = this.cy.edges().filter(function(i, edge) {
+    return edge.data('directed');
+  });
+  directed.css('color', this.edge_color);
+  directed.css('opacity', this.edge_opacity);
+  directed.css('text-opacity', this.edge_text_opacity);
+
+  var min = this.edge_min_width,
+      color = this.edge_color,
+      edgeWidth = this.edgeWidthFn();
+
+  this.cy.edges().each(function(i, edge) {
+    if (edge.data('directed')) {
+      edge.data('color', color);
+      edge.data('width', min + edgeWidth(edge.data('weight')));
+    }
+  });
 };
 
 GroupGraph.prototype.writeGML = function() {

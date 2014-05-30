@@ -2104,6 +2104,18 @@ window.OptionsDialog.prototype.appendField = function(title, fieldID,
   return input;
 };
 
+window.OptionsDialog.prototype.appendCheckbox = function(title, checkboxID, selected) {
+  var p = document.createElement('p');
+  var checkbox = document.createElement('input');
+  checkbox.setAttribute('type', 'checkbox');
+  checkbox.setAttribute('id', checkboxID);
+  checkbox.setAttribute('checked', selected);
+  p.appendChild(checkbox);
+  p.appendChild(document.createTextNode(title));
+  this.dialog.appendChild(p);
+  return checkbox;
+};
+
 
 var SplitMergeDialog = function(model1, model2) {
   // Models object

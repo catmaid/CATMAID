@@ -691,6 +691,7 @@ GroupGraph.prototype.toggleTrimmedNodeLabels = function() {
 };
 
 GroupGraph.prototype.clear = function() {
+  this.groups = {};
   if (this.cy) this.cy.elements("node").remove();
 };
 

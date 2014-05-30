@@ -985,7 +985,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     // Translate and then rotate relative to 0,0 (preconcatenates)
     this.arrowPath.transform("t" + x2new + "," + y2new + "r" + angle + ",0,0");
 
-    if (this.confidence < 5) {
+    if (confidence < 5) {
       this.confidence_text = this.updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, this.confidence_text);
     } else if (this.confidence_text) {
       this.confidence_text.remove();

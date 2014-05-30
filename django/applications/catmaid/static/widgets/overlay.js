@@ -2447,10 +2447,15 @@ SplitMergeDialog.prototype.show = function(extension) {
     width: self.width,
     height: self.height,
     modal: true,
+    close: function(ev, ui) {
+      if (self.webglapp) {
+        self.webglapp.space.destroy();
+      }
+      $(this).dialog("destroy");
+    },
     buttons: {
       "Cancel": function() {
-        if (self.webglapp) self.webglapp.space.destroy();
-        $(this).dialog("destroy");
+        $(this).dialog("close");
         if (self.onCancel) self.onCancel();
       },
       "OK": function() {
@@ -2461,8 +2466,7 @@ SplitMergeDialog.prototype.show = function(extension) {
           alert("The selected annotation configuration isn't valid. " +
               "One part has to keep all annotations.");
         } else {
-          if (self.webglapp) self.webglapp.space.destroy();
-          $(this).dialog("destroy");
+          $(this).dialog("close");
           if (self.onOK) self.onOK();
         }
       }

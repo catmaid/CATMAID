@@ -818,7 +818,7 @@ GroupGraph.prototype.appendGroup = function(models) {
     var skids = Object.keys(json);
     var common = json[skids[0]].filter(function(annotation) {
       return skids.reduce(function(all, skid) {
-        return all && annotation in json[skid];
+        return all && -1 !== json[skid].indexOf(annotation);
       }, true);
     }).sort();
 

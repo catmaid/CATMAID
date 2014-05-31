@@ -991,7 +991,12 @@ GroupGraph.prototype._load = function(models) {
               risk: this.compute_risk ? 1 : 0};
   if (this.clustering_bandwidth > 0) {
     var selected = Object.keys(this.cy.nodes().toArray().reduce(function(m, node) {
-      if (node.selected()) m[node.data('skeleton_id')] = true;
+      if (node.selected()) {
+        return node.data('skeletons').reduce(function(m, model) {
+          m[model.id] = true;
+          return m;
+        }, m);
+      }
       return m;
     }, {}));
     if (selected.length > 0) {
@@ -1068,7 +1073,7 @@ GroupGraph.prototype.writeGML = function() {
 
   this.cy.nodes(function(i, node) {
     if (node.hidden()) return;
-    var props = node.data(); // props.id, props.color, props.skeleton_id, props.node_count, props.label,
+    var props = node.data(); // props.id, props.color, props.skeletons, props.node_count, props.label,
     ids[props.id] = i;
     var p = node.position(); // pos.x, pos.y
     // node name with escaped \ and "

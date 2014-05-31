@@ -16,7 +16,9 @@ class Migration(DataMigration):
         for rid, rskid, tskid in orm.Review.objects.values_list('id',
                 'skeleton_id', 'treenode__skeleton_id'):
             if rskid != tskid:
-                orm.Review.objects.get(pk=rid).update(skeleton_id=tskid)
+                r = orm.Review.objects.get(pk=rid)
+                r.skeleton_id = tskid
+                r.save()
                 count = count + 1
 
         if count:

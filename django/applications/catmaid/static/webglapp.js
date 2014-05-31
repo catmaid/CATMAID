@@ -1767,6 +1767,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       Object.keys(node_weights).forEach(function(node) {
         node_weights[node] /= max_length;
       });
+
+    } else if ('strahler' === options.shading_method) {
+      node_weights = arbor.strahlerAnalysis();
+      var max = node_weights[arbor.root];
+      Object.keys(node_weights).forEach(function(node) {
+        node_weights[node] /= max;
+      });
     }
   }
 

@@ -202,7 +202,7 @@ Arbor.prototype.findBranchAndEndNodes = function() {
 	}, this);
 
 	return {ends: ends,
-		      branching: Object.keys(parents).filter(function(k) { return parents[k] > 1; })};
+		branching: Object.keys(parents).filter(function(k) { return parents[k] > 1; })};
 };
 
 /** Returns an array with all branch nodes. Runs in O(n + m) time,
@@ -612,4 +612,45 @@ Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
 	}
 
 	return values;
+};
+
+/** Return a map of node vs branch index relative to root. Terminal branches
+ * have an index of 1, their parent branches of 2, etc., all the way too root.
+ * The maximum number is that of the root branch.
+ */
+Arbor.prototype.strahlerAnalysis = function() {
+    var edges = this.edges,
+        children = Object.keys(edges),
+        parents = children.reduce(function(o, child) {
+            var n_children = o[edges[child]];
+            o[edges[child]] = undefined === n_children ? 1 : n_children + 1;
+            return o;
+        }, {}),
+        ends = children.filter(function(child) { return !parents[child]; }),
+        open = ends,
+        strahler = ends.reduce(function(o, node) {
+            o[node] = 1;
+            return o;
+        }, {});
+
+    while (open.length > 0) {
+        var node = ends.pop(),
+            index = strahler[node],
+            paren = edges[node];
+        while (undefined !== paren) { // a node could be the number 0, which is falsy
+            if (parents[paren] > 1) {
+                // is a branch node
+                if (strahler[paren]) break; // already seen
+                strahler[paren] = index + 1;
+                open.push(paren);
+                break;
+            } else {
+                strahler[paren] = index;
+                // Next iteration:
+                paren = edges[paren];
+            }
+        }
+    }
+
+    return strahler;
 };

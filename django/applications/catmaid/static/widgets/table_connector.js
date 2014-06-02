@@ -161,7 +161,12 @@ var ConnectorTable = new function()
             "bSearchable": false,
             "bSortable": true,
             "bVisible": true
-          } // treenodes
+          }, // treenodes
+          {
+            "bSearchable": false,
+            "bSortable": true,
+            "bVisible": true
+          } // last modified
         ]
       });
 

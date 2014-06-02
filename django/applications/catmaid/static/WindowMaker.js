@@ -1240,6 +1240,7 @@ var WindowMaker = new function()
             '<th id="connector_nr_nodes_top"># nodes for target(s)</th>' +
             '<th>username</th>' +
             '<th id="other_treenode_top">target treenode ID</th>' +
+            '<th>last modified</th>' +
           '</tr>' +
         '</thead>' +
         '<tfoot>' +
@@ -1254,6 +1255,7 @@ var WindowMaker = new function()
             '<th id="connector_nr_nodes_bottom"># nodes for target(s)</th>' +
             '<th>username</th>' +
             '<th id="other_treenode_bottom">target treenode ID</th>' +
+            '<th>last modified</th>' +
           '</tr>' +
         '</tfoot>' +
       '</table>';

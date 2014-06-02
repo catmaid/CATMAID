@@ -156,7 +156,8 @@ def list_connector(request, project_id=None):
             (tn_this.location).z AS this_treenode_z,
             tn_this.id AS this_treenode_id,
             tc_this.relation_id AS this_to_connector_relation_id,
-            tc_other.relation_id AS connector_to_other_relation_id
+            tc_other.relation_id AS connector_to_other_relation_id,
+            to_char(connector.edition_time, 'DD-MM-YYYY HH24:MI') AS last_modified
             FROM
             treenode tn_other,
             treenode_connector tc_other,
@@ -205,7 +206,8 @@ def list_connector(request, project_id=None):
             (connector.location).y AS connector_y,
             (connector.location).z AS connector_z,
             tn_this.id AS this_treenode_id,
-            tc_this.relation_id AS this_to_connector_relation_id
+            tc_this.relation_id AS this_to_connector_relation_id,
+            to_char(connector.edition_time, 'DD-MM-YYYY HH24:MI') AS last_modified
             FROM
             connector,
             "auth_user" connector_user,
@@ -287,6 +289,7 @@ def list_connector(request, project_id=None):
             row.append(connected_skeleton_treenode_count)
             row.append(c['connector_username'])
             row.append(c['other_treenode_id'])
+            row.append(c['last_modified'])
             aaData_output.append(row)
 
         # Sort output

@@ -654,3 +654,36 @@ Arbor.prototype.strahlerAnalysis = function() {
 
     return strahler;
 };
+
+/**
+ * Return a map of bin index vs quantity of nodes whose position falls within the bin.
+ * Only nodes included in the map of positions will be measured. This enables
+ * computing Sholl for e.g. only branch and end nodes, or only for nodes with synapses.
+ *
+ * center: "root", "first-branch-point", or a THREE.Vector3.
+ * binSize: difference between the radius of a sphere and that of the next sphere.
+ * positions: map of node ID vs THREE.Vector3.
+ */
+Arbor.prototype.spatialDensity = function(center, binSize, positions) {
+    // TODO
+};
+
+
+/**
+ * Perform Sholl analysis: returns a map of radius length vs number of cable crossings,
+ * sampled every radius_increment.
+ *
+ * A segment of cable defined two nodes that hold a parent-child relationship is considered to be crossing a sampling radius if the distance from the center for one of them is beyond the radius, and below for the other.
+ *
+ * Notice that if parent-child segments are longer than radius-increment in the radial direction, some parent-child segments will be counted more than once, which is correct.
+ *
+ * radius_increment: distance between two consecutive samplings.
+ * distanceToCenterFn: determines the distance of a node from the origin of coordinates, in the same units as the radius_increment.
+ */
+Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
+    return Object.keys(this.edges).reduce((function(sholl, node) {
+        // TODO compute distance of both parent and child to the center
+        // and then do a mod division with radius_increment and find out
+        // which boundaries are crossed, and accumulate the cross counts in sholl.
+    }).bind(this), {});
+};

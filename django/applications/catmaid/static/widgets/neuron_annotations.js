@@ -729,14 +729,29 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
 NeuronAnnotations.remove_annotation = function(entity_id,
     annotation_id, callback)
 {
+  NeuronAnnotations.remove_annotation_from_entities([entity_id],
+      annotation_id, callback);
+};
+
+/**
+ * This neuron annotation namespace method removes an annotation from a list of
+ * entities. It is not dependent on any context, but asks the user for
+ * confirmation. A callback can be executed in the case of success.
+ */
+NeuronAnnotations.remove_annotation_from_entities = function(entity_ids,
+    annotation_id, callback)
+{
   if (!confirm('Are you sure you want to remove annotation "' +
         annotations.getName(annotation_id) + '"?')) {
     return;
   }
 
   requestQueue.register(django_url + project.id + '/annotations/' +
-      annotation_id + '/entity/' + entity_id + '/remove',
-      'POST', {}, $.proxy(function(status, text, xml) {
+      annotation_id + '/remove',
+      'POST', {
+        entity_ids: entity_ids
+      },
+      $.proxy(function(status, text, xml) {
         if (status === 200) {
           var e = $.parseJSON(text);
           if (e.error) {

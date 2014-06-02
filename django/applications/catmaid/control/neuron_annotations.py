@@ -385,22 +385,29 @@ def annotate_entities(request, project_id = None):
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_annotation(request, project_id=None, annotation_id=None,
-        entity_id=None):
-    """ Removes an annotation from an entity.
+def remove_annotation(request, project_id=None, annotation_id=None):
+    """ Removes an annotation from one or more entities.
     """
     p = get_object_or_404(Project, pk=project_id)
 
+    entity_ids = [int(v) for k,v in request.POST.iteritems()
+            if k.startswith('entity_ids[')]
+
     # Get CICI instance representing the link
     cici_n_a = ClassInstanceClassInstance.objects.filter(project=p,
-            class_instance_a__id=entity_id, class_instance_b__id=annotation_id)
+            class_instance_a__id__in=entity_ids,
+            class_instance_b__id=annotation_id)
     # Make sure the current user has permissions to remove the annotation.
     for cici in cici_n_a:
-        can_edit_or_fail(request.user, cici.id, 'class_instance_class_instance')
+        can_edit_or_fail(request.user, cici.id,
+                'class_instance_class_instance')
     # Remove link between entity and annotation.
     cici_n_a.delete()
 
-    message = "Removed annotation from entity."
+    if len(entity_ids) > 1:
+        message = "Removed annotation from entities."
+    else:
+        message = "Removed annotation from entity."
 
     # Remove the annotation class instance, regardless of the owner, if there
     # are no more links to it

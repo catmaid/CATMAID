@@ -728,6 +728,20 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
   annotate_button.setAttribute('value', 'Annotate');
   $container.append(annotate_button);
 
+  // Create button to remove annotations, based on the filters
+  var deannotate_buttons = [];
+  if (filters.annotations) {
+    filters.annotations.forEach(function(aid, i) {
+      var deannotate_button = document.createElement('input');
+      deannotate_button.setAttribute('type', 'button');
+      deannotate_button.setAttribute('value', 'De-annotate ' +
+          annotations.getName(aid));
+      deannotate_button.setAttribute('data-annotationid', aid);
+      $container.append(deannotate_button);
+      deannotate_buttons.push(deannotate_button);
+    });
+  }
+
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_neuronlist_content' +
       this.navigator.widgetID);
@@ -835,20 +849,41 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
   // Make self accessible in callbacks more easily
   var self = this;
 
-  $(annotate_button).click(function() {
+  var getSelectedNeurons = function() {
     var cb_selector = '#navigator_neuronlist_table' +
         self.navigator.widgetID + ' tbody td.selector_column input';
-    var selected_neurons = $(cb_selector).toArray().reduce(function(ret, cb) {
+    return $(cb_selector).toArray().reduce(function(ret, cb) {
       if ($(cb).prop('checked')) {
         ret.push($(cb).attr('neuron_id'));
       }
       return ret;
     }, []);
+  };
 
+  $(annotate_button).click(function() {
+    var selected_neurons = getSelectedNeurons();
     if (selected_neurons.length > 0) {
       NeuronAnnotations.prototype.annotate_entities(selected_neurons);
     } else {
       alert("Please select at least one neuron to annotate first!");
+    }
+  });
+
+  $(deannotate_buttons).click(function() {
+    var selected_neurons = getSelectedNeurons();
+    if (selected_neurons.length > 0) {
+      // Get annotation ID
+      var annotation_id = parseInt(this.getAttribute('data-annotationid'));
+      // Unlink the annotation from the current neuron
+      NeuronAnnotations.remove_annotation_from_entities(selected_neurons,
+          annotation_id, function(message) {
+              // Display message returned by the server
+              growlAlert('Information', message);
+              // Refresh node
+              self.navigator.select_node(self);
+          });
+    } else {
+      alert("Please select at least one neuron to remove the annotation from first!");
     }
   });
 

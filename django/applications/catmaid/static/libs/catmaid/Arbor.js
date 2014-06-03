@@ -670,8 +670,13 @@ Arbor.prototype.spatialDensity = function(center, binSize, positions) {
 
 
 /**
- * Perform Sholl analysis: returns a map of radius length vs number of cable crossings,
+ * Perform Sholl analysis: returns two arrays, paired by index, of radius length and the corresponding number of cable crossings,
  * sampled every radius_increment.
+ *
+ * E.g.:
+ *
+ * {radius:   [0.75, 1.5, 2.25, 3.0],
+ *  crossings:[   3,   2,    1,   1]}
  *
  * A segment of cable defined two nodes that hold a parent-child relationship is considered to be crossing a sampling radius if the distance from the center for one of them is beyond the radius, and below for the other.
  *
@@ -681,9 +686,35 @@ Arbor.prototype.spatialDensity = function(center, binSize, positions) {
  * distanceToCenterFn: determines the distance of a node from the origin of coordinates, in the same units as the radius_increment.
  */
 Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
-    return Object.keys(this.edges).reduce((function(sholl, node) {
-        // TODO compute distance of both parent and child to the center
+    // Create map of radius index to number of crossings.
+    // (The index, being an integer, is a far safer key for a map than the distance as floating-point.)
+    var indexMap = Object.keys(this.edges).reduce((function(sholl, child) {
+        // Compute distance of both parent and child to the center
         // and then do a mod division with radius_increment and find out
         // which boundaries are crossed, and accumulate the cross counts in sholl.
-    }).bind(this), {});
+        var paren = this.edges[child],
+            dc = this.cache[child],
+            dp = this.cache[paren];
+        if (undefined === dc) this.cache[child] = dc = distanceToCenterFn(child);
+        if (undefined === dp) this.cache[paren] = dp = distanceToCenterFn(paren);
+        var pos = Math.min(dc, dp) + radius_increment,
+            end = Math.max(dc, dp);
+        while (pos <= end) {
+            var index = Math.floor(pos / radius_increment),
+                count = sholl[index];
+            if (undefined === count) sholl[index] = 1;
+            else sholl[index] += 1;
+            // Next cross
+            pos += radius_increment;
+        }
+        return sholl;
+    }).bind({edges: this.edges,
+             cache: {}}), {});
+
+    // Convert indices to distances
+    return Object.keys(indexMap).reduce(function(o, index) {
+        o.radius.push(index * radius_increment);
+        o.crossings.push(indexMap[index]);
+        return o;
+    }, {radius: [], crossings: []});
 };

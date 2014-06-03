@@ -2,6 +2,7 @@ import json
 from django.db import connection
 from django.http import HttpResponse
 from catmaid.control.authentication import *
+from catmaid.control.review import get_treenodes_to_reviews
 from catmaid.models import Relation
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
@@ -112,7 +113,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
 
     # Fetch all treenodes of all skeletons
     cursor.execute('''
-    SELECT id, parent_id, confidence, skeleton_id, location, reviewer_id
+    SELECT id, parent_id, confidence, skeleton_id, location
     FROM treenode
     WHERE skeleton_id IN (%s)
     ''' % skeletons_string)
@@ -120,9 +121,12 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
     # Each skeleton is represented with a DiGraph
     arbors = defaultdict(nx.DiGraph)
 
+    # Get reviewers for the requested skeletons
+    reviews = get_treenodes_to_reviews(skeleton_ids=skeleton_ids)
+
     # Create a DiGraph for every skeleton
     for row in rows:
-        arbors[row[3]].add_node(row[0], {'reviewer_id': row[5]})
+        arbors[row[3]].add_node(row[0], {'reviewer_ids': reviews.get(row[0], [])})
 
     # Dictionary of skeleton IDs vs list of DiGraph instances
     arbors = split_by_confidence_and_add_edges(confidence_threshold, arbors, rows)
@@ -191,7 +195,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
                                  'label': label,
                                  'skeleton_id': skid,
                                  'node_count': len(g),
-                                 'node_reviewed_count': sum(1 for v in g.node.itervalues() if -1 != v.get('reviewer_id', -1)), # TODO when bandwidth > 0, not all nodes are included. They will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
+                                 'node_reviewed_count': sum(1 for v in g.node.itervalues() if 0 != len(v.get('reviewer_ids', []))), # TODO when bandwidth > 0, not all nodes are included. They will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
                                  'branch': False})
             i += 1
 

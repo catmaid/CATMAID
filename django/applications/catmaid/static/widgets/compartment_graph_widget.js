@@ -1557,7 +1557,7 @@ GroupGraph.prototype.resize = function() {
         fit: false,
       };
       this.cy.layout( options );
-    }).bind(this), 400);
+    }).bind(this), 100);
   }
 };
 

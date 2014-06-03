@@ -1549,6 +1549,8 @@ GroupGraph.prototype.resize = function() {
       clearTimeout(this.relayoutTimeout);
     }
     this.relayoutTimeout = setTimeout((function() {
+      // Invalidate dimensions of cytoscape canvases
+      this.cy.resize();
       // Update the layout accordingly
       var options = {
         name: 'preset',

@@ -561,7 +561,7 @@ GroupGraph.prototype.updateGraph = function(json, models) {
 
     // Color nodes
     data.nodes.forEach(function(node) {
-      node.data.color = '#' + models[node.data.skeletons[0].id].color.getHexString();
+      node.data.color = '#' + models[node.data.skeleton_id].color.getHexString();
     });
 
     // Set color of new edges

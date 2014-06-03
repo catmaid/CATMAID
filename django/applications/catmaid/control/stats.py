@@ -153,59 +153,47 @@ def stats_user_history(request, project_id=None):
 
     # Look up all tree nodes for the project in the given date range. Also add
     # a computed field which is just the day of the last edited date/time.
-    tree_nodes = Treenode.objects \
+    treenode_stats = Treenode.objects \
         .filter(
             project=project_id,
             creation_time__range=(start_date, end_date)) \
-        .extra(select={
-            'date': 'to_char("treenode"."creation_time", \'YYYYMMDD\')'}) \
-        .order_by('user', 'date')
-    # Get the count of tree nodes for each user/day combination.
-    treenode_stats = tree_nodes.values('user__id', 'date') \
+        .extra(select={'date': "date_trunc('day', creation_time)"}) \
+        .order_by('user', 'date') \
+        .values_list('user', 'date') \
         .annotate(count=Count('id'))
-    # Change the 'user__username' field name to just 'name'. (If
-    # <https://code.djangoproject.com/ticket/12222> ever gets implemented then
-    # this wouldn't be necessary.)
-    treenode_stats = [{
-        'userid': stat['user__id'],
-        'date':stat['date'],
-        'count':stat['count']} for stat in treenode_stats]
 
-    connector_nodes = Connector.objects \
+    connector_stats = Connector.objects \
         .filter(
             project=project_id,
             creation_time__range=(start_date, end_date)) \
-        .extra(select={
-            'date': 'to_char("connector"."creation_time", \'YYYYMMDD\')'}) \
-        .order_by('user', 'date')
-    connector_stats = connector_nodes.values('user__id', 'date') \
+        .extra(select={'date': "date_trunc('day', creation_time)"}) \
+        .order_by('user', 'date') \
+        .values_list('user', 'date') \
         .annotate(count=Count('id'))
-    connector_stats = [{
-        'userid': stat['user__id'],
-        'date': stat['date'],
-        'count': stat['count']} for stat in connector_stats]
 
     tree_reviewed_nodes = Review.objects \
         .filter(
             project_id=project_id,
             review_time__range=(start_date, end_date)) \
-        .extra(select={
-            'date': 'to_char("review"."review_time", \'YYYYMMDD\')'}) \
+        .extra(select={'date': "date_trunc('day', review_time)"}) \
         .order_by('date') \
-        .values('reviewer_id', 'date') \
+        .values_list('reviewer_id', 'date') \
         .annotate(count = Count('treenode'))
 
     for di in treenode_stats:
-        name = map_userid_to_name[di['userid']]
-        stats_table[name][di['date']]['new_treenodes'] = di['count']
+        name = map_userid_to_name[di[0]]
+        date = di[1].strftime('%Y%m%d')
+        stats_table[name][date]['new_treenodes'] = di[2]
 
     for di in connector_stats:
-        name = map_userid_to_name[di['userid']]
-        stats_table[name][di['date']]['new_connectors'] = di['count']
+        name = map_userid_to_name[di[0]]
+        date = di[1].strftime('%Y%m%d')
+        stats_table[name][date]['new_connectors'] = di[2]
 
     for di in tree_reviewed_nodes:
-        name = map_userid_to_name[di['reviewer_id']]
-        stats_table[name][di['date']]['new_reviewed_nodes'] = di['count']
+        name = map_userid_to_name[di[0]]
+        date = di[1].strftime('%Y%m%d')
+        stats_table[name][date]['new_reviewed_nodes'] = di[2]
 
     return HttpResponse(json.dumps({
         'stats_table': stats_table,

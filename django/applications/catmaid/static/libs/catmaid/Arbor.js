@@ -655,19 +655,6 @@ Arbor.prototype.strahlerAnalysis = function() {
     return strahler;
 };
 
-/**
- * Return a map of bin index vs quantity of nodes whose position falls within the bin.
- * Only nodes included in the map of positions will be measured. This enables
- * computing Sholl for e.g. only branch and end nodes, or only for nodes with synapses.
- *
- * center: "root", "first-branch-point", or a THREE.Vector3.
- * binSize: difference between the radius of a sphere and that of the next sphere.
- * positions: map of node ID vs THREE.Vector3.
- */
-Arbor.prototype.spatialDensity = function(center, binSize, positions) {
-    // TODO
-};
-
 
 /**
  * Perform Sholl analysis: returns two arrays, paired by index, of radius length and the corresponding number of cable crossings,
@@ -690,7 +677,7 @@ Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
     // (The index, being an integer, is a far safer key for a map than the distance as floating-point.)
     var indexMap = Object.keys(this.edges).reduce((function(sholl, child) {
         // Compute distance of both parent and child to the center
-        // and then do a mod division with radius_increment and find out
+        // and then divide by radius_increment and find out
         // which boundaries are crossed, and accumulate the cross counts in sholl.
         var paren = this.edges[child],
             dc = this.cache[child],
@@ -717,4 +704,37 @@ Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
         o.crossings.push(indexMap[index]);
         return o;
     }, {radius: [], crossings: []});
+};
+
+
+/**
+ * Return two correlated arrays, one with bin starting position and the other
+ * with the quantity of nodes whose position falls within the bin.
+ *
+ * Bins have a size of radius_increment.
+ *
+ * Only nodes included in the map of positions will be measured. This enables
+ * computing Sholl for e.g. only branch and end nodes, or only for nodes with synapses.
+ *
+ * center: an object with a distanceTo method, like THREE.Vector3.
+ * radius_increment: difference between the radius of a sphere and that of the next sphere.
+ * positions: map of node ID vs objects like THREE.Vector3.
+ */
+Arbor.prototype.radialDensity = function(center, radius_increment, positions) {
+    var density = this.nodesArray.reduce(function(bins, node) {
+        var p = positions[node];
+        // Ignore missing nodes
+        if (undefined === p) return bins;
+        var index = Math.floor(center.distanceTo(p) / radius_increment),
+            count = bins[index];
+        if (undefined === count) bins[index] = 1;
+        else bins[index] += 1;
+        return bins;
+    }, {});
+
+    // Convert indices to distances
+    return Object.keys(density).reduce(function(o, index) {
+        o.bins.push(index * radius_increment);
+        o.counts.push(density[index]);
+    }, {bins: [], counts: []});
 };

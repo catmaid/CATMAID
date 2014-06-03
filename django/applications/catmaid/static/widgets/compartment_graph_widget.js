@@ -1543,7 +1543,7 @@ GroupGraph.prototype.annotate_skeleton_list = function() {
 
 GroupGraph.prototype.resize = function() {
   if (this.cy) {
-    // Schedule a re-layout without changing the node position after 400ms and
+    // Schedule a re-layout without changing the node position after 100ms and
     // override it automatically if resizing isn't finished, yet.
     if (this.relayoutTimeout) {
       clearTimeout(this.relayoutTimeout);

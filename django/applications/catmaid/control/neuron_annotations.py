@@ -398,16 +398,34 @@ def remove_annotation(request, project_id=None, annotation_id=None):
             class_instance_a__id__in=entity_ids,
             class_instance_b__id=annotation_id)
     # Make sure the current user has permissions to remove the annotation.
+    missed_cicis = []
+    cicis_to_delete = []
     for cici in cici_n_a:
-        can_edit_or_fail(request.user, cici.id,
-                'class_instance_class_instance')
-    # Remove link between entity and annotation.
-    cici_n_a.delete()
+        try:
+            can_edit_or_fail(request.user, cici.id,
+                             'class_instance_class_instance')
+            cicis_to_delete.append(cici)
+        except Exception:
+            # Remember links for which permissions are missing
+            missed_cicis.append(cici)
 
-    if len(entity_ids) > 1:
-        message = "Removed annotation from entities."
+    # Remove link between entity and annotation for all links on which the user
+    # the necessary permissions has.
+    if cicis_to_delete:
+        ClassInstanceClassInstance.objects \
+                .filter(id__in=[cici.id for cici in cicis_to_delete]) \
+                .delete()
+
+    if len(cicis_to_delete) > 1:
+        message = "Removed annotation from %s entities." % len(cicis_to_delete)
+    elif len(cicis_to_delete) == 1:
+        message = "Removed annotation from one entity."
     else:
-        message = "Removed annotation from entity."
+        message = "No annotation removed."
+
+    if missed_cicis:
+        message += " Couldn't de-annotate %s entities, due to the lack of " \
+                "permissions." % len(missed_cicis)
 
     # Remove the annotation class instance, regardless of the owner, if there
     # are no more links to it

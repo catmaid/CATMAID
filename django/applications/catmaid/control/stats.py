@@ -161,13 +161,12 @@ def stats_user_history(request, project_id=None):
             'date': 'to_char("treenode"."creation_time", \'YYYYMMDD\')'}) \
         .order_by('user', 'date')
     # Get the count of tree nodes for each user/day combination.
-    treenode_stats = tree_nodes.values('user__username', 'date', 'user__id') \
+    treenode_stats = tree_nodes.values('user__id', 'date') \
         .annotate(count=Count('id'))
     # Change the 'user__username' field name to just 'name'. (If
     # <https://code.djangoproject.com/ticket/12222> ever gets implemented then
     # this wouldn't be necessary.)
     treenode_stats = [{
-        'username': stat['user__username'],
         'userid': stat['user__id'],
         'date':stat['date'],
         'count':stat['count']} for stat in treenode_stats]
@@ -179,10 +178,9 @@ def stats_user_history(request, project_id=None):
         .extra(select={
             'date': 'to_char("connector"."creation_time", \'YYYYMMDD\')'}) \
         .order_by('user', 'date')
-    connector_stats = connector_nodes.values('user__username', 'date', 'user__id') \
+    connector_stats = connector_nodes.values('user__id', 'date') \
         .annotate(count=Count('id'))
     connector_stats = [{
-        'username': stat['user__username'],
         'userid': stat['user__id'],
         'date': stat['date'],
         'count': stat['count']} for stat in connector_stats]
@@ -198,10 +196,12 @@ def stats_user_history(request, project_id=None):
         .annotate(count = Count('treenode'))
 
     for di in treenode_stats:
-        stats_table[di['username']][di['date']]['new_treenodes'] = di['count']
+        name = map_userid_to_name[di['userid']]
+        stats_table[name][di['date']]['new_treenodes'] = di['count']
 
     for di in connector_stats:
-        stats_table[di['username']][di['date']]['new_connectors'] = di['count']
+        name = map_userid_to_name[di['userid']]
+        stats_table[name][di['date']]['new_connectors'] = di['count']
 
     for di in tree_reviewed_nodes:
         name = map_userid_to_name[di['reviewer_id']]

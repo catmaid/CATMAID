@@ -997,6 +997,90 @@ var WindowMaker = new function()
   };
 
 
+  var createMorphologyPlotWindow = function() {
+  
+    var MA = new MorphologyPlot();
+
+    var win = new CMWWindow("Analysis of morphology");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var buttons = document.createElement('div');
+    buttons.setAttribute('id', 'morphology_plot_buttons' + MA.widgetID);
+
+    buttons.appendChild(document.createTextNode('From'));
+    buttons.appendChild(SkeletonListSources.createSelect(MA));
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("value", "Append");
+    add.onclick = MA.loadSource.bind(MA);
+    buttons.appendChild(add);
+
+    var clear = document.createElement('input');
+    clear.setAttribute("type", "button");
+    clear.setAttribute("value", "Clear");
+    clear.onclick = MA.clear.bind(MA);
+    buttons.appendChild(clear);
+
+    var update = document.createElement('input');
+    update.setAttribute("type", "button");
+    update.setAttribute("value", "Refresh");
+    update.onclick = MA.update.bind(MA);
+    buttons.appendChild(update);
+
+    var annotate = document.createElement('input');
+    annotate.setAttribute("type", "button");
+    annotate.setAttribute("value", "Annotate");
+    annotate.onclick = MA.annotate_skeleton_list.bind(MA);
+    buttons.appendChild(annotate);
+
+    appendSelect(buttons, "function",
+        ['Sholl analysis',
+         'Radial density of cable',
+         'Radial density of branch points',
+         'Radial density of ends',
+         'Radial density of input synapses',
+         'Radial density of output synapses']);
+
+    buttons.appendChild(document.createTextNode(' Radius (nm): '));
+    var radius = document.createElement('input');
+    radius.setAttribute("id", "morphology_plot_step" + MA.widgetID);
+    radius.setAttribute("type", "text");
+    radius.setAttribute("value", "1000");
+    buttons.appendChild(radius);
+
+    buttons.appendChild(document.createTextNode(' Center: '));
+    appendSelect(buttons, "center",
+        ['Root node',
+         'Active node',
+         'First branch node',
+         'Bounding box center',
+         'Average node position',
+         'Highest centrality node',
+         'Highest signal flow centrality']);
+
+    var redraw = document.createElement('input');
+    redraw.setAttribute("type", "button");
+    redraw.setAttribute("value", "Draw");
+    redraw.onclick = MA.redraw.bind(MA);
+    buttons.appendChild(redraw);
+
+    content.appendChild(buttons);
+
+    var container = createContainer('morphology_plot_div' + MA.widgetID);
+    content.appendChild(container);
+
+    addListener(win, container, 'morphology_plot_buttons' + MA.widgetID, MA.destroy.bind(MA), MA.resize.bind(MA));
+
+    addLogic(win);
+
+    SkeletonListSources.updateGUI();
+
+    return win;
+  };
+
+
   var createAssemblyGraphWindow = function()
   {
 
@@ -2287,6 +2371,7 @@ var WindowMaker = new function()
     "notifications": createNotificationsWindow,
     "clustering-widget": createClusteringWidget,
     "circuit-graph-plot": createCircuitGraphPlot,
+    "morphology-plot": createMorphologyPlotWindow,
     "neuron-annotations": createNeuronAnnotationsWindow,
     "neuron-navigator": createNeuronNavigatorWindow,
     "settings": createSettingsWindow,

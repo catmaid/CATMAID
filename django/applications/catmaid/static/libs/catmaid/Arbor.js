@@ -684,15 +684,13 @@ Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
             dp = this.cache[paren];
         if (undefined === dc) this.cache[child] = dc = distanceToCenterFn(child);
         if (undefined === dp) this.cache[paren] = dp = distanceToCenterFn(paren);
-        var pos = Math.min(dc, dp) + radius_increment,
-            end = Math.max(dc, dp);
-        while (pos <= end) {
-            var index = Math.floor(pos / radius_increment),
-                count = sholl[index];
+        var index = Math.floor(Math.min(dc, dp) / radius_increment) + 1,
+            next = Math.round(Math.max(dc, dp) / radius_increment + 0.5); // proper ceil
+        while (index < next) {
+            var count = sholl[index];
             if (undefined === count) sholl[index] = 1;
             else sholl[index] += 1;
-            // Next cross
-            pos += radius_increment;
+            ++index;
         }
         return sholl;
     }).bind({edges: this.edges,

@@ -795,7 +795,7 @@ Arbor.prototype.flowCentrality = function(outputs, inputs) {
         partition.forEach(function(node) {
             var counts = cs[node];
             seenI += counts.inputs + counts.seenInputs;
-            seenO += counts.outputs + count.seenOutputs;
+            seenO += counts.outputs + counts.seenOutputs;
             counts.seenInputs = seenI;
             counts.seenOutputs = seenO;
             var nPossibleIOPaths = counts.seenInputs  * (totalOutputs - counts.seenOutputs)

@@ -750,3 +750,59 @@ Arbor.prototype.radialDensity = function(center, radius_increment, positions) {
         o.counts.push(density[index]);
     }, {bins: [], counts: []});
 };
+
+/** Return a map of node vs number of paths from any node in the set of inputs to any node in the set of outputs.
+ *  outputs: a map of node keys vs number of outputs at the node.
+ *  inputs: a map of node keys vs number of inputs at the node. */
+Arbor.prototype.flowCentrality = function(outputs, inputs) {
+    var totalOutputs = Object.keys(outputs).reduce(function(sum, node) {
+        return sum + outputs[node];
+    }, 0);
+
+    var totalInputs = Object.keys(inputs).reduce(function(sum, node) {
+        return sum + inputs[node];
+    }, 0);
+
+    if (0 === totalOutputs || 0 === totalInputs) {
+        // Not computable
+        return null;
+    }
+
+    // If the root node is a branch, reroot at the first end node found
+    var arbor = this,
+        be = arbor.findBranchAndEndNodes();
+    if (-1 !== be.branching.indexOf(arbor.root)) {
+        arbor = arbor.clone();
+        arbor.reroot(be.ends[0]);
+    }
+
+    var cs = arbor.nodesArray().reduce(function(o, node) {
+        var n_inputs = inputs[node],
+            n_outputs = outputs[node];
+        o[node] = {inputs: undefined === n_inputs ? 0 : n_inputs,
+                   outputs: undefined === n_outputs ? 0 : n_outputs,
+                   seenInputs: 0,
+                   seenOutputs: 0};
+        return o;
+    }, {});
+
+    var centrality = {};
+
+    // Traverse all partitions counting synapses seen
+    arbor.partitionSorted().forEach(function(partition) {
+        var seenI = 0,
+            seenO = 0;
+        partition.forEach(function(node) {
+            var counts = cs[node];
+            seenI += counts.inputs + counts.seenInputs;
+            seenO += counts.outputs + count.seenOutputs;
+            counts.seenInputs = seenI;
+            counts.seenOutputs = seenO;
+            var nPossibleIOPaths = counts.seenInputs  * (totalOutputs - counts.seenOutputs)
+                                 + counts.seenOutputs * (totalInputs - counts.seenInputs);
+            centrality[node] = nPossibleIOPaths / totalOutputs;
+        });
+    });
+
+    return centrality;
+};

@@ -163,7 +163,7 @@ Arbor.prototype.allSuccessors = function() {
  *  Assumes the node belongs to the arbor.
  *  Returns null when no branches are found. */
 Arbor.prototype.nextBranchNode = function(node) {
-  var all_succ = arbor.allSuccessors(),
+  var all_succ = this.allSuccessors(),
       succ  = all_succ[node];
   while (1 === succ.length) {
     node = succ[0];

@@ -116,6 +116,16 @@ SkeletonSource.prototype.getLinkTarget = function() {
 	return this.linkTarget;
 };
 
+SkeletonSource.prototype.getSelectedSkeletons = function() {
+    return Object.keys(this.getSelectedSkeletonModels());
+};
+
+SkeletonSource.prototype.annotate_skeleton_list = function() {
+  NeuronAnnotations.prototype.annotate_neurons_of_skeletons(this.getSelectedSkeletons());
+};
+
+
+
 // A prototype for a manager of existing skeleton sources
 var SkeletonSourceManager = function() {
 	this.sources = {};

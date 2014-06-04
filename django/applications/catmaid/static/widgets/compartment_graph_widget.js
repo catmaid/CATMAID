@@ -1536,11 +1536,6 @@ GroupGraph.prototype.openPlot = function() {
   GP.plot(m.ids, m.names, m.skeletons, m.AdjM);
 };
 
-GroupGraph.prototype.annotate_skeleton_list = function() {
-  var skeleton_ids = this.getSelectedSkeletons();
-  NeuronAnnotations.prototype.annotate_neurons_of_skeletons(skeleton_ids);
-};
-
 GroupGraph.prototype.resize = function() {
   if (this.cy) {
     // Schedule a re-layout without changing the node position after 400ms and

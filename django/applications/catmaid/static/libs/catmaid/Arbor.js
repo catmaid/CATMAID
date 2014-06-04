@@ -159,6 +159,20 @@ Arbor.prototype.allSuccessors = function() {
 	}, {});
 };
 
+/** Finds the next branch node, starting at node (inclusive).
+ *  Assumes the node belongs to the arbor.
+ *  Returns null when no branches are found. */
+Arbor.prototype.nextBranchNode = function(node) {
+  var all_succ = arbor.allSuccessors(),
+      succ  = all_succ[node];
+  while (1 === succ.length) {
+    node = succ[0];
+    succ = all_succ[node];
+  }
+  if (all_succ[node].length > 1) return node;
+  return null;
+};
+
 /** Return an object with each nodes as keys and arrays of children plus the parent as values, or an empty array for an isolated root node. Runs in O(2n) time.*/
 Arbor.prototype.allNeighbors = function() {
 	var edges = this.edges,

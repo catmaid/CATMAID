@@ -376,70 +376,26 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
   if (0 === skeleton_ids.length) return;
 
 	var self = this;
-  var i = 0;
-  var missing = [];
-  var unloadable = [];
   var options = this.options;
 
-  var fnMissing = function() {
-    if (missing.length > 0 && confirm("Skeletons " + missing.join(', ') + " do not exist. Remove them from selections?")) {
-      SkeletonListSources.removeSkeletons(missing);
-    }
-    if (unloadable.length > 0) {
-      alert("Could not load skeletons: " + unloadable.join(', '));
-    }
-  };
-
-  var fn = function(skeleton_id) {
-    // NOTE: cannot use 'submit': on error, it would abort the chain of calls and show an alert
-    requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json', 'POST', {lean: options.lean_mode ? 1 : 0},
-        function(status, text) {
-          try {
-            if (200 === status) {
-              var json = $.parseJSON(text);
-              if (json.error) {
-                // e.g. the skeleton as listed in the selection table does not exist in the database
-                console.log(json.error);
-                self.space.removeSkeleton(skeleton_id);
-                if (0 === json.error.indexOf("Skeleton #" + skeleton_id + " doesn't exist")) {
-                  missing.push(skeleton_id);
-                } else {
-                  unloadable.push(skeleton_id);
-                }
-              } else {
-                var sk = self.space.updateSkeleton(models[skeleton_id], json, options);
-                if (sk) sk.show(self.options);
-              }
-            } else {
-              unloadable.push(skeleton_id);
-            }
-            i += 1;
-            $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
-            if (i < skeleton_ids.length) {
-              fn(skeleton_ids[i]);
-            } else {
-              if (self.options.connector_filter) self.refreshRestrictedConnectors();
-              else self.space.render();
-              if (callback) {
-                try { callback(); } catch (e) { alert(e); }
-              }
-              if (skeleton_ids.length > 1) {
-                $.unblockUI();
-              }
-              fnMissing();
-            }
-          } catch(e) {
-            $.unblockUI();
-            console.log(e, e.stack);
-            growlAlert("ERROR", "Problem loading skeleton " + skeleton_id);
-            fnMissing();
-          }
-        });
-  };
-  if (skeleton_ids.length > 1) {
-    $.blockUI({message: '<img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> <h2>Loading skeletons <div id="counting-loaded-skeletons">0 / ' + skeleton_ids.length + '</div></h2>'});
-  }
-  fn(skeleton_ids[0]);
+  fetchCompactSkeletons(
+      skeleton_ids,
+      options.lean_mode,
+      function(skeleton_id, json) {
+        var sk = self.space.updateSkeleton(models[skeleton_id], json, options);
+        if (sk) sk.show(self.options);
+      },
+      function(skeleton_id) {
+        // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
+      },
+      function() {
+        // Done:
+        if (self.options.connector_filter) self.refreshRestrictedConnectors();
+        else self.space.render();
+        if (callback) {
+          try { callback(); } catch (e) { alert(e); }
+        }
+      });
 };
 
 /** Reload skeletons from database. */

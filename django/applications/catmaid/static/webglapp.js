@@ -1633,9 +1633,26 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     if (-1 !== options.shading_method.lastIndexOf('centrality')) {
       // Darken the skeleton based on the betweenness calculation.
-      var c = (0 === options.shading_method.indexOf('betweenness')) ?
-          arbor.betweennessCentrality(true) // betweenness_centrality
-        : arbor.slabCentrality(true); // branch_centrality
+      var c;
+      if (0 === options.shading_method.indexOf('betweenness')) {
+        c = arbor.betweennessCentrality(true);
+      } else if (0 === options.shading_method.indexOf('slab')) {
+        c = arbor.slabCentrality(true); // branch centrality
+      } else {
+        // Flow centrality
+        var io = this.synapticTypes.map(function(type) {
+          var vs = this.geometry[type].vertices,
+              m = {};
+          for (var i=0, l=vs.length; i<l; i+=2) {
+            var treenode_id = vs[i+1].node_id,
+                count = m[treenode_id];
+            if (undefined === count) m[treenode_id] = 1;
+            else m[treenode_id] = count + 1;
+          }
+          return m;
+        }, this);
+        c = arbor.flowCentrality(io[0], io[1]);
+      }
 
       var node_ids = Object.keys(c),
           max = node_ids.reduce(function(a, node_id) {

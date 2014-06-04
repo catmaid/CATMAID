@@ -212,7 +212,7 @@ MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions
     return new THREE.Vector3(c.x, c.y, c.z);
   }
   if ('Highest centrality node' === center_mode) {
-    var c = arbor.betweenness_centrality(true),
+    var c = arbor.betweennessCentrality(true),
         sorted = Object.keys(c).sort(function(a, b) {
           var c1 = c[a],
               c2 = c[b];

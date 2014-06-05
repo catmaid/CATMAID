@@ -446,6 +446,16 @@ var tracingWindowActions = [
   }),
 
   new Action({
+      helpText: "Morphology Plot",
+      buttonID: "data_button_morphology_plot",
+      buttonName: 'morphology_plot',
+      run: function (e) {
+          WindowMaker.create('morphology-plot');
+          return true;
+      }
+  }),
+
+  new Action({
       helpText: "Selection Table",
       buttonID: "data_button_neuron_staging_area_widget",
       buttonName: 'neuron_staging',

@@ -827,11 +827,6 @@ SelectionTable.prototype.measure = function() {
     });
 };
 
-SelectionTable.prototype.annotate_skeleton_list = function() {
-  var skeleton_ids = this.getSelectedSkeletons();
-  NeuronAnnotations.prototype.annotate_neurons_of_skeletons(skeleton_ids);
-};
-
 /** Filtering by an empty text resets to no filtering. */
 SelectionTable.prototype.filterBy = function(text) {
   if (!text || 0 === text.length) {

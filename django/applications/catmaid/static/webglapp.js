@@ -376,70 +376,26 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
   if (0 === skeleton_ids.length) return;
 
 	var self = this;
-  var i = 0;
-  var missing = [];
-  var unloadable = [];
   var options = this.options;
 
-  var fnMissing = function() {
-    if (missing.length > 0 && confirm("Skeletons " + missing.join(', ') + " do not exist. Remove them from selections?")) {
-      SkeletonListSources.removeSkeletons(missing);
-    }
-    if (unloadable.length > 0) {
-      alert("Could not load skeletons: " + unloadable.join(', '));
-    }
-  };
-
-  var fn = function(skeleton_id) {
-    // NOTE: cannot use 'submit': on error, it would abort the chain of calls and show an alert
-    requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json', 'POST', {lean: options.lean_mode ? 1 : 0},
-        function(status, text) {
-          try {
-            if (200 === status) {
-              var json = $.parseJSON(text);
-              if (json.error) {
-                // e.g. the skeleton as listed in the selection table does not exist in the database
-                console.log(json.error);
-                self.space.removeSkeleton(skeleton_id);
-                if (0 === json.error.indexOf("Skeleton #" + skeleton_id + " doesn't exist")) {
-                  missing.push(skeleton_id);
-                } else {
-                  unloadable.push(skeleton_id);
-                }
-              } else {
-                var sk = self.space.updateSkeleton(models[skeleton_id], json, options);
-                if (sk) sk.show(self.options);
-              }
-            } else {
-              unloadable.push(skeleton_id);
-            }
-            i += 1;
-            $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
-            if (i < skeleton_ids.length) {
-              fn(skeleton_ids[i]);
-            } else {
-              if (self.options.connector_filter) self.refreshRestrictedConnectors();
-              else self.space.render();
-              if (callback) {
-                try { callback(); } catch (e) { alert(e); }
-              }
-              if (skeleton_ids.length > 1) {
-                $.unblockUI();
-              }
-              fnMissing();
-            }
-          } catch(e) {
-            $.unblockUI();
-            console.log(e, e.stack);
-            growlAlert("ERROR", "Problem loading skeleton " + skeleton_id);
-            fnMissing();
-          }
-        });
-  };
-  if (skeleton_ids.length > 1) {
-    $.blockUI({message: '<img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> <h2>Loading skeletons <div id="counting-loaded-skeletons">0 / ' + skeleton_ids.length + '</div></h2>'});
-  }
-  fn(skeleton_ids[0]);
+  fetchCompactSkeletons(
+      skeleton_ids,
+      options.lean_mode,
+      function(skeleton_id, json) {
+        var sk = self.space.updateSkeleton(models[skeleton_id], json, options);
+        if (sk) sk.show(self.options);
+      },
+      function(skeleton_id) {
+        // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
+      },
+      function() {
+        // Done:
+        if (self.options.connector_filter) self.refreshRestrictedConnectors();
+        else self.space.render();
+        if (callback) {
+          try { callback(); } catch (e) { alert(e); }
+        }
+      });
 };
 
 /** Reload skeletons from database. */
@@ -1677,9 +1633,26 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     if (-1 !== options.shading_method.lastIndexOf('centrality')) {
       // Darken the skeleton based on the betweenness calculation.
-      var c = (0 === options.shading_method.indexOf('betweenness')) ?
-          arbor.betweennessCentrality(true) // betweenness_centrality
-        : arbor.slabCentrality(true); // branch_centrality
+      var c;
+      if (0 === options.shading_method.indexOf('betweenness')) {
+        c = arbor.betweennessCentrality(true);
+      } else if (0 === options.shading_method.indexOf('slab')) {
+        c = arbor.slabCentrality(true); // branch centrality
+      } else {
+        // Flow centrality
+        var io = this.synapticTypes.map(function(type) {
+          var vs = this.geometry[type].vertices,
+              m = {};
+          for (var i=0, l=vs.length; i<l; i+=2) {
+            var treenode_id = vs[i+1].node_id,
+                count = m[treenode_id];
+            if (undefined === count) m[treenode_id] = 1;
+            else m[treenode_id] = count + 1;
+          }
+          return m;
+        }, this);
+        c = arbor.flowCentrality(io[0], io[1]);
+      }
 
       var node_ids = Object.keys(c),
           max = node_ids.reduce(function(a, node_id) {

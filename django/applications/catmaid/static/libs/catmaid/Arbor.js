@@ -159,6 +159,20 @@ Arbor.prototype.allSuccessors = function() {
 	}, {});
 };
 
+/** Finds the next branch node, starting at node (inclusive).
+ *  Assumes the node belongs to the arbor.
+ *  Returns null when no branches are found. */
+Arbor.prototype.nextBranchNode = function(node) {
+  var all_succ = this.allSuccessors(),
+      succ  = all_succ[node];
+  while (1 === succ.length) {
+    node = succ[0];
+    succ = all_succ[node];
+  }
+  if (all_succ[node].length > 1) return node;
+  return null;
+};
+
 /** Return an object with each nodes as keys and arrays of children plus the parent as values, or an empty array for an isolated root node. Runs in O(2n) time.*/
 Arbor.prototype.allNeighbors = function() {
 	var edges = this.edges,
@@ -653,4 +667,144 @@ Arbor.prototype.strahlerAnalysis = function() {
     }
 
     return strahler;
+};
+
+
+/**
+ * Perform Sholl analysis: returns two arrays, paired by index, of radius length and the corresponding number of cable crossings,
+ * sampled every radius_increment.
+ *
+ * E.g.:
+ *
+ * {radius:   [0.75, 1.5, 2.25, 3.0],
+ *  crossings:[   3,   2,    1,   1]}
+ *
+ * A segment of cable defined two nodes that hold a parent-child relationship is considered to be crossing a sampling radius if the distance from the center for one of them is beyond the radius, and below for the other.
+ *
+ * Notice that if parent-child segments are longer than radius-increment in the radial direction, some parent-child segments will be counted more than once, which is correct.
+ *
+ * radius_increment: distance between two consecutive samplings.
+ * distanceToCenterFn: determines the distance of a node from the origin of coordinates, in the same units as the radius_increment.
+ */
+Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
+    // Create map of radius index to number of crossings.
+    // (The index, being an integer, is a far safer key for a map than the distance as floating-point.)
+    var indexMap = Object.keys(this.edges).reduce((function(sholl, child) {
+        // Compute distance of both parent and child to the center
+        // and then divide by radius_increment and find out
+        // which boundaries are crossed, and accumulate the cross counts in sholl.
+        var paren = this.edges[child],
+            dc = this.cache[child],
+            dp = this.cache[paren];
+        if (undefined === dc) this.cache[child] = dc = distanceToCenterFn(child);
+        if (undefined === dp) this.cache[paren] = dp = distanceToCenterFn(paren);
+        var index = Math.floor(Math.min(dc, dp) / radius_increment) + 1,
+            next = Math.round(Math.max(dc, dp) / radius_increment + 0.5); // proper ceil
+        while (index < next) {
+            var count = sholl[index];
+            if (undefined === count) sholl[index] = 1;
+            else sholl[index] += 1;
+            ++index;
+        }
+        return sholl;
+    }).bind({edges: this.edges,
+             cache: {}}), {});
+
+    // Convert indices to distances
+    return Object.keys(indexMap).reduce(function(o, index) {
+        o.radius.push(index * radius_increment);
+        o.crossings.push(indexMap[index]);
+        return o;
+    }, {radius: [], crossings: []});
+};
+
+
+/**
+ * Return two correlated arrays, one with bin starting position and the other
+ * with the quantity of nodes whose position falls within the bin.
+ *
+ * Bins have a size of radius_increment.
+ *
+ * Only nodes included in the map of positions will be measured. This enables
+ * computing Sholl for e.g. only branch and end nodes, or only for nodes with synapses.
+ *
+ * center: an object with a distanceTo method, like THREE.Vector3.
+ * radius_increment: difference between the radius of a sphere and that of the next sphere.
+ * positions: map of node ID vs objects like THREE.Vector3.
+ * fnCount: a function to e.g. return 1 when counting, or the length of a segment when measuring cable.
+ */
+Arbor.prototype.radialDensity = function(center, radius_increment, positions, fnCount) {
+    var density = this.nodesArray().reduce(function(bins, node) {
+        var p = positions[node];
+        // Ignore missing nodes
+        if (undefined === p) return bins;
+        var index = Math.floor(center.distanceTo(p) / radius_increment),
+            count = bins[index];
+        if (undefined === count) bins[index] = fnCount(node);
+        else bins[index] += fnCount(node);
+        return bins;
+    }, {});
+
+    // Convert indices to distances
+    return Object.keys(density).reduce(function(o, index) {
+        o.bins.push(index * radius_increment);
+        o.counts.push(density[index]);
+        return o;
+    }, {bins: [], counts: []});
+};
+
+/** Return a map of node vs number of paths from any node in the set of inputs to any node in the set of outputs.
+ *  outputs: a map of node keys vs number of outputs at the node.
+ *  inputs: a map of node keys vs number of inputs at the node. */
+Arbor.prototype.flowCentrality = function(outputs, inputs) {
+    var totalOutputs = Object.keys(outputs).reduce(function(sum, node) {
+        return sum + outputs[node];
+    }, 0);
+
+    var totalInputs = Object.keys(inputs).reduce(function(sum, node) {
+        return sum + inputs[node];
+    }, 0);
+
+    if (0 === totalOutputs || 0 === totalInputs) {
+        // Not computable
+        return null;
+    }
+
+    // If the root node is a branch, reroot at the first end node found
+    var arbor = this,
+        be = arbor.findBranchAndEndNodes();
+    if (-1 !== be.branching.indexOf(arbor.root)) {
+        arbor = arbor.clone();
+        arbor.reroot(be.ends[0]);
+    }
+
+    var cs = arbor.nodesArray().reduce(function(o, node) {
+        var n_inputs = inputs[node],
+            n_outputs = outputs[node];
+        o[node] = {inputs: undefined === n_inputs ? 0 : n_inputs,
+                   outputs: undefined === n_outputs ? 0 : n_outputs,
+                   seenInputs: 0,
+                   seenOutputs: 0};
+        return o;
+    }, {});
+
+    var centrality = {};
+
+    // Traverse all partitions counting synapses seen
+    arbor.partitionSorted().forEach(function(partition) {
+        var seenI = 0,
+            seenO = 0;
+        partition.forEach(function(node) {
+            var counts = cs[node];
+            seenI += counts.inputs + counts.seenInputs;
+            seenO += counts.outputs + counts.seenOutputs;
+            counts.seenInputs = seenI;
+            counts.seenOutputs = seenO;
+            var nPossibleIOPaths = counts.seenInputs  * (totalOutputs - counts.seenOutputs)
+                                 + counts.seenOutputs * (totalInputs - counts.seenInputs);
+            centrality[node] = nPossibleIOPaths / totalOutputs;
+        });
+    });
+
+    return centrality;
 };

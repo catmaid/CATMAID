@@ -116,6 +116,16 @@ SkeletonSource.prototype.getLinkTarget = function() {
 	return this.linkTarget;
 };
 
+SkeletonSource.prototype.getSelectedSkeletons = function() {
+    return Object.keys(this.getSelectedSkeletonModels());
+};
+
+SkeletonSource.prototype.annotate_skeleton_list = function() {
+  NeuronAnnotations.prototype.annotate_neurons_of_skeletons(this.getSelectedSkeletons());
+};
+
+
+
 // A prototype for a manager of existing skeleton sources
 var SkeletonSourceManager = function() {
 	this.sources = {};
@@ -866,4 +876,68 @@ var parseColorWheel = function(color) {
   return new THREE.Color().setRGB(parseInt(color.r) / 255.0,
                                   parseInt(color.g) / 255.0,
                                   parseInt(color.b) / 255.0);
+};
+
+/** Load each skeleton from the skeleton_ids array one by one, invoking the fnLoadedOne
+ * with the ID and the corresponding JSON.
+ * If some skeletons fail to load (despite existing), the fnFailedLoading will be invoked with the ID.
+ * Finally when all are loaded, fnDone is invoked without arguments.
+ *
+ * Additionally, when done if any skeletons don't exist anymore, a dialog will ask to remove them from all widgets that are skeleton sources.*/
+var fetchCompactSkeletons = function(skeleton_ids, lean_mode, fnLoadedOne, fnFailedLoading, fnDone) {
+  var i = 0,
+      missing = [],
+      unloadable = [],
+      fnMissing = function() {
+        if (missing.length > 0 && confirm("Skeletons " + missing.join(', ') + " do not exist. Remove them from selections?")) {
+          SkeletonListSources.removeSkeletons(missing);
+        }
+        if (unloadable.length > 0) {
+          alert("Could not load skeletons: " + unloadable.join(', '));
+        }
+      },
+      post = {lean: lean_mode ? 1 : 0},
+      loadOne = function(skeleton_id) {
+        requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json', 'POST', post,
+            function(status, text) {
+              try {
+                if (200 === status) {
+                  var json = $.parseJSON(text);
+                  if (json.error) {
+                    if (0 === json.error.indexOf("Skeleton #" + skeleton_id + " doesn't exist")) {
+                      missing.push(skeleton_id);
+                    } else {
+                      unloadable.push(skeleton_id);
+                    }
+                    fnFailedLoading(skeleton_id);
+                  } else {
+                    fnLoadedOne(skeleton_id, json);
+                  }
+                } else {
+                  unloadable.push(skeleton_id);
+                  fnFailedLoading(skeleton_id);
+                }
+                // Next iteration
+                i += 1;
+                $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
+                if (i < skeleton_ids.length) {
+                  loadOne(skeleton_ids[i]);
+                } else {
+                  fnDone();
+                }
+              } catch (e) {
+                console.log(e, e.stack);
+                growlAlert("ERROR", "Problem loading skeleton " + skeleton_id);
+              } finally {
+                if (skeleton_ids.length > 1) {
+                  $.unblockUI();
+                }
+                fnMissing();
+              }
+            });
+      };
+  if (skeleton_ids.length > 1) {
+    $.blockUI({message: '<img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> <h2>Loading skeletons <div id="counting-loaded-skeletons">0 / ' + skeleton_ids.length + '</div></h2>'});
+  }
+  loadOne(skeleton_ids[0]);
 };

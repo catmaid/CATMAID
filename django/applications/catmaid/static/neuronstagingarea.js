@@ -772,7 +772,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       .css("background-color", '#' + skeleton.color.getHexString())
   );
   td.append(
-    $('<div id="color-wheel' + widgetID + '-' + skeleton.id + '"><div class="colorwheel' + skeleton.id + '"></div></div>')
+    $('<div id="color-wheel' + widgetID + '-' + skeleton.id + '"><div class="colorwheel' + skeleton.id + '"></div></div>').hide()
   );
   td.append(
     $(document.createElement("button")).attr({

@@ -264,7 +264,7 @@ MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions
               c2 = c[b];
           return c1 === c2 ? 0 : (c1 > c2 ? 1 : -1);
         }),
-        highest = sorted[sorted.length / 2];
+        highest = sorted[Math.floor(sorted.length / 2)];
     return positions[highest];
   }
   if ('Highest signal flow centrality' === center_mode) {
@@ -282,7 +282,7 @@ MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions
               c2 = c[b];
           return c1 === c2 ? 0 : (c1 > c2 ? 1 : -1);
         }),
-        highest = sorted[sorted.length / 2],
+        highest = sorted[Math.floor(sorted.length / 2)],
         max = c[highest],
         identical = sorted.filter(function(node) {
           return max === c[node];

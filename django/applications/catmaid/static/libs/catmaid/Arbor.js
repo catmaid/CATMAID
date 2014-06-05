@@ -731,16 +731,17 @@ Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
  * center: an object with a distanceTo method, like THREE.Vector3.
  * radius_increment: difference between the radius of a sphere and that of the next sphere.
  * positions: map of node ID vs objects like THREE.Vector3.
+ * fnCount: a function to e.g. return 1 when counting, or the length of a segment when measuring cable.
  */
-Arbor.prototype.radialDensity = function(center, radius_increment, positions) {
-    var density = this.nodesArray.reduce(function(bins, node) {
+Arbor.prototype.radialDensity = function(center, radius_increment, positions, fnCount) {
+    var density = this.nodesArray().reduce(function(bins, node) {
         var p = positions[node];
         // Ignore missing nodes
         if (undefined === p) return bins;
         var index = Math.floor(center.distanceTo(p) / radius_increment),
             count = bins[index];
-        if (undefined === count) bins[index] = 1;
-        else bins[index] += 1;
+        if (undefined === count) bins[index] = fnCount(node);
+        else bins[index] += fnCount(node);
         return bins;
     }, {});
 
@@ -748,6 +749,7 @@ Arbor.prototype.radialDensity = function(center, radius_increment, positions) {
     return Object.keys(density).reduce(function(o, index) {
         o.bins.push(index * radius_increment);
         o.counts.push(density[index]);
+        return o;
     }, {bins: [], counts: []});
 };
 

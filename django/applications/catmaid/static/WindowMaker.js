@@ -1036,6 +1036,22 @@ var WindowMaker = new function()
     annotate.onclick = MA.annotate_skeleton_list.bind(MA);
     buttons.appendChild(annotate);
 
+    buttons.appendChild(document.createTextNode(' - '));
+
+    var csv = document.createElement('input');
+    csv.setAttribute("type", "button");
+    csv.setAttribute("value", "Export CSV");
+    csv.onclick = MA.exportCSV.bind(MA);
+    buttons.appendChild(csv);
+
+    var svg = document.createElement('input');
+    svg.setAttribute("type", "button");
+    svg.setAttribute("value", "Export SVG");
+    svg.onclick = MA.exportSVG.bind(MA);
+    buttons.appendChild(svg);
+
+    buttons.appendChild(document.createElement('br'));
+
     appendSelect(buttons, "function",
         ['Sholl analysis',
          'Radial density of cable',
@@ -1049,6 +1065,7 @@ var WindowMaker = new function()
     radius.setAttribute("id", "morphology_plot_step" + MA.widgetID);
     radius.setAttribute("type", "text");
     radius.setAttribute("value", "1000");
+    radius.style.width = "40px";
     buttons.appendChild(radius);
 
     buttons.appendChild(document.createTextNode(' Center: '));
@@ -1066,18 +1083,6 @@ var WindowMaker = new function()
     redraw.setAttribute("value", "Draw");
     redraw.onclick = MA.redraw.bind(MA);
     buttons.appendChild(redraw);
-
-    var csv = document.createElement('input');
-    csv.setAttribute("type", "button");
-    csv.setAttribute("value", "Export CSV");
-    csv.onclick = MA.exportCSV.bind(MA);
-    buttons.appendChild(csv);
-
-    var svg = document.createElement('input');
-    svg.setAttribute("type", "button");
-    svg.setAttribute("value", "Export SVG");
-    svg.onclick = MA.exportSVG.bind(MA);
-    buttons.appendChild(svg);
 
     content.appendChild(buttons);
 

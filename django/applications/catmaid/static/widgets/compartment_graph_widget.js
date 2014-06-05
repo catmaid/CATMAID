@@ -929,7 +929,6 @@ GroupGraph.prototype.appendGroup = function(models) {
     options.appendMessage("Choose group color:");
     var display = document.createElement('input');
     display.setAttribute('type', 'button');
-    display.setAttribute('id', 'gg-color');
     display.setAttribute('value', 'Color');
     var default_color = '#aaaaff';
     $(display).css("background-color", default_color);

@@ -160,11 +160,6 @@ MorphologyPlot.prototype._populateLine = function(skeleton_id) {
   });
   var center = this._computeCenter(this.center_mode, arbor, positions, line.connectors);
 
-  console.log(center);
-  console.log(arbor);
-  console.log(this.radius_increment);
-
-
   if ('Sholl analysis' === this.mode) {
     var distanceToCenterFn = function(node) {
       return center.distanceTo(positions[node]);
@@ -172,10 +167,55 @@ MorphologyPlot.prototype._populateLine = function(skeleton_id) {
     var sholl = arbor.sholl(this.radius_increment, distanceToCenterFn);
     line.x = sholl.radius;
     line.y = sholl.crossings;
-    console.log(sholl);
+    return;
   }
 
-  // TODO other modes
+  if (0 === this.mode.indexOf('Radial density')) {
+    var endsWith = function(s, suffix) {
+      return -1 !== s.indexOf(suffix, s.length - suffix.length);
+    }
+
+    var ps = positions;
+
+    if (endsWith(this.mode, 'ends')) {
+      ps = arbor.findEndNodes().reduce(function(o, node) {
+        o[node] = positions[node];
+        return o;
+      }, {});
+    } else if (endsWith(this.mode, 'branch nodes')) {
+      ps = arbor.findBranchNodes().reduce(function(o, node) {
+        o[node] = positions[node];
+        return o;
+      }, {});
+    } else if (endsWith(this.mode, 'input synapses')) {
+      ps = line.connectors.reduce(function(o, row) {
+        if (1 === row[2]) o[row[0]] = positions[row[0]];
+        return o;
+      }, {});
+    } else if (endsWith(this.mode, 'output synapses')) {
+      ps = line.connectors.reduce(function(o, row) {
+        if (0 === row[2]) o[row[0]] = positions[row[0]];
+        return o;
+      }, {});
+    }
+    
+    var fnCount;
+
+    if (endsWith(this.mode, 'cable')) {
+      // Approximate by assuming that parent and child fall within the same bin
+      fnCount = function(node) {
+        if (arbor.root === node) return 0;
+        // distance from child to parent
+        return positions[node].distanceTo(positions[arbor.edges[node]]);
+      };
+    } else {
+      fnCount = function() { return 1; };
+    }
+
+    var density = arbor.radialDensity(center, this.radius_increment, ps, fnCount);
+    line.x = density.bins;
+    line.y = density.counts;
+  }
 };
 
 MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions, connectors) {
@@ -247,7 +287,6 @@ MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions
   }
 };
 
-// TODO abstract from CircuitGraphPlot
 MorphologyPlot.prototype.draw = function() {
   var containerID = '#morphology_plot_div' + this.widgetID,
       container = $(containerID);

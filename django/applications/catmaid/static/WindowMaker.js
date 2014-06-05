@@ -1039,7 +1039,7 @@ var WindowMaker = new function()
     appendSelect(buttons, "function",
         ['Sholl analysis',
          'Radial density of cable',
-         'Radial density of branch points',
+         'Radial density of branch nodes',
          'Radial density of ends',
          'Radial density of input synapses',
          'Radial density of output synapses']);

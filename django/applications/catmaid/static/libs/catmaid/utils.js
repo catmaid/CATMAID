@@ -941,3 +941,14 @@ var fetchCompactSkeletons = function(skeleton_ids, lean_mode, fnLoadedOne, fnFai
   }
   loadOne(skeleton_ids[0]);
 };
+
+var saveDivSVG = function(divID, filename) {
+  var div = document.getElementById(divID);
+  if (!div) return; 
+  var svg = div.getElementsByTagName('svg');
+  if (svg && svg.length > 0) {
+    var xml = new XMLSerializer().serializeToString(svg[0]);
+    var blob = new Blob([xml], {type : 'text/xml'});
+    saveAs(blob, filename);
+  }
+};

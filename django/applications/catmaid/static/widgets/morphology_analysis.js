@@ -159,6 +159,10 @@ MorphologyPlot.prototype._populateLine = function(skeleton_id) {
     }
   });
   var center = this._computeCenter(this.center_mode, arbor, positions, line.connectors);
+  if (center.error) {
+    growlAlert('WARNING', center.error + " for " + neuronNameService.getName(skeleton_id));
+    center = this._computeCenter(center.alternative_mode, arbor, positions, line.connectors);
+  }
 
   if ('Sholl analysis' === this.mode) {
     var distanceToCenterFn = function(node) {
@@ -276,6 +280,10 @@ MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions
       else a[node] = count + 1;
       return o;
     }, [{}, {}]); // 0 for pre, 1 for post
+    if (0 === Object.keys(io[0]).length || 0 === Object.keys(io[1]).length) {
+      return {error: 'No input or output synapses',
+              alternative_mode: 'First branch node'};
+    }
     var c = arbor.flowCentrality(io[0], io[1]),
         sorted = Object.keys(positions).sort(function(a, b) {
           var c1 = c[a],
@@ -327,10 +335,12 @@ MorphologyPlot.prototype.draw = function() {
       yMax = 0,
       data = Object.keys(this.lines).map(function(id) {
         var line = this.lines[id];
-        xMin = Math.min(xMin, d3.min(line.x));
-        xMax = Math.max(xMax, d3.max(line.x));
-        yMin = Math.min(yMin, d3.min(line.y));
-        yMax = Math.max(yMax, d3.max(line.y));
+        if (line.x.length > 0 && line.y.length > 0) {
+          xMin = Math.min(xMin, d3.min(line.x));
+          xMax = Math.max(xMax, d3.max(line.x));
+          yMin = Math.min(yMin, d3.min(line.y));
+          yMax = Math.max(yMax, d3.max(line.y));
+        }
         return {id: id,
                 name: neuronNameService.getName(id),
                 hex: '#' + this.models[id].color.getHexString(),

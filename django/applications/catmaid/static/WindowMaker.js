@@ -1067,6 +1067,12 @@ var WindowMaker = new function()
     redraw.onclick = MA.redraw.bind(MA);
     buttons.appendChild(redraw);
 
+    var csv = document.createElement('input');
+    csv.setAttribute("type", "button");
+    csv.setAttribute("value", "Export CSV");
+    csv.onclick = MA.exportCSV.bind(MA);
+    buttons.appendChild(csv);
+
     content.appendChild(buttons);
 
     var container = createContainer('morphology_plot_div' + MA.widgetID);

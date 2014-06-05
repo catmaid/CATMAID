@@ -421,3 +421,40 @@ MorphologyPlot.prototype.draw = function() {
   this.svg = svg;
 };
 
+MorphologyPlot.prototype.createCSV = function() {
+  // Find minimum and maximum values in the X axis
+  var skids = Object.keys(this.lines);
+  if (0 === skids.length) return;
+
+  var xs = skids.reduce((function(o, skid) {
+    return this.lines[skid].x.reduce(function(o, v) {
+      o[v] = true;
+      return o;
+    }, o);
+  }).bind(this), {});
+
+  var xAxis = Object.keys(xs).map(Number).sort(function(a, b) {
+    return a === b ? 0 : (a < b ? -1 : 1);
+  });
+
+  var csv = [this.mode + ',' + xAxis.join(',')].concat(skids.map(
+        function(skid) {
+          var line = this.lines[skid],
+              values = line.x.reduce(
+                function(v, x, i) {
+                  v[x] = line.y[i];
+                  return v;
+                }, {});
+           return neuronNameService.getName(skid) + ',' + xAxis.map(
+             function(x) {
+               var v = values[x];
+               return undefined === v ? 0 : v;
+             }).join(',');
+        }, this));
+  return csv.join('\n');
+};
+
+MorphologyPlot.prototype.exportCSV = function() {
+  var blob = new Blob([this.createCSV()], {type : 'text/plain'});
+  saveAs(blob, this.mode.replace(/ /g, '_') + ".csv");
+};

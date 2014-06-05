@@ -1002,7 +1002,7 @@ var WindowMaker = new function()
   
     var MA = new MorphologyPlot();
 
-    var win = new CMWWindow("Analysis of morphology");
+    var win = new CMWWindow(MA.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 

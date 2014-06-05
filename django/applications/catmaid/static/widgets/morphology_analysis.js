@@ -16,7 +16,7 @@ $.extend(MorphologyPlot.prototype, new InstanceRegistry());
 $.extend(MorphologyPlot.prototype, new SkeletonSource());
 
 MorphologyPlot.prototype.getName = function() {
-  return "Circuit Graph Plot " + this.widgetID;
+  return "Morphology Plot " + this.widgetID;
 };
 
 MorphologyPlot.prototype.destroy = function() {
@@ -41,6 +41,10 @@ MorphologyPlot.prototype.hasSkeleton = function(skeleton_id) {
 
 /** Returns a clone of all skeleton models, keyed by skeleton ID. */
 MorphologyPlot.prototype.getSelectedSkeletonModels = function() {
+  return Object.keys(this.models).reduce((function(o, skid) {
+    o[skid] = this.models[skid].clone();
+    return o;
+  }).bind(this), {});
 };
 
 MorphologyPlot.prototype.getSkeletonModels = function() {
@@ -96,6 +100,8 @@ MorphologyPlot.prototype.append = function(models) {
   var skeleton_ids = Object.keys(newIDs);
 
   if (0 === skeleton_ids.length) {
+    // Update colors, names, etc.
+    this.draw();
     return;
   }
 

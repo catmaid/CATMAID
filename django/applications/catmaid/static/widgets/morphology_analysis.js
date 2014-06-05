@@ -282,7 +282,22 @@ MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions
               c2 = c[b];
           return c1 === c2 ? 0 : (c1 > c2 ? 1 : -1);
         }),
-        highest = sorted[sorted.length / 2];
+        highest = sorted[sorted.length / 2],
+        max = c[highest],
+        identical = sorted.filter(function(node) {
+          return max === c[node];
+        });
+    if (identical.length > 1) {
+      // Pick the most central
+      var bc = arbor.betweennessCentrality(true);
+      identical.sort(function(a, b) {
+        var c1 = bc[a],
+            c2 = bc[b];
+        // Sort descending
+        return c1 == c2 ? 0 : (c1 < c2 ? 1 : -1);
+      });
+      highest = identical[0];
+    }
     return positions[highest];
   }
 };

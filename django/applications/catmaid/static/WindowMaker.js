@@ -1053,9 +1053,9 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createTextNode(' Center: '));
     appendSelect(buttons, "center",
-        ['Root node',
+        ['First branch node',
+         'Root node',
          'Active node',
-         'First branch node',
          'Bounding box center',
          'Average node position',
          'Highest centrality node',

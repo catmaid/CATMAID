@@ -667,14 +667,7 @@ CircuitGraphPlot.prototype.highlight = function() {
 };
 
 CircuitGraphPlot.prototype.exportSVG = function() {
-  var div = document.getElementById('circuit_graph_plot_div' + this.widgetID);
-  if (!div) return; 
-  var svg = div.getElementsByTagName('svg');
-  if (svg && svg.length > 0) {
-    var xml = new XMLSerializer().serializeToString(svg[0]);
-    var blob = new Blob([xml], {type : 'text/xml'});
-    saveAs(blob, "circuit_plot.svg");
-  }
+  saveDivSVG('circuit_graph_plot_div' + this.widgetID, "circuit_plot.svg");
 };
 
 CircuitGraphPlot.prototype.exportCSV = function() {

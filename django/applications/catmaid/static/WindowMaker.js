@@ -1073,6 +1073,12 @@ var WindowMaker = new function()
     csv.onclick = MA.exportCSV.bind(MA);
     buttons.appendChild(csv);
 
+    var svg = document.createElement('input');
+    svg.setAttribute("type", "button");
+    svg.setAttribute("value", "Export SVG");
+    svg.onclick = MA.exportSVG.bind(MA);
+    buttons.appendChild(svg);
+
     content.appendChild(buttons);
 
     var container = createContainer('morphology_plot_div' + MA.widgetID);

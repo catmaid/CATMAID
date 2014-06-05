@@ -458,3 +458,7 @@ MorphologyPlot.prototype.exportCSV = function() {
   var blob = new Blob([this.createCSV()], {type : 'text/plain'});
   saveAs(blob, this.mode.replace(/ /g, '_') + ".csv");
 };
+
+MorphologyPlot.prototype.exportSVG = function() {
+  saveDivSVG('morphology_plot_div' + this.widgetID, this.mode.replace(/ /g, '_') + ".svg");
+};

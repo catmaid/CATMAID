@@ -1130,6 +1130,10 @@ var WindowMaker = new function()
     svg.onclick = VD.exportSVG.bind(VD);
     buttons.appendChild(svg);
 
+    var sel = document.createElement('span');
+    sel.innerHTML = ' Selected: <span id="venn_diagram_sel' + VD.widgetID + '">none</span>';
+    buttons.appendChild(sel);
+
     content.appendChild(buttons);
 
     var container = createContainer('venn_diagram_div' + VD.widgetID);

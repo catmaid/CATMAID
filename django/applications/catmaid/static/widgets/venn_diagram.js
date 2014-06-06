@@ -49,7 +49,7 @@ VennDiagram.prototype.getSelectedSkeletonModels = function() {
 VennDiagram.prototype.Group = function(models, name, color) {
     this.models = models;
     this.name = name;
-    this.hex = color;
+    this.color = color;
 };
 
 /** Appends skeletons as a group*/
@@ -152,18 +152,31 @@ VennDiagram.prototype.draw = function() {
   var positions;
   if (this.groups.length > 3) positions = venn.venn(this.sets, this.overlaps, {layoutFunction: venn.classicMDSLayout});
   else positions = venn.venn(this.sets, this.overlaps);
+
+  var parameters = {
+      opacity: 0.4,
+      textStrokeColours: function() { return 'none'; },
+      textFillColours: (function(i) {
+          // To psychodelic:
+          // return '#' + this.groups[i].color.clone().offsetHSL(0.5, 0, 0).getHexString();
+          return '#000000';
+        }).bind(this),
+      circleFillColours: (function(i) {
+          return '#' + this.groups[i].color.getHexString();
+        }).bind(this)
+  };
  
-  this.diagram = venn.drawD3Diagram(d3.select(containerID), positions, width, height);
+  this.diagram = venn.drawD3Diagram(d3.select(containerID), positions, width, height, parameters);
 
   var self = this;
 
   this.diagram.circles
     .on("mouseover", function(d, i) {
-        d3.select(this).style("fill-opacity", .8);
+        d3.select(this).style("fill-opacity", 0.8);
         d3.select(this).style("stroke-width", 2);
     })
     .on("mouseout", function(d, i) {
-        d3.select(this).style("fill-opacity", 0.6);
+        d3.select(this).style("fill-opacity", 0.4);
         d3.select(this).style("stroke-width", 0);
     })
     .on("click", function(d, i) {
@@ -182,10 +195,13 @@ VennDiagram.prototype.draw = function() {
         });
 
         self.selected = {};
+        var label = $('#venn_diagram_sel' + self.widgetID);
+        label.empty();
 
         if (1 === intersecting.length) {
             // Single group
             self.selected = self.groups[intersecting[0]].models;
+            label.text(self.sets[intersecting[0]].label);
         } else {
             // Potential intersection (may be false due to layout impossibility)
             var search = self.overlaps.reduce(function(r, overlap) {
@@ -206,18 +222,16 @@ VennDiagram.prototype.draw = function() {
 
             if (search.n_empty === intersecting.length -1 && 0 === Object.keys(search.models).length) {
                 // False intersection, it's a single group
-                self.selected = self.groups[intersecting.filter(function(k) { return k > 0; })[0]].models;
+                var index = intersecting.filter(function(k) { return k > 0; })[0];
+                self.selected = self.groups[index].models;
+                label.text(self.sets[index].label);
             } else {
                 self.selected = search.models;
+                var size = Object.keys(self.selected).length;
+                label.text("intersection with " + size + " neuron" + (1 === size ? "" : "s") + ".");
             }
         }
     });
-
-  // TODO fix the colors
-  this.diagram.svg.selectAll('circle')
-      .each(function(d) {
-          // d has d.name, d.size, d.x, d.y, d.radius
-      });
 };
 
 VennDiagram.prototype.exportSVG = function() {

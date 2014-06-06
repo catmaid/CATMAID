@@ -1651,7 +1651,16 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           }
           return m;
         }, this);
-        c = arbor.flowCentrality(io[0], io[1]);
+        if (0 === Object.keys(io[0]).length || 0 === Object.keys(io[1]).length) {
+          growlAlert('WARNING', 'Neuron "' + this.skeletonmodel.baseName + '" lacks input or output synapses.');
+          c = arbor.nodesArray().reduce(function(o, node) {
+            // All the same
+            o[node] = 1;
+            return o;
+          }, {});
+        } else {
+          c = arbor.flowCentrality(io[0], io[1]);
+        }
       }
 
       var node_ids = Object.keys(c),

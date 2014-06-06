@@ -456,6 +456,16 @@ var tracingWindowActions = [
   }),
 
   new Action({
+      helpText: "Venn Diagram",
+      buttonID: "venn_diagram_button",
+      buttonName: 'venn',
+      run: function (e) {
+          WindowMaker.create('venn-diagram');
+          return true;
+      }
+  }),
+
+  new Action({
       helpText: "Selection Table",
       buttonID: "data_button_neuron_staging_area_widget",
       buttonName: 'neuron_staging',

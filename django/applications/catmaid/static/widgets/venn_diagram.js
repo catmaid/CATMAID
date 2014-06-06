@@ -180,6 +180,20 @@ VennDiagram.prototype.draw = function() {
         d3.select(this).style("stroke-width", 0);
     })
     .on("click", function(d, i) {
+        // Clear selection
+        self.selected = {};
+        var label = $('#venn_diagram_sel' + self.widgetID);
+        label.empty();
+
+        // Check if removing a group
+        if (d3.event.shiftKey) {
+            if (confirm("Remove group '" + self.sets[i].label + "' ?")) {
+               self.groups.splice(i, 1);
+               self.redraw();
+            }
+            return;
+        }
+
         // find circles intersected by the click
         var e = d3.mouse(this),
             x = e[0],
@@ -193,10 +207,6 @@ VennDiagram.prototype.draw = function() {
                 intersecting.push(i);
             }
         });
-
-        self.selected = {};
-        var label = $('#venn_diagram_sel' + self.widgetID);
-        label.empty();
 
         if (1 === intersecting.length) {
             // Single group

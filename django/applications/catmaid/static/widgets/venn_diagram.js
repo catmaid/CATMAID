@@ -90,6 +90,14 @@ VennDiagram.prototype.append = function(models) {
                     visible,
                     label,
                     parseColorWheel(cw.color())));
+
+        // Reorder from large to small, so that small ones end up on top
+        self.groups.sort(function(g1, g2) {
+            var s1 = Object.keys(g1.models).length,
+                s2 = Object.keys(g2.models).length;
+            return s1 === s2 ? 0 : (s1 > s2 ? -1 : 1);
+        });
+
         self.redraw();
     };
 
@@ -113,12 +121,14 @@ VennDiagram.prototype.redraw = function() {
         var s1 = pairs[k].skids;
         for (var j=k+1; j<l; ++j) {
             var m2 = pairs[j].g.models;
-            var common = s1.reduce(function(s, skid1) {
-                if (skid1 in m2) s[skid1] = true;
-                return s;
+            var common = s1.reduce(function(c, skid1) {
+                if (skid1 in m2) c[skid1] = m2[skid1];
+                return c;
             }, {});
-            var n_common = Object.keys(common).length;
-            this.overlaps.push({sets: [k, j], size: n_common}); // can be zero
+            this.overlaps.push({
+                sets: [k, j],
+                size: Object.keys(common).length, // can be zero
+                common: common});
         }
     }
 
@@ -143,12 +153,11 @@ VennDiagram.prototype.draw = function() {
   if (this.groups.length > 3) positions = venn.venn(this.sets, this.overlaps, {layoutFunction: venn.classicMDSLayout});
   else positions = venn.venn(this.sets, this.overlaps);
  
-  var diagram = venn.drawD3Diagram(d3.select(containerID), positions, width, height);
-  this.diagram = diagram;
+  this.diagram = venn.drawD3Diagram(d3.select(containerID), positions, width, height);
 
-  var widgetID = this.widgetID;
+  var self = this;
 
-  diagram.circles
+  this.diagram.circles
     .on("mouseover", function(d, i) {
         d3.select(this).style("fill-opacity", .8);
         d3.select(this).style("stroke-width", 2);
@@ -163,7 +172,7 @@ VennDiagram.prototype.draw = function() {
             x = e[0],
             y = e[1],
             intersecting = [];
-        diagram.svg.selectAll('circle').each(function(circle, i) {
+        self.diagram.svg.selectAll('circle').each(function(circle, i) {
             var dx = circle.x - x,
                 dy = circle.y - y,
                 d = dx * dx + dy * dy;
@@ -171,9 +180,37 @@ VennDiagram.prototype.draw = function() {
                 intersecting.push(i);
             }
         });
-        // TODO:
-        // - add a point, signaling the selected intersection or circle
-        // - pick up the models within the intersection, store them in to this.selected
+
+        self.selected = {};
+
+        if (1 === intersecting.length) {
+            // Single group
+            self.selected = self.groups[intersecting[0]].models;
+        } else {
+            // Potential intersection (may be false due to layout impossibility)
+            var search = self.overlaps.reduce(function(r, overlap) {
+                if (0 === overlap.size) {
+                    r.n_empty += 1;
+                    return r;
+                }
+                if (   -1 !== intersecting.indexOf(overlap.sets[0])
+                    && -1 !== intersecting.indexOf(overlap.sets[1])) {
+                    Object.keys(overlap.common).reduce(function(models, skid) {
+                        models[skid] = overlap.common[skid];
+                        return models;
+                    }, r.models);
+                    return r;
+                }
+                return r;
+            }, {n_empty: 0, models: {}});
+
+            if (search.n_empty === intersecting.length -1 && 0 === Object.keys(search.models).length) {
+                // False intersection, it's a single group
+                self.selected = self.groups[intersecting.filter(function(k) { return k > 0; })[0]].models;
+            } else {
+                self.selected = search.models;
+            }
+        }
     });
 
   // TODO fix the colors

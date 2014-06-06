@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import timedelta, datetime
 from dateutil import parser as dateparser
 
@@ -7,7 +8,8 @@ from django.db.models import Count
 from django.db import connection
 
 from catmaid.control.authentication import requires_user_role
-from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, Review
+from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, \
+    Review, Relation, TreenodeConnector
 
 
 def _process(query, minus1name):
@@ -111,6 +113,39 @@ def stats_history(request, project_id=None):
 
     return HttpResponse(json.dumps(stats), mimetype='text/json')
 
+def stats_user_activity(request, project_id=None):
+    username = request.GET.get('username', None)
+    all_users = User.objects.filter().values('username', 'id')
+    map_name_to_userid = {}
+    for user in all_users:
+        map_name_to_userid[user['username']] = user['id']
+    relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=project_id))
+    # Retrieve all treenodes and creation time
+    stats = Treenode.objects \
+        .filter(
+            project=project_id,
+            user=map_name_to_userid[username] ) \
+        .order_by('creation_time') \
+        .values('creation_time')
+    # Extract the timestamps from the datetime objects
+    timepoints = [time.mktime(ele['creation_time'].timetuple()) for ele in stats]
+    # Retrieve TreenodeConnector creation times
+    stats_prelink = TreenodeConnector.objects \
+        .filter(
+            project=project_id,
+            user=map_name_to_userid[username],
+            relation=relations['presynaptic_to'] ) \
+        .order_by('creation_time').values('creation_time')
+    stats_postlink = TreenodeConnector.objects \
+        .filter(
+            project=project_id,
+            user=map_name_to_userid[username],
+            relation=relations['postsynaptic_to'] ) \
+        .order_by('creation_time').values('creation_time')
+    prelinks = [time.mktime(ele['creation_time'].timetuple()) for ele in stats_prelink]
+    postlinks = [time.mktime(ele['creation_time'].timetuple()) for ele in stats_postlink]
+    return HttpResponse(json.dumps({'skeleton_nodes': timepoints,
+         'presynaptic': prelinks, 'postsynaptic': postlinks}), mimetype='text/json')
 
 def stats_user_history(request, project_id=None):
     # Get the start date for the query, defaulting to 10 days ago.

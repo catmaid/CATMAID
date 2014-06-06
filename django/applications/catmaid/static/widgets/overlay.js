@@ -2046,6 +2046,10 @@ window.OptionsDialog.prototype.show = function(width, height, modal) {
     width: width ? width : 300,
     height: height ? height : 200,
     modal: modal ? modal : true,
+    close: function() {
+      if (self.onCancel) self.onCancel();
+      $(this).dialog("destroy");
+    },
     buttons: {
       "Cancel": function() {
         if (self.onCancel) self.onCancel();

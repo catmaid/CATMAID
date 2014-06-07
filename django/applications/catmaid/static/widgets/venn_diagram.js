@@ -169,6 +169,80 @@ VennDiagram.prototype.draw = function() {
   this.diagram = venn.drawD3Diagram(d3.select(containerID), positions, width, height, parameters);
 
   var self = this;
+    
+  var click = function(d, i) {
+      // Clear selection
+      self.selected = {};
+      var label = $('#venn_diagram_sel' + self.widgetID);
+      label.empty();
+
+      // Check if removing a group
+      if (d3.event.shiftKey) {
+          if (confirm("Remove group '" + self.sets[i].label + "' ?")) {
+             self.groups.splice(i, 1);
+             self.redraw();
+          }
+          return;
+      }
+
+      // find circles intersected by the click
+      var e = d3.mouse(this),
+          x = e[0],
+          y = e[1],
+          intersecting = [];
+      self.diagram.svg.selectAll('circle').each(function(circle, k) {
+          var dx = circle.x - x,
+              dy = circle.y - y,
+              d = dx * dx + dy * dy;
+          if (d < circle.radius * circle.radius) {
+              intersecting.push(k);
+          }
+      });
+
+      if (intersecting.length > 1) {
+          // Potential intersection (may be false due to layout impossibility)
+          var search = self.overlaps.reduce(function(r, overlap) {
+              if (0 === overlap.size) {
+                  r.n_empty += 1;
+                  return r;
+              }
+              if (   -1 !== intersecting.indexOf(overlap.sets[0])
+                  && -1 !== intersecting.indexOf(overlap.sets[1])) {
+                  Object.keys(overlap.common).reduce(function(models, skid) {
+                      models[skid] = overlap.common[skid];
+                      return models;
+                  }, r.models);
+                  return r;
+              }
+              return r;
+          }, {n_empty: 0, models: {}});
+
+          if (search.n_empty === intersecting.length -1 && 0 === Object.keys(search.models).length) {
+              // False intersection, it's a single group
+              intersecting = intersecting.filter(function(k) { return k > 0; });
+          }
+      }
+
+      if (intersecting.length > 1) {
+          self.selected = search.models;
+          var size = Object.keys(self.selected).length;
+          label.text("intersection with " + size + " neuron" + (1 === size ? "" : "s") + ".");
+      } else {
+          // Single group: subtract all its overlaps
+          var k = intersecting[0];
+          self.selected = self.overlaps.reduce(function(s, overlap) {
+              return -1 === overlap.sets.indexOf(k) ?
+                s
+                : Object.keys(overlap.common).reduce(function(s, skid) {
+                    delete s[skid];
+                    return s;
+                }, s);
+          }, $.extend({}, self.groups[k].models));
+
+          var size = Object.keys(self.selected).length;
+          label.text("subset of " + size + " neuron" + (size > 1 ? "s" : "") + " from " + self.groups[k].name + ".");
+      }
+  };
 
   this.diagram.circles
     .on("mouseover", function(d, i) {
@@ -179,78 +253,10 @@ VennDiagram.prototype.draw = function() {
         d3.select(this).style("fill-opacity", 0.4);
         d3.select(this).style("stroke-width", 0);
     })
-    .on("click", function(d, i) {
-        // Clear selection
-        self.selected = {};
-        var label = $('#venn_diagram_sel' + self.widgetID);
-        label.empty();
+    .on("click", click);
 
-        // Check if removing a group
-        if (d3.event.shiftKey) {
-            if (confirm("Remove group '" + self.sets[i].label + "' ?")) {
-               self.groups.splice(i, 1);
-               self.redraw();
-            }
-            return;
-        }
-
-        // find circles intersected by the click
-        var e = d3.mouse(this),
-            x = e[0],
-            y = e[1],
-            intersecting = [];
-        self.diagram.svg.selectAll('circle').each(function(circle, k) {
-            var dx = circle.x - x,
-                dy = circle.y - y,
-                d = dx * dx + dy * dy;
-            if (d < circle.radius * circle.radius) {
-                intersecting.push(k);
-            }
-        });
-
-        if (1 === intersecting.length) {
-            // Single group
-            self.selected = self.overlaps.reduce(function(s, overlap) {
-                return -1 === overlap.sets.indexOf(i) ?
-                  s
-                  : Object.keys(overlap.common).reduce(function(s, skid) {
-                      delete s[skid];
-                      return s;
-                  }, s);
-            }, $.extend({}, self.groups[i].models));
-
-            var size = Object.keys(self.selected).length;
-            label.text("subset of " + size + " neuron" + (size > 1 ? "s" : "") + " from " + self.groups[i].name + ".");
-        } else {
-            // Potential intersection (may be false due to layout impossibility)
-            var search = self.overlaps.reduce(function(r, overlap) {
-                if (0 === overlap.size) {
-                    r.n_empty += 1;
-                    return r;
-                }
-                if (   -1 !== intersecting.indexOf(overlap.sets[0])
-                    && -1 !== intersecting.indexOf(overlap.sets[1])) {
-                    Object.keys(overlap.common).reduce(function(models, skid) {
-                        models[skid] = overlap.common[skid];
-                        return models;
-                    }, r.models);
-                    return r;
-                }
-                return r;
-            }, {n_empty: 0, models: {}});
-
-            if (search.n_empty === intersecting.length -1 && 0 === Object.keys(search.models).length) {
-                // False intersection, it's a single group
-                var index = intersecting.filter(function(k) { return k > 0; })[0];
-                self.selected = self.groups[index].models;
-                label.text(self.sets[index].label);
-            } else {
-                self.selected = search.models;
-                var size = Object.keys(self.selected).length;
-                label.text("intersection with " + size + " neuron" + (1 === size ? "" : "s") + ".");
-            }
-        }
-    });
+  this.diagram.text
+    .on("click", click);
 };
 
 VennDiagram.prototype.exportSVG = function() {

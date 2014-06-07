@@ -199,19 +199,28 @@ VennDiagram.prototype.draw = function() {
             x = e[0],
             y = e[1],
             intersecting = [];
-        self.diagram.svg.selectAll('circle').each(function(circle, i) {
+        self.diagram.svg.selectAll('circle').each(function(circle, k) {
             var dx = circle.x - x,
                 dy = circle.y - y,
                 d = dx * dx + dy * dy;
             if (d < circle.radius * circle.radius) {
-                intersecting.push(i);
+                intersecting.push(k);
             }
         });
 
         if (1 === intersecting.length) {
             // Single group
-            self.selected = self.groups[intersecting[0]].models;
-            label.text(self.sets[intersecting[0]].label);
+            self.selected = self.overlaps.reduce(function(s, overlap) {
+                return -1 === overlap.sets.indexOf(i) ?
+                  s
+                  : Object.keys(overlap.common).reduce(function(s, skid) {
+                      delete s[skid];
+                      return s;
+                  }, s);
+            }, $.extend({}, self.groups[i].models));
+
+            var size = Object.keys(self.selected).length;
+            label.text("subset of " + size + " neuron" + (size > 1 ? "s" : "") + " from " + self.groups[i].name + ".");
         } else {
             // Potential intersection (may be false due to layout impossibility)
             var search = self.overlaps.reduce(function(r, overlap) {

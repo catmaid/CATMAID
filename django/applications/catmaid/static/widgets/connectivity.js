@@ -25,6 +25,13 @@ var SkeletonConnectivity = function() {
   this.hideSingleNodePartners = false;
   // ID of the user who is currently reviewing or null for 'union'
   this.reviewFilter = null;
+  // An object mapping skeleton IDs to their selection state
+  this.skeletonSelection = {};
+  // An object for remembering the selection state of the select-all controls
+  this.selectAllSelection = {
+    'up': false,
+    'down': false,
+  };
 };
 
 SkeletonConnectivity.prototype = {};
@@ -395,6 +402,17 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
                postsynaptic_to: 'presynaptic_to'}[relation];
       $('#' + r + '-show-skeleton-' + widgetID + '-' + skelid).attr('checked', checked);
 
+      // Remember this selection
+      this.skeletonSelection[skelid] = checked;
+
+      // Uncheck the select-all checkbox if it is checked and this checkbox is
+      // now unchecked
+      if (!this.checked) {
+        $('#' + title.toLowerCase() + 'stream-selectall' + widgetID + ':checked')
+            .prop('checked', false);
+      }
+
+      // Tell all linked widgets about this change or return if there are none
       var linkTarget = getLinkTarget();
       if (!linkTarget) return;
 
@@ -493,6 +511,9 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         .css('background-color', getBackgroundColor(average)));
     row.append( $('<td />').text(total_node_count));
     var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
+    if (this.selectAllSelection[title.toLowerCase()]) {
+      el.attr('checked', 'checked');
+    }
     row.append( $('<td />').addClass('input-container').append( el ) );
     thead.append(row);
 
@@ -558,7 +579,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     };
 
     // Create a table row for every partner and remember the ignored ones
-    var filtered = partners.reduce(function(filtered, partner) {
+    var filtered = partners.reduce((function(filtered, partner) {
       // Ignore this line if all its synapse counts are below the threshold. If
       // the threshold is 'undefined', false is returned and to semantics of
       // this test.
@@ -618,12 +639,19 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       input.setAttribute('id', relation + '-show-skeleton-' + widgetID + '-' + partner.id);
       input.setAttribute('type', 'checkbox');
       input.setAttribute('value', partner.id);
-      input.onclick = set_as_selected;
+      input.onclick = set_as_selected.bind(this);
+      if (partner.id in this.skeletonSelection) {
+        if (this.skeletonSelection[partner.id]) {
+          input.setAttribute('checked', 'checked');
+        }
+      } else {
+        this.skeletonSelection[partner.id] = false;
+      }
       td.appendChild(input);
       tr.appendChild(td);
 
       return filtered;
-    }, []);
+    }).bind(this), []);
 
     // If some partners have been filtered (e.g. due to thresholding, hidden
     // one-node-neurons), add another table row to provide information about
@@ -667,7 +695,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   /**
    * Support function to add a 'seclect all' checkbox.
    */
-  var add_select_all_fn = function(name, table, nSkeletons) {
+  var add_select_all_fn = function(widget, name, table, nSkeletons) {
     // Offset of checkbox column due to extra columns.
     var cbOffset = nSkeletons > 1 ? nSkeletons : 0;
     // Assign 'select all' checkbox handler
@@ -675,11 +703,16 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       var rows = table[0].childNodes[1].childNodes; // all tr elements
       var linkTarget = getLinkTarget();
 
+      // Remember the check state of this control
+      widget.selectAllSelection[name] = this.checked;
+
       var skids = [];
       for (var i=rows.length-1; i > -1; --i) {
         var checkbox = rows[i].childNodes[4 + cbOffset].childNodes[0];
         checkbox.checked = this.checked;
-        skids.push(parseInt(checkbox.value));
+        var skid = parseInt(checkbox.value);
+        widget.skeletonSelection[skid] = this.checked;
+        skids.push(skid);
       };
 
       if (this.checked) {
@@ -758,13 +791,28 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       };
     })(this, skid));
 
+    // Make a neuron selected by default
+    if (!(id in this.skeletonSelection)) {
+      this.skeletonSelection[id] = true;
+    }
+
+    // Create a selection checkbox
+    var selectionCb = $('<input />')
+        .attr('id', 'neuron-selector-' + id)
+        .attr('type', 'checkbox')
+        .change(function(widget, neuronId) {
+          return function() {
+            widget.skeletonSelection[neuronId] = this.checked;
+          };
+        }(this, id));
+    if (this.skeletonSelection[id]) {
+        selectionCb.attr('checked', 'checked');
+    }
     // Create and append row for current skeleton
     var row = $('<tr />')
         .append($('<td />').append((i + 1) + '.'))
         .append($('<td />').attr('class', 'input-container')
-            .append($('<input />')
-                .attr('id', 'neuron-selector-' + id)
-                .attr('type', 'checkbox').attr('checked', 'checked')))
+            .append(selectionCb))
         .append($('<td />').append(
             createNameElement(this.skeletons[skid], skid)))
         .append($('<td />').append($upThrSelector)
@@ -889,16 +937,16 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       })(this));
 
   // Create incomining and outgoing tables
-  var table_incoming = create_table(this.ordered_skeleton_ids, this.skeletons,
-      this.upThresholds, to_sorted_array(this.incoming), 'Up', 'presynaptic_to',
-      this.hideSingleNodePartners, this.reviewFilter, this.upstreamCollapsed,
-      (function() {
+  var table_incoming = create_table.call(this, this.ordered_skeleton_ids,
+      this.skeletons, this.upThresholds, to_sorted_array(this.incoming),
+      'Up', 'presynaptic_to', this.hideSingleNodePartners, this.reviewFilter,
+      this.upstreamCollapsed, (function() {
         this.upstreamCollapsed = !this.upstreamCollapsed;
       }).bind(this));
-  var table_outgoing = create_table(this.ordered_skeleton_ids, this.skeletons,
-      this.downThresholds, to_sorted_array(this.outgoing), 'Down', 'postsynaptic_to',
-      this.hideSingleNodePartners, this.reviewFilter, this.downstreamCollapsed,
-      (function() {
+  var table_outgoing = create_table.call(this, this.ordered_skeleton_ids,
+      this.skeletons, this.downThresholds, to_sorted_array(this.outgoing),
+      'Down', 'postsynaptic_to', this.hideSingleNodePartners, this.reviewFilter,
+      this.downstreamCollapsed, (function() {
         this.downstreamCollapsed = !this.downstreamCollapsed;
       }).bind(this));
 
@@ -907,8 +955,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
   // Add 'select all' checkboxes
   var nSkeletons = Object.keys(this.skeletons).length;
-  add_select_all_fn('up', table_incoming, nSkeletons);
-  add_select_all_fn('down', table_outgoing, nSkeletons);
+  add_select_all_fn(this, 'up', table_incoming, nSkeletons);
+  add_select_all_fn(this, 'down', table_outgoing, nSkeletons);
 };
 
 SkeletonConnectivity.prototype.openPlot = function() {

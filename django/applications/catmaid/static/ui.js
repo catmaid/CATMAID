@@ -36,9 +36,13 @@ UI = function()
 	var eventCatcher = document.createElement( "div" );
 	eventCatcher.id = "eventCatcher";
 	document.body.appendChild( eventCatcher );
-	
+
+	/* The focus catcher is used as a focus target when the active element should
+	 * be un-focused. It is required to have a 'href' attribute. Otherwise, a
+	 * focus() call will not succeed. */
 	var focusCatcher = document.createElement( "a" );
 	focusCatcher.id = "focusCatcher";
+	focusCatcher.href = "#";
 	document.body.appendChild( focusCatcher );
 
 	var updateFrameHeight = function()

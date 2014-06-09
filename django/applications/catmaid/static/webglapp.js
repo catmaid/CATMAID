@@ -967,9 +967,9 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.adjust = func
 	}
 
 	if (options.show_background) {
-		space.view.renderer.setClearColorHex(0x000000, 1);
+		space.view.renderer.setClearColor(0x000000, 1);
 	} else {
-		space.view.renderer.setClearColorHex(0xffffff, 1);
+		space.view.renderer.setClearColor(0xffffff, 1);
 	}
 
 	this.floor.visible = options.show_floor;

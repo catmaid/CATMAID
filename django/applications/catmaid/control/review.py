@@ -57,6 +57,8 @@ def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
     """
     if user_ids and excluding_user_ids:
         raise ValueError("user_ids and excluding_user_ids can't be used at the same time")
+    if not skeleton_ids:
+        raise ValueError("Need at least one skeleton ID")
 
     cursor = connection.cursor()
 

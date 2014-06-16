@@ -460,9 +460,11 @@ SelectionTable.prototype.getSkeletonModels = function() {
 /** Update neuron names and remove stale non-existing skeletons while preserving
  *  ordering and properties of each skeleton currently in the selection. */
 SelectionTable.prototype.update = function() {
+  var self = this;
   var models = this.skeletons.reduce(function(o, sk) { o[sk.id] = sk; return o; }, {});
   var indices = this.skeleton_ids;
-  var self = this;
+  var skeleton_ids = Object.keys(models);
+
   requestQueue.register(django_url + project.id + '/skeleton/neuronnames', 'POST',
     {skids: Object.keys(models)},
     function(status, text) {
@@ -485,8 +487,19 @@ SelectionTable.prototype.update = function() {
         self.skeletons.push(models[skid]);
         self.skeleton_ids[skid] = self.skeletons.length -1;
       });
-      self.gui.update();
-      self.updateLink(new_models);
+
+      // Retrieve review status
+      skeleton_ids = skeleton_ids.concat(Object.keys(new_models));
+      requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
+        {skeleton_ids: skeleton_ids}, jsonResponseHandler(function(json) {
+          // Update review information
+          skeleton_ids.forEach(function(skeleton_id) {
+            self.reviews[skeleton_id] = parseInt(json[skeleton_id]);
+          }, this);
+          // Update user interface
+          self.gui.update();
+          self.updateLink(new_models);
+        }));
     });
 };
 

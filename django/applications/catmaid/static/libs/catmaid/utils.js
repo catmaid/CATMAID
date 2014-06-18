@@ -427,7 +427,7 @@ var NeuronNameService = function()
 
   // An object mapping skeleton IDs to objects that contain the current name and
   // a list of clients, inerested in the particular skeleton.
-  var managedSkeletons = [];
+  var managedSkeletons = {};
 
   // A list of all clients
   var clients = [];

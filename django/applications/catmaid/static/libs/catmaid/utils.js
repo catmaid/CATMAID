@@ -419,6 +419,7 @@ var NeuronNameService = function()
 
   // The current fallback/naming list
   var fallbackList = [
+    {id: 'skeletonid', name: "Skeleton ID"},
     {id: 'neuronname', name: "Neuron name"}
   ];
 

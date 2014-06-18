@@ -1509,11 +1509,11 @@ GroupGraph.prototype.exportAdjacencyMatrix = function() {
   }
 
   var m = this.createAdjacencyMatrix(),
-      names = m.names.map(function(o, name, i) {
-        var managed = neuronNameService.getName(m.ids[i]);
+      names = m.ids.map(function(skid) {
+        var managed = neuronNameService.getName(skid);
         if (managed) name = managed;
-        return '"' + name.replace(/\\/g, '\\\\').replace(/"/g,'\\"');
-      }, {});
+        return '"' + name.replace(/\\/g, '\\\\').replace(/"/g,'\\"') + '"';
+      });
 
   // First row and first column take the neuron names plus the #<skeleton_id>
   var csv = '"Neurons",' + names.join(',') + '\n' + m.AdjM.map(function(row, i) {

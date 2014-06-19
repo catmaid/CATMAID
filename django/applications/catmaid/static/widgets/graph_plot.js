@@ -92,11 +92,13 @@ CircuitGraphPlot.prototype.getSkeletons = function() {
 };
 
 CircuitGraphPlot.prototype.getSkeletonModels = function() {
-  if (!this.svg) return [];
-  var models = this.models;
-	return this.ids.reduce(function(a, id, i) {
-    return a.concat(models[i]);
-  }, []);
+  if (!this.svg) return {};
+  return this.models.reduce(function(o, ms) {
+    return ms.reduce(function(o, model) {
+      o[model.id] = model;
+      return o;
+    }, o);
+  }, {});
 };
 
 CircuitGraphPlot.prototype.getSkeletonModel = function(skeleton_id) {

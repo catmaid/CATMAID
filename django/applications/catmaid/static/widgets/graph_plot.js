@@ -146,6 +146,7 @@ CircuitGraphPlot.prototype.append = function(models) {
       this.names.splice(k, 1);
       return false; // removes from this.models
     }
+    return true;
   }, this);
 
   // Add new ones

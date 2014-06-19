@@ -1509,9 +1509,7 @@ GroupGraph.prototype.exportAdjacencyMatrix = function() {
   }
 
   var m = this.createAdjacencyMatrix(),
-      names = m.ids.map(function(skid) {
-        var managed = neuronNameService.getName(skid);
-        if (managed) name = managed;
+      names = m.names.map(function(name) {
         return '"' + name.replace(/\\/g, '\\\\').replace(/"/g,'\\"') + '"';
       });
 

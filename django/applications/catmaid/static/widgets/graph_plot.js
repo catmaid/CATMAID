@@ -661,7 +661,7 @@ CircuitGraphPlot.prototype.toggleNamesVisible = function(checkbox) {
 
 /** Implements the refresh button. */
 CircuitGraphPlot.prototype.update = function() {
-  this.append(this.getSkeletons());
+  this.append(this.getSkeletonModels());
 };
 
 CircuitGraphPlot.prototype.highlight = function() {

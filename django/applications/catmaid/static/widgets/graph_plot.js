@@ -128,7 +128,7 @@ CircuitGraphPlot.prototype.append = function(models) {
 	// Update names and colors when already present, or remove when deselected
   var skeleton_ids = {};
 	this.models = this.models.filter(function(ms, i) {
-    ms = ms.filter(function(m, k) {
+    var ms2 = ms.filter(function(m, k) {
       skeleton_ids[m.id] = true;
       //
       var model = models[m.id];
@@ -140,7 +140,7 @@ CircuitGraphPlot.prototype.append = function(models) {
       }
       return false; // remove skeleton from group
     }, this);
-    if (0 === ms.length) {
+    if (0 === ms2.length) {
       // Remove group
       this.ids.splice(k, 1);
       this.names.splice(k, 1);

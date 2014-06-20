@@ -1652,8 +1652,8 @@ GroupGraph.prototype._regroup = function(data, splitted, models) {
         if (intragroup && this.groups[source].hide_self_edges) return false;
         // Reuse edge
         d.id = id;
-        d.source = source;
-        d.target = target;
+        d.source = source + ""; // ensure both are strings, fixes issue with edges not curving out (to avoid overlap) in reciprocal connections involving a group
+        d.target = target + "";
         gedges[id] = edge;
       }
       return false;

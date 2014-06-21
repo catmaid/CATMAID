@@ -140,6 +140,7 @@ GroupGraph.prototype._asModels = function(m, node) {
       selected = node.selected();
   return props.skeletons.reduce(function(m, skeleton) {
     var copy = skeleton.clone();
+    copy.baseName = node.data('label');
     copy.color = color.clone();
     copy.setVisible(selected);
     m[copy.id] = copy;

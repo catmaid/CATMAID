@@ -140,7 +140,6 @@ SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
   var e_name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
   if (0 === e_name.length) return null;
   var name = e_name.text();
-  name = name.substring(0, name.lastIndexOf(' '));
 
   var pre = $("#presynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
   var post = $("#postsynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
@@ -166,7 +165,6 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
         '[type=checkbox]');
     if (cb.is(':checked')) {
       var name = skeletons[skid];
-      name = name.substring(0, name.lastIndexOf(' '));
       o[skid] = new SelectionTable.prototype.SkeletonModel(skid,
           skeletons[skid], new THREE.Color().setRGB(1, 1, 0));
     }
@@ -195,7 +193,6 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
         else index = 0;
       } else if (1 in sk) index = 1;
       var name = $('#a-connectivity-table-' + widgetID + '-' + skid).text();
-      name = name.substring(0, name.lastIndexOf(' '));
       models[skid] = new SelectionTable.prototype.SkeletonModel(skid, name, colors[index].clone());
     }
   });

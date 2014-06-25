@@ -9,6 +9,7 @@ from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.db.models import Count
+from django.contrib.contenttypes.models import ContentType
 
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.common import insert_into_log
@@ -20,6 +21,9 @@ from catmaid.models import CardinalityRestriction, RegionOfInterest
 from catmaid.models import RegionOfInterestClassInstance
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.roi import link_roi_to_class_instance
+
+from taggit.models import TaggedItem
+
 
 # All needed classes by the classification system alongside their
 # descriptions.
@@ -1199,18 +1203,92 @@ def autofill_classification_graph(request, workspace_pid, project_id=None, link_
     else:
         return HttpResponse("Couldn't infer any new class instances.")
 
-def export(request, workspace_pid=None):
+def get_graph_tag_indices(graph_ids, workspace_pid=-1):
+    """ Return a list of tags for a specific classification.
+    """
+    # Find projects that are linked to the matching graphs and build
+    # indices for their tags.
+    classification_project_c_q = Class.objects.get(
+            project_id=workspace_pid, class_name='classification_project')
+    classification_project_cis_q = ClassInstance.objects.filter(
+            class_column=classification_project_c_q)
+    # Query to get the 'classified_by' relation
+    classified_by_rel = Relation.objects.filter(
+                project_id=workspace_pid, relation_name='classified_by')
+    # Find all 'classification_project' class instances of all requested
+    # projects that link to the matched graphs. They are the
+    #'class_instance_a' instances of these links.
+    cici_q = ClassInstanceClassInstance.objects.filter(
+            project_id=workspace_pid, relation__in=classified_by_rel,
+            class_instance_b_id__in=graph_ids,
+            class_instance_a__in=classification_project_cis_q)
+
+    # Build index from classification project class instance ID to PID
+    cp_to_pid = {}
+    for cp in classification_project_cis_q:
+            cp_to_pid[cp.id] = cp.project_id
+
+    # Build project index
+    project_ids = set()
+    cg_to_pids = defaultdict(list)
+    pid_to_cgs = defaultdict(list)
+    for cgid, cpid in cici_q.values_list('class_instance_b_id',
+                                         'class_instance_a_id'):
+        pid = cp_to_pid[cpid]
+        cg_to_pids[cgid].append(pid)
+        pid_to_cgs[pid].append(cgid)
+        project_ids.add(pid)
+
+    # Build index from classification project class instance ID to PID
+    cp_to_pid = {}
+    for cp in classification_project_cis_q:
+            cp_to_pid[cp.id] = cp.project_id
+
+    # Build tag index
+    ct = ContentType.objects.get_for_model(Project)
+    tag_links = TaggedItem.objects.filter(content_type=ct) \
+            .values_list('object_id', 'tag__name')
+    pid_to_tags = defaultdict(set)
+    for pid, t in tag_links:
+       pid_to_tags[pid].add(t)
+
+    return cg_to_pids, pid_to_tags
+
+def export(request, workspace_pid=None, exclusion_tags=None):
     """ This view returns a JSON representation of all classifications in this
     given workspace.
     """
+    # Split the string of exlusion tags
+    if exclusion_tags:
+        exclusion_tags = frozenset(exclusion_tags.split(','))
+    else:
+        exclusion_tags = frozenset()
 
-    # As a last step we create a simpler representation of the collected data
+    # Collect fraphs and features as well as indices to get related tags
+    graphs = get_graphs_to_features(workspace_pid)
+    cg_to_pids, pids_to_tags = get_graph_tag_indices(graphs.keys(),
+                                                     workspace_pid)
+
+    # As a last step we create a simpler representation of the colqlected data.
     graph_to_features = {}
-    for g,fl in get_graphs_to_features(workspace_pid).items():
-        graph_to_features[g.name] = [str(f) for f in fl]
-        # TODO: Get and attach tags of linked projects
+    for g,fl in graphs.items():
+        # Get and attach tags of linked projects
+        tags = set()
+        for pid in cg_to_pids[g.id]:
+            # Attach tags only if the tag set of the current project doesn't
+            # contain one of the exclusion tags.
+            ptags = set(pids_to_tags[pid])
+            if exclusion_tags and ptags.intersection(exclusion_tags):
+                continue
+            tags = tags.union(ptags)
+        # Build result data structure. The tag set has to be converted to a
+        # list to be JSON serializable.
+        graph_to_features[g.name] = {
+            'classification': [str(f) for f in fl],
+            'tags': list(tags),
+        }
 
-    return HttpResponse(json.dumps(graph_to_features))
+    return HttpResponse(json.dumps(graph_to_features), )
 
 def get_graphs_to_features(workspace_pid=None):
     """ This view returns a JSON representation of all classifications in this
@@ -1228,12 +1306,10 @@ def get_graphs_to_features(workspace_pid=None):
     graph_to_features = defaultdict(list)
     for o in ontologies:
         # Get features of the current ontology
-        features = get_features(o,
-            workspace_pid, graphs=graphs, add_nonleafs=True,
-            only_used_features=True)
+        features = get_features(o, workspace_pid, graphs, add_nonleafs=True,
+                                only_used_features=True)
         # Now check which graph instaniates which feature
         for g in graphs:
-            print g.name
             for f in features:
                 if graph_instanciates_feature(g, f):
                     graph_to_features[g].append(f)

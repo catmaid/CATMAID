@@ -44,7 +44,7 @@ Arbor.prototype.addEdges = function(edges, accessor) {
 	} else {
 		for (var i=0; i<length; i+=2) {
 			// Add edge from child to parent
-			this.edges[accessor(edges[i])] = accessor(edges[i+1]);
+			this.edges[edges[i]] = edges[i+1];
 		}
 	}
 

@@ -1472,34 +1472,19 @@ GroupGraph.prototype.createAdjacencyMatrix = function() {
     skeletons.push(node.data("skeletons"));
     names.push(node.data('label'));
   });
-  var AdjM = ids.map(function() { return ids.map(function() { return 0; })}),
-      edges = {};
-  // Plan for potentially split neurons
+  var AdjM = ids.map(function() { return new Uint32Array(ids.length); });
   this.cy.edges().each(function(i, edge) {
     if (edge.hidden()) return;
     var e = edge.data();
     if (!e.directed) return; // intra-edge of a neuron split by synapse clustering
     var source = e.source,
-        target = e.target,
-        c = edges[source];
-    if (!c) {
-      edges[source] = {};
-      edges[source][target] = e.weight;
-    } else if (c[target]) {
-      c[target] += e.weight;
-    } else {
-      c[target] = e.weight;
-    }
+        target = e.target;
+    AdjM[indices[source]][indices[target]] = e.weight;
   });
-  Object.keys(edges).forEach(function(source) {
-    var c = edges[source];
-    Object.keys(c).forEach(function(target) {
-      AdjM[indices[source]][indices[target]] = c[target];
-    });
-  });
+
   return {ids: ids, // list of node IDs
           AdjM: AdjM,
-          skeletons: skeletons, // list of models
+          skeletons: skeletons, // list of list of models
           names: names}; // list of strings
 };
 

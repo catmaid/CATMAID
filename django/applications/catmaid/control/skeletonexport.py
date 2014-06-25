@@ -129,7 +129,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
         if with_connectors:
             if all_field:
-                added_fields = ', c.creation_time'
+                added_fields = ', tc.creation_time'
             else:
                 added_fields = ''
 
@@ -149,10 +149,11 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
                 x, y, z = imap(float, row[3][1:-1].split(','))
-                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z))
+                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
             return name, nodes, tags, connectors, reviews
 
     return name, nodes, tags, connectors, reviews
+    
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

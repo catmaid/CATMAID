@@ -1254,22 +1254,33 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1):
 
     return cg_to_pids, pid_to_tags
 
-def export(request, workspace_pid=None):
+def export(request, workspace_pid=None, exclusion_tags=None):
     """ This view returns a JSON representation of all classifications in this
     given workspace.
     """
+    # Split the string of exlusion tags
+    if exclusion_tags:
+        exclusion_tags = frozenset(exclusion_tags.split(','))
+    else:
+        exclusion_tags = frozenset()
+
     # Collect fraphs and features as well as indices to get related tags
     graphs = get_graphs_to_features(workspace_pid)
     cg_to_pids, pids_to_tags = get_graph_tag_indices(graphs.keys(),
                                                      workspace_pid)
 
-    # As a last step we create a simpler representation of the colqlected data
+    # As a last step we create a simpler representation of the colqlected data.
     graph_to_features = {}
     for g,fl in graphs.items():
         # Get and attach tags of linked projects
         tags = set()
         for pid in cg_to_pids[g.id]:
-            tags = tags.union(pids_to_tags[pid])
+            # Attach tags only if the tag set of the current project doesn't
+            # contain one of the exclusion tags.
+            ptags = set(pids_to_tags[pid])
+            if exclusion_tags and ptags.intersection(exclusion_tags):
+                continue
+            tags = tags.union(ptags)
         # Build result data structure. The tag set has to be converted to a
         # list to be JSON serializable.
         graph_to_features[g.name] = {

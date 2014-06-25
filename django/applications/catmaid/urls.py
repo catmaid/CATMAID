@@ -9,6 +9,8 @@ num = r'[-+]?[0-9]*\.?[0-9]+'
 integer = r'[-+]?[0-9]+'
 # A regular expression matching lists of integers with comma as delimiter
 intlist = r'[0-9]+(,[0-9]+)*'
+# A list of words, not containing commas
+wordlist= r'\w+(,\w+)*'
 
 # Add the main index.html page at the root:
 urlpatterns = patterns('',
@@ -318,7 +320,9 @@ urlpatterns += patterns('catmaid.control.classification',
         'link_classification_graph', name='link_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/stack/(?P<stack_id>{0})/linkroi/(?P<ci_id>{0})/$'.format(integer),
         'link_roi_to_classification', name='link_roi_to_classification'),
-    url(r'^classification/(?P<workspace_pid>{0})/export'.format(integer),
+    url(r'^classification/(?P<workspace_pid>{0})/export$'.format(integer),
+        'export', name='export_classification'),
+    url(r'^classification/(?P<workspace_pid>{0})/export/excludetags/(?P<exclusion_tags>{1})/$'.format(integer, wordlist),
         'export', name='export_classification'),
 )
 

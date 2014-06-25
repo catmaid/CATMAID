@@ -61,23 +61,38 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     sub_annotation_ids = get_sub_annotation_ids(project, annotations_to_expand,
             relations, classes)
 
-    # Collect all possible annotation and sub-annotation IDs
-    annotation_ids = set()
+    # Collect all annotations and their sub-annotation IDs (if requested) in a
+    # set each. For the actual query each set is connected with AND while
+    # for everything within one set OR is used.
+    annotation_id_sets = []
     for a in annotations:
-        annotation_ids.add(a)
+        current_annotation_ids = set([a])
         # Add sub annotations, if requested
         sa_ids = sub_annotation_ids.get(a)
         if sa_ids and len(sa_ids):
-            annotation_ids.update(sa_ids)
+            current_annotation_ids.update(sa_ids)
+        annotation_id_sets.append(current_annotation_ids)
 
-    # Add filter for annotation constraints, if any
-    if annotation_ids:
+    # Due to Django's QuerySet syntax, we have to add the first
+    # annotation ID set constraint to the first filter we add.
+    if annotation_id_sets:
+        first_id_set = annotation_id_sets.pop()
         filters['cici_via_a__relation_id'] = annotated_with
-        filters['cici_via_a__class_instance_b_id__in'] = annotation_ids
+        # Use IN (OR) for a single annotation and its sub-annotations
+        filters['cici_via_a__class_instance_b_id__in'] = first_id_set
+
+    # Create basic filter, possibly containing *one* annotation ID set
+    entities = ClassInstance.objects.filter(**filters)
+
+    # Add remaining filters for annotation constraints, if any
+    for annotation_id_set in annotation_id_sets:
+        entities = entities.filter(
+            cici_via_a__relation_id=annotated_with,
+            cici_via_a__class_instance_b_id__in=annotation_id_set)
 
     # Create final query. Without any restriction, the result set will contain
     # all instances of the given set of allowed classes.
-    return ClassInstance.objects.filter(**filters)
+    return entities
 
 def get_sub_annotation_ids(project_id, annotation_set, relations, classes):
     """ Sub-annotations are annotations that are annotated with an annotation

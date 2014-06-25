@@ -358,3 +358,8 @@ div.sliceView div.cropBox p.close
 .clear {
   clear: both;
 }
+
+div.sliceTiles > * {
+	-webkit-transform: translateZ(0);	/* Pre-chrome36 */
+	will-change: top, left;			/* Post-chrome36 */
+}

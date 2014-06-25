@@ -179,7 +179,7 @@ CircuitGraphPlot.prototype.append = function(models) {
 				var json = $.parseJSON(text);
 				if (json.error) { alert(json.error); return; }
 				// Create adjacency matrix
-				var AdjM = this.ids.map(function(id) { return this.ids.map(function(id) { return 0; }); }, this);
+				var AdjM = this.ids.map(function(id) { return new Uint32Array(this.ids.length); }, this);
         // Create indices from skeleton ID to group index in this.ids array
 				var indices = this.models.reduce(function(o, ms, i) {
           return ms.reduce(function(o, model) {

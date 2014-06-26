@@ -127,6 +127,7 @@ urlpatterns += patterns('catmaid.control.connector',
     (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'graphedge_list'),
     (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'one_to_many_synapses'),
     (r'^(?P<project_id>\d+)/connector/skeletons$', 'connector_skeletons'),
+    (r'^(?P<project_id>\d+)/connector/edgetimes$', 'connector_associated_edgetimes'),
 )
 
 # Neuron acess

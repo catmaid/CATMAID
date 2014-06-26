@@ -160,6 +160,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
     return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=request.POST.get('with_connectors', True), lean=int(request.POST.get('lean', 0)), all_field=request.POST.get('all_fields', False)), separators=(',', ':')))
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_with_metadata(request, project_id=None, skeleton_id=None):
 
     def default(obj):

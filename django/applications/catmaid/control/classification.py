@@ -1339,8 +1339,9 @@ class ClassificationSearchWizard(SessionWizardView):
         if self.steps.current == 'features':
             extra_context['description'] = \
                 "Please select the features that should be respected for " \
-                "your search. Features within the <em>same</em> ontology " \
-                "are combined with a logical <em>AND</em>. Feature sets of " \
+                "your search. Only features that are actually used are shown. " \
+                "Features within the <em>same</em> ontology are combined " \
+                "with a logical <em>AND</em>. Feature sets of " \
                 "<em>different</em> ontologies are combined with a " \
                 "logical <em>OR</em>."
         elif self.steps.current == 'layout':
@@ -1364,13 +1365,14 @@ class ClassificationSearchWizard(SessionWizardView):
             # live under the classification_root node.
             class_ids = get_root_classes_qs(self.workspace_pid)
             ontologies = Class.objects.filter(id__in=class_ids)
+            graphs = ClassInstanceProxy.objects.filter(class_column__in=ontologies)
             # Featurs are abstract concepts (classes) and graphs will be
             # checked which classes they have instanciated.
             raw_features = []
             for o in ontologies:
                 raw_features = raw_features + get_features(o,
-                    self.workspace_pid, graphs=None, add_nonleafs=True,
-                    only_used_features=False)
+                    self.workspace_pid, graphs, add_nonleafs=True,
+                    only_used_features=True)
             self.features = raw_features
             # Build form array
             features = []
@@ -1506,13 +1508,19 @@ class LayoutSetupForm(forms.Form):
     filter_tags = forms.CharField(required=False,
                                   help_text="A comma-sepaarated list of tag"
                                   "names that all results have to be linked"
-                                  "to, regardless of where they will placed")
+                                  "to, regardless of where they will placed",
+                                  initial=getattr(settings,
+                                      "DEFAULT_ONTOLOGY_SEARCH_FILTER_TAGS", ""))
     row_tags = forms.CharField(required=False, help_text="A comma-separated "
                                "list of tag names that organize all results "
-                               "in diferent rows.")
+                               "in diferent rows.",
+                                initial=getattr(settings,
+                                    "DEFAULT_ONTOLOGY_SEARCH_ROW_TAGS", ""))
     column_tags = forms.CharField(required=False, help_text="A comma-separated "
                                   "list of tag names that organize all results "
-                                  "in different columns.")
+                                  "in different columns.",
+                                    initial=getattr(settings,
+                                        "DEFAULT_ONTOLOGY_SEARCH_COLUMN_TAGS", ""))
 
 def search(request, workspace_pid=None):
     """ This view simplifies the creation of a new ontology search wizard and

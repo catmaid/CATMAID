@@ -1288,7 +1288,7 @@ def export(request, workspace_pid=None, exclusion_tags=None):
             'tags': list(tags),
         }
 
-    return HttpResponse(json.dumps(graph_to_features), )
+    return HttpResponse(json.dumps(graph_to_features), content_type="application/json")
 
 def get_graphs_to_features(workspace_pid=None):
     """ This view returns a JSON representation of all classifications in this

@@ -8,7 +8,8 @@ from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control import export_NeuroML_Level3
-from catmaid.control.review import get_treenodes_to_reviews
+from catmaid.control.review import get_treenodes_to_reviews, \
+    get_treenodes_to_reviews_with_time
 
 import networkx as nx
 from tree_util import edge_count_to_root, partition
@@ -108,7 +109,10 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
     connectors = []
 
     # Get all reviews for this skeleton
-    reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
+    if all_field:
+        reviews = get_treenodes_to_reviews_with_time(skeleton_ids=[skeleton_id])
+    else:
+        reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
 
     if 0 == lean: # meaning not lean
         # Text tags
@@ -129,7 +133,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
         if with_connectors:
             if all_field:
-                added_fields = ', tc.creation_time'
+                added_fields = ', c.creation_time'
             else:
                 added_fields = ''
 

@@ -1390,10 +1390,13 @@ class ClassificationSearchWizard(SessionWizardView):
         """
         cleaned_data = [form.cleaned_data for form in form_list]
         selected_feature_ids = cleaned_data[0].get('features')
-        # Get selected features
-        features = []
+        # Get selected features and build feature dict to map ontologies to
+        # features.
+        ontologies_to_features = defaultdict(list)
         for f_id in selected_feature_ids:
-            features.append(self.features[int(f_id)])
+            f = self.features[int(f_id)]
+            ontologies_to_features[f.links[0].class_a.class_name].append(f)
+
         # All classification graphs in this workspace will be respected
         ontologies = get_root_classes_qs(self.workspace_pid)
         graphs = ClassInstanceProxy.objects.filter(class_column__in=ontologies)
@@ -1401,14 +1404,22 @@ class ClassificationSearchWizard(SessionWizardView):
         # selected features in their respective ontology.
         matching_graphs = []
         for g in graphs:
-            matches = True
-            for f in features:
-                # TODO: Separate features by ontology and only test those for
-                # the matching ontology.
-                if graph_instanciates_feature(g, f):
-                    continue
-                else:
-                    matches = False
+            # Lazy evaluate every ontology. If all features of one ontology
+            # matches, the others don't need to be tested, because thez are
+            # OR combined.
+            for o in ontologies_to_features.keys():
+                matches = True
+                # All features of one ontology must match
+                for f in ontologies_to_features[o]:
+                    if graph_instanciates_feature(g, f):
+                        continue
+                    else:
+                        matches = False
+                        break
+                # If all features of one ontology match, we can consider this
+                # graph as match---feature sets of different ontologies are OR
+                # combined.
+                if matches:
                     break
             # Remember the graph if all relevant features match
             if matches:

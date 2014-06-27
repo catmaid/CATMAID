@@ -324,6 +324,8 @@ urlpatterns += patterns('catmaid.control.classification',
         'export', name='export_classification'),
     url(r'^classification/(?P<workspace_pid>{0})/export/excludetags/(?P<exclusion_tags>{1})/$'.format(integer, wordlist),
         'export', name='export_classification'),
+    url(r'^classification/(?P<workspace_pid>{0})/search$'.format(integer),
+        'search', name='search_classifications'),
 )
 
 # Notifications

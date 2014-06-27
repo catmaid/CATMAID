@@ -3,7 +3,11 @@ import json
 from collections import defaultdict
 
 from django import forms
+from django.db.models import Q
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.formtools.wizard.views import SessionWizardView
+from django.forms.widgets import CheckboxSelectMultiple
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404, render_to_response
@@ -14,11 +18,11 @@ from django.contrib.contenttypes.models import ContentType
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.common import insert_into_log
 from catmaid.control.ajax_templates import *
-from catmaid.control.ontology import get_class_links_qs
+from catmaid.control.ontology import get_class_links_qs, get_features
 from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
-from catmaid.models import Relation, UserRole, Project, Restriction, Stack
+from catmaid.models import Relation, UserRole, Project, Restriction, Stack, User
 from catmaid.models import CardinalityRestriction, RegionOfInterest
-from catmaid.models import RegionOfInterestClassInstance
+from catmaid.models import RegionOfInterestClassInstance, ProjectStack
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.roi import link_roi_to_class_instance
 
@@ -48,6 +52,16 @@ class ClassProxy(Class):
 
     def __unicode__(self):
         return "{0} ({1})".format(self.class_name, str(self.id))
+
+class ClassInstanceProxy(ClassInstance):
+    """ A proxy class to allow custom labeling of class instances in
+    model forms.
+    """
+    class Meta:
+        proxy=True
+
+    def __unicode__(self):
+        return "{0} ({1})".format(self.name, str(self.id))
 
 class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
     """ A proxy class to allow custom labeling of links between class
@@ -1329,3 +1343,318 @@ def link_roi_to_classification(request, project_id=None, workspace_pid=None,
 
     return link_roi_to_class_instance(request, project_id=project_id,
         relation_id=rel.id, stack_id=stack_id, ci_id=ci_id)
+
+def graph_instanciates_feature(graph, feature):
+    return graph_instanciates_feature_complex(graph, feature)
+
+def graph_instanciates_feature_simple(graph, feature, idx=0):
+    """ Traverses a class instance graph, starting from the passed node.
+    It recurses into child graphs and tests on every class instance if it
+    is linked to an ontology node. If it does, the function returns true.
+    """
+    # An empty feature is always true
+    num_features = len(feature)
+    if num_features == idx:
+        return True
+    f_head = feature.links[idx]
+
+    # Check for a link to the first feature component
+    link_q = ClassInstanceClassInstance.objects.filter(
+        class_instance_b=graph, class_instance_a__class_column=f_head.class_a,
+        relation=f_head.relation)
+    # Get number of links wth. of len(), because it is doesn't hurt performance
+    # if there are no results, but it improves performance if there is exactly
+    # one result (saves one query). More than one link should not happen often.
+    num_links = len(link_q)
+    # Make sure there is the expected child link
+    if num_links == 0:
+        return False
+    elif num_links > 1:
+        # More than one?
+        raise Exception('Found more than one ontology node link of one class instance.')
+
+    # Continue with checking children, if any
+    return graph_instanciates_feature_simple(link_q[0].class_instance_a, feature, idx+1)
+
+def graph_instanciates_feature_complex(graph, feature):
+    """ Creates one complex query that thest if the feature is matched as a
+    whole.
+    """
+    # Build Q objects for to query whole feature instantiation at once. Start
+    # with query that makes sure the passed graph is the root.
+    Qr = Q(class_instance_b=graph)
+    for n,fl in enumerate(feature.links):
+        # Add constraints for each link
+        cia = "class_instance_a__cici_via_b__" * n
+        q_cls = Q(**{cia + "class_instance_a__class_column": fl.class_a})
+        q_rel = Q(**{cia + "relation": fl.relation})
+        # Combine all sub-queries with logical AND
+        Qr = Qr & q_cls & q_rel
+
+    link_q = ClassInstanceClassInstance.objects.filter(Qr).distinct()
+    num_links = link_q.count()
+    # Make sure there is the expected child link
+    if num_links == 0:
+        return False
+    elif num_links == 1:
+        return True
+    else:
+        # More than one?
+        raise Exception('Found more than one ontology node link of one class instance.')
+
+def graphs_instanciate_feature(graphlist, feature):
+    """ A delegate method to be able to use different implementations in a
+    simple manner. Benchmarks show that the complex query is faster.
+    """
+    return graphs_instanciate_feature_complex(graphlist, feature)
+
+def graphs_instanciate_feature_simple(graphs, feature):
+    """ Creates a simple query for each graph to test wheter it instantiates
+    a given featuren.
+    """
+    for g in graphs:
+        # Improvement: graphs could be sorted according to how many
+        # class instances they have.
+        if graph_instanciates_feature(g, feature):
+            return True
+    return False
+
+def graphs_instanciate_feature_complex(graphlist, feature):
+    """ Creates one complex query that thest if the feature is matched as a
+    whole.
+    """
+    # Build Q objects for to query whole feature instantiation at once. Start
+    # with query that makes sure the passed graph is the root.
+    Qr = Q(class_instance_b__in=graphlist)
+    for n,fl in enumerate(feature.links):
+        # Add constraints for each link
+        cia = "class_instance_a__cici_via_b__" * n
+        q_cls = Q(**{cia + "class_instance_a__class_column": fl.class_a})
+        q_rel = Q(**{cia + "relation": fl.relation})
+        # Combine all sub-queries with logical AND
+        Qr = Qr & q_cls & q_rel
+
+    link_q = ClassInstanceClassInstance.objects.filter(Qr).distinct()
+    return link_q.count() != 0
+
+class ClassificationSearchWizard(SessionWizardView):
+    """ This search wizard guides the user through searching for classification
+    graphs (i.e. realizations of ontologies). The first step asks the user for
+    defining ontology features which the result classifications must contain. In
+    a second step the user can layout the result display.
+    """
+    template_name = 'catmaid/classification/search.html'
+    workspace_pid = None
+
+    def get_context_data(self, form, **kwargs):
+        context = super(ClassificationSearchWizard, self).get_context_data(
+                form=form, **kwargs)
+        extra_context = {'workspace_pid': self.workspace_pid}
+
+        if self.steps.current == 'features':
+            extra_context['description'] = \
+                "Please select the features that should be respected for " \
+                "your search. Only features that are actually used are shown. " \
+                "Features within the <em>same</em> ontology are combined " \
+                "with a logical <em>AND</em>. Feature sets of " \
+                "<em>different</em> ontologies are combined with a " \
+                "logical <em>OR</em>."
+        elif self.steps.current == 'layout':
+            extra_context['description'] = \
+                "This steps allows you to specify the layout of the search " \
+                "result. Currently, only a tag based table layout is " \
+                "supported. Below you can configure general filter tags and " \
+                "tags that are used to organize all results in rows and " \
+                "columns."
+
+        # Update context with extra information and return ir
+        context.update(extra_context)
+        return context
+
+    def get_form(self, step=None, data=None, files=None):
+        form = super(ClassificationSearchWizard, self) \
+            .get_form(step, data, files)
+        current_step = step or self.steps.current
+        if current_step == 'features':
+            # We want all ontologies represented (which are Class objects) that
+            # live under the classification_root node.
+            class_ids = get_root_classes_qs(self.workspace_pid)
+            ontologies = Class.objects.filter(id__in=class_ids)
+            graphs = ClassInstanceProxy.objects.filter(class_column__in=ontologies)
+            # Featurs are abstract concepts (classes) and graphs will be
+            # checked which classes they have instanciated.
+            raw_features = []
+            for o in ontologies:
+                raw_features = raw_features + get_features(o,
+                    self.workspace_pid, graphs, add_nonleafs=True,
+                    only_used_features=True)
+            self.features = raw_features
+            # Build form array
+            features = []
+            for i, f in enumerate(raw_features):
+                name =  "%s: %s" % (f.links[0].class_b.class_name, f.name)
+                features.append((i, name))
+            # Add form array to form field
+            form.fields['features'].choices = features
+
+        return form
+
+    def done(self, form_list, **kwargs):
+        """ All matching classifications are fetched and organized in a
+        result data view.
+        """
+        cleaned_data = [form.cleaned_data for form in form_list]
+        selected_feature_ids = cleaned_data[0].get('features')
+        # Get selected features and build feature dict to map ontologies to
+        # features.
+        ontologies_to_features = defaultdict(list)
+        for f_id in selected_feature_ids:
+            f = self.features[int(f_id)]
+            ontologies_to_features[f.links[0].class_a.class_name].append(f)
+
+        # All classification graphs in this workspace will be respected
+        ontologies = get_root_classes_qs(self.workspace_pid)
+        graphs = ClassInstanceProxy.objects.filter(class_column__in=ontologies)
+        # Iterate through all graphs and find those that realize all of the
+        # selected features in their respective ontology.
+        matching_graphs = []
+        for g in graphs:
+            # Lazy evaluate every ontology. If all features of one ontology
+            # matches, the others don't need to be tested, because thez are
+            # OR combined.
+            for o in ontologies_to_features.keys():
+                matches = True
+                # All features of one ontology must match
+                for f in ontologies_to_features[o]:
+                    if graph_instanciates_feature(g, f):
+                        continue
+                    else:
+                        matches = False
+                        break
+                # If all features of one ontology match, we can consider this
+                # graph as match---feature sets of different ontologies are OR
+                # combined.
+                if matches:
+                    break
+            # Remember the graph if all relevant features match
+            if matches:
+                matching_graphs.append(g)
+        # Find projects that are linked to the matching graphs and build
+        # indices for their tags.
+        classification_project_c_q = Class.objects.get(
+            project_id=self.workspace_pid, class_name='classification_project')
+        classification_project_cis_q = ClassInstance.objects.filter(
+                class_column=classification_project_c_q)
+        # Query to get the 'classified_by' relation
+        classified_by_rel = Relation.objects.filter(
+                project_id=self.workspace_pid, relation_name='classified_by')
+        # Find all 'classification_project' class instances of all requested
+        # projects that link to the matched graphs. They are the
+        #'class_instance_a' instances of these links.
+        mg_index = {}
+        for mg in matching_graphs:
+            mg_index[mg.id] = mg
+        cici_q = ClassInstanceClassInstance.objects.filter(
+            project_id=self.workspace_pid, relation__in=classified_by_rel,
+            class_instance_b_id__in=mg_index.keys(),
+            class_instance_a__in=classification_project_cis_q)
+
+        # Build index from classification project class instance ID to PID
+        cp_to_pid = {}
+        for cp in classification_project_cis_q:
+            cp_to_pid[cp.id] = cp.project_id
+
+        # Build project index
+        project_ids = set()
+        cg_to_pids = defaultdict(list)
+        pid_to_cgs = defaultdict(list)
+        for cgid, cpid in cici_q.values_list('class_instance_b_id',
+                                            'class_instance_a_id'):
+            pid = cp_to_pid[cpid]
+            cg_to_pids[cgid].append(pid)
+            pid_to_cgs[pid].append(cgid)
+            project_ids.add(pid)
+
+        # Build tag index
+        ct = ContentType.objects.get_for_model(Project)
+        tag_links = TaggedItem.objects.filter(content_type=ct) \
+            .values_list('object_id', 'tag__name')
+        tag_index = defaultdict(set)
+        for pid, t in tag_links:
+            if pid in project_ids:
+                tag_index[t].add(pid)
+
+        # To actually open a result, the stacks are required as well. So we
+        # need to build a stack index.
+        pid_to_sids = defaultdict(list)
+        for pid, sid in ProjectStack.objects.order_by('id') \
+                .values_list('project_id', 'stack_id'):
+            pid_to_sids[pid].append(sid)
+
+        # Get row and column tags
+        col_tags = [t.strip() for t in cleaned_data[1].get('column_tags').split(',')]
+        row_tags = [t.strip() for t in cleaned_data[1].get('row_tags').split(',')]
+        filter_tags = [t.strip() for t in cleaned_data[1].get('filter_tags').split(',')]
+
+        # Build project index
+        project_index = dict([(p.id, p) for p in Project.objects.all()])
+
+        # Get the default request context and add custom data
+        context = RequestContext(self.request)
+        context.update({
+            'project_ids': project_ids,
+            'matching_graphs': matching_graphs,
+            'cg_to_pids': cg_to_pids,
+            'pid_to_cgs': pid_to_cgs,
+            'mg_index': mg_index,
+            'tag_index': tag_index,
+            'col_tags': col_tags,
+            'row_tags': row_tags,
+            'filter_tags': filter_tags,
+            'project_index': project_index,
+            'pid_to_sids': pid_to_sids,
+        })
+
+        return render_to_response('catmaid/classification/search_report.html',
+                                  context)
+
+class FeatureSetupForm(forms.Form):
+    """ This form displays all available classification_root based ontologies
+    in one tree structure. All ontologies can be graphs per se, but this form
+    will cut all loops. Every level of the tee is kept in a UL element with LI
+    elements as nodes.
+    """
+    features = forms.MultipleChoiceField(choices=[],
+            widget=CheckboxSelectMultiple(attrs={'class': 'autoselectable'}))
+
+
+class LayoutSetupForm(forms.Form):
+    """ This form lets the user specify the result output layout.
+    """
+    filter_tags = forms.CharField(required=False,
+                                  help_text="A comma-sepaarated list of tag"
+                                  "names that all results have to be linked"
+                                  "to, regardless of where they will placed",
+                                  initial=getattr(settings,
+                                      "DEFAULT_ONTOLOGY_SEARCH_FILTER_TAGS", ""))
+    row_tags = forms.CharField(required=False, help_text="A comma-separated "
+                               "list of tag names that organize all results "
+                               "in diferent rows.",
+                                initial=getattr(settings,
+                                    "DEFAULT_ONTOLOGY_SEARCH_ROW_TAGS", ""))
+    column_tags = forms.CharField(required=False, help_text="A comma-separated "
+                                  "list of tag names that organize all results "
+                                  "in different columns.",
+                                    initial=getattr(settings,
+                                        "DEFAULT_ONTOLOGY_SEARCH_COLUMN_TAGS", ""))
+
+def search(request, workspace_pid=None):
+    """ This view simplifies the creation of a new ontology search wizard and
+    its view.
+    """
+    workspace_pid = int(workspace_pid)
+    forms = [('features', FeatureSetupForm),
+             ('layout', LayoutSetupForm)]
+    view = ClassificationSearchWizard.as_view(forms,
+                                              workspace_pid=workspace_pid)
+    return view(request)

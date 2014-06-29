@@ -146,6 +146,16 @@ SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
             .join('') + "</table>";
         };
 
+        var time = {};
+        time.hour = (json.construction_time / 3600) | 0;
+        time.minute = ((json.construction_time - (time.hour * 3600)) / 60) | 0;
+        time.second = (json.construction_time - (time.hour * 3600 + time.minute * 60)) | 0;
+        var time_string = ['hour', 'minute', 'second'].reduce(function(s, unit) {
+          var v = time[unit];
+          return s + (s.length > 0 ? " " : "")
+                   + (0 === v ? "" : v + " " + unit + (v > 1 ? "s" : ""));
+        }, "");
+
         var table = document.createElement('table');
         table.style.border = 1;
         table.innerHTML = [
@@ -155,7 +165,8 @@ SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
           ["Number of presynaptic sites: ", json.n_pre],
           ["Presynapses contributed by: ", format(json.pre_contributors)],
           ["Number of postsynaptic sites: ", json.n_post],
-          ["Postsynapses contributed by: ", format(json.post_contributors)]
+          ["Postsynapses contributed by: ", format(json.post_contributors)],
+          ["Construction time: ", time_string],
         ].map(function(row) {
           return "<tr><td>" + row[0] + "</td><td>" + row[1] + "</td></tr>";
         }).join('');

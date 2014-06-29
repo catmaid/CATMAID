@@ -127,7 +127,7 @@ def contributor_statistics(request, project_id=None, skeleton_id=None):
     construction_time = 0
     max_pause = 7 * 60 # 7 minutes
     for node_id, row in nodes.iteritems():
-        parent_id = row[0]
+        parent_id = row[1]
         if parent_id:
             # Two datetime instances, when subtracted, return a deltatime instance
             delta = abs((row[3] - nodes[parent_id][3]).total_seconds())

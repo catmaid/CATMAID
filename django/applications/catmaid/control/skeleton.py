@@ -114,6 +114,52 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
         'measure_construction_time': construction_time,
         'percentage_reviewed': "%.2f" % skel.percentage_reviewed() }), mimetype='text/json')
 
+# Will fail if skeleton_id does not exist
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def contributor_statistics(request, project_id=None, skeleton_id=None):
+    contributors = defaultdict(int)
+    nodes = {}
+
+    for row in Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'parent_id', 'user_id', 'creation_time'):
+        nodes[row[0]] = row
+        contributors[row[2]] += 1
+
+    construction_time = 0
+    max_pause = 7 * 60 # 7 minutes
+    for node_id, row in nodes.iteritems():
+        parent_id = row[0]
+        if parent_id:
+            # Two datetime instances, when subtracted, return a deltatime instance
+            delta = abs((row[3] - nodes[parent_id][3]).total_seconds())
+            if delta < max_pause:
+                construction_time += delta
+
+    relations = {row[0]: row[1] for row in Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id')}
+
+    synapses = {}
+    synapses[relations['presynaptic_to']] = defaultdict(int)
+    synapses[relations['postsynaptic_to']] = defaultdict(int)
+
+    for row in TreenodeConnector.objects.filter(skeleton_id=skeleton_id).values_list('user_id', 'relation_id'):
+        synapses[row[1]][row[0]] += 1
+
+    cq = ClassInstanceClassInstance.objects.filter(
+            relation__relation_name='model_of',
+            project_id=project_id,
+            class_instance_a=int(skeleton_id)).select_related('class_instance_b')
+    neuron_name = cq[0].class_instance_b.name
+
+    return HttpResponse(json.dumps({
+        'name': neuron_name,
+        'construction_time': construction_time, # in seconds
+        'n_nodes': len(nodes),
+        'node_contributors': contributors,
+        'n_pre': sum(synapses[relations['presynaptic_to']].values()),
+        'n_post': sum(synapses[relations['postsynaptic_to']].values()),
+        'pre_contributors': synapses[relations['presynaptic_to']],
+        'post_contributors': synapses[relations['postsynaptic_to']]}))
+
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
     # Works with either the skeleton_id or the treenode_id

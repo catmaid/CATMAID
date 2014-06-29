@@ -119,43 +119,59 @@ SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
   // Additionally, the node count should be continued by the user contribution
   // (that is, how many nodes each user contributed). Same for review status.
   // And the "Downstream skeletons" should be split into two: skeletons with more than one node, and skeletons with one single node (placeholder pre- or postsynaptic nodes).
-  requestQueue.register(django_url + project.id + '/skeleton/' + this.id + '/statistics', "POST", {},
-      function (status, text, xml) {
-        if (status === 200) {
-          if (text && text !== " ") {
-            var e = $.parseJSON(text);
-            if (e.error) {
-                alert(e.error);
-            } else {
-              var dialog = document.createElement('div');
-              dialog.setAttribute("id", "dialog-confirm");
-              dialog.setAttribute("title", "Skeleton Information");
-              var msg = document.createElement('p');
-              msg.innerHTML = 
-                  "Neuron Name: " + self.baseName + ' #' + self.id + "<br />" +
-                  "Node count: " + e.node_count + "<br />" +
-                  "Postsynaptic sites: " + e.postsynaptic_sites + "<br />" +
-                  "Upstream skeletons: " + e.input_count + "<br />" +
-                  "Presynaptic sites: " + e.presynaptic_sites + "<br />" +
-                  "Downstream skeletons: " + e.output_count + "<br />" +
-                  "Cable length: " + e.cable_length + " nm <br />" +
-                  "Construction time: " + e.measure_construction_time + "<br />" +
-                  "Reviewed: " + e.percentage_reviewed + " %<br />";
-              dialog.appendChild(msg);
+  requestQueue.register(django_url + project.id + '/skeleton/' + this.id + '/contributor_statistics', "POST", {},
+      (function (status, text, xml) {
+        if (200 !== status) return;
+        if (!text || text === " ") return;
+        var json = $.parseJSON(text);
+        if (json.error) return alert(json.error);
 
-              $(dialog).dialog({
-                height: 440,
-                modal: true,
-                buttons: {
-                  "OK": function() {
-                    $(this).dialog("close");
-                  }
-                }
-              });
+        var dialog = document.createElement('div');
+        dialog.setAttribute("id", "dialog-confirm");
+        dialog.setAttribute("title", "Skeleton Information");
+
+        var users = User.all();
+        var format = function(contributors) {
+          return "<br /><table>" + Object.keys(contributors)
+            .reduce(function(a, user_id) {
+              a.push([users[user_id].login, contributors[user_id]]);
+              return a;
+            }, [])
+            .sort(function(a, b) {
+              return a[1] === b[1] ? 0 : (a[1] < b[1] ? 1 : -1); // descending
+            })
+            .map(function(a) {
+              return '<tr><td>' + a[0] + '</td><td>' + a[1] + '</td></tr>';
+            })
+            .join('') + "</table>";
+        };
+
+        var table = document.createElement('table');
+        table.style.border = 1;
+        table.innerHTML = [
+          ["Neuron name:", json.name],
+          ["Node count: ", json.n_nodes],
+          ["Nodes contributed by: ", format(json.node_contributors)],
+          ["Number of presynaptic sites: ", json.n_pre],
+          ["Presynapses contributed by: ", format(json.pre_contributors)],
+          ["Number of postsynaptic sites: ", json.n_post],
+          ["Postsynapses contributed by: ", format(json.post_contributors)]
+        ].map(function(row) {
+          return "<tr><td>" + row[0] + "</td><td>" + row[1] + "</td></tr>";
+        }).join('');
+
+        dialog.appendChild(table);
+
+        $(dialog).dialog({
+          height: 440,
+          modal: true,
+          buttons: {
+            "OK": function() {
+              $(this).dialog("close");
             }
           }
-        }
-      });
+        });
+      }).bind(this));
 };
 
 SelectionTable.prototype.highlight = function( skeleton_id ) {

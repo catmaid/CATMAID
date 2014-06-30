@@ -1501,7 +1501,13 @@ GroupGraph.prototype.exportAdjacencyMatrix = function() {
 
   // First row and first column take the neuron names plus the #<skeleton_id>
   var csv = '"Neurons",' + names.join(',') + '\n' + m.AdjM.map(function(row, i) {
-    return names[i] + ',' + row.join(',');
+    var rowValues = ""
+    var delim = ""
+    for (var j=0; j<row.length; ++j) {
+      rowValues += delim + row[j].toString();
+      delim = ',';
+    }
+    return names[i] + ',' + rowValues;
   }).join('\n');
 
   var blob = new Blob([csv], {type: 'text/plain'});

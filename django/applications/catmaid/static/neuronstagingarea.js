@@ -147,10 +147,9 @@ SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
         };
 
         var time = {};
-        time.hour = (json.construction_time / 3600) | 0;
-        time.minute = ((json.construction_time - (time.hour * 3600)) / 60) | 0;
-        time.second = (json.construction_time - (time.hour * 3600 + time.minute * 60)) | 0;
-        var time_string = ['hour', 'minute', 'second'].reduce(function(s, unit) {
+        time.hour = (json.construction_minutes / 60) | 0;
+        time.minute = json.construction_minutes % 60;
+        var time_string = ['hour', 'minute'].reduce(function(s, unit) {
           var v = time[unit];
           return s + (s.length > 0 ? " " : "")
                    + (0 === v ? "" : v + " " + unit + (v > 1 ? "s" : ""));

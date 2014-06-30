@@ -118,21 +118,15 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def contributor_statistics(request, project_id=None, skeleton_id=None):
     contributors = defaultdict(int)
-    nodes = {}
+    n_nodes = 0
+    # Count the total number of 60-second intervals with at least one treenode in them
+    minutes = set()
+    epoch = datetime.utcfromtimestamp(0)
 
     for row in Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'parent_id', 'user_id', 'creation_time'):
-        nodes[row[0]] = row
+        n_nodes += 1
         contributors[row[2]] += 1
-
-    construction_time = 0
-    max_pause = 7 * 60 # 7 minutes
-    for node_id, row in nodes.iteritems():
-        parent_id = row[1]
-        if parent_id:
-            # Two datetime instances, when subtracted, return a deltatime instance
-            delta = abs((row[3] - nodes[parent_id][3]).total_seconds())
-            if delta < max_pause:
-                construction_time += delta
+        minutes.add(int((row[3] - epoch).total_seconds() / 60))
 
     relations = {row[0]: row[1] for row in Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id')}
 
@@ -151,8 +145,8 @@ def contributor_statistics(request, project_id=None, skeleton_id=None):
 
     return HttpResponse(json.dumps({
         'name': neuron_name,
-        'construction_time': construction_time, # in seconds
-        'n_nodes': len(nodes),
+        'construction_minutes': len(minutes),
+        'n_nodes': n_nodes,
         'node_contributors': contributors,
         'n_pre': sum(synapses[relations['presynaptic_to']].values()),
         'n_post': sum(synapses[relations['postsynaptic_to']].values()),

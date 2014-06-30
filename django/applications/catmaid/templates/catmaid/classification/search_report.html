@@ -29,10 +29,9 @@
                 {{ p.title }}
               {% endif %}
             {% endwith %}
-          {% endfor %}
-          {% if tprojects|length == 0 %}
+          {% empty %}
             -
-          {% endif %}
+          {% endfor %}
         </td>
         {% endwith %}
         {% endwith %}

@@ -1,42 +1,76 @@
-CREATE OR REPLACE FUNCTION recreate_intersection_table()
+-- This function will drop a table with the given name and recreates it as
+-- an intersection table. i.e. with the fields id, child_id, parent_id,
+-- intersection.
+CREATE OR REPLACE FUNCTION recreate_intersection_table(table_name text)
 RETURNS void AS $$
+DECLARE
+  seq_name text;
+  tmp_name text;
+  row_count integer;
 BEGIN
-  IF EXISTS (SELECT 0 FROM pg_class WHERE relname = 'catmaid_skeleton_intersections')
+  -- We need to store the table name in a separate variable, because a regclass
+  -- type variable will be invalid after the table is removed that it refers to.
+  tmp_name = '' || table_name;
+
+  -- Test if table exists
+  EXECUTE format($a$SELECT COUNT(*) FROM pg_class WHERE relname='%s'$a$, table_name)
+    INTO row_count;
+
+  IF row_count <> 0
   THEN
-    DROP TABLE catmaid_skeleton_intersections;
+    EXECUTE format('DROP TABLE %s', table_name);
   END IF;
 
+  -- Prepare sequence name
+  seq_name = format('%s_id_seq', tmp_name);
+
   -- Create intersection table
-  CREATE TABLE catmaid_skeleton_intersections (
+  EXECUTE format('CREATE TABLE %I (
     id bigint PRIMARY KEY,
     child_id bigint NOT NULL,
     parent_id bigint,
     intersection double3d NOT NULL,
-    CONSTRAINT catmaid_skeleton_intersections_child_id_fkey FOREIGN KEY (child_id)
+    CONSTRAINT ' || tmp_name || '_child_id_fkey FOREIGN KEY (child_id)
         REFERENCES treenode(id),
-    CONSTRAINT catmaid_skeleton_intersections_parent_id_fkey FOREIGN KEY (parent_id)
-        REFERENCES treenode(id)
-  );
-  CREATE SEQUENCE catmaid_skeleton_intersections_id_seq
-    START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
-  ALTER SEQUENCE catmaid_skeleton_intersections_id_seq OWNED BY catmaid_skeleton_intersections.id;
-  ALTER TABLE ONLY catmaid_skeleton_intersections ALTER COLUMN id
-    SET DEFAULT nextval('catmaid_skeleton_intersections_id_seq'::regclass);
+    CONSTRAINT ' || tmp_name || '_parent_id_fkey FOREIGN KEY (parent_id)
+        REFERENCES treenode(id))', tmp_name);
+  EXECUTE format('CREATE SEQUENCE %s START WITH 1 INCREMENT BY 1 ' ||
+    'NO MINVALUE NO MAXVALUE CACHE 1', seq_name);
+  EXECUTE format('ALTER SEQUENCE %s OWNED BY %s.id', seq_name, tmp_name);
+  EXECUTE format('ALTER TABLE ONLY %s ALTER COLUMN id ' ||
+    $a$SET DEFAULT nextval('%s'::regclass)$a$, tmp_name, seq_name);
 
   RETURN;
 END;
 $$ LANGUAGE plpgsql;
 
+-- This function shrinks the treenode table by removing all treenodes that are
+-- on a straight line between its neighbors and are no branch points and are not
+-- referened in any other way (e.g. by tags).
+CREATE OR REPLACE FUNCTION reduce_treenode_table()
+RETURNS void AS $$
+BEGIN
+  RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
 -- This function populates an intersection table for a specific stack. It
 -- will create an intersection for every edge in the treenode table. Two
 -- parameters are required: project ID and stack ID.
--- 
+-- This function walks all skeltons in the treenode table and finds
+-- intersections between sekeltons and slices for a given stack. Next to project
+-- and stack ID, it expects the target table to be passed as a parameter. The
+-- target table has to exist already. This function doesn't remove data from the
+-- target table, but only adds to it.
+--
 -- TODO: What to do with broken slices?
-CREATE OR REPLACE FUNCTION populate_intersection_table(integer, integer)
+CREATE OR REPLACE FUNCTION populate_intersection_table(integer, integer, table_name reglass)
 RETURNS integer AS $$
 DECLARE
   stack_id ALIAS FOR $1;
   pid ALIAS FOR $2;
+  table_name ALIAS FOR $3;
   dimension stack.dimension%TYPE;
   resolution stack.resolution%TYPE;
   loc treenode.location%TYPE;
@@ -48,6 +82,7 @@ DECLARE
   num_intersections integer;
   num_treenodes integer;
   treenode_count integer;
+  insert_statement text;
   -- edge_count integer;
 BEGIN
   -- Get the stack's dimension and resolution
@@ -64,6 +99,11 @@ BEGIN
   -- Find out how many treenodes we have
   SELECT count(*) INTO num_treenodes FROM treenode;
   treenode_count = 0;
+
+
+  -- Prepare basic insert statement
+  insert_statement = format('INSERT INTO %s (child_id, parent_id, intersection) ' ||
+    'VALUES ($1, $2, $3)', table_name);
 
   -- Walk each skeleton of this project from root to all leafes. This is faster
   -- than walking sequencially though a big join. Expect the skeleton to have no
@@ -99,8 +139,7 @@ BEGIN
       section_distance = MOD((node.location).z::numeric, resolution.z::numeric);
       IF section_distance < 0.0001 THEN
           -- RAISE NOTICE 'Skeleton %: adding intersection: %', skeleton.id, node.location;
-          INSERT INTO catmaid_skeleton_intersections (child_id, parent_id, intersection)
-            VALUES (node.id, node.parent_id, node.location);
+          EXECUTE insert_statement USING node.id, node.parent_id, node.location;
       END IF;
 
       -- Calculate the number of extra intersections. Substract one to
@@ -153,8 +192,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION intersection_test()
 RETURNS void AS $$
 BEGIN
-  PERFORM recreate_intersection_table();
-  PERFORM populate_intersection_table(1,1);
+  PERFORM recreate_intersection_table('catmaid_skeleton_intersections');
+  PERFORM populate_intersection_table(1,1, 'catmaid_skeleton_intersections');
   RETURN;
 END;
 $$ LANGUAGE plpgsql;

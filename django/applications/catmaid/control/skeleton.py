@@ -44,12 +44,15 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
     tnid = int(request.POST['tnid'])
     cursor = connection.cursor()
 
+    cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='labeled_as'" % int(project_id))
+    labeled_as = cursor.fetchone()[0]
+
     # Select all nodes and their tags
     cursor.execute('''
     SELECT t.id, t.parent_id, t.location, ci.name
-    FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id) ON t.id = tci.treenode_id
+    FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id AND tci.relation_id = %s) ON t.id = tci.treenode_id
     WHERE t.skeleton_id = %s
-    ''' % int(skeleton_id))
+    ''' % (labeled_as, int(skeleton_id)))
 
     # Some entries repeated, when a node has more than one tag
     # Create a graph with edges from parent to child, and accumulate parents

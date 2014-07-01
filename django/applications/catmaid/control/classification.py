@@ -1592,9 +1592,9 @@ class ClassificationSearchWizard(SessionWizardView):
             pid_to_sids[pid].append(sid)
 
         # Get row and column tags
-        col_tags = [t.strip() for t in cleaned_data[1].get('column_tags').split(',')]
-        row_tags = [t.strip() for t in cleaned_data[1].get('row_tags').split(',')]
-        filter_tags = [t.strip() for t in cleaned_data[1].get('filter_tags').split(',')]
+        col_tags = [t.strip() for t in cleaned_data[1].get('column_tags').split(',') if len(t)]
+        row_tags = [t.strip() for t in cleaned_data[1].get('row_tags').split(',') if len(t)]
+        filter_tags = [t.strip() for t in cleaned_data[1].get('filter_tags').split(',') if len(t)]
 
         # Shrink the result to only those projects that match the filter
         # constraints

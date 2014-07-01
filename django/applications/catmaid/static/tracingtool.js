@@ -790,6 +790,17 @@ function TracingTool()
       }
   }) );
 
+  this.addAction( new Action({
+    helpText: "Open the neuron/annotation search widget",
+    keyShortcuts: {
+      '/': [ 191 ]
+    },
+    run: function (e) {
+      WindowMaker.create('neuron-annotations');
+      return true;
+    }
+  }) );
+
 
   var keyCodeToAction = getKeyCodeToActionMap(actions);
 

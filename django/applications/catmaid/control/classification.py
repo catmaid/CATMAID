@@ -1596,6 +1596,19 @@ class ClassificationSearchWizard(SessionWizardView):
         row_tags = [t.strip() for t in cleaned_data[1].get('row_tags').split(',')]
         filter_tags = [t.strip() for t in cleaned_data[1].get('filter_tags').split(',')]
 
+        # Shrink the result to only those projects that match the filter
+        # constraints
+        num_unfiltered_projects = len(project_ids)
+        for ft in filter_tags:
+            project_ids.intersection_update(tag_index[ft])
+        if num_unfiltered_projects != len(project_ids):
+            # Rebuild tag index (but only if some projects are left)
+            tag_index = defaultdict(set)
+            if project_ids:
+                for pid, t in tag_links:
+                    if pid in project_ids:
+                        tag_index[t].add(pid)
+
         # Build project index
         project_index = dict([(p.id, p) for p in Project.objects.all()])
 

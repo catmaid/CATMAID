@@ -65,14 +65,12 @@ $$ LANGUAGE plpgsql;
 -- target table, but only adds to it.
 --
 -- TODO: What to do with broken slices?
-CREATE OR REPLACE FUNCTION populate_intersection_table(integer, integer, table_name reglass)
+CREATE OR REPLACE FUNCTION populate_intersection_table(sid integer, pid integer, table_name regclass)
 RETURNS integer AS $$
 DECLARE
-  stack_id ALIAS FOR $1;
-  pid ALIAS FOR $2;
-  table_name ALIAS FOR $3;
   dimension stack.dimension%TYPE;
   resolution stack.resolution%TYPE;
+  orientation integer;
   loc treenode.location%TYPE;
   skeleton_class_id integer;
   root_node_id integer;
@@ -86,11 +84,11 @@ DECLARE
   -- edge_count integer;
 BEGIN
   -- Get the stack's dimension and resolution
-  SELECT (s.dimension).* INTO dimension FROM stack s WHERE id = stack_id LIMIT 1;
-  SELECT (s.resolution).* INTO resolution FROM stack s WHERE id = stack_id LIMIT 1;
+  SELECT (s.dimension).* INTO dimension FROM stack s WHERE id = sid LIMIT 1;
+  SELECT (s.resolution).* INTO resolution FROM stack s WHERE id = sid LIMIT 1;
   -- Make sure we got the data we want
   IF NOT FOUND THEN
-      RAISE EXCEPTION 'stack % not found', stack_id;
+      RAISE EXCEPTION 'stack % not found', sid;
   END IF;
 
   -- Get ID of 'skeleton' class
@@ -99,6 +97,82 @@ BEGIN
   -- Find out how many treenodes we have
   SELECT count(*) INTO num_treenodes FROM treenode;
   treenode_count = 0;
+
+
+  -- Depending on the view, create a functinon to measure the distance between a
+  -- node and a section. The orientation is encoded as an integer: XY = 0, XZ = 1
+  -- and ZY = 2.
+  SELECT ps.orientation INTO orientation FROM project_stack ps WHERE ps.project_id=pid AND ps.stack_id=sid;
+  IF orientation = 0
+  THEN
+    -- Helper to get distance of a node to a section.
+    CREATE OR REPLACE FUNCTION get_section_distance(treenode.location%TYPE, stack.resolution%TYPE)
+    RETURNS double precision AS $a$
+    BEGIN
+      RETURN MOD(($1).z::numeric, ($2).z::numeric);
+    END;
+    $a$ LANGUAGE plpgsql;
+    -- Helper to get number of intersections between two nodes
+    CREATE OR REPLACE FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, stack.resolution%TYPE)
+    RETURNS integer AS $a$
+    BEGIN
+      RETURN abs(($1).z - ($2).z) / ($3).z - 1;
+    END;
+    $a$ LANGUAGE plpgsql;
+    -- Helper to test if the first nodes projection is lower than the second one's
+    CREATE OR REPLACE FUNCTION is_below(treenode.location%TYPE, treenode.location%TYPE)
+    RETURNS boolean AS $a$
+    BEGIN
+      RETURN ($1).z < ($2).z;
+    END;
+    $a$ LANGUAGE plpgsql;
+  ELSIF orientation = 1
+  THEN
+    -- Helper to get distance of a node to a section.
+    CREATE OR REPLACE FUNCTION get_section_distance(treenode.location%TYPE, stack.resolution%TYPE)
+    RETURNS double precision AS $a$
+    BEGIN
+      return MOD(($1).y::numeric, ($2).y::numeric);
+    END;
+    $a$ LANGUAGE plpgsql;
+    -- Helper to get number of intersections between two nodes
+    CREATE OR REPLACE FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, stack.resolution%TYPE)
+    RETURNS integer AS $a$
+    BEGIN
+      return abs(($1).y - ($2).y) / ($3).y - 1;
+    END;
+    $a$ LANGUAGE plpgsql;
+    -- Helper to test if the first nodes projection is lower than the second one's
+    CREATE OR REPLACE FUNCTION is_below(treenode.location%TYPE, treenode.location%TYPE)
+    RETURNS boolean AS $a$
+    BEGIN
+      RETURN ($1).y < ($2).y;
+    END;
+    $a$ LANGUAGE plpgsql;
+  ELSIF orientation = 2
+  THEN
+    -- Helper to get distance of a node to a section.
+    CREATE OR REPLACE FUNCTION get_section_distance(treenode.location%TYPE, stack.resolution%TYPE)
+    RETURNS double precision AS $a$
+    BEGIN
+      return MOD(($1).x::numeric, ($2).x::numeric);
+    END;
+    $a$ LANGUAGE plpgsql;
+    -- Helper to get number of intersections between two nodes
+    CREATE OR REPLACE FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, stack.resolution%TYPE)
+    RETURNS integer AS $a$
+    BEGIN
+      return abs(($1).x - ($2).x) / ($3).x - 1;
+    END;
+    $a$ LANGUAGE plpgsql;
+    -- Helper to test if the first nodes projection is lower than the second one's
+    CREATE OR REPLACE FUNCTION is_below(treenode.location%TYPE, treenode.location%TYPE)
+    RETURNS boolean AS $a$
+    BEGIN
+      RETURN ($1).x < ($2).x;
+    END;
+    $a$ LANGUAGE plpgsql;
+  END IF;
 
 
   -- Prepare basic insert statement
@@ -136,7 +210,7 @@ BEGIN
       -- last two are NULL for the root node. Based on this, all intersections
       -- can be calculated. Start with the current location and add an
       -- intersection, if it is on a section.
-      section_distance = MOD((node.location).z::numeric, resolution.z::numeric);
+      section_distance = get_section_distance(node.location, resolution);
       IF section_distance < 0.0001 THEN
           -- RAISE NOTICE 'Skeleton %: adding intersection: %', skeleton.id, node.location;
           EXECUTE insert_statement USING node.id, node.parent_id, node.location;
@@ -144,7 +218,7 @@ BEGIN
 
       -- Calculate the number of extra intersections. Substract one to
       -- compensate for the intersection that has been potentially added above.
-      num_intersections = abs((node.location).z - (node.parent_location).z) / resolution.z - 1;
+      num_intersections = get_num_intersections(node.location, node.parent_location, resolution);
 
       -- Continue with next node if there are -1 or zero intersections. Minus
       -- one will happen for the root node and zero if the parent node is on the
@@ -158,7 +232,7 @@ BEGIN
       
       -- If the parent node's Z is lower than the current node's Z, check
       -- backwars for intersections. Otherwise go forwards.
-      IF (node.parent_location).z < (node.location).z THEN
+      IF is_below(node.parent_location, node.location) THEN
         -- Go to the next intersection before this slice
         WHILE num_intersections > 0 LOOP
           RAISE NOTICE '  Adding addition intersection';
@@ -183,7 +257,12 @@ BEGIN
 
   END LOOP;
 
-  RAISE NOTICE 'Done populating intersection table for stack %', stack_id;
+  -- Clean up
+  DROP FUNCTION get_section_distance(treenode.location%TYPE, stack.resolution%TYPE);
+  DROP FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, stack.resolution%TYPE);
+  DROP FUNCTION is_below(treenode.location%TYPE, treenode.location%TYPE);
+
+  RAISE NOTICE 'Done populating intersection table for stack %', sid;
   RETURN 0;
 END;
 $$ LANGUAGE plpgsql;

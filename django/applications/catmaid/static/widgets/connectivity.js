@@ -6,6 +6,21 @@
 var SkeletonConnectivity = function() {
   this.widgetID = this.registerInstance();
   this.registerSource();
+  this.init();
+  // Default table layout to be side by side. Have it seperate from init() as
+  // long as it is part of the top button row.
+  this.tablesSideBySide = true;
+};
+
+SkeletonConnectivity.prototype = {};
+$.extend(SkeletonConnectivity.prototype, new InstanceRegistry());
+$.extend(SkeletonConnectivity.prototype, new SkeletonSource());
+
+/**
+ * Initializes the connectivity widget by setting all fields to their default
+ * value.
+ */
+SkeletonConnectivity.prototype.init = function() {
   // An ordered list of neurons/skeletons for display
   this.ordered_skeleton_ids = [];
   // An (per se unordered) object mapping skeletonIDs to skeleton names
@@ -13,8 +28,6 @@ var SkeletonConnectivity = function() {
   // Incoming an outgoing connections of current neurons
   this.incoming = {};
   this.outgoing = {};
-  // Default table layout to be side by side
-  this.tablesSideBySide = true;
   // Default upstream and downstream tables to be not collapsed
   this.upstreamCollapsed = false;
   this.downstreamCollapsed = false;
@@ -33,10 +46,6 @@ var SkeletonConnectivity = function() {
     'down': false,
   };
 };
-
-SkeletonConnectivity.prototype = {};
-$.extend(SkeletonConnectivity.prototype, new InstanceRegistry());
-$.extend(SkeletonConnectivity.prototype, new SkeletonSource());
 
 /** Appends only to the top list, that is, the set of seed skeletons
  *  for which all pre- and postsynaptic partners are listed. */
@@ -95,10 +104,7 @@ SkeletonConnectivity.prototype.destroy = function() {
 };
 
 SkeletonConnectivity.prototype.clear = function(source_chain) {
-  this.skeletons = {};
-  this.ordered_skeleton_ids = [];
-  this.upThresholds = {};
-  this.downThresholds = {};
+  this.init();
   this.update();
   this.clearLink(source_chain);
 };

@@ -202,8 +202,8 @@ BEGIN
         SELECT * FROM skeleton_tree
     LOOP
       -- Output status information
-      treenode_count = treenode_count + 1;
-      RAISE NOTICE 'Status: %/%', treenode_count, num_treenodes;
+      -- treenode_count = treenode_count + 1;
+      -- RAISE NOTICE 'Status: %/%', treenode_count, num_treenodes;
 
       -- In every iteration one node of the current skeleton as 'node'. It has
       -- the properties 'id', 'location', 'parent_id' and 'parent_location'. The

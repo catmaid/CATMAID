@@ -122,11 +122,11 @@ Arbor.prototype.reroot = function(new_root) {
  * Does not include the root node. */
 Arbor.prototype.findEndNodes = function() {
 	var edges = this.edges,
-			children = Object.keys(edges),
-			parents = children.reduce(function(o, child) {
-				o[edges[child]] = true;
-				return o;
-			}, {});
+	    children = Object.keys(edges),
+	    parents = children.reduce(function(o, child) {
+	      o[edges[child]] = true;
+	      return o;
+	    }, {});
 
 	return children.reduce(function(a, child) {
 		if (child in parents) return a;
@@ -310,8 +310,8 @@ Arbor.prototype.countNodes = function() {
  * another path. Runs in O(4n + nlog(n)) time. */
 Arbor.prototype.partition = function() {
 	var ends = this.findEndNodes(),
-		  distances = this.nodesOrderFrom(this.root),
-			seen = {};
+	    distances = this.nodesOrderFrom(this.root),
+	    seen = {};
 
 	// Sort nodes by distance to root, so that the first end node is the furthest
 	return ends.sort(function(a, b) {

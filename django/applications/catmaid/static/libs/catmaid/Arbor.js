@@ -808,3 +808,114 @@ Arbor.prototype.flowCentrality = function(outputs, inputs) {
 
     return centrality;
 };
+
+/**
+ * positions: map of node ID vs objects like THREE.Vector3.
+ */
+Arbor.prototype.cableLength = function(positions) {
+    return Object.keys(this.edges).reduce((function(sum, node) {
+        return sum += positions[node].distanceTo(positions[this[node]]);
+    }).bind(this.edges), 0);
+};
+
+/** Sum the cable length by smoothing using a Gaussian convolution.
+ * For simplicity, considers the root, all branch and end nodes as fixed points,
+ * and will only therefore adjust slab nodes.
+ * - positions: map of node ID vs objects like THREE.Vector3.
+ * - sigma: for tracing neurons, use e.g. 100 nm
+ * - initialValue: initial value for the reduce to accumulate on.
+ * - slabInitFn: take the accumulator value, the node and its point, return a new accumulator value.
+ * - accumulatorFn: given an accumulated value, the last point, the node ID and its new point, return a new value that will be the next value in the next round.
+ */
+Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabInitFn, accumulatorFn) {
+    // Gaussian:  a * Math.exp(-Math.pow(x - b, 2) / (2 * c * c)) + d 
+    // where a=1, d=0, x-b is the distance to the point in space, and c is sigma=0.5.
+    var S = 2 * sigma * sigma,
+        slabs = this.slabs(),
+        threshold = 0.01,
+        accum = initialValue;
+
+    for (var j=0, l=slabs.length; j<l; ++j) {
+        var slab = slabs[j],
+            last = positions[slab[0]];
+        accum = slabInitFn(accum, slab[0], last);
+        for (var i=1, len=slab.length -1; i<len; ++i) {
+            // Estimate new position of the point at i
+            // by convolving adjacent points
+            var node = slab[i],
+                point = positions[node],
+                weights = [1],
+                points = [point],
+                k, w, pk;
+            // TODO: could memoize the distances to points for reuse
+            k = i - 1;
+            while (k > -1) {
+                pk = positions[slab[k]];
+                w = Math.exp(-Math.pow(point.distanceTo(pk), 2) / S);
+                if (w < threshold) break;
+                points.push(pk);
+                weights.push(w);
+                --k;
+            }
+            k = i + 1;
+            while (k < slab.length) {
+                pk = positions[slab[k]];
+                w = Math.exp(-Math.pow(point.distanceTo(pk), 2) / S);
+                if (w < threshold) break;
+                points.push(pk);
+                weights.push(w);
+                ++k;
+            }
+            var weightSum = 0,
+                n = weights.length;
+            for (k=0; k<n; ++k) weightSum += weights[k];
+
+            var x = 0,
+                y = 0,
+                z = 0;
+            for (k=0; k<n; ++k) {
+                w = weights[k] / weightSum;
+                pk = points[k];
+                x += pk.x * w;
+                y += pk.y * w;
+                z += pk.z * w;
+            }
+
+            var pos = new THREE.Vector3(x, y, z);
+            accum = accumulatorFn(accum, last, slab[i], pos);
+            last = pos;
+        }
+        accum = accumulatorFn(accum, last, slab[slab.length -1], positions[slab[slab.length -1]]);
+    }
+    return accum;
+};
+
+Arbor.prototype.smoothCableLength = function(positions, sigma) {
+    return this.convolveSlabs(positions, sigma, 0,
+            function(sum, id, p) {
+                return sum;
+            },
+            function(sum, p0, id, p1) {
+                return sum + p0.distanceTo(p1);
+            });
+};
+
+Arbor.prototype.smoothPositions = function(positions, sigma) {
+    return this.convolveSlabs(positions, sigma, {},
+            function(s, id, p) {
+                s[id] = p;
+                return s;
+            },
+            function(s, p0, id, p1) {
+                s[id] = p1;
+                return s;
+            });
+};
+
+/** Resample the arbor to fix the node interdistance to a specific value.
+ * The distance between a node prior to a branch node and the branch node
+ * will most often not be equal to the specific value, but within 50%;
+ * same for end nodes.
+ * Returns a new Arbor. */
+Arbor.prototype.resample = function() {
+};

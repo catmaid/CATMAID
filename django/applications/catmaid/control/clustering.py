@@ -51,7 +51,7 @@ def create_ontology_selection_form( workspace_pid, class_ids=None ):
         field allows to select a single class that 'is_a' 'classification_root'.
         """
         ontologies = forms.ModelMultipleChoiceField(
-            queryset=Class.objects.filter(id__in=class_ids),
+            queryset=Class.objects.filter(id__in=class_ids).order_by('class_name'),
             widget=CheckboxSelectMultiple(attrs={'class': 'autoselectable'}))
 
     return SelectOntologyForm
@@ -87,7 +87,7 @@ class ClusteringWizard(SessionWizardView):
             # Select root nodes of graphs that are instances of the
             # selected ontologies
             ontologies = self.get_cleaned_data_for_step('ontologies')['ontologies']
-            root_ci_qs = ClassInstanceProxy.objects.filter( class_column__in=ontologies )
+            root_ci_qs = ClassInstanceProxy.objects.filter( class_column__in=ontologies ).order_by('name')
             form.fields['classification_graphs'].queryset = root_ci_qs
         elif current_step == 'features':
             # Display a list of all available features

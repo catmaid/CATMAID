@@ -25,14 +25,14 @@ class ProjectStackInline(admin.TabularInline):
 
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title', 'public')
-    search_fields = ['title']
+    search_fields = ['title','comment']
     inlines = [ProjectStackInline]
 
 
 class StackAdmin(GuardedModelAdmin):
     list_display = ('title', 'dimension', 'resolution', 'num_zoom_levels',
                     'image_base')
-    search_fields = ['title', 'image_base']
+    search_fields = ['title', 'comment', 'image_base']
     inlines = [ProjectStackInline]
 
 

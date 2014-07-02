@@ -142,6 +142,8 @@ WebGLApplication.prototype.Options = function() {
   this.connector_color = 'cyan-red';
   this.lean_mode = false;
   this.synapse_clustering_bandwidth = 5000;
+  this.smooth_skeletons = false;
+  this.smooth_skeletons_sigma = 200; // nm
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -598,12 +600,28 @@ WebGLApplication.prototype.configureParameters = function() {
 	ibandwidth.setAttribute('value', options.synapse_clustering_bandwidth);
 	ibandwidth.setAttribute('size', '7');
   dialog.appendChild(ibandwidth);
-  dialog.appendChild(document.createTextNode(' nanometers.'));
+  dialog.appendChild(document.createTextNode(' nm.'));
+  dialog.appendChild(document.createElement("br"));
+
+  var smooth = document.createElement('input');
+  smooth.setAttribute("type", "checkbox");
+  if (options.smooth_skeletons)
+    smooth.setAttribute("checked", true);
+  dialog.appendChild(smooth);
+  dialog.appendChild(document.createTextNode('Toggle smoothing skeletons by Gaussian convolution of the slabs, with sigma: '));
+  var sigma = document.createElement('input');
+  sigma.setAttribute('type', 'text');
+  sigma.setAttribute('value', options.smooth_skeletons_sigma);
+  sigma.setAttribute('size', 5);
+  dialog.appendChild(sigma);
+  dialog.appendChild(document.createTextNode(' nm.'));
+  dialog.appendChild(document.createElement("br"));
 
   var submit = this.submit;
 
 	$(dialog).dialog({
 		height: 440,
+		width: 600,
 		modal: true,
 		buttons: {
 			"Cancel": function() {
@@ -629,7 +647,16 @@ WebGLApplication.prototype.configureParameters = function() {
 				options.show_meshes = bmeshes.checked;
         options.meshes_color = options.validateOctalString("#meshes-color", options.meshes_color);
         options.lean_mode = blean.checked;
+        options.smooth_skeletons = smooth.checked;
 
+        var new_sigma = options.smooth_skeletons_sigma;
+        try {
+          new_sigma = parseInt(sigma.value);
+          if (new_sigma > 0) options.smooth_skeletons_sigma = new_sigma;
+          else alert ("Sigma must be larger than zero.");
+        } catch (e) {
+          alert("Invalid value for sigma: '" + sigma.value + "'");
+        }
 
         var old_bandwidth = options.synapse_clustering_bandwidth,
             new_bandwidth = old_bandwidth;
@@ -2279,6 +2306,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			this.createLabelSphere(v1, this.space.staticContent.labelColors.uncertain);
 		}
 	}, this);
+
+  if (options.smooth_skeletons) {
+    var smoothed = this.createArbor().smoothPositions(vs, options.smooth_skeletons_sigma * this.space.scale);
+    Object.keys(vs).forEach(function(node_id) {
+      vs[node_id].copy(smoothed[node_id]);
+    });
+  }
 
 	// Create edges between all connector nodes and their associated skeleton nodes,
 	// appropriately colored as pre- or postsynaptic.

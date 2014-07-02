@@ -471,6 +471,7 @@ WebGLApplication.prototype.showActiveNode = function() {
 WebGLApplication.prototype.configureParameters = function() {
 	var space = this.space;
 	var options = this.options;
+	var updateSkeletons = this.updateSkeletons.bind(this);
 
 	var dialog = document.createElement('div');
 	dialog.setAttribute("id", "dialog-confirm");
@@ -647,12 +648,19 @@ WebGLApplication.prototype.configureParameters = function() {
 				options.show_meshes = bmeshes.checked;
         options.meshes_color = options.validateOctalString("#meshes-color", options.meshes_color);
         options.lean_mode = blean.checked;
+
+        var refresh = false;
+
+        var old_smooth = options.smooth_skeletons;
         options.smooth_skeletons = smooth.checked;
 
         var new_sigma = options.smooth_skeletons_sigma;
         try {
           new_sigma = parseInt(sigma.value);
-          if (new_sigma > 0) options.smooth_skeletons_sigma = new_sigma;
+          if (new_sigma > 0) {
+            options.smooth_skeletons_sigma = new_sigma;
+            refresh = old_smooth != options.smooth_skeletons;
+          }
           else alert ("Sigma must be larger than zero.");
         } catch (e) {
           alert("Invalid value for sigma: '" + sigma.value + "'");
@@ -671,10 +679,11 @@ WebGLApplication.prototype.configureParameters = function() {
 				space.staticContent.adjust(options, space);
 				space.content.adjust(options, space, submit, old_bandwidth);
 
-        space.render();
-
 				// Copy
 				WebGLApplication.prototype.OPTIONS = options.clone();
+
+        if (refresh) updateSkeletons();
+        else space.render();
 
 				$(this).dialog("close");
 			}

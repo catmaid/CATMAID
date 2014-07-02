@@ -472,3 +472,34 @@ MorphologyPlot.prototype.exportCSV = function() {
 MorphologyPlot.prototype.exportSVG = function() {
   saveDivSVG('morphology_plot_div' + this.widgetID, this.mode.replace(/ /g, '_') + ".svg");
 };
+
+/** Perform PCA on a vector for each neuron containing the concatenation of all the following measurements:
+ *
+ * - cable length (smoothed)
+ * - cable length of the topological tree (sum of soma to branch, branch to branch and branch to end nodes).
+ * - cable length of the principal branch (smoothed).
+ * - tortuosity of the principal branch (length of the smoothed principal branch divided by the Euclidean distance between soma and the end node of the branch).
+ * - sum of cable length of all terminal segments.
+ * - number of input synapses
+ * - number of output synapses
+ * - segregation index (measures whether the arbor has cleanly separated input domains and output domains, or how mixed domains are).
+ * - number of branch events (a binary split counts as 2; a trinary split as 3, etc.)
+ * - number of terminal nodes
+ * - sum of the volumes of the 3d convex hull of each synapse cluster for a given bandwidth value.
+ * - centrifugal order: number of branch nodes between a node and the soma (using the topological copy of the tree, and binning the counts for an histogram of 64 bins.
+ * - degree: number of end nodes downstream of a branch node (binning the counts for an histogram of 64 bins)
+ * - tree asymmetry index (van Pelt, 1992): mean of all partition asymmetries at each branch node, assuming binary branches (will consider trinary and higher as nested binary branches, considering the smallest subtree as the closest to the soma.
+ * - tree asymmetry index by taking the median rather than the mean of all partition asymmetries.
+ * - Sholl analysis
+ * - spatial density of cable
+ * - spatial density of input synapses
+ * - spatial density of output synapses
+ *
+ *
+ * See: van Pelt et al., 1992
+ *      Uylings and van Pelt, 2002
+ *      Torben-Nielsen, 2014
+ *
+ */
+MorphologyPlot.prototype.PCA = function() {
+};

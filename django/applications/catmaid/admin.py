@@ -24,7 +24,7 @@ class ProjectStackInline(admin.TabularInline):
 
 
 class ProjectAdmin(GuardedModelAdmin):
-    list_display = ('title', 'public')
+    list_display = ('title',)
     search_fields = ['title','comment']
     inlines = [ProjectStackInline]
 

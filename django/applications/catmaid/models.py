@@ -44,7 +44,6 @@ class Project(models.Model):
         )
     title = models.TextField()
     comment = models.TextField(blank=True, null=True)
-    public = models.BooleanField(default=True)
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
     tags = TaggableManager(blank=True)

@@ -915,7 +915,19 @@ Arbor.prototype.smoothPositions = function(positions, sigma) {
 /** Resample the arbor to fix the node interdistance to a specific value.
  * The distance between a node prior to a branch node and the branch node
  * will most often not be equal to the specific value, but within 50%;
- * same for end nodes.
+ * same for end nodes. In other words, branch and end nodes are fixed.
+ *
+ * - positions: map of node ID vs THREE.Vector3.
+ * - sigma: value to use for Gaussian convolution to smooth the slabs prior to resampling.
+ * - delta: desired new node interdistance.
+ *
  * Returns a new Arbor. */
-Arbor.prototype.resample = function() {
+Arbor.prototype.resampleSlabs = function(positions, sigma, delta) {
+    var smoothed = this.smoothPositions(positions, sigma),
+        slabs = this.slabs(); // TODO computed as well within smoothPositions
+
+    for (var j=0, len=slabs.length; j<len; ++j) {
+        var slab = slabs[j];
+        // TODO
+    }
 };

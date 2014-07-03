@@ -131,7 +131,6 @@ def projects(request):
         result.append( {
             'pid': p.id,
             'title': p.title,
-            'public_project': int(p.public),
             'editable': int(p.is_editable),
             'catalogue': int(p.is_catalogueable),
             'note': '[ editable ]' if p.is_editable else '',

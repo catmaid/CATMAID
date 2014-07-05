@@ -187,12 +187,48 @@ WebGLApplication.prototype.staticUpdateZPlane = function() {
   });
 };
 
-WebGLApplication.prototype.updateSkeletonColors = function(colorMenu) {
+/** Receives an extra argument (an event) which is ignored. */
+WebGLApplication.prototype.updateColorMethod = function(colorMenu) {
   this.options.color_method = colorMenu.value;
-  Object.keys(this.space.content.skeletons).forEach(function(skeleton_id) {
-    this.space.content.skeletons[skeleton_id].updateSkeletonColor(this.options);
-  }, this);
-  this.space.render();
+  this.updateSkeletonColors();
+};
+
+WebGLApplication.prototype.updateSkeletonColors = function(callback) {
+  var fnRecolor = (function() {
+    Object.keys(this.space.content.skeletons).forEach(function(skeleton_id) {
+      this.space.content.skeletons[skeleton_id].updateSkeletonColor(this.options);
+    }, this);
+    if (typeof callback === "function") {
+      try { callback(); } catch (e) { alert(e); }
+    }
+    this.space.render();
+  }).bind(this);
+
+  if (-1 !== this.options.color_method.indexOf('reviewed')) {
+    var skeletons = this.space.content.skeletons;
+    // Find the subset of skeletons that don't have their reviews loaded
+    var skeleton_ids = Object.keys(skeletons).filter(function(skid) {
+      return !skeletons[skid].reviews;
+    });
+    // Will invoke fnRecolor even if the list of skeleton_ids is empty
+    fetchSkeletons(
+        skeleton_ids,
+        function(skeleton_id) {
+          return django_url + project.id + '/skeleton/' + skeleton_id + '/reviewed-nodes';
+        },
+        function(skeleton_id) { return {}; }, // post
+        function(skeleton_id, json) {
+          skeletons[skeleton_id].reviews = json;
+        },
+        function(skeleton_id) {
+          // Failed loading
+          skeletons[skeleton_id].reviews = {}; // dummy
+          growlAlert('ERROR', 'Failed to load reviews for skeleton ' + skeleton_id);
+        },
+        fnRecolor);
+  } else {
+    fnRecolor();
+  }
 };
 
 WebGLApplication.prototype.XYView = function() {
@@ -375,27 +411,36 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
 
   if (0 === skeleton_ids.length) return;
 
-	var self = this;
   var options = this.options;
+  var url1 = django_url + project.id + '/',
+      lean = options.lean_mode ? 0 : 1,
+      url2 = '/' + lean  + '/' + lean + '/compact-skeleton';
 
-  fetchCompactSkeletons(
+
+  fetchSkeletons(
       skeleton_ids,
-      options.lean_mode,
-      function(skeleton_id, json) {
-        var sk = self.space.updateSkeleton(models[skeleton_id], json, options);
-        if (sk) sk.show(self.options);
+      function(skeleton_id) {
+        return url1 + skeleton_id + url2;
       },
+      function(skeleton_id) {
+        return {}; // the post
+      },
+      (function(skeleton_id, json) {
+        var sk = this.space.updateSkeleton(models[skeleton_id], json, options);
+        if (sk) sk.show(this.options);
+      }).bind(this),
       function(skeleton_id) {
         // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
       },
-      function() {
-        // Done:
-        if (self.options.connector_filter) self.refreshRestrictedConnectors();
-        else self.space.render();
-        if (callback) {
-          try { callback(); } catch (e) { alert(e); }
-        }
-      });
+      (function() {
+        this.updateSkeletonColors(
+          (function() {
+              if (this.options.connector_filter) this.refreshRestrictedConnectors();
+              if (typeof callback === "function") {
+                try { callback(); } catch (e) { alert(e); }
+              }
+          }).bind(this));
+      }).bind(this));
 };
 
 /** Reload skeletons from database. */
@@ -1342,7 +1387,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 
 WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json, options) {
   if (!this.content.skeletons.hasOwnProperty(skeletonmodel.id)) {
-    this.content.skeletons[skeletonmodel.id] = new this.Skeleton(this, skeletonmodel, json[0]);
+    this.content.skeletons[skeletonmodel.id] = new this.Skeleton(this, skeletonmodel);
   }
   this.content.skeletons[skeletonmodel.id].reinit_actor(skeletonmodel, json, options);
   return this.content.skeletons[skeletonmodel.id];
@@ -1361,16 +1406,17 @@ WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmod
  *  When visualizing only the connectors among the skeletons visible in the WebGL space, the geometries of the pre- and postsynaptic edges are hidden away, and a new pair of geometries are created to represent just the edges that converge onto connectors also related to by the other skeletons.
  *
  */
-WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmodel, name) {
+WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmodel) {
   // TODO id, baseName, actorColor are all redundant with the skeletonmodel
 	this.space = space;
 	this.id = skeletonmodel.id;
-	this.baseName = name;
+	this.baseName = skeletonmodel.baseName;
   this.synapticColors = space.staticContent.synapticColors;
   this.skeletonmodel = skeletonmodel;
   // This is an index mapping treenode IDs to lists of reviewers. Attaching them
   // directly to the nodes is too much of a performance hit.
-  this.reviews = {};
+  // Gets loaded dynamically, and erased when refreshing (because a new Skeleton is instantiated with the same model).
+  this.reviews = null;
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
@@ -2179,18 +2225,16 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphe
 };
 
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = function(skeletonmodel, skeleton_data, options) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = function(skeletonmodel, json, options) {
 	if (this.actor) {
 		this.destroy();
 	}
-  this.skeletonmodel = skeletonmodel; // updating properties TODO should update baseName, color ...?
+  this.skeletonmodel = skeletonmodel;
 	this.initialize_objects();
 
-	var nodes = skeleton_data[1];
-	var tags = skeleton_data[2];
-	var connectors = skeleton_data[3];
-	// Store reviews so that some shading methods can access it.
-	this.reviews = skeleton_data[4];
+	var nodes = json[0];
+	var connectors = json[1];
+  var tags = json[2];
 
 	var scale = this.space.scale,
       lean = options.lean_mode;
@@ -2333,7 +2377,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.show = function(op
 
 	this.setTextVisibility( this.skeletonmodel.text_visible ); // the text labels
 
-  this.updateSkeletonColor(options);
+  //this.updateSkeletonColor(options);
 
   // Will query the server
   if ('cyan-red' !== options.connector_color) this.space.updateConnectorColors(options, [this]);

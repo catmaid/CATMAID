@@ -65,6 +65,74 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors=None, with_tags=None):
+    """
+        Performance-critical function. Do not edit unless to improve performance.
+
+        Returns, in JSON, [[nodes], [connectors], [tags]], with connectors and tags being empty when 0 == with_connectors and 0 == with_tags, respectively
+    """
+
+    # Sanitize
+    project_id = int(project_id)
+    skeleton_id = int(skeleton_id)
+    with_connectors  = int(with_connectors)
+    with_tags = int(with_tags)
+
+    cursor = connection.cursor()
+
+    cursor.execute('''
+        SELECT id, parent_id, user_id,
+               (location).x, (location).y, (location).z,
+               radius, confidence
+        FROM treenode
+        WHERE skeleton_id = %s
+    ''' % skeleton_id)
+
+    nodes = tuple(cursor.fetchall())
+    connectors = ()
+    tags = defaultdict(list)
+
+    if 0 != with_connectors or 0 != with_tags:
+        # postgres is caching this query
+        cursor.execute("SELECT relation_name, id FROM relation WHERE project_id=%s" % project_id)
+        relations = dict(cursor.fetchall())
+
+    if 0 != with_connectors:
+        # Fetch all connectors with their partner treenode IDs
+        cursor.execute('''
+            SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
+                   (c.location).x, (c.location).y, (c.location).z
+            FROM treenode_connector tc,
+                 connector c
+            WHERE tc.skeleton_id = %s
+              AND tc.connector_id = c.id
+        ''' % skeleton_id)
+
+        post = relations['postsynaptic_to']
+        connectors = tuple((row[0], row[1], 1 if row[2] == post else 0, row[3], row[4], row[5]) for row in cursor.fetchall())
+
+    if 0 != with_tags:
+        # Fetch all node tags
+        cursor.execute('''
+            SELECT c.name, tci.treenode_id
+            FROM treenode t,
+                 treenode_class_instance tci,
+                 class_instance c
+            WHERE t.skeleton_id = %s
+              AND t.id = tci.treenode_id
+              AND tci.relation_id = %s
+              AND c.id = tci.class_instance_id
+        ''' % (skeleton_id, relations['labeled_as']))
+
+        for row in cursor.fetchall():
+            tags[row[0]].append(row[1])
+
+    return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
+
+
+
+# THIS FUNCTION IS HEREBY DECLARED A MESS. Users of this function: split it up
 def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=0, all_field=False):
     """ with_connectors: when False, connectors are not returned
         lean: when not zero, both connectors and tags are returned as empty arrays. """
@@ -605,4 +673,15 @@ def skeleton_connectors_by_partner(request, project_id):
         partners[row[0]][relations[row[1]]][row[2]].append(row[3])
 
     return HttpResponse(json.dumps(partners))
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
+    """ Return a map of treenode ID vs list of reviewer IDs,
+    without including any unreviewed treenode. """
+    m = defaultdict(list)
+    for row in Review.objects.filter(skeleton_id=int(skeleton_id)).values_list('treenode_id', 'reviewer_id').iterator():
+        m[row[0]].append(row[1])
+
+    return HttpResponse(json.dumps(m, separators=(',', ':')))
 

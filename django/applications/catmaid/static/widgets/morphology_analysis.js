@@ -105,12 +105,15 @@ MorphologyPlot.prototype.append = function(models) {
     return;
   }
 
-  fetchCompactSkeletons(
+  fetchSkeletons(
       skeleton_ids,
-      false,
+      function(skeleton_id) {
+        return django_url + project.id + '/' + skeleton_id + '/1/0/compact-skeleton';
+      },
+      function(skeleton_id) { return {}; }, // post
       (function(skeleton_id, json) {
-        this.lines[skeleton_id] = {nodes: json[1],
-                                   connectors: json[3]};
+        this.lines[skeleton_id] = {nodes: json[0],
+                                   connectors: json[1]};
       }).bind(this),
       (function(skeleton_id) {
         // Failed loading

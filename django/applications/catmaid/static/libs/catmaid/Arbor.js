@@ -830,6 +830,7 @@ Arbor.prototype.cableLength = function(positions) {
 Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabInitFn, accumulatorFn) {
     // Gaussian:  a * Math.exp(-Math.pow(x - b, 2) / (2 * c * c)) + d 
     // where a=1, d=0, x-b is the distance to the point in space, and c is sigma=0.5.
+    // Given that the distance between points is computed as the sqrt of the sum of the squared differences of each dimension, and it is then squared, we can save two ops: one sqrt and one squaring, to great performance gain.
     var S = 2 * sigma * sigma,
         slabs = this.slabs(),
         threshold = 0.01,
@@ -851,7 +852,9 @@ Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabIni
             k = i - 1;
             while (k > -1) {
                 pk = positions[slab[k]];
-                w = Math.exp(-Math.pow(point.distanceTo(pk), 2) / S);
+                //w = Math.exp(-Math.pow(point.distanceTo(pk), 2) / S);
+                //Same as above, saving two ops (sqrt and squaring):
+                w = Math.exp(- (point.distanceToSquared(pk) / S));
                 if (w < threshold) break;
                 points.push(pk);
                 weights.push(w);
@@ -860,7 +863,9 @@ Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabIni
             k = i + 1;
             while (k < slab.length) {
                 pk = positions[slab[k]];
-                w = Math.exp(-Math.pow(point.distanceTo(pk), 2) / S);
+                //w = Math.exp(-Math.pow(point.distanceTo(pk), 2) / S);
+                //Same as above, saving two ops (sqrt and squaring):
+                w = Math.exp(- (point.distanceToSquared(pk) / S));
                 if (w < threshold) break;
                 points.push(pk);
                 weights.push(w);

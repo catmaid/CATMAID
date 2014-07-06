@@ -127,6 +127,7 @@ urlpatterns += patterns('catmaid.control.connector',
     (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'graphedge_list'),
     (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'one_to_many_synapses'),
     (r'^(?P<project_id>\d+)/connector/skeletons$', 'connector_skeletons'),
+    (r'^(?P<project_id>\d+)/connector/edgetimes$', 'connector_associated_edgetimes'),
 )
 
 # Neuron acess
@@ -187,9 +188,11 @@ urlpatterns += patterns('catmaid.control.skeletonexport',
     (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'export_neuroml_level3_v181'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'skeleton_swc'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'skeletons_neuroml'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'skeleton_json'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'skeleton_with_metadata'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/compact-json$', 'skeleton_for_3d_viewer'),
+    (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-skeleton$', 'compact_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/reviewed-nodes$', 'export_skeleton_reviews'),
     (r'^(?P<project_id>\d+)/skeletons/measure$', 'measure_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
 )

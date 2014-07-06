@@ -516,11 +516,12 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createTextNode(" Color:"));
     var colorMenu = document.createElement('select');
+    colorMenu.setAttribute('id', 'webglapp_color_menu' + WA.widgetID);
     $('<option/>', {value : 'none', text: 'Source', selected: true}).appendTo(colorMenu);
     $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
     $('<option/>', {value : 'all-reviewed', text: 'All Reviewed'}).appendTo(colorMenu);
     $('<option/>', {value : 'own-reviewed', text: 'Own Reviewed'}).appendTo(colorMenu);
-    colorMenu.onchange = WA.updateSkeletonColors.bind(WA, colorMenu);
+    colorMenu.onchange = WA.updateColorMethod.bind(WA, colorMenu);
     buttons.appendChild(colorMenu);
 
     buttons.appendChild(document.createTextNode(" Synapse color:"));

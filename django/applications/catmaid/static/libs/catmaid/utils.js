@@ -883,9 +883,10 @@ var parseColorWheel = function(color) {
  * with the ID and the corresponding JSON.
  * If some skeletons fail to load (despite existing), the fnFailedLoading will be invoked with the ID.
  * Finally when all are loaded, fnDone is invoked without arguments.
+ * Note that fnDone is invoked even when the given skeleton_ids array is empty.
  *
  * Additionally, when done if any skeletons don't exist anymore, a dialog will ask to remove them from all widgets that are skeleton sources.*/
-var fetchCompactSkeletons = function(skeleton_ids, lean_mode, fnLoadedOne, fnFailedLoading, fnDone) {
+var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFailedLoading, fnDone) {
   var i = 0,
       missing = [],
       unloadable = [],
@@ -897,9 +898,8 @@ var fetchCompactSkeletons = function(skeleton_ids, lean_mode, fnLoadedOne, fnFai
           alert("Could not load skeletons: " + unloadable.join(', '));
         }
       },
-      post = {lean: lean_mode ? 1 : 0},
       loadOne = function(skeleton_id) {
-        requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json', 'POST', post,
+        requestQueue.register(fnMakeURL(skeleton_id), 'POST', fnPost(skeleton_id),
             function(status, text) {
               try {
                 if (200 === status) {
@@ -940,7 +940,11 @@ var fetchCompactSkeletons = function(skeleton_ids, lean_mode, fnLoadedOne, fnFai
   if (skeleton_ids.length > 1) {
     $.blockUI({message: '<img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> <h2>Loading skeletons <div id="counting-loaded-skeletons">0 / ' + skeleton_ids.length + '</div></h2>'});
   }
-  loadOne(skeleton_ids[0]);
+  if (skeleton_ids.length > 0) {
+    loadOne(skeleton_ids[0]);
+  } else {
+      fnDone();
+  }
 };
 
 var saveDivSVG = function(divID, filename) {

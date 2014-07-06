@@ -8,7 +8,8 @@ from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control import export_NeuroML_Level3
-from catmaid.control.review import get_treenodes_to_reviews
+from catmaid.control.review import get_treenodes_to_reviews, \
+    get_treenodes_to_reviews_with_time
 
 import networkx as nx
 from tree_util import edge_count_to_root, partition
@@ -64,6 +65,74 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors=None, with_tags=None):
+    """
+        Performance-critical function. Do not edit unless to improve performance.
+
+        Returns, in JSON, [[nodes], [connectors], [tags]], with connectors and tags being empty when 0 == with_connectors and 0 == with_tags, respectively
+    """
+
+    # Sanitize
+    project_id = int(project_id)
+    skeleton_id = int(skeleton_id)
+    with_connectors  = int(with_connectors)
+    with_tags = int(with_tags)
+
+    cursor = connection.cursor()
+
+    cursor.execute('''
+        SELECT id, parent_id, user_id,
+               (location).x, (location).y, (location).z,
+               radius, confidence
+        FROM treenode
+        WHERE skeleton_id = %s
+    ''' % skeleton_id)
+
+    nodes = tuple(cursor.fetchall())
+    connectors = ()
+    tags = defaultdict(list)
+
+    if 0 != with_connectors or 0 != with_tags:
+        # postgres is caching this query
+        cursor.execute("SELECT relation_name, id FROM relation WHERE project_id=%s" % project_id)
+        relations = dict(cursor.fetchall())
+
+    if 0 != with_connectors:
+        # Fetch all connectors with their partner treenode IDs
+        cursor.execute('''
+            SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
+                   (c.location).x, (c.location).y, (c.location).z
+            FROM treenode_connector tc,
+                 connector c
+            WHERE tc.skeleton_id = %s
+              AND tc.connector_id = c.id
+        ''' % skeleton_id)
+
+        post = relations['postsynaptic_to']
+        connectors = tuple((row[0], row[1], 1 if row[2] == post else 0, row[3], row[4], row[5]) for row in cursor.fetchall())
+
+    if 0 != with_tags:
+        # Fetch all node tags
+        cursor.execute('''
+            SELECT c.name, tci.treenode_id
+            FROM treenode t,
+                 treenode_class_instance tci,
+                 class_instance c
+            WHERE t.skeleton_id = %s
+              AND t.id = tci.treenode_id
+              AND tci.relation_id = %s
+              AND c.id = tci.class_instance_id
+        ''' % (skeleton_id, relations['labeled_as']))
+
+        for row in cursor.fetchall():
+            tags[row[0]].append(row[1])
+
+    return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
+
+
+
+# THIS FUNCTION IS HEREBY DECLARED A MESS. Users of this function: split it up
 def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=0, all_field=False):
     """ with_connectors: when False, connectors are not returned
         lean: when not zero, both connectors and tags are returned as empty arrays. """
@@ -108,7 +177,10 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
     connectors = []
 
     # Get all reviews for this skeleton
-    reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
+    if all_field:
+        reviews = get_treenodes_to_reviews_with_time(skeleton_ids=[skeleton_id])
+    else:
+        reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
 
     if 0 == lean: # meaning not lean
         # Text tags
@@ -149,16 +221,35 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
                 x, y, z = imap(float, row[3][1:-1].split(','))
-                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z))
+                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
             return name, nodes, tags, connectors, reviews
 
     return name, nodes, tags, connectors, reviews
+    
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
     return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=request.POST.get('with_connectors', True), lean=int(request.POST.get('lean', 0)), all_field=request.POST.get('all_fields', False)), separators=(',', ':')))
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeleton_with_metadata(request, project_id=None, skeleton_id=None):
+
+    def default(obj):
+        """Default JSON serializer."""
+        import calendar, datetime
+
+        if isinstance(obj, datetime.datetime):
+            if obj.utcoffset() is not None:
+                obj = obj - obj.utcoffset()
+            millis = int(
+                calendar.timegm(obj.timetuple()) * 1000 +
+                obj.microsecond / 1000
+            )
+        return millis
+
+    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id, project_id, \
+        with_connectors=True, lean=0, all_field=True), separators=(',', ':'), default=default))
 
 def _measure_skeletons(skeleton_ids):
     if not skeleton_ids:
@@ -486,11 +577,6 @@ def skeleton_swc(*args, **kwargs):
     return export_skeleton_response(*args, **kwargs)
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeleton_json(*args, **kwargs):
-    kwargs['format'] = 'json'
-    return export_extended_skeleton_response(*args, **kwargs)
-
 def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
     """ Returns a list of segments for the requested skeleton. Each segment
     contains information about the review status of this part of the skeleton.
@@ -587,4 +673,15 @@ def skeleton_connectors_by_partner(request, project_id):
         partners[row[0]][relations[row[1]]][row[2]].append(row[3])
 
     return HttpResponse(json.dumps(partners))
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
+    """ Return a map of treenode ID vs list of reviewer IDs,
+    without including any unreviewed treenode. """
+    m = defaultdict(list)
+    for row in Review.objects.filter(skeleton_id=int(skeleton_id)).values_list('treenode_id', 'reviewer_id').iterator():
+        m[row[0]].append(row[1])
+
+    return HttpResponse(json.dumps(m, separators=(',', ':')))
 

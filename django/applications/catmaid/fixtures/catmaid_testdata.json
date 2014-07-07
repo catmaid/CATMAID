@@ -1,6 +1,60 @@
 [
   {
     "pk": -1, 
+    "model": "auth.user", 
+    "fields": {
+      "username": "AnonymousUser", 
+      "first_name": "", 
+      "last_name": "", 
+      "is_active": true, 
+      "is_superuser": false, 
+      "is_staff": false, 
+      "last_login": "2012-11-19T18:19:39", 
+      "groups": [], 
+      "user_permissions": [], 
+      "password": "", 
+      "email": "", 
+      "date_joined": "2012-11-19T18:19:39"
+    }
+  },
+  {
+    "pk": 49, 
+    "model": "auth.user", 
+    "fields": {
+      "username": "test", 
+      "first_name": "", 
+      "last_name": "", 
+      "is_active": true, 
+      "is_superuser": false, 
+      "is_staff": false, 
+      "last_login": "2014-07-07T14:55:09", 
+      "groups": [], 
+      "user_permissions": [], 
+      "password": "pbkdf2_sha256$12000$d4BgasAnFjAE$v+UN/9JtMGEC4fObH5d2zN3fj3sluUrb0YhQCjU5TXQ=", 
+      "email": "", 
+      "date_joined": "2014-07-07T14:55:09"
+    }
+  },
+  {
+    "pk": 2, 
+    "model": "auth.user", 
+    "fields": {
+      "username": "admin2",
+      "first_name": "", 
+      "last_name": "", 
+      "is_active": true, 
+      "is_superuser": true, 
+      "is_staff": true, 
+      "last_login": "2014-06-09T14:51:31.553", 
+      "groups": [], 
+      "user_permissions": [], 
+      "password": "pbkdf2_sha256$12000$8QpjaFGpDsBC$mqX4KEOvQXli1+ESlCpI3fqmR2cZn1oT7XGGv7Q8qD0=", 
+      "email": "admin2@admin.com", 
+      "date_joined": "2014-05-05T16:31:54"
+    }
+  },
+  {
+    "pk": -1, 
     "model": "catmaid.project", 
     "fields": {
       "title": "Classification dummy project"
@@ -106,6 +160,46 @@
       "metadata": ""
     }
   }, 
+  {
+    "pk": 1, 
+    "model": "catmaid.projectstack", 
+    "fields": {
+      "project": 1, 
+      "translation": "(0.000, 0.000, 0.000)", 
+      "stack": 1, 
+      "orientation": 0
+    }
+  },
+  {
+    "pk": 2, 
+    "model": "catmaid.projectstack", 
+    "fields": {
+      "project": 3, 
+      "translation": "(0.000, 0.000, 0.000)", 
+      "stack": 3, 
+      "orientation": 0
+    }
+  },
+  {
+    "pk": 3, 
+    "model": "catmaid.projectstack", 
+    "fields": {
+      "project": 5, 
+      "translation": "(0.000, 0.000, 0.000)", 
+      "stack": 5, 
+      "orientation": 0
+    }
+  },
+  {
+    "pk": 4, 
+    "model": "catmaid.projectstack", 
+    "fields": {
+      "project": 5, 
+      "translation": "(0.000, 0.000, 0.000)", 
+      "stack": 6, 
+      "orientation": 0
+    }
+  },
   {
     "pk": 5, 
     "model": "catmaid.concept", 

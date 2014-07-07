@@ -918,21 +918,181 @@ Arbor.prototype.smoothPositions = function(positions, sigma) {
 };
 
 /** Resample the arbor to fix the node interdistance to a specific value.
- * The distance between a node prior to a branch node and the branch node
- * will most often not be equal to the specific value, but within 50%;
- * same for end nodes. In other words, branch and end nodes are fixed.
+ * The distance of an edge prior to a slab terminating node (branch or end)
+ * will most often be within +/- 50% of the specified delta value, given that
+ * branch and end nodes are fixed. The root is also fixed.
  *
- * - positions: map of node ID vs THREE.Vector3.
+ * The resampling is done using a Gaussian convolution with adjacent nodes,
+ * weighing them by distance to relevant node to use as the focus for resampling,
+ * which is the first node beyond delta from the last resampled node.
+ *
+ * - positions: map of node ID vs THREE.Vector3, or equivalent object with distanceTo and clone methods.
  * - sigma: value to use for Gaussian convolution to smooth the slabs prior to resampling.
  * - delta: desired new node interdistance.
  *
- * Returns a new Arbor. */
+ * Returns a new Arbor, with new numeric node IDs that bear no relation to the IDs of this Arbor, and a map of the positions of its nodes.  */
 Arbor.prototype.resampleSlabs = function(positions, sigma, delta) {
-    var smoothed = this.smoothPositions(positions, sigma),
-        slabs = this.slabs(); // TODO computed as well within smoothPositions
+    var arbor = new Arbor(),
+        new_positions = {},
+        next_id = 0,
+        starts = {},
+        slabs = this.slabs(),
+        S = 2 * sigma * sigma,
+        sqDelta = delta * delta;
 
-    for (var j=0, len=slabs.length; j<len; ++j) {
-        var slab = slabs[j];
-        // TODO
+    arbor.root = 0;
+    new_positions[0] = positions[this.root];
+
+    starts[this.root] = 0;
+
+    // In a slab, the first node is the closest one to the root.
+    for (var i=0, l=slabs.length; i<l; ++i) {
+        var slab = slabs[i],
+            a = this._resampleSlab(slab, positions, S, delta, sqDelta),
+            first = slab[0],
+            paren = starts[first];
+        if (undefined === paren) {
+            paren = ++next_id;
+            starts[first] = paren;
+            new_positions[paren] = positions[first];
+        }
+        var child;
+        // In the new slab, the first and last nodes have not moved positions.
+        for (var k=1, la=a.length-1; k<la; ++k) {
+            child = ++next_id;
+            arbor.edges[child] = paren;
+            new_positions[child] = a[k];
+            paren = child;
+        }
+        // Find the ID of the last node of the slab, which may exist
+        var last = slab[slab.length -1];
+        child = starts[last];
+        if (undefined === child) {
+            child = ++next_id;
+            starts[last] = child;
+            new_positions[child] = positions[last];
+        }
+        // Set the last edge of the slab
+        arbor.edges[child] = paren;
     }
+
+    return {arbor: arbor,
+            positions: new_positions};
+};
+
+/** Helper function for resampleSlabs. */
+Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta) {
+    var slabP = slab.map(function(node) { return positions[node]; }),
+        gw = this._gaussianWeights(slab, slabP, S),
+        len = slab.length,
+        last = slabP[0],
+        a = [last],
+        k,
+        i = 1;
+
+    while (i < len) {
+        // Find k ahead of i that is just over delta from last
+        for (k=i; k<len; ++k) {
+            if (last.distanceToSquared(slabP[k]) > sqDelta) break;
+        }
+
+        if (k === len) break;
+
+        // NOTE: should check which is closer: k or k-1; but when assuming a Gaussian-smoothed arbor, k will be closer in all reasonable situations. Additionally, k (the node past) is the one to drift towards when nodes are too far apart.
+
+        // Collect all nodes before and after k with a weight under 0.01,
+        // as precomputed in gw: only weights > 0.01 exist
+        var pivot = slab[k],
+            points = [k],
+            weights = [1],
+            j = k - 1;
+        while (j > 0) {
+            var w = gw[slab[j] + "@" + pivot];
+            if (undefined === w) break;
+            points.push(j);
+            weights.push(w);
+            --j;
+        }
+
+        j = k + 1;
+        while (j < len) {
+            var w = gw[pivot + "@" + slab[j]];
+            if (undefined === w) break;
+            points.push(j);
+            weights.push(w);
+            ++j;
+        }
+
+        var x = 0,
+            y = 0,
+            z = 0;
+
+        if (1 === points.length) {
+            // All too far: advance towards next node's position
+            var pk = slabP[k];
+            x = pk.x;
+            y = pk.y;
+            z = pk.z;
+        } else {
+            var weightSum = 0,
+                n = weights.length;
+
+            for (j=0; j<n; ++j) weightSum += weights[j];
+
+            for (j=0; j<n; ++j) {
+                var w = weights[j] / weightSum,
+                    pk = slabP[points[j]];
+                x += pk.x * w;
+                y += pk.y * w;
+                z += pk.z * w;
+            }
+        }
+
+        // Create a direction vector from last to the x,y,z point, scale by delta,
+        // and then create the new point by translating the vector to last
+        var next = new THREE.Vector3(x - last.x, y - last.y, z - last.z)
+            .normalize()
+            .multiplyScalar(delta)
+            .add(last);
+        a.push(next);
+        last = next;
+
+        i = k;
+    }
+
+    var slabLast = slabP[len -1];
+    if (last.distanceToSquared(slabLast) < sqDelta / 2) {
+        // Replace last: too close to slabLast
+        a[a.length -1] = slabLast;
+    }
+    a.push(slabLast);
+
+    return a;
+};
+
+/** Helper function.
+ *
+ * Starting at the first node, compute the Gaussian weight
+ * towards forward in the slab until it is smaller than 1%. Then do the
+ * same for the second node, etc. Store all weights in a map where the keys
+ * are the combination node1 + "@" + node2.
+ * Gaussian as: a * Math.exp(-Math.pow(x - b, 2) / (2 * c * c)) + d
+ * ignoring a and d, given that the weights will then be used for normalizing
+ * 
+ * slab: array of node IDs
+ * slabP: array of corresponding THREE.Vector3
+ * S: 2 * Math.pow(sigma, 2)
+ */
+Arbor.prototype._gaussianWeights = function(slab, slabP, S) {
+    var weights = {};
+    for (var i=0, l=slab.length; i<l; ++i) {
+        var node1 = slab[i],
+            pos1 = slabP[i];
+        for (var k=i+1; k<l; ++k) {
+            var w = Math.exp(- (pos1.distanceToSquared(slabP[k]) / S));
+            if (w < 0.01) break;
+            weights[node1 + "@" + slab[k]] = w;
+        }
+    }
+    return weights;
 };

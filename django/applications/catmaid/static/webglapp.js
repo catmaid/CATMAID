@@ -474,10 +474,10 @@ WebGLApplication.prototype.clear = function() {
 };
 
 WebGLApplication.prototype.getSkeletonColor = function( skeleton_id ) {
-	if (skeleton_id in this.space.content.skeletons) {
-		return this.space.content.skeletons[skeleton_id].actorColor.clone();
+  if (skeleton_id in this.space.content.skeletons) {
+    return this.space.content.skeletons[skeleton_id].actorColor.clone();
   }
-	return new THREE.Color().setRGB(1, 0, 1);
+  return new THREE.Color().setRGB(1, 0, 1);
 };
 
 WebGLApplication.prototype.hasSkeleton = function(skeleton_id) {
@@ -485,153 +485,153 @@ WebGLApplication.prototype.hasSkeleton = function(skeleton_id) {
 };
 
 WebGLApplication.prototype.removeSkeletons = function(skeleton_ids) {
-	if (!this.space) return;
-	this.space.removeSkeletons(skeleton_ids);
-	if (this.options.connector_filter) this.refreshRestrictedConnectors();
-	else this.space.render();
+  if (!this.space) return;
+  this.space.removeSkeletons(skeleton_ids);
+  if (this.options.connector_filter) this.refreshRestrictedConnectors();
+  else this.space.render();
 };
 
 WebGLApplication.prototype.changeSkeletonColors = function(skeleton_ids, colors) {
-	var skeletons = this.space.content.skeletons;
+  var skeletons = this.space.content.skeletons;
 
   skeleton_ids.forEach(function(skeleton_id, index) {
     if (!skeletons.hasOwnProperty(skeleton_id)) {
-		  console.log("Skeleton "+skeleton_id+" does not exist.");
+      console.log("Skeleton "+skeleton_id+" does not exist.");
     }
     if (undefined === colors) skeletons[skeleton_id].updateSkeletonColor(this.options);
     else skeletons[skeleton_id].changeColor(colors[index], this.options);
   }, this);
 
-	this.space.render();
-	return true;
+  this.space.render();
+  return true;
 };
 
 // TODO obsolete code from segmentationtool.js
 WebGLApplication.prototype.addActiveObjectToStagingArea = function() {
-	alert("The function 'addActiveObjectToStagingArea' is no longer in use.");
+  alert("The function 'addActiveObjectToStagingArea' is no longer in use.");
 };
 
 WebGLApplication.prototype.showActiveNode = function() {
-	this.space.content.active_node.setVisible(true);
+  this.space.content.active_node.setVisible(true);
 };
 
 
 WebGLApplication.prototype.configureParameters = function() {
-	var space = this.space;
-	var options = this.options;
-	var updateSkeletons = this.updateSkeletons.bind(this);
+  var space = this.space;
+  var options = this.options;
+  var updateSkeletons = this.updateSkeletons.bind(this);
 
-	var dialog = document.createElement('div');
-	dialog.setAttribute("id", "dialog-confirm");
-	dialog.setAttribute("title", "Configuration");
+  var dialog = document.createElement('div');
+  dialog.setAttribute("id", "dialog-confirm");
+  dialog.setAttribute("title", "Configuration");
 
-	var msg = document.createElement('p');
-	msg.innerHTML = "Missing sections height [0,100]:";
-	dialog.appendChild(msg);
+  var msg = document.createElement('p');
+  msg.innerHTML = "Missing sections height [0,100]:";
+  dialog.appendChild(msg);
 
-	var missingsectionheight = document.createElement('input');
-	missingsectionheight.setAttribute("type", "text");
-	missingsectionheight.setAttribute("id", "missing-section-height");
-	missingsectionheight.setAttribute("value", options.missing_section_height);
-	dialog.appendChild(missingsectionheight);
-	dialog.appendChild(document.createElement("br"));
+  var missingsectionheight = document.createElement('input');
+  missingsectionheight.setAttribute("type", "text");
+  missingsectionheight.setAttribute("id", "missing-section-height");
+  missingsectionheight.setAttribute("value", options.missing_section_height);
+  dialog.appendChild(missingsectionheight);
+  dialog.appendChild(document.createElement("br"));
 
-	var bzplane = document.createElement('input');
-	bzplane.setAttribute("type", "checkbox");
-	bzplane.setAttribute("id", "enable_z_plane");
-	bzplane.setAttribute("value", "Enable z-plane");
-	if ( options.show_zplane )
-		bzplane.setAttribute("checked", "true");
-	dialog.appendChild(bzplane);
-	dialog.appendChild(document.createTextNode('Enable z-plane'));
-	dialog.appendChild(document.createElement("br"));
+  var bzplane = document.createElement('input');
+  bzplane.setAttribute("type", "checkbox");
+  bzplane.setAttribute("id", "enable_z_plane");
+  bzplane.setAttribute("value", "Enable z-plane");
+  if ( options.show_zplane )
+    bzplane.setAttribute("checked", "true");
+  dialog.appendChild(bzplane);
+  dialog.appendChild(document.createTextNode('Enable z-plane'));
+  dialog.appendChild(document.createElement("br"));
 
-	var bmeshes = document.createElement('input');
-	bmeshes.setAttribute("type", "checkbox");
-	bmeshes.setAttribute("id", "show_meshes");
-	bmeshes.setAttribute("value", "Show meshes");
-	if( options.show_meshes )
-		bmeshes.setAttribute("checked", "true");
-	dialog.appendChild(bmeshes);
-	dialog.appendChild(document.createTextNode('Show meshes, with color: '));
+  var bmeshes = document.createElement('input');
+  bmeshes.setAttribute("type", "checkbox");
+  bmeshes.setAttribute("id", "show_meshes");
+  bmeshes.setAttribute("value", "Show meshes");
+  if( options.show_meshes )
+    bmeshes.setAttribute("checked", "true");
+  dialog.appendChild(bmeshes);
+  dialog.appendChild(document.createTextNode('Show meshes, with color: '));
 
-	var c = document.createElement('input');
-	c.setAttribute('type', 'text');
-	c.setAttribute('id', 'meshes-color');
-	c.setAttribute('value', '0xff0000');
-	c.setAttribute('size', '10');
-	$(document).on('keyup', "#meshes-color", function (e) {
-		var code = (e.keyCode ? e.keyCode : e.which);
-		if (13 === code) {
-			// Enter was pressed
-			if (options.show_meshes) {
-				var material = options.createMeshMaterial("#meshes-color");
-				space.content.meshes.forEach(function(mesh) {
-					mesh.material = material;
-				});
-				space.render();
-			}
-		}
-	});
-	dialog.appendChild(c);
-	dialog.appendChild(document.createElement("br"));
+  var c = document.createElement('input');
+  c.setAttribute('type', 'text');
+  c.setAttribute('id', 'meshes-color');
+  c.setAttribute('value', '0xff0000');
+  c.setAttribute('size', '10');
+  $(document).on('keyup', "#meshes-color", function (e) {
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if (13 === code) {
+      // Enter was pressed
+      if (options.show_meshes) {
+        var material = options.createMeshMaterial("#meshes-color");
+        space.content.meshes.forEach(function(mesh) {
+          mesh.material = material;
+        });
+        space.render();
+      }
+    }
+  });
+  dialog.appendChild(c);
+  dialog.appendChild(document.createElement("br"));
 
-	var bactive = document.createElement('input');
-	bactive.setAttribute("type", "checkbox");
-	bactive.setAttribute("id", "enable_active_node");
-	bactive.setAttribute("value", "Enable active node");
-	if( options.show_active_node )
-		bactive.setAttribute("checked", "true");
-	dialog.appendChild(bactive);
-	dialog.appendChild(document.createTextNode('Enable active node'));
-	dialog.appendChild(document.createElement("br"));
+  var bactive = document.createElement('input');
+  bactive.setAttribute("type", "checkbox");
+  bactive.setAttribute("id", "enable_active_node");
+  bactive.setAttribute("value", "Enable active node");
+  if( options.show_active_node )
+    bactive.setAttribute("checked", "true");
+  dialog.appendChild(bactive);
+  dialog.appendChild(document.createTextNode('Enable active node'));
+  dialog.appendChild(document.createElement("br"));
 
-	var bmissing = document.createElement('input');
-	bmissing.setAttribute("type", "checkbox");
-	bmissing.setAttribute("id", "enable_missing_sections");
-	bmissing.setAttribute("value", "Missing sections");
-	if( options.show_missing_sections )
-		bmissing.setAttribute("checked", "true");
-	dialog.appendChild(bmissing);
-	dialog.appendChild(document.createTextNode('Missing sections'));
-	dialog.appendChild(document.createElement("br"));
+  var bmissing = document.createElement('input');
+  bmissing.setAttribute("type", "checkbox");
+  bmissing.setAttribute("id", "enable_missing_sections");
+  bmissing.setAttribute("value", "Missing sections");
+  if( options.show_missing_sections )
+    bmissing.setAttribute("checked", "true");
+  dialog.appendChild(bmissing);
+  dialog.appendChild(document.createTextNode('Missing sections'));
+  dialog.appendChild(document.createElement("br"));
 
-	/*var bortho = document.createElement('input');
-	bortho.setAttribute("type", "checkbox");
-	bortho.setAttribute("id", "toggle_ortho");
-	bortho.setAttribute("value", "Toggle Ortho");
-	container.appendChild(bortho);
-	container.appendChild(document.createTextNode('Toggle Ortho'));*/
+  /*var bortho = document.createElement('input');
+  bortho.setAttribute("type", "checkbox");
+  bortho.setAttribute("id", "toggle_ortho");
+  bortho.setAttribute("value", "Toggle Ortho");
+  container.appendChild(bortho);
+  container.appendChild(document.createTextNode('Toggle Ortho'));*/
 
-	var bfloor = document.createElement('input');
-	bfloor.setAttribute("type", "checkbox");
-	bfloor.setAttribute("id", "toggle_floor");
-	bfloor.setAttribute("value", "Toggle Floor");
-	if( options.show_floor )
-		bfloor.setAttribute("checked", "true");
-	dialog.appendChild(bfloor);
-	dialog.appendChild(document.createTextNode('Toggle floor'));
-	dialog.appendChild(document.createElement("br"));
+  var bfloor = document.createElement('input');
+  bfloor.setAttribute("type", "checkbox");
+  bfloor.setAttribute("id", "toggle_floor");
+  bfloor.setAttribute("value", "Toggle Floor");
+  if( options.show_floor )
+    bfloor.setAttribute("checked", "true");
+  dialog.appendChild(bfloor);
+  dialog.appendChild(document.createTextNode('Toggle floor'));
+  dialog.appendChild(document.createElement("br"));
 
-	var bbox = document.createElement('input');
-	bbox.setAttribute("type", "checkbox");
-	bbox.setAttribute("id", "toggle_aabb");
-	bbox.setAttribute("value", "Toggle Bounding Box");
-	if( options.show_box )
-		bbox.setAttribute("checked", "true");
-	dialog.appendChild(bbox);
-	dialog.appendChild(document.createTextNode('Toggle Bounding Box'));
-	dialog.appendChild(document.createElement("br"));
+  var bbox = document.createElement('input');
+  bbox.setAttribute("type", "checkbox");
+  bbox.setAttribute("id", "toggle_aabb");
+  bbox.setAttribute("value", "Toggle Bounding Box");
+  if( options.show_box )
+    bbox.setAttribute("checked", "true");
+  dialog.appendChild(bbox);
+  dialog.appendChild(document.createTextNode('Toggle Bounding Box'));
+  dialog.appendChild(document.createElement("br"));
 
-	var bbackground = document.createElement('input');
-	bbackground.setAttribute("type", "checkbox");
-	bbackground.setAttribute("id", "toggle_bgcolor");
-	bbackground.setAttribute("value", "Toggle Background Color");
-	if( options.show_background )
-		bbackground.setAttribute("checked", "true");
-	dialog.appendChild(bbackground);
-	dialog.appendChild(document.createTextNode('Toggle Background Color'));
-	dialog.appendChild(document.createElement("br"));
+  var bbackground = document.createElement('input');
+  bbackground.setAttribute("type", "checkbox");
+  bbackground.setAttribute("id", "toggle_bgcolor");
+  bbackground.setAttribute("value", "Toggle Background Color");
+  if( options.show_background )
+    bbackground.setAttribute("checked", "true");
+  dialog.appendChild(bbackground);
+  dialog.appendChild(document.createTextNode('Toggle Background Color'));
+  dialog.appendChild(document.createElement("br"));
 
   var blean = document.createElement('input');
   blean.setAttribute("type", "checkbox");
@@ -642,12 +642,12 @@ WebGLApplication.prototype.configureParameters = function() {
   dialog.appendChild(document.createTextNode('Toggle lean mode (no synapses, no tags)'));
   dialog.appendChild(document.createElement("br"));
 
-	dialog.appendChild(document.createTextNode('Synapse clustering bandwidth: '));
-	var ibandwidth = document.createElement('input');
-	ibandwidth.setAttribute('type', 'text');
-	ibandwidth.setAttribute('id', 'synapse-clustering-bandwidth');
-	ibandwidth.setAttribute('value', options.synapse_clustering_bandwidth);
-	ibandwidth.setAttribute('size', '7');
+  dialog.appendChild(document.createTextNode('Synapse clustering bandwidth: '));
+  var ibandwidth = document.createElement('input');
+  ibandwidth.setAttribute('type', 'text');
+  ibandwidth.setAttribute('id', 'synapse-clustering-bandwidth');
+  ibandwidth.setAttribute('value', options.synapse_clustering_bandwidth);
+  ibandwidth.setAttribute('size', '7');
   dialog.appendChild(ibandwidth);
   dialog.appendChild(document.createTextNode(' nm.'));
   dialog.appendChild(document.createElement("br"));
@@ -680,32 +680,32 @@ WebGLApplication.prototype.configureParameters = function() {
 
   var submit = this.submit;
 
-	$(dialog).dialog({
-		height: 440,
-		width: 600,
-		modal: true,
-		buttons: {
-			"Cancel": function() {
-				$(this).dialog("close");
-			},
-			"OK": function() {
-				var missing_section_height = missingsectionheight.value;	
-				try {
-					missing_section_height = parseInt(missing_section_height);
-					if (missing_section_height < 0) missing_section_height = 20;
-				} catch (e) {
-					alert("Invalid value for the height of missing sections!");
-				}
+  $(dialog).dialog({
+    height: 440,
+    width: 600,
+    modal: true,
+    buttons: {
+      "Cancel": function() {
+        $(this).dialog("close");
+      },
+      "OK": function() {
+        var missing_section_height = missingsectionheight.value;  
+        try {
+          missing_section_height = parseInt(missing_section_height);
+          if (missing_section_height < 0) missing_section_height = 20;
+        } catch (e) {
+          alert("Invalid value for the height of missing sections!");
+        }
 
-				options.missing_section_height = missing_section_height;
-				options.show_zplane = bzplane.checked;
-				options.show_missing_sections = bmissing.checked;
-				options.show_floor = bfloor.checked;
-				options.show_box = bbox.checked;
-				options.show_background = bbackground.checked;
+        options.missing_section_height = missing_section_height;
+        options.show_zplane = bzplane.checked;
+        options.show_missing_sections = bmissing.checked;
+        options.show_floor = bfloor.checked;
+        options.show_box = bbox.checked;
+        options.show_background = bbackground.checked;
 
-				options.show_active_node = bactive.checked;
-				options.show_meshes = bmeshes.checked;
+        options.show_active_node = bactive.checked;
+        options.show_meshes = bmeshes.checked;
         options.meshes_color = options.validateOctalString("#meshes-color", options.meshes_color);
         options.lean_mode = blean.checked;
 
@@ -729,25 +729,25 @@ WebGLApplication.prototype.configureParameters = function() {
             changed_delta = read(resample[0], 'resample_skeletons', resample[1], 'resampling_delta'),
             changed_line_width = read(null, null, linewidth[1], 'skeleton_line_width', null);
 
-				space.staticContent.adjust(options, space);
-				space.content.adjust(options, space, submit, changed_bandwidth, changed_line_width);
+        space.staticContent.adjust(options, space);
+        space.content.adjust(options, space, submit, changed_bandwidth, changed_line_width);
 
-				// Copy
-				WebGLApplication.prototype.OPTIONS = options.clone();
+        // Copy
+        WebGLApplication.prototype.OPTIONS = options.clone();
 
         if (changed_sigma || changed_delta) updateSkeletons();
         else space.render();
 
-				$(this).dialog("close");
-			}
-		},
-		close: function(event, ui) {
-			$('#dialog-confirm').remove();
+        $(this).dialog("close");
+      }
+    },
+    close: function(event, ui) {
+      $('#dialog-confirm').remove();
 
-			// Remove the binding
-			$(document).off('keyup', "#meshes-color");
-		}
-	});
+      // Remove the binding
+      $(document).off('keyup', "#meshes-color");
+    }
+  });
 };
 
 

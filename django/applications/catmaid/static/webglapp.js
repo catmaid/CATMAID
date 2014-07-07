@@ -144,6 +144,8 @@ WebGLApplication.prototype.Options = function() {
   this.synapse_clustering_bandwidth = 5000;
   this.smooth_skeletons = false;
   this.smooth_skeletons_sigma = 200; // nm
+  this.resample_skeletons = false;
+  this.resampling_delta = 3000; // nm
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -649,19 +651,27 @@ WebGLApplication.prototype.configureParameters = function() {
   dialog.appendChild(document.createTextNode(' nm.'));
   dialog.appendChild(document.createElement("br"));
 
-  var smooth = document.createElement('input');
-  smooth.setAttribute("type", "checkbox");
-  if (options.smooth_skeletons)
-    smooth.setAttribute("checked", true);
-  dialog.appendChild(smooth);
-  dialog.appendChild(document.createTextNode('Toggle smoothing skeletons by Gaussian convolution of the slabs, with sigma: '));
-  var sigma = document.createElement('input');
-  sigma.setAttribute('type', 'text');
-  sigma.setAttribute('value', options.smooth_skeletons_sigma);
-  sigma.setAttribute('size', 5);
-  dialog.appendChild(sigma);
-  dialog.appendChild(document.createTextNode(' nm.'));
-  dialog.appendChild(document.createElement("br"));
+  var optionField = function(label, units, size, checkboxKey, valueKey) {
+    var checkbox = document.createElement('input');
+    checkbox.setAttribute("type", "checkbox");
+    if (options[checkboxKey])
+      checkbox.setAttribute("checked", true);
+    dialog.appendChild(checkbox);
+    dialog.appendChild(document.createTextNode(label));
+    var number = document.createElement('input');
+    number.setAttribute('type', 'text');
+    number.setAttribute('value', options[valueKey]);
+    number.setAttribute('size', size);
+    dialog.appendChild(number);
+    dialog.appendChild(document.createTextNode(units));
+    dialog.appendChild(document.createElement("br"));
+    return [checkbox, number];
+  };
+
+  var smooth = optionField('Toggle smoothing skeletons by Gaussian convolution of the slabs, with sigma: ', ' nm.', 5, 'smooth_skeletons', 'smooth_skeletons_sigma');
+
+  var resample = optionField('Toogle resampling skeleton slabs, with delta: ', ' nm.', 5, 'resample_skeletons', 'resampling_delta');
+
 
   var submit = this.submit;
 
@@ -694,32 +704,30 @@ WebGLApplication.prototype.configureParameters = function() {
         options.meshes_color = options.validateOctalString("#meshes-color", options.meshes_color);
         options.lean_mode = blean.checked;
 
-        var refresh = false;
+        var refresh = false,
+            refreshFn = function(old_value, new_value) { refresh = old_value != new_value; };
 
-        var old_smooth = options.smooth_skeletons;
-        options.smooth_skeletons = smooth.checked;
-
-        var new_sigma = options.smooth_skeletons_sigma;
-        try {
-          new_sigma = parseInt(sigma.value);
-          if (new_sigma > 0) {
-            options.smooth_skeletons_sigma = new_sigma;
-            refresh = old_smooth != options.smooth_skeletons;
+        var read = function(checkbox, checkboxKey, valueField, valueKey, callback) {
+          var old_value = options[checkboxKey];
+          if (checkbox) options[checkboxKey] = checkbox.checked;
+          try {
+            var new_value = parseInt(valueField.value);
+            if (new_value > 0) {
+              options[valueKey] = new_value;
+              if (callback) callback(old_value, new_value);
+            } else alert("'" + valueKey + "' must be larger than zero.");
+          } catch (e) {
+            alert("Invalid value for '" + valueKey + "': " + valueField.value);
           }
-          else alert ("Sigma must be larger than zero.");
-        } catch (e) {
-          alert("Invalid value for sigma: '" + sigma.value + "'");
-        }
+        };
 
-        var old_bandwidth = options.synapse_clustering_bandwidth,
-            new_bandwidth = old_bandwidth;
-        try {
-          new_bandwidth = parseInt(ibandwidth.value);
-          if (new_bandwidth > 0) options.synapse_clustering_bandwidth = new_bandwidth;
-          else alert("Synapse clustering bandwidth must be larger than zero.");
-        } catch (e) {
-          alert("Invalid value for synapse clustering bandwidth: '" + ibandwidth.value + "'");
-        }
+        read(smooth[0], 'smooth_skeletons', smooth[1], 'smooth_skeletons_sigma', refreshFn);
+
+        var old_bandwidth = options.synapse_clustering_bandwidth;
+        read(null, null, ibandwidth, 'synapse_clustering_bandwidth', null);
+
+        read(resample[0], 'resample_skeletons', resample[1], 'resampling_delta', refreshFn);
+
 
 				space.staticContent.adjust(options, space);
 				space.content.adjust(options, space, submit, old_bandwidth);
@@ -2402,6 +2410,31 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			}
 		}
 	}
+
+  if (options.resample_skeletons) {
+    // WARNING: node IDs no longer resemble actual skeleton IDs.
+    // All node IDs will now have negative values to avoid accidental similarities.
+    var res = this.createArbor().resampleSlabs(vs, options.smooth_skeletons_sigma * this.space.scale, options.resampling_delta * this.space.scale, 0);
+    var vs = this.geometry['neurite'].vertices;
+    // Remove existing lines
+    vs.length = 0;
+    // Add all new lines
+    var edges = res.arbor.edges,
+        positions = res.positions;
+    Object.keys(edges).forEach(function(nodeID) {
+      // Fix up Vector3 instances
+      var v_child = positions[nodeID];
+      v_child.user_id = -1;
+      v_child.node_id = -nodeID;
+      // Add line
+      vs.push(v_child);
+      vs.push(positions[edges[nodeID]]); // parent
+    });
+    // Fix up root
+    var v_root = positions[res.arbor.root];
+    v_root.user_id = -1;
+    v_root.node_id = -res.arbor.root;
+  }
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.show = function(options) {

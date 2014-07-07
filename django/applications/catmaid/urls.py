@@ -330,6 +330,8 @@ urlpatterns += patterns('catmaid.control.classification',
         'export', name='export_classification'),
     url(r'^classification/(?P<workspace_pid>{0})/search$'.format(integer),
         'search', name='search_classifications'),
+    url(r'^classification/(?P<workspace_pid>{0})/export_ontology$'.format(integer),
+        'export_ontology', name='export_ontology'),
 )
 
 # Notifications

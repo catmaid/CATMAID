@@ -1,6 +1,7 @@
 from django.db import connection
 from django.test import TestCase
 
+from catmaid.models import Treenode
 
 class IntersectionTableTest(TestCase):
     """ This test case tests the PL/pgSQL functions creating the intersection
@@ -34,3 +35,21 @@ class IntersectionTableTest(TestCase):
         # Expect the new table to have zero entries
         cursor.execute('SELECT * FROM %s' % table_name)
         self.assertEqual(0, len(cursor.fetchall()))
+
+    def test_on_slice_treenodes(self):
+        """ This test case makes sure all intersections are actually found. It
+        only tests intersections that are on slices and requires a dense
+        representation of the skeleton (i.e. a treenode on each slice that the
+        skeleton intersects).
+        """
+        table_name = 'catmaid_skeleton_intersections'
+        # Re-create intersection table
+
+        cursor = connection.cursor()
+        cursor.execute('''
+        SELECT * FROM recreate_intersection_table('%s')
+        ''' % table_name)
+
+
+        # Get all treenode positions of test skeleton))
+        Treenode.objects.filter(skeleton_id=1).

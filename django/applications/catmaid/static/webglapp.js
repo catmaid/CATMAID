@@ -144,6 +144,7 @@ WebGLApplication.prototype.Options = function() {
   this.synapse_clustering_bandwidth = 5000;
   this.smooth_skeletons = false;
   this.smooth_skeletons_sigma = 200; // nm
+  this.skeleton_line_width = 3;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -663,6 +664,16 @@ WebGLApplication.prototype.configureParameters = function() {
   dialog.appendChild(document.createTextNode(' nm.'));
   dialog.appendChild(document.createElement("br"));
 
+  dialog.appendChild(document.createTextNode('Skeleton Line Width: '));
+  var linewidth = document.createElement('input');
+  linewidth.setAttribute('type', 'text');
+  linewidth.setAttribute('id', 'skeleton-line-width');
+  linewidth.setAttribute('value', options.skeleton_line_width);
+  linewidth.setAttribute('size', '7');
+  dialog.appendChild(linewidth);
+  dialog.appendChild(document.createTextNode(' nm.'));
+  dialog.appendChild(document.createElement("br"));
+
   var submit = this.submit;
 
 	$(dialog).dialog({
@@ -721,8 +732,18 @@ WebGLApplication.prototype.configureParameters = function() {
           alert("Invalid value for synapse clustering bandwidth: '" + ibandwidth.value + "'");
         }
 
+        var old_skeleton_line_width = options.skeleton_line_width,
+            new_skeleton_line_width = old_skeleton_line_width;
+        try {
+          new_skeleton_line_width = parseInt(linewidth.value);
+          if (new_skeleton_line_width > 0) options.skeleton_line_width = new_skeleton_line_width;
+          else alert("Skeleton line width must be larger than zero.");
+        } catch (e) {
+          alert("Invalid value for skeleton line width: '" + linewidth.value + "'");
+        }
+
 				space.staticContent.adjust(options, space);
-				space.content.adjust(options, space, submit, old_bandwidth);
+				space.content.adjust(options, space, submit, old_bandwidth, old_skeleton_line_width);
 
 				// Copy
 				WebGLApplication.prototype.OPTIONS = options.clone();
@@ -1169,7 +1190,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.newJSONLoader = fun
 };
 
 /** Adjust content according to the persistent options. */
-WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit, old_bandwidth) {
+WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit, old_bandwidth, old_skeleton_line_width) {
 	if (options.show_meshes) {
     if (0 === this.meshes.length) {
 		  this.loadMeshes(space, submit, options.createMeshMaterial());
@@ -1185,6 +1206,11 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
       && 'synapse-clustering' === options.connector_color) {
     space.updateConnectorColors(options, Object.keys(this.skeletons).map(function(skid) { return this.skeletons[skid]; }, this));
   }
+
+  if (old_skeleton_line_width !== options.skeleton_line_width) {
+    space.updateSkeletonLineWidth(options, Object.keys(this.skeletons).map(function(skid) { return this.skeletons[skid]; }, this));
+  }
+
 };
 
 
@@ -1460,7 +1486,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite', 'presynaptic_to', 'postsynaptic_to'];
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to'];
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects = function() {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects = function(options) {
 	this.visible = true;
 	if (undefined === this.skeletonmodel) {
 		console.log('Can not initialize skeleton object');
@@ -1468,17 +1494,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects
 	}
 	this.actorColor = this.skeletonmodel.color.clone();
 	var CTYPES = this.CTYPES;
-	this.line_material = new THREE.LineBasicMaterial({color: 0xffff00, opacity: 1.0, linewidth: 3});
+	this.line_material = new THREE.LineBasicMaterial({color: 0xffff00, opacity: 1.0, linewidth: options.skeleton_line_width});
 
 	this.geometry = {};
 	this.geometry[CTYPES[0]] = new THREE.Geometry();
 	this.geometry[CTYPES[1]] = new THREE.Geometry();
 	this.geometry[CTYPES[2]] = new THREE.Geometry();
 
-	this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
-	this.actor[CTYPES[0]] = new THREE.Line(this.geometry[CTYPES[0]], this.line_material, THREE.LinePieces);
-  this.actor[CTYPES[1]] = new THREE.Line(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]], THREE.LinePieces);
-  this.actor[CTYPES[2]] = new THREE.Line(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]], THREE.LinePieces);
+      this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
+      this.actor[CTYPES[0]] = new THREE.Line(this.geometry[CTYPES[0]], this.line_material, THREE.LinePieces);
+      this.actor[CTYPES[1]] = new THREE.Line(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]], THREE.LinePieces);
+      this.actor[CTYPES[2]] = new THREE.Line(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]], THREE.LinePieces);
 
 	this.specialTagSpheres = {};
 	this.synapticSpheres = {};
@@ -1921,6 +1947,11 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
   }
 };
 
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeSkeletonLineWidth = function(width) {
+    this.actor['neurite'].material.linewidth = width;
+    this.actor['neurite'].material.needsUpdate = true;
+};
+
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeColor = function(color, options) {
 	this.actorColor = color;
 	if (options.color_method === 'manual') {
@@ -1935,6 +1966,12 @@ WebGLApplication.prototype.updateConnectorColors = function(select) {
   }, this);
   this.space.updateConnectorColors(this.options, skeletons, this.space.render.bind(this.space));
 };
+
+WebGLApplication.prototype.Space.prototype.updateSkeletonLineWidth = function(options, skeletons, callback) {
+    skeletons.forEach(function(skeleton) {
+      skeleton.changeSkeletonLineWidth(options.skeleton_line_width);
+    });
+}
 
 WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(options, skeletons, callback) {
   if ('cyan-red' === options.connector_color) {
@@ -2266,7 +2303,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 		this.destroy();
 	}
   this.skeletonmodel = skeletonmodel;
-	this.initialize_objects();
+	this.initialize_objects(options);
 
 	var nodes = json[0];
 	var connectors = json[1];

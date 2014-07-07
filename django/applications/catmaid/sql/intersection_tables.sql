@@ -91,18 +91,20 @@ BEGIN
       RAISE EXCEPTION 'stack % not found', sid;
   END IF;
 
-  -- Get ID of 'skeleton' class
-  SELECT id INTO skeleton_class_id FROM class WHERE class_name = 'skeleton' LIMIT 1;
+  -- Get ID of 'skeleton' class of the current project
+  SELECT id INTO skeleton_class_id FROM class
+      WHERE class_name = 'skeleton' AND project_id = pid LIMIT 1;
 
   -- Find out how many treenodes we have
-  SELECT count(*) INTO num_treenodes FROM treenode;
+  SELECT count(*) INTO num_treenodes FROM treenode WHERE project_id=pid;
   treenode_count = 0;
 
 
   -- Depending on the view, create a functinon to measure the distance between a
   -- node and a section. The orientation is encoded as an integer: XY = 0, XZ = 1
   -- and ZY = 2.
-  SELECT ps.orientation INTO orientation FROM project_stack ps WHERE ps.project_id=pid AND ps.stack_id=sid;
+  SELECT ps.orientation INTO orientation FROM project_stack ps
+      WHERE ps.project_id=pid AND ps.stack_id=sid;
   IF orientation = 0
   THEN
     -- Helper to get distance of a node to a section.

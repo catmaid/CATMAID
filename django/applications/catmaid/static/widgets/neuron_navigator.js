@@ -1548,7 +1548,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   // Manually request compact-json object for skeleton
   var loader_fn = function(skeleton_id) {
     requestQueue.register(django_url + project.id +
-        '/skeleton/' + skeleton_id + '/compact-json', 'POST', {},
+        '/' + skeleton_id + '/0/1/compact-skeleton', 'POST', {},
         function(status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);
@@ -1556,7 +1556,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
             new ErrorDialog(json.error, json.detail).show();
             return;
           }
-          var nodes = json[1],
+          var nodes = json[0],
               tags = json[2],
               arbor = new Arbor(),
               eb = arbor.findBranchAndEndNodes(),

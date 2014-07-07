@@ -1558,8 +1558,12 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
           }
           var nodes = json[0],
               tags = json[2],
-              arbor = new Arbor(),
-              eb = arbor.findBranchAndEndNodes(),
+              arbor = new Arbor();
+          nodes.forEach(function(row) {
+            if (row[1]) arbor.edges[row[0]] = row[1];
+            else arbor.root = row[0];
+          });
+          var eb = arbor.findBranchAndEndNodes(),
               tagged = ['ends', 'uncertain end', 'not a branch', 'soma'].reduce(function(o, tag) {
                 if (tag in tags) return tags[tag].reduce(function(o, nodeID) { o[nodeID] = true; return o; }, o);
                 return o;

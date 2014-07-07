@@ -849,6 +849,7 @@ Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabIni
                 points = [point],
                 k, w, pk;
             // TODO: could memoize the distances to points for reuse
+            // TODO: or use the _gaussianWeights one-pass computation. Need to measure what is faster: to create a bunch of arrays or to muliply multiple times the same values.
             k = i - 1;
             while (k > -1) {
                 pk = positions[slab[k]];

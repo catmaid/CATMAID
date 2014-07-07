@@ -146,6 +146,7 @@ WebGLApplication.prototype.Options = function() {
   this.smooth_skeletons_sigma = 200; // nm
   this.resample_skeletons = false;
   this.resampling_delta = 3000; // nm
+  this.skeleton_line_width = 3;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -652,11 +653,14 @@ WebGLApplication.prototype.configureParameters = function() {
   dialog.appendChild(document.createElement("br"));
 
   var optionField = function(label, units, size, checkboxKey, valueKey) {
-    var checkbox = document.createElement('input');
-    checkbox.setAttribute("type", "checkbox");
-    if (options[checkboxKey])
-      checkbox.setAttribute("checked", true);
-    dialog.appendChild(checkbox);
+    var checkbox;
+    if (checkboxKey) {
+      checkbox = document.createElement('input');
+      checkbox.setAttribute("type", "checkbox");
+      if (options[checkboxKey])
+        checkbox.setAttribute("checked", true);
+      dialog.appendChild(checkbox);
+    }
     dialog.appendChild(document.createTextNode(label));
     var number = document.createElement('input');
     number.setAttribute('type', 'text');
@@ -672,6 +676,7 @@ WebGLApplication.prototype.configureParameters = function() {
 
   var resample = optionField('Toogle resampling skeleton slabs, with delta: ', ' nm.', 5, 'resample_skeletons', 'resampling_delta');
 
+  var linewidth = optionField('Skeleton rendering line width: ', ' pixels.', 5, null, 'skeleton_line_width');
 
   var submit = this.submit;
 
@@ -704,38 +709,33 @@ WebGLApplication.prototype.configureParameters = function() {
         options.meshes_color = options.validateOctalString("#meshes-color", options.meshes_color);
         options.lean_mode = blean.checked;
 
-        var refresh = false,
-            refreshFn = function(old_value, new_value) { refresh = old_value != new_value; };
-
-        var read = function(checkbox, checkboxKey, valueField, valueKey, callback) {
+        var read = function(checkbox, checkboxKey, valueField, valueKey) {
           var old_value = options[checkboxKey];
           if (checkbox) options[checkboxKey] = checkbox.checked;
           try {
             var new_value = parseInt(valueField.value);
             if (new_value > 0) {
               options[valueKey] = new_value;
-              if (callback) callback(old_value, new_value);
+              return old_value != new_value;
             } else alert("'" + valueKey + "' must be larger than zero.");
           } catch (e) {
             alert("Invalid value for '" + valueKey + "': " + valueField.value);
           }
+          return false;
         };
 
-        read(smooth[0], 'smooth_skeletons', smooth[1], 'smooth_skeletons_sigma', refreshFn);
-
-        var old_bandwidth = options.synapse_clustering_bandwidth;
-        read(null, null, ibandwidth, 'synapse_clustering_bandwidth', null);
-
-        read(resample[0], 'resample_skeletons', resample[1], 'resampling_delta', refreshFn);
-
+        var changed_sigma = read(smooth[0], 'smooth_skeletons', smooth[1], 'smooth_skeletons_sigma'),
+            changed_bandwidth = read(null, null, ibandwidth, 'synapse_clustering_bandwidth', null),
+            changed_delta = read(resample[0], 'resample_skeletons', resample[1], 'resampling_delta'),
+            changed_line_width = read(null, null, linewidth[1], 'skeleton_line_width', null);
 
 				space.staticContent.adjust(options, space);
-				space.content.adjust(options, space, submit, old_bandwidth);
+				space.content.adjust(options, space, submit, changed_bandwidth, changed_line_width);
 
 				// Copy
 				WebGLApplication.prototype.OPTIONS = options.clone();
 
-        if (refresh) updateSkeletons();
+        if (changed_sigma || changed_delta) updateSkeletons();
         else space.render();
 
 				$(this).dialog("close");
@@ -1177,7 +1177,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.newJSONLoader = fun
 };
 
 /** Adjust content according to the persistent options. */
-WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit, old_bandwidth) {
+WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit, changed_bandwidth, changed_line_width) {
 	if (options.show_meshes) {
     if (0 === this.meshes.length) {
 		  this.loadMeshes(space, submit, options.createMeshMaterial());
@@ -1189,9 +1189,14 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
 
 	this.active_node.setVisible(options.show_active_node);
 
-  if (old_bandwidth !== options.synapse_clustering_bandwidth
-      && 'synapse-clustering' === options.connector_color) {
+  if (changed_bandwidth && 'synapse-clustering' === options.connector_color) {
     space.updateConnectorColors(options, Object.keys(this.skeletons).map(function(skid) { return this.skeletons[skid]; }, this));
+  }
+
+  if (changed_line_width) {
+    Object.keys(this.skeletons).forEach(function(skid) {
+      this.skeletons[skid].changeSkeletonLineWidth(options.skeleton_line_width);
+    }, this);
   }
 };
 
@@ -1468,7 +1473,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite', 'presynaptic_to', 'postsynaptic_to'];
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to'];
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects = function() {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects = function(options) {
 	this.visible = true;
 	if (undefined === this.skeletonmodel) {
 		console.log('Can not initialize skeleton object');
@@ -1476,17 +1481,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects
 	}
 	this.actorColor = this.skeletonmodel.color.clone();
 	var CTYPES = this.CTYPES;
-	this.line_material = new THREE.LineBasicMaterial({color: 0xffff00, opacity: 1.0, linewidth: 3});
+	this.line_material = new THREE.LineBasicMaterial({color: 0xffff00, opacity: 1.0, linewidth: options.skeleton_line_width});
 
 	this.geometry = {};
 	this.geometry[CTYPES[0]] = new THREE.Geometry();
 	this.geometry[CTYPES[1]] = new THREE.Geometry();
 	this.geometry[CTYPES[2]] = new THREE.Geometry();
 
-	this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
-	this.actor[CTYPES[0]] = new THREE.Line(this.geometry[CTYPES[0]], this.line_material, THREE.LinePieces);
-  this.actor[CTYPES[1]] = new THREE.Line(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]], THREE.LinePieces);
-  this.actor[CTYPES[2]] = new THREE.Line(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]], THREE.LinePieces);
+      this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
+      this.actor[CTYPES[0]] = new THREE.Line(this.geometry[CTYPES[0]], this.line_material, THREE.LinePieces);
+      this.actor[CTYPES[1]] = new THREE.Line(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]], THREE.LinePieces);
+      this.actor[CTYPES[2]] = new THREE.Line(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]], THREE.LinePieces);
 
 	this.specialTagSpheres = {};
 	this.synapticSpheres = {};
@@ -1929,6 +1934,11 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
   }
 };
 
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeSkeletonLineWidth = function(width) {
+    this.actor['neurite'].material.linewidth = width;
+    this.actor['neurite'].material.needsUpdate = true;
+};
+
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeColor = function(color, options) {
 	this.actorColor = color;
 	if (options.color_method === 'manual') {
@@ -2274,7 +2284,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 		this.destroy();
 	}
   this.skeletonmodel = skeletonmodel;
-	this.initialize_objects();
+	this.initialize_objects(options);
 
 	var nodes = json[0];
 	var connectors = json[1];

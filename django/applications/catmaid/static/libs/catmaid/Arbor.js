@@ -987,7 +987,7 @@ Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta, min
     var slabP = slab.map(function(node) { return positions[node]; }),
         gw = this._gaussianWeights(slab, slabP, S, minNeighbors),
         len = slab.length,
-        last = slabP[0],
+        last = slabP[0].clone(),
         a = [last],
         k,
         i = 1;
@@ -1062,12 +1062,13 @@ Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta, min
         i = k;
     }
 
-    var slabLast = slabP[len -1];
+    var slabLast = slabP[len -1].clone();
     if (last.distanceToSquared(slabLast) < sqDelta / 2) {
         // Replace last: too close to slabLast
         a[a.length -1] = slabLast;
+    } else {
+        a.push(slabLast);
     }
-    a.push(slabLast);
 
     return a;
 };

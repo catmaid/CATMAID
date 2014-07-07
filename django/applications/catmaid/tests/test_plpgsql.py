@@ -87,3 +87,6 @@ class IntersectionTableTest(TestCase):
 
         for tid, tloc in t_id_vs_loc.items():
             self.assertEquals(tloc, i_id_vs_loc[tid])
+
+    def test_in_between_treenodes(self):
+        pass

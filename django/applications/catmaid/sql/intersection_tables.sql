@@ -64,28 +64,37 @@ $$ LANGUAGE plpgsql;
 -- target table has to exist already. This function doesn't remove data from the
 -- target table, but only adds to it.
 --
+-- TODO: Compensate for possible translation between stack and project
 -- TODO: What to do with broken slices?
 CREATE OR REPLACE FUNCTION populate_intersection_table(sid integer, pid integer, table_name regclass)
 RETURNS integer AS $$
 DECLARE
   dimension stack.dimension%TYPE;
   resolution stack.resolution%TYPE;
+  translation project_stack.translation%TYPE;
   orientation integer;
-  loc treenode.location%TYPE;
   skeleton_class_id integer;
   root_node_id integer;
   skeleton class_instance%ROWTYPE;
   node RECORD;
   section_distance double precision;
+  next_isect_dist double precision;
+  base_offset double precision;
+  slice_thickness double precision;
+  sin_alpha double precision;
   num_intersections integer;
   num_treenodes integer;
   treenode_count integer;
   insert_statement text;
+  direction treenode.location%TYPE;
+  direction_length double precision;
+  new_location treenode.location%TYPE;
   -- edge_count integer;
 BEGIN
   -- Get the stack's dimension and resolution
   SELECT (s.dimension).* INTO dimension FROM stack s WHERE id = sid LIMIT 1;
   SELECT (s.resolution).* INTO resolution FROM stack s WHERE id = sid LIMIT 1;
+  SELECT (ps.translation).* INTO translation FROM project_stack ps WHERE project_id = pid AND stack_id = sid LIMIT 1;
   -- Make sure we got the data we want
   IF NOT FOUND THEN
       RAISE EXCEPTION 'stack % not found', sid;
@@ -107,6 +116,16 @@ BEGIN
       WHERE ps.project_id=pid AND ps.stack_id=sid;
   IF orientation = 0
   THEN
+    -- Helper to get the sine of the angle between the passed in direction and a
+    -- slice of this orientation. The direction is expected to be normalized.
+    CREATE OR REPLACE FUNCTION get_sin_angle_to_slices(treenode.location%TYPE)
+    RETURNS double precision AS $a$
+    BEGIN
+      -- Calculate length of dot product between normal of XY plane and
+      -- direction in an optimized fasion.
+      return sqrt(($1).y * ($1).y + ($1).x * ($1).x);
+    END;
+    $a$ LANGUAGE plpgsql;
     -- Helper to get distance of a node to a section.
     CREATE OR REPLACE FUNCTION get_section_distance(treenode.location%TYPE, stack.resolution%TYPE)
     RETURNS double precision AS $a$
@@ -115,21 +134,45 @@ BEGIN
     END;
     $a$ LANGUAGE plpgsql;
     -- Helper to get number of intersections between two nodes
-    CREATE OR REPLACE FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, stack.resolution%TYPE)
+    CREATE OR REPLACE FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, double precision, stack.resolution%TYPE)
     RETURNS integer AS $a$
     BEGIN
-      RETURN abs(($1).z - ($2).z) / ($3).z - 1;
+      RETURN floor((abs(($1).z - ($2).z) + $3) / ($4).z);
     END;
     $a$ LANGUAGE plpgsql;
     -- Helper to test if the first nodes projection is lower than the second one's
-    CREATE OR REPLACE FUNCTION is_below(treenode.location%TYPE, treenode.location%TYPE)
+    CREATE OR REPLACE FUNCTION is_higher_up(treenode.location%TYPE, treenode.location%TYPE)
     RETURNS boolean AS $a$
     BEGIN
       RETURN ($1).z < ($2).z;
     END;
     $a$ LANGUAGE plpgsql;
+    -- Helper to get the thickness of a slice
+    CREATE OR REPLACE FUNCTION get_slice_thickness(stack.resolution%TYPE)
+    RETURNS double precision AS $a$
+    BEGIN
+      return ($1).z;
+    END;
+    $a$ LANGUAGE plpgsql;
+    -- Helper to transform a location into the current coordinate space
+    CREATE OR REPLACE FUNCTION transform(treenode.location%TYPE)
+    RETURNS treenode.location%TYPE AS $a$
+    BEGIN
+      return (($1).x, ($1).y, ($1).z);
+    END;
+    $a$ LANGUAGE plpgsql;
   ELSIF orientation = 1
   THEN
+    -- Helper to get the sine of the angle between the passed in direction and a
+    -- slice of this orientation. The direction is expected to be normalized.
+    CREATE OR REPLACE FUNCTION get_sin_angle_to_slices(treenode.location%TYPE)
+    RETURNS double precision AS $a$
+    BEGIN
+      -- Calculate length of dot product between normal of XZ plane and
+      -- direction in an optimized fasion.
+      return sqrt(($1).z * ($1).z + ($1).y * ($1).y);
+    END;
+    $a$ LANGUAGE plpgsql;
     -- Helper to get distance of a node to a section.
     CREATE OR REPLACE FUNCTION get_section_distance(treenode.location%TYPE, stack.resolution%TYPE)
     RETURNS double precision AS $a$
@@ -138,21 +181,45 @@ BEGIN
     END;
     $a$ LANGUAGE plpgsql;
     -- Helper to get number of intersections between two nodes
-    CREATE OR REPLACE FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, stack.resolution%TYPE)
+    CREATE OR REPLACE FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, double precision, stack.resolution%TYPE)
     RETURNS integer AS $a$
     BEGIN
-      return abs(($1).y - ($2).y) / ($3).y - 1;
+      RETURN floor((abs(($1).y - ($2).y) + $3) / ($4).y);
     END;
     $a$ LANGUAGE plpgsql;
     -- Helper to test if the first nodes projection is lower than the second one's
-    CREATE OR REPLACE FUNCTION is_below(treenode.location%TYPE, treenode.location%TYPE)
+    CREATE OR REPLACE FUNCTION is_higher_up(treenode.location%TYPE, treenode.location%TYPE)
     RETURNS boolean AS $a$
     BEGIN
       RETURN ($1).y < ($2).y;
     END;
     $a$ LANGUAGE plpgsql;
+    -- Helper to get the thickness of a slice
+    CREATE OR REPLACE FUNCTION get_slice_thickness(stack.resolution%TYPE)
+    RETURNS double precision AS $a$
+    BEGIN
+      return ($1).y;
+    END;
+    $a$ LANGUAGE plpgsql;
+    -- Helper to transform a location into the current coordinate space
+    CREATE OR REPLACE FUNCTION transform(treenode.location%TYPE)
+    RETURNS treenode.location%TYPE AS $a$
+    BEGIN
+      return (($1).x, ($1).z, ($1).y);
+    END;
+    $a$ LANGUAGE plpgsql;
   ELSIF orientation = 2
   THEN
+    -- Helper to get the sine of the angle between the passed in direction and a
+    -- slice of this orientation. The direction is expected to be normalized.
+    CREATE OR REPLACE FUNCTION get_sin_angle_to_slices(treenode.location%TYPE)
+    RETURNS double precision AS $a$
+    BEGIN
+      -- Calculate length of dot product between normal of ZY plane and
+      -- direction in an optimized fasion.
+      return sqrt(($1).z * ($1).z + ($1).y * ($1).y);
+    END;
+    $a$ LANGUAGE plpgsql;
     -- Helper to get distance of a node to a section.
     CREATE OR REPLACE FUNCTION get_section_distance(treenode.location%TYPE, stack.resolution%TYPE)
     RETURNS double precision AS $a$
@@ -161,25 +228,45 @@ BEGIN
     END;
     $a$ LANGUAGE plpgsql;
     -- Helper to get number of intersections between two nodes
-    CREATE OR REPLACE FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, stack.resolution%TYPE)
+    CREATE OR REPLACE FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, double precision, stack.resolution%TYPE)
     RETURNS integer AS $a$
     BEGIN
-      return abs(($1).x - ($2).x) / ($3).x - 1;
+      RETURN floor((abs(($1).x - ($2).x) + $3) / ($4).x);
     END;
     $a$ LANGUAGE plpgsql;
     -- Helper to test if the first nodes projection is lower than the second one's
-    CREATE OR REPLACE FUNCTION is_below(treenode.location%TYPE, treenode.location%TYPE)
+    CREATE OR REPLACE FUNCTION is_higher_up(treenode.location%TYPE, treenode.location%TYPE)
     RETURNS boolean AS $a$
     BEGIN
       RETURN ($1).x < ($2).x;
     END;
     $a$ LANGUAGE plpgsql;
+    -- Helper to get the thickness of a slice
+    CREATE OR REPLACE FUNCTION get_slice_thickness(stack.resolution%TYPE)
+    RETURNS double precision AS $a$
+    BEGIN
+      return ($1).x;
+    END;
+    $a$ LANGUAGE plpgsql;
+    -- Helper to transform a location into the current coordinate space
+    CREATE OR REPLACE FUNCTION transform(treenode.location%TYPE)
+    RETURNS treenode.location%TYPE AS $a$
+    BEGIN
+      return (($1).z, ($1).y, ($1).x);
+    END;
+    $a$ LANGUAGE plpgsql;
   END IF;
 
+  RAISE NOTICE 'Walking skeleton';
+
+  -- Slice thickness won't change while walking the skeleton
+  slice_thickness := get_slice_thickness(resolution);
 
   -- Prepare basic insert statement
   insert_statement = format('INSERT INTO %s (child_id, parent_id, intersection) ' ||
     'VALUES ($1, $2, $3)', table_name);
+  -- Prepare parent update statement
+--  update_parent = format('UPDATE %s SET parent_id = $2 WHERE id = $1', table_name);
 
   -- Walk each skeleton of this project from root to all leafes. This is faster
   -- than walking sequencially though a big join. Expect the skeleton to have no
@@ -204,50 +291,107 @@ BEGIN
         SELECT * FROM skeleton_tree
     LOOP
       -- Output status information
-      -- treenode_count = treenode_count + 1;
-      -- RAISE NOTICE 'Status: %/%', treenode_count, num_treenodes;
+      treenode_count = treenode_count + 1;
+      RAISE NOTICE 'Status: %/% node: % parent: %', treenode_count, num_treenodes, node.location, node.parent_location;
 
-      -- In every iteration one node of the current skeleton as 'node'. It has
-      -- the properties 'id', 'location', 'parent_id' and 'parent_location'. The
-      -- last two are NULL for the root node. Based on this, all intersections
-      -- can be calculated. Start with the current location and add an
-      -- intersection, if it is on a section.
+      -- Find out how far away the current node is from the last section
       section_distance = get_section_distance(node.location, resolution);
+      RAISE NOTICE '# Section distance: %', section_distance;
+
+      -- Calculate the number of intersections between this node and its parent.
+      num_intersections = get_num_intersections(node.location, node.parent_location, section_distance, resolution);
+
+      -- Display intersections with:
+      RAISE NOTICE '# Intersections: %', num_intersections;
+
+      -- In every iteration one node of the current skeleton is available as
+      -- 'node'. It has the properties 'id', 'location', 'parent_id' and
+      -- 'parent_location'. The last two are NULL for the root node. Based on
+      -- this, all intersections can be calculated. Start with the current
+      -- location and add an intersection, if it is on a section.
       IF section_distance < 0.0001 THEN
-          -- RAISE NOTICE 'Skeleton %: adding intersection: %', skeleton.id, node.location;
+          RAISE NOTICE 'Skeleton %: adding intersection: %', skeleton.id, node.location;
           EXECUTE insert_statement USING node.id, node.parent_id, node.location;
+          -- Subtract one from number of intersections that still have to be
+          -- added
+          num_intersections := num_intersections - 1;
       END IF;
 
-      -- Calculate the number of extra intersections. Substract one to
-      -- compensate for the intersection that has been potentially added above.
-      num_intersections = get_num_intersections(node.location, node.parent_location, resolution);
+      -- Because not included in num_intersections, check if the parent is also
+      -- located exactly on a section. If so, add an intersection entry for it
+      -- as well. This makes two intersections for one edge if child and parent
+      -- are both exactly on a section.
+--      IF node.parent_location IS NOT NULL
+--          AND get_section_distance(node.parent_location, resolution) < 0.0001 THEN
+--        -- RAISE NOTICE 'Skeleton %: adding intersection: %', skeleton.id, node.location;
+--        EXECUTE insert_statement USING node.id, node.parent_id, node.parent_location;
+--      END IF;
 
-      -- Continue with next node if there are -1 or zero intersections. Minus
-      -- one will happen for the root node and zero if the parent node is on the
-      -- next slice. Display intersections with:
-      -- RAISE NOTICE '# Intersections: %', num_intersections;
-      IF num_intersections > 0 THEN
+      -- Continue with next node if there are no intersections. For a root node,
+      -- num_intersections will be 0 as well as if the distance between the last
+      -- section and the node's parent is smaller than the resolution in this
+      -- dimension.
+      IF num_intersections < 1 THEN
         CONTINUE;
       END IF;
 
-      -- Calculate the vector in direction of the next intersection
-      
-      -- If the parent node's Z is lower than the current node's Z, check
-      -- backwars for intersections. Otherwise go forwards.
-      IF is_below(node.parent_location, node.location) THEN
-        -- Go to the next intersection before this slice
-        WHILE num_intersections > 0 LOOP
-          RAISE NOTICE '  Adding addition intersection';
-          num_intersections = num_intersections - 1;
-        END LOOP;
+      -- Calculate the direction of the next intersection (not normalized),
+      -- which is toward the partent
+      direction.x := (node.parent_location).x - (node.location).x;
+      direction.y := (node.parent_location).y - (node.location).y;
+      direction.z := (node.parent_location).z - (node.location).z;
+      -- Get distance between node and parent
+      direction_length := sqrt(direction.x * direction.x
+                             + direction.y * direction.y
+                             + direction.z * direction.z);
+      -- Normalize this vector
+      direction.x := direction.x / direction_length;
+      direction.y := direction.y / direction_length;
+      direction.z := direction.z / direction_length;
+
+      -- The distance between slices along <direction> is based on the angle
+      -- between the the direction and the section plane. If this angle is zero,
+      -- there is no further intersection (actuall infinity).
+      sin_alpha = get_sin_angle_to_slices(direction);
+      IF abs(sin_alpha) < 0.0001 THEN
+        -- TODO: Instead of don't adding any intersections, should we add one at
+        -- the parent?
+        CONTINUE;
+      END IF;
+      -- Sine trigonometry to get the distance
+      base_offset := slice_thickness / sin_alpha;
+      RAISE NOTICE '  Base offset: %', base_offset;
+
+      -- If the parent node is higher up in the stack than the current node,
+      -- check backwars for intersections. Otherwise go forwards.
+      IF is_higher_up(node.parent_location, node.location) THEN
+        -- Calculate the distance to the first intersection and get the base_offset
+        -- for every succequent iteration
+        next_isect_dist := slice_thickness - base_offset;
       ELSE
-        -- Go to the next intersection after this slice
-        WHILE num_intersections > 0 LOOP
-          RAISE NOTICE '  Adding addition intersection';
-          num_intersections = num_intersections - 1;
-        END LOOP;
+        -- Calculate the distance to the first intersection
+        next_isect_dist := base_offset;
       END IF;
 
+--      last_node_id = node.id;
+
+      -- Walk over intersections
+      WHILE num_intersections > 0 LOOP
+        -- Calculate intersection
+        new_location.x := (node.location).x + next_isect_dist * direction.x;
+        new_location.y := (node.location).y + next_isect_dist * direction.y;
+        new_location.z := (node.location).z + next_isect_dist * direction.z;
+        -- Add intersection
+        EXECUTE insert_statement USING node.id, node.parent_id, new_location;
+--        -- Update original parent and current node to reflect this change
+--         EXECUTE update_parent USING last_node_id, new_node.id;
+        -- Mark intersection as added
+        num_intersections := num_intersections - 1;
+        -- Update distance
+        next_isect_dist := next_isect_dist + base_offset;
+        -- Debug output
+        RAISE NOTICE '  Adding additional intersection at %', new_location;
+      END LOOP;
 
       -- This could be used to display each node:
       -- RAISE NOTICE 'Skeleton % edge: % to %', skeleton.id, node.parent_location, node.location;
@@ -256,13 +400,13 @@ BEGIN
     -- The number of nodes per skeleton can now be obtained and displayed with:
     -- SELECT COUNT(*) INTO edge_count FROM skeleton_tree;
     -- RAISE NOTICE 'Skeleton % has % edges', skeleton.id, edge_count;
-
   END LOOP;
 
   -- Clean up
   DROP FUNCTION get_section_distance(treenode.location%TYPE, stack.resolution%TYPE);
-  DROP FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, stack.resolution%TYPE);
-  DROP FUNCTION is_below(treenode.location%TYPE, treenode.location%TYPE);
+  DROP FUNCTION get_num_intersections(treenode.location%TYPE, treenode.location%TYPE, double precision, stack.resolution%TYPE);
+  DROP FUNCTION is_higher_up(treenode.location%TYPE, treenode.location%TYPE);
+  DROP FUNCTION get_slice_thickness(stack.resolution%TYPE);
 
   RAISE NOTICE 'Done populating intersection table for stack %', sid;
   RETURN 0;
@@ -274,7 +418,7 @@ CREATE OR REPLACE FUNCTION intersection_test()
 RETURNS void AS $$
 BEGIN
   PERFORM recreate_intersection_table('catmaid_skeleton_intersections');
-  PERFORM populate_intersection_table(1,1, 'catmaid_skeleton_intersections');
+  PERFORM populate_intersection_table(1,2, 'catmaid_skeleton_intersections');
   RETURN;
 END;
 $$ LANGUAGE plpgsql;

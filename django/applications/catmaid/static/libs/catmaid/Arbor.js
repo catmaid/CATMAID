@@ -929,16 +929,18 @@ Arbor.prototype.smoothPositions = function(positions, sigma) {
  * - positions: map of node ID vs THREE.Vector3, or equivalent object with distanceTo and clone methods.
  * - sigma: value to use for Gaussian convolution to smooth the slabs prior to resampling.
  * - delta: desired new node interdistance.
+ * - minNeighbors: minimum number of neighbors to inspect; defaults to zero. Aids in situations of extreme jitter, where otherwise spatially close but not topologically adjancent nodes would not be looked at because the prior node would have a Gaussian weight below 0.01.
  *
  * Returns a new Arbor, with new numeric node IDs that bear no relation to the IDs of this Arbor, and a map of the positions of its nodes.  */
-Arbor.prototype.resampleSlabs = function(positions, sigma, delta) {
+Arbor.prototype.resampleSlabs = function(positions, sigma, delta, minNeighbors) {
     var arbor = new Arbor(),
         new_positions = {},
         next_id = 0,
         starts = {},
         slabs = this.slabs(),
         S = 2 * sigma * sigma,
-        sqDelta = delta * delta;
+        sqDelta = delta * delta,
+        minNeighbors = (Number.NaN === Math.min(minNeighbors | 0, 0) ? 0 : minNeighbors) | 0;
 
     arbor.root = 0;
     new_positions[0] = positions[this.root];
@@ -948,7 +950,7 @@ Arbor.prototype.resampleSlabs = function(positions, sigma, delta) {
     // In a slab, the first node is the closest one to the root.
     for (var i=0, l=slabs.length; i<l; ++i) {
         var slab = slabs[i],
-            a = this._resampleSlab(slab, positions, S, delta, sqDelta),
+            a = this._resampleSlab(slab, positions, S, delta, sqDelta, minNeighbors),
             first = slab[0],
             paren = starts[first];
         if (undefined === paren) {
@@ -981,9 +983,9 @@ Arbor.prototype.resampleSlabs = function(positions, sigma, delta) {
 };
 
 /** Helper function for resampleSlabs. */
-Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta) {
+Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta, minNeighbors) {
     var slabP = slab.map(function(node) { return positions[node]; }),
-        gw = this._gaussianWeights(slab, slabP, S),
+        gw = this._gaussianWeights(slab, slabP, S, minNeighbors),
         len = slab.length,
         last = slabP[0],
         a = [last],
@@ -1007,8 +1009,8 @@ Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta) {
             weights = [1],
             j = k - 1;
         while (j > 0) {
-            var w = gw[slab[j] + "@" + pivot];
-            if (undefined === w) break;
+            var w = gw[j][k-j];
+            if (undefined === w && (k - j) >= minNeighbors) break;
             points.push(j);
             weights.push(w);
             --j;
@@ -1016,8 +1018,8 @@ Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta) {
 
         j = k + 1;
         while (j < len) {
-            var w = gw[pivot + "@" + slab[j]];
-            if (undefined === w) break;
+            var w = gw[k][j-k];
+            if (undefined === w && (j - k) >= minNeighbors) break;
             points.push(j);
             weights.push(w);
             ++j;
@@ -1074,8 +1076,15 @@ Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta) {
  *
  * Starting at the first node, compute the Gaussian weight
  * towards forward in the slab until it is smaller than 1%. Then do the
- * same for the second node, etc. Store all weights in a map where the keys
- * are the combination node1 + "@" + node2.
+ * same for the second node, etc. Store all weights in an array per node
+ * that has as first element '1' (weight with itself is 1), and then
+ * continues with weights for the next node, etc. until one node's weight
+ * falls below 0.01.
+ *
+ * BEWARE that if nodes are extremely jittery, the computation of weights
+ * may terminate earlier than would be appropriate. To overcome this,
+ * pass a value of e.g. 3 neighbor nodes minimum to look at.
+ *
  * Gaussian as: a * Math.exp(-Math.pow(x - b, 2) / (2 * c * c)) + d
  * ignoring a and d, given that the weights will then be used for normalizing
  * 
@@ -1083,16 +1092,17 @@ Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta) {
  * slabP: array of corresponding THREE.Vector3
  * S: 2 * Math.pow(sigma, 2)
  */
-Arbor.prototype._gaussianWeights = function(slab, slabP, S) {
-    var weights = {};
+Arbor.prototype._gaussianWeights = function(slab, slabP, S, minNeighbors) {
+    var weights = [];
     for (var i=0, l=slab.length; i<l; ++i) {
-        var node1 = slab[i],
-            pos1 = slabP[i];
+        var pos1 = slabP[i],
+            a = [1.0];
         for (var k=i+1; k<l; ++k) {
             var w = Math.exp(- (pos1.distanceToSquared(slabP[k]) / S));
-            if (w < 0.01) break;
-            weights[node1 + "@" + slab[k]] = w;
+            if (w < 0.01 && (k - i) >= minNeighbors) break;
+            a.push(w);
         }
+        weights.push(a);
     }
     return weights;
 };

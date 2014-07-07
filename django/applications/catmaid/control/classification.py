@@ -1671,3 +1671,28 @@ def search(request, workspace_pid=None):
     view = ClassificationSearchWizard.as_view(forms,
                                               workspace_pid=workspace_pid)
     return view(request)
+
+
+def ontologies_to_features(workspace_pid):
+    """ Returns a dictonary that maps ontology names to a complete list of
+    features that represent this ontology.
+    """
+    ontologies = get_root_classes_qs(workspace_pid)
+    ontologies = [c.class_a for c in get_class_links_qs(
+        workspace_pid, 'is_a', 'classification_root')]
+    features = {}
+    for o in ontologies:
+        features[o.class_name] = get_features(o, workspace_pid,
+            graphs=None, add_nonleafs=True, only_used_features=False)
+    return features
+
+
+def export_ontology(request, workspace_pid):
+    """ Returns a JSON representation of a mapping between ontology names and
+    their features.
+    """
+    feature_dict = {}
+    for o,features in ontologies_to_features(workspace_pid).items():
+        feature_dict[o] = [f.name for f in features]
+
+    return HttpResponse(json.dumps(feature_dict), content_type="application/json")

@@ -167,6 +167,12 @@ var WindowMaker = new function()
     update.onclick = SMT.update.bind(SMT);
     buttons.appendChild(update);
 
+    var options = document.createElement('input');
+    options.setAttribute("type", "button");
+    options.setAttribute("value", "Options");
+    options.onclick = SMT.adjustOptions.bind(SMT);
+    buttons.appendChild(options);
+
     var container = createContainer("skeleton_measurements_widget" + SMT.widgetID);
 
     content.appendChild(buttons);

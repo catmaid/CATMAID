@@ -8,6 +8,7 @@ var SkeletonMeasurementsTable = function() {
   this.registerSource();
   this.table = null;
   this.models = {};
+  this.sigma = 200;
 };
 
 SkeletonMeasurementsTable.prototype = {};
@@ -66,7 +67,7 @@ SkeletonMeasurementsTable.prototype.appendToTable = function(models) {
           positions[node] = new THREE.Vector3(row[3], row[4], row[5]);
         });
         var raw_cable = Math.round(arbor.cableLength(positions)) | 0,
-            smooth_cable = Math.round(arbor.smoothCableLength(positions, 200)) | 0,
+            smooth_cable = Math.round(arbor.smoothCableLength(positions, this.sigma)) | 0,
             lower_bound_cable = Math.round(arbor.topologicalCopy().cableLength(positions)) | 0,
             io = json[1].reduce(function(a, row) {
               a[row[2]] += 1;
@@ -191,3 +192,19 @@ SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {
     }, this);
 };
 
+SkeletonMeasurementsTable.prototype.adjustOptions = function() {
+  var od = new OptionsDialog("Parameters");
+  od.appendField("Smooth skeletons by Gaussian convolution with sigma (nm): ", "SMT-sigma-" + this.widgetID, this.sigma);
+  od.onOK = (function() {
+    var field = $('#SMT-sigma-' + this.widgetID);
+    try {
+      var sigma = parseInt(field.val()) | 0;
+      if (sigma < 0) return alert("Sigma must be larger than zero.");
+      this.sigma = sigma;
+      this.update();
+    } catch (e) {
+      alert("Invalid value for sigma: " + field.val());
+    }
+  }).bind(this);
+  od.show();
+};

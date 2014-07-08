@@ -349,6 +349,7 @@ var ClassificationEditor = new function()
                         $("#imagepreview")
                             .css("top", (e.pageY - preview_y_offset) + "px")
                             .css("left", (e.pageX + preview_x_offset) + "px")
+                            .attr("class", "ui-front")
                             .fadeIn("fast");
                     }
                 },

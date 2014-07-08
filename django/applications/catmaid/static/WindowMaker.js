@@ -173,6 +173,12 @@ var WindowMaker = new function()
     options.onclick = SMT.adjustOptions.bind(SMT);
     buttons.appendChild(options);
 
+    var csv = document.createElement('input');
+    csv.setAttribute("type", "button");
+    csv.setAttribute("value", "Export CSV");
+    csv.onclick = SMT.exportCSV.bind(SMT);
+    buttons.appendChild(csv);
+
     var container = createContainer("skeleton_measurements_widget" + SMT.widgetID);
 
     content.appendChild(buttons);

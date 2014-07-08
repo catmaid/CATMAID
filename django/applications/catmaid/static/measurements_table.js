@@ -208,3 +208,12 @@ SkeletonMeasurementsTable.prototype.adjustOptions = function() {
   }).bind(this);
   od.show();
 };
+
+SkeletonMeasurementsTable.prototype.exportCSV = function() {
+  if (!this.table) return;
+  var csv = this.labels.join(',') + '\n' + this.table.fnGetData().map(function(row) {
+    return $(row[0]).text() + ',' + row.slice(1).join(',');
+  }).join('\n'),
+      blob = new Blob([csv], {type: 'text/plain'});
+  saveAs(blob, "skeleton_measurements.csv");
+};

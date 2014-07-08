@@ -105,7 +105,7 @@ SkeletonMeasurementsTable.prototype.clear = function() {
 };
 
 SkeletonMeasurementsTable.prototype.removeSkeletons = function(skids) {
-    var ids = skids.reduce((function(o, skid) {
+    var to_remove = skids.reduce((function(o, skid) {
         if (this.models.hasOwnProperty(skid)) {
             o[skid] = true;
             delete this.models[skid];
@@ -113,9 +113,11 @@ SkeletonMeasurementsTable.prototype.removeSkeletons = function(skids) {
         return o;
     }).bind(this), {});
 
-    if (0 === Object.keys(ids).length) return;
+    if (0 === Object.keys(to_remove).length) return;
 
-    var rows = this.table.fnGetNodes();
+    var rows = this.table.fnGetData().filter(function(row) {
+      return !to_remove.hasOwnProperty(row[1]);
+    });
 
     this.table.fnClearTable();
     this.table.fnAddData(rows);

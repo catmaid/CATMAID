@@ -38,6 +38,10 @@ var SkeletonMeasurementsTable = new function() {
         "bSearchable": true,
         "bSortable": true
       },
+      { // Lower-bound cable length
+        "bSearchable": true,
+        "bSortable": true
+      },
       { // N inputs
         "bSearchable": true,
         "bSortable": true

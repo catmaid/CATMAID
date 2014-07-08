@@ -146,36 +146,15 @@ var WindowMaker = new function()
     var container = createContainer("skeleton_measurements_widget");
     content.appendChild(container);
 
+    var labels = ['Neuron', 'Skeleton', 'Raw cable (nm)', 'Smooth cable (nm)', 'Lower-bound cable (nm)', 'N inputs', 'N outputs', 'N nodes', 'N branch nodes', 'N end nodes'],
+        headings = '<tr>' + labels.map(function(label) { return '<th>' + label + '</th>'; }).join('') + '</tr>';
+
     container.innerHTML =
       '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeleton_measurements_table">' +
-        '<thead>' +
-          '<tr>' +
-            '<th>Neuron</th>' +
-            '<th>Skeleton</th>' +
-            '<th>Raw cable (nm)</th>' +
-            '<th>Smooth cable (nm)</th>' +
-            '<th>N inputs</th>' +
-            '<th>N outputs</th>' +
-            '<th>N nodes</th>' +
-            '<th>N branch nodes</th>' +
-            '<th>N end nodes</th>' +
-          '</tr>' +
-        '</thead>' +
-        '<tfoot>' +
-          '<tr>' +
-            '<th>Neuron</th>' +
-            '<th>Skeleton</th>' +
-            '<th>Raw cable (nm)</th>' +
-            '<th>Smooth cable (nm)</th>' +
-            '<th>N inputs</th>' +
-            '<th>N outputs</th>' +
-            '<th>N nodes</th>' +
-            '<th>N branch nodes</th>' +
-            '<th>N end nodes</th>' +
-          '</tr>' +
-        '</tfoot>' +
+        '<thead>' + headings + '</thead>' +
+        '<tfoot>' + headings + '</tfoot>' +
         '<tbody>' +
-          '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>' +
+          '<tr>' + labels.map(function() { return '<td></td>'; }).join('') + '</tr>' +
         '</tbody>' +
       '</table>';
     // ABOVE, notice the table needs one dummy row

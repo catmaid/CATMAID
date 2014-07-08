@@ -846,53 +846,16 @@ SelectionTable.prototype.selectSkeleton = function( skeleton, vis ) {
 };
 
 SelectionTable.prototype.measure = function() {
-  var models = this.getSelectedSkeletonModels(),
-      skids = Object.keys(models);
-  if (0 === skids.length) return;
+  var models = this.getSelectedSkeletonModels();
+  if (0 === Object.keys(models).length) return;
 
-  var rows = [],
-      failed = [];
-
-  fetchSkeletons(
-      skids,
-      function(skid) {
-        return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
-      },
-      function(skid) { return {}; },
-      (function(skid, json) {
-        var arbor = new Arbor(),
-            positions = {};
-        json[0].forEach(function(row) {
-          var node = row[0],
-              paren = row[1];
-          if (paren) arbor.edges[node] = paren;
-          else arbor.root = node;
-          positions[node] = new THREE.Vector3(row[3], row[4], row[5]);
-        });
-        var raw_cable = Math.round(arbor.cableLength(positions)) | 0,
-            smooth_cable = Math.round(arbor.smoothCableLength(positions, 200)) | 0,
-            lower_bound_cable = Math.round(arbor.topologicalCopy().cableLength(positions)) | 0,
-            io = json[1].reduce(function(a, row) {
-              a[row[2]] += 1;
-              return a;
-            }, [0, 0]),
-            n_outputs = io[0],
-            n_inputs = io[1],
-            n_nodes = arbor.countNodes(),
-            be = arbor.findBranchAndEndNodes(),
-            n_branching = be.branching.length,
-            n_ends = be.ends.length;
-        this.push([models[skid].baseName, skid,
-                   raw_cable, smooth_cable, lower_bound_cable,
-                   n_inputs, n_outputs,
-                   n_nodes, n_branching, n_ends]);
-      }).bind(rows),
-      (function(skid) {
-        this.push(skid);
-      }).bind(failed),
-      function() {
-        SkeletonMeasurementsTable.populate(rows);
-      });
+  if (this.measurements_table && this.measurements_table.table) {
+    this.measurements_table.append(models);
+  } else {
+    WindowMaker.show('skeleton-measurements-table');
+    this.measurements_table = SkeletonMeasurementsTable.prototype.getLastInstance();
+    this.measurements_table.append(models);
+  }
 };
 
 /** Filtering by an empty text resets to no filtering. */

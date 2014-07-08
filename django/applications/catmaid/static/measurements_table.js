@@ -1,12 +1,167 @@
-var SkeletonMeasurementsTable = new function() {
-  var self = this;
-  var table = null;
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-  this.init = function() {
-    if (table) {
-      table.remove();
-    }
-    table = $('#skeleton_measurements_table').dataTable({
+"use strict";
+
+var SkeletonMeasurementsTable = function() {
+  this.widgetID = this.registerInstance();
+  this.registerSource();
+  this.table = null;
+  this.models = {};
+};
+
+SkeletonMeasurementsTable.prototype = {};
+$.extend(SkeletonMeasurementsTable.prototype, new InstanceRegistry());
+$.extend(SkeletonMeasurementsTable.prototype, new SkeletonSource());
+
+SkeletonMeasurementsTable.prototype.labels = ['Neuron', 'Skeleton', 'Raw cable (nm)', 'Smooth cable (nm)', 'Lower-bound cable (nm)', 'N inputs', 'N outputs', 'N nodes', 'N branch nodes', 'N end nodes'];
+
+SkeletonMeasurementsTable.prototype.getName = function() {
+  return "Measurements " + this.widgetID;
+};
+
+SkeletonMeasurementsTable.prototype.destroy = function() {
+  this.clear();
+  this.table = null;
+  this.unregisterInstance();
+  this.unregisterSource();
+  neuronNameService.unregister(this);
+};
+
+SkeletonMeasurementsTable.prototype.append = function(models) {
+  // Update models and find out which ones are missing
+  var new_models = {};
+  Object.keys(models).forEach(function(skid) {
+      var model = models[skid];
+      if (this.models.hasOwnProperty(skid)) this.models[skid] = model;
+      else {
+          new_models[skid] = model;
+          this.models[skid] = model;
+      }
+  }, this);
+
+  if (0 === Object.keys(new_models).length) return;
+
+  neuronNameService.registerAll(this, new_models, (function() { this.appendToTable(new_models); }).bind(this));
+};
+
+SkeletonMeasurementsTable.prototype.appendToTable = function(models) {
+  var rows = [],
+      failed = [];
+
+  fetchSkeletons(
+      Object.keys(models).map(Number),
+      function(skid) {
+        return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
+      },
+      function(skid) { return {}; },
+      (function(skid, json) {
+        var arbor = new Arbor(),
+            positions = {};
+        json[0].forEach(function(row) {
+          var node = row[0],
+              paren = row[1];
+          if (paren) arbor.edges[node] = paren;
+          else arbor.root = node;
+          positions[node] = new THREE.Vector3(row[3], row[4], row[5]);
+        });
+        var raw_cable = Math.round(arbor.cableLength(positions)) | 0,
+            smooth_cable = Math.round(arbor.smoothCableLength(positions, 200)) | 0,
+            lower_bound_cable = Math.round(arbor.topologicalCopy().cableLength(positions)) | 0,
+            io = json[1].reduce(function(a, row) {
+              a[row[2]] += 1;
+              return a;
+            }, [0, 0]),
+            n_outputs = io[0],
+            n_inputs = io[1],
+            n_nodes = arbor.countNodes(),
+            be = arbor.findBranchAndEndNodes(),
+            n_branching = be.branching.length,
+            n_ends = be.ends.length;
+        rows.push([this._makeStringLink(models[skid].baseName, skid), skid,
+                   raw_cable, smooth_cable, lower_bound_cable,
+                   n_inputs, n_outputs,
+                   n_nodes, n_branching, n_ends]);
+      }).bind(this),
+      (function(skid) {
+        this.push(skid);
+      }).bind(failed),
+      (function() {
+        this.table.fnAddData(rows);
+        if (failed.length > 0) {
+            alert("Skeletons that failed to load: " + failed);
+        }
+      }).bind(this));
+};
+
+SkeletonMeasurementsTable.prototype._makeStringLink = function(name, skid) {
+  return '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\',' + skid + ');">' + name + '</a>';
+};
+
+SkeletonMeasurementsTable.prototype.clear = function() {
+    if (!this.table) return;
+    this.models = {};
+    this.table.fnClearTable();
+};
+
+SkeletonMeasurementsTable.prototype.removeSkeletons = function(skids) {
+    var ids = skids.reduce((function(o, skid) {
+        if (this.models.hasOwnProperty(skid)) {
+            o[skid] = true;
+            delete this.models[skid];
+        }
+        return o;
+    }).bind(this), {});
+
+    if (0 === Object.keys(ids).length) return;
+
+    var rows = this.table.fnGetNodes();
+
+    this.table.fnClearTable();
+    this.table.fnAddData(rows);
+};
+
+SkeletonMeasurementsTable.prototype.update = function() {
+    var models = this.models;
+    this.clear();
+    this.append(models);
+};
+
+SkeletonMeasurementsTable.prototype.updateModels = function(models) {
+    Object.keys(models).forEach(function(skid) {
+        if (this.models.hasOwnProperty(skid)) this.models[skid] = models[skid];
+    }, this);
+};
+
+SkeletonMeasurementsTable.prototype.getSkeletonColor = function(skid) {
+    var model = this.models[skid];
+    if (model) return model.color;
+    return new THREE.Color().setRGB(1, 0, 1);
+};
+
+SkeletonMeasurementsTable.prototype.hasSkeleton = function(skid) {
+    return this.models.hasOwnProperty(skid);
+};
+
+SkeletonMeasurementsTable.prototype.getSelectedSkeletonModels = function() {
+    return Object.keys(this.models).reduce((function(o, skid) {
+        o[skid] = this.models[skid].clone();
+        return o;
+    }).bind(this), {});
+};
+
+SkeletonMeasurementsTable.prototype.getSkeletonModels = SkeletonMeasurementsTable.prototype.getSelectedSkeletonModels;
+
+SkeletonMeasurementsTable.prototype.highlight = function(skid) {
+    // TODO
+};
+
+SkeletonMeasurementsTable.prototype.init = function() {
+  if (this.table) table.remove();
+
+  var n_labels = this.labels.length;
+
+  this.table = $('#skeleton_measurements_table' + this.widgetID).dataTable({
       // http://www.datatables.net/usage/options
       "bDestroy": true,
       "sDom": '<"H"lr>t<"F"ip>',
@@ -16,66 +171,21 @@ var SkeletonMeasurementsTable = new function() {
       "bAutoWidth": false,
       "iDisplayLength": -1,
       "aLengthMenu": [
-        [-1, 10, 100, 200],
-        ["All", 10, 100, 200]
+      [-1, 10, 100, 200],
+      ["All", 10, 100, 200]
       ],
       //"aLengthChange": false,
       "bJQueryUI": true,
-      "aoColumns": [
-      { // Neuron name
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // Skeleton ID
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // Raw cable length
-        "bSearchable": true,
-        "bSortable": true,
-      },
-      { // Smooth cable length
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // Lower-bound cable length
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // N inputs
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // N outputs
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // N nodes
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // N branch nodes
-        "bSearchable": true,
-        "bSortable": true
-      },
-      { // N end nodes
-        "bSearchable": true,
-        "bSortable": true,
-      },
-      ]
-    });
-  };
+      "aoColumns": this.labels.map((function() { return this; }).bind({bSearchable: true, bSortable: true}))
+  });
 
-  this.populate = function(rows) {
-    WindowMaker.show('skeleton-measurements-table');
-    table.fnClearTable(0);
-    table.fnAddData(rows);
-
-    // Specify what happens on double click
-    $('#skeleton_measurements_table tbody tr').on('dblclick', function(evt) {
-      var aData = table.fnGetData(this);
-      var skeleton_id = parseInt(aData[1]);
-      TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
-    });
-  };
+  // Remove default dummy row
+  this.table.fnClearTable();
 };
+
+SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {
+    this.table.fnGetData().forEach(function(row, i) {
+        this.table.fnUpdate(this._makeStringLink(neuronNameService.getName(row[1]), row[1]), i, 0);
+    }, this);
+};
+

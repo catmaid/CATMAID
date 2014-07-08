@@ -139,29 +139,55 @@ var WindowMaker = new function()
 
   var createSkeletonMeasurementsTable = function()
   {
-    var win = new CMWWindow("Skeleton Measurements Table");
+    var SMT = new SkeletonMeasurementsTable();
+    var win = new CMWWindow("Skeleton Measurements Table " + SMT.widgetID);
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
-    var container = createContainer("skeleton_measurements_widget");
+    var buttons = document.createElement("div");
+
+    buttons.appendChild(document.createTextNode('From'));
+    buttons.appendChild(SkeletonListSources.createSelect(SMT));
+
+    var load = document.createElement('input');
+    load.setAttribute("type", "button");
+    load.setAttribute("value", "Append");
+    load.onclick = SMT.loadSource.bind(SMT);
+    buttons.appendChild(load);
+
+    var clear = document.createElement('input');
+    clear.setAttribute("type", "button");
+    clear.setAttribute("value", "Clear");
+    clear.onclick = SMT.clear.bind(SMT);
+    buttons.appendChild(clear);
+
+    var update = document.createElement('input');
+    update.setAttribute("type", "button");
+    update.setAttribute("value", "Refresh");
+    update.onclick = SMT.update.bind(SMT);
+    buttons.appendChild(update);
+
+    var container = createContainer("skeleton_measurements_widget" + SMT.widgetID);
+
+    content.appendChild(buttons);
     content.appendChild(container);
 
-    var labels = ['Neuron', 'Skeleton', 'Raw cable (nm)', 'Smooth cable (nm)', 'Lower-bound cable (nm)', 'N inputs', 'N outputs', 'N nodes', 'N branch nodes', 'N end nodes'],
-        headings = '<tr>' + labels.map(function(label) { return '<th>' + label + '</th>'; }).join('') + '</tr>';
+    var headings = '<tr>' + SMT.labels.map(function(label) { return '<th>' + label + '</th>'; }).join('') + '</tr>';
 
     container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeleton_measurements_table">' +
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeleton_measurements_table' + SMT.widgetID + '">' +
         '<thead>' + headings + '</thead>' +
         '<tfoot>' + headings + '</tfoot>' +
         '<tbody>' +
-          '<tr>' + labels.map(function() { return '<td></td>'; }).join('') + '</tr>' +
+          '<tr>' + SMT.labels.map(function() { return '<td></td>'; }).join('') + '</tr>' +
         '</tbody>' +
       '</table>';
     // ABOVE, notice the table needs one dummy row
 
-    addListener(win, container);
+    addListener(win, container, null, SMT.destroy.bind(SMT));
     addLogic(win);
-    SkeletonMeasurementsTable.init(); // MUST go after adding the container to the window, otherwise one gets "cannot read property 'aoData' of null" when trying to add data to the table
+
+    SMT.init(); // Must be invoked after the table template has been created above.
 
     return win;
   };

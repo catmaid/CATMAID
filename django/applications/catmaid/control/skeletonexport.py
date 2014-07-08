@@ -90,6 +90,13 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     ''' % skeleton_id)
 
     nodes = tuple(cursor.fetchall())
+
+    if 0 == len(nodes):
+        # Check if the skeleton exists
+        if 0 == ClassInstance.objects.filter(pk=skeleton_id).count():
+            raise Exception("Skeleton #%s doesn't exist" % skeleton_id)
+        # Otherwise returns an empty list of nodes
+
     connectors = ()
     tags = defaultdict(list)
 

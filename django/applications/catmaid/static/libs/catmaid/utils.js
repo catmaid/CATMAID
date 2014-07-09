@@ -943,7 +943,7 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
   if (skeleton_ids.length > 0) {
     loadOne(skeleton_ids[0]);
   } else {
-      fnDone();
+    fnDone();
   }
 };
 

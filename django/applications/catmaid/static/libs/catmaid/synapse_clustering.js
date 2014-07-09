@@ -317,3 +317,69 @@ SynapseClustering.prototype.clusterSizes = function(density_hill_map) {
                         function(treenode_id) { return 1; },
                         function(entry, treenode_id) { return entry + 1; });
 };
+
+
+/** Compute the sum of the entropy of each cluster, measured as a deviation from uniformity (same number of inputs and outputs per cluster), relative to the entropy of the arbor as a whole.
+ *
+ * clusters: map of cluster ID vs array of nodes, as obtained by this.clusters(density_hill_map)
+ *
+ * Algorithm by Casey Schneider-Mizell, implemented by Albert Cardona.
+ */
+SynapseClustering.prototype.segregationIndex = function(clusters) {
+  // Count the number of inputs and outputs of each cluster
+  var synapses = this.synapses,
+      cs = Object.keys(clusters).reduce(function(a, clusterID) {
+    // TODO workaround issue with density_hill_map, which may contain a tiny cluster with 'undefined' as the ID
+    if (undefined === clusterID) return a;
+
+    var m = clusters[clusterID].reduce(function(c, nodeID) {
+      var s = synapses[nodeID];
+      if (s) {
+        for (var i=0; i<s.length; ++i) {
+          // NOTE, could be clever about it (and unreadable) and sum the type to n_inputs, which would only add 1 when it is postsynaptic (presynaptic is 0). And then add 1 always to n_synapses, and there would be no need to have n_outputs. But would be unmaintainable.
+          switch (s[i].type) {
+            case 0: c.n_outputs += 1; break;
+            case 1: c.n_inputs += 1; break;
+          }
+        }
+      }
+      return c;
+    }, {id: clusterID,
+        n_inputs: 0,
+        n_outputs: 0,
+        n_synapses: 0,
+        entropy: 0});
+    m.n_synapses = m.n_inputs + m.n_outputs;
+
+    // Skip clusters without synapses
+    if (0 === m.n_synapses) return a;
+
+    // p cannot be zero, otherwise 0 * -Infinity = NaN !
+    if (0 === m.n_inputs || m.n_inputs === m.n_synapses) {
+      m.entropy = 0;
+    } else {
+      var p = m.n_inputs / m.n_synapses;
+      m.entropy = -(p * Math.log(p) + (1 - p) * Math.log(1 - p));
+    }
+
+    a.push(m);
+    return a;
+  }, []);
+
+  // Compute total entropy of clusters with synapses
+  var n_synapses = 0,
+      n_inputs = 0,
+      S = cs.reduce(function(sum, c) {
+    n_synapses += c.n_synapses;
+    n_inputs += c.n_inputs;
+    return sum + c.n_synapses * c.entropy;
+  }, 0) / n_synapses;
+
+  // Compute reference entropy
+  if (0 === n_inputs) return 1; // fully segregated
+
+  var p = n_inputs / n_synapses,
+      S_norm = -(p * Math.log(p) + (1 - p) * Math.log(1 - p));
+
+  return 1 - S / S_norm;
+};

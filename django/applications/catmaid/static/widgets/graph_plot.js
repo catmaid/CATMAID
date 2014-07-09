@@ -317,7 +317,8 @@ CircuitGraphPlot.prototype._plot = function(ids, names, models, AdjM) {
      'Cable length w/o principal branch (nm)',
      'Num. input synapses',
      'Num. output synapses',
-     'Num. input - Num. output'].forEach(function(name, k) {
+     'Num. input - Num. output',
+     'Segregation index'].forEach(function(name, k) {
        select.options.add(new Option(name, 'a' + k));
      });
 
@@ -385,62 +386,102 @@ CircuitGraphPlot.prototype.redraw = function() {
 
 CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
   $.blockUI();
-  requestQueue.register(django_url + project.id + '/skeletons/measure', "POST",
-      {skeleton_ids: this.getSkeletons()},
-      (function(status, text) {
-        try {
-          if (200 !== status) return;
-          var json = $.parseJSON(text);
-          if (json.error) { alert(json.error); return ;}
-          // Map by skeleton ID
-          var rows = json.reduce(function(o, row) {
-            o[row[0]] = row;
-            return o;
-          }, {});
-          // 0: smooth cable length
-          // 1: smooth cable length minus principal branch length
-          // 2: number of inputs
-          // 3: number of outputs
-          // 4: inputs minus outputs
-          var vs = [[], [], [], [], []];
-          this.models.forEach(function(models) {
-            if (1 === models) {
-              var row = rows[skeleton_id];
-              vs[0].push(row[2]);
-              vs[1].push(row[2] - row[8]);
-              vs[2].push(row[3]);
-              vs[3].push(row[4]);
-              vs[4].push(row[3] - row[4]);
-            } else {
-              var v0 = 0,
-                  v1 = 0,
-                  v2 = 0,
-                  v3 = 0,
-                  v4 = 0;
-              models.forEach(function(model) {
-                var row = rows[model.id];
-                v0 += row[2];
-                v1 += row[2] - row[8];
-                v2 += row[3];
-                v3 += row[4];
-                v4 += row[3] - row[4];
-              });
-              vs[0].push(v0);
-              vs[1].push(v1);
-              vs[2].push(v2);
-              vs[3].push(v3);
-              vs[4].push(v4);
-            }
-          });
 
-          this.anatomy = vs;
-          if (typeof(callback) === 'function') callback();
-        } catch (e) {
-          console.log(e, e.stack);
-          alert("Error: " + e);
-        } finally {
-          $.unblockUI();
+  var measurements = {},
+      sigma = 200, // TODO
+      bandwidth = 5000; // TODO
+
+  fetchSkeletons(
+      Object.keys(this.getSkeletonModels()).map(Number),
+      function(skid) {
+        return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
+      },
+      function(skid) { return {}; },
+      function(skid, json) {
+        var ap = parseArbor(json),
+            arbor = ap.arbor,
+            smooth_positions = arbor.smoothPositions(ap.positions, sigma),
+            smooth_cable = Math.round(arbor.cableLength(smooth_positions, sigma)) | 0,
+            n_inputs = ap.n_inputs,
+            n_outputs = ap.n_outputs;
+
+        // Compute length of principal branch
+        var principal = (function(ps) { return ps[ps.length -1]; })(arbor.partitionSorted()),
+            plen = 0,
+            loc1 = smooth_positions[principal[0]];
+        for (var i=1, l=principal.length; i<l; ++i) {
+          var loc2 = smooth_positions[principal[i]];
+          plen += loc1.distanceTo(loc2);
+          loc1 = loc2;
         }
+
+        // Compute synapse segregation index
+        var synapse_map = json[1].reduce(function(o, row) {
+          var list = o[row[0]],
+              entry = {type: row[2],
+                       connector_id: row[1]};
+          if (list) list.push(entry);
+          else o[row[0]] = [entry];
+          return o;
+        }, {}),
+            sc = new SynapseClustering(arbor, smooth_positions, synapse_map),
+            segIndex = sc.segregationIndex(sc.clusters(sc.densityHillMap(bandwidth)));
+
+        measurements[skid] = [smooth_cable,
+                              plen,
+                              ap.n_inputs,
+                              ap.n_outputs,
+                              segIndex];
+      },
+      function(skid) {
+        // Failed to load
+        growlAlert("ERROR", "Skeleton #" + skid + " failed to load.");
+        measurements[skid] = [0, 0, 0, 0, 0];
+      },
+      (function() {
+        // Done loading all
+        // 0: smooth cable length
+        // 1: smooth cable length minus principal branch length
+        // 2: number of inputs
+        // 3: number of outputs
+        // 4: inputs minus outputs
+        // 5: segregation index
+        var vs = [[], [], [], [], [], []];
+        this.models.forEach(function(models) {
+          var len = models.length;
+          if (1 === len) {
+            var m = measurements[models[0].id];
+            vs[0].push(m[0]);
+            vs[1].push(m[0] - m[1]);
+            vs[2].push(m[2]);
+            vs[3].push(m[3]);
+            vs[4].push(m[2] - m[3]);
+            vs[5].push(m[4]);
+          } else {
+            var v0 = 0,
+                v1 = 0,
+                v2 = 0,
+                v3 = 0,
+                v5 = 0;
+            models.forEach(function(model) {
+              var row = rows[model.id];
+              v0 += m[0];
+              v1 += m[0] - m[1];
+              v2 += m[2];
+              v3 += m[3];
+              v5 += m[4] * m[0]; // weighed by cable
+            });
+            vs[0].push(v0); // sum of all cable
+            vs[1].push(v1); // sum of all cable minus principal branches
+            vs[2].push(v2); // sum of all inputs
+            vs[3].push(v3); // sum of all outputs
+            vs[4].push(v2 - v3); // total inputs minus total outputs
+            vs[5].push(v5 / v0); // average segregation index, weighed by cable
+          }
+        });
+
+        this.anatomy = vs;
+        if (typeof(callback) === 'function') callback();
       }).bind(this));
 };
 

@@ -6,7 +6,7 @@
 /**
  * arbor: an instance of Arbor: each node is a treenode ID.
  * locations: map of treenode ID vs Vector3.
- * synapses: map of treenode ID vs list of connector IDs.
+ * synapses: map of treenode ID vs list of pairs {type, connector_id}, where type 0 is presynaptic and type 1 is postsynaptic.
  *
  * Computes and stores as members the Arbor partitions and the distance map.
  */

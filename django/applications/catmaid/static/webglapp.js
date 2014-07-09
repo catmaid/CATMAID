@@ -1674,20 +1674,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClust
   return new SynapseClustering(this.createArbor(), locations, this.createSynapseMap());
 };
 
-/** Returns a map of treenode ID keys and lists of connector IDs as values.
- * Does not differentiate pre and post relationships. */
+/** Returns a map of treenode ID keys and lists of {type, connectorID} as values,
+ * where type 0 is presynaptic and type 1 is postsynaptic. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseMap = function() {
-  return this.synapticTypes.reduce((function(o, type) {
+  return this.synapticTypes.reduce((function(o, type, k) {
     var vs = this.geometry[type].vertices;
     for (var i=0, l=vs.length; i<l; i+=2) {
       var connector_id = vs[i].node_id,
           treenode_id = vs[i+1].node_id,
-          list = o[treenode_id];
-      if (list) {
-        list.push(connector_id);
-      } else {
-        o[treenode_id] = [connector_id]
-      }
+          list = o[treenode_id],
+          synapse = {type: k,
+                     connector_id: connector_id};
+      if (list) list.push(synapse);
+      else o[treenode_id] = [synapse];
     }
     return o;
   }).bind(this), {});

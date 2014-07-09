@@ -957,3 +957,24 @@ var saveDivSVG = function(divID, filename) {
     saveAs(blob, filename);
   }
 };
+
+/** Extract the Arbor and the node positions from the compact-skeleton JSON. */
+var parseArbor = function(json) {
+  var arbor = new Arbor(),
+      positions = {};
+  json[0].forEach(function(row) {
+    var node = row[0],
+        paren = row[1];
+    if (paren) arbor.edges[node] = paren;
+    else arbor.root = node;
+    positions[node] = new THREE.Vector3(row[3], row[4], row[5]);
+  });
+  var io = json[1].reduce(function(a, row) {
+    a[row[2]] += 1;
+    return a;
+  }, [0, 0]);
+  return {arbor: arbor,
+          positions: positions,
+          n_outputs: io[0],
+          n_inputs: io[1]};
+};

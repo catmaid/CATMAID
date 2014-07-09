@@ -375,9 +375,9 @@ SynapseClustering.prototype.segregationIndex = function(clusters) {
     return sum + c.n_synapses * c.entropy;
   }, 0) / n_synapses;
 
-  // Compute reference entropy
-  if (0 === n_inputs) return 1; // fully segregated
+  if (0 === S || 0 === n_inputs || n_inputs === n_synapses) return 1; // fully segregated
 
+  // Compute reference entropy
   var p = n_inputs / n_synapses,
       S_norm = -(p * Math.log(p) + (1 - p) * Math.log(1 - p));
 

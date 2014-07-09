@@ -291,8 +291,8 @@ SynapseClustering.prototype._clusters = function(density_hill_map, newEntryFn, a
   return Object.keys(density_hill_map).reduce(function(o, treenode_id) {
     var cluster_id = density_hill_map[treenode_id],
         cluster = o[cluster_id];
-    if (cluster) o[cluster_id] = appendFn(cluster, treenode_id);
-    else o[cluster_id] = newEntryFn(treenode_id);
+    if (undefined === cluster) o[cluster_id] = newEntryFn(treenode_id);
+    else o[cluster_id] = appendFn(cluster, treenode_id);
     return o;
   }, {});
 };

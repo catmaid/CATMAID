@@ -33,6 +33,10 @@ var CircuitGraphPlot = function() {
 
   // Node ID vs true
   this.selected = {};
+
+  // Parameters for anatomy
+  this.sigma = 200; // nm
+  this.bandwidth = 8000; // nm
 };
 
 CircuitGraphPlot.prototype = {};
@@ -388,8 +392,8 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
   $.blockUI();
 
   var measurements = {},
-      sigma = 200, // TODO
-      bandwidth = 5000; // TODO
+      sigma = this.sigma,
+      bandwidth = this.bandwidth;
 
   fetchSkeletons(
       Object.keys(this.getSkeletonModels()).map(Number),
@@ -726,3 +730,33 @@ CircuitGraphPlot.prototype.exportCSV = function() {
   var blob = new Blob(["neuron,skeleton_id," + vs.x_name + "," + vs.y_name + "\n", csv], {type :'text/plain'});
   saveAs(blob, "circuit_plot.csv");
 };
+
+CircuitGraphPlot.prototype.adjustOptions = function() {
+  var od = new OptionsDialog("Parameters");
+  od.appendField(
+      "Smooth skeletons by Gaussian convolution with sigma (nm): ",
+      "CGP-sigma" + this.widgetID,
+      this.sigma);
+  od.appendField(
+      "Bandwidth for synapse clustering (nm): ",
+      "CGP-bandwidth" + this.widgetID,
+      this.bandwidth);
+  od.onOK = (function() {
+    var read = (function(name) {
+      var field = $('#CGP-' + name + this.widgetID);
+      try {
+        var value = parseInt(field.val());
+        if (value < 0) return alert(name + " must be larger than zero.");
+        this[name] = value;
+        return true;
+      } catch (e) {
+        alert("Invalid value for sigma: " + field.val());
+        return false;
+      }
+    }).bind(this);
+    var update1 = read('sigma'),
+        update2 = read('bandwidth');
+    if (update1 || update2) this.update();
+  }).bind(this);
+  od.show();
+}

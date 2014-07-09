@@ -957,6 +957,13 @@ var WindowMaker = new function()
     annotate.onclick = GP.annotate_skeleton_list.bind(GP);
     buttons.appendChild(annotate);
 
+    var options = document.createElement('input');
+    options.setAttribute("type", "button");
+    options.setAttribute("value", "Options");
+    options.onclick = GP.adjustOptions.bind(GP);
+    buttons.appendChild(options);
+
+
     buttons.appendChild(document.createTextNode(' - X:'));
 
     var axisX = document.createElement('select');

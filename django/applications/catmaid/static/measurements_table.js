@@ -43,10 +43,13 @@ SkeletonMeasurementsTable.prototype.append = function(models) {
 
   if (0 === Object.keys(new_models).length) return;
 
-  neuronNameService.registerAll(this, new_models, (function() { this.appendToTable(new_models); }).bind(this));
+  neuronNameService.registerAll(this, new_models,
+      (function() {
+        this.load(new_models, this.sigma, this.table.fnAddData.bind(this.table));
+      }).bind(this));
 };
 
-SkeletonMeasurementsTable.prototype.appendToTable = function(models) {
+SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
   var rows = [],
       failed = [];
 
@@ -56,43 +59,33 @@ SkeletonMeasurementsTable.prototype.appendToTable = function(models) {
         return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
       },
       function(skid) { return {}; },
-      (function(skid, json) {
-        var arbor = new Arbor(),
-            positions = {};
-        json[0].forEach(function(row) {
-          var node = row[0],
-              paren = row[1];
-          if (paren) arbor.edges[node] = paren;
-          else arbor.root = node;
-          positions[node] = new THREE.Vector3(row[3], row[4], row[5]);
-        });
-        var raw_cable = Math.round(arbor.cableLength(positions)) | 0,
-            smooth_cable = Math.round(arbor.smoothCableLength(positions, this.sigma)) | 0,
+      function(skid, json) {
+        var ap = parseArbor(json),
+            arbor = ap.arbor,
+            positions = ap.positions,
+            raw_cable = Math.round(arbor.cableLength(positions)) | 0,
+            smooth_cable = Math.round(arbor.smoothCableLength(positions, sigma)) | 0,
             lower_bound_cable = Math.round(arbor.topologicalCopy().cableLength(positions)) | 0,
-            io = json[1].reduce(function(a, row) {
-              a[row[2]] += 1;
-              return a;
-            }, [0, 0]),
-            n_outputs = io[0],
-            n_inputs = io[1],
+            n_outputs = ap.n_outputs,
+            n_inputs = ap.n_inputs,
             n_nodes = arbor.countNodes(),
             be = arbor.findBranchAndEndNodes(),
             n_branching = be.branching.length,
             n_ends = be.ends.length;
-        rows.push([this._makeStringLink(models[skid].baseName, skid), skid,
+        rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(models[skid].baseName, skid), skid,
                    raw_cable, smooth_cable, lower_bound_cable,
                    n_inputs, n_outputs,
                    n_nodes, n_branching, n_ends]);
-      }).bind(this),
+      },
       (function(skid) {
         this.push(skid);
       }).bind(failed),
-      (function() {
-        this.table.fnAddData(rows);
+      function() {
+        fnDone(rows);
         if (failed.length > 0) {
             alert("Skeletons that failed to load: " + failed);
         }
-      }).bind(this));
+      });
 };
 
 SkeletonMeasurementsTable.prototype._makeStringLink = function(name, skid) {

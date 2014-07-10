@@ -322,7 +322,11 @@ CircuitGraphPlot.prototype._plot = function(ids, names, models, AdjM) {
      'Num. input synapses',
      'Num. output synapses',
      'Num. input - Num. output',
-     'Segregation index'].forEach(function(name, k) {
+     'Segregation index',
+     'Asymmetry index',
+     'Cable asymmetry index',
+     'Output asymmetry index',
+     'Input asymmetry index'].forEach(function(name, k) {
        select.options.add(new Option(name, 'a' + k));
      });
 
@@ -431,16 +435,33 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             sc = new SynapseClustering(arbor, smooth_positions, synapse_map),
             segIndex = sc.segregationIndex(sc.clusters(sc.densityHillMap(bandwidth)));
 
+        // Compute subtree asymmetries
+        var asymIndex = arbor.asymmetryIndex(),
+            cableAsymIndex = arbor.cableAsymmetryIndex(smooth_positions),
+            io = json[1].reduce(function(a, row) {
+              var node = row[0],
+                  type = row[2],
+                  count = a[type][node];
+              a[type][node] = (undefined === count ? 0 : count) + 1;
+              return a;
+            }, [{}, {}]),
+            outputAsymIndex = arbor.loadAsymmetryIndex(io[0]),
+            inputAsymIndex = arbor.loadAsymmetryIndex(io[1]);
+
         measurements[skid] = [smooth_cable,
                               plen,
                               ap.n_inputs,
                               ap.n_outputs,
-                              segIndex];
+                              segIndex,
+                              asymIndex.mean,
+                              cableAsymIndex.mean,
+                              outputAsymIndex.mean,
+                              inputAsymIndex.mean];
       },
       function(skid) {
         // Failed to load
         growlAlert("ERROR", "Skeleton #" + skid + " failed to load.");
-        measurements[skid] = [0, 0, 0, 0, 0];
+        measurements[skid] = new Uint8Array(9);
       },
       (function() {
         // Done loading all
@@ -450,23 +471,38 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // 3: number of outputs
         // 4: inputs minus outputs
         // 5: segregation index
-        var vs = [[], [], [], [], [], []];
-        this.models.forEach(function(models) {
+        // 6: topological asymmetry index
+        // 7: cable asymmetry index
+        // 8: output asymmetry index
+        // 9: input asymmetry index
+        var n = this.models.length,
+            vs = [];
+        for (var i=0; i<10; ++i) vs[i] = new Float64Array(n);
+
+        this.models.forEach(function(models, k) {
           var len = models.length;
           if (1 === len) {
             var m = measurements[models[0].id];
-            vs[0].push(m[0]);
-            vs[1].push(m[0] - m[1]);
-            vs[2].push(m[2]);
-            vs[3].push(m[3]);
-            vs[4].push(m[2] - m[3]);
-            vs[5].push(m[4]);
+            vs[0][k] = m[0];
+            vs[1][k] = m[0] - m[1];
+            vs[2][k] = m[2];
+            vs[3][k] = m[3];
+            vs[4][k] = m[2] - m[3];
+            vs[5][k] = m[4];
+            vs[6][k] = m[5];
+            vs[7][k] = m[6];
+            vs[8][k] = m[7];
+            vs[9][k] = m[8];
           } else {
             var v0 = 0,
                 v1 = 0,
                 v2 = 0,
                 v3 = 0,
-                v5 = 0;
+                v5 = 0,
+                v6 = 0,
+                v7 = 0,
+                v8 = 0,
+                v9 = 0;
             models.forEach(function(model) {
               var row = rows[model.id];
               v0 += m[0];
@@ -474,17 +510,26 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
               v2 += m[2];
               v3 += m[3];
               v5 += m[4] * m[0]; // weighed by cable
+              v6 += m[5] * m[0]; // weighed by cable
+              v7 += m[6] * m[0]; // weighed by cable
+              v8 += m[7] * m[0]; // weighed by cable
+              v9 += m[8] * m[0]; // weighed by cable
             });
-            vs[0].push(v0); // sum of all cable
-            vs[1].push(v1); // sum of all cable minus principal branches
-            vs[2].push(v2); // sum of all inputs
-            vs[3].push(v3); // sum of all outputs
-            vs[4].push(v2 - v3); // total inputs minus total outputs
-            vs[5].push(v5 / v0); // average segregation index, weighed by cable
+            vs[0][k] = v0; // sum of all cable
+            vs[1][k] = v1; // sum of all cable minus principal branches
+            vs[2][k] = v2; // sum of all inputs
+            vs[3][k] = v3; // sum of all outputs
+            vs[4][k] = v2 - v3; // total inputs minus total outputs
+            vs[5][k] = v5 / v0; // average segregation index, weighed by cable
+            vs[6][k] = v6 / v0; // average asymmetry index, weighted by cable
+            vs[7][k] = v7 / v0; // average cable asymmetry index, weighted by cable
+            vs[8][k] = v8 / v0; // average output asymmetry index, weighted by cable
+            vs[9][k] = v9 / v0; // average input asymmetry index, weighted by cable
           }
         });
 
         this.anatomy = vs;
+
         if (typeof(callback) === 'function') callback();
       }).bind(this));
 };

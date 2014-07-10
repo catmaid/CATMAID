@@ -1254,3 +1254,101 @@ Arbor.prototype.subtreesLoad = function(load) {
         return accum1 + accum2;
       });
 };
+
+/** Compute the mean and stdDev of the asymmetries of the subtrees at each branch node,
+ * assuming binary branches. When branches are trinary or higher, these are considered
+ * as nested binary branches, with the smallest subtree as being closest to the soma.
+ *
+ * m: a map of branch node vs an array of numeric measurements of each of its subtrees.
+ * asymmetryFn: given two numeric measurements of two subtrees, compute the asymmetry.
+ *
+ * return: the mean and standard deviation of the asymmetries.
+ */
+Arbor.prototype.asymmetry = function(m, asymmetryFn) {
+  var branches = Object.keys(m),
+      len = branches.length,
+      asym = [],
+      sum = 0,
+      descending = function(a, b) { return a === b ? 0 : (a < b ? 1 : -1); };
+
+  for (var i=0; i<len; ++i) {
+    // Sorted from large to small
+    var subtrees = m[branches[i]];
+    if (2 === subtrees.length) {
+      var value = asymmetryFn(subtrees[0], subtrees[1]);
+      sum += value;
+      asym.push(value);
+    } else {
+      // Branch splits into more than 2
+      // Sort from large to small
+      subtrees.sort(descending);
+      var last = subtrees[0];
+      for (var k=1; k<subtrees.length; ++k) {
+        var sub = subtrees[k];
+        // Equation 1 in Uylings and van Pelt, 2002:
+        var value = asymmetryFn(last, sub);
+        sum += value;
+        asym.push(value);
+        // Accumulate for next iteration
+        last += sub;
+      }
+    }
+  }
+
+  // Beware that asym.length !== len
+  var mean = sum / asym.length,
+      stdDev = Math.sqrt(asym.reduce(function(s, value) {
+        return s + Math.pow(value - mean, 2);
+      }, 0) / asym.length);
+
+  return {mean: mean,
+          stdDev: stdDev};
+};
+
+
+/** Mean of all "partition asymmetries" at each branch node, as defined by van Pelt et al. 1992.
+ * Considers trinary and higher as nested binary branches, with the smallest subtree as being the closest to the soma.
+ *
+ * Returns the average and standard deviation of the distribution of asymmetries at each branch.
+ *
+ * After:
+ *  - van Pelt et al. 1992. "Tree asymmetry--a sensitive and practical measure for binary topological trees.
+ *  - Uylings and van Pelt. 2002. Measures for quantifying dendritic arborizations.
+ */
+Arbor.prototype.asymmetryIndex = function() {
+  return this.asymmetry(
+      this.subtreesEndCount(),
+      function(sub1, sub2) {
+        // Equation 1 in Uylings and van Pelt, 2002:
+        return sub1 === sub2 ? 0 : Math.abs(sub1 - sub2) / (sub1 + sub2 - 2);
+      });
+};
+
+/** Mean of all asymmetries in the measurement of cable lengths of subtrees at each branch node.
+ * Considers trinary and higher as nested binary branches, with the smallest subtree as being the closest to the soma.
+ * positions: map of node vs THREE.Vector3.
+ * Returns the average and standard deviation of the distribution of asymmetries at each branch.
+ */
+Arbor.prototype.cableAsymmetryIndex = function(positions) {
+  return this.asymmetry(
+      this.subtreesCable(positions),
+      function(sub1, sub2) {
+        return sub1 === sub2 ? 0 : Math.abs(sub1 - sub2) / (sub1 + sub2);
+      });
+};
+
+/** Mean of all asymmetries in the counts of load (e.g. input synapses) of subtres at each branch node.
+ * Considers trinary and higher as nested binary branches, with the smallest subtree as being the closest to the soma.
+ * load: map of node vs counts at node. Nodes with a count of zero do not need to be present.
+ * Returns the average and standard deviation of the distribution of asymmetries at each branch.
+ *
+ */
+Arbor.prototype.loadAsymmetryIndex = function(load) {
+  return this.asymmetry(
+      this.subtreesLoad(load),
+      function(sub1, sub2) {
+        return sub1 === sub2 ? 0 : Math.abs(sub1 - sub2) / (sub1 + sub2);
+      });
+};
+
+// Note: could compute all the asymmetries in one pass, by generalizing the asymmetry function to return the list of asymmetries instead of computing the mean and std. Then, a multipurpose function could do all desired measurements (this would already work with subtreesMeasurements), and the mean and stdDev could be computed for all.

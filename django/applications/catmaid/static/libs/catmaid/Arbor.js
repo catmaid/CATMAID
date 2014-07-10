@@ -1144,3 +1144,113 @@ Arbor.prototype.pathToUpstreamNodeIn = function(node, stops) {
   // Reached root without having found a stop
   return null;
 };
+
+/** For each branch node, record of a measurement for each of its subtrees.
+ *
+ *  - initialFn: returns the value to start accumulating on.
+ *  - accumFn: can alter its accum parameter.
+ *  - mergeFn: merge two accumulated values into a new one; must not alter its parameters.
+ *
+ *  Returns a map of branch node vs array of measurements, one per subtree.
+ */
+Arbor.prototype.subtreesMeasurements = function(initialFn, cummulativeFn, mergeFn) {
+  // Iterate partitions from shortest to longest.
+  // At the end of each partition, accumulate the cable length onto the ending node
+  // (which is a branch, except for root).
+  // As shorter branches are traversed, append the cable so far into them.
+  var branch = {},
+      partitions = this.partitionSorted();
+
+  for (var p=0; p < partitions.length; ++p) {
+    var partition = partitions[p],
+        node1 = partition[0],
+        accum = initialFn(node1),
+        node2,
+        i=1;
+    for (var l=partition.length -1; i<l; ++i) {
+      node2 = partition[i];
+      accum = cummulativeFn(accum, node1, node2);
+      // Check if current node is a branch
+      // By design, the branch will already have been seen and contain a list
+      var list = branch[node2];
+      if (list) {
+        var tmp = accum;
+        accum = list.reduce(mergeFn, accum);
+        list.push(tmp);
+      }
+      // Prepare next iteration
+      node1 = node2;
+    }
+    // Handle last node separately
+    // (there could be issues otherwise with branches that split into more than 2)
+    node2 = partition[i];
+    accum = cummulativeFn(accum, node1, node2);
+    var list = branch[node2];
+    if (list) list.push(accum);
+    else branch[node2] = [accum];
+  }
+
+  // Check if root node was not a branch
+  var list = branch[this.root];
+  if (1 === list.length) delete branch[this.root];
+
+  return branch;
+};
+
+/**
+ * At each branch node, measure the amount of cable on each of the 2 or more subtrees.
+ *
+ * positions: map of node vs THREE.Vector3.
+ *
+ * Returns a map of branch node vs array of values, one for each subtree.
+ */
+Arbor.prototype.subtreesCable = function(positions) {
+  return this.subtreesMeasurements(
+      function(node1) {
+        return 0;
+      },
+      function(accum, node1, node2) {
+        return accum + positions[node1].distanceTo(positions[node2]);
+      },
+      function(accum1, accum2) {
+        return accum1 + accum2;
+      });
+};
+
+/**
+ * At each branch node, count the number of terminal ends on each of the 2 or more subtrees.
+ * Returns a map of branch node vs array of values, one for each subtree.
+ */
+Arbor.prototype.subtreesEndCount = function() {
+  return this.subtreesMeasurements(
+      function(node1) {
+        return 1;
+      },
+      function(accum, node1, node2) {
+        return accum;
+      },
+      function(accum1, accum2) {
+        return accum1 + accum2;
+      });
+};
+
+/**
+ * At each branch node, count the number of associated elemennts on each of the 2 or more subtrees.
+ * load: map of node vs number of associated elements (e.g. input synapses). Nodes with a count of zero do not need to be present.
+ * Returns a map of branch node vs array of values, of for each subtree.
+ */
+Arbor.prototype.subtreesLoad = function(load) {
+  return this.subtreesMeasurements(
+      function(node1) {
+        var count = load[node1];
+        return count ? count : 0;
+      },
+      function(accum, node1, node2) {
+        var count = load[node2];
+        if (count) return accum + count;
+        return accum;
+      },
+      function(accum1, accum2) {
+        return accum1 + accum2;
+      });
+};

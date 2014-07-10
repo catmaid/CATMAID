@@ -1111,3 +1111,36 @@ Arbor.prototype._gaussianWeights = function(slab, slabP, S, minNeighbors) {
     }
     return weights;
 };
+
+/** Measure cable distance from node to a parent of it that exists in stops.
+ * If no node in stops is upstream of node, then returns null.
+ * Will traverse towards upstream regardless of whether the initial node belongs to stops or not. */
+Arbor.prototype.distanceToUpstreamNodeIn = function(node, positions, stops) {
+  var loc1 = positions[node],
+      paren = this.edges[node],
+      len = 0;
+  while (paren) {
+    var loc2 = positions[paren];
+    len += loc1.distanceTo(loc2);
+    if (stops.hasOwnProperty(paren)) return len;
+    loc1 = loc2;
+    paren = this.edges[paren];
+  }
+  // Reached root without having found a stop
+  return null;
+};
+
+/** Find path from node to an upstream node that is in stops.
+ * If no node in stops is upstrem of node, then returns null.
+ * Will traverse towards upstream regardless of whether the initial node belongs to stops or not. */
+Arbor.prototype.pathToUpstreamNodeIn = function(node, stops) {
+  var path = [node],
+      paren = this.edges[node];
+  while (paren) {
+    path.push(paren);
+    if (stops.hasOwnProperty(paren)) return path;
+    paren = this.edges[paren];
+  }
+  // Reached root without having found a stop
+  return null;
+};

@@ -2423,7 +2423,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
   if (options.resample_skeletons) {
     // WARNING: node IDs no longer resemble actual skeleton IDs.
     // All node IDs will now have negative values to avoid accidental similarities.
-    var res = this.createArbor().resampleSlabs(vs, options.smooth_skeletons_sigma * this.space.scale, options.resampling_delta * this.space.scale, 0);
+    var res = this.createArbor().resampleSlabs(vs, options.smooth_skeletons_sigma * this.space.scale, options.resampling_delta * this.space.scale, 2);
     var vs = this.geometry['neurite'].vertices;
     // Remove existing lines
     vs.length = 0;

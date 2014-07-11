@@ -38,10 +38,11 @@ var CircuitGraphPlot = function() {
   this.sigma = 200; // nm
   this.bandwidth = 8000; // nm
 
-  this.pca_parameters = {graph: true,
+  this.pca_parameters = {graph: false,
                          'arbor morphology': true,
                          'synaptic counts': true,
-                         'synaptic distribution': true};
+                         'synaptic distribution': true,
+                         'with asymmetry histograms': true};
 
   // Array of pairs of [single value, principal component vector]
   this.pca = null;
@@ -496,10 +497,10 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                               ap.n_inputs,
                               ap.n_outputs,
                               segIndex,
-                              asymIndex.mean,
-                              cableAsymIndex.mean,
-                              outputAsymIndex.mean,
-                              inputAsymIndex.mean];
+                              asymIndex,
+                              cableAsymIndex,
+                              outputAsymIndex,
+                              inputAsymIndex];
       },
       function(skid) {
         // Failed to load
@@ -518,9 +519,13 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // 7: cable asymmetry index
         // 8: output asymmetry index
         // 9: input asymmetry index
+        // 10-19: topological asymmetry histogram bins
+        // 20-29: cable asymmetry histogram bins
+        // 30-39: output asymmetry histogram bins
+        // 40-49: input asymmetry histogram bins
         var n = this.models.length,
             vs = [];
-        for (var i=0; i<10; ++i) vs[i] = new Float64Array(n);
+        for (var i=0; i<50; ++i) vs[i] = new Float64Array(n);
 
         this.models.forEach(function(models, k) {
           var len = models.length;
@@ -532,42 +537,44 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             vs[3][k] = m[3];
             vs[4][k] = m[2] - m[3];
             vs[5][k] = m[4];
-            vs[6][k] = m[5];
-            vs[7][k] = m[6];
-            vs[8][k] = m[7];
-            vs[9][k] = m[8];
+            vs[6][k] = m[5].mean;
+            vs[7][k] = m[6].mean;
+            vs[8][k] = m[7].mean;
+            vs[9][k] = m[8].mean;
+            for (var i=1; i<5; ++i) {
+              var histogram = m[i+4].histogram,
+                  offset = 10 * i;
+              for (var b=0; b<10; ++b) {
+                vs[offset + b][k] = histogram[b];
+              }
+            };
           } else {
-            var v0 = 0,
-                v1 = 0,
-                v2 = 0,
-                v3 = 0,
-                v5 = 0,
-                v6 = 0,
-                v7 = 0,
-                v8 = 0,
-                v9 = 0;
             models.forEach(function(model) {
               var m = measurements[model.id];
-              v0 += m[0];
-              v1 += m[0] - m[1];
-              v2 += m[2];
-              v3 += m[3];
-              v5 += m[4] * m[0]; // weighed by cable
-              v6 += m[5] * m[0]; // weighed by cable
-              v7 += m[6] * m[0]; // weighed by cable
-              v8 += m[7] * m[0]; // weighed by cable
-              v9 += m[8] * m[0]; // weighed by cable
+              vs[0][k] += m[0];
+              vs[1][k] += m[0] - m[1];
+              vs[2][k] += m[2];
+              vs[3][k] += m[3];
+              // v[4] taken care of at the end
+              vs[5][k] += m[4] * m[0]; // weighed by cable
+              vs[6][k] += m[5].mean * m[0]; // weighed by cable
+              vs[7][k] += m[6].mean * m[0]; // weighed by cable
+              vs[8][k] += m[7].mean * m[0]; // weighed by cable
+              vs[9][k] += m[8].mean * m[0]; // weighed by cable
+              //
+              for (var i=1; i<5; ++i) {
+                var histogram = m[i+4].histogram,
+                    offset = 10 * i;
+                for (var b=0; b<10; ++b) {
+                  vs[offset + b][k] += histogram[b];
+                }
+              };
             });
-            vs[0][k] = v0; // sum of all cable
-            vs[1][k] = v1; // sum of all cable minus principal branches
-            vs[2][k] = v2; // sum of all inputs
-            vs[3][k] = v3; // sum of all outputs
-            vs[4][k] = v2 - v3; // total inputs minus total outputs
-            vs[5][k] = v5 / v0; // average segregation index, weighed by cable
-            vs[6][k] = v6 / v0; // average asymmetry index, weighted by cable
-            vs[7][k] = v7 / v0; // average cable asymmetry index, weighted by cable
-            vs[8][k] = v8 / v0; // average output asymmetry index, weighted by cable
-            vs[9][k] = v9 / v0; // average input asymmetry index, weighted by cable
+
+            // Compute inputs minuts outputs
+            vs[4][k] = vs[2][k] - vs[3][k];
+            // Divide those that are weighted by cable
+            for (var i=5, v0=vs[0][k]; i<10; ++i) vs[i][k] /= v0;
           }
         });
 
@@ -907,6 +914,12 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
     M.push(this.anatomy[1]); // cable minus principal branch
     M.push(this.anatomy[6]); // asymmetry index
     M.push(this.anatomy[7]); // cable asymmetry index
+    if (p['with asymmetry histograms']) {
+      // Append 2 * 10 bins of histograms of both asymmetry index and cable asymmetry index
+      for (var i=10; i<30; ++i) {
+        M.push(this.anatomy[i]);
+      }
+    }
   }
   if (p['synaptic counts']) {
     M.push(this.anatomy[2]);  // N inputs
@@ -917,6 +930,12 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
     M.push(this.anatomy[5]);  // segregation index
     M.push(this.anatomy[8]);  // output asymmetry index
     M.push(this.anatomy[9]);  // input asymmetry index
+    if (p['with asymmetry histograms']) {
+      // Append 2 * 10 bins of histograms of both output asymmetry index and input asymmetry index
+      for (var i=30; i<50; ++i) {
+        M.push(this.anatomy[i]);
+      }
+    }
   }
 
   // Normalize the standard deviations
@@ -928,20 +947,27 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
     for (var i=0; i<v.length; ++i) s += Math.pow(v[i] - mean, 2);
     var stdDev = Math.sqrt(s / v.length),
         v2 = new Float64Array(v.length);
+    if (0 === stdDev) stdDev = 1;
     for (var i=0; i<v.length; ++i) v2[i] = (v[i] - mean) / stdDev;
     return v2;
   });
 
-  // Normalize all the variances
-
   // M is in a transposed state
   //var pca = numeric.svd(numeric.div(numeric.dot(numeric.transpose(M), M), M.length)).U;
   // Instead, compute in reverse
+  
+  // Adjust error to prevent lack of convergence
+  //var epsilon = numeric.epsilon;
+  //numeric.epsilon = 0.0000000001;
+
   var svd = numeric.svd(numeric.div(numeric.dot(M, numeric.transpose(M)), M[0].length));
 
   this.pca = numeric.dot(svd.U.slice(0, 5), M).map(function(v, i) {
     return [svd.S[i], v];
   });
+
+  // Restore default
+  //numeric.epsilon = epsilon;
 
   this.updatePulldownMenus(true);
 

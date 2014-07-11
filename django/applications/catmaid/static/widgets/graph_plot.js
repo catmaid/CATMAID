@@ -37,6 +37,14 @@ var CircuitGraphPlot = function() {
   // Parameters for anatomy
   this.sigma = 200; // nm
   this.bandwidth = 8000; // nm
+
+  this.pca_parameters = {graph: true,
+                         'arbor morphology': true,
+                         'synaptic counts': true,
+                         'synaptic distribution': true};
+
+  // Array of pairs of [single value, principal component vector]
+  this.pca = null;
 };
 
 CircuitGraphPlot.prototype = {};
@@ -126,6 +134,10 @@ CircuitGraphPlot.prototype.clear = function() {
   this.names = [];
   this.selected = {};
   this.clearGUI();
+  this.vectors = null;
+  this.anatomy = null;
+  this.centralities = [null];
+  this.pca = null;
 };
 
 CircuitGraphPlot.prototype.append = function(models) {
@@ -295,6 +307,7 @@ CircuitGraphPlot.prototype._plot = function(ids, names, models, AdjM) {
   this.vectors = null;
   this.anatomy = null;
   this.centralities = [null];
+  this.pca = null;
 
   // Store for replotting later
   this.vectors = [[-1, cga.z]];
@@ -305,17 +318,28 @@ CircuitGraphPlot.prototype._plot = function(ids, names, models, AdjM) {
   this._add_graph_partition(false);
   this._add_graph_partition(true);
 
+  this.updatePulldownMenus(false);
+
+  this.redraw();
+};
+
+CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
   // Reset pulldown menus
-  var updateSelect = function(select) {
+  var updateSelect = (function(select) {
+    var index = select.selectedIndex;
     select.options.length = 0;
 
     select.options.add(new Option('Signal Flow', 0));
-    for (var i=0; i<10 && i <cga.e.length; ++i) {
-      select.options.add(new Option('Eigenvalue ' + Number(cga.e[i][0]).toFixed(2), i+1));
+    for (var i=1; i<11 && i<this.vectors.length; ++i) {
+      select.options.add(new Option('Eigenvalue ' + Number(this.vectors[i][0]).toFixed(2), i+1));
     }
 
     select.options.add(new Option('Graph partition (cell types)', 11));
     select.options.add(new Option('Graph partition (cell types) mirror', 12));
+
+    ['Betweenness centrality'].forEach(function(name, k) {
+       select.options.add(new Option(name, 'c' + k));
+     });
 
     ['Cable length (nm)',
      'Cable length w/o principal branch (nm)',
@@ -330,17 +354,28 @@ CircuitGraphPlot.prototype._plot = function(ids, names, models, AdjM) {
        select.options.add(new Option(name, 'a' + k));
      });
 
-    ['Betweenness centrality'].forEach(function(name, k) {
-       select.options.add(new Option(name, 'c' + k));
-     });
+    if (this.pca) {
+      for (var i=0; i<this.pca.length; ++i) {
+        select.options.add(new Option('PC ' + (i+1) + ' - ' + Number(this.pca[i][0]).toFixed(2), 'p' + i));
+      }
+    } else {
+      for (var i=0; i<5; ++i) {
+        select.options.add(new Option('PC ' + (i+1), 'p' + i));
+      }
+    }
+
+    if (preserve_indices) select.selectedIndex = index;
 
     return select;
-  };
+  }).bind(this);
 
-  updateSelect($('#circuit_graph_plot_X_' + this.widgetID)[0]).selectedIndex = 1;
-  updateSelect($('#circuit_graph_plot_Y_' + this.widgetID)[0]).selectedIndex = 0;
-
-  this.redraw();
+  var sel1 = updateSelect($('#circuit_graph_plot_X_' + this.widgetID)[0]),
+      sel2 = updateSelect($('#circuit_graph_plot_Y_' + this.widgetID)[0]);
+ 
+  if (!preserve_indices) {
+    sel1.selectedIndex = 1;
+    sel2.selectedIndex = 0;
+  }
 };
 
 CircuitGraphPlot.prototype.clearGUI = function() {
@@ -369,6 +404,11 @@ CircuitGraphPlot.prototype.getVectors = function() {
         return this.loadBetweennessCentrality(this.redraw.bind(this));
       }
       return this.centralities[i];
+    } else if ('p' === select.value[0]) {
+      if (!this.pca) {
+        return this.loadPCA(this.redraw.bind(this));
+      }
+      return this.pca[parseInt(select.value.slice(1))][1];
     }
   }).bind(this);
 
@@ -539,11 +579,11 @@ CircuitGraphPlot.prototype.loadBetweennessCentrality = function(callback) {
     var graph = jsnx.DiGraph();
     this.AdjM.forEach(function(row, i) {
       var source = this.ids[i];
-      row.forEach(function(count, j) {
-        if (0 === count) return;
+      for (var j=0; j<row.length; ++j) {
+        if (0 === row[j]) continue;
         var target = this.ids[j];
-        graph.add_edge(source, target, {weight: count});
-      }, this);
+        graph.add_edge(source, target, {weight: row[j]});
+      }
     }, this);
 
     if (this.ids.length > 10) {
@@ -786,7 +826,25 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
       "Bandwidth for synapse clustering (nm): ",
       "CGP-bandwidth" + this.widgetID,
       this.bandwidth);
+  od.appendMessage('Groups of measurements for PCA:');
+  Object.keys(this.pca_parameters).forEach(function(key) {
+    var id = key.replace(/ /g, '-') + this.widgetID;
+    od.appendCheckbox(key, id, this.pca_parameters[key]);
+  }, this);
+
   od.onOK = (function() {
+    var b = false;
+    Object.keys(this.pca_parameters).forEach(function(key) {
+      var id = key.replace(/ /g, '-') + this.widgetID,
+          val = $('#' + id)[0].checked;
+      this.pca_parameters[key] = val;
+      if (val) b = true;
+    }, this);
+    if (!b) {
+      alert("At least one of the four parameter groups should be selected: selecting 'graph'");
+      this.pca_parameters.graph = true;
+    }
+
     var read = (function(name) {
       var field = $('#CGP-' + name + this.widgetID);
       try {
@@ -799,9 +857,77 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
         return false;
       }
     }).bind(this);
+
     var update1 = read('sigma'),
         update2 = read('bandwidth');
-    if (update1 || update2) this.update();
+
+    if ((update1 || update2) && this.models.length > 1) this.update();
+
   }).bind(this);
-  od.show();
-}
+
+  od.show(300, 400, true);
+};
+
+/** Perform PCA on a set of parameters based on morphology only, rather than connectivity. */
+CircuitGraphPlot.prototype.loadPCA = function(callback) {
+  var p = this.pca_parameters;
+  if ((p['arbor morphology'] || p['synaptic counts'] || p['synaptic distribution']) && !this.anatomy) {
+    return this.loadAnatomy(this.loadPCA.bind(this, callback));
+  }
+  if (p.graph && !this.centralities[0]) {
+    return this.loadBetweennessCentrality(this.loadPCA.bind(this, callback));
+  }
+
+  var M = [];
+  if (p.graph) {
+    // signal flow
+    // eigenvalues of the graph Laplacian of the adjacency matrix
+    // betweenness centrality
+    for (var i=0; i<this.vectors.length; ++i) M.push(this.vectors[i][1]);
+    for (var i=0; i<this.centralities.length; ++i) M.push(this.centralities[i]);
+  }
+  if (p['arbor morphology']) {
+    M.push(this.anatomy[0]); // cable
+    M.push(this.anatomy[1]); // cable minus principal branch
+    M.push(this.anatomy[6]); // asymmetry index
+    M.push(this.anatomy[7]); // cable asymmetry index
+  }
+  if (p['synaptic counts']) {
+    M.push(this.anatomy[2]);  // N inputs
+    M.push(this.anatomy[3]);  // N outputs
+    M.push(this.anatomy[4]);  // N inputs minus N outputs
+  }
+  if (p['synaptic distribution']) {
+    M.push(this.anatomy[5]);  // segregation index
+    M.push(this.anatomy[8]);  // output asymmetry index
+    M.push(this.anatomy[9]);  // input asymmetry index
+  }
+
+  // Normalize the standard deviations
+  M = M.map(function(v) {
+    var sum = 0;
+    for (var i=0; i<v.length; ++i) sum += v[i];
+    var mean = sum / v.length;
+    var s = 0;
+    for (var i=0; i<v.length; ++i) s += Math.pow(v[i] - mean, 2);
+    var stdDev = Math.sqrt(s / v.length),
+        v2 = new Float64Array(v.length);
+    for (var i=0; i<v.length; ++i) v2[i] = (v[i] - mean) / stdDev;
+    return v2;
+  });
+
+  // Normalize all the variances
+
+  // M is in a transposed state
+  //var pca = numeric.svd(numeric.div(numeric.dot(numeric.transpose(M), M), M.length)).U;
+  // Instead, compute in reverse
+  var svd = numeric.svd(numeric.div(numeric.dot(M, numeric.transpose(M)), M[0].length));
+
+  this.pca = numeric.dot(svd.U.slice(0, 5), M).map(function(v, i) {
+    return [svd.S[i], v];
+  });
+
+  this.updatePulldownMenus(true);
+
+  if ('function' === typeof callback) callback();
+};

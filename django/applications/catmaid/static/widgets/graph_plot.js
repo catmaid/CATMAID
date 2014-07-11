@@ -547,7 +547,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                 v8 = 0,
                 v9 = 0;
             models.forEach(function(model) {
-              var row = rows[model.id];
+              var m = measurements[model.id];
               v0 += m[0];
               v1 += m[0] - m[1];
               v2 += m[2];

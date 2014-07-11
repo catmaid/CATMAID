@@ -381,6 +381,9 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
 CircuitGraphPlot.prototype.clearGUI = function() {
   this.selected = {};
   $('#circuit_graph_plot_div' + this.widgetID).empty();
+
+  $('#circuit_graph_plot_X_' + this.widgetID)[0].options.length = 0;
+  $('#circuit_graph_plot_Y_' + this.widgetID)[0].options.length = 0;
 };
 
 CircuitGraphPlot.prototype.getVectors = function() {

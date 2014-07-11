@@ -898,6 +898,10 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
           alert("Could not load skeletons: " + unloadable.join(', '));
         }
       },
+      finish = function() {
+        $.unblockUI();
+        fnMissing();
+      },
       loadOne = function(skeleton_id) {
         requestQueue.register(fnMakeURL(skeleton_id), 'POST', fnPost(skeleton_id),
             function(status, text) {
@@ -924,16 +928,13 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
                 if (i < skeleton_ids.length) {
                   loadOne(skeleton_ids[i]);
                 } else {
+                  finish();
                   fnDone();
                 }
               } catch (e) {
+                finish();
                 console.log(e, e.stack);
                 growlAlert("ERROR", "Problem loading skeleton " + skeleton_id);
-              } finally {
-                if (skeleton_ids.length > 1) {
-                  $.unblockUI();
-                }
-                fnMissing();
               }
             });
       };

@@ -1262,7 +1262,7 @@ Arbor.prototype.subtreesLoad = function(load) {
  * m: a map of branch node vs an array of numeric measurements of each of its subtrees.
  * asymmetryFn: given two numeric measurements of two subtrees, compute the asymmetry.
  *
- * return: the mean and standard deviation of the asymmetries.
+ * return: the mean and standard deviation of the asymmetries, and the histogram with 10 bins and the number of branches (the sum of all bin counts).
  */
 Arbor.prototype.asymmetry = function(m, asymmetryFn) {
   var branches = Object.keys(m),
@@ -1297,12 +1297,22 @@ Arbor.prototype.asymmetry = function(m, asymmetryFn) {
 
   // Beware that asym.length !== len
   var mean = sum / asym.length,
-      stdDev = Math.sqrt(asym.reduce(function(s, value) {
-        return s + Math.pow(value - mean, 2);
-      }, 0) / asym.length);
+      histogram = new Float64Array(10),
+      sumSqDiffs = 0;
+
+  for (var i=0; i<asym.length; ++i) {
+    var value = asym[i],
+        index = (value * 10) | 0;
+    if (10 === index) index = 9 | 0;
+    histogram[index] += 1;
+    //
+    sumSqDiffs += Math.pow(value - mean, 2);
+  }
 
   return {mean: mean,
-          stdDev: stdDev};
+          histogram: histogram,
+          n_branches: asym.length,
+          stdDev: Math.sqrt(sumSqDiffs / asym.length)};
 };
 
 

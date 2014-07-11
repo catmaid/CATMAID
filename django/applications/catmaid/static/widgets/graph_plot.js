@@ -836,13 +836,16 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
   }, this);
 
   od.onOK = (function() {
-    var b = false;
+    var b = false,
+        update_pca = false;
     Object.keys(this.pca_parameters).forEach(function(key) {
       var id = key.replace(/ /g, '-') + this.widgetID,
           val = $('#' + id)[0].checked;
+      if (!update_pca) update_pca = this.pca_parameters[key] !== val;
       this.pca_parameters[key] = val;
       if (val) b = true;
     }, this);
+
     if (!b) {
       alert("At least one of the four parameter groups should be selected: selecting 'graph'");
       this.pca_parameters.graph = true;
@@ -853,8 +856,9 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
       try {
         var value = parseInt(field.val());
         if (value < 0) return alert(name + " must be larger than zero.");
+        var old_value = this[name];
         this[name] = value;
-        return true;
+        return old_value !== value;
       } catch (e) {
         alert("Invalid value for sigma: " + field.val());
         return false;
@@ -864,7 +868,16 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
     var update1 = read('sigma'),
         update2 = read('bandwidth');
 
-    if ((update1 || update2) && this.models.length > 1) this.update();
+    // Label for reloading upon redraw
+    if (update1 || update2) {
+      this.anatomy = null;
+      update_pca = true;
+    }
+
+    if (update_pca) this.pca = null;
+
+    if (update1 || update2 || update_pca) this.redraw();
+
 
   }).bind(this);
 

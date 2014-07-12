@@ -759,14 +759,18 @@ Arbor.prototype.radialDensity = function(center, radius_increment, positions, fn
 /** Return a map of node vs number of paths from any node in the set of inputs to any node in the set of outputs.
  *  outputs: a map of node keys vs number of outputs at the node.
  *  inputs: a map of node keys vs number of inputs at the node. */
-Arbor.prototype.flowCentrality = function(outputs, inputs) {
-    var totalOutputs = Object.keys(outputs).reduce(function(sum, node) {
-        return sum + outputs[node];
-    }, 0);
+Arbor.prototype.flowCentrality = function(outputs, inputs, totalOutputs, totalInputs) {
+    if (undefined === totalOutputs) {
+      totalOutputs = Object.keys(outputs).reduce(function(sum, node) {
+          return sum + outputs[node];
+      }, 0);
+    }
 
-    var totalInputs = Object.keys(inputs).reduce(function(sum, node) {
-        return sum + inputs[node];
-    }, 0);
+    if (undefined === totalInputs) {
+      totalInputs = Object.keys(inputs).reduce(function(sum, node) {
+          return sum + inputs[node];
+      }, 0);
+    }
 
     if (0 === totalOutputs || 0 === totalInputs) {
         // Not computable

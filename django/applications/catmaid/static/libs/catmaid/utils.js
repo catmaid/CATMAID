@@ -959,7 +959,8 @@ var saveDivSVG = function(divID, filename) {
   }
 };
 
-/** Extract the Arbor and the node positions from the compact-skeleton JSON. */
+/** Extract the Arbor and the node positions from the compact-skeleton JSON,
+ * as well as the count of n_inputs and n_outputs, and the maps of node vs input count and node vs output count. */
 var parseArbor = function(json) {
   var arbor = new Arbor(),
       positions = {};
@@ -971,11 +972,25 @@ var parseArbor = function(json) {
     positions[node] = new THREE.Vector3(row[3], row[4], row[5]);
   });
   var io = json[1].reduce(function(a, row) {
-    a[row[2]] += 1;
+    // 0: node ID
+    // 1: connector ID
+    // 2: type: 0 for pre, 1 for post
+    var t = a[row[2]],
+        node = row[0],
+        count = t[node];
+    if (count) t[node] += 1;
+    else t[node] = 1;
+    t.count += 1;
     return a;
-  }, [0, 0]);
+  }, [{count: 0}, {count: 0}]);
+  var n_outputs = io[0].count,
+      n_inputs = io[1].count;
+  delete io[0].count;
+  delete io[1].count;
   return {arbor: arbor,
           positions: positions,
-          n_outputs: io[0],
-          n_inputs: io[1]};
+          n_outputs: n_outputs,
+          n_inputs: n_inputs,
+          outputs: io[0],
+          inputs: io[1]};
 };

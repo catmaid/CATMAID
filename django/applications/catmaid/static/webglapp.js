@@ -1736,7 +1736,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         // Flow centrality
         var io = this.synapticTypes.map(function(type) {
           var vs = this.geometry[type].vertices,
-              m = {};
+              m = {count: vs.length / 2};
           for (var i=0, l=vs.length; i<l; i+=2) {
             var treenode_id = vs[i+1].node_id,
                 count = m[treenode_id];
@@ -1745,7 +1745,11 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           }
           return m;
         }, this);
-        if (0 === Object.keys(io[0]).length || 0 === Object.keys(io[1]).length) {
+        var n_outputs = io[0].count,
+            n_inputs = io[1].count;
+        delete io[0].count;
+        delete io[1].count;
+        if (0 === n_outputs || 0 === n_inputs) {
           growlAlert('WARNING', 'Neuron "' + this.skeletonmodel.baseName + '" lacks input or output synapses.');
           c = arbor.nodesArray().reduce(function(o, node) {
             // All the same
@@ -1753,7 +1757,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
             return o;
           }, {});
         } else {
-          c = arbor.flowCentrality(io[0], io[1]);
+          c = arbor.flowCentrality(io[0], io[1], n_outputs, n_inputs);
         }
       }
 

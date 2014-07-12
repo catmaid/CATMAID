@@ -355,6 +355,10 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
        select.options.add(new Option(name, 'a' + k));
      });
 
+    select.options.add(new Option('Cable of terminal segments (nm)', 'a50'));
+    select.options.add(new Option('Num. terminal segments (nm)', 'a51'));
+    select.options.add(new Option('Cable of hillock (nm)', 'a52'));
+
     if (this.pca) {
       for (var i=0; i<this.pca.length; ++i) {
         select.options.add(new Option('PC ' + (i+1) + ' - ' + Number(this.pca[i][0]).toFixed(2), 'p' + i));
@@ -457,6 +461,30 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             n_inputs = ap.n_inputs,
             n_outputs = ap.n_outputs;
 
+        // Compute amount of cable of the terminal segments
+        var terminal = arbor.terminalCableLength(smooth_positions),
+            terminal_cable = terminal.cable,
+            n_terminal_segments = terminal.n_ends;
+
+        // Compute length of hillock: part of the cable with maximum flow centrality.
+        // Increase robustness to occasional synapse on the hillock or small side branch, by using cable with more than 75% of the max value.
+        var flow_centrality = arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
+            hillock_cable = 0;
+        if (flow_centrality) {
+          var nodes = Object.keys(flow_centrality),
+              max = nodes.reduce(function(max, node) {
+            return Math.max(max, flow_centrality[node]);
+          }, 0),
+              max75 = 0.75 * max;
+          hillock_cable = nodes.reduce(function(sum, node) {
+            if (flow_centrality[node] > max75) {
+              var paren = arbor.edges[node];
+              return sum + (paren ? smooth_positions[node].distanceTo(smooth_positions[paren]) : 0);
+            }
+            return sum;
+          }, 0);
+        }
+
         // Compute length of principal branch
         var principal = (function(ps) { return ps[ps.length -1]; })(arbor.partitionSorted()),
             plen = 0,
@@ -500,7 +528,10 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                               asymIndex,
                               cableAsymIndex,
                               outputAsymIndex,
-                              inputAsymIndex];
+                              inputAsymIndex,
+                              terminal_cable,
+                              n_terminal_segments,
+                              hillock_cable];
       },
       function(skid) {
         // Failed to load
@@ -523,9 +554,12 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // 20-29: cable asymmetry histogram bins
         // 30-39: output asymmetry histogram bins
         // 40-49: input asymmetry histogram bins
+        // 50: cable length of the terminal segments
+        // 51: number of terminal segments
+        // 52: length of the hillock cable
         var n = this.models.length,
             vs = [];
-        for (var i=0; i<50; ++i) vs[i] = new Float64Array(n);
+        for (var i=0; i<53; ++i) vs[i] = new Float64Array(n);
 
         this.models.forEach(function(models, k) {
           var len = models.length;
@@ -548,6 +582,9 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                 vs[offset + b][k] = histogram[b];
               }
             };
+            vs[50][k] = m[9];
+            vs[51][k] = m[10];
+            vs[52][k] = m[11];
           } else {
             models.forEach(function(model) {
               var m = measurements[model.id];
@@ -569,6 +606,9 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                   vs[offset + b][k] += histogram[b];
                 }
               };
+              vs[50][k] += m[9];
+              vs[51][k] += m[10];
+              vs[52][k] += m[11];
             });
 
             // Compute inputs minuts outputs
@@ -920,6 +960,8 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
         M.push(this.anatomy[i]);
       }
     }
+    M.push(this.anatomy[50]); // cable of terminal segments
+    M.push(this.anatomy[51]); // N terminal segments
   }
   if (p['synaptic counts']) {
     M.push(this.anatomy[2]);  // N inputs
@@ -936,6 +978,8 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
         M.push(this.anatomy[i]);
       }
     }
+    M.push(this.anatomy[52]); // cable of hillock
+    // TODO test without cable of hillock
   }
 
   // Normalize the standard deviations

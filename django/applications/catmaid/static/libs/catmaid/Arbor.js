@@ -1134,6 +1134,23 @@ Arbor.prototype.distanceToUpstreamNodeIn = function(node, positions, stops) {
   return null;
 };
 
+/** Compute the amount of able of all terminal slabs together.
+ * Returns both the cable and the number of end nodes (equivalent to the number of terminal segments). */
+Arbor.prototype.terminalCableLength = function(positions) {
+  var be = this.findBranchAndEndNodes(),
+      branches = be.branching.reduce(function(o, node) {
+        o[node] = true;
+        return o;
+      }, {}),
+      ends = be.ends,
+      cable = 0;
+  for (var i=0; i<ends.length; ++i) {
+    cable += this.distanceToUpstreamNodeIn(ends[i], positions, branches);
+  }
+  return {cable: cable,
+          n_ends: ends.length};
+};
+
 /** Find path from node to an upstream node that is in stops.
  * If no node in stops is upstrem of node, then returns null.
  * Will traverse towards upstream regardless of whether the initial node belongs to stops or not. */

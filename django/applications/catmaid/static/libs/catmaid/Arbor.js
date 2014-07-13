@@ -1148,6 +1148,7 @@ Arbor.prototype.terminalCableLength = function(positions) {
     cable += this.distanceToUpstreamNodeIn(ends[i], positions, branches);
   }
   return {cable: cable,
+          n_branches: be.branching.length,
           n_ends: ends.length};
 };
 

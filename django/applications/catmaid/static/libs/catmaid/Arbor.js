@@ -1384,3 +1384,20 @@ Arbor.prototype.loadAsymmetryIndex = function(load) {
 };
 
 // Note: could compute all the asymmetries in one pass, by generalizing the asymmetry function to return the list of asymmetries instead of computing the mean and std. Then, a multipurpose function could do all desired measurements (this would already work with subtreesMeasurements), and the mean and stdDev could be computed for all.
+
+
+/** Remove terminal segments when none of their nodes carries a load (e.g. a synapse). */
+Arbor.prototype.pruneBareTerminalSegments = function(load) {
+  var be = this.findBranchAndEndNodes(),
+      ends = be.ends,
+      branches = be.branching.reduce(function(o, node) { o[node] = true; return o; }, {});
+  ends.forEach(function(node) {
+    var path = [];
+    while (undefined === branches[node]) {
+      if (undefined !== load[node]) return;
+      path.push(node);
+      node = this[node]; // parent
+    }
+    path.forEach(function(node) { delete this[node]; }, this);
+  }, this.edges);
+};

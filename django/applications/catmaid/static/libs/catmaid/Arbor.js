@@ -327,29 +327,62 @@ Arbor.prototype.countNodes = function() {
 /** Returns an array of arrays, unsorted, where the longest array contains the linear
  * path between the furthest end node and the root node, and all other arrays are shorter
  * paths always starting at an end node and finishing at a node already included in
- * another path. Runs in O(4n + nlog(n)) time. */
+ * another path. Runs in O(4*n + m) where n is the number of nodes and m the number of ends. */
 Arbor.prototype.partition = function() {
-	var ends = this.findEndNodes(),
-	    distances = this.nodesOrderFrom(this.root),
-	    seen = {};
+  var be = this.findBranchAndEndNodes(),
+      ends = be.ends,
+      branches = be.branches,
+      partitions = new Array(ends.length),
+      next = 0,
+      junctions = {};
 
-	// Sort nodes by distance to root, so that the first end node is the furthest
-	return ends.sort(function(a, b) {
-		var da = distances[a],
-		    db = distances[b];
-		return da === db ? 0 : (da < db ? 1 : -1);
-	}).map(function(child) {
-		// Iterate nodes sorted from highest to lowest distance to root
-		var sequence = [child],
-				paren = this.edges[child];
-	  while (paren) {
-			sequence.push(paren);
-			if (seen[paren]) break;
-			seen[paren] = true;
-			paren = this.edges[paren];
-		}
-		return sequence;
-	}, this);
+  var open = new Array(ends.length);
+  for (var k=0; k<ends.length; ++k) open[k] = [ends[k]];
+
+  while (open.length > 0) {
+    var seq = open.shift(),
+        node = seq[seq.length -1],
+        paren,
+        n_successors;
+    do {
+        var paren = this.edges[node];
+        if (undefined === paren) break; // reached root
+        seq.push(paren);
+        n_successors = branches[paren];
+        node = paren;
+    } while (undefined === n_successors);
+
+    if (undefined === paren) {
+      // Reached the root
+      partitions[next++] = seq;
+    } else {
+      // Reached a branch node
+      var junction = junctions[node];
+      if (undefined === junction) {
+        junctions[node] = [seq];
+      } else {
+        junction.push(seq);
+        if (junction.length === n_successors) {
+          // Append longest to open, and all others to partitions
+          var max = 0,
+              ith = 0;
+          for (var k=0; k<junction.length; ++k) {
+            var len = junction[k].length;
+            if (len > max) {
+              max = len;
+              ith = k;
+            }
+          }
+          for (var k=0; k<junction.length; ++k) {
+            if (k === ith) open.push(junction[k]);
+            else partitions[next++] = junction[k];
+          }
+        }
+      }
+    }
+  }
+
+  return partitions;
 };
 
 /** Like this.partition, but returns the arrays sorted by length from small to large. */

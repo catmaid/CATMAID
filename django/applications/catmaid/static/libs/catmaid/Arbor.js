@@ -143,25 +143,27 @@ Arbor.prototype.findEndNodes = function() {
 /** Return an object with parent node as keys and arrays of children as values.
  * End nodes have empty arrays. */
 Arbor.prototype.allSuccessors = function() {
-	var edges = this.edges,
-			children = Object.keys(edges);
-	// Handle corner cases
-	if (0 === children.length) {
-		if (this.root) {
-			var a = {};
-			a[this.root] = [];
-			return a;
-		}
-		return {};
-	}
-	return children.reduce(function(o, child) {
-		var paren = edges[child],
-			  children = o[paren];
-	  if (children) children.push(child);
-		else o[paren] = [child];
-		if (!(child in o)) o[child] = [];
-		return o;
-	}, {});
+  var edges = this.edges,
+      children = Object.keys(edges);
+  // Handle corner cases
+  if (0 === children.length) {
+    if (this.root) {
+      var a = {};
+      a[this.root] = [];
+      return a;
+    }
+    return {};
+  }
+  var successors = {};
+  for (var k=0, l=children.length; k<l; ++k) {
+    var child = children[k],
+        paren = edges[child],
+        succ = successors[paren];
+    if (succ) succ.push(child);
+    else successors[paren] = [child];
+    if (undefined === successors[child]) successors[child] = [];
+  }
+  return successors;
 };
 
 /** Finds the next branch node, starting at node (inclusive).

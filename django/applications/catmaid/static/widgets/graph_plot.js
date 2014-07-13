@@ -97,7 +97,7 @@ CircuitGraphPlot.prototype.getSelectedSkeletons = function() {
 };
 
 CircuitGraphPlot.prototype.getSkeletons = function() {
-  if (!this.svg) return [];
+  if (!this.models) return [];
   var models = this.models;
 	return this.ids.reduce(function(a, id, i) {
     return a.concat(models[i].map(function(model) { return model.id; }));
@@ -105,7 +105,7 @@ CircuitGraphPlot.prototype.getSkeletons = function() {
 };
 
 CircuitGraphPlot.prototype.getSkeletonModels = function() {
-  if (!this.svg) return {};
+  if (!this.models) return {};
   return this.models.reduce(function(o, ms) {
     return ms.reduce(function(o, model) {
       o[model.id] = model;
@@ -281,12 +281,6 @@ CircuitGraphPlot.prototype._add_graph_partition = function(mirror) {
  * in rows and columns corresponds to the order in the array of skeleton IDs.
  * Clears the existing plot and replaces it with the new data. */
 CircuitGraphPlot.prototype.plot = function(ids, names, models, AdjM) {
-  neuronNameService.registerAll(this, models, (function() {
-    this._plot(ids, names, models, AdjM);
-  }).bind(this));
-};
-
-CircuitGraphPlot.prototype._plot = function(ids, names, models, AdjM) {
   // Set the new data
   this.ids = ids;
   this.names = names;
@@ -294,9 +288,16 @@ CircuitGraphPlot.prototype._plot = function(ids, names, models, AdjM) {
   this.AdjM = AdjM;
   this.selected = {};
 
+  neuronNameService.registerAll(this,
+      this.getSkeletonModels(),
+      (function() { this._plot(); }).bind(this));
+};
+
+CircuitGraphPlot.prototype._plot = function() {
+
   // Compute signal flow and eigenvectors
   try {
-    var cga = new CircuitGraphAnalysis().init(AdjM, 100000, 0.0000000001);
+    var cga = new CircuitGraphAnalysis().init(this.AdjM, 100000, 0.0000000001);
   } catch (e) {
     this.clear();
     console.log(e, e.stack);

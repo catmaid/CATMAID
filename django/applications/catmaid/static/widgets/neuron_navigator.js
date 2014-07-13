@@ -1576,7 +1576,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
           skeleton_datatable.fnAddData([
             skeleton_id,
             nodes.length,
-            eb.branching.length,
+            eb.n_branches,
             eb.ends.length + 1, // count the soma
             eb.ends.length + 1 - n_tagged_ends,
           ]);

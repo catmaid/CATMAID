@@ -207,23 +207,36 @@ Arbor.prototype.allNeighbors = function() {
 	}, {});
 };
 
-/** Find branch and end nodes in O(4*n) time. */
+/** Find branch and end nodes in O(3*n) time. */
 Arbor.prototype.findBranchAndEndNodes = function() {
-	var edges = this.edges,
-			children = Object.keys(edges),
-			parents = children.reduce(function(o, child) {
-				o[edges[child]] = 0;
-				return o;
-			}, {}),
-			ends = [];
+  var edges = this.edges,
+      children = Object.keys(edges),
+      parents = {},
+      branches = {},
+      n_branches = 0,
+      ends = [];
 
-	children.forEach(function(node) {
-		parents[this.edges[node]] += 1;
-		if (!(node in parents)) ends.push(node);
-	}, this);
+  for (var i=0, l=children.length; i<l; ++i) {
+    var paren = edges[children[i]];
+    if (parents[paren]) {
+      var count = branches[paren];
+      if (undefined === count) {
+        branches[paren] = 2;
+        n_branches += 1;
+      } else branches[paren] = count + 1;
+    } else {
+      parents[paren] = true;
+    }
+  }
 
-	return {ends: ends,
-		branching: Object.keys(parents).filter(function(k) { return parents[k] > 1; })};
+  for (var i=0, l=children.length; i<l; ++i) {
+    var node = children[i];
+    if (undefined === parents[node]) ends.push(node);
+  }
+
+  return {ends: ends,
+          branches: branches,
+          n_branches: n_branches};
 };
 
 /** Returns an array with all branch nodes. Runs in O(n + m) time,
@@ -784,7 +797,7 @@ Arbor.prototype.flowCentrality = function(outputs, inputs, totalOutputs, totalIn
     // If the root node is a branch, reroot at the first end node found
     var arbor = this,
         be = arbor.findBranchAndEndNodes();
-    if (-1 !== be.branching.indexOf(arbor.root)) {
+    if (be.branches[arbor.root]) {
         arbor = arbor.clone();
         arbor.reroot(be.ends[0]);
     }
@@ -1142,17 +1155,14 @@ Arbor.prototype.distanceToUpstreamNodeIn = function(node, positions, stops) {
  * Returns both the cable and the number of end nodes (equivalent to the number of terminal segments). */
 Arbor.prototype.terminalCableLength = function(positions) {
   var be = this.findBranchAndEndNodes(),
-      branches = be.branching.reduce(function(o, node) {
-        o[node] = true;
-        return o;
-      }, {}),
+      branches = be.branches,
       ends = be.ends,
       cable = 0;
   for (var i=0; i<ends.length; ++i) {
     cable += this.distanceToUpstreamNodeIn(ends[i], positions, branches);
   }
   return {cable: cable,
-          n_branches: be.branching.length,
+          n_branches: be.n_branches,
           n_ends: ends.length};
 };
 
@@ -1394,7 +1404,7 @@ Arbor.prototype.loadAsymmetryIndex = function(load) {
 Arbor.prototype.pruneBareTerminalSegments = function(load) {
   var be = this.findBranchAndEndNodes(),
       ends = be.ends,
-      branches = be.branching.reduce(function(o, node) { o[node] = true; return o; }, {});
+      branches = be.branches;
   ends.forEach(function(node) {
     var path = [];
     while (undefined === branches[node]) {

@@ -70,7 +70,7 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
             n_inputs = ap.n_inputs,
             n_nodes = arbor.countNodes(),
             be = arbor.findBranchAndEndNodes(),
-            n_branching = be.branching.length,
+            n_branching = be.n_branches,
             n_ends = be.ends.length;
         rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(models[skid].baseName, skid), skid,
                    raw_cable, smooth_cable, lower_bound_cable,

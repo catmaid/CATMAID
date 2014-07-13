@@ -366,7 +366,7 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
         select.options.add(new Option('PC ' + (i+1) + ' - ' + Number(this.pca[i][0]).toFixed(2), 'p' + i));
       }
     } else {
-      for (var i=0; i<5; ++i) {
+      for (var i=0; i<2; ++i) {
         select.options.add(new Option('PC ' + (i+1), 'p' + i));
       }
     }
@@ -1014,7 +1014,16 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
 
   var svd = numeric.svd(numeric.div(numeric.dot(M, numeric.transpose(M)), M[0].length));
 
-  this.pca = numeric.dot(svd.U.slice(0, 5), M).map(function(v, i) {
+  var variance = svd.S.reduce(function(sum, s) { return sum + s; }),
+      cutoff = svd.S.reduce(function(o, s, i) {
+        if (o.index) return o;
+        o.sum += s;
+        if (o.sum / variance > 0.98) o.index = i;
+        return o;
+      }, {sum: 0}).index + 1,
+      n_pc = cutoff < 2 ? 2 : cutoff;
+
+  this.pca = numeric.dot(svd.U.slice(0, n_pc), M).map(function(v, i) {
     return [svd.S[i], v];
   });
 

@@ -124,18 +124,20 @@ Arbor.prototype.reroot = function(new_root) {
 /** Returns an array with all end nodes, in O(3*n) time.
  * Does not include the root node. */
 Arbor.prototype.findEndNodes = function() {
-	var edges = this.edges,
-	    children = Object.keys(edges),
-	    parents = children.reduce(function(o, child) {
-	      o[edges[child]] = true;
-	      return o;
-	    }, {});
+  var edges = this.edges,
+      children = Object.keys(edges),
+      parents = {};
 
-	return children.reduce(function(a, child) {
-		if (child in parents) return a;
-		a.push(child);
-		return a;
-	}, []);
+  for (var k=0, l=children.length; k<l; ++k) {
+    parents[edges[children[k]]] = true;
+  }
+
+  var ends = [];
+  for (var j=0, l=children.length; j<l; ++j) {
+    var child = children[j];
+    if (undefined === parents[child]) ends.push(child);
+  }
+  return ends;
 };
 
 /** Return an object with parent node as keys and arrays of children as values.

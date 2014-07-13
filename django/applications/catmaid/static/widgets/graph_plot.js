@@ -37,6 +37,7 @@ var CircuitGraphPlot = function() {
   // Parameters for anatomy
   this.sigma = 200; // nm
   this.bandwidth = 8000; // nm
+  this.prune_bare_terminal_segments = false;
 
   this.pca_parameters = {graph: false,
                          'arbor morphology': true,
@@ -447,7 +448,8 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
 
   var measurements = {},
       sigma = this.sigma,
-      bandwidth = this.bandwidth;
+      bandwidth = this.bandwidth,
+      prune = this.prune_bare_terminal_segments;
 
   fetchSkeletons(
       Object.keys(this.getSkeletonModels()).map(Number),
@@ -457,8 +459,14 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
       function(skid) { return {}; },
       function(skid, json) {
         var ap = parseArbor(json),
-            arbor = ap.arbor,
-            smooth_positions = arbor.smoothPositions(ap.positions, sigma),
+            arbor = ap.arbor;
+
+        // Remove 'not a branch' and other artifacts that could introduce noise into asymmetry measurements
+        if (prune) {
+          arbor.pruneBareTerminalSegments($.extend({}, ap.inputs, ap.outputs));
+        }
+
+        var smooth_positions = arbor.smoothPositions(ap.positions, sigma),
             smooth_cable = Math.round(arbor.cableLength(smooth_positions, sigma)) | 0,
             n_inputs = ap.n_inputs,
             n_outputs = ap.n_outputs;
@@ -499,6 +507,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         }
 
         // Compute synapse segregation index
+        // Most costly operation of all, consumes about 40% of the anatomy time
         var synapse_map = json[1].reduce(function(o, row) {
           var list = o[row[0]],
               entry = {type: row[2],
@@ -883,6 +892,10 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
       "Bandwidth for synapse clustering (nm): ",
       "CGP-bandwidth" + this.widgetID,
       this.bandwidth);
+  od.appendCheckbox(
+      "Prune synapse-less terminal segments",
+      "prune-" + this.widgetID,
+      this.prune_bare_terminal_segments);
   od.appendMessage('Groups of measurements for PCA:');
   Object.keys(this.pca_parameters).forEach(function(key) {
     var id = key.replace(/ /g, '-') + this.widgetID;
@@ -922,11 +935,15 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
     var update1 = read('sigma'),
         update2 = read('bandwidth');
 
+    var prune = $('#prune-' + this.widgetID)[0].checked;
+
     // Label for reloading upon redraw
-    if (update1 || update2) {
+    if (update1 || update2 || prune != this.prune_bare_terminal_segments) {
       this.anatomy = null;
       update_pca = true;
     }
+
+    this.prune_bare_terminal_segments = prune;
 
     if (update_pca) this.pca = null;
 

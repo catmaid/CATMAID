@@ -49,7 +49,8 @@ SynapseClustering.prototype.distanceMap = function() {
   // where it is not the last treenode of the partition.
   var seen_downstream_nodes = {};
 
-  this.partitions.forEach(function(partition) {
+  for (var pi=0, pil=this.partitions.length; pi<pil; ++pi) {
+    var partition = this.partitions[pi];
     // Update synapses for the previous node, and upstream nodes for the current node.
     
     // Treenodes downstream of the current treenode: includes priorly in the partition
@@ -79,13 +80,14 @@ SynapseClustering.prototype.distanceMap = function() {
         // Record the distance to the synapse in every downstream node:
         // (which include prev_treenode_id)
         var d = this.distancesToRoot[prev_treenode_id];
-        downstream_nodes.forEach(function(child_id) {
-          var ds = Ds[child_id],
+        for (var di=0, dil=downstream_nodes.length; di<dil; ++di) {
+          var child_id = downstream_nodes[di],
+              ds = Ds[child_id],
               distance_child_to_synapse = this.distancesToRoot[child_id] - d;
           for (var k = 0, sl=synapses.length; k<sl; ++k) {
             ds.push(distance_child_to_synapse);
           }
-        }, this);
+        }
       }
 
       // If treenode_id is a branch, append all its children to downstream_nodes.
@@ -100,22 +102,24 @@ SynapseClustering.prototype.distanceMap = function() {
             prev_ds = prev_ds.slice(); // clone: original will be modified below
 
         // Append to downstream nodes' Ds the distances to synapses in the branch just found in treenode_id
-        downstream_nodes.forEach(function(child_id) {
-          var child_ds = Ds[child_id],
+        for (var di=0, dil=downstream_nodes.length; di<dil; ++di) {
+          var child_id = downstream_nodes[di],
+              child_ds = Ds[child_id],
               distance = this.distancesToRoot[child_id] - distance_to_root;
           for (var k=0, cl=current_ds.length; k<cl; ++k) {
             child_ds.push(current_ds[k] + distance);
           }
-        }, this);
+        }
 
         // Append to the seen nodes' Ds the distances to synapses collected along the downstream_nodes
-        seen.forEach(function(child_id) {
-          var child_ds = Ds[child_id],
+        for (var si=0, sil=seen.length; si<sil; ++si) {
+          var child_id = seen[si],
+              child_ds = Ds[child_id],
               distance = this.distancesToRoot[child_id] + distance_prev_to_current - distance_to_root;
           for (var k=0, pl=prev_ds.length; k<pl; ++k) {
             child_ds.push(prev_ds[k] + distance);
           }
-        }, this);
+        }
 
         // Update list of children
         downstream_nodes = downstream_nodes.concat(seen);
@@ -139,7 +143,7 @@ SynapseClustering.prototype.distanceMap = function() {
     var last_treenode_id = partition[partition.length -1];
     seen_downstream_nodes[last_treenode_id] = downstream_nodes;
 
-  }, this);
+  }
 
   // Update the last node: the root
   var synapses_at_root = this.synapses[this.arbor.root];
@@ -168,13 +172,22 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
   // than the subset of nodes pointing to a synapse.
   var density_hill_map = {};
 
-  var lambda_sq = lambda * lambda,
-      density = Object.keys(this.Ds).reduce((function(o, treenode_id) {
-    o[treenode_id] = this[treenode_id].reduce(function(sum, d) { // this == Ds
-      return sum + Math.exp( - (d*d / lambda_sq) );
-    }, 0);
-    return o;
-  }).bind(this.Ds), {});
+  // Key performance hog: n * m (treenodes vs synapses)
+  var density = (function(Ds) {
+        var treenode_ids = Object.keys(Ds),
+            lambda_sq = lambda * lambda;
+            density = {};
+        for (var k=0, kl=treenode_ids.length; k<kl; ++k) {
+          var sum = 0.0,
+              treenode_id = treenode_ids[k],
+              a = Ds[treenode_id];
+          for (var i=0, l=a.length; i<l; ++i) {
+            sum += Math.exp( - (Math.pow(+a[i], 2) / lambda_sq) );
+          }
+          density[treenode_id] = sum;
+        }
+        return density;
+      })(this.Ds);
 
   var max_density_index = 0;
 

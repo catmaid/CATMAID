@@ -953,8 +953,8 @@ Arbor.prototype.smoothCableLength = function(positions, sigma) {
             });
 };
 
-Arbor.prototype.smoothPositions = function(positions, sigma) {
-    return this.convolveSlabs(positions, sigma, {},
+Arbor.prototype.smoothPositions = function(positions, sigma, accum) {
+    return this.convolveSlabs(positions, sigma, accum ? accum : {},
             function(s, id, p) {
                 s[id] = p;
                 return s;

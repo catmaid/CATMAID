@@ -1729,6 +1729,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = func
                               function(v) { return v.node_id; });
 };
 
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getPositions = function() {
+  return this.geometry['neurite'].vertices.reduce(function(o, v) { o[v.node_id] = v; return o; }, {});
+};
+
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
   var node_weights;
 

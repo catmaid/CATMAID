@@ -1304,7 +1304,7 @@ Arbor.prototype.subtreesEndCount = function() {
 };
 
 /**
- * At each branch node, count the number of associated elemennts on each of the 2 or more subtrees.
+ * At each branch node, count the number of associated elements on each of the 2 or more subtrees.
  * load: map of node vs number of associated elements (e.g. input synapses). Nodes with a count of zero do not need to be present.
  * Returns a map of branch node vs array of values, of for each subtree.
  */

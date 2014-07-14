@@ -65,7 +65,6 @@ var CircuitGraphPlot = function() {
   this.pca_synapses_absolute = {
     'Num. of inputs': false,
     'Num. of outputs': false,
-    'Num. of inputs minus outputs': false,
     'Histogram of output asymmetry index': false,
     'Histogram of input asymmetry index': false,
     'Cable of hillock': true
@@ -73,6 +72,7 @@ var CircuitGraphPlot = function() {
 
   this.pca_synapses_relative = {
     'Segregation index': true,
+    'Ratio (I - O) / (I + O)': false,
     'Output asymmetry index': true,
     'Normalized histogram of output asymmetry index': true,
     'Input asymmetry index': true,
@@ -387,7 +387,7 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
      'Cable w/o principal branch (nm)',
      'Num. input synapses',
      'Num. output synapses',
-     'Num. input - Num. output',
+     'Ratio (I - O) / (I + O)',
      'Segregation index',
      'Asymmetry index',
      'Cable asymmetry index',
@@ -609,7 +609,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // 1: smooth cable length minus principal branch length
         // 2: number of inputs
         // 3: number of outputs
-        // 4: inputs minus outputs
+        // 4: ratio (I - O) / (I + O)
         // 5: segregation index
         // 6: topological asymmetry index
         // 7: cable asymmetry index
@@ -637,7 +637,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             vs[1][k] = m[0] - m[1];
             vs[2][k] = m[2];
             vs[3][k] = m[3];
-            vs[4][k] = m[2] - m[3];
+            vs[4][k] = 0 === (m[2] + m[3]) ? 0 : ((m[2] - m[3]) / (m[2] + m[3]));
             vs[5][k] = m[4];
             vs[6][k] = m[5].mean;
             vs[7][k] = m[6].mean;
@@ -684,8 +684,9 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
               vs[54][k] += m[12];
             });
 
-            // Compute inputs minuts outputs
-            vs[4][k] = vs[2][k] - vs[3][k];
+            // Compute I/O ratio
+            var sum = vs[2][k] + vs[3][k];
+            vs[4][k] = 0 === sum ? 0 : (vs[2][k] - vs[3][k]) / sum;
             // Divide those that are weighted by cable
             for (var i=5, v0=vs[0][k]; i<10; ++i) vs[i][k] /= v0;
             // Compute normalized cable of terminal segments
@@ -1101,7 +1102,7 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
 
   if (this.pca_synapses_absolute['Num. of inputs']) M.push(this.anatomy[2]);
   if (this.pca_synapses_absolute['Num. of outputs']) M.push(this.anatomy[3]);
-  if (this.pca_synapses_absolute['Num. of inputs minus outputs']) M.push(this.anatomy[4]);
+  if (this.pca_synapses_relative['Ratio (I - O) / (I + O)']) M.push(this.anatomy[4]);
 
   if (this.pca_synapses_relative['Segregation index']) M.push(this.anatomy[5]);
   if (this.pca_synapses_relative['Output asymmetry index']) M.push(this.anatomy[8]);

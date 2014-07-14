@@ -607,7 +607,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
       function(skid) {
         // Failed to load
         growlAlert("ERROR", "Skeleton #" + skid + " failed to load.");
-        measurements[skid] = new Uint8Array(9);
+        measurements[skid] = null;
       },
       (function() {
         // Done loading all
@@ -638,6 +638,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
           var len = models.length;
           if (1 === len) {
             var m = measurements[models[0].id];
+            if (!m) return;
             vs[0][k] = m[0];
             vs[1][k] = m[0] - m[1];
             vs[2][k] = m[2];
@@ -663,6 +664,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
           } else {
             models.forEach(function(model) {
               var m = measurements[model.id];
+              if (!m) return;
               vs[0][k] += m[0];
               vs[1][k] += m[0] - m[1];
               vs[2][k] += m[2];

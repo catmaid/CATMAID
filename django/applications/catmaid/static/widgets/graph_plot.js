@@ -45,7 +45,7 @@ var CircuitGraphPlot = function() {
   };
 
   this.pca_anatomy_absolute = {
-    'Cable length': false,
+    'Cable length': true,
     'Cable minus principal branch': false,
     'Histogram of asymmetry index': false,
     'Histogram of cable asymmetry index': false,
@@ -55,11 +55,11 @@ var CircuitGraphPlot = function() {
   };
 
   this.pca_anatomy_relative = {
-    'Asymmetry index': true,
-    'Normalized histogram of asymmetry index': true,
-    'Cable asymmetry index': true,
-    'Normalized histogram of cable asymmetry index': true,
-    'Normalized cable of terminal segments': true
+    'Asymmetry index': false,
+    'Normalized histogram of asymmetry index': false,
+    'Cable asymmetry index': false,
+    'Normalized histogram of cable asymmetry index': false,
+    'Normalized cable of terminal segments': false
   };
 
   this.pca_synapses_absolute = {
@@ -68,15 +68,15 @@ var CircuitGraphPlot = function() {
     'Num. of inputs minus outputs': false,
     'Histogram of output asymmetry index': false,
     'Histogram of input asymmetry index': false,
-    'Cable of hillock': false
+    'Cable of hillock': true
   };
 
   this.pca_synapses_relative = {
-    'Segregation index': false,
-    'Output asymmetry index': false,
-    'Normalized histogram of output asymmetry index': false,
-    'Input asymmetry index': false,
-    'Normalized histogram of input asymmetry index': false,
+    'Segregation index': true,
+    'Output asymmetry index': true,
+    'Normalized histogram of output asymmetry index': true,
+    'Input asymmetry index': true,
+    'Normalized histogram of input asymmetry index': true,
   };
 
 

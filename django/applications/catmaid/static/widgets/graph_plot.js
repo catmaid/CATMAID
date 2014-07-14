@@ -259,57 +259,52 @@ CircuitGraphPlot.prototype.updateNeuronNames = function() {
 
 
 CircuitGraphPlot.prototype._add_graph_partition = function(mirror) {
-  if (this.vectors.length > 2) {
-    // Potentially disjoint if there are least two network components,
-    // detectable by finding out whether the first non-zero eigenvalue has zeros where the next one doesn't.
-    var epsilon = 0.00000001,
-        clean = function(v) { return Math.abs(v) < epsilon ? 0 : v},
-        ev2 = this.vectors[1][1].map(clean),
-        ev3 = this.vectors[2][1].map(clean);
+  // Potentially disjoint if there are least two network components,
+  // detectable by finding out whether the first non-zero eigenvalue has zeros where the next one doesn't.
+  var epsilon = 0.00000001,
+      clean = function(v) { return Math.abs(v) < epsilon ? 0 : v},
+      ev2 = this.vectors[1][1].map(clean),
+      ev3 = this.vectors[2][1].map(clean);
 
-    if (mirror) {
-      ev3 = ev3.map(function(v) { return -v; });
-    }
+  if (mirror) {
+    ev3 = ev3.map(function(v) { return -v; });
+  }
 
-    if (ev2.some(function(v2, i) {
-      var v3 = ev3[i];
-      return (0 === v2 && 0 !== v3) || (0 === v3 && 0 !== v2);
-    })) {
-      this.vectors.push([-1, ev2.map(function(v2, i) {
-        return 0 === v2 ? ev3[i] : v2;
-      })]);
-    } else if (this.vectors.length > 3) {
-      // Not disjoint: combine the third and fourth eigenvectors
-      // as a function of the second eigenvector, according to the sign in the latter.
-      
-      var ev4 = this.vectors[3][1].map(clean),
-          vs = [ev3, ev4];
+  if (ev2.some(function(v2, i) {
+    var v3 = ev3[i];
+    return (0 === v2 && 0 !== v3) || (0 === v3 && 0 !== v2);
+  })) {
+    this.vectors.push([-1, ev2.map(function(v2, i) {
+      return 0 === v2 ? ev3[i] : v2;
+    })]);
+  } else if (this.vectors.length > 3) {
+    // Not disjoint: combine the third and fourth eigenvectors
+    // as a function of the second eigenvector, according to the sign in the latter.
+    
+    var ev4 = this.vectors[3][1].map(clean),
+        vs = [ev3, ev4];
 
-      // Pick all indices for positive values in the second (1) eigenvector
-      var positive = ev2.reduce(function(a, v, i) { if (v > 0) a.push(i); return a; }, []);
+    // Pick all indices for positive values in the second (1) eigenvector
+    var positive = ev2.reduce(function(a, v, i) { if (v > 0) a.push(i); return a; }, []);
 
-      // For the positive indices, find out if the std dev is larger in the third
-      // or the fourth eigenvectors
-      var indices = [0, 1].map(function(k) {
-        var v = vs[k],
-            mean = positive.reduce(function(sum, i) { return sum + v[i];}, 0) / positive.length,
-            stdDev = positive.reduce(function(sum, i) { return sum + Math.pow(v[i] - mean, 2); }, 0) / positive.length;
-        return [k, stdDev];
-      }, this).sort(function(a, b) {
-        return a[1] < b[1];
-      }).map(function(a) { return a[0]; });
+    // For the positive indices, find out if the std dev is larger in the third
+    // or the fourth eigenvectors
+    var indices = [0, 1].map(function(k) {
+      var v = vs[k],
+          mean = positive.reduce(function(sum, i) { return sum + v[i];}, 0) / positive.length,
+          stdDev = positive.reduce(function(sum, i) { return sum + Math.pow(v[i] - mean, 2); }, 0) / positive.length;
+      return [k, stdDev];
+    }, this).sort(function(a, b) {
+      return a[1] < b[1];
+    }).map(function(a) { return a[0]; });
 
-      // Create a new vector with the most signal from both the third (2) and fourth (3) eigenvectors
-      this.vectors.push([-1, ev2.map(function(v, i) {
-        return vs[v > 0 ? indices[0] : indices[1]][i]; 
-      }, this)]);
-    } else {
-      this.vectors.push([-1, this.ids.map(function() { return 0; })]);
-    }
+    // Create a new vector with the most signal from both the third (2) and fourth (3) eigenvectors
+    this.vectors.push([-1, ev2.map(function(v, i) {
+      return vs[v > 0 ? indices[0] : indices[1]][i]; 
+    }, this)]);
   } else {
     this.vectors.push([-1, this.ids.map(function() { return 0; })]);
   }
-
 };
 
 /** Takes an array of skeleton IDs, a map of skeleton ID vs SkeletonModel,
@@ -333,7 +328,13 @@ CircuitGraphPlot.prototype._plot = function() {
 
   // Compute signal flow and eigenvectors
   try {
-    var cga = new CircuitGraphAnalysis().init(this.AdjM, 100000, 0.0000000001);
+    var cga;
+    if (numeric.sum(this.AdjM) > 0) {
+      cga = new CircuitGraphAnalysis().init(this.AdjM, 100000, 0.0000000001);
+    } else {
+      // Neurons don't connect to each other at all
+      cga = null;
+    }
   } catch (e) {
     this.clear();
     console.log(e, e.stack);
@@ -342,19 +343,23 @@ CircuitGraphPlot.prototype._plot = function() {
   }
 
   // Reset data
-  this.vectors = null;
+  this.vectors = [];
   this.anatomy = null;
   this.centralities = [null];
   this.pca = null;
 
-  // Store for replotting later
-  this.vectors = [[-1, cga.z]];
-  for (var i=0; i<10 && i <cga.e.length; ++i) {
-    this.vectors.push(cga.e[i]);
-  }
+  if (cga) {
+    // Store for replotting later
+    this.vectors = [[-1, cga.z]];
+    for (var i=0; i<10 && i <cga.e.length; ++i) {
+      this.vectors.push(cga.e[i]);
+    }
 
-  this._add_graph_partition(false);
-  this._add_graph_partition(true);
+    if (cga.e.length > 2) {
+      this._add_graph_partition(false);
+      this._add_graph_partition(true);
+    }
+  }
 
   this.updatePulldownMenus(false);
 
@@ -367,17 +372,22 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
     var index = select.selectedIndex;
     select.options.length = 0;
 
-    select.options.add(new Option('Signal Flow', 0));
-    for (var i=1; i<11 && i<this.vectors.length; ++i) {
-      select.options.add(new Option('Eigenvalue ' + Number(this.vectors[i][0]).toFixed(2), i+1));
+    if (this.vectors.length > 0) {
+      // Will be zero when neurons don't connect to each other
+      select.options.add(new Option('Signal Flow', 0));
+      var i = 1;
+      for (; i<11 && i<this.vectors.length; ++i) {
+        if (-1 === this.vectors[i][0]) break; // graph partitions
+        select.options.add(new Option('Eigenvalue ' + Number(this.vectors[i][0]).toFixed(2), i+1));
+      }
+
+      select.options.add(new Option('Graph partition (cell types)', i));
+      select.options.add(new Option('Graph partition (cell types) mirror', i + 1));
+
+      ['Betweenness centrality'].forEach(function(name, k) {
+        select.options.add(new Option(name, 'c' + k));
+      });
     }
-
-    select.options.add(new Option('Graph partition (cell types)', 11));
-    select.options.add(new Option('Graph partition (cell types) mirror', 12));
-
-    ['Betweenness centrality'].forEach(function(name, k) {
-       select.options.add(new Option(name, 'c' + k));
-     });
 
     ['Cable length (nm)',
      'Cable w/o principal branch (nm)',
@@ -417,8 +427,14 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
       sel2 = updateSelect($('#circuit_graph_plot_Y_' + this.widgetID)[0]);
  
   if (!preserve_indices) {
-    sel1.selectedIndex = 1;
-    sel2.selectedIndex = 0;
+    if (this.vectors.length > 0) {
+      sel1.selectedIndex = 1;
+      sel2.selectedIndex = 0;
+    } else {
+      // Choose most discerning anatomical measurements
+      sel1.selectedIndex = 5; // Segregation index
+      sel2.selectedIndex = 14; // Cable of hillock
+    }
   }
 };
 
@@ -689,8 +705,9 @@ CircuitGraphPlot.prototype.loadBetweennessCentrality = function(callback) {
       }
     }, this);
 
-    if (this.ids.length > 10) {
-      $.blockUI();
+    if (0 === graph.number_of_edges()) {
+      this.centralities[0] = new Uint8Array(this.ids.length);
+      return;
     }
 
     var bc = jsnx.betweenness_centrality(graph, {weight: 'weight',

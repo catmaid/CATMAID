@@ -217,9 +217,9 @@ CircuitGraphPlot.prototype.append = function(models) {
 
   var skids = Object.keys(skeleton_ids);
 
-  if (1 === skids.length) {
+  if (skids.length < 2) {
     this.clearGUI();
-    growlAlert('Need more than one', 'Add at least another skeleton!');
+    growlAlert('Need more than one', 'Need at least two neurons!');
     return;
   }
 

@@ -523,6 +523,9 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             n_inputs = ap.n_inputs,
             n_outputs = ap.n_outputs;
 
+        // Release
+        delete ap.positions;
+
         // Compute amount of cable of the terminal segments
         var terminal = arbor.terminalCableLength(smooth_positions),
             terminal_cable = terminal.cable,
@@ -531,48 +534,55 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
 
         // Compute length of hillock: part of the cable with maximum flow centrality.
         // Increase robustness to occasional synapse on the hillock or small side branch, by using cable with more than 75% of the max value.
-        var flow_centrality = arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
-            hillock_cable = 0;
-        if (flow_centrality) {
-          var nodes = Object.keys(flow_centrality),
-              max = nodes.reduce(function(max, node) {
-            return Math.max(max, flow_centrality[node]);
-          }, 0),
-              max75 = 0.75 * max;
-          hillock_cable = nodes.reduce(function(sum, node) {
-            if (flow_centrality[node] > max75) {
-              var paren = arbor.edges[node];
-              return sum + (paren ? smooth_positions[node].distanceTo(smooth_positions[paren]) : 0);
-            }
-            return sum;
-          }, 0);
-        }
+        var hillock_cable = (function(ap, positions) {
+          var flow_centrality = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
+              hillock_cable = 0;
+          if (flow_centrality) {
+            var nodes = Object.keys(flow_centrality),
+                max = nodes.reduce(function(max, node) {
+              return Math.max(max, flow_centrality[node]);
+            }, 0),
+                max75 = 0.75 * max;
+            hillock_cable = nodes.reduce(function(sum, node) {
+              if (flow_centrality[node] > max75) {
+                var paren = arbor.edges[node];
+                return sum + (paren ? positions[node].distanceTo(positions[paren]) : 0);
+              }
+              return sum;
+            }, 0);
+          }
+          return hillock_cable;
+        })(ap, smooth_positions);
 
         // Compute length of principal branch
-        var principal = (function(ps) { return ps[ps.length -1]; })(arbor.partitionSorted()),
-            plen = 0,
-            loc1 = smooth_positions[principal[0]];
-        for (var i=1, l=principal.length; i<l; ++i) {
-          var loc2 = smooth_positions[principal[i]];
-          plen += loc1.distanceTo(loc2);
-          loc1 = loc2;
-        }
+        var plen = (function(arbor, positions) {
+          var principal = (function(ps) { return ps[ps.length -1]; })(arbor.partitionSorted()),
+              pCable = 0,
+              loc1 = positions[principal[0]];
+          for (var i=1, l=principal.length; i<l; ++i) {
+            var loc2 = positions[principal[i]];
+            pCable += loc1.distanceTo(loc2);
+            loc1 = loc2;
+          }
+          return pCable;
+        })(arbor, smooth_positions);
 
         // Compute synapse segregation index
         // Most costly operation of all, consumes about 40% of the anatomy time
-        var synapse_map = {},
-            nodes = arbor.nodesArray();
-        for (var k=0; k<nodes.length; ++k) {
-          var node = nodes[k],
-              ni = ap.inputs[node],
-              no = ap.outputs[node];
-          if (!ni) ni = 0;
-          if (!no) no = 0;
-          synapse_map[node] = ni + no;
-        }
-
-        var sc = new SynapseClustering(arbor, smooth_positions, synapse_map),
-            segIndex = sc.segregationIndex(sc.clusters(sc.densityHillMap(bandwidth)), ap.outputs, ap.inputs);
+        var segIndex = (function(arbor, positions, outputs, inputs, bandwidth) {
+          var synapse_map = Object.keys(outputs).reduce(function(m, node) {
+            var no = outputs[node],
+                ni = m[node];
+            if (ni) m[node] = ni + no;
+            else m[node] = no;
+            return m;
+          }, $.extend({}, inputs));
+          var sc = new SynapseClustering(arbor, positions, synapse_map);
+          return sc.segregationIndex(
+            sc.clusters(sc.densityHillMap(bandwidth)),
+            outputs,
+            inputs);
+        })(arbor, smooth_positions, ap.outputs, ap.inputs, bandwidth);
 
         // Compute subtree asymmetries
         var asymIndex = arbor.asymmetryIndex(),

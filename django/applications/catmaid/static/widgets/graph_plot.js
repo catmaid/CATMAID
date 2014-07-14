@@ -39,11 +39,46 @@ var CircuitGraphPlot = function() {
   this.bandwidth = 8000; // nm
   this.prune_bare_terminal_segments = false;
 
-  this.pca_parameters = {graph: false,
-                         'arbor morphology': true,
-                         'synaptic counts': true,
-                         'synaptic distribution': true,
-                         'with asymmetry histograms': true};
+  this.pca_graph = {
+    'Graph': false,
+    'Betweenness centrality': false
+  };
+
+  this.pca_anatomy_absolute = {
+    'Cable length': false,
+    'Cable minus principal branch': false,
+    'Histogram of asymmetry index': false,
+    'Histogram of cable asymmetry index': false,
+    'Cable of terminal segments': false,
+    'Num. terminal segments': false,
+    'Num. of branches': false
+  };
+
+  this.pca_anatomy_relative = {
+    'Asymmetry index': true,
+    'Normalized histogram of asymmetry index': true,
+    'Cable asymmetry index': true,
+    'Normalized histogram of cable asymmetry index': true,
+    'Normalized cable of terminal segments': true
+  };
+
+  this.pca_synapses_absolute = {
+    'Num. of inputs': false,
+    'Num. of outputs': false,
+    'Num. of inputs minus outputs': false,
+    'Histogram of output asymmetry index': false,
+    'Histogram of input asymmetry index': false,
+    'Cable of hillock': false
+  };
+
+  this.pca_synapses_relative = {
+    'Segregation index': false,
+    'Output asymmetry index': false,
+    'Normalized histogram of output asymmetry index': false,
+    'Input asymmetry index': false,
+    'Normalized histogram of input asymmetry index': false,
+  };
+
 
   // Array of pairs of [single value, principal component vector]
   this.pca = null;
@@ -345,7 +380,7 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
      });
 
     ['Cable length (nm)',
-     'Cable length w/o principal branch (nm)',
+     'Cable w/o principal branch (nm)',
      'Num. input synapses',
      'Num. output synapses',
      'Num. input - Num. output',
@@ -358,9 +393,10 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
      });
 
     select.options.add(new Option('Cable of terminal segments (nm)', 'a50'));
-    select.options.add(new Option('Num. terminal segments (nm)', 'a51'));
-    select.options.add(new Option('Num. branches', 'a52'));
-    select.options.add(new Option('Cable of hillock (nm)', 'a53'));
+    select.options.add(new Option('Norm. cable of terminal segments (nm)', 'a51'));
+    select.options.add(new Option('Num. terminal segments (nm)', 'a52'));
+    select.options.add(new Option('Num. branches', 'a53'));
+    select.options.add(new Option('Cable of hillock (nm)', 'a54'));
 
     if (this.pca) {
       for (var i=0; i<this.pca.length; ++i) {
@@ -525,15 +561,8 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // Compute subtree asymmetries
         var asymIndex = arbor.asymmetryIndex(),
             cableAsymIndex = arbor.cableAsymmetryIndex(smooth_positions),
-            io = json[1].reduce(function(a, row) {
-              var node = row[0],
-                  type = row[2],
-                  count = a[type][node];
-              a[type][node] = (undefined === count ? 0 : count) + 1;
-              return a;
-            }, [{}, {}]),
-            outputAsymIndex = arbor.loadAsymmetryIndex(io[0]),
-            inputAsymIndex = arbor.loadAsymmetryIndex(io[1]);
+            outputAsymIndex = arbor.loadAsymmetryIndex(ap.inputs),
+            inputAsymIndex = arbor.loadAsymmetryIndex(ap.outputs);
 
         measurements[skid] = [smooth_cable,
                               plen,
@@ -571,12 +600,13 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // 30-39: output asymmetry histogram bins
         // 40-49: input asymmetry histogram bins
         // 50: cable length of the terminal segments
-        // 51: number of terminal segments
-        // 52: number of total branches
-        // 53: length of the hillock cable
+        // 51: Normalized cable of terminal segments
+        // 52: number of terminal segments
+        // 53: number of total branches
+        // 54: length of the hillock cable
         var n = this.models.length,
             vs = [];
-        for (var i=0; i<54; ++i) vs[i] = new Float64Array(n);
+        for (var i=0; i<55; ++i) vs[i] = new Float64Array(n);
 
         this.models.forEach(function(models, k) {
           var len = models.length;
@@ -600,9 +630,10 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
               }
             };
             vs[50][k] = m[9];
-            vs[51][k] = m[10];
-            vs[52][k] = m[11];
-            vs[53][k] = m[12];
+            vs[51][k] = m[9] / m[0];
+            vs[52][k] = m[10];
+            vs[53][k] = m[11];
+            vs[54][k] = m[12];
           } else {
             models.forEach(function(model) {
               var m = measurements[model.id];
@@ -625,15 +656,18 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                 }
               };
               vs[50][k] += m[9];
-              vs[51][k] += m[10];
-              vs[52][k] += m[11];
-              vs[53][k] += m[12];
+              // vs[51] taken care of at the end
+              vs[52][k] += m[10];
+              vs[53][k] += m[11];
+              vs[54][k] += m[12];
             });
 
             // Compute inputs minuts outputs
             vs[4][k] = vs[2][k] - vs[3][k];
             // Divide those that are weighted by cable
             for (var i=5, v0=vs[0][k]; i<10; ++i) vs[i][k] /= v0;
+            // Compute normalized cable of terminal segments
+            vs[51][k] = vs[50][k] / vs[0][k];
           }
         });
 
@@ -899,28 +933,38 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
       "Prune synapse-less terminal segments",
       "prune-" + this.widgetID,
       this.prune_bare_terminal_segments);
-  od.appendMessage('Groups of measurements for PCA:');
-  Object.keys(this.pca_parameters).forEach(function(key) {
-    var id = key.replace(/ /g, '-') + this.widgetID;
-    od.appendCheckbox(key, id, this.pca_parameters[key]);
-  }, this);
+  od.appendMessage('Measurements for PCA:');
+
+  var update_pca = false;
+
+  ['pca_graph',
+   'pca_anatomy_relative',
+   'pca_anatomy_absolute',
+   'pca_synapses_relative',
+   'pca_synapses_absolute'].forEach(function(group) {
+     var name = group.substring(4).replace(/_/, ' ');
+     od.appendMessage(name[0].toUpperCase() + name.substring(1) + ' parameters:');
+     var params = this[group],
+         cb = od.appendCheckbox('ALL', name + this.widgetID, Object.keys(params).reduce(function(o, key) { return o && params[key]; }, true)),
+         cbs = Object.keys(params).map(function(p) {
+       var c = od.appendCheckbox(p, p.replace(/ /g, '-') + this.widgetID, params[p]);
+       c.onchange = function() {
+         params[p] = c.checked;
+         update_pca = true;
+       };
+       return c;
+     }, this);
+
+     cb.onchange = function() {
+       cbs.forEach(function(c) { c.checked = cb.checked; });
+       Object.keys(params).forEach(function(key) { params[key] = cb.checked; });
+       update_pca = true;
+     };
+   }, this);
+
+  // May end up updating PCA more than necessary, but it does not matter.
 
   od.onOK = (function() {
-    var b = false,
-        update_pca = false;
-    Object.keys(this.pca_parameters).forEach(function(key) {
-      var id = key.replace(/ /g, '-') + this.widgetID,
-          val = $('#' + id)[0].checked;
-      if (!update_pca) update_pca = this.pca_parameters[key] !== val;
-      this.pca_parameters[key] = val;
-      if (val) b = true;
-    }, this);
-
-    if (!b) {
-      alert("At least one of the four parameter groups should be selected: selecting 'graph'");
-      this.pca_parameters.graph = true;
-    }
-
     var read = (function(name) {
       var field = $('#CGP-' + name + this.widgetID);
       try {
@@ -936,9 +980,8 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
     }).bind(this);
 
     var update1 = read('sigma'),
-        update2 = read('bandwidth');
-
-    var prune = $('#prune-' + this.widgetID)[0].checked;
+        update2 = read('bandwidth'),
+        prune = $('#prune-' + this.widgetID)[0].checked;
 
     // Label for reloading upon redraw
     if (update1 || update2 || prune != this.prune_bare_terminal_segments) {
@@ -960,55 +1003,103 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
 
 /** Perform PCA on a set of parameters based on morphology only, rather than connectivity. */
 CircuitGraphPlot.prototype.loadPCA = function(callback) {
-  var p = this.pca_parameters;
-  if ((p['arbor morphology'] || p['synaptic counts'] || p['synaptic distribution']) && !this.anatomy) {
+  var any = function(params) {
+    return Object.keys(params).some(function(key) {
+      return params[key];
+    });
+  };
+
+  if ( (   any(this.pca_anatomy_absolute)
+        || any(this.pca_anatomy_relative)
+        || any(this.pca_synapses_absolute)
+        || any(this.pca_synapses_relative))
+      && !this.anatomy) {
     return this.loadAnatomy(this.loadPCA.bind(this, callback));
   }
-  if (p.graph && !this.centralities[0]) {
+  if (this.pca_graph['Betweenness centrality'] && !this.centralities[0]) {
     return this.loadBetweennessCentrality(this.loadPCA.bind(this, callback));
   }
 
+  // Normalize histograms spread across multiple arrays
+  var normalize = function(a, first, last) {
+    var n_rows = last - first + 1,
+        n_cols = a[first].length,
+        vs = new Array(n_rows);
+    for (var i=0; i<n_rows; ++i) vs[i] = new Float64Array(n_cols);
+    // For every column, add up all the rows, and divide
+    for (var col=0; col<n_cols; ++col) {
+      var sum = 0;
+      for (var row=0; row<n_rows; ++row) {
+        sum += a[first + row][col];
+      }
+      for (var row=0; row<n_rows; ++row) {
+        vs[row][col] = a[first + row][col] / sum;
+      }
+    }
+    return vs;
+  };
+
   var M = [];
-  if (p.graph) {
+  if (this.pca_graph['Graph']) {
     // signal flow
     // eigenvalues of the graph Laplacian of the adjacency matrix
-    // betweenness centrality
     for (var i=0; i<this.vectors.length; ++i) M.push(this.vectors[i][1]);
+  }
+
+  if (this.pca_graph['Betweenness centrality']) {
+    // betweenness centrality
     for (var i=0; i<this.centralities.length; ++i) M.push(this.centralities[i]);
   }
-  if (p['arbor morphology']) {
-    M.push(this.anatomy[0]); // cable
-    M.push(this.anatomy[1]); // cable minus principal branch
-    M.push(this.anatomy[6]); // asymmetry index
-    M.push(this.anatomy[7]); // cable asymmetry index
-    if (p['with asymmetry histograms']) {
-      // Append 2 * 10 bins of histograms of both asymmetry index and cable asymmetry index
-      for (var i=10; i<30; ++i) {
+
+  if (this.pca_anatomy_absolute['Cable length']) M.push(this.anatomy[0]);
+  if (this.pca_anatomy_absolute['Cable minus principal branch']) M.push(this.anatomy[1]);
+  if (this.pca_anatomy_relative['Asymmetry index']) M.push(this.anatomy[6]);
+  if (this.pca_anatomy_absolute['Histogram of asymmetry index']) {
+    for (var i=10; i<20; ++i) {
+      M.push(this.anatomy[i]);
+    }
+  }
+  if (this.pca_anatomy_relative['Normalized histogram of asymmetry index']) {
+    normalize(this.anatomy, 10, 19).forEach(function(v) { M.push(v); });
+  }
+  if (this.pca_anatomy_relative['Cable asymmetry index']) M.push(this.anatomy[7]);
+  if (this.pca_anatomy_absolute['Histogram of cable asymmetry index']) {
+    for (var i=20; i<30; ++i) {
+      M.push(this.anatomy[i]);
+    }
+  }
+  if (this.pca_anatomy_relative['Normalized histogram of cable asymmetry index']) {
+    normalize(this.anatomy, 20, 29).forEach(function(v) { M.push(v); });
+  }
+  if (this.pca_anatomy_absolute['Cable of terminal segments']) M.push(this.anatomy[50]);
+  if (this.pca_anatomy_relative['Normalized cable of terminal segments']) M.push(this.anatomy[51]);
+  if (this.pca_anatomy_absolute['Num. terminal segments']) M.push(this.anatomy[52]);
+  if (this.pca_anatomy_absolute['Num. of branches']) M.push(this.anatomy[53]);
+
+  if (this.pca_synapses_absolute['Num. of inputs']) M.push(this.anatomy[2]);
+  if (this.pca_synapses_absolute['Num. of outputs']) M.push(this.anatomy[3]);
+  if (this.pca_synapses_absolute['Num. of inputs minus outputs']) M.push(this.anatomy[4]);
+
+  if (this.pca_synapses_relative['Segregation index']) M.push(this.anatomy[5]);
+  if (this.pca_synapses_relative['Output asymmetry index']) M.push(this.anatomy[8]);
+  if (this.pca_synapses_absolute['Histogram of output asymmetry index']) {
+      for (var i=30; i<40; ++i) {
         M.push(this.anatomy[i]);
       }
-    }
-    M.push(this.anatomy[50]); // cable of terminal segments
-    M.push(this.anatomy[51]); // N terminal segments
-    // Ignoring N branches: misleading signal
   }
-  if (p['synaptic counts']) {
-    M.push(this.anatomy[2]);  // N inputs
-    M.push(this.anatomy[3]);  // N outputs
-    M.push(this.anatomy[4]);  // N inputs minus N outputs
+  if (this.pca_anatomy_relative['Normalized histogram of output asymmetry index']) {
+    normalize(this.anatomy, 30, 39).forEach(function(v) { M.push(v); });
   }
-  if (p['synaptic distribution']) {
-    M.push(this.anatomy[5]);  // segregation index
-    M.push(this.anatomy[8]);  // output asymmetry index
-    M.push(this.anatomy[9]);  // input asymmetry index
-    if (p['with asymmetry histograms']) {
-      // Append 2 * 10 bins of histograms of both output asymmetry index and input asymmetry index
-      for (var i=30; i<50; ++i) {
+  if (this.pca_synapses_relative['Input asymmetry index']) M.push(this.anatomy[9]);
+  if (this.pca_synapses_absolute['Histogram of input asymmetry index']) {
+      for (var i=40; i<50; ++i) {
         M.push(this.anatomy[i]);
       }
-    }
-    M.push(this.anatomy[53]); // cable of hillock
-    // TODO test without cable of hillock
   }
+  if (this.pca_anatomy_relative['Normalized histogram of input asymmetry index']) {
+    normalize(this.anatomy, 40, 49).forEach(function(v) { M.push(v); });
+  }
+  if (this.pca_synapses_absolute['Cable of hillock']) M.push(this.anatomy[54]);
 
   // Normalize the standard deviations
   M = M.map(function(v) {

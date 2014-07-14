@@ -1671,7 +1671,20 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClust
     return vs;
   }, {});
   
-  return new SynapseClustering(this.createArbor(), locations, this.createSynapseMap());
+  return new SynapseClustering(this.createArbor(), locations, this.createSynapseCounts());
+};
+
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseCounts = function() {
+  return this.synapticTypes.reduce((function(o, type, k) {
+    var vs = this.geometry[type].vertices;
+    for (var i=0, l=vs.length; i<l; i+=2) {
+      var treenode_id = vs[i+1].node_id,
+          count = o[treenode_id];
+      if (count) o[treenode_id] = count + 1;
+      else o[treenode_id] = 1;
+    }
+    return o;
+  }).bind(this), {});
 };
 
 /** Returns a map of treenode ID keys and lists of {type, connectorID} as values,

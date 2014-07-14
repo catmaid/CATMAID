@@ -508,16 +508,19 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
 
         // Compute synapse segregation index
         // Most costly operation of all, consumes about 40% of the anatomy time
-        var synapse_map = json[1].reduce(function(o, row) {
-          var list = o[row[0]],
-              entry = {type: row[2],
-                       connector_id: row[1]};
-          if (list) list.push(entry);
-          else o[row[0]] = [entry];
-          return o;
-        }, {}),
-            sc = new SynapseClustering(arbor, smooth_positions, synapse_map),
-            segIndex = sc.segregationIndex(sc.clusters(sc.densityHillMap(bandwidth)));
+        var synapse_map = {},
+            nodes = arbor.nodesArray();
+        for (var k=0; k<nodes.length; ++k) {
+          var node = nodes[k],
+              ni = ap.inputs[node],
+              no = ap.outputs[node];
+          if (!ni) ni = 0;
+          if (!no) no = 0;
+          synapse_map[node] = ni + no;
+        }
+
+        var sc = new SynapseClustering(arbor, smooth_positions, synapse_map),
+            segIndex = sc.segregationIndex(sc.clusters(sc.densityHillMap(bandwidth)), ap.outputs, ap.inputs);
 
         // Compute subtree asymmetries
         var asymIndex = arbor.asymmetryIndex(),

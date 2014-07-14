@@ -68,7 +68,7 @@ SynapseClustering.prototype.distanceMap = function() {
 
       downstream_nodes.push(prev_treenode_id);
 
-      var synapses = this.synapses[prev_treenode_id],
+      var n_synapses = this.synapses[prev_treenode_id],
           prev_ds = Ds[prev_treenode_id];
 
       if (!prev_ds) { // prev_ds may already be defined for a branch node
@@ -76,7 +76,7 @@ SynapseClustering.prototype.distanceMap = function() {
         Ds[prev_treenode_id] = prev_ds;
       }
 
-      if (synapses) {
+      if (n_synapses > 0) {
         // Record the distance to the synapse in every downstream node:
         // (which include prev_treenode_id)
         var d = this.distancesToRoot[prev_treenode_id];
@@ -84,7 +84,7 @@ SynapseClustering.prototype.distanceMap = function() {
           var child_id = downstream_nodes[di],
               ds = Ds[child_id],
               distance_child_to_synapse = this.distancesToRoot[child_id] - d;
-          for (var k = 0, sl=synapses.length; k<sl; ++k) {
+          for (var k = 0; k<n_synapses; ++k) {
             ds.push(distance_child_to_synapse);
           }
         }
@@ -146,11 +146,11 @@ SynapseClustering.prototype.distanceMap = function() {
   }
 
   // Update the last node: the root
-  var synapses_at_root = this.synapses[this.arbor.root];
-  if (synapses_at_root) {
+  var n_synapses_at_root = this.synapses[this.arbor.root];
+  if (n_synapses_at_root > 0) {
     Object.keys(Ds).forEach(function(treenode_id) {
       var ds = Ds[treenode_id];
-      for (var k=0; k<synapses_at_root.length; ++k) {
+      for (var k=0; k<n_synapses_at_root; ++k) {
         ds.push(this.distancesToRoot[treenode_id]);
       }
     }, this);
@@ -338,7 +338,7 @@ SynapseClustering.prototype.clusterSizes = function(density_hill_map) {
  *
  * Algorithm by Casey Schneider-Mizell, implemented by Albert Cardona.
  */
-SynapseClustering.prototype.segregationIndex = function(clusters) {
+SynapseClustering.prototype.segregationIndex = function(clusters, outputs, inputs) {
   // Count the number of inputs and outputs of each cluster
   var synapses = this.synapses,
       cs = Object.keys(clusters).reduce(function(a, clusterID) {
@@ -346,16 +346,10 @@ SynapseClustering.prototype.segregationIndex = function(clusters) {
     if (undefined === clusterID) return a;
 
     var m = clusters[clusterID].reduce(function(c, nodeID) {
-      var s = synapses[nodeID];
-      if (s) {
-        for (var i=0; i<s.length; ++i) {
-          // NOTE, could be clever about it (and unreadable) and sum the type to n_inputs, which would only add 1 when it is postsynaptic (presynaptic is 0). And then add 1 always to n_synapses, and there would be no need to have n_outputs. But would be unmaintainable.
-          switch (s[i].type) {
-            case 0: c.n_outputs += 1; break;
-            case 1: c.n_inputs += 1; break;
-          }
-        }
-      }
+      var n_pre = outputs[nodeID],
+          n_post = inputs[nodeID];
+      if (n_pre) c.n_outputs += n_pre;
+      if (n_post) c.n_inputs += n_post;
       return c;
     }, {id: clusterID,
         n_inputs: 0,

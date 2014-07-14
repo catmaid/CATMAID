@@ -1184,20 +1184,22 @@ Arbor.prototype.terminalCableLength = function(positions) {
 
   // catch corner case: no branches, perhaps just the root in isolation
   if (ends.length < 2) {
-    return this.cableLength(positions);
+    return {cable: this.cableLength(positions),
+            n_branches: 0,
+            n_ends: ends.length}; // 1 or 0
   }
 
   for (var i=0; i<ends.length; ++i) {
-    var node1 = ends[i],
-        pos1 = positions[node1],
-        paren = this.edges[node1];
+    var node = ends[i],
+        pos1 = positions[node],
+        node = this.edges[node];
     do {
-        var pos2 = positions[paren];
+        var pos2 = positions[node];
         cable += pos1.distanceTo(pos2);
         pos1 = pos2;
-        node1 = paren;
-        paren = this.edges[node1];
-    } while (undefined === branches[paren]);
+        node = this.edges[node];
+        if (undefined === node) break; // Root node is a branch
+    } while (undefined === branches[node]);
   }
 
   return {cable: cable,

@@ -72,8 +72,19 @@ CircuitGraphAnalysis.prototype._sign = function(M) {
  * In practice, using the default numeric.epsilon fails in some occasions,
  * when too many nodes are too 'close' to each other network-wise.
  * An epsilon of 0.0000000001 works well empirically.
+ *
+ * Returns null if not computable: given no edges (no synapses),
+ * or all are self edges (autapses).
  */
 CircuitGraphAnalysis.prototype.init = function(adjacency_matrix, maxiter, epsilon) {
+  // Check if computable
+  var sum = numeric.sum(adjacency_matrix);
+  if (0 === sum) return null; // no synapses
+  if (0 === sum - numeric.sumV(numeric.getDiag(adjacency_matrix))) {
+    // Has only autapses, which result in a all-zero Laplacian
+    return this;
+  }
+
   var numeric_epsilon = numeric.epsilon;
   if (typeof(epsilon) === 'number') {
     numeric.epsilon = epsilon;

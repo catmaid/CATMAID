@@ -325,16 +325,9 @@ CircuitGraphPlot.prototype.plot = function(ids, names, models, AdjM) {
 };
 
 CircuitGraphPlot.prototype._plot = function() {
-
   // Compute signal flow and eigenvectors
   try {
-    var cga;
-    if (numeric.sum(this.AdjM) > 0) {
-      cga = new CircuitGraphAnalysis().init(this.AdjM, 100000, 0.0000000001);
-    } else {
-      // Neurons don't connect to each other at all
-      cga = null;
-    }
+    var cga = new CircuitGraphAnalysis().init(this.AdjM, 100000, 0.0000000001);
   } catch (e) {
     this.clear();
     console.log(e, e.stack);
@@ -348,7 +341,8 @@ CircuitGraphPlot.prototype._plot = function() {
   this.centralities = [null];
   this.pca = null;
 
-  if (cga) {
+  // Can be null when not computable
+  if (cga.e && cga.z) {
     // Store for replotting later
     this.vectors = [[-1, cga.z]];
     for (var i=0; i<10 && i <cga.e.length; ++i) {

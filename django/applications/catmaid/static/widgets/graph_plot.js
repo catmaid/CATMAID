@@ -441,7 +441,7 @@ CircuitGraphPlot.prototype.clearGUI = function() {
 };
 
 CircuitGraphPlot.prototype.getVectors = function() {
-  if (!this.ids || 0 === this.ids.length || !this.vectors) return;
+  if (!this.ids || 0 === this.ids.length) return;
   
   var xSelect = $('#circuit_graph_plot_X_' + this.widgetID)[0],
       ySelect = $('#circuit_graph_plot_Y_' + this.widgetID)[0];

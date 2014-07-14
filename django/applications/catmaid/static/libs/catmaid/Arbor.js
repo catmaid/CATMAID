@@ -1166,7 +1166,7 @@ Arbor.prototype.distanceToUpstreamNodeIn = function(node, positions, stops) {
   while (paren) {
     var loc2 = positions[paren];
     len += loc1.distanceTo(loc2);
-    if (stops.hasOwnProperty(paren)) return len;
+    if (undefined !== stops[paren]) return len;
     loc1 = loc2;
     paren = this.edges[paren];
   }

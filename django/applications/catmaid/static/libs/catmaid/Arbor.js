@@ -27,7 +27,9 @@ Arbor.prototype = {};
 Arbor.prototype.clone = function() {
 	var arbor = new Arbor();
 	arbor.root = this.root;
-	arbor.edges = Object.create(this.edges);
+	Object.keys(this.edges).forEach(function(node) {
+    arbor.edges[node] = this.edges[node];
+  }, this);
 	return arbor;
 };
 

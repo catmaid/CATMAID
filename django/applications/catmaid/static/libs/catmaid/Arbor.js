@@ -686,37 +686,27 @@ Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
  * The maximum number is that of the root branch.
  */
 Arbor.prototype.strahlerAnalysis = function() {
-    var edges = this.edges,
-        children = Object.keys(edges),
-        parents = children.reduce(function(o, child) {
-            var n_children = o[edges[child]];
-            o[edges[child]] = undefined === n_children ? 1 : n_children + 1;
-            return o;
-        }, {}),
-        ends = children.filter(function(child) { return !parents[child]; }),
-        open = ends,
-        strahler = ends.reduce(function(o, node) {
-            o[node] = 1;
-            return o;
-        }, {});
+    var topo = this.topologicalCopy(),
+        order = topo.nodesOrderFrom(topo.root),
+        be = topo.findBranchAndEndNodes(),
+        branches = be.branches,
+        ends = be.ends.sort(function(a, b) {
+          var orderA = order[a],
+              orderB = order[b];
+          return orderA === orderB ? 0 : (orderA < orderB ? 1 : -1); // descending
+        }),
+        strahler = {};
 
-    while (open.length > 0) {
-        var node = ends.pop(),
-            index = strahler[node],
-            paren = edges[node];
-        while (undefined !== paren) { // a node could be the number 0, which is falsy
-            if (parents[paren] > 1) {
-                // is a branch node
-                if (strahler[paren]) break; // already seen
-                strahler[paren] = index + 1;
-                open.push(paren);
-                break;
-            } else {
-                strahler[paren] = index;
-                // Next iteration:
-                paren = edges[paren];
-            }
-        }
+    strahler[this.root] = order[ends[0]];
+
+    for (var i=0; i<ends.length; ++i) {
+      var node = ends[i],
+          index = 1;
+      do {
+        strahler[node] = index;
+        node = this.edges[node]; // parent
+        if (undefined !== branches[node]) ++index;
+      } while (undefined === strahler[node]);
     }
 
     return strahler;

@@ -1181,9 +1181,25 @@ Arbor.prototype.terminalCableLength = function(positions) {
       branches = be.branches,
       ends = be.ends,
       cable = 0;
-  for (var i=0; i<ends.length; ++i) {
-    cable += this.distanceToUpstreamNodeIn(ends[i], positions, branches);
+
+  // catch corner case: no branches, perhaps just the root in isolation
+  if (ends.length < 2) {
+    return this.cableLength(positions);
   }
+
+  for (var i=0; i<ends.length; ++i) {
+    var node1 = ends[i],
+        pos1 = positions[node1],
+        paren = this.edges[node1];
+    do {
+        var pos2 = positions[paren];
+        cable += pos1.distanceTo(pos2);
+        pos1 = pos2;
+        node1 = paren;
+        paren = this.edges[node1];
+    } while (undefined === branches[paren]);
+  }
+
   return {cable: cable,
           n_branches: be.n_branches,
           n_ends: ends.length};

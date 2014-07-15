@@ -957,6 +957,7 @@ def annotation_list(request, project_id=None):
             if k.startswith('skeleton_ids[')]
     annotations = bool(int(request.POST.get("annotations", 0)))
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
+    neuronnames = bool(int(request.POST.get("neuronnames", 0)))
 
     classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
@@ -999,6 +1000,16 @@ def annotation_list(request, project_id=None):
         'annotations': annotations,
         'skeletons': skeletons,
     }
+
+    # If wanted, get the neuron name of each skeleton
+    if neuronnames:
+        neuronnames_query = ClassInstanceClassInstance.objects.filter(
+                relation=relations['model_of'],
+                project=project_id,
+                class_instance_a__in=skeleton_ids) \
+                        .select_related("class_instance_b") \
+                        .values_list("class_instance_a", "class_instance_b__name")
+        response['neuronnames'] = dict(neuronnames_query)
 
     # If wanted, get the meta annotations for each annotation
     if metaannotations:

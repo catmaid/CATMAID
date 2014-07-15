@@ -658,7 +658,7 @@ var NeuronNameService = function()
         for (var i=fallbackList.length - 1; i > -1; --i) {
           var l = fallbackList[i];
           if ('neuronname' === l.id) {
-            return skeleton.model.baseName;
+            return data.neuronnames[skid];
           } else if ('skeletonid' === l.id) {
             return '' + skid;
           } else if ('all' === l.id) {
@@ -726,7 +726,7 @@ var NeuronNameService = function()
 
     // Request information only, if needed
     var needsNoBackend = 0 === fallbackList.filter(function(l) {
-        return 'neuronname' !== l.id && 'skeletonid' !== l.id;
+        return 'skeletonid' !== l.id;
     }).length;
 
     if (needsNoBackend) {
@@ -738,6 +738,10 @@ var NeuronNameService = function()
       var needsMetaAnnotations = fallbackList.some(function(l) {
           return 'all-meta' ===  l.id || 'own-meta' === l.id;
       });
+      // Check if we need neuron names
+      var needsNeueonNames = fallbackList.some(function(l) {
+          return 'neuronname' === l.id;
+      });
 
       // Get all data that is needed for the fallback list
       requestQueue.register(django_url + project.id + '/skeleton/annotationlist',
@@ -745,6 +749,7 @@ var NeuronNameService = function()
         {
           skeleton_ids: Object.keys(managedSkeletons),
           metaannotations: needsMetaAnnotations ? 1 : 0,
+          neuronnames: needsNeueonNames ? 1 : 0,
         },
         jsonResponseHandler(function(json) {
           update(json);

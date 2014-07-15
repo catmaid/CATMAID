@@ -887,6 +887,13 @@ var WindowMaker = new function()
     plot.onclick = GG.openPlot.bind(GG);
     contentbutton.appendChild(plot);
 
+    var exportsvg = document.createElement('input');
+    exportsvg.setAttribute("type", "button");
+    exportsvg.setAttribute("value", "Export SVG");
+    exportsvg.onclick = GG.exportSVG.bind(GG);
+    contentbutton.appendChild(exportsvg);
+    
+
     content.appendChild( contentbutton );
 
     /* Create graph container and assure that it's overflow setting is set to

@@ -1514,6 +1514,30 @@ GroupGraph.prototype.exportAdjacencyMatrix = function() {
   saveAs(blob, "adjacency_matrix.csv");
 };
 
+GroupGraph.prototype.exportSVG = function() {
+  if (0 === this.cy.nodes().size()) {
+    alert("Load a graph first!");
+    return;
+  }
+
+  console.log('exportSVG');
+  
+  var svg = new SVGKit(500,500);
+  ccy = this.cy;
+  // this.cy.renderer().renderTo( svg, zoom, pan, pxRatio );
+  // ccy.renderer().renderTo( svg, zoom, pan, pxRatio );
+// 
+    var rect = svg.RECT({x:10, y:10, width:50, height:50, fill:'red'})
+    svg.append(rect)
+    var circ = svg.CIRCLE({cx:60, cy:60, r:20, fill:'blue', 'fill-opacity':0.5})
+    svg.append(circ)
+
+   this.cy.renderer().renderTo( svg, 1.0, {x: 0, y: 0}, 1.0 ); 
+    $('#compartment_graph_window_buttons1').append( svg.htmlElement );
+    // appendChildNodes('mydiv', svg.htmlElement)
+};
+var ccy;
+
 GroupGraph.prototype.openPlot = function() {
   if (0 === this.cy.nodes().size()) {
     alert("Load a graph first!");

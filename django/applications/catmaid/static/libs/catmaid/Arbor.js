@@ -1458,3 +1458,37 @@ Arbor.prototype.pruneBareTerminalSegments = function(load) {
     path.forEach(function(node) { delete this[node]; }, this);
   }, this.edges);
 };
+
+/** Prune the arbor at all the given nodes, inclusive.
+ * nodes: a map of nodes vs not undefined.
+ * Returns a map of removed nodes vs true values. */
+Arbor.prototype.pruneAt = function(nodes) {
+  // Speed-up special case
+  if (undefined !== nodes[this.root]) {
+    var removed = this.nodes();
+    this.root = null;
+    this.edges = {};
+    return removed;
+  }
+
+  var removed = {},
+      partitions = this.partitionSorted();
+
+  for (var k=0; k<partitions.length; ++k) {
+    var partition = partitions[k],
+        cut = -1;
+    // Find node nearest to root to cut, if any
+    for (var i=0; i<partition.length; ++i) {
+      if (undefined !== nodes[partition[i]]) cut = i;
+    }
+    if (-1 !== cut) {
+      for (var i=0; i<=cut; ++i) {
+        var node = partition[i];
+        removed[node] = true;
+        delete this.edges[node];
+      }
+    }
+  }
+
+  return removed;
+};

@@ -3,7 +3,6 @@
     "pk": -1, 
     "model": "catmaid.project", 
     "fields": {
-      "public": true, 
       "title": "Classification dummy project"
     }
   }, 
@@ -11,7 +10,6 @@
     "pk": 1, 
     "model": "catmaid.project", 
     "fields": {
-      "public": true, 
       "title": "Default Project"
     }
   }, 
@@ -19,7 +17,6 @@
     "pk": 2, 
     "model": "catmaid.project", 
     "fields": {
-      "public": true, 
       "title": "Evaluation data set"
     }
   }, 
@@ -27,7 +24,6 @@
     "pk": 3, 
     "model": "catmaid.project", 
     "fields": {
-      "public": true, 
       "title": "Focussed Ion Beam (FIB)"
     }
   }, 
@@ -35,7 +31,6 @@
     "pk": 5, 
     "model": "catmaid.project", 
     "fields": {
-      "public": false, 
       "title": "Private version of the FIB data set"
     }
   }, 

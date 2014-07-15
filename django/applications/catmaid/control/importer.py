@@ -472,12 +472,11 @@ class ImportingWizard(SessionWizardView):
             cls_graph_ids = self.get_cleaned_data_for_step(
                 'classification')['classification_graph_suggestions']
         # Get remaining properties
-        make_public = self.get_cleaned_data_for_step('projectselection')['make_projects_public']
         tile_width = self.get_cleaned_data_for_step('projectselection')['tile_width']
         tile_height = self.get_cleaned_data_for_step('projectselection')['tile_height']
         tile_source_type = 1
         imported_projects, not_imported_projects = import_projects(
-            self.request.user, selected_projects, make_public, tags,
+            self.request.user, selected_projects, tags,
             permissions, tile_width, tile_height, tile_source_type,
             cls_graph_ids)
         # Show final page
@@ -592,9 +591,6 @@ class ProjectSelectionForm(forms.Form):
     tile_height = forms.IntegerField(
         initial=settings.IMPORTER_DEFAULT_TILE_HEIGHT,
         help_text="The height of one tile in <em>pixel</em>.")
-    make_projects_public = forms.BooleanField(initial=False,
-        required=False, help_text="If made public, a project \
-        can be seen without being logged in.")
     link_classifications = forms.BooleanField(initial=False,
         required=False, help_text="If checked, this option will " \
             "let the importer suggest classification graphs to " \
@@ -640,7 +636,7 @@ class ConfirmationForm(forms.Form):
     """
     something = forms.CharField(initial="", required=False)
 
-def import_projects( user, pre_projects, make_public, tags, permissions,
+def import_projects( user, pre_projects, tags, permissions,
     tile_width, tile_height, tile_source_type, cls_graph_ids_to_link ):
     """ Creates real CATMAID projects out of the PreProject objects
     and imports them into CATMAID.
@@ -677,8 +673,7 @@ def import_projects( user, pre_projects, make_public, tags, permissions,
                         tile_source_type=tile_source_type)
             # Create new project
             p = Project.objects.create(
-                title=pp.name,
-                public=make_public)
+                title=pp.name)
             # Assign permissions to project
             assigned_permissions = []
             for user_or_group, perm in permissions:

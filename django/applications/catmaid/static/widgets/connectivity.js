@@ -795,8 +795,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     })(this, skid));
 
     // Make a neuron selected by default
-    if (!(id in this.skeletonSelection)) {
-      this.skeletonSelection[id] = true;
+    if (!(skid in this.skeletonSelection)) {
+      this.skeletonSelection[skid] = true;
     }
 
     // Create a selection checkbox
@@ -807,8 +807,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
           return function() {
             widget.skeletonSelection[neuronId] = this.checked;
           };
-        }(this, id));
-    if (this.skeletonSelection[id]) {
+        }(this, skid));
+    if (this.skeletonSelection[skid]) {
         selectionCb.attr('checked', 'checked');
     }
     // Create and append row for current skeleton

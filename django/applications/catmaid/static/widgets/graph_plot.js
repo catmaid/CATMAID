@@ -35,6 +35,7 @@ var CircuitGraphPlot = function() {
   this.selected = {};
 
   // Parameters for anatomy
+  this.reroot_at_soma = true;
   this.sigma = 200; // nm
   this.bandwidth = 8000; // nm
   this.prune_bare_terminal_segments = false;
@@ -493,6 +494,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
   $.blockUI();
 
   var measurements = {},
+      reroot_at_soma = this.reroot_at_soma,
       sigma = this.sigma,
       bandwidth = this.bandwidth,
       prune = this.prune_bare_terminal_segments;
@@ -500,12 +502,20 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
   fetchSkeletons(
       Object.keys(this.getSkeletonModels()).map(Number),
       function(skid) {
-        return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
+        return django_url + project.id + '/' + skid + '/1/' + (reroot_at_soma ? 1 : 0) + '/compact-skeleton';
       },
       function(skid) { return {}; },
       function(skid, json) {
         var ap = parseArbor(json),
             arbor = ap.arbor;
+
+        // Reroot at soma if possible and necessary
+        if (reroot_at_soma) {
+          var soma = json[2]['soma'];
+          if (soma && 1 === soma.length && soma[0] !== arbor.soma) {
+            arbor.reroot(soma[0]);
+          }
+        }
 
         // Remove 'not a branch' and other artifacts that could introduce noise into asymmetry measurements
         if (prune) {
@@ -954,8 +964,12 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
       "CGP-bandwidth" + this.widgetID,
       this.bandwidth);
   od.appendCheckbox(
+      "Reroot at soma (if soma tag present)",
+      "CGP-reroot-" + this.widgetID,
+      this.reroot_at_soma);
+  od.appendCheckbox(
       "Prune synapse-less terminal segments",
-      "prune-" + this.widgetID,
+      "CGP-prune-" + this.widgetID,
       this.prune_bare_terminal_segments);
   od.appendMessage('Measurements for PCA:');
 
@@ -1005,15 +1019,17 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
 
     var update1 = read('sigma'),
         update2 = read('bandwidth'),
-        prune = $('#prune-' + this.widgetID)[0].checked;
+        reroot = $('#CGP-reroot-' + this.widgetID)[0].checked,
+        prune = $('#CGP-prune-' + this.widgetID)[0].checked;
 
     // Label for reloading upon redraw
-    if (update1 || update2 || prune != this.prune_bare_terminal_segments) {
+    if (update1 || update2 || prune != this.prune_bare_terminal_segments || reroot != this.reroot_at_soma) {
       this.anatomy = null;
       update_pca = true;
     }
 
     this.prune_bare_terminal_segments = prune;
+    this.reroot_at_soma = reroot;
 
     if (update_pca) this.pca = null;
 

@@ -390,6 +390,27 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   };
 
   /**
+   *  Support function to update the visibility of a neuron in another widget.
+   */
+  var updateVisibility = function(skid, visible) {
+      // Tell all linked widgets about this change or return if there are none
+      var linkTarget = getLinkTarget();
+      if (!linkTarget) return;
+
+      var model = linkTarget.getSkeletonModel(skid);
+      if (visible) {
+        if (!model) model = getSkeletonModel(skid);
+        else model.setVisible(true);
+        linkTarget.updateOneModel(model);
+      } else {
+        if (model) {
+          model.setVisible(false);
+          linkTarget.updateOneModel(model);
+        }
+      }
+  };
+
+  /**
    * Support function for creating a partner table.
    */
   var create_table = function(skids, skeletons, thresholds, partners, title, relation,
@@ -415,21 +436,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
             .prop('checked', false);
       }
 
-      // Tell all linked widgets about this change or return if there are none
-      var linkTarget = getLinkTarget();
-      if (!linkTarget) return;
-
-      var model = linkTarget.getSkeletonModel(skelid);
-      if (checked) {
-        if (!model) model = getSkeletonModel(skelid);
-        else model.setVisible(true);
-        linkTarget.updateOneModel(model);
-      } else {
-        if (model) {
-          model.setVisible(false);
-          linkTarget.updateOneModel(model);
-        }
-      }
+      updateVisibility(skelid, checked);
     };
 
     var table = $('<table />').attr('id', 'incoming_connectivity_table' + widgetID)
@@ -806,6 +813,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         .change(function(widget, neuronId) {
           return function() {
             widget.skeletonSelection[neuronId] = this.checked;
+            updateVisibility(neuronId, this.checked);
           };
         }(this, skid));
     if (this.skeletonSelection[skid]) {

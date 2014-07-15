@@ -1438,6 +1438,16 @@ var WindowMaker = new function()
     return select;
   };
 
+  var appendButton = function(div, title, onclickFn, attr) {
+    var b = document.createElement('input');
+    if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
+    b.setAttribute('type', 'button');
+    b.setAttribute('value', title);
+    b.onclick = onclickFn;
+    div.appendChild(b);
+    return b;
+  };
+
   var createSkeletonAnalyticsWindow = function()
   {
     var SA = new SkeletonAnalytics();

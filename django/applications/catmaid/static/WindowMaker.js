@@ -711,94 +711,44 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
-    var contentbutton = document.createElement('div');
-    contentbutton.setAttribute("id", 'compartment_graph_window_buttons' + GG.widgetID);
+    var bar = document.createElement('div');
+    bar.setAttribute("id", 'compartment_graph_window_buttons' + GG.widgetID);
 
-    contentbutton.appendChild(document.createTextNode('From'));
-    contentbutton.appendChild(SkeletonListSources.createSelect(GG));
+    bar.appendChild(document.createTextNode('From'));
+    bar.appendChild(SkeletonListSources.createSelect(GG));
 
-    var append = document.createElement('input');
-    append.setAttribute("type", "button");
-    append.setAttribute("value", "Append");
-    append.onclick = GG.loadSource.bind(GG);
-    contentbutton.appendChild(append);
+    appendButton(bar, 'Append', GG.loadSource.bind(GG));
+    appendButton(bar, 'Append as group', GG.appendAsGroup.bind(GG));
+    appendButton(bar, 'Clear',  GG.clear.bind(GG));
+    appendButton(bar, 'Refresh', GG.update.bind(GG));
+    appendButton(bar, 'Annotate', GG.annotate_skeleton_list.bind(GG));
+    appendButton(bar, 'Properties', GG.graph_properties.bind(GG));
 
-    var asgroup = document.createElement('input');
-    asgroup.setAttribute("type", "button");
-    asgroup.setAttribute("value", "Append as group");
-    asgroup.onclick = GG.appendAsGroup.bind(GG);
-    contentbutton.appendChild(asgroup);
+    bar.appendChild(document.createElement('br'));
 
-    var clear = document.createElement('input');
-    clear.setAttribute("type", "button");
-    clear.setAttribute("value", "Clear");
-    clear.onclick = GG.clear.bind(GG);
-    contentbutton.appendChild(clear);
-
-    var refresh = document.createElement('input');
-    refresh.setAttribute("type", "button");
-    refresh.setAttribute("value", "Refresh");
-    refresh.onclick = GG.update.bind(GG);
-    contentbutton.appendChild(refresh);
-
-    var annotate = document.createElement('input');
-    annotate.setAttribute("type", "button");
-    annotate.setAttribute("value", "Annotate");
-    annotate.onclick = GG.annotate_skeleton_list.bind(GG);
-    contentbutton.appendChild(annotate);
-
-    var props = document.createElement('input');
-    props.setAttribute("type", "button");
-    props.setAttribute("value", "Properties");
-    props.onclick = GG.graph_properties.bind(GG);
-    contentbutton.appendChild(props);
-
-    contentbutton.appendChild(document.createElement('br'));
-
-    var layout = appendSelect(contentbutton, "compartment_layout",
+    var layout = appendSelect(bar, "compartment_layout",
         ["Force-directed", "Hierarchical", "Grid", "Circle",
          "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
          "Random", "Compound Spring Embedder", "Manual"]);
 
-    var trigger = document.createElement('input');
-    trigger.setAttribute('type', 'button');
-    trigger.setAttribute('value', 'Re-layout');
-    trigger.onclick = GG.updateLayout.bind(GG, layout);
-    contentbutton.appendChild(trigger);
+    appendButton(bar, 'Re-layout', GG.updateLayout.bind(GG, layout));
 
-    contentbutton.appendChild(document.createTextNode(' - '));
+    bar.appendChild(document.createTextNode(' - '));
 
-    var group = document.createElement('input');
-    group.setAttribute('type', 'button');
-    group.setAttribute('value', 'Group');
-    group.onclick = GG.group.bind(GG);
-    contentbutton.appendChild(group);
+    appendButton(bar, 'Group', GG.group.bind(GG));
+    appendButton(bar, 'Ungroup', GG.ungroup.bind(GG));
 
-    var ungroup = document.createElement('input');
-    ungroup.setAttribute('type', 'button');
-    ungroup.setAttribute('value', 'Ungroup');
-    ungroup.onclick = GG.ungroup.bind(GG);
-    contentbutton.appendChild(ungroup);
+    bar.appendChild(document.createElement('br'));
 
-    contentbutton.appendChild(document.createElement('br'));
+    bar.appendChild(document.createTextNode('Grow '));
 
-    contentbutton.appendChild(document.createTextNode('Grow '));
+    appendButton(bar, 'Circles', GG.growGraph.bind(GG));
 
-    var circles = document.createElement('input');
-    circles.setAttribute("type", "button");
-    circles.setAttribute("value", "Circles");
-    circles.onclick = GG.growGraph.bind(GG);
-    contentbutton.appendChild(circles);
+    bar.appendChild(document.createTextNode(" or "));
 
-    contentbutton.appendChild(document.createTextNode(" or "));
+    appendButton(bar, 'Paths', GG.growPaths.bind(GG));
 
-    var paths = document.createElement('input');
-    paths.setAttribute("type", "button");
-    paths.setAttribute("value", "Paths");
-    paths.onclick = GG.growPaths.bind(GG);
-    contentbutton.appendChild(paths);
-
-    contentbutton.appendChild(document.createTextNode(" by "));
+    bar.appendChild(document.createTextNode(" by "));
 
     var n_circles = document.createElement('select');
     n_circles.setAttribute("id", "n_circles_of_hell" + GG.widgetID);
@@ -808,10 +758,9 @@ var WindowMaker = new function()
       option.value = title;
       n_circles.appendChild(option);
     });
-    contentbutton.appendChild(n_circles);
+    bar.appendChild(n_circles);
 
-
-    contentbutton.appendChild(document.createTextNode("hops, limit:"));
+    bar.appendChild(document.createTextNode("hops, limit:"));
 
     var f = function(name) {
       var e = document.createElement('select');
@@ -834,28 +783,17 @@ var WindowMaker = new function()
       return e;
     };
 
-    contentbutton.appendChild(f("pre"));
-    contentbutton.appendChild(f("post"));
+    bar.appendChild(f("pre"));
+    bar.appendChild(f("post"));
 
-    contentbutton.appendChild(document.createTextNode(' - '));
+    bar.appendChild(document.createTextNode(' - '));
 
-    var hide = document.createElement('input');
-    hide.setAttribute('type', 'button');
-    hide.setAttribute('value', 'Hide selected');
-    hide.onclick = GG.hideSelected.bind(GG);
-    contentbutton.appendChild(hide);
+    appendButton(bar, 'Hide', GG.hideSelected.bind(GG));
+    appendButton(bar, 'Show hidden', GG.showHidden.bind(GG), {disabled: true});
 
-    var show = document.createElement('input');
-    show.setAttribute('type', 'button');
-    show.setAttribute('id', 'graph_show_hidden' + GG.widgetID);
-    show.setAttribute('value', 'Show hidden');
-    show.setAttribute('disabled', true);
-    show.onclick = GG.showHidden.bind(GG);
-    contentbutton.appendChild(show);
+    bar.appendChild(document.createElement('br'));
 
-    contentbutton.appendChild(document.createElement('br'));
-
-    contentbutton.appendChild(document.createTextNode('Color:'));
+    bar.appendChild(document.createTextNode('Color:'));
     var color = document.createElement('select');
     color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
     color.options.add(new Option('source', 'source'));
@@ -865,36 +803,17 @@ var WindowMaker = new function()
     color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
     color.options.add(new Option('circles of hell', 'circles_of_hell')); // inspired by Tom Jessell's comment
     color.onchange = GG._colorize.bind(GG, color);
-    contentbutton.appendChild(color);
+    bar.appendChild(color);
 
-    contentbutton.appendChild(document.createTextNode(' - '));
+    bar.appendChild(document.createTextNode(' - '));
 
-    var gml = document.createElement('input');
-    gml.setAttribute("type", "button");
-    gml.setAttribute("value", "Export GML");
-    gml.onclick = GG.exportGML.bind(GG);
-    contentbutton.appendChild(gml);
+    appendButton(bar, 'Hide', GG.hideSelected.bind(GG));
+    appendButton(bar, 'Export GML', GG.exportGML.bind(GG));
+    appendButton(bar, 'Export SVG', GG.exportSVG.bind(GG));
+    appendButton(bar, 'Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG));
+    appendButton(bar, 'Open plot', GG.openPlot.bind(GG));
 
-    var adj = document.createElement('input');
-    adj.setAttribute("type", "button");
-    adj.setAttribute("value", "Export Adjacency Matrix");
-    adj.onclick = GG.exportAdjacencyMatrix.bind(GG);
-    contentbutton.appendChild(adj);
-
-    var plot = document.createElement('input');
-    plot.setAttribute("type", "button");
-    plot.setAttribute("value", "Open plot");
-    plot.onclick = GG.openPlot.bind(GG);
-    contentbutton.appendChild(plot);
-
-    var exportsvg = document.createElement('input');
-    exportsvg.setAttribute("type", "button");
-    exportsvg.setAttribute("value", "Export SVG");
-    exportsvg.onclick = GG.exportSVG.bind(GG);
-    contentbutton.appendChild(exportsvg);
-    
-
-    content.appendChild( contentbutton );
+    content.appendChild( bar );
 
     /* Create graph container and assure that it's overflow setting is set to
      * 'hidden'. This is required, because cytoscape.js' redraw can be delayed

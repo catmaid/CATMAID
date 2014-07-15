@@ -1,5 +1,6 @@
 from django.conf.urls import patterns, include, url
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 
 from catmaid.views import *
@@ -360,6 +361,11 @@ urlpatterns += patterns('catmaid.control.clustering',
     url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),
         TemplateView.as_view(template_name="catmaid/clustering/display.html"),
         name="clustering_display"),
+)
+
+# Front-end tests
+urlpatterns += patterns('',
+    url(r'^tests$', login_required(TemplateView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),
 )
 
 # Collection of various parts of the CATMAID API. These methods are usually

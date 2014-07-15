@@ -25,7 +25,6 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
                          'to the project with ID %s, but there should only be ' \
                          'one link.' % (stack_id, project_id)}
     ps=ps_all[0]
-    can_edit = user.has_perm('can_administer', p) or user.has_perm('can_annotate', p)
 
     # https://github.com/acardona/CATMAID/wiki/Convention-for-Stack-Image-Sources
     if int(s.tile_source_type) == 2:
@@ -68,7 +67,6 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
             'image_base': s.image_base,
             'num_zoom_levels': int(s.num_zoom_levels),
             'file_extension': s.file_extension,
-            'editable': can_edit,
             'translation': {
                 'x': ps.translation.x,
                 'y': ps.translation.y,

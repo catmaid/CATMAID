@@ -310,20 +310,20 @@ Arbor.prototype.nodes = function() {
 		o[child] = true;
 		return o;
 	}, {});
-	nodes[this.root] = true;
+  if (null !== this.root) nodes[this.root] = true;
 	return nodes;
 };
 
 /** Return an Array of all nodes in O(n) time. */
 Arbor.prototype.nodesArray = function() {
 	var nodes = Object.keys(this.edges);
-	nodes.push(this.root);
+	if (null !== this.root) nodes.push(this.root);
 	return nodes;
 };
 
 /** Counts number of nodes in O(n) time. */
 Arbor.prototype.countNodes = function() {
-	return Object.keys(this.edges).length + (this.root ? 1 : 0);
+	return Object.keys(this.edges).length + (null !== this.root ? 1 : 0);
 };
 
 /** Returns an array of arrays, unsorted, where the longest array contains the linear

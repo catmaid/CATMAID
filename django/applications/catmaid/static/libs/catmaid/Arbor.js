@@ -241,16 +241,21 @@ Arbor.prototype.findBranchAndEndNodes = function() {
           n_branches: n_branches};
 };
 
-/** Returns an array with all branch nodes. Runs in O(n + m) time,
- * where n is the number of nodes and m the number of branches. */
+/** Returns a map of branch node vs true.
+ * Runs in O(2n) time. */
 Arbor.prototype.findBranchNodes = function() {
-	var successors = this.allSuccessors(),
-			node_ids = Object.keys(successors);
-	// Handle corner case
-	if (0 === node_ids.length) return [];
-	return node_ids.filter(function(node) {
-		return successors[node].length > 1;
-	});
+  var edges = this.edges,
+      children = Object.keys(edges),
+      parents = {},
+      branches = {};
+
+  for (var i=0, l=children.length; i<l; ++i) {
+    var paren = edges[children[i]];
+    if (parents[paren]) branches[paren] = true;
+    else parents[paren] = true;
+  }
+
+  return branches;
 };
 
 /** Return a map of node vs topological distance from the given root. Rather than a distance, these are the hierarchical orders, where root has order 0, nodes directly downstream of root have order 1, and so on. Invoke with this.root as argument to get the distances to the root of this Arbor. Invoke with any non-end node to get distances to that node for nodes downstream of it. */

@@ -362,7 +362,8 @@ GroupGraph.prototype.init = function() {
     var node = this;
     if (evt.originalEvent.altKey) {
       // Select in the overlay
-      TracingTool.goToNearestInNeuronOrSkeleton("skeleton", node.data('skeleton_id'));
+      var models = node.data('skeletons');
+      if (1 === models.length) TracingTool.goToNearestInNeuronOrSkeleton("skeleton", models[0].id);
     }
   });
 

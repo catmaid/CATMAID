@@ -1644,7 +1644,10 @@ GroupGraph.prototype.iterateEdges = function(fn) {
   });
 };
 
-GroupGraph.prototype.measureRisk = function() {
+/** Annotate the data of each edge with a risk value between 0 (none) and 1 (highest risk).
+ * Autapses have by definition a risk of 1.
+ * The edge label is appended with the risk value, intrepreted as MIN, MAX or a numeric value, in square brackets. */
+GroupGraph.prototype.annotateEdgeRisk = function() {
   // Reverse edges from target to source
   var edges = {},
       autapses = false;
@@ -1658,14 +1661,13 @@ GroupGraph.prototype.measureRisk = function() {
     if (edge.selected() || (edge.source().selected() && edge.target().selected())) {
       // Label autapses with maximum risk
       if (data.source === data.target) {
-        edge.data('label', data.weight + ' (1.00)');
+        edge.data('label', data.weight + ' [MAX]');
         autapses = true;
         return;
       }
-      var a = edges[data.target],
-          e = [edge, data.source];
-      if (a) a.push(e);
-      else edges[data.target] = [e];
+      var a = edges[data.target];
+      if (a) a.push(edge);
+      else edges[data.target] = [edge];
     }
   }.bind(this)));
 
@@ -1681,38 +1683,81 @@ GroupGraph.prototype.measureRisk = function() {
   // Fetch locations of input synapses for each target
   var inputs = {};
 
-  var computeRisk = function() {
-    fetchSkeletons(
-        Object.keys(edges), // targets could have changed if some failed to load
-        function(skid) {
-          return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
-        },
-        function(skid) {
-          return {}; // POST
-        },
-        function(target, json) {
-          var connectors = inputs[target];
+  fetchSkeletons(
+      targets,
+      function(skid) {
+        return django_url + project.id + '/connector/list/one_to_many';
+      },
+      function(target) {
+        return {skid: target,
+                skids: edges[target].map(function(edge) { return edge.data('source'); }),
+                relation: 'postsynaptic_to'};
+      },
+      function(skid, json) {
+        inputs[skid] = json;
+      },
+      function(skid) {
+        // Failed to load
+        delete edges[skid];
+      },
+      function() {
+        GroupGraph.prototype.computeRisk(
+          edges,
+          inputs,
+          function(risks) {
+            risks.forEach(function(pair) {
+              var edge = pair[0],
+                  risk = pair[1],
+                  label = Number(risk).toFixed(2);
+              edge.data('risk', risk);
+              if ('0.00' === label) label = 'MIN';
+              else if ('1.00' === label) label = 'MAX';
+              edge.data('label', edge.data('weight') + ' [' + label + ']');
+            });
+          });
+      });
+};
 
-          if (0 === connectors.length) {
-            // edge(s) disappeared from database
-            growlAlert('Information', 'Could not find edges for skeleton #' + skid);
-            return;
-          }
 
-          var ap = parseArbor(json);
+/** Compute the risk for subset of edges, by estimating, for each edge,
+ * what fraction of the synapses of the target arbor would be removed
+ * if the subtree starting at the lowest common ancestor node of the synapses
+ * in the edge was to be cut off from the arbor.
+ * Risk is a value between 0 and 1.
+ * edges: a map of edge.target keys vs array of edge.
+ * inputs: a map of edge.target vs connector data as obtained from /connector/list/one_to_many.
+ * Invokes callback with one parameter: an array of [edge, risk] pairs. */
+GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
+  var risks = [];
 
-          if (0 === ap.n_inputs) {
-            // Database changed
-            growlAlert('Information', 'Skeleton #' + target + ' no longer has any input synapses');
-            return;
-          } else if (0 === ap.n_outputs) {
-            // Flow centrality not computable: use alternative method
-            // TODO
-            alert('Risk not computable for target skeleton #' + target);
-            return;
-          }
+  fetchSkeletons(
+      Object.keys(edges), // targets could have changed if some failed to load
+      function(skid) {
+        return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
+      },
+      function(skid) {
+        return {}; // POST
+      },
+      function(target, json) {
+        var connectors = inputs[target];
 
-          // Reroot arbor at highest centrality node closest to the root
+        if (0 === connectors.length) {
+          // edge(s) disappeared from database
+          growlAlert('Information', 'Could not find edges for skeleton #' + skid);
+          return;
+        }
+
+        var ap = parseArbor(json);
+
+        if (0 === ap.n_inputs) {
+          // Database changed
+          growlAlert('Information', 'Skeleton #' + target + ' no longer has any input synapses');
+          return;
+        }
+
+        // Reroot arbor at highest centrality node closest to the root
+        // but only if possible:
+        if (ap.n_outputs > 0) {
           var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
               nodes = Object.keys(fc),
               max = nodes.reduce(function(o, node) {
@@ -1732,64 +1777,44 @@ GroupGraph.prototype.measureRisk = function() {
           }
 
           ap.arbor.reroot(child);
+        }
 
-          // For each source
-          edges[target].forEach(function(e) {
-            var source = e[1],
-                edge = e[0];
+        // For each source
+        edges[target].forEach(function(edge) {
+          var source = edge.data('source');
 
-            // Find out how many total synapses are thrown away
-            // when cutting the arbor at the synapses that make up
-            // the edge between source and target.
-            var edge_synapses = connectors.reduce(function(o, row) {
-              // 2: treenode ID receiving the input
-              // 8: skeleton ID of the partner arbor
-              if (row[8] === source) o[row[2]] = true;
-              return o;
-            }, {});
+          // Find out how many total synapses are thrown away
+          // when cutting the arbor at the synapses that make up
+          // the edge between source and target.
+          var edge_synapses = connectors.reduce(function(o, row) {
+            // 2: treenode ID receiving the input
+            // 8: skeleton ID of the partner arbor
+            if (row[8] === source) o[row[2]] = true;
+            return o;
+          }, {});
 
-            if (0 === Object.keys(edge_synapses)) {
-              // Database changed
-              growlAlert('Information', 'Skeleton #' + target + ' no longer receives inputs from skeleton #' + source);
-              return;
-            }
+          if (0 === Object.keys(edge_synapses)) {
+            // Database changed
+            growlAlert('Information', 'Skeleton #' + target + ' no longer receives inputs from skeleton #' + source);
+            return;
+          }
 
-            var lca = ap.arbor.lowestCommonAncestor(edge_synapses),
-                sub_nodes = ap.arbor.subArbor(lca).nodes(),
-                lost_inputs = Object.keys(ap.inputs).reduce(function(sum, node) {
-                  if (undefined !== sub_nodes[node]) sum += ap.inputs[node]; // 1 or more inputs per node
-                  return sum;
-                }, 0),
-                risk = 1 - lost_inputs / ap.n_inputs;
+          var lca = ap.arbor.lowestCommonAncestor(edge_synapses),
+              sub_nodes = ap.arbor.subArbor(lca).nodes(),
+              lost_inputs = Object.keys(ap.inputs).reduce(function(sum, node) {
+                if (undefined !== sub_nodes[node]) sum += ap.inputs[node]; // 1 or more inputs per node
+                return sum;
+              }, 0),
+              risk = 1 - lost_inputs / ap.n_inputs;
 
-            edge.data('risk', risk);
-            edge.data('label', edge.data('weight') + ' (' + Number(risk).toFixed(2) + ')');
-          });
-        },
-        function(skid) {
-          // Failed loading: will be handled by fetchSkeletons
-        },
-        function() {
-          // DONE: nothing left to do
+          risks.push([edge, risk]);
         });
-  };
-
-  fetchSkeletons(
-      targets,
-      function(skid) {
-        return django_url + project.id + '/connector/list/one_to_many';
-      },
-      function(target) {
-        return {skid: target,
-                skids: edges[target].map(function(e) { return e[1]; }),
-                relation: 'postsynaptic_to'};
-      },
-      function(skid, json) {
-        inputs[skid] = json;
       },
       function(skid) {
-        // Failed to load
-        delete edges[skid];
+        // Failed loading: will be handled by fetchSkeletons
       },
-      computeRisk);
+      function() {
+        // DONE
+        callback(risks);
+      });
 };

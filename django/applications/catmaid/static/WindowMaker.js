@@ -738,16 +738,16 @@ var WindowMaker = new function()
     appendButton(bar, 'Group', GG.group.bind(GG));
     appendButton(bar, 'Ungroup', GG.ungroup.bind(GG));
 
+    bar.appendChild(document.createTextNode(' - '));
+
+    appendButton(bar, 'Measure risk', GG.measureRisk.bind(GG));
+
     bar.appendChild(document.createElement('br'));
 
     bar.appendChild(document.createTextNode('Grow '));
-
     appendButton(bar, 'Circles', GG.growGraph.bind(GG));
-
     bar.appendChild(document.createTextNode(" or "));
-
     appendButton(bar, 'Paths', GG.growPaths.bind(GG));
-
     bar.appendChild(document.createTextNode(" by "));
 
     var n_circles = document.createElement('select');

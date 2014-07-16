@@ -1760,9 +1760,10 @@ GroupGraph.prototype.measureRisk = function() {
                   if (undefined !== sub_nodes[node]) sum += ap.inputs[node]; // 1 or more inputs per node
                   return sum;
                 }, 0),
-                risk = Number(1 - lost_inputs / ap.n_inputs).toFixed(2);
+                risk = 1 - lost_inputs / ap.n_inputs;
 
-            edge.data('label', edge.data('weight') + ' (' + risk + ')');
+            edge.data('risk', risk);
+            edge.data('label', edge.data('weight') + ' (' + Number(risk).toFixed(2) + ')');
           });
         },
         function(skid) {

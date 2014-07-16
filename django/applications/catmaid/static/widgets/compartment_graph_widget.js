@@ -12,7 +12,6 @@ var GroupGraph = function() {
   this.show_node_labels = true;
   this.trim_node_labels = false;
   this.clustering_bandwidth = 0;
-  this.compute_risk = false;
 
   this.color_circles_of_hell = this.colorCirclesOfHell.bind(this);
 
@@ -192,15 +191,6 @@ GroupGraph.prototype.graph_properties = function() {
   dialog.appendChild(bandwidth);
   dialog.appendChild( document.createElement("br"));
 
-  dialog.appendChild(document.createTextNode('Compute synapse risk'));
-  var risk = document.createElement('input');
-  risk.setAttribute('id', 'synaptic_risk');
-  risk.setAttribute('type', 'checkbox');
-  if (this.compute_risk)
-    risk.setAttribute('checked', 'true');
-  dialog.appendChild(risk);
-  dialog.appendChild( document.createElement("br"));
-
   var label = document.createTextNode('Keep edges with ');
   dialog.appendChild(label);
   var syncount = document.createElement('input');
@@ -280,20 +270,7 @@ GroupGraph.prototype.graph_properties = function() {
           }
         }
 
-
         self.synaptic_count_edge_filter = syncount.value; // TODO not used?
-
-
-        if (!self.compute_risk && risk.checked) {
-          if (Object.keys(self.groups).length > 0) {
-            if (confirm("Computing the synapse risk ungroups all groups: proceed?")) {
-              self.compute_risk = risk.checked;
-              self.resetGroups();
-            }
-          } else {
-            self.compute_risk = risk.checked;
-          }
-        }
 
         var edge_opacity = Number(props[0].value.trim());
         if (!Number.isNaN(edge_opacity) && edge_opacity >= 0 && edge_opacity <= 1) self.edge_opacity = edge_opacity;
@@ -551,140 +528,107 @@ GroupGraph.prototype.updateNeuronNames = function() {
 GroupGraph.prototype.updateGraph = function(json, models) {
   // A neuron that is split cannot be part of a group anymore: makes no sense.
   // Neither by confidence nor by synapse clustering.
-  // Also, when computing the risk there can't be any groups.
+
+  var edge_color = this.edge_color;
+  var asEdge = function(edge) {
+      return {data: {directed: true,
+                      arrow: 'triangle',
+                      id: edge[0] + '_' + edge[1],
+                      label: edge[2],
+                      color: edge_color,
+                      source: edge[0],
+                      target: edge[1],
+                      weight: edge[2]}};
+  };
+
+  var asNode = function(nodeID) {
+      nodeID = nodeID + '';
+      var i_ = nodeID.indexOf('_'),
+          skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
+          model = models[skeleton_id];
+      return {data: {id: nodeID, // MUST be a string, or fails
+                      skeletons: [model.clone()],
+                      label: neuronNameService.getName(model.id),
+                      node_count: 0,
+                      color: '#' + model.color.getHexString()}};
+  };
+
+  // Figure out what kind of response we got
+  var modes = {basic: false,
+                confidence_split: false,
+                dual_split: false};
+  if ('branch_nodes' in json && 'intraedges' in json) modes.dual_split = true;
+  else if ('nodes' in json) modes.confidence_split = true;
+  else modes.basic = true;
 
 
-  var data = {};
+  var elements = {}
 
-  // TODO move the risk computation to the client, and only for selected nodes with other selected nodes.
-  if (this.compute_risk) {
-    data = json;
+  if (modes.basic) {
+    // Basic graph: infer nodes from json.edges
+    var seen = {},
+        nodes = [],
+        appendNode = function(skid) {
+          if (seen[skid]) return;
+          var node = asNode('' + skid);
+          seen[skid] = true;
+          nodes.push(node);
+        };
 
-    // Color nodes
-    data.nodes.forEach(function(node) {
-      node.data.color = '#' + models[node.data.skeleton_id].color.getHexString();
+    json.edges.forEach(function(edge) {
+      edge.slice(0, 2).forEach(appendNode);
     });
 
-    // Set color of new edges
-    data.edges.forEach(function(edge) {
-      var d = edge.data;
-      if (d.risk) {
-        /*
-        var hsv = [0,
-                   d.risk > 0.75 ? 0 : 1 - d.risk / 0.75,
-                   d.risk > 0.75 ? 0.267 : 1.267 - d.risk / 0.75];
-        */
-        // TODO how to convert HSV to RGB hex?
-        d.color = '#444';
-        d.label += ' (' + d.risk.toFixed(2) + ')';
-      } else {
-        d.color = '#444';
-      }
-      if (d.arrow === 'none') {
-        d.color = '#F00';
-      }
-    });
+    // For nodes without edges, add them from the local list
+    Object.keys(models).forEach(appendNode);
+
+    elements.nodes = nodes;
+    elements.edges = json.edges.map(asEdge);
+
+  } else if (modes.confidence_split) {
+    // Graph with skeletons potentially split at low confidence edges
+    elements.nodes = json.nodes.map(asNode);
+    elements.edges = json.edges.map(asEdge);
 
   } else {
-    var edge_color = this.edge_color;
-    var asEdge = function(edge) {
-        return {data: {directed: true,
-                       arrow: 'triangle',
-                       id: edge[0] + '_' + edge[1],
-                       label: edge[2],
-                       color: edge_color,
-                       source: edge[0],
-                       target: edge[1],
-                       weight: edge[2]}};
-    };
+    // Graph with skeletons potentially split both at low confidence edges
+    // and by synapse clustering
+    elements.nodes = json.nodes.map(asNode).concat(json.branch_nodes.map(function(bnodeID) {
+      var node = asNode(bnodeID);
+      node.data.label = '';
+      node.data.branch = true;
+      return node;
+    }));
 
-    var asNode = function(nodeID) {
-        nodeID = nodeID + '';
-        var i_ = nodeID.indexOf('_'),
-            skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
-            model = models[skeleton_id];
-        return {data: {id: nodeID, // MUST be a string, or fails
-                       skeletons: [model.clone()],
-                       label: neuronNameService.getName(model.id),
-                       node_count: 0,
-                       color: '#' + model.color.getHexString()}};
-    };
-
-    // Figure out what kind of response we got
-    var modes = {basic: false,
-                 confidence_split: false,
-                 dual_split: false};
-    if ('branch_nodes' in json && 'intraedges' in json) modes.dual_split = true;
-    else if ('nodes' in json) modes.confidence_split = true;
-    else modes.basic = true;
-
-    if (modes.basic) {
-      // Basic graph: infer nodes from json.edges
-      var seen = {},
-          nodes = [],
-          appendNode = function(skid) {
-            if (seen[skid]) return;
-            var node = asNode('' + skid);
-            seen[skid] = true;
-            nodes.push(node);
-          };
-
-      json.edges.forEach(function(edge) {
-        edge.slice(0, 2).forEach(appendNode);
-      });
-
-      // For nodes without edges, add them from the local list
-      Object.keys(models).forEach(appendNode);
-
-      data.nodes = nodes;
-      data.edges = json.edges.map(asEdge);
-
-    } else if (modes.confidence_split) {
-      // Graph with skeletons potentially split at low confidence edges
-      data.nodes = json.nodes.map(asNode);
-      data.edges = json.edges.map(asEdge);
-
-    } else {
-      // Graph with skeletons potentially split both at low confidence edges
-      // and by synapse clustering
-      data.nodes = json.nodes.map(asNode).concat(json.branch_nodes.map(function(bnodeID) {
-        var node = asNode(bnodeID);
-        node.data.label = '';
-        node.data.branch = true;
-        return node;
-      }));
-
-      data.edges = json.edges.map(asEdge).concat(json.intraedges.map(function(edge) {
-        return {data: {directed: false,
-                       arrow: 'none',
-                       id: edge[0] + '_' + edge[1],
-                       label: edge[2],
-                       color: '#F00',
-                       source: edge[0],
-                       target: edge[1],
-                       weight: 10}}; // default weight for intraedge
-      }));
-    }
-
-    // Group neurons, if any groups exist, skipping splitted neurons
-    // (Neurons may have been splitted either by synapse clustering or at low-confidence edges.)
-    var splitted = {};
-    if (data.nodes) {
-      splitted = data.nodes.reduce(function(o, nodeID) {
-        nodeID = nodeID + '';
-        var i_ = nodeID.lastIndexOf('_');
-        if (-1 !== i_) o[nodeID.substring(0, i_)] = true;
-        return o;
-      }, {});
-    }
-    this._regroup(data, splitted, models);
+    elements.edges = json.edges.map(asEdge).concat(json.intraedges.map(function(edge) {
+      return {data: {directed: false,
+                      arrow: 'none',
+                      id: edge[0] + '_' + edge[1],
+                      label: edge[2],
+                      color: '#F00',
+                      source: edge[0],
+                      target: edge[1],
+                      weight: 10}}; // default weight for intraedge
+    }));
   }
 
-  // Compute edge width for rendering the edge width
+  // Group neurons, if any groups exist, skipping splitted neurons
+  // (Neurons may have been splitted either by synapse clustering or at low-confidence edges.)
+  var splitted = {};
+  if (elements.nodes) {
+    splitted = elements.nodes.reduce(function(o, nodeID) {
+      nodeID = nodeID + '';
+      var i_ = nodeID.lastIndexOf('_');
+      if (-1 !== i_) o[nodeID.substring(0, i_)] = true;
+      return o;
+    }, {});
+  }
+  this._regroup(elements, splitted, models);
 
+  // Compute edge width for rendering the edge width
   var edgeWidth = this.edgeWidthFn();
 
-  data.edges.forEach(function(edge) {
+  elements.edges.forEach(function(edge) {
     edge.data.width = this.edge_min_width + edgeWidth(edge.data.weight);
   }, this);
 
@@ -704,7 +648,7 @@ GroupGraph.prototype.updateGraph = function(json, models) {
   this.cy.elements().remove();
 
   // Re-add them
-  this.cy.add( data );
+  this.cy.add( elements );
 
   this.cy.nodes().each(function(i, node) {
     // Lock old nodes into place and restore their position
@@ -987,8 +931,7 @@ GroupGraph.prototype._load = function(models) {
     return;
   }
   var post = {skeleton_list: skeleton_ids,
-              confidence_threshold: this.confidence_threshold,
-              risk: this.compute_risk ? 1 : 0};
+              confidence_threshold: this.confidence_threshold};
   if (this.clustering_bandwidth > 0) {
     var selected = Object.keys(this.cy.nodes().toArray().reduce(function(m, node) {
       if (node.selected()) {
@@ -1685,4 +1628,166 @@ GroupGraph.prototype.ungroup = function() {
   });
   if (count > 0) this.update();
   else growlAlert("Information", "Nothing to ungroup!");
+};
+
+/** Iterate over all visible directed edges
+ * and invoke the function fn with the edge and its data
+ * as arguments.
+ */
+GroupGraph.prototype.iterateEdges = function(fn) {
+  this.cy.edges().each(function(i, edge) {
+    if (edge.hidden()) return;
+    var e = edge.data();
+    if (!e.directed) return; // intra-edge of a neuron split by synapse clustering
+    fn(edge, e);
+  });
+};
+
+GroupGraph.prototype.measureRisk = function() {
+  // Reverse edges from target to source
+  var edges = {},
+      autapses = false;
+
+  // Find selected edges if any, defined as:
+  // 1. The edge itself being selected
+  // 2. Both the source and target nodes being selected
+  this.iterateEdges((function(edge, data) {
+    // Can't be part of a group
+    if (this.groups[data.source] || this.groups[data.target]) return;
+    if (edge.selected() || (edge.source().selected() && edge.target().selected())) {
+      // Label autapses with maximum risk
+      if (data.source === data.target) {
+        edge.data('label', data.weight + ' (1.00)');
+        autapses = true;
+        return;
+      }
+      var a = edges[data.target],
+          e = [edge, data.source];
+      if (a) a.push(e);
+      else edges[data.target] = [e];
+    }
+  }.bind(this)));
+
+  // TODO handle split nodes
+
+  var targets = Object.keys(edges);
+
+  if (0 === targets.length) {
+    if (!autapses) growlAlert("Information", "Select at least 2 connected nodes, that are not groups!");
+    return;
+  };
+
+  // Fetch locations of input synapses for each target
+  var inputs = {};
+
+  var computeRisk = function() {
+    fetchSkeletons(
+        Object.keys(edges), // targets could have changed if some failed to load
+        function(skid) {
+          return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
+        },
+        function(skid) {
+          return {}; // POST
+        },
+        function(target, json) {
+          var connectors = inputs[target];
+
+          if (0 === connectors.length) {
+            // edge(s) disappeared from database
+            growlAlert('Information', 'Could not find edges for skeleton #' + skid);
+            return;
+          }
+
+          var ap = parseArbor(json);
+
+          if (0 === ap.n_inputs) {
+            // Database changed
+            growlAlert('Information', 'Skeleton #' + target + ' no longer has any input synapses');
+            return;
+          } else if (0 === ap.n_outputs) {
+            // Flow centrality not computable: use alternative method
+            // TODO
+            alert('Risk not computable for target skeleton #' + target);
+            return;
+          }
+
+          // Reroot arbor at highest centrality node closest to the root
+          var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
+              nodes = Object.keys(fc),
+              max = nodes.reduce(function(o, node) {
+                var m = fc[node];
+                if (o.max < m) {
+                  o.max = m;
+                  o.node = node;
+                }
+                return o;
+              }, {max: 0, node: null}),
+              node = max.node,
+              child = node;
+
+          while (fc[node] === max.max) {
+            child = node;
+            node = ap.arbor.edges[node]; // its parent
+          }
+
+          ap.arbor.reroot(child);
+
+          // For each source
+          edges[target].forEach(function(e) {
+            var source = e[1],
+                edge = e[0];
+
+            // Find out how many total synapses are thrown away
+            // when cutting the arbor at the synapses that make up
+            // the edge between source and target.
+            var edge_synapses = connectors.reduce(function(o, row) {
+              // 2: treenode ID receiving the input
+              // 8: skeleton ID of the partner arbor
+              if (row[8] === source) o[row[2]] = true;
+              return o;
+            }, {});
+
+            if (0 === Object.keys(edge_synapses)) {
+              // Database changed
+              growlAlert('Information', 'Skeleton #' + target + ' no longer receives inputs from skeleton #' + source);
+              return;
+            }
+
+            var lca = ap.arbor.lowestCommonAncestor(edge_synapses),
+                sub_nodes = ap.arbor.subArbor(lca).nodes(),
+                lost_inputs = Object.keys(ap.inputs).reduce(function(sum, node) {
+                  if (undefined !== sub_nodes[node]) sum += ap.inputs[node]; // 1 or more inputs per node
+                  return sum;
+                }, 0),
+                risk = Number(1 - lost_inputs / ap.n_inputs).toFixed(2);
+
+            edge.data('label', edge.data('weight') + ' (' + risk + ')');
+          });
+        },
+        function(skid) {
+          // Failed loading: will be handled by fetchSkeletons
+        },
+        function() {
+          // DONE: nothing left to do
+        });
+  };
+
+  fetchSkeletons(
+      targets,
+      function(skid) {
+        return django_url + project.id + '/connector/list/one_to_many';
+      },
+      function(target) {
+        return {skid: target,
+                skids: edges[target].map(function(e) { return e[1]; }),
+                relation: 'postsynaptic_to'};
+      },
+      function(skid, json) {
+        inputs[skid] = json;
+      },
+      function(skid) {
+        // Failed to load
+        delete edges[skid];
+      },
+      computeRisk);
 };

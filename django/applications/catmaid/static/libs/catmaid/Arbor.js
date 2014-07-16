@@ -209,7 +209,10 @@ Arbor.prototype.allNeighbors = function() {
 	}, {});
 };
 
-/** Find branch and end nodes in O(3*n) time. */
+/** Find branch and end nodes in O(3n) time.
+ * Returns {ends: array of end nodes,
+ *          branches: map of branch node vs count of branches,
+ *          n_branches: number of branch nodes} */
 Arbor.prototype.findBranchAndEndNodes = function() {
   var edges = this.edges,
       children = Object.keys(edges),
@@ -241,16 +244,21 @@ Arbor.prototype.findBranchAndEndNodes = function() {
           n_branches: n_branches};
 };
 
-/** Returns an array with all branch nodes. Runs in O(n + m) time,
- * where n is the number of nodes and m the number of branches. */
+/** Returns a map of branch node vs true.
+ * Runs in O(2n) time. */
 Arbor.prototype.findBranchNodes = function() {
-	var successors = this.allSuccessors(),
-			node_ids = Object.keys(successors);
-	// Handle corner case
-	if (0 === node_ids.length) return [];
-	return node_ids.filter(function(node) {
-		return successors[node].length > 1;
-	});
+  var edges = this.edges,
+      children = Object.keys(edges),
+      parents = {},
+      branches = {};
+
+  for (var i=0, l=children.length; i<l; ++i) {
+    var paren = edges[children[i]];
+    if (parents[paren]) branches[paren] = true;
+    else parents[paren] = true;
+  }
+
+  return branches;
 };
 
 /** Return a map of node vs topological distance from the given root. Rather than a distance, these are the hierarchical orders, where root has order 0, nodes directly downstream of root have order 1, and so on. Invoke with this.root as argument to get the distances to the root of this Arbor. Invoke with any non-end node to get distances to that node for nodes downstream of it. */
@@ -310,20 +318,20 @@ Arbor.prototype.nodes = function() {
 		o[child] = true;
 		return o;
 	}, {});
-	nodes[this.root] = true;
+  if (null !== this.root) nodes[this.root] = true;
 	return nodes;
 };
 
 /** Return an Array of all nodes in O(n) time. */
 Arbor.prototype.nodesArray = function() {
 	var nodes = Object.keys(this.edges);
-	nodes.push(this.root);
+	if (null !== this.root) nodes.push(this.root);
 	return nodes;
 };
 
 /** Counts number of nodes in O(n) time. */
 Arbor.prototype.countNodes = function() {
-	return Object.keys(this.edges).length + (this.root ? 1 : 0);
+	return Object.keys(this.edges).length + (null !== this.root ? 1 : 0);
 };
 
 /** Returns an array of arrays, unsorted, where the longest array contains the linear
@@ -1457,4 +1465,69 @@ Arbor.prototype.pruneBareTerminalSegments = function(load) {
     }
     path.forEach(function(node) { delete this[node]; }, this);
   }, this.edges);
+};
+
+/** Prune the arbor at all the given nodes, inclusive.
+ * nodes: a map of nodes vs not undefined.
+ * Returns a map of removed nodes vs true values. */
+Arbor.prototype.pruneAt = function(nodes) {
+  // Speed-up special case
+  if (undefined !== nodes[this.root]) {
+    var removed = this.nodes();
+    this.root = null;
+    this.edges = {};
+    return removed;
+  }
+
+  var removed = {},
+      partitions = this.partitionSorted();
+
+  for (var k=0; k<partitions.length; ++k) {
+    var partition = partitions[k],
+        cut = -1;
+    // Find node nearest to root to cut, if any
+    for (var i=0; i<partition.length; ++i) {
+      if (undefined !== nodes[partition[i]]) cut = i;
+    }
+    if (-1 !== cut) {
+      for (var i=0; i<=cut; ++i) {
+        var node = partition[i];
+        removed[node] = true;
+        delete this.edges[node];
+      }
+    }
+  }
+
+  return removed;
+};
+
+/** Find the nearest upstream node common to all given nodes.
+ * nodes: a map of nodes vs not undefined.
+ * Runs in less than O(n).*/
+Arbor.prototype.lowestCommonAncestor = function(nodes) {
+  // Corner cases
+  if (null === this.root) return null;
+  if (undefined !== nodes[this.root]) return this.root;
+
+  var open = Object.keys(nodes),
+      n_nodes = open.length,
+      seen = {};
+
+  if (0 == n_nodes) return null;
+  if (1 === n_nodes) return open[0];
+
+  for (var i=0; i<n_nodes; ++i) {
+    var node = open[i];
+    do {
+      var count = seen[node];
+      if (count) {
+        ++count;
+        if (count === n_nodes) return node;
+        seen[node] = count;
+      } else {
+        seen[node] = 1;
+      }
+      node = this.edges[node]; // parent
+    } while (undefined !== node);
+  }
 };

@@ -190,7 +190,7 @@ MorphologyPlot.prototype._populateLine = function(skeleton_id) {
         return o;
       }, {});
     } else if (endsWith(this.mode, 'branch nodes')) {
-      ps = arbor.findBranchNodes().reduce(function(o, node) {
+      ps = Object.keys(arbor.findBranchNodes()).reduce(function(o, node) {
         o[node] = positions[node];
         return o;
       }, {});

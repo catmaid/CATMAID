@@ -209,7 +209,10 @@ Arbor.prototype.allNeighbors = function() {
 	}, {});
 };
 
-/** Find branch and end nodes in O(3*n) time. */
+/** Find branch and end nodes in O(3n) time.
+ * Returns {ends: array of end nodes,
+ *          branches: map of branch node vs count of branches,
+ *          n_branches: number of branch nodes} */
 Arbor.prototype.findBranchAndEndNodes = function() {
   var edges = this.edges,
       children = Object.keys(edges),

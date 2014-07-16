@@ -156,8 +156,12 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
 
   // Annotations column
   var td_ann = document.createElement('td');
-  // Build list of annotations and use layout of jQuery tagbox
-  var ul = entity.annotations.reduce(
+  // Build list of alphabetically sorted annotations and use layout of jQuery
+  // tagbox
+  var sortedAnnotations = entity.annotations.sort(function(a, b) {
+    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+  });
+  var ul = sortedAnnotations.reduce(
     function(o, e) {
       var li = document.createElement('li');
       li.setAttribute('title', 'Show annotation in navigator');

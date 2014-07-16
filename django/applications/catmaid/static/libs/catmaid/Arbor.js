@@ -1500,3 +1500,34 @@ Arbor.prototype.pruneAt = function(nodes) {
 
   return removed;
 };
+
+/** Find the nearest upstream node common to all given nodes.
+ * nodes: a map of nodes vs not undefined.
+ * Runs in less than O(n).*/
+Arbor.prototype.lowestCommonAncestor = function(nodes) {
+  // Corner cases
+  if (null === this.root) return null;
+  if (undefined !== nodes[this.root]) return this.root;
+
+  var open = Object.keys(nodes),
+      n_nodes = open.length,
+      seen = {};
+
+  if (0 == n_nodes) return null;
+  if (1 === n_nodes) return open[0];
+
+  for (var i=0; i<n_nodes; ++i) {
+    var node = open[i];
+    do {
+      var count = seen[node];
+      if (count) {
+        ++count;
+        if (count === n_nodes) return node;
+        seen[node] = count;
+      } else {
+        seen[node] = 1;
+      }
+      node = this.edges[node]; // parent
+    } while (undefined !== node);
+  }
+};

@@ -388,6 +388,10 @@ SVGCanvas.prototype._hasOnlyMoveZero = function() {
             this._subpaths[this._subpaths.length-1] == ' M 0,0'
 }
 
+SVGCanvas.prototype.fillText = function(elem, sx, sy) {
+  console.log('filltext');
+}
+
 SVGCanvas.prototype.scale = function(sx, sy) {
     /***
         Add the scaling transformation described by the arguments to the 

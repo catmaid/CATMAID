@@ -230,6 +230,10 @@ SVGCanvas.prototype.__init__ = function (widthOrIdOrNode /*=100*/, height /*=100
 //  Utility Functions
 ////////////////////////////
 
+SVGCanvas.prototype.setTransform = function(a,b,c,d,e,f) {
+
+}
+
 SVGCanvas.prototype.reset = function(startingGroup /*=_startingGroup or svg.svgElement*/) {
     /***
         SVG ONLY used by the constructor, but can also be called to reset the state
@@ -391,6 +395,11 @@ SVGCanvas.prototype._hasOnlyMoveZero = function() {
 SVGCanvas.prototype.fillText = function(elem, sx, sy) {
   console.log('filltext');
 }
+
+SVGCanvas.prototype.strokeText = function(elem, sx, sy) {
+  console.log('strokeText');
+}
+
 
 SVGCanvas.prototype.scale = function(sx, sy) {
     /***

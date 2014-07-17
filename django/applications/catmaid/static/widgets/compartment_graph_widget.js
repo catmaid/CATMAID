@@ -1522,7 +1522,7 @@ GroupGraph.prototype.exportSVG = function() {
 
   console.log('exportSVG');
   
-  var svg = new SVGCanvas(500,500);
+  var svg = new SVGCanvas(800,800);
   ccy = this.cy;
   // this.cy.renderer().renderTo( svg, zoom, pan, pxRatio );
   // ccy.renderer().renderTo( svg, zoom, pan, pxRatio );

@@ -964,38 +964,107 @@ var saveDivSVG = function(divID, filename) {
   }
 };
 
-/** Extract the Arbor and the node positions from the compact-skeleton JSON,
- * as well as the count of n_inputs and n_outputs, and the maps of node vs input count and node vs output count. */
-var parseArbor = function(json) {
+/** When invoked with json from compact-skeleton, n_outputs is the number of presynaptic
+ * sites, and outputs is a map of nodes vs number of presynaptic relations.
+ * When invoked with json from compact-arbor, n_outputs is the number of target nodes
+ * in other arbors; in other words, the number of actual output synapses. And in this
+ * case, input_partners and output_partners will be maps of skeleton_id vs true. */
+var ArborParser = function() {
+    this.arbor = null;
+    this.inputs = null;
+    this.outputs = null;
+    this.n_inputs = null;
+    // Number of post targets of pre connectors
+    this.n_outputs = null;
+    // Number of pre connectors
+    this.n_presynaptic_sites = null;
+    this.input_partners = null;
+    this.output_partners = null;
+};
+
+ArborParser.prototype = {};
+
+ArborParser.prototype.init = function(url, json) {
+    this.tree(json[0]);
+    switch (url) {
+        case 'compact-skeleton':
+            this.connectors(json[1]);
+            break;
+        case 'compact-arbor':
+            this.synapses(json[1]);
+            break;
+    }
+    return this;
+};
+
+ArborParser.prototype.tree = function(rows) {
   var arbor = new Arbor(),
       positions = {};
-  json[0].forEach(function(row) {
-    var node = row[0],
+  for (var i=0; i<rows.length; ++i) {
+    var row = rows[i],
+        node = row[0],
         paren = row[1];
     if (paren) arbor.edges[node] = paren;
     else arbor.root = node;
     positions[node] = new THREE.Vector3(row[3], row[4], row[5]);
-  });
-  var io = json[1].reduce(function(a, row) {
-    // 0: node ID
-    // 1: connector ID
-    // 2: type: 0 for pre, 1 for post
-    var t = a[row[2]],
-        node = row[0],
+  };
+
+  this.arbor = arbor;
+  this.positions = positions;
+};
+
+/** Parse connectors from compact-skeleton.
+ */
+ArborParser.prototype.connectors = function(rows) {
+  var io = [{count: 0},
+            {count: 0}];
+  for (var i=0; i<rows.length; ++i) {
+    var row = rows[i],
+        t = io[row[2]], // 2: type: 0 for pre, 1 for post
+        node = row[0], // 0: ID
         count = t[node];
-    if (count) t[node] += 1;
+    if (count) t[node] = count + 1;
     else t[node] = 1;
     t.count += 1;
-    return a;
-  }, [{count: 0}, {count: 0}]);
-  var n_outputs = io[0].count,
-      n_inputs = io[1].count;
+  }
+  this.n_presynaptic_sites = io[0].count;
+  this.n_inputs = io[1].count;
   delete io[0].count;
   delete io[1].count;
-  return {arbor: arbor,
-          positions: positions,
-          n_outputs: n_outputs,
-          n_inputs: n_inputs,
-          outputs: io[0],
-          inputs: io[1]};
+  this.outputs = io[0];
+  this.inputs = io[1];
+};
+
+/** Parse connectors from compact-arbor.
+ */
+ArborParser.prototype.synapses = function(rows) {
+  var io = [{partners: {},
+             count: 0,
+             connectors: {}},
+            {partners: {},
+             count: 0,
+             connectors: {}}];
+  for (var i=0; i<rows.length; ++i) {
+    var row = rows[i],
+        t = io[row[6]], // 6: 0 for pre, 1 for post
+        node = row[0], // 0: treenode ID
+        count = t[node];
+    if (count) t[node] = count + 1;
+    else t[node] = 1;
+    t.count += 1;
+    t.partners[row[5]] = true;
+    t.connectors[row[2]] = true; // 2: connector ID
+  }
+  this.n_outputs = io[0].count;
+  this.n_inputs = io[1].count;
+  this.output_partners = io[0].partners;
+  this.input_partners = io[1].partners;
+  this.n_output_connectors = Object.keys(io[0].connectors).length;
+  this.n_input_connectors = Object.keys(io[1].connectors).length;
+  ['count', 'partners', 'connectors'].forEach(function(key) {
+      delete io[0][key];
+      delete io[1][key];
+  });
+  this.outputs = io[0];
+  this.inputs = io[1];
 };

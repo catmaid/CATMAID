@@ -502,11 +502,11 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
   fetchSkeletons(
       Object.keys(this.getSkeletonModels()).map(Number),
       function(skid) {
-        return django_url + project.id + '/' + skid + '/1/' + (reroot_at_soma ? 1 : 0) + '/compact-skeleton';
+        return django_url + project.id + '/' + skid + '/1/' + (reroot_at_soma ? 1 : 0) + '/compact-arbor';
       },
       function(skid) { return {}; },
       function(skid, json) {
-        var ap = parseArbor(json),
+        var ap = new ArborParser().init('compact-arbor', json),
             arbor = ap.arbor;
 
         // Reroot at soma if possible and necessary

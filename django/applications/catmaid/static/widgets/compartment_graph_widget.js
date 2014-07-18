@@ -1747,7 +1747,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
           return;
         }
 
-        var ap = parseArbor(json);
+        var ap = new ArborParser().init('compact-arbor', json);
 
         if (0 === ap.n_inputs) {
           // Database changed

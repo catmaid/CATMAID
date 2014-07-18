@@ -343,7 +343,7 @@ CircuitGraphPlot.prototype._plot = function() {
   this.pca = null;
 
   // Can be null when not computable
-  if (cga.e && cga.z) {
+  if (cga && cga.e && cga.z) {
     // Store for replotting later
     this.vectors = [[-1, cga.z]];
     for (var i=0; i<10 && i <cga.e.length; ++i) {

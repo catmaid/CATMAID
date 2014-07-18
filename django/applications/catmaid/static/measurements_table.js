@@ -15,7 +15,7 @@ SkeletonMeasurementsTable.prototype = {};
 $.extend(SkeletonMeasurementsTable.prototype, new InstanceRegistry());
 $.extend(SkeletonMeasurementsTable.prototype, new SkeletonSource());
 
-SkeletonMeasurementsTable.prototype.labels = ['Neuron', 'Skeleton', 'Raw cable (nm)', 'Smooth cable (nm)', 'Lower-bound cable (nm)', 'N inputs', 'N outputs', 'N nodes', 'N branch nodes', 'N end nodes'];
+SkeletonMeasurementsTable.prototype.labels = ['Neuron', 'Skeleton', 'Raw cable (nm)', 'Smooth cable (nm)', 'Lower-bound cable (nm)', 'N inputs', 'N outputs', 'N presynaptic sites', 'N nodes', 'N branch nodes', 'N end nodes'];
 
 SkeletonMeasurementsTable.prototype.getName = function() {
   return "Measurements " + this.widgetID;
@@ -56,16 +56,18 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
   fetchSkeletons(
       Object.keys(models).map(Number),
       function(skid) {
-        return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
+        return django_url + project.id + '/' + skid + '/1/0/compact-arbor';
       },
       function(skid) { return {}; },
       function(skid, json) {
-        var ap = parseArbor(json),
+        console.log('buh');
+        var ap = new ArborParser().init('compact-arbor', json),
             arbor = ap.arbor,
             positions = ap.positions,
             raw_cable = Math.round(arbor.cableLength(positions)) | 0,
             smooth_cable = Math.round(arbor.smoothCableLength(positions, sigma)) | 0,
             lower_bound_cable = Math.round(arbor.topologicalCopy().cableLength(positions)) | 0,
+            n_presynaptic_sites = ap.n_output_connectors,
             n_outputs = ap.n_outputs,
             n_inputs = ap.n_inputs,
             n_nodes = arbor.countNodes(),
@@ -74,12 +76,12 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
             n_ends = be.ends.length;
         rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(models[skid].baseName, skid), skid,
                    raw_cable, smooth_cable, lower_bound_cable,
-                   n_inputs, n_outputs,
+                   n_inputs, n_outputs, n_presynaptic_sites,
                    n_nodes, n_branching, n_ends]);
       },
-      (function(skid) {
-        this.push(skid);
-      }).bind(failed),
+      function(skid) {
+        failed.push(skid);
+      },
       function() {
         fnDone(rows);
         if (failed.length > 0) {

@@ -964,11 +964,9 @@ var saveDivSVG = function(divID, filename) {
   }
 };
 
-/** When invoked with json from compact-skeleton, n_outputs is the number of presynaptic
- * sites, and outputs is a map of nodes vs number of presynaptic relations.
- * When invoked with json from compact-arbor, n_outputs is the number of target nodes
- * in other arbors; in other words, the number of actual output synapses. And in this
- * case, input_partners and output_partners will be maps of skeleton_id vs true. */
+/** Parse JSON data from compact-skeleton and compact-arbor into an object
+ * that contains an Arbor instance and a number of measurements related
+ * to synapses and synaptic partners. */
 var ArborParser = function() {
     this.arbor = null;
     this.inputs = null;

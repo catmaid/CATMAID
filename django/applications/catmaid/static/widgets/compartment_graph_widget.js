@@ -1458,6 +1458,61 @@ GroupGraph.prototype.exportAdjacencyMatrix = function() {
   saveAs(blob, "adjacency_matrix.csv");
 };
 
+/** Synchronously load the heavy-weight SVG libraries if not done already. */
+GroupGraph.prototype.loadSVGLibraries = function(callback) {
+  if (GroupGraph.prototype.svg_libs_loaded) {
+    if (callback) callback();
+    return;
+  }
+
+  var libs = ["MochiKit/Base.js", "MochiKit/Iter.js", "MochiKit/Logging.js", "MochiKit/DateTime.js", "MochiKit/Format.js", "MochiKit/Async.js", "MochiKit/DOM.js", "MochiKit/Style.js", "MochiKit/Color.js", "MochiKit/Signal.js", "MochiKit/Position.js", "MochiKit/Visual.js", "MochiKit/LoggingPane.js", "SVGKit/SVGKit.js", "SVGKit/SVGCanvas.js"];
+
+  $.blockUI();
+
+  var scripts = document.getElementsByTagName("script"),
+      last = scripts[scripts.length -1];
+
+  var jQuery = $,
+      cleanup = function() {
+        // FIX DOM.js overwriting jQuery
+        window.$ = jQuery;
+        $.unblockUI();
+      },
+      error = function(e) {
+        console.log(e, e.stack);
+        alert("Sorry: failed to load SVG rendering libraries.");
+      },
+      chainLoad = function(libs, i) {
+    try {
+      var s = document.createElement('script');
+      s.type = 'text/javascript';
+      s.async = false;
+      s.src = django_url + 'static/libs/' + libs[i];
+      var exec = false;
+      s.onreadystatechange = function() {
+        if (!exec && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete")) {
+          exec = true;
+          console.log("Loaded script " + libs[i]);
+          console.log(window.SVGCanvas);
+          if (i < libs.length -1) chainLoad(libs, i + 1);
+          else {
+            GroupGraph.prototype.svg_libs_loaded = true;
+            cleanup();
+            if (callback) callback();
+          }
+        }
+      };
+      s.onload = s.onreadystatechange;
+      last.parentNode.appendChild(s);
+    } catch (e) {
+      cleanup();
+      error(e);
+    }
+  };
+
+  chainLoad(libs, 0);
+};
+
 GroupGraph.prototype.exportSVG = function() {
   if (0 === this.cy.nodes().size()) {
     alert("Load a graph first!");
@@ -1471,6 +1526,12 @@ GroupGraph.prototype.exportSVG = function() {
     alert("The SVG exporter is currently limited to graphs with edges.");
     return;
   }
+
+  GroupGraph.prototype.loadSVGLibraries(this._exportSVG.bind(this));
+};
+
+/** Assumes SVG libraries are loaded, a graph exists and has at least one edge. */
+GroupGraph.prototype._exportSVG = function() {
 
   var div= $('#graph_widget' + this.widgetID),
       width = div.width(),

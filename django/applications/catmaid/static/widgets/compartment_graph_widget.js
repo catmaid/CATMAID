@@ -9,8 +9,12 @@ var GroupGraph = function() {
 
   this.confidence_threshold = 0;
   this.synaptic_count_edge_filter = 0; // value equal or higher than this number or kept
+  this.label_valign = 'top';
+  this.label_halign = 'center';
   this.show_node_labels = true;
   this.trim_node_labels = false;
+  this.node_width = 30; // pixels
+  this.node_height = 30; // pixels
   this.clustering_bandwidth = 0;
 
   this.color_circles_of_hell = this.colorCirclesOfHell.bind(this);
@@ -164,10 +168,16 @@ GroupGraph.prototype.graph_properties = function() {
   var conf = dialog.appendChoice("Keep skeleton edges of this or higher confidence:", "confidence-threshold", conf_values, conf_values, 0);
   var bandwidth = dialog.appendField("Synapse clustering bandwidth:", "bandwidth", this.clustering_bandwidth);
   var syncount = dialog.appendField("Show edges with this or higher synapses:", "edge_filter", this.synaptic_count_edge_filter); // TODO unused parameter
+  var vpos = ["top", "center", "bottom"];
+  var label_vpos = dialog.appendChoice("Node label vertical position", "valign", vpos, vpos, this.label_valign);
+  var hpos = ["left", "center", "right"];
+  var label_hpos = dialog.appendChoice("Node label horizontal position", "halign", hpos, hpos, this.label_halign);
   var node_labels = dialog.appendCheckbox("Show node labels", "node_labels", this.show_node_labels);
   node_labels.onclick = this.toggle_show_node_labels.bind(this);
   var trim_labels = dialog.appendCheckbox("Trim node labels beyond first ';'", "trim_labels", this.trim_node_labels);
   trim_labels.onclick = this.toggleTrimmedNodeLabels.bind(this);
+  var node_width = dialog.appendField("Node width:", "node_width", this.node_width);
+  var node_height = dialog.appendField("Node height:", "node_height", this.node_height);
   dialog.appendMessage("Edge properties:");
   var props = ["opacity", "text opacity", "min width"].map(function(prop) {
     var field = dialog.appendField("Edge " + prop + ":", prop.replace(/ /, '-'), this["edge_" + prop.replace(/ /g, "_")]);
@@ -200,6 +210,32 @@ GroupGraph.prototype.graph_properties = function() {
       }
     }
 
+    var validate = function(old_value, new_value) {
+      try {
+        var v = parseInt(new_value);
+        if (v < 0) return old_value;
+        return new_value;
+      } catch (e) {
+        growlAlert("Warning", "Bad value: " + new_value);
+        return old_value;
+      }
+    };
+
+    this.label_halign = label_hpos.value;
+    this.label_valign = label_vpos.value;
+    this.node_width = validate(node_width, node_width.value);
+    this.node_height = validate(node_height, node_height.value);
+
+    var style = {"text-halign": this.label_halign,
+                 "text-valign": this.label_valign,
+                 "width": this.node_width + "px",
+                 "height": this.node_height + "px"}
+
+    // Update general style, for new nodes
+    this.cy.style().selector("node").css(style);
+    // Update style of current nodes
+    this.cy.nodes().css(style);
+
     this.synaptic_count_edge_filter = syncount.value; // TODO not used?
 
     var edge_opacity = Number(props[0].value.trim());
@@ -227,9 +263,10 @@ GroupGraph.prototype.init = function() {
             "border-width": 1,
             "background-color": "data(color)",
             "border-color": "#555",
-            "text-valign": "top",
-            "width": "mapData(node_count, 10, 2000, 30, 50)", //"data(node_count)",
-            "height": "mapData(node_count, 10, 2000, 30, 50)"   // "data(node_count)"
+            "text-valign": this.label_valign,
+            "text-halign": this.label_halign,
+            "width": this.node_width,
+            "height": this.node_height
           })
         .selector("edge")
           .css({
@@ -275,7 +312,6 @@ GroupGraph.prototype.init = function() {
             "height": 15
           }),
   };
-
   var sel = $("#cyelement" + this.widgetID);
   sel.cytoscape(options).css('background', 'white');
   this.cy = sel.cytoscape("get");

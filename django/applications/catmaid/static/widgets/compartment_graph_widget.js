@@ -1458,6 +1458,186 @@ GroupGraph.prototype.exportAdjacencyMatrix = function() {
   saveAs(blob, "adjacency_matrix.csv");
 };
 
+/** Synchronously load the heavy-weight SVG libraries if not done already. */
+GroupGraph.prototype.loadSVGLibraries = function(callback) {
+  if (GroupGraph.prototype.svg_libs_loaded) {
+    if (callback) callback();
+    return;
+  }
+
+  var libs = ["MochiKit/Base.js", "MochiKit/Iter.js", "MochiKit/Logging.js", "MochiKit/DateTime.js", "MochiKit/Format.js", "MochiKit/Async.js", "MochiKit/DOM.js", "MochiKit/Style.js", "MochiKit/Color.js", "MochiKit/Signal.js", "MochiKit/Position.js", "MochiKit/Visual.js", "MochiKit/LoggingPane.js", "SVGKit/SVGKit.js", "SVGKit/SVGCanvas.js"];
+
+  $.blockUI();
+
+  var scripts = document.getElementsByTagName("script"),
+      last = scripts[scripts.length -1];
+
+  var jQuery = $,
+      cleanup = function() {
+        // FIX DOM.js overwriting jQuery
+        window.$ = jQuery;
+        $.unblockUI();
+      },
+      error = function(e) {
+        console.log(e, e.stack);
+        alert("Sorry: failed to load SVG rendering libraries.");
+      },
+      fixAPI = function() {
+        // Fix up API mismatches between SVGCanvas and Canvas
+        SVGCanvas.prototype.fillText = SVGCanvas.prototype.text;
+        SVGCanvas.prototype.strokeText = function() {
+          // Fortunately always used in ways that can fixed below.
+          // Absence of this function explains the need to fix the stroke in SVG elements below.
+        };
+        SVGCanvas.prototype.setTransform = function() {
+          // Fortunately all calls are to the identity transform, that is, to reset,
+          // and explains perhaps the issues with the position of the M point in paths below,
+          // which is fixable.
+        };
+      },
+      chainLoad = function(libs, i) {
+    try {
+      var s = document.createElement('script');
+      s.type = 'text/javascript';
+      s.async = false;
+      s.src = django_url + 'static/libs/' + libs[i];
+      var exec = false;
+      s.onreadystatechange = function() {
+        if (!exec && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete")) {
+          exec = true;
+          console.log("Loaded script " + libs[i]);
+          console.log(window.SVGCanvas);
+          if (i < libs.length -1) chainLoad(libs, i + 1);
+          else {
+            GroupGraph.prototype.svg_libs_loaded = true;
+            cleanup();
+            fixAPI();
+            if (callback) callback();
+          }
+        }
+      };
+      s.onload = s.onreadystatechange;
+      last.parentNode.appendChild(s);
+    } catch (e) {
+      cleanup();
+      error(e);
+    }
+  };
+
+  chainLoad(libs, 0);
+};
+
+GroupGraph.prototype.exportSVG = function() {
+  if (0 === this.cy.nodes().size()) {
+    alert("Load a graph first!");
+    return;
+  }
+
+  if (0 === this.cy.edges().length) {
+    // This limitation has to do with:
+    // 1. Transforms and bounds are not correct for nodes when the graph lacks any edges.
+    // 2. Need at least one edge for the heuristics below to detect where the edges end and the nodes start--which could be overcome by testing if the graph has any edges, but given that without edges the rendering is wrong anyway, the best is to avoid it.
+    alert("The SVG exporter is currently limited to graphs with edges.");
+    return;
+  }
+
+  GroupGraph.prototype.loadSVGLibraries(this._exportSVG.bind(this));
+};
+
+/** Assumes SVG libraries are loaded, a graph exists and has at least one edge. */
+GroupGraph.prototype._exportSVG = function() {
+
+  var div= $('#graph_widget' + this.widgetID),
+      width = div.width(),
+      height = div.height();
+  var svg = new SVGCanvas(width, height);
+
+  this.cy.renderer().renderTo( svg, 1.0, {x: 0, y: 0}, 1.0 ); 
+
+  // Fix rendering issues.
+  // Painting order is from bottom to top (logically).
+  // All edge lines are painted first. Then all edge strings. Then all nodes, as two circles: one is the contour and the other the filling. Then all node strings.
+  // Edges are painted as three consecutive path elements:
+  //   1. edge line
+  //   2. arrowhead line
+  //   3. arrowhead filling
+  // .. or just with one line when lacking arrowhead.
+  // Paths 2 and 3 are identical except one has stroke and the other fill.
+
+  var children = svg.svg.htmlElement.childNodes;
+
+  var edges = [],
+      remove = [],
+      i = 0;
+  // Group the path elements of each edge
+  for (; i<children.length; ++i) {
+    var child = children[i];
+    if ('text' === child.localName) break;
+    switch(child.pathSegList.length) {
+      case 2:
+        // New graph edge
+        edges.push([child]);
+        break;
+      case 5:
+        // Arrowhead of previous edge
+        edges[edges.length -1].push(child);
+        break;
+    }
+  }
+
+  // Fix edge arrowheads if necessary
+  for (var k=0; k<edges.length; ++k) {
+    var edge = edges[k];
+    if (1 === edge.length) continue;
+    // Fix the style
+    var path = edge[2],
+        attr = path.attributes;
+    attr.stroke.value = attr.fill.value;
+    // Remove bogus lineTo
+    path.pathSegList.removeItem(2);
+    remove.push(edge[1]);
+  }
+
+  // Fix edge labels: stroke should be white and of 0.2 thickness
+  for (; i<children.length; ++i) {
+      var child = children[i];
+      if ('text' !== child.localName) break;
+      child.attributes.stroke.value = '#ffffff';
+      child.style.strokeWidth = '0.2';
+  }
+
+  // Fix nodes: instead of two separate paths (one for the filling
+  // and one for the contour), add a fill value to the contour
+  // and delete the other.
+  // Also add the text-anchor: middle to the text.
+  for (; i<children.length; i+=3) {
+    // The second one is the contour
+    var child = children[i+1],
+      path = child.pathSegList;
+    // The coordinates of the M are wrong:
+    // make the M have the coordinates of the first L
+    // Note: cannot remove the L, circle would draw as semicircle
+    path[0].x = path[1].x;
+    path[0].y = path[1].y;
+    // Set the fill value
+    child.attributes.fill.value = children[i].attributes.fill.value;
+    // Fix text anchor
+    children[i+2].style.textAnchor = 'middle';
+    remove.push(children[i]);
+  }
+
+
+  remove.forEach(function(child) {
+    child.parentNode.removeChild(child);
+  });
+
+
+  var s = new XMLSerializer().serializeToString(svg.svg.htmlElement);
+
+  var blob = new Blob([s], {type: 'text/svg'});
+  saveAs(blob, "graph-" + this.widgetID + ".svg");
+};
+
 GroupGraph.prototype.openPlot = function() {
   if (0 === this.cy.nodes().size()) {
     alert("Load a graph first!");

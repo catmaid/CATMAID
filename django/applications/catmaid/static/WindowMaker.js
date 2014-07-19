@@ -809,6 +809,7 @@ var WindowMaker = new function()
 
     appendButton(bar, 'Hide', GG.hideSelected.bind(GG));
     appendButton(bar, 'Export GML', GG.exportGML.bind(GG));
+    appendButton(bar, 'Export SVG', GG.exportSVG.bind(GG));
     appendButton(bar, 'Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG));
     appendButton(bar, 'Open plot', GG.openPlot.bind(GG));
 

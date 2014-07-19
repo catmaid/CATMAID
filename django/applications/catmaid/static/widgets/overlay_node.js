@@ -725,7 +725,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
         // to existing treenode or connectornode
         if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
           if (!mayEdit()) {
-            alert("You lack permissions to declare node #" + node.id + "as postsynaptic to connector #" + atnID);
+            alert("You lack permissions to declare node #" + node.id + " as postsynaptic to connector #" + atnID);
             return;
           }
           // careful, atnID is a connector
@@ -873,7 +873,8 @@ SkeletonElements.prototype.mouseEventManager = new (function()
         if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
           alert("Can not join two connector nodes!");
         } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
-          catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to");
+          var synapse_type = e.altKey ? 'post' : 'pre';
+          catmaidSVGOverlay.createLink(atnID, connectornode.id, synapse_type + "synaptic_to");
           statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
         }
       } else {

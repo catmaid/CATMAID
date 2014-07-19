@@ -1213,6 +1213,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
       targetTreenodeID = atn.id;
       if (SkeletonAnnotations.TYPE_NODE === atn.type) {
         if (e.shiftKey) {
+          // Create a new connector and a new link
           var synapse_type = e.altKey ? 'post' : 'pre';
           statusBar.replaceLast("created connector, with " + synapse_type + "synaptic treenode id " + atn.id);
           var self = this;

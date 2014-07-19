@@ -445,26 +445,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     // Else, select the node
     if (SkeletonAnnotations.TYPE_NODE === node.type) {
       // Update statusBar
-      statusBar.replaceLast("Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id);
-      // If changing skeletons:
-      if (atn.skeleton_id !== node.skeleton_id) {
-        // Update the status with the ancestry of that skeleton:
-        var stackID = this.stack.getId();
-        this.submit(
-            django_url + project.id + '/skeleton/ancestry',
-            {pid: project.id,
-             skeleton_id: node.skeleton_id},
-            function(json) {
-              var message = "Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id;
-              for (var i = 0, len = json.length; i < len; ++i) {
-                message += " <i>part_of</i> [<strong>" + json[i].name + "</strong>]";
-              }
-              statusBar.replaceLastHTML(message);
-              SkeletonAnnotations.setNeuronNameInTopbar(stackID, json[0].name, node.skeleton_id);
-              project.selectedObjects.selectedneuron = json[0].id;
-              project.selectedObjects.selectedskeleton = parseInt(node.skeleton_id);
-            });
-      }
+      this.printTreenodeInfo(node.id, "Node " + node.id + ", skeleton " + node.skeleton_id);
 
       atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
@@ -1573,13 +1554,17 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNearestOpenEndNode = function(nodeI
       });
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID) {
+SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, prefixMessage) {
   if (this.isIDNull(nodeID)) return;
+  if (typeof prefixMessage === "undefined") {
+    prefixMessage = "Node " + nodeID;
+  }
+  statusBar.replaceLast(prefixMessage + " (loading authorship information)");
   this.submit(
       django_url + project.id + '/node/user-info',
       {treenode_id: nodeID},
       function(jso) {
-        var msg = "Created by " + jso.user.first_name + " " + jso.user.last_name + " (" + jso.user.username +
+        var msg = prefixMessage + " created by " + jso.user.first_name + " " + jso.user.last_name + " (" + jso.user.username +
                 ") on " + jso.creation_time +
                 ", last edited by " + jso.editor.first_name + " " + jso.editor.last_name + " (" + jso.editor.username +
                 ") on " + jso.edition_time +

@@ -158,137 +158,62 @@ GroupGraph.prototype.toggle_show_node_labels = function() {
 };
 
 GroupGraph.prototype.graph_properties = function() {
-  var dialog = document.createElement('div');
-  dialog.setAttribute("id", "dialog-graph-confirm");
-  dialog.setAttribute("title", "Graph properties");
-
-  var label = document.createTextNode('Keep edges with confidence');
-  dialog.appendChild(label);
-
-  var conf = document.createElement('select');
-  conf.setAttribute("id", "confidence_threshold");
-  for (var i = 0; i < 6; ++i) {
-    var option = document.createElement("option");
-    option.text = i.toString();
-    option.value = i;
-    conf.appendChild(option);
-  }
-  dialog.appendChild(conf);
-  // TODO: set confidence_threshold
-  dialog.appendChild( document.createElement("br"));
-
-  var label = document.createTextNode('or higher.');
-  dialog.appendChild(label);
-  dialog.appendChild( document.createElement("br"));
-
-  var label = document.createTextNode('Bandwidth:');
-  dialog.appendChild(label);
-  var bandwidth = document.createElement('input');
-  bandwidth.setAttribute('id', 'clustering_bandwidth_input');
-  bandwidth.setAttribute('type', 'text');
-  bandwidth.setAttribute('value', this.clustering_bandwidth );
-  bandwidth.style.width = "80px";
-  dialog.appendChild(bandwidth);
-  dialog.appendChild( document.createElement("br"));
-
-  var label = document.createTextNode('Keep edges with ');
-  dialog.appendChild(label);
-  var syncount = document.createElement('input');
-  syncount.setAttribute('id', 'synaptic_count_edge_filter');
-  syncount.setAttribute('type', 'text');
-  syncount.setAttribute('value', this.synaptic_count_edge_filter );
-  syncount.style.width = "30px";
-  dialog.appendChild(syncount);
-  label = document.createTextNode(' or more synapses.');
-  dialog.appendChild(label);
-  dialog.appendChild( document.createElement("br"));
-
-  var label = document.createTextNode('Show node labels:');
-  dialog.appendChild(label);
-  var rand = document.createElement('input');
-  rand.setAttribute("type", "checkbox");
-  rand.setAttribute("id", "show_node_labels");
-  if (this.show_node_labels)
-    rand.setAttribute("checked", "true");
-  rand.onclick = this.toggle_show_node_labels.bind(this);
-  dialog.appendChild(rand);
-  dialog.appendChild( document.createElement("br"));
-
-  dialog.appendChild(document.createTextNode('Trim node labels:'));
-  var check = document.createElement('input');
-  check.setAttribute('type', 'checkbox');
-  check.setAttribute('id', 'graph_toggle_short_names');
-  if (this.trim_node_labels) check.setAttribute('checked', 'true');
-  check.onclick = this.toggleTrimmedNodeLabels.bind(this);
-  dialog.appendChild(check);
-  dialog.appendChild(document.createElement("br"));
-
-  var p = document.createElement('p');
-  p.appendChild(document.createTextNode('Edge properties:'));
-  p.appendChild(document.createElement("br"));
+  
+  var dialog = new OptionsDialog("Graph properties");
+  var conf_values = [0, 1, 2, 3, 4, 5];
+  var conf = dialog.appendChoice("Keep skeleton edges of this or higher confidence:", "confidence-threshold", conf_values, conf_values, 0);
+  var bandwidth = dialog.appendField("Synapse clustering bandwidth:", "bandwidth", this.clustering_bandwidth);
+  var syncount = dialog.appendField("Show edges with this or higher synapses:", "edge_filter", this.synaptic_count_edge_filter); // TODO unused parameter
+  var node_labels = dialog.appendCheckbox("Show node labels", "node_labels", this.show_node_labels);
+  node_labels.onclick = this.toggle_show_node_labels.bind(this);
+  var trim_labels = dialog.appendCheckbox("Trim node labels beyond first ';'", "trim_labels", this.trim_node_labels);
+  trim_labels.onclick = this.toggleTrimmedNodeLabels.bind(this);
+  dialog.appendMessage("Edge properties:");
   var props = ["opacity", "text opacity", "min width"].map(function(prop) {
-    var field = document.createElement('input');
-    field.setAttribute('value', this["edge_" + prop.replace(/ /g, "_")]);
+    var field = dialog.appendField("Edge " + prop + ":", prop.replace(/ /, '-'), this["edge_" + prop.replace(/ /g, "_")]);
     field.style.width = "40px";
-    p.appendChild(document.createTextNode("Edge " + prop + ": "));
-    p.appendChild(field);
-    p.appendChild(document.createElement("br"));
     return field;
   }, this);
-  p.appendChild(document.createTextNode('Edge width as '));
   var edgeFnNames = ["identity", "log", "log10", "sqrt"];
-  var edgeFnSel = document.createElement('select');
-  edgeFnNames.forEach(function(name) { edgeFnSel.appendChild(new Option(name, name)); });
-  edgeFnSel.selectedIndex = edgeFnNames.indexOf(this.edge_width_function);
-  p.appendChild(edgeFnSel);
-  p.appendChild(document.createTextNode(' of the synapse count.'));
-  p.appendChild(document.createElement("br"));
+  var edgeFnSel = dialog.appendChoice("Edge width as a function of synaptic count:", "edge_width_fn", edgeFnNames, edgeFnNames, this.edge_width_function);
+
+
+  var p = document.createElement('p');
   var cw_div = document.createElement('div');
+  p.appendChild(cw_div);
   var edge_cw = Raphael.colorwheel(cw_div, 150);
   edge_cw.color(this.edge_color);
   p.appendChild(cw_div);
-  dialog.appendChild(p);
+  dialog.dialog.appendChild(p);
 
+  dialog.onOK = (function() {
+    this.clustering_bandwidth = bandwidth.value;
 
-  var self = this;
-
-  $(dialog).dialog({
-    height: 440,
-    modal: true,
-    buttons: {
-      "OK": function() {
-        self.clustering_bandwidth = bandwidth.value;
-
-        if (!self.confidence_threshold && conf.value) {
-          if (Object.keys(self.groups).length > 0) {
-            if (confirm("Splitting by confidence ungroups all groups: proceed?")) {
-              self.confidence_threshold = conf.value;
-              self.resetGroups();
-            }
-          } else {
-            self.confidence_threshold = conf.value;
-          }
+    if (!this.confidence_threshold && conf.value) {
+      if (Object.keys(this.groups).length > 0) {
+        if (confirm("Splitting by confidence ungroups all groups: proceed?")) {
+          this.confidence_threshold = conf.value;
+          this.resetGroups();
         }
-
-        self.synaptic_count_edge_filter = syncount.value; // TODO not used?
-
-        var edge_opacity = Number(props[0].value.trim());
-        if (!Number.isNaN(edge_opacity) && edge_opacity >= 0 && edge_opacity <= 1) self.edge_opacity = edge_opacity;
-        var edge_text_opacity = Number(props[1].value.trim());
-        if (!Number.isNaN(edge_text_opacity) && edge_text_opacity >= 0 && edge_text_opacity <= 1) self.edge_text_opacity = edge_text_opacity;
-        var edge_min_width = Number(props[2].value.trim());
-        if (!Number.isNaN(edge_min_width)) self.edge_min_width = edge_min_width;
-        self.edge_width_function = edgeFnNames[edgeFnSel.selectedIndex];
-        self.edge_color = '#' + parseColorWheel(edge_cw.color()).getHexString();
-        self.updateEdgeGraphics();
-
-        $(this).dialog("close");
+      } else {
+        this.confidence_threshold = conf.value;
       }
-    },
-    close: function(event, ui) {
-      $('#dialog-graph-confirm').remove();
     }
-  });
+
+    this.synaptic_count_edge_filter = syncount.value; // TODO not used?
+
+    var edge_opacity = Number(props[0].value.trim());
+    if (!Number.isNaN(edge_opacity) && edge_opacity >= 0 && edge_opacity <= 1) this.edge_opacity = edge_opacity;
+    var edge_text_opacity = Number(props[1].value.trim());
+    if (!Number.isNaN(edge_text_opacity) && edge_text_opacity >= 0 && edge_text_opacity <= 1) this.edge_text_opacity = edge_text_opacity;
+    var edge_min_width = Number(props[2].value.trim());
+    if (!Number.isNaN(edge_min_width)) this.edge_min_width = edge_min_width;
+    this.edge_width_function = edgeFnNames[edgeFnSel.selectedIndex];
+    this.edge_color = '#' + parseColorWheel(edge_cw.color()).getHexString();
+    this.updateEdgeGraphics();
+  }).bind(this);
+
+  dialog.show(440, 300, true);
 };
 
 GroupGraph.prototype.init = function() {
@@ -302,6 +227,7 @@ GroupGraph.prototype.init = function() {
             "border-width": 1,
             "background-color": "data(color)",
             "border-color": "#555",
+            "text-valign": "top",
             "width": "mapData(node_count, 10, 2000, 30, 50)", //"data(node_count)",
             "height": "mapData(node_count, 10, 2000, 30, 50)"   // "data(node_count)"
           })

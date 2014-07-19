@@ -1464,6 +1464,14 @@ GroupGraph.prototype.exportSVG = function() {
     return;
   }
 
+  if (0 === this.cy.edges().length) {
+    // This limitation has to do with:
+    // 1. Transforms and bounds are not correct for nodes when the graph lacks any edges.
+    // 2. Need at least one edge for the heuristics below to detect where the edges end and the nodes start--which could be overcome by testing if the graph has any edges, but given that without edges the rendering is wrong anyway, the best is to avoid it.
+    alert("The SVG exporter is currently limited to graphs with edges.");
+    return;
+  }
+
   var div= $('#graph_widget' + this.widgetID),
       width = div.width(),
       height = div.height();

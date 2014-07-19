@@ -1482,6 +1482,19 @@ GroupGraph.prototype.loadSVGLibraries = function(callback) {
         console.log(e, e.stack);
         alert("Sorry: failed to load SVG rendering libraries.");
       },
+      fixAPI = function() {
+        // Fix up API mismatches between SVGCanvas and Canvas
+        SVGCanvas.prototype.fillText = SVGCanvas.prototype.text;
+        SVGCanvas.prototype.strokeText = function() {
+          // Fortunately always used in ways that can fixed below.
+          // Absence of this function explains the need to fix the stroke in SVG elements below.
+        };
+        SVGCanvas.prototype.setTransform = function() {
+          // Fortunately all calls are to the identity transform, that is, to reset,
+          // and explains perhaps the issues with the position of the M point in paths below,
+          // which is fixable.
+        };
+      },
       chainLoad = function(libs, i) {
     try {
       var s = document.createElement('script');
@@ -1498,6 +1511,7 @@ GroupGraph.prototype.loadSVGLibraries = function(callback) {
           else {
             GroupGraph.prototype.svg_libs_loaded = true;
             cleanup();
+            fixAPI();
             if (callback) callback();
           }
         }
@@ -1537,10 +1551,6 @@ GroupGraph.prototype._exportSVG = function() {
       width = div.width(),
       height = div.height();
   var svg = new SVGCanvas(width, height);
-
-  // Fix up API mismatches
-  SVGCanvas.prototype.transform = SVGCanvas.prototype.translate;
-  SVGCanvas.prototype.fillText = SVGCanvas.prototype.text;
 
   this.cy.renderer().renderTo( svg, 1.0, {x: 0, y: 0}, 1.0 ); 
 

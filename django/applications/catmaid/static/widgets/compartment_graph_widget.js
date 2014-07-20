@@ -336,6 +336,11 @@ GroupGraph.prototype.init = function() {
       // Select in the overlay
       var models = node.data('skeletons');
       if (1 === models.length) TracingTool.goToNearestInNeuronOrSkeleton("skeleton", models[0].id);
+    } else if (evt.originalEvent.shiftKey && (evt.originalEvent.ctrlKey || evt.originalEvent.metaKey)) {
+      // Remove node
+      delete this.groups[node.id()]; // if present
+      node.remove();
+      unselect(evt); // remove should have triggered, but not always
     }
   }).bind(this));
 

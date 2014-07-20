@@ -216,10 +216,13 @@ GroupGraph.prototype.graph_properties = function() {
       }
     }
 
-    var validate = function(old_value, new_value) {
+    var validate = function(name, old_value, new_value) {
       try {
         var v = parseInt(new_value);
-        if (v < 0) return old_value;
+        if (v < 0) {
+          growlAlert("Warning", "Value for " + name + " must be positive!");
+          return old_value;
+        }
         return new_value;
       } catch (e) {
         growlAlert("Warning", "Bad value: " + new_value);
@@ -229,8 +232,8 @@ GroupGraph.prototype.graph_properties = function() {
 
     this.label_halign = label_hpos.value;
     this.label_valign = label_vpos.value;
-    this.node_width = validate(node_width, node_width.value);
-    this.node_height = validate(node_height, node_height.value);
+    this.node_width = validate('node_width', node_width, node_width.value);
+    this.node_height = validate('node_height', node_height, node_height.value);
 
     var style = {"text-halign": this.label_halign,
                  "text-valign": this.label_valign,

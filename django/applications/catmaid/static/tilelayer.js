@@ -217,6 +217,10 @@ function TileLayer(
 			// Notice that we add the panning xd, yd as well (which is already in tile units).
 			LAST_XT = Math.floor((stack.x * stack.scale + stack.viewWidth) / effectiveTileWidth) + xd;
 			LAST_YT = Math.floor((stack.y * stack.scale + stack.viewHeight) / effectiveTileHeight) + yd;
+
+			// Clamp last tile coordinates within the slice edges.
+			LAST_XT = Math.min(LAST_XT, Math.floor((stack.dimension.x * Math.pow(2, -zoom) - 1) / tileWidth));
+			LAST_YT = Math.min(LAST_YT, Math.floor((stack.dimension.y * Math.pow(2, -zoom) - 1) / tileHeight));
 		}
 		else
 		{

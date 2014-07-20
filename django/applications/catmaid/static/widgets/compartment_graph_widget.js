@@ -38,6 +38,9 @@ var GroupGraph = function() {
   // The counter always increases, so that deleting nodes doesn't alter the order.
   this.selection = {entries: {},
                     counter: 0};
+
+  this.grid_snap = false;
+  this.grid_side = 10; // px
 };
 
 GroupGraph.prototype = {};
@@ -184,6 +187,8 @@ GroupGraph.prototype.graph_properties = function() {
   trim_labels.onclick = this.toggleTrimmedNodeLabels.bind(this);
   var node_width = dialog.appendField("Node width:", "node_width", this.node_width);
   var node_height = dialog.appendField("Node height:", "node_height", this.node_height);
+  var grid_snap = dialog.appendCheckbox("Snap node position to grid", "snap", this.grid_snap);
+  var grid_side = dialog.appendField("Grid cell side (px):", "side", this.grid_side);
   dialog.appendMessage("Edge properties:");
   var props = ["opacity", "text opacity", "min width"].map(function(prop) {
     var field = dialog.appendField("Edge " + prop + ":", prop.replace(/ /, '-'), this["edge_" + prop.replace(/ /g, "_")]);
@@ -244,6 +249,9 @@ GroupGraph.prototype.graph_properties = function() {
     this.cy.style().selector("node").css(style);
     // Update style of current nodes
     this.cy.nodes().css(style);
+
+    this.grid_side = validate('grid_side', this.grid_side, grid_side.value);
+    this.grid_snap = grid_snap.checked;
 
     this.synaptic_count_edge_filter = syncount.value; // TODO not used?
 
@@ -362,6 +370,15 @@ GroupGraph.prototype.init = function() {
 
   this.cy.on('unselect', 'node', {}, unselect);
   this.cy.on('remove', 'node', {}, unselect);
+
+  this.cy.on('mouseup', 'node', {}, (function(evt) {
+    if (this.grid_snap) {
+      var pos = evt.cyTarget.position();
+      pos.x -= pos.x % this.grid_side;
+      pos.y -= pos.y % this.grid_side;
+      evt.cyTarget.position(pos);
+    }
+  }).bind(this));
 };
 
 /** Unlocks locked nodes, if any, when done. */

@@ -32,6 +32,12 @@ var GroupGraph = function() {
   this.relayoutTimeout = null;
 
   this.groups = {}; // groupID vs Group instances, where groupID is e.g. g0, g1, g2, ...
+
+  // Keep set of selected elements as arrays of [id, index]
+  // so that the order of the selection is stored.
+  // The counter always increases, so that deleting nodes doesn't alter the order.
+  this.selection = {entries: {},
+                    counter: 0};
 };
 
 GroupGraph.prototype = {};
@@ -320,14 +326,18 @@ GroupGraph.prototype.init = function() {
   //   // console.log('node mouseover', e);
   // });
 
-  this.cy.on('click', 'node', {}, function(evt){
-    var node = this;
+  var unselect = (function(evt) {
+    delete this.entries[evt.cyTarget.id()];
+  }).bind(this.selection);
+
+  this.cy.on('click', 'node', {}, (function(evt){
+    var node = evt.cyTarget;
     if (evt.originalEvent.altKey) {
       // Select in the overlay
       var models = node.data('skeletons');
       if (1 === models.length) TracingTool.goToNearestInNeuronOrSkeleton("skeleton", models[0].id);
     }
-  });
+  }).bind(this));
 
   this.cy.on('click', 'edge', {}, function(evt){
     var edge = this,
@@ -336,6 +346,14 @@ GroupGraph.prototype.init = function() {
       ConnectorSelection.show_shared_connectors( props.source, [props.target], "presynaptic_to" );
     }
   });
+
+  this.cy.on('select', 'node', {}, (function(evt) {
+    this.entries[evt.cyTarget.id()] = {node: evt.cyTarget,
+                                       order: this.counter++};
+  }).bind(this.selection));
+
+  this.cy.on('unselect', 'node', {}, unselect);
+  this.cy.on('remove', 'node', {}, unselect);
 };
 
 /** Unlocks locked nodes, if any, when done. */
@@ -1965,4 +1983,29 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
         // DONE
         callback(risks);
       });
+};
+
+/** Make the given axis coordinate of all selected nodes
+ * be that of the first selected node.
+ * Axis must be 'x' or 'y'. */
+GroupGraph.prototype.equalizeCoordinate = function(axis) {
+  // Sort nodes by selection order
+  var entries = this.selection.entries;
+  var sel = Object.keys(entries).map(function(id) { return entries[id]; })
+    .sort(function(a, b) {
+      return a.order < b.order ? -1 : 1;
+    })
+    .map(function(a) { return a.node; });
+  if (sel.length < 2) {
+    growlAlert("Information", "Please select more than one node.");
+    return;
+  }
+  var value = sel[0].position(axis);
+  if (undefined === value) {
+    growlAlert("WARNING", "Invalid axis: '" + axis + "'");
+    return;
+  }
+  for (var i=1; i<sel.length; ++i) {
+    sel[i].position(axis, value);
+  }
 };

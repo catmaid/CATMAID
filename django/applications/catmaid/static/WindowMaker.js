@@ -742,6 +742,11 @@ var WindowMaker = new function()
 
     appendButton(bar, 'Measure risk', GG.annotateEdgeRisk.bind(GG));
 
+    bar.appendChild(document.createTextNode(' - '));
+
+    appendButton(bar, 'Align H', GG.equalizeCoordinate.bind(GG, 'y'));
+    appendButton(bar, 'Align V', GG.equalizeCoordinate.bind(GG, 'x'));
+
     bar.appendChild(document.createElement('br'));
 
     bar.appendChild(document.createTextNode('Grow '));

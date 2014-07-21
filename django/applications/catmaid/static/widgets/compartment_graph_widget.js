@@ -874,6 +874,7 @@ GroupGraph.prototype.appendGroup = function(models) {
     names.unshift("--");
 
     var options = new OptionsDialog("Group properties");
+    options.appendMessage("Creating new group with " + names.length + " neurons.");
     options.appendMessage("Choose a group name from:");
     options.appendMessage("(Will pick first non-empty match.)");
     options.appendChoice("Common annotations: ", "gg-common", common, common, common[0]);
@@ -881,6 +882,7 @@ GroupGraph.prototype.appendGroup = function(models) {
     options.appendChoice("All neuron names: ", "gg-names", names, names, names[0]);
     options.appendField("Or type a new name: ", "gg-typed", "", null);
     options.appendCheckbox("Hide intragroup edges", "gg-edges", true);
+    options.appendCheckbox("Append number of neurons to name", "gg-number", true);
     options.appendMessage("Choose group color:");
     var display = document.createElement('input');
     display.setAttribute('type', 'button');
@@ -907,6 +909,8 @@ GroupGraph.prototype.appendGroup = function(models) {
       }, null);
 
       if (!label) return alert("You must choose a name!");
+
+      if ($('#gg-number').is(':checked')) label += ' [#' + names.length + ']';
 
       var gid = self.nextGroupID();
       self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColorWheel(cw.color()), $('#gg-edges').is(':checked'));

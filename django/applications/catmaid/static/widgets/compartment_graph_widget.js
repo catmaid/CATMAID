@@ -1922,7 +1922,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
   fetchSkeletons(
       Object.keys(edges), // targets could have changed if some failed to load
       function(skid) {
-        return django_url + project.id + '/' + skid + '/1/0/compact-skeleton';
+        return django_url + project.id + '/' + skid + '/1/0/compact-arbor';
       },
       function(skid) {
         return {}; // POST
@@ -1990,15 +1990,8 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
 
           var lca = ap.arbor.lowestCommonAncestor(edge_synapses),
               sub_nodes = ap.arbor.subArbor(lca).nodes(),
-              all_synapses = Object.keys(ap.outputs).reduce(function(o, node) {
-                var countO = ap.outputs[node],
-                    countI = o[node];
-                if (countI) o[node] += countI;
-                else o[node] = countO;
-                return o;
-              }, $.extend({}, ap.inputs)),
-              lost_synapses = Object.keys(all_synapses).reduce(function(sum, node) {
-                return undefined === sub_nodes[node] ? sum : sum + all_synapses[node];
+              lost_inputs = Object.keys(ap.inputs).reduce(function(sum, node) {
+                return undefined === sub_nodes[node] ? sum : sum + ap.inputs[node];
               }, 0),
               risk = 1 - lost_inputs / ap.n_inputs;
 

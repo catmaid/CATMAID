@@ -1627,11 +1627,21 @@ GroupGraph.prototype._exportSVG = function() {
     // The second one is the contour
     var child = children[i+1],
       path = child.pathSegList;
-    // The coordinates of the M are wrong:
-    // make the M have the coordinates of the first L
-    // Note: cannot remove the L, circle would draw as semicircle
-    path[0].x = path[1].x;
-    path[0].y = path[1].y;
+    // Find out the type
+    var commands = {};
+    for (var k=0; k<path.length; ++k) {
+      var letter = path[k].pathSegTypeAsLetter,
+          count = commands[letter];
+      if (count) commands[letter] = count + 1;
+      else commands[letter] = 1;
+    }
+    if (commands['A'] > 0) {
+      // Circle: the coordinates of the M are wrong:
+      // make the M have the coordinates of the first L
+      // Note: cannot remove the L, circle would draw as semicircle
+      path[0].x = path[1].x;
+      path[0].y = path[1].y;
+    }
     // Set the fill value
     child.attributes.fill.value = children[i].attributes.fill.value;
     // Fix text anchor

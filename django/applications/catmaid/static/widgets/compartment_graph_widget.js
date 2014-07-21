@@ -1705,36 +1705,34 @@ GroupGraph.prototype.Group = function(gid, models, label, color, hide_self_edges
  * - models: one for every skeleton_id in data.
  */
 GroupGraph.prototype._regroup = function(data, splitted, models) {
-  var groupIDs = Object.keys(this.groups);
-  if (0 === groupIDs.length) return;
-
   // Remove splitted neurons from existing groups when necessary,
   // construct member_of: a map of skeleton ID vs group ID,
   // and reset the group's nodes list.
   var member_of = {};
 
-  groupIDs.forEach(function(gid) {
+  var groupIDs = Object.keys(this.groups).filter(function(gid) {
     var group = this.groups[gid],
         gmodels = group.models;
 
-    Object.keys(gmodels).forEach(function(skid) {
+    var n_models = Object.keys(gmodels).reduce(function(c, skid) {
       if (skid in splitted) {
         // Remove from the group
         delete gmodels[skid];
-        return;
+        return c;
       }
       member_of[skid] = gid;
-    });
+      return c + 1;
+    }, 0);
 
-    if (0 === gmodels.length) {
+    if (0 === n_models) {
       // Remove empty group
       delete this.groups[gid];
-      return;
+      return false;
     }
+
+    return true;
   }, this);
 
-  // Update: empty ones have been removed
-  groupIDs = Object.keys(this.groups);
   if (0 === groupIDs.length) return;
 
   // Remove nodes that have been assigned to groups
@@ -1743,7 +1741,7 @@ GroupGraph.prototype._regroup = function(data, splitted, models) {
   });
 
   // Create one node for each group
-  var gnodes = Object.keys(this.groups).map(function(gid) {
+  var gnodes = groupIDs.map(function(gid) {
     var group = this.groups[gid];
     return {data: {id: gid,
                    skeletons: Object.keys(group.models).map(function(skid) { return group.models[skid];}),

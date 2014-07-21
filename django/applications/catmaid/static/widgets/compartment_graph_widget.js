@@ -1759,7 +1759,7 @@ GroupGraph.prototype._regroup = function(data, splitted, models) {
     var d = edge.data,
         source = member_of[d.source],
         target = member_of[d.target],
-        intragroup = source !== target && undefined !== source && undefined !== target;
+        intragroup = source === target && undefined !== source && undefined !== target;
     if (source || target) {
       source = source ? source : d.source;
       target = target ? target : d.target;

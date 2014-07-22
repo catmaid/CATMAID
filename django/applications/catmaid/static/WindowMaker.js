@@ -287,7 +287,7 @@ var WindowMaker = new function()
 
     var filterButton = document.createElement('input');
     filterButton.setAttribute('type', 'button');
-    filterButton.setAttribute('value', 'Filter by');
+    filterButton.setAttribute('value', 'Filter by regex:');
     filterButton.onclick = function() { ST.filterBy(filter.value); };
     buttons.appendChild(filterButton);
 

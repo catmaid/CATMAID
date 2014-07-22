@@ -226,9 +226,7 @@ SelectionTable.prototype.toggleSelectAllSkeletonsUI = function() {
     this.all_visible = !this.all_visible;
     // Update only skeletons that match the text
     var updated = {};
-    this.skeletons.filter(function(skeleton) {
-      return skeleton.baseName.indexOf(this.match) > -1;
-    }, this).forEach(function(skeleton) {
+    this.filteredSkeletons(false).forEach(function(skeleton) {
         // Update checkboxes
         $("#skeletonshow" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
         $("#skeletonpre" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
@@ -252,12 +250,7 @@ SelectionTable.prototype.toggleSelectAllSkeletonsUI = function() {
 SelectionTable.prototype.toggleSynapsesUI = function(type) {
   var state = !this.all_synapses_visible[type];
   this.all_synapses_visible[type] = state;
-  var skeletons = this.skeletons;
-  if (this.match) {
-    skeletons = this.skeletons.filter(function(skeleton) {
-      return skeleton.baseName.indexOf(this.match) > -1;
-    }, this);
-  }
+  var skeletons = this.filteredSkeletons(true);
   skeletons.forEach(function(skeleton) {
     $("#skeleton" + type + this.widgetID + "-" + skeleton.id).attr('checked', state);
     skeleton[type + "_visible"] = state;
@@ -456,11 +449,10 @@ SelectionTable.prototype.clear = function(source_chain) {
 /** Set the color of all skeletons based on the state of the "Color" pulldown menu. */
 SelectionTable.prototype.randomizeColorsOfSelected = function() {
   this.next_color_index = 0; // reset
-  this.skeletons.filter(this.isSelectedFn())
-                .forEach(function(skeleton) {
-                  skeleton.color = this.pickColor();
-                  this.gui.update_skeleton_color_button(skeleton);
-                }, this);
+  this.filteredSkeletons(true).forEach(function(skeleton) {
+    skeleton.color = this.pickColor();
+    this.gui.update_skeleton_color_button(skeleton);
+  }, this);
   this.updateLink(this.getSelectedSkeletonModels());
 };
  
@@ -472,8 +464,10 @@ SelectionTable.prototype.getSkeletonModel = function( id ) {
 
 /** Returns a clone of each model. */
 SelectionTable.prototype.getSelectedSkeletonModels = function() {
-  return this.skeletons.filter(this.isSelectedFn())
-                       .reduce(function(m, sk) { m[sk.id] = sk.clone(); return m; }, {});
+  return this.filteredSkeletons(true).reduce(function(m, sk) {
+    m[sk.id] = sk.clone();
+    return m;
+  }, {});
 };
 
 SelectionTable.prototype.getSkeletonModels = function() {
@@ -534,15 +528,9 @@ SelectionTable.prototype.getSkeletonColor = function( id ) {
   if (sk) return sk.color.clone();
 };
 
-SelectionTable.prototype.isSelectedFn = function() {
-  return (this.match ?
-      function(sk) { return sk.selected && sk.baseName.indexOf(this.match) > -1; }
-    : function(sk) { return sk.selected; }).bind(this);
-};
-
+/** Return an array of selected Skeleton IDs. */
 SelectionTable.prototype.getSelectedSkeletons = function() {
-  return this.skeletons.filter(this.isSelectedFn())
-                       .map(function(s) { return s.id; });
+  return this.filteredSkeletons(true).map(function(s) { return s.id; });
 };
 
 SelectionTable.prototype.hasSkeleton = function(skeleton_id) {
@@ -610,21 +598,8 @@ SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(s
 /** Remove all, and repopulate with the current range. */
 SelectionTable.prototype.GUI.prototype.update = function() {
 
-  var skeletons = this.table.skeletons,
-      skeleton_ids = this.table.skeleton_ids;
-
-  if (this.table.match) {
-    // filter skeletons by the matching string
-    skeletons = skeletons.filter(function(skeleton) {
-      return skeleton.baseName && skeleton.baseName.indexOf(this.table.match) > -1;
-    }, this);
-    // recreate the indices
-    var i = 0;
-    skeleton_ids = skeletons.reduce(function(o, skeleton) {
-      o[skeleton.id] = i++;
-      return o;
-    }, {});
-  }
+  var skeletons = this.table.filteredSkeletons(false),
+      skeleton_ids = skeletons.reduce(function(o, sk, i) { o[sk.id] = i; return o; }, {});
 
   // Cope with changes in size
   if (this.first >= skeletons.length) {
@@ -867,6 +842,27 @@ SelectionTable.prototype.filterBy = function(text) {
     this.first = 0;
   }
   this.gui.update();
+};
+
+/** Returns an array of Skeleton instances,
+ * filtered by this.match if the latter exists,
+ * and containing only those selected if so indicated by only_selected. */
+SelectionTable.prototype.filteredSkeletons = function(only_selected) {
+  if (0 === this.skeletons.length) return this.skeletons;
+  if (this.match) {
+    try {
+      return this.skeletons.filter(function(skeleton) {
+        if (only_selected && !skeleton.selected) return false;
+        var matches = neuronNameService.getName(skeleton.id).match(this);
+        return matches && matches.length > 0;
+      }, new RegExp(this.match));
+    } catch (e) {
+      alert(e.message);
+      return [];
+    }
+  }
+  if (only_selected) return this.skeletons.filter(function(skeleton) { return skeleton.selected; });
+  return this.skeletons;
 };
 
 SelectionTable.prototype.batchColorSelected = function(rgb) {

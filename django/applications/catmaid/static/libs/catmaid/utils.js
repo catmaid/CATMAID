@@ -506,7 +506,7 @@ var NeuronNameService = function()
 
   /**
    * Removes the labeling at the given index from the fallback list. All items
-   * but the fist on can be removed.
+   * but the first on can be removed.
    */
   this.removeLabeling = function(index)
   {

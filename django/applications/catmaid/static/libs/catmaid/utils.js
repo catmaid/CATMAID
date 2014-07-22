@@ -559,11 +559,8 @@ var NeuronNameService = function()
     }
 
     if (0 === unknownSkids.length) {
-      // Execute callback and return if here is no unknown skeleton ID
-      if (callback) {
-        callback();
-      }
-      return;
+      // Execute callback and return if there aren't any unknown skeleton ID
+      if (callback) callback();
     } else {
       this.updateNames(unknownSkids, callback);
     }
@@ -579,7 +576,7 @@ var NeuronNameService = function()
       if (-1 !== cIdx) {
         // Remove whole skeleton from managed list, if this is the only client
         // linked to it.
-        if (1 ===managedSkeletons[skid].clients.length) {
+        if (1 === managedSkeletons[skid].clients.length) {
           delete managedSkeletons[skid];
         } else {
           // Delete client from list

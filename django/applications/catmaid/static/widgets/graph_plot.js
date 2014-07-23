@@ -520,6 +520,9 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // Cache functions that are invoked multiple times
         ap.cache(['childrenArray', 'allSuccessors', 'findBranchAndEndNodes', 'partitionSorted']);
 
+        // Hack: replace by native ints
+        ap.arbor.__cache__['childrenArray'] = new Uint32Array(ap.arbor.__cache__['childrenArray']);
+
         // Remove 'not a branch' and other artifacts that could introduce noise into asymmetry measurements
         if (prune) {
           arbor.pruneBareTerminalSegments($.extend({}, ap.inputs, ap.outputs));

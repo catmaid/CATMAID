@@ -591,8 +591,8 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // Compute subtree asymmetries
         var asymIndex = arbor.asymmetryIndex(),
             cableAsymIndex = arbor.cableAsymmetryIndex(smooth_positions),
-            outputAsymIndex = arbor.loadAsymmetryIndex(ap.inputs),
-            inputAsymIndex = arbor.loadAsymmetryIndex(ap.outputs);
+            outputAsymIndex = arbor.loadAsymmetryIndex(ap.outputs),
+            inputAsymIndex = arbor.loadAsymmetryIndex(ap.inputs);
 
         measurements[skid] = [smooth_cable,
                               plen,

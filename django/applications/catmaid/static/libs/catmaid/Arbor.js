@@ -27,7 +27,7 @@ Arbor.prototype = {};
 Arbor.prototype.clone = function() {
 	var arbor = new Arbor();
 	arbor.root = this.root;
-	Object.keys(this.edges).forEach(function(node) {
+	this.childrenArray().forEach(function(node) {
     arbor.edges[node] = this.edges[node];
   }, this);
 	return arbor;
@@ -127,7 +127,7 @@ Arbor.prototype.reroot = function(new_root) {
  * Does not include the root node. */
 Arbor.prototype.findEndNodes = function() {
   var edges = this.edges,
-      children = Object.keys(edges),
+      children = this.childrenArray(),
       parents = {};
 
   for (var k=0, l=children.length; k<l; ++k) {
@@ -146,7 +146,7 @@ Arbor.prototype.findEndNodes = function() {
  * End nodes have empty arrays. */
 Arbor.prototype.allSuccessors = function() {
   var edges = this.edges,
-      children = Object.keys(edges);
+      children = this.childrenArray();
   // Handle corner cases
   if (0 === children.length) {
     if (this.root) {
@@ -185,7 +185,7 @@ Arbor.prototype.nextBranchNode = function(node) {
 /** Return an object with each nodes as keys and arrays of children plus the parent as values, or an empty array for an isolated root node. Runs in O(2n) time.*/
 Arbor.prototype.allNeighbors = function() {
 	var edges = this.edges,
-			nodes = Object.keys(edges); // except the root
+			nodes = this.childrenArray();
 	// Handle corner cases
 	if (0 === nodes.length) {
 		if (this.root) {
@@ -215,7 +215,7 @@ Arbor.prototype.allNeighbors = function() {
  *          n_branches: number of branch nodes} */
 Arbor.prototype.findBranchAndEndNodes = function() {
   var edges = this.edges,
-      children = Object.keys(edges),
+      children = this.childrenArray(),
       parents = {},
       branches = {},
       n_branches = 0,
@@ -248,7 +248,7 @@ Arbor.prototype.findBranchAndEndNodes = function() {
  * Runs in O(2n) time. */
 Arbor.prototype.findBranchNodes = function() {
   var edges = this.edges,
-      children = Object.keys(edges),
+      children = this.childrenArray(),
       parents = {},
       branches = {};
 
@@ -312,9 +312,14 @@ Arbor.prototype.nodesDistanceTo = function(root, distanceFn) {
 	return r;
 };
 
+/** Return an array will all nodes that are not the root. */
+Arbor.prototype.childrenArray = function() {
+  return Object.keys(this.edges);
+};
+
 /** Return an Object with node keys and true values, in O(2n) time. */
 Arbor.prototype.nodes = function() {
-	var nodes = Object.keys(this.edges).reduce(function(o, child) {
+	var nodes = this.childrenArray().reduce(function(o, child) {
 		o[child] = true;
 		return o;
 	}, {});
@@ -331,7 +336,7 @@ Arbor.prototype.nodesArray = function() {
 
 /** Counts number of nodes in O(n) time. */
 Arbor.prototype.countNodes = function() {
-	return Object.keys(this.edges).length + (null !== this.root ? 1 : 0);
+	return this.childrenArray().length + (null !== this.root ? 1 : 0);
 };
 
 /** Returns an array of arrays, unsorted, where the longest array contains the linear
@@ -408,7 +413,7 @@ Arbor.prototype.partitionSorted = function() {
  * See also this.allSuccessors() to get them all in one single shot at O(n) time. */
 Arbor.prototype.successors = function(node) {
 	var edges = this.edges;
-	return Object.keys(edges).reduce(function(a, child) {
+	return this.childrenArray().reduce(function(a, child) {
 		if (edges[child] === node) a.push(child);
 		return a;
 	}, []);
@@ -419,7 +424,7 @@ Arbor.prototype.successors = function(node) {
 Arbor.prototype.neighbors = function(node) {
 	var edges = this.edges,
 			paren = this.edges[node];
-	return Object.keys(edges).reduce(function(a, child) {
+	return this.childrenArray().reduce(function(a, child) {
 		if (edges[child] === node) a.push(child);
 		return a;
 	}, undefined === paren ? [] : [paren]);
@@ -742,7 +747,7 @@ Arbor.prototype.strahlerAnalysis = function() {
 Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
     // Create map of radius index to number of crossings.
     // (The index, being an integer, is a far safer key for a map than the distance as floating-point.)
-    var indexMap = Object.keys(this.edges).reduce((function(sholl, child) {
+    var indexMap = this.childrenArray().reduce((function(sholl, child) {
         // Compute distance of both parent and child to the center
         // and then divide by radius_increment and find out
         // which boundaries are crossed, and accumulate the cross counts in sholl.
@@ -870,7 +875,7 @@ Arbor.prototype.flowCentrality = function(outputs, inputs, totalOutputs, totalIn
  * positions: map of node ID vs objects like THREE.Vector3.
  */
 Arbor.prototype.cableLength = function(positions) {
-    return Object.keys(this.edges).reduce((function(sum, node) {
+    return this.childrenArray().reduce((function(sum, node) {
         return sum += positions[node].distanceTo(positions[this[node]]);
     }).bind(this.edges), 0);
 };

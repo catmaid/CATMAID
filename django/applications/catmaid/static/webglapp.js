@@ -1687,6 +1687,27 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseCount
   }).bind(this), {});
 };
 
+/** Return a map with 4 elements:
+ * {presynaptic_to: {}, // map of node ID vs count of presynaptic sites
+ *  postsynaptic_to: {}, // map of node ID vs count of postsynaptic sites
+ *  presynaptic_to_count: N,
+ *  postsynaptic_to_count: M} */
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createPrePostCounts = function() {
+  return this.synapticTypes.reduce((function(o, type, k) {
+    var vs = this.geometry[type].vertices,
+        syn = {};
+    for (var i=0, l=vs.length; i<l; i+=2) {
+      var treenode_id = vs[i+1].node_id,
+          count = syn[treenode_id];
+      if (count) syn[treenode_id] = count + 1;
+      else syn[treenode_id] = 1;
+    }
+    o[type] = syn;
+    o[type + "_count"] = vs.length / 2;
+    return o;
+  }).bind(this), {});
+};
+
 /** Returns a map of treenode ID keys and lists of {type, connectorID} as values,
  * where type 0 is presynaptic and type 1 is postsynaptic. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseMap = function() {

@@ -517,6 +517,9 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
           }
         }
 
+        // Cache functions that are invoked multiple times
+        ap.cache(['childrenArray', 'allSuccessors', 'findBranchAndEndNodes', 'partitionSorted']);
+
         // Remove 'not a branch' and other artifacts that could introduce noise into asymmetry measurements
         if (prune) {
           arbor.pruneBareTerminalSegments($.extend({}, ap.inputs, ap.outputs));

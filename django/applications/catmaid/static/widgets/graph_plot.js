@@ -581,9 +581,9 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             else m[node] = no;
             return m;
           }, $.extend({}, inputs));
-          var sc = new SynapseClustering(arbor, positions, synapse_map);
+          var sc = new SynapseClustering(arbor, positions, synapse_map, bandwidth);
           return sc.segregationIndex(
-            sc.clusters(sc.densityHillMap(bandwidth)),
+            sc.clusters(sc.densityHillMap()),
             outputs,
             inputs);
         })(arbor, smooth_positions, ap.outputs, ap.inputs, bandwidth);

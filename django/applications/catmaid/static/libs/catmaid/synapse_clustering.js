@@ -10,9 +10,10 @@
  *
  * Computes and stores as members the Arbor partitions and the distance map.
  */
-var SynapseClustering = function(arbor, locations, synapses) {
+var SynapseClustering = function(arbor, locations, synapses, lambda) {
   this.arbor = arbor;
   this.synapses = synapses;
+  this.lambda = lambda;
   // List of lists of treenode IDs, sorted from smaller to larger lists
   this.partitions = arbor.partitionSorted();
 
@@ -49,6 +50,8 @@ SynapseClustering.prototype.distanceMap = function() {
   // where it is not the last treenode of the partition.
   var seen_downstream_nodes = {};
 
+  var max_distance = 3 * this.lambda;
+
   for (var pi=0, pil=this.partitions.length; pi<pil; ++pi) {
     var partition = this.partitions[pi];
     // Update synapses for the previous node, and upstream nodes for the current node.
@@ -84,6 +87,7 @@ SynapseClustering.prototype.distanceMap = function() {
           var child_id = downstream_nodes[di],
               ds = Ds[child_id],
               distance_child_to_synapse = this.distancesToRoot[child_id] - d;
+          if (distance_child_to_synapse > max_distance) continue;
           for (var k = 0; k<n_synapses; ++k) {
             ds.push(distance_child_to_synapse);
           }
@@ -106,6 +110,7 @@ SynapseClustering.prototype.distanceMap = function() {
           var child_id = downstream_nodes[di],
               child_ds = Ds[child_id],
               distance = this.distancesToRoot[child_id] - distance_to_root;
+          if (distance > max_distance) continue;
           for (var k=0, cl=current_ds.length; k<cl; ++k) {
             child_ds.push(current_ds[k] + distance);
           }
@@ -116,6 +121,7 @@ SynapseClustering.prototype.distanceMap = function() {
           var child_id = seen[si],
               child_ds = Ds[child_id],
               distance = this.distancesToRoot[child_id] + distance_prev_to_current - distance_to_root;
+          if (distance > max_distance) continue;
           for (var k=0, pl=prev_ds.length; k<pl; ++k) {
             child_ds.push(prev_ds[k] + distance);
           }
@@ -129,9 +135,12 @@ SynapseClustering.prototype.distanceMap = function() {
 
       // Assign synapse distances to the current node
       var current_ds = Ds[treenode_id],
-          translated_prev_ds = prev_ds.map(function(distance) {
-            return distance + distance_prev_to_current;
-          });
+          translated_prev_ds = [];
+
+      for (var k=0; k<prev_ds.length; ++k) {
+        var distance = prev_ds[k] + distance_prev_to_current;
+        if (distance < max_distance) translated_prev_ds.push(distance);
+      }
 
       Ds[treenode_id] = undefined !== current_ds ? current_ds.concat(translated_prev_ds) : translated_prev_ds;
 
@@ -151,7 +160,8 @@ SynapseClustering.prototype.distanceMap = function() {
     Object.keys(Ds).forEach(function(treenode_id) {
       var ds = Ds[treenode_id];
       for (var k=0; k<n_synapses_at_root; ++k) {
-        ds.push(this.distancesToRoot[treenode_id]);
+        var distance = this.distancesToRoot[treenode_id];
+        if (distance < max_distance) ds.push(distance);
       }
     }, this);
   }
@@ -166,16 +176,15 @@ SynapseClustering.prototype.distanceMap = function() {
  *
  * Algorithm by Casey Schneider-Mizell.
  */
-SynapseClustering.prototype.densityHillMap = function(lambda) {
+SynapseClustering.prototype.densityHillMap = function() {
   // Map of treenode ID vs synapse cluster index.
   // Contains entries for all nodes, and therefore may contain more clusters
   // than the subset of nodes pointing to a synapse.
   var density_hill_map = {};
 
   // Key performance hog: n * m (treenodes vs synapses)
-  var density = (function(Ds) {
+  var density = (function(Ds, lambda_sq) {
         var treenode_ids = Object.keys(Ds),
-            lambda_sq = lambda * lambda;
             density = {};
         for (var k=0, kl=treenode_ids.length; k<kl; ++k) {
           var sum = 0.0,
@@ -187,7 +196,7 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
           density[treenode_id] = sum;
         }
         return density;
-      })(this.Ds);
+      })(this.Ds, this.lambda * this.lambda);
 
   var max_density_index = 0;
 
@@ -298,7 +307,7 @@ SynapseClustering.prototype._clusters = function(density_hill_map, newEntryFn, a
   }, {});
 };
 
-/** Given a density_hill_map computed with densityHillMap(lambda),
+/** Given a density_hill_map computed with densityHillMap(),
  * return a map of cluster ID vs array of treenode IDs.
  */
 SynapseClustering.prototype.clusters = function(density_hill_map) {
@@ -310,7 +319,7 @@ SynapseClustering.prototype.clusters = function(density_hill_map) {
                         });
 };
 
-/** Given a density_hill_map computed with densityHillMap(lambda),
+/** Given a density_hill_map computed with densityHillMap(),
  * return a map of cluster ID vs cluster size (number of treenode IDs labeled).
  */
 SynapseClustering.prototype.clusterSizes = function(density_hill_map) {

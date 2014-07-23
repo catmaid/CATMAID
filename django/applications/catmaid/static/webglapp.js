@@ -1663,7 +1663,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 };
 */
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClustering = function() {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClustering = function(bandwidth) {
   // Correct the scale of the vertices
   var invScale = 1.0 / this.space.scale,
       locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
@@ -1671,7 +1671,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClust
     return vs;
   }, {});
   
-  return new SynapseClustering(this.createArbor(), locations, this.createSynapseCounts());
+  return new SynapseClustering(this.createArbor(), locations, this.createSynapseCounts(), bandwidth);
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseCounts = function() {
@@ -2093,8 +2093,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
     }, this);
 
   } else if ('synapse-clustering' === options.connector_color) {
-    var sc = this.createSynapseClustering(),
-        density_hill_map = sc.densityHillMap(options.synapse_clustering_bandwidth),
+    var sc = this.createSynapseClustering(options.synapse_clustering_bandwidth),
+        density_hill_map = sc.densityHillMap(),
         clusters = sc.clusterSizes(density_hill_map),
         colorizer = new Colorizer(),
         cluster_colors = Object.keys(clusters)

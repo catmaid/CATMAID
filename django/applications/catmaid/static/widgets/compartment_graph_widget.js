@@ -1808,12 +1808,13 @@ GroupGraph.prototype._regroup = function(data, splitted, models) {
 GroupGraph.prototype.group = function() {
   var models = this.cy.nodes().filter(function(i, node) {
     return node.selected();
-  }).toArray().reduce(function(o, node) {
+  }).toArray().reduce((function(o, node) {
+    if (undefined !== this.groups[node.id()]) delete this.groups[node.id()];
     return node.data('skeletons').reduce(function(o, model) {
       o[model.id] = model;
       return o;
     }, o);
-  }, {});
+  }).bind(this), {});
   if (Object.keys(models).length > 1) this.appendGroup(models);
   else growlAlert("Information", "Select at least 2 nodes!");
 };

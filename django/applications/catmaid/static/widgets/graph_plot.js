@@ -37,7 +37,7 @@ var CircuitGraphPlot = function() {
   // Parameters for anatomy
   this.reroot_at_soma = true;
   this.sigma = 200; // nm
-  this.bandwidth = 8000; // nm
+  //this.bandwidth = 8000; // nm
   this.prune_bare_terminal_segments = false;
 
   this.pca_graph = {
@@ -496,7 +496,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
   var measurements = {},
       reroot_at_soma = this.reroot_at_soma,
       sigma = this.sigma,
-      bandwidth = this.bandwidth,
+      //bandwidth = this.bandwidth,
       prune = this.prune_bare_terminal_segments;
 
   fetchSkeletons(
@@ -523,6 +523,10 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // Hack: replace by native ints
         ap.arbor.__cache__['childrenArray'] = new Uint32Array(ap.arbor.__cache__['childrenArray']);
 
+        // Prune away terminal branches labeled at the end node with "not a branch",
+        // reassigning any synapses to the nearest branch node.
+        // TODO
+
         // Remove 'not a branch' and other artifacts that could introduce noise into asymmetry measurements
         if (prune) {
           arbor.pruneBareTerminalSegments($.extend({}, ap.inputs, ap.outputs));
@@ -544,24 +548,39 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
 
         // Compute length of hillock: part of the cable with maximum flow centrality.
         // Increase robustness to occasional synapse on the hillock or small side branch, by using cable with more than 75% of the max value.
-        var hillock_cable = (function(ap, positions) {
+        var flow_based = (function(ap, positions) {
           var flow_centrality = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
-              hillock_cable = 0;
+              hillock_cable = 0,
+              segregationIndex = 0;
           if (flow_centrality) {
             var nodes = Object.keys(flow_centrality),
-                max = nodes.reduce(function(max, node) {
-              return Math.max(max, flow_centrality[node]);
-            }, 0),
-                max75 = 0.75 * max;
-            hillock_cable = nodes.reduce(function(sum, node) {
+                max = 0,
+                cut = nodes[0];
+            for (var i=0; i<nodes.length; ++i) {
+              var node = nodes[i],
+                  fc = flow_centrality[node];
+              if (fc > max) {
+                max = fc;
+                cut = node;
+              }
+            }
+            var max75 = 0.75 * max;
+            for (var i=0; i<nodes.length; ++i) {
+              var node = nodes[i];
               if (flow_centrality[node] > max75) {
                 var paren = arbor.edges[node];
-                return sum + (paren ? positions[node].distanceTo(positions[paren]) : 0);
+                if (undefined === paren) continue;
+                hillock_cable += positions[node].distanceTo(positions[paren]);
               }
-              return sum;
-            }, 0);
+            }
+            var cluster1 = arbor.subArbor(cut).nodes(),
+                cluster2 = arbor.nodesArray().filter(function(node) {
+                  return undefined === cluster1[node];
+                });
+            segregationIndex = SynapseClustering.prototype.segregationIndex({0: Object.keys(cluster1), 1: cluster2}, ap.outputs, ap.inputs);
           }
-          return hillock_cable;
+          return {hillock_cable: hillock_cable,
+                  segregationIndex: segregationIndex};
         })(ap, smooth_positions);
 
         // Compute length of principal branch
@@ -577,6 +596,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
           return pCable;
         })(arbor, smooth_positions);
 
+        /*
         // Compute synapse segregation index
         // Most costly operation of all, consumes about 40% of the anatomy time
         var segIndex = (function(arbor, positions, outputs, inputs, bandwidth) {
@@ -593,6 +613,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             outputs,
             inputs);
         })(arbor, smooth_positions, ap.outputs, ap.inputs, bandwidth);
+        */
 
         // Compute subtree asymmetries
         var asymIndex = arbor.asymmetryIndex(),
@@ -604,7 +625,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                               plen,
                               ap.n_inputs,
                               ap.n_outputs,
-                              segIndex,
+                              flow_based.segregationIndex,
                               asymIndex,
                               cableAsymIndex,
                               outputAsymIndex,
@@ -612,7 +633,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                               terminal_cable,
                               n_terminal_segments,
                               n_branches,
-                              hillock_cable];
+                              flow_based.hillock_cable];
       },
       function(skid) {
         // Failed to load
@@ -965,10 +986,10 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
       "Smooth skeletons by Gaussian convolution with sigma (nm): ",
       "CGP-sigma" + this.widgetID,
       this.sigma);
-  od.appendField(
-      "Bandwidth for synapse clustering (nm): ",
-      "CGP-bandwidth" + this.widgetID,
-      this.bandwidth);
+  //od.appendField(
+  //    "Bandwidth for synapse clustering (nm): ",
+  //    "CGP-bandwidth" + this.widgetID,
+  //    this.bandwidth);
   od.appendCheckbox(
       "Reroot at soma (if soma tag present)",
       "CGP-reroot-" + this.widgetID,
@@ -1024,7 +1045,7 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
     }).bind(this);
 
     var update1 = read('sigma'),
-        update2 = read('bandwidth'),
+        //update2 = read('bandwidth'),
         reroot = $('#CGP-reroot-' + this.widgetID)[0].checked,
         prune = $('#CGP-prune-' + this.widgetID)[0].checked;
 

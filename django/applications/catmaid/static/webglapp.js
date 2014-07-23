@@ -2026,7 +2026,8 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
           }
           $.unblockUI();
         }).bind(this));
-  } else if ('synapse-clustering' === options.connector_color) {
+  } else if ('synapse-clustering' === options.connector_color
+          || 'axon-and-dendrite' === options.connector_color) {
 
     if (skeletons.length > 1) $.blockUI();
 
@@ -2124,7 +2125,51 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
       return cluster_colors[value];
     };
 
-    this.CTYPES.slice(1).forEach(function(type) {
+    this.synapticTypes.forEach(function(type) {
+      this._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
+    }, this);
+
+  } else if ('axon-and-dendrite' === options.connector_color) {
+    // Approximate by using the presynaptic sites (rather the actual numbers of outputs, which will be larger when synapses are polyadic)
+    var arbor = this.createArbor(),
+        syn = this.createPrePostCounts(),
+        flow_centrality = arbor.flowCentrality(syn.presynaptic_to, syn.postsynaptic_to, syn.presynaptic_to_count, syn.postsynaptic_to_count),
+        fnMakeColor,
+        fnConnectorValue;
+
+    if (!flow_centrality) {
+      // Not computable
+      fnMakeColor = function() { return new THREE.Color().setRGB(0, 0, 0); };
+      fnConnectorValue = function() { return 0; };
+    } else {
+      var max = 0,
+          cut = null,
+          nodes = Object.keys(flow_centrality);
+      for (var i=0; i<nodes.length; ++i) {
+        var node = nodes[i],
+            fc = flow_centrality[node];
+        if (fc > max) {
+          max = fc;
+          cut = node;
+        }
+      }
+
+      var cluster1 = arbor.subArbor(cut).nodes(),
+          n_pre = 0,
+          sub = Object.keys(cluster1);
+      for (var i=0; i<sub.length; ++i) {
+        if (syn.presynaptic_to[sub[i]]) ++n_pre;
+      }
+      var colors = [new THREE.Color().setRGB(0, 1, 0), // axon: green
+                    new THREE.Color().setRGB(0, 0, 1)];    // dendrite: blue
+      if (n_pre / syn.presynaptic_to_count < 0.5) colors.reverse();
+
+      fnConnectorValue = function(node_id, connector_id) { return undefined === cluster1[node_id] ? 1 : 0; };
+
+      fnMakeColor = function(value) { return colors[value]; }
+    }
+
+    this.synapticTypes.forEach(function(type) {
       this._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
     }, this);
   }

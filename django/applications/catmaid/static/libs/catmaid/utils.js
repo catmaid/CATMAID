@@ -1063,3 +1063,16 @@ ArborParser.prototype.synapses = function(rows) {
   this.outputs = io[0];
   this.inputs = io[1];
 };
+
+/** Replace in this.arbor the functions defined in the fnNames array by a function
+ * that returns a cached version of their corresponding return values.
+ * Order matters: later functions in the fnNames array will already be using
+ * cached versions of earlier ones.
+ * Functions will be invoked without arguments. */
+ArborParser.prototype.cache = function(fnNames) {
+    if (!this.arbor.__cache__) this.arbor.__cache__ = {};
+    fnNames.forEach(function(fnName) {
+        this.__cache__[fnName] = Arbor.prototype[fnName].bind(this)();
+        this[fnName] = new Function("return this.__cache__." + fnName);
+    }, this.arbor);
+};

@@ -191,28 +191,17 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
 
   var max_density_index = 0;
 
-  // TODO: to remove one array creation for every node, create new function Arbor.allNeighbors. Later, skip the parent when only wanting to use the children.
-  //
-  var children = this.arbor.allSuccessors(),
-      parents = this.arbor.edges;
-
-  var getNeighbors = function(treenode_id) {
-    var c = children[treenode_id],
-        p = parents[treenode_id];
-    if (p) {
-      var a = c.slice(); // clone array
-      a.push(p);
-      return a;
-    }
-    return c;
-  };
+  var all_neighbors = this.arbor.allNeighbors(),
+      edges = this.arbor.edges; // child keys and parent values
 
   // Root node will always be in cluster 0.
   density_hill_map[this.arbor.root] = 0;
 
   // Iterate partitions from longest to shortest: copy and reverse the copy first.
   // This iteration order ensure never working on the same density hill from two directions.
-  this.partitions.slice().reverse().forEach(function(partition) {
+  var partitions = this.partitions.slice().reverse();
+  for (var q=0; q<partitions.length; ++q) {
+    var partition = partitions[q];
     // Iterate each partition in reverse, from branch node or root to end node.
     // Branch nodes will always be pre-visited, so just check if their child within
     // the current partition has also been visited. If it hasn't, continue with the
@@ -234,7 +223,7 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
       density_hill_map[treenode_id] = density_hill_index;
 
       // See if the current node has multiple neighbors, since leaf nodes are trivially maxima.
-      var neighbors = getNeighbors(treenode_id);
+      var neighbors = all_neighbors[treenode_id];
       if (neighbors.length > 1) {
         // If a pair of neighbors has a higher density than the current node,
         // the current node is a boundary between the domains of each.
@@ -259,10 +248,10 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
           // if the node is a minimum at a branch point. Only need them for the
           // children of the current node, since we came from the parent and already gave
           // it an index value.
-          var successors = children[treenode_id];
-          for (var k=0, l=successors.length; k<l; ++k) {
-            var id = successors[k];
-            if (delta_density[id] < 0) return;
+          var paren = edges[treenode_id];
+          for (var k=0, l=neighbors.length; k<l; ++k) {
+            var id = neighbors[k];
+            if (paren === id || delta_density[id] < 0) continue;
             // if delta_density[id] >= 0:
             ++max_density_index;
             density_hill_map[id] = max_density_index;
@@ -293,8 +282,7 @@ SynapseClustering.prototype.densityHillMap = function(lambda) {
         }
       }
     }
-
-  }, this);
+  }
 
   return density_hill_map;
 };

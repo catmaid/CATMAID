@@ -755,12 +755,12 @@ var WindowMaker = new function()
     color.options.add(new Option('circles of hell', 'circles_of_hell')); // inspired by Tom Jessell's comment
     color.onchange = GG._colorize.bind(GG, color);
 
-    var layout = appendSelect(tabs['Graph'], "compartment_layout",
+    var layout = appendSelect(tabs['Layout'], "compartment_layout",
         ["Force-directed", "Hierarchical", "Grid", "Circle",
          "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
          "Random", "Compound Spring Embedder", "Manual"]);
 
-    appendToTab(tabs['Graph'],
+    appendToTab(tabs['Layout'],
         [['Re-layout', GG.updateLayout.bind(GG, layout)],
          [document.createTextNode(' - Color: ')],
          [color]]);

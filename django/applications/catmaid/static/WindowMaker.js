@@ -715,48 +715,74 @@ var WindowMaker = new function()
     var bar = document.createElement('div');
     bar.setAttribute("id", 'compartment_graph_window_buttons' + GG.widgetID);
 
-    bar.appendChild(document.createTextNode('From'));
-    bar.appendChild(SkeletonListSources.createSelect(GG));
+    var titles = document.createElement('ul');
+    bar.appendChild(titles);
+    var tabs = ['Main', 'Grow', 'Graph', 'Selection', 'Align', 'Export'].reduce(function(o, name) {
+          titles.appendChild($('<li><a href="#' + name + GG.widgetID + '">' + name + '</a></li>')[0]);
+          var div = document.createElement('div');
+          div.setAttribute('id', name + GG.widgetID);
+          bar.appendChild(div);
+          o[name] = div;
+          return o;
+    }, {});
 
-    appendButton(bar, 'Append', GG.loadSource.bind(GG));
-    appendButton(bar, 'Append as group', GG.appendAsGroup.bind(GG));
-    appendButton(bar, 'Clear',  GG.clear.bind(GG));
-    appendButton(bar, 'Refresh', GG.update.bind(GG));
-    appendButton(bar, 'Annotate', GG.annotate_skeleton_list.bind(GG));
-    appendButton(bar, 'Properties', GG.graph_properties.bind(GG));
+    var appendToTab = function(tab, elems) {
+      elems.forEach(function(e) {
+        switch (e.length) {
+          case 1: tab.appendChild(e[0]); break;
+          case 2: appendButton(tab, e[0], e[1]); break;
+          case 3: appendButton(tab, e[0], e[1], e[2]); break;
+        }
+      });
+    };
 
-    bar.appendChild(document.createElement('br'));
+    appendToTab(tabs['Main'],
+        [[document.createTextNode('From')],
+         [SkeletonListSources.createSelect(GG)],
+         ['Append', GG.loadSource.bind(GG)],
+         ['Append as group', GG.appendAsGroup.bind(GG)],
+         ['Clear', GG.clear.bind(GG)],
+         ['Refresh', GG.update.bind(GG)],
+         ['Properties', GG.graph_properties.bind(GG)]]);
 
-    var layout = appendSelect(bar, "compartment_layout",
+    var color = document.createElement('select');
+    color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
+    color.options.add(new Option('source', 'source'));
+    color.options.add(new Option('review status (union)', 'union-review'));
+    color.options.add(new Option('review status (own)', 'own-review'));
+    color.options.add(new Option('input/output', 'I/O'));
+    color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
+    color.options.add(new Option('circles of hell', 'circles_of_hell')); // inspired by Tom Jessell's comment
+    color.onchange = GG._colorize.bind(GG, color);
+
+    var layout = appendSelect(tabs['Graph'], "compartment_layout",
         ["Force-directed", "Hierarchical", "Grid", "Circle",
          "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
          "Random", "Compound Spring Embedder", "Manual"]);
 
-    appendButton(bar, 'Re-layout', GG.updateLayout.bind(GG, layout));
+    appendToTab(tabs['Graph'],
+        [['Re-layout', GG.updateLayout.bind(GG, layout)],
+         [document.createTextNode(' - Color: ')],
+         [color]]);
 
-    bar.appendChild(document.createTextNode(' - '));
+    appendToTab(tabs['Selection'],
+        [['Annotate', GG.annotate_skeleton_list.bind(GG)],
+         [document.createTextNode(' - ')],
+         ['Measure edge risk', GG.annotateEdgeRisk.bind(GG)],
+         [document.createTextNode(' - ')],
+         ['Group', GG.group.bind(GG)],
+         ['Ungroup', GG.ungroup.bind(GG)],
+         [document.createTextNode(' - ')],
+         ['Hide', GG.hideSelected.bind(GG)],
+         ['Show hidden', GG.showHidden.bind(GG), {disabled: true}]]);
 
-    appendButton(bar, 'Group', GG.group.bind(GG));
-    appendButton(bar, 'Ungroup', GG.ungroup.bind(GG));
-
-    bar.appendChild(document.createTextNode(' - '));
-
-    appendButton(bar, 'Measure risk', GG.annotateEdgeRisk.bind(GG));
-
-    bar.appendChild(document.createTextNode(' - '));
-
-    appendButton(bar, 'Align H', GG.equalizeCoordinate.bind(GG, 'y'));
-    appendButton(bar, 'Align V', GG.equalizeCoordinate.bind(GG, 'x'));
-    appendButton(bar, 'Distribute H', GG.distributeCoordinate.bind(GG, 'x'));
-    appendButton(bar, 'Distribute V', GG.distributeCoordinate.bind(GG, 'y'));
-
-    bar.appendChild(document.createElement('br'));
-
-    bar.appendChild(document.createTextNode('Grow '));
-    appendButton(bar, 'Circles', GG.growGraph.bind(GG));
-    bar.appendChild(document.createTextNode(" or "));
-    appendButton(bar, 'Paths', GG.growPaths.bind(GG));
-    bar.appendChild(document.createTextNode(" by "));
+    appendToTab(tabs['Align'],
+        [[document.createTextNode('Align: ')],
+         [' H ', GG.equalizeCoordinate.bind(GG, 'y')],
+         [' V ', GG.equalizeCoordinate.bind(GG, 'x')],
+         [document.createTextNode(' - Distribute: ')],
+         [' H ', GG.distributeCoordinate.bind(GG, 'x')],
+         [' V ', GG.distributeCoordinate.bind(GG, 'y')]]);
 
     var n_circles = document.createElement('select');
     n_circles.setAttribute("id", "n_circles_of_hell" + GG.widgetID);
@@ -766,9 +792,6 @@ var WindowMaker = new function()
       option.value = title;
       n_circles.appendChild(option);
     });
-    bar.appendChild(n_circles);
-
-    bar.appendChild(document.createTextNode("hops, limit:"));
 
     var f = function(name) {
       var e = document.createElement('select');
@@ -791,36 +814,39 @@ var WindowMaker = new function()
       return e;
     };
 
-    bar.appendChild(f("pre"));
-    bar.appendChild(f("post"));
+    appendToTab(tabs['Grow'],
+        [[document.createTextNode('Grow ')],
+         ['Circles', GG.growGraph.bind(GG)],
+         [document.createTextNode(" or ")],
+         ['Paths', GG.growPaths.bind(GG)],
+         [document.createTextNode(" by ")],
+         [n_circles],
+         [document.createTextNode("hops, limit:")],
+         [f("pre")],
+         [f("post")]]);
 
-    bar.appendChild(document.createTextNode(' - '));
-
-    appendButton(bar, 'Hide', GG.hideSelected.bind(GG));
-    appendButton(bar, 'Show hidden', GG.showHidden.bind(GG), {disabled: true});
-
-    bar.appendChild(document.createElement('br'));
-
-    bar.appendChild(document.createTextNode('Color:'));
-    var color = document.createElement('select');
-    color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
-    color.options.add(new Option('source', 'source'));
-    color.options.add(new Option('review status (union)', 'union-review'));
-    color.options.add(new Option('review status (own)', 'own-review'));
-    color.options.add(new Option('input/output', 'I/O'));
-    color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
-    color.options.add(new Option('circles of hell', 'circles_of_hell')); // inspired by Tom Jessell's comment
-    color.onchange = GG._colorize.bind(GG, color);
-    bar.appendChild(color);
-
-    bar.appendChild(document.createTextNode(' - '));
-
-    appendButton(bar, 'Export GML', GG.exportGML.bind(GG));
-    appendButton(bar, 'Export SVG', GG.exportSVG.bind(GG));
-    appendButton(bar, 'Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG));
-    appendButton(bar, 'Open plot', GG.openPlot.bind(GG));
+    appendToTab(tabs['Export'],
+        [['Export GML', GG.exportGML.bind(GG)],
+         ['Export SVG', GG.exportSVG.bind(GG)],
+         ['Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG)],
+         ['Open plot', GG.openPlot.bind(GG)]]);
 
     content.appendChild( bar );
+
+    $(bar).tabs();
+
+    // Remove excessive padding in ui-tabs-panel and ui-tabs-nav classes
+    Object.keys(tabs).forEach(function(name) {
+      tabs[name].style.padding = "0px";
+    });
+    var ul = bar.childNodes[0];
+    ul.style.padding = "0px";
+    var lis = ul.childNodes;
+    for (var i=0; i<lis.length; ++i) {
+      lis[i].style.padding = "";
+      var a = lis[i].childNodes[0];
+      a.style.padding = ".2em 1em";
+    }
 
     /* Create graph container and assure that it's overflow setting is set to
      * 'hidden'. This is required, because cytoscape.js' redraw can be delayed

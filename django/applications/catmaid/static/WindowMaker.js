@@ -747,6 +747,8 @@ var WindowMaker = new function()
 
     appendButton(bar, 'Align H', GG.equalizeCoordinate.bind(GG, 'y'));
     appendButton(bar, 'Align V', GG.equalizeCoordinate.bind(GG, 'x'));
+    appendButton(bar, 'Distribute H', GG.distributeCoordinate.bind(GG, 'x'));
+    appendButton(bar, 'Distribute V', GG.distributeCoordinate.bind(GG, 'y'));
 
     bar.appendChild(document.createElement('br'));
 

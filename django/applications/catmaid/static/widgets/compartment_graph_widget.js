@@ -2047,4 +2047,19 @@ GroupGraph.prototype.equalizeCoordinate = function(axis) {
     }
   });
 };
+
+GroupGraph.prototype.distributeCoordinate = function(axis) {
+  if ('x' !== axis && 'y' !== axis) return alert("Invalid axis: " + axis);
+  this.whenMinSelected(3, function(nodes) {
+    var sorted = nodes.sort(function(a, b) {
+      var ca = a.position(axis),
+          cb = b.position(axis);
+      return ca < cb ? -1 : 1;
+    }),
+        span = nodes[nodes.length - 1].position(axis) - nodes[0].position(axis),
+        offset = nodes[0].position(axis);
+    for (var i=1, l=nodes.length -1; i<l; ++i) {
+      nodes[i].position(axis, offset + i * (span / l));
+    }
+  });
 };

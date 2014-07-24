@@ -1050,7 +1050,7 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
         prune = $('#CGP-prune-' + this.widgetID)[0].checked;
 
     // Label for reloading upon redraw
-    if (update1 || update2 || prune != this.prune_bare_terminal_segments || reroot != this.reroot_at_soma) {
+    if (update1 || /*update2 ||*/ prune != this.prune_bare_terminal_segments || reroot != this.reroot_at_soma) {
       this.anatomy = null;
       update_pca = true;
     }
@@ -1060,7 +1060,7 @@ CircuitGraphPlot.prototype.adjustOptions = function() {
 
     if (update_pca) this.pca = null;
 
-    if (update1 || update2 || update_pca) this.redraw();
+    if (update1 || /*update2 ||*/ update_pca) this.redraw();
 
 
   }).bind(this);

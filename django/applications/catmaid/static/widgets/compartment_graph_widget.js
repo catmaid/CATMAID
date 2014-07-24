@@ -2020,27 +2020,31 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
       });
 };
 
-/** Make the given axis coordinate of all selected nodes
- * be that of the first selected node.
- * Axis must be 'x' or 'y'. */
-GroupGraph.prototype.equalizeCoordinate = function(axis) {
-  // Sort nodes by selection order
+GroupGraph.prototype.orderedSelectedNodes = function() {
   var entries = this.selection.entries;
-  var sel = Object.keys(entries).map(function(id) { return entries[id]; })
+  return Object.keys(entries).map(function(id) { return entries[id]; })
     .sort(function(a, b) {
       return a.order < b.order ? -1 : 1;
     })
     .map(function(a) { return a.node; });
-  if (sel.length < 2) {
-    growlAlert("Information", "Please select more than one node.");
-    return;
-  }
-  var value = sel[0].position(axis);
-  if (undefined === value) {
-    growlAlert("WARNING", "Invalid axis: '" + axis + "'");
-    return;
-  }
-  for (var i=1; i<sel.length; ++i) {
-    sel[i].position(axis, value);
-  }
+};
+
+GroupGraph.prototype.whenMinSelected = function(min, fn) {
+  var sel = this.orderedSelectedNodes();
+  if (sel.length < min) return alert("Please select more than one node.");
+  fn(sel);
+};
+
+/** Make the given axis coordinate of all selected nodes
+ * be that of the first selected node.
+ * Axis must be 'x' or 'y'. */
+GroupGraph.prototype.equalizeCoordinate = function(axis) {
+  if ('x' !== axis && 'y' !== axis) return alert("Invalid axis: " + axis);
+  this.whenMinSelected(2, function(nodes) {
+    var value = nodes[0].position(axis);
+    for (var i=1; i<nodes.length; ++i) {
+      nodes[i].position(axis, value);
+    }
+  });
+};
 };

@@ -774,7 +774,9 @@ var WindowMaker = new function()
          ['Ungroup', GG.ungroup.bind(GG)],
          [document.createTextNode(' - ')],
          ['Hide', GG.hideSelected.bind(GG)],
-         ['Show hidden', GG.showHidden.bind(GG), {disabled: true}]]);
+         ['Show hidden', GG.showHidden.bind(GG), {disabled: true}],
+         [document.createTextNode(' - ')],
+         ['Remove', GG.removeSelected.bind(GG)]]);
 
     appendToTab(tabs['Align'],
         [[document.createTextNode('Align: ')],

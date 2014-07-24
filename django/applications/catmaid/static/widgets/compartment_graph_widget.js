@@ -1161,6 +1161,23 @@ GroupGraph.prototype.showHidden = function() {
   $('#graph_show_hidden' + this.widgetID).val('Show hidden').prop('disabled', true);
 };
 
+GroupGraph.prototype.removeSelected = function() {
+  var nodes = this.orderedSelectedNodes();
+  if (0 === nodes.length) return alert("Select one or more nodes first!");
+  if (!confirm("Remove " + nodes.length + " selected node" + (nodes.length > 1 ? "s":"") + "?")) return;
+  nodes.forEach(function(node) {
+    delete this.groups[node.id()]; // ok if not present
+    node.remove();
+  }, this);
+  this.deselectAll();
+};
+
+GroupGraph.prototype.deselectAll = function() {
+  this.selection.entries = {};
+  this.selection.counter = 0;
+  this.cy.nodes().unselect();
+};
+
 GroupGraph.prototype.getState = function() {
   return this.state ? this.state : {};
 };

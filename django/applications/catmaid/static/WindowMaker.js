@@ -717,7 +717,7 @@ var WindowMaker = new function()
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
-    var tabs = ['Main', 'Grow', 'Graph', 'Selection', 'Align', 'Export'].reduce(function(o, name) {
+    var tabs = ['Main', 'Grow', 'Layout', 'Selection', 'Align', 'Export'].reduce(function(o, name) {
           titles.appendChild($('<li><a href="#' + name + GG.widgetID + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
           div.setAttribute('id', name + GG.widgetID);
@@ -780,11 +780,11 @@ var WindowMaker = new function()
 
     appendToTab(tabs['Align'],
         [[document.createTextNode('Align: ')],
-         [' H ', GG.equalizeCoordinate.bind(GG, 'y')],
-         [' V ', GG.equalizeCoordinate.bind(GG, 'x')],
+         [' X ', GG.equalizeCoordinate.bind(GG, 'x')],
+         [' Y ', GG.equalizeCoordinate.bind(GG, 'y')],
          [document.createTextNode(' - Distribute: ')],
-         [' H ', GG.distributeCoordinate.bind(GG, 'x')],
-         [' V ', GG.distributeCoordinate.bind(GG, 'y')]]);
+         [' X ', GG.distributeCoordinate.bind(GG, 'x')],
+         [' Y ', GG.distributeCoordinate.bind(GG, 'y')]]);
 
     var n_circles = document.createElement('select');
     n_circles.setAttribute("id", "n_circles_of_hell" + GG.widgetID);

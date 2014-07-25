@@ -558,16 +558,16 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                 cut = nodes[0];
             for (var i=0; i<nodes.length; ++i) {
               var node = nodes[i],
-                  fc = flow_centrality[node];
+                  fc = flow_centrality[node].centrifugal;
               if (fc > max) {
                 max = fc;
                 cut = node;
               }
             }
-            var max75 = 0.75 * max;
+            var threshold = 0.75 * max;
             for (var i=0; i<nodes.length; ++i) {
               var node = nodes[i];
-              if (flow_centrality[node] > max75) {
+              if (flow_centrality[node].centrifugal > threshold) {
                 var paren = arbor.edges[node];
                 if (undefined === paren) continue;
                 hillock_cable += positions[node].distanceTo(positions[paren]);

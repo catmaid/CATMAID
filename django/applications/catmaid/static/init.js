@@ -37,6 +37,8 @@ var project_menu;
 var stack_menu;
 
 var message_menu;
+// A menu for user related links
+var user_menu;
 
 var pid;
 var sids = new Array();
@@ -164,6 +166,15 @@ function handle_login(status, text, xml, completionCallback) {
 
       // Check for unread messages
       check_messages();
+
+      // Update user menu
+      user_menu.update({
+        "user_menu_entry_1": {
+          action: django_url + "user/password_change/",
+          title: "Change password",
+          note: "",
+        }
+      });
       
       // Asynchronously get the full list of users.
       // TODO: how to handle failure of this call?
@@ -1099,6 +1110,9 @@ var realInit = function()
 	
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
+
+	user_menu = new Menu();
+	document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
 
 	// login and thereafter load stacks if requested
 	login(undefined, undefined, function() {

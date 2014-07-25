@@ -121,7 +121,8 @@ div.toolbar div.box_right select
 
 /* menu */
 
-div.menu div.box
+div.menu div.box,
+div.menu div.box_right
 {
 	padding:0px;
 }

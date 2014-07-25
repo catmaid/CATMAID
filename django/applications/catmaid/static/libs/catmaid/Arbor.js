@@ -861,23 +861,25 @@ Arbor.prototype.flowCentrality = function(outputs, inputs, totalOutputs, totalIn
         return o;
     }, {});
 
-    var centrality = {};
-
     // Traverse all partitions counting synapses seen
-    arbor.partitionSorted().forEach(function(partition) {
+    var partitions = arbor.partitionSorted(),
+        centrality = {};
+    for (var i=0; i<partitions.length; ++i) {
+      var partition = partitions[i];
         var seenI = 0,
             seenO = 0;
-        partition.forEach(function(node) {
-            var counts = cs[node];
-            seenI += counts.inputs + counts.seenInputs;
-            seenO += counts.outputs + counts.seenOutputs;
-            counts.seenInputs = seenI;
-            counts.seenOutputs = seenO;
-            var nPossibleIOPaths = counts.seenInputs  * (totalOutputs - counts.seenOutputs)
-                                 + counts.seenOutputs * (totalInputs - counts.seenInputs);
-            centrality[node] = nPossibleIOPaths / totalOutputs;
-        });
-    });
+        for (var k=0; k<partition.length; ++k) {
+          var node = partition[k],
+              counts = cs[node];
+          seenI += counts.inputs + counts.seenInputs;
+          seenO += counts.outputs + counts.seenOutputs;
+          counts.seenInputs = seenI;
+          counts.seenOutputs = seenO;
+          var nPossibleIOPaths = counts.seenInputs  * (totalOutputs - counts.seenOutputs)
+                               + counts.seenOutputs * (totalInputs - counts.seenInputs);
+          centrality[node] = nPossibleIOPaths / totalOutputs;
+        }
+    }
 
     return centrality;
 };

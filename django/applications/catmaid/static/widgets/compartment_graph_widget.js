@@ -1952,7 +1952,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
   fetchSkeletons(
       Object.keys(edges), // targets could have changed if some failed to load
       function(skid) {
-        return django_url + project.id + '/' + skid + '/1/0/compact-arbor';
+        return django_url + project.id + '/' + skid + '/1/1/0/compact-arbor';
       },
       function(skid) {
         return {}; // POST

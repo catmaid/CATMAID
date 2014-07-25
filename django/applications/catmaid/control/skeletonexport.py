@@ -139,7 +139,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def compact_arbor(request, project_id=None, skeleton_id=None, with_connectors=None, with_tags=None):
+def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
     """
     Performance-critical function. Do not edit unless to improve performance.
     Returns, in JSON, [[nodes], [outputs], [inputs], {nodeID: [tags]}],
@@ -161,29 +161,32 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_connectors=No
     # Sanitize
     project_id = int(project_id)
     skeleton_id = int(skeleton_id)
+    with_nodes = int(with_nodes)
     with_connectors  = int(with_connectors)
     with_tags = int(with_tags)
 
     cursor = connection.cursor()
 
-    cursor.execute('''
-        SELECT id, parent_id, user_id,
-               (location).x, (location).y, (location).z,
-               radius, confidence
-        FROM treenode
-        WHERE skeleton_id = %s
-    ''' % skeleton_id)
-
-    nodes = tuple(cursor.fetchall())
-
-    if 0 == len(nodes):
-        # Check if the skeleton exists
-        if 0 == ClassInstance.objects.filter(pk=skeleton_id).count():
-            raise Exception("Skeleton #%s doesn't exist" % skeleton_id)
-        # Otherwise returns an empty list of nodes
-
+    nodes = ()
     connectors = []
     tags = defaultdict(list)
+
+    if 0 != with_nodes:
+        cursor.execute('''
+            SELECT id, parent_id, user_id,
+                (location).x, (location).y, (location).z,
+                radius, confidence
+            FROM treenode
+            WHERE skeleton_id = %s
+        ''' % skeleton_id)
+
+        nodes = tuple(cursor.fetchall())
+
+        if 0 == len(nodes):
+            # Check if the skeleton exists
+            if 0 == ClassInstance.objects.filter(pk=skeleton_id).count():
+                raise Exception("Skeleton #%s doesn't exist" % skeleton_id)
+            # Otherwise returns an empty list of nodes
 
     if 0 != with_connectors or 0 != with_tags:
         # postgres is caching this query

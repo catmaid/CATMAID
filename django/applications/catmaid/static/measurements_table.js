@@ -56,7 +56,7 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
   fetchSkeletons(
       Object.keys(models).map(Number),
       function(skid) {
-        return django_url + project.id + '/' + skid + '/1/0/compact-arbor';
+        return django_url + project.id + '/' + skid + '/1/1/0/compact-arbor';
       },
       function(skid) { return {}; },
       function(skid, json) {

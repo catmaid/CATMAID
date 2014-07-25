@@ -35,6 +35,11 @@ urlpatterns += patterns('catmaid.control.user',
     (r'^user-profile/update$', 'update_user_profile'),
 )
 
+# Django related user URLs
+urlpatterns += patterns('django.contrib.auth.views',
+    url(r'^user/password_change/$', 'password_change', {'post_change_redirect': '/'}),
+)
+
 # Log
 urlpatterns += patterns('catmaid.control.log',
     (r'^(?P<project_id>\d+)/logs/list$', 'list_logs'),

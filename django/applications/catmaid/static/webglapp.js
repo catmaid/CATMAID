@@ -2026,8 +2026,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
           }
           $.unblockUI();
         }).bind(this));
-  } else if ('synapse-clustering' === options.connector_color
-          || 'axon-and-dendrite' === options.connector_color) {
+  } else if ('synapse-clustering' === options.connector_color) {
 
     if (skeletons.length > 1) $.blockUI();
 
@@ -2044,6 +2043,14 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
     }
 
     $.unblockUI();
+  } else if ('axon-and-dendrite' === options.connector_color) {
+    fetchSkeletons(
+        skeletons.map(function(skeleton) { return skeleton.id; }),
+        function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
+        function(skid) { return {}; },
+        (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json[1]); }).bind(this),
+        function(skid) { growlAlert("Failed to load synapses for: " + skid); },
+        (function() { this.render(); }).bind(this));
   }
 };
 
@@ -2132,8 +2139,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
   } else if ('axon-and-dendrite' === options.connector_color) {
     // Approximate by using the presynaptic sites (rather the actual numbers of outputs, which will be larger when synapses are polyadic)
     var arbor = this.createArbor(),
-        syn = this.createPrePostCounts(),
-        flow_centrality = arbor.flowCentrality(syn.presynaptic_to, syn.postsynaptic_to, syn.presynaptic_to_count, syn.postsynaptic_to_count),
+        syn = new ArborParser().synapses(json),
+        flow_centrality = arbor.flowCentrality(syn.outputs, syn.inputs, syn.n_outputs, syn.n_inputs),
         fnMakeColor,
         fnConnectorValue;
 
@@ -2155,14 +2162,15 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
       }
 
       var cluster1 = arbor.subArbor(cut).nodes(),
-          n_pre = 0,
+          n_outputs = 0,
           sub = Object.keys(cluster1);
       for (var i=0; i<sub.length; ++i) {
-        if (syn.presynaptic_to[sub[i]]) ++n_pre;
+        var count = syn.outputs[sub[i]];
+        if (count) n_outputs += count;
       }
       var colors = [new THREE.Color().setRGB(0, 1, 0), // axon: green
                     new THREE.Color().setRGB(0, 0, 1)];    // dendrite: blue
-      if (n_pre / syn.presynaptic_to_count < 0.5) colors.reverse();
+      if (n_outputs / syn.n_outputs < 0.5) colors.reverse();
 
       fnConnectorValue = function(node_id, connector_id) { return undefined === cluster1[node_id] ? 1 : 0; };
 

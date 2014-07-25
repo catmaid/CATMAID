@@ -524,7 +524,9 @@ var WindowMaker = new function()
     $('<option/>', {value : 'downstream_amount', text: 'Downstream cable'}).appendTo(shadingMenu);
     $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
     $('<option/>', {value : 'slab_centrality', text: 'Slab centrality'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'flow_centrality', text: 'Signal flow centrality'}).appendTo(shadingMenu);
+    $('<option/>', {value : 'flow_centrality', text: 'Flow centrality'}).appendTo(shadingMenu);
+    $('<option/>', {value : 'centrifugal flow_centrality', text: 'Centrifugal flow centrality'}).appendTo(shadingMenu);
+    $('<option/>', {value : 'centripetal flow_centrality', text: 'Centripetal flow centrality'}).appendTo(shadingMenu);
     $('<option/>', {value : 'distance_to_root', text: 'Distance to root'}).appendTo(shadingMenu);
     $('<option/>', {value : 'partitions', text: 'Principal branch length'}).appendTo(shadingMenu);
     $('<option/>', {value : 'strahler', text: 'Strahler analysis'}).appendTo(shadingMenu);

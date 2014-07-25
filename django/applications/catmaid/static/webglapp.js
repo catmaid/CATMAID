@@ -1781,7 +1781,23 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
             return o;
           }, {});
         } else {
-          c = arbor.flowCentrality(io.presynaptic_to, io.postsynaptic_to, io.presynaptic_to_count, io.postsynaptic_to_count);
+          var key = 'sum';
+          if (0 === options.shading_method.indexOf('centrifugal')) {
+            key = 'centrifugal';
+          } else if (0 === options.shading_method.indexOf('centripetal')) {
+            key = 'centripetal';
+          }
+          var fc = arbor.flowCentrality(io.presynaptic_to, io.postsynaptic_to, io.presynaptic_to_count, io.postsynaptic_to_count),
+              c = {},
+              nodes = Object.keys(fc);
+          for (var i=0; i<nodes.length; ++i) {
+            var node = nodes[i];
+            c[node] = fc[node][key];
+          }
+
+          // DEBUG
+          //var blob = new Blob([nodes.map(function(node, i) { return (i + 1) + ", " + fc[node].sum + ", " + fc[node].centrifugal + ", " + fc[node].centripetal; }).join('\n')], {type: 'text/csv'});
+          //saveAs(blob, "flow_centrality_" + this.skeletonmodel.id + ".csv");
         }
       }
 
@@ -2154,7 +2170,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
           nodes = Object.keys(flow_centrality);
       for (var i=0; i<nodes.length; ++i) {
         var node = nodes[i],
-            fc = flow_centrality[node];
+            fc = flow_centrality[node].centrifugal;
         if (fc > max) {
           max = fc;
           cut = node;

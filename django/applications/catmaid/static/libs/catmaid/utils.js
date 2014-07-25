@@ -1006,6 +1006,7 @@ ArborParser.prototype.tree = function(rows) {
 
   this.arbor = arbor;
   this.positions = positions;
+  return this;
 };
 
 /** Parse connectors from compact-skeleton.
@@ -1028,6 +1029,7 @@ ArborParser.prototype.connectors = function(rows) {
   delete io[1].count;
   this.outputs = io[0];
   this.inputs = io[1];
+  return this;
 };
 
 /** Parse connectors from compact-arbor.
@@ -1062,6 +1064,7 @@ ArborParser.prototype.synapses = function(rows) {
   });
   this.outputs = io[0];
   this.inputs = io[1];
+  return this;
 };
 
 /** Replace in this.arbor the functions defined in the fnNames array by a function

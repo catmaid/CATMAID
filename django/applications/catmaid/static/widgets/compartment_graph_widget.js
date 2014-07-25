@@ -1980,7 +1980,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
           var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
               nodes = Object.keys(fc),
               max = nodes.reduce(function(o, node) {
-                var m = fc[node];
+                var m = fc[node].centrifugal;
                 if (o.max < m) {
                   o.max = m;
                   o.node = node;

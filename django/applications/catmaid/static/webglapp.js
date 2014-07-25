@@ -1773,7 +1773,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       } else {
         // Flow centrality
         var io = this.createPrePostCounts();
-        if (0 === n_outputs || 0 === n_inputs) {
+        if (0 === io.postsynaptic_to_count || 0 === io.presynaptic_to_count) {
           growlAlert('WARNING', 'Neuron "' + this.skeletonmodel.baseName + '" lacks input or output synapses.');
           c = arbor.nodesArray().reduce(function(o, node) {
             // All the same

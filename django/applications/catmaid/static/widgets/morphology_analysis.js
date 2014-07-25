@@ -287,16 +287,16 @@ MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions
       return {error: 'No input or output synapses',
               alternative_mode: 'First branch node'};
     }
-    var c = arbor.flowCentrality(io[0], io[1]),
+    var fc = arbor.flowCentrality(io[0], io[1]),
         sorted = Object.keys(positions).sort(function(a, b) {
-          var c1 = c[a],
-              c2 = c[b];
+          var c1 = fc[a].sum,
+              c2 = fc[b].sum;
           return c1 === c2 ? 0 : (c1 > c2 ? 1 : -1);
         }),
         highest = sorted[Math.floor(sorted.length / 2)],
-        max = c[highest],
+        max = fc[highest].sum,
         identical = sorted.filter(function(node) {
-          return max === c[node];
+          return max === fc[node].sum;
         });
     if (identical.length > 1) {
       // Pick the most central

@@ -1548,3 +1548,44 @@ Arbor.prototype.lowestCommonAncestor = function(nodes) {
     } while (undefined !== node);
   }
 };
+
+/** Returns an array of Arbor instances.
+ * Each Arbor contains a subset of the given array of nodes.
+ * If all given nodes are connected will return a single Arbor. */
+Arbor.prototype.subArbors = function(nodes) {
+  var members = {},
+      arbors = {},
+      seen = {};
+
+  for (var i=0; i<nodes.length; ++i) {
+    members[nodes[i]] = true;
+  }
+
+  for (var i=0; i<nodes.length; ++i) {
+    var node = nodes[i];
+    if (seen[node]) continue;
+    var p = new Arbor(),
+        p_root = node;
+    p.root = node;
+    arbors[node] = p;
+    var paren = this.edges[node];
+    while (members[paren]) {
+      seen[paren] = true;
+      var p2 = arbors[paren];
+      if (p2) {
+        $.extend(p2.edges, p.edges);
+        p2.edges[node] = paren;
+        delete arbors[p_root];
+        p_root = paren;
+        p = p2;
+      } else {
+        p.edges[node] = paren;
+        p.root = paren;
+      }
+      node = paren;
+      paren = this.edges[paren];
+    }
+  }
+
+  return Object.keys(arbors).map(function(node) { return arbors[node]; });
+};

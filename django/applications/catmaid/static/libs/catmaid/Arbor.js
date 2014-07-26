@@ -843,41 +843,36 @@ Arbor.prototype.flowCentrality = function(outputs, inputs, totalOutputs, totalIn
         return null;
     }
 
-    // If the root node is a branch, reroot at the first end node found
-    var arbor = this,
-        be = arbor.findBranchAndEndNodes();
-    if (be.branches[arbor.root]) {
-        arbor = arbor.clone();
-        arbor.reroot(be.ends[0]);
-    }
-
-    var cs = arbor.nodesArray().reduce(function(o, node) {
-        var n_inputs = inputs[node],
-            n_outputs = outputs[node];
-        o[node] = {inputs: undefined === n_inputs ? 0 : n_inputs,
-                   outputs: undefined === n_outputs ? 0 : n_outputs,
-                   seenInputs: 0,
-                   seenOutputs: 0};
-        return o;
-    }, {});
-
     // Traverse all partitions counting synapses seen
-    var partitions = arbor.partitionSorted(),
+    var partitions = this.partitionSorted(),
+        cs = {},
         centrality = {};
     for (var i=0; i<partitions.length; ++i) {
       var partition = partitions[i];
         var seenI = 0,
             seenO = 0;
-        for (var k=0; k<partition.length; ++k) {
+        for (var k=0, l=partition.length; k<l; ++k) {
           var node = partition[k],
               counts = cs[node];
-          seenI += counts.inputs + counts.seenInputs;
-          seenO += counts.outputs + counts.seenOutputs;
-          counts.seenInputs = seenI;
-          counts.seenOutputs = seenO;
-          var nPossibleIOPaths = counts.seenInputs  * (totalOutputs - counts.seenOutputs)
-                               + counts.seenOutputs * (totalInputs - counts.seenInputs);
-          centrality[node] = nPossibleIOPaths / totalOutputs;
+          if (undefined === counts) {
+            var n_inputs = inputs[node],
+                n_outputs = outputs[node];
+            if (n_inputs) seenI += n_inputs;
+            if (n_outputs) seenO += n_outputs;
+            // Last node of the partition is a branch or root
+            if (k === l -1) cs[node] = {seenInputs: seenI,
+                                        seenOutputs: seenO};
+          } else {
+            seenI += counts.seenInputs;
+            seenO += counts.seenOutputs;
+            counts.seenInputs = seenI;
+            counts.seenOutputs = seenO;
+          }
+          var centripetal = seenI * (totalOutputs - seenO),
+              centrifugal = seenO * (totalInputs  - seenI);
+          centrality[node] = {centrifugal: centrifugal,
+                              centripetal: centripetal,
+                              sum: centrifugal + centripetal};
         }
     }
 
@@ -1552,4 +1547,45 @@ Arbor.prototype.lowestCommonAncestor = function(nodes) {
       node = this.edges[node]; // parent
     } while (undefined !== node);
   }
+};
+
+/** Returns an array of Arbor instances.
+ * Each Arbor contains a subset of the given array of nodes.
+ * If all given nodes are connected will return a single Arbor. */
+Arbor.prototype.subArbors = function(nodes) {
+  var members = {},
+      arbors = {},
+      seen = {};
+
+  for (var i=0; i<nodes.length; ++i) {
+    members[nodes[i]] = true;
+  }
+
+  for (var i=0; i<nodes.length; ++i) {
+    var node = nodes[i];
+    if (seen[node]) continue;
+    var p = new Arbor(),
+        p_root = node;
+    p.root = node;
+    arbors[node] = p;
+    var paren = this.edges[node];
+    while (members[paren]) {
+      seen[paren] = true;
+      var p2 = arbors[paren];
+      if (p2) {
+        $.extend(p2.edges, p.edges);
+        p2.edges[node] = paren;
+        delete arbors[p_root];
+        p_root = paren;
+        p = p2;
+      } else {
+        p.edges[node] = paren;
+        p.root = paren;
+      }
+      node = paren;
+      paren = this.edges[paren];
+    }
+  }
+
+  return Object.keys(arbors).map(function(node) { return arbors[node]; });
 };

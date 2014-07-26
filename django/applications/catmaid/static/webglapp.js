@@ -1781,7 +1781,23 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
             return o;
           }, {});
         } else {
-          c = arbor.flowCentrality(io.presynaptic_to, io.postsynaptic_to, io.presynaptic_to_count, io.postsynaptic_to_count);
+          var key = 'sum';
+          if (0 === options.shading_method.indexOf('centrifugal')) {
+            key = 'centrifugal';
+          } else if (0 === options.shading_method.indexOf('centripetal')) {
+            key = 'centripetal';
+          }
+          var fc = arbor.flowCentrality(io.presynaptic_to, io.postsynaptic_to, io.presynaptic_to_count, io.postsynaptic_to_count),
+              c = {},
+              nodes = Object.keys(fc);
+          for (var i=0; i<nodes.length; ++i) {
+            var node = nodes[i];
+            c[node] = fc[node][key];
+          }
+
+          // DEBUG
+          //var blob = new Blob([nodes.map(function(node, i) { return (i + 1) + ", " + fc[node].sum + ", " + fc[node].centrifugal + ", " + fc[node].centripetal; }).join('\n')], {type: 'text/csv'});
+          //saveAs(blob, "flow_centrality_" + this.skeletonmodel.id + ".csv");
         }
       }
 
@@ -2150,16 +2166,32 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
       fnConnectorValue = function() { return 0; };
     } else {
       var max = 0,
-          cut = null,
           nodes = Object.keys(flow_centrality);
       for (var i=0; i<nodes.length; ++i) {
         var node = nodes[i],
-            fc = flow_centrality[node];
+            fc = flow_centrality[node].centrifugal;
         if (fc > max) {
           max = fc;
-          cut = node;
         }
       }
+
+      var above = [],
+          threshold = 0.9 * max;
+      for (var i=0; i<nodes.length; ++i) {
+        var node = nodes[i];
+        if (flow_centrality[node].centrifugal > threshold) {
+          above.push(node);
+        }
+      }
+
+      var orders = arbor.nodesOrderFrom(arbor.root),
+          cut = arbor.subArbors(above).reduce(function(ends, sub) {
+        return ends.concat(sub.findEndNodes());
+      }, []).sort(function(a, b) {
+        var oa = orders[a],
+            ob = orders[b];
+        return oa === ob ? 0 : (oa > ob ? -1 : 1); // Descending
+      })[0];
 
       var cluster1 = arbor.subArbor(cut).nodes(),
           n_outputs = 0,

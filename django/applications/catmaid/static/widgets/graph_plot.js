@@ -554,25 +554,38 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
               segregationIndex = 0;
           if (flow_centrality) {
             var nodes = Object.keys(flow_centrality),
-                max = 0,
-                cut = nodes[0];
+                max = 0;
             for (var i=0; i<nodes.length; ++i) {
               var node = nodes[i],
-                  fc = flow_centrality[node];
+                  fc = flow_centrality[node].centrifugal;
               if (fc > max) {
                 max = fc;
-                cut = node;
               }
             }
-            var max75 = 0.75 * max;
+
+            var threshold1 = 0.8 * max,
+                above = [],
+                threshold2 = 0.9 * max;
             for (var i=0; i<nodes.length; ++i) {
-              var node = nodes[i];
-              if (flow_centrality[node] > max75) {
+              var node = nodes[i],
+                  c = flow_centrality[node].centrifugal;
+              if (c > threshold1) {
+                if (c > threshold2) above.push(node);
                 var paren = arbor.edges[node];
                 if (undefined === paren) continue;
                 hillock_cable += positions[node].distanceTo(positions[paren]);
               }
             }
+
+            var orders = arbor.nodesOrderFrom(arbor.root),
+                cut = arbor.subArbors(above).reduce(function(ends, sub) {
+              return ends.concat(sub.findEndNodes());
+            }, []).sort(function(a, b) {
+              var oa = orders[a],
+                  ob = orders[b];
+              return oa === ob ? 0 : (oa > ob ? -1 : 1); // Descending
+            })[0];
+
             var cluster1 = arbor.subArbor(cut).nodes(),
                 cluster2 = arbor.nodesArray().filter(function(node) {
                   return undefined === cluster1[node];

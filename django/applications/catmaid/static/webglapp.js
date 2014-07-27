@@ -228,7 +228,28 @@ WebGLApplication.prototype.updateSkeletonColors = function(callback) {
         function(skeleton_id) {
           // Failed loading
           skeletons[skeleton_id].reviews = {}; // dummy
-          growlAlert('ERROR', 'Failed to load reviews for skeleton ' + skeleton_id);
+          console.log('ERROR: failed to load reviews for skeleton ' + skeleton_id);
+        },
+        fnRecolor);
+  } else if ('axon-and-dendrite' === this.options.color_method) {
+    var skeletons = this.space.content.skeletons;
+    // Find the subset of skeletons that don't have their axon loaded
+    var skeleton_ids = Object.keys(skeletons).filter(function(skid) {
+      return !skeletons[skid].axon;
+    });
+    fetchSkeletons(
+        skeleton_ids,
+        function(skid) {
+          return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor';
+        },
+        function(skid) { return {}; }, // post
+        function(skid, json) {
+          skeletons[skid].axon = skeletons[skid].splitByFlowCentrality(json);
+        },
+        function(skid) {
+          // Failed loading
+          skeletons[skid].axon = {}; // dummy
+          console.log('ERROR: failed to load axon-and-dendrite for skeleton ' + skid);
         },
         fnRecolor);
   } else {
@@ -1466,6 +1487,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmo
   // directly to the nodes is too much of a performance hit.
   // Gets loaded dynamically, and erased when refreshing (because a new Skeleton is instantiated with the same model).
   this.reviews = null;
+  // A map of nodeID vs true for nodes that belong to the axon, as computed by splitByFlowCentrality. Loaded dynamically, and erased when refreshing like this.reviews.
+  this.axon = null;
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
@@ -1968,6 +1991,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     var actorColor = this.actorColor;
     var unreviewedColor = new THREE.Color().setRGB(0.2, 0.2, 0.2);
     var reviewedColor = new THREE.Color().setRGB(1.0, 0.0, 1.0);
+    var axonColor = new THREE.Color().setRGB(0, 1, 0),
+        dendriteColor = new THREE.Color().setRGB(0, 0, 1),
+        notComputable = new THREE.Color().setRGB(0.4, 0.4, 0.4);
     if ('creator' === options.color_method) {
       pickColor = function(vertex) { return User(vertex.user_id).color; };
     } else if ('all-reviewed' === options.color_method) {
@@ -1977,11 +2003,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
             reviewedColor : unreviewedColor;
       }).bind(this);
     } else if ('own-reviewed' === options.color_method) {
-      pickColor = (function(vertex) {
-        var reviews = this.reviews[vertex.node_id];
-        return typeof reviews !== 'undefined' && reviews.indexOf(session.userid) != -1 ?
-            reviewedColor : unreviewedColor;
-      }).bind(this);
+      pickColor = this.reviews ?
+        (function(vertex) {
+        return -1 !== this.reviews[vertex.node_id].indexOf(session.userid) ? reviewedColor : unreviewedColor;
+      }).bind(this)
+        : function() { return notComputable; };
+    } else if ('axon-and-dendrite' === options.color_method) {
+      pickColor = this.axon ?
+        (function(vertex) {
+        return this.axon[vertex.node_id] ? axonColor : dendriteColor;
+      }).bind(this)
+        : function() { return notComputable; };
     } else {
       pickColor = function() { return actorColor; };
     }

@@ -540,6 +540,7 @@ var WindowMaker = new function()
     $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
     $('<option/>', {value : 'all-reviewed', text: 'All Reviewed'}).appendTo(colorMenu);
     $('<option/>', {value : 'own-reviewed', text: 'Own Reviewed'}).appendTo(colorMenu);
+    $('<option/>', {value : 'axon-and-dendrite', text: 'Axon and dendrite'}).appendTo(colorMenu);
     colorMenu.onchange = WA.updateColorMethod.bind(WA, colorMenu);
     buttons.appendChild(colorMenu);
 

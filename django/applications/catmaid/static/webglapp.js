@@ -2126,7 +2126,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
         skeletons.map(function(skeleton) { return skeleton.id; }),
         function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
         function(skid) { return {}; },
-        (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json[1]); }).bind(this),
+        (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(this),
         function(skid) { growlAlert("Failed to load synapses for: " + skid); },
         (function() { this.render(); }).bind(this));
   }
@@ -2215,60 +2215,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
     }, this);
 
   } else if ('axon-and-dendrite' === options.connector_color) {
-    // Approximate by using the presynaptic sites (rather the actual numbers of outputs, which will be larger when synapses are polyadic)
-    var arbor = this.createArbor(),
-        syn = new ArborParser().synapses(json),
-        flow_centrality = arbor.flowCentrality(syn.outputs, syn.inputs, syn.n_outputs, syn.n_inputs),
+    var axon = this.splitByFlowCentrality(json),
         fnMakeColor,
         fnConnectorValue;
 
-    if (!flow_centrality) {
-      // Not computable
-      fnMakeColor = function() { return new THREE.Color().setRGB(0, 0, 0); };
-      fnConnectorValue = function() { return 0; };
-    } else {
-      var max = 0,
-          nodes = Object.keys(flow_centrality);
-      for (var i=0; i<nodes.length; ++i) {
-        var node = nodes[i],
-            fc = flow_centrality[node].centrifugal;
-        if (fc > max) {
-          max = fc;
-        }
-      }
-
-      var above = [],
-          threshold = 0.9 * max;
-      for (var i=0; i<nodes.length; ++i) {
-        var node = nodes[i];
-        if (flow_centrality[node].centrifugal > threshold) {
-          above.push(node);
-        }
-      }
-
-      var orders = arbor.nodesOrderFrom(arbor.root),
-          cut = arbor.subArbors(above).reduce(function(ends, sub) {
-        return ends.concat(sub.findEndNodes());
-      }, []).sort(function(a, b) {
-        var oa = orders[a],
-            ob = orders[b];
-        return oa === ob ? 0 : (oa > ob ? -1 : 1); // Descending
-      })[0];
-
-      var cluster1 = arbor.subArbor(cut).nodes(),
-          n_outputs = 0,
-          sub = Object.keys(cluster1);
-      for (var i=0; i<sub.length; ++i) {
-        var count = syn.outputs[sub[i]];
-        if (count) n_outputs += count;
-      }
-      var colors = [new THREE.Color().setRGB(0, 1, 0), // axon: green
-                    new THREE.Color().setRGB(0, 0, 1)];    // dendrite: blue
-      if (n_outputs / syn.n_outputs < 0.5) colors.reverse();
-
-      fnConnectorValue = function(node_id, connector_id) { return undefined === cluster1[node_id] ? 1 : 0; };
-
+    if (axon) {
+      var colors = [new THREE.Color().setRGB(0, 1, 0),  // axon: green
+                    new THREE.Color().setRGB(0, 0, 1)]; // dendrite: blue
+      fnConnectorValue = function(node_id, connector_id) { return axon[node_id] ? 0 : 1; };
       fnMakeColor = function(value) { return colors[value]; }
+    } else {
+      // Not computable
+      fnMakeColor = function() { return new THREE.Color().setRGB(0.4, 0.4, 0.4); };
+      fnConnectorValue = function() { return 0; };
     }
 
     this.synapticTypes.forEach(function(type) {

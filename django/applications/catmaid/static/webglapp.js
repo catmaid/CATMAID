@@ -1754,6 +1754,68 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getPositions = fun
   return this.geometry['neurite'].vertices.reduce(function(o, v) { o[v.node_id] = v; return o; }, {});
 };
 
+/** Determine the nodes that belong to the axon by computing the centrifugal flow
+ * centrality.
+ * Takes as argument the json of compact-arbor, but uses only index 1: the inputs and outputs, parseable by the ArborParser.synapse function.
+ * If only one node has the soma tag and it is not the root, will reroot at it.
+ * Returns a map of node ID vs true for nodes that belong to the axon.
+ * When the flowCentrality cannot be computed, returns null. */
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.splitByFlowCentrality = function(json) {
+    var arbor = this.createArbor();
+
+    if (this.tags && 1 === this.tags['soma'].length) {
+      var soma = this.tags['soma'][0];
+      if (arbor.root != soma) arbor.reroot(soma);
+    }
+
+    var syn = new ArborParser().synapses(json[1]),
+        flow_centrality = arbor.flowCentrality(syn.outputs, syn.inputs, syn.n_outputs, syn.n_inputs);
+
+    if (!flow_centrality) return null;
+
+    var max = 0,
+        nodes = Object.keys(flow_centrality);
+    for (var i=0; i<nodes.length; ++i) {
+      var node = nodes[i],
+          fc = flow_centrality[node].centrifugal;
+      if (fc > max) {
+        max = fc;
+      }
+    }
+
+    var above = [],
+        threshold = 0.9 * max;
+    for (var i=0; i<nodes.length; ++i) {
+      var node = nodes[i];
+      if (flow_centrality[node].centrifugal > threshold) {
+        above.push(node);
+      }
+    }
+
+    var cut,
+        orders,
+        subs = arbor.subArbors(above);
+
+    if (1 === subs.length) {
+      var ends = subs[0].findEndNodes();
+      if (1 === ends.length) cut = ends[0];
+      else orders = subs[0].nodesOrderFrom(subs[0].root);
+    }
+
+    if (!cut) {
+      if (!orders) orders = arbor.nodesOrderFrom(arbor.root);
+      cut = subs.reduce(function(ends, sub) {
+        return ends.concat(sub.findEndNodes());
+      }, []).sort(function(a, b) {
+        var oa = orders[a],
+            ob = orders[b];
+        return oa === ob ? 0 : (oa > ob ? -1 : 1); // Descending
+      })[0];
+    }
+
+    return arbor.subArbor(cut).nodes();
+};
+
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
   var node_weights;
 

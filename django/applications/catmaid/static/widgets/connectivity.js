@@ -625,7 +625,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         skids.forEach(function(skid, i) {
           var count = partner.skids[skid] || 0;
           this.appendChild(createSynapseCountCell(count, partner, [skid],
-              count + " synapses for neuron '" + skeletons[skid]  + "."));
+              count + " synapse(s) for neuron '" + skeletons[skid]  + "'."));
         }, tr);
       }
 

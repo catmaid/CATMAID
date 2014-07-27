@@ -387,3 +387,41 @@ SynapseClustering.prototype.segregationIndex = function(clusters, outputs, input
 
   return 1 - S / S_norm;
 };
+
+/** Find a node ID at which is its optical to cut an arbor so that the downstream
+ * sub-arbor is the axon and the rest is the dendrites.
+ *
+ * arbor: an Arbor instance
+ * outputs: map of node ID vs non-undefined to signal there are one or more output synapses at the node
+ * above: array of nodes with e.g. maximum centrifugal flow centrality.
+ *
+ * The returned node is present in 'above'.
+ */
+SynapseClustering.prototype.findAxonCut = function(arbor, outputs, above) {
+  var cut,
+      sel = above.filter(function(node) { return undefined !== outputs[node]; });
+
+  if (sel.length > 0) {
+    // Find lowest-order node with an output synapse
+    var orders = arbor.nodesOrderFrom(arbor.root);
+    return sel.sort(function(a, b) {
+      var oa = orders[a],
+          ob = orders[b];
+      return oa === ob ? 0 : (oa < ob ? -1 : 1); // Ascending
+    })[0];
+  }
+
+  // Else, find highest-order end node
+  var subs = arbor.subArbors(above),
+      orders = (1 === subs.length) ?
+    subs[0].nodesOrderFrom(subs[0].root)
+    : arbor.nodesOrderFrom(arbor.root);
+
+  return subs.reduce(function(ends, sub) {
+    return ends.concat(sub.findEndNodes());
+  }, []).sort(function(a, b) {
+    var oa = orders[a],
+        ob = orders[b];
+    return oa === ob ? 0 : (oa > ob ? -1 : 1); // Descending
+  })[0];
+};

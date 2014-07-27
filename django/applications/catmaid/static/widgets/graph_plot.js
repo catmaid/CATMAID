@@ -577,14 +577,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
               }
             }
 
-            var orders = arbor.nodesOrderFrom(arbor.root),
-                cut = arbor.subArbors(above).reduce(function(ends, sub) {
-              return ends.concat(sub.findEndNodes());
-            }, []).sort(function(a, b) {
-              var oa = orders[a],
-                  ob = orders[b];
-              return oa === ob ? 0 : (oa > ob ? -1 : 1); // Descending
-            })[0];
+            var cut = SynapseClustering.prototype.findAxonCut(arbor, ap.outputs, above);
 
             var cluster1 = arbor.subArbor(cut).nodes(),
                 cluster2 = arbor.nodesArray().filter(function(node) {

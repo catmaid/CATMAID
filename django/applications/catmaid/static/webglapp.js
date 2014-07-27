@@ -1815,26 +1815,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.splitByFlowCentral
       }
     }
 
-    var cut,
-        orders,
-        subs = arbor.subArbors(above);
-
-    if (1 === subs.length) {
-      var ends = subs[0].findEndNodes();
-      if (1 === ends.length) cut = ends[0];
-      else orders = subs[0].nodesOrderFrom(subs[0].root);
-    }
-
-    if (!cut) {
-      if (!orders) orders = arbor.nodesOrderFrom(arbor.root);
-      cut = subs.reduce(function(ends, sub) {
-        return ends.concat(sub.findEndNodes());
-      }, []).sort(function(a, b) {
-        var oa = orders[a],
-            ob = orders[b];
-        return oa === ob ? 0 : (oa > ob ? -1 : 1); // Descending
-      })[0];
-    }
+    var cut = SynapseClustering.prototype.findAxonCut(arbor, syn.outputs, above);
 
     return arbor.subArbor(cut).nodes();
 };

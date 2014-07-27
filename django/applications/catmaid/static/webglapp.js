@@ -1860,10 +1860,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
             var node = nodes[i];
             c[node] = fc[node][key];
           }
-
-          // DEBUG
-          //var blob = new Blob([nodes.map(function(node, i) { return (i + 1) + ", " + fc[node].sum + ", " + fc[node].centrifugal + ", " + fc[node].centripetal; }).join('\n')], {type: 'text/csv'});
-          //saveAs(blob, "flow_centrality_" + this.skeletonmodel.id + ".csv");
         }
       }
 

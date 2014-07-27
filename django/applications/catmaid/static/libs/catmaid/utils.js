@@ -443,7 +443,7 @@ var NeuronNameService = function()
     appendSkeletonId = append ? true: false;
 
     // Update the name representation of all neurons
-    this.updateNames(null, this.notifyClients.bind(this));
+    this.refresh();
   };
 
   /**
@@ -501,7 +501,7 @@ var NeuronNameService = function()
     fallbackList.push(newLabeling);
 
     // Update the name representation of all neurons
-    this.updateNames(null, this.notifyClients.bind(this));
+    this.refresh();
   };
 
   /**
@@ -517,7 +517,7 @@ var NeuronNameService = function()
     fallbackList.splice(index, 1);
 
     // Update the name representation of all neurons
-    this.updateNames(null, this.notifyClients.bind(this));
+    this.refresh();
   };
 
   /**
@@ -602,6 +602,20 @@ var NeuronNameService = function()
         c.updateNeuronNames();
       }
     });
+  };
+
+  /**
+   * Updates the name representation of every managed neuron and notifies all
+   * clients about it.
+   */
+  this.refresh = function(callback)
+  {
+    this.updateNames(null, (function() {
+      this.notifyClients();
+      if (callback) {
+        callback();
+      }
+    }).bind(this));
   };
 
   /**
@@ -798,12 +812,7 @@ var NeuronNameService = function()
         if (updatedSkeletons.length > 0) {
           // Update the names of the affected skeleton IDs and notify clients if
           // there was a change. And finally execute the callback.
-          this.updateNames(updatedSkeletons, (function() {
-            this.notifyClients();
-            if (callback) {
-              callback();
-            }
-          }).bind(this));
+          this.refresh(callback);
         } else {
           if (callback) {
             callback();

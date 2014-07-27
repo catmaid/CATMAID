@@ -1786,7 +1786,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getPositions = fun
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.splitByFlowCentrality = function(json) {
     var arbor = this.createArbor();
 
-    if (this.tags && 1 === this.tags['soma'].length) {
+    if (this.tags && this.tags['soma'] && 1 === this.tags['soma'].length) {
       var soma = this.tags['soma'][0];
       if (arbor.root != soma) arbor.reroot(soma);
     }

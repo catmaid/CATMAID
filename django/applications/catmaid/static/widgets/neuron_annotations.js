@@ -717,6 +717,10 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
                 new ErrorDialog("There was a problem updating the annotation " +
                     "cache, please close and re-open the tool", err).show();
               }
+
+              // Let the neuron name service update itself
+              neuronNameService.refresh();
+
               // Execute callback, if any
               if (callback) callback();
             }
@@ -761,6 +765,9 @@ NeuronAnnotations.remove_annotation_from_entities = function(entity_ids,
           if (e.error) {
             new ErrorDialog(e.error, e.detail).show();
           } else {
+            // Let the neuron name service update itself
+            neuronNameService.refresh();
+
             if (callback) callback(e.message);
           }
         }

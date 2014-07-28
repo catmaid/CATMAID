@@ -749,6 +749,7 @@ var WindowMaker = new function()
           ['Restrict connectors', WA.toggleConnectors.bind(WA)],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
           ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
+          ['Orthographic mode', false, function() { WA.updateCameraView(this.checked); }, false],
         ]);
 
     // Wait for the 3D viewer to have initialized to get existing views

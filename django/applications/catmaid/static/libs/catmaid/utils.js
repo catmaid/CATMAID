@@ -1088,3 +1088,47 @@ ArborParser.prototype.cache = function(fnNames) {
         this[fnName] = new Function("return this.__cache__." + fnName);
     }, this.arbor);
 };
+
+/** Will find terminal branches whose end node is tagged with "not a branch"
+ * and remove them from the arbor, transferring any synapses to the branch node.
+ * tags: a map of tag name vs array of nodes with that tag, as retrieved by compact-arbor or compact-skeleton.
+ * Assumes that this.arbor, this.inputs and this.outputs exist. */
+ArborParser.prototype.collapseArtifactualBranches = function(tags) {
+    var notabranch = tags['not a branch'];
+    if (undefined === notabranch) return;
+    var be = this.arbor.findBranchAndEndNodes(),
+        ends = be.ends,
+        branches = be.branches,
+        edges = this.arbor.edges,
+        tagged = {};
+    for (var i=0; i<notabranch.length; ++i) {
+        tagged[notabranch[i]] = true;
+    }
+    for (var i=0; i<ends.length; ++i) {
+        var node = ends[i];
+        if (tagged[node]) {
+            var n_inputs = 0,
+                n_outputs = 0;
+            while (node && !branches[node]) {
+                var nI = this.inputs[node],
+                    nO = this.outputs[node];
+                if (nI) {
+                    n_inputs += nI;
+                    delete this.inputs[node];
+                }
+                if (nO) {
+                    n_outputs += nO;
+                    delete this.outputs[node];
+                }
+                // Continue to parent
+                var paren = edges[node];
+                delete edges[node];
+                node = paren;
+            }
+            // node is now the branch node, or null for a neuron without branches
+            if (!node) node = this.arbor.root;
+            if (n_inputs > 0) this.inputs[node] = n_inputs;
+            if (n_outputs > 0) this.outputs[node] = n_outputs;
+        }
+    }
+};

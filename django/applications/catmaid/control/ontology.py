@@ -648,6 +648,10 @@ def get_by_graphs_instantiated_features(graphs, features):
     the graphs.
     """
 
+    # Make sure there are features at all
+    if not features:
+        raise ValueError("Need at least one feature to continue")
+
     # Find maximum feature length
     max_links = 0
     for f in features:
@@ -695,7 +699,7 @@ def get_features( ontology, workspace_pid, graphs, add_nonleafs=False, only_used
     """
     feature_lists = get_feature_paths( ontology, workspace_pid, add_nonleafs )
     features = [Feature(fl) for fl in feature_lists]
-    if only_used_features:
+    if only_used_features and features:
         used_features = get_by_graphs_instantiated_features(graphs, features)
         return used_features
     else:

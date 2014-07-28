@@ -68,7 +68,8 @@ var CircuitGraphPlot = function() {
     'Num. of outputs': false,
     'Histogram of output asymmetry index': false,
     'Histogram of input asymmetry index': false,
-    'Cable of hillock': true
+    'Cable of hillock': true,
+    'Cable of main dendritic shaft': true
   };
 
   this.pca_synapses_relative = {
@@ -402,6 +403,7 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
     select.options.add(new Option('Num. terminal segments (nm)', 'a52'));
     select.options.add(new Option('Num. branches', 'a53'));
     select.options.add(new Option('Cable of hillock (nm)', 'a54'));
+    select.options.add(new Option('Cable of main dendritic shaft (nm)', 'a55'));
 
     if (this.pca) {
       for (var i=0; i<this.pca.length; ++i) {
@@ -552,29 +554,38 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         var flow_based = (function(ap, positions) {
           var flow_centrality = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
               hillock_cable = 0,
+              main_dendritic_shaft_cable = 0,
               segregationIndex = 0;
           if (flow_centrality) {
             var nodes = Object.keys(flow_centrality),
-                max = 0;
+                maxF = 0,
+                maxP = 0;
             for (var i=0; i<nodes.length; ++i) {
               var node = nodes[i],
-                  fc = flow_centrality[node].centrifugal;
-              if (fc > max) {
-                max = fc;
-              }
+                  fc = flow_centrality[node].centrifugal,
+                  fp = flow_centrality[node].centripetal;
+              if (fc > maxF) maxF = fc;
+              if (fp > maxP) maxP = fp;
             }
 
-            var threshold1 = 0.8 * max,
+            var thresholdF1 = 0.8 * maxF,
+                thresholdP1 = 0.8 * maxP,
                 above = [],
-                threshold2 = 0.9 * max;
+                thresholdF2 = 0.9 * maxF;
             for (var i=0; i<nodes.length; ++i) {
               var node = nodes[i],
-                  c = flow_centrality[node].centrifugal;
-              if (c > threshold1) {
-                if (c > threshold2) above.push(node);
+                  cf = flow_centrality[node].centrifugal,
+                  cp = flow_centrality[node].centripetal;
+              if (cf > thresholdF1) {
+                if (cf > thresholdF2) above.push(node);
                 var paren = arbor.edges[node];
                 if (undefined === paren) continue;
                 hillock_cable += positions[node].distanceTo(positions[paren]);
+              }
+              if (cp > thresholdP1) {
+                var paren = arbor.edges[node];
+                if (undefined === paren) continue;
+                main_dendritic_shaft_cable += positions[node].distanceTo(positions[paren]);
               }
             }
 
@@ -587,6 +598,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             segregationIndex = SynapseClustering.prototype.segregationIndex({0: Object.keys(cluster1), 1: cluster2}, ap.outputs, ap.inputs);
           }
           return {hillock_cable: hillock_cable,
+                  main_dendritic_shaft_cable: main_dendritic_shaft_cable,
                   segregationIndex: segregationIndex};
         })(ap, smooth_positions);
 
@@ -640,7 +652,8 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                               terminal_cable,
                               n_terminal_segments,
                               n_branches,
-                              flow_based.hillock_cable];
+                              flow_based.hillock_cable,
+                              flow_based.main_dendritic_shaft_cable];
       },
       function(skid) {
         // Failed to load
@@ -668,9 +681,10 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // 52: number of terminal segments
         // 53: number of total branches
         // 54: length of the hillock cable
+        // 55: length of main dendritic shaft cable
         var n = this.models.length,
             vs = [];
-        for (var i=0; i<55; ++i) vs[i] = new Float64Array(n);
+        for (var i=0; i<56; ++i) vs[i] = new Float64Array(n);
 
         this.models.forEach(function(models, k) {
           var len = models.length;
@@ -699,6 +713,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             vs[52][k] = m[10];
             vs[53][k] = m[11];
             vs[54][k] = m[12];
+            vs[55][k] = m[13];
           } else {
             models.forEach(function(model) {
               var m = measurements[model.id];
@@ -726,6 +741,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
               vs[52][k] += m[10];
               vs[53][k] += m[11];
               vs[54][k] += m[12];
+              vs[55][k] += m[13];
             });
 
             // Compute I/O ratio
@@ -1174,6 +1190,7 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
     normalize(this.anatomy, 40, 49).forEach(function(v) { M.push(v); });
   }
   if (this.pca_synapses_absolute['Cable of hillock']) M.push(this.anatomy[54]);
+  if (this.pca_synapses_absolute['Cable of main dendritic shaft']) M.push(this.anatomy[55]);
 
   // Normalize the standard deviations
   M = M.map(function(v) {

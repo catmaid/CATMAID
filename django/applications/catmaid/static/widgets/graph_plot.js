@@ -517,6 +517,10 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
           }
         }
 
+        // Prune away terminal branches labeled at the end node with "not a branch",
+        // reassigning any synapses to the nearest branch node.
+        ap.collapseArtifactualBranches(json[2]);
+
         // Cache functions that are invoked multiple times
         ap.cache(['childrenArray', 'allSuccessors', 'findBranchAndEndNodes', 'partitionSorted']);
 

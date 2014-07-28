@@ -521,20 +521,17 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
         // reassigning any synapses to the nearest branch node.
         ap.collapseArtifactualBranches(json[2]);
 
+        // Remove empty terminal branches that could introduce noise into asymmetry measurements. Many of these should have already been eliminated by collapseArtifactualBranches if they were appropriately labeled with "not a branch".
+        if (prune) {
+          arbor.pruneBareTerminalSegments($.extend({}, ap.inputs, ap.outputs));
+        }
+
+
         // Cache functions that are invoked multiple times
         ap.cache(['childrenArray', 'allSuccessors', 'findBranchAndEndNodes', 'partitionSorted']);
 
         // Hack: replace by native ints
         ap.arbor.__cache__['childrenArray'] = new Uint32Array(ap.arbor.__cache__['childrenArray']);
-
-        // Prune away terminal branches labeled at the end node with "not a branch",
-        // reassigning any synapses to the nearest branch node.
-        // TODO
-
-        // Remove 'not a branch' and other artifacts that could introduce noise into asymmetry measurements
-        if (prune) {
-          arbor.pruneBareTerminalSegments($.extend({}, ap.inputs, ap.outputs));
-        }
 
         var smooth_positions = arbor.smoothPositions(ap.positions, sigma),
             smooth_cable = Math.round(arbor.cableLength(smooth_positions, sigma)) | 0,

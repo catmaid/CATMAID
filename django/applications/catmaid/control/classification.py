@@ -1361,7 +1361,7 @@ def graph_instanciates_feature_simple(graph, feature, idx=0):
     # Check for a link to the first feature component
     link_q = ClassInstanceClassInstance.objects.filter(
         class_instance_b=graph, class_instance_a__class_column=f_head.class_a,
-        relation=f_head.relation)
+        class_instance_b__class_column=f_head.class_b, relation=f_head.relation)
     # Get number of links wth. of len(), because it is doesn't hurt performance
     # if there are no results, but it improves performance if there is exactly
     # one result (saves one query). More than one link should not happen often.
@@ -1386,7 +1386,10 @@ def graph_instanciates_feature_complex(graph, feature):
     for n,fl in enumerate(feature.links):
         # Add constraints for each link
         cia = "class_instance_a__cici_via_b__" * n
-        q_cls = Q(**{cia + "class_instance_a__class_column": fl.class_a})
+        q_cls = Q(**{
+            cia + "class_instance_a__class_column": fl.class_a,
+            cia + "class_instance_b__class_column": fl.class_b
+        })
         q_rel = Q(**{cia + "relation": fl.relation})
         # Combine all sub-queries with logical AND
         Qr = Qr & q_cls & q_rel

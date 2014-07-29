@@ -30,8 +30,10 @@ class Feature:
     """
     def __init__(self, class_class_links):
         self.links = class_class_links
-        self.name = ",".join(
-            [l.class_a.class_name for l in self.links] )
+        if self.links:
+            children = ",".join(
+                [l.class_a.class_name for l in self.links] )
+            self.name = "%s: %s" % (self.links[0].class_b.class_name, children)
     def __str__(self):
         return self.name
     def __len__(self):

@@ -1358,10 +1358,19 @@ def graph_instanciates_feature_simple(graph, feature, idx=0):
         return True
     f_head = feature.links[idx]
 
+    # Create a set of filters
+    filters = {
+        'class_instance_b': graph,
+        'class_instance_a__class_column': f_head.class_a,
+        'relation': f_head.relation,
+    }
+    # The first graph item is also checked against the correct class of the
+    # 'object' class instance.
+    if idx == 0:
+        filters['class_instance_b__class_column'] = f_head.class_b
+
     # Check for a link to the first feature component
-    link_q = ClassInstanceClassInstance.objects.filter(
-        class_instance_b=graph, class_instance_a__class_column=f_head.class_a,
-        class_instance_b__class_column=f_head.class_b, relation=f_head.relation)
+    link_q = ClassInstanceClassInstance.objects.filter(**filters)
     # Get number of links wth. of len(), because it is doesn't hurt performance
     # if there are no results, but it improves performance if there is exactly
     # one result (saves one query). More than one link should not happen often.
@@ -1386,10 +1395,13 @@ def graph_instanciates_feature_complex(graph, feature):
     for n,fl in enumerate(feature.links):
         # Add constraints for each link
         cia = "class_instance_a__cici_via_b__" * n
-        q_cls = Q(**{
+        filters = {
             cia + "class_instance_a__class_column": fl.class_a,
-            cia + "class_instance_b__class_column": fl.class_b
-        })
+        }
+        if n == 0:
+            filters["class_instance_b__class_column"] = fl.class_b
+
+        q_cls = Q(**filters)
         q_rel = Q(**{cia + "relation": fl.relation})
         # Combine all sub-queries with logical AND
         Qr = Qr & q_cls & q_rel

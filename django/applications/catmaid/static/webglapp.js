@@ -1974,15 +1974,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     if ('creator' === options.color_method) {
       pickColor = function(vertex) { return User(vertex.user_id).color; };
     } else if ('all-reviewed' === options.color_method) {
-      pickColor = (function(vertex) {
-        var reviews = this.reviews[vertex.node_id];
-        return typeof reviews !== 'undefined' && reviews.length > 0 ?
+      pickColor = this.reviews ?
+        (function(vertex) {
+          var reviewers = this.reviews[vertex.node_id];
+          return reviewers && reviewers.length > 0 ?
             reviewedColor : unreviewedColor;
-      }).bind(this);
+        }).bind(this)
+        : function() { return notComputable; };
     } else if ('own-reviewed' === options.color_method) {
       pickColor = this.reviews ?
         (function(vertex) {
-        return -1 !== this.reviews[vertex.node_id].indexOf(session.userid) ? reviewedColor : unreviewedColor;
+          var reviewers = this.reviews[vertex.node_id];
+        return reviewers && -1 !== reviewers.indexOf(session.userid) ?
+          reviewedColor : unreviewedColor;
       }).bind(this)
         : function() { return notComputable; };
     } else if ('axon-and-dendrite' === options.color_method) {

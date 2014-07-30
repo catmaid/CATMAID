@@ -296,7 +296,7 @@ def can_edit_all_or_fail(user, ob_ids, table_name):
         raise Exception('Invalid table name: %s' % table_name)
 
     cursor = connection.cursor()
-    cursor.execute("SELECT user_id, count(user_id) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
+    cursor.execute("SELECT user_id, count(*) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
     rows = tuple(cursor.fetchall())
     # Check that all ids to edit exist
     if rows and len(ob_ids) == sum(row[1] for row in rows):

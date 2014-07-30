@@ -59,7 +59,7 @@ def get_review_count(skeleton_ids):
     # Count nodes that have been reviewed by each user in each partner skeleton
     cursor = connection.cursor()
     cursor.execute('''
-    SELECT skeleton_id, reviewer_id, count(skeleton_id)
+    SELECT skeleton_id, reviewer_id, count(*)
     FROM review
     WHERE skeleton_id IN (%s)
     GROUP BY reviewer_id, skeleton_id
@@ -117,7 +117,7 @@ def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
         user_filter = ""
 
     cursor.execute('''
-    SELECT skeleton_id, count(skeleton_id)
+    SELECT skeleton_id, count(*)
     FROM (SELECT skeleton_id, treenode_id
           FROM review
           WHERE skeleton_id IN (%s)%s

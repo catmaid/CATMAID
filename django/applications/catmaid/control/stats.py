@@ -32,7 +32,7 @@ def _process(query, minus1name):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_nodecount(request, project_id=None):
     return _process('''
-    SELECT user_id, count(user_id)
+    SELECT user_id, count(*)
     FROM treenode
     WHERE project_id=%s
     GROUP BY user_id

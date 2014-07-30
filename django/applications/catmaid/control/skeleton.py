@@ -507,7 +507,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     # Count nodes that have been reviewed by each user in each partner skeleton
     cursor.execute('''
-    SELECT skeleton_id, reviewer_id, count(skeleton_id)
+    SELECT skeleton_id, reviewer_id, count(*)
     FROM review
     WHERE skeleton_id IN (%s)
     GROUP BY reviewer_id, skeleton_id
@@ -518,7 +518,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     # Count total number of reviewed nodes per skeleton
     cursor.execute('''
-    SELECT skeleton_id, count(skeleton_id)
+    SELECT skeleton_id, count(*)
     FROM (SELECT skeleton_id, treenode_id
           FROM review
           WHERE skeleton_id IN (%s)

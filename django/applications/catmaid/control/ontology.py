@@ -31,9 +31,12 @@ class Feature:
     def __init__(self, class_class_links):
         self.links = class_class_links
         if self.links:
-            children = ",".join(
+            self.short_name = ",".join(
                 [l.class_a.class_name for l in self.links] )
-            self.name = "%s: %s" % (self.links[0].class_b.class_name, children)
+            self.name = "%s: %s" % (self.links[0].class_b.class_name, self.short_name)
+        else:
+            raise ValueError("A feature needs at least one element")
+
     def __str__(self):
         return self.name
     def __len__(self):

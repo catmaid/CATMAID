@@ -1298,7 +1298,7 @@ def export(request, workspace_pid=None, exclusion_tags=None):
         # Build result data structure. The tag set has to be converted to a
         # list to be JSON serializable.
         graph_to_features[g.name] = {
-            'classification': [str(f) for f in fl],
+            'classification': [f.short_name for f in fl],
             'tags': list(tags),
         }
 

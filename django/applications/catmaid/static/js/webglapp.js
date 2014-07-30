@@ -2077,6 +2077,21 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
     controls.target.add(change);
     camera.position.add(change);
 
+    // The distance to the target does not make any difference for an
+    // orthographic projection, the depth is fixed.
+    if (camera.inOrthographicMode) {
+      var new_zoom = camera.zoom;
+      if (ev.wheelDelta > 0) {
+        new_zoom += 0.25;
+      } else {
+        new_zoom -= 0.25;
+      }
+      if (new_zoom < 0 ) {
+        new_zoom = 0.1;
+      }
+      camera.setZoom( new_zoom );
+    }
+
     this.CATMAID_view.space.render();
   };
 
@@ -2802,13 +2817,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeColor = func
 	}
 };
 
-
 WebGLApplication.prototype.updateCameraView = function(toOrthographic) {
   if(toOrthographic) {
     this.options.camera_view = 'orthographic';
     this.space.view.camera.toOrthographic();
   } else {
     this.options.camera_view = 'perspective';
+    this.space.view.camera.setZoom(1.0);
     this.space.view.camera.toPerspective();
   }
   this.space.render();

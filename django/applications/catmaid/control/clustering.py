@@ -30,9 +30,9 @@ metrics = (
 )
 
 linkages = (
+    ('average', 'Average (UPGMA)'),
     ('single', 'Single (nearest point algorithm)'),
     ('complete', 'Complete (farthest point algorithm)'),
-    ('average', 'Average (UPGMA)'),
     ('weighted', 'Weighted'),
     ('centroid', 'Centroid'),
     ('median', 'Median'),

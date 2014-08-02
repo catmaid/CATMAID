@@ -219,7 +219,6 @@ def check_new_annotations(project_id, user, entity_id, annotation_set):
     """ With respect to annotations, the new annotation set is only valid if the
     user doesn't remove annotations for which (s)he has no permissions.
     """
-    print("Testing %s" % entity_id)
     # Get current annotation links
     annotation_links = ClassInstanceClassInstance.objects.filter(
             project_id=project_id,

@@ -4,7 +4,7 @@ Basic Installation Instructions
 ===============================
 
 These installation instructions have been tested on the most
-recent stable release of Ubuntu (12.04 precise), so may need
+recent stable release of Ubuntu (14.04 precise), so may need
 some minor changes for other Debian-based distributions.
 
 As an alternative, we have generated an AMI (Amazon Machine
@@ -18,14 +18,14 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL >= 9.0
+1. PostgreSQL >= 9.2
 2. Python 2.7
 3. Imagemagick (for generating image tiles)
 
 On Debian-based systems, such as Ubuntu, you can install these
 with::
 
-    sudo apt-get install python postgresql-9.1 imagemagick
+    sudo apt-get install python postgresql-9.3 imagemagick
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on
@@ -63,8 +63,8 @@ this with::
     sudo apt-get install gcc gfortran apt-file \
                          python2.7-dev postgresql-common \
                          libpq-dev libgraphicsmagick++1-dev \
-                         libhdf5-serial-dev libboost1.48-dev \
-                         libboost-python1.48-dev uuid-dev \
+                         libhdf5-serial-dev libboost1.55-dev \
+                         libboost-python1.55-dev uuid-dev \
                          libxml2-dev libxslt1-dev libjpeg-dev \
                          libtiff-dev virtualenvwrapper \
                          libblas-dev liblapack-dev
@@ -146,7 +146,7 @@ database called ``catmaid`` and a database user called
 ``catmaid_user``.  Firstly, we need to reconfigure PostgreSQL to
 allow password-based authentication for that user to that
 database.  To do that, edit the file
-``/etc/postgresql/9.1/main/pg_hba.conf`` (where ``9.1`` may be a
+``/etc/postgresql/9.3/main/pg_hba.conf`` (where ``9.3`` may be a
 slightly different version for you) and add this line as the
 *first* rule in that file::
 
@@ -171,7 +171,7 @@ currently empty, e.g.::
 
     psql -U catmaid_user catmaid
     Password:
-    psql (9.1.8)
+    psql (9.3.4)
     Type "help" for help.
 
     catmaid=> \d

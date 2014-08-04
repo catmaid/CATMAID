@@ -228,7 +228,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
     # Now fetch all treenodes of all skeletons to expand
     cursor.execute('''
-    SELECT skeleton_id, id, parent_id, confidence, (location).x, (location).y, (location).z
+    SELECT skeleton_id, id, parent_id, confidence, location_x, location_y, location_z
     FROM treenode
     WHERE project_id = %s
       AND skeleton_id IN (%s)

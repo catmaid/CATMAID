@@ -77,18 +77,18 @@ def node_list_tuples(request, project_id=None):
         SELECT
             t1.id,
             t1.parent_id,
-            (t1.location).x,
-            (t1.location).y,
-            (t1.location).z,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
             t1.user_id,
             t2.id,
             t2.parent_id,
-            (t2.location).x,
-            (t2.location).y,
-            (t2.location).z,
+            t2.location_x,
+            t2.location_y,
+            t2.location_z,
             t2.confidence,
             t2.radius,
             t2.skeleton_id,
@@ -98,11 +98,11 @@ def node_list_tuples(request, project_id=None):
                (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
                 OR (t1.parent_id IS NULL AND t1.id = t2.id))
         WHERE
-            (t1.location).z = %(z)s
-            AND (t1.location).x > %(left)s
-            AND (t1.location).x < %(right)s
-            AND (t1.location).y > %(top)s
-            AND (t1.location).y < %(bottom)s
+            t1.location_z = %(z)s
+            AND t1.location_x > %(left)s
+            AND t1.location_x < %(right)s
+            AND t1.location_y > %(top)s
+            AND t1.location_y < %(bottom)s
             AND t1.project_id = %(project_id)s
         LIMIT %(limit)s
         ''', params)
@@ -140,9 +140,9 @@ def node_list_tuples(request, project_id=None):
             response_on_error = 'Failed to query connector locations.'
             cursor.execute('''
             SELECT connector.id,
-                (connector.location).x,
-                (connector.location).y,
-                (connector.location).z,
+                connector.location_x,
+                connector.location_y,
+                connector.location_z,
                 connector.confidence,
                 treenode_connector.relation_id,
                 treenode_connector.treenode_id,
@@ -162,9 +162,9 @@ def node_list_tuples(request, project_id=None):
 
         cursor.execute('''
         SELECT connector.id,
-            (connector.location).x,
-            (connector.location).y,
-            (connector.location).z,
+            connector.location_x,
+            connector.location_y,
+            connector.location_z,
             connector.confidence,
             treenode_connector.relation_id,
             treenode_connector.treenode_id,
@@ -173,11 +173,11 @@ def node_list_tuples(request, project_id=None):
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
-          AND (connector.location).z = %(z)s
-          AND (connector.location).x > %(left)s
-          AND (connector.location).x < %(right)s
-          AND (connector.location).y > %(top)s
-          AND (connector.location).y < %(bottom)s
+          AND connector.location_z = %(z)s
+          AND connector.location_x > %(left)s
+          AND connector.location_x < %(right)s
+          AND connector.location_y > %(top)s
+          AND connector.location_y < %(bottom)s
         ''', params)
 
         crows.extend(cursor.fetchall())
@@ -246,9 +246,9 @@ def node_list_tuples(request, project_id=None):
             cursor.execute('''
             SELECT id,
                 parent_id,
-                (location).x,
-                (location).y,
-                (location).z,
+                location_x,
+                location_y,
+                location_z,
                 confidence,
                 radius,
                 skeleton_id,
@@ -363,9 +363,9 @@ def most_recent_treenode(request, project_id=None):
     return HttpResponse(json.dumps({
         'id': tn.id,
         #'skeleton_id': tn.skeleton.id,
-        'x': int(tn.location.x),
-        'y': int(tn.location.y),
-        'z': int(tn.location.z),
+        'x': int(tn.location_x),
+        'y': int(tn.location_y),
+        'z': int(tn.location_z),
         #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
         #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
         #'type': 'treenode'
@@ -458,9 +458,9 @@ def node_nearest(request, project_id=None):
             minDistance = -1
             nearestTreenode = None
             for tn in treenodes:
-                xdiff = x - tn.location.x
-                ydiff = y - tn.location.y
-                zdiff = z - tn.location.z
+                xdiff = x - tn.location_x
+                ydiff = y - tn.location_y
+                zdiff = z - tn.location_z
                 distanceSquared = xdiff ** 2 + ydiff ** 2 + zdiff ** 2
                 if distanceSquared < minDistance or minDistance < 0:
                     nearestTreenode = tn
@@ -477,9 +477,9 @@ def node_nearest(request, project_id=None):
 
         return HttpResponse(json.dumps({
             'treenode_id': nearestTreenode.id,
-            'x': int(nearestTreenode.location.x),
-            'y': int(nearestTreenode.location.y),
-            'z': int(nearestTreenode.location.z),
+            'x': int(nearestTreenode.location_x),
+            'y': int(nearestTreenode.location_y),
+            'z': int(nearestTreenode.location_z),
             'skeleton_id': nearestTreenode.skeleton_id}))
 
     except Exception as e:
@@ -510,9 +510,9 @@ def _fetch_location(treenode_id):
     cursor.execute('''
         SELECT
           id,
-          (location).x AS x,
-          (location).y AS y,
-          (location).z AS z,
+          location_x AS x,
+          location_y AS y,
+          location_z AS z,
           skeleton_id
         FROM treenode
         WHERE id=%s''', [treenode_id])
@@ -524,9 +524,9 @@ def _fetch_location_connector(connector_id):
     cursor.execute('''
         SELECT
           id,
-          (location).x AS x,
-          (location).y AS y,
-          (location).z AS z
+          location_x AS x,
+          location_y AS y,
+          location_z AS z
         FROM connector
         WHERE id=%s''', [connector_id])
     return cursor.fetchone()

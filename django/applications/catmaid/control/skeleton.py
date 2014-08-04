@@ -374,9 +374,9 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None):
         skeleton_id=skeleton_id)
     return HttpResponse(json.dumps({
         'root_id': tn.id,
-        'x': tn.location.x,
-        'y': tn.location.y,
-        'z': tn.location.z}),
+        'x': tn.location_x,
+        'y': tn.location_y,
+        'z': tn.location_z}),
         mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

@@ -427,13 +427,17 @@ class Location(UserFocusedModel):
     class Meta:
         db_table = "location"
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
-    location = Double3DField()
+    location_x = models.FloatField()
+    location_y = models.FloatField()
+    location_z = models.FloatField()
 
 class Treenode(UserFocusedModel):
     class Meta:
         db_table = "treenode"
     editor = models.ForeignKey(User, related_name='treenode_editor', db_column='editor_id')
-    location = Double3DField()
+    location_x = models.FloatField()
+    location_y = models.FloatField()
+    location_z = models.FloatField()
     parent = models.ForeignKey('self', null=True, related_name='children')
     radius = models.FloatField()
     confidence = models.IntegerField(default=5)
@@ -444,7 +448,9 @@ class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
-    location = Double3DField()
+    location_x = models.FloatField()
+    location_y = models.FloatField()
+    location_z = models.FloatField()
     confidence = models.IntegerField(default=5)
 
 
@@ -495,7 +501,9 @@ class RegionOfInterest(UserFocusedModel):
     class Meta:
         db_table = "region_of_interest"
     # Repeat the columns inherited from 'location'
-    location = Double3DField()
+    location_x = models.FloatField()
+    location_y = models.FloatField()
+    location_z = models.FloatField()
     # Now new columns:
     stack = models.ForeignKey(Stack)
     zoom_level = models.IntegerField()

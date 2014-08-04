@@ -788,9 +788,9 @@ class ViewPageTests(TestCase):
         treenode = get_object_or_404(Treenode, id=parsed_response['treenode_id'])
         self.assertEqual(confidence, treenode.confidence)
         self.assertEqual(radius, treenode.radius)
-        self.assertEqual(x, treenode.location.x)
-        self.assertEqual(y, treenode.location.y)
-        self.assertEqual(z, treenode.location.z)
+        self.assertEqual(x, treenode.location_x)
+        self.assertEqual(y, treenode.location_y)
+        self.assertEqual(z, treenode.location_z)
         self.assertEqual(parsed_response['skeleton_id'], treenode.skeleton_id)
         self.assertEqual(get_object_or_404(Treenode, id=parent_id).skeleton_id, treenode.skeleton_id)
 
@@ -828,9 +828,9 @@ class ViewPageTests(TestCase):
         treenode = get_object_or_404(Treenode, id=parsed_response['treenode_id'])
         self.assertEqual(confidence, treenode.confidence)
         self.assertEqual(radius, treenode.radius)
-        self.assertEqual(x, treenode.location.x)
-        self.assertEqual(y, treenode.location.y)
-        self.assertEqual(z, treenode.location.z)
+        self.assertEqual(x, treenode.location_x)
+        self.assertEqual(y, treenode.location_y)
+        self.assertEqual(z, treenode.location_z)
         self.assertEqual(parsed_response['skeleton_id'], treenode.skeleton_id)
         self.assertEqual(get_object_or_404(Treenode, id=parent_id).skeleton_id, treenode.skeleton_id)
         # Ensure nodes in-between have been created
@@ -1110,9 +1110,9 @@ class ViewPageTests(TestCase):
         connector_id = parsed_response['connector_id']
 
         new_connector = Connector.objects.filter(id=connector_id).get()
-        self.assertEqual(111, new_connector.location.x)
-        self.assertEqual(222, new_connector.location.y)
-        self.assertEqual(333, new_connector.location.z)
+        self.assertEqual(111, new_connector.location_x)
+        self.assertEqual(222, new_connector.location_y)
+        self.assertEqual(333, new_connector.location_z)
         self.assertEqual(3, new_connector.confidence)
         self.assertEqual(connector_count + 1, Connector.objects.all().count())
 
@@ -1250,8 +1250,8 @@ class ViewPageTests(TestCase):
         label_location = TextlabelLocation.objects.filter(textlabel=textlabel_id)[0]
         self.assertEqual(label_before_update.project_id, label.project_id)
         self.assertEqual(label_location_before_update.location.x, label_location.location.x)
-        self.assertEqual(label_location_before_update.location.y, label_location.location.y)
-        self.assertEqual(label_location_before_update.location.z, label_location.location.z)
+        self.assertEqual(label_location_before_update.location_y, label_location.location_y)
+        self.assertEqual(label_location_before_update.location_z, label_location.location_z)
         self.assertEqual(params['type'], label.type)
         self.assertEqual(params['text'], label.text)
         self.assertEqual(label_before_update.font_name, label.font_name)
@@ -2324,9 +2324,9 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         treenode = Treenode.objects.filter(id=treenode_id)[0]
-        self.assertEqual(x, treenode.location.x)
-        self.assertEqual(y, treenode.location.y)
-        self.assertEqual(z, treenode.location.z)
+        self.assertEqual(x, treenode.location_x)
+        self.assertEqual(y, treenode.location_y)
+        self.assertEqual(z, treenode.location_z)
 
     def test_node_update_many_nodes(self):
         self.fake_authentication()
@@ -2363,9 +2363,9 @@ class ViewPageTests(TestCase):
                 node = Treenode.objects.filter(id=n_id)[0]
             else:
                 node = Connector.objects.filter(id=n_id)[0]
-            self.assertEqual(x[i], node.location.x)
-            self.assertEqual(y[i], node.location.y)
-            self.assertEqual(z[i], node.location.z)
+            self.assertEqual(x[i], node.location_x)
+            self.assertEqual(y[i], node.location_y)
+            self.assertEqual(z[i], node.location_z)
             i += 1
 
     def test_node_list_without_active_skeleton(self):
@@ -2525,9 +2525,9 @@ class TreenodeTests(TestCase):
         # But the next should have this as a parent:
         self.assertEqual(tns[1].parent, tns[0])
 
-        x = tns[0].location.x
-        y = tns[0].location.y
-        z = tns[0].location.z
+        x = tns[0].location_x
+        y = tns[0].location_y
+        z = tns[0].location_z
 
         self.assertTrue(1030 < x < 1090)
         self.assertTrue(3000 < y < 3060)

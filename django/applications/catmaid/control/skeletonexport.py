@@ -43,9 +43,9 @@ def get_swc_string(treenodes_qs):
     for tn in treenodes_qs:
         swc_row = [tn.id]
         swc_row.append(0)
-        swc_row.append(tn.location.x)
-        swc_row.append(tn.location.y)
-        swc_row.append(tn.location.z)
+        swc_row.append(tn.location_x)
+        swc_row.append(tn.location_y)
+        swc_row.append(tn.location_z)
         swc_row.append(max(tn.radius, 0))
         swc_row.append(-1 if tn.parent_id is None else tn.parent_id)
         all_rows.append(swc_row)
@@ -83,7 +83,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
 
     cursor.execute('''
         SELECT id, parent_id, user_id,
-               (location).x, (location).y, (location).z,
+               location_x, location_y, location_z,
                radius, confidence
         FROM treenode
         WHERE skeleton_id = %s
@@ -109,7 +109,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
         # Fetch all connectors with their partner treenode IDs
         cursor.execute('''
             SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
-                   (c.location).x, (c.location).y, (c.location).z
+                   c.location_x, c.location_y, c.location_z
             FROM treenode_connector tc,
                  connector c
             WHERE tc.skeleton_id = %s
@@ -174,7 +174,7 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, w
     if 0 != with_nodes:
         cursor.execute('''
             SELECT id, parent_id, user_id,
-                (location).x, (location).y, (location).z,
+                location_x, location_y, location_z,
                 radius, confidence
             FROM treenode
             WHERE skeleton_id = %s
@@ -272,7 +272,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
     # Fetch all nodes, with their tags if any
     cursor.execute(
-        '''SELECT id, parent_id, user_id, (location).x, (location).y, (location).z, radius, confidence %s
+        '''SELECT id, parent_id, user_id, location_x, location_y, location_z, radius, confidence %s
           FROM treenode
           WHERE skeleton_id = %s
         ''' % (added_fields, skeleton_id) )
@@ -314,7 +314,8 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
             # Fetch all connectors with their partner treenode IDs
             cursor.execute(
-                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location %s
+                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name,
+                           c.location_x, c.location_y, c.location_z %s
                     FROM treenode_connector tc,
                          connector c,
                          relation r
@@ -327,8 +328,8 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # List of (treenode_id, connector_id, relation_id, x, y, z)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
-                x, y, z = imap(float, row[3][1:-1].split(','))
-                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
+                x, y, z = imap(float, (row[3], row[4], row[5]))
+                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[6]))
             return name, nodes, tags, connectors, reviews
 
     return name, nodes, tags, connectors, reviews

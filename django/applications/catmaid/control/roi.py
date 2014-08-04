@@ -39,7 +39,7 @@ def get_roi_info(request, project_id=None, roi_id=None):
     info = {
         'id': roi.id,
         'zoom_level': roi.zoom_level,
-        'location': [roi.location.x, roi.location.y, roi.location.z],
+        'location': [roi.location_x, roi.location_y, roi.location_z],
         'width': roi.width,
         'height': roi.height,
         'rotation_cw': roi.rotation_cw,
@@ -174,11 +174,11 @@ def create_roi_image_task(user, project_id, roi_id, file_path):
         roi = RegionOfInterest.objects.get(id=roi_id)
         # Prepare parameters
         hwidth = roi.width * 0.5
-        x_min = roi.location.x - hwidth
-        x_max = roi.location.x + hwidth
+        x_min = roi.location_x - hwidth
+        x_max = roi.location_x + hwidth
         hheight = roi.height * 0.5
-        y_min = roi.location.y - hheight
-        y_max = roi.location.y + hheight
+        y_min = roi.location_y - hheight
+        y_max = roi.location_y + hheight
         z_min = z_max = roi.location.z
         single_channel = False
         # Create a cropping job

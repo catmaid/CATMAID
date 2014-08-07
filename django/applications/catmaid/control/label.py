@@ -140,10 +140,12 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     # on each one. Remember each label that couldn't be deleted in the
     # other_labels array.
     other_labels = []
+    deleted_labels = []
     for l in labels_to_delete:
         try:
             can_edit_or_fail(request.user, l.id, table._meta.db_table)
             l.delete()
+            deleted_labels.append(l)
         except:
             other_labels.append(l)
 
@@ -160,6 +162,12 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                        'approve_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(label.id) + ', "' + ntype + '")'}).save()
 
     existing_names = set(ele.class_instance.name for ele in existingLabels)
+
+    # Remove class instance for all deleted labels, if it isn't linked to any
+    # treenode anymore.
+    for l in deleted_labels:
+        if 0 == table.objects.filter(class_instance=l.class_instance).count():
+            l.class_instance.delete()
 
     # Add any new labels.
     label_class = Class.objects.get(project=project_id, class_name='label')

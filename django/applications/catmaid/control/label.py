@@ -135,15 +135,17 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     # Get the existing list of tags for the tree node/connector and delete any that are not in the new list.
     existingLabels = table.objects.filter(**kwargs).select_related('class_instance__name')
     labels_to_delete = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags)
-    other_labels = labels_to_delete.exclude(user = request.user)
 
-    # Delete labels
-    if request.user.is_superuser:
-        # All labels
-        labels_to_delete.delete()
-    else:
-        # Only labels associated to the treenode by the request.user
-        labels_to_delete.filter(user=request.user).delete()
+    # Iterate over all labels that should get deleted to check permission
+    # on each one. Remember each label that couldn't be deleted in the
+    # other_labels array.
+    other_labels = []
+    for l in labels_to_delete:
+        try:
+            can_edit_or_fail(request.user, l.id, table._meta.db_table)
+            l.delete()
+        except:
+            other_labels.append(l)
 
     # Create change requests for labels associated to the treenode by other users
     for label in other_labels:

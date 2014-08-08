@@ -13,3 +13,15 @@ Restart postgres::
    sudo /etc/init.d/postgresql restart
    
 Now you should be able to call the ./scripts/createuser.sh script.
+
+*My CATMAID instance is working in debug mode, but can't be reached in
+production. What is the problem?*
+
+Check the `ALLOWED_HOSTS` setting in your Django configuration file:
+
+    django/projects/mysite/settings.py
+
+Since Django 1.5 this setting is present and should contain a list of all
+host/domain names that your CATMAID instance is reachable under. Access will be
+blocked if target host isn't found in this list. For more detail have a look at
+the `Django documentation <https://docs.djangoproject.com/en/1.6/ref/settings/#allowed-hosts>`_.

@@ -144,8 +144,10 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     for l in labels_to_delete:
         try:
             can_edit_or_fail(request.user, l.id, table._meta.db_table)
-            l.delete()
-            deleted_labels.append(l)
+            if remove_label(l.id, ntype):
+                deleted_labels.append(l)
+            else:
+                other_labels.append(l)
         except:
             other_labels.append(l)
 
@@ -162,12 +164,6 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                        'approve_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(label.id) + ', "' + ntype + '")'}).save()
 
     existing_names = set(ele.class_instance.name for ele in existingLabels)
-
-    # Remove class instance for all deleted labels, if it isn't linked to any
-    # treenode anymore.
-    for l in deleted_labels:
-        if 0 == table.objects.filter(class_instance=l.class_instance).count():
-            l.class_instance.delete()
 
     # Add any new labels.
     label_class = Class.objects.get(project=project_id, class_name='label')
@@ -237,14 +233,21 @@ def remove_label(label_id, node_type):
     # This removes an exact instance of a tag being applied to a node/connector, it does not look up the tag by name.
     # If the tag was removed and added again then this will do nothing and the tag will remain.
     if node_type == 'treenode':
-        try:
-            label = TreenodeClassInstance.objects.get(pk=label_id).delete()
-        except TreenodeClassInstance.DoesNotExist:
-            pass
+        table = TreenodeClassInstance
     elif node_type == 'connector':
-        try:
-            label = ConnectorClassInstance.objects.get(pk=label_id).delete()
-        except ConnectorClassInstance.DoesNotExist:
-            pass
+        table = ConnectorClassInstance
     else:
         raise Exception('Unknown node type: "%s"', node_type)
+
+    try:
+        label_link = table.objects.get(pk=label_id)
+        label = label_link.class_instance
+        label_link.delete()
+        # Remove class instance for all deleted labels, if it isn't linked to any
+        # treenode anymore.
+        if 0 == table.objects.filter(class_instance=label).count():
+            label.delete()
+
+        return True
+    except table.DoesNotExist:
+        return False

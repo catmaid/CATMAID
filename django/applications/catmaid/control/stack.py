@@ -133,9 +133,19 @@ def stack_models(request, project_id=None, stack_id=None):
     """ Retrieve Mesh models for a stack
     """
     d={}
-    filename=os.path.join(settings.HDF5_STORAGE_PATH, '%s_%s.hdf' %(project_id, stack_id) )
-    if not os.path.exists(filename):
+    patterns = (('%s_%s.hdf', (project_id, stack_id)),
+                ('%s.hdf', (project_id,)))
+
+    filename = None
+    for p in patterns:
+        test_filename = os.path.join(settings.HDF5_STORAGE_PATH, p[0] % p[1])
+        if os.path.exists(test_filename):
+            filename = test_fiilename
+            break
+
+    if not filename:
         return HttpResponse(json.dumps(d), mimetype="text/json")
+
     with closing(h5py.File(filename, 'r')) as hfile:
         meshnames=hfile['meshes'].keys()
         for name in meshnames:

@@ -190,7 +190,7 @@ details requested.  Then you should run::
 
     ./create_configuration.py
 
-This will output some suggested Apache configuration in the
+This will output some suggested Nginx and Apache configuration in the
 terminal, and generate the files ``django.wsgi`` and ``settings.py``
 in ``/home/alice/catmaid/django/projects/mysite``.
 

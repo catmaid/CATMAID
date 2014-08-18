@@ -20,3 +20,4 @@ pillow==2.3.0
 south==0.8.4
 scipy==0.11.0
 mock==1.0.1
+matplotlib==1.3.1

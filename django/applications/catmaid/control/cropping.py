@@ -529,11 +529,13 @@ def extract_substack_no_rotation( job ):
                 cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
                 # Delete tile image - it's not needed anymore
                 del image
-            # Optionally, use only a single channel
-            if job.single_channel:
-                cropped_slice.channel( ChannelType.RedChannel )
-            # Add the image to the cropped stack
-            cropped_stack.append( cropped_slice )
+
+            if cropped_slice:
+                # Optionally, use only a single channel
+                if job.single_channel:
+                    cropped_slice.channel( ChannelType.RedChannel )
+                # Add the image to the cropped stack
+                cropped_stack.append( cropped_slice )
 
     return cropped_stack
 

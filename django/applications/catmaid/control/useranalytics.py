@@ -279,7 +279,7 @@ def splitBout(bout,increment):
 def generateErrorImage(msg):
     """ Creates an empty image (based on image nr. 1) and adds a message to it.
     """
-    fig = figure(1, figsize=(6,6))
+    fig = plt.figure(1, figsize=(6,6))
     fig.clf()
     fig.suptitle(msg)
     return fig

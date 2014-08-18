@@ -11,6 +11,11 @@ import numpy as np
 import copy
 
 try:
+    # Because we don't want to show generated images in a window, we can use
+    # the Agg backend. This avoids some potential threading issues.
+    import matplotlib
+    matplotlib.use('Agg')
+
     import matplotlib.pyplot as plt
     import matplotlib.colors as colors
     from matplotlib.dates import  DateFormatter, DayLocator

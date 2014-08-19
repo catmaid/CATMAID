@@ -450,7 +450,7 @@ def _measure_skeletons(skeleton_ids):
             wx, wy, wz = 0, 0, 0
             for oid, distance in oids.iteritems():
                 other = skeleton.nodes[oid]
-                w = distance / sum_distances
+                w = distance / sum_distances if sum_distances != 0 else 0
                 wx += other.x * w
                 wy += other.y * w
                 wz += other.z * w

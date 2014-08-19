@@ -287,7 +287,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Move down 1 slice in z (or 10 with Shift held)",
     keyShortcuts: {
-      '.': [ 46, 190 ]
+      '.': [ 190 ]
     },
     run: function (e) {
       self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
@@ -652,6 +652,31 @@ function TracingTool()
       if (!mayEdit())
         return false;
       tracingLayer.svgOverlay.createInterpolatedTreenode(e);
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Delete the active node",
+    keyShortcuts: {
+      'DEL': [ 46 ]
+    },
+    run: function (e) {
+      if (!mayEdit())
+        return false;
+      var node = tracingLayer.svgOverlay.nodes[SkeletonAnnotations.getActiveNodeId()];
+      var nodeType = SkeletonAnnotations.getActiveNodeType();
+      tracingLayer.svgOverlay.activateNode(null);
+
+      switch (nodeType) {
+        case SkeletonAnnotations.TYPE_CONNECTORNODE:
+          tracingLayer.svgOverlay.deleteConnectorNode(node);
+          break;
+        case SkeletonAnnotations.TYPE_NODE:
+          tracingLayer.svgOverlay.deleteTreenode(node, true);
+          break;
+      }
+      
       return true;
     }
   }) );

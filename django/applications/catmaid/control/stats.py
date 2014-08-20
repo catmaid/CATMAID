@@ -188,22 +188,26 @@ def stats_user_history(request, project_id=None):
 
     # Look up all tree nodes for the project in the given date range. Also add
     # a computed field which is just the day of the last edited date/time.
-    cursor = connection.cursor();
-    cursor.execute('''\
-        SELECT "treenode"."user_id", (date_trunc('day', creation_time)) AS "date", COUNT("treenode"."id") AS "count"
-          FROM "treenode"
-          INNER JOIN (
-            SELECT "treenode"."skeleton_id", COUNT("treenode"."id") as "skeleton_nodes"
+    treenode_stats = []
+    cursor = connection.cursor()
+    try:
+        cursor.execute('''\
+            SELECT "treenode"."user_id", (date_trunc('day', creation_time)) AS "date", COUNT("treenode"."id") AS "count"
               FROM "treenode"
-              GROUP BY "treenode"."skeleton_id") as tn2
-            ON "treenode"."skeleton_id" = tn2."skeleton_id"
-          WHERE ("treenode"."project_id" = %(project_id)s
-            AND "treenode"."creation_time" BETWEEN %(start_date)s AND %(end_date)s
-            AND tn2."skeleton_nodes" > 1)
-          GROUP BY "treenode"."user_id", "date"
-          ORDER BY "treenode"."user_id" ASC, "date" ASC''', \
-          dict(project_id=project_id, start_date=start_date, end_date=end_date))
-    treenode_stats = cursor.fetchall()
+              INNER JOIN (
+                SELECT "treenode"."skeleton_id", COUNT("treenode"."id") as "skeleton_nodes"
+                  FROM "treenode"
+                  GROUP BY "treenode"."skeleton_id") as tn2
+                ON "treenode"."skeleton_id" = tn2."skeleton_id"
+              WHERE ("treenode"."project_id" = %(project_id)s
+                AND "treenode"."creation_time" BETWEEN %(start_date)s AND %(end_date)s
+                AND tn2."skeleton_nodes" > 1)
+              GROUP BY "treenode"."user_id", "date"
+              ORDER BY "treenode"."user_id" ASC, "date" ASC''', \
+              dict(project_id=project_id, start_date=start_date, end_date=end_date))
+        treenode_stats = cursor.fetchall()
+    finally:
+        cursor.close()
 
     connector_stats = Connector.objects \
         .filter(

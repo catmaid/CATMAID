@@ -219,7 +219,7 @@ SkeletonConnectivity.prototype.update = function() {
   if (0 === skids.length) {
     this._clearGUI();
     return;
-  };
+  }
 
   var self = this;
 
@@ -250,7 +250,7 @@ SkeletonConnectivity.prototype.update = function() {
           // Save reference of incoming and outgoing nodes. These are needed to open
           // the connectivity plots in a separate widget.
           self.incoming = json.incoming;
-          self.outgoing = json.outgoing
+          self.outgoing = json.outgoing;
 
           // Register this widget with the name service for all neurons
           var createPartnerModels = function(partners, result) {
@@ -455,7 +455,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       return elements.reduce(function(sum, e) {
         return sum + e[field];
       }, 0);
-    }
+    };
     // The total synapse count
     var total_synaptic_count = getSum(partners, 'synaptic_count');
     // The total node count
@@ -510,14 +510,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     row.append( $('<td />').addClass('input-container').append( el ) );
     var titleClass = collapsed ? "extend-box-closed" : "extend-box-open";
     var titleCell = $('<td />').html('<span class="' + titleClass +
-            '"></span>ALL (' + partners.length + ' neurons)')
+            '"></span>ALL (' + partners.length + ' neurons)');
     row.append(titleCell);
     row.append($('<td />').addClass('syncount').text(total_synaptic_count));
     if (extraCols) {
       skids.forEach(function(skid) {
         var count = partners.reduce(function(sum, partner) {
           return sum + (partner.skids[skid] || 0);
-        }, 0)
+        }, 0);
         this.append($('<td />').addClass('syncount').text(count));
       }, row);
     }
@@ -582,11 +582,11 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         };
         a.onmouseout = onmouseout;
         // Create tool-tip
-        a.setAttribute('title', title)
+        a.setAttribute('title', title);
       }
-      td.setAttribute('title', title)
+      td.setAttribute('title', title);
       return td;
-    };
+    }
 
     // Create a table row for every partner and remember the ignored ones
     var filtered = partners.reduce((function(filtered, partner) {
@@ -685,7 +685,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         skids.forEach(function(skid, i) {
           var count = filtered.reduce(function(sum, partner) {
             return sum + (partner.skids[skid] || 0);
-          }, 0)
+          }, 0);
           $tr.append($('<td />').addClass('syncount').append(count));
         });
       }
@@ -724,7 +724,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         var skid = parseInt(checkbox.value);
         widget.skeletonSelection[skid] = this.checked;
         skids.push(skid);
-      };
+      }
 
       if (this.checked) {
        if (linkTarget) {
@@ -786,7 +786,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
         this.upThresholds[skid] || 1, 21);
     var $downThrSelector = createThresholdSelector('neuron-down-threshold-' + id,
-        this.downThresholds[skid] || 1, 21)
+        this.downThresholds[skid] || 1, 21);
     // Create and attach handlers to threshold selectors. Generate the function
     // to avoid the creation of a closure.
     $upThrSelector.change((function(widget, skid) {
@@ -840,7 +840,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
         this.upThresholds['sum'] || 1, 21);
     var $downThrSelector = createThresholdSelector('neuron-down-threshold-' + id,
-        this.downThresholds['sum'] || 1, 21)
+        this.downThresholds['sum'] || 1, 21);
     // Create and attach handlers to threshold selectors. Generate the function
     // to avoid the creation of a closure.
     $upThrSelector.change((function(widget) {
@@ -920,7 +920,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var u = User.all()[r];
     var opt = $('<option />').attr('value', r).append(u ? u.fullName : r);
     if (this.reviewFilter == r) {
-      opt.attr('selected', 'selected')
+      opt.attr('selected', 'selected');
     }
     reviewFilter.append(opt);
   }, this);
@@ -1119,7 +1119,7 @@ ConnectivityGraphPlot.prototype.draw = function() {
     if (0 === skids.length) return null;
 
     // Colors: an array of hex values
-    var zeroPad = function(s) { return ("0" + s).slice(-2); }
+    var zeroPad = function(s) { return ("0" + s).slice(-2); };
     var colors = skids.reduce(function(array, skid, i) {
       // Start at Red 255, decrease towards 0
       //          Green 100, increase towards 255

@@ -94,8 +94,9 @@ def instance_operation(request, project_id=None):
         nodes_to_rename = ClassInstance.objects.filter(id=params['id'])
         node_ids = [node.id for node in nodes_to_rename]
         if len(node_ids) > 0:
+            old_name = ",".join([n.name for n in nodes_to_rename])
             nodes_to_rename.update(name=params['title'])
-            insert_into_log(project_id, request.user.id, "rename_%s" % params['classname'], None, "Renamed %s with ID %s to %s" % (params['classname'], params['id'], params['title']))
+            insert_into_log(project_id, request.user.id, "rename_%s" % params['classname'], None, "Renamed %s with ID %s from %s to %s" % (params['classname'], params['id'], old_name, params['title']))
             return HttpResponse(json.dumps({'class_instance_ids': node_ids}))
         else:
             instance_operation.res_on_err = ''

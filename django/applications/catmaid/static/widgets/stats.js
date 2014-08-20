@@ -14,7 +14,7 @@ var ProjectStatistics = new function()
     $("#skeletons_created").text(data.skeletons_created);
     $("#treenodes_created").text(data.treenodes_created);
     $("#connectors_created").text(data.connectors_created);
-  }
+  };
 
   var get_formated_entry = function(data) {
     var entry = '', points = 0;
@@ -23,21 +23,21 @@ var ProjectStatistics = new function()
       points += data['new_treenodes'];
     } else {
       entry += '0 /';
-    };
+    }
     if( data.hasOwnProperty('new_connectors') ) {
       entry += ' ' + data['new_connectors'] + ' /';
       points += data['new_connectors'];
     } else {
       entry += ' 0 /';
-    };
+    }
     if( data.hasOwnProperty('new_reviewed_nodes') ) {
       entry += ' ' + data['new_reviewed_nodes'];
       points += data['new_reviewed_nodes'];
     } else {
       entry += ' 0';
-    };
+    }
     return {'entry': entry, 'points': points};
-  }
+  };
 
   /**
    * (Re)creates the summary table at the top of the widget, based on the data
@@ -49,13 +49,13 @@ var ProjectStatistics = new function()
     // Select time interval, default to days
     var timeinterval;
     if ("year" === timeunit) {
-      timeinterval = 365
+      timeinterval = 365;
     } else if ("month" === timeunit) {
-      timeinterval = 30
+      timeinterval = 30;
     } else if ("week" === timeunit) {
-      timeinterval = 7
+      timeinterval = 7;
     } else {
-      timeinterval = 1
+      timeinterval = 1;
     }
     // Find interval remainder of timespan in days
     var intervalRemainder = data['days'].length % timeinterval;
@@ -96,7 +96,7 @@ var ProjectStatistics = new function()
             new_treenodes: 0,
             new_connectors: 0,
             new_reviewed_nodes: 0,
-          }
+          };
           // Aggregate statistics for current time interval
           for (var j = 0; j< timeinterval; ++j) {
               // Cancel iteration after last entry
@@ -126,7 +126,7 @@ var ProjectStatistics = new function()
         $('#project_stats_history_table').append( row );
       }
     }
-  }
+  };
 
   var update_piechart = function(data, chart_name) {
     $(chart_name).empty();
@@ -225,7 +225,7 @@ var ProjectStatistics = new function()
     var ms = this.getTime() + (msPerDay * days);
     var added = new Date(ms);
     return added;
-  }
+  };
   
   var update_linegraph = function(data) {
     $("#linechart_treenode_holder").empty();
@@ -312,14 +312,14 @@ var ProjectStatistics = new function()
       .attr("y", 0)
       .attr("transform", "translate(" + (w - 12) + ", " + (h / 2) + ") rotate(90)")
       .text("Nodes edited");
-  }
+  };
   
   var refresh_project_statistics = function() {
     refresh_nodecount();
     refresh_history();
 
     // d3.json(django_url + project.id + '/stats/history', update_linegraph);
-  }
+  };
 
   var refresh_history = function() {
     // disable the refresh button until finished
@@ -404,7 +404,7 @@ var ProjectStatistics = new function()
    */
   var refresh_timeunit = function(unit) {
     timeUnit = unit;
-    update_user_history(statisticsData, timeUnit)
+    update_user_history(statisticsData, timeUnit);
   };
 
   /**
@@ -434,4 +434,4 @@ var ProjectStatistics = new function()
           refresh_project_statistics();
         });
   };
-};
+}();

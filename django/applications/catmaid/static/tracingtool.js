@@ -802,7 +802,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-      helpText: "Rename object tree node or current active neuron (Shift key)",
+      helpText: "Rename active neuron",
       keyShortcuts: {
           'F2': [ 113 ]
       },
@@ -810,7 +810,7 @@ function TracingTool()
           if (!mayEdit()) {
               return false;
           }
-          if (e.shiftKey) tracingLayer.svgOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
+          tracingLayer.svgOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
           return true;
       }
   }) );

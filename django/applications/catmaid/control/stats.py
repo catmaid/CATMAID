@@ -188,14 +188,22 @@ def stats_user_history(request, project_id=None):
 
     # Look up all tree nodes for the project in the given date range. Also add
     # a computed field which is just the day of the last edited date/time.
-    treenode_stats = Treenode.objects \
-        .filter(
-            project=project_id,
-            creation_time__range=(start_date, end_date)) \
-        .extra(select={'date': "date_trunc('day', creation_time)"}) \
-        .order_by('user', 'date') \
-        .values_list('user', 'date') \
-        .annotate(count=Count('id'))
+    cursor = connection.cursor();
+    cursor.execute('''\
+        SELECT "treenode"."user_id", (date_trunc('day', creation_time)) AS "date", COUNT("treenode"."id") AS "count"
+          FROM "treenode"
+          INNER JOIN (
+            SELECT "treenode"."skeleton_id", COUNT("treenode"."id") as "skeleton_nodes"
+              FROM "treenode"
+              GROUP BY "treenode"."skeleton_id") as tn2
+            ON "treenode"."skeleton_id" = tn2."skeleton_id"
+          WHERE ("treenode"."project_id" = %(project_id)s
+            AND "treenode"."creation_time" BETWEEN %(start_date)s AND %(end_date)s
+            AND tn2."skeleton_nodes" > 1)
+          GROUP BY "treenode"."user_id", "date"
+          ORDER BY "treenode"."user_id" ASC, "date" ASC''', \
+          dict(project_id=project_id, start_date=start_date, end_date=end_date))
+    treenode_stats = cursor.fetchall()
 
     connector_stats = Connector.objects \
         .filter(

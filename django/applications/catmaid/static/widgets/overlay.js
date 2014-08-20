@@ -591,8 +591,7 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
             downstream_annotation_map: JSON.stringify(downstream_set),
           },
           function () {
-            self.updateNodes();
-            self.selectNode(nodeID);
+            self.updateNodes(function () { self.selectNode(nodeID); });
           },
           true); // block UI
     };

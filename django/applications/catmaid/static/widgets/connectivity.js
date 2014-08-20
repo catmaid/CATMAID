@@ -510,7 +510,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     row.append( $('<td />').addClass('input-container').append( el ) );
     var titleClass = collapsed ? "extend-box-closed" : "extend-box-open";
     var titleCell = $('<td />').html('<span class="' + titleClass +
-            '"></span>ALL (' + partners.length + 'neurons)')
+            '"></span>ALL (' + partners.length + ' neurons)')
     row.append(titleCell);
     row.append($('<td />').addClass('syncount').text(total_synaptic_count));
     if (extraCols) {

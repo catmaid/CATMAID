@@ -566,7 +566,7 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
 SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   // Get ID of the first model available
-  var model = SkeletonAnnotations.sourceView.createModel()
+  var model = SkeletonAnnotations.sourceView.createModel();
   var self = this;
   // Make sure we have permissions to edit the neuron
   this.executeIfSkeletonEditable(model.id, (function() {
@@ -632,7 +632,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                 });
               },
               true); // block UI
-          }
+          };
 
           // A method to use when the to-skeleton has multiple nodes
           var merge_multiple_nodes = function() {
@@ -881,7 +881,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
         return;
     }
     requester(SkeletonAnnotations.getActiveNodeId(), queue[0]);
-  }
+  };
 };
 
 /** Create a node and activate it. */
@@ -1526,7 +1526,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToLastEditedNode = function(skeletonI
      treenode_id: SkeletonAnnotations.getActiveNodeId()},
     function (jso) {
       self.moveTo(jso.z, jso.y, jso.x,
-        function() { self.selectNode(jso.id) });
+        function() { self.selectNode(jso.id); });
     });
 };
 
@@ -1549,7 +1549,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNearestOpenEndNode = function(nodeI
           // Parse location string
           var loc = jso[1].slice(1, -1).split(',').map(parseFloat);
           self.moveTo(loc[2], loc[1], loc[0],
-            function() { self.selectNode(jso[0]) });
+            function() { self.selectNode(jso[0]); });
         }
       });
 };
@@ -1571,7 +1571,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
                 ", reviewed by ";
         // Add review information
         if (jso.reviewers.length > 0) {
-          var reviews = []
+          var reviews = [];
           for (var i=0; i<jso.reviewers.length; ++i) {
             reviews.push(jso.reviewers[i].first_name + " " +
                 jso.reviewers[i].last_name + " (" +
@@ -1880,7 +1880,7 @@ SkeletonAnnotations.Tag = new (function() {
 
   this.hasTagbox = function() {
     return this.tagbox !== null;
-  }
+  };
 
   this.removeTagbox = function() {
     if (this.tagbox) {
@@ -2151,8 +2151,8 @@ SplitMergeDialog.prototype.populate = function(extension) {
       big = document.createElement('div'),
       small = document.createElement('div');
 
-  big.setAttribute('id', 'split_merge_dialog_over_annotations')
-  small.setAttribute('id', 'split_merge_dialog_under_annotations')
+  big.setAttribute('id', 'split_merge_dialog_over_annotations');
+  small.setAttribute('id', 'split_merge_dialog_under_annotations');
 
   // Style annotation list boxes
   big.setAttribute('multiple', 'multiple');
@@ -2379,15 +2379,15 @@ SplitMergeDialog.prototype.get_annotation_set = function(over) {
   }, {});
 
   return annotations;
-}
+};
 
 SplitMergeDialog.prototype.get_over_annotation_set = function() {
   return this.get_annotation_set(true);
-}
+};
 
 SplitMergeDialog.prototype.get_under_annotation_set = function() {
   return this.get_annotation_set(false);
-}
+};
 
 SplitMergeDialog.prototype.get_combined_annotation_set = function() {
   // Get both annotation sets
@@ -2403,7 +2403,7 @@ SplitMergeDialog.prototype.get_combined_annotation_set = function() {
   }
 
   return combined_set;
-}
+};
 
 /**
  * The annotation distribution for a split is only valid if one part keeps the
@@ -2436,7 +2436,7 @@ SplitMergeDialog.prototype.check_merge_annotations = function() {
   // At the moment, all combinations of annotations (even selecting none!) are
   // allowed. If a user is shown the dialog, (s)he can do whatever (s)he wants.
   return true;
-}
+};
 
 SplitMergeDialog.prototype.show = function(extension) {
   var self = this;

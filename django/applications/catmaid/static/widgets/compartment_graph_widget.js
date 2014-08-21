@@ -875,7 +875,7 @@ GroupGraph.prototype.appendGroup = function(models) {
     names.unshift("--");
 
     var options = new OptionsDialog("Group properties");
-    options.appendMessage("Creating new group with " + names.length + " neurons.");
+    options.appendMessage("Creating new group with " + (names.length - 1) + " neurons.");
     options.appendMessage("Choose a group name from:");
     options.appendMessage("(Will pick first non-empty match.)");
     options.appendChoice("Common annotations: ", "gg-common", common, common, common[0]);

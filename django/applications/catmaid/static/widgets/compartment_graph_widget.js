@@ -850,7 +850,8 @@ GroupGraph.prototype.appendGroup = function(models) {
 
     // Find common annotations, if any
     var skids = Object.keys(json);
-    var common = json[skids[0]].filter(function(annotation) {
+    var common = skids.length > 0 ? json[skids[0]] : [];
+    common = common.filter(function(annotation) {
       return skids.reduce(function(all, skid) {
         return all && -1 !== json[skid].indexOf(annotation);
       }, true);

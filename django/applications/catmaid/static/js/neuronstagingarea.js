@@ -772,9 +772,10 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
           sel.empty();
         } else {
           var cw = Raphael.colorwheel(sel[0], 150);
-          cw.color('#' + skeleton.color.getHexString());
-          cw.onchange(function(color) {
+          cw.color('#' + skeleton.color.getHexString(), skeleton.opacity);
+          cw.onchange(function(color, alpha) {
             skeleton.color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
+            skeleton.opacity = alpha;
             table.gui.update_skeleton_color_button(skeleton);
             table.notifyLink(skeleton);
           });
@@ -865,13 +866,14 @@ SelectionTable.prototype.filteredSkeletons = function(only_selected) {
   return this.skeletons;
 };
 
-SelectionTable.prototype.batchColorSelected = function(rgb) {
+SelectionTable.prototype.batchColorSelected = function(rgb, alpha) {
   var c = [parseInt(rgb.r) / 255.0,
            parseInt(rgb.g) / 255.0,
            parseInt(rgb.b) / 255.0];
   this.getSelectedSkeletons().forEach(function(skid) {
     var skeleton = this.skeletons[this.skeleton_ids[skid]];
     skeleton.color.setRGB(c[0], c[1], c[2]);
+    skeleton.opacity = alpha;
     this.gui.update_skeleton_color_button(skeleton);
     this.notifyLink(skeleton); // TODO need a batchNotifyLink
   }, this);

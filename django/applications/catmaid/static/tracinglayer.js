@@ -24,17 +24,17 @@ function TracingLayer( stack )
   {
     self.svgOverlay.redraw( stack );
     return;
-  }
+  };
 
 
   this.beforeMove = function (completionCallback) {
     this.svgOverlay.updateNodeCoordinatesinDB(completionCallback);
-  }
+  };
 
   this.getOpacity = function()
   {
     return self.opacity;
-  }
+  };
 
   this.setOpacity = function ( val )
   {
@@ -61,7 +61,7 @@ function TracingLayer( stack )
     // this fetches from the database, e.g. after deleting a node in the object tree
     self.svgOverlay.updateNodes();
     self.svgOverlay.redraw( stack );
-  }
+  };
   */
 
   this.unregister = function()
@@ -74,12 +74,11 @@ function TracingLayer( stack )
   {
     // TODO: implement removal
     // see tilelayer.js
-  }
+  };
 
   this.reattachTileLayer = function()
   {
     // TODO: implement readding of the layer
     // see tilelayer.js
-  }
-
-}
+  };
+};

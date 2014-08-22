@@ -530,8 +530,10 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, 
   return nearestnode;
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z, node) {
+SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z, node, exclusion) {
   var a, b, p, ab, ap, r, ablen;
+
+  exclusion = exclusion || 0;
 
   a = new THREE.Vector3(this.pix2physX(node.x),
                         this.pix2physY(node.y),
@@ -545,24 +547,25 @@ SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z
   if (ablen === 0) return {point: a, distsq: p.distanceToSquared(a)};
   ap = new THREE.Vector3().subVectors(p, a);
   r = ab.dot(ap)/ablen;
+  exclusion *= exclusion/ablen;
 
-  if (r < 0) return {point: a, distsq: ap.lengthSq()};
-  else if (r > 1) return {point: b, distsq: p.distanceToSquared(b)};
-  else {
-    a.lerp(b, r);
-    return  {point: a, distsq: p.distanceToSquared(a)};
-  }
+  if (r < 0) r = exclusion;
+  else if (r > 1) r = 1 - exclusion;
+
+  a.lerp(b, r);
+  return  {point: a, distsq: p.distanceToSquared(a)};
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (x, y, z, skeleton_id) {
   var tmp, mindistsq = Infinity, nearestnode = null, nearestpoint = null, node, parent;
+  var phys_radius = (30.0 / this.stack.scale) * Math.max(this.stack.resolution.x, this.stack.resolution.y);
 
   for (var nodeid in this.nodes) {
     if (this.nodes.hasOwnProperty(nodeid)) {
       node = this.nodes[nodeid];
 
       if (node.skeleton_id === skeleton_id && node.parent !== null) {
-        tmp = this.pointEdgeDistanceSq(x, y, z, node);
+        tmp = this.pointEdgeDistanceSq(x, y, z, node, phys_radius);
         if (tmp.distsq < mindistsq) {
           mindistsq = tmp.distsq;
           nearestnode = node;

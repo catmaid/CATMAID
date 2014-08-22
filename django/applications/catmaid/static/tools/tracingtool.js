@@ -589,6 +589,18 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
+    helpText: "Toggle the display of slice controls",
+    buttonName: "togglecontrols",
+    buttonID: "trace_button_togglecontrols",
+    keyShortcuts: {
+      "8": [ 56 ]
+    },
+    run: function (e) {
+      $('.TilelayerControl, .sliceBenchmark').toggle();
+    }
+  }) );
+
+  this.addAction( new Action({
     helpText: "Switch between a terminal and its connector",
     keyShortcuts: {
       "S": [ 83 ]

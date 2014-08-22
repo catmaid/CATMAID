@@ -530,6 +530,8 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, 
   return nearestnode;
 };
 
+/** Find the point along the edge from node to node.parent nearest (x, y, z),
+ *  optionally exluding a radius around the nodes. */
 SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z, node, exclusion) {
   var a, b, p, ab, ap, r, ablen;
 
@@ -549,6 +551,9 @@ SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z
   r = ab.dot(ap)/ablen;
   exclusion *= exclusion/ablen;
 
+  // If r is not in [0, 1], the point nearest the line through the node and
+  // its parent lies beyond the edge between them, so clamp the point to the
+  // edge excluding a radius near the nodes.
   if (r < 0) r = exclusion;
   else if (r > 1) r = 1 - exclusion;
 
@@ -556,6 +561,8 @@ SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z
   return  {point: a, distsq: p.distanceToSquared(a)};
 };
 
+/** Find the point nearest physical coordinates (x, y, z) nearest the
+ *  specified skeleton */
 SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (x, y, z, skeleton_id) {
   var tmp, mindistsq = Infinity, nearestnode = null, nearestpoint = null, node, parent;
   var phys_radius = (30.0 / this.stack.scale) * Math.max(this.stack.resolution.x, this.stack.resolution.y);
@@ -1004,6 +1011,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
           growlAlert('BEWARE', 'Node added beyond one section from its parent node!');
         }
 
+        // Invoke callback if necessary
         if (afterCreate) afterCreate(self, nn);
       });
 };
@@ -1275,6 +1283,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
       var insertion = this.findNearestSkeletonPoint(phys_x, phys_y, phys_z, atn.skeleton_id);
       this.createNode(insertion.node.parent.id, insertion.point.x, insertion.point.y, phys_z,
         -1, 5, this.phys2pixX(insertion.point.x), this.phys2pixY(insertion.point.y), this.phys2pixZ(phys_z),
+        // Callback after creating the new node to make it the parent of the node it was inserted before
         function (self, nn) {
           self.submit(
             django_url + project.id + '/treenode/' + insertion.node.id + '/parent',

@@ -28,7 +28,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'catmaid.middleware.AnonymousAuthenticationMiddleware',
-    'catmaid.middleware.AjaxExceptionMiddleware', 
+    'catmaid.middleware.AjaxExceptionMiddleware',
 )
 
 ROOT_URLCONF = 'mysite.urls'
@@ -48,6 +48,7 @@ INSTALLED_APPS = (
     'vncbrowser',
     'guardian',
     'south',
+    'pipeline',
 )
 
 # Use the default template context processors. If custom ones should be
@@ -123,6 +124,27 @@ CELERY_IMPORTS = (
     'catmaid.control.roi',
     'catmaid.control.treenodeexport',
 )
+
+# We use django-pipeline to compress and reference JavaScript and CSS files. To
+# make Pipeline integrate with staticfiles (and therefore collectatic calls)
+# the STATICFILES_STORAGE variable has to be set to:
+STATICFILES_STORAGE = 'pipeline.storage.PipelineStorage'
+
+# Disable django-pipeline compression for now.
+PIPELINE_CSS_COMPRESSOR = None
+
+PIPELINE_CSS = {
+    'catmaid': {
+        'source_filenames': (
+            'widgets/*.css',
+            'widgets/themes/kde/*.css',
+        ),
+        'output_filename': 'css/catmaid.css',
+        'extra_context': {
+            'media': 'screen,projection',
+        }
+    },
+}
 
 # A couple of functions useful for generating default directories to
 # be used in the settings files:

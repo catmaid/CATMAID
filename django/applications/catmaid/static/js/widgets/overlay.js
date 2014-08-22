@@ -1273,8 +1273,8 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     if (e.altKey && null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
       // Insert a treenode along an edge on the active skeleton
       var insertion = this.findNearestSkeletonPoint(phys_x, phys_y, phys_z, atn.skeleton_id);
-      this.createNode(insertion.node.parent.id, insertion.point.x, insertion.point.y, insertion.point.z,
-        -1, 5, this.phys2pixX(insertion.point.x), this.phys2pixY(insertion.point.y), this.phys2pixZ(insertion.point.z),
+      this.createNode(insertion.node.parent.id, insertion.point.x, insertion.point.y, phys_z,
+        -1, 5, this.phys2pixX(insertion.point.x), this.phys2pixY(insertion.point.y), this.phys2pixZ(phys_z),
         function (self, nn) {
           self.submit(
             django_url + project.id + '/treenode/' + insertion.node.id + '/parent',

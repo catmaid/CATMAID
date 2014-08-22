@@ -736,6 +736,7 @@ function TracingTool()
     result += '<strong>shift-alt-click in space:</strong> create a synapse with the active treenode as postsynaptic.<br />';
     result += '<strong>shift-click in space:</strong> create a post-synaptic node (if there was an active connector)<br />';
     result += '<strong>shift-click on a treenode:</strong> join two skeletons (if there was an active treenode)<br />';
+    result += '<strong>alt-ctrl-click in space:</strong> adds a node along the nearest edge of the active skeleton<br />';
     result += '</p>';
     return result;
   };

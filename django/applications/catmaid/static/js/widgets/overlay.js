@@ -530,6 +530,50 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, 
   return nearestnode;
 };
 
+SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z, node) {
+  var a, b, p, ab, ap, r, ablen;
+
+  a = new THREE.Vector3(this.pix2physX(node.x),
+                        this.pix2physY(node.y),
+                        this.pix2physZ(node.z));
+  b = new THREE.Vector3(this.pix2physX(node.parent.x),
+                        this.pix2physY(node.parent.y),
+                        this.pix2physZ(node.parent.z));
+  p = new THREE.Vector3(x, y, z);
+  ab = new THREE.Vector3().subVectors(b, a);
+  ablen = ab.lengthSq();
+  if (ablen === 0) return {point: a, distsq: p.distanceToSquared(a)};
+  ap = new THREE.Vector3().subVectors(p, a);
+  r = ab.dot(ap)/ablen;
+
+  if (r < 0) return {point: a, distsq: ap.lengthSq()};
+  else if (r > 1) return {point: b, distsq: p.distanceToSquared(b)};
+  else {
+    a.lerp(b, r);
+    return  {point: a, distsq: p.distanceToSquared(a)};
+  }
+};
+
+SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (x, y, z, skeleton_id) {
+  var tmp, mindistsq = Infinity, nearestnode = null, nearestpoint = null, node, parent;
+
+  for (var nodeid in this.nodes) {
+    if (this.nodes.hasOwnProperty(nodeid)) {
+      node = this.nodes[nodeid];
+
+      if (node.skeleton_id === skeleton_id && node.parent !== null) {
+        tmp = this.pointEdgeDistanceSq(x, y, z, node);
+        if (tmp.distsq < mindistsq) {
+          mindistsq = tmp.distsq;
+          nearestnode = node;
+          nearestpoint = tmp.point;
+        }
+      }
+    }
+  }
+  return {node: nearestnode, point: nearestpoint};
+};
+
 /** Remove and hide all node labels. */
 SkeletonAnnotations.SVGOverlay.prototype.hideLabels = function() {
   document.getElementById( "trace_button_togglelabels" ).className = "button";
@@ -911,7 +955,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
 };
 
 /** Create a node and activate it. */
-SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate) {
   if (!parentID) { parentID = -1; }
 
   // Check if we want the newly create node to be a model of an existing empty neuron
@@ -956,6 +1000,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
         if (active_node_z !== null && Math.abs(active_node_z - nn.z) > self.stack.resolution.z) {
           growlAlert('BEWARE', 'Node added beyond one section from its parent node!');
         }
+
+        if (afterCreate) afterCreate(self, nn);
       });
 };
 
@@ -1221,15 +1267,31 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
 
   // e.metaKey should correspond to the command key on Mac OS
   if (e.ctrlKey || e.metaKey) {
-    // ctrl-click deselects the current active node
-    if (null !== atn.id) {
-      statusBar.replaceLast("Deactivated node #" + atn.id);
-    }
-    SkeletonAnnotations.clearTopbar(this.stack.getId());
-    this.activateNode(null);
-    if (!e.shiftKey) {
+    if (e.altKey && null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
+      // Insert a treenode along an edge on the active skeleton
+      var insertion = this.findNearestSkeletonPoint(phys_x, phys_y, phys_z, atn.skeleton_id);
+      this.createNode(insertion.node.parent.id, insertion.point.x, insertion.point.y, insertion.point.z,
+        -1, 5, this.phys2pixX(insertion.point.x), this.phys2pixY(insertion.point.y), this.phys2pixZ(insertion.point.z),
+        function (self, nn) {
+          self.submit(
+            django_url + project.id + '/treenode/' + insertion.node.id + '/parent',
+            {parent_id: nn.id},
+            function(json) {
+              self.updateNodes();
+            });
+        });
       e.stopPropagation();
-    } // else, a node under the mouse will be removed
+    } else {
+      // ctrl-click deselects the current active node
+      if (null !== atn.id) {
+        statusBar.replaceLast("Deactivated node #" + atn.id);
+      }
+      SkeletonAnnotations.clearTopbar(this.stack.getId());
+      this.activateNode(null);
+      if (!e.shiftKey) {
+        e.stopPropagation();
+      } // else, a node under the mouse will be removed
+    }
   } else if (e.shiftKey) {
     if (null === atn.id) {
       if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {

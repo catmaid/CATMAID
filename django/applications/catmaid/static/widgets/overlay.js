@@ -1150,6 +1150,15 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     e.stopPropagation();
     return;
   }
+
+  // Only process the click event, if it was targeted at the view of this
+  // overlay. The event is not stopped from bubbling up to make it possible to
+  // handle at other places. Currently this triggers the activation of the other
+  // view.
+  if (e.currentTarget !== this.view) {
+    return;
+  }
+
   var m = ui.getMouse(e, this.view);
 
   if (!mayEdit()) {

@@ -150,6 +150,24 @@ div.TilelayerControl .layerControl
 	margin:0 0 10px 0;
 }
 
+div.stackControlToggle
+{
+	position:absolute;
+	bottom:0px;
+	left:0px;
+	overflow:hidden;
+	margin:0px;
+	padding:0px;
+	width:16px;
+	height:16px;
+	border:none 0px;
+	border-top:solid 4px #000000;
+	border-right:solid 4px #000000;
+	background:#0000FF url(hslider_handle.svg) no-repeat center;
+	cursor:pointer;
+	z-index:10;
+}
+
 div.sliceView div.sliceMouseCatcher
 {
 	position:absolute;

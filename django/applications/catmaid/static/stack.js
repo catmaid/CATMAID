@@ -822,6 +822,19 @@ function Stack(
 	scaleBar.firstChild.firstChild.appendChild( document.createTextNode( "test" ) );
 	view.appendChild( scaleBar );
 
+	var controlToggle = document.createElement( "div" );
+	controlToggle.className = "stackControlToggle";
+	controlToggle.title = "show/hide slice controls";
+	controlToggle.onmousedown = function(e) {
+		if ( typeof event != "undefined" && event )
+			event.cancelBubble = true;
+		if ( e && e.stopPropagation )
+			e.stopPropagation();
+		var state = $(this).siblings('.TilelayerControl, .sliceBenchmark').toggle().is(':visible');
+		$(this).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
+	};
+	view.appendChild( controlToggle );
+
 	self.metadata = metadata;
 	if ( metadata.length > 0 ) {
 		var metadataDisplay = document.createElement( "div" );

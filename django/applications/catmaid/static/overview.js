@@ -45,7 +45,7 @@ function Overview( stack )
 	
 	var onmouseup = function( e )
 	{
-		ui.releaseEvents()
+		ui.releaseEvents();
 		ui.removeEvent( "onmousemove", onmousemove );
 		ui.removeEvent( "onmouseup", onmouseup );
 		return false;
@@ -85,7 +85,7 @@ function Overview( stack )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
 		return;
-	}
+	};
 	
 	/**
 	 * Remove a layer specified by its key.  If no layer with this key exists,
@@ -103,7 +103,7 @@ function Overview( stack )
 		}
 		else
 			return null;
-	}
+	};
 	
 	var self = this;
 	
@@ -132,14 +132,6 @@ function Overview( stack )
 	var rect = document.createElement( "div" );
 	rect.className = "smallMapRect";
 	rect.onmousedown = onmousedown.drag;
-	//function( e )
-	//{
-		//if ( typeof event != "undefined" && event )
-			//event.cancelBubble = true;
-		//if ( e && e.stopPropagation )
-			//e.stopPropagation();
-
-	//}
 	view.appendChild( rect );
 
     var hide = function() {
@@ -155,7 +147,7 @@ function Overview( stack )
         view.style.width = width + "px";
         view.style.height = height + "px";
         self.redraw();
-    }
+    };
 	
 	var toggle = document.createElement( "div" );
 	toggle.className = "smallMapToggle";

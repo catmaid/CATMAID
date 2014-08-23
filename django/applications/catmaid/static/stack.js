@@ -830,7 +830,8 @@ function Stack(
 			event.cancelBubble = true;
 		if ( e && e.stopPropagation )
 			e.stopPropagation();
-		$(this).siblings('.TilelayerControl, .sliceBenchmark').toggle();
+		var state = $(this).siblings('.TilelayerControl, .sliceBenchmark').toggle().is(':visible');
+		$(this).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
 	};
 	view.appendChild( controlToggle );
 

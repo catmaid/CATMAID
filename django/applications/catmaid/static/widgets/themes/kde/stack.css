@@ -150,7 +150,8 @@ div.TilelayerControl .layerControl
 	margin:0 0 10px 0;
 }
 
-div.stackControlToggle
+div.stackControlToggle,
+div.stackControlToggle_hidden
 {
 	position:absolute;
 	bottom:0px;
@@ -163,8 +164,13 @@ div.stackControlToggle
 	border:none 0px;
 	border-top:solid 4px #000000;
 	border-right:solid 4px #000000;
-	background:#0000FF url(hslider_handle.svg) no-repeat center;
+	background:#0000FF url(slice_control_toggle_hide.svg) no-repeat center;
 	z-index:10;
+}
+
+div.stackControlToggle_hidden
+{
+	background:#0000FF url(slice_control_toggle_show.svg) no-repeat center;
 }
 
 div.sliceView div.sliceMouseCatcher

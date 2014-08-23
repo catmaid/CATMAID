@@ -164,7 +164,6 @@ div.stackControlToggle
 	border-top:solid 4px #000000;
 	border-right:solid 4px #000000;
 	background:#0000FF url(hslider_handle.svg) no-repeat center;
-	cursor:pointer;
 	z-index:10;
 }
 

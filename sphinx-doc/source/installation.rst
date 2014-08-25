@@ -97,13 +97,16 @@ shells, for example, you will need to activate it by running::
 
     workon catmaid
 
-Ubuntu 12.04 ships a rather old version of Pip, the tool we use to install
-Python packages within the virtualenv. Let's update it therefor first---within
-the virtualenv::
+.. note::
 
-    pip install pip==1.5.4
+    On Ubuntu versions before 14.04 a rather old version of Pip is shipped.
+    This is the tool we use to install Python packages within the virtualenv, so
+    let's update it therefor first---within the virtualenv::
 
-You can probably use a later version as well, but we tested it with Pip v1.5.4.
+        pip install pip==1.5.4
+
+    You can probably use a later version as well, but we tested it with Pip
+    v1.5.4.
 
 Due to `a dependency problem
 <https://github.com/h5py/h5py/issues/96>`_, we need to install

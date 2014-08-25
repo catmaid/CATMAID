@@ -167,11 +167,24 @@ var NeuronNameService = function()
   };
 
   /**
-   * Removes all references to the given client.
+   * Unregisters the skeletons in skids from the client, removing them from the
+   * set of skeletons managed by the service if no other clients are registered
+   * to those skeletons.
+   *
+   * If called with only one argument, removes all references to the given 
+   * client.
    */
-  this.unregister = function(client)
+  this.unregister = function(client, skids)
   {
-    for (var skid in managedSkeletons) {
+    // If only one argument was passed, unregister the client completely.
+    var unregisterAll = typeof skids === "undefined";
+    // If skids is undefined or null, unregister from all managedSkeletons.
+    // Note that this allows a client to call unregister(this, null), which
+    // will unregister all of its skeletons without unregistering the client
+    // from being notified on update.
+    skids = skids || Object.keys(managedSkeletons);
+
+    for (var skid in skids) {
       var cIdx =  managedSkeletons[skid].clients.indexOf(client);
       if (-1 !== cIdx) {
         // Remove whole skeleton from managed list, if this is the only client
@@ -185,9 +198,11 @@ var NeuronNameService = function()
       }
     }
 
-    var cIdx = clients.indexOf(client);
-    if (-1 !== cIdx) {
-      clients.splice(cIdx, 1);
+    if (unregisterAll) {
+      var cIdx = clients.indexOf(client);
+      if (-1 !== cIdx) {
+        clients.splice(cIdx, 1);
+      }
     }
   };
 

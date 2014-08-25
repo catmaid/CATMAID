@@ -302,8 +302,7 @@ ActiveSkeleton.prototype.hasSkeleton = function(skeleton_id) {
 ActiveSkeleton.prototype.createModel = function() {
 	var active = SkeletonAnnotations.getActiveSkeletonId();
 	if (!active) return null;
-	var name = $('#neuronName' + SkeletonAnnotations.getActiveStackId()).text();
-	name = name.substring(0, name.lastIndexOf(' (Sk'));
+	var name = neuronNameService.getName(active);
   return new SelectionTable.prototype.SkeletonModel(active, name, new THREE.Color().setRGB(1, 1, 0));
 };
 

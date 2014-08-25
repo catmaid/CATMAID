@@ -184,16 +184,19 @@ var NeuronNameService = function()
     // from being notified on update.
     skids = skids || Object.keys(managedSkeletons);
 
-    for (var skid in skids) {
-      var cIdx =  managedSkeletons[skid].clients.indexOf(client);
-      if (-1 !== cIdx) {
-        // Remove whole skeleton from managed list, if this is the only client
-        // linked to it.
-        if (1 === managedSkeletons[skid].clients.length) {
-          delete managedSkeletons[skid];
-        } else {
-          // Delete client from list
-          managedSkeletons[skid].clients.splice(cIdx, 1);
+    for (var idx in skids) {
+      var skid = skids[idx];
+      if (skid in managedSkeletons) {
+        var cIdx = managedSkeletons[skid].clients.indexOf(client);
+        if (-1 !== cIdx) {
+          // Remove whole skeleton from managed list, if this is the only client
+          // linked to it.
+          if (1 === managedSkeletons[skid].clients.length) {
+            delete managedSkeletons[skid];
+          } else {
+            // Delete client from list
+            managedSkeletons[skid].clients.splice(cIdx, 1);
+          }
         }
       }
     }

@@ -279,10 +279,10 @@ development server, this would be::
 
     http://localhost:8000/admin/
 
-... or if your CATMAID instance is at
-``http://myserver.example.org/catmaid``, it would be at::
+... or, to use the variables used in the ``configuration.py`` (see step 4), the
+URL would be::
 
-    http://myserver.example.org/catmaid/admin/
+    http://<catmaid_servername>/<catmaid_subdirectory>/admin/
 
 12. Creating tiles for new CATMAID stacks
 #########################################

@@ -39,7 +39,7 @@ Configuring Data Views
 ----------------------
 
 To add new or modify the present views, the Django admin interface is
-used. By default, you'll find it at *http://<CATMAID-URL>/dj/admin*
+used. By default, you'll find it at *http://<CATMAID-URL>/admin*
 or a similar URL. It is not necessarily the case, that every CATMAID
 user can administer data views. This depends on the permissions granted and
 in case you can't log-in or don't see the relevant parts within the admin

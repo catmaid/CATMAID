@@ -127,7 +127,7 @@ var NeuronNameService = function()
   this.register = function(client, model, callback)
   {
     this.registerAll(client, [model], callback);
-  }
+  };
 
   /**
    * Makes all given skeletons known to the naming service and registers the
@@ -151,7 +151,7 @@ var NeuronNameService = function()
         };
         unknownSkids.push(skid);
       }
-    };
+    }
 
     // Add client to the list of known clients.
     if (-1 === clients.indexOf(client)) {
@@ -284,7 +284,7 @@ var NeuronNameService = function()
               // annotation.
               var label = metaLabel(annotations.getID(l.option));
               if (null !== label) {
-                return label
+                return label;
               }
             }
           } else if ('own' === l.id) {
@@ -307,7 +307,7 @@ var NeuronNameService = function()
               // annotation.
               var label = metaLabel(annotations.getID(l.option), session.userid);
               if (null !== label) {
-                return label
+                return label;
               }
             }
           }

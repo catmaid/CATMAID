@@ -107,7 +107,7 @@ function TracingTool()
     spanName.appendChild( document.createTextNode( "" ) );
     neuronnameDisplay.appendChild( spanName );
     stack.getWindow().getFrame().appendChild( neuronnameDisplay );
-    tracingLayer.svgOverlay.updateNeuronNameLabel(stack.getId(), SkeletonAnnotations.getActiveSkeletonId());
+    SkeletonAnnotations.setNeuronNameInTopbar(stack.getId(), SkeletonAnnotations.getActiveSkeletonId());
   };
 
   /**

@@ -1447,10 +1447,6 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
     var new_name = prompt("Rename", this.neuron_name);
     if (!new_name) return;
     neuronNameService.renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
-        // Update UI
-        if (this.skeleton_ids.some(function(skid) { return skid === SkeletonAnnotations.getActiveSkeletonId();})) {
-          SkeletonAnnotations.setNeuronNameInTopbar(project.focusedStack.id, new_name, SkeletonAnnotations.getActiveSkeletonId());
-        }
         $('div.nodeneuronname', container).html('Name: ' + new_name);
         this.neuron_name = new_name;
     }).bind(this));

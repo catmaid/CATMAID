@@ -24,10 +24,9 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.divID = divID;
 	this.container = document.getElementById(divID);
 	this.stack = project.focusedStack;
-	this.scale = 50.0 / this.stack.dimension.x;
   this.submit = new submitterFn();
 	this.options = new WebGLApplication.prototype.OPTIONS.clone();
-	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.scale);
+	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack);
   this.updateActiveNodePosition();
 	this.initialized = true;
 };
@@ -182,7 +181,7 @@ WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(id) {
 WebGLApplication.prototype.OPTIONS = new WebGLApplication.prototype.Options();
 
 WebGLApplication.prototype.updateZPlane = function() {
-	this.space.staticContent.updateZPlanePosition(this.stack, this.scale);
+	this.space.staticContent.updateZPlanePosition(this.stack);
 	this.space.render();
 };
 
@@ -774,33 +773,32 @@ WebGLApplication.prototype.configureParameters = function() {
 
 
 /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
-WebGLApplication.prototype.Space = function( w, h, container, stack, scale ) {
+WebGLApplication.prototype.Space = function( w, h, container, stack ) {
 	this.stack = stack;
   this.container = container; // used by MouseControls
 
-	// Scale at which to show the objects
-	this.scale = scale;
-
 	this.canvasWidth = w;
 	this.canvasHeight = h;
-	this.yDimensionUnscaled = stack.dimension.y * stack.resolution.y;
+	this.yDimension = stack.dimension.y * stack.resolution.y;
 
 	// Absolute center in Space coordinates (not stack coordinates)
 	this.center = this.createCenter();
-	this.dimensions = new THREE.Vector3(stack.dimension.x * stack.resolution.x * scale, stack.dimension.y * stack.resolution.y * scale, stack.dimension.z * stack.resolution.z * scale);
+	this.dimensions = new THREE.Vector3(stack.dimension.x * stack.resolution.x,
+                                      stack.dimension.y * stack.resolution.y,
+                                      stack.dimension.z * stack.resolution.z);
 
 	// WebGL space
 	this.scene = new THREE.Scene();
 	this.view = new this.View(this);
-	this.lights = this.createLights(stack.dimension, stack.resolution, scale, this.view.camera);
+	this.lights = this.createLights(stack.dimension, stack.resolution, this.view.camera);
 	this.lights.forEach(this.scene.add, this.scene);
 
 	// Content
-	this.staticContent = new this.StaticContent(stack, this.center, scale);
+	this.staticContent = new this.StaticContent(this.dimensions, stack, this.center);
 	this.scene.add(this.staticContent.box);
 	this.scene.add(this.staticContent.floor);
 
-	this.content = new this.Content(scale);
+	this.content = new this.Content();
 	this.scene.add(this.content.active_node.mesh);
 };
 
@@ -818,21 +816,20 @@ WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canva
 	 In other words, transform coordinates from CATMAID coordinate system
 	 to WebGL coordinate system: x->x, y->y+dy, z->-z */
 WebGLApplication.prototype.Space.prototype.toSpace = function(v3) {
-	v3.x *= this.scale;
-	v3.y = this.scale * (this.yDimensionUnscaled - v3.y);
-	v3.z = -v3.z * this.scale;
+	v3.y = this.yDimension - v3.y;
+	v3.z = -v3.z;
 	return v3;
 };
 
 /** Transform axes but do not scale. */
 WebGLApplication.prototype.Space.prototype.coordsToUnscaledSpace = function(x, y, z) {
-	return [x, this.yDimensionUnscaled - y, -z];
+	return [x, this.yDimension - y, -z];
 };
 
 /** Starting at i, edit i, i+1 and i+2, which represent x, y, z of a 3d point. */
 WebGLApplication.prototype.Space.prototype.coordsToUnscaledSpace2 = function(vertices, i) {
 	// vertices[i] equal
-	vertices[i+1] =  this.yDimensionUnscaled -vertices[i+1];
+	vertices[i+1] =  this.yDimension -vertices[i+1];
 	vertices[i+2] = -vertices[i+2];
 };
 
@@ -851,17 +848,17 @@ WebGLApplication.prototype.Space.prototype.createCenter = function() {
 };
 
 
-WebGLApplication.prototype.Space.prototype.createLights = function(dimension, resolution, scale, camera) {
+WebGLApplication.prototype.Space.prototype.createLights = function(dimension, resolution, camera) {
 	var ambientLight = new THREE.AmbientLight( 0x505050 );
 
   var pointLight = new THREE.PointLight( 0xffaa00 );
-	pointLight.position.set(dimension.x * resolution.x * scale,
-                          dimension.y * resolution.y * scale,
+	pointLight.position.set(dimension.x * resolution.x,
+                          dimension.y * resolution.y,
 													50);
 
 	var light = new THREE.SpotLight( 0xffffff, 1.5 );
-	light.position.set(dimension.x * resolution.x * scale / 2,
-										 dimension.y * resolution.y * scale / 2,
+	light.position.set(dimension.x * resolution.x / 2,
+										 dimension.y * resolution.y / 2,
 										 50);
 	light.castShadow = true;
 	light.shadowCameraNear = 200;
@@ -938,7 +935,7 @@ WebGLApplication.prototype.Space.prototype.updateSplitShading = function(old_ske
 WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
 	this.geometryCache = {};
 
-	this.getTagGeometry = function(tagString, scale) {
+	this.getTagGeometry = function(tagString) {
 		if (tagString in this.geometryCache) {
 			var e = this.geometryCache[tagString];
 			e.refs += 1;
@@ -946,8 +943,8 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
 		}
 		// Else create, store, and return a new one:
 		var text3d = new THREE.TextGeometry( tagString, {
-			size: 100 * scale,
-			height: 20 * scale,
+			size: 100,
+			height: 20,
 			curveSegments: 1,
 			font: "helvetiker"
 		});
@@ -968,8 +965,8 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
     }
 	};
 
-  this.createTextMesh = function(tagString, scale, material) {
-    var text = new THREE.Mesh(this.getTagGeometry(tagString, scale), material);
+  this.createTextMesh = function(tagString, material) {
+    var text = new THREE.Mesh(this.getTagGeometry(tagString), material);
     text.visible = true;
     return text;
   };
@@ -982,18 +979,18 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
   };
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent = function(stack, center, scale) {
+WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, stack, center) {
 	// Space elements
-	this.box = this.createBoundingBox(center, stack.dimension, stack.resolution, scale);
-	this.floor = this.createFloor();
+	this.box = this.createBoundingBox(center, stack.dimension, stack.resolution);
+	this.floor = this.createFloor(dimensions);
 
 	this.zplane = null;
 
 	this.missing_sections = [];
 
 	// Shared across skeletons
-  this.labelspheregeometry = new THREE.OctahedronGeometry( 130 * scale, 3);
-  this.radiusSphere = new THREE.OctahedronGeometry( 40 * scale, 3);
+  this.labelspheregeometry = new THREE.OctahedronGeometry( 130, 3);
+  this.radiusSphere = new THREE.OctahedronGeometry( 40, 3);
   this.icoSphere = new THREE.IcosahedronGeometry(1, 2);
   this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
   this.textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
@@ -1037,10 +1034,10 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.dispose = fun
   this.synapticColors[1].dispose();
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(center, dimension, resolution, scale) {
-  var width = dimension.x * resolution.x * scale;
-  var height = dimension.y * resolution.y * scale;
-  var depth = dimension.z * resolution.z * scale;
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(center, dimension, resolution) {
+  var width = dimension.x * resolution.x;
+  var height = dimension.y * resolution.y;
+  var depth = dimension.z * resolution.z;
   var geometry = new THREE.CubeGeometry( width, height, depth );
   var material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
   var mesh = new THREE.Mesh( geometry, material );
@@ -1048,18 +1045,31 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundin
 	return mesh;
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor = function() {
-    var line_material = new THREE.LineBasicMaterial( { color: 0x535353 } ),
-        geometry = new THREE.Geometry(),
-        floor = 0,
-        step = 25;
-    for ( var i = 0; i <= 40; i ++ ) {
-      geometry.vertices.push( new THREE.Vector3( - 500, floor, i * step - 500 ) );
-      geometry.vertices.push( new THREE.Vector3(   500, floor, i * step - 500 ) );
-      geometry.vertices.push( new THREE.Vector3( i * step - 500, floor, -500 ) );
-      geometry.vertices.push( new THREE.Vector3( i * step - 500, floor,  500 ) );
+/**
+ * Creates a THREE.js line object that represents a floor grid. It is twice the
+ * size of the current space in both X and Y. Make the grid spacing a 10th of
+ * the smallest side of the bounding box. It is positioned around the center of
+ * the dimensions.
+ */
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor = function(dimensions) {
+    var line_material = new THREE.LineBasicMaterial( { color: 0x535353 } );
+    var geometry = new THREE.Geometry();
+    var floor = 0;
+    var min_x = -1.0 * dimensions.x, max_x = 2.0 * dimensions.x;
+    var min_z = -1.0 * dimensions.z, max_z = 2.0 * dimensions.z;
+    var numSteps = 10;
+    var xStep = (3 * dimensions.x) / numSteps;
+    var yStep = (3 * dimensions.z) / numSteps;
 
+    for (var i = 0; i < numSteps; ++i ) {
+      var x = min_x + i * xStep;
+      geometry.vertices.push( new THREE.Vector3( x, floor, min_z ) );
+      geometry.vertices.push( new THREE.Vector3( x, floor, max_z ) );
+      var z = min_z + i * yStep;
+      geometry.vertices.push( new THREE.Vector3( min_x, floor, z ) );
+      geometry.vertices.push( new THREE.Vector3( max_x, floor, z ) );
     }
+
     return new THREE.Line( geometry, line_material, THREE.LinePieces );
 };
 
@@ -1088,18 +1098,18 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.adjust = func
 
 	if (this.zplane) space.scene.remove(this.zplane);
 	if (options.show_zplane) {
-		this.zplane = this.createZPlane(space.stack, space.scale);
-    this.updateZPlanePosition(space.stack, space.scale);
+		this.zplane = this.createZPlane(space.stack);
+    this.updateZPlanePosition(space.stack);
 		space.scene.add(this.zplane);
 	} else {
 		this.zplane = null;
 	}
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(stack, scale) {
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(stack) {
 	var geometry = new THREE.Geometry(),
-	    xwidth = stack.dimension.x * stack.resolution.x * scale,
-			ywidth = stack.dimension.y * stack.resolution.y * scale,
+	    xwidth = stack.dimension.x * stack.resolution.x,
+			ywidth = stack.dimension.y * stack.resolution.y,
 	    material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide } );
 
 	geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
@@ -1111,9 +1121,9 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane 
 	return new THREE.Mesh( geometry, material );
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(stack, scale) {
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(stack) {
 	if (this.zplane) {
-		this.zplane.position.z = (-stack.z * stack.resolution.z - stack.translation.z) * scale;
+		this.zplane.position.z = (-stack.z * stack.resolution.z - stack.translation.z);
 	}
 };
 
@@ -1122,10 +1132,9 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissing
 	var d = space.stack.dimension,
 			r = space.stack.resolution,
 			t = space.stack.translation,
-			s = space.scale,
 	    geometry = new THREE.Geometry(),
-	    xwidth = d.x * r.x * s,
-			ywidth = d.y * r.y * s * missing_section_height / 100.0,
+	    xwidth = d.x * r.x,
+			ywidth = d.y * r.y * missing_section_height / 100.0,
 	    materials = [new THREE.MeshBasicMaterial( { color: 0x151349, opacity:0.6, transparent: true, side: THREE.DoubleSide } ),
 	                 new THREE.MeshBasicMaterial( { color: 0x00ffff, wireframe: true, wireframeLinewidth: 5, side: THREE.DoubleSide } )];
 
@@ -1136,7 +1145,7 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissing
 	geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
 
   return space.stack.broken_slices.reduce(function(missing_sections, sliceZ) {
-		var z = (-sliceZ * r.z - t.z) * s;
+		var z = -sliceZ * r.z - t.z;
 		return missing_sections.concat(materials.map(function(material) {
 			var mesh = new THREE.Mesh(geometry, material);
 			mesh.position.z = z;
@@ -1145,9 +1154,9 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissing
 	}, []);
 };
 
-WebGLApplication.prototype.Space.prototype.Content = function(scale) {
+WebGLApplication.prototype.Space.prototype.Content = function() {
 	// Scene content
-	this.active_node = new this.ActiveNode(scale);
+	this.active_node = new this.ActiveNode();
 	this.meshes = [];
 	this.skeletons = {};
 };
@@ -1170,8 +1179,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.loadMeshes = functi
          function (models) {
            var ids = Object.keys(models);
            if (0 === ids.length) return;
-           var loader = space.content.newJSONLoader(),
-               scale = space.scale;
+           var loader = space.content.newJSONLoader();
            ids.forEach(function(id) {
              var vs = models[id].vertices;
              for (var i=0; i < vs.length; i+=3) {
@@ -1179,7 +1187,6 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.loadMeshes = functi
              }
              var geometry = loader.parse(models[id]).geometry;
              var mesh = space.content.newMesh(geometry, material);
-             mesh.scale.set(scale, scale, scale);
              mesh.position.set(0, 0, 0);
              mesh.rotation.set(0, 0, 0);
              space.content.meshes.push(mesh);
@@ -1234,7 +1241,17 @@ WebGLApplication.prototype.Space.prototype.View = function(space) {
 WebGLApplication.prototype.Space.prototype.View.prototype = {};
 
 WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
-	this.camera = new THREE.CombinedCamera( -this.space.canvasWidth, -this.space.canvasHeight, 75, 1, 3000, -1000, 1, 500 );
+  /* Create a camera which generates a picture fitting in our canvas. The
+  * frustum's far culling plane is three times the longest size of the
+  * displayed space. The near plan starts at one. */
+  var d = this.space.dimensions;
+  var fov = 75;
+  var near = 1;
+  var far = 3 * Math.max(d.x, Math.max(d.y, d.z))
+  var orthoNear = 1;
+  var orthoFar =  far;
+	this.camera = new THREE.CombinedCamera(-this.space.canvasWidth,
+      -this.space.canvasHeight, fov, near, far, orthoNear, orthoFar);
   this.camera.frustumCulled = false;
 
 	this.projector = new THREE.Projector();
@@ -1418,10 +1435,10 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
 };
 
 
-WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function(scale) {
+WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function() {
   this.skeleton_id = null;
   this.mesh = new THREE.Mesh( new THREE.IcosahedronGeometry(1, 2), new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
-  this.mesh.scale.x = this.mesh.scale.y = this.mesh.scale.z = 160 * scale;
+  this.mesh.scale.x = this.mesh.scale.y = this.mesh.scale.z = 160;
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototype = {};
@@ -1638,7 +1655,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTextMeshes =
 	for (var tagString in tagNodes) {
 		if (tagNodes.hasOwnProperty(tagString)) {
 			tagNodes[tagString].forEach(function(nodeID) {
-        var text = cache.createTextMesh(tagString, this.space.scale, textMaterial);
+        var text = cache.createTextMesh(tagString, textMaterial);
         var v = vs[nodeID];
         text.position.x = v.x;
         text.position.y = v.y;
@@ -1687,10 +1704,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 */
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClustering = function(bandwidth) {
-  // Correct the scale of the vertices
-  var invScale = 1.0 / this.space.scale,
-      locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
-    vs[v.node_id] = v.clone().multiplyScalar(invScale);
+  var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
+    vs[v.node_id] = v.clone();
     return vs;
   }, {});
   
@@ -1881,7 +1896,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         return vs;
       }, {});
 
-      // NOTE: distances are scaled down by 'scale', but it doesn't matter here.
       var distanceFn = (function(child, paren) {
         return this[child].distanceTo(this[paren]);
       }).bind(locations);
@@ -1903,7 +1917,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         return vs;
       }, {});
 
-      // NOTE: distances are scaled down by 'scale', but it doesn't matter here.
       var distanceFn = (function(paren, child) {
         return this[child].distanceTo(this[paren]);
       }).bind(locations);
@@ -2436,8 +2449,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 	var connectors = json[1];
   var tags = json[2];
 
-	var scale = this.space.scale,
-      lean = options.lean_mode;
+  var lean = options.lean_mode;
 
 	// Map of node ID vs node properties array
 	var nodeProps = nodes.reduce(function(ob, node) {
@@ -2487,8 +2499,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			var nodeID = node[0];
 			if (node[6] > 0 && p[6] > 0) {
 				// Create cylinder using the node's radius only (not the parent) so that the geometry can be reused
-				var scaled_radius = node[6] * scale;
-				this.createCylinder(v1, v2, scaled_radius, material);
+				this.createCylinder(v1, v2, node[6], material);
 				// Create skeleton line as well
 				this.createEdge(v1, v2, 'neurite');
 			} else {
@@ -2496,7 +2507,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 				this.createEdge(v1, v2, 'neurite');
 				// Create sphere
 				if (node[6] > 0) {
-					this.createNodeSphere(v1, node[6] * scale, material);
+					this.createNodeSphere(v1, node[6], material);
 				}
 			}
 		} else {
@@ -2515,7 +2526,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
           this.space.remove(mesh);
           delete this.radiusVolumes[v1.node_id];
         }
-			  this.createNodeSphere(v1, node[6] * scale, material);
+			  this.createNodeSphere(v1, node[6], material);
       }
 		}
 		if (!lean && node[7] < 5) {
@@ -2525,7 +2536,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 	}, this);
 
   if (options.smooth_skeletons) {
-    var smoothed = this.createArbor().smoothPositions(vs, options.smooth_skeletons_sigma * this.space.scale);
+    var smoothed = this.createArbor().smoothPositions(vs, options.smooth_skeletons_sigma);
     Object.keys(vs).forEach(function(node_id) {
       vs[node_id].copy(smoothed[node_id]);
     });
@@ -2570,7 +2581,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
   if (options.resample_skeletons) {
     // WARNING: node IDs no longer resemble actual skeleton IDs.
     // All node IDs will now have negative values to avoid accidental similarities.
-    var res = this.createArbor().resampleSlabs(vs, options.smooth_skeletons_sigma * this.space.scale, options.resampling_delta * this.space.scale, 2);
+    var res = this.createArbor().resampleSlabs(vs, options.smooth_skeletons_sigma, options.resampling_delta, 2);
     var vs = this.geometry['neurite'].vertices;
     // Remove existing lines
     vs.length = 0;

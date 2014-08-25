@@ -936,6 +936,11 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
       self.navigator.select_node(node);
   });
 
+  // If search is used, make sure 'select all' checkbox is unselected
+  $('#' + table_id + '_filter').find('input').keyup(function() {
+    $('#' + table_id).find('thead th input,tfoot th input').prop('checked', false);
+  });
+
   return datatable;
 };
 

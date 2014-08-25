@@ -110,9 +110,9 @@ shells, for example, you will need to activate it by running::
 
 Due to `a dependency problem
 <https://github.com/h5py/h5py/issues/96>`_, we need to install
-NumPy separately::
+NumPy and Distribute separately::
 
-   pip install numpy==1.6.1
+   pip install numpy==1.6.1 distribute==0.7.3
 
 You should then install all the rest of the required Python
 packages with::

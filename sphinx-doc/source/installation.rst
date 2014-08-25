@@ -44,7 +44,7 @@ The git repository is hosted at `https://github.com/acardona/CATMAID
 somewhere outside your web root, e.g. in ``/home/alice``, so that
 the source code is in ``/home/alice/catmaid``::
 
-   git clone git://github.com/acardona/CATMAID.git catmaid
+   git clone https://github.com/acardona/CATMAID.git catmaid
 
 2. Install required Python packages
 ###################################
@@ -60,14 +60,12 @@ Some of these Python packages depend on system-wide libraries
 that you will need to install in advance, however.  You can do
 this with::
 
-    sudo apt-get install gcc gfortran apt-file \
-                         python2.7-dev postgresql-common \
-                         libpq-dev libgraphicsmagick++1-dev \
-                         libhdf5-serial-dev libboost1.55-dev \
-                         libboost-python1.55-dev uuid-dev \
-                         libxml2-dev libxslt1-dev libjpeg-dev \
-                         libtiff-dev virtualenvwrapper \
-                         libblas-dev liblapack-dev
+    sudo apt-get install gcc gfortran apt-file python2.7-dev postgresql-common \
+                         libpq-dev libgraphicsmagick++1-dev graphicsmagick \
+                         libhdf5-serial-dev libboost1.55-dev virtualenvwrapper \
+                         libboost-python1.55-dev uuid-dev libxml2-dev \
+                         libxslt1-dev libjpeg-dev libtiff-dev libblas-dev \
+                         liblapack-dev
 
 Virtualenv Wrapper needs to source your environment. Start a new terminal
 or if you are using the bash::

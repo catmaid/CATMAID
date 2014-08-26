@@ -146,8 +146,10 @@ function createButtonsFromActions(actions, boxID, iconPrefix) {
       a.onclick = action.run;
       img = document.createElement('img');
       img.setAttribute('id', buttonID + '_img');
-      img.setAttribute('src', STATIC_URL_JS + 'widgets/themes/kde/' + iconPrefix + action.getButtonName() + '.svg');
-      img.setAttribute('onerror', "this.src='" + STATIC_URL_JS + 'widgets/themes/kde/' + iconPrefix + action.getButtonName() + ".png'");
+      var iconFilename = STATIC_URL_JS + 'widgets/themes/kde/' + iconPrefix + action.getButtonName();
+      img.setAttribute('src', iconFilename + '.svg');
+      // If an SVG icon is not found, fallback to a PNG icon
+      img.setAttribute('onerror', 'this.onerror = null; this.src="' + iconFilename + '.png";');
       img.setAttribute('alt', action.getHelpText());
       shortcuts = action.getKeyShortcutsString();
       if (shortcuts.length === 0) {

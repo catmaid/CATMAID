@@ -982,7 +982,7 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
 WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, stack, center) {
 	// Space elements
 	this.box = this.createBoundingBox(center, stack.dimension, stack.resolution);
-	this.floor = this.createFloor(dimensions);
+	this.floor = this.createFloor(center, dimensions);
 
 	this.zplane = null;
 
@@ -1046,28 +1046,44 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundin
 };
 
 /**
- * Creates a THREE.js line object that represents a floor grid. It is twice the
- * size of the current space in both X and Y. Make the grid spacing a 10th of
- * the smallest side of the bounding box. It is positioned around the center of
- * the dimensions.
+ * Creates a THREE.js line object that represents a floor grid. By default, it
+ * extents around the bounding box by about twice the height of it. The grid
+ * cells are placed so that they are divide the bouning box floor evenly. By
+ * default, there are ten cells in each dimension within the bounding box. It is
+ * positioned around the center of the dimensions. These settings can be
+ * overridden with the options parameter.
  */
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor = function(dimensions) {
-    var line_material = new THREE.LineBasicMaterial( { color: 0x535353 } );
-    var geometry = new THREE.Geometry();
-    var floor = 0;
-    var min_x = -1.0 * dimensions.x, max_x = 2.0 * dimensions.x;
-    var min_z = -1.0 * dimensions.z, max_z = 2.0 * dimensions.z;
-    var numSteps = 10;
-    var xStep = (3 * dimensions.x) / numSteps;
-    var yStep = (3 * dimensions.z) / numSteps;
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor = function(center, dimensions, options) {
+    var o = options || {};
+    var line_material = new THREE.LineBasicMaterial( { color: o['color'] || 0x535353 } );
+    var floor = o['floor'] || 0.0;
 
-    for (var i = 0; i < numSteps; ++i ) {
-      var x = min_x + i * xStep;
-      geometry.vertices.push( new THREE.Vector3( x, floor, min_z ) );
-      geometry.vertices.push( new THREE.Vector3( x, floor, max_z ) );
-      var z = min_z + i * yStep;
-      geometry.vertices.push( new THREE.Vector3( min_x, floor, z ) );
-      geometry.vertices.push( new THREE.Vector3( max_x, floor, z ) );
+    // 10 steps in each dimension of the bounding box
+    var nBaseLines = o['nBaseLines'] || 10.0;
+    var xStep = dimensions.x / nBaseLines;
+    var zStep = dimensions.z / nBaseLines;
+    // Extend this around the bounding box
+    var xExtent = o['xExtent'] || Math.ceil(2.0 * dimensions.y / xStep);
+    var zExtent = o['zExtent'] || Math.ceil(2.0 * dimensions.y / zStep);
+    // Offset from origin
+    var xOffset = dimensions.x * 0.5 - center.x;
+    var zOffset = dimensions.z * 0.5 + center.z;
+    // Get min and max coordinates of grid
+    var min_x = -1.0 * xExtent * xStep + xOffset,
+        max_x = dimensions.x + (xExtent * xStep) + xOffset;
+    var min_z = -1.0 * dimensions.z - zExtent * zStep + zOffset,
+        max_z = zExtent * zStep + zOffset;
+
+    var geometry = new THREE.Geometry();
+    for (var i = 0; i <= nBaseLines + 2 * xExtent; ++i) {
+      for (var j = 0; j <= nBaseLines + 2 * zExtent; ++j) {
+        var x = min_x + i * xStep;
+        geometry.vertices.push( new THREE.Vector3( x, floor, min_z ) );
+        geometry.vertices.push( new THREE.Vector3( x, floor, max_z ) );
+        var z = min_z + j * zStep;
+        geometry.vertices.push( new THREE.Vector3( min_x, floor, z ) );
+        geometry.vertices.push( new THREE.Vector3( max_x, floor, z ) );
+      }
     }
 
     return new THREE.Line( geometry, line_material, THREE.LinePieces );

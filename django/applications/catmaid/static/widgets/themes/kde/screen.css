@@ -455,6 +455,11 @@ div#classification_graph_object img.roiimage {
 
 .connectivity_widget .table_container_wide {
   width: 100%;
+  margin-bottom: 6em;
+}
+
+.connectivity_widget .table_container_wide:last-child {
+  margin-bottom: 0;
 }
 
 .connectivity_widget .content {
@@ -473,6 +478,11 @@ div#classification_graph_object img.roiimage {
 .connectivity_widget .partner_table td,
 .connectivity_widget .partner_table th {
   border: 1px solid black;
+}
+
+.connectivity_widget .partner_table thead input {
+  width: auto;
+  margin-right: 12px;
 }
 
 .connectivity_widget .partner_table .syncount {

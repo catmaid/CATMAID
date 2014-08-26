@@ -439,7 +439,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       updateVisibility(skelid, checked);
     };
 
-    var table = $('<table />').attr('id', 'incoming_connectivity_table' + widgetID)
+    var table = $('<table />').attr('id', relation + 'stream_connectivity_table' + widgetID)
             .attr('class', 'partner_table');
 
     /* The table header will be slightly different if there is more than one
@@ -534,21 +534,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     }
 
     // Add handler to first row
-    titleCell.click((function(element) {
-      return function() {
+    $('span', titleCell).click((function(element) {
+      return function(e) {
+        e.stopPropagation();
         var $title = $(this);
         // Toggle visibility of the complete table body
         element.toggle(200, function() {
           // Change open/close indidicator box
-          var open_elements = $(".extend-box-open", $title);
-          if (open_elements.length > 0) {
-            open_elements.attr('class', 'extend-box-closed');
-          } else {
-            var close_elements = $(".extend-box-closed", $title);
-            if (close_elements.length > 0) {
-              close_elements.attr('class', 'extend-box-open');
-            }
-          }
+          $title.toggleClass('extend-box-open extend-box-closed');
         });
         // Call back, if wanted
         if (collapsedCallback) {
@@ -711,6 +704,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var cbOffset = 0;
     // Assign 'select all' checkbox handler
     $('#' + name + 'stream-selectall' + widgetID).click(function( event ) {
+      event.stopPropagation();
       var rows = table[0].childNodes[1].childNodes; // all tr elements
       var linkTarget = getLinkTarget();
 
@@ -964,6 +958,44 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
   incoming.append(table_incoming);
   outgoing.append(table_outgoing);
+
+  // Extend tables with DataTables for sorting, reordering and filtering
+  var dataTableOptions = {
+    bDestroy: true,
+    sDom: 'Rl<"connectivity_table_filter"<"connectivity_table_filter_inner"f>>rti',
+    bFilter: true,
+    bPaginate: false,
+    bProcessing: true,
+    bServerSide: false,
+    bAutoWidth: false,
+    iDisplayLength: -1,
+    oColReorder: {
+      iFixedColumns: 1
+    },
+    oLanguage: {
+      sSearch: 'Filter partners:'
+    },
+    aoColumnDefs: [
+      { aTargets: [0], sSortDataType: 'dom-checkbox' }
+    ]
+  };
+
+  $.fn.dataTableExt.afnSortData['dom-checkbox'] = function (oSettings, iColumn) {
+    return $('td:eq('+iColumn+') input', oSettings.oApi._fnGetTrNodes(oSettings)).map(function () {
+        return this.checked == true ? "1" : "0";
+    });
+  };
+
+  table_incoming.dataTable(dataTableOptions);
+  table_outgoing.dataTable(dataTableOptions);
+
+  $('.dataTables_wrapper', tables).css('min-height', 0);
+
+  $('.connectivity_table_filter').prepend(
+    $('<input type="button" value="Show filter" />').click(function(e) {
+      var visible = $(this).siblings('.connectivity_table_filter_inner').toggle().is(':visible');
+      $(this).prop('value', visible ? 'Hide filter' : 'Show filter');
+    })).children('.connectivity_table_filter_inner').hide();
 
   // Add 'select all' checkboxes
   var nSkeletons = Object.keys(this.skeletons).length;

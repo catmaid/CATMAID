@@ -140,7 +140,7 @@ def stack_models(request, project_id=None, stack_id=None):
     for p in patterns:
         test_filename = os.path.join(settings.HDF5_STORAGE_PATH, p[0] % p[1])
         if os.path.exists(test_filename):
-            filename = test_fiilename
+            filename = test_filename
             break
 
     if not filename:

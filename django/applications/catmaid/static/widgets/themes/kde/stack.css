@@ -165,7 +165,7 @@ div.stackControlToggle_hidden
 	border-top:solid 4px #000000;
 	border-right:solid 4px #000000;
 	background:#0000FF url(slice_control_toggle_hide.svg) no-repeat center;
-	z-index:10;
+	z-index:6;
 }
 
 div.stackControlToggle_hidden

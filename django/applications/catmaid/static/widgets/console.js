@@ -4,20 +4,13 @@
 function Console() {
   var view = document.createElement("div");
   view.className = "console";
-  view.style.height = "35px";
-  view.appendChild(document.createElement("pre"));
 
   var coords = document.createElement("div");
   coords.id = "coordinates";
-  coords.style.position = 'absolute';
-  coords.style.right = '5px';
-  coords.style.fontFamily = "Courier; Sans-serif;";
-  coords.style.fontSize = "15px";
-  coords.style.marginTop="10px";
-  coords.style.marginRight="8px";
   coords.appendChild(document.createTextNode(""));
   view.appendChild(coords);
-  
+  view.appendChild(document.createElement("pre"));
+
   this.printCoords = function (obj) {
     coords.replaceChild(document.createTextNode(obj), coords.firstChild);
   }
@@ -73,14 +66,14 @@ function Console() {
       sp.appendChild(document.createTextNode(obj));
     else
       sp.appendChild(document.createTextNode(toStr(obj)));
-    view.replaceChild(sp, view.firstChild);
+    view.replaceChild(sp, view.lastChild);
     return;
   }
 
   this.replaceLastHTML = function (html) {
     var e = document.createElement("pre");
     e.innerHTML = html;
-    view.replaceChild(e, view.firstChild);
+    view.replaceChild(e, view.lastChild);
   }
 
   this.getView = function () {

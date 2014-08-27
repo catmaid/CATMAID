@@ -12,7 +12,7 @@ if (!window.console) {
   window.console.log = function() {}
 }
 
-var global_bottom = 34;
+var global_bottom = 29;
 var statusBar; //!< global statusBar
 var slider_trace_z;
 var slider_trace_s;

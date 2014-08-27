@@ -28,7 +28,7 @@ function getCssRules(styleSheet) {
   if (
   document.styleSheets && document.styleSheets[styleSheet]) {
     if (document.styleSheets[styleSheet].cssRules) return document.styleSheets[styleSheet].cssRules;
-    else if (document.styleSheets[styleSheet].rules) return document.styleSheets[styleSheet].rules
+    else if (document.styleSheets[styleSheet].rules) return document.styleSheets[styleSheet].rules;
   } else
   return undefined;
 }
@@ -61,7 +61,7 @@ function parseFragment() {
     if (r = fragment.exec(location.hash)) {
       var o, p, value;
       o = new Object();
-      value = /([^&=]+)=([^&=]+)/gi
+      value = /([^&=]+)=([^&=]+)/gi;
       while (p = value.exec(r[1])) {
         o[p[1]] = p[2];
       }
@@ -83,7 +83,7 @@ function parseQuery() {
     if (r = query.exec(location.search)) {
       var o, p, value;
       o = new Object();
-      value = /([^&=]+)=([^&=]+)/gi
+      value = /([^&=]+)=([^&=]+)/gi;
       while (p = value.exec(r[1])) {
         o[p[1]] = p[2];
       }
@@ -198,7 +198,7 @@ window.ErrorDialog = function(text, detail) {
   // Create detail field, if detail available
   if (detail) {
     var detail_head = document.createElement('p');
-    var detail_head_em = document.createElement('em')
+    var detail_head_em = document.createElement('em');
     detail_head_em.appendChild(document.createTextNode('Show/hide detail'));
     detail_head.appendChild(detail_head_em);
     this.dialog.appendChild(detail_head);

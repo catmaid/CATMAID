@@ -5,8 +5,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
 		<title>CATMAID v0.24</title>
-    {% compressed_css 'catmaid' %}
-
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/css/demo_table.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/themes/smoothness/jquery-ui-1.10.1.custom.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/extras/ColReorder/css/dataTables.colReorder.css" />
@@ -35,48 +33,12 @@
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.blockUI.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.dd.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/fabric.js/all.modified.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/console.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/request.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/submitter.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/utils.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/neuron_name_service.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/Arbor.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}ui.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/input.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/slider.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/menu.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/resize_handle.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}action.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}project.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}overview.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tilelayercontrol.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}stack.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tilesource.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tilelayer.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}navigator.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/settings.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}selector.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}taggingtool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools/boxselectiontool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools/roitool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools/croppingtool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools/tracingtool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}layers/tracinglayer.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}segmentationtool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}neuronstagingarea.js"></script>
 
 		<!--[if gte IE 5]>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/excanvas/excanvas.js"></script>
 		<script type="text/javascript">var IE = true;</script>
 		<![endif]-->
 
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/textlabel.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/profile.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/overlay_node.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/overlay_label.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/overlay.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}init.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/raphael.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/g.raphael.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/g.pie-min.js"></script>
@@ -87,48 +49,21 @@
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/d3/d3.v2.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/d3/venn.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/d3/mds.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_treenode.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_connector.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_log.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/stats.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/review.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/sylvester/sylvester.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/numeric/numeric-1.2.6.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/circuit_graph_analysis.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/synapse_clustering.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}treelines.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/three.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/controls/TrackballControls.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/Detector.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/helvetiker_regular.typeface.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/threex/THREEx.FullScreen.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/threex/THREEx.WindowResize.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}webglapp.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}WindowMaker.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/windowmanager.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/arbor.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/cytoscape.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/connectivity.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}connectorselection.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}measurements_table.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/adjmatrix.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/compartment_graph_widget.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/graph_plot.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/morphology_analysis.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/venn_diagram.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/skeleton_analytics.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}ontologytool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/ontology_editor.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/ontology_search.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/classification_editor.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/clustering_widget.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_notifications.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jsnetworkx/jsnetworkx.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}user.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/filesaver/FileSaver.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/neuron_annotations.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/neuron_navigator.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}layers/gridlayer.js"></script>
+
+		{% compressed_css 'catmaid' %}
+		{% compressed_js 'catmaid' %}
 	</head>
 	<body onload="realInit();"><a></a>
 		<!-- Toolbars

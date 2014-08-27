@@ -132,6 +132,8 @@ STATICFILES_STORAGE = 'pipeline.storage.PipelineStorage'
 
 # Use CSSMin as django-pipeline's CSS compressor
 PIPELINE_CSS_COMPRESSOR = 'pipeline.compressors.cssmin.CSSMinCompressor'
+# Use no JS compresor for now
+PIPELINE_JS_COMPRESSOR = None
 
 PIPELINE_CSS = {
     'catmaid': {
@@ -144,6 +146,20 @@ PIPELINE_CSS = {
             'media': 'screen,projection',
         }
     },
+}
+
+PIPELINE_JS = {
+    'catmaid': {
+        'source_filenames': (
+          'tools.js',
+          'libs/catmaid/*.js',
+          'tools/boxselectiontool.js',
+          'tools/roitool.js',
+          '*.js',
+          '*/*.js',
+        ),
+        'output_filename': 'js/catmaid.js',
+    }
 }
 
 # A couple of functions useful for generating default directories to

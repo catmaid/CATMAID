@@ -962,7 +962,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // Extend tables with DataTables for sorting, reordering and filtering
   var dataTableOptions = {
     bDestroy: true,
-    sDom: 'Rl<"connectivity_table_filter"<"connectivity_table_filter_inner"f>>rti',
+    sDom: 'Rl<"connectivity_table_actions"f>rti',
     bFilter: true,
     bPaginate: false,
     bProcessing: true,
@@ -990,12 +990,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   table_outgoing.dataTable(dataTableOptions);
 
   $('.dataTables_wrapper', tables).css('min-height', 0);
-
-  $('.connectivity_table_filter').prepend(
-    $('<input type="button" value="Show filter" />').click(function(e) {
-      var visible = $(this).siblings('.connectivity_table_filter_inner').toggle().is(':visible');
-      $(this).prop('value', visible ? 'Hide filter' : 'Show filter');
-    })).children('.connectivity_table_filter_inner').hide();
 
   // Add 'select all' checkboxes
   var nSkeletons = Object.keys(this.skeletons).length;

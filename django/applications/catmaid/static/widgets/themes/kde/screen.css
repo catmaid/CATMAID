@@ -467,6 +467,23 @@ div#classification_graph_object img.roiimage {
   clear: both;
 }
 
+.connectivity_widget .connectivity_table_actions {
+  position: relative;
+  clear: both;
+  width: 100%;
+}
+
+.connectivity_widget .dataTables_filter {
+  float: none;
+  text-align: left;
+}
+
+.connectivity_widget .dataTables_filter label {
+  margin: 0.5em;
+  padding-left: 10px;
+  text-indent: 0;
+}
+
 .connectivity_widget .partner_table {
   padding: 3px;
   border-collapse: collapse;

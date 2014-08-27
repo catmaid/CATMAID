@@ -13,7 +13,7 @@ function Console() {
 
   this.printCoords = function (obj) {
     coords.replaceChild(document.createTextNode(obj), coords.firstChild);
-  }
+  };
 
   var toStr = function (obj, ins) {
     if (typeof ins == "undefined") ins = "";
@@ -29,7 +29,7 @@ function Console() {
         for (var key in obj) {
           str += ins + "\"" + key + "\" => " + toStr(obj[key], ins + "  ") + "\r\n";
         }
-      } else str += "..."
+      } else str += "...";
       break;
     case "undefined":
       break;
@@ -38,18 +38,18 @@ function Console() {
       break;
     }
     return str;
-  }
+  };
 
   this.setBottom = function() {
     view.style.bottom = "0px";
-  }
+  };
 
   this.print = function (obj) {
     if (typeof obj == "string") view.lastChild.appendChild(document.createTextNode(obj));
     else
     view.lastChild.appendChild(document.createTextNode(toStr(obj)));
     return;
-  }
+  };
 
   this.println = function (obj) {
     var sp = document.createElement("pre");
@@ -58,7 +58,7 @@ function Console() {
     sp.appendChild(document.createTextNode(toStr(obj)));
     view.appendChild(sp);
     return;
-  }
+  };
 
   this.replaceLast = function (obj) {
     var sp = document.createElement("pre");
@@ -68,15 +68,15 @@ function Console() {
       sp.appendChild(document.createTextNode(toStr(obj)));
     view.replaceChild(sp, view.lastChild);
     return;
-  }
+  };
 
   this.replaceLastHTML = function (html) {
     var e = document.createElement("pre");
     e.innerHTML = html;
     view.replaceChild(e, view.lastChild);
-  }
+  };
 
   this.getView = function () {
     return view;
-  }
+  };
 }

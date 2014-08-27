@@ -54,7 +54,7 @@ GroupGraph.prototype.getName = function() {
 GroupGraph.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
-  neuronNameService.unregister(this);
+  NeuronNameService.getInstance().unregister(this);
 };
 
 GroupGraph.prototype.nextGroupID = function() {
@@ -529,7 +529,7 @@ GroupGraph.prototype.updateNeuronNames = function() {
   this.cy.nodes().each(function(i, node) {
     var models = node.data('skeletons');
     // skip groups
-    if (1 == models.length) node.data('label', neuronNameService.getName(models[0].id));
+    if (1 == models.length) node.data('label', NeuronNameService.getInstance().getName(models[0].id));
   });
 };
 
@@ -558,7 +558,7 @@ GroupGraph.prototype.updateGraph = function(json, models) {
           model = models[skeleton_id];
       return {data: {id: nodeID, // MUST be a string, or fails
                       skeletons: [model.clone()],
-                      label: neuronNameService.getName(model.id),
+                      label: NeuronNameService.getInstance().getName(model.id),
                       node_count: 0,
                       color: '#' + model.color.getHexString()}};
   };
@@ -786,7 +786,7 @@ GroupGraph.prototype.append = function(models) {
         // Update node properties
 
         if (new_model.baseName) {
-          var name = neuronNameService.getName(new_model.id);
+          var name = NeuronNameService.getInstance().getName(new_model.id);
           node.data('label', name ? name : new_model.baseName);
         }
         skeleton.color = new_model.color.clone();
@@ -933,7 +933,7 @@ GroupGraph.prototype.update = function() {
 
 GroupGraph.prototype.load = function(models) {
   // Register with name service before we attempt to load the graph
-  neuronNameService.registerAll(this, models, (function() {
+  NeuronNameService.getInstance().registerAll(this, models, (function() {
     this._load(models);
   }).bind(this));
 };

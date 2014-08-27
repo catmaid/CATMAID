@@ -33,7 +33,7 @@ SelectionTable.prototype.destroy = function() {
   this.clear(); // clear after clearing linkTarget, so it doesn't get cleared
   this.unregisterInstance();
   this.unregisterSource();
-  neuronNameService.unregister(this);
+  NeuronNameService.getInstance().unregister(this);
 };
 
 SelectionTable.prototype.updateModels = function(models, source_chain) {
@@ -277,8 +277,8 @@ SelectionTable.prototype.sort = function(sortingFn) {
 
 SelectionTable.prototype.sortByName = function() {
   this.sort(function(sk1, sk2) {
-    var name1 = neuronNameService.getName(sk1.id).toLowerCase(),
-        name2 = neuronNameService.getName(sk2.id).toLowerCase();
+    var name1 = NeuronNameService.getInstance().getName(sk1.id).toLowerCase(),
+        name2 = NeuronNameService.getInstance().getName(sk2.id).toLowerCase();
     return name1 == name2 ? 0 : (name1 < name2 ? -1 : 1);
   });
 
@@ -381,7 +381,7 @@ SelectionTable.prototype.append = function(models) {
       }, this);
 
       // Add skeletons
-      neuronNameService.registerAll(this, models,
+      NeuronNameService.getInstance().registerAll(this, models,
           this.gui.update.bind(this.gui));
 
       this.updateLink(models);
@@ -659,7 +659,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   rowElement.append( td );
 
   // name
-  var name = neuronNameService.getName(skeleton.id);
+  var name = NeuronNameService.getInstance().getName(skeleton.id);
   rowElement.append($(document.createElement("td")).text(
         name ? name : 'undefined'));
 
@@ -853,7 +853,7 @@ SelectionTable.prototype.filteredSkeletons = function(only_selected) {
     try {
       return this.skeletons.filter(function(skeleton) {
         if (only_selected && !skeleton.selected) return false;
-        var matches = neuronNameService.getName(skeleton.id).match(this);
+        var matches = NeuronNameService.getInstance().getName(skeleton.id).match(this);
         return matches && matches.length > 0;
       }, new RegExp(this.match));
     } catch (e) {

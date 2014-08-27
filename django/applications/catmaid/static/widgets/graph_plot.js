@@ -97,7 +97,7 @@ CircuitGraphPlot.prototype.getName = function() {
 CircuitGraphPlot.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
-  neuronNameService.unregister(this);
+  NeuronNameService.getInstance().unregister(this);
   
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
@@ -321,7 +321,7 @@ CircuitGraphPlot.prototype.plot = function(ids, names, models, AdjM) {
   this.AdjM = AdjM;
   this.selected = {};
 
-  neuronNameService.registerAll(this,
+  NeuronNameService.getInstance().registerAll(this,
       this.getSkeletonModels(),
       (function() { this._plot(); }).bind(this));
 };
@@ -815,7 +815,7 @@ CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
   var data = this.ids.map(function(id, i) {
     var models = this.models[i];
     return {id: id,
-            name: (models.length > 1 ? this.names[i] : neuronNameService.getName(id)), // groups retain their name
+            name: (models.length > 1 ? this.names[i] : NeuronNameService.getInstance().getName(id)), // groups retain their name
             hex: '#' + this.models[i][0].color.getHexString(),
             x: xVector[i],
             y: yVector[i]};

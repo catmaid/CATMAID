@@ -26,7 +26,7 @@ SkeletonMeasurementsTable.prototype.destroy = function() {
   this.table = null;
   this.unregisterInstance();
   this.unregisterSource();
-  neuronNameService.unregister(this);
+  NeuronNameService.getInstance().unregister(this);
 };
 
 SkeletonMeasurementsTable.prototype.append = function(models) {
@@ -43,7 +43,7 @@ SkeletonMeasurementsTable.prototype.append = function(models) {
 
   if (0 === Object.keys(new_models).length) return;
 
-  neuronNameService.registerAll(this, new_models,
+  NeuronNameService.getInstance().registerAll(this, new_models,
       (function() {
         this.load(new_models, this.sigma, this.table.fnAddData.bind(this.table));
       }).bind(this));
@@ -183,7 +183,7 @@ SkeletonMeasurementsTable.prototype.init = function() {
 
 SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {
     this.table.fnGetData().forEach(function(row, i) {
-        this.table.fnUpdate(this._makeStringLink(neuronNameService.getName(row[1]), row[1]), i, 0);
+        this.table.fnUpdate(this._makeStringLink(NeuronNameService.getInstance().getName(row[1]), row[1]), i, 0);
     }, this);
 };
 

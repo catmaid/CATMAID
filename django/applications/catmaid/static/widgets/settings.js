@@ -152,10 +152,10 @@ SettingsWidget.prototype.init = function(space)
         "a desired representation isn't available for a neuron."));
 
     ds.append(createCheckboxSetting("Append Skeleton ID", function() {
-      neuronNameService.setAppendSkeletonId(this.checked);
+      NeuronNameService.getInstance().setAppendSkeletonId(this.checked);
     }));
     // Get all available options
-    var namingOptions = neuronNameService.getOptions();
+    var namingOptions = NeuronNameService.getInstance().getOptions();
     // Add naming option select box
     var select = $('<select/>');
     namingOptions.forEach(function(o) {
@@ -170,9 +170,9 @@ SettingsWidget.prototype.init = function(space)
       // The function to be called to actually add the label
       var addLabeling = function(metaAnnotation) {
         if (metaAnnotation) {
-          neuronNameService.addLabeling(newLabel, metaAnnotation);
+          NeuronNameService.getInstance().addLabeling(newLabel, metaAnnotation);
         } else {
-          neuronNameService.addLabeling(newLabel);
+          NeuronNameService.getInstance().addLabeling(newLabel);
         }
         updateFallbackList();
       };
@@ -205,7 +205,7 @@ SettingsWidget.prototype.init = function(space)
       if (fallbackList.selectedIndex < fallbackList.length - 1) {
         // We display the fallback list reversed, therefore we need to mirror
         // the index.
-        neuronNameService.removeLabeling(fallbackList.length - fallbackList.selectedIndex - 1);
+        NeuronNameService.getInstance().removeLabeling(fallbackList.length - fallbackList.selectedIndex - 1);
         updateFallbackList();
       }
     });
@@ -215,7 +215,7 @@ SettingsWidget.prototype.init = function(space)
 
     var updateFallbackList = function() {
       $(fallbackList).empty();
-      var options = neuronNameService.getFallbackList().map(function(o, i) {
+      var options = NeuronNameService.getInstance().getFallbackList().map(function(o, i) {
         // Add each fallback list element to the select control. The last
         // element is disabled by default.
         var optionElement = $('<option/>').attr('value', o.id)

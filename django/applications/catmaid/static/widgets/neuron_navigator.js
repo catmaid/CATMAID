@@ -1446,7 +1446,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   rename_button.onclick = (function() {
     var new_name = prompt("Rename", this.neuron_name);
     if (!new_name) return;
-    neuronNameService.renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
+    NeuronNameService.getInstance().renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
         $('div.nodeneuronname', container).html('Name: ' + new_name);
         this.neuron_name = new_name;
     }).bind(this));

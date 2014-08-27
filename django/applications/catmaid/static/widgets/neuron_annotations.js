@@ -719,7 +719,7 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
               }
 
               // Let the neuron name service update itself
-              neuronNameService.refresh();
+              NeuronNameService.getInstance().refresh();
 
               // Execute callback, if any
               if (callback) callback();
@@ -766,7 +766,7 @@ NeuronAnnotations.remove_annotation_from_entities = function(entity_ids,
             new ErrorDialog(e.error, e.detail).show();
           } else {
             // Let the neuron name service update itself
-            neuronNameService.refresh();
+            NeuronNameService.getInstance().refresh();
 
             if (callback) callback(e.message);
           }

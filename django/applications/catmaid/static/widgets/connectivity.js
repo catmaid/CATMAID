@@ -61,7 +61,7 @@ SkeletonConnectivity.prototype.append = function(models) {
         // Update name
         skeletons[skid] = model.baseName;
         $('#a-connectivity-table-' + widgetID + '-' + skid).html(
-            neuronNameService.getName(skid));
+            NeuronNameService.getInstance().getName(skid));
       } else {
         // Remove
         delete skeletons[skid];
@@ -87,7 +87,7 @@ SkeletonConnectivity.prototype.append = function(models) {
   }
 
   // Add skeletons
-  neuronNameService.registerAll(this, models, (function() {
+  NeuronNameService.getInstance().registerAll(this, models, (function() {
     this.update();
     this.updateLink(models);
   }).bind(this));
@@ -100,7 +100,7 @@ SkeletonConnectivity.prototype.getName = function() {
 SkeletonConnectivity.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
-  neuronNameService.unregister(this);
+  NeuronNameService.getInstance().unregister(this);
 };
 
 SkeletonConnectivity.prototype.clear = function(source_chain) {
@@ -264,7 +264,7 @@ SkeletonConnectivity.prototype.update = function() {
           createPartnerModels(self.outgoing, partnerModels);
 
           // Make all partners known to the name service
-          neuronNameService.registerAll(self, partnerModels, function() {
+          NeuronNameService.getInstance().registerAll(self, partnerModels, function() {
             // Create connectivity tables
             self.redraw();
           });
@@ -325,7 +325,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
    */
   var createNameElement = function(name, skeleton_id) {
     var a = document.createElement('a');
-    a.appendChild(document.createTextNode(neuronNameService.getName(skeleton_id)));
+    a.appendChild(document.createTextNode(NeuronNameService.getInstance().getName(skeleton_id)));
     a.setAttribute('href', '#');
     a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
     a.onclick = function() {
@@ -637,7 +637,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
           var count = partner.skids[skid] || 0;
           this.appendChild(createSynapseCountCell(count, partner, [skid],
               count + " synapse(s) for neuron '" +
-              neuronNameService.getName(skid) + "'."));
+              NeuronNameService.getInstance().getName(skid) + "'."));
         }, tr);
       }
 

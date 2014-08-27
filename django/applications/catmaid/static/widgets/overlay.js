@@ -184,20 +184,20 @@ SkeletonAnnotations.setTracingMode = function (mode) {
 SkeletonAnnotations.setNeuronNameInTopbar = function(stackID, skeletonID) {
   if (!skeletonID) return;
   var label = $('#neuronName' + stackID);
-  neuronNameService.unregister(label.data());
+  NeuronNameService.getInstance().unregister(label.data());
   label.data('skeleton_id', skeletonID);
   label.data('updateNeuronNames', function () {
-    label.text(neuronNameService.getName(this.skeleton_id));
+    label.text(NeuronNameService.getInstance().getName(this.skeleton_id));
   });
   var models = {};
   models[skeletonID] = {};
-  neuronNameService.registerAll(label.data(), models,
-    function () { label.text(neuronNameService.getName(skeletonID)); });
+  NeuronNameService.getInstance().registerAll(label.data(), models,
+    function () { label.text(NeuronNameService.getInstance().getName(skeletonID)); });
 };
 
 SkeletonAnnotations.clearTopbar = function(stackID) {
   var label = $('#neuronName' + stackID);
-  neuronNameService.unregister(label.data());
+  NeuronNameService.getInstance().unregister(label.data());
   label.text("");
 };
 
@@ -308,7 +308,7 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
       function(json) {
           var new_name = prompt("Change neuron name", json['neuronname']);
           if (!new_name) return;
-          neuronNameService.renameNeuron(json['neuronid'], [skeletonID],
+          NeuronNameService.getInstance().renameNeuron(json['neuronid'], [skeletonID],
               new_name);
       });
 };

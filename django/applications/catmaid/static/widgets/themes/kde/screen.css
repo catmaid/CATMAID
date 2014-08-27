@@ -484,6 +484,14 @@ div#classification_graph_object img.roiimage {
   text-indent: 0;
 }
 
+.connectivity_widget .DTTT_container {
+  position: absolute;
+  float: none;
+  bottom: 0;
+  right: 0;
+  margin: 0.5em 0.5em 0 0;
+}
+
 .connectivity_widget .partner_table {
   padding: 3px;
   border-collapse: collapse;

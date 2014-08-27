@@ -962,7 +962,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // Extend tables with DataTables for sorting, reordering and filtering
   var dataTableOptions = {
     bDestroy: true,
-    sDom: 'Rl<"connectivity_table_actions"f>rti',
+    sDom: 'Rl<"connectivity_table_actions"fT>rti',
     bFilter: true,
     bPaginate: false,
     bProcessing: true,
@@ -977,7 +977,16 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     },
     aoColumnDefs: [
       { aTargets: [0], sSortDataType: 'dom-checkbox' }
-    ]
+    ],
+    tableTools: {
+        sSwfPath: STATIC_URL_JS + 'widgets/themes/kde/datatable/extras/TableTools/swf/copy_csv_xls_pdf.swf',
+        aButtons: [{
+                sExtends: 'collection',
+                sButtonText: 'Export',
+                aButtons: ['csv', 'xls', 'pdf', 'copy']
+            }
+        ]
+    }
   };
 
   $.fn.dataTableExt.afnSortData['dom-checkbox'] = function (oSettings, iColumn) {

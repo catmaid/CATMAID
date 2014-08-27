@@ -1,6 +1,0 @@
-div.toolbar div.box,
-div.toolbar div.box_right
-{
-	height:32px;
-	width:expression( ieCSSWidth( this ) + "px" );
-}

@@ -130,8 +130,8 @@ CELERY_IMPORTS = (
 # the STATICFILES_STORAGE variable has to be set to:
 STATICFILES_STORAGE = 'pipeline.storage.PipelineStorage'
 
-# Disable django-pipeline compression for now.
-PIPELINE_CSS_COMPRESSOR = None
+# Use CSSMin as django-pipeline's CSS compressor
+PIPELINE_CSS_COMPRESSOR = 'pipeline.compressors.cssmin.CSSMinCompressor'
 
 PIPELINE_CSS = {
     'catmaid': {

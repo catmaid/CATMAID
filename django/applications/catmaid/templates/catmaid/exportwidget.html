@@ -302,6 +302,80 @@
     return;
   };
 
+  function export_tree_geometry() {
+    // Add skeleton source message and controls
+    var dialog = new OptionsDialog('Export tree geometry');
+
+    // Add user interface
+    dialog.appendMessage('Please select a source from where to get the ' +
+        'skeletons of which the geometry should be exported.');
+    var select = document.createElement('select');
+    SkeletonListSources.createOptions().forEach(function(option, i) {
+      select.options.add(option);
+      if (option.value === 'Active skeleton') select.selectedIndex = i;
+    });
+    var label_p = document.createElement('p');
+    var label = document.createElement('label');
+    label.appendChild(document.createTextNode('Source:'));
+    label.appendChild(select);
+    label_p.appendChild(label);
+    dialog.dialog.appendChild(label_p);
+
+    // Add handler for initiating the export
+    dialog.onOK = function() {
+      // Collected objects for all skeletons
+      var result = {skeletons: {}};
+      // Get all selected skeletons from the selected source
+      var source = SkeletonListSources.getSource($(select).val());
+      var skids = source.getSelectedSkeletons();
+      // Cancel if there are no skeletons
+      if (skids.length === 0) {
+        alert('Please select at least one skeleton in the selection widget.');
+        return;
+      }
+
+      for (var idx in skids) {
+        var skid = skids[idx];
+        // Call backend and notify user
+        requestQueue.register(django_url + project.id + '/' + skid + '/1/0/compact-skeleton',
+              'GET', undefined,
+              CATMAID.jsonResponseHandler((function (skid, skids, json) {
+                var skeleton = {
+                  treenodes: {},
+                  connectors: {}
+                };
+                // Parse treenode objects
+                json[0].forEach(function (tn) {
+                  var id = tn[0];
+                  skeleton.treenodes[id] = {};
+                  skeleton.treenodes[id].location = tn.slice(3,6);
+                  skeleton.treenodes[id].parent_id = tn[1];
+                });
+                // Parse connector objects
+                json[1].forEach(function (cn) {
+                  var id = cn[1];
+                  if (typeof skeleton.connectors[id] === 'undefined') {
+                    skeleton.connectors[id] = {};
+                    skeleton.connectors[id].presynaptic_to = [];
+                    skeleton.connectors[id].postsynaptic_to = [];
+                  }
+                  skeleton.connectors[id].location = cn.slice(3, 6);
+                  var relation = cn[2] === 1 ? 'postsynaptic_to' : 'presynaptic_to';
+                  skeleton.connectors[id][relation].push(cn[0]);
+                });
+                this.skeletons[skid] = skeleton;
+                // Detect if all skeletons have completed callbacks
+                if (skids.length === Object.keys(this.skeletons).length) {
+                  var blob = new Blob([JSON.stringify(this)], {type: "text/json"});
+                  saveAs(blob, 'tree_geometry.json');
+                }
+              }).bind(result, skid, skids)));
+      }
+    };
+
+    dialog.show(500, 250, true);
+  }
+
 </script>
 
 
@@ -355,6 +429,13 @@ the selected neurons.
     their ID. The actual images are stored in such a connector folder. They are
     named <em>x_y_z.tiff</em> and encode the image center coordinates in their
     name.
+  </li>
+  <li>
+    <a id='export-tree-geometry' href='#'>
+            <strong>Treenode and connector geometry</strong></a><br />
+    The generated JSON file contains location and tree information for all
+    treenodes in the selected neurons, as well as for all connector nodes
+    presynaptic or postsynaptic to the selected neurons.
   </li>
 </ul>
 

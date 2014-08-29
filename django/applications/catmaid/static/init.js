@@ -979,6 +979,14 @@ var realInit = function()
 	document.body.ondragstart = function( e ){ return false; };
 	*/
 	
+	// If the browser supports everything but webgl, let the user dismiss the warning message
+	if (Modernizr.opacity && Modernizr.canvas && Modernizr.svg && Modernizr.json)
+	{
+		$('#browser_unsupported .message').append($('<p><a href="#">Dismiss<a/></p>').click(function () {
+			$('#browser_unsupported').hide();
+		}));
+	}
+
 	//! analyze the URL
 	var z;
 	var y;

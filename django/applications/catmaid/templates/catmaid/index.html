@@ -33,6 +33,7 @@
 			var django_url = "{{ CATMAID_URL }}";
 		</script>
 
+		<script type="text/javascript" src="{{ STATIC_URL }}libs/modernizr/modernizr.custom.36683.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.dataTables.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/dataTables.colReorder.js"></script>
@@ -328,6 +329,15 @@
 			-->
 			<div id="message_context" style="background:#ffffff; position:absolute; bottom:0px; width:100%; overflow:auto"><dl id="message_container" style="margin-top:2em; margin-bottom:2em"><dt>No new messages.</dt><dd></dd></dl></div>
 		</div>
-		
+
+		<div id="browser_unsupported">
+			<div class="ui-widget-overlay"></div>
+			<div class="message">
+				<h1>CATMAID requires a modern browser.</h1>
+				<p>
+					Your browser does not support some features necessary for CATMAID to work correctly. To use CATMAID please use a recent version of either <a href="https://www.mozilla.org/firefox/">Firefox</a> or <a href="https://www.google.com/chrome/">Chrome</a> with javascript enabled.
+				</p>
+			</div>
+		</div>
 	</body>
 </html>

@@ -113,6 +113,46 @@ div#content
 	background:#FFFFFF;
 }
 
+/* Hide the browser warning messsage if all features are present */
+html.mod-js.mod-opacity.mod-canvas.mod-svg.mod-webgl.mod-json #browser_unsupported
+{
+  display:none;
+}
+
+/* Relative position and z-index on this div are important for .message
+ * to show over other elements in IE6 */
+div#browser_unsupported
+{
+  position:relative;
+  z-index:90;
+  width:100%;
+  top:0;
+  left:0;
+}
+
+div#browser_unsupported .message
+{
+  position:fixed;
+  left:30%;
+  top:20%;
+  width:40%;
+  background:#FF8636;
+  color:#000000;
+  z-index:99;
+}
+
+div#browser_unsupported h1
+{
+  margin-bottom: 2em;
+}
+
+div#browser_unsupported p
+{
+  padding:0.5em 2em 1.5em 2em;
+  font-size:14px;
+  line-height:1.2;
+}
+
 /**
  * Forms
  */

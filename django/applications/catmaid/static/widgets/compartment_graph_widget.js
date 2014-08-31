@@ -533,106 +533,82 @@ GroupGraph.prototype.updateNeuronNames = function() {
   });
 };
 
-/** There is a model for every skeleton ID included in json.
- *  But there could be models for which there isn't a skeleton_id in json: these are disconnected nodes. */
+/** json: list of edges, each represented by connector_id, {treenode_id, confidence_id, relation_id}{2} */
 GroupGraph.prototype.updateGraph = function(json, models) {
-  // A neuron that is split cannot be part of a group anymore: makes no sense.
-  // Neither by confidence nor by synapse clustering.
-
-  var edge_color = this.edge_color;
-  var asEdge = function(edge) {
-      return {data: {directed: true,
-                      arrow: 'triangle',
-                      id: edge[0] + '_' + edge[1],
-                      label: edge[2],
-                      color: edge_color,
-                      source: edge[0],
-                      target: edge[1],
-                      weight: edge[2]}};
-  };
-
-  var asNode = function(nodeID) {
-      nodeID = nodeID + '';
-      var i_ = nodeID.indexOf('_'),
-          skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
-          model = models[skeleton_id];
-      return {data: {id: nodeID, // MUST be a string, or fails
-                      skeletons: [model.clone()],
-                      label: NeuronNameService.getInstance().getName(model.id),
-                      node_count: 0,
-                      color: '#' + model.color.getHexString()}};
-  };
-
-  // Figure out what kind of response we got
-  var modes = {basic: false,
-                confidence_split: false,
-                dual_split: false};
-  if ('branch_nodes' in json && 'intraedges' in json) modes.dual_split = true;
-  else if ('nodes' in json) modes.confidence_split = true;
-  else modes.basic = true;
-
-
-  var elements = {}
-
-  if (modes.basic) {
-    // Basic graph: infer nodes from json.edges
-    var seen = {},
-        nodes = [],
-        appendNode = function(skid) {
-          if (seen[skid]) return;
-          var node = asNode('' + skid);
-          seen[skid] = true;
-          nodes.push(node);
+  // Parse json: extract edges
+  var edges = (function(json, edge_color) {
+    var edges = {},
+        entry = function(e) {
+          return {pre_treenode: e[1],
+                  connector: e[0],
+                  post_treenode: e[3]};
         };
 
-    json.edges.forEach(function(edge) {
-      edge.slice(0, 2).forEach(appendNode);
-    });
+    for (var i=0; i<json.length; ++i) {
+      var e = json[i];
+      // [0]: connector_id
+      // [1], [2]: PRE treenode_id, skeleton_id
+      // [3], [4]: POST treenode_id, skeleton_id
+      var eid = e[2] + '_' + e[4],
+          edge = edges[eid];
+      if (edge) {
+        edge.data.weight += 1;
+        edge.data.connectors.push(entry(e));
+      } else {
+        edges[eid] = {data:
+          {directed: true,
+          arrow: 'triangle',
+          id: eid,
+          color: edge_color,
+          source: e[2],
+          target: e[4],
+          weight: 1,
+          width: 0,
+          connectors: [entry(e)]}
+        };
+      }
+    }
 
-    // For nodes without edges, add them from the local list
-    Object.keys(models).forEach(appendNode);
+    return edges;
+  })(json, this.edge_color);
 
-    elements.nodes = nodes;
-    elements.edges = json.edges.map(asEdge);
+  // Create nodes
+  var nodes = Object.keys(models).map(function(skid) {
+    var model = models[skid];
+    return {data:
+      {id: "" + skid, // MUST be a string, or fails
+       skeletons: [model.clone()],
+       label: NeuronNameService.getInstance().getName(skid),
+       color: '#' + model.color.getHexString()}};
+  });
 
-  } else if (modes.confidence_split) {
-    // Graph with skeletons potentially split at low confidence edges
-    elements.nodes = json.nodes.map(asNode);
-    elements.edges = json.edges.map(asEdge);
+  // Split nodes
+  // TODO
+  //
+  // Find out which nodes are labeled as to be split either by:
+  //  1) confidence
+  //  2) axon/dendrite with flow centrality
+  //  3) synapse clustering
+  //
+  // Then request the arbor data for each, and split it.
+  //
+  // While at it, check whether any of its in/out edges is labeled for risk,
+  // and use the arbor data to compute it.
+  //
+  // TODO
 
-  } else {
-    // Graph with skeletons potentially split both at low confidence edges
-    // and by synapse clustering
-    elements.nodes = json.nodes.map(asNode).concat(json.branch_nodes.map(function(bnodeID) {
-      var node = asNode(bnodeID);
-      node.data.label = '';
-      node.data.branch = true;
-      return node;
-    }));
 
-    elements.edges = json.edges.map(asEdge).concat(json.intraedges.map(function(edge) {
-      return {data: {directed: false,
-                      arrow: 'none',
-                      id: edge[0] + '_' + edge[1],
-                      label: edge[2],
-                      color: '#F00',
-                      source: edge[0],
-                      target: edge[1],
-                      weight: 10}}; // default weight for intraedge
-    }));
-  }
+  var elements = {nodes: nodes,
+                  edges: Object.keys(edges).map(function(skid) { return edges[skid]; })};
+
 
   // Group neurons, if any groups exist, skipping splitted neurons
-  // (Neurons may have been splitted either by synapse clustering or at low-confidence edges.)
-  var splitted = {};
-  if (elements.nodes) {
-    splitted = elements.nodes.reduce(function(o, nodeID) {
-      nodeID = nodeID + '';
-      var i_ = nodeID.lastIndexOf('_');
-      if (-1 !== i_) o[nodeID.substring(0, i_)] = true;
-      return o;
-    }, {});
-  }
+  var splitted = elements.nodes.reduce(function(o, nodeID) {
+    nodeID = nodeID + '';
+    var i_ = nodeID.lastIndexOf('_');
+    if (-1 !== i_) o[nodeID.substring(0, i_)] = true;
+    return o;
+  }, {});
   this._regroup(elements, splitted, models);
 
   // Compute edge width for rendering the edge width
@@ -945,38 +921,33 @@ GroupGraph.prototype._load = function(models) {
     growlAlert("Info", "Nothing to load!");
     return;
   }
-  var post = {skeleton_list: skeleton_ids,
-              confidence_threshold: this.confidence_threshold};
-  if (this.clustering_bandwidth > 0) {
-    var selected = Object.keys(this.cy.nodes().toArray().reduce(function(m, node) {
-      if (node.selected()) {
-        return node.data('skeletons').reduce(function(m, model) {
-          m[model.id] = true;
-          return m;
-        }, m);
-      }
-      return m;
-    }, {}));
-    if (selected.length > 0) {
-      post.bandwidth = this.clustering_bandwidth;
-      post.expand = selected;
-    }
-  }
 
-  requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
+  // Collect list of skeleton arbors to load (those that are split)
+  var to_load = {};
+  this.cy.nodes().each(function(i, node) {
+    var id = "" + node.id(),
+        i = id.indexOf('_');
+    if (-1 !== i) to_load[id.substring(0, i)] = true;
+  });
+  var load_arbors = Object.keys(to_load);
+
+  requestQueue.replace(django_url + project.id + "/graph/arbor_graph",
       "POST",
-      post,
+      {skids: skeleton_ids},
       (function (status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);
-          if (json.error) {
-            if ('REPLACED' === json.error) return;
-            alert(json.error);
-            return;
-          }
+          if (json.error) return 'REPLACED' === json.error ? null : alert(json.error);
           this.updateGraph(json, models);
       }).bind(this),
       "graph_widget_request");
+
+  // TODO
+  //   Deal with the new arbor_graph data structure, needing splits of both kinds in the client.
+  //
+  //
+  //
+  //
 };
 
 GroupGraph.prototype.highlight = function(skeleton_id) {
@@ -1031,7 +1002,7 @@ GroupGraph.prototype.writeGML = function() {
 
   this.cy.nodes(function(i, node) {
     if (node.hidden()) return;
-    var props = node.data(); // props.id, props.color, props.skeletons, props.node_count, props.label,
+    var props = node.data(); // props.id, props.color, props.skeletons, props.label,
     ids[props.id] = i;
     var p = node.position(); // pos.x, pos.y
     // node name with escaped \ and "

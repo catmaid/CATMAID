@@ -387,7 +387,7 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/graphexport/json$', 'graphexport.export_jsongraph' ),
 
     # Graphs
-    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'graph2.skeleton_graph'),
+    (r'^(?P<project_id>\d+)/graph/arbor_graph', 'graph.arbor_graph'),
 
     # Circles
     (r'^(?P<project_id>\d+)/graph/circlesofhell', 'circles.circles_of_hell'),

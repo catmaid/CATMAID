@@ -443,7 +443,8 @@ def create_request_based_export_job(request, project_id):
         if request.user.is_superuser:
             raise Exception("Please make sure your output folder (%s) exists " \
                     "and is writable. It is configured by MEDIA_ROOT and " \
-                    "MEDIA_TREENODE_SUBDIRECTORY in settings.py.")
+                    "MEDIA_TREENODE_SUBDIRECTORY in settings.py." % \
+                    treenode_output_path)
         else:
             raise Exception("Sorry, the output path for the node export tool " \
                     "isn't set up correctly. Please contact an administrator.")
@@ -474,7 +475,7 @@ def export_connectors(request, project_id=None):
         raise Exception("Something went wrong while queuing the export: " + \
                 proc.result)
     json_data = json.dumps({'message': 'The connector archive is currently ' \
-            'exported. You will be notified once it is ready for download.'})
+            'exporting. You will be notified once it is ready for download.'})
     return HttpResponse(json_data, mimetype='text/json')
 
 @requires_user_role(UserRole.Browse)
@@ -488,5 +489,5 @@ def export_treenodes(request, project_id=None):
         raise Exception("Something went wrong while queuing the export: " + \
                 proc.result)
     json_data = json.dumps({'message': 'The treenode archive is currently ' \
-            'exported. You will be notified once it is ready for download.'})
+            'exporting. You will be notified once it is ready for download.'})
     return HttpResponse(json_data, mimetype='text/json')

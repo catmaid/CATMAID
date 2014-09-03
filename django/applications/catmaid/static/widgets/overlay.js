@@ -1008,8 +1008,8 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
     this.nodes[a[0]] = this.graphics.newNode(
-      a[0], null, a[1], a[6], this.phys2pixX(a[2]),
-      this.phys2pixY(a[3]), this.phys2pixZ(a[4]),
+      a[0], null, a[1], a[6], this.phys2pixX(a[2], a[3], a[4]),
+      this.phys2pixY(a[2], a[3], a[4]), this.phys2pixZ(a[2], a[3], a[4]),
       (a[4] - pz) / this.stack.resolution.z, a[5], a[7], a[8]);
   }, this);
 
@@ -1020,8 +1020,8 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
     // and confidence, a[7]: whether the user can edit the connector
     this.nodes[a[0]] = this.graphics.newConnectorNode(
-      a[0], this.phys2pixX(a[1]),
-      this.phys2pixY(a[2]), this.phys2pixZ(a[3]),
+      a[0], this.phys2pixX(a[1], a[2], a[3]),
+      this.phys2pixY(a[1], a[2], a[3]), this.phys2pixZ(a[1], a[2], a[3]),
       (a[3] - pz) / this.stack.resolution.z, a[4], a[7]);
   }, this);
 
@@ -1271,14 +1271,14 @@ SkeletonAnnotations.SVGOverlay.prototype.updatePaperDimensions = function () {
   this.paper.setSize(wi, he);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (x) {
-  return (x - this.stack.translation.x) / this.stack.resolution.x * this.stack.scale;
+SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (x, y, z) {
+  return this.stack.projectToStackX(z, y, x) * this.stack.scale;
 };
-SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (y) {
-  return (y - this.stack.translation.y) / this.stack.resolution.y * this.stack.scale;
+SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (x, y, z) {
+  return this.stack.projectToStackY(z, y, x) * this.stack.scale;
 };
-SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (z) {
-  return (z - this.stack.translation.z) / this.stack.resolution.z;
+SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (x, y, z) {
+  return this.stack.projectToStackZ(z, y, x);
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physX = function (x) {
   return this.stack.translation.x + ((x) / this.stack.scale) * this.stack.resolution.x;
@@ -1323,17 +1323,23 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     self.old_x = stack.x;
     self.old_y = stack.y;
 
-    var pz = stack.z * stack.resolution.z + stack.translation.z;
+    var pz = stack.stackToProjectZ(stack.z, stack.y, stack.x);
+
+    // Intersections with differently oriented stacks are stored in world
+    // (project) coordinates. We therefore have to adjust the requests's
+    // bounding box to that.
+    var bb = stack.createStackToProjectBox(stack.createStackViewBox());
 
     self.submit(
       django_url + project.id + '/node/list',
       {pid: stack.getProject().id,
        sid: stack.getId(),
-       z: pz,
-       top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
-       left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
-       width: (stack.viewWidth / stack.scale) * stack.resolution.x,
-       height: (stack.viewHeight / stack.scale) * stack.resolution.y,
+       minz: bb.min.z,
+       maxz: bb.max.z,
+       top: bb.min.y,
+       left: bb.min.x,
+       width: bb.max.x - bb.min.x,
+       height: bb.max.y - bb.min.y,
        zres: stack.resolution.z,
        atnid: atnid,
        labels: self.getLabelStatus()},

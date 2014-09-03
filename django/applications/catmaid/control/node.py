@@ -37,6 +37,7 @@ def node_list_tuples(request, project_id=None):
     and in the client that consumes it.
     '''
     project_id = int(project_id) # sanitize
+    stack_id = int(request.POST.get('sid')) # sanitize
     params = {}
     # z: the section index in calibrated units.
     # width: the width of the field of view in calibrated units.
@@ -46,10 +47,15 @@ def node_list_tuples(request, project_id=None):
     # top: the Y coordinate of the bounding box (field of view) in calibrated units
     # left: the X coordinate of the bounding box (field of view) in calibrated units
     atnid = int(request.POST.get('atnid', -1))
-    for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
+    for p in ('top', 'left', 'minz', 'maxz', 'width', 'height', 'zres'):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
+
+    # The node query is based on an intersection query which is created for
+    # each stack individually. The table name is therefore passed as a
+    # parameter as well.
+    params['table'] = 'catmaid_skeleton_intersections_%s_%s' % (project_id, stack_id)
 
     try:
         cursor = connection.cursor()
@@ -73,13 +79,15 @@ def node_list_tuples(request, project_id=None):
         # and of the next section (therefore the '<' and not '<=' for zhigh)
         params['bottom'] = params['top'] + params['height']
         params['right'] = params['left'] + params['width']
+
+        # FIXME: Using string concatenation to insert table name is unsafe!
         cursor.execute('''
         SELECT
             t1.id,
             t1.parent_id,
-            (t1.location).x,
-            (t1.location).y,
-            (t1.location).z,
+            (i.intersection).x,
+            (i.intersection).y,
+            (i.intersection).z,
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
@@ -93,25 +101,25 @@ def node_list_tuples(request, project_id=None):
             t2.radius,
             t2.skeleton_id,
             t2.user_id
-        FROM treenode t1
-             INNER JOIN treenode t2 ON
-               (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
-                OR (t1.parent_id IS NULL AND t1.id = t2.id))
+        FROM %s i''' % params['table'] + '''
+             INNER JOIN treenode t1 ON (i.child_id = t1.id)
+             INNER JOIN treenode t2 ON (i.parent_id = t2.id
+                               OR (i.child_id = t2.parent_id)
+                               OR (i.parent_id IS NULL AND i.child_id = t2.id))
         WHERE
-            (t1.location).z = %(z)s
-            AND (t1.location).x > %(left)s
-            AND (t1.location).x < %(right)s
-            AND (t1.location).y > %(top)s
-            AND (t1.location).y < %(bottom)s
-            AND t1.project_id = %(project_id)s
+            (i.intersection).z > %(minz)s
+            AND (i.intersection).z < %(maxz)s
+            AND (i.intersection).x > %(left)s
+            AND (i.intersection).x < %(right)s
+            AND (i.intersection).y > %(top)s
+            AND (i.intersection).y < %(bottom)s
         LIMIT %(limit)s
         ''', params)
 
-        # Above, notice that the join is done for:
+        # Above, notice that the first join is done to get data for the node in
+        # section z and the second join is done for:
         # 1. A parent-child or child-parent pair (where the first one is in section z)
         # 2. A node with itself when the parent is null
-        # This is by far the fastest way to retrieve all parents and children nodes
-        # of the nodes in section z within the specified 2d bounds.
 
         # A list of tuples, each tuple containing the selected columns for each treenode
         # The id is the first element of each tuple
@@ -173,7 +181,8 @@ def node_list_tuples(request, project_id=None):
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
-          AND (connector.location).z = %(z)s
+          AND (connector.location).z > %(minz)s
+          AND (connector.location).z < %(maxz)s
           AND (connector.location).x > %(left)s
           AND (connector.location).x < %(right)s
           AND (connector.location).y > %(top)s

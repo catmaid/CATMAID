@@ -8,6 +8,7 @@ Developer Documentation
    userprofiles
    dbmigration
    faq
+   administration
    djangounittest
    celeryinstall
    ami

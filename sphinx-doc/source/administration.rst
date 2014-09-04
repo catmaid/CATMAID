@@ -82,3 +82,60 @@ scripts ``scripts/database/backup-database.py`` and
 thing. Those, however, don't ask for a password, but require a
 ``.pgpass`` file (see `PostgreSQL documentation
 <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_).
+
+Making CATMAID available through SSL
+------------------------------------
+
+By default the connection between the CATMAID server and a browser is
+unencrypted. This means data can be read and manipulated on the way between both
+sides. To protect sensitive data like passwords and to improve security as a whole,
+it is recommended to use SSL/TLS to encrypt this communication. Below you will
+find notes on how to do this with Nginx.
+
+The webserver is the first place where the configuration has to be changed.
+Given that you created a certificate and key file, you would add the following
+to your Nginx server configuration::
+
+    server {
+        listen 443;
+        ...
+
+        ssl on;
+        ssl_certificate /etc/nginx/ssl/server.crt;
+        ssl_certificate_key /etc/nginx/ssl/server.key;
+        ssl_prefer_server_ciphers on;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_ciphers "EECDH+ECDSA+AESGCM:EECDH+aRSA+AESGCM:EECDH+ECDSA+SHA256:EECDH+aRSA+SHA256:EECDH+ECDSA+SHA384:EECDH+ECDSA+SHA256:EECDH+aRSA+SHA384:EDH+aRSA+AESGCM:EDH+aRSA+SHA256:EDH+aRSA:EECDH:!aNULL:!eNULL:!MEDIUM:!LOW:!3DES:!MD5:!EXP:!PSK:!SRP:!DSS:!RC4:!SEED";
+
+        ...
+    }
+
+If you refer to certificates and keys in Nginx that it didn't know before, you
+have to restart it (instead of reloading the configuration). The reason is that
+the Nginx process drops privileges after loading and root permissions are
+required to read the certificates and keys.
+
+A good resource to test your configuration and to disable weak ciphers is
+`Qualys SSL Labs <https://www.ssllabs.com/ssltest/>`_.
+
+Django's ``settings.py`` has to be updated as well to make sure it will only
+hand out session cookies and CSRF tokens on a secure connection::
+
+    # This CATMAID instance is served through SSL/TLS. Therefore, send session
+    # cookies only over HTTPS and don't add CSRF tokens for non-HTTPS connections.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # Assume a secure connection, if the X-FORWARDED-PROTO header is set to
+    # 'https'. This implies that one has to make sure this head is only set to
+    # 'https' if the connection is actually secure.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+Please make also sure that
+you override the ``X-Forwarded-Proto`` header passed to Django. It should only
+contain "https" if the connection is actually secure. Consult the `Django
+documentation
+<https://docs.djangoproject.com/en/1.6/ref/settings/#std:setting-SECURE_PROXY_SSL_HEADER>`_
+to read more about this.
+
+With this you should be able to provide a secure connection to your CATMAID
+server.

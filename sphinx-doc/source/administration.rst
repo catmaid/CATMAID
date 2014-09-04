@@ -46,6 +46,11 @@ Update Python packages::
 Synchronize the Django environment with the database::
 
    ./projects/mysite/manage.py syncdb
+   ./projects/mysite/manage.py migrate
+
+Collect new and changed static files::
+
+   ./projects/mysite/manage.py collectstatic -l
 
 Finally, open the web-frontend of your CATMAID instance in a browser to
 start the database migration. If you don't need it anymore, you can also

@@ -45,14 +45,15 @@ Slider = function(
   var setByIndex = function( i, cancelOnchange )
   {
     if ( values.length > 1 )
-      handlePos = i / ( values.length - 1 ) * barSize;
+      handlePos = 100 * i / ( values.length - 1 );
     else
       handlePos = 0;
     switch ( type )
     {
     case SLIDER_VERTICAL:
-      barTop.style.height = ( handlePos + handleTop ) + "px";
-      barBottom.style.height = ( barSize - handlePos + handleBottom ) + "px";
+      handle.style.height = handlePos + "%";
+      barTop.style.height = handlePos + "%";
+      barBottom.style.height = ( 100 - handlePos ) + "px";
       // select CSS class
       if (i < splitIndex) {
         barTop.className = "vSliderBarTop";
@@ -63,10 +64,9 @@ Slider = function(
       }
       break;
     case SLIDER_HORIZONTAL:
-      var w = Math.floor( handlePos + handleSize / 2 );
-      handle.style.left = ( handlePos + handleTop ) + "px";
-      barTop.style.width = ( w + handleTop ) + "px";
-      barBottom.style.width = ( barSize - w + handleSize + handleBottom ) + "px";
+      handle.style.left = handlePos + "%";
+      barTop.style.width = handlePos + "%";
+      barBottom.style.width = ( 100 - handlePos ) + "%";
       // select CSS class
       if (i < splitIndex) {
         barTop.className = "hSliderBarTop";
@@ -139,7 +139,8 @@ Slider = function(
    */
   var handleMouseDown = function( e )
   {
-    virtualHandlePos = handlePos;
+    getBarSize();
+    virtualHandlePos = barSize * handlePos / 100;
     
     ui.registerEvent( "onmousemove", handleMove );
     ui.registerEvent( "onmouseup", handleMouseUp );
@@ -179,6 +180,7 @@ Slider = function(
       md = ui.diffX;
       break;
     }
+    getBarSize();
     virtualHandlePos = Math.max( 0, Math.min( barSize, virtualHandlePos + md ) );
     var i = Math.round( virtualHandlePos / barSize * ( values.length - 1 ) );
     setByIndex( i );
@@ -279,24 +281,25 @@ Slider = function(
     
     return false;
   }
+
+  var getBarSize = function()
+  {
+    barSize = barSize || parseInt( $( view ).css(
+      type === SLIDER_VERTICAL ? 'height' : 'width') );
+  }
   
   /**
   * resize the slider
   */
   this.resize = function( newSize )
   {
-    viewSize = Math.max( handleSize * 2, newSize - viewTop - viewBottom );
-    switch ( type )
-    {
-    case SLIDER_VERTICAL:
-      view.style.height = viewSize + "px";
-      break;
-    case SLIDER_HORIZONTAL:
-      view.style.width = viewSize + "px";
-      break;
-    }
-    barSize = viewSize - handleSize - handleTop - handleBottom;
-    
+    var viewSize;
+    var axis = type === SLIDER_VERTICAL ? 'height' : 'width';
+    // Clamp the new size to be at least twice as large as the slider handle
+    viewSize = Math.max( parseInt( $( handle ).css( axis ) ) * 2, newSize );
+    barSize = parseInt( $( view ).css( axis ) );
+    view.style[ axis ] = viewSize + "px";
+
     // update the handle position
     setByIndex( ind, true );
     return;
@@ -365,8 +368,8 @@ Slider = function(
   var inputView;
   var timer;
   
-  var virtualHandlePos = 0;
-  var handlePos = 0;
+  var virtualHandlePos = 0; // Handle position when dragging as pixels
+  var handlePos = 0; // Handle position as percentage of slider
   
   var values;
   var ind = 0;  //!< the current index
@@ -379,6 +382,8 @@ Slider = function(
   var barTop = document.createElement( "div" );
   var barBottom = document.createElement( "div" );
   var handle = document.createElement( "div" );
+
+  var barSize;
   
   handle.onmousedown = handleMouseDown;
   barTop.onmousedown = barTopMouseDown;
@@ -387,37 +392,12 @@ Slider = function(
   switch ( type )
   {
   case SLIDER_VERTICAL:
-    var viewSize = parseInt( getPropertyFromCssRules( 2, 0, "height" ) );
-    var viewTop = parseInt( getPropertyFromCssRules( 2, 0, "marginTop" ) );
-    var viewBottom = parseInt( getPropertyFromCssRules( 2, 0, "marginBottom" ) );
-    var handleSize = parseInt( getPropertyFromCssRules( 2, 1, "height" ) );
-    var handleTop = parseInt( getPropertyFromCssRules( 2, 1, "marginTop" ) );
-    var handleBottom = parseInt( getPropertyFromCssRules( 2, 1, "marginBottom" ) );
-    var barSize = viewSize - handleSize - handleTop - handleBottom;
-    
-    // margins are used for the realignment only, so remove it
-    view.style.marginTop = view.style.marginBottom = "0px";
-    handle.style.marginTop = handle.style.marginBottom = "0px";
-    
     view.className = "vSliderView";
     barTop.className = "vSliderBarTop";
     barBottom.className = "vSliderBarBottom";
     handle.className = "vSliderHandle";
-    
     break;
   case SLIDER_HORIZONTAL:
-    var viewSize = parseInt( getPropertyFromCssRules( 2, 2, "width" ) );
-    var viewTop = parseInt( getPropertyFromCssRules( 2, 2, "marginLeft" ) );
-    var viewBottom = parseInt( getPropertyFromCssRules( 2, 2, "marginRight" ) );
-    var handleSize = parseInt( getPropertyFromCssRules( 2, 3, "width" ) );
-    var handleTop = parseInt( getPropertyFromCssRules( 2, 3, "marginLeft" ) );
-    var handleBottom = parseInt( getPropertyFromCssRules( 2, 3, "marginRight" ) );
-    var barSize = viewSize - handleSize - handleTop - handleBottom;
-    
-    // margins are used for the realignment only, so remove it
-    view.style.marginLeft = view.style.marginRight = "0px";
-    handle.style.marginLeft = handle.style.marginRight = "0px";
-    
     view.className = "hSliderView";
     barTop.className = "hSliderBarTop";
     barBottom.className = "hSliderBarBottom";
@@ -434,7 +414,7 @@ Slider = function(
     var name = uniqueId();
     
     inputView = document.createElement( "p" );
-    inputView.style.paddingLeft = "2em";
+    inputView.style.paddingLeft = "1em";
     input = document.createElement( "input" );
     input.type = "text";
     input.size = "3";

@@ -46,15 +46,6 @@ function CroppingTool() {
 			5,
 			function( val ){ statusBar.replaceLast( "crop s: " + val ); } );
 
-	// Make sliders a bit smaller to save space
-	var viewSize = parseInt( getPropertyFromCssRules( 2, 2, "width" ) );
-	var viewTop = parseInt( getPropertyFromCssRules( 2, 2, "marginLeft" ) );
-	var viewBottom = parseInt( getPropertyFromCssRules( 2, 2, "marginRight" ) );
-	var new_width = 0.6*viewSize + viewTop + viewBottom;
-	this.slider_crop_top_z.resize(new_width);
-	this.slider_crop_bottom_z.resize(new_width);
-	this.slider_crop_s.resize(new_width);
-
 	// Obtain a reference to the RoiTool toolbar button
 	var toolbar = document.getElementById("toolbar_roi");
 	var toolbar_button = document.getElementById("button_roi_apply").parentNode;
@@ -73,7 +64,7 @@ function CroppingTool() {
 	// A procedure to add containers for extra sliders
 	var create_slider_box = function(name, text, slider) {
 		var p = document.createElement("p");
-		p.innerHTML = text + "&nbsp;&nbsp;";
+		p.innerHTML = text;
 		// fill container
 		var container = create_tb_box();
 		container.appendChild(p);
@@ -90,6 +81,12 @@ function CroppingTool() {
 		this.slider_crop_bottom_z );
 	create_slider_box( "slider_crop_s", "zoom-level",
 		this.slider_crop_s );
+
+	// Make sliders a bit smaller to save space
+	var new_width = 80;
+	this.slider_crop_top_z.resize(new_width);
+	this.slider_crop_bottom_z.resize(new_width);
+	this.slider_crop_s.resize(new_width);
 
 	//! stacks menu
 	this.stacks_menu = new Menu();

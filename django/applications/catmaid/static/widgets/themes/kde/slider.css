@@ -1,20 +1,21 @@
 div.vSliderView
 {
-	/* this has to be the 1st rule for automated parsing */
-	position:absolute;
-	margin:68px 0px 128px 0px;
+	position:relative;
+	margin:20px 0px 20px 0px;
 	padding:0px;
 	width:32px;
 	height:256px;
 	z-index:8;
-	overflow:hidden;
 	background:url(checker_grey32.gif) repeat-y center top;
 }
 
 div.vSliderHandle
 {
-	/* this has to be the 2nd rule for automated parsing */
-	margin:32px 0px 32px 0px;
+	position:absolute;
+	top:0px;
+	left:0px;
+	margin:0px;
+	margin-top:-12px;
 	padding:0px;
 	width:100%;
 	height:24px;
@@ -28,26 +29,24 @@ div.vSliderHandle
 
 div.hSliderView
 {
-	/* this has to be the 3rd rule for automated parsing */
 	/*position:absolute;*/
 	position:relative;
-	margin:0px 32px 0px 32px;
+	margin:0px 10px 0px 10px;
 	padding:0px;
 	width:128px;
 	height:24px;
 	z-index:8;
-	overflow:hidden;
 	float:left;
 	/*background:url(hslider_bg.gif) repeat-x center;*/
 }
 
 div.hSliderHandle
 {
-	/* this has to be the 4th rule for automated parsing */
 	position:absolute;
 	top:0px;
 	left:0px;
-	margin:0px 0px 0px 0px;
+	margin:0px;
+	margin-left:-5px;
 	padding:0px;
 	width:11px;
 	height:100%;

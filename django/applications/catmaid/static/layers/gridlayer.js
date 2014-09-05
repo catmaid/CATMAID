@@ -30,9 +30,7 @@ var GridLayer = function(stack, options) {
   stack.getView().appendChild(this.view);
 
   // Create SVG
-  this.paper = Raphael(this.view,
-      Math.floor(stack.dimension.x * stack.scale),
-      Math.floor(stack.dimension.y * stack.scale));
+  this.paper = Raphael(this.view, stack.viewWidth, stack.viewHeight);
 };
 
 GridLayer.prototype = {};
@@ -65,8 +63,9 @@ GridLayer.prototype.setOptions = function(cellWidth, cellHeight, xOffset, yOffse
   if (lineWidth) this.lineWidth = lineWidth;
 };
 
-GridLayer.prototype.resize = function()
+GridLayer.prototype.resize = function(width, height)
 {
+  this.paper.setSize(width, height);
   this.redraw();
 };
 

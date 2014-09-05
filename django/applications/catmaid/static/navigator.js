@@ -367,7 +367,7 @@ function Navigator()
 		new Action({
 			helpText: "Zoom out",
 			keyShortcuts: {
-				'-': [ 45, 109, 189 ]
+				'-': [ 45, 109, 173, 189 ]
 			},
 			run: function (e) {
 				self.slider_s.move(-1);

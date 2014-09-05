@@ -265,7 +265,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Zoom out",
     keyShortcuts: {
-      '-': [ 45, 109, 189 ]
+      '-': [ 45, 109, 173, 189 ]
     },
     run: function (e) {
       self.prototype.slider_s.move(-1);

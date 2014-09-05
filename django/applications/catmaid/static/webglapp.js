@@ -1055,7 +1055,6 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundin
  */
 WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor = function(center, dimensions, options) {
     var o = options || {};
-    var line_material = new THREE.LineBasicMaterial( { color: o['color'] || 0x535353 } );
     var floor = o['floor'] || 0.0;
 
     // 10 steps in each dimension of the bounding box
@@ -1074,19 +1073,24 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor =
     var min_z = -1.0 * dimensions.z - zExtent * zStep + zOffset,
         max_z = zExtent * zStep + zOffset;
 
-    var geometry = new THREE.Geometry();
-    for (var i = 0; i <= nBaseLines + 2 * xExtent; ++i) {
-      for (var j = 0; j <= nBaseLines + 2 * zExtent; ++j) {
-        var x = min_x + i * xStep;
-        geometry.vertices.push( new THREE.Vector3( x, floor, min_z ) );
-        geometry.vertices.push( new THREE.Vector3( x, floor, max_z ) );
-        var z = min_z + j * zStep;
-        geometry.vertices.push( new THREE.Vector3( min_x, floor, z ) );
-        geometry.vertices.push( new THREE.Vector3( max_x, floor, z ) );
-      }
-    }
+    // Create planar mesh for floor
+    var xLines = nBaseLines + 2 * xExtent;
+    var zLines = nBaseLines + 2 * zExtent;
+    var width = max_x - min_x;
+    var height = max_z - min_z;
+    var plane = new THREE.PlaneGeometry(width, height, xLines, zLines);
+    var material = new THREE.MeshBasicMaterial({
+        color: o['color'] || 0x535353,
+        wireframe: true,
+        side: THREE.DoubleSide,
+        transparent: true
+    });
+    var mesh = new THREE.Mesh(plane, material);
+    // Center the mesh and rotate it to be XZ parallel
+    mesh.position.set(min_x + 0.5 * width, floor, min_z + 0.5 * height);
+    mesh.rotation.x = Math.PI * 0.5;
 
-    return new THREE.Line( geometry, line_material, THREE.LinePieces );
+    return mesh;
 };
 
 

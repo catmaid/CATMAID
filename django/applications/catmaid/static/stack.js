@@ -761,12 +761,6 @@ function Stack(
 
 	//-------------------------------------------------------------------------
 
-	// extract the borders of the viewer window from CSS rules
-	var viewTop    = parseInt( getPropertyFromCssRules( 3, 0, "top" ) );
-	var viewBottom = parseInt( getPropertyFromCssRules( 3, 0, "bottom" ) );
-	var viewLeft   = parseInt( getPropertyFromCssRules( 3, 0, "left" ) );
-	var viewRight  = parseInt( getPropertyFromCssRules( 3, 0, "right" ) );
-
 	var stackWindow = new CMWWindow( title );
 	var view = stackWindow.getFrame();
 

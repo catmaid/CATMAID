@@ -3,7 +3,6 @@
  */
 function Overview( stack )
 {
-	var self = this;
 	/**
 	 * get the view object
 	 */
@@ -53,10 +52,15 @@ function Overview( stack )
 	
 	this.redraw = function()
 	{
-
+		var $view = $( view );
 		// If it is minimized, don't redraw. Avoids fetching and decoding an extra jpeg
-		if ("" === view.style.width) {
-			return;
+		if ( $view.hasClass( 'smallMapView_hidden' ) ) return;
+
+		if ( typeof scale === "undefined" )
+		{
+			var scaleY = parseInt( $view.css( 'max-height' ) ) / maxY;
+			var scaleX = parseInt( $view.css( 'max-width' ) ) / maxX;
+			scale = Math.min( scaleX, scaleY );
 		}
 
 		var height = scale / stack.scale * stack.viewHeight;
@@ -114,21 +118,12 @@ function Overview( stack )
 	
 	var maxX = stack.dimension.x - 1;
 	var maxY = stack.dimension.y - 1;
-	
-	var height = parseInt( getPropertyFromCssRules( 3, 3, "height" ) );
-	var width = parseInt( getPropertyFromCssRules( 3, 3, "width" ) );
-	var scaleY = height / maxY;
-	var scaleX = width / maxX;
-	var scale = Math.min( scaleX, scaleY );
-	height = Math.floor( maxY * scale );
-	width = Math.floor( maxX * scale );
-	
+	var scale;
+
 	var view = document.createElement( "div" );
 	view.className = "smallMapView";
 	view.onmousedown = onmousedown.jump;
-	view.style.width = width + "px";
-	view.style.height = height + "px";
-		
+
 	var rect = document.createElement( "div" );
 	rect.className = "smallMapRect";
 	rect.onmousedown = onmousedown.drag;
@@ -137,15 +132,11 @@ function Overview( stack )
     var hide = function() {
         toggle.title = "show overview";
         view.className = "smallMapView_hidden";
-        view.style.width = "";
-        view.style.height = "";
     };
 
     var show = function() {
         toggle.title = "hide overview";
         view.className = "smallMapView";
-        view.style.width = width + "px";
-        view.style.height = height + "px";
         self.redraw();
     };
 	

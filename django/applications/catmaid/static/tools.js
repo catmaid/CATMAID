@@ -24,32 +24,6 @@ function setAlpha(element, alpha) {
   return;
 }
 
-function getCssRules(styleSheet) {
-  if (
-  document.styleSheets && document.styleSheets[styleSheet]) {
-    if (document.styleSheets[styleSheet].cssRules) return document.styleSheets[styleSheet].cssRules;
-    else if (document.styleSheets[styleSheet].rules) return document.styleSheets[styleSheet].rules;
-  } else
-  return undefined;
-}
-/*
- * get a CSS-Property
- * platform wrapper for incompatibilities between Moz, IE and KHTML
- */
-
-function getPropertyFromCssRules(
-styleSheet, //!< int number of the stylesheet
-rule, //!< int number of the cssRule
-property //!< string the property
-) {
-  var sheet = getCssRules(styleSheet);
-  if (sheet && sheet[rule]) {
-    if (sheet[rule].style[property]) return sheet[rule].style[property];
-    else if (sheet[rule].style.getPropertyValue[property]) return sheet[rule].style.getPropertyValue[property];
-  } else
-  return undefined;
-}
-
 /**
  * parse the fragment part of the current URL
  */

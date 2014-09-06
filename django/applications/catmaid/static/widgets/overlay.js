@@ -1123,18 +1123,21 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
     }
   }
 
-  if ( !doNotUpdate ) {
-    this.updateNodes(completionCallback);
-  }
+  var updateAndCallback = function() {
+    this.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
+    this.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
 
-  this.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
-  this.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
+    this.updatePaperDimensions();
 
-  this.updatePaperDimensions(stack);
-  if (doNotUpdate) {
     if (typeof completionCallback !== "undefined") {
       completionCallback();
     }
+  }.bind(this);
+
+  if ( !doNotUpdate ) {
+    this.updateNodes(updateAndCallback);
+  } else {
+    updateAndCallback();
   }
 };
 

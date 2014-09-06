@@ -524,7 +524,7 @@ div#classification_graph_object img.roiimage {
   text-indent: 0;
 }
 
-.connectivity_widget .DTTT_container {
+.connectivity_widget .dataTables_export {
   position: absolute;
   float: none;
   bottom: 0;

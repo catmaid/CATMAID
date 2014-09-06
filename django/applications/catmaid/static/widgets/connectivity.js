@@ -962,7 +962,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // Extend tables with DataTables for sorting, reordering and filtering
   var dataTableOptions = {
     bDestroy: true,
-    sDom: 'Rl<"connectivity_table_actions"fT>rti',
+    sDom: 'Rl<"connectivity_table_actions"f>rti',
     bFilter: true,
     bPaginate: false,
     bProcessing: true,
@@ -977,16 +977,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     },
     aoColumnDefs: [
       { aTargets: [0], sSortDataType: 'dom-checkbox' }
-    ],
-    tableTools: {
-        sSwfPath: STATIC_URL_JS + 'widgets/themes/kde/datatable/extras/TableTools/swf/copy_csv_xls_pdf.swf',
-        aButtons: [{
-                sExtends: 'collection',
-                sButtonText: 'Export',
-                aButtons: ['csv', 'xls', 'pdf', 'copy']
-            }
-        ]
-    }
+    ]
   };
 
   $.fn.dataTableExt.afnSortData['dom-checkbox'] = function (oSettings, iColumn) {
@@ -999,6 +990,23 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   table_outgoing.dataTable(dataTableOptions);
 
   $('.dataTables_wrapper', tables).css('min-height', 0);
+
+  $.each([table_incoming, table_outgoing], function () {
+    var self = this;
+    $(this).siblings('.connectivity_table_actions').append(
+      $('<div class="dataTables_export"></div>').append(
+        $('<input type="button" value="Export CSV" />').click(function () {
+          var text = self.fnSettings().aoHeader.map(function (r) {
+            return r.map(function (c) { return $(c.cell).text(); }).join(',');
+          }).join('\n');
+          text += '\n' + self.fnGetData().map(function (r) {
+            return r.map(function (c) { return '"'+($(c).text() || c)+'"'; }).join(',');
+          }).join('\n');
+          saveAs(new Blob([text], {type: 'text/plain'}), 'connectivity.csv');
+        })
+      )
+    );
+  });
 
   // Add 'select all' checkboxes
   var nSkeletons = Object.keys(this.skeletons).length;

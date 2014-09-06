@@ -700,25 +700,21 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
    * Support function to add a 'seclect all' checkbox.
    */
   var add_select_all_fn = function(widget, name, table, nSkeletons) {
-    // Offset of checkbox column due to extra columns.
-    var cbOffset = 0;
     // Assign 'select all' checkbox handler
     $('#' + name + 'stream-selectall' + widgetID).click(function( event ) {
       event.stopPropagation();
-      var rows = table[0].childNodes[1].childNodes; // all tr elements
       var linkTarget = getLinkTarget();
 
       // Remember the check state of this control
       widget.selectAllSelection[name] = this.checked;
+      var selfChecked = this.checked;
 
-      var skids = [];
-      for (var i=rows.length-1; i > -1; --i) {
-        var checkbox = rows[i].childNodes[cbOffset].childNodes[0];
-        checkbox.checked = this.checked;
-        var skid = parseInt(checkbox.value);
-        widget.skeletonSelection[skid] = this.checked;
-        skids.push(skid);
-      }
+      var skids = $('tbody input[type="checkbox"]', table).map(function () {
+        this.checked = selfChecked;
+        var skid = parseInt(this.value);
+        widget.skeletonSelection[skid] = selfChecked;
+        return skid;
+      }).get();
 
       if (this.checked) {
        if (linkTarget) {

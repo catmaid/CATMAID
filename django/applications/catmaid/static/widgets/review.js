@@ -187,39 +187,58 @@ var ReviewSystem = new function()
                 });
     };
 
+    /**
+     * Selects the next segment to review, that is the first segment that
+     * wasn't reviewed by either the current user or one that is followed. To
+     * check the review state of all segments, we want to make sure all requests
+     * returned from the server (otherwise we don't work with the most recent
+     * information). Therefore, the selection of the next segment is queued to
+     * be executed after all pending requests.
+     */
     this.selectNextSegment = function() {
         if (self.skeleton_segments) {
-            // Find out the index of the current segment
-            var index = self.current_segment ? self.skeleton_segments.indexOf(self.current_segment) : -1;
-            /**
-             * Support function to test whether a node hasn't been reviewed by
-             * any of the followed reviewers. This is the case if the list of
-             * reviewers is empty or no followed reviewer appears in it.
-             */
-            var unreviewed_nodes = function(node) {
-                return 0 === node['rids'].length || followedUsers.every(function(rid) {
-                    return -1 === node['rids'].indexOf(rid);
-                });
-            };
-            /**
-             * Support function to test whether a sgement has't been reviewed by
-             * any of the followed reviewers. If it has not been reviewed, a new
-             * review for it is started as a side effect.
-             */
-            var unreviewed_segments = function(segment, i) {
-                if (segment['sequence'].some(unreviewed_nodes)) {
-                    // Side effect which actually triggers the selection of the
-                    // next segment.
-                    self.initReviewSegment(i);
-                    return true;
+            var fn = function() {
+                // Find out the index of the current segment
+                var index = self.current_segment ? self.skeleton_segments.indexOf(self.current_segment) : -1;
+                /**
+                 * Support function to test whether a node hasn't been reviewed by
+                 * any of the followed reviewers. This is the case if the list of
+                 * reviewers is empty or no followed reviewer appears in it.
+                 */
+                var unreviewed_nodes = function(node) {
+                    return 0 === node['rids'].length || followedUsers.every(function(rid) {
+                        return -1 === node['rids'].indexOf(rid);
+                    });
+                };
+                /**
+                 * Support function to test whether a sgement has't been reviewed by
+                 * any of the followed reviewers. If it has not been reviewed, a new
+                 * review for it is started as a side effect.
+                 */
+                var unreviewed_segments = function(segment, i) {
+                    if (segment['sequence'].some(unreviewed_nodes)) {
+                        // Side effect which actually triggers the selection of the
+                        // next segment.
+                        self.initReviewSegment(i);
+                        return true;
+                    }
+                    return false;
+                };
+                // Find a segment with unreviewed nodes, starting after current segment
+                if (self.skeleton_segments.some(unreviewed_segments)) {
+                    return;
                 }
-                return false;
+                growlAlert("Done", "Done reviewing.");
             };
-            // Find a segment with unreviewed nodes, starting after current segment
-            if (self.skeleton_segments.some(unreviewed_segments)) {
-                return;
-            }
-            growlAlert("Done", "Done reviewing.");
+
+            var errFn = function() {
+                growlAlert("Error", "Couldn't select next segment for " +
+                    "review, please try again!");
+            };
+
+            // Queue the selection so that pending requests can finish before.
+            // Display an error message if something fails before.
+            submit(null, null, fn, false, false, errFn);
         }
     };
 

@@ -549,7 +549,7 @@ function Stack(
 
 			if ( typeof sp == "number" )
 			{
-				self.s = Math.max( self.MIN_S, Math.min( self.MAX_S, Math.round( sp ) ) );
+				self.s = Math.max( self.MIN_S, Math.min( self.MAX_S, sp ) );
 				self.scale = 1.0 / Math.pow( 2, self.s );
 			}
 

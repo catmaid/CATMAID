@@ -1007,7 +1007,7 @@ var realInit = function()
 		if ( isNaN( y ) ) delete y;
 		if ( values[ "x" ] ) x = parseInt( values[ "x" ] );
 		if ( isNaN( x ) ) delete x;
-		if ( values[ "s" ] ) s = parseInt( values[ "s" ] );
+		if ( values[ "s" ] ) s = parseFloat( values[ "s" ] );
         if ( isNaN( s ) ) delete s;
         if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
         if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
@@ -1040,7 +1040,7 @@ var realInit = function()
 			{
 				sids.push( parseInt( values[ "sid" + i ] ) );
 				if ( values[ "s" + i ] )
-					ss.push( parseInt( values[ "s" + i ] ) );
+					ss.push( parseFloat( values[ "s" + i ] ) );
 				else
 					ss.push( NaN );
 				if ( isNaN( sids[ i ] ) || isNaN( ss[ i ] ) )

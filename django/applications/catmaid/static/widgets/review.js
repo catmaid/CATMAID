@@ -250,8 +250,10 @@ var ReviewSystem = new function()
             $('#review_segment_table').remove();
         }
         
-        // Count which user reviewed how many nodes
-        // Map of user ID vs object containing name and count:
+        // Count which user reviewed how many nodes and map user ID vs object
+        // containing name and count.
+        // FIXME: count is wrong because branch points are repeated. Would have
+        // to create sets and then count the number of keys.
         var users = users.reduce(function(map, u) {
             // Create an empty segment count object
             var seg_count = skeleton_data.reduce(function(o, s) {
@@ -262,8 +264,6 @@ var ReviewSystem = new function()
             map[u[0]] = {name: u[1], count: 0, segment_count: seg_count};
             return map;
         }, {});
-        // TODO count is wrong because branch points are repeated. Would have to create sets and then count the number of keys.
-        users[-1] = {name: '3lunreviewed', count: 0};
 
         // Fill in the users count:
         skeleton_data.forEach(function(segment) {

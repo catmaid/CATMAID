@@ -63,9 +63,10 @@ var ReviewSystem = new function()
     };
 
     this.moveNodeInSegmentBackward = function() {
-        if (self.skeleton_segments===null)
+        if (null === self.skeleton_segments) {
             return;
-        if( self.current_segment_index == 0 ) {
+        }
+        if(0 === self.current_segment_index) {
             self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
             // Go to 'previous' section, to check whether an end really ends
             var segment = self.current_segment['sequence'];
@@ -181,7 +182,7 @@ var ReviewSystem = new function()
                         // this node, if not already present.
                         if (node_ob['rids'].indexOf(json.reviewer_id) === -1) {
                             node_ob['rids'].push(json.reviewer_id);
-                        };
+                        }
                     }
                 });
     };
@@ -408,8 +409,9 @@ var ReviewSystem = new function()
     };
 
     var loadImageCallback = function( imageArray ) {
-        if( imageArray.length == 0 )
+        if(0 === imageArray.length) {
             return;
+        }
         var src = imageArray.pop();
         var image = new Image();
         image.src = src;
@@ -417,19 +419,19 @@ var ReviewSystem = new function()
             $('#counting-cache').text( total_count - imageArray.length + '/' + total_count );
             loadImageCallback( imageArray );
         };
-    }
+    };
 
     this.cacheImages = function() {
         if (!checkSkeletonID()) {
             return;
         }
-        var tilelayer = project.focusedStack.getLayers()['TileLayer'];
+        var tilelayer = project.focusedStack.getLayers()['TileLayer'],
             stack = project.focusedStack,
             tileWidth = tilelayer.getTileWidth(),
             tileHeight = tilelayer.getTileHeight(),
             max_column = parseInt( stack.dimension.x / tileWidth ),
-            max_row = parseInt( stack.dimension.y / tileHeight )
-            startsegment = -1, endsegment = 0; tile_counter = 0;
+            max_row = parseInt( stack.dimension.y / tileHeight ),
+            startsegment = -1, endsegment = 0, tile_counter = 0;
         var s = [];
         for(var idx in self.skeleton_segments) {
             if( self.skeleton_segments[idx]['status'] !== "100.00" ) {
@@ -459,9 +461,8 @@ var ReviewSystem = new function()
         total_count = s.length;
         $('#counting-cache-info').text( 'From segment: ' + startsegment + ' to ' + endsegment );
         loadImageCallback( s );
-    }
-
-};
+    };
+}();
 
 /**
  * Support function for selecting a background color based on review state.

@@ -91,7 +91,7 @@ var ReviewSystem = new function()
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
-    this.moveNodeInSegmentForward = function(evt) {
+    this.moveNodeInSegmentForward = function(advanceToNextUnfollowed) {
         if (self.skeleton_segments===null)
             return;
         if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
@@ -122,7 +122,7 @@ var ReviewSystem = new function()
         self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
         self.current_segment_index++;
 
-        if (evt.shiftKey) {
+        if (advanceToNextUnfollowed) {
             // Advance current_segment_index to the first node that is not reviewed
             // which is a node with no reviewer of the current user.
             var i = self.current_segment_index;
@@ -187,7 +187,7 @@ var ReviewSystem = new function()
                 });
     };
 
-    this.selectNextSegment = function( ev ) {
+    this.selectNextSegment = function() {
         if (self.skeleton_segments) {
             // Find out the index of the current segment
             var index = self.current_segment ? self.skeleton_segments.indexOf(self.current_segment) : -1;

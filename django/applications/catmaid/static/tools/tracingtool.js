@@ -782,7 +782,7 @@ function TracingTool()
           if (!mayEdit())
               return false;
           if (ReviewSystem.validSegment())
-              ReviewSystem.moveNodeInSegmentForward(e);
+              ReviewSystem.moveNodeInSegmentForward(e.shiftKey);
           return true;
       }
   }) );
@@ -796,7 +796,7 @@ function TracingTool()
           if (!mayEdit())
               return false;
           if (ReviewSystem.validSegment())
-              ReviewSystem.selectNextSegment(e);
+              ReviewSystem.selectNextSegment();
           return true;
       }
   }) );

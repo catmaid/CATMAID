@@ -257,7 +257,7 @@ function TracingTool()
       '+': [ 43, 107, 61, 187 ]
     },
     run: function (e) {
-      self.prototype.slider_s.move(1);
+      self.prototype.slider_s.move(1, e.shiftKey);
       return true;
     }
   }) );
@@ -268,7 +268,7 @@ function TracingTool()
       '-': [ 45, 109, 173, 189 ]
     },
     run: function (e) {
-      self.prototype.slider_s.move(-1);
+      self.prototype.slider_s.move(-1, e.shiftKey);
       return true;
     }
   }) );

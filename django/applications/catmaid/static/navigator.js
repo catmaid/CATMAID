@@ -56,7 +56,9 @@ function Navigator()
 				4,
 				8 ),
 			8,
-			function( val ){ statusBar.replaceLast( "s: " + val ); } );
+			function( val ){ statusBar.replaceLast( "s: " + val ); },
+			undefined,
+			false );
 	
 	var slider_z_box = document.createElement( "div" );
 	slider_z_box.className = "box";
@@ -359,7 +361,7 @@ function Navigator()
 				'+': [ 43, 107, 61, 187 ]
 			},
 			run: function (e) {
-				self.slider_s.move(1);
+				self.slider_s.move(1, e.shiftKey);
 				return true;
 			}
 		}),
@@ -370,7 +372,7 @@ function Navigator()
 				'-': [ 45, 109, 173, 189 ]
 			},
 			run: function (e) {
-				self.slider_s.move(-1);
+				self.slider_s.move(-1, e.shiftKey);
 				return true;
 			}
 		}),
@@ -479,10 +481,11 @@ function Navigator()
 		self.slider_s.update(
 			self.stack.MAX_S,
 			self.stack.MIN_S,
-			(Math.abs(self.stack.MAX_S) + Math.abs(self.stack.MIN_S)) + 1,
+			{ major: (Math.abs(self.stack.MAX_S) + Math.abs(self.stack.MIN_S)) + 1,
+			  minor: (Math.abs(self.stack.MAX_S) + Math.abs(self.stack.MIN_S))*10 + 1 },
 			self.stack.s,
 			self.changeScaleDelayed,
-			-1 );
+			-0.01);
 		
 		if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
 		{
@@ -493,9 +496,10 @@ function Navigator()
 			self.slider_z.getView().parentNode.style.display = "block";
 		}
 		self.slider_z.update(
-			0,
-			0,
-			self.stack.slices,
+			undefined,
+			undefined,
+			{ major: self.stack.slices.filter(function(el,ind,arr) { return (ind % 10) === 0; }),
+			  minor: self.stack.slices },
 			self.stack.z,
 			self.changeSliceDelayed );
 		

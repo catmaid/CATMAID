@@ -94,9 +94,12 @@ var ReviewSystem = new function()
     this.moveNodeInSegmentForward = function(advanceToNextUnfollowed) {
         if (self.skeleton_segments===null)
             return;
+
+        // Mark current node as reviewed
+        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
+
         if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
             if( $('#remote_review_skeleton').attr('checked') ) {
-                self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
                 end_puffer_count += 1;
                 // do not directly jump to the next segment to review
                 if( end_puffer_count < 3) {
@@ -113,13 +116,11 @@ var ReviewSystem = new function()
                 self.selectNextSegment();
                 return;
             } else {
-                self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
                 self.startSkeletonToReview(skeletonID);
                 return;                
             }
         }
 
-        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
         self.current_segment_index++;
 
         if (advanceToNextUnfollowed) {

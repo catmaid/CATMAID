@@ -1241,14 +1241,7 @@ var OntologyEditor = new function()
     this.show_error_status = function( title, message, delaytime ) {
             if (!delaytime)
                 delaytime = 2500;
-            $('#growl-alert').growlAlert({
-              autoShow: true,
-              content: message,
-              title: title,
-              position: 'top-right',
-              delayTime: delaytime,
-              onComplete: function() { g.remove(); }
-            });
+            growlAlert(title, message, {style: 'error', duratin: delaytime});
     };
 
     this.display_wait_message = function( message ) {

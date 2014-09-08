@@ -410,14 +410,8 @@ var ClassificationEditor = new function()
                 if(r['status']) {
                     $("#annotation_graph_object").jstree("refresh", -1);
                     project.updateTool();
-                    $('#growl-alert').growlAlert({
-                      autoShow: true,
-                      content: 'Classification graph element "' + friendly_name + '" removed.',
-                      title: 'SUCCESS',
-                      position: 'top-right',
-                      delayTime: 2500,
-                      onComplete: function() { g.remove(); }
-                    });
+                    growlAlert('SUCCESS',
+                        'Classification graph element "' + friendly_name + '" removed.');
                 };
             });
         });
@@ -447,14 +441,7 @@ var ClassificationEditor = new function()
                 if(r['status']) {
                     $("#annotation_graph_object").jstree("refresh", -1);
                     project.updateTool();
-                    $('#growl-alert').growlAlert({
-                      autoShow: true,
-                      content: 'Classification graph element renamed.',
-                      title: 'SUCCESS',
-                      position: 'top-right',
-                      delayTime: 2500,
-                      onComplete: function() { g.remove(); }
-                    });
+                    growlAlert('SUCCESS', 'Classification graph element renamed.');
                 };
             });
         });
@@ -936,13 +923,6 @@ var ClassificationEditor = new function()
     this.show_status = function( title, message, delaytime ) {
         if (!delaytime)
             delaytime = 2500;
-        $('#growl-alert').growlAlert({
-          autoShow: true,
-          content: message,
-          title: title,
-          position: 'top-right',
-          delayTime: delaytime,
-          onComplete: function() { g.remove(); }
-        });
+        growlAlert(title, message, {duration: delaytime});
     };
 }

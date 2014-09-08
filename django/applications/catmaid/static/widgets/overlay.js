@@ -1869,15 +1869,25 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLinkInterpolated = Skelet
 //////
 
 
-window.growlAlert = function(title, message) {
-  $('#growl-alert').growlAlert({
-    autoShow: true,
-    content: message,
+window.growlAlert = function(title, message, options) {
+  var settings = {
     title: title,
-    position: 'top-right',
-    delayTime: 2500,
-    onComplete: function() { g.remove(); }
-  });
+    message: message,
+    duration: 3000,
+    size: 'large',
+    style: undefined // Gray background by default, alternatives are:
+                     // 'error' = red, 'warning' = yellow, 'notice' = green
+  };
+
+  // If an alert style wasn't provided, guess from the alert title
+  if (!options || !options.style) {
+    if (title.match(/error/i)) settings.style = 'error';
+    else if (title.match(/warn|beware/i)) settings.style = 'warning';
+    else if (title.match(/done|success/i)) settings.style = 'notice';
+  }
+
+  $.extend(settings, options);
+  $.growl(settings);
 };
 
 

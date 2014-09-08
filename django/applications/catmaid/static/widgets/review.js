@@ -388,14 +388,7 @@ var ReviewSystem = new function()
 
     var checkSkeletonID = function() {
         if (!skeletonID) {
-            $('#growl-alert').growlAlert({
-                autoShow: true,
-                content: 'You need to activate a skeleton to review.',
-                title: 'BEWARE',
-                position: 'top-right',
-                delayTime: 2500,
-                onComplete: function() { g.remove(); }
-            });
+            growlAlert('BEWARE', 'You need to activate a skeleton to review.');
             return false;
         }
         return true;

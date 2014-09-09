@@ -927,7 +927,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
      .append(incoming)
      .append(outgoing);
   content.append(tables);
-  layoutTables(this.tablesSideBySide);
 
   // Add handler to layout toggle
   $('#connectivity-layout-toggle-' + widgetID).unbind('change')
@@ -936,7 +935,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
           widget.tablesSideBySide = this.checked;
           layoutTables(this.checked);
         };
-      })(this));
+      })(this)).change();
 
   // Create incomining and outgoing tables
   var table_incoming = create_table.call(this, this.ordered_skeleton_ids,

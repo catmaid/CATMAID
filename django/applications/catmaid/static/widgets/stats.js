@@ -239,13 +239,14 @@ var ProjectStatistics = new function()
     // Create zero-filled arrays for each user spanning the full date range.
     var dateRange = (endDate - startDate) / msPerDay;
     var counts = {};
-    for (d in data) {
-      date = parseDate(data[d].date);
+    var name, i;
+    for (var d in data) {
+      var date = parseDate(data[d].date);
       name = data[d].name;
-      dayIndex = Math.round((date - startDate) / msPerDay);
+      var dayIndex = Math.round((date - startDate) / msPerDay);
       if (!(name in counts)) {
         counts[name] = [];
-        for (var i = 0; i < dateRange; i++) {
+        for (i = 0; i < dateRange; i++) {
           counts[name][i] = 0;
         }
       }
@@ -275,7 +276,7 @@ var ProjectStatistics = new function()
     var lineGroup = chart.append("g")
       .attr("class", "linegroup");
     var colors = ['red', 'blue', 'green', 'yellow', 'orange', 'black', 'gray'];
-    var i = 0;
+    i = 0;
     for (name in counts) {
       lineGroup.append("svg:path")
         .attr("d", lineGen(counts[name]))

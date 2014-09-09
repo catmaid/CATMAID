@@ -181,7 +181,7 @@ var OntologyEditor = new function()
                     var has_restrictions = false;
                     var rem_restriction_submenu = {};
 
-                    for (r_type in restriction_types) {
+                    for (var r_type in restriction_types) {
                         has_restrictions = true;
                         restrictions = restriction_types[r_type];
                         for (var r=0; r<restrictions.length; r++) {

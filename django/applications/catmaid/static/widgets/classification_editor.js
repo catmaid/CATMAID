@@ -156,7 +156,7 @@ var ClassificationEditor = new function()
                         var menu = {};
                         if (display_edit_tools) {
                             // Add entries to create child class instances
-                            for (group_name in child_groups) {
+                            for (var group_name in child_groups) {
                                 var menu_id = 'add_child_' + group_name;
                                 // Create "add child node" sub menu and put child nodes
                                 // with the same name into the same sub menu.

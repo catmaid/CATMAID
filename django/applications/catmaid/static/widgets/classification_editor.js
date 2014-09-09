@@ -714,7 +714,7 @@ var ClassificationEditor = new function()
                 data: form.serialize(),
                 success: function(data, textStatus) {
                     container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-                    setTimeout("ClassificationEditor.refresh()", 1500);
+                    setTimeout(ClassificationEditor.refresh, 1500);
                 }
             });
             return false;
@@ -735,7 +735,7 @@ var ClassificationEditor = new function()
                 data: form.serialize(),
                 success: function(data, textStatus) {
                     container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-                    setTimeout("ClassificationEditor.refresh()", 1500);
+                    setTimeout(ClassificationEditor.refresh, 1500);
                 }
             });
             return false;
@@ -756,7 +756,7 @@ var ClassificationEditor = new function()
                      url: remove_link.attr('href'),
                      success: function(data, textStatus) {
                          container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-                         setTimeout("ClassificationEditor.refresh()", 3000);
+                         setTimeout(ClassificationEditor.refresh, 3000);
                      }
                  });
              }
@@ -801,7 +801,7 @@ var ClassificationEditor = new function()
                      url: remove_link.attr('href'),
                      success: function(data, textStatus) {
                          container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-                         setTimeout("ClassificationEditor.refresh()", 3000);
+                         setTimeout(ClassificationEditor.refresh, 3000);
                      }
                  });
              }

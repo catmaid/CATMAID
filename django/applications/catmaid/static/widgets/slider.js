@@ -17,10 +17,12 @@ Slider = function(
   input,    //!< create an input or not
   min,      //!< the minimal value
   max,      //!< the maximal value
-  steps,    //!< number of steps or an array of values
+  steps,    //!< number of steps, an array of values,
+            //!< or an object literal of either for major and minor steps
   def,      //!< default value
-  onchange,  //!< method to call
-  split     //!< split value
+  onchange, //!< method to call
+  split,    //!< split value
+  forceSnap //!< whether to force input to snap to indexed values
   )
 {
   /**
@@ -44,10 +46,21 @@ Slider = function(
    */
   var setByIndex = function( i, cancelOnchange )
   {
+    self.setByValue( values[ i ], cancelOnchange );
+  };
+
+  /**
+   * set the handle position based on the slider value
+   *
+   * param {number} index Index of the value to move to, may be nonintegral
+   */
+  var setHandle = function (index)
+  {
     if ( values.length > 1 )
-      handlePos = 100 * i / ( values.length - 1 );
+      handlePos = 100 * index / ( values.length - 1 );
     else
       handlePos = 0;
+
     switch ( type )
     {
     case SLIDER_VERTICAL:
@@ -55,7 +68,7 @@ Slider = function(
       barTop.style.height = handlePos + "%";
       barBottom.style.height = ( 100 - handlePos ) + "px";
       // select CSS class
-      if (i < splitIndex) {
+      if (index < splitIndex) {
         barTop.className = "vSliderBarTop";
         barBottom.className = "vSliderBarBottom";
       } else {
@@ -68,7 +81,7 @@ Slider = function(
       barTop.style.width = handlePos + "%";
       barBottom.style.width = ( 100 - handlePos ) + "%";
       // select CSS class
-      if (i < splitIndex) {
+      if (index < splitIndex) {
         barTop.className = "hSliderBarTop";
         barBottom.className = "hSliderBarBottom";
       } else {
@@ -77,48 +90,58 @@ Slider = function(
       }
       break;
     }
-    self.val = values[ i ];
-    if ( input )
-    {
-      input.value = self.val;
-    }
-    ind = i;
-    
-    if ( !cancelOnchange ) self.onchange( self.val );
-    
-    return;
-  }
-  
+  };
+
   /**
-   * set a value, priorly check if it is in the value array
+   * Set the slider by a value. If forceSnap is false, allows values not in the
+   * value set. Assumes the value array is sorted and unique, but no assumptions
+   * are made about order or interval.
    */
-  this.setByValue = function( val, cancelOnchange )
-  {
-    var i = isValue( val );
-    if ( i > -1 )
-    {
-      setByIndex( i, cancelOnchange );
+  this.setByValue = function(val, cancelOnchange) {
+    var valBin, index;
+
+    if (values.length > 1) {
+      valBin = binValue(val, values);
+
+      // If arbitrary values are not allowed, restrict the value to values in
+      // the array
+      if (forceSnap && valBin.length > 1) {
+        valBin.length = 1; // Truncate
+        val = values[valBin[0]];
+      }
+
+      if (valBin.length > 1) {
+        // Linearly interpolate handle position between nearest value ticks
+        index = valBin[0] + (val - values[valBin[0]])/(values[valBin[1]] - values[valBin[0]]);
+      } else {
+        index = valBin[0];
+      }
+    } else {
+      index = 0;
+      val = values[0];
+      valBin = [0];
     }
-    return;
-  }
-  
+
+    setHandle(index);
+    self.val = val;
+    ind = valBin[0];
+
+    if (input) {
+      // Set input textbox to new value, truncating the value for display
+      input.value = Number(val).toFixed(2).replace(/\.?0+$/,"");
+    }
+
+    if (!cancelOnchange) self.onchange(self.val);
+  };
+
   /**
    * set a value, priorly check if it is in the value array
    */
   var setByInput = function( e )
   {
-    var i = isValue( this.value );
-    if ( i > -1 )
-    {
-      setByIndex( i );
-    }
-    else
-    {
-      this.value = self.val;
-    }
-    return;
-  }
-  
+    self.setByValue(Number(this.value));
+  };
+
   /**
    * check if a value is in the value array
    *
@@ -126,14 +149,47 @@ Slider = function(
    */
   var isValue = function( val )
   {
-    for ( var i = 0; i < values.length; ++i )
-    {
-      if ( values[ i ] == val )
-        return i;
+    var valBin = binValue( val, values );
+    return valBin.length === 1 ? valBin[0] : -1;
+  };
+
+  /**
+   * Find the index of value in a set of sorted bins. If the value is not in the
+   * set, find the bins surrounding the value.
+   */
+  var binValue = function(val, bins) {
+    var ascending = bins[0] < bins[bins.length - 1];
+    var minVal = ascending ? bins[0] : bins[bins.length - 1];
+    var maxVal = !ascending ? bins[0] : bins[bins.length - 1];
+    val = Number(val);
+
+    // Clamp val to bins range
+    if (val < minVal)
+      return [ascending ? 0 : bins.length - 1];
+    else if (val > maxVal)
+      return [ascending ? bins.length - 1 : 0];
+
+    // Binary search values for bin fitting val
+    var i = 0, j = bins.length - 1, n;
+    while (j - i > 1)  {
+      n = Math.floor((i + j) / 2);
+
+      if (val === bins[n]) {
+        return [n];
+      } else if (val > bins[n]) {
+        if (ascending) i = n;
+        else j = n;
+      } else {
+        if (ascending) j = n;
+        else i = n;
+      }
     }
-    return -1;
-  }
-  
+
+    if (val === bins[i]) return [i];
+    if (val === bins[j]) return [j];
+    return [i, j];
+  };
+
   /**
    * mouse button pressed on handle
    */
@@ -197,14 +253,8 @@ Slider = function(
     if ( w )
     {
       if ( type == SLIDER_HORIZONTAL ) w *= -1;
-      if ( w > 0 )
-      {
-        setByIndex( Math.min( values.length - 1, ind + 1 ) );
-      }
-      else
-      {
-        setByIndex( Math.max( 0, ind - 1 ) );
-      }
+
+      self.move( w > 0 ? 1 : -1, e.shiftKey );
     }
     return false;
   }
@@ -214,11 +264,43 @@ Slider = function(
    */
   var decrease = function()
   {
-    setByIndex( Math.max( 0, ind - 1 ) );
+    self.move( -1 );
     timer = window.setTimeout( decrease, 250 );
     return;
   }
   
+  /**
+   * increases the index and invoke timeout
+   */
+  var increase = function()
+  {
+    self.move( 1 );
+    timer = window.setTimeout( increase, 250 );
+    return;
+  };
+
+  /**
+   * move the slider from outside
+   */
+  this.move = function( i, major )
+  {
+    if ( major )
+    {
+      valBin = binValue( self.val, majorValues );
+
+      if ( i < 0 && valBin.length > 1)
+      {
+        valBin[0]++;
+      }
+
+      setByIndex( isValue( majorValues [ Math.max( 0, Math.min( majorValues.length - 1, valBin[0] + i ) ) ] ) );
+    }
+    else
+    {
+      setByIndex( Math.max( 0, Math.min( values.length - 1, ind + i ) ) );
+    }
+  };
+
   /**
    * mouse down on the top bar, so move up, setting a timer
    */
@@ -236,16 +318,6 @@ Slider = function(
   }
   
   /**
-   * increases the index and invoke timeout
-   */
-  var increase = function()
-  {
-    setByIndex( Math.min( values.length - 1, ind + 1 ) );
-    timer = window.setTimeout( increase, 250 );
-    return;
-  }
-  
-  /**
    * mouse down on the top bar, so move up, setting a timer
    */
   var barBottomMouseDown = function( e )
@@ -259,14 +331,6 @@ Slider = function(
     
     increase();
     return false;
-  }
-  
-  /**
-   * move the slider from outside
-   */
-  this.move = function( i )
-  {
-    setByIndex( Math.max( 0, Math.min( values.length - 1, ind + i ) ) );
   }
   
   /**
@@ -306,31 +370,50 @@ Slider = function(
   }
   
   this.update = function(
-    min,				//!< the minimal value
-    max,				//!< the maximal value
-    steps,				//!< number of steps or an array of values
-    def,				//!< default value
-    onchange,			//!< method to call
-    split              //!< split value
+    min,      //!< the minimal value
+    max,      //!< the maximal value
+    steps,    //!< number of steps, an array of values,
+              //!< or an object literal of either for major and minor steps
+    def,      //!< default value
+    onchange, //!< method to call
+    split     //!< split value
   )
   {
     this.onchange = onchange;
-    if ( ( typeof steps ) == "number" )
+
+    // If steps is not an object, create one.
+    if ( typeof steps !== "object" || Array.isArray( steps ) )
     {
-      values = new Array();
-      if ( steps > 1 )
-        var s = ( max - min ) / ( steps - 1 );
-      else
-        var s = 0;
-      for ( var i = 0; i < steps; ++i )
-        values [ i ] = i * s + min;
+      steps = { major: steps, minor: steps };
     }
-    else if ( ( typeof steps ) == "object" )
-    {
-      values = steps;
-      min = steps[ 0 ];
-      max = steps[ steps.length - 1 ];
-    }
+
+    values = [ steps.major, steps.minor ].map( function ( steps ) {
+      var values = [];
+
+      if ( ( typeof steps ) === "number" )
+      {
+        var s;
+        if ( steps > 1 )
+          s = ( max - min ) / ( steps - 1 );
+        else
+          s = 0;
+        for ( var i = 0; i < steps; ++i )
+          values[ i ] = i * s + min;
+      }
+      else if ( ( typeof steps ) === "object" )
+      {
+        values = steps;
+      }
+
+      return values;
+    } );
+
+    majorValues = values[ 0 ];
+    // Combine major and minor values, sort, and filter duplicates.
+    values = majorValues.concat( values[ 1 ] ).sort( function ( a, b ) { return a - b; } );
+    if ( majorValues[ 0 ] > majorValues[ majorValues.length - 1 ] ) values.reverse();
+    values = values.filter( function ( el, ind, arr )
+      { return ind === arr.indexOf( el ); } );
 
     // was a split parameter passed?
     if (split === undefined)
@@ -341,11 +424,14 @@ Slider = function(
     else
     {
       // set split index
-      splitIndex = isValue( split );
-      if (splitIndex == -1)
+      splitIndex = binValue( split, values );
+      if ( splitIndex.length > 1)
       {
-          // disable splitting
-          splitIndex = values.length;
+        splitIndex = splitIndex[1];
+      }
+      else
+      {
+        splitIndex = splitIndex[0];
       }
     }
     
@@ -372,9 +458,11 @@ Slider = function(
   var handlePos = 0; // Handle position as percentage of slider
   
   var values;
+  var majorValues;
   var ind = 0;  //!< the current index
-  this.val;     //!< the current value
+  this.val = 0;     //!< the current value
   var splitIndex = 0; //!< index where to change div class
+  if ( typeof forceSnap === 'undefined' ) forceSnap = true;
 
   if ( !ui ) ui = new UI();
   

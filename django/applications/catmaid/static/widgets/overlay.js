@@ -352,7 +352,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack,
       worldY = wc.worldTop + ((m.offsetY / stack.scale) * stack.resolution.y);
       coords.lastX = worldX;
       coords.lastY = worldY;
-      statusBar.printCoords('['+worldX+', '+worldY+', '+project.coordinates.z+']');
+      statusBar.printCoords('['+[worldX, worldY, project.coordinates.z].map(Math.round).join(', ')+']');
       coords.offsetXPhysical = worldX;
       coords.offsetYPhysical = worldY;
     }
@@ -1123,18 +1123,21 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
     }
   }
 
-  if ( !doNotUpdate ) {
-    this.updateNodes(completionCallback);
-  }
+  var updateAndCallback = function() {
+    this.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
+    this.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
 
-  this.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
-  this.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
+    this.updatePaperDimensions();
 
-  this.updatePaperDimensions(stack);
-  if (doNotUpdate) {
     if (typeof completionCallback !== "undefined") {
       completionCallback();
     }
+  }.bind(this);
+
+  if ( !doNotUpdate ) {
+    this.updateNodes(updateAndCallback);
+  } else {
+    updateAndCallback();
   }
 };
 

@@ -108,10 +108,20 @@ function TileLayer(
 		 * we take the zero zoom level and adjust the tile properties.
 		 * This way we let the browser do the zooming work.
 		 */
-		if (zoom < 0) {
+		if (zoom < 0 || zoom % 1 !== 0) {
 			artificialZoom = true;
-			mag = Math.pow(2, -zoom);
-			zoom = 0;
+			/* For nonintegral zoom levels the ceiling is used to select
+			 * source image zoom level. While using the floor would allow
+			 * better image quality, it would requiring dynamically
+			 * increasing the number of tiles to fill the viewport since
+			 * in that case effectiveTileWidth < tileWidth.
+			 */
+			zoom = Math.max(0, Math.ceil(zoom));
+			/* Magnification is positive for digital zoom beyond image
+			 * resolution and negative for non-integral zooms within
+			 * image resolution.
+			 */
+			mag = Math.pow(2, zoom - stack.s);
 		}
 
 		var effectiveTileWidth = tileWidth * mag;
@@ -242,11 +252,14 @@ function TileLayer(
 
 		var t = top;
 		var l = left;
+		var nextL, nextT, seamRow;
 
 		// update the images sources
 		for ( var i = 0; i < tiles.length; ++i )
 		{
 			var r = fr + i;
+			nextT = t + effectiveTileHeight;
+			seamRow = Math.round(nextT) - nextT > 0;
 			for ( var j = 0; j < tiles[ 0 ].length; ++j )
 			{
 				var c = fc + j;
@@ -286,14 +299,27 @@ function TileLayer(
 				tiles[ i ][ j ].style.left = l + "px";
 				tiles[ i ][ j ].style.visibility = "visible";
 
-				tiles[ i ][ j ].style.width = effectiveTileWidth + "px";
-				tiles[ i ][ j ].style.height = effectiveTileHeight + "px";
+				// To prevent tile seams when the browser is going to round the
+				// edge of the next column up a pixel, grow the width of this
+				// column slightly to fill the gap
+				nextL = l + effectiveTileWidth;
+				if (Math.round(nextL) - nextL > 0) {
+					tiles[ i ][ j ].style.width = Math.ceil(effectiveTileWidth) + "px";
+				} else {
+					tiles[ i ][ j ].style.width = effectiveTileWidth + "px";
+				}
 
-				l += effectiveTileWidth;
+				// As above, prevent tile seams when the next row will round up
+				if (seamRow) {
+					tiles[ i ][ j ].style.height = Math.ceil(effectiveTileHeight) + "px";
+				} else {
+					tiles[ i ][ j ].style.height = effectiveTileHeight + "px";
+				}
 
+				l = nextL;
 			}
 			l = left;
-			t += effectiveTileHeight;
+			t = nextT;
 		}
 		
 		

@@ -31,8 +31,7 @@ Menu = function () {
   content //!< object menu content
   ) {
     if (view.firstChild) view.removeChild(view.firstChild);
-    delete pulldowns;
-    pulldowns = new Object();
+    pulldowns = {};
     var table = document.createElement("table");
     for (var key in content) {
       var row = table.insertRow(-1);

@@ -74,8 +74,7 @@ function TileLayer(
 		while ( tilesContainer.firstChild )
 			tilesContainer.removeChild( tilesContainer.firstChild );
 		
-		delete tiles;
-		tiles = new Array();
+		tiles = [];
 		
 		for ( var i = 0; i < rows; ++i )
 		{

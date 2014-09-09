@@ -885,12 +885,6 @@ function CMWWindow( title )
 		return;
 	};
 	
-	this.clearListeners = function()
-	{
-		delete listeners;
-		listeners = new Array();
-	};
-	
 	/**
 	 * Call all listeners with a RESIZE event, the actual window redrawing is
 	 * done by parent.

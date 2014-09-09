@@ -340,7 +340,7 @@ function handle_updateProjects(status, text, xml) {
 		}
 		if (project) {
 			project.destroy();
-			delete project;
+			project = undefined;
 		}
 	}
 	ui.releaseEvents();
@@ -1002,13 +1002,13 @@ var realInit = function()
 		// simply parse the fragment values
 		// @todo take care for the values proper range
 		if ( values[ "z" ] ) z = parseInt( values[ "z" ] );
-		if ( isNaN( z ) ) delete z;
+		if ( isNaN( z ) ) z = undefined;
 		if ( values[ "y" ] ) y = parseInt( values[ "y" ] );
-		if ( isNaN( y ) ) delete y;
+		if ( isNaN( y ) ) y = undefined;
 		if ( values[ "x" ] ) x = parseInt( values[ "x" ] );
-		if ( isNaN( x ) ) delete x;
+		if ( isNaN( x ) ) x = undefined;
 		if ( values[ "s" ] ) s = parseInt( values[ "s" ] );
-        if ( isNaN( s ) ) delete s;
+        if ( isNaN( s ) ) s = undefined;
         if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
         if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
 
@@ -1027,13 +1027,13 @@ var realInit = function()
 		else
 		{
 			if ( values[ "pid" ] ) pid = parseInt( values[ "pid" ] );
-			if ( isNaN( pid ) ) delete pid;
+			if ( isNaN( pid ) ) pid = undefined;
 			if ( values[ "zp" ] ) zp = parseInt( values[ "zp" ] );
-			if ( isNaN( z ) ) delete zp;
+			if ( isNaN( z ) ) zp = undefined;
 			if ( values[ "yp" ] ) yp = parseInt( values[ "yp" ] );
-			if ( isNaN( y ) ) delete yp;
+			if ( isNaN( y ) ) yp = undefined;
 			if ( values[ "xp" ] ) xp = parseInt( values[ "xp" ] );
-			if ( isNaN( x ) ) delete xp;
+			if ( isNaN( x ) ) xp = undefined;
 			if ( values[ "tool" ] ) inittool = values[ "tool"];
 			
 			for ( var i = 0; values[ "sid" + i ]; ++i )
@@ -1060,7 +1060,7 @@ var realInit = function()
 		// find data view setting
 		if ( values[ "dataview" ] )
 			current_dataview = parseInt( values["dataview"] );
-		if ( isNaN( current_dataview ) ) delete current_dataview;
+		if ( isNaN( current_dataview ) ) current_dataview = undefined;
 	}
 	
 	statusBar = new Console();

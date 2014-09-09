@@ -929,7 +929,7 @@ TextlabelLayer = function(
 	var handle_update = function( status, text, xml )
 	{
     var check = $('#textlabeleditable').attr("checked");
-		if ( status = 200 )
+		if ( 200 === status )
 		{
 			//alert( "data: " + text );
 			var e = eval( "(" + text + ")" );

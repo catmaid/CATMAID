@@ -90,7 +90,7 @@ function TaggingTool()
      */
     this.retrieve_project_tags_handler = function( status, text, xml )
     {
-        if ( status = 200 && text )
+        if ( 200 === status && text )
         {
             var e = eval( "(" + text + ")" );
             var tags = self.list_to_string( e.tags );
@@ -112,7 +112,7 @@ function TaggingTool()
      */
     this.retrieve_stack_tags_handler = function( status, text, xml )
     {
-        if ( status = 200 && text )
+        if ( 200 === status && text )
         {
             var e = eval( "(" + text + ")" );
             var tags = self.list_to_string( e.tags );
@@ -266,7 +266,7 @@ function TaggingTool()
 
     this.update_project_tags_handler = function( status, text, xml )
     {
-        if ( status = 200 )
+        if ( 200 === status )
         {
             self.update_states.project = "done";
             // update the project tags
@@ -280,7 +280,7 @@ function TaggingTool()
 
     this.update_stack_tags_handler = function( status, text, xml )
     {
-        if ( status = 200 )
+        if ( 200 === status )
         {
             self.update_states.stack = "done";
             // update the stack tags

@@ -1737,7 +1737,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
 SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = function() {
   var atn = SkeletonAnnotations.atn;
   if (null === atn.id) {
-    growlAlert("A terminal must be select in order to switch to its connector");
+    growlAlert("Information", "A terminal must be selected in order to switch to its connector");
     return;
   }
   var ob = this.nodes[atn.id];

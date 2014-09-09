@@ -2173,7 +2173,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
         function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
         function(skid) { return {}; },
         (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(this),
-        function(skid) { growlAlert("Failed to load synapses for: " + skid); },
+        function(skid) { growlAlert("Error", "Failed to load synapses for: " + skid); },
         (function() { this.render(); }).bind(this));
   }
 };

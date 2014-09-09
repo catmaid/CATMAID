@@ -180,7 +180,8 @@ var ReviewSystem = new function()
                     self.current_segment.sequence[self.current_segment_index-1].z) /
                     project.focusedStack.resolution.z;
         if (Math.abs(zdiff) > 1) growlAlert("Skipped sections",
-            "This node is " + Math.abs(zdiff) + " sections away from the previous node.");
+            "This node is " + Math.abs(zdiff) + " sections away from the previous node.",
+            {style: 'warning'});
     };
 
     var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;

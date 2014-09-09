@@ -208,7 +208,7 @@ function TracingTool()
     SkeletonAnnotations.Tag.changeScale();
     stack.moveToPixel( stack.z, stack.y, stack.x, val );
     return;
-  }
+  };
 
   this.prototype.changeSlice = function( val )
   {
@@ -216,7 +216,7 @@ function TracingTool()
 
     SkeletonAnnotations.Tag.changeSlice();
     stack.moveToPixel( val, stack.y, stack.x, stack.s );
-  }
+  };
 
 
   var updateStatusBar = function( e ) {
@@ -861,7 +861,7 @@ function TracingTool()
     self.prototype.redraw();
   };
 
-};
+}
 
 /* Works as well for skeletons.
  * @param type A 'neuron' or a 'skeleton'.
@@ -955,7 +955,7 @@ TracingTool.search = function()
             }, function (status, text) {});
             return false;
           };
-        }
+        };
         for (i = 0; i < data.length; ++i) {
           row = $('<tr/>');
           row.append($('<td/>').text(i+1));
@@ -976,7 +976,7 @@ TracingTool.search = function()
               actionLink.attr({'href':''});
               actionLink.click(actionaddstage(data[i].class_name));
               actionLink.text(" Add to selection table");
-              tdd.append(actionLink)
+              tdd.append(actionLink);
             }
             row.append(tdd);
           } else if (data[i].class_name === 'label') {
@@ -1006,7 +1006,7 @@ TracingTool.search = function()
                            .text("[" + index + "]")
                   ).append("&nbsp;");
                 if( index % 20 == 0)
-                  td.append('<br />')
+                  td.append('<br />');
                 return index + 1;
               }, 1);
             } else {
@@ -1113,4 +1113,4 @@ function display_tracing_setup_dialog(pid, has_needed_permissions,
     modal: true,
     buttons: buttons,
   });
-};
+}

@@ -71,7 +71,7 @@ function CroppingTool() {
 		container.appendChild(slider.getView());
 		container.appendChild(slider.getInputView());
 		// add container to the toolbar
-		toolbar.insertBefore(container, toolbar_button)
+		toolbar.insertBefore(container, toolbar_button);
 		added_elements.push(container);
 	};
 
@@ -101,7 +101,7 @@ function CroppingTool() {
 	};
 	stacks_menu_item.onmouseout = function() {
 		this.lastChild.style.display = 'none';
-	}
+	};
 	var stacks_p = document.createElement("p");
 	var stacks_a = document.createElement("a");
 	stacks_a.innerHTML = "Stacks";
@@ -121,7 +121,7 @@ function CroppingTool() {
 	var rgb_slices_container = create_tb_box();
 	var rgb_slices_p1 = document.createElement("p");
 	var rgb_slices_label = document.createElement("label");
-	rgb_slices_label.setAttribute("for", "check_crop_rgb_slices")
+	rgb_slices_label.setAttribute("for", "check_crop_rgb_slices");
 	rgb_slices_label.innerHTML = "RGB slices";
 	rgb_slices_p1.appendChild(rgb_slices_label);
 	this.check_rgb_slices = document.createElement("input");
@@ -149,8 +149,8 @@ function CroppingTool() {
 			if ( stack.marked )
 			{
 				if ( nStacks > 0 )
-					stacks += ","
-				stacks += stack.data.id.toString()
+					stacks += ",";
+				stacks += stack.data.id.toString();
 				nStacks++;
 			}
 		}
@@ -175,7 +175,7 @@ function CroppingTool() {
 
 		var url = django_url + project.id + '/stack/' + stacks + '/crop/' + cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" + z_min + "," + z_max + '/' + zoom_level + '/' + single_channels + '/';
 		return url;
-	}
+	};
 
 	/**
 	 * crop a microstack by initiating a server backend call
@@ -184,13 +184,13 @@ function CroppingTool() {
 	{
 		var url = self.get_crop_url();
 		var cb = self.getCropBox();
-		var data = {'rotationcw': cb.rotation_cw}
+		var data = {'rotationcw': cb.rotation_cw};
 		if (url)
 		{
 			requestQueue.register(url, 'GET', data, handle_crop );
 		}
 		return false;
-	}
+	};
 
 	/**
 	 * Handle the response of a microstack crop request. This answer is not the
@@ -216,7 +216,7 @@ function CroppingTool() {
 			alert( "The server returned an unexpected response (status: " + status + "):\n" + text );
 		}
 		return;
-	}
+	};
 
 	/**
 	 * This methods gets the related stacks of the current project and creates
@@ -257,7 +257,7 @@ function CroppingTool() {
 								// closures had to be used.
 								curr_stack.marked = ! curr_stack.marked;
 								self.updateStacksMenu();
-							}
+							};
 						})(stack)
 					}
 				);
@@ -271,7 +271,7 @@ function CroppingTool() {
 			document.getElementById( "crop_stacks_menu_box" ).style.display = "none";
 		}
 		document.getElementById( "crop_stacks_menu" ).appendChild( self.stacks_menu.getView() );
-	}
+	};
 
 	//--------------------------------------------------------------------------
 	/**
@@ -289,25 +289,25 @@ function CroppingTool() {
 		self.changeSlice( changeSliceDelayedParam.z );
 		changeSliceDelayedParam = null;
 		return false;
-	}
+	};
 
 	this.changeSliceDelayed = function( val )
 	{
 		if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
 		changeSliceDelayedParam = { z : val };
 		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
-	}
+	};
 
 	this.changeSlice = function( val )
 	{
 		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
 		return;
-	}
+	};
 
 	this.changeBottomSlice = function( val )
 	{
 
-	}
+	};
 
 	/**
 	 * ... same as said before for scale changes ...
@@ -321,14 +321,14 @@ function CroppingTool() {
 		self.changeScale( changeScaleDelayedParam.s );
 		changeScaleDelayedParam = null;
 		return false;
-	}
+	};
 
 	this.changeScaleDelayed = function( val )
 	{
 		if ( changeScaleDelayedTimer ) window.clearTimeout( changeScaleDelayedTimer );
 		changeScaleDelayedParam = { s : val };
 		changeScaleDelayedTimer = window.setTimeout( changeScaleDelayedAction, 100 );
-	}
+	};
 
 	this.changeScale = function( val )
 	{
@@ -338,7 +338,7 @@ function CroppingTool() {
 		statusBar.replaceLast( "crop s: " + val );
 		self.zoomlevel = val;
 		return;
-	}
+	};
 
 	/**
 	 * change the scale, making sure that the point keep_[xyz] stays in
@@ -360,7 +360,7 @@ function CroppingTool() {
 		var new_centre_y = keep_y - dy * (old_scale / new_scale);
 
 		self.stack.moveTo(self.stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
-	}
+	};
 
 	//--------------------------------------------------------------------------
 
@@ -433,7 +433,7 @@ function CroppingTool() {
 		self.updateControls();
 
 		return;
-	}
+	};
 
 	/**
 	 * unregister all stack related mouse and keyboard controls
@@ -444,7 +444,7 @@ function CroppingTool() {
 		CroppingTool.superproto.unregister.call( self );
 
 		return;
-	}
+	};
 
 	/**
 	 * unregister all project related GUI control connections and event
@@ -491,7 +491,7 @@ function CroppingTool() {
 		CroppingTool.superproto.destroy.call( self );
 
 		return;
-	}
+	};
 }
 extend( CroppingTool, RoiTool );
 

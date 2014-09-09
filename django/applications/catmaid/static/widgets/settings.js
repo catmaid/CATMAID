@@ -90,8 +90,8 @@ SettingsWidget.prototype.init = function(space)
         xOffset: parseInt($("input", gridCellXOffset).val()),
         yOffset: parseInt($("input", gridCellYOffset).val()),
         lineWidth: parseInt($("input", gridLineWidth).val())
-      }
-    }
+      };
+    };
     // General grid visibility
     $(ds).append(createCheckboxSetting("Show grid on open stacks", function() {
           // Add a grid layer to all open stacks
@@ -106,7 +106,7 @@ SettingsWidget.prototype.init = function(space)
               s.removeLayer("grid");
             });
           }
-        }))
+        }));
     // Append grid options to settings
     $(ds).append(gridCellWidth);
     $(ds).append(gridCellHeight);
@@ -124,7 +124,7 @@ SettingsWidget.prototype.init = function(space)
           s.redraw();
         }
       });
-    }
+    };
     $("input[type=text]", ds).spinner({
       min: 0,
       change: gridUpdate,
@@ -159,7 +159,7 @@ SettingsWidget.prototype.init = function(space)
     // Add naming option select box
     var select = $('<select/>');
     namingOptions.forEach(function(o) {
-      this.append(new Option(o.name, o.id))
+      this.append(new Option(o.name, o.id));
     }, select);
     ds.append(createLabeledControl('Neuron label', select));
 
@@ -198,7 +198,7 @@ SettingsWidget.prototype.init = function(space)
         });
       } else {
         addLabeling();
-      };
+      }
     });
     var removeButton = $('<button/>').text('Remove labeling').click(function() {
       // The last element cannot be removed
@@ -221,7 +221,7 @@ SettingsWidget.prototype.init = function(space)
         var optionElement = $('<option/>').attr('value', o.id)
             .text(o.name);
         if (i==0) {
-          optionElement.attr('disabled', 'disabled')
+          optionElement.attr('disabled', 'disabled');
         }
         return optionElement[0];
       });

@@ -15,7 +15,7 @@ ResizeHandle = function (type) {
    */
   this.getView = function () {
     return view;
-  }
+  };
 
   var onmousemove = {
     h: function (e) {
@@ -32,13 +32,13 @@ ResizeHandle = function (type) {
 
   var onmouseup = {
     h: function (e) {
-      ui.releaseEvents()
+      ui.releaseEvents();
       ui.removeEvent("onmousemove", onmousemove.h);
       ui.removeEvent("onmouseup", onmouseup.h);
       return false;
     },
     v: function (e) {
-      ui.releaseEvents()
+      ui.releaseEvents();
       ui.removeEvent("onmousemove", onmousemove.v);
       ui.removeEvent("onmouseup", onmouseup.v);
       return false;
@@ -81,4 +81,4 @@ ResizeHandle = function (type) {
   view.className = "resize_handle_" + type;
   view.onmousedown = onmousedown[type];
   view.onmouseup = onmouseup[type];
-}
+};

@@ -190,8 +190,8 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
     var create_handler = function(skid) {
       return function() {
         TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skid );
-      }
-    }
+      };
+    };
     // Go to nearest
     if (entity.skeleton_ids.length > 0) {
       $(a).click(create_handler(entity.skeleton_ids[0]));
@@ -261,7 +261,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
                   // reference for potential removal.
                   var appender = function(new_tr) {
                     new_tr.setAttribute('expansion_' + entity.id, 'true');
-                    $(tr).after(new_tr)
+                    $(tr).after(new_tr);
                   };
 
                   // Mark entities as unselected and create result table rows
@@ -303,7 +303,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   // Add click handlers to show an annotation in navigator
   $(".show_annotation", $(ul)).click( function() {
       // Expect name to be the text content of the node
-      var annotation_name = $(this).text();;
+      var annotation_name = $(this).text();
       var annotation_id = $(this).attr('annotation_id');
       // Create a new navigator and set it to an annotation filter node
       var NN = new NeuronNavigator();
@@ -483,7 +483,7 @@ NeuronAnnotations.prototype.add_query_field = function()
           this.nextFieldID
   });
 
-  $newRow.children()[0].innerHTML = 'and:'
+  $newRow.children()[0].innerHTML = 'and:';
 
   // Update the text field attributes.
   var $text = $newRow.find("input[type='text']");
@@ -572,17 +572,17 @@ NeuronAnnotations.prototype.get_entities = function(checked)
         }, this);
       return o;
     }).bind(this), []);
-}
+};
 
 NeuronAnnotations.prototype.get_selected_neurons = function()
 {
   return this.get_entities(true);
-}
+};
 
 NeuronAnnotations.prototype.get_unselected_neurons = function()
 {
   return this.get_entities(false);
-}
+};
 
 NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
 {
@@ -607,7 +607,7 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
     $new_meta_field.click(add_meta_annotation_fields.bind(this,
         $new_meta_field.hide.bind($new_meta_field)));
     // Increase meta annotation counter in dialog
-    dialog.meta_annotation_inputs.push(meta_annotation_input)
+    dialog.meta_annotation_inputs.push(meta_annotation_input);
     // Call continuation
     continuation();
   };
@@ -639,7 +639,7 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
   // the auto completion controls com after the dialog in the DOM (to display
   // them above the dialog).
   this.add_autocomplete_to_input(annotation_input);
-}
+};
 
 NeuronAnnotations.prototype.annotate_neurons_of_skeletons = function(
     skeleton_ids, callback)
@@ -839,7 +839,7 @@ NeuronAnnotations.prototype.prev_page = function()
   if (this.display_start >= this.display_length) {
     this.display_start -= this.display_length;
     this.query(false);
-  };
+  }
 };
 
 /**
@@ -851,5 +851,5 @@ NeuronAnnotations.prototype.next_page = function()
   if (this.total_n_results >= new_display_start) {
     this.display_start = new_display_start;
     this.query(false);
-  };
+  }
 };

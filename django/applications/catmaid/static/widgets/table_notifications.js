@@ -190,7 +190,7 @@ var NotificationsTable = new function()
                   '  <option>Show</option>' + 
                   '  <option' + disabled + '>Approve</option>' + 
                   '  <option' + disabled + '>Reject</option>' + 
-                  '</select>'
+                  '</select>';
         },
         "sWidth": "100px"
       } // actions
@@ -235,4 +235,4 @@ var NotificationsTable = new function()
       asInitVals[1] = $(this).val();
     });
   };
-}
+}();

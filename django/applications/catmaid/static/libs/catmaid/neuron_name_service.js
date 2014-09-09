@@ -450,7 +450,7 @@ var NeuronNameService = (function()
           }).bind(this)));
       }
     };
-  };
+  }
 
   return {
     getInstance: function() {

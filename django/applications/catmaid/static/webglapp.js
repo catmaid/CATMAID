@@ -1267,7 +1267,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
   var d = this.space.dimensions;
   var fov = 75;
   var near = 1;
-  var far = 3 * Math.max(d.x, Math.max(d.y, d.z))
+  var far = 3 * Math.max(d.x, Math.max(d.y, d.z));
   var orthoNear = 1;
   var orthoFar =  far;
 	this.camera = new THREE.CombinedCamera(-this.space.canvasWidth,
@@ -2033,7 +2033,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     }
 
     // When not using shading, but using creator or reviewer:
-    if (!node_weights) node_weights = {}
+    if (!node_weights) node_weights = {};
 
     var seen = {};
     this.geometry['neurite'].colors = this.geometry['neurite'].vertices.map(function(vertex) {
@@ -2269,7 +2269,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
       var colors = [new THREE.Color().setRGB(0, 1, 0),  // axon: green
                     new THREE.Color().setRGB(0, 0, 1)]; // dendrite: blue
       fnConnectorValue = function(node_id, connector_id) { return axon[node_id] ? 0 : 1; };
-      fnMakeColor = function(value) { return colors[value]; }
+      fnMakeColor = function(value) { return colors[value]; };
     } else {
       // Not computable
       fnMakeColor = function() { return new THREE.Color().setRGB(0.4, 0.4, 0.4); };

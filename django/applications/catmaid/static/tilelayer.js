@@ -19,7 +19,7 @@
 function getTileBaseName( pixelPos )
 {
 	var n = pixelPos.length;
-	var dir = ""
+	var dir = "";
 	for ( var i = n - 1; i > 1; --i )
 	{
 		dir += pixelPos[ i ] + "/";
@@ -91,7 +91,7 @@ function TileLayer(
 		}
 
 		return;
-	}
+	};
 	
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
@@ -302,7 +302,7 @@ function TileLayer(
 		}
 
 		return 2;
-	}
+	};
 	
 	this.resize = function( width, height )
 	{
@@ -313,17 +313,17 @@ function TileLayer(
 		initTiles( rows, cols );
 		self.redraw();
 		return;
-	}
+	};
 	
 	/**
 	 * Get the width of an image tile.
 	 */
-	this.getTileWidth = function(){ return tileWidth; }
+	this.getTileWidth = function(){ return tileWidth; };
 	
 	/**
 	 * Get the height of an image tile.
 	 */
-	this.getTileHeight = function(){ return tileHeight; }
+	this.getTileHeight = function(){ return tileHeight; };
 	
 	/**
 	 * Get the number of tile columns.
@@ -334,17 +334,17 @@ function TileLayer(
 			return 0;
 		else
 			return tiles[ 0 ].length;
-	}
+	};
 	
 	/**
 	 * Get the number of tile rows.
 	 */
-	this.numTileColumns = function(){ return tiles.length; }
+	this.numTileColumns = function(){ return tiles.length; };
 	
 	/**
 	 * Get the stack.
 	 */
-	this.getStack = function(){ return stack; }
+	this.getStack = function(){ return stack; };
 
 	/* Set opacity in the range from 0 to 1 */
 	this.setOpacity = function( val )
@@ -358,28 +358,28 @@ function TileLayer(
 			if(!self.visible)
 				self.reattachTileLayer();
 		}
-	}
+	};
 
 	this.updateOpacity = function() {
 		self.setOpacity( opacity );
-	}
+	};
 
 	this.getOpacity = function()
 	{
 		return self.opacity;
-	}
+	};
 
 	this.isolateTileLayer = function()
 	{	
 		stack.getView().removeChild( tilesContainer );
 		self.visible = false;
-	}
+	};
 
 	this.reattachTileLayer = function()
 	{
 		stack.getView().appendChild( tilesContainer );
 		self.visible = true;
-	}
+	};
 
 	// initialise
 	var self = this;

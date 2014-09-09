@@ -453,7 +453,7 @@ Arbor.prototype.spanningTree = function(keepers) {
 	var arbor = this;
 	if (this.successors(this.root).length > 1) {
 		// Root has two children. Reroot a copy at the first end node found
-		arbor = this.clone().reroot(this.findEndNodes()[0])
+		arbor = this.clone().reroot(this.findEndNodes()[0]);
 	}
 
 	var n_seen = 0,

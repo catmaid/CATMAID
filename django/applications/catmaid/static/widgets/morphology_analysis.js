@@ -180,7 +180,7 @@ MorphologyPlot.prototype._populateLine = function(skeleton_id) {
   if (0 === this.mode.indexOf('Radial density')) {
     var endsWith = function(s, suffix) {
       return -1 !== s.indexOf(suffix, s.length - suffix.length);
-    }
+    };
 
     var ps = positions;
 

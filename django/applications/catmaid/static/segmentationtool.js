@@ -22,7 +22,7 @@ function SegmentationTool()
     this.unregister = function()
     {
 
-    }
+    };
 
     /**
      * unregister all project related GUI control connections and event
@@ -35,7 +35,7 @@ function SegmentationTool()
         self.destroyToolbar();
 
         self.stack = null;
-    }
+    };
 
     /*
     ** Destroy the tool bar elements
@@ -52,7 +52,7 @@ function SegmentationTool()
             undefined,
             0,
             null );
-    }
+    };
 
     /**
      * install this tool in a stack.
@@ -63,7 +63,7 @@ function SegmentationTool()
         document.getElementById( "toolbox_segmentation" ).style.display = "block";
         self.stack = parentStack;
         self.createToolbar();
-    }
+    };
 
     /*
     ** Create the segmentation toolbar
@@ -99,7 +99,7 @@ function SegmentationTool()
         slider_z_box.appendChild( self.slider_z.getView() );
         slider_z_box.appendChild( self.slider_z.getInputView() );
         sliders_box.appendChild( slider_z_box );
-    }
+    };
 
     var onmouseup = function( e )
     {
@@ -153,7 +153,7 @@ function SegmentationTool()
         self.changeSlice( changeSliceDelayedParam.z );
         changeSliceDelayedParam = null;
         return false;
-    }
+    };
     
     this.changeSliceDelayed = function( val )
     {
@@ -161,19 +161,19 @@ function SegmentationTool()
         if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
         changeSliceDelayedParam = { z : val };
         changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
-    }
+    };
     
     this.changeSlice = function( val )
     {
         self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
         return;
-    }
+    };
 
     var updateControls = function()
     {
         self.slider_z.setByValue( self.stack.z, true );
         return;
-    }
+    };
     
     var actions = [];
 
@@ -219,16 +219,16 @@ function SegmentationTool()
         } else {
           return false;
         }
-    }
+    };
 
     this.clickXY = function( e ) {
         var wc = self.stack.getFieldOfViewInPixel();
         return;
-    }
+    };
 
     this.redraw = function() {
         updateControls();
-    }
+    };
 
 }
 

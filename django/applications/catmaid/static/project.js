@@ -24,7 +24,7 @@ function Project( pid )
 	this.getView = function()
 	{
 		return view;
-	}
+	};
 
 	/**
 	 * Add a stack to the project. The stack reference is returned. In
@@ -78,7 +78,7 @@ function Project( pid )
 
 		// return the (possibly updated) stack reference
 		return stack;
-	}
+	};
 	
 	/**
 	 * get one of the projects currently opened stacks
@@ -90,7 +90,7 @@ function Project( pid )
 			if ( stacks[ i ].id == sid ) return stacks[ i ];
 		}
 		return false;
-	}
+	};
 
 	/**
 	 * get all the currently opened stacks
@@ -98,7 +98,7 @@ function Project( pid )
 	this.getStacks = function()
 	{
 		return stacks;
-	}
+	};
 
 	/**
 	 * remove a stack from the list
@@ -118,7 +118,7 @@ function Project( pid )
 		}
 		ui.onresize();
 		return;
-	}
+	};
 	
 	/**
 	 * focus a stack and blur the rest
@@ -130,7 +130,7 @@ function Project( pid )
 			self.focusedStack.setTool( tool );
 		window.onresize();
 		return;
-	}
+	};
 	
 	/**
 	 * focus the next or prior stack
@@ -143,7 +143,7 @@ function Project( pid )
 			
 		stacks[ ( i + stacks.length + s ) % stacks.length ].getWindow().focus();
 		return;
-	}
+	};
 
 	//!< Associative array of selected objects
 	// in the Treenode Table and Object Tree.
@@ -180,13 +180,13 @@ function Project( pid )
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		document.getElementById( "toolbar_text" ).style.display = "none";
 		document.getElementById( "toolbar_trace" ).style.display = "none";
-	}
+	};
 	
     this.hideToolboxes = function()
 	{
 		document.getElementById( "toolbox_segmentation" ).style.display = "none";
 		document.getElementById( "toolbox_data" ).style.display = "none";
-	}
+	};
 	
 	this.setTool = function( newTool )
 	{
@@ -197,10 +197,10 @@ function Project( pid )
 		self.hideToolboxes();
 
 		if ( !self.focusedStack && stacks.length > 0 ) {
-			self.setFocusedStack( stacks[ 0 ] )
+			self.setFocusedStack( stacks[ 0 ] );
 		} 
 
-		self.focusedStack.setTool( tool )
+		self.focusedStack.setTool( tool );
 
 		if ( self.focusedStack ) {
 			if (!self.focusedStack.getWindow().hasFocus())
@@ -209,12 +209,12 @@ function Project( pid )
 		window.onresize();
 		WindowMaker.setKeyShortcuts();
 		return;
-	}
+	};
 
 	this.getTool = function( )
 	{
 		return tool;
-	}
+	};
 	
 	this.toggleShow = function( m )
 	{
@@ -237,7 +237,7 @@ function Project( pid )
 			}
 		}
 		return;
-	}
+	};
 	
 	/**
 	 * register all GUI elements
@@ -253,7 +253,7 @@ function Project( pid )
 		document.onkeydown = onkeydown;
 		
 		return;
-	}
+	};
 	
 	/**
 	 * unregister and remove all stacks, free the event-handlers, hide the stack-toolbar
@@ -289,7 +289,7 @@ function Project( pid )
 		project = null;
 
 		return;
-	}
+	};
 
 	/**
 	 * This is a helper function for the moveTo() API function. It moves each
@@ -329,7 +329,7 @@ function Project( pid )
 						    self.moveToInStacks( zp, yp, xp, sp, stacks, completionCallback );
 					    });
 		}
-	}
+	};
 
 	/**
 	 * Move all stacks to the physical coordinates and execute a completion
@@ -401,7 +401,7 @@ function Project( pid )
 			}
 		}
 		return url;
-	}
+	};
 
 	/** This function should return true if there was any action
 		linked to the key code, or false otherwise. */
@@ -413,7 +413,7 @@ function Project( pid )
 		} else {
 			return false;
 		}
-	}
+	};
 
 	var onkeydown = function( e )
 	{
@@ -493,12 +493,12 @@ function Project( pid )
 		} else {
 			return true;
 		}
-	}
+	};
 	
 	/**
 	 * Get project ID.
 	 */
-	this.getId = function(){ return pid; }
+	this.getId = function(){ return pid; };
 	
 	// initialise
 	var self = this;
@@ -537,7 +537,7 @@ function Project( pid )
 
 	this.getActions = function () {
 		return actions;
-	}
+	};
 
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
 }

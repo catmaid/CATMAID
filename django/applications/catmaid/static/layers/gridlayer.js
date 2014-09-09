@@ -44,12 +44,12 @@ GridLayer.prototype.setOpacity = function( val )
 {
     this.view.style.opacity = val;
     this.opacity = val;
-}
+};
 
 GridLayer.prototype.getOpacity = function()
 {
     return this.opacity;
-}
+};
 
 /**
  * Allows to set all grid options at once

@@ -37,7 +37,7 @@ function Selector()
 		mouseCatcher.style.width = width + "px";
 		mouseCatcher.style.height = height + "px";
 		return;
-	}
+	};
 
 	this.redraw = function()
 	{
@@ -97,7 +97,7 @@ function Selector()
 		case 1:
 			break;
 		case 2:
-			ui.releaseEvents()
+			ui.releaseEvents();
 			ui.removeEvent( "onmousemove", onmousemove.move );
 			ui.removeEvent( "onmouseup", onmouseup );
 			break;
@@ -166,7 +166,7 @@ function Selector()
 			}
 		}
 		return false;
-	}
+	};
 
 	/**
 	 * Adds an position marker for all opened stacks related to the
@@ -199,7 +199,7 @@ function Selector()
 				  view : stack_view,
 				  stack : stacks[ i ] };
 		}
-	}
+	};
 
 	/**
 	 * Removes all existant position markers from the views they
@@ -215,8 +215,8 @@ function Selector()
 			stack_view.removeChild( stack_marker );
 		}
 		// Clear the array
-		position_markers.length = 0
-	}
+		position_markers.length = 0;
+	};
 
 	/**
 	 * unregister all stack related mouse and keyboard controls
@@ -228,7 +228,7 @@ function Selector()
 		mouseCatcher.style.cursor = "default";
 		self.removePositionMarkers();
 		return;
-	}
+	};
 	
 	/**
 	 * install this tool in a stack.
@@ -267,7 +267,7 @@ function Selector()
 		self.addPositionMarkers();
 
 		return;
-	}
+	};
 	
 	/**
 	 * unregister all project related GUI control connections and event
@@ -279,13 +279,13 @@ function Selector()
 		document.getElementById( "edit_button_select" ).className = "button";
 		stack = null;
 		return;
-	}
+	};
 
 	/** This function should return true if there was any action
 		linked to the key code, or false otherwise. */
 	this.handleKeyPress = function( e )
 	{
 		return false;
-	}
+	};
 }
 

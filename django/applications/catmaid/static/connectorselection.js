@@ -126,4 +126,4 @@ var ConnectorSelection = new function()
         });
     });
   };
-};
+}();

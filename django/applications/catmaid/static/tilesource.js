@@ -32,16 +32,16 @@ function DefaultTileSource( baseURL, fileExtension )
         tileWidth, tileHeight, col, row, zoom_level )
     {
         return baseURL + baseName + row + "_" + col + "_" + zoom_level + "." + fileExtension;
-    }
+    };
 
     this.getOverviewURL = function( stack ) {
         return baseURL + stack.z + "/small." + fileExtension;
-    }
+    };
 
     this.getOverviewLayer = function( layer )
     {
         return new GenericOverviewLayer( layer, baseURL, fileExtension, this.getOverviewURL );
-    }
+    };
 }
 
 /**
@@ -64,12 +64,12 @@ function RequestTileSource( baseURL, fileExtension )
             col : 'x',
             scale : stack.scale, // defined as 1/2**zoomlevel
             z : stack.z });
-    }
+    };
 
     this.getOverviewLayer = function( layer )
     {
         return new DummyOverviewLayer();
-    }
+    };
 }
 
 /*
@@ -95,12 +95,12 @@ function HDF5TileSource( baseURL, fileExtension )
             basename: baseURL,
             type:'all'
         });
-    }
+    };
 
     this.getOverviewLayer = function( layer )
     {
         return new DummyOverviewLayer();
-    }
+    };
 }
 
 /**
@@ -119,16 +119,16 @@ function BackslashTileSource( baseURL, fileExtension )
         tileWidth, tileHeight, col, row, zoom_level )
     {
         return baseURL + baseName + zoom_level + "/" + row + "_" + col + "." + fileExtension;
-    }
+    };
 
     this.getOverviewURL = function( stack ) {
         return baseURL + stack.z + "/small." + fileExtension;
-    }
+    };
 
     this.getOverviewLayer = function( layer )
     {
         return new GenericOverviewLayer( layer, baseURL, fileExtension, this.getOverviewURL );
-    }
+    };
 }
 
 /**
@@ -146,16 +146,16 @@ function LargeDataTileSource( baseURL, fileExtension )
         tileWidth, tileHeight, col, row, zoom_level )
     {
         return baseURL + zoom_level + "/" + baseName + row + "/" +  col + "." + fileExtension;
-    }
+    };
 
     this.getOverviewURL = function( stack ) {
         return baseURL + "/small/" + stack.z + "." + fileExtension;
-    }
+    };
 
     this.getOverviewLayer = function( layer )
     {
         return new GenericOverviewLayer( layer, baseURL, fileExtension, this.getOverviewURL);
-    }
+    };
 }
 
 /*
@@ -173,12 +173,12 @@ function DVIDTileSource( baseURL, fileExtension )
     {
         return baseURL + "/" + tileWidth + "," + tileHeight + "/" + col * tileWidth + "," + 
             row * tileHeight + "," + stack.z + "/" + fileExtension;
-    }
+    };
 
     this.getOverviewLayer = function( layer )
     {
         return new DummyOverviewLayer();
-    }
+    };
 }
 
 /**
@@ -188,11 +188,11 @@ function DummyOverviewLayer()
 {
     this.redraw = function()
     {
-    }
+    };
 
     this.unregister = function()
     {
-    }
+    };
 }
 
 /*
@@ -204,13 +204,13 @@ function GenericOverviewLayer( layer, baseURL, fileExtension, getOverviewURL)
     this.redraw = function()
     {
         img.src = getOverviewURL( stack );
-    }
+    };
 
     this.unregister = function()
     {
         if ( img.parentNode )
             img.parentNode.removeChild( img );
-    }
+    };
 
     var stack = layer.getStack();
     var img = document.createElement( "img" );

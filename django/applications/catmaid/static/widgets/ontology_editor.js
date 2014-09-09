@@ -22,7 +22,7 @@ var OntologyEditor = new function()
                     else
                         text = "(None)";
                     $("span#known_root_names").append(text);
-                })
+                });
 
         // Assign a function to the refresh button
         $("#refresh_ontology_editor").click(function() {
@@ -135,7 +135,7 @@ var OntologyEditor = new function()
                             }
                          }
                     }
-                    }
+                    };
                 } else if (type_of_node === "class") {
                     var restriction_types = JSON.parse(obj.attr("restrictions"));
                     // create restrictions submenu
@@ -158,7 +158,7 @@ var OntologyEditor = new function()
                                 return OntologyEditor.create_cardinality_restriction(pid, obj, 1);
                              }
                         }
-                    }
+                    };
 
                     menu = {
                     "add_class_with_relation": {
@@ -202,8 +202,8 @@ var OntologyEditor = new function()
                                 "action": function(rid) {
                                     return function (obj) {
                                         return OntologyEditor.remove_restriction(pid, obj, rid);
-                                    }}(restriction.id)
-                                }
+                                    };}(restriction.id)
+                                };
                         }
                     }
 
@@ -214,7 +214,7 @@ var OntologyEditor = new function()
                             "_disabled": false,
                             "label": "Remove restriction",
                             "submenu": rem_restriction_submenu
-                        }
+                        };
                     }
 
                     // add remove parent-link entry
@@ -226,11 +226,11 @@ var OntologyEditor = new function()
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove the class-class link between this class and the class connected with the parent relation?")) {
-                                var cc_id = obj.attr('ccid')
+                                var cc_id = obj.attr('ccid');
                                 return OntologyEditor.remove_link_handler(pid, cc_id, tree_id);
                             }
                          }
-                    }
+                    };
                 } else if (type_of_node === "relation") {
                     menu = {
                     "add_class_with_relation": {
@@ -250,13 +250,13 @@ var OntologyEditor = new function()
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove all ontology class-class links that use this relation?")) {
-                                var rel_id = obj.attr('id').replace("node_", "")
-                                var class_b_id = obj.attr('classbid')
+                                var rel_id = obj.attr('id').replace("node_", "");
+                                var class_b_id = obj.attr('classbid');
                                 return OntologyEditor.remove_selected_links_handler(pid, rel_id, class_b_id, tree_id);
                             }
                          }
                     }
-                    }
+                    };
                 }
 
                 // add "Expand sub-tree" option to each menu
@@ -399,7 +399,7 @@ var OntologyEditor = new function()
                             }
                          }
                     }
-                    }
+                    };
                 } else if (type_of_node === "relation") {
                     menu = {
                     "rename_relation": {
@@ -420,12 +420,12 @@ var OntologyEditor = new function()
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove this relation?")) {
-                                var rel_id = obj.attr('id').replace("node_", "")
+                                var rel_id = obj.attr('id').replace("node_", "");
                                 return OntologyEditor.remove_relation_handler(pid, rel_id, tree_id);
                             }
                          }
                     }
-                    }
+                    };
                 }
                 return menu;
             }
@@ -554,7 +554,7 @@ var OntologyEditor = new function()
                             }
                          }
                     }
-                    }
+                    };
                 } else if (type_of_node === "class") {
                     menu = {
                     "rename_class": {
@@ -575,12 +575,12 @@ var OntologyEditor = new function()
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove this class?")) {
-                                var class_id = obj.attr('id').replace("node_", "")
+                                var class_id = obj.attr('id').replace("node_", "");
                                 return OntologyEditor.remove_class_handler(pid, class_id, tree_id);
                             }
                          }
                     }
-                    }
+                    };
                 }
                 return menu;
             }
@@ -653,7 +653,7 @@ var OntologyEditor = new function()
             "selected " + entity_name + ".";
         dialog.appendChild(msg);
         var form = document.createElement('p');
-        dialog.appendChild(form)
+        dialog.appendChild(form);
         var input = document.createElement('input');
         input.setAttribute("id", "dialog-rename-input");
         input.value = current_name;
@@ -780,7 +780,7 @@ var OntologyEditor = new function()
                         }
                     });
             });
-    }
+    };
 
     /**
      * Handles the creation of a class out of the tree's context menu.
@@ -902,10 +902,10 @@ var OntologyEditor = new function()
             var classbid = -1;
             if (is_relation) {
                 classbid = obj.attr('classbid');
-                relid = obj.attr('id').replace("node_", "")
+                relid = obj.attr('id').replace("node_", "");
             } else {
                 // class b is just the parent then
-                classbid = obj.attr('id').replace("node_", "")
+                classbid = obj.attr('id').replace("node_", "");
                 // check if an available relation was selected
                 relid = $('#relid').val();
             }
@@ -925,7 +925,7 @@ var OntologyEditor = new function()
                         function( jsonData ) {
                             if (!jsonData['class_class_id'])
                             {
-                                alert( "Can't understand server response: " + data )
+                                alert( "Can't understand server response: " + data );
                             }
                             OntologyEditor.refresh_trees();
                         });
@@ -938,13 +938,13 @@ var OntologyEditor = new function()
             function(status, data, text) {
                 if (status !== 200) {
                     OntologyEditor.show_error_msg( status, text );
-                    return
+                    return;
                 }
                 var classes = JSON.parse(data);
                 // sort classes
                 var sorted_classes = [];
                 $.each(classes, function (key, value) {
-                    sorted_classes.push([key, value])
+                    sorted_classes.push([key, value]);
                 });
                 sorted_classes.sort(function(a, b) {return a[0].localeCompare(b[0]);});
 
@@ -953,7 +953,7 @@ var OntologyEditor = new function()
                 class_select.empty();
                 $.each(sorted_classes, function (i) {
                     var class_name = sorted_classes[i][0];
-                    var class_id = sorted_classes[i][1]
+                    var class_id = sorted_classes[i][1];
                     class_select.append($('<option></option>').attr("value", class_id).text(class_name + " (" + class_id + ")"));
                 });
                 // show class dropdown
@@ -977,7 +977,7 @@ var OntologyEditor = new function()
                         function(status, data, text) {
                             if (status !== 200) {
                                 OntologyEditor.show_error_msg( status, text );
-                                return
+                                return;
                             }
                             var relations = JSON.parse(data);
                             // populate class select box
@@ -1038,8 +1038,8 @@ var OntologyEditor = new function()
                     function( jsonData ) {
                         OntologyEditor.refresh_tree(tree_id);
                         // give out some information
-                        var num_deleted_links = jsonData.deleted_links.length
-                        var msg = num_deleted_links + " class-class link(s) have been removed."
+                        var num_deleted_links = jsonData.deleted_links.length;
+                        var msg = num_deleted_links + " class-class link(s) have been removed.";
                         OntologyEditor.show_error_status( "Success", msg );
                     });
                 });
@@ -1059,8 +1059,8 @@ var OntologyEditor = new function()
                     function( jsonData ) {
                         OntologyEditor.refresh_tree(tree_id);
                         // give out some information
-                        var num_deleted_links = jsonData.deleted_links.length
-                        var msg = num_deleted_links + " class-class link(s) have been removed."
+                        var num_deleted_links = jsonData.deleted_links.length;
+                        var msg = num_deleted_links + " class-class link(s) have been removed.";
                         OntologyEditor.show_error_status( "Success", msg );
                     });
                 });
@@ -1072,7 +1072,7 @@ var OntologyEditor = new function()
     this.handle_operation_response = function(status, data, text, handler) {
         if (status !== 200) {
             OntologyEditor.show_error_msg( status, text );
-            return
+            return;
         }
         var jsonData = $.parseJSON(data);
         if (jsonData.error) {
@@ -1111,7 +1111,7 @@ var OntologyEditor = new function()
                             function( jsonData ) {
                                 if (!jsonData['new_restriction'])
                                 {
-                                    alert( "Can't understand server response: " + data )
+                                    alert( "Can't understand server response: " + data );
                                 } else {
                                     var r_id = jsonData.new_restriction;
                                     var msg = "A new restriction with ID " + r_id + " has been created.";
@@ -1127,7 +1127,7 @@ var OntologyEditor = new function()
                 function(status, data, text) {
                     if (status !== 200) {
                         OntologyEditor.show_error_msg( status, text );
-                        return
+                        return;
                     }
                     var json_data = JSON.parse(data);
                     var types = json_data.types;
@@ -1163,7 +1163,7 @@ var OntologyEditor = new function()
                         });
                     });
         }
-    }
+    };
 
     /**
      * Removes a restriction
@@ -1182,7 +1182,7 @@ var OntologyEditor = new function()
                         OntologyEditor.show_error_status( "Success", msg );
                     });
                 });
-    }
+    };
 
     /**
      * Refreshes a tree.
@@ -1251,4 +1251,4 @@ var OntologyEditor = new function()
     this.hide_wait_message = function() {
         $.unblockUI();
     };
-};
+}();

@@ -15,7 +15,7 @@
 function RoiTool()
 {
     // call super constructor
-    BoxSelectionTool.call( this )
+    BoxSelectionTool.call( this );
 
     var self = this;
     this.toolname = "roitool";
@@ -41,7 +41,7 @@ function RoiTool()
     this.onmouseup_bound = this.onmouseup.bind(this);
     this.onmousemove_pos_bound = this.onmousemove.pos.bind(this);
     this.onmousemove_crop_bound = this.onmousemove.crop.bind(this);
-};
+}
 
 // Let the RoiTool inherit from the BoxSelectionTool
 extend( RoiTool, BoxSelectionTool );
@@ -212,7 +212,7 @@ RoiTool.prototype.cropBoxMouseWheel = function( e )
         this.value = parseInt( this.value ) - w;
         this.onchange();
     }
-    return false
+    return false;
 };
 
 /**

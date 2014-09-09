@@ -142,7 +142,7 @@ function OntologyTool()
         $("#toolbox_ontology").hide();
         $("#toolbar_ontology").hide();
         $("#edit_button_ontology").switchClass("button_active", "button", 0);
-    }
+    };
 
     this.redraw = function()
     {
@@ -168,7 +168,7 @@ function OntologyTool()
         } else {
           return false;
         }
-    }
+    };
 
     // init the workspace bar
     update_workspace_toolbar();

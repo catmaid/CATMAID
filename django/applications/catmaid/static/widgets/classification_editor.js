@@ -50,7 +50,7 @@ var ClassificationEditor = new function()
                             completionCallback();
                     }
                 }));
-    }
+    };
 
     this.load_tree = function(pid, link_id) {
         // id of object tree
@@ -160,7 +160,7 @@ var ClassificationEditor = new function()
                                 var menu_id = 'add_child_' + group_name;
                                 // Create "add child node" sub menu and put child nodes
                                 // with the same name into the same sub menu.
-                                var submenu = {}
+                                var submenu = {};
                                 if (menu[menu_id]) {
                                     submenu = menu[menu_id]['submenu'];
                                 }
@@ -189,8 +189,8 @@ var ClassificationEditor = new function()
                                               }
                                             };
                                             this.create(obj, "inside", att, null, true);
-                                          }})(subchild.name, subchild.id, subchild.relname, subchild.relid)
-                                    }
+                                          };})(subchild.name, subchild.id, subchild.relname, subchild.relid)
+                                    };
                                 }
                                 // add complete contextmenu
                                 menu[menu_id] = {
@@ -228,7 +228,7 @@ var ClassificationEditor = new function()
 
                             // Add entry and submenu for removing a region of interest
                             var rois = JSON.parse(obj.attr("rois"));
-                            var submenu = {}
+                            var submenu = {};
                             for (i=0; i<rois.length; i++) {
                                 var roi = rois[i];
                                 submenu['remove_roi_' + roi] = {
@@ -238,7 +238,7 @@ var ClassificationEditor = new function()
                                     "action": function (r_id) {
                                         return function (obj) {
                                             self.remove_roi(tree_id, r_id);
-                                        }
+                                        };
                                     }(roi)
                                 };
                             }
@@ -364,7 +364,7 @@ var ClassificationEditor = new function()
                     if (display_previews) {
                         $("#imagepreview")
                             .css("top", (e.pageY - preview_y_offset) + "px")
-                            .css("left", (e.pageX + preview_x_offset) + "px")
+                            .css("left", (e.pageX + preview_x_offset) + "px");
                     }
                 });
         });
@@ -412,7 +412,7 @@ var ClassificationEditor = new function()
                     project.updateTool();
                     growlAlert('SUCCESS',
                         'Classification graph element "' + friendly_name + '" removed.');
-                };
+                }
             });
         });
 
@@ -442,7 +442,7 @@ var ClassificationEditor = new function()
                     $("#annotation_graph_object").jstree("refresh", -1);
                     project.updateTool();
                     growlAlert('SUCCESS', 'Classification graph element renamed.');
-                };
+                }
             });
         });
 
@@ -472,7 +472,7 @@ var ClassificationEditor = new function()
                 z: tool.stack.z * tool.stack.resolution.z + tool.stack.translation.z,
                 zoom_level: tool.stack.s,
                 rotation_cw: cb.rotation_cw
-            }
+            };
             // The actual creation and linking of the ROI happens in
             // the back-end. Create URL for initiating this:
             var roi_url = self.get_cls_url(project.id,
@@ -614,7 +614,7 @@ var ClassificationEditor = new function()
                             // React to a click on that closing button
                             closing_button.onclick = function() {
                                 bboxtool.destroy();
-                            }
+                            };
                             // set tool to navigator
                             project.setTool( new Navigator() );
                         }
@@ -664,7 +664,7 @@ var ClassificationEditor = new function()
             } else {
                 fx(status, data, text);
             }
-        }
+        };
     };
 
     /* Depending on the type of the page, some rewrites need to
@@ -701,7 +701,7 @@ var ClassificationEditor = new function()
             // Override the submit behaviour if the setup form is displayed
             self.overrideSetupSubmit(container, pid);
          }
-    }
+    };
 
   this.overrideNewGraphSubmit = function(container, pid) {
     var form = $("#add-new-classification-form");
@@ -765,7 +765,7 @@ var ClassificationEditor = new function()
     }
 
     return found;
-  }
+  };
 
   this.overrideAddGraphLink = function(container, pid) {
     var remove_link = $("#add_classification_link");
@@ -788,7 +788,7 @@ var ClassificationEditor = new function()
     }
 
     return found;
-  }
+  };
 
   this.overrideAutofillLink = function(container, pid) {
     var remove_link = $("#autofill_classification_link");
@@ -810,7 +810,7 @@ var ClassificationEditor = new function()
     }
 
     return found;
-  }
+  };
 
   this.overrideSelectGraphSubmit = function(container, pid) {
     var form = $("#select-classification-form");
@@ -866,12 +866,12 @@ var ClassificationEditor = new function()
             $.each(select_elements, function(index, record) {
                 if (!this.hasChangeEventHandler) {
                     var menu_class = "div.select_new_classification_instance";
-                    var menu_elem  = $(menu_class, this)
+                    var menu_elem  = $(menu_class, this);
                     var menu = menu_elem.menu({
                         menus: menu_class,
                         select: function( ev, ui ) {
                             // let a menu selection create a new class instance
-                            var item = ui.item
+                            var item = ui.item;
                             var parentid = menu_elem.attr("parentid");
                             var classid = item.attr("value");
                             var relid = item.attr("relid");
@@ -880,7 +880,7 @@ var ClassificationEditor = new function()
                             return false;
                         }});
                     // hide the menu by default
-                    menu.menu('widget').hide()
+                    menu.menu('widget').hide();
                     // show it when hovering over the node
                     $(this).hover(function() {
                         menu.menu('widget').fadeIn(100);
@@ -893,7 +893,7 @@ var ClassificationEditor = new function()
         }
 
         return found;
-    }
+    };
 
     /**
      * Changes the workspace according to the value of the radio
@@ -925,4 +925,4 @@ var ClassificationEditor = new function()
             delaytime = 2500;
         growlAlert(title, message, {duration: delaytime});
     };
-}
+}();

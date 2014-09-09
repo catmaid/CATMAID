@@ -24,7 +24,7 @@ function User(userID, login, fullName, firstName, lastName, color)
   }
 
   return this;
-};
+}
 
 
 User.prototype.users = {};

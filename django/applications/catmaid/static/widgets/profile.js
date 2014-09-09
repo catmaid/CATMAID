@@ -103,11 +103,11 @@ ya) {
       break;
     }
     return;
-  }
+  };
 
   this.getType = function () {
     return type;
-  }
+  };
 
   this.min = function () {
     var m = {
@@ -115,7 +115,7 @@ ya) {
       y: Math.min(Math.min(self.key.y, self.before.y), self.after.y)
     };
     return m;
-  }
+  };
 
   this.max = function () {
     var m = {
@@ -123,7 +123,7 @@ ya) {
       y: Math.max(Math.max(self.key.y, self.before.y), self.after.y)
     };
     return m;
-  }
+  };
 
   /**
    * move the key and its handles
@@ -137,7 +137,7 @@ ya) {
     self.after.x = self.after.x + dx;
     self.after.y = self.after.y + dy;
     return;
-  }
+  };
 
   /**
    * move the before node
@@ -161,7 +161,7 @@ ya) {
       break;
     }
     return;
-  }
+  };
 
   /**
    * move the after node
@@ -185,7 +185,7 @@ ya) {
       break;
     }
     return;
-  }
+  };
 
 
   // initialise all members
@@ -227,14 +227,14 @@ function Profile() {
       } catch (e) {}
     }
     return ctx;
-  }
+  };
 
   /**
    * get the view object
    */
   this.getView = function () {
     return view;
-  }
+  };
 
   /**
    * get the bounding box of the profile
@@ -261,7 +261,7 @@ function Profile() {
     canvas.height = Math.floor((max.y - min.y) * screen.scale);
     canvas.style.height = view.style.height = canvas.height + "px";
     return;
-  }
+  };
 
   /**
    * check, if a coordinate is inside the curve
@@ -273,7 +273,7 @@ function Profile() {
   this.isInside = function (x, y) {
     return (
     x >= min.x && x <= max.x && y >= min.y && y <= max.y);
-  }
+  };
 
   /**
    * update the screen context
@@ -283,19 +283,19 @@ function Profile() {
     screen = l;
     boundingBox();
     return;
-  }
+  };
 
   this.clearCanvas = function () {
     var ctx = getContext();
     if (ctx) ctx.clearRect(0, 0, max.x - min.x, max.y - min.y);
     return;
-  }
+  };
 
   this.place = function () {
     view.style.top = Math.floor((min.y - screen.y) * screen.scale) + "px";
     view.style.left = Math.floor((min.x - screen.x) * screen.scale) + "px";
     return;
-  }
+  };
 
   /**
    * draw the profile using all bezier points
@@ -330,7 +330,7 @@ function Profile() {
       ctx.fill();
     }
     return;
-  }
+  };
 
   /**
    * draw the profiles outline using all bezier points
@@ -366,7 +366,7 @@ function Profile() {
       ctx.stroke();
     }
     return;
-  }
+  };
 
   /**
    * draw the handles of all bezier points
@@ -414,12 +414,12 @@ function Profile() {
       }
     }
     return;
-  }
+  };
 
   this.isVisible = function () {
     return (
     max.x >= screen.x && max.y >= screen.y && min.x <= screen.x + screen.width && min.y <= screen.y + screen.height);
-  }
+  };
 
   this.onmousemove = function (e) {
     if (spi) {
@@ -445,7 +445,7 @@ function Profile() {
     self.drawOutline();
     self.drawHandles();
     return false;
-  }
+  };
 
   this.onmousedown = function (e) {
     spi = undefined;
@@ -497,7 +497,7 @@ function Profile() {
       }
     }
     return;
-  }
+  };
 
   // initialise
   var self = this;

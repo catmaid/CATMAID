@@ -30,7 +30,7 @@ var ClusteringWidget = new function()
                     }
                 }
             });
-    }
+    };
 
     this.patch_clustering_setup = function( container )
     {
@@ -78,7 +78,7 @@ var ClusteringWidget = new function()
             slave_cbs.click( function() {
                 master_cb.attr("checked", $.grep(slave_cbs, function(e) {
                     return $(e).attr("checked");
-                }).length == slave_cbs.length)
+                }).length == slave_cbs.length);
             });
         }
 
@@ -118,7 +118,7 @@ var ClusteringWidget = new function()
                 self.load_feature_tree( tree_id );
             });
         }
-    }
+    };
 
     this.load_feature_tree = function( tree_id, container ) {
         var tree = $(tree_id);
@@ -207,7 +207,7 @@ var ClusteringWidget = new function()
                             }
                          }
                     }
-                    }
+                    };
                 } else if (type_of_node === "class") {
                     var restriction_types = JSON.parse(obj.attr("restrictions"));
                     // create restrictions submenu
@@ -230,7 +230,7 @@ var ClusteringWidget = new function()
                                 return OntologyEditor.create_cardinality_restriction(pid, obj, 1);
                              }
                         }
-                    }
+                    };
 
                     menu = {
                     "add_class_with_relation": {
@@ -274,8 +274,8 @@ var ClusteringWidget = new function()
                                 "action": function(rid) {
                                     return function (obj) {
                                         return OntologyEditor.remove_restriction(pid, obj, rid);
-                                    }}(restriction.id)
-                                }
+                                    };}(restriction.id)
+                                };
                         }
                     }
 
@@ -286,7 +286,7 @@ var ClusteringWidget = new function()
                             "_disabled": false,
                             "label": "Remove restriction",
                             "submenu": rem_restriction_submenu
-                        }
+                        };
                     }
 
                     // add remove parent-link entry
@@ -298,11 +298,11 @@ var ClusteringWidget = new function()
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove the class-class link between this class and the class connected with the parent relation?")) {
-                                var cc_id = obj.attr('ccid')
+                                var cc_id = obj.attr('ccid');
                                 return OntologyEditor.remove_link_handler(pid, cc_id, tree_id);
                             }
                          }
-                    }
+                    };
                 } else if (type_of_node === "relation") {
                     menu = {
                     "add_class_with_relation": {
@@ -322,13 +322,13 @@ var ClusteringWidget = new function()
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove all ontology class-class links that use this relation?")) {
-                                var rel_id = obj.attr('id').replace("node_", "")
-                                var class_b_id = obj.attr('classbid')
+                                var rel_id = obj.attr('id').replace("node_", "");
+                                var class_b_id = obj.attr('classbid');
                                 return OntologyEditor.remove_selected_links_handler(pid, rel_id, class_b_id, tree_id);
                             }
                          }
                     }
-                    }
+                    };
                 }
                 return menu;
             }
@@ -466,7 +466,7 @@ var ClusteringWidget = new function()
             }
             // draw labels
             var label_center_y = null;
-			var max_label_width = null
+			var max_label_width = null;
 			var labels = new Array();
             $.each(label_coords, function(i, coord) {
                 // only draw labels for real leaves
@@ -556,7 +556,7 @@ var ClusteringWidget = new function()
                     // Only show tags if a leaf column is hovered, i.e. the relative
                     // x coordinate can be divided by 10 without remainder.
                     if (rel_leaf_x % 10 == 0) {
-                        var graph_idx = rel_leaf_x / 10
+                        var graph_idx = rel_leaf_x / 10;
                         var graph_name = dendrogram.ivl[graph_idx];
                         // highlight label
                         current_label = labels[graph_idx];
@@ -589,7 +589,7 @@ var ClusteringWidget = new function()
     {
         if (workspace_pid)
             self.refresh();
-    }
+    };
 
     /**
      * Changes the workspace according to the value of the radio
@@ -616,4 +616,4 @@ var ClusteringWidget = new function()
         ClusteringWidget.render_to_content(container,
             self.get_clustering_url('/setup'), self.patch_clustering_setup);
     };
-}
+}();

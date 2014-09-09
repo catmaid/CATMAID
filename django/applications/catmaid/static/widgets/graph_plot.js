@@ -264,7 +264,7 @@ CircuitGraphPlot.prototype._add_graph_partition = function(mirror) {
   // Potentially disjoint if there are least two network components,
   // detectable by finding out whether the first non-zero eigenvalue has zeros where the next one doesn't.
   var epsilon = 0.00000001,
-      clean = function(v) { return Math.abs(v) < epsilon ? 0 : v},
+      clean = function(v) { return Math.abs(v) < epsilon ? 0 : v; },
       ev2 = this.vectors[1][1].map(clean),
       ev3 = this.vectors[2][1].map(clean);
 
@@ -707,7 +707,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
               for (var b=0; b<10; ++b) {
                 vs[offset + b][k] = histogram[b];
               }
-            };
+            }
             vs[50][k] = m[9];
             vs[51][k] = m[9] / m[0];
             vs[52][k] = m[10];
@@ -735,7 +735,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
                 for (var b=0; b<10; ++b) {
                   vs[offset + b][k] += histogram[b];
                 }
-              };
+              }
               vs[50][k] += m[9];
               // vs[51] taken care of at the end
               vs[52][k] += m[10];

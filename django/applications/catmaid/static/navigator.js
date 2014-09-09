@@ -85,7 +85,7 @@ function Navigator()
 	this.setMouseCatcher = function( mc )
 	{
 		self.mouseCatcher = mc;
-	}
+	};
 	
 	this.updateControls = function()
 	{
@@ -96,19 +96,19 @@ function Navigator()
 		self.input_y.value = self.stack.y;
 		
 		return;
-	}
+	};
 	
 	this.resize = function( width, height )
 	{
 		self.mouseCatcher.style.width = width + "px";
 		self.mouseCatcher.style.height = height + "px";
 		return;
-	}
+	};
 	
 	this.redraw = function()
 	{
 		self.updateControls();
-	}
+	};
 	
 	var onmousemove = function( e )
 	{
@@ -245,20 +245,20 @@ function Navigator()
 		self.changeSlice( changeSliceDelayedParam.z );
 		changeSliceDelayedParam = null;
 		return false;
-	}
+	};
 	
 	this.changeSliceDelayed = function( val )
 	{
 		if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
 		changeSliceDelayedParam = { z : val };
 		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
-	}
+	};
 	
 	this.changeSlice = function( val )
 	{
 		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
 		return;
-	}
+	};
 	//--------------------------------------------------------------------------
 	
 	//--------------------------------------------------------------------------
@@ -274,20 +274,20 @@ function Navigator()
 		self.changeScale( changeScaleDelayedParam.s );
 		changeScaleDelayedParam = null;
 		return false;
-	}
+	};
 	
 	this.changeScaleDelayed = function( val )
 	{
 		if ( changeScaleDelayedTimer ) window.clearTimeout( changeScaleDelayedTimer );
 		changeScaleDelayedParam = { s : val };
 		changeScaleDelayedTimer = window.setTimeout( changeScaleDelayedAction, 100 );
-	}
+	};
 	
 	this.changeScale = function( val )
 	{
 		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
 		return;
-	}
+	};
 
 	/**
 	 * change the scale, making sure that the point keep_[xyz] stays in
@@ -309,7 +309,7 @@ function Navigator()
 		var new_centre_y = keep_y - dy * (old_scale / new_scale);
 
 		self.stack.moveTo(self.stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
-	}
+	};
 
 	//--------------------------------------------------------------------------
 	
@@ -319,7 +319,7 @@ function Navigator()
 		if ( isNaN( val ) ) this.value = self.stack.x;
 		else self.stack.moveToPixel( self.stack.z, self.stack.y, val, self.stack.s );
 		return;
-	}
+	};
 	
 	var changeYByInput = function( e )
 	{
@@ -327,7 +327,7 @@ function Navigator()
 		if ( isNaN( val ) ) this.value = self.stack.y;
 		else self.stack.moveToPixel( self.stack.z, val, self.stack.x, self.stack.s );
 		return;
-	}
+	};
 	
 	var YXMouseWheel = function( e )
 	{
@@ -337,12 +337,12 @@ function Navigator()
 			this.value = parseInt( this.value ) - w;
 			this.onchange();
 		}
-		return false
-	}
+		return false;
+	};
 
 	this.getActions = function () {
 		return actions;
-	}
+	};
 
 	var arrowKeyCodes = {
 		left: 37,
@@ -443,7 +443,7 @@ function Navigator()
 				self.input_y.onchange(e);
 				return true;
 			}
-		})]
+		})];
 
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
 
@@ -548,7 +548,7 @@ function Navigator()
 		self.updateControls();
 		
 		return;
-	}
+	};
 	
 	
 	/**
@@ -559,7 +559,7 @@ function Navigator()
 		if ( self.stack && self.mouseCatcher.parentNode == self.stack.getView() )
 			self.stack.getView().removeChild( self.mouseCatcher );
 		return;
-	}
+	};
 	
 	
 	/**
@@ -620,7 +620,7 @@ function Navigator()
 		self.stack = null;
 		
 		return;
-	}
+	};
 
 	/** This function should return true if there was any action
 		linked to the key code, or false otherwise. */
@@ -633,5 +633,5 @@ function Navigator()
 		} else {
 			return false;
 		}
-	}
+	};
 }

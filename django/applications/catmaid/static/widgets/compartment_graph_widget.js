@@ -243,7 +243,7 @@ GroupGraph.prototype.graph_properties = function() {
     var style = {"text-halign": this.label_halign,
                  "text-valign": this.label_valign,
                  "width": this.node_width + "px",
-                 "height": this.node_height + "px"}
+                 "height": this.node_height + "px"};
 
     // Update general style, for new nodes
     this.cy.style().selector("node").css(style);
@@ -572,7 +572,7 @@ GroupGraph.prototype.updateGraph = function(json, models) {
   else modes.basic = true;
 
 
-  var elements = {}
+  var elements = {};
 
   if (modes.basic) {
     // Basic graph: infer nodes from json.edges
@@ -1476,8 +1476,8 @@ GroupGraph.prototype.exportAdjacencyMatrix = function() {
 
   // First row and first column take the neuron names plus the #<skeleton_id>
   var csv = '"Neurons",' + names.join(',') + '\n' + m.AdjM.map(function(row, i) {
-    var rowValues = ""
-    var delim = ""
+    var rowValues = "";
+    var delim = "";
     for (var j=0; j<row.length; ++j) {
       rowValues += delim + row[j].toString();
       delim = ',';
@@ -1898,7 +1898,7 @@ GroupGraph.prototype.annotateEdgeRisk = function() {
   if (0 === targets.length) {
     if (!autapses) growlAlert("Information", "Select at least 2 connected nodes, that are not groups!");
     return;
-  };
+  }
 
   // Fetch locations of input synapses for each target
   var inputs = {};

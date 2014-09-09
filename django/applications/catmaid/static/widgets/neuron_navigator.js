@@ -186,7 +186,7 @@ NeuronNavigator.Node = function(name)
    */
   this.possibleLengths = [25, 100, 500, 2000];
   this.possibleLengthsLabels = this.possibleLengths.map(
-      function (n) { return n.toString() });
+      function (n) { return n.toString(); });
 };
 
 /**
@@ -382,7 +382,7 @@ NeuronNavigator.Node.prototype.create_header_row = function(columns)
 NeuronNavigator.Node.prototype.add_menu_table = function(entries, container)
 {
   var toolbar_classes = 'fg-toolbar ui-toolbar ui-widget-header' +
-      ' ui-helper-clearfix'
+      ' ui-helper-clearfix';
 
   // Create top tool bar
   var top_toolbar = document.createElement('div');
@@ -953,7 +953,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
 NeuronNavigator.NeuronListMixin = function()
 {
   this.listed_neurons = [];
-}
+};
 
 /**
  * Returns the IDs of the skeletons modeling the currently selected neurons.
@@ -1052,7 +1052,7 @@ NeuronNavigator.NeuronListMixin.prototype.add_neuronlist_content =
   var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
   var datatable = this.add_neuron_list_table(container, table_id, filters,
       this.post_process_fn(this.listed_neurons));
-}
+};
 
 
 /**
@@ -1166,7 +1166,7 @@ NeuronNavigator.UserListNode.prototype.add_content = function(container,
         'first_name': aData[1],
         'last_name': aData[2],
         'id': aData[3],
-      }
+      };
       var filter_node = new NeuronNavigator.UserFilterNode(user);
       filter_node.link(self.navigator, self);
       self.navigator.select_node(filter_node);
@@ -1371,7 +1371,7 @@ NeuronNavigator.NeuronNode.prototype.create_ann_post_process_fn = function(
       });
       var id = 'nl_locked_user_info' + node.navigator.widgetID;
       // Remove old info, if available
-      $('#' + id, $container).remove()
+      $('#' + id, $container).remove();
       // Add new info
       var annotation_title = document.createElement('h4');
       annotation_title.setAttribute('id', id);
@@ -1389,7 +1389,7 @@ NeuronNavigator.NeuronNode.prototype.create_ann_post_process_fn = function(
                 var user = {
                   'login': locked_user.login,
                   'id': locked_user.id,
-                }
+                };
                 var filter_node = new NeuronNavigator.UserFilterNode(user);
                 filter_node.link(node.navigator, node);
                 node.navigator.select_node(filter_node);

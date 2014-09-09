@@ -81,4 +81,4 @@ function TracingLayer( stack )
     // TODO: implement readding of the layer
     // see tilelayer.js
   };
-};
+}

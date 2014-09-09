@@ -775,4 +775,4 @@ var Treelines = new function()
       return true;
     });
   };
-};
+}();

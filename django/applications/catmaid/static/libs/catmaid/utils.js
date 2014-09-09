@@ -389,9 +389,9 @@ AnnotationCache.prototype.push = function(annotationList) {
       // Nothing to do, if the annotation is already known.
     } else {
       // If only the ID or the name is known, something is odd.
-      throw "Annotation already known with different id/name"
+      throw "Annotation already known with different id/name";
     }
-  }, this)
+  }, this);
 };
 
 var annotations = new AnnotationCache();
@@ -583,7 +583,7 @@ ArborParser.prototype.tree = function(rows) {
     if (paren) arbor.edges[node] = paren;
     else arbor.root = node;
     positions[node] = new THREE.Vector3(row[3], row[4], row[5]);
-  };
+  }
 
   this.arbor = arbor;
   this.positions = positions;

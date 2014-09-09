@@ -9,7 +9,7 @@
 
 if (!window.console) {
   window.console = {};
-  window.console.log = function() {}
+  window.console.log = function() {};
 }
 
 var global_bottom = 29;
@@ -115,7 +115,7 @@ function login(
 {
 	var loginCompletion = function ( status, text, xml ) {
 		handle_login( status, text, xml, completionCallback );
-	}
+	};
 	if ( msg_timeout ) window.clearTimeout( msg_timeout );
 	
 	ui.catchEvents( "wait" );
@@ -345,7 +345,7 @@ function handle_updateProjects(status, text, xml) {
 	}
 	ui.releaseEvents();
 	return;
-};
+}
 
 function updateProjectListMessage(text) {
   $('#project_list_message').text(text);
@@ -397,7 +397,7 @@ function getStackMenuInfo(project_id, callback) {
             }
         });
     return;
-};
+}
 
 /**
  * Update the displayed project list based on the cache
@@ -673,7 +673,7 @@ function handle_openProjectStack( status, text, xml )
 	}
 	ui.releaseEvents();
 	return;
-};
+}
 
 /**
  * Check, if there are new messages for the current user.
@@ -817,7 +817,7 @@ function handle_dataviews(status, text, xml) {
 					rootWindow.closeAllChildren();
 					// open data view
 					switch_dataview( id, code_type );
-				}
+				};
 			};
 			/* As we want to handle a data view change in JS,
 			 * a function is added as action for all the menu
@@ -856,7 +856,7 @@ function switch_dataview( view_id, view_type ) {
 			// let Django render the requested view and display it
 			document.getElementById("clientside_data_view").style.display = "none";
 			document.getElementById("data_view").style.display = "block";
-			load_dataview( view_id )
+			load_dataview( view_id );
 		}
 	};
 
@@ -1075,7 +1075,7 @@ var realInit = function()
 	{
 		this.href = project.createURL();
 		return true;
-	}
+	};
 	
 	document.getElementById( "login_box" ).style.display = "block";
 	document.getElementById( "logout_box" ).style.display = "none";
@@ -1128,7 +1128,7 @@ var realInit = function()
 		{
 			for ( var i = 0; i < sids.length; ++i )
 			{
-				openProjectStack( pid, sids[ i ] )
+				openProjectStack( pid, sids[ i ] );
 			}
 		}
 	});
@@ -1163,7 +1163,7 @@ var realInit = function()
 	window.onresize();
 
 	return;
-}
+};
 
 /**
  * resize the view and its content on window.onresize event
@@ -1187,7 +1187,7 @@ var resize = function( e )
 	rootWindow.redraw();
 	
 	return true;
-}
+};
 
 function showMessages()
 {

@@ -33,7 +33,7 @@ function TextlabelTool()
   self.updateTextlabels = function () {
       textlabelLayer.update(0, 0, stack.dimension.x * stack.resolution.x,
           stack.dimension.y * stack.resolution.y );
-  }
+  };
 
   this.getMouseHelp = function( e ) {
     var result = '<p>';
@@ -76,7 +76,7 @@ function TextlabelTool()
       return true;
     });
     return;
-  }
+  };
 
   var createTextlabelLayer = function( parentStack )
   {
@@ -177,7 +177,7 @@ function TextlabelTool()
       inactivateBindings();
     }
     return;
-  }
+  };
 
 	/**
 	 * unregister all project related GUI control connections and event
@@ -250,7 +250,7 @@ Textlabel = function(
 	this.getView = function()
 	{
 		return view;
-	}
+	};
 	
 	var getContext = function()
 	{
@@ -272,7 +272,7 @@ Textlabel = function(
 			{}
 		}
 		return ctx;
-	}
+	};
 	
 	this.redraw = function(
 			pl,						//!< float left-most coordinate of the parent DOM element in nanometer
@@ -416,12 +416,12 @@ Textlabel = function(
 		}
 		
 		return;
-	}
+	};
 
   this.setOpacity = function( val )
   {
     view.style.opacity = val+"";
-  }
+  };
 	
 	this.setEditable = function( e )
 	{
@@ -443,7 +443,7 @@ Textlabel = function(
 			closeHandle.style.display = "none";
 		}
 		return;
-	}
+	};
 	
 	var synchText = function( e )
 	{
@@ -456,7 +456,7 @@ Textlabel = function(
 			scale );
 		
 		return true;
-	}
+	};
 	
 	var apply = function( e )
 	{
@@ -504,7 +504,7 @@ Textlabel = function(
 			},
 			"textlabel_" + this.id );
 		return;
-	}
+	};
 	
 	var close = function( e )
 	{
@@ -524,7 +524,7 @@ Textlabel = function(
 			window.onresize ); // TODO: what is the proper way to call updateTextlabels of the tool?
             // the window.onresize solution calls onresize about 6 times
 		return;
-	}
+	};
 	
 	/**
 	 * onchange handler for the font size input element
@@ -543,7 +543,7 @@ Textlabel = function(
 				scale );
 		}
 		return false;
-	}
+	};
 	
 	/**
 	 * onchange handler for the red colour input element
@@ -559,7 +559,7 @@ Textlabel = function(
 			textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
 		}
 		return false;
-	}
+	};
 	
 	/**
 	 * onchange handler for the green colour input element
@@ -575,7 +575,7 @@ Textlabel = function(
 			textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
 		}
 		return false;
-	}
+	};
 	
 	/**
 	 * onchange handler for the blue colour input element
@@ -591,7 +591,7 @@ Textlabel = function(
 			textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
 		}
 		return false;
-	}
+	};
 	
 	
 	/**
@@ -639,7 +639,7 @@ Textlabel = function(
 		//button_apply.onclick = apply;
 		
 		return true;
-	}
+	};
 	
 	/**
 	 * unbind all input elements
@@ -668,7 +668,7 @@ Textlabel = function(
 		//button_apply.onclick = apply;
 		
 		return true;
-	}
+	};
 	
 	var movemousemove = function( e )
 	{
@@ -679,16 +679,16 @@ Textlabel = function(
 			parentTop,
 			scale );
 		return false;
-	}
+	};
 	
 	var movemouseup = function( e )
 	{
 		apply();
-		ui.releaseEvents()
+		ui.releaseEvents();
 		ui.removeEvent( "onmousemove", movemousemove );
 		ui.removeEvent( "onmouseup", movemouseup );
 		return false;
-	}
+	};
 	
 	var movemousedown = function( e )
 	{
@@ -703,7 +703,7 @@ Textlabel = function(
 		document.body.firstChild.focus();
 		
 		return false;
-	}
+	};
 	
 	var closemousedown = function( e )
 	{
@@ -722,7 +722,7 @@ Textlabel = function(
 		document.body.firstChild.focus();
 		
 		return false;
-	}
+	};
 	
 	
 	
@@ -822,7 +822,7 @@ Textlabel = function(
 	var icon_apply = document.getElementById( "icon_text_apply" );
 	
 	var edit = false;
-}
+};
 
 TextlabelLayer = function(
 		stack,
@@ -875,7 +875,7 @@ TextlabelLayer = function(
       }
       catch ( error ) {}
     }
-  }
+  };
 
   this.setUneditableTextlabels = function() {
     for(var t in textlabels ) {
@@ -920,7 +920,7 @@ TextlabelLayer = function(
 			},
 			handle_update );
 		return;
-	}
+	};
 	
 	/**
 	 * handle an update-textlabels-request answer
@@ -973,6 +973,6 @@ TextlabelLayer = function(
 			}
 		}
 		return;
-	}
+	};
 
-}
+};

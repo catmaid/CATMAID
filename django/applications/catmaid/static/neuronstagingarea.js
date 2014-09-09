@@ -681,7 +681,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
         })
         .click( function( event )
         {
-          var vis = $('#skeletonshow' + widgetID + '-' + skeleton.id).is(':checked')
+          var vis = $('#skeletonshow' + widgetID + '-' + skeleton.id).is(':checked');
           skeleton.selected = vis;
           $('#skeletonpre' + widgetID + '-' + skeleton.id).attr({checked: vis});
           skeleton.pre_visible = vis;
@@ -902,7 +902,7 @@ SelectionTable.prototype._rgb2hex = function(rgb) {
   rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
   var hex = function(x) {
     return ("0" + parseInt(x).toString(16)).slice(-2);
-  }
+  };
   return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
 };
 

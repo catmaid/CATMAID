@@ -62,7 +62,7 @@ var requestQueue = function()
     q = q.replace( /\&$/, "" );
     
     return q;
-  }
+  };
 
   var encodeObject = function( o, p )
   {
@@ -94,7 +94,7 @@ var requestQueue = function()
     q = q.replace( /\&$/, "" );
     
     return q;
-  }
+  };
 
   var showSpinner = function()
   {
@@ -102,7 +102,7 @@ var requestQueue = function()
       spinner = document.getElementById( "spinner" );
     if ( spinner )
       spinner.style.display = "block";
-  }
+  };
 
   var hideSpinner = function()
   {
@@ -110,7 +110,7 @@ var requestQueue = function()
       spinner = document.getElementById( "spinner" );
     if ( spinner )
       spinner.style.display = "none";
-  }
+  };
 
   var send = function()
   {
@@ -131,7 +131,7 @@ var requestQueue = function()
     xmlHttp.send( queue[ 0 ].data );
     
     return;
-  }
+  };
 
   var callback = function()
   {
@@ -144,7 +144,7 @@ var requestQueue = function()
         send();
     }
     return;
-  }
+  };
 
   return {
     /**

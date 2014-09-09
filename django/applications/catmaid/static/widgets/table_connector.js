@@ -13,22 +13,22 @@ var ConnectorTable = new function()
   last_displayed_skeletons[0] = 'None';
   var possibleLengths = [25, 100, -1];
   var possibleLengthsLabels = possibleLengths.map(
-    function (n) { return (n === -1) ? "All" : n.toString() });
+    function (n) { return (n === -1) ? "All" : n.toString(); });
 
   this.updateConnectorTable = function() {
     self.setSkeleton( -1 );
     self.connectorTable.fnClearTable( 0 );
     self.connectorTable.fnDraw();
-  }
+  };
 
   this.refreshConnectorTable = function() {
     self.connectorTable.fnClearTable( 0 );
     self.connectorTable.fnDraw();
-  }
+  };
 
   this.setSkeleton = function( skeleton_id ) {
     skeletonID = skeleton_id;
-  }
+  };
   
   this.init = function (pid) {
     var tableid = '#connectortable';
@@ -220,7 +220,7 @@ var ConnectorTable = new function()
       } else {
         adjective = "target";
       }
-      numberOfNodesText = "# nodes in " + adjective + " skeleton"
+      numberOfNodesText = "# nodes in " + adjective + " skeleton";
       otherSkeletonText = adjective + " skeleton ID";
       otherTreenodeText = adjective + " treenode ID";
       $("#connector_nr_nodes_top").text(numberOfNodesText);
@@ -231,5 +231,5 @@ var ConnectorTable = new function()
       $("#other_treenode_bottom").text(otherTreenodeText);
     });
 
-  }
-}
+  };
+}();

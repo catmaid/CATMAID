@@ -22,7 +22,7 @@ CMWNode.CMWNodeUniqueId = 0;
 CMWNode.prototype.uniqueId = function()
 {
 	return CMWNode.CMWNodeUniqueId++;
-}
+};
 
 /**
  * @return width of the node in pixels
@@ -34,7 +34,7 @@ CMWNode.prototype.getWidth = function()
 		return frame.offsetWidth;
 	else
 		return 0;
-}
+};
 
 /**
  * @return height of the node in pixels
@@ -46,7 +46,7 @@ CMWNode.prototype.getHeight = function()
 		return frame.offsetHeight;
 	else
 		return 0;
-}
+};
 
 /**
  * @return available width of the node in pixels (without resize handle or alike structures)
@@ -59,7 +59,7 @@ CMWNode.prototype.getAvailableWidth = function()
 		return w - parent.getResizeHandleView().offsetWidth;
 	else
 		return w - parent.getWidth() + parent.getAvailableWidth();
-}
+};
 
 /**
  * @return available height of the node in pixels (without resize handle or alike structures)
@@ -72,7 +72,7 @@ CMWNode.prototype.getAvailableHeight = function()
 		return h - parent.getResizeHandleView().offsetHeight;
 	else
 		return h - parent.getHeight() + parent.getAvailableHeight();
-}
+};
 
 /**
  * @return left position of the node in pixels
@@ -84,7 +84,7 @@ CMWNode.prototype.getLeft = function()
 		return parseInt( frame.style.left );
 	else
 		return 0;
-}
+};
 
 /**
  * @return top position of the node in pixels
@@ -96,7 +96,7 @@ CMWNode.prototype.getTop = function()
 		return parseInt( frame.style.top );
 	else
 		return 0;
-}
+};
 
 
 
@@ -117,11 +117,11 @@ function CMWRootNode()
 	frame.id = "CMW" + id;
 	frame.style.top = "0px";
 
-	this.getId = function(){ return id; }
+	this.getId = function(){ return id; };
 
-	this.getFrame = function(){ return frame; }
+	this.getFrame = function(){ return frame; };
 
-	this.getChild = function(){ return child; }
+	this.getChild = function(){ return child; };
 
 	this.getChildren = function()
 	{
@@ -132,7 +132,7 @@ function CMWRootNode()
 			children = children.concat( child.getChildren() );
 		}
 		return children;
-	}
+	};
 
 	this.getWindows = function()
 	{
@@ -140,7 +140,7 @@ function CMWRootNode()
 			return child.getWindows();
 		else	
 			return [];
-	}
+	};
 
 	this.replaceChild = function( newChild )
 	{
@@ -150,7 +150,7 @@ function CMWRootNode()
 		frame.appendChild( child.getFrame() );
 		child.setParent( self );
 		self.redraw();
-	}
+	};
 
 	/**
 	 * @return {CMWRootNode} this (allows chains of calls like myRootNode.redraw().show())
@@ -161,17 +161,17 @@ function CMWRootNode()
 		/* document.getElementById( "text" ).replaceChild( document.createTextNode( self.toXML() ), document.getElementById( "text" ).firstChild ); */
 		
 		return self;
-	}
+	};
 	
 	this.getAvailableWidth = function()
 	{
 		return this.getWidth();
-	}
+	};
 
 	this.getAvailableHeight = function()
 	{
 		return this.getHeight();
-	}
+	};
 
 	this.catchDrag = function()
 	{
@@ -179,19 +179,19 @@ function CMWRootNode()
 		ui.registerEvent( "onmouseup", self.releaseDrag );
 		ui.catchEvents();
 		child.catchDrag();
-	}
+	};
 	
 	this.releaseDrag = function()
 	{
 		ui.releaseEvents();
 		ui.removeEvent( "onmouseup", self.releaseDrag );
 		child.releaseDrag();
-	}
+	};
 	
 	this.toXML = function()
 	{
 		return "<root id\"" + id + "\">\n" + child.toXML( "\t" ) + "\n</root>";
-	}
+	};
 	
 	/**
 	 * Empty close method that can be overridden to any needs.  The method is
@@ -201,13 +201,13 @@ function CMWRootNode()
 	{
 		child = null;
 		return;
-	}
+	};
 }
 
 CMWRootNode.prototype = new CMWNode();
 CMWRootNode.prototype.constructor = CMWRootNode;
 
-CMWRootNode.prototype.getRootNode = function(){ return this; }
+CMWRootNode.prototype.getRootNode = function(){ return this; };
 
 /**
  * Closes all children of the root node. Because closing one node can
@@ -224,7 +224,7 @@ CMWRootNode.prototype.closeAllChildren = function()
 		windows = this.getWindows();
 	}
 	return;
-}
+};
 
 
 
@@ -280,11 +280,11 @@ function CMWHSplitNode( child1, child2 )
 	
 	var widthRatio = 0.5;
 	
-	this.getId = function(){ return id; }
+	this.getId = function(){ return id; };
 	
-	this.getFrame = function(){ return frame; }
+	this.getFrame = function(){ return frame; };
 	
-	this.getParent = function(){ return parent; }
+	this.getParent = function(){ return parent; };
 	
 	/**
 	 * Set the parent node.
@@ -297,29 +297,29 @@ function CMWHSplitNode( child1, child2 )
 		var oldParent = parent;
 		parent = newParent;
 		return oldParent;
-	}
+	};
 	
-	this.getRootNode = function(){ return parent.getRootNode(); }
+	this.getRootNode = function(){ return parent.getRootNode(); };
 	
 	this.getLeftChild = function()
 	{
 		return child1;
-	}
+	};
 
 	this.getRightChild = function()
 	{
 		return child2;
-	}
+	};
 
 	this.getChildren = function()
 	{
 		return [ child1, child2 ].concat( child1.getChildren() ).concat( child2.getChildren() );
-	}
+	};
 	
 	this.getWindows = function()
 	{
 		return child1.getWindows().concat( child2.getWindows() );
-	}
+	};
 	
 	this.redraw = function()
 	{
@@ -337,7 +337,7 @@ function CMWHSplitNode( child1, child2 )
 		child2.redraw();
 		
 		return self;
-	}
+	};
 	
 	this.changeWidth = function( d )
 	{
@@ -348,12 +348,12 @@ function CMWHSplitNode( child1, child2 )
 		widthRatio = w1 / w;
 		
 		return self.redraw();
-	}
+	};
 	
 	this.removeResizeHandle = function()
 	{
 		return child1.getFrame().removeChild( resizeHandle.getView() );
-	}
+	};
 	
 	this.replaceChild = function( newChild, oldChild )
 	{
@@ -361,7 +361,7 @@ function CMWHSplitNode( child1, child2 )
 			return self.replaceLeftChild( newChild );
 		else if ( oldChild == child2 )
 			return self.replaceRightChild( newChild );
-	}
+	};
 	
 	this.replaceLeftChild = function( newChild )
 	{
@@ -378,7 +378,7 @@ function CMWHSplitNode( child1, child2 )
 		newChild.setParent( self );
 		self.redraw();
 		return oldChild;
-	}
+	};
 	
 	this.replaceRightChild = function( newChild )
 	{
@@ -393,7 +393,7 @@ function CMWHSplitNode( child1, child2 )
 		newChild.setParent( self );
 		self.redraw();
 		return oldChild;
-	}
+	};
 	
 	this.getSiblingOf = function( child )
 	{
@@ -403,31 +403,31 @@ function CMWHSplitNode( child1, child2 )
 			return child1;
 		else
 			return null;
-	}
+	};
 	
 	this.getResizeHandleView = function()
 	{
 		return resizeHandle.getView();
-	}
+	};
 
 	this.catchDrag = function()
 	{
 		child1.catchDrag();
 		child2.catchDrag();
 		return;
-	}
+	};
 	
 	this.releaseDrag = function()
 	{
 		child1.releaseDrag();
 		child2.releaseDrag();
 		return;
-	}
+	};
 	
 	this.toXML = function( tabs )
 	{
 		return tabs + "<hsplitnode id\"" + id + "\">\n" + child1.toXML( tabs + "\t" ) + "\n" + child2.toXML( tabs + "\t" ) + "\n" + tabs + "</hsplitnode>";
-	}
+	};
 }
 
 CMWHSplitNode.prototype = new CMWNode();
@@ -489,11 +489,11 @@ function CMWVSplitNode( child1, child2 )
 	
 	var heightRatio = 0.5;
 	
-	this.getId = function(){ return id; }
+	this.getId = function(){ return id; };
 	
-	this.getFrame = function(){ return frame; }
+	this.getFrame = function(){ return frame; };
 	
-	this.getParent = function(){ return parent; }
+	this.getParent = function(){ return parent; };
 	
 	/**
 	 * Set the parent node.
@@ -506,29 +506,29 @@ function CMWVSplitNode( child1, child2 )
 		var oldParent = parent;
 		parent = newParent;
 		return oldParent;
-	}
+	};
 	
-	this.getRootNode = function(){ return parent.getRootNode(); }
+	this.getRootNode = function(){ return parent.getRootNode(); };
 	
 	this.getTopChild = function()
 	{
 		return child1;
-	}
+	};
 
 	this.getBottomChild = function()
 	{
 		return child2;
-	}
+	};
 
 	this.getChildren = function()
 	{
 		return [ child1, child2 ].concat( child1.getChildren() ).concat( child2.getChildren() );
-	}
+	};
 	
 	this.getWindows = function()
 	{
 		return child1.getWindows().concat( child2.getWindows() );
-	}
+	};
 	
 	this.redraw = function()
 	{
@@ -546,7 +546,7 @@ function CMWVSplitNode( child1, child2 )
 		child2.redraw();
 		
 		return self;
-	}
+	};
 	
 	this.changeHeight = function( d )
 	{
@@ -557,12 +557,12 @@ function CMWVSplitNode( child1, child2 )
 		heightRatio = h1 / h;
 		
 		return self.redraw();
-	}
+	};
 	
 	this.removeResizeHandle = function()
 	{
 		return child1.getFrame().removeChild( resizeHandle.getView() );
-	}
+	};
 	
 	this.replaceChild = function( newChild, oldChild )
 	{
@@ -570,7 +570,7 @@ function CMWVSplitNode( child1, child2 )
 			return self.replaceTopChild( newChild );
 		else if ( oldChild == child2 )
 			return self.replaceBottomChild( newChild );
-	}
+	};
 	
 	this.replaceTopChild = function( newChild )
 	{
@@ -588,7 +588,7 @@ function CMWVSplitNode( child1, child2 )
 		newChild.setParent( self );
 		self.redraw();
 		return oldChild;
-	}
+	};
 	
 	this.replaceBottomChild = function( newChild )
 	{
@@ -603,7 +603,7 @@ function CMWVSplitNode( child1, child2 )
 		newChild.setParent( self );
 		self.redraw();
 		return oldChild;
-	}
+	};
 	
 	this.getSiblingOf = function( child )
 	{
@@ -613,31 +613,31 @@ function CMWVSplitNode( child1, child2 )
 			return child1;
 		else
 			return null;
-	}
+	};
 	
 	this.getResizeHandleView = function()
 	{
 		return resizeHandle.getView();
-	}
+	};
 
 	this.catchDrag = function()
 	{
 		child1.catchDrag();
 		child2.catchDrag();
 		return;
-	}
+	};
 	
 	this.releaseDrag = function()
 	{
 		child1.releaseDrag();
 		child2.releaseDrag();
 		return;
-	}
+	};
 	
 	this.toXML = function( tabs )
 	{
 		return tabs + "<vsplitnode id\"" + id + "\">\n" + child1.toXML( tabs + "\t" ) + "\n" + child2.toXML( tabs + "\t" ) + "\n" + tabs + "</vsplitnode>";
-	}
+	};
 }
 
 CMWVSplitNode.prototype = new CMWNode();
@@ -662,7 +662,7 @@ function CMWWindow( title )
 		if ( frame.firstChild && frame.firstChild.offsetHeight )
 			h -= frame.firstChild.offsetHeight;
 		return h;
-	}
+	};
 	
 	/**
 	 * Remove this window from tree.  If this was the sole child of root,
@@ -708,12 +708,12 @@ function CMWWindow( title )
 		self.callListeners( CMWWindow.CLOSE );
 			
 		return false;
-	}
+	};
 	
 	this.hasFocus = function()
 	{
 		return frame.firstChild.className == "stackInfo_selected";
-	}
+	};
 	
 	this.focus = function()
 	{
@@ -734,7 +734,7 @@ function CMWWindow( title )
 			self.callListeners( CMWWindow.FOCUS );
 		}
 		return self;
-	}
+	};
 	
 	var id = this.uniqueId();
 	
@@ -776,13 +776,13 @@ function CMWWindow( title )
 	{
 		eventCatcher.style.display = "block";
 		return false;
-	}
+	};
 	
 	this.releaseDrag = function()
 	{
 		eventCatcher.style.display = "none";
 		return false;
-	}
+	};
 	
 	frame.onmousedown = this.focus;
 	
@@ -791,7 +791,7 @@ function CMWWindow( title )
 		CMWWindow.selectedWindow = self;
 		self.getRootNode().catchDrag();
         return false;
-	}
+	};
 	
 	eventCatcher.onmousemove = function( e )
 	{
@@ -816,13 +816,13 @@ function CMWWindow( title )
 			eventCatcher.className = "eventCatcher" + s;
 		}
 		return false;
-    }
+    };
 	
 	eventCatcher.onmouseout = function()
 	{
 		eventCatcher.className = "eventCatcher";
 		return false;
-	}
+	};
 	
 	eventCatcher.onmouseup = function( e )
 	{
@@ -864,13 +864,13 @@ function CMWWindow( title )
 		rootNode.redraw();
 		
 		return false;
-	}
+	};
 	
 	this.addListener = function( listener )
 	{
 		listeners.push( listener );
 		return;
-	}
+	};
 	
 	this.removeListener = function( listener )
 	{
@@ -883,13 +883,13 @@ function CMWWindow( title )
 			}
 		}
 		return;
-	}
+	};
 	
 	this.clearListeners = function()
 	{
 		delete listeners;
 		listeners = new Array();
-	}
+	};
 	
 	/**
 	 * Call all listeners with a RESIZE event, the actual window redrawing is
@@ -900,17 +900,17 @@ function CMWWindow( title )
 	this.redraw = function()
 	{
 		return self.callListeners( CMWWindow.RESIZE );
-	}
+	};
 	
-	this.getId = function(){ return id; }
+	this.getId = function(){ return id; };
 	
-	this.getFrame = function(){ return frame; }
+	this.getFrame = function(){ return frame; };
 	
-	this.getParent = function(){ return parent; }
+	this.getParent = function(){ return parent; };
 	
-	this.getTitle = function(){ return title; }
+	this.getTitle = function(){ return title; };
 	
-	this.getSibling = function(){ return parent.getSiblingOf( self ); }
+	this.getSibling = function(){ return parent.getSiblingOf( self ); };
 	
 	/**
 	 * Set the parent node.
@@ -923,11 +923,11 @@ function CMWWindow( title )
 		var oldParent = parent;
 		parent = newParent;
 		return oldParent;
-	}
+	};
 	
-	this.getChildren = function(){ return []; }
+	this.getChildren = function(){ return []; };
 	
-	this.getWindows = function(){ return [ self ]; }
+	this.getWindows = function(){ return [ self ]; };
 	
 	/**
 	 * Set the window title
@@ -940,7 +940,7 @@ function CMWWindow( title )
 		title = newTitle;
 		titleText.replaceChild( document.createTextNode( title ), titleText.firstChild );
 		return self;
-	}
+	};
 	
 	/**
 	 * @return root node
@@ -948,7 +948,7 @@ function CMWWindow( title )
 	this.getRootNode = function()
 	{
 		return parent.getRootNode();
-	}
+	};
 	
 	/**
 	 * Call all listeners with a signal.
@@ -962,12 +962,12 @@ function CMWWindow( title )
 			listeners[ i ]( self, signal );
 		
 		return self;
-	}
+	};
 	
 	this.toXML = function( tabs )
 	{
 		return tabs + "<window id\"" + id + "\" title=\"" + title + "\" />";
-	}
+	};
 }
 
 CMWWindow.prototype = new CMWNode();
@@ -996,7 +996,7 @@ function ResizeHandle( type, node )
 	/**
 	 * @return the html-element
 	 */
-	this.getView = function(){ return view; }
+	this.getView = function(){ return view; };
 
 	var onmousemove =
 	{
@@ -1016,14 +1016,14 @@ function ResizeHandle( type, node )
 	{
 		h : function( e )
 		{
-			ui.releaseEvents()
+			ui.releaseEvents();
 			ui.removeEvent( "onmousemove", onmousemove.h );
 			ui.removeEvent( "onmouseup", onmouseup.h );
 			return false;
         },
 		v : function( e )
 		{
-			ui.releaseEvents()
+			ui.releaseEvents();
 			ui.removeEvent( "onmousemove", onmousemove.v );
 			ui.removeEvent( "onmouseup", onmouseup.v );
 			return false;

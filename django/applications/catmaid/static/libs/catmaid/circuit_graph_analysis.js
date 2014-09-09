@@ -38,7 +38,7 @@ CircuitGraphAnalysis.prototype = {};
 /** Degrees of the adjacency matrix represented by W. */
 CircuitGraphAnalysis.prototype._degrees = function(W) {
   return W.map(function(row) {
-    return row.reduce(function(a, b) { return a + b }, 0);
+    return row.reduce(function(a, b) { return a + b; }, 0);
   });
 };
 

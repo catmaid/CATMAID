@@ -12,7 +12,7 @@ name, size, onchange, defaultvalue) {
    */
   this.getView = function () {
     return view;
-  }
+  };
 
   /**
    * mouse up, so clear the timer
@@ -20,11 +20,11 @@ name, size, onchange, defaultvalue) {
   var mouseUp = function (e) {
     if (timer) window.clearTimeout(timer);
 
-    ui.releaseEvents()
+    ui.releaseEvents();
     ui.removeEvent("onmouseup", mouseUp);
 
     return false;
-  }
+  };
 
   /**
    * decreases the value and invoke timeout
@@ -38,7 +38,7 @@ name, size, onchange, defaultvalue) {
       timer = window.setTimeout(decrease, 250);
     }
     return;
-  }
+  };
 
   /**
    * mouse down on the increase button, so move up, setting a timer
@@ -53,7 +53,7 @@ name, size, onchange, defaultvalue) {
 
     decrease();
     return false;
-  }
+  };
 
   /**
    * increases the value and invoke timeout
@@ -67,7 +67,7 @@ name, size, onchange, defaultvalue) {
       timer = window.setTimeout(increase, 250);
     }
     return;
-  }
+  };
 
   /**
    * mouse down on the top bar, so move up, setting a timer
@@ -82,7 +82,7 @@ name, size, onchange, defaultvalue) {
 
     increase();
     return false;
-  }
+  };
 
   /**
    * mouse wheel over input
@@ -101,7 +101,7 @@ name, size, onchange, defaultvalue) {
     }
     input.onchange();
     return false;
-  }
+  };
 
   // initialise
   var self = this;

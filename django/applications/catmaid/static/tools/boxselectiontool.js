@@ -25,7 +25,7 @@ function BoxSelectionTool()
     {
         return this.cropBox;
     };
-};
+}
 
 BoxSelectionTool.prototype.toPx = function( world_coord, resolution )
 {
@@ -90,7 +90,7 @@ BoxSelectionTool.prototype.getCropBoxBoundingBox = function(stack)
              left_px : left_px, top_px : top_px,
              right_px : right_px, bottom_px : bottom_px,
              width_px : width_px, height_px : height_px,
-             rotation_cw: this.cropBox.rotation_cw }
+             rotation_cw: this.cropBox.rotation_cw };
 };
 
 /**
@@ -102,7 +102,7 @@ BoxSelectionTool.prototype.updateCropBox = function()
     for ( var s in this.cropBoxCache )
     {
         var cb = this.cropBoxCache[ s ];
-        cb.layer.redraw()
+        cb.layer.redraw();
     }
 
     return;
@@ -213,7 +213,7 @@ BoxSelectionTool.prototype.register = function( parentStack )
     // make sure the tool knows all (and only) open projecs
     getStackMenuInfo(project.id, function(stacks) {
         $.each(stacks, function(i, s) {
-            var id = s.id
+            var id = s.id;
             var opened_stack = project.getStack( id );
             if ( id in self.cropBoxCache )
             {
@@ -257,12 +257,12 @@ function BoxSelectionLayer( stack, tool, crop_box)
     {
         view.style.opacity = val;
         opacity = val;
-    }
+    };
 
     this.getOpacity = function()
     {
         return opacity;
-    }
+    };
 
     this.redraw = function(completionCallback)
     {
@@ -314,12 +314,12 @@ function BoxSelectionLayer( stack, tool, crop_box)
         }
 
         return;
-    }
+    };
 
     this.resize = function( width, height )
     {
         return;
-    }
+    };
 
     this.show = function ()
     {
@@ -334,7 +334,7 @@ function BoxSelectionLayer( stack, tool, crop_box)
     this.getView = function()
     {
         return view;
-    }
+    };
 
     this.unregister = function()
     {
@@ -391,7 +391,7 @@ function BoxSelectionLayer( stack, tool, crop_box)
     // add view to DOM
     if( self.visible )
         stack.getView().appendChild( view );
-};
+}
 
 /**
  * Return friendly name of this layer.

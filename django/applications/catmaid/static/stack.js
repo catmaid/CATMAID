@@ -77,7 +77,7 @@ function Stack(
 			document.createTextNode( text + " " + Stack.SCALE_BAR_UNITS[ ui ] ),
 			scaleBar.firstChild.firstChild.firstChild );
 		return;
-	}
+	};
 
 
 	/**
@@ -97,8 +97,8 @@ function Stack(
 			tool.redraw();
 		}
 
-		return
-	}
+		return;
+	};
 	this.update = update;
 
 	/**
@@ -116,7 +116,7 @@ function Stack(
 			left : Math.floor( self.x - width / 2 )
 		};
 		return l;
-	}
+	};
 
 	/**
 	 * Project x-coordinate for stack coordinates
@@ -192,7 +192,7 @@ function Stack(
 			x : self.stackToProjectX( self.z, self.y, self.x )
 		};
 		return l;
-	}
+	};
 
 
 	/**
@@ -213,7 +213,7 @@ function Stack(
 		projectBox.max.x = self.stackToProjectX( stackBox.max.z, stackBox.max.y, stackBox.max.x );
 		projectBox.max.y = self.stackToProjectY( stackBox.max.z, stackBox.max.y, stackBox.max.x );
 		projectBox.max.z = self.stackToProjectZ( stackBox.max.z, stackBox.max.y, stackBox.max.x );
-	}
+	};
 
 
 	/**
@@ -235,8 +235,8 @@ function Stack(
 				y : self.stackToProjectY( stackBox.max.z, stackBox.max.y, stackBox.max.x ),
 				z : self.stackToProjectZ( stackBox.max.z, stackBox.max.y, stackBox.max.x )
 			}
-		}
-	}
+		};
+	};
 
 
 	/**
@@ -257,7 +257,7 @@ function Stack(
 		stackBox.max.x = self.x + w2;
 		stackBox.max.y = self.y + h2;
 		stackBox.max.z = self.z + 0.5;
-	}
+	};
 
 
 	/**
@@ -281,8 +281,8 @@ function Stack(
 				y : self.y + h2,
 				z : self.z + 0.5
 			}
-		}
-	}
+		};
+	};
 
 
 	/**
@@ -308,7 +308,7 @@ function Stack(
 		stackBox.max.x = self.x + w2;
 		stackBox.max.y = self.y + h2;
 		stackBox.max.z = self.z + d2;
-	}
+	};
 
 
 	/**
@@ -336,8 +336,8 @@ function Stack(
 				y : self.y + w2,
 				z : self.z + d2
 			}
-		}
-	}
+		};
+	};
 
 
 	/**
@@ -352,7 +352,7 @@ function Stack(
 			worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
 			worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
 			scale : self.scale };
-	}
+	};
 
   /**
    * Get stacks width and height
@@ -374,7 +374,7 @@ function Stack(
         worldLeftC : self.xc
     };
     return l;
-  }
+  };
 
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
@@ -389,7 +389,7 @@ function Stack(
 					completionCallback();
 				}
 			}
-		}
+		};
 
 		self.yc = Math.floor( self.y * self.scale - ( self.viewHeight / 2 ) );
 		self.xc = Math.floor( self.x * self.scale - ( self.viewWidth / 2 ) );
@@ -434,7 +434,7 @@ function Stack(
 		self.old_xc = self.xc;
 
 		return 2;
-	}
+	};
 
 	/**
 	 * Get the view element
@@ -442,7 +442,7 @@ function Stack(
 	this.getView = function()
 	{
 		return view;
-	}
+	};
 
     /**
      * Get layers
@@ -450,7 +450,7 @@ function Stack(
     this.getLayers = function()
     {
         return layers;
-    }
+    };
 
 
     /**
@@ -527,7 +527,7 @@ function Stack(
 		}
 		var z3 = skip_planes[ z1 ] ? z2 : z1;
 		return Math.max( 0, Math.min( MAX_Z, z3 ) );
-	}
+	};
 
 	/**
 	 * Move this stack to the given project coordinates and call the completion
@@ -569,7 +569,7 @@ function Stack(
 				self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
 			} );
 		}
-	}
+	};
 
 	/**
 	 * Move to project-coordinates and execute a completion callback when
@@ -591,7 +591,7 @@ function Stack(
 		}
 
 		self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
-	}
+	};
 
 	/**
 	 * move to pixel coordinates
@@ -605,7 +605,7 @@ function Stack(
 			ss );
 
 		return true;
-	}
+	};
 
 	var resize = function()
 	{
@@ -621,23 +621,23 @@ function Stack(
 		self.overview.redraw();
 
 		return;
-	}
-	this.resize = resize
+	};
+	this.resize = resize;
 
 	/**
 	 * Get the stack window.
 	 */
-	this.getWindow = function() { return stackWindow; }
+	this.getWindow = function() { return stackWindow; };
 
 	/**
 	 * Get the project.
 	 */
-	this.getProject = function(){ return project; }
+	this.getProject = function(){ return project; };
 
 	/**
 	 * Get stack ID.
 	 */
-	this.getId = function(){ return id; }
+	this.getId = function(){ return id; };
 
 	/**
 	 * Get a layer. Layers are associated by a unique key.
@@ -649,7 +649,7 @@ function Stack(
 		if ( layers[ key ] )
 			return layers[key];
         return;
-	}
+	};
 
 	/**
 	 * Add a layer.  Layers are associated by a unique key.
@@ -665,7 +665,7 @@ function Stack(
 		layers[ key ] = layer;
 		self.tilelayercontrol.refresh();
 		return;
-	}
+	};
 
 	/**
 	 * Remove a layer specified by its key.  If no layer with this key exists,
@@ -684,7 +684,7 @@ function Stack(
 		}
 		else
 			return null;
-	}
+	};
 
 
 	/**
@@ -698,13 +698,13 @@ function Stack(
 		tool = newTool;
 		if ( typeof tool != "undefined" && tool )
 			tool.register( self );
-	}
+	};
 
 	/** Return the current tool. */
 	this.getTool = function()
 	{
 		return tool;
-	}
+	};
 
 	/**
 	 * Shows and hides reference lines that meet on the center of each slice.

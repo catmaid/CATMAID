@@ -15,14 +15,14 @@ Menu = function () {
    */
   this.getView = function () {
     return view;
-  }
+  };
 
   /**
    * get a pulldown-menu by it's title
    */
   this.getPulldown = function (title) {
     return pulldowns[title];
-  }
+  };
 
   /**
    * update the content of the menu
@@ -42,21 +42,21 @@ Menu = function () {
           if (this.className == "menu_item") this.className = "menu_item_hover";
           this.cells[0].firstChild.lastChild.style.display = "block";
           return false;
-        }
+        };
         row.onmouseout = function (e) {
           if (this.className == "menu_item_hover") this.className = "menu_item";
           this.cells[0].firstChild.lastChild.style.display = "none";
           return false;
-        }
+        };
       } else {
         row.onmouseover = function (e) {
           if (this.className == "menu_item") this.className = "menu_item_hover";
           return false;
-        }
+        };
         row.onmouseout = function (e) {
           if (this.className == "menu_item_hover") this.className = "menu_item";
           return false;
-        }
+        };
       }
       row.id = content[key].id;
 
@@ -115,7 +115,7 @@ Menu = function () {
     }
     view.appendChild(table);
     return;
-  }
+  };
 
   // initialise
   var self = this;
@@ -123,4 +123,4 @@ Menu = function () {
   view.className = "menu_text";
 
   var pulldowns = new Object();
-}
+};

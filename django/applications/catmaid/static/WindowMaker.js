@@ -808,7 +808,7 @@ var WindowMaker = new function()
       option = document.createElement("option");
       option.text = "No " + name;
       option.value = -1;
-      e.appendChild(option)
+      e.appendChild(option);
       for (var i=1; i<51; ++i) {
         option = document.createElement("option");
         option.text = i;
@@ -1938,7 +1938,7 @@ var WindowMaker = new function()
     // container.
     OS.init_ui(container);
 
-    return win
+    return win;
   };
 
   var createClassificationWidget = function()
@@ -2363,7 +2363,7 @@ var WindowMaker = new function()
         var user = users[userID];
         {
           // Add entry to query select
-          var opts = {value: user.id, text: user.fullName}
+          var opts = {value: user.id, text: user.fullName};
           $("<option />", opts).appendTo($select);
           // Add entry to filter select and select current user by default
           if (userID == session.userid) { opts.selected = true; }
@@ -2424,7 +2424,7 @@ var WindowMaker = new function()
 
     SkeletonListSources.updateGUI();
 
-    return win
+    return win;
   };
 
   var createSettingsWindow = function()

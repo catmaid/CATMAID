@@ -16,7 +16,7 @@ function TilelayerControl( stack )
   self.getView = function()
   {
     return view;
-  }
+  };
 
   /**
    * set opacity for a layer
@@ -28,7 +28,7 @@ function TilelayerControl( stack )
 
     if(layers.hasOwnProperty(key))
       layers[key].setOpacity( val / 100 );
-  }
+  };
 
   /**
    * removes existing layer controls and re-creates them.
@@ -39,7 +39,7 @@ function TilelayerControl( stack )
     var layers = stack.getLayers();
 
     // Empty container
-    $(view).empty()
+    $(view).empty();
 
     // Add slider for each layer
     for(var key in layers)
@@ -52,7 +52,7 @@ function TilelayerControl( stack )
         self.setOpacity( this.idd, val );
         stack.redraw();
         return;
-      }
+      };
 
       // Make layer re-evaluate it's opacity
       layers[key].setOpacity(layers[key].getOpacity());
@@ -91,4 +91,4 @@ function TilelayerControl( stack )
   view.style.zIndex = 8;
 
   stack.getView().appendChild( view );
-};
+}

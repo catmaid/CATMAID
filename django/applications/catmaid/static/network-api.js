@@ -96,7 +96,7 @@ var CM = function()
     /** Position the canvas centered at the x,y,z of this node. */
     this.go = function() {
       project.moveTo(this.z, this.y, this.x, 0);
-    }
+    };
     this.select = function() {
       this.go();
       /*
@@ -109,7 +109,7 @@ var CM = function()
       // TODO
       */
       return "Currently you have to manually select the tracing tool and click on the node!";
-    }
+    };
   };
 
   /** First check if an instance of json.id exists in the cache,
@@ -215,17 +215,17 @@ var CM = function()
         }
       }
       return arr;
-    }
+    };
 
     /** Returns an array of presynaptic connectors. */
     this.preConnectors = function(update) {
       return flattenValueArraysById(this.connectors(update).pre);
-    }
+    };
 
     /** Returns an array of postsynaptic connectors. */
     this.postConnectors = function(update) {
       return flattenValueArraysById(this.connectors(update).post);
-    }
+    };
 
     /** Invoke function fnName in every value of the properties in map,
      * which is expected to return an array of values,
@@ -463,7 +463,7 @@ var CM = function()
     var json = synchFetch("model/network.api/neuron.php", {neuron_id: ID});
     if (null !== json) return create(Neuron, cm.IDNeurons, json);
     return null;
-  }
+  };
 
   /** Find what ID is (a skeleton, node or a neuron) and return the appropriate
    * object instance for reading out its properties. */

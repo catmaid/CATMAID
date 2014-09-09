@@ -250,4 +250,4 @@ var TreenodeTable = new function()
     });
 
   };
-}
+}();

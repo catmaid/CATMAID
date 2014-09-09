@@ -21,7 +21,7 @@ function TaggingTool()
     this.initial_stack_tags = null;
 
     // an object to save update states of objects
-    this.update_states = {}
+    this.update_states = {};
 
     if (!ui) ui = new UI();
 
@@ -41,7 +41,7 @@ function TaggingTool()
         var sid = self.stack.getId();
         requestQueue.register(django_url + pid + '/tags/list',
             'GET', undefined, self.retrieve_project_tags_handler);
-    }
+    };
 
     /**
      * Initiates calls to the server to get the tags of
@@ -54,7 +54,7 @@ function TaggingTool()
         var sid = self.stack.getId();
         requestQueue.register(django_url + pid + '/stack/' + sid + '/tags/list',
             'GET', undefined, self.retrieve_stack_tags_handler);
-    }
+    };
 
     /**
      * Creates a string containing the comma separated
@@ -68,8 +68,8 @@ function TaggingTool()
             new_tag = (tags.length == 0) ? tag_list[i] : (", " + tag_list[i]);
             tags += new_tag;
         }
-        return tags
-    }
+        return tags;
+    };
 
     /**
      * This method takes a string that represents a list (e.g. "a, b, c")
@@ -81,7 +81,7 @@ function TaggingTool()
         var outer_trim = list_string.replace(/^\s+|\s+$/g, "");
         var inner_trim = outer_trim.replace(/\s*,\s*/g, ",");
         return inner_trim;
-    }
+    };
 
     /**
      * If the project tags could be retrieved, this handler will
@@ -101,9 +101,9 @@ function TaggingTool()
         }
         else
         {
-            self.input_project_tags.value = "(Sorry, couldn't retrieve tags)"
+            self.input_project_tags.value = "(Sorry, couldn't retrieve tags)";
         }
-    }
+    };
 
     /**
      * If the stack tags could be retrieved, this handler will
@@ -123,9 +123,9 @@ function TaggingTool()
         }
         else
         {
-            self.input_stack_tags.value = "(Sorry, couldn't retrieve tags)"
+            self.input_stack_tags.value = "(Sorry, couldn't retrieve tags)";
         }
-    }
+    };
 
     /**
      * Updates the tags of the current project and stack in the
@@ -195,7 +195,7 @@ function TaggingTool()
 
         // see if all updates went well
         self.check_updates();
-    }
+    };
 
     /**
      * Checks what tag updates have been requested and displays
@@ -262,7 +262,7 @@ function TaggingTool()
             // try again in 200ms
             setTimeout(self.check_updates, 200);
         }
-    }
+    };
 
     this.update_project_tags_handler = function( status, text, xml )
     {
@@ -276,7 +276,7 @@ function TaggingTool()
         {
             self.update_states.project = "error";
         }
-    }
+    };
 
     this.update_stack_tags_handler = function( status, text, xml )
     {
@@ -290,7 +290,7 @@ function TaggingTool()
         {
             self.update_states.stack = "error";
         }
-    }
+    };
 
     /**
      * unregister all stack related mouse and keyboard controls
@@ -299,7 +299,7 @@ function TaggingTool()
     {
         self.project_tags_ready = false;
         self.stack_tags_ready = false;
-    }
+    };
 
     /**
      * unregister all project related GUI control connections and event
@@ -314,7 +314,7 @@ function TaggingTool()
         document.getElementById( "toolbar_tags" ).style.display = "none";
 
         self.stack = null;
-    }
+    };
 
     /**
      * install this tool in a stack.
@@ -331,8 +331,8 @@ function TaggingTool()
         // disable inputs while the tags are retrieved
         self.input_project_tags.disabled = true;
         self.input_stack_tags.disabled = true;
-        self.input_project_tags.value = "(Retrieving tags)"
-        self.input_stack_tags.value = "(Retrieving tags)"
+        self.input_project_tags.value = "(Retrieving tags)";
+        self.input_stack_tags.value = "(Retrieving tags)";
 
         // get the tags
         self.retrieve_project_tags();
@@ -340,12 +340,12 @@ function TaggingTool()
 
 		// initialize crop button
 		self.button_tags_apply.onclick = self.update_tags;
-    }
+    };
 
     /** This function should return true if there was any action
         linked to the key code, or false otherwise. */
     this.handleKeyPress = function( e )
     {
         return false;
-    }
+    };
 }

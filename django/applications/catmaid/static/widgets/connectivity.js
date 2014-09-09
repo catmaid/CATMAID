@@ -373,7 +373,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     });
   };
 
-  var onmouseover = function() { this.style.textDecoration = 'underline'; }
+  var onmouseover = function() { this.style.textDecoration = 'underline'; };
   var onmouseout = function() { this.style.textDecoration = 'none'; };
 
   /**

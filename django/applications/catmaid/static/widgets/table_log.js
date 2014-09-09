@@ -16,7 +16,7 @@ var LogTable = new function()
 
     var possibleLengths = [25, 100, 500, 2000, -1];
     var possibleLengthsLabels = possibleLengths.map(
-        function (n) { return (n === -1) ? "All" : n.toString() });
+        function (n) { return (n === -1) ? "All" : n.toString(); });
 
     this.init = function (pid) {
         var tableid = '#logtable';
@@ -110,6 +110,6 @@ var LogTable = new function()
             project.moveTo(z, y, x);
         });
 
-    }
+    };
 
-}
+}();

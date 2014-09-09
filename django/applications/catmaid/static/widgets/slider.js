@@ -29,7 +29,7 @@ Slider = function(
   this.getView = function()
   {
     return view;
-  }
+  };
   
   /**
    * returns the input-element for insertion to the document
@@ -37,7 +37,7 @@ Slider = function(
   this.getInputView = function()
   {
     return inputView;
-  }
+  };
   
   /**
    * set a value by its index in the value array
@@ -87,7 +87,7 @@ Slider = function(
     if ( !cancelOnchange ) self.onchange( self.val );
     
     return;
-  }
+  };
   
   /**
    * set a value, priorly check if it is in the value array
@@ -100,7 +100,7 @@ Slider = function(
       setByIndex( i, cancelOnchange );
     }
     return;
-  }
+  };
   
   /**
    * set a value, priorly check if it is in the value array
@@ -117,7 +117,7 @@ Slider = function(
       this.value = self.val;
     }
     return;
-  }
+  };
   
   /**
    * check if a value is in the value array
@@ -132,7 +132,7 @@ Slider = function(
         return i;
     }
     return -1;
-  }
+  };
   
   /**
    * mouse button pressed on handle
@@ -149,7 +149,7 @@ Slider = function(
     ui.onmousedown( e );
     
     return false;
-  }
+  };
   
   /**
    * mouse button released on handle (on the ui.mouseCatcher respectively)
@@ -158,12 +158,12 @@ Slider = function(
   {
     if ( timer ) window.clearTimeout( timer );
     
-    ui.releaseEvents()
+    ui.releaseEvents();
     ui.removeEvent( "onmousemove", handleMove );
     ui.removeEvent( "onmouseup", handleMouseUp );
     
     return false;
-  }
+  };
   
   /**
    * mouse moved on handle (on the mouseCatcher respectively)
@@ -186,7 +186,7 @@ Slider = function(
     setByIndex( i );
     
     return false;
-  }
+  };
   
   /**
    * mouse wheel over slider, moves the slider step by step
@@ -207,7 +207,7 @@ Slider = function(
       }
     }
     return false;
-  }
+  };
   
   /**
    * decreases the index and invoke timeout
@@ -217,7 +217,7 @@ Slider = function(
     setByIndex( Math.max( 0, ind - 1 ) );
     timer = window.setTimeout( decrease, 250 );
     return;
-  }
+  };
   
   /**
    * mouse down on the top bar, so move up, setting a timer
@@ -233,7 +233,7 @@ Slider = function(
     
     decrease();
     return false;
-  }
+  };
   
   /**
    * increases the index and invoke timeout
@@ -243,7 +243,7 @@ Slider = function(
     setByIndex( Math.min( values.length - 1, ind + 1 ) );
     timer = window.setTimeout( increase, 250 );
     return;
-  }
+  };
   
   /**
    * mouse down on the top bar, so move up, setting a timer
@@ -259,7 +259,7 @@ Slider = function(
     
     increase();
     return false;
-  }
+  };
   
   /**
    * move the slider from outside
@@ -267,7 +267,7 @@ Slider = function(
   this.move = function( i )
   {
     setByIndex( Math.max( 0, Math.min( values.length - 1, ind + i ) ) );
-  }
+  };
   
   /**
    * mouse up on the top  or bottom bar, so clear the timer
@@ -276,17 +276,17 @@ Slider = function(
   {
     if ( timer ) window.clearTimeout( timer );
     
-    ui.releaseEvents()
+    ui.releaseEvents();
     ui.removeEvent( "onmouseup", barMouseUp );
     
     return false;
-  }
+  };
 
   var getBarSize = function()
   {
     barSize = barSize || parseInt( $( view ).css(
       type === SLIDER_VERTICAL ? 'height' : 'width') );
-  }
+  };
   
   /**
   * resize the slider
@@ -303,7 +303,7 @@ Slider = function(
     // update the handle position
     setByIndex( ind, true );
     return;
-  }
+  };
   
   this.update = function(
     min,				//!< the minimal value
@@ -359,7 +359,7 @@ Slider = function(
     }
     
     return;
-  }
+  };
   
   // initialise
   
@@ -494,4 +494,4 @@ Slider = function(
   }
   
   this.update( min, max, steps, def, onchange, split);
-}
+};

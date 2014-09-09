@@ -56,7 +56,7 @@ UI = function()
 				screenHeight = document.body.clientHeight;
 		}
 		return;
-	}
+	};
 	
 	var updateFrameWidth = function()
 	{
@@ -69,7 +69,7 @@ UI = function()
 				screenWidth = document.body.clientWidth;
 		}
 		return;
-	}
+	};
 	
 	/**
 	 * set the cursor style
@@ -80,7 +80,7 @@ UI = function()
 	{
 		eventCatcher.style.cursor = c;
 		return;
-	}
+	};
 	
 	/**
 	 * add a function to an event's queue
@@ -92,7 +92,7 @@ UI = function()
 	{
 		events[ e ].push( h );
 		return;
-	}
+	};
 	
 	/**
 	 * remove a function from an event's queue
@@ -111,7 +111,7 @@ UI = function()
 			}
 		}
 		return;
-	}
+	};
 	/**
 	 * clear an event's queue
 	 */
@@ -121,17 +121,17 @@ UI = function()
 	{
 		delete events[ e ];
 		events[ e ] = new Array();
-	}
+	};
 		
 	this.getFrameWidth = function()
 	{
 		return screenWidth;
-	}
+	};
 	
 	this.getFrameHeight = function()
 	{
 		return screenHeight;
-	}
+	};
 	
 	this.onresize = function( e )
 	{
@@ -148,7 +148,7 @@ UI = function()
 			r = r && events[ "onresize" ][ i ]( e );
 		
 		return r;
-	}
+	};
 	
 	/**
 	 * get the mouse button normalized to gecko enumeration
@@ -172,7 +172,7 @@ UI = function()
 		//statusBar.replaceLast( "mouse button " + which + " pressed" );
 		
 		return which;
-	}
+	};
 	
 	/**
 	 * get the direction of the mousewheel
@@ -192,7 +192,7 @@ UI = function()
 		}
 		else
 			return undefined;
-	}
+	};
 	
 	/**
 	 * get the mouse location absolute and relative to the element, which fired the event
@@ -229,7 +229,7 @@ UI = function()
 		}
 		m.target = UI.getTargetElement(e || event);
 		return m;
-	}
+	};
 	
 	/**
 	 * get the key code
@@ -247,7 +247,7 @@ UI = function()
 			key = event.keyCode;
 		else key = false;
 		return key;
-	}
+	};
 	
 	this.onmousemove = function( e )
 	{
@@ -267,7 +267,7 @@ UI = function()
 			return r;
 		}
 		else return false;
-	}
+	};
 	
 	this.onmousedown = function( e )
 	{
@@ -303,7 +303,7 @@ UI = function()
 			return r;
 		}
 		else return;
-	}
+	};
 
 	this.onmouseup = function( e )
 	{
@@ -338,7 +338,7 @@ UI = function()
 			return r;
 		}
 		else return;
-	}
+	};
 	
 	/**
 	 * catch mouse and keyboard events
@@ -352,7 +352,7 @@ UI = function()
 		if ( c ) eventCatcher.style.cursor = c;
 		eventCatcher.style.display = "block";
 		return;
-	}
+	};
 	
 	/**
 	 * release mouse and keyboard events
@@ -362,7 +362,7 @@ UI = function()
 		eventCatcher.style.cursor = "auto";
 		eventCatcher.style.display = "none";
 		return;
-	}
+	};
 	
 	/**
 	 * catch focus which might be at a form element or an arbitrary anchor
@@ -370,7 +370,7 @@ UI = function()
 	this.catchFocus = function()
 	{
 		focusCatcher.focus();
-	}
+	};
 	
 	window.onresize = this.onresize;
 	window.onresize();
@@ -378,7 +378,7 @@ UI = function()
 	eventCatcher.onmousedown = self.onmousedown;
 	eventCatcher.onmouseout = eventCatcher.onmouseup = self.onmouseup;
 	eventCatcher.onmousemove = self.onmousemove;
-}
+};
 
 UI.getFrameHeight = function()
 {
@@ -396,7 +396,7 @@ UI.getFrameHeight = function()
 		return 0;
 	}
 	catch ( exception ) { return 0; }	
-}
+};
 	
 UI.getFrameWidth = function()
 {
@@ -414,7 +414,7 @@ UI.getFrameWidth = function()
 		return 0;
 	}
 	catch ( exception ) { return 0; }
-}
+};
 
 UI.getRealPagePosition = function (e) {
 	// This function is taken from:
@@ -434,7 +434,7 @@ UI.getRealPagePosition = function (e) {
 	}
 	// posx and posy contain the mouse position relative to the document
 	return {'x': posx, 'y': posy};
-}
+};
 
 UI.getTargetElement = function (e) {
 	var target;
@@ -447,7 +447,7 @@ UI.getTargetElement = function (e) {
 	if (target.nodeType == 3) // defeat Safari bug
 		target = target.parentNode;
 	return target;
-}
+};
 
 UI.getRealPagePosition = function (e) {
   // This function is taken from:
@@ -467,6 +467,6 @@ UI.getRealPagePosition = function (e) {
   }
   // posx and posy contain the mouse position relative to the document
   return {'x': posx, 'y': posy};
-}
+};
 
 //var UI = new UI();

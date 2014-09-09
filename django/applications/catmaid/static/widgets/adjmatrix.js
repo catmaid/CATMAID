@@ -8,7 +8,7 @@ var AdjacencyMatrix = new function()
 
     this.init = function() {
         projectID = project.id;
-    }
+    };
 
     this.fetchMatrixForSkeletons = function() {
         // Retrieve a list of skeleton ids and call the backend to return the JSON graph
@@ -19,11 +19,11 @@ var AdjacencyMatrix = new function()
             dataType: "json",
             data: { skeleton_list: WebGLApp.getListOfSkeletonIDs() },
             success: function (data) {
-                self.createAdjacencyMatrix( data )
+                self.createAdjacencyMatrix( data );
             }
         });
 
-    }
+    };
 
     this.createAdjacencyMatrix = function( data ) {
 
@@ -164,6 +164,6 @@ var AdjacencyMatrix = new function()
             d3.select("#order").property("selectedIndex", 2).node().focus();
         }, 5000);*/
 
-    }
+    };
 
-}
+}();

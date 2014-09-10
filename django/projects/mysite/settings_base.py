@@ -141,6 +141,9 @@ STATICFILES_FINDERS = (
 PIPELINE_CSS_COMPRESSOR = 'pipeline.compressors.cssmin.CSSMinCompressor'
 # Use no JS compresor for now
 PIPELINE_JS_COMPRESSOR = None
+# Don't wrap JS files into anonymous functions. Our code isn't ready for this,
+# yet.
+PIPELINE_DISABLE_WRAPPER = True
 
 # A couple of functions useful for generating default directories to
 # be used in the settings files:

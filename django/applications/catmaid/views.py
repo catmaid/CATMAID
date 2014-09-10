@@ -11,6 +11,7 @@ class HomepageView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(self.__class__, self).get_context_data(**kwargs)
         context['CATMAID_URL'] = settings.CATMAID_URL
+        context['JS_FILES'] = settings.PIPELINE_JS.keys()
         profile_context = self.request.user.userprofile.as_dict()
         return dict(context.items() + profile_context.items())
 

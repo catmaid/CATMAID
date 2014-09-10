@@ -1,6 +1,7 @@
 # General Django settings for mysite project.
 
 import django.conf.global_settings as DEFAULT_SETTINGS
+from pipelinefiles import *
 
 # A list of people who get code error notifications. They will get an email
 # if DEBUG=False and a view raises an exception.
@@ -134,33 +135,6 @@ STATICFILES_STORAGE = 'pipeline.storage.PipelineStorage'
 PIPELINE_CSS_COMPRESSOR = 'pipeline.compressors.cssmin.CSSMinCompressor'
 # Use no JS compresor for now
 PIPELINE_JS_COMPRESSOR = None
-
-PIPELINE_CSS = {
-    'catmaid': {
-        'source_filenames': (
-            'widgets/*.css',
-            'widgets/themes/kde/*.css',
-        ),
-        'output_filename': 'css/catmaid.css',
-        'extra_context': {
-            'media': 'screen,projection',
-        }
-    },
-}
-
-PIPELINE_JS = {
-    'catmaid': {
-        'source_filenames': (
-          'tools.js',
-          'libs/catmaid/*.js',
-          'tools/boxselectiontool.js',
-          'tools/roitool.js',
-          '*.js',
-          '*/*.js',
-        ),
-        'output_filename': 'js/catmaid.js',
-    }
-}
 
 # A couple of functions useful for generating default directories to
 # be used in the settings files:

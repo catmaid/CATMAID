@@ -57,8 +57,8 @@ var ConnectorTable = new function()
           }
 
           if (!skeletonID) {
-            $('#growl-alert').growlAlert('BEWARE',
-              'You need to activate a treenode to display the connector table of its skeleton.');
+            growlAlert('BEWARE', 'You need to activate a treenode to display ' +
+                'the connector table of its skeleton.');
             skeletonID = 0;
           }
 

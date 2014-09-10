@@ -131,6 +131,12 @@ CELERY_IMPORTS = (
 # the STATICFILES_STORAGE variable has to be set to:
 STATICFILES_STORAGE = 'pipeline.storage.PipelineStorage'
 
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'pipeline.finders.PipelineFinder',
+)
+
 # Use CSSMin as django-pipeline's CSS compressor
 PIPELINE_CSS_COMPRESSOR = 'pipeline.compressors.cssmin.CSSMinCompressor'
 # Use no JS compresor for now

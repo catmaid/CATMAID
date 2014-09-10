@@ -60,7 +60,6 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
       },
       function(skid) { return {}; },
       function(skid, json) {
-        console.log('buh');
         var ap = new ArborParser().init('compact-arbor', json),
             arbor = ap.arbor,
             positions = ap.positions,

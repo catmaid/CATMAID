@@ -19,7 +19,7 @@ div.sliceView div.sliceSVGOverlay
 .tagEditor li
 {
   display: inline;
-  background-image: url(minus_small.png);
+  background-image: url(../images/minus_small.png);
   background-color: #eef;
   background-position: right center;
   background-repeat: no-repeat;
@@ -45,7 +45,7 @@ div.sliceView div.sliceSVGOverlay p
   padding:3px 6px 3px 14px;
   color:#FFFFFF;
 
-  background:url(blue20.png);
+  background:url(../images/blue20.png);
   overflow:hidden;
 }
 

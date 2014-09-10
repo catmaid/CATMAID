@@ -101,7 +101,7 @@
 				<div class="box" id="toolbox_data" style="display:none"></div>
 
 				<div id="spinner_box" class="box_right" style="width:20px; height: 20px; position:relative">
-				    <div id="spinner"><img src="{{ STATIC_URL }}widgets/themes/kde/wait_bgtransgrey.gif" alt="spinner" /></div>
+				    <div id="spinner"><img src="{{ STATIC_URL }}images/wait_bgtransgrey.gif" alt="spinner" /></div>
 				</div>
 				<div class="menu">
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
@@ -114,8 +114,8 @@
 				</div>
 				</div>
 				<div class="box_right" id="toolbox_show" style="display:none">
-					<a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="{{ STATIC_URL }}widgets/themes/kde/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
-					<!--<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="{{ STATIC_URL }}widgets/themes/kde/show_trace.gif" alt="show traces" title="show traces" /></a>//-->
+					<a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="{{ STATIC_URL }}images/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
+					<!--<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="{{ STATIC_URL }}images/show_trace.gif" alt="show traces" title="show traces" /></a>//-->
 				</div>
 				<div class="toolbar_fill"></div>
 			</div>
@@ -127,8 +127,8 @@
 			*******************************************************************
 			-->
 			<div id="toolbar_nav" class="toolbar" style="display:none">
-				<div class="box"><p>x&nbsp;</p><p><input type="text" id="x" name="x" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.svg" onerror="this.src = '{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif'" alt="" usemap="#xmap" /></p></div>
-				<div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.svg" onerror="this.src = '{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif'" alt="" usemap="#ymap" /></p></div>
+				<div class="box"><p>x&nbsp;</p><p><input type="text" id="x" name="x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#xmap" /></p></div>
+				<div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#ymap" /></p></div>
 				<div id="sliders_box"></div>
 				<div class="box" id="zoom_level_box"><p>zoom-level</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
 				<div class="box"><p><input type="checkbox" id="displayreflines" name="displayreflines" checked="checked" /></p><p><label for="displayreflines">display reference lines</label></p></div>
@@ -156,7 +156,7 @@
 				<div class="box"><p>colour&nbsp;</p><p>&nbsp;red&nbsp;</p><p id="input_fontcolourred"></p><p>&nbsp;green&nbsp;</p><p id="input_fontcolourgreen"></p><p>&nbsp;blue&nbsp;</p><p id="input_fontcolourblue"></p></div>
 				<div class="box"><p>scaling&nbsp;</p><p><input type="checkbox" id="fontscaling" name="fontscaling" checked="checked" /></p></div>
                 <div class="box"><p>textlabel editable&nbsp;</p><p><input type="checkbox" id="textlabeleditable" name="textlabeleditable" checked="checked" /></p></div>
-				<!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>-->
+				<!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>-->
 				<div class="box_right"><p id="icon_text_apply" class="toolbar_wait">applying ...</p></div>
 				<div class="toolbar_fill"></div>
 			</div>
@@ -170,7 +170,7 @@
 			<div id="toolbar_tags" class="toolbar" style="display:none">
 				<div class="box"><p>project tags&nbsp;</p><p><input type="text" id="project_tags" name="project_tags" size="35" /></p></div>
 				<div class="box"><p>stack tags&nbsp;</p><p><input type="text" id="stack_tags" name="stack_tags" size="35" /></p></div>
-				<div class="box_right"><a href="#" class="button" id="button_tags_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
+				<div class="box_right"><a href="#" class="button" id="button_tags_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--
@@ -181,12 +181,12 @@
 			*******************************************************************
 			-->
 			<div id="toolbar_roi" class="toolbar" style="display:none">
-				<div class="box"><p>x&nbsp;</p><p><input type="text" id="box_roi_x" name="box_roi_x" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_xmap" /></p></div>
-				<div class="box"><p>y&nbsp;</p><p><input type="text" id="box_roi_y" name="box_roi_y" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_ymap" /></p></div>
-				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_roi_w" name="box_roi_w" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_wmap" /></p></div>
-				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_roi_h" name="box_roi_h" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_hmap" /></p></div>
-				<div class="box"><p>r&nbsp;</p><p><input type="text" id="box_roi_r" name="box_roi_r" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_rmap" /></p></div>
-				<div class="box_right"><a href="#" class="button" id="button_roi_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
+				<div class="box"><p>x&nbsp;</p><p><input type="text" id="box_roi_x" name="box_roi_x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_xmap" /></p></div>
+				<div class="box"><p>y&nbsp;</p><p><input type="text" id="box_roi_y" name="box_roi_y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_ymap" /></p></div>
+				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_roi_w" name="box_roi_w" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_wmap" /></p></div>
+				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_roi_h" name="box_roi_h" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_hmap" /></p></div>
+				<div class="box"><p>r&nbsp;</p><p><input type="text" id="box_roi_r" name="box_roi_r" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_rmap" /></p></div>
+				<div class="box_right"><a href="#" class="button" id="button_roi_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--

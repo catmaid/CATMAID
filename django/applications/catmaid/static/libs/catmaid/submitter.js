@@ -106,7 +106,7 @@ var submitterFn = function() {
 
     // Block UI prior to placing a request, if desired
     if (q.blockUI) {
-      $.blockUI({message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Just a moment...</h2>'});
+      $.blockUI({message: '<h2><img src="' + STATIC_URL_JS + 'images/busy.gif" /> Just a moment...</h2>'});
     }
 
     if (q.url) {

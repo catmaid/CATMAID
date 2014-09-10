@@ -146,7 +146,7 @@ function createButtonsFromActions(actions, boxID, iconPrefix) {
       a.onclick = action.run;
       img = document.createElement('img');
       img.setAttribute('id', buttonID + '_img');
-      var iconFilename = STATIC_URL_JS + 'widgets/themes/kde/' + iconPrefix + action.getButtonName();
+      var iconFilename = STATIC_URL_JS + 'images/' + iconPrefix + action.getButtonName();
       img.setAttribute('src', iconFilename + '.svg');
       // If an SVG icon is not found, fallback to a PNG icon
       img.setAttribute('onerror', 'this.onerror = null; this.src="' + iconFilename + '.png";');

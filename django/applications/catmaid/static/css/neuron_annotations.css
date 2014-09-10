@@ -49,7 +49,7 @@
 .resultTags div.remove_annotation
 {
   display: inline;
-  background-image: url(minus_small.png);
+  background-image: url(../images/minus_small.png);
   background-color: #eef;
   background-position: right center;
   background-repeat: no-repeat;

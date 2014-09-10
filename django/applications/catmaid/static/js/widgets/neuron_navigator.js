@@ -104,7 +104,7 @@ NeuronNavigator.prototype.select_node = function(node)
   duplicate_button.setAttribute('class', 'navigator_button');
   var duplicate_image = document.createElement('img');
   duplicate_image.setAttribute('src', STATIC_URL_JS +
-      'widgets/themes/kde/duplicate_navigator.png');
+      'images/duplicate_navigator.png');
   duplicate_button.setAttribute('title', 'Duplicate navigator window');
   duplicate_button.appendChild(duplicate_image);
   $navi_bar.append(duplicate_button);
@@ -115,7 +115,7 @@ NeuronNavigator.prototype.select_node = function(node)
   reroot_button.setAttribute('class', 'navigator_button');
   var reroot_image = document.createElement('img');
   reroot_image.setAttribute('src', STATIC_URL_JS +
-      'widgets/themes/kde/reroot_navigator.png');
+      'images/reroot_navigator.png');
   reroot_button.setAttribute('title',
       'Remove all nodes not needed for current view');
   reroot_button.appendChild(reroot_image);

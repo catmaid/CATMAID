@@ -644,7 +644,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
     {
       TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
     })
-    .attr('src', STATIC_URL_JS + 'widgets/themes/kde/activate.gif')
+    .attr('src', STATIC_URL_JS + 'images/activate.gif')
   );
   td.append( $(document.createElement("img")).attr({
         value: 'Remove'
@@ -653,7 +653,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
         {
           table.removeSkeletons( [skeleton.id] );
         })
-        .attr('src', STATIC_URL_JS + 'widgets/themes/kde/delete.png')
+        .attr('src', STATIC_URL_JS + 'images/delete.png')
         .text('Remove!')
   );
   rowElement.append( td );

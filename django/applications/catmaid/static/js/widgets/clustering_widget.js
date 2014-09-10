@@ -175,7 +175,7 @@ var ClusteringWidget = new function()
 
           "themes": {
             "theme": "classic",
-            "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
+            "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
             "dots": true,
             "icons": true
           },
@@ -338,17 +338,17 @@ var ClusteringWidget = new function()
             "types": {
                 "root": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
+                        "image": STATIC_URL_JS + "images/ontology_root.png"
                     },
                 },
                 "class": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/class.png"
+                        "image": STATIC_URL_JS + "images/ontology_class.png"
                     },
                 },
                 "relation": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/relation.png"
+                        "image": STATIC_URL_JS + "images/ontology_relation.png"
                     },
                 }
             }

@@ -143,7 +143,7 @@ var ClassificationEditor = new function()
             },
             "themes": {
               "theme": "classic",
-              "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
+              "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
               "dots": false,
               "icons": true
             },
@@ -292,7 +292,7 @@ var ClassificationEditor = new function()
                   },
                   "root": {
                     "icon": {
-                      "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
+                      "image": STATIC_URL_JS + "images/ontology_root.png"
                     },
                     "valid_children": "all",
                     "start_drag": false,
@@ -301,13 +301,13 @@ var ClassificationEditor = new function()
                   },
                   "editnode": {
                     "icon": {
-                      "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/edit.png"
+                      "image": STATIC_URL_JS + "images/ontology_edit.png"
                     },
                     "valid_children": "all",
                   },
                   "element": {
                     "icon": {
-                      "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/class_instance.png"
+                      "image": STATIC_URL_JS + "images/ontology_class_instance.png"
                     },
                     "valid_children": "all",
                   },
@@ -390,7 +390,7 @@ var ClassificationEditor = new function()
                 return false;
             }
 
-            $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Removing classification graph node. Just a moment...</h2>' });
+            $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'images/busy.gif" /> Removing classification graph node. Just a moment...</h2>' });
             // Remove classes
             $.post(self.get_cls_url(project.id, '/instance-operation'), {
                 "operation": "remove_node",
@@ -424,7 +424,7 @@ var ClassificationEditor = new function()
                 $.jstree.rollback(treebefore);
                 return false;
             }
-            $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Renaming classification graph node. Just a moment...</h2>' });
+            $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'images/busy.gif" /> Renaming classification graph node. Just a moment...</h2>' });
             $.post(self.get_cls_url(project.id, '/instance-operation'), {
                  "operation": "rename_node",
                  "id": node.attr("id").replace("node_", ""),
@@ -504,7 +504,7 @@ var ClassificationEditor = new function()
             project.setTool( new Navigator() );
         };
         var cancel_img = document.createElement("img");
-        cancel_img.setAttribute("src", STATIC_URL_JS + "widgets/themes/kde/cancel.gif");
+        cancel_img.setAttribute("src", STATIC_URL_JS + "images/cancel.gif");
         cancel_img.setAttribute("alt", "cancel");
         cancel_img.setAttribute("title", "cancel");
         cancel_link.appendChild(cancel_img);

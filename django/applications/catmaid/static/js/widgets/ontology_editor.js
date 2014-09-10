@@ -103,7 +103,7 @@ var OntologyEditor = new function()
 
           "themes": {
             "theme": "classic",
-            "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
+            "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
             "dots": true,
             "icons": true
           },
@@ -277,17 +277,17 @@ var OntologyEditor = new function()
             "types": {
                 "root": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
+                        "image": STATIC_URL_JS + "images/ontology_root.png"
                     },
                 },
                 "class": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/class.png"
+                        "image": STATIC_URL_JS + "images/ontology_class.png"
                     },
                 },
                 "relation": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/relation.png"
+                        "image": STATIC_URL_JS + "images/ontology_relation.png"
                     },
                 }
             }
@@ -370,7 +370,7 @@ var OntologyEditor = new function()
 
           "themes": {
             "theme": "classic",
-            "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
+            "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
             "dots": true,
             "icons": true
           },
@@ -435,12 +435,12 @@ var OntologyEditor = new function()
             "types": {
                 "root": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
+                        "image": STATIC_URL_JS + "images/ontology_root.png"
                     },
                 },
                 "relation": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/relation.png"
+                        "image": STATIC_URL_JS + "images/ontology_relation.png"
                     },
                 }
             }
@@ -524,7 +524,7 @@ var OntologyEditor = new function()
 
           "themes": {
             "theme": "classic",
-            "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
+            "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
             "dots": true,
             "icons": true
           },
@@ -590,12 +590,12 @@ var OntologyEditor = new function()
             "types": {
                 "root": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
+                        "image": STATIC_URL_JS + "images/ontology_root.png"
                     },
                 },
                 "class": {
                     "icon": {
-                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/class.png"
+                        "image": STATIC_URL_JS + "images/ontology_class.png"
                     },
                 }
             }
@@ -1245,7 +1245,7 @@ var OntologyEditor = new function()
     };
 
     this.display_wait_message = function( message ) {
-        $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" />' + message + '</h2>' });
+        $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'images/busy.gif" />' + message + '</h2>' });
     };
 
     this.hide_wait_message = function() {

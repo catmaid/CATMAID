@@ -141,7 +141,8 @@ name, size, onchange, defaultvalue) {
 
   var img = document.createElement("img");
   img.src = STATIC_URL_JS + "images/input_topdown.svg";
-  img.setAttribute('onerror', 'this.src="' + STATIC_URL_JS + 'images/input_topdown.gif";');
+  img.setAttribute('onerror', 'this.onerror=null;this.src="' +
+    STATIC_URL_JS + 'images/input_topdown.gif";');
   img.alt = "";
   img.useMap = "#map_" + name;
 

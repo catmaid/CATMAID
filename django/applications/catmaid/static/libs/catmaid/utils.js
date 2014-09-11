@@ -522,7 +522,7 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
             });
       };
   if (skeleton_ids.length > 1) {
-    $.blockUI({message: '<img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> <h2>Loading skeletons <div id="counting-loaded-skeletons">0 / ' + skeleton_ids.length + '</div></h2>'});
+    $.blockUI({message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /> <h2>Loading skeletons <div id="counting-loaded-skeletons">0 / ' + skeleton_ids.length + '</div></h2>'});
   }
   if (skeleton_ids.length > 0) {
     loadOne(skeleton_ids[0]);

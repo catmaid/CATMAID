@@ -218,7 +218,7 @@ def get_roi_image(request, project_id=None, roi_id=None):
         create_roi_image(request.user, project_id, roi_id, file_path)
         # Use waiting image
         url = urljoin(settings.STATIC_URL,
-            "widgets/themes/kde/wait_bgwhite.gif")
+            "images/wait_bgwhite.gif")
     else:
         # Create real image di
         url_base = urljoin(settings.MEDIA_URL,

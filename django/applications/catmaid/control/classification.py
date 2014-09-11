@@ -826,7 +826,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
         def make_roi_html(roi):
             img_data = (roi.id, settings.STATIC_URL)
             return "<img class='roiimage' roi_id='%s' " \
-                    "src='%s/widgets/themes/kde/camera.png' \>" % img_data
+                    "src='%s/images/camera.png' \>" % img_data
 
         def get_rois(ci):
             # Find ROIs for this class instance

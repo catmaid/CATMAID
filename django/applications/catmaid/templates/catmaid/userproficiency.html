@@ -1,12 +1,11 @@
 {% extends "admin/base_site.html" %}
+{% load compressed %}
 {% load i18n %}
 
 {% block extrahead %}
-<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.blockUI.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery-ui-1.10.1.custom.min.js"></script>
-<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/themes/smoothness/jquery-ui-1.10.1.custom.css" />
-<script type="text/javascript" src="{{ STATIC_URL }}libs/d3/d3.v2.js"></script>
+{% compressed_css 'libraries' %}
+{% compressed_js 'jquery-lib' %}
+{% compressed_js 'd3-lib' %}
 <style>
 
 .axis path,

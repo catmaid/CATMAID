@@ -1,30 +1,10 @@
+{% load compressed %}
+
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
 		<title>CATMAID v0.24</title>
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/console.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/ui.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/slider.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/stack.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/toolbar.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/screen.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/project.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/keyboard-shortcuts.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/textlabel.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/svgoverlay.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/canvasoverlay.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/css/demo_table.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/themes/smoothness/jquery-ui-1.10.1.custom.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/extras/ColReorder/css/dataTables.colReorder.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/resize_handle.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}libs/jquery/jquery.growl.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}libs/jquery/jquery-ui.combobox.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/windowmanager.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/jsTree/classic/style.css" />
-		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/stats.css" />
-    <link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/dd.css" />
-    <link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/neuron_annotations.css" />
 
 		<script type="text/javascript">
 			var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
@@ -32,114 +12,17 @@
 			var django_url = "{{ CATMAID_URL }}";
 		</script>
 
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/modernizr/modernizr.custom.36683.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.dataTables.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/dataTables.colReorder.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.jstree.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.tag.editor.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.jeditable.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.url.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery-ui-1.10.1.custom.min.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery-ui.combobox.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.growl.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.blockUI.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.dd.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/fabric.js/all.modified.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/console.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/request.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/submitter.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/utils.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/neuron_name_service.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/Arbor.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}ui.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/input.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/slider.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/menu.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/resize_handle.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}action.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}project.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}overview.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tilelayercontrol.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}stack.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tilesource.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tilelayer.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}navigator.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/settings.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}selector.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}taggingtool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools/boxselectiontool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools/roitool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools/croppingtool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}tools/tracingtool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}layers/tracinglayer.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}segmentationtool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}neuronstagingarea.js"></script>
-
 		<!--[if gte IE 5]>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/excanvas/excanvas.js"></script>
 		<script type="text/javascript">var IE = true;</script>
 		<![endif]-->
 
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/textlabel.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/profile.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/overlay_node.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/overlay_label.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/overlay.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}init.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/raphael.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/g.raphael.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/g.pie-min.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/g.line.altered.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/raphael-custom.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/colorwheel.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/raphael/raphael.export.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/d3/d3.v2.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/d3/venn.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/d3/mds.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_treenode.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_connector.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_log.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/stats.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/review.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/sylvester/sylvester.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/numeric/numeric-1.2.6.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/circuit_graph_analysis.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/catmaid/synapse_clustering.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}treelines.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/three.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/controls/TrackballControls.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/Detector.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/helvetiker_regular.typeface.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/threex/THREEx.FullScreen.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/threex/THREEx.WindowResize.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}webglapp.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}WindowMaker.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/windowmanager.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/arbor.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/cytoscape.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/connectivity.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}connectorselection.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}measurements_table.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/adjmatrix.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/compartment_graph_widget.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/graph_plot.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/morphology_analysis.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/venn_diagram.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/skeleton_analytics.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}ontologytool.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/ontology_editor.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/ontology_search.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/classification_editor.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/clustering_widget.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_notifications.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jsnetworkx/jsnetworkx.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}user.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/filesaver/FileSaver.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/neuron_annotations.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}widgets/neuron_navigator.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}layers/gridlayer.js"></script>
+		{% compressed_css 'libraries' %}
+		{% compressed_css 'catmaid' %}
+
+    {% for f in JS_FILES %}
+		  {% compressed_js f %}
+    {% endfor %}
 	</head>
 	<body onload="realInit();"><a></a>
 		<!-- Toolbars
@@ -177,7 +60,7 @@
 				<div class="box" id="toolbox_data" style="display:none"></div>
 
 				<div id="spinner_box" class="box_right" style="width:20px; height: 20px; position:relative">
-				    <div id="spinner"><img src="{{ STATIC_URL }}widgets/themes/kde/wait_bgtransgrey.gif" alt="spinner" /></div>
+				    <div id="spinner"><img src="{{ STATIC_URL }}images/wait_bgtransgrey.gif" alt="spinner" /></div>
 				</div>
 				<div class="menu">
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
@@ -190,8 +73,8 @@
 				</div>
 				</div>
 				<div class="box_right" id="toolbox_show" style="display:none">
-					<a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="{{ STATIC_URL }}widgets/themes/kde/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
-					<!--<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="{{ STATIC_URL }}widgets/themes/kde/show_trace.gif" alt="show traces" title="show traces" /></a>//-->
+					<a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="{{ STATIC_URL }}images/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
+					<!--<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="{{ STATIC_URL }}images/show_trace.gif" alt="show traces" title="show traces" /></a>//-->
 				</div>
 				<div class="toolbar_fill"></div>
 			</div>
@@ -203,8 +86,8 @@
 			*******************************************************************
 			-->
 			<div id="toolbar_nav" class="toolbar" style="display:none">
-				<div class="box"><p>x&nbsp;</p><p><input type="text" id="x" name="x" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.svg" onerror="this.src = '{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif'" alt="" usemap="#xmap" /></p></div>
-				<div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.svg" onerror="this.src = '{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif'" alt="" usemap="#ymap" /></p></div>
+				<div class="box"><p>x&nbsp;</p><p><input type="text" id="x" name="x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#xmap" /></p></div>
+				<div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#ymap" /></p></div>
 				<div id="sliders_box"></div>
 				<div class="box" id="zoom_level_box"><p>zoom-level</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
 				<div class="box"><p><input type="checkbox" id="displayreflines" name="displayreflines" checked="checked" /></p><p><label for="displayreflines">display reference lines</label></p></div>
@@ -232,7 +115,7 @@
 				<div class="box"><p>colour&nbsp;</p><p>&nbsp;red&nbsp;</p><p id="input_fontcolourred"></p><p>&nbsp;green&nbsp;</p><p id="input_fontcolourgreen"></p><p>&nbsp;blue&nbsp;</p><p id="input_fontcolourblue"></p></div>
 				<div class="box"><p>scaling&nbsp;</p><p><input type="checkbox" id="fontscaling" name="fontscaling" checked="checked" /></p></div>
                 <div class="box"><p>textlabel editable&nbsp;</p><p><input type="checkbox" id="textlabeleditable" name="textlabeleditable" checked="checked" /></p></div>
-				<!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>-->
+				<!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>-->
 				<div class="box_right"><p id="icon_text_apply" class="toolbar_wait">applying ...</p></div>
 				<div class="toolbar_fill"></div>
 			</div>
@@ -246,7 +129,7 @@
 			<div id="toolbar_tags" class="toolbar" style="display:none">
 				<div class="box"><p>project tags&nbsp;</p><p><input type="text" id="project_tags" name="project_tags" size="35" /></p></div>
 				<div class="box"><p>stack tags&nbsp;</p><p><input type="text" id="stack_tags" name="stack_tags" size="35" /></p></div>
-				<div class="box_right"><a href="#" class="button" id="button_tags_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
+				<div class="box_right"><a href="#" class="button" id="button_tags_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--
@@ -257,12 +140,12 @@
 			*******************************************************************
 			-->
 			<div id="toolbar_roi" class="toolbar" style="display:none">
-				<div class="box"><p>x&nbsp;</p><p><input type="text" id="box_roi_x" name="box_roi_x" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_xmap" /></p></div>
-				<div class="box"><p>y&nbsp;</p><p><input type="text" id="box_roi_y" name="box_roi_y" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_ymap" /></p></div>
-				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_roi_w" name="box_roi_w" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_wmap" /></p></div>
-				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_roi_h" name="box_roi_h" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_hmap" /></p></div>
-				<div class="box"><p>r&nbsp;</p><p><input type="text" id="box_roi_r" name="box_roi_r" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_rmap" /></p></div>
-				<div class="box_right"><a href="#" class="button" id="button_roi_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
+				<div class="box"><p>x&nbsp;</p><p><input type="text" id="box_roi_x" name="box_roi_x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_xmap" /></p></div>
+				<div class="box"><p>y&nbsp;</p><p><input type="text" id="box_roi_y" name="box_roi_y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_ymap" /></p></div>
+				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_roi_w" name="box_roi_w" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_wmap" /></p></div>
+				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_roi_h" name="box_roi_h" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_hmap" /></p></div>
+				<div class="box"><p>r&nbsp;</p><p><input type="text" id="box_roi_r" name="box_roi_r" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_rmap" /></p></div>
+				<div class="box_right"><a href="#" class="button" id="button_roi_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--

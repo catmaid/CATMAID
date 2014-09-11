@@ -42,7 +42,7 @@ p, dl
 {
 	padding:4px 24px 4px 0px;
 	vertical-align:middle;
-	background:url(wait_bgwhite.gif) no-repeat right center;
+	background:url(../images/wait_bgwhite.gif) no-repeat right center;
 }
 
 dt,
@@ -60,7 +60,7 @@ dl p
 {
 	padding:4px 0px 4px 24px;
 	vertical-align:middle;
-	background:url(wait_bgwhite.gif) no-repeat left center;
+	background:url(../images/wait_bgwhite.gif) no-repeat left center;
 }
 
 dt
@@ -76,7 +76,7 @@ div#imprint
 {
 	height:32px;
 	width:100%;
-	background:url(bar32_bg.gif) repeat-x left top;		
+	background:url(../images/bar32_bg.gif) repeat-x left top;
 	position:absolute;
 	left:0px;
 	bottom:0px;

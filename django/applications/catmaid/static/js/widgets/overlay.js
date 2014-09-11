@@ -241,7 +241,7 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.view.id = "sliceSVGOverlayId" + stack.getId();
   this.view.style.zIndex = 5;
   // Custom cursor for tracing
-  this.view.style.cursor ="url(" + STATIC_URL_JS + "widgets/themes/kde/svg-circle.cur) 15 15, crosshair";
+  this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
   this.view.onmousemove = this.createViewMouseMoveFn(this.stack, this.coords);
 
   this.paper = Raphael(this.view, Math.floor(stack.dimension.x * stack.scale), Math.floor(stack.dimension.y * stack.scale));

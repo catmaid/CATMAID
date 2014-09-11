@@ -85,13 +85,13 @@ div.textlabelView div.closeHandle
 	overflow:hidden;
 	margin:0px;
 	padding:0px;
-	background:url(textlabel_movehandle.png) no-repeat left top;
+	background:url(../images/textlabel_movehandle.png) no-repeat left top;
 	cursor:move;
 	display:none;
 }
 div.textlabelView div.closeHandle
 {
 	left:0px;
-	background:url(textlabel_closehandle.png) no-repeat left top;
+	background:url(../images/textlabel_closehandle.png) no-repeat left top;
 	cursor:default;
 }

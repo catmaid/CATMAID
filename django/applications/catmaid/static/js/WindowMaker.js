@@ -331,7 +331,7 @@ var WindowMaker = new function()
         '</thead>' +
         '<tbody>' +
           '<tr>' +
-            '<td><img src="' + STATIC_URL_JS + 'widgets/themes/kde/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></td>' +
+            '<td><img src="' + STATIC_URL_JS + 'images/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></td>' +
             '<td><input type="button" id="selection-table-sort-by-name' + ST.widgetID + '" value="Sort by name" /></td>' +
             '<td></td>' +
             '<td><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></td>' +

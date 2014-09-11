@@ -21,7 +21,7 @@ function Selector()
 	var stack = null;
 	var position_markers = new Array();
 	// settings for duplicated cursors
-	var img_path = STATIC_URL_JS + "widgets/themes/kde/svg-cursor-light-30px.png";
+	var img_path = STATIC_URL_JS + "images/svg-cursor-light-30px.png";
 	var img_width = 30;
 	var img_height = 30;
 
@@ -258,7 +258,7 @@ function Selector()
 			catch ( error ) {}
 		}
 
-		mouseCatcher.style.cursor = "url(" + STATIC_URL_JS + "widgets/themes/kde/svg-circle.cur) 15 15, crosshair";
+		mouseCatcher.style.cursor = "url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
 		stack.getView().appendChild( mouseCatcher );
 
 		// make sure there are no markers already there

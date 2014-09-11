@@ -743,9 +743,9 @@ function handle_message( status, text, xml )
 						var notifications_button_img = $('#data_button_notifications_img');
 						if (notifications_button_img !== undefined) {
 							if (notifications_count > 0)
-								notifications_button_img.attr('src', STATIC_URL_JS + 'widgets/themes/kde/table_notifications_open.png');
+								notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications_open.png');
 							else
-								notifications_button_img.attr('src', STATIC_URL_JS + 'widgets/themes/kde/table_notifications.png');
+								notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications.png');
 						}
 						
 						delete e [ i ];

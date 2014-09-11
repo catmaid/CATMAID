@@ -73,17 +73,24 @@ function TileLayer(
 	{
 		while ( tilesContainer.firstChild )
 			tilesContainer.removeChild( tilesContainer.firstChild );
+
+		var tileOnload = function ()
+		{
+			this.style.visibility = "visible";
+			this.alt = "l"; // Set a flag to indicate this image has loaded
+		};
 		
 		tiles = [];
 		
 		for ( var i = 0; i < rows; ++i )
 		{
-			tiles[ i ] = new Array();
+			tiles[ i ] = [];
 			for ( var j = 0; j < cols; ++j )
 			{
 				tiles[ i ][ j ] = document.createElement( "img" );
-				tiles[ i ][ j ].alt = "empty";
-				tiles[ i ][ j ].src = STATIC_URL_JS + "images/empty256.gif";
+				tiles[ i ][ j ].alt = "";
+				tiles[ i ][ j ].style.visibility = "hidden";
+				tiles[ i ][ j ].onload = tileOnload;
 				
 				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
@@ -136,83 +143,57 @@ function TileLayer(
 			if ( xd < 0 )
 			{
 				// Panning to the left:
-				// Remove existing last image from each row
-				// and preppend a new one pointing to the black tile URL.
-				for ( var i = 0; i < tiles.length; ++i )
+				// Move the last column of tiles to the first column
+				for ( var i = tiles.length - 1; i >= 0; --i )
 				{
-					tilesContainer.removeChild( tiles[ i ].pop() );
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = STATIC_URL_JS + "images/empty256.gif";
+					var img = tiles[ i ].pop();
 					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
 					tiles[ i ].unshift( img );
 				}
 			}
 			else if ( xd > 0 )
 			{
 				// Panning to the right:
-				// Remove existing first image from each row
-				// and append a new one pointing to the black tile URL.
-				for ( var i = 0; i < tiles.length; ++i )
+				// Move the first column of tiles to the last column
+				for ( var i = tiles.length - 1; i >= 0; --i )
 				{
-					tilesContainer.removeChild( tiles[ i ].shift() );
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = STATIC_URL_JS + "images/empty256.gif";
+					var img = tiles[ i ].shift();
 					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
 					tiles[ i ].push( img );
 				}
 			}
-			else if ( yd < 0 )
+
+			if ( yd < 0 )
 			{
 				// Panning to the top:
-				// Remove the last row of tiles
-				// and preppend a new row of tiles, all pointing to the black image URL.
+				// Move the last row of tiles to the first row
 				var old_row = tiles.pop();
-				var new_row = new Array();
-				for ( var i = 0; i < tiles[ 0 ].length; ++i )
+				for ( var i = old_row.length - 1; i >= 0; --i )
 				{
-					tilesContainer.removeChild( old_row.pop() );
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = STATIC_URL_JS + "images/empty256.gif";
-					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
-					new_row.push( img );
+					old_row[ i ].style.visibility = "hidden";
 				}
-				tiles.unshift( new_row );
+				tiles.unshift( old_row );
 			}
 			else if ( yd > 0 )
 			{
 				// Panning to the bottom:
-				// Remove the first row of tiles
-				// and append a new row of tiles, all pointing to the black image URL.
+				// Move the first row of tiles to the last row
 				var old_row = tiles.shift();
-				var new_row = new Array();
-				for ( var i = 0; i < tiles[ 0 ].length; ++i )
+				for ( var i = old_row.length - 1; i >= 0; --i )
 				{
-					tilesContainer.removeChild( old_row.pop() );
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = STATIC_URL_JS + "images/empty256.gif";
-					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
-					new_row.push( img );
+					old_row[ i ].style.visibility = "hidden";
 				}
-				tiles.push( new_row );
+				tiles.push( old_row );
 			}
 		}
 
-		// Adjust the last tile to render with an URL rather than with the black gif.
+		// Adjust the last tile in a row or column to be visible rather than hidden.
 		// Must run when changing scale, or when changing the size of the canvas window.
 		// Considering how inexpensive it is, it is made to run always.
 		if (artificialZoom)
 		{
 			// Adjust last tile index to display to the one intersecting the bottom right
-			// of the field of view. The purpose: to set the URL of images beyond the edges
-			// to the black gif URL further below.
+			// of the field of view. The purpose: to hide images beyond the stack edges.
 			// Notice that we add the panning xd, yd as well (which is already in tile units).
 			LAST_XT = Math.floor((stack.x * stack.scale + stack.viewWidth) / effectiveTileWidth) + xd;
 			LAST_YT = Math.floor((stack.y * stack.scale + stack.viewHeight) / effectiveTileHeight) + yd;
@@ -256,37 +237,35 @@ function TileLayer(
 				 * and non-modulo changing steps.  Write more comments in
 				 * general.
 				 */
-				if ( r < 0 || c < 0 || r > LAST_YT || c > LAST_XT )
+				if ( r >= 0 && c >= 0 && r <= LAST_YT && c <= LAST_XT )
 				{
-					tiles[ i ][ j ].alt = "";
-					tiles[ i ][ j ].src = STATIC_URL_JS + "images/black.gif";
-				}
-				else
-				{
-					tiles[ i ][ j ].alt = "";
-					tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
+					var source = self.tileSource.getTileURL( project, stack,
 						tileBaseName, tileWidth, tileHeight, c, r, zoom);
+					var tile = tiles[ i ][ j ];
 
-          // prefetch tiles
-          // TODO: fetch information in stack table: -2, -1, 1, 2
-					/*
-          var adj = [], tmpimg = new Image(), tmptileBaseName;
-          for( var jj in adj ) {
-            tmptileBaseName = getTileBaseName3D( stack, pixelPos, adj[jj] );
-            // only prefetch for type 1
-            if( tileSourceType === 1 ) {
-              tmpimg.src = self.getTileURL( tmptileBaseName + r + "_" + c + "_" + zoom );
-            }
-          }
-					*/
+					if (tile.src === source)
+					{
+						// If a tile was hidden earlier, but we now wish to
+						// show it again and it happens to have the same src,
+						// Chrome will not fire the onload event if we set src.
+						// Instead check the flag we set in alt when loaded.
+						if (tile.alt)
+						{
+							tile.style.visibility = "visible";
+						}
+					}
+					else
+					{
+						tile.alt = "";
+						tile.src = source;
+					}
+
+					tile.style.top = t + "px";
+					tile.style.left = l + "px";
+
+					tile.style.width = effectiveTileWidth + "px";
+					tile.style.height = effectiveTileHeight + "px";
 				}
-
-				tiles[ i ][ j ].style.top = t + "px";
-				tiles[ i ][ j ].style.left = l + "px";
-				tiles[ i ][ j ].style.visibility = "visible";
-
-				tiles[ i ][ j ].style.width = effectiveTileWidth + "px";
-				tiles[ i ][ j ].style.height = effectiveTileHeight + "px";
 
 				l += effectiveTileWidth;
 

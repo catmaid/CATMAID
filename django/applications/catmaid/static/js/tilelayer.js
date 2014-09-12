@@ -230,18 +230,12 @@ function TileLayer(
 			for ( var j = 0; j < tiles[ 0 ].length; ++j )
 			{
 				var c = fc + j;
+				var tile = tiles[ i ][ j ];
 
-				/**
-				 * TODO Test if updating the URLs always was required to
-				 * guarantee homogeneous update speed for modulo-changing steps
-				 * and non-modulo changing steps.  Write more comments in
-				 * general.
-				 */
 				if ( r >= 0 && c >= 0 && r <= LAST_YT && c <= LAST_XT )
 				{
 					var source = self.tileSource.getTileURL( project, stack,
 						tileBaseName, tileWidth, tileHeight, c, r, zoom);
-					var tile = tiles[ i ][ j ];
 
 					if (tile.src === source)
 					{
@@ -265,6 +259,10 @@ function TileLayer(
 
 					tile.style.width = effectiveTileWidth + "px";
 					tile.style.height = effectiveTileHeight + "px";
+				}
+				else
+				{
+					tile.style.visibility = "hidden";
 				}
 
 				l += effectiveTileWidth;

@@ -1029,11 +1029,11 @@ var realInit = function()
 			if ( values[ "pid" ] ) pid = parseInt( values[ "pid" ] );
 			if ( isNaN( pid ) ) pid = undefined;
 			if ( values[ "zp" ] ) zp = parseInt( values[ "zp" ] );
-			if ( isNaN( z ) ) zp = undefined;
+			if ( isNaN( zp ) ) zp = undefined;
 			if ( values[ "yp" ] ) yp = parseInt( values[ "yp" ] );
-			if ( isNaN( y ) ) yp = undefined;
+			if ( isNaN( yp ) ) yp = undefined;
 			if ( values[ "xp" ] ) xp = parseInt( values[ "xp" ] );
-			if ( isNaN( x ) ) xp = undefined;
+			if ( isNaN( xp ) ) xp = undefined;
 			if ( values[ "tool" ] ) inittool = values[ "tool"];
 			
 			for ( var i = 0; values[ "sid" + i ]; ++i )

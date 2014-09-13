@@ -253,6 +253,7 @@ function TileLayer(
 		// Helper function to swap source images from tiles_buf into tiles
 		var swapLayers = function ()
 		{
+			to_buffer = NaN; // If timeout, prevent load callbacks from calling
 			for ( var i = 0; i < tiles.length; ++i )
 			{
 				var r = fr + i;
@@ -268,6 +269,10 @@ function TileLayer(
 			}
 		};
 
+		// Set a timeout for slow connections to swap in images for the zslice
+		// whether or not they have buffered.
+		if (z_loading) var swapLayersTimeout = window.setTimeout(swapLayers, 3000);
+
 		// Callback to deal with buffered image loading. Calls swapLayers once
 		// all requested images have been loaded in the tile buffer.
 		function bufferLoadDeferred()
@@ -276,6 +281,7 @@ function TileLayer(
 				buffered = buffered + 1;
 				if (buffered === to_buffer)
 				{
+					window.clearTimeout(swapLayersTimeout);
 					swapLayers();
 				}
 			};

@@ -154,7 +154,7 @@ SkeletonMeasurementsTable.prototype.highlight = function(skid) {
 };
 
 SkeletonMeasurementsTable.prototype.init = function() {
-  if (this.table) table.remove();
+  if (this.table) this.table.remove();
 
   var n_labels = this.labels.length;
 

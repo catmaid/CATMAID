@@ -42,7 +42,7 @@ function Action (properties) {
   };
 
   this.getKeyShortcutsString = function( ) {
-    result = [];
+    var result = [];
     for (var name in keyShortcuts) {
       if (keyShortcuts.hasOwnProperty(name)) {
         result.push(name);
@@ -136,7 +136,7 @@ var getKeyCodeToActionMap = function( actionArray ) {
 function createButtonsFromActions(actions, boxID, iconPrefix) {
   var box, action, a, img, buttonID, title, shortcuts;
   box = $( '<div class="box" id="'+boxID+'"></div>' );
-  for (i = 0; i < actions.length; ++i) {
+  for (var i = 0; i < actions.length; ++i) {
     action = actions[i];
     if (action.hasButton()) {
       buttonID = action.getButtonID();

@@ -554,7 +554,7 @@ SelectionTable.prototype.setVisible = function(skeleton_ids, visible) {
 };
 
 SelectionTable.prototype.get_all_skeletons = function() {
-  return Object.keys( skeleton_ids );
+  return Object.keys( this.skeleton_ids );
 };
 
 SelectionTable.prototype.showPrevious = function() {

@@ -295,7 +295,7 @@ function Stack(
 	 *  @param padScreenY y-padding in screen coordinates
 	 *  @param padScreenZ z-padding in screen coordinates (==stack coordinates as z is not scaled)
 	 */
-	this.paddedStackViewBox = function( paddedStackBox, padScreenX, padScreenY, padScreenZ )
+	this.paddedStackViewBox = function( stackBox, padScreenX, padScreenY, padScreenZ )
 	{
 		var w2 = ( self.viewWidth / 2 + padScreenX ) / self.scale;
 		var h2 = ( self.viewHeight / 2 + padScreenY ) / self.scale;

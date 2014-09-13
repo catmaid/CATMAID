@@ -65,7 +65,7 @@ function TaggingTool()
         var tags = "";
         for (var i=0; i<tag_list.length; ++i)
         {
-            new_tag = (tags.length == 0) ? tag_list[i] : (", " + tag_list[i]);
+            var new_tag = (tags.length === 0) ? tag_list[i] : (", " + tag_list[i]);
             tags += new_tag;
         }
         return tags;
@@ -222,18 +222,19 @@ function TaggingTool()
             var failed_objs = "";
             var done_count = 0;
             var done_objs = "";
+            var new_obj;
 
             for (var key in self.update_states)
             {
                 if (self.update_states[key] == "error")
                 {
-                    new_obj = (failed_count == 0) ? key : (", " + key);
+                    new_obj = (failed_count === 0) ? key : (", " + key);
                     failed_objs = failed_objs + new_obj;
                     failed_count = failed_count + 1;
                 }
                 else if (self.update_states[key] == "done")
                 {
-                    new_obj = (done_count == 0) ? key : (", " + key);
+                    new_obj = (done_count === 0) ? key : (", " + key);
                     done_objs = done_objs + new_obj;
                     done_count = done_count + 1;
                 }

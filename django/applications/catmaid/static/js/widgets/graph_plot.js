@@ -197,8 +197,8 @@ CircuitGraphPlot.prototype.append = function(models) {
     }, this);
     if (0 === ms2.length) {
       // Remove group
-      this.ids.splice(k, 1);
-      this.names.splice(k, 1);
+      this.ids.splice(i, 1);
+      this.names.splice(i, 1);
       return false; // removes from this.models
     }
     return true;

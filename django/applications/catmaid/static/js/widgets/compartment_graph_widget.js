@@ -1963,7 +1963,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
 
         if (0 === connectors.length) {
           // edge(s) disappeared from database
-          growlAlert('Information', 'Could not find edges for skeleton #' + skid);
+          growlAlert('Information', 'Could not find edges for skeleton #' + target);
           return;
         }
 

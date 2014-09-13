@@ -16,7 +16,7 @@ var OntologyEditor = new function()
         // display the known root class names
         $.getJSON(django_url + 'ontology/knownroots',
                 function(data) {
-                    text = "";
+                    var text = "";
                     if (data.knownroots)
                         text = data.knownroots.join(', ');
                     else
@@ -183,9 +183,9 @@ var OntologyEditor = new function()
 
                     for (var r_type in restriction_types) {
                         has_restrictions = true;
-                        restrictions = restriction_types[r_type];
+                        var restrictions = restriction_types[r_type];
                         for (var r=0; r<restrictions.length; r++) {
-                            restriction = restrictions[r];
+                            var restriction = restrictions[r];
                             var r_name = "";
                             if (r_type == 'cardinality') {
                                 r_name = "Type " + restriction.type + " cardinality with value " + restriction.value;

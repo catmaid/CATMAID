@@ -243,7 +243,7 @@ function Profile() {
   var boundingBox = function () {
     min = keys[0].min();
     max = keys[0].max();
-    for (i = 1; i < keys.length; ++i) {
+    for (var i = 1; i < keys.length; ++i) {
       var m = keys[i].min();
       min.x = Math.min(m.x, min.x);
       min.y = Math.min(m.y, min.y);

@@ -166,7 +166,7 @@ var ClassificationEditor = new function()
                                 }
                                 var child_classes = child_groups[group_name];
                                 var only_disabled_items = true;
-                                for (i=0; i<child_classes.length; i++) {
+                                for (var i=0; i<child_classes.length; i++) {
                                     var subchild = child_classes[i];
                                     only_disabled_items = (only_disabled_items && subchild.disabled);
                                     submenu['add_child_' + group_name + '_sub_' + i] = {

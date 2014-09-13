@@ -255,9 +255,9 @@ var ClusteringWidget = new function()
 
                     for (var r_type in restriction_types) {
                         has_restrictions = true;
-                        restrictions = restriction_types[r_type];
+                        var restrictions = restriction_types[r_type];
                         for (var r=0; r<restrictions.length; r++) {
-                            restriction = restrictions[r];
+                            var restriction = restrictions[r];
                             var r_name = "";
                             if (r_type == 'cardinality') {
                                 r_name = "Type " + restriction.type + " cardinality with value " + restriction.value;

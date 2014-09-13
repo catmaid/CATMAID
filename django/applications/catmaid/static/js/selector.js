@@ -63,7 +63,7 @@ function Selector()
 				statusBar.replaceLast( "[" + project_pos_x.toFixed( 3 ) + ", " + project_pos_y.toFixed( 3 ) + ", " + project_pos_z.toFixed( 3 ) + "]" );
 
 				// update position marks in other open stacks as well
-				for ( i = 0; i < position_markers.length; ++i )
+				for ( var i = 0; i < position_markers.length; ++i )
 				{
 					var current_stack = position_markers[ i ].stack;
 
@@ -174,10 +174,10 @@ function Selector()
 	 */
 	this.addPositionMarkers = function()
 	{
-		stacks = project.getStacks();
-		for ( i = 0; i < stacks.length; ++i )
+		var stacks = project.getStacks();
+		for ( var i = 0; i < stacks.length; ++i )
 		{
-			s_id = stacks[ i ].id;
+			var s_id = stacks[ i ].id;
 			// don't add one to the current stack
 			if ( s_id == stack.id )
 					continue;
@@ -208,10 +208,10 @@ function Selector()
 	this.removePositionMarkers = function()
 	{
 		// remove all the created div tags
-		for ( i = 0; i < position_markers.length; ++i )
+		for ( var i = 0; i < position_markers.length; ++i )
 		{
-			stack_view = position_markers[ i ].view;
-			stack_marker = position_markers[ i ].marker;
+			var stack_view = position_markers[ i ].view;
+			var stack_marker = position_markers[ i ].marker;
 			stack_view.removeChild( stack_marker );
 		}
 		// Clear the array

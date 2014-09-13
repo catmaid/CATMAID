@@ -2013,7 +2013,7 @@ var WindowMaker = new function()
       content.appendChild( container );
     }
 
-    keysHTML = '<p id="keyShortcutsText">';
+    var keysHTML = '<p id="keyShortcutsText">';
     keysHTML += '<h4>Global Key Help</h4>';
 
     actions = project.getActions();
@@ -2058,7 +2058,7 @@ var WindowMaker = new function()
       content.appendChild( container );
     }
 
-    keysHTML = '<form onsubmit="TracingTool.search(); return false">';
+    var keysHTML = '<form onsubmit="TracingTool.search(); return false">';
     keysHTML += '<input type="text" id="search-box" name="search-box">';
     keysHTML += '<input type="submit" style="display: hidden">';
     keysHTML += '</form>';
@@ -2206,7 +2206,7 @@ var WindowMaker = new function()
     queryFields.setAttribute('id', 'neuron_annotations_query_fields' + NA.widgetID);
     // Create the query fields HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
-    queryFields_html =
+    var queryFields_html =
       '<form id="neuron_query_by_annotations{{NA-ID}}">' +
       '<table cellpadding="0" cellspacing="0" border="0" ' +
           'class="neuron_annotations_query_fields" ' +
@@ -2263,7 +2263,7 @@ var WindowMaker = new function()
     var container = createContainer("neuron_annotations_query_results" + NA.widgetID);
     // Create container HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
-    container_html =
+    var container_html =
       '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +
           'class="neuron_annotations_query_footer">' +
         '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +

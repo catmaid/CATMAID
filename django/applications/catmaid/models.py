@@ -47,25 +47,39 @@ class Project(models.Model):
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
     tags = TaggableManager(blank=True)
-    
+
     def __unicode__(self):
         return self.title
 
 class Stack(models.Model):
     class Meta:
         db_table = "stack"
-    title = models.TextField()
-    dimension = Integer3DField()
-    resolution = Double3DField()
-    image_base = models.TextField()
-    comment = models.TextField(blank=True, null=True)
-    trakem2_project = models.BooleanField(default=False)
-    num_zoom_levels = models.IntegerField(default=-1)
-    file_extension = models.TextField(default='jpg', blank=True)
-    tile_width = models.IntegerField(default=256)
-    tile_height = models.IntegerField(default=256)
-    tile_source_type = models.IntegerField(default=1)
-    metadata = models.TextField(default='', blank=True)
+    title = models.TextField(help_text="Descriptive title of this stack.")
+    dimension = Integer3DField(help_text="The pixel dimensionality of the "
+            "stack.")
+    resolution = Double3DField(help_text="The resolution of the stack in "
+            "nanometers.")
+    image_base = models.TextField(help_text="Fully qualified URL where the "
+            "tile data can be found.")
+    comment = models.TextField(blank=True, null=True,
+            help_text="A comment that describes the image data.")
+    trakem2_project = models.BooleanField(default=False,
+            help_text="Is TrakEM2 the source of this stack?")
+    num_zoom_levels = models.IntegerField(default=-1,
+            help_text="The number of zoom levels a stack has data for. A "
+            "value of -1 lets CATMAID dynamically determine the actual value "
+            "so that at this value the largest extent (X or Y) won't be "
+            "smaller than 1024 pixels. Values larger -1 will be used directly.")
+    file_extension = models.TextField(default='jpg', blank=True,
+            help_text="The file extension of the data files.")
+    tile_width = models.IntegerField(default=256,
+            help_text="The width of one tile.")
+    tile_height = models.IntegerField(default=256,
+            help_text="The height of one tile.")
+    tile_source_type = models.IntegerField(default=1,
+            help_text="This represents how the tile data is organized.")
+    metadata = models.TextField(default='', blank=True,
+            help_text="Arbitrary text that is displayed alongside the stack.")
     tags = TaggableManager(blank=True)
 
     def __unicode__(self):

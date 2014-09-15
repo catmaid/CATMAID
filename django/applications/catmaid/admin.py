@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
@@ -12,10 +12,70 @@ from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.views import UseranalyticsView, UserProficiencyView
 
 
+class BrokenSliceModelForm(forms.ModelForm):
+    """ This model form for the BrokenSlide model, will add an optional "last
+    index" field. BrokenSliceAdmin will deactivate it, when an existing
+    instance is edited. Using it when adding, allows to add many broken slice
+    entries at once.
+    """
+    last_index = forms.IntegerField(initial="",
+            required=False, help_text="Optionally, add a last index "
+            "and a new broken slice entry will be generated for each "
+            "slice in the range [index, last index].")
+
+    class Meta:
+        model = BrokenSlice
+
+
 class BrokenSliceAdmin(GuardedModelAdmin):
     list_display = ('stack', 'index')
     search_fields = ('stack', 'index')
     list_editable = ('index',)
+
+    form = BrokenSliceModelForm
+
+    def get_fieldsets(self, request, obj=None):
+        """ Remove last_index field if an existing instance is edited.
+        """
+        fieldsets = super(BrokenSliceAdmin, self).get_fieldsets(request, obj)
+        print fieldsets
+        if obj and 'last_index' in fieldsets[0][1]['fields']:
+            fieldsets[0][1]['fields'].remove('last_index')
+        return fieldsets
+
+    def save_model(self, request, obj, form, change):
+        """ After calling the super method, additinal broken slice records are
+        created if a "last index was specified.
+        """
+        super(BrokenSliceAdmin, self).save_model(request, obj, form, change)
+        li = (form.cleaned_data.get('last_index'))
+        # Only attemt to add additional broken slice entries, if a last index
+        # was specified.
+        if li and not change:
+            s = form.cleaned_data.get('stack')
+            i = int(form.cleaned_data.get('index'))
+            # Add a new broken slice entry for each additional index, if it
+            # doesn't exist already.
+            num_extra_slices = max(li - i, 0)
+            new_entry_count = 0
+            for diff in range(1, num_extra_slices + 1):
+                _, created = BrokenSlice.objects.get_or_create(stack=s,
+                        index=i+diff)
+                if created:
+                    new_entry_count += 1
+
+            # Create a result message
+            if new_entry_count > 0:
+                msg = 'Added %s additional broken slice entries.' % \
+                        str(new_entry_count)
+                if num_extra_slices != new_entry_count:
+                    msg += ' %s broken slice entries were already present.' %\
+                        str(num_extra_slices - new_entry_count)
+                messages.add_message(request, messages.INFO, msg)
+            elif num_extra_slices > 0 and new_entry_count == 0:
+                msg = 'All %s extra broken slice entries were already ' \
+                    'present.' % str(num_extra_slices)
+                messages.add_message(request, messages.INFO, msg)
 
 
 class ProjectStackInline(admin.TabularInline):

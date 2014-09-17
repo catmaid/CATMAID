@@ -152,7 +152,7 @@ def node_list_tuples(request, project_id=None):
                  connector
             WHERE treenode_connector.treenode_id IN (%s)
               AND treenode_connector.connector_id = connector.id
-            ''' % ','.join(str(x) for x in treenode_ids))
+            ''' % ','.join(map(str, treenode_ids)))
 
             crows = list(cursor.fetchall())
 
@@ -566,7 +566,7 @@ def _find_first_interesting_node(sequence):
          LEFT OUTER JOIN treenode_connector tc ON (tc.treenode_id = t.id)
          LEFT OUTER JOIN treenode_class_instance tci ON (tci.treenode_id = t.id)
     WHERE t.id IN (%s)
-    ''' % ",".join(str(x) for x in sequence))
+    ''' % ",".join(map(str, sequence)))
 
     nodes = {row[0]: row for row in cursor.fetchall()}
     for nodeID in sequence:

@@ -841,7 +841,7 @@ def annotations_for_skeletons(request, project_id=None):
       AND skeleton_neuron.class_instance_b = neuron_annotation.class_instance_a
       AND neuron_annotation.relation_id = %s
       AND neuron_annotation.class_instance_b = annotation.id
-    ''' % (",".join(str(skid) for skid in skids), annotated_with_id))
+    ''' % (",".join(map(str, skids)), annotated_with_id))
 
     # Group by skeleton ID
     m = defaultdict(list)

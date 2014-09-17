@@ -86,7 +86,7 @@ def one_to_many_synapses(request, project_id=None):
       AND tc2.treenode_id = t2.id
       AND tc1.user_id = u1.id
       AND tc2.user_id = u2.id
-    ''' % (skid, ','.join(str(d) for d in skids), relation_name))
+    ''' % (skid, ','.join(map(str, skids)), relation_name))
 
     def parse(loc):
         return tuple(imap(float, loc[1:-1].split(',')))
@@ -338,7 +338,7 @@ def _connector_skeletons(connector_ids, project_id):
     SELECT connector_id, relation_id, skeleton_id
     FROM treenode_connector
     WHERE connector_id IN (%s)
-    ''' % ",".join(str(cid) for cid in connector_ids))
+    ''' % ",".join(map(str, connector_ids)))
 
     cs = {}
     for row in cursor.fetchall():
@@ -384,7 +384,7 @@ def _connector_associated_edgetimes(connector_ids, project_id):
     SELECT connector_id, relation_id, skeleton_id, treenode_id, creation_time
     FROM treenode_connector
     WHERE connector_id IN (%s)
-    ''' % ",".join(str(cid) for cid in connector_ids))
+    ''' % ",".join(map(str, connector_ids)))
 
     cs = {}
     for row in cursor.fetchall():

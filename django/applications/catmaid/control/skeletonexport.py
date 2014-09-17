@@ -51,7 +51,7 @@ def get_swc_string(treenodes_qs):
         all_rows.append(swc_row)
     result = ""
     for row in all_rows:
-        result += " ".join(str(x) for x in row) + "\n"
+        result += " ".join(map(str, row)) + "\n"
     return result
 
 def export_skeleton_response(request, project_id=None, skeleton_id=None, format=None):
@@ -362,7 +362,7 @@ def _measure_skeletons(skeleton_ids):
     if not skeleton_ids:
         raise Exception("Must provide the ID of at least one skeleton.")
 
-    skids_string = ",".join(str(x) for x in skeleton_ids)
+    skids_string = ",".join(map(str, skeleton_ids))
 
     cursor = connection.cursor()
     cursor.execute('''
@@ -579,7 +579,7 @@ def export_neuroml_level3_v181(request, project_id=None):
     Considers synapses among the requested skeletons only. """
     skeleton_ids = tuple(int(v) for v in request.POST.getlist('skids[]'))
     mode = int(request.POST.get('mode'))
-    skeleton_strings = ",".join(str(skid) for skid in skeleton_ids)
+    skeleton_strings = ",".join(map(str, skeleton_ids))
     cursor = connection.cursor()
 
     cursor.execute('''
@@ -643,7 +643,7 @@ def export_neuroml_level3_v181(request, project_id=None):
         if len(skeleton_ids) > 1:
             raise Exception("Expected a single skeleton for mode %s!" % mode)
         input_ids = tuple(int(v) for v in request.POST.getlist('inputs[]', []))
-        input_strings = ",".join(str(skid) for skid in input_ids)
+        input_strings = ",".join(map(str, input_ids))
         if 2 == mode:
             constraint = "AND tc2.skeleton_id IN (%s)" % input_strings
         elif 1 == mode:
@@ -771,7 +771,7 @@ def skeleton_connectors_by_partner(request, project_id):
       AND tc1.connector_id = tc2.connector_id
       AND tc1.skeleton_id != tc2.skeleton_id
       AND tc1.relation_id != tc2.relation_id
-    ''' % ','.join(str(skid) for skid in skeleton_ids))
+    ''' % ','.join(map(str, skeleton_ids)))
 
     # Dict of skeleton vs relation vs skeleton vs list of connectors
     partners = defaultdict(partial(defaultdict, partial(defaultdict, list)))

@@ -471,7 +471,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
       AND t1.relation_id = %s
       AND t1.connector_id = t2.connector_id
       AND t2.relation_id = %s
-    ''' % (','.join(str(skid) for skid in skeleton_ids), int(relation_id_1), int(relation_id_2)))
+    ''' % (','.join(map(str, skeleton_ids)), int(relation_id_1), int(relation_id_2)))
 
     # Sum the number of synapses
     for srcID, partnerID in cursor.fetchall():
@@ -492,7 +492,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
         return partners
 
     # Obtain a string with unique skeletons
-    skids_string = ','.join(str(x) for x in partners.iterkeys())
+    skids_string = ','.join(map(str, partners.iterkeys()))
 
     # Count nodes of each partner skeleton
     cursor.execute('''

@@ -385,7 +385,7 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None,
           AND cici.relation_id = r.id
           AND r.relation_name = 'model_of'
           AND ci.id = cici.class_instance_b
-        ''' % ','.join(str(x) for x in neuron_ids)) # no need to sanitize
+        ''' % ','.join(map(str, neuron_ids))) # no need to sanitize
         skeletons = dict(cursor.fetchall())
     else:
         skeletons = {}
@@ -395,7 +395,7 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None,
         cursor = connection.cursor()
         cursor.execute('''
         SELECT skeleton_id FROM treenode WHERE skeleton_id IN (%s) GROUP BY skeleton_id HAVING count(*) > %s
-        ''' % (",".join(str(skid) for skid in skeletons), int(threshold)))
+        ''' % (",".join(map(str, skeletons)), int(threshold)))
         skeleton_ids = {row[0]: skeletons[row[0]] for row in cursor.fetchall()}
     else:
         skeleton_ids = skeletons
@@ -572,7 +572,7 @@ def remove_empty_neurons(request, project_id=None, group_id=None):
       AND cici.class_instance_a = ci.id
       AND ci.class_id = class.id
       AND class.class_name = 'skeleton'
-    ''' % (",".join(str(nid) for nid in neurons), relations['model_of']))
+    ''' % (",".join(map(str, neurons)), relations['model_of']))
     # Filter out neurons modeled by skeletons
     empty_neurons = neurons - set(row[0] for row in cursor.fetchall())
     if empty_neurons:

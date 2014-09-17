@@ -63,7 +63,7 @@ def get_review_count(skeleton_ids):
     FROM review
     WHERE skeleton_id IN (%s)
     GROUP BY reviewer_id, skeleton_id
-    ''' % ",".join(str(skid) for skid in skeleton_ids))
+    ''' % ",".join(map(str, skeleton_ids)))
     # Build dictionary
     reviews = defaultdict(lambda: defaultdict(int))
     for row in cursor.fetchall():
@@ -96,7 +96,7 @@ def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
     FROM treenode
     WHERE skeleton_id IN (%s)
     GROUP BY skeleton_id
-    ''' % ",".join(str(skid) for skid in skeleton_ids))
+    ''' % ",".join(map(str, skeleton_ids)))
     for row in cursor.fetchall():
         skeletons[row[0]].num_nodes = row[1]
 
@@ -105,12 +105,12 @@ def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
         # Count number of nodes reviewed by a certain set of users,
         # per skeleton.
         user_filter = " AND reviewer_id IN (%s)" % \
-            ",".join(str(uid) for uid in user_ids)
+            ",".join(map(str, user_ids))
     elif excluding_user_ids:
         # Count number of nodes reviewed by all users excluding the
         # specified ones, per skeleton.
         user_filter = " AND reviewer_id NOT IN (%s)" % \
-            ",".join(str(uid) for uid in excluding_user_ids)
+            ",".join(map(str, excluding_user_ids))
     else:
         # Count total number of reviewed nodes per skeleton, regardless
         # of reviewer.
@@ -123,7 +123,7 @@ def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
           WHERE skeleton_id IN (%s)%s
           GROUP BY skeleton_id, treenode_id) AS sub
     GROUP BY skeleton_id
-    ''' % (",".join(str(skid) for skid in skeleton_ids), user_filter))
+    ''' % (",".join(map(str, skeleton_ids)), user_filter))
     for row in cursor.fetchall():
         skeletons[row[0]].num_reviewed = row[1]
 

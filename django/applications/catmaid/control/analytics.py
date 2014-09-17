@@ -12,7 +12,7 @@ import json
 def analyze_skeletons(request, project_id=None):
     project_id = int(project_id)
     skids = [int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids[')]
-    s_skids = ",".join(str(skid) for skid in skids)
+    s_skids = ",".join(map(str, skids))
     extra = int(request.POST.get('extra', 0))
     adjacents = int(request.POST.get('adjacents', 0))
 
@@ -59,7 +59,7 @@ def analyze_skeletons(request, project_id=None):
       AND cici.class_instance_b = ci.id
       AND cici.relation_id = r.id
       AND r.relation_name = 'model_of'
-    ''' % ",".join(str(skid) for skid in skids))
+    ''' % ",".join(map(str, skids)))
 
     blob = {'issues': tuple((skid, _analyze_skeleton(project_id, skid, adjacents)) for skid in skids),
             'names': dict(cursor.fetchall()),

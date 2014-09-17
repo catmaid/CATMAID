@@ -49,7 +49,7 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
 
     # Select all nodes and their tags
     cursor.execute('''
-    SELECT t.id, t.parent_id, t.location, ci.name
+    SELECT t.id, t.parent_id, t.location_x, t.location_y, t.location_z, ci.name
     FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id AND tci.relation_id = %s) ON t.id = tci.treenode_id
     WHERE t.skeleton_id = %s
     ''' % (labeled_as, int(skeleton_id)))
@@ -64,14 +64,14 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
             tree.add_edge(row[1], nodeID)
         else:
             tree.add_node(nodeID)
-        tree.node[nodeID]['loc'] = row[2]
+        tree.node[nodeID]['loc'] = (row[2], row[3], row[4])
         if row[3]:
             props = tree.node[nodeID]
             tags = props.get('tags')
             if tags:
                 tags.append(row[3])
             else:
-                props['tags'] = [row[3]]
+                props['tags'] = [row[5]]
 
     if tnid not in tree:
         raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))

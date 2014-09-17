@@ -331,7 +331,8 @@ def update_confidence(request, project_id=None, node_id=0):
         rows_affected = Treenode.objects.filter(id=tnid).update(confidence=new_confidence,editor=request.user)
 
     if rows_affected > 0:
-        location = Location.objects.get(id=tnid).location
+        location = Location.objects.get(id=tnid).values_list('location_x'
+                'location_y', 'location_z')
         insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
         return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
@@ -629,8 +630,7 @@ def find_next_branchnode_or_end(request, project_id=None):
             # The closest to 0,0,0 or the furthest if shift is down
             sqDist = 0 if shift else float('inf')
             for t in Treenode.objects.filter(parent_id=tnid):
-                p = t.location
-                d = pow(p.x, 2) + pow(p.y, 2) + pow(p.z, 2)
+                d = pow(t.location_x, 2) + pow(t.location_y, 2) + pow(t.location_z, 2)
                 if (shift and d > sqDist) or (not shift and d < sqDist):
                     sqDist = d
                     tnid = t.id

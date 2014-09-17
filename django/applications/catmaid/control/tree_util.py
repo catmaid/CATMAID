@@ -6,7 +6,6 @@ from collections import defaultdict
 from math import sqrt
 from itertools import izip, islice, imap
 from catmaid.models import Treenode
-from catmaid.fields import Double3D
 
 def find_root(tree):
     """ Search and return the first node that has zero predecessors.
@@ -215,11 +214,6 @@ def lazy_load_trees(skeleton_ids, node_properties):
             tree = DiGraph()
 
         fields = {k: v for k,v in izip(props, islice(t, 3, 3 + len(props)))}
-
-        # Hack: why doesn't django parse well the location?
-        loc = fields.get('location')
-        if loc:
-            fields['location'] = Double3D(*(imap(float, loc[1:-1].split(','))))
         tree.add_node(t[0], fields)
 
         if t[1]:

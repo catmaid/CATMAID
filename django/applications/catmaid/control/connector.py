@@ -63,9 +63,11 @@ def one_to_many_synapses(request, project_id=None):
         raise Exception("Cannot accept a relation named '%s'" % relation_name)
     cursor = connection.cursor();
     cursor.execute('''
-    SELECT tc1.connector_id, c.location,
-           tc1.treenode_id, tc1.skeleton_id, tc1.confidence, u1.username, t1.location,
-           tc2.treenode_id, tc2.skeleton_id, tc2.confidence, u2.username, t2.location
+    SELECT tc1.connector_id, c.location_x, c.location_y, c.location_y,
+           tc1.treenode_id, tc1.skeleton_id, tc1.confidence, u1.username,
+           t1.location_x, t1.location_y, t1.location_z,
+           tc2.treenode_id, tc2.skeleton_id, tc2.confidence, u2.username,
+           t2.location_x, t2.location_y, t2.location_z
     FROM treenode_connector tc1,
          treenode_connector tc2,
          treenode t1,
@@ -90,9 +92,11 @@ def one_to_many_synapses(request, project_id=None):
     def parse(loc):
         return tuple(imap(float, loc[1:-1].split(',')))
 
-    rows = tuple((row[0], parse(row[1]),
-                  row[2], row[3], row[4], row[5], parse(row[6]),
-                  row[7], row[8], row[9], row[10], parse(row[11])) for row in cursor.fetchall())
+    rows = tuple((row[0], (row[1], row[2], row[3]),
+                  row[4], row[5], row[6], row[7],
+                  (row[8], row[9], row[10]),
+                  row[11], row[12], row[13], row[14],
+                  (row[15], row[16], row[17])) for row in cursor.fetchall())
 
     return HttpResponse(json.dumps(rows))
 

@@ -113,7 +113,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
 
     # Fetch all treenodes of all skeletons
     cursor.execute('''
-    SELECT id, parent_id, confidence, skeleton_id, location
+    SELECT id, parent_id, confidence, skeleton_id,
+           location_x, location_y, location_z
     FROM treenode
     WHERE skeleton_id IN (%s)
     ''' % skeletons_string)
@@ -151,7 +152,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
     locations = None
     whole_arbors = arbors
     if expand and bandwidth > 0:
-        locations = {row[0]: tuple(imap(float, row[4][1:-1].split(','))) for row in rows}
+        locations = {row[0]: (row[4], row[5], row[6]) for row in rows}
         treenode_connector = defaultdict(list)
         for connector_id, pp in connectors.iteritems():
             for treenode_id in chain.from_iterable(pp[relations['presynaptic_to']]):
@@ -247,7 +248,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
                 arbor.treenode_synapse_counts = tc
 
         if not locations:
-            locations = {row[0]: imap(float, row[4][1:-1].split(',')) for row in rows}
+            locations = {row[0]: (row[4], row[5], row[6]) for row in rows}
 
         # Estimate the risk factor of the edge between two arbors,
         # as a function of the number of synapses and their location within the arbor.

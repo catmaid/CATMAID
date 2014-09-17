@@ -608,7 +608,8 @@ def export_neuroml_level3_v181(request, project_id=None):
     neuron_names = dict(cursor.fetchall())
 
     skeleton_query = '''
-        SELECT id, parent_id, location, radius, skeleton_id
+        SELECT id, parent_id, location_x, location_y, location_z,
+               radius, skeleton_id
         FROM treenode
         WHERE skeleton_id IN (%s)
         ORDER BY skeleton_id

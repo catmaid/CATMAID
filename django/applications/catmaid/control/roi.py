@@ -180,7 +180,7 @@ def create_roi_image_task(user, project_id, roi_id, file_path):
         hheight = roi.height * 0.5
         y_min = roi.location_y - hheight
         y_max = roi.location_y + hheight
-        z_min = z_max = roi.location.z
+        z_min = z_max = roi.location_z
         single_channel = False
         # Create a cropping job
         job = cropping.CropJob(user, project_id, [roi.stack.id],

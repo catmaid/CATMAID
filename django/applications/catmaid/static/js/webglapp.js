@@ -1321,42 +1321,90 @@ WebGLApplication.prototype.Space.prototype.View.prototype.render = function() {
 };
 
 
+/**
+ * Set camera position so that the whole XY side of the bounding box facing +Z
+ * can just be seen.
+ */
 WebGLApplication.prototype.Space.prototype.View.prototype.XY = function() {
 	var center = this.space.center,
-			dimensions = this.space.dimensions;
+			dimensions = this.space.dimensions,
+			vFOV = this.camera.fov * Math.PI / 180,
+			bbDistance;
+	if (this.height > this.width) {
+		var hFOV = 2 * Math.atan( Math.tan( vFOV * 0.5 ) * this.width / this.height );
+		bbDistance = dimensions.x * 0.5 / Math.tan(hFOV * 0.5);
+	} else {
+		bbDistance = dimensions.y * 0.5 / Math.tan(vFOV * 0.5);
+	}
 	this.controls.target = center;
 	this.camera.position.x = center.x;
 	this.camera.position.y = center.y;
-	this.camera.position.z = (dimensions.z / 2) + center.z + 100;
+	this.camera.position.z = center.z + (dimensions.z / 2) + bbDistance;
 	this.camera.up.set(0, 1, 0);
 };
 
+/**
+ * Set camera position so that the whole XZ side of the bounding box facing +Y
+ * can just be seen.
+ */
 WebGLApplication.prototype.Space.prototype.View.prototype.XZ = function() {
 	var center = this.space.center,
-			dimensions = this.space.dimensions;
+			dimensions = this.space.dimensions,
+			vFOV = this.camera.fov * Math.PI / 180,
+			bbDistance;
+	if (this.height > this.width) {
+		var hFOV = 2 * Math.atan( Math.tan( vFOV * 0.5 ) * this.width / this.height );
+		bbDistance = dimensions.x * 0.5 / Math.tan(hFOV * 0.5);
+	} else {
+		bbDistance = dimensions.z * 0.5 / Math.tan(vFOV * 0.5);
+	}
 	this.controls.target = center;
 	this.camera.position.x = center.x;
-	this.camera.position.y = dimensions.y * 2;
+	this.camera.position.y = center.y + (dimensions.y / 2) + bbDistance;
 	this.camera.position.z = center.z;
 	this.camera.up.set(0, 0, 1);
 };
 
+/**
+ * Set camera position so that the whole ZY side of the bounding box facing +X
+ * can just be seen.
+ */
 WebGLApplication.prototype.Space.prototype.View.prototype.ZY = function() {
 	var center = this.space.center,
-			dimensions = this.space.dimensions;
+			dimensions = this.space.dimensions,
+			vFOV = this.camera.fov * Math.PI / 180,
+			bbDistance;
+	if (this.height > this.width) {
+		var hFOV = 2 * Math.atan( Math.tan( vFOV * 0.5 ) * this.width / this.height );
+		bbDistance = dimensions.z * 0.5 / Math.tan(hFOV * 0.5);
+	} else {
+		bbDistance = dimensions.y * 0.5 / Math.tan(vFOV * 0.5);
+	}
 	this.controls.target = center;
-	this.camera.position.x = dimensions.x * 2;
+	this.camera.position.x = center.x + (dimensions.x / 2) + bbDistance;
 	this.camera.position.y = center.y;
 	this.camera.position.z = center.z;
 	this.camera.up.set(0, 1, 0);
 };
 
+/**
+ * Set camera position so that the whole ZX side of the bounding box facing +Y
+ * can just be seen.
+ */
 WebGLApplication.prototype.Space.prototype.View.prototype.ZX = function() {
 	var center = this.space.center,
-			dimensions = this.space.dimensions;
+			dimensions = this.space.dimensions,
+			vFOV = this.camera.fov * Math.PI / 180,
+			bbDistance;
+	if (this.height > this.width) {
+		var hFOV = 2 * Math.atan( Math.tan( vFOV * 0.5 ) * this.width / this.height );
+		bbDistance = dimensions.z * 0.5 / Math.tan(hFOV * 0.5);
+	} else {
+		bbDistance = dimensions.x * 0.5 / Math.tan(vFOV * 0.5);
+	}
 	this.controls.target = center;
 	this.camera.position.x = center.x;
-	this.camera.position.y = dimensions.y * 2;
+	this.camera.position.y = center.y + (dimensions.y / 2) + bbDistance;
 	this.camera.position.z = center.z;
 	this.camera.up.set(-1, 0, 0);
 };

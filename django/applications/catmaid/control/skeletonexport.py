@@ -366,7 +366,7 @@ def _measure_skeletons(skeleton_ids):
 
     cursor = connection.cursor()
     cursor.execute('''
-    SELECT id, parent_id, skeleton_id, location
+    SELECT id, parent_id, skeleton_id, location_x, location_y, location_z
     FROM treenode
     WHERE skeleton_id IN (%s)
     ''' % skids_string)
@@ -403,8 +403,7 @@ def _measure_skeletons(skeleton_ids):
         if not skeleton:
             skeleton = Skeleton()
             skeletons[row[2]] = skeleton
-        x, y, z = imap(float, row[3][1:-1].split(','))
-        skeleton.nodes[row[0]] = Node(row[1], x, y, z)
+        skeleton.nodes[row[0]] = Node(row[1], row[3], row[4], row[5])
 
     for skeleton in skeletons.itervalues():
         nodes = skeleton.nodes
@@ -521,11 +520,11 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     cursor = connection.cursor()
 
     cursor.execute('''
-    SELECT id, parent_id, location, radius
+    SELECT id, parent_id, location_x, location_y, location_z, radius
     FROM treenode
     WHERE skeleton_id = %s
     ''' % skeleton_id)
-    nodes = {row[0]: (row[1], tuple(imap(float, row[2][1:-1].split(','))), row[3]) for row in cursor.fetchall()}
+    nodes = {row[0]: (row[1], (row[2], row[3], row[4]), row[5]) for row in cursor.fetchall()}
 
     cursor.execute('''
     SELECT tc.treenode_id, tc.connector_id, tc.relation_id

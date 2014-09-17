@@ -362,7 +362,9 @@ def split_skeleton(request, project_id=None):
     _annotate_entities(project_id, [new_neuron.id], downstream_annotation_map)
 
     # Log the location of the node at which the split was done
-    insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
+    location = (treenode.location_x, treenode.location_y, treenode.location_z)
+    insert_into_log(project_id, request.user.id, "split_skeleton", location,
+                    "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
 
     return HttpResponse(json.dumps({}), mimetype='text/json')
 
@@ -660,8 +662,9 @@ def reroot_skeleton(request, project_id=None):
     try:
         if treenode:
             response_on_error = 'Failed to log reroot.'
+            location = (treenode.location_x, treenode.location.y, treenode.location_z)
             insert_into_log(project_id, request.user.id, 'reroot_skeleton',
-                            treenode.location, 'Rerooted skeleton for '
+                            location, 'Rerooted skeleton for '
                             'treenode with ID %s' % treenode.id)
             return HttpResponse(json.dumps({'newroot': treenode.id}))
         # Else, already root
@@ -865,8 +868,10 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         _update_neuron_annotations(project_id, user, from_neuron['neuronid'],
                 annotation_map)
 
+        from_location = (from_treenode.location_x, from_treenode.location_y,
+                         from_treenode.location_z)
         insert_into_log(project_id, user.id, 'join_skeleton',
-                from_treenode.location, 'Joined skeleton with ID %s (neuron: ' \
+                from_location, 'Joined skeleton with ID %s (neuron: ' \
                 '%s) into skeleton with ID %s (neuron: %s, annotations: %s)' % \
                 (to_skid, to_neuron['neuronname'], from_skid,
                         from_neuron['neuronname'], ', '.join(annotation_map.keys())))

@@ -171,12 +171,11 @@ def create_treenode(request, project_id=None):
                 new_treenode = insert_new_treenode(None, new_skeleton)
 
                 response_on_error = 'Failed to write to logs.'
+                new_location = (new_treenode.location_x, new_treenode.location_y,
+                                new_treenode.location_z)
                 insert_into_log(project_id, request.user.id, 'create_neuron',
-                                Double3D(new_treenode.location_x,
-                                         new_treenode.location_y,
-                                         new_treenode.location_z), 'Create neuron %d and '
-                                'skeleton %d' % (new_neuron.id,
-                                                 new_skeleton.id))
+                                new_location, 'Create neuron %d and skeleton '
+                                '%d' % (new_neuron.id, new_skeleton.id))
 
                 return HttpResponse(json.dumps({
                     'treenode_id': new_treenode.id,

@@ -816,6 +816,21 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
+      helpText: "Annotate active neuron",
+      keyShortcuts: {
+          'F3': [ 114 ]
+      },
+      run: function (e) {
+          if (!mayEdit()) {
+              return false;
+          }
+          NeuronAnnotations.prototype.annotate_neurons_of_skeletons(
+            [SkeletonAnnotations.getActiveSkeletonId()]);
+          return true;
+      }
+  }) );
+
+  this.addAction( new Action({
     helpText: "Open the neuron/annotation search widget",
     keyShortcuts: {
       '/': [ 191 ]

@@ -1099,7 +1099,7 @@ function display_tracing_setup_dialog(pid, has_needed_permissions,
   } else {
     msg.innerHTML = msg_text + "Unfortunately, you don't have " +
       "needed permissions to add the missing bits and intitialize " +
-      "tracing fro this project";
+      "tracing for this project";
       buttons = {
         "Ok": function() {
             project.setTool( new Navigator() );

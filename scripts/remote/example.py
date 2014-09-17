@@ -34,7 +34,7 @@ skeleton_data = remote_instance.get_page( remote_skeleton_for_3D_url )
 
 #Skeleton data is an array containg:
 #skeleton_data = [neuron_name,[nodes],{tags},[connectors]
-#[nodes] = treenode_id, parent_node_id, user_id, (location).x, (location).y, (location).z, radius, confidence
+#[nodes] = treenode_id, parent_node_id, user_id, location_x, location_y, location_z, radius, confidence
 print(skeleton_data)
 
 

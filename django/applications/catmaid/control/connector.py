@@ -6,7 +6,6 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
-from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
@@ -431,12 +430,13 @@ def create_connector(request, project_id=None):
     if parsed_confidence < 1 or parsed_confidence > 5:
         return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
 
-    location = Double3D(x=float(query_parameters['x']), y=float(query_parameters['y']), z=float(query_parameters['z']))
     new_connector = Connector(
         user=request.user,
         editor=request.user,
         project=Project.objects.get(id=project_id),
-        location=location,
+        location_x=float(query_parameters['x']),
+        location_y=float(query_parameters['y']),
+        location_z=float(query_parameters['z']),
         confidence=parsed_confidence)
     new_connector.save()
 

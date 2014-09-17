@@ -4,7 +4,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
-from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control import export_NeuroML_Level3
@@ -690,7 +689,8 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
     contains information about the review status of this part of the skeleton.
     """
     # Get all treenodes of the requested skeleton
-    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'location', 'parent_id')
+    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values(
+        'id', 'parent_id', 'location_x', 'location_y', 'location_z')
     # Get all reviews for the requested skeleton
     reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
 
@@ -699,14 +699,13 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
     g = nx.DiGraph()
     reviewed = set()
     for t in treenodes:
-        loc = Double3D.from_str(t[1])
         # While at it, send the reviewer IDs, which is useful to iterate fwd
         # to the first unreviewed node in the segment.
-        g.add_node(t[0], {'id': t[0], 'x': loc.x, 'y': loc.y, 'z': loc.z, 'rids': reviews[t[0]]})
+        g.add_node(t[0], {'id': t[0], 'x': t[2], 'y': t[3], 'z': t[4], 'rids': reviews[t[0]]})
         if reviews[t[0]]:
             reviewed.add(t[0])
-        if t[2]: # if parent
-            g.add_edge(t[2], t[0]) # edge from parent to child
+        if t[1]: # if parent
+            g.add_edge(t[1], t[0]) # edge from parent to child
         else:
             root_id = t[0]
 

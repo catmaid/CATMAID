@@ -9,7 +9,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
-from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.treenode import can_edit_treenode_or_fail
@@ -384,7 +383,10 @@ def _update(Kind, table, nodes, now, user):
         Kind.objects.filter(id=int(node[0])).update(
             editor=user,
             edition_time=now,
-            location=Double3D(float(node[1]), float(node[2]), float(node[3])))
+            location_x=float(node[1]),
+            location_y=float(node[2]),
+            location_z=float(node[3]))
+
 
 @requires_user_role(UserRole.Annotate)
 def node_update(request, project_id=None):

@@ -12,7 +12,6 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import urljoin
 from catmaid.models import UserRole, RegionOfInterest, Project, Relation
 from catmaid.models import Stack, ClassInstance, RegionOfInterestClassInstance
-from catmaid.fields import Double3D
 
 from celery.task import task
 from celery.utils.log import get_task_logger
@@ -84,7 +83,9 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
     roi.project = project
     roi.stack = stack
     roi.zoom_level = zoom_level
-    roi.location = Double3D(cx, cy, cz)
+    roi.location_x = cx
+    roi.location_y = cy
+    roi.location_z = cz
     roi.width = width
     roi.height = height
     roi.rotation_cw = rotation_cw

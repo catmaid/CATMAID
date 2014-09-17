@@ -81,8 +81,9 @@ def create_treenode(request, project_id=None):
         new_treenode.user = request.user
         new_treenode.editor = request.user
         new_treenode.project_id = project_id
-        new_treenode.location = Double3D(float(params['x']),
-                float(params['y']), float(params['z']))
+        new_treenode.location_x = float(params['x'])
+        new_treenode.location_y = float(params['y'])
+        new_treenode.location_z = float(params['z'])
         new_treenode.radius = int(params['radius'])
         new_treenode.skeleton = skeleton
         new_treenode.confidence = int(params['confidence'])
@@ -171,7 +172,9 @@ def create_treenode(request, project_id=None):
 
                 response_on_error = 'Failed to write to logs.'
                 insert_into_log(project_id, request.user.id, 'create_neuron',
-                                new_treenode.location, 'Create neuron %d and '
+                                Double3D(new_treenode.location_x,
+                                         new_treenode.location_y,
+                                         new_treenode.location_z), 'Create neuron %d and '
                                 'skeleton %d' % (new_neuron.id,
                                                  new_skeleton.id))
 
@@ -251,10 +254,9 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
             new_treenode.user_id = request.user.id
             new_treenode.editor_id = request.user.id
             new_treenode.project_id = project_id
-            new_treenode.location = Double3D(
-                float(parent_x + dx * i),
-                float(parent_y + dy * i),
-                float(parent_z + dz * i))
+            new_treenode.location_x = float(parent_x + dx * i)
+            new_treenode.location_y = float(parent_y + dy * i)
+            new_treenode.location_z = float(parent_z + dz * i)
             new_treenode.radius = params['radius']
             new_treenode.skeleton_id = parent_skeleton_id
             new_treenode.confidence = params['confidence']

@@ -121,9 +121,9 @@ def list_treenode_table(request, project_id=None):
                     'parent_id': '"treenode"."parent_id"',
                     'user_id': '"treenode"."user_id"',
                     'edition_time': '"treenode"."edition_time"',
-                    'x': '("treenode"."location")."x"',
-                    'y': '("treenode"."location")."y"',
-                    'z': '("treenode"."location")."z"',
+                    'x': '"treenode"."location_x"',
+                    'y': '"treenode"."location_y"',
+                    'z': '"treenode"."location_z"',
                     'username': '"auth_user"."username"',
                     'last_modified': 'to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\')'
                 }) \

@@ -3,7 +3,6 @@ import json
 from django.http import HttpResponse
 
 from catmaid.models import *
-from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 

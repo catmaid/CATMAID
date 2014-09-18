@@ -1,5 +1,41 @@
 [
   {
+    "pk": -1,
+    "model": "auth.user",
+    "fields": {
+      "username": "AnonymousUser",
+      "first_name": "Anonymous",
+      "last_name": "User",
+      "is_active": true,
+      "is_superuser": false,
+      "is_staff": false,
+      "last_login": "2014-03-17T18:14:34.851",
+      "groups": [],
+      "user_permissions": [],
+      "password": "",
+      "email": "",
+      "date_joined": "2014-03-17T18:14:34.851"
+    }
+  },
+  {
+    "pk": 3,
+    "model": "auth.user",
+    "fields": {
+      "username": "test",
+      "first_name": "Test",
+      "last_name": "User",
+      "is_active": true,
+      "is_superuser": false,
+      "is_staff": false,
+      "last_login": "2014-09-03T11:17:50.752",
+      "groups": [],
+      "user_permissions": [],
+      "password": "pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=",
+      "email": "",
+      "date_joined": "2014-03-26T17:49:36"
+    }
+  },
+  {
     "pk": -1, 
     "model": "catmaid.project", 
     "fields": {

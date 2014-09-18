@@ -263,12 +263,14 @@ class ViewPageTests(TestCase):
                                   float(e2[d[f]]))
 
     def test_authentication(self):
-        response = self.client.get('/%d' % (self.test_project_id,))
-        self.assertEqual('http://testserver/login?return_url=%2F3', response['Location'])
+        # Try to access the password change view without logging in
+        response = self.client.get('/user/password_change/')
+        self.assertEqual('http://testserver/accounts/login?next=/user/password_change/',
+                         response['Location'])
         self.assertEqual(response.status_code, 302)
-        # Now insert a fake session:
+        # Now insert a fake session and expect a successful request
         self.fake_authentication()
-        response = self.client.get('/%d' % (self.test_project_id,))
+        response = self.client.get('/user/password_change/')
         self.assertEqual(response.status_code, 200)
 
     def test_user_project_permissions_not_logged_in(self):

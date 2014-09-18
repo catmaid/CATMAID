@@ -127,7 +127,8 @@ WebGLApplication.prototype.fullscreenWebGL = function() {
 
 WebGLApplication.prototype.Options = function() {
 	this.show_meshes = false;
-  this.meshes_color = "0xffffff";
+  this.meshes_color = "#ffffff";
+  this.meshes_opacity = 0.2;
 	this.show_missing_sections = false;
 	this.missing_section_height = 20;
 	this.show_active_node = true;
@@ -157,23 +158,11 @@ WebGLApplication.prototype.Options.prototype.clone = function() {
 			new WebGLApplication.prototype.Options());
 };
 
-WebGLApplication.prototype.Options.prototype.validateOctalString = function(id, default_color_string) {
-  var sf = $(id);
-  if (!sf) {
-    return default_color_string;
-  }
-  var s = sf.val();
-  if (8 === s.length && '0' === s[0] && 'x' === s[1] && /0x[0-9a-f]{6}/.exec(s)) {
-    return s;
-  }
-  return default_color_string;
-};
-
-WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(id) {
-  var color;
-  if (id) color = parseInt(this.validateOctalString(id, this.meshes_color));
-  else color = parseInt(this.meshes_color);
-  return new THREE.MeshBasicMaterial({color: color, opacity:0.2, wireframe: true});
+WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color, opacity) {
+  color = color || new THREE.Color(this.meshes_color);
+  if (typeof opacity === 'undefined') opacity = this.meshes_opacity;
+  return new THREE.MeshBasicMaterial({color: color, opacity: opacity,
+    transparent: opacity !== 1, wireframe: true});
 };
 
 
@@ -576,25 +565,45 @@ WebGLApplication.prototype.configureParameters = function() {
   dialog.appendChild(bmeshes);
   dialog.appendChild(document.createTextNode('Show meshes, with color: '));
 
-  var c = document.createElement('input');
-  c.setAttribute('type', 'text');
-  c.setAttribute('id', 'meshes-color');
-  c.setAttribute('value', '0xff0000');
-  c.setAttribute('size', '10');
-  $(document).on('keyup', "#meshes-color", function (e) {
-    var code = (e.keyCode ? e.keyCode : e.which);
-    if (13 === code) {
-      // Enter was pressed
-      if (options.show_meshes) {
-        var material = options.createMeshMaterial("#meshes-color");
-        space.content.meshes.forEach(function(mesh) {
-          mesh.material = material;
-        });
-        space.render();
-      }
-    }
-  });
+  var c = $(document.createElement("button")).attr({
+      id: 'meshes-color',
+      value: 'color'
+    })
+      .css('background-color', options.meshes_color)
+      .click( function( event )
+      {
+        var sel = $('#meshes-colorwheel');
+
+        if (sel.is(':hidden')) {
+          var cw = Raphael.colorwheel(sel[0], 150);
+          cw.color($('#meshes-color').css('background-color'),
+                   $('#meshes-opacity').text());
+          cw.onchange(function(color, alpha) {
+            color = new THREE.Color().setRGB(parseInt(color.r) / 255.0,
+                parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
+            $('#meshes-color').css('background-color', color.getStyle());
+            $('#meshes-opacity').text(alpha.toFixed(2));
+            if (options.show_meshes) {
+              var material = options.createMeshMaterial(color, alpha);
+              space.content.meshes.forEach(function(mesh) {
+                mesh.material = material;
+              });
+              space.render();
+            }
+          });
+          sel.show();
+        } else {
+          sel.hide();
+          sel.empty();
+        }
+      })
+      .text('color')
+      .get(0);
   dialog.appendChild(c);
+  dialog.appendChild($(
+    '<span>(Opacity: <span id="meshes-opacity">' +
+      options.meshes_opacity + '</span>)</span>').get(0));
+  dialog.appendChild($('<div id="meshes-colorwheel">').hide().get(0));
   dialog.appendChild(document.createElement("br"));
 
   var bactive = document.createElement('input');
@@ -727,7 +736,8 @@ WebGLApplication.prototype.configureParameters = function() {
 
         options.show_active_node = bactive.checked;
         options.show_meshes = bmeshes.checked;
-        options.meshes_color = options.validateOctalString("#meshes-color", options.meshes_color);
+        options.meshes_color = $('#meshes-color').css('background-color').replace(/\s/g, '');
+        options.meshes_opacity = $('#meshes-opacity').text();
         options.lean_mode = blean.checked;
 
         var read = function(checkbox, checkboxKey, valueField, valueKey) {

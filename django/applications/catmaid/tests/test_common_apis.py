@@ -148,11 +148,9 @@ class InsertionTest(TestCase):
     def test_stack_insertion(self):
         p = self.insert_project()
         s = self.insert_stack()
-        self.assertEqual(s.id, 1)
+        self.assertTrue(Project.objects.get(pk=p.id))
+        self.assertTrue(Stack.objects.get(pk=s.id))
         # Now try to associate this stack with the project:
-        p = Project.objects.get(pk=1)
-        self.assertTrue(p)
-
         ps = ProjectStack(project=p, stack=s)
         ps.save()
 

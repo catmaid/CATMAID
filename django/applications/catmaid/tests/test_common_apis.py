@@ -9,12 +9,12 @@ import urllib
 import json
 import datetime
 
-from models import Project, Stack, ProjectStack
-from models import ClassInstance, Log, Message, TextlabelLocation
-from models import Treenode, Connector, TreenodeConnector, User
-from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
-from .fields import Double3D, Integer3D
-from control.common import get_relation_to_id_map, get_class_to_id_map
+from catmaid.models import Project, Stack, ProjectStack
+from catmaid.models import ClassInstance, Log, Message, TextlabelLocation
+from catmaid.models import Treenode, Connector, TreenodeConnector, User
+from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
+from catmaid.fields import Double3D, Integer3D
+from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 
 
 class SimpleTest(TestCase):

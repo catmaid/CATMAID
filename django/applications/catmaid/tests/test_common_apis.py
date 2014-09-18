@@ -1208,9 +1208,9 @@ class ViewPageTests(TestCase):
                 'a': 0,
                 'type': 'text',
                 'text': 'Lets dance the Grim Fandango!',
-                'fontname': 'We may have years, we may have hours',
-                'fontstyle': 'But sooner or later we all push up flowers',
-                'fontsize': 5555,
+                'font_name': 'We may have years, we may have hours',
+                'font_style': 'But sooner or later we all push up flowers',
+                'font_size': 5555,
                 'scaling': 0}
 
         response = self.client.post(
@@ -1228,9 +1228,9 @@ class ViewPageTests(TestCase):
         self.assertEqual(params['z'], label_location.location.z)
         self.assertEqual(params['type'], label.type)
         self.assertEqual(params['text'], label.text)
-        self.assertEqual(params['fontname'], label.font_name)
-        self.assertEqual(params['fontstyle'], label.font_style)
-        self.assertEqual(params['fontsize'], label.font_size)
+        self.assertEqual(params['font_name'], label.font_name)
+        self.assertEqual(params['font_style'], label.font_style)
+        self.assertEqual(params['font_size'], label.font_size)
         self.assertEqual(False, label.scaling)
 
     def test_update_textlabel_using_optionals(self):

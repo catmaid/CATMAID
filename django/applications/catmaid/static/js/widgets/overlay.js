@@ -270,7 +270,7 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
   this.view.onmousemove = this.createViewMouseMoveFn(this.stack, this.coords);
 
-  this.paper = Raphael(this.view, Math.floor(stack.dimension.x * stack.scale), Math.floor(stack.dimension.y * stack.scale));
+  this.paper = Raphael(this.view, stack.viewWidth, stack.viewHeight);
   this.graphics = new SkeletonElements(this.paper);
 };
 
@@ -1152,10 +1152,10 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
     this.updateNodes(completionCallback);
   }
 
-  this.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
-  this.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
+  this.paper.setViewBox(pl, pt,
+    (stack.viewWidth / stack.scale) * stack.resolution.x,
+    (stack.viewHeight / stack.scale) * stack.resolution.y);
 
-  this.updatePaperDimensions(stack);
   if (doNotUpdate) {
     if (typeof completionCallback !== "undefined") {
       completionCallback();
@@ -1192,8 +1192,8 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   }
 
   // take into account current local offset coordinates and scale
-  var pos_x = m.offsetX;
-  var pos_y = m.offsetY;
+  var pos_x = this.coords.offsetXPhysical;
+  var pos_y = this.coords.offsetYPhysical;
   var pos_z = this.phys2pixZ(project.coordinates.z);
 
   // get physical coordinates for node position creation
@@ -1274,30 +1274,20 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   return true;
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.updatePaperDimensions = function () {
-  var wi = Math.floor(this.stack.dimension.x * this.stack.scale);
-  var he = Math.floor(this.stack.dimension.y * this.stack.scale);
-  // update width/height with the dimension from the database, which is in pixel unit
-  this.view.style.width = wi + "px";
-  this.view.style.height = he + "px";
-  // update the raphael canvas as well
-  this.paper.setSize(wi, he);
-};
-
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (x) {
-  return (x - this.stack.translation.x) / this.stack.resolution.x * this.stack.scale;
+  return x - this.stack.translation.x;
 };
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (y) {
-  return (y - this.stack.translation.y) / this.stack.resolution.y * this.stack.scale;
+  return y - this.stack.translation.y;
 };
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (z) {
   return (z - this.stack.translation.z) / this.stack.resolution.z;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physX = function (x) {
-  return this.stack.translation.x + ((x) / this.stack.scale) * this.stack.resolution.x;
+  return this.stack.translation.x + x;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physY = function (y) {
-  return this.stack.translation.y + ((y) / this.stack.scale) * this.stack.resolution.y;
+  return this.stack.translation.y + y;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physZ = function (z) {
   return z *this.stack.resolution.z + this.stack.translation.z;

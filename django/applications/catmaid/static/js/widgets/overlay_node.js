@@ -250,8 +250,9 @@ SkeletonElements.prototype.AbstractTreenode = function() {
   this.leaf_node_color = "rgb(128,0,0)";
 
   // For drawing:
-  this.NODE_RADIUS = 3;
-  this.CATCH_RADIUS = 8;
+  this.NODE_RADIUS = 6;
+  this.CATCH_RADIUS = 16;
+  this.EDGE_WIDTH = 2;
 
   // ID of the disabled nodes
   this.DISABLED = -1;
@@ -319,7 +320,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
         ["L", this.parent.x, this.parent.y]
       ],
       stroke: lineColor,
-      "stroke-width": 2
+      "stroke-width": this.EDGE_WIDTH
     });
 
     // May be hidden if the node was reused
@@ -505,8 +506,8 @@ SkeletonElements.prototype.Node.prototype = new SkeletonElements.prototype.Abstr
 
 SkeletonElements.prototype.AbstractConnectorNode = function() {
   // For drawing:
-  this.NODE_RADIUS = 8;
-  this.CATCH_RADIUS = 8;
+  this.NODE_RADIUS = 16;
+  this.CATCH_RADIUS = 16;
 
   /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
   this.removeConnectorArrows = function() {
@@ -924,6 +925,7 @@ SkeletonElements.prototype.ArrowLine = function(paper) {
 SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   this.PRE_COLOR = "rgb(200,0,0)";
   this.POST_COLOR = "rgb(0,217,232)";
+  this.EDGE_WIDTH = 2;
   this.pathString = "M0,0,L1,0";
   this.arrowString = "M0,0,L-5,-5,L-5,5,L0,0";
 
@@ -995,7 +997,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
 
     // Adjust
     this.line.attr({"stroke": stroke_color,
-                        "stroke-width": 2});
+                    "stroke-width": this.EDGE_WIDTH});
     // Adjust color
     this.arrowPath.attr({
       "fill": stroke_color,

@@ -237,11 +237,19 @@ class ViewPageTests(TestCase):
     fixtures = ['catmaid_testdata']
 
     def setUp(self):
+        """ Creates a new test client and test user. The user is assigned
+        permissions to modify an existing test project.
+        """
         self.test_project_id = 3
         self.client = Client()
 
-        user = User.objects.create_user('temporary',
-            'temporary@gmail.com', 'temporary')
+        user = User.objects.create_user('temporary', 'temporary@gmail.com',
+                                        'temporary')
+        # Assign the new user permissions to browse and annotate projects
+        p = Project.objects.get(pk=self.test_project_id)
+        assign_perm('can_browse', user, p)
+        assign_perm('can_annotate', user, p)
+
 
     def fake_authentication(self):
         self.client.login(username='temporary', password='temporary')

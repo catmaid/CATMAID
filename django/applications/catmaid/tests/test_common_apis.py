@@ -1356,28 +1356,28 @@ class ViewPageTests(TestCase):
 
     log_rows = [
                     [
-                        'gerhard',
+                        'test2',
                         'create_neuron',
-                        '22-07-2012 22:50',
-                        5290,
-                        3930,
-                        279,
+                        '22-07-2012 16:50',
+                        5290.0,
+                        3930.0,
+                        279.0,
                         'Create neuron 2434 and skeleton 2433'],
                     [
-                        'gerhard',
+                        'test2',
                         'create_neuron',
-                        '23-07-2012 01:12',
-                        4470,
-                        2110,
-                        180,
+                        '22-07-2012 19:12',
+                        4470.0,
+                        2110.0,
+                        180.0,
                         'Create neuron 2441 and skeleton 2440'],
                     [
-                        'gerhard',
+                        'test2',
                         'create_neuron',
-                        '23-07-2012 01:15',
-                        3680,
-                        2530,
-                        180,
+                        '22-07-2012 19:15',
+                        3680.0,
+                        2530.0,
+                        180.0,
                         'Create neuron 2452 and skeleton 2451']
             ]
 
@@ -1409,7 +1409,7 @@ class ViewPageTests(TestCase):
                 'iTotalDisplayRecords': 3,
                 'iTotalRecords': 3,
                 'aaData': [
-                    self.log_rows[1], self.log_rows[2], self.log_rows[0]
+                    self.log_rows[0], self.log_rows[1], self.log_rows[2]
                     ]
                 }
         self.assertEqual(response.status_code, 200)

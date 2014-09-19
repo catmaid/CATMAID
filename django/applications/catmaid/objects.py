@@ -152,7 +152,7 @@ class Skeleton(object):
                 'user_id': e.user_id,
                 'creation_time': e.creation_time,
                 'edition_time': e.edition_time,
-                'location': np.array([e.location.x, e.location.y, e.location.z], dtype=np.float32),
+                'location': np.array([e.location_x, e.location_y, e.location_z], dtype=np.float32),
                 'reviewer_ids': [r.reviewer_id for r in reviews],
                 'review_times': [r.review_time for r in reviews],
                 'radius': e.radius,

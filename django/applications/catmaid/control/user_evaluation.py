@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from catmaid.control.review import get_review_count, get_review_status
 from catmaid.models import Treenode, Log, Relation, TreenodeConnector, UserRole, Review
-from catmaid.fields import Double3D
 from catmaid.control.authentication import requires_user_role
 from django.db.models import Count
 from django.http import HttpResponse
@@ -18,8 +17,10 @@ def _find_nearest(tree, nodes, loc1):
     """ Returns a tuple of the closest node and the square of the distance. """
     min_sqdist = float('inf')
     for node in nodes:
-        loc2 = tree.node[node]['location']
-        dsq = pow(loc1.x - loc2.x, 2) + pow(loc1.y - loc2.y, 2) + pow(loc1.z - loc2.z, 2)
+        loc2 = (tree.node[node]['location_x'],
+                tree.node[node]['location_y'],
+                tree.node[node]['location_z'])
+        dsq = pow(loc1[0] - loc2[0], 2) + pow(loc1[1] - loc2[1], 2) + pow(loc1[2] - loc2[2], 2)
         if dsq < min_sqdist:
             min_sqdist = dsq
             closest = node
@@ -27,7 +28,7 @@ def _find_nearest(tree, nodes, loc1):
     return node, min_sqdist
 
 def _parse_location(loc):
-    return Double3D(*(imap(float, loc[1:-1].split(','))))
+    return map(float, loc[1:-1].split(','))
 
 def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
     """ Evaluate each epoch:
@@ -301,7 +302,9 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
 
     # 2. Load each fully reviewed skeleton one at a time
     evaluations = {skid: _evaluate_arbor(user_id, skid, tree, reviews[skid], relations, max_gap) \
-        for skid, tree in lazy_load_trees(skeleton_ids, ('location', 'creation_time', 'user_id', 'editor_id', 'edition_time'))}
+        for skid, tree in lazy_load_trees(skeleton_ids, ('location_x', 'location_y', 'location_z', \
+                                                         'creation_time', 'user_id', 'editor_id', \
+                                                         'edition_time'))}
 
     # 3. Extract evaluations for the user_id over time
     # Each evaluation contains an instance of EpochOps namedtuple, with members:

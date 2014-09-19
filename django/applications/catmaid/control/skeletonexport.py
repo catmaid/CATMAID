@@ -4,7 +4,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
-from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control import export_NeuroML_Level3
@@ -43,9 +42,9 @@ def get_swc_string(treenodes_qs):
     for tn in treenodes_qs:
         swc_row = [tn.id]
         swc_row.append(0)
-        swc_row.append(tn.location.x)
-        swc_row.append(tn.location.y)
-        swc_row.append(tn.location.z)
+        swc_row.append(tn.location_x)
+        swc_row.append(tn.location_y)
+        swc_row.append(tn.location_z)
         swc_row.append(max(tn.radius, 0))
         swc_row.append(-1 if tn.parent_id is None else tn.parent_id)
         all_rows.append(swc_row)
@@ -83,7 +82,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
 
     cursor.execute('''
         SELECT id, parent_id, user_id,
-               (location).x, (location).y, (location).z,
+               location_x, location_y, location_z,
                radius, confidence
         FROM treenode
         WHERE skeleton_id = %s
@@ -109,7 +108,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
         # Fetch all connectors with their partner treenode IDs
         cursor.execute('''
             SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
-                   (c.location).x, (c.location).y, (c.location).z
+                   c.location_x, c.location_y, c.location_z
             FROM treenode_connector tc,
                  connector c
             WHERE tc.skeleton_id = %s
@@ -174,7 +173,7 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, w
     if 0 != with_nodes:
         cursor.execute('''
             SELECT id, parent_id, user_id,
-                (location).x, (location).y, (location).z,
+                location_x, location_y, location_z,
                 radius, confidence
             FROM treenode
             WHERE skeleton_id = %s
@@ -272,7 +271,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
     # Fetch all nodes, with their tags if any
     cursor.execute(
-        '''SELECT id, parent_id, user_id, (location).x, (location).y, (location).z, radius, confidence %s
+        '''SELECT id, parent_id, user_id, location_x, location_y, location_z, radius, confidence %s
           FROM treenode
           WHERE skeleton_id = %s
         ''' % (added_fields, skeleton_id) )
@@ -314,7 +313,8 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
             # Fetch all connectors with their partner treenode IDs
             cursor.execute(
-                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location %s
+                ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name,
+                           c.location_x, c.location_y, c.location_z %s
                     FROM treenode_connector tc,
                          connector c,
                          relation r
@@ -327,8 +327,8 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # List of (treenode_id, connector_id, relation_id, x, y, z)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
-                x, y, z = imap(float, row[3][1:-1].split(','))
-                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
+                x, y, z = imap(float, (row[3], row[4], row[5]))
+                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[6]))
             return name, nodes, tags, connectors, reviews
 
     return name, nodes, tags, connectors, reviews
@@ -366,7 +366,7 @@ def _measure_skeletons(skeleton_ids):
 
     cursor = connection.cursor()
     cursor.execute('''
-    SELECT id, parent_id, skeleton_id, location
+    SELECT id, parent_id, skeleton_id, location_x, location_y, location_z
     FROM treenode
     WHERE skeleton_id IN (%s)
     ''' % skids_string)
@@ -403,8 +403,7 @@ def _measure_skeletons(skeleton_ids):
         if not skeleton:
             skeleton = Skeleton()
             skeletons[row[2]] = skeleton
-        x, y, z = imap(float, row[3][1:-1].split(','))
-        skeleton.nodes[row[0]] = Node(row[1], x, y, z)
+        skeleton.nodes[row[0]] = Node(row[1], row[3], row[4], row[5])
 
     for skeleton in skeletons.itervalues():
         nodes = skeleton.nodes
@@ -521,11 +520,11 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     cursor = connection.cursor()
 
     cursor.execute('''
-    SELECT id, parent_id, location, radius
+    SELECT id, parent_id, location_x, location_y, location_z, radius
     FROM treenode
     WHERE skeleton_id = %s
     ''' % skeleton_id)
-    nodes = {row[0]: (row[1], tuple(imap(float, row[2][1:-1].split(','))), row[3]) for row in cursor.fetchall()}
+    nodes = {row[0]: (row[1], (row[2], row[3], row[4]), row[5]) for row in cursor.fetchall()}
 
     cursor.execute('''
     SELECT tc.treenode_id, tc.connector_id, tc.relation_id
@@ -608,7 +607,8 @@ def export_neuroml_level3_v181(request, project_id=None):
     neuron_names = dict(cursor.fetchall())
 
     skeleton_query = '''
-        SELECT id, parent_id, location, radius, skeleton_id
+        SELECT id, parent_id, location_x, location_y, location_z,
+               radius, skeleton_id
         FROM treenode
         WHERE skeleton_id IN (%s)
         ORDER BY skeleton_id
@@ -689,7 +689,8 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
     contains information about the review status of this part of the skeleton.
     """
     # Get all treenodes of the requested skeleton
-    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'location', 'parent_id')
+    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values(
+        'id', 'parent_id', 'location_x', 'location_y', 'location_z')
     # Get all reviews for the requested skeleton
     reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
 
@@ -698,14 +699,13 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
     g = nx.DiGraph()
     reviewed = set()
     for t in treenodes:
-        loc = Double3D.from_str(t[1])
         # While at it, send the reviewer IDs, which is useful to iterate fwd
         # to the first unreviewed node in the segment.
-        g.add_node(t[0], {'id': t[0], 'x': loc.x, 'y': loc.y, 'z': loc.z, 'rids': reviews[t[0]]})
+        g.add_node(t[0], {'id': t[0], 'x': t[2], 'y': t[3], 'z': t[4], 'rids': reviews[t[0]]})
         if reviews[t[0]]:
             reviewed.add(t[0])
-        if t[2]: # if parent
-            g.add_edge(t[2], t[0]) # edge from parent to child
+        if t[1]: # if parent
+            g.add_edge(t[1], t[0]) # edge from parent to child
         else:
             root_id = t[0]
 

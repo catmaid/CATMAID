@@ -9,7 +9,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
-from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.treenode import can_edit_treenode_or_fail
@@ -77,18 +76,18 @@ def node_list_tuples(request, project_id=None):
         SELECT
             t1.id,
             t1.parent_id,
-            (t1.location).x,
-            (t1.location).y,
-            (t1.location).z,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
             t1.user_id,
             t2.id,
             t2.parent_id,
-            (t2.location).x,
-            (t2.location).y,
-            (t2.location).z,
+            t2.location_x,
+            t2.location_y,
+            t2.location_z,
             t2.confidence,
             t2.radius,
             t2.skeleton_id,
@@ -98,11 +97,11 @@ def node_list_tuples(request, project_id=None):
                (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
                 OR (t1.parent_id IS NULL AND t1.id = t2.id))
         WHERE
-            (t1.location).z = %(z)s
-            AND (t1.location).x > %(left)s
-            AND (t1.location).x < %(right)s
-            AND (t1.location).y > %(top)s
-            AND (t1.location).y < %(bottom)s
+            t1.location_z = %(z)s
+            AND t1.location_x > %(left)s
+            AND t1.location_x < %(right)s
+            AND t1.location_y > %(top)s
+            AND t1.location_y < %(bottom)s
             AND t1.project_id = %(project_id)s
         LIMIT %(limit)s
         ''', params)
@@ -140,9 +139,9 @@ def node_list_tuples(request, project_id=None):
             response_on_error = 'Failed to query connector locations.'
             cursor.execute('''
             SELECT connector.id,
-                (connector.location).x,
-                (connector.location).y,
-                (connector.location).z,
+                connector.location_x,
+                connector.location_y,
+                connector.location_z,
                 connector.confidence,
                 treenode_connector.relation_id,
                 treenode_connector.treenode_id,
@@ -162,9 +161,9 @@ def node_list_tuples(request, project_id=None):
 
         cursor.execute('''
         SELECT connector.id,
-            (connector.location).x,
-            (connector.location).y,
-            (connector.location).z,
+            connector.location_x,
+            connector.location_y,
+            connector.location_z,
             connector.confidence,
             treenode_connector.relation_id,
             treenode_connector.treenode_id,
@@ -173,11 +172,11 @@ def node_list_tuples(request, project_id=None):
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
-          AND (connector.location).z = %(z)s
-          AND (connector.location).x > %(left)s
-          AND (connector.location).x < %(right)s
-          AND (connector.location).y > %(top)s
-          AND (connector.location).y < %(bottom)s
+          AND connector.location_z = %(z)s
+          AND connector.location_x > %(left)s
+          AND connector.location_x < %(right)s
+          AND connector.location_y > %(top)s
+          AND connector.location_y < %(bottom)s
         ''', params)
 
         crows.extend(cursor.fetchall())
@@ -246,9 +245,9 @@ def node_list_tuples(request, project_id=None):
             cursor.execute('''
             SELECT id,
                 parent_id,
-                (location).x,
-                (location).y,
-                (location).z,
+                location_x,
+                location_y,
+                location_z,
                 confidence,
                 radius,
                 skeleton_id,
@@ -332,7 +331,8 @@ def update_confidence(request, project_id=None, node_id=0):
         rows_affected = Treenode.objects.filter(id=tnid).update(confidence=new_confidence,editor=request.user)
 
     if rows_affected > 0:
-        location = Location.objects.get(id=tnid).location
+        location = Location.objects.get(id=tnid).values_list('location_x'
+                'location_y', 'location_z')
         insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
         return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
@@ -363,9 +363,9 @@ def most_recent_treenode(request, project_id=None):
     return HttpResponse(json.dumps({
         'id': tn.id,
         #'skeleton_id': tn.skeleton.id,
-        'x': int(tn.location.x),
-        'y': int(tn.location.y),
-        'z': int(tn.location.z),
+        'x': int(tn.location_x),
+        'y': int(tn.location_y),
+        'z': int(tn.location_z),
         #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
         #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
         #'type': 'treenode'
@@ -384,7 +384,10 @@ def _update(Kind, table, nodes, now, user):
         Kind.objects.filter(id=int(node[0])).update(
             editor=user,
             edition_time=now,
-            location=Double3D(float(node[1]), float(node[2]), float(node[3])))
+            location_x=float(node[1]),
+            location_y=float(node[2]),
+            location_z=float(node[3]))
+
 
 @requires_user_role(UserRole.Annotate)
 def node_update(request, project_id=None):
@@ -458,9 +461,9 @@ def node_nearest(request, project_id=None):
             minDistance = -1
             nearestTreenode = None
             for tn in treenodes:
-                xdiff = x - tn.location.x
-                ydiff = y - tn.location.y
-                zdiff = z - tn.location.z
+                xdiff = x - tn.location_x
+                ydiff = y - tn.location_y
+                zdiff = z - tn.location_z
                 distanceSquared = xdiff ** 2 + ydiff ** 2 + zdiff ** 2
                 if distanceSquared < minDistance or minDistance < 0:
                     nearestTreenode = tn
@@ -477,9 +480,9 @@ def node_nearest(request, project_id=None):
 
         return HttpResponse(json.dumps({
             'treenode_id': nearestTreenode.id,
-            'x': int(nearestTreenode.location.x),
-            'y': int(nearestTreenode.location.y),
-            'z': int(nearestTreenode.location.z),
+            'x': int(nearestTreenode.location_x),
+            'y': int(nearestTreenode.location_y),
+            'z': int(nearestTreenode.location_z),
             'skeleton_id': nearestTreenode.skeleton_id}))
 
     except Exception as e:
@@ -510,9 +513,9 @@ def _fetch_location(treenode_id):
     cursor.execute('''
         SELECT
           id,
-          (location).x AS x,
-          (location).y AS y,
-          (location).z AS z,
+          location_x AS x,
+          location_y AS y,
+          location_z AS z,
           skeleton_id
         FROM treenode
         WHERE id=%s''', [treenode_id])
@@ -524,9 +527,9 @@ def _fetch_location_connector(connector_id):
     cursor.execute('''
         SELECT
           id,
-          (location).x AS x,
-          (location).y AS y,
-          (location).z AS z
+          location_x AS x,
+          location_y AS y,
+          location_z AS z
         FROM connector
         WHERE id=%s''', [connector_id])
     return cursor.fetchone()
@@ -627,8 +630,7 @@ def find_next_branchnode_or_end(request, project_id=None):
             # The closest to 0,0,0 or the furthest if shift is down
             sqDist = 0 if shift else float('inf')
             for t in Treenode.objects.filter(parent_id=tnid):
-                p = t.location
-                d = pow(p.x, 2) + pow(p.y, 2) + pow(p.z, 2)
+                d = pow(t.location_x, 2) + pow(t.location_y, 2) + pow(t.location_z, 2)
                 if (shift and d > sqDist) or (not shift and d < sqDist):
                     sqDist = d
                     tnid = t.id

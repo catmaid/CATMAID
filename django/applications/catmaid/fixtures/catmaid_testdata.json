@@ -6371,8 +6371,10 @@
       "creation_time": "2011-09-27T07:57:15.967", 
       "edition_time": "2011-10-27T10:45:09.870", 
       "project": 3, 
-      "location": "(6730.000, 2700.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6730.000,
+      "location_y": 2700.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6383,8 +6385,10 @@
       "creation_time": "2011-10-07T07:02:22.656", 
       "edition_time": "2011-10-07T07:02:30.396", 
       "project": 3, 
-      "location": "(6260.000, 3990.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6260.000,
+      "location_y": 3990.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6395,8 +6399,10 @@
       "creation_time": "2011-10-11T10:49:08.042", 
       "edition_time": "2011-10-31T05:22:37.263", 
       "project": 3, 
-      "location": "(2640.000, 3450.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2640.000,
+      "location_y": 3450.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6407,8 +6413,10 @@
       "creation_time": "2011-12-09T08:01:43.965", 
       "edition_time": "2011-12-09T08:01:43.965", 
       "project": 3, 
-      "location": "(3400.000, 5620.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3400.000,
+      "location_y": 5620.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6419,8 +6427,10 @@
       "creation_time": "2012-07-23T21:54:02.486", 
       "edition_time": "2012-07-23T21:54:02.486", 
       "project": 3, 
-      "location": "(5870.000, 3460.000, 243.000)", 
-      "editor": null, 
+      "location_x": 5870.000,
+      "location_y": 3460.000,
+      "location_z": 243.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6431,8 +6441,10 @@
       "creation_time": "2011-09-04T07:53:41.243", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3590.000, 3240.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3590.000,
+      "location_y": 3240.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6443,8 +6455,10 @@
       "creation_time": "2011-09-04T07:54:16.301", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3600.000, 3250.000, 9.000)", 
-      "editor": null, 
+      "location_x": 3600.000,
+      "location_y": 3250.000,
+      "location_z": 9.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6455,8 +6469,10 @@
       "creation_time": "2011-09-04T07:54:24.528", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3600.000, 3250.000, 18.000)", 
-      "editor": null, 
+      "location_x": 3600.000,
+      "location_y": 3250.000,
+      "location_z": 18.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6467,8 +6483,10 @@
       "creation_time": "2011-09-04T07:54:26.464", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3590.000, 3250.000, 27.000)", 
-      "editor": null, 
+      "location_x": 3590.000,
+      "location_y": 3250.000,
+      "location_z": 27.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6479,8 +6497,10 @@
       "creation_time": "2011-09-04T07:54:28.523", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3590.000, 3250.000, 36.000)", 
-      "editor": null, 
+      "location_x": 3590.000,
+      "location_y": 3250.000,
+      "location_z": 36.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6491,8 +6511,10 @@
       "creation_time": "2011-09-27T07:49:15.802", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(1065.000, 3035.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1065.000,
+      "location_y": 3035.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6503,8 +6525,10 @@
       "creation_time": "2011-09-27T07:49:16.553", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(1135.000, 2800.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1135.000,
+      "location_y": 2800.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6515,8 +6539,10 @@
       "creation_time": "2011-09-27T07:49:17.217", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(1340.000, 2660.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1340.000,
+      "location_y": 2660.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6527,8 +6553,10 @@
       "creation_time": "2011-09-27T07:49:17.660", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(1780.000, 2570.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1780.000,
+      "location_y": 2570.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6539,8 +6567,10 @@
       "creation_time": "2011-09-27T07:49:18.343", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(1970.000, 2595.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1970.000,
+      "location_y": 2595.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6551,8 +6581,10 @@
       "creation_time": "2011-09-27T07:49:19.012", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(2610.000, 2700.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2610.000,
+      "location_y": 2700.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6563,8 +6595,10 @@
       "creation_time": "2011-09-27T07:49:19.887", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(2815.000, 2590.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2815.000,
+      "location_y": 2590.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6575,8 +6609,10 @@
       "creation_time": "2011-09-27T07:49:20.514", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3380.000, 2330.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3380.000,
+      "location_y": 2330.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6587,8 +6623,10 @@
       "creation_time": "2011-09-27T07:49:21.493", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3685.000, 2160.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3685.000,
+      "location_y": 2160.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6599,8 +6637,10 @@
       "creation_time": "2011-09-27T07:49:22.835", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3850.000, 1790.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3850.000,
+      "location_y": 1790.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6611,8 +6651,10 @@
       "creation_time": "2011-09-27T07:49:23.591", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3825.000, 1480.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3825.000,
+      "location_y": 1480.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6623,8 +6665,10 @@
       "creation_time": "2011-09-27T07:49:24.879", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3445.000, 1385.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3445.000,
+      "location_y": 1385.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6635,8 +6679,10 @@
       "creation_time": "2011-09-27T07:49:25.549", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(2820.000, 1345.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2820.000,
+      "location_y": 1345.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6647,8 +6693,10 @@
       "creation_time": "2011-09-27T07:49:27.637", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3915.000, 2105.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3915.000,
+      "location_y": 2105.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6659,8 +6707,10 @@
       "creation_time": "2011-09-27T07:49:28.080", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(4570.000, 2125.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4570.000,
+      "location_y": 2125.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6671,8 +6721,10 @@
       "creation_time": "2011-09-27T07:49:28.515", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(5400.000, 2200.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5400.000,
+      "location_y": 2200.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6683,8 +6735,10 @@
       "creation_time": "2011-09-27T07:49:31.952", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(4820.000, 1900.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4820.000,
+      "location_y": 1900.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6695,8 +6749,10 @@
       "creation_time": "2011-09-27T07:49:32.376", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(5090.000, 1675.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5090.000,
+      "location_y": 1675.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6707,8 +6763,10 @@
       "creation_time": "2011-09-27T07:49:32.824", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(5265.000, 1610.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5265.000,
+      "location_y": 1610.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6719,8 +6777,10 @@
       "creation_time": "2011-09-27T07:49:33.254", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(5800.000, 1560.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5800.000,
+      "location_y": 1560.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6731,8 +6791,10 @@
       "creation_time": "2011-09-27T07:49:33.770", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(6090.000, 1550.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6090.000,
+      "location_y": 1550.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6743,8 +6805,10 @@
       "creation_time": "2011-09-27T07:49:35.689", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(5530.000, 2465.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5530.000,
+      "location_y": 2465.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6755,8 +6819,10 @@
       "creation_time": "2011-09-27T07:49:36.374", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(5675.000, 2635.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5675.000,
+      "location_y": 2635.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6767,8 +6833,10 @@
       "creation_time": "2011-09-27T07:49:36.843", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(5985.000, 2745.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5985.000,
+      "location_y": 2745.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6779,8 +6847,10 @@
       "creation_time": "2011-09-27T07:49:37.269", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(6100.000, 2980.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6100.000,
+      "location_y": 2980.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6791,8 +6861,10 @@
       "creation_time": "2011-09-27T07:49:38.607", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(6210.000, 3480.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6210.000,
+      "location_y": 3480.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6803,8 +6875,10 @@
       "creation_time": "2011-09-27T07:54:31.891", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3610.000, 3230.000, 45.000)", 
-      "editor": null, 
+      "location_x": 3610.000,
+      "location_y": 3230.000,
+      "location_z": 45.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6815,8 +6889,10 @@
       "creation_time": "2011-09-27T07:54:33.793", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3610.000, 3240.000, 54.000)", 
-      "editor": null, 
+      "location_x": 3610.000,
+      "location_y": 3240.000,
+      "location_z": 54.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6827,8 +6903,10 @@
       "creation_time": "2011-09-27T07:54:35.521", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3590.000, 3270.000, 63.000)", 
-      "editor": null, 
+      "location_x": 3590.000,
+      "location_y": 3270.000,
+      "location_z": 63.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6839,8 +6917,10 @@
       "creation_time": "2011-09-27T07:54:37.211", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3560.000, 3210.000, 72.000)", 
-      "editor": null, 
+      "location_x": 3560.000,
+      "location_y": 3210.000,
+      "location_z": 72.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6851,8 +6931,10 @@
       "creation_time": "2011-09-27T07:54:38.863", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3630.000, 3290.000, 81.000)", 
-      "editor": null, 
+      "location_x": 3630.000,
+      "location_y": 3290.000,
+      "location_z": 81.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6863,8 +6945,10 @@
       "creation_time": "2011-09-27T07:54:40.603", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3620.000, 3300.000, 90.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3300.000,
+      "location_z": 90.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6875,8 +6959,10 @@
       "creation_time": "2011-09-27T07:54:43.902", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3600.000, 3290.000, 99.000)", 
-      "editor": null, 
+      "location_x": 3600.000,
+      "location_y": 3290.000,
+      "location_z": 99.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6887,8 +6973,10 @@
       "creation_time": "2011-09-27T07:55:15.319", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3630.000, 3270.000, 108.000)", 
-      "editor": null, 
+      "location_x": 3630.000,
+      "location_y": 3270.000,
+      "location_z": 108.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6899,8 +6987,10 @@
       "creation_time": "2011-09-27T07:55:19.502", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3640.000, 3290.000, 117.000)", 
-      "editor": null, 
+      "location_x": 3640.000,
+      "location_y": 3290.000,
+      "location_z": 117.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6911,8 +7001,10 @@
       "creation_time": "2011-09-27T07:55:21.329", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3620.000, 3320.000, 126.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3320.000,
+      "location_z": 126.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6923,8 +7015,10 @@
       "creation_time": "2011-09-27T07:55:23.334", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3610.000, 3340.000, 135.000)", 
-      "editor": null, 
+      "location_x": 3610.000,
+      "location_y": 3340.000,
+      "location_z": 135.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6935,8 +7029,10 @@
       "creation_time": "2011-09-27T07:55:25.134", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3620.000, 3310.000, 144.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3310.000,
+      "location_z": 144.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6947,8 +7043,10 @@
       "creation_time": "2011-09-27T07:55:26.647", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3620.000, 3320.000, 153.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3320.000,
+      "location_z": 153.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6959,8 +7057,10 @@
       "creation_time": "2011-09-27T07:55:28.081", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3640.000, 3360.000, 162.000)", 
-      "editor": null, 
+      "location_x": 3640.000,
+      "location_y": 3360.000,
+      "location_z": 162.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6971,8 +7071,10 @@
       "creation_time": "2011-09-27T07:55:29.498", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3640.000, 3370.000, 171.000)", 
-      "editor": null, 
+      "location_x": 3640.000,
+      "location_y": 3370.000,
+      "location_z": 171.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6983,8 +7085,10 @@
       "creation_time": "2011-09-27T07:55:30.721", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3630.000, 3360.000, 180.000)", 
-      "editor": null, 
+      "location_x": 3630.000,
+      "location_y": 3360.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -6995,8 +7099,10 @@
       "creation_time": "2011-09-27T07:56:07.198", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3640.000, 3320.000, 189.000)", 
-      "editor": null, 
+      "location_x": 3640.000,
+      "location_y": 3320.000,
+      "location_z": 189.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7007,8 +7113,10 @@
       "creation_time": "2011-09-27T07:56:10.196", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3610.000, 3340.000, 198.000)", 
-      "editor": null, 
+      "location_x": 3610.000,
+      "location_y": 3340.000,
+      "location_z": 198.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7019,8 +7127,10 @@
       "creation_time": "2011-09-27T07:56:12.174", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3630.000, 3350.000, 207.000)", 
-      "editor": null, 
+      "location_x": 3630.000,
+      "location_y": 3350.000,
+      "location_z": 207.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7031,8 +7141,10 @@
       "creation_time": "2011-09-27T07:56:14.347", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3620.000, 3350.000, 216.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3350.000,
+      "location_z": 216.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7043,8 +7155,10 @@
       "creation_time": "2011-09-27T07:56:18.238", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3650.000, 3330.000, 225.000)", 
-      "editor": null, 
+      "location_x": 3650.000,
+      "location_y": 3330.000,
+      "location_z": 225.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7055,8 +7169,10 @@
       "creation_time": "2011-09-27T07:56:19.960", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3650.000, 3350.000, 234.000)", 
-      "editor": null, 
+      "location_x": 3650.000,
+      "location_y": 3350.000,
+      "location_z": 234.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7067,8 +7183,10 @@
       "creation_time": "2011-09-27T07:56:21.927", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3600.000, 3370.000, 243.000)", 
-      "editor": null, 
+      "location_x": 3600.000,
+      "location_y": 3370.000,
+      "location_z": 243.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7079,8 +7197,10 @@
       "creation_time": "2011-09-27T07:56:24.082", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3580.000, 3350.000, 252.000)", 
-      "editor": null, 
+      "location_x": 3580.000,
+      "location_y": 3350.000,
+      "location_z": 252.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7091,8 +7211,10 @@
       "creation_time": "2011-09-27T07:57:17.808", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(7030.000, 1980.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7030.000,
+      "location_y": 1980.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7103,8 +7225,10 @@
       "creation_time": "2011-09-27T07:57:19.447", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(7620.000, 2890.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7620.000,
+      "location_y": 2890.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7115,8 +7239,10 @@
       "creation_time": "2011-09-27T07:57:24.747", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(7850.000, 1970.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7850.000,
+      "location_y": 1970.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7127,8 +7253,10 @@
       "creation_time": "2011-09-27T07:57:25.555", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(8530.000, 1820.000, 0.000)", 
-      "editor": null, 
+      "location_x": 8530.000,
+      "location_y": 1820.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7139,8 +7267,10 @@
       "creation_time": "2011-09-27T07:57:26.310", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(9030.000, 1480.000, 0.000)", 
-      "editor": null, 
+      "location_x": 9030.000,
+      "location_y": 1480.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7151,8 +7281,10 @@
       "creation_time": "2011-09-27T07:57:34.626", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(6740.000, 1530.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6740.000,
+      "location_y": 1530.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7163,8 +7295,10 @@
       "creation_time": "2011-09-27T07:57:35.676", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(6910.000, 990.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6910.000,
+      "location_y": 990.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7175,8 +7309,10 @@
       "creation_time": "2011-09-27T07:57:36.318", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(6430.000, 910.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6430.000,
+      "location_y": 910.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7187,8 +7323,10 @@
       "creation_time": "2011-09-27T07:57:36.995", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(6140.000, 640.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6140.000,
+      "location_y": 640.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7199,8 +7337,10 @@
       "creation_time": "2011-09-27T07:57:37.518", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(5670.000, 640.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5670.000,
+      "location_y": 640.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7211,8 +7351,10 @@
       "creation_time": "2011-09-27T07:57:55.026", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(7840.000, 2380.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7840.000,
+      "location_y": 2380.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7223,8 +7365,10 @@
       "creation_time": "2011-09-27T07:57:57.310", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(7390.000, 3510.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7390.000,
+      "location_y": 3510.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7235,8 +7379,10 @@
       "creation_time": "2011-09-27T07:57:57.976", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(7080.000, 3960.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7080.000,
+      "location_y": 3960.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7247,8 +7393,10 @@
       "creation_time": "2011-09-27T07:57:58.454", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(6630.000, 4330.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6630.000,
+      "location_y": 4330.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7259,8 +7407,10 @@
       "creation_time": "2011-10-07T07:02:13.511", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(5810.000, 3950.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5810.000,
+      "location_y": 3950.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7271,8 +7421,10 @@
       "creation_time": "2011-10-07T07:02:15.176", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(4990.000, 4200.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4990.000,
+      "location_y": 4200.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7283,8 +7435,10 @@
       "creation_time": "2011-11-01T12:54:42.122", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(1820.000, 5390.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1820.000,
+      "location_y": 5390.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -7295,8 +7449,10 @@
       "creation_time": "2011-11-01T12:54:43.555", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(2140.000, 4620.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2140.000,
+      "location_y": 4620.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -7307,8 +7463,10 @@
       "creation_time": "2011-11-01T12:54:44.436", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(2760.000, 4600.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2760.000,
+      "location_y": 4600.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -7319,8 +7477,10 @@
       "creation_time": "2011-11-01T12:54:45.793", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3310.000, 5190.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3310.000,
+      "location_y": 5190.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -7331,8 +7491,10 @@
       "creation_time": "2011-11-01T12:54:47.472", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(3930.000, 4330.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3930.000,
+      "location_y": 4330.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -7343,8 +7505,10 @@
       "creation_time": "2011-11-01T12:54:48.503", 
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
-      "location": "(4420.000, 4880.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4420.000,
+      "location_y": 4880.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -7355,8 +7519,10 @@
       "creation_time": "2011-12-09T08:01:37.575", 
       "edition_time": "2011-12-09T08:01:37.575", 
       "project": 3, 
-      "location": "(2370.000, 6080.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2370.000,
+      "location_y": 6080.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7367,8 +7533,10 @@
       "creation_time": "2011-12-09T08:01:39.388", 
       "edition_time": "2011-12-09T08:01:48.933", 
       "project": 3, 
-      "location": "(3110.000, 6030.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3110.000,
+      "location_y": 6030.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7379,8 +7547,10 @@
       "creation_time": "2011-12-09T08:01:40.583", 
       "edition_time": "2011-12-09T08:01:40.583", 
       "project": 3, 
-      "location": "(3680.000, 6550.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3680.000,
+      "location_y": 6550.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7391,8 +7561,10 @@
       "creation_time": "2011-12-09T08:01:59.149", 
       "edition_time": "2011-12-09T08:01:59.149", 
       "project": 3, 
-      "location": "(4110.000, 6080.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4110.000,
+      "location_y": 6080.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7403,8 +7575,10 @@
       "creation_time": "2011-12-09T08:02:00.466", 
       "edition_time": "2011-12-09T08:02:00.466", 
       "project": 3, 
-      "location": "(4400.000, 5730.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4400.000,
+      "location_y": 5730.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7415,8 +7589,10 @@
       "creation_time": "2011-12-09T08:02:01.614", 
       "edition_time": "2011-12-09T08:02:01.614", 
       "project": 3, 
-      "location": "(5040.000, 5650.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5040.000,
+      "location_y": 5650.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7427,8 +7603,10 @@
       "creation_time": "2011-12-09T08:02:11.175", 
       "edition_time": "2011-12-09T08:02:11.175", 
       "project": 3, 
-      "location": "(4140.000, 6460.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4140.000,
+      "location_y": 6460.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7439,8 +7617,10 @@
       "creation_time": "2012-07-22T16:50:57.758", 
       "edition_time": "2012-07-22T16:50:57.758", 
       "project": 3, 
-      "location": "(5290.000, 3930.000, 279.000)", 
-      "editor": null, 
+      "location_x": 5290.000,
+      "location_y": 3930.000,
+      "location_z": 279.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7451,8 +7631,10 @@
       "creation_time": "2012-07-22T19:12:54.541", 
       "edition_time": "2012-07-22T19:12:54.541", 
       "project": 3, 
-      "location": "(4470.000, 2110.000, 180.000)", 
-      "editor": null, 
+      "location_x": 4470.000,
+      "location_y": 2110.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7463,8 +7645,10 @@
       "creation_time": "2012-07-22T19:13:08.185", 
       "edition_time": "2012-07-22T19:13:08.185", 
       "project": 3, 
-      "location": "(4910.000, 3260.000, 180.000)", 
-      "editor": null, 
+      "location_x": 4910.000,
+      "location_y": 3260.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7475,8 +7659,10 @@
       "creation_time": "2012-07-22T19:13:26.149", 
       "edition_time": "2012-07-22T19:13:26.149", 
       "project": 3, 
-      "location": "(5110.000, 2500.000, 180.000)", 
-      "editor": null, 
+      "location_x": 5110.000,
+      "location_y": 2500.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7487,8 +7673,10 @@
       "creation_time": "2012-07-22T19:15:24.010", 
       "edition_time": "2012-07-22T19:15:24.010", 
       "project": 3, 
-      "location": "(3680.000, 2530.000, 180.000)", 
-      "editor": null, 
+      "location_x": 3680.000,
+      "location_y": 2530.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7503,8 +7691,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3590.000, 3240.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3590.000,
+      "location_y": 3240.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7519,8 +7709,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3600.000, 3250.000, 9.000)", 
-      "editor": null, 
+      "location_x": 3600.000,
+      "location_y": 3250.000,
+      "location_z": 9.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7535,8 +7727,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3600.000, 3250.000, 18.000)", 
-      "editor": null, 
+      "location_x": 3600.000,
+      "location_y": 3250.000,
+      "location_z": 18.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7551,8 +7745,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3590.000, 3250.000, 27.000)", 
-      "editor": null, 
+      "location_x": 3590.000,
+      "location_y": 3250.000,
+      "location_z": 27.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7567,8 +7763,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3590.000, 3250.000, 36.000)", 
-      "editor": null, 
+      "location_x": 3590.000,
+      "location_y": 3250.000,
+      "location_z": 36.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7583,8 +7781,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(1065.000, 3035.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1065.000,
+      "location_y": 3035.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7599,8 +7799,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(1135.000, 2800.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1135.000,
+      "location_y": 2800.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7615,8 +7817,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(1340.000, 2660.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1340.000,
+      "location_y": 2660.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7631,8 +7835,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(1780.000, 2570.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1780.000,
+      "location_y": 2570.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7647,8 +7853,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(1970.000, 2595.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1970.000,
+      "location_y": 2595.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7663,8 +7871,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(2610.000, 2700.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2610.000,
+      "location_y": 2700.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7679,8 +7889,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(2815.000, 2590.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2815.000,
+      "location_y": 2590.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7695,8 +7907,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3380.000, 2330.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3380.000,
+      "location_y": 2330.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7711,8 +7925,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3685.000, 2160.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3685.000,
+      "location_y": 2160.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7727,8 +7943,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3850.000, 1790.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3850.000,
+      "location_y": 1790.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7743,8 +7961,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3825.000, 1480.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3825.000,
+      "location_y": 1480.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7759,8 +7979,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3445.000, 1385.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3445.000,
+      "location_y": 1385.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7775,8 +7997,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(2820.000, 1345.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2820.000,
+      "location_y": 1345.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7791,8 +8015,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3915.000, 2105.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3915.000,
+      "location_y": 2105.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7807,8 +8033,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(4570.000, 2125.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4570.000,
+      "location_y": 2125.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7823,8 +8051,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5400.000, 2200.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5400.000,
+      "location_y": 2200.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7839,8 +8069,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(4820.000, 1900.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4820.000,
+      "location_y": 1900.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7855,8 +8087,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5090.000, 1675.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5090.000,
+      "location_y": 1675.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7871,8 +8105,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5265.000, 1610.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5265.000,
+      "location_y": 1610.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7887,8 +8123,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5800.000, 1560.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5800.000,
+      "location_y": 1560.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7903,8 +8141,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(6090.000, 1550.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6090.000,
+      "location_y": 1550.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7919,8 +8159,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5530.000, 2465.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5530.000,
+      "location_y": 2465.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7935,8 +8177,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5675.000, 2635.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5675.000,
+      "location_y": 2635.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7951,8 +8195,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5985.000, 2745.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5985.000,
+      "location_y": 2745.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7967,8 +8213,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(6100.000, 2980.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6100.000,
+      "location_y": 2980.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7983,8 +8231,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(6210.000, 3480.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6210.000,
+      "location_y": 3480.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -7999,8 +8249,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3610.000, 3230.000, 45.000)", 
-      "editor": null, 
+      "location_x": 3610.000,
+      "location_y": 3230.000,
+      "location_z": 45.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8015,8 +8267,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3610.000, 3240.000, 54.000)", 
-      "editor": null, 
+      "location_x": 3610.000,
+      "location_y": 3240.000,
+      "location_z": 54.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8031,8 +8285,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3590.000, 3270.000, 63.000)", 
-      "editor": null, 
+      "location_x": 3590.000,
+      "location_y": 3270.000,
+      "location_z": 63.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8047,8 +8303,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3560.000, 3210.000, 72.000)", 
-      "editor": null, 
+      "location_x": 3560.000,
+      "location_y": 3210.000,
+      "location_z": 72.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8063,8 +8321,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3630.000, 3290.000, 81.000)", 
-      "editor": null, 
+      "location_x": 3630.000,
+      "location_y": 3290.000,
+      "location_z": 81.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8079,8 +8339,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3620.000, 3300.000, 90.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3300.000,
+      "location_z": 90.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8095,8 +8357,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3600.000, 3290.000, 99.000)", 
-      "editor": null, 
+      "location_x": 3600.000,
+      "location_y": 3290.000,
+      "location_z": 99.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8111,8 +8375,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3630.000, 3270.000, 108.000)", 
-      "editor": null, 
+      "location_x": 3630.000,
+      "location_y": 3270.000,
+      "location_z": 108.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8127,8 +8393,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3640.000, 3290.000, 117.000)", 
-      "editor": null, 
+      "location_x": 3640.000,
+      "location_y": 3290.000,
+      "location_z": 117.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8143,8 +8411,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3620.000, 3320.000, 126.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3320.000,
+      "location_z": 126.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8159,8 +8429,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3610.000, 3340.000, 135.000)", 
-      "editor": null, 
+      "location_x": 3610.000,
+      "location_y": 3340.000,
+      "location_z": 135.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8175,8 +8447,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3620.000, 3310.000, 144.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3310.000,
+      "location_z": 144.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8191,8 +8465,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3620.000, 3320.000, 153.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3320.000,
+      "location_z": 153.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8207,8 +8483,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3640.000, 3360.000, 162.000)", 
-      "editor": null, 
+      "location_x": 3640.000,
+      "location_y": 3360.000,
+      "location_z": 162.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8223,8 +8501,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3640.000, 3370.000, 171.000)", 
-      "editor": null, 
+      "location_x": 3640.000,
+      "location_y": 3370.000,
+      "location_z": 171.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8239,8 +8519,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3630.000, 3360.000, 180.000)", 
-      "editor": null, 
+      "location_x": 3630.000,
+      "location_y": 3360.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8255,8 +8537,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3640.000, 3320.000, 189.000)", 
-      "editor": null, 
+      "location_x": 3640.000,
+      "location_y": 3320.000,
+      "location_z": 189.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8271,8 +8555,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3610.000, 3340.000, 198.000)", 
-      "editor": null, 
+      "location_x": 3610.000,
+      "location_y": 3340.000,
+      "location_z": 198.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8287,8 +8573,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3630.000, 3350.000, 207.000)", 
-      "editor": null, 
+      "location_x": 3630.000,
+      "location_y": 3350.000,
+      "location_z": 207.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8303,8 +8591,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3620.000, 3350.000, 216.000)", 
-      "editor": null, 
+      "location_x": 3620.000,
+      "location_y": 3350.000,
+      "location_z": 216.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8319,8 +8609,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3650.000, 3330.000, 225.000)", 
-      "editor": null, 
+      "location_x": 3650.000,
+      "location_y": 3330.000,
+      "location_z": 225.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8335,8 +8627,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3650.000, 3350.000, 234.000)", 
-      "editor": null, 
+      "location_x": 3650.000,
+      "location_y": 3350.000,
+      "location_z": 234.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8351,8 +8645,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3600.000, 3370.000, 243.000)", 
-      "editor": null, 
+      "location_x": 3600.000,
+      "location_y": 3370.000,
+      "location_z": 243.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8367,8 +8663,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3580.000, 3350.000, 252.000)", 
-      "editor": null, 
+      "location_x": 3580.000,
+      "location_y": 3350.000,
+      "location_z": 252.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8383,8 +8681,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(7030.000, 1980.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7030.000,
+      "location_y": 1980.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8399,8 +8699,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(7620.000, 2890.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7620.000,
+      "location_y": 2890.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8415,8 +8717,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(7850.000, 1970.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7850.000,
+      "location_y": 1970.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8431,8 +8735,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(8530.000, 1820.000, 0.000)", 
-      "editor": null, 
+      "location_x": 8530.000,
+      "location_y": 1820.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8447,8 +8753,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(9030.000, 1480.000, 0.000)", 
-      "editor": null, 
+      "location_x": 9030.000,
+      "location_y": 1480.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8463,8 +8771,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(6740.000, 1530.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6740.000,
+      "location_y": 1530.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8479,8 +8789,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(6910.000, 990.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6910.000,
+      "location_y": 990.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8495,8 +8807,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(6430.000, 910.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6430.000,
+      "location_y": 910.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8511,8 +8825,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(6140.000, 640.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6140.000,
+      "location_y": 640.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8527,8 +8843,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5670.000, 640.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5670.000,
+      "location_y": 640.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8543,8 +8861,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(7840.000, 2380.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7840.000,
+      "location_y": 2380.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8559,8 +8879,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(7390.000, 3510.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7390.000,
+      "location_y": 3510.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8575,8 +8897,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(7080.000, 3960.000, 0.000)", 
-      "editor": null, 
+      "location_x": 7080.000,
+      "location_y": 3960.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8591,8 +8915,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(6630.000, 4330.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6630.000,
+      "location_y": 4330.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8607,8 +8933,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5810.000, 3950.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5810.000,
+      "location_y": 3950.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8623,8 +8951,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(4990.000, 4200.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4990.000,
+      "location_y": 4200.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8639,8 +8969,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(1820.000, 5390.000, 0.000)", 
-      "editor": null, 
+      "location_x": 1820.000,
+      "location_y": 5390.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -8655,8 +8987,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(2140.000, 4620.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2140.000,
+      "location_y": 4620.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -8671,8 +9005,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(2760.000, 4600.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2760.000,
+      "location_y": 4600.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -8687,8 +9023,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3310.000, 5190.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3310.000,
+      "location_y": 5190.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -8703,8 +9041,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3930.000, 4330.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3930.000,
+      "location_y": 4330.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -8719,8 +9059,10 @@
       "edition_time": "2011-12-05T13:51:36.955", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(4420.000, 4880.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4420.000,
+      "location_y": 4880.000,
+      "location_z": 0.000,
+      "editor": 2,
       "user": 2
     }
   }, 
@@ -8735,8 +9077,10 @@
       "edition_time": "2011-12-09T08:01:37.575", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(2370.000, 6080.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2370.000,
+      "location_y": 6080.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8751,8 +9095,10 @@
       "edition_time": "2011-12-09T08:01:48.933", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3110.000, 6030.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3110.000,
+      "location_y": 6030.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8767,8 +9113,10 @@
       "edition_time": "2011-12-09T08:01:40.583", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3680.000, 6550.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3680.000,
+      "location_y": 6550.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8783,8 +9131,10 @@
       "edition_time": "2011-12-09T08:01:59.149", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(4110.000, 6080.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4110.000,
+      "location_y": 6080.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8799,8 +9149,10 @@
       "edition_time": "2011-12-09T08:02:00.466", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(4400.000, 5730.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4400.000,
+      "location_y": 5730.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8815,8 +9167,10 @@
       "edition_time": "2011-12-09T08:02:01.614", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5040.000, 5650.000, 0.000)", 
-      "editor": null, 
+      "location_x": 5040.000,
+      "location_y": 5650.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8831,8 +9185,10 @@
       "edition_time": "2011-12-09T08:02:11.175", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(4140.000, 6460.000, 0.000)", 
-      "editor": null, 
+      "location_x": 4140.000,
+      "location_y": 6460.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8847,8 +9203,10 @@
       "edition_time": "2012-07-22T16:50:57.758", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5290.000, 3930.000, 279.000)", 
-      "editor": null, 
+      "location_x": 5290.000,
+      "location_y": 3930.000,
+      "location_z": 279.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8863,8 +9221,10 @@
       "edition_time": "2012-07-22T19:12:54.541", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(4470.000, 2110.000, 180.000)", 
-      "editor": null, 
+      "location_x": 4470.000,
+      "location_y": 2110.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8879,8 +9239,10 @@
       "edition_time": "2012-07-22T19:13:08.185", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(4910.000, 3260.000, 180.000)", 
-      "editor": null, 
+      "location_x": 4910.000,
+      "location_y": 3260.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8895,8 +9257,10 @@
       "edition_time": "2012-07-22T19:13:26.149", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(5110.000, 2500.000, 180.000)", 
-      "editor": null, 
+      "location_x": 5110.000,
+      "location_y": 2500.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8911,8 +9275,10 @@
       "edition_time": "2012-07-22T19:15:24.010", 
       "project": 3, 
       "radius": -1.0, 
-      "location": "(3680.000, 2530.000, 180.000)", 
-      "editor": null, 
+      "location_x": 3680.000,
+      "location_y": 2530.000,
+      "location_z": 180.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8924,8 +9290,10 @@
       "creation_time": "2011-09-27T07:57:15.967", 
       "edition_time": "2011-10-27T10:45:09.870", 
       "project": 3, 
-      "location": "(6730.000, 2700.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6730.000,
+      "location_y": 2700.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8937,8 +9305,10 @@
       "creation_time": "2011-10-07T07:02:22.656", 
       "edition_time": "2011-10-07T07:02:30.396", 
       "project": 3, 
-      "location": "(6260.000, 3990.000, 0.000)", 
-      "editor": null, 
+      "location_x": 6260.000,
+      "location_y": 3990.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8950,8 +9320,10 @@
       "creation_time": "2011-10-11T10:49:08.042", 
       "edition_time": "2011-10-31T05:22:37.263", 
       "project": 3, 
-      "location": "(2640.000, 3450.000, 0.000)", 
-      "editor": null, 
+      "location_x": 2640.000,
+      "location_y": 3450.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8963,8 +9335,10 @@
       "creation_time": "2011-12-09T08:01:43.965", 
       "edition_time": "2011-12-09T08:01:43.965", 
       "project": 3, 
-      "location": "(3400.000, 5620.000, 0.000)", 
-      "editor": null, 
+      "location_x": 3400.000,
+      "location_y": 5620.000,
+      "location_z": 0.000,
+      "editor": 3,
       "user": 3
     }
   }, 
@@ -8976,8 +9350,10 @@
       "creation_time": "2012-07-23T21:54:02.486", 
       "edition_time": "2012-07-23T21:54:02.486", 
       "project": 3, 
-      "location": "(5870.000, 3460.000, 243.000)", 
-      "editor": null, 
+      "location_x": 5870.000,
+      "location_y": 3460.000,
+      "location_z": 243.000,
+      "editor": 3,
       "user": 3
     }
   }, 

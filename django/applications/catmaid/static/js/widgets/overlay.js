@@ -1548,14 +1548,14 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNearestOpenEndNode = function(nodeI
       {tnid: nodeID},
       function(jso) {
         // [0]: open end node ID
-        // [1]: location string as in "(12.3, 45.6, 78.9)"
+        // [1]: location array as in [12.3, 45.6, 78.9]
         if (!jso[0]) {
           growlAlert("Information", "No more open ends!");
         } else if (jso[0] === nodeID) {
           growlAlert("Information", "You are at an open end node.");
         } else {
           // Parse location string
-          var loc = jso[1].slice(1, -1).split(',').map(parseFloat);
+          var loc = jso[1].map(parseFloat);
           self.moveTo(loc[2], loc[1], loc[0],
             function() { self.selectNode(jso[0]); });
         }

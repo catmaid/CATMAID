@@ -49,7 +49,7 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
 
     # Select all nodes and their tags
     cursor.execute('''
-    SELECT t.id, t.parent_id, t.location, ci.name
+    SELECT t.id, t.parent_id, t.location_x, t.location_y, t.location_z, ci.name
     FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id AND tci.relation_id = %s) ON t.id = tci.treenode_id
     WHERE t.skeleton_id = %s
     ''' % (labeled_as, int(skeleton_id)))
@@ -64,14 +64,14 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
             tree.add_edge(row[1], nodeID)
         else:
             tree.add_node(nodeID)
-        tree.node[nodeID]['loc'] = row[2]
+        tree.node[nodeID]['loc'] = (row[2], row[3], row[4])
         if row[3]:
             props = tree.node[nodeID]
             tags = props.get('tags')
             if tags:
                 tags.append(row[3])
             else:
-                props['tags'] = [row[3]]
+                props['tags'] = [row[5]]
 
     if tnid not in tree:
         raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
@@ -362,7 +362,9 @@ def split_skeleton(request, project_id=None):
     _annotate_entities(project_id, [new_neuron.id], downstream_annotation_map)
 
     # Log the location of the node at which the split was done
-    insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
+    location = (treenode.location_x, treenode.location_y, treenode.location_z)
+    insert_into_log(project_id, request.user.id, "split_skeleton", location,
+                    "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
 
     return HttpResponse(json.dumps({}), mimetype='text/json')
 
@@ -374,9 +376,9 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None):
         skeleton_id=skeleton_id)
     return HttpResponse(json.dumps({
         'root_id': tn.id,
-        'x': tn.location.x,
-        'y': tn.location.y,
-        'z': tn.location.z}),
+        'x': tn.location_x,
+        'y': tn.location_y,
+        'z': tn.location_z}),
         mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -660,8 +662,9 @@ def reroot_skeleton(request, project_id=None):
     try:
         if treenode:
             response_on_error = 'Failed to log reroot.'
+            location = (treenode.location_x, treenode.location.y, treenode.location_z)
             insert_into_log(project_id, request.user.id, 'reroot_skeleton',
-                            treenode.location, 'Rerooted skeleton for '
+                            location, 'Rerooted skeleton for '
                             'treenode with ID %s' % treenode.id)
             return HttpResponse(json.dumps({'newroot': treenode.id}))
         # Else, already root
@@ -865,8 +868,10 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         _update_neuron_annotations(project_id, user, from_neuron['neuronid'],
                 annotation_map)
 
+        from_location = (from_treenode.location_x, from_treenode.location_y,
+                         from_treenode.location_z)
         insert_into_log(project_id, user.id, 'join_skeleton',
-                from_treenode.location, 'Joined skeleton with ID %s (neuron: ' \
+                from_location, 'Joined skeleton with ID %s (neuron: ' \
                 '%s) into skeleton with ID %s (neuron: %s, annotations: %s)' % \
                 (to_skid, to_neuron['neuronname'], from_skid,
                         from_neuron['neuronname'], ', '.join(annotation_map.keys())))

@@ -155,12 +155,12 @@ class TreenodeExporter:
         and writable.
         """
         # Calculate bounding box for current connector
-        x_min = treenode.location.x - self.job.x_radius
-        x_max = treenode.location.x + self.job.x_radius
-        y_min = treenode.location.y - self.job.y_radius
-        y_max = treenode.location.y + self.job.y_radius
-        z_min = treenode.location.z - self.job.z_radius
-        z_max = treenode.location.z + self.job.z_radius
+        x_min = treenode.location_x - self.job.x_radius
+        x_max = treenode.location_x + self.job.x_radius
+        y_min = treenode.location_y - self.job.y_radius
+        y_max = treenode.location_y + self.job.y_radius
+        z_min = treenode.location_z - self.job.z_radius
+        z_max = treenode.location_z + self.job.z_radius
         rotation_cw = 0
         zoom_level = 0
 
@@ -212,9 +212,9 @@ class TreenodeExporter:
         p = n.parent.id if n.parent else 'null'
         n_pre = presynaptic_map.get(n.id, 0)
         n_post = postsynaptic_map.get(n.id, 0)
-        x = n.location.x
-        y = n.location.y
-        z = n.location.z
+        x = n.location_x
+        y = n.location_y
+        z = n.location_z
         line = ', '.join([str(e) for e in (n.id, p, n_pre, n_post, x, y, z)])
         ls.append(line)
 
@@ -321,12 +321,12 @@ class ConnectorExporter(TreenodeExporter):
         connector = connector_link.connector
 
         # Calculate bounding box for current connector
-        x_min = connector.location.x - self.job.x_radius
-        x_max = connector.location.x + self.job.x_radius
-        y_min = connector.location.y - self.job.y_radius
-        y_max = connector.location.y + self.job.y_radius
-        z_min = connector.location.z - self.job.z_radius
-        z_max = connector.location.z + self.job.z_radius
+        x_min = connector.location_x - self.job.x_radius
+        x_max = connector.location_x + self.job.x_radius
+        y_min = connector.location_y - self.job.y_radius
+        y_max = connector.location_y + self.job.y_radius
+        z_min = connector.location_z - self.job.z_radius
+        z_max = connector.location_z + self.job.z_radius
         rotation_cw = 0
         zoom_level = 0
 
@@ -340,9 +340,9 @@ class ConnectorExporter(TreenodeExporter):
         for i, img in enumerate(cropped_stack):
             # Save image in output path, named after the image center's coordinates,
             # rounded to full integers.
-            x = int(connector.location.x + 0.5)
-            y = int(connector.location.y + 0.5)
-            z = int(z_min + i * crop_self.stacks[0].resolution.z  + 0.5)
+            x = int(connector.location_x + 0.5)
+            y = int(connector.location_y + 0.5)
+            z = int(z_min + i * crop_self.stacks[0].resolution_z  + 0.5)
             image_name = "%s_%s_%s.tiff" % (x, y, z)
             connector_image_path = os.path.join(connector_path, image_name)
             img.write(connector_image_path)

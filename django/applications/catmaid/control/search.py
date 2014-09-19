@@ -3,7 +3,6 @@ import json
 from django.http import HttpResponse
 
 from catmaid.models import *
-from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
@@ -18,12 +17,11 @@ def search(request, project_id=None):
         .values('treenode__xxx'), and will then be able to access a proper location
         object.
         '''
-        location = Double3D.from_str(node['treenode__location'])
         return {
             'id': node['treenode'],
-            'x': int(location.x),
-            'y': int(location.y),
-            'z': int(location.z),
+            'x': int(node['treenode__location_x']),
+            'y': int(node['treenode__location_y']),
+            'z': int(node['treenode__location_z']),
             'skid': node['treenode__skeleton']}
 
     search_string = request.GET.get('substring', "")

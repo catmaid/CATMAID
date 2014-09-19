@@ -209,7 +209,7 @@ def make_arbors(neuron_names, all_treenodes, cellIDs, scale, state):
         treenodes = []
         while i < length and all_treenodes[i][4] == skeletonID:
             t = all_treenodes[i]
-            treenodes.append((t[0], t[1], map(float, t[2][1:-1].split(',')), t[3]))
+            treenodes.append((t[0], t[1], map(float, (t[2], t[3], t[4])), t[5]))
             i += 1
         cellIDs.append(skeletonID)
         for line in make_arbor(neuron_name(skeletonID, neuron_names), treenodes, scale, state):

@@ -1995,20 +1995,27 @@ class ViewPageTests(TestCase):
                 '/messages/list', {})
         parsed_response = json.loads(response.content)
         expected_result = {
-                '0': {
+                u'0': {
                     'action': 'http://www.example.com/message2',
                     'id': 2,
                     'text': 'Contents of message 2.',
-                    'time':  '2011-12-20 16:46:01.360422',
-                    'time_formatted': '2011-12-20 16:46:01 CET',
-                    'title': 'Message 2'},
-                '1': {
+                    'time': '2011-12-20 16:46:01.360422',
+                    'time_formatted': '2011-12-20 16:46:01 EST',
+                    'title': 'Message 2'
+                },
+                u'1': {
                     'action': 'http://www.example.com/message1',
                     'id': 1,
                     'text': 'Contents of message 1.',
-                    'time': '2011-12-19 16:46:01.360422',
-                    'time_formatted': '2011-12-19 16:46:01 CET',
-                    'title': 'Message 1'}}
+                    'time': '2011-12-19 16:46:01',
+                    'time_formatted': '2011-12-19 16:46:01 EST',
+                    'title': 'Message 1'
+                },
+                u'2': {
+                    'id': -1,
+                    'notification_count': 0
+                }
+        }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 

@@ -369,7 +369,7 @@ def delete_treenode(request, project_id=None):
             response_on_error = 'Could not retrieve children for ' \
                 'treenode #%s' % treenode_id
             n_children = Treenode.objects.filter(parent=treenode).count()
-            response_on_error = "Can't delete root node when it has children"
+            response_on_error = "Could not delete root node"
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children,
                 # and other children become independent skeletons

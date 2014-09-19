@@ -412,7 +412,10 @@ def delete_treenode(request, project_id=None):
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
         Treenode.objects.filter(pk=treenode_id).delete()
-        return HttpResponse(json.dumps({'parent_id': parent_id}))
+        return HttpResponse(json.dumps({
+            'parent_id': parent_id,
+            'success': "Removed treenode successfully."
+        }))
 
     except Exception as e:
         raise Exception(response_on_error + ': ' + str(e))

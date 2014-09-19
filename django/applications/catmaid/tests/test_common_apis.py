@@ -369,6 +369,7 @@ class ViewPageTests(TestCase):
                 "356": "356",
                 "421": "421",
                 "432": "432"}
+        connector_ids = ("432",)
         response = self.client.post('/%d/labels-for-nodes' % (self.test_project_id,),
                               {'treenode_ids': ",".join(nods.keys()),
                                'connector_ids': ",".join(connector_ids)})
@@ -1021,7 +1022,7 @@ class ViewPageTests(TestCase):
     def test_list_connector_empty(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/connector/list' % self.test_project_id, {
+                '/%d/connector/table/list' % self.test_project_id, {
                     'iDisplayStart': 0,
                     'iDisplayLength': 25,
                     'iSortingCols': 1,
@@ -1037,7 +1038,7 @@ class ViewPageTests(TestCase):
     def test_list_connector_outgoing_with_sorting_and_paging(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/connector/list' % self.test_project_id, {
+                '/%d/connector/table/list' % self.test_project_id, {
                     'iDisplayStart': 1,
                     'iDisplayLength': 2,
                     'iSortingCols': 1,
@@ -1047,18 +1048,18 @@ class ViewPageTests(TestCase):
                     'skeleton_id': 235})
         parsed_response = json.loads(response.content)
         expected_result = {
-                'iTotalRecords': 4,
-                'iTotalDisplayRecords': 4,
-                'aaData': [
-                    ["421", "373", "6630.00", "4330.00", "0.00", "", "5", "gerhard", "409"],
-                    ["356", "373", "7620.00", "2890.00", "0.00", "", "5", "gerhard", "377"]]}
+                u'iTotalRecords': 4,
+                u'iTotalDisplayRecords': 4,
+                u'aaData': [
+                    [421, 373, 6630.00, 4330.00, 0.0, 0, u"", 5, u"test2", 409, u'07-10-2011 07:02'],
+                    [356, 373, 7620.00, 2890.00, 0.0, 0, u"", 5, u"test2", 377, u'27-10-2011 10:45']]}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_list_connector_outgoing_with_sorting(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/connector/list' % self.test_project_id, {
+                '/%d/connector/table/list' % self.test_project_id, {
                     'iDisplayStart': 0,
                     'iDisplayLength': 25,
                     'iSortingCols': 1,
@@ -1068,20 +1069,21 @@ class ViewPageTests(TestCase):
                     'skeleton_id': 235})
         parsed_response = json.loads(response.content)
         expected_result = {
-                'iTotalRecords': 4,
-                'iTotalDisplayRecords': 4,
-                'aaData': [
-                    ["356", "361", "7030.00", "1980.00", "0.00", "", "9", "gerhard", "367"],
-                    ["421", "373", "6630.00", "4330.00", "0.00", "", "5", "gerhard", "409"],
-                    ["356", "373", "7620.00", "2890.00", "0.00", "", "5", "gerhard", "377"],
-                    ["432", "", "2640.00", "3450.00", "0.00", "synapse with more targets, TODO", "0", "gerhard", ""]]}
+                u'iTotalRecords': 4,
+                u'iTotalDisplayRecords': 4,
+                u'aaData': [
+                    [432, u"", 2640.00, 3450.00, 0.0, 0, u"synapse with more targets, TODO", 0, u"test2", u"", u'31-10-2011 05:22'],
+                    [421, 373, 6630.00, 4330.00, 0.0, 0, u"", 5, u"test2", 409, u'07-10-2011 07:02'],
+                    [356, 373, 7620.00, 2890.00, 0.0, 0, u"", 5, u"test2", 377, u'27-10-2011 10:45'],
+                    [356, 361, 7030.00, 1980.00, 0.0, 0, u"", 9, u"test2", 367, u'27-10-2011 10:45']]
+        }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_list_connector_incoming_with_connecting_skeletons(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/connector/list' % self.test_project_id, {
+                '/%d/connector/table/list' % self.test_project_id, {
                     'iDisplayStart': 0,
                     'iDisplayLength': 25,
                     'iSortingCols': 1,
@@ -1089,13 +1091,16 @@ class ViewPageTests(TestCase):
                     'sSortDir_0': 'asc',
                     'relation_type': 0,
                     'skeleton_id': 373})
+        print response
         parsed_response = json.loads(response.content)
         expected_result = {
-                'iTotalRecords': 2,
-                'iTotalDisplayRecords': 2,
-                'aaData': [
-                    ["356", "235", "6100.00", "2980.00", "0.00", "", "28", "gerhard", "285"],
-                    ["421", "235", "5810.00", "3950.00", "0.00", "", "28", "gerhard", "415"]]}
+                u'iTotalRecords': 2,
+                u'iTotalDisplayRecords': 2,
+                u'aaData': [
+                    [356, 235, 6100.00, 2980.00, 0.0, 0, u"", 28,
+                     u"test2", 285, u'27-10-2011 10:45'],
+                    [421, 235, 5810.00, 3950.00, 0.0, 0, u"", 28,
+                     u"test2", 415, u'07-10-2011 07:02']]}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 

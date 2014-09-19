@@ -46,9 +46,10 @@ def labels_for_node(request, project_id=None, ntype=None, location_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_nodes(request, project_id=None):
-    # Two POST variables, which are each an array of integers stringed together with commas as separators
-    treenode_ids = request.POST['treenode_ids'].strip()
-    connector_ids = request.POST['connector_ids'].strip()
+    # Two POST variables, which are each an array of integers stringed together
+    # with commas as separators
+    treenode_ids = request.POST.get('treenode_ids', '').strip()
+    connector_ids = request.POST.get('connector_ids', '').strip()
     result = defaultdict(list)
     cursor = connection.cursor();
 

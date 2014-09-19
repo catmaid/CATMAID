@@ -369,7 +369,8 @@ class ViewPageTests(TestCase):
                 "421": "421",
                 "432": "432"}
         response = self.client.post('/%d/labels-for-nodes' % (self.test_project_id,),
-                              {'nods': json.dumps(nods)})
+                              {'treenode_ids': ",".join(nods.keys()),
+                               'connector_ids': ",".join(connector_ids)})
 
         returned_node_map = json.loads(response.content)
         self.assertEqual(len(returned_node_map.keys()), 3)
@@ -392,9 +393,9 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(returned_labels), 1)
         self.assertEqual(returned_labels[0], "uncertain end")
 
-        response = self.client.post('/%d/label-update/treenode/%d' % (self.test_project_id,
+        response = self.client.post('/%d/label/treenode/%d/update' % (self.test_project_id,
                                                                       403),
-                                    {'tags': json.dumps(['foo', 'bar'])})
+                                    {'tags': ",".join(['foo', 'bar'])})
         parsed_response = json.loads(response.content)
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')

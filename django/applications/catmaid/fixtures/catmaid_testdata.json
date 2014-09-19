@@ -54,6 +54,30 @@
     }
   },
   {
+    "pk": 1,
+    "model": "catmaid.message",
+    "fields": {
+        "action": "http://www.example.com/message1",
+        "text": "Contents of message 1.",
+        "time": "2011-12-19T16:46:01",
+        "title": "Message 1",
+        "read": false,
+        "user": 3
+    }
+  },
+  {
+    "pk": 2,
+    "model": "catmaid.message",
+    "fields": {
+        "action": "http://www.example.com/message2",
+        "text": "Contents of message 2.",
+        "time": "2011-12-20 16:46:01.360422",
+        "title": "Message 2",
+        "read": false,
+        "user": 3
+    }
+  },
+  {
     "pk": -1, 
     "model": "catmaid.project", 
     "fields": {

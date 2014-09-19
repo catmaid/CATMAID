@@ -491,17 +491,7 @@ class ViewPageTests(TestCase):
 
     def test_index(self):
         self.fake_authentication()
-        url = '/%d' % (self.test_project_id,)
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        for order in ('cellbody', 'cellbodyr', 'name', 'namer', 'gal4', 'gal4r'):
-            url = '/%d/sorted/%s' % (self.test_project_id, order)
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
-
-    def test_visual_index(self):
-        self.fake_authentication()
-        url = '/%d/visual_index' % (self.test_project_id,)
+        url = '/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 

@@ -9,6 +9,7 @@ from django.db.models import Count
 
 from catmaid.models import ProjectStack, Stack, Treenode
 from catmaid.models import TreenodeClassInstance, User, UserRole
+from catmaid.fields import Double3D
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.review import get_treenodes_to_reviews
@@ -223,11 +224,15 @@ def list_treenode_table(request, project_id=None):
         treenode_to_reviews = get_treenodes_to_reviews(treenode_ids,
             umap=lambda r: users[r])
 
-        response_on_error = 'Could not retrieve resolution and translation ' \
-            'parameters for project.'
-        resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
-        translation = get_object_or_404(ProjectStack,
-            stack=int(stack_id), project=project_id).translation
+        if stack_id:
+            response_on_error = 'Could not retrieve resolution and translation ' \
+                'parameters for project.'
+            resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
+            translation = get_object_or_404(ProjectStack,
+                stack=int(stack_id), project=project_id).translation
+        else:
+            resolution = Double3D(1.0, 1.0, 1.0)
+            translation = Double3D(0.0, 0.0, 0.0)
 
         def formatTreenode(tn):
             row = [str(tn.tid)]

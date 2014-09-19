@@ -1612,9 +1612,9 @@ class ViewPageTests(TestCase):
             'parent_id': parent_id,
             'radius': 2})
         parsed_response = json.loads(response.content)
-        expected_result = {'error': 'Can not find skeleton for parent treenode %d in this project.' % parent_id}
+        expected_result = {'error': 'No skeleton and neuron for treenode %d' % parent_id}
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn(expected_result['error'], parsed_response['error'])
         self.assertEqual(treenode_count, Treenode.objects.all().count())
         self.assertEqual(relation_count, TreenodeClassInstance.objects.all().count())
 
@@ -1628,9 +1628,10 @@ class ViewPageTests(TestCase):
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id})
         parsed_response = json.loads(response.content)
-        expected_result = {'error': "You can't delete the root node when it has children."}
+        expected_result = "Could not delete root node: You can't delete the " \
+                          "root node when it has children."
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(expected_result, parsed_response['error'])
         self.assertEqual(1, Treenode.objects.filter(id=treenode_id).count())
         self.assertEqual(tn_count, Treenode.objects.all().count())
         self.assertEqual(child_count, Treenode.objects.filter(parent=treenode_id).count())
@@ -1644,9 +1645,9 @@ class ViewPageTests(TestCase):
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id})
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'Removed treenode successfully.'}
+        expected_result = 'Removed treenode successfully.'
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(expected_result, parsed_response['success'])
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
         self.assertEqual(tn_count - 1, Treenode.objects.all().count())
 
@@ -1664,7 +1665,10 @@ class ViewPageTests(TestCase):
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id})
         parsed_response = json.loads(response.content)
-        expected_result = {'success': 'Removed treenode successfully.'}
+        expected_result = {
+            'success': 'Removed treenode successfully.',
+            'parent_id': None
+        }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
@@ -1690,9 +1694,9 @@ class ViewPageTests(TestCase):
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id})
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'Removed treenode successfully.'}
+        expected_result = 'Removed treenode successfully.'
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(expected_result, parsed_response['success'])
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
         self.assertEqual(0, get_skeleton().count())
         self.assertEqual(tn_count - 1, Treenode.objects.all().count())

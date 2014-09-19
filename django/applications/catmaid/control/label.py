@@ -16,15 +16,15 @@ def label_remove(request, project_id=None):
     class_instance_for_label = int(request.POST['class_instance_id'])
     if request.user.is_superuser:
         ClassInstance.objects.filter(id=class_instance_for_label).delete()
-        return HttpResponse(json.dumps({'message': 'success'}), mimetype="text/plain")
-    return HttpResponse(json.dumps({}), mimetype="text/plain")
+        return HttpResponse(json.dumps({'message': 'success'}), content_type="text/plain")
+    return HttpResponse(json.dumps({}), content_type="text/plain")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_all(request, project_id=None):
     qs = ClassInstance.objects.filter(
         class_column__class_name='label',
         project=project_id)
-    return HttpResponse(json.dumps(list(x.name for x in qs)), mimetype="text/plain")
+    return HttpResponse(json.dumps(list(x.name for x in qs)), content_type="text/plain")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_node(request, project_id=None, ntype=None, location_id=None):
@@ -42,7 +42,7 @@ def labels_for_node(request, project_id=None, ntype=None, location_id=None):
             project=project_id).select_related('class_instance__name')
     else:
         raise Http404('Unknown node type: "%s"' % (ntype,))
-    return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), mimetype="text/plain")
+    return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), content_type="text/plain")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_nodes(request, project_id=None):
@@ -105,7 +105,7 @@ def labels_for_nodes(request, project_id=None):
             result[cci.connector.id].append(cci.class_instance.name)
         """
 
-    return HttpResponse(json.dumps(result), mimetype="text/plain")
+    return HttpResponse(json.dumps(result), content_type="text/plain")
 
 @requires_user_role(UserRole.Annotate)
 def label_update(request, project_id=None, location_id=None, ntype=None):
@@ -207,7 +207,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                               'reject_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "' + ntype + '")'}).save()
 
 
-    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+    return HttpResponse(json.dumps({'message': 'success'}), content_type='text/json')
 
 
 def label_exists(label_id, node_type):

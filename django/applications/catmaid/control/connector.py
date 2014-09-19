@@ -111,11 +111,15 @@ def one_to_many_synapses(request, project_id=None):
 def list_connector(request, project_id=None):
     stack_id = request.POST.get('stack_id', None)
     skeleton_id = request.POST.get('skeleton_id', None)
-    if skeleton_id is None:
+
+    def empty_result():
         return HttpResponse(json.dumps({
             'iTotalRecords': 0,
             'iTotalDisplayRecords': 0,
             'aaData': []}))
+
+    if not skeleton_id:
+        return empty_result()
     else:
         skeleton_id = int(skeleton_id)
 
@@ -258,6 +262,9 @@ def list_connector(request, project_id=None):
                 labels.sort(key=upper)
 
         total_result_count = len(connectors)
+
+        if 0 == total_result_count:
+            return empty_result()
 
         # Paging
         if display_length == 0:

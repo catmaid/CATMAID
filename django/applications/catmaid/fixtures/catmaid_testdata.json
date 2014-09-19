@@ -195,6 +195,42 @@
     }
   }, 
   {
+    "pk": 1,
+    "model": "catmaid.projectstack",
+    "fields": {
+        "project": 1,
+        "stack": 1,
+        "translation": "(0.0, 0.0, 0.0)"
+    }
+  },
+  {
+    "pk": 2,
+    "model": "catmaid.projectstack",
+    "fields": {
+        "project": 3,
+        "stack": 3,
+        "translation": "(0.0, 0.0, 0.0)"
+    }
+  },
+  {
+    "pk": 3,
+    "model": "catmaid.projectstack",
+    "fields": {
+        "project": 5,
+        "stack": 5,
+        "translation": "(0.0, 0.0, 0.0)"
+    }
+  },
+  {
+    "pk": 4,
+    "model": "catmaid.projectstack",
+    "fields": {
+        "project": 5,
+        "stack": 6,
+        "translation": "(0.0, 0.0, 0.0)"
+    }
+  },
+  {
     "pk": 14, 
     "model": "catmaid.concept", 
     "fields": {

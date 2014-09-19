@@ -842,7 +842,6 @@ class ViewPageTests(TestCase):
     def test_fail_update_confidence(self):
         treenode_id = Treenode.objects.order_by("-id")[0].id + 1  # Inexistant
         self.fake_authentication()
-        self.maxDiff = None
         response = self.client.post(
                 '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4'})
@@ -1457,7 +1456,6 @@ class ViewPageTests(TestCase):
             'confidence': 5,
             'parent_id': -1,
             'radius': 2})
-        print response
         parsed_response = json.loads(response.content)
 
         self.assertEqual(response.status_code, 200)
@@ -1813,7 +1811,6 @@ class ViewPageTests(TestCase):
         log_count = count_logs()
         response = self.client.post(
                 '/%d/neuron/%s/delete' % (self.test_project_id, neuron_id), {})
-        print response
         parsed_response = json.loads(response.content)
         expected_result = {'status': 1, 'message': 'Removed skeleton successfully.'}
         self.assertEqual(response.status_code, 200)

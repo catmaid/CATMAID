@@ -449,10 +449,10 @@ def _treenode_info(project_id, treenode_id):
         for row in c.fetchall()
     ]
     if (len(results) > 1):
-        raise Exception('Found more than one skeleton and neuron for '
+        raise ValueError('Found more than one skeleton and neuron for '
                         'treenode %s' % treenode_id)
     elif (len(results) == 0):
-        raise Exception('No skeleton and neuron for treenode %s' % treenode_id)
+        raise ValueError('No skeleton and neuron for treenode %s' % treenode_id)
 
     return results[0]
 

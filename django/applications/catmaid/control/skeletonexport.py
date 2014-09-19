@@ -689,7 +689,7 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
     contains information about the review status of this part of the skeleton.
     """
     # Get all treenodes of the requested skeleton
-    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values(
+    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list(
         'id', 'parent_id', 'location_x', 'location_y', 'location_z')
     # Get all reviews for the requested skeleton
     reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])

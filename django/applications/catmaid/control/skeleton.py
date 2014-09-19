@@ -65,11 +65,11 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
         else:
             tree.add_node(nodeID)
         tree.node[nodeID]['loc'] = (row[2], row[3], row[4])
-        if row[3]:
+        if row[5]:
             props = tree.node[nodeID]
             tags = props.get('tags')
             if tags:
-                tags.append(row[3])
+                tags.append(row[5])
             else:
                 props['tags'] = [row[5]]
 

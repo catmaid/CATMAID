@@ -102,7 +102,7 @@ class Double3DField(models.Field):
             return Double3D(value[0], value[1], value[2])
         # When contructing a Location, we get the empty string
         # here; return a new Double3D for any falsy value:
-        elif not value:
+        elif not value or value == '(,,)':
             return Double3D()
         else:
             return Double3D.from_str(value)

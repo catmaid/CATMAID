@@ -971,14 +971,27 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       sSearch: 'Filter partners:'
     },
     aoColumnDefs: [
-      { aTargets: [0], sSortDataType: 'dom-checkbox' }
+      { aTargets: [0], sSortDataType: 'dom-checkbox' },
+      { aTargets: [-2], sType: 'percentage' }
     ]
   };
 
+  // Sorting function for checkbox column
   $.fn.dataTableExt.afnSortData['dom-checkbox'] = function (oSettings, iColumn) {
     return $('td:eq('+iColumn+') input', oSettings.oApi._fnGetTrNodes(oSettings)).map(function () {
         return this.checked == true ? "1" : "0";
     });
+  };
+
+  // Sorting functions for review columns (to parse out percent sign)
+  $.fn.dataTableExt.oSort['percentage-asc'] = function(a, b) {
+    a = parseFloat(a);
+    b = parseFloat(b);
+    return (a < b ? -1 : (a === b ? 0 : 1));
+  };
+
+  $.fn.dataTableExt.oSort['percentage-desc'] = function(a, b) {
+    return $.fn.dataTableExt.oSort['percentage-asc'](b, a);
   };
 
   table_incoming.dataTable(dataTableOptions);

@@ -427,10 +427,11 @@ class ViewPageTests(TestCase):
             name='c005',
             class_column__class_name='driver_line')
         self.assertTrue(line)
-        url = '/%d/line/%d' % (self.test_project_id,
-                               line.id,)
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        # FIXME: There is currently no such API
+        #url = '/%d/line/%d' % (self.test_project_id,
+        #                       line.id,)
+        #response = self.client.get(url)
+        #self.assertEqual(response.status_code, 200)
 
     def test_project_list(self):
         # Check that, pre-authentication, we can see two of the

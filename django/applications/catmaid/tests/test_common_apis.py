@@ -1160,11 +1160,12 @@ class ViewPageTests(TestCase):
 
     def test_most_recent_treenode(self):
         self.fake_authentication()
+        self.maxDiff = None
 
         most_recent_node_id = 2423
 
         skeleton_id = 2411
-        treenode_id = 0  # This will not affect anything but the error message
+        treenode_id = 2415
 
         response = self.client.post(
                 '/%d/node/most_recent' % self.test_project_id,
@@ -1172,16 +1173,9 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         expected_result = {
                 'id': most_recent_node_id,
-                'skeleton_id': skeleton_id,
                 'x': 4140,
                 'y': 6460,
                 'z': 0,
-                # 'most_recent': '2011-12-09 14:02:11.175624+01',
-                # This was the result from the old PHP script. Wasn't ever used
-                # however, so the change is inconsequential and duplicating the
-                # old functionality hard.
-                'most_recent': '2011-12-09 14:02:11.175624',
-                'type': 'treenode'
                 }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)

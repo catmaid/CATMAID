@@ -1,0 +1,32 @@
+notifications:
+  email: false
+language: python
+python:
+  - "2.7"
+addons:
+  postgresql: 9.3
+before_install:
+  - travis_retry sudo apt-get update -y -qq
+install:
+  - travis_retry sudo apt-get install -y -qq $(< packagelist-ubuntu-12.04-apt.txt)
+  - travis_retry pip install -q pip==1.5.4
+  - travis_retry travis_wait pip install -q numpy==1.6.1 distribute==0.7.3
+  - travis_retry travis_wait 60 pip install -q -r django/pip-frozen
+before_script:
+  - psql -c 'CREATE DATABASE catmaid;' -U postgres
+  - cd django
+  - cp configuration.py.example configuration.py
+  - sed -i -e "s?^\(abs_catmaid_path = \).*?\1'$(pwd)'?g" configuration.py
+  - sed -i -e "s?^\(abs_virtualenv_python_library_path = \).*?\1'$(echo $VIRTUAL_ENV)'?g" configuration.py
+  - sed -i -e "s?^\(catmaid_database_name = \).*?\1'catmaid'?g" configuration.py
+  - sed -i -e "s?^\(catmaid_database_username = \).*?\1'postgres'?g" configuration.py
+  - sed -i -e "s?^\(catmaid_timezone = \).*?\1'America/New_York'?g" configuration.py
+  - sed -i -e "s?^\(catmaid_servername = \).*?\1'localhost:8000'?g" configuration.py
+  - cat configuration.py
+  - python create_configuration.py
+  - cd ..
+script:
+  - cd django/projects/mysite
+  - python manage.py syncdb --migrate --noinput
+  - python manage.py runserver &
+  - python manage.py test catmaid.tests

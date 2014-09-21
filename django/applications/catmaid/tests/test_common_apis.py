@@ -2232,30 +2232,30 @@ class ViewPageTests(TestCase):
 
     def test_node_list_with_active_skeleton(self):
         self.fake_authentication()
-        expected_result = [
-                {"id": 279, "parentid": 267, "x": 5530, "y": 2465, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
-                {"id": 281, "parentid": 279, "x": 5675, "y": 2635, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
-                {"id": 283, "parentid": 281, "x": 5985, "y": 2745, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
-                {"id": 285, "parentid": 283, "x": 6100, "y": 2980, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
-                {"id": 289, "parentid": 285, "x": 6210, "y": 3480, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
-                {"id": 377, "parentid": None, "x": 7620, "y": 2890, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
-                {"id": 403, "parentid": 377, "x": 7840, "y": 2380, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
-                {"id": 405, "parentid": 377, "x": 7390, "y": 3510, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
-                {"id": 407, "parentid": 405, "x": 7080, "y": 3960, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
-                {"id": 409, "parentid": 407, "x": 6630, "y": 4330, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
-                {"id": 415, "parentid": 289, "x": 5810, "y": 3950, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
-                {"id": 417, "parentid": 415, "x": 4990, "y": 4200, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
-                {"id": 2419, "parentid": 2417, "x": 5040, "y": 5650, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 2411, "type": "treenode"},
-                {"id": 367, "parentid": None, "x": 7030, "y": 1980, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 361, "type": "treenode"},
-                {"id": 356, "x": 6730, "y": 2700, "z": 0, "confidence": 5, "user_id": 3, "z_diff": 0, "type": "connector",
-                    "pre": [{"tnid": 285, "confidence": 5}],
-                    "post": [
-                        {"tnid": 367, "confidence": 5},
-                        {"tnid": 377, "confidence": 5}]},
-                {"id": 421, "x": 6260, "y": 3990, "z": 0, "confidence": 5, "user_id": 3, "z_diff": 0, "type": "connector",
-                    "pre": [{"tnid": 415, "confidence": 5}],
-                    "post": [{"tnid": 409, "confidence": 5}]}]
-        response = self.client.get('/%d/node-list' % (self.test_project_id,), {
+        expected_t_result = [
+                [267, 265, 5400, 2200, 0, 5, -1, 235, True],
+                [279, 267, 5530, 2465, 0, 5, -1, 235, True],
+                [281, 279, 5675, 2635, 0, 5, -1, 235, True],
+                [283, 281, 5985, 2745, 0, 5, -1, 235, True],
+                [285, 283, 6100, 2980, 0, 5, -1, 235, True],
+                [289, 285, 6210, 3480, 0, 5, -1, 235, True],
+                [367, None, 7030, 1980, 0, 5, -1, 361, 3],
+                [377, None, 7620, 2890, 0, 5, -1, 373, True],
+                [403, 377, 7840, 2380, 0, 5, -1, 373, True],
+                [405, 377, 7390, 3510, 0, 5, -1, 373, True],
+                [407, 405, 7080, 3960, 0, 5, -1, 373, True],
+                [409, 407, 6630, 4330, 0, 5, -1, 373, True],
+                [415, 289, 5810, 3950, 0, 5, -1, 235, True],
+                [417, 415, 4990, 4200, 0, 5, -1, 235, True],
+                [2419, 2417, 5040, 5650, 0, 5, -1, 2411, True],
+                [2417, 2415, 4400, 5730, 0, 5, -1, 2411, True]
+        ]
+        expected_c_result = [
+                [356, 6730.0, 2700.0, 0.0, 5, [[285, 5]], [[377, 5], [367, 5]], True],
+                [421, 6260.0, 3990.0, 0.0, 5, [[415, 5]], [[409, 5]], True]
+        ]
+
+        response = self.client.post('/%d/node/list' % (self.test_project_id,), {
                 'sid': 3,
                 'z': 0,
                 'top': 2280,
@@ -2263,12 +2263,19 @@ class ViewPageTests(TestCase):
                 'width': 8000,
                 'height': 3450,
                 'zres': 9,
-                'as': 373})
+                'as': 373,
+                'labels': False,})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        self.assertEqual(len(expected_result), len(parsed_response))
-        for row in expected_result:
-            self.assertTrue(row in parsed_response)
+        self.assertEqual(4, len(parsed_response))
+        self.assertEqual(len(expected_t_result), len(parsed_response[0]))
+        self.assertEqual(len(expected_c_result), len(parsed_response[1]))
+        for row in expected_t_result:
+            print row
+            self.assertTrue(row in parsed_response[0])
+        for row in expected_c_result:
+            print row
+            self.assertTrue(row in parsed_response[1])
 
     def test_textlabels_empty(self):
         self.fake_authentication()

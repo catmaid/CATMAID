@@ -1093,7 +1093,6 @@ class ViewPageTests(TestCase):
                     'sSortDir_0': 'asc',
                     'relation_type': 0,
                     'skeleton_id': 373})
-        print response
         parsed_response = json.loads(response.content)
         expected_result = {
                 u'iTotalRecords': 2,
@@ -1162,7 +1161,6 @@ class ViewPageTests(TestCase):
 
     def test_most_recent_treenode(self):
         self.fake_authentication()
-        self.maxDiff = None
 
         most_recent_node_id = 2423
 
@@ -2271,10 +2269,8 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(expected_t_result), len(parsed_response[0]))
         self.assertEqual(len(expected_c_result), len(parsed_response[1]))
         for row in expected_t_result:
-            print row
             self.assertTrue(row in parsed_response[0])
         for row in expected_c_result:
-            print row
             self.assertTrue(row in parsed_response[1])
 
     def test_textlabels_empty(self):

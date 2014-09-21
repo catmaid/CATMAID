@@ -2126,11 +2126,11 @@ class ViewPageTests(TestCase):
                     })
         parsed_response = json.loads(response.content)
         expected_result = {
-                "treenode_id": "367",
-                "x": "7030",
-                "y": "1980",
-                "z": "0",
-                "skeleton_id": "361"}
+                "treenode_id": 367,
+                "x": 7030,
+                "y": 1980,
+                "z": 0,
+                "skeleton_id": 361}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 

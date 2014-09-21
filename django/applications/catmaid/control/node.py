@@ -260,7 +260,7 @@ def node_list_tuples(request, project_id=None):
                 treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
 
         labels = defaultdict(list)
-        if 'true' == request.POST['labels']:
+        if 'true' == request.POST.get('labels', None):
             z0 = params['z']
             # Collect treenodes visible in the current section
             visible = ','.join(str(row[0]) for row in treenodes if row[4] == z0)

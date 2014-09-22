@@ -157,7 +157,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                        'project': p,
                        'user': request.user,
                        'recipient': node.user,
-                       'location': node.location,
+                       'location': Double3D(node.location_x, node.location_y, node.location_z),
                        ntype: node,
                        'description': 'Remove tag \'' + label.class_instance.name + '\'',
                        'validate_action': 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(label.id) + ', "' + ntype + '")',
@@ -201,7 +201,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                                'project': p, 
                                'user': request.user,
                                'recipient': node.user,
-                               'location': node.location,
+                               'location': Double3D(node.location_x, node.location_y, node.location_z),
                                'treenode': node,
                                'validate_action': 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(tci.id) + ', "' + ntype + '")',
                               'reject_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "' + ntype + '")'}).save()

@@ -110,14 +110,15 @@ def countTargets( skeleton_id ):
     
 def createSpatialGraphFromSkeletonID(sid):
     # retrieve all nodes of the skeleton
-    treenode_qs = Treenode.objects.filter(skeleton_id=sid).values_list('id', 'parent_id', 'location')
+    treenode_qs = Treenode.objects.filter(skeleton_id=sid).values_list(
+        'id', 'parent_id', 'location_x', 'location_y', 'location_z')
     # build the networkx graph from it
     G = nx.Graph()
     locations = {}
-    for tnid, parent_id, location in treenode_qs:
+    for tnid, parent_id, location_x, location_y, location_z in treenode_qs:
         if parent_id:
             G.add_edge(parent_id, tnid)
-        locations[tnid] = array(tuple(float(a) for a in location[1:-1].split(',')), dtype=float32)
+        locations[tnid] = array((location_x, location_y, location_z), dtype=float32)
     for iFrom, iTo in G.edges(data=False):
         G[iFrom][iTo]['weight'] = norm(locations[iFrom] - locations[iTo])
     return G

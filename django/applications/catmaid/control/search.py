@@ -68,7 +68,9 @@ def search(request, project_id=None):
         class_instance__name__in=label_rows.keys())\
     .order_by('-treenode__id')\
     .values('treenode',
-        'treenode__location',
+        'treenode__location_x',
+        'treenode__location_y',
+        'treenode__location_z',
         'treenode__skeleton',
         'class_instance__name')
 

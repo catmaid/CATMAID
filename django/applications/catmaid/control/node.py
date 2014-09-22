@@ -331,8 +331,8 @@ def update_confidence(request, project_id=None, node_id=0):
         rows_affected = Treenode.objects.filter(id=tnid).update(confidence=new_confidence,editor=request.user)
 
     if rows_affected > 0:
-        location = Location.objects.get(id=tnid).values_list('location_x'
-                'location_y', 'location_z')
+        location = Location.objects.filter(id=tnid).values_list('location_x',
+                'location_y', 'location_z')[0]
         insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
         return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 

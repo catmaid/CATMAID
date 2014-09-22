@@ -222,10 +222,9 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
     try:
         parent = Treenode.objects.get(pk=params['parent_id'])
         parent_skeleton_id = parent.skeleton_id
-        loc = parent.location
-        parent_x = decimal.Decimal(loc.x)
-        parent_y = decimal.Decimal(loc.y)
-        parent_z = decimal.Decimal(loc.z)
+        parent_x = decimal.Decimal(parent.location_x)
+        parent_y = decimal.Decimal(parent.location_y)
+        parent_z = decimal.Decimal(parent.location_z)
 
         steps = abs((params['z'] - parent_z) / params['resz']) \
             .quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)

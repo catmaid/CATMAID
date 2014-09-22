@@ -662,7 +662,7 @@ def reroot_skeleton(request, project_id=None):
     try:
         if treenode:
             response_on_error = 'Failed to log reroot.'
-            location = (treenode.location_x, treenode.location.y, treenode.location_z)
+            location = (treenode.location_x, treenode.location_y, treenode.location_z)
             insert_into_log(project_id, request.user.id, 'reroot_skeleton',
                             location, 'Rerooted skeleton for '
                             'treenode with ID %s' % treenode.id)

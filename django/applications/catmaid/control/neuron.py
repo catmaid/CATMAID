@@ -86,7 +86,7 @@ def delete_neuron(request, project_id=None, neuron_id=None):
             root_node = Treenode.objects.get(
                     skeleton_id=skeleton_ids[0], parent=None)
             root_location = (root_node.location_x, root_node.location_y,
-                             root_node.location.z)
+                             root_node.location_z)
         except (Treenode.DoesNotExist, Treenode.MultipleObjectsReturned):
             root_location = None
     else:

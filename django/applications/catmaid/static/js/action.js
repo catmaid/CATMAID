@@ -173,16 +173,6 @@ function createButtonsFromActions(actions, boxID, iconPrefix) {
 var toolActions = [
 
 	new Action({
-		helpText: "Switch to the selector tool",
-		buttonID: 'edit_button_select',
-		buttonName: "select",
-		run: function (e) {
-			project.setTool( new Selector() );
-			return true;
-		}
-	}),
-
-	new Action({
 		helpText: "Switch to the move tool",
 		buttonID: 'edit_button_move',
 		buttonName: "move",

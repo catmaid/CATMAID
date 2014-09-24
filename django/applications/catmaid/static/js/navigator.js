@@ -21,6 +21,11 @@ function Navigator()
 	this.stack = null;
 	this.toolname = "navigator";
 
+	var position_markers = [];
+	var position_marker_path = STATIC_URL_JS + "images/svg-cursor-light-30px.png";
+	var position_marker_width = 30;
+	var position_marker_height = 30;
+
 	if ( !ui ) ui = new UI();
 
 	var sliders_box = document.getElementById( "sliders_box" );
@@ -110,29 +115,67 @@ function Navigator()
 		self.updateControls();
 	};
 	
-	var onmousemove = function( e )
+	var onmousemove =
 	{
-		self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
-		self.lastY = self.stack.y + ui.diffY;
-		self.stack.moveToPixel(
-			self.stack.z,
-			self.stack.y - ui.diffY / self.stack.scale,
-			self.stack.x - ui.diffX / self.stack.scale,
-			self.stack.s );
-		return true;
+		move : function( e )
+		{
+			self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
+			self.lastY = self.stack.y + ui.diffY;
+			self.stack.moveToPixel(
+				self.stack.z,
+				self.stack.y - ui.diffY / self.stack.scale,
+				self.stack.x - ui.diffX / self.stack.scale,
+				self.stack.s );
+			return true;
+		},
+		pos : function( e )
+		{
+			var xp, yp;
+			var m = ui.getMouse( e, self.stack.getView() );
+
+			if ( m )
+			{
+				var mouseStackX = self.stack.x + ( m.offsetX - self.stack.viewWidth / 2 ) / self.stack.scale;
+				var mouseStackY = self.stack.y + ( m.offsetY - self.stack.viewHeight / 2 ) / self.stack.scale;
+
+				var project_pos_x = self.stack.stackToProjectX( self.stack.z, mouseStackY, mouseStackX );
+				var project_pos_y = self.stack.stackToProjectY( self.stack.z, mouseStackY, mouseStackX );
+				var project_pos_z = self.stack.stackToProjectZ( self.stack.z, mouseStackY, mouseStackX );
+
+				statusBar.replaceLast( "[" + project_pos_x.toFixed( 3 ) + ", " + project_pos_y.toFixed( 3 ) + ", " + project_pos_z.toFixed( 3 ) + "]" );
+
+				// update position markers in other open stacks
+				for ( i = 0; i < position_markers.length; ++i )
+				{
+					var current_stack = position_markers[ i ].stack;
+
+					var stack_pos_x = current_stack.projectToStackX( project_pos_z, project_pos_y, project_pos_x );
+					var stack_pos_y = current_stack.projectToStackY( project_pos_z, project_pos_y, project_pos_x );
+
+					// positioning is relative to the center of the current view
+					var rel_x = ( stack_pos_x - current_stack.x ) * current_stack.scale + current_stack.viewWidth * 0.5 - position_marker_width / 2;
+					var rel_y = ( stack_pos_y - current_stack.y ) * current_stack.scale + current_stack.viewHeight * 0.5 - position_marker_height / 2;
+
+					var stack_marker = position_markers[ i ].marker;
+
+					stack_marker.style.left = rel_x + "px";
+					stack_marker.style.top = rel_y + "px";
+				}
+			}
+		}
 	};
 	
 	var onmouseup = function( e )
 	{
 		ui.releaseEvents(); 
-		ui.removeEvent( "onmousemove", onmousemove );
+		ui.removeEvent( "onmousemove", onmousemove.move );
 		ui.removeEvent( "onmouseup", onmouseup );
 		return false;
 	};
 	
 	var onmousedown = function( e )
 	{
-		ui.registerEvent( "onmousemove", onmousemove );
+		ui.registerEvent( "onmousemove", onmousemove.move );
 		ui.registerEvent( "onmouseup", onmouseup );
 		ui.catchEvents( "move" );
 		ui.onmousedown( e );
@@ -448,6 +491,56 @@ function Navigator()
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
 
 	/**
+	 * Adds a position marker for all opened stacks related to the
+	 * current project.
+	 */
+	this.addPositionMarkers = function()
+	{
+		stacks = project.getStacks();
+		for ( i = 0; i < stacks.length; ++i )
+		{
+			s_id = stacks[ i ].id;
+			// don't add one to the current stack
+			if ( s_id == this.stack.id )
+					continue;
+			// create new image div
+			var img = document.createElement( "img" );
+			img.src = position_marker_path;
+			var position_marker = document.createElement( "div" );
+			position_marker.id = "positionMarkerId" + s_id;
+			position_marker.style.zIndex = 5;
+			position_marker.style.width = position_marker_width;
+			position_marker.style.height = position_marker_height;
+			position_marker.style.position = "absolute";
+			position_marker.appendChild( img );
+			// add it to view
+			var stack_view = stacks[ i ].getView();
+			stack_view.appendChild( position_marker );
+			position_markers[ position_markers.length ] =
+				{ marker : position_marker,
+				  view : stack_view,
+				  stack : stacks[ i ] };
+		}
+	}
+
+	/**
+	 * Removes all existant position markers from the views they
+	 * are attached.
+	 */
+	this.removePositionMarkers = function()
+	{
+		// remove all the created div tags
+		for ( i = 0; i < position_markers.length; ++i )
+		{
+			stack_view = position_markers[ i ].view;
+			stack_marker = position_markers[ i ].marker;
+			stack_view.removeChild( stack_marker );
+		}
+		// Clear the array
+		position_markers.length = 0
+	}
+
+	/**
 	 * install this tool in a stack.
 	 * register all GUI control elements and event handlers
 	 */
@@ -459,6 +552,8 @@ function Navigator()
 		self.stack = parentStack;
 
 		self.mouseCatcher.onmousedown = onmousedown;
+		self.mouseCatcher.onmousemove = onmousemove.pos;
+
 		try
 		{
 			self.mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
@@ -546,7 +641,12 @@ function Navigator()
 		};
 		
 		self.updateControls();
-		
+
+		// make sure there are no markers already there
+		self.removePositionMarkers();
+		// create a DIV in the view of every opened stack
+		self.addPositionMarkers();
+
 		return;
 	};
 	
@@ -558,6 +658,8 @@ function Navigator()
 	{
 		if ( self.stack && self.mouseCatcher.parentNode == self.stack.getView() )
 			self.stack.getView().removeChild( self.mouseCatcher );
+		
+		self.removePositionMarkers();
 		return;
 	};
 	

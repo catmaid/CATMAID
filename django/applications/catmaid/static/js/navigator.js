@@ -126,41 +126,50 @@ function Navigator()
 				self.stack.y - ui.diffY / self.stack.scale,
 				self.stack.x - ui.diffX / self.stack.scale,
 				self.stack.s );
+
+			self.movePositionMarkers( e );
+
 			return true;
 		},
 		pos : function( e )
 		{
-			var xp, yp;
-			var m = ui.getMouse( e, self.stack.getView() );
+			if( position_markers.length > 0 ) {
+				self.movePositionMarkers( e );
+			}
+		}
+	};
 
-			if ( m )
+	this.movePositionMarkers = function ( e )
+	{
+		var m = ui.getMouse( e, self.stack.getView() );
+		
+		if( m )
+		{
+			var mouseStackX = self.stack.x + ( m.offsetX - self.stack.viewWidth / 2 ) / self.stack.scale;
+			var mouseStackY = self.stack.y + ( m.offsetY - self.stack.viewHeight / 2 ) / self.stack.scale;
+
+			var project_pos_x = self.stack.stackToProjectX( self.stack.z, mouseStackY, mouseStackX );
+			var project_pos_y = self.stack.stackToProjectY( self.stack.z, mouseStackY, mouseStackX );
+			var project_pos_z = self.stack.stackToProjectZ( self.stack.z, mouseStackY, mouseStackX );
+
+			statusBar.replaceLast( "[" + project_pos_x.toFixed( 3 ) + ", " + project_pos_y.toFixed( 3 ) + ", " + project_pos_z.toFixed( 3 ) + "]" );
+
+			// update position markers in other open stacks
+			for ( i = 0; i < position_markers.length; ++i )
 			{
-				var mouseStackX = self.stack.x + ( m.offsetX - self.stack.viewWidth / 2 ) / self.stack.scale;
-				var mouseStackY = self.stack.y + ( m.offsetY - self.stack.viewHeight / 2 ) / self.stack.scale;
+				var current_stack = position_markers[ i ].stack;
 
-				var project_pos_x = self.stack.stackToProjectX( self.stack.z, mouseStackY, mouseStackX );
-				var project_pos_y = self.stack.stackToProjectY( self.stack.z, mouseStackY, mouseStackX );
-				var project_pos_z = self.stack.stackToProjectZ( self.stack.z, mouseStackY, mouseStackX );
+				var stack_pos_x = current_stack.projectToStackX( project_pos_z, project_pos_y, project_pos_x );
+				var stack_pos_y = current_stack.projectToStackY( project_pos_z, project_pos_y, project_pos_x );
 
-				statusBar.replaceLast( "[" + project_pos_x.toFixed( 3 ) + ", " + project_pos_y.toFixed( 3 ) + ", " + project_pos_z.toFixed( 3 ) + "]" );
+				// positioning is relative to the center of the current view
+				var rel_x = ( stack_pos_x - current_stack.x ) * current_stack.scale + current_stack.viewWidth * 0.5 - position_marker_width / 2;
+				var rel_y = ( stack_pos_y - current_stack.y ) * current_stack.scale + current_stack.viewHeight * 0.5 - position_marker_height / 2;
 
-				// update position markers in other open stacks
-				for ( i = 0; i < position_markers.length; ++i )
-				{
-					var current_stack = position_markers[ i ].stack;
+				var stack_marker = position_markers[ i ].marker;
 
-					var stack_pos_x = current_stack.projectToStackX( project_pos_z, project_pos_y, project_pos_x );
-					var stack_pos_y = current_stack.projectToStackY( project_pos_z, project_pos_y, project_pos_x );
-
-					// positioning is relative to the center of the current view
-					var rel_x = ( stack_pos_x - current_stack.x ) * current_stack.scale + current_stack.viewWidth * 0.5 - position_marker_width / 2;
-					var rel_y = ( stack_pos_y - current_stack.y ) * current_stack.scale + current_stack.viewHeight * 0.5 - position_marker_height / 2;
-
-					var stack_marker = position_markers[ i ].marker;
-
-					stack_marker.style.left = rel_x + "px";
-					stack_marker.style.top = rel_y + "px";
-				}
+				stack_marker.style.left = rel_x + "px";
+				stack_marker.style.top = rel_y + "px";
 			}
 		}
 	};

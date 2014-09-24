@@ -971,8 +971,9 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       sSearch: 'Filter partners:'
     },
     aoColumnDefs: [
-      { aTargets: [0], sSortDataType: 'dom-checkbox' },
-      { aTargets: [-2], sType: 'percentage' }
+      { aTargets: [0], sSortDataType: 'dom-checkbox' }, // Checkbox column
+      { aTargets: [1], sType: 'html' },                 // Neuron name column
+      { aTargets: ['_all'], sType: 'wrapped-numeric' }  // All other columns
     ]
   };
 
@@ -984,14 +985,14 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   };
 
   // Sorting functions for review columns (to parse out percent sign)
-  $.fn.dataTableExt.oSort['percentage-asc'] = function(a, b) {
-    a = parseFloat(a);
-    b = parseFloat(b);
+  $.fn.dataTableExt.oSort['wrapped-numeric-asc'] = function(a, b) {
+    a = parseFloat($.type(a) === 'string' ? a.replace(/<.*?>/g, "") : a);
+    b = parseFloat($.type(b) === 'string' ? b.replace(/<.*?>/g, "") : b);
     return (a < b ? -1 : (a === b ? 0 : 1));
   };
 
-  $.fn.dataTableExt.oSort['percentage-desc'] = function(a, b) {
-    return $.fn.dataTableExt.oSort['percentage-asc'](b, a);
+  $.fn.dataTableExt.oSort['wrapped-numeric-desc'] = function(a, b) {
+    return $.fn.dataTableExt.oSort['wrapped-numeric-asc'](b, a);
   };
 
   table_incoming.dataTable(dataTableOptions);

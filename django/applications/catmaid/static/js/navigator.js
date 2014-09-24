@@ -139,6 +139,18 @@ function Navigator()
 		}
 	};
 
+	var onmouseout = function( e )
+	{
+		if( e.relatedTarget === null || e.relatedTarget.id !== 'eventCatcher' ) {
+			self.hidePositionMarkers( e );
+		}
+	};
+
+	var onmouseover = function( e )
+	{
+		self.showPositionMarkers( e );
+	};
+
 	this.movePositionMarkers = function ( e )
 	{
 		var m = ui.getMouse( e, self.stack.getView() );
@@ -173,7 +185,23 @@ function Navigator()
 			}
 		}
 	};
-	
+
+	this.hidePositionMarkers = function( e )
+	{
+		for( var i = 0; i < position_markers.length; i++ )
+		{
+			position_markers[ i ].marker.style.display = 'none';
+		}
+	};
+
+	this.showPositionMarkers = function( e )
+	{
+		for( var i = 0; i < position_markers.length; i++ )
+		{
+			position_markers[ i ].marker.style.display = 'block';
+		}
+	};
+
 	var onmouseup = function( e )
 	{
 		ui.releaseEvents(); 
@@ -562,6 +590,8 @@ function Navigator()
 
 		self.mouseCatcher.onmousedown = onmousedown;
 		self.mouseCatcher.onmousemove = onmousemove.pos;
+		self.mouseCatcher.onmouseout = onmouseout;
+		self.mouseCatcher.onmouseover = onmouseover;
 
 		try
 		{

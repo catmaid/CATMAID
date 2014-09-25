@@ -411,7 +411,8 @@ def node_update(request, project_id=None):
     _update(Treenode, 'treenode', nodes['t'], now, request.user)
     _update(Connector, 'connector', nodes['c'], now, request.user)
 
-    return HttpResponse(json.dumps(len(nodes)))
+    num_updated_nodes = len(nodes['t'].keys()) + len(nodes['c'].keys())
+    return HttpResponse(json.dumps({'updated': num_updated_nodes}))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

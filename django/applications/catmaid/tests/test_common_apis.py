@@ -2160,26 +2160,24 @@ class ViewPageTests(TestCase):
 
     def test_node_update_many_nodes(self):
         self.fake_authentication()
-        pid = [3, 3, 3, 3, 3, 3]
         node_id = [2368, 2370, 2372, 2374, 356, 421]
         x = [2990, 3060, 3210, 3460, 3640, 3850]
         y = [5200, 4460, 4990, 4830, 5060, 4800]
         z = [1, 2, 3, 4, 5, 6]
-        type_ = ['treenode', 'treenode', 'treenode', 'treenode', 'connector', 'connector']
+        types = ['t', 't', 't', 't', 'c', 'c']
 
-        def insert_params(dictionary, param_name, params):
-            i = 0
-            for param in params:
-                dictionary['%s%s' % (param_name, i)] = params[i]
-                i += 1
+        def insert_params(dictionary, param_id, params):
+            """ Creates a parameter representation that is expected by the
+            backend. Parameters are identified by a number: 0: id, 1: X, 2: Y
+            and 3: Z. """
+            for i,param in enumerate(params):
+                dictionary['%s[%s][%s]' % (types[i], i, param_id)] = params[i]
 
         param_dict = {}
-        insert_params(param_dict, 'pid', pid)
-        insert_params(param_dict, 'node_id', node_id)
-        insert_params(param_dict, 'x', x)
-        insert_params(param_dict, 'y', y)
-        insert_params(param_dict, 'z', z)
-        insert_params(param_dict, 'type', type_)
+        insert_params(param_dict, 0, node_id)
+        insert_params(param_dict, 1, x)
+        insert_params(param_dict, 2, y)
+        insert_params(param_dict, 3, z)
 
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, param_dict)
@@ -2189,7 +2187,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response)
         i = 0
         for n_id in node_id:
-            if type_[i] == 'treenode':
+            if types[i] == 't':
                 node = Treenode.objects.filter(id=n_id)[0]
             else:
                 node = Connector.objects.filter(id=n_id)[0]

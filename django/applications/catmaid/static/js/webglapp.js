@@ -139,6 +139,7 @@ WebGLApplication.prototype.Options = function() {
 	this.connector_filter = false;
   this.shading_method = 'none';
   this.color_method = 'none';
+  this.tag_regex = '';
   this.connector_color = 'cyan-red';
   this.lean_mode = false;
   this.synapse_clustering_bandwidth = 5000;
@@ -182,6 +183,23 @@ WebGLApplication.prototype.staticUpdateZPlane = function() {
 
 /** Receives an extra argument (an event) which is ignored. */
 WebGLApplication.prototype.updateColorMethod = function(colorMenu) {
+  if ('downstream-of-tag' === colorMenu.value) {
+    var dialog = new OptionsDialog("Type in tag");
+    dialog.appendMessage("Nodes downstream of tag: magenta.\nNodes upstream of tag: dark grey.");
+    var input = dialog.appendField("Tag (regex): ", "tag_text", this.options.tag_regex);
+    dialog.onOK = (function() {
+      this.options.tag_regex = input.value;
+      this.options.color_method = colorMenu.value;
+      this.updateSkeletonColors();
+    }).bind(this);
+    dialog.onCancel = function() {
+      // Reset to default (can't know easily what was selected before).
+      colorMenu.selectedIndex = 0;
+    };
+    dialog.show();
+    return;
+  }
+
   this.options.color_method = colorMenu.value;
   this.updateSkeletonColors();
 };
@@ -1916,13 +1934,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.splitByFlowCentral
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
-  var node_weights;
+  var node_weights,
+      arbor;
 
   if ('none' === options.shading_method) {
     node_weights = null;
   } else {
-    var arbor = this.createArbor(),
-        node_weights;
+    arbor = this.createArbor();
 
     if (-1 !== options.shading_method.lastIndexOf('centrality')) {
       // Darken the skeleton based on the betweenness calculation.
@@ -2088,6 +2106,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         return this.axon[vertex.node_id] ? axonColor : dendriteColor;
       }).bind(this)
         : function() { return notComputable; };
+    } else if ('downstream-of-tag' === options.color_method) {
+      var tags = this.tags,
+          regex = new RegExp(options.tag_regex),
+          cuts = Object.keys(tags).filter(function(tag) {
+        return tag.match(regex);
+      }).reduce(function(o, tag) {
+        return tags[tag].reduce(function(o, nodeID) { o[nodeID] = true; return o;}, o);
+      }, {});
+      if (!arbor) arbor = this.createArbor();
+      var upstream = arbor.upstreamArbor(cuts);
+      pickColor = function(vertex) {
+        return upstream.edges[vertex.node_id] ? unreviewedColor : reviewedColor;
+      };
     } else {
       pickColor = function() { return actorColor; };
     }

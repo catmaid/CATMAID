@@ -1589,3 +1589,20 @@ Arbor.prototype.subArbors = function(nodes) {
 
   return Object.keys(arbors).map(function(node) { return arbors[node]; });
 };
+
+/** Return a new Arbor that contains nodes from root all the way to either end nodes or the nodes found in the cuts map. */
+Arbor.prototype.upstreamArbor = function(cuts) {
+  var up = new Arbor(),
+      successors = this.allSuccessors(),
+      open = successors[this.root].slice(0); // clone
+  up.root = this.root;
+  while (open.length > 0) {
+    var node = open.pop(),
+        paren = this.edges[node];
+    up.edges[node] = paren;
+    if (cuts[node]) continue;
+    var succ = successors[node];
+    for (var i=0; i<succ.length; ++i) open.push(succ[i]);
+  }
+  return up;
+};

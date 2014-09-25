@@ -221,23 +221,6 @@ function Navigator()
 		
 		return false;
 	};
-	
-	var onmousewheel = function( e )
-	{
-		var w = ui.getMouseWheel( e );
-		if ( w )
-		{
-			if ( w > 0 )
-			{
-				self.slider_z.move( 1 );
-			}
-			else
-			{
-				self.slider_z.move( -1 );
-			}
-		}
-		return false;
-	};
 
 	var onmousewheel = 
 	{

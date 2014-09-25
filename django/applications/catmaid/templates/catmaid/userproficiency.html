@@ -25,6 +25,10 @@
   stroke-width: 1.5px;
 }
 
+.result {
+  display: none;
+}
+
 </style>
 {% endblock %}
 
@@ -37,6 +41,7 @@
 {% block content %}
 
 <h2>User Proficiency</h2>
+
 <table>
   <tr>
     <td>User: <select id="logtable_username"></select></td>
@@ -61,10 +66,12 @@
   </td></tr>
 </table>
 
-<div id="splits-merges"></div>
-<div id="percent"></div>
-<div id="synapses"></div>
-<div id="nodes"></div>
+<h3 class="result">Results</h3>
+
+<div class="result" id="splits-merges"></div>
+<div class="result" id="percent"></div>
+<div class="result" id="synapses"></div>
+<div class="result" id="nodes"></div>
 
 <script type="text/javascript">
 
@@ -158,10 +165,14 @@
                    min_nodes: min_nodes},
           "error": function(xml, msg, e) {
             $.unblockUI();
+            $('.result').hide();
             alert("An error occurred. Check the console.\n" + msg);
             if (e) console.log(e);
           },
-          "success": draw
+          "success": function(data) {
+            $('.result').show();
+            draw(data);
+          }
         });
       } catch (e) {
         alert(e);

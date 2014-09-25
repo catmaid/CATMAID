@@ -22,7 +22,7 @@ function Navigator()
 	this.toolname = "navigator";
 
 	var position_markers = [];
-	var position_marker_path = STATIC_URL_JS + "images/svg-cursor-light-30px.png";
+	var position_marker_path = STATIC_URL_JS + "images/cursor.svg";
 	var position_marker_width = 30;
 	var position_marker_height = 30;
 
@@ -188,6 +188,8 @@ function Navigator()
 
 	this.hidePositionMarkers = function( e )
 	{
+		//self.mouseCatcher.style.cursor = "move";
+
 		for( var i = 0; i < position_markers.length; i++ )
 		{
 			position_markers[ i ].marker.style.display = 'none';
@@ -196,6 +198,8 @@ function Navigator()
 
 	this.showPositionMarkers = function( e )
 	{
+		//self.mouseCatcher.style.cursor = "url(" + position_marker_path + ") 15 15, crosshair";
+
 		for( var i = 0; i < position_markers.length; i++ )
 		{
 			position_markers[ i ].marker.style.display = 'block';

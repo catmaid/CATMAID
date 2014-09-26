@@ -205,6 +205,54 @@ var WindowMaker = new function()
   };
 
 
+  var createAnalyzeArbor = function() {
+    var AA = new AnalyzeArbor();
+    var win = new CMWWindow(AA.getName());
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("table_analyze_arbor_widget" + AA.widgetID);
+    content.appendChild(container);
+
+    container.innerHTML =
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="analyzearbor' + AA.widgetID + '">' +
+        '<thead>' +
+          '<tr style="border-collapse: collapse; border-right: 1px solid black;">' +
+            '<th rowspan="2"></th>' +
+            '<th colspan="4">Arbor</th>' +
+            '<th colspan="4">Backbone</th>' +
+            '<th colspan="4">Dendrites</th>' +
+            '<th colspan="4">Axon terminals</th>' +
+          '</tr>' +
+          '<tr>' +
+            '<th>Cable (nm)</th>' +
+            '<th>Inputs</th>' +
+            '<th>Outputs</th>' +
+            '<th>Time (min)</th>' +
+            '<th>Cable (nm)</th>' +
+            '<th>Inputs</th>' +
+            '<th>Outputs</th>' +
+            '<th>Time (min)</th>' +
+            '<th>Cable (nm)</th>' +
+            '<th>Inputs</th>' +
+            '<th>Outputs</th>' +
+            '<th>Time (min)</th>' +
+            '<th>Cable (nm)</th>' +
+            '<th>Inputs</th>' +
+            '<th>Outputs</th>' +
+            '<th>Time (min)</th>' +
+          '</tr>' +
+        '</thead>' +
+      '</table>';
+
+    addListener(win, container, 'analyze_arbor' + AA.widgetID);
+
+    addLogic(win);
+
+    return win;
+  };
+
+
   var createStagingListWindow = function( webglwin, webglwin_name ) {
 
     var ST = new SelectionTable();
@@ -2480,6 +2528,7 @@ var WindowMaker = new function()
     "neuron-annotations": createNeuronAnnotationsWindow,
     "neuron-navigator": createNeuronNavigatorWindow,
     "settings": createSettingsWindow,
+    "analyze-arbor": createAnalyzeArbor,
   };
 
   /** If the window for the given name is already showing, just focus it.

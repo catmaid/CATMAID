@@ -1452,6 +1452,17 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
     }).bind(this));
   }).bind(this);
 
+  var analyze_button = document.createElement('input');
+  analyze_button.setAttribute('type', 'button');
+  analyze_button.setAttribute('value', 'Analyze arbor');
+  container.append(analyze_button);
+
+  analyze_button.onclick = (function() {
+    WindowMaker.create('analyze-arbor');
+    // Assumes only one skeleton per neuron
+    AnalyzeArbor.prototype.getLastInstance().init(this.skeleton_ids[0]);
+  }).bind(this);
+
   var activate_button = document.createElement('input');
   activate_button.setAttribute('type', 'button');
   activate_button.setAttribute('value', 'Go to nearest node');

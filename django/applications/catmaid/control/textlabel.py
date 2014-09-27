@@ -72,7 +72,6 @@ def delete_textlabel(request, project_id=None):
 
 @requires_user_role(UserRole.Annotate)
 def create_textlabel(request, project_id=None):
-    print >> sys.stderr, 'creating text label'
     params = {}
     param_defaults = {
         'x': 0,

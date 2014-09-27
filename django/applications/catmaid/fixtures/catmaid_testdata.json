@@ -18,6 +18,24 @@
     }
   },
   {
+    "pk": 1,
+    "model": "auth.user",
+    "fields": {
+      "username": "test0",
+      "first_name": "Test",
+      "last_name": "User 0",
+      "is_active": true,
+      "is_superuser": false,
+      "is_staff": false,
+      "last_login": "2014-09-03T11:17:50.752",
+      "groups": [],
+      "user_permissions": [],
+      "password": "pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=",
+      "email": "",
+      "date_joined": "2014-04-26T12:49:36"
+    }
+  },
+  {
     "pk": 2,
     "model": "auth.user",
     "fields": {
@@ -3264,7 +3282,7 @@
     "fields": {
       "project": 3, 
       "creation_time": "2011-11-01T12:54:44.436", 
-      "user": 2, 
+      "user": 1, 
       "edition_time": "2011-12-05T13:51:36.955"
     }
   }, 
@@ -3274,7 +3292,7 @@
     "fields": {
       "project": 3, 
       "creation_time": "2011-11-01T12:54:45.793", 
-      "user": 2, 
+      "user": 1, 
       "edition_time": "2011-12-05T13:51:36.955"
     }
   }, 
@@ -3284,7 +3302,7 @@
     "fields": {
       "project": 3, 
       "creation_time": "2011-11-01T12:54:47.472", 
-      "user": 2, 
+      "user": 1, 
       "edition_time": "2011-12-05T13:51:36.955"
     }
   }, 
@@ -3294,7 +3312,7 @@
     "fields": {
       "project": 3, 
       "creation_time": "2011-11-01T12:54:48.503", 
-      "user": 2, 
+      "user": 1, 
       "edition_time": "2011-12-05T13:51:36.955"
     }
   }, 
@@ -7535,7 +7553,7 @@
       "location_y": 4600.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -7549,7 +7567,7 @@
       "location_y": 5190.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -7563,7 +7581,7 @@
       "location_y": 4330.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -7577,7 +7595,7 @@
       "location_y": 4880.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -9077,7 +9095,7 @@
       "location_y": 4600.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -9095,7 +9113,7 @@
       "location_y": 5190.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -9113,7 +9131,7 @@
       "location_y": 4330.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -9131,7 +9149,7 @@
       "location_y": 4880.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {

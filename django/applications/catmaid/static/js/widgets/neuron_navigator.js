@@ -1460,7 +1460,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   analyze_button.onclick = (function() {
     WindowMaker.create('analyze-arbor');
     // Assumes only one skeleton per neuron
-    AnalyzeArbor.prototype.getLastInstance().init(this.skeleton_ids[0]);
+    AnalyzeArbor.prototype.getLastInstance().append(this.getSelectedSkeletonModels());
   }).bind(this);
 
   var activate_button = document.createElement('input');

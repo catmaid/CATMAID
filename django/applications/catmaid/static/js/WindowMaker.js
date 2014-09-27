@@ -211,14 +211,39 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
+    var buttons = document.createElement("div");
+
+    buttons.appendChild(document.createTextNode('From'));
+    buttons.appendChild(SkeletonListSources.createSelect(AA));
+
+    var load = document.createElement('input');
+    load.setAttribute("type", "button");
+    load.setAttribute("value", "Append");
+    load.onclick = AA.loadSource.bind(AA);
+    buttons.appendChild(load);
+
+    var clear = document.createElement('input');
+    clear.setAttribute("type", "button");
+    clear.setAttribute("value", "Clear");
+    clear.onclick = AA.clear.bind(AA);
+    buttons.appendChild(clear);
+
+    var update = document.createElement('input');
+    update.setAttribute("type", "button");
+    update.setAttribute("value", "Refresh");
+    update.onclick = AA.update.bind(AA);
+    buttons.appendChild(update);
+
+    content.appendChild(buttons);
+
     var container = createContainer("table_analyze_arbor_widget" + AA.widgetID);
     content.appendChild(container);
 
     container.innerHTML =
       '<table cellpadding="0" cellspacing="0" border="0" class="display" id="analyzearbor' + AA.widgetID + '">' +
         '<thead>' +
-          '<tr style="border-collapse: collapse; border-right: 1px solid black;">' +
-            '<th rowspan="2"></th>' +
+          '<tr>' +
+            '<th rowspan="2">Neuron name</th>' +
             '<th colspan="4">Arbor</th>' +
             '<th colspan="4">Backbone</th>' +
             '<th colspan="4">Dendrites</th>' +
@@ -248,6 +273,9 @@ var WindowMaker = new function()
     addListener(win, container, 'analyze_arbor' + AA.widgetID);
 
     addLogic(win);
+
+    SkeletonListSources.updateGUI();
+    AA.init();
 
     return win;
   };

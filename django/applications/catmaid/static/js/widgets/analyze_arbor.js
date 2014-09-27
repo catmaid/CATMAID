@@ -8,6 +8,7 @@ var AnalyzeArbor = function() {
   this.registerSource();
 
   this.table = null;
+  this.skeleton_ids = [];
 };
 
 AnalyzeArbor.prototype = {};
@@ -26,14 +27,26 @@ AnalyzeArbor.prototype.destroy = function() {
   NeuronNameService.getInstance().unregister(this);
 };
 
-AnalyzeArbor.prototype.append = function() {};
-AnalyzeArbor.prototype.clear = function() {};
+AnalyzeArbor.prototype.update = function() {
+  var skids = this.skeleton_ids,
+      models = this.getSelectedSkeletonModels();
+  this.clear();
+  this.appendOrdered(skids, models);
+};
+
+AnalyzeArbor.prototype.clear = function() {
+  this.table.fnClearTable();
+  this.skeleton_ids = [];
+};
+
 AnalyzeArbor.prototype.removeSkeletons = function() {};
 AnalyzeArbor.prototype.updateModels = function() {};
-AnalyzeArbor.prototype.highlight = function(skeleton_id) {};
+AnalyzeArbor.prototype.highlight = function(skeleton_id) {
+  // TODO highlight row
+};
 
 AnalyzeArbor.prototype.getSelectedSkeletons = function() {
-  return this.skeleton_id ? [this.skeleton_id] : [];
+  return this.skeleton_ids.slice(0);
 };
 
 AnalyzeArbor.prototype.getSkeletonColor = function() {
@@ -41,26 +54,31 @@ AnalyzeArbor.prototype.getSkeletonColor = function() {
 };
 
 AnalyzeArbor.prototype.hasSkeleton = function(skeleton_id) {
-  return skeleton_id && skeleton_id === this.skeleton_id;
+  return -1 !== this.skeleton_ids.indexOf(skeleton_id);
 };
 
-AnalyzeArbor.prototype.createModel = function() {
-  if (!this.skeleton_id) return null;
-  var name = NeuronNameService.getInstance().getName(active);
-  return new SelectionTable.prototype.SkeletonModel(this.skeleton_id, name, this.getSkeletonColor());
+AnalyzeArbor.prototype.createModel = function(skeleton_id) {
+  var name = NeuronNameService.getInstance().getName(skeleton_id);
+  return new SelectionTable.prototype.SkeletonModel(skeleton_id, name, this.getSkeletonColor());
 };
 
 AnalyzeArbor.prototype.getSelectedSkeletonModels = function() {
-  var model = this.createModel(),
-          o = {};
-  if (model) o[model.id] = model;
-  return o;
+  return this.skeleton_ids.reduce((function(o, skid) {
+    o[skid] = this.createModel(skid);
+    return o;
+  }).bind(this), {});
 };
 
 AnalyzeArbor.prototype.getSkeletonModels = AnalyzeArbor.prototype.getSelectedSkeletonModels;
 
+AnalyzeArbor.prototype.updateNeuronNames = function() {
+  this.skeleton_ids.forEach(function(skid, i) {
+    this.table.fnUpdate(NeuronNameService.getInstance().getName(skid), i, 0);
+  }, this);
+};
 
-AnalyzeArbor.prototype.init = function(skeleton_id) {
+
+AnalyzeArbor.prototype.init = function() {
   this.table = $('#analyzearbor' + this.widgetID).dataTable({
       // http://www.datatables.net/usage/options
       "bDestroy": true,
@@ -83,19 +101,27 @@ AnalyzeArbor.prototype.init = function(skeleton_id) {
       })()),
   });
 
-  this.table.fnClearTable(0);
+  this.table.fnClearTable();
+};
 
-  fetchSkeletons(
-      [skeleton_id],
-      function(skid) { return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor-with-minutes'; },
-      function(skid) { return {}; },
-      this.insert.bind(this),
-      function(skid) { growlAlert("ERROR", "Failed to load skeleton #" + skid); },
-      function() {});
+AnalyzeArbor.prototype.append = function(models) {
+  this.appendOrdered(Object.keys(models), models);
+};
+
+AnalyzeArbor.prototype.appendOrdered = function(skids, models) {
+  NeuronNameService.getInstance().registerAll(this, models, (function() {
+    fetchSkeletons(
+        skids,
+        function(skid) { return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor-with-minutes'; },
+        function(skid) { return {}; },
+        this.appendOne.bind(this),
+        function(skid) { growlAlert("ERROR", "Failed to load skeleton #" + skid); },
+        function() {});
+  }).bind(this));
 };
 
 /** json: from URL compact-arbor (nodes, synapses and tags). */
-AnalyzeArbor.prototype.insert = function(skid, json) {
+AnalyzeArbor.prototype.appendOne = function(skid, json) {
   var tags = json[2],
       microtubules_end = tags['microtubules end'];
 
@@ -178,22 +204,23 @@ AnalyzeArbor.prototype.insert = function(skid, json) {
       d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes())));
 
   var rows = [NeuronNameService.getInstance().getName(skid),
-              cable,
+              Math.round(cable) | 0,
               ap.n_inputs,
               ap.n_outputs,
               Object.keys(minutes).length,
-              bb_cable,
+              Math.round(bb_cable) | 0,
               bb_n_inputs,
               bb_n_outputs,
               bb_minutes,
-              d_cable,
+              Math.round(d_cable) | 0,
               d_n_inputs,
               d_n_outputs,
               d_minutes,
-              at_cable,
+              Math.round(at_cable) | 0,
               at_n_inputs,
               at_n_outputs,
               at_minutes];
 
   this.table.fnAddData(rows);
+  this.skeleton_ids.push(skid);
 };

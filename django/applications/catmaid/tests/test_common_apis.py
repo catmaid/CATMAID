@@ -2160,11 +2160,12 @@ class ViewPageTests(TestCase):
 
     def test_node_update_many_nodes(self):
         self.fake_authentication()
-        node_id = [2368, 2370, 2372, 2374, 356, 421]
-        x = [2990, 3060, 3210, 3460, 3640, 3850]
-        y = [5200, 4460, 4990, 4830, 5060, 4800]
-        z = [1, 2, 3, 4, 5, 6]
-        types = ['t', 't', 't', 't', 'c', 'c']
+        self.maxDiff = None
+        node_id = [2368, 2370, 356, 421]
+        x = [2990, 3060, 3640, 3850]
+        y = [5200, 4460, 5060, 4800]
+        z = [1, 2, 5, 6]
+        types = ['t', 't', 'c', 'c']
 
         def insert_params(dictionary, param_id, params):
             """ Creates a parameter representation that is expected by the
@@ -2182,7 +2183,7 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, param_dict)
         parsed_response = json.loads(response.content)
-        expected_result = {'updated': 6}
+        expected_result = {'updated': 4}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         i = 0

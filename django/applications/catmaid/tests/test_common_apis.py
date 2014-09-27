@@ -2197,6 +2197,36 @@ class ViewPageTests(TestCase):
             self.assertEqual(z[i], node.location_z)
             i += 1
 
+    def test_node_no_update_many_nodes(self):
+        self.fake_authentication()
+        self.maxDiff = None
+        node_id = [2368, 2370, 2372, 2374]
+        x = [2990, 3060, 3210, 3460]
+        y = [5200, 4460, 4990, 4830]
+        z = [1, 2, 3, 4]
+        types = ['t', 't', 't', 't']
+
+        def insert_params(dictionary, param_id, params):
+            """ Creates a parameter representation that is expected by the
+            backend. Parameters are identified by a number: 0: id, 1: X, 2: Y
+            and 3: Z. """
+            for i,param in enumerate(params):
+                dictionary['%s[%s][%s]' % (types[i], i, param_id)] = params[i]
+
+        param_dict = {}
+        insert_params(param_dict, 0, node_id)
+        insert_params(param_dict, 1, x)
+        insert_params(param_dict, 2, y)
+        insert_params(param_dict, 3, z)
+
+        response = self.client.post(
+                '/%d/node/update' % self.test_project_id, param_dict)
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'User test2 cannot edit all of the 4 '
+                           'unique objects from table treenode'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result['error'], parsed_response['error'])
+
     def test_node_list_without_active_skeleton(self):
         self.fake_authentication()
         expected_t_result = [

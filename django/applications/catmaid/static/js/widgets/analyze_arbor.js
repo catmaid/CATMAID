@@ -171,56 +171,72 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
       bb_n_inputs = inputs.filter(bb_f).reduce(countInputs, 0),
       bb_minutes = countMinutes(backbone.nodesArray());
 
+  var ad;
+
   // Split by synapse flow centrality
-  var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
-      fc_max = Object.keys(fc).reduce(function(max, nodeID) {
-        var c = fc[nodeID].centrifugal;
-        return c > max ? c : max;
-      }, 0),
-      fc_plateau = Object.keys(fc).filter(function(nodeID) { return fc[nodeID].centrifugal === fc_max; }),
-      cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, fc_plateau);
+  if (0 !== ap.n_outputs && 0 !== ap.n_inputs) {
+    var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
+        fc_max = Object.keys(fc).reduce(function(max, nodeID) {
+          var c = fc[nodeID].centrifugal;
+          return c > max ? c : max;
+        }, 0),
+        fc_plateau = Object.keys(fc).filter(function(nodeID) { return fc[nodeID].centrifugal === fc_max; }),
+        cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, fc_plateau);
 
-  // Detect and measure the axon
-  var axon_terminals = ap.arbor.subArbor(cut),
-      at_backbone = axon_terminals.upstreamArbor(microtubules_end_nodes),
-      at_backbone_cable = at_backbone.cableLength(smooth_positions),
-      at_cable = axon_terminals.cableLength(smooth_positions) - at_backbone_cable,
-      at_f = function(nodeID) { return axon_terminals.contains(nodeID) && !at_backbone.contains(nodeID); },
-      at_n_outputs = outputs.filter(at_f).reduce(countOutputs, 0),
-      at_n_inputs = inputs.filter(at_f).reduce(countInputs, 0),
-      at_minutes = countMinutes(Object.keys(subtract(axon_terminals.nodes(), at_backbone.nodes())));
- 
-  // Detect and measure the dendrites
-  var dendrites = ap.arbor.clone();
-  axon_terminals.nodesArray().forEach(function(nodeID) {
-    delete dendrites.edges[nodeID];
-  });
-  var d_backbone = dendrites.upstreamArbor(microtubules_end_nodes),
-      d_backbone_cable = d_backbone.cableLength(smooth_positions),
-      d_cable = dendrites.cableLength(smooth_positions) - d_backbone_cable,
-      d_f = function(nodeID) { return dendrites.contains(nodeID) && !d_backbone.contains(nodeID); },
-      d_n_outputs = outputs.filter(d_f).reduce(countOutputs, 0),
-      d_n_inputs = inputs.filter(d_f).reduce(countInputs, 0),
-      d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes())));
+    // Detect and measure the axon
+    var axon_terminals = ap.arbor.subArbor(cut),
+        at_backbone = axon_terminals.upstreamArbor(microtubules_end_nodes),
+        at_backbone_cable = at_backbone.cableLength(smooth_positions),
+        at_cable = axon_terminals.cableLength(smooth_positions) - at_backbone_cable,
+        at_f = function(nodeID) { return axon_terminals.contains(nodeID) && !at_backbone.contains(nodeID); },
+        at_n_outputs = outputs.filter(at_f).reduce(countOutputs, 0),
+        at_n_inputs = inputs.filter(at_f).reduce(countInputs, 0),
+        at_minutes = countMinutes(Object.keys(subtract(axon_terminals.nodes(), at_backbone.nodes())));
 
-  var rows = [NeuronNameService.getInstance().getName(skid),
-              Math.round(cable) | 0,
-              ap.n_inputs,
-              ap.n_outputs,
-              Object.keys(minutes).length,
-              Math.round(bb_cable) | 0,
-              bb_n_inputs,
-              bb_n_outputs,
-              bb_minutes,
-              Math.round(d_cable) | 0,
-              d_n_inputs,
-              d_n_outputs,
-              d_minutes,
-              Math.round(at_cable) | 0,
-              at_n_inputs,
-              at_n_outputs,
-              at_minutes];
+    // Detect and measure the dendrites
+    var dendrites = ap.arbor.clone();
+    axon_terminals.nodesArray().forEach(function(nodeID) {
+      delete dendrites.edges[nodeID];
+    });
+    var d_backbone = dendrites.upstreamArbor(microtubules_end_nodes),
+        d_backbone_cable = d_backbone.cableLength(smooth_positions),
+        d_cable = dendrites.cableLength(smooth_positions) - d_backbone_cable,
+        d_f = function(nodeID) { return dendrites.contains(nodeID) && !d_backbone.contains(nodeID); },
+        d_n_outputs = outputs.filter(d_f).reduce(countOutputs, 0),
+        d_n_inputs = inputs.filter(d_f).reduce(countInputs, 0),
+        d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes())));
 
-  this.table.fnAddData(rows);
-  this.skeleton_ids.push(skid);
+    ad = [Math.round(d_cable) | 0,
+          d_n_inputs,
+          d_n_outputs,
+          d_minutes,
+          Math.round(at_cable) | 0,
+          at_n_inputs,
+          at_n_outputs,
+          at_minutes];
+  } else {
+    // Consider non-backbone parts as "dendrites"
+    ad = [Math.round(cable - bb_cable) | 0,
+          ap.n_inputs - bb_n_inputs,
+          ap.n_outputs - bb_n_outputs,
+          countMinutes(Object.keys(subtract(ap.arbor.nodes(), backbone.nodes()))),
+          0,
+          0,
+          0,
+          0];
+  }
+
+  var row = [NeuronNameService.getInstance().getName(skid),
+             Math.round(cable) | 0,
+             ap.n_inputs,
+             ap.n_outputs,
+             Object.keys(minutes).length,
+             Math.round(bb_cable) | 0,
+             bb_n_inputs,
+             bb_n_outputs,
+             bb_minutes].concat(ad);
+
+
+  this.table.fnAddData(row);
+  this.skeleton_ids.push(Number(skid));
 };

@@ -63,7 +63,7 @@ WebGLApplication.prototype.getSelectedSkeletonModels = function() {
 	return Object.keys(skeletons).reduce(function(m, skid) {
     var skeleton = skeletons[skid];
     if (skeleton.visible) {
-      m[skid] = new SelectionTable.prototype.SkeletonModel(skid, skeleton.skeletonmodel.baseName, skeleton.actorColor.clone());
+      m[skid] = skeleton.skeletonmodel.clone();
     }
     return m;
   }, {});
@@ -1597,7 +1597,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmo
 	this.baseName = skeletonmodel.baseName;
   this.synapticColors = space.staticContent.synapticColors;
   this.skeletonmodel = skeletonmodel;
-  this.opacity = 1;
+  this.opacity = skeletonmodel.opacity;
   // This is an index mapping treenode IDs to lists of reviewers. Attaching them
   // directly to the nodes is too much of a performance hit.
   // Gets loaded dynamically, and erased when refreshing (because a new Skeleton is instantiated with the same model).
@@ -2155,6 +2155,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     this.geometry['neurite'].colorsNeedUpdate = true;
     this.actor['neurite'].material.color = new THREE.Color().setHex(0xffffff);
+    this.actor['neurite'].material.opacity = 1;
+    this.actor['neurite'].material.transparent = false;
     this.actor['neurite'].material.needsUpdate = true; // TODO repeated, it's the line_material
 
   } else {

@@ -270,7 +270,7 @@ var WindowMaker = new function()
         '</thead>' +
       '</table>';
 
-    addListener(win, container, 'analyze_arbor' + AA.widgetID);
+    addListener(win, container, 'analyze_arbor' + AA.widgetID, AA.destroy.bind(AA));
 
     addLogic(win);
 

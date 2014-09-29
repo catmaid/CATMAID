@@ -609,6 +609,13 @@ var WindowMaker = new function()
     shadingMenu.onchange = WA.set_shading_method.bind(WA);
     buttons.appendChild(shadingMenu);
 
+    buttons.appendChild(document.createTextNode(" Inv:"));
+    var invert = document.createElement('input');
+    invert.setAttribute('type', 'checkbox');
+    invert.checked = false;
+    invert.onclick = WA.toggleInvertShading.bind(WA);
+    buttons.appendChild(invert);
+
     buttons.appendChild(document.createTextNode(" Color:"));
     var colorMenu = document.createElement('select');
     colorMenu.setAttribute('id', 'webglapp_color_menu' + WA.widgetID);

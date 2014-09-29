@@ -148,6 +148,7 @@ WebGLApplication.prototype.Options = function() {
   this.resample_skeletons = false;
   this.resampling_delta = 3000; // nm
   this.skeleton_line_width = 3;
+  this.invert_shading = false;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -2024,11 +2025,17 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     } else if ('active_node_split' === options.shading_method) {
       var atn = SkeletonAnnotations.getActiveNodeId();
       if (arbor.contains(atn)) {
-        node_weights = arbor.subArbor(atn)
-          .nodesArray().reduce(function(o, node) {
-            o[node] = 0.5;
-            return o;
-          }, {});
+        node_weights = {};
+        var sub = arbor.subArbor(atn),
+            up = 1,
+            down = 0.5;
+        if (options.invert_shading) {
+          up = 0.5;
+          down = 0;
+        }
+        arbor.nodesArray().forEach(function(node) {
+          node_weights[node] = sub.contains(node) ? down : up;
+        });
       } else {
         // Don't shade any
         node_weights = {};
@@ -2061,13 +2068,20 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         node_weights[node] /= max_length;
       });
 
-    } else if ('strahler' === options.shading_method) {
+    } else if (-1 !== options.shading_method.indexOf('strahler')) {
       node_weights = arbor.strahlerAnalysis();
       var max = node_weights[arbor.root];
       Object.keys(node_weights).forEach(function(node) {
         node_weights[node] /= max;
       });
     }
+  }
+
+  if (options.invert_shading) {
+    // All weights are values between 0 and 1
+    Object.keys(node_weights).forEach(function(node) {
+      node_weights[node] = 1 - node_weights[node];
+    });
   }
 
   if (node_weights || 'none' !== options.color_method) {
@@ -2794,4 +2808,10 @@ WebGLApplication.prototype.toggle_usercolormap_dialog = function() {
       $('#usercolormap-table > tbody:last').append( rowElement );
     }
   }
+};
+
+WebGLApplication.prototype.toggleInvertShading = function() {
+  this.options.invert_shading = !this.options.invert_shading;
+  if (this.options.shading_method === 'none') return;
+  this.set_shading_method();
 };

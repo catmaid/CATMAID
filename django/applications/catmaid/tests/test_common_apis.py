@@ -2143,12 +2143,10 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, {
-                    'd0': 3,
-                    'node_id0': treenode_id,
-                    'x0': x,
-                    'y0': y,
-                    'z0': z,
-                    'type0': 'treenode'})
+                    't[0][0]': treenode_id,
+                    't[0][1]': x,
+                    't[0][2]': y,
+                    't[0][3]': z})
         parsed_response = json.loads(response.content)
         expected_result = {'updated': 1}
         self.assertEqual(response.status_code, 200)

@@ -1057,6 +1057,12 @@ var WindowMaker = new function()
     csv.onclick = GP.exportCSV.bind(GP);
     buttons.appendChild(csv);
 
+    var csva = document.createElement('input');
+    csva.setAttribute("type", "button");
+    csva.setAttribute("value", "Export CSV (all)");
+    csva.onclick = GP.exportCSVAll.bind(GP);
+    buttons.appendChild(csva);
+
     content.appendChild(buttons);
 
     var container = createContainer('circuit_graph_plot_div' + GP.widgetID);

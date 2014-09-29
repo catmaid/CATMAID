@@ -1018,6 +1018,47 @@ CircuitGraphPlot.prototype.loadAll = function(callback) {
   }
   if (callback) callback();
 };
+
+CircuitGraphPlot.prototype.exportCSVAll = function() {
+  if (!this.ids || 0 === this.ids.length) return;
+  // Load everything if not there yet
+  this.loadAll((function() {
+    var m = [],
+        i = 1;
+    // Neuron names
+    m.push(this.names.map(function(name) { return name.replace(/,/g, ";"); }));
+    m.push(this.ids);
+    // Signal flow
+    m.push(this.vectors[0][1]);
+    // Eigenvectors
+    for (; i<11 && i<this.vectors.length; ++i) {
+      if (-1 === this.vectors[i][0]) break; // graph partitions
+      m.push(this.vectors[i][1]);
+    }
+    // Graph partitions
+    m.push(this.vectors[i][1]);
+    m.push(this.vectors[i+1][1]);
+    // Betweenness centrality
+    m.push(this.centralities[0]);
+    // Anatomy without the histograms
+    m = m.concat(this.anatomy.slice(0, 10))
+         .concat(this.anatomy.slice(50, 56));
+    // PCA
+    for (i=0; i<this.pca.length; ++i) {
+      m.push(this.pca[i][1]);
+    }
+
+    var csv = numeric.transpose(m).map(function(row) { return row.join(','); }).join('\n');
+
+    // Pulldown menus to grab titles
+    var xSelect = $('#circuit_graph_plot_X_' + this.widgetID)[0],
+        titles = [];
+    for (var i=0; i<xSelect.length; ++i) titles.push(xSelect[i].text);
+    var blob = new Blob(["neuron,skeleton_id," + titles.join(',') + "\n", csv], {type :'text/plain'});
+    saveAs(blob, "circuit_plot_all.csv");
+  }).bind(this));
+};
+
 CircuitGraphPlot.prototype.adjustOptions = function() {
   var od = new OptionsDialog("Parameters");
   od.appendField(

@@ -1225,7 +1225,7 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
       }, {sum: 0}).index + 1,
       n_pc = cutoff < 2 ? 2 : cutoff;
 
-  this.pca = numeric.dot(svd.U.slice(0, n_pc), M).map(function(v, i) {
+  this.pca = numeric.dot(svd.U.slice(0, n_pc), M.slice(0, n_pc)).map(function(v, i) {
     return [svd.S[i], v];
   });
 

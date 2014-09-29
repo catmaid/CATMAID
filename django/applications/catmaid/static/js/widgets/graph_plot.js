@@ -991,6 +991,7 @@ CircuitGraphPlot.prototype.exportSVG = function() {
 };
 
 CircuitGraphPlot.prototype.exportCSV = function() {
+  // TODO this.getVectors could launch a continuation
   var vs = this.getVectors();
   if (!vs) return;
   var csv = this.ids.map(function(id, i) {

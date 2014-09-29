@@ -1003,6 +1003,20 @@ CircuitGraphPlot.prototype.exportCSV = function() {
   saveAs(blob, "circuit_plot.csv");
 };
 
+CircuitGraphPlot.prototype.loadAll = function(callback) {
+  var pairs = [[this.anatomy, 'loadAnatomy'],
+               [this.centralities[0], 'loadBetweennessCentrality'],
+               [this.pca, 'loadPCA']];
+
+  for (var i=0; i<pairs.length; ++i) {
+    if (!pairs[i][0]) {
+      return this[pairs[i][1]]((function() {
+        this.loadAll(callback);
+      }).bind(this));
+    }
+  }
+  if (callback) callback();
+};
 CircuitGraphPlot.prototype.adjustOptions = function() {
   var od = new OptionsDialog("Parameters");
   od.appendField(

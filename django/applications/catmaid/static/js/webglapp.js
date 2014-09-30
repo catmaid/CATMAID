@@ -2077,7 +2077,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     }
   }
 
-  if (options.invert_shading) {
+  if (options.invert_shading && node_weights) {
     // All weights are values between 0 and 1
     Object.keys(node_weights).forEach(function(node) {
       node_weights[node] = 1 - node_weights[node];

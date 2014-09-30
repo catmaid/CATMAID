@@ -400,7 +400,7 @@ CircuitGraphPlot.prototype.updatePulldownMenus = function(preserve_indices) {
 
     select.options.add(new Option('Cable of terminal segments (nm)', 'a50'));
     select.options.add(new Option('Norm. cable of terminal segments (nm)', 'a51'));
-    select.options.add(new Option('Num. terminal segments (nm)', 'a52'));
+    select.options.add(new Option('Num. terminal segments', 'a52'));
     select.options.add(new Option('Num. branches', 'a53'));
     select.options.add(new Option('Cable of hillock (nm)', 'a54'));
     select.options.add(new Option('Cable of main dendritic shaft (nm)', 'a55'));

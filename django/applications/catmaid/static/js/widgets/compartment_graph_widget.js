@@ -1055,6 +1055,7 @@ GroupGraph.prototype.writeGML = function() {
 
   this.cy.edges(function(i, edge) {
     var props = edge.data();
+    var risk = props.risk ? ['risk ' + props.risk, 'label "' + props.label + '"'] : [];
     items.push(["edge [",
                 "source " + ids[props.source],
                 "target " + ids[props.target],
@@ -1065,7 +1066,7 @@ GroupGraph.prototype.writeGML = function() {
                  "source_arrow 0",
                  "target_arrow " + (props.directed ? 3 : 0)].join("\n      "),
                 "]",
-                'weight ' + props.weight].join("\n    "));
+                'weight ' + props.weight].concat(risk).join("\n    "));
     items.push("]");
   });
 

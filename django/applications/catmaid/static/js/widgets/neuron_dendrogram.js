@@ -20,9 +20,13 @@ NeuronDendrogram.prototype.getName = function() {
   return "Neuron Dendrogram " + this.widgetID;
 };
 
-NeuronDendrogram.prototype.init = function()
+NeuronDendrogram.prototype.init = function(container)
 {
-  // Get active skeleton
+  this.container = container;
+};
+
+NeuronDendrogram.prototype.destroy = function() {
+  this.unregisterInstance();
 };
 
 /**
@@ -47,13 +51,15 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
   if (!skid) {
     alert("Please provide a skeleton ID");
   }
-  this.sekletonId = skid;
 
   // Retrieve skeleton data
   var url = django_url + project.id + '/' + skid + '/0/1/compact-skeleton';
   requestQueue.register(url, "GET", {}, jsonResponseHandler(
         (function(data) {
           var tree = this.createTreeRepresentation(data[0]);
+          this.currentSkeletonId = skid;
+          this.currentSkeletonTree = tree;
+          this.currentSkeletonTags = data[2];
           this.renderDendogram(tree, data[2]);
         }).bind(this)));
 };
@@ -106,9 +112,58 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes)
   return tree;
 };
 
+NeuronDendrogram.prototype.resize = function()
+{
+  if (this.currentSkeletonTree && this.currentSkeletonTags) {
+    this.renderDendogram(this.currentSkeletonTree, this.currentSkeletonTags);
+  }
+};
+
 /**
   * Renders a new dendogram containing the provided list of nodes.
   */
 NeuronDendrogram.prototype.renderDendogram = function(tree, tags)
 {
+  var width = this.container.clientWidth;
+  var height = this.container.clientHeight;
+  var dendrogram = d3.layout.cluster().size([height, width - 160]);
+
+  // Clear existing container
+  $("#dendrogram" + this.widgetID).empty();
+
+  // Create new SVG
+  var svg = d3.select("#dendrogram" + this.widgetID).append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .append("g")
+      .attr("transform", "translate(40,0)");
+
+  var nodes = dendrogram.nodes(tree);
+  var links = dendrogram.links(nodes);
+
+  var diagonal = d3.svg.diagonal()
+    .projection(function(d) { return [d.y, d.x]; });
+
+  var link = svg.selectAll(".link")
+    .data(links)
+    .enter().append("path")
+    .attr("class", "link")
+    .attr("d", diagonal);
+
+  var node = svg.selectAll(".node")
+    .data(nodes)
+    .enter().append("g")
+    .attr("class", "node")
+    .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+  node.append("circle")
+    .attr("r", 4.5);
+
+  node.append("text")
+    .attr("dx", function(d) { return d.children ? -8 : 8; })
+    .attr("dy", 3)
+    .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+    .text(function(d) { return d.name; });
+
+  d3.select(self.frameElement).style("height", height + "px");
 };

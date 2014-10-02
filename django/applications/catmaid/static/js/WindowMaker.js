@@ -288,23 +288,32 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var buttons = document.createElement("div");
+    buttons.setAttribute("class", "buttonpanel");
 
     var load = document.createElement('input');
     load.setAttribute("type", "button");
     load.setAttribute("value", "Display active skeleton");
     load.onclick = ND.loadActiveSkeleton.bind(ND);
     buttons.appendChild(load);
-    buttons.appendChild(document.createTextNode('Tag'));
+
+    var tag = document.createElement('label');
+    tag.appendChild(document.createTextNode('Tag'));
+    var tagInput = document.createElement('input');
+    tagInput.setAttribute('type', 'text');
+    tagInput.setAttribute('id', 'dendrogram-tag-' + ND.widgetID);
+    tag.appendChild(tagInput);
+    buttons.appendChild(tag);
 
     content.appendChild(buttons);
 
     var container = createContainer("dendrogram" + ND.widgetID);
     content.appendChild(container);
 
-    addListener(win, container, 'dendogram' + ND.widgetID);
+    addListener(win, container, 'dendrogram' + ND.widgetID,
+        ND.destroy.bind(ND), ND.resize.bind(ND));
     addLogic(win);
 
-    ND.init();
+    ND.init(container);
 
     return win;
   };

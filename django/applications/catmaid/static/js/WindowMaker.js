@@ -281,6 +281,35 @@ var WindowMaker = new function()
   };
 
 
+  var createNeuronDendrogram = function() {
+    var ND = new NeuronDendrogram();
+    var win = new CMWWindow(ND.getName());
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var buttons = document.createElement("div");
+
+    var load = document.createElement('input');
+    load.setAttribute("type", "button");
+    load.setAttribute("value", "Display active skeleton");
+    load.onclick = ND.loadActiveSkeleton.bind(ND);
+    buttons.appendChild(load);
+    buttons.appendChild(document.createTextNode('Tag'));
+
+    content.appendChild(buttons);
+
+    var container = createContainer("dendrogram" + ND.widgetID);
+    content.appendChild(container);
+
+    addListener(win, container, 'dendogram' + ND.widgetID);
+    addLogic(win);
+
+    ND.init();
+
+    return win;
+  };
+
+
   var createStagingListWindow = function( webglwin, webglwin_name ) {
 
     var ST = new SelectionTable();
@@ -2570,6 +2599,7 @@ var WindowMaker = new function()
     "neuron-navigator": createNeuronNavigatorWindow,
     "settings": createSettingsWindow,
     "analyze-arbor": createAnalyzeArbor,
+    "neuron-dendrogram": createNeuronDendrogram,
   };
 
   /** If the window for the given name is already showing, just focus it.

@@ -816,6 +816,17 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
+      helpText: "Neuron denrogram",
+      keyShortcuts: {
+          'F4': [ 115 ]
+      },
+      run: function (e) {
+        WindowMaker.create('neuron-dendrogram');
+        return true;
+      }
+  }) );
+
+  this.addAction( new Action({
       helpText: "Annotate active neuron",
       keyShortcuts: {
           'F3': [ 114 ]

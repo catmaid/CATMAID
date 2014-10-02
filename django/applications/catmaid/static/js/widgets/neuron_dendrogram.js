@@ -67,12 +67,18 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
 NeuronDendrogram.prototype.createTreeRepresentation = function(nodes)
 {
   /**
-   * Helper to create a tree representation of a skeleton.
+   * Helper to create a tree representation of a skeleton. Expects data to be of
+   * the format [id, parent_id, user_id, x, y, z, radius, confidence]
    */
-  var createTree = function(index, id, depth) {
+  var createTree = function(index, data, depth) {
+    var id = data[0];
     // Basic node data structure
     var node = {
       'name': id,
+      'id': id,
+      'loc_x': data[3],
+      'loc_y': data[4],
+      'loc_z': data[5],
       'depth': depth,
     };
     // Add children to node, if they exist
@@ -92,7 +98,8 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes)
     if (!o.hasOwnProperty(parent)) {
       o[parent] = [];
     }
-    o[parent].push(n[0]);
+    // Push whole table row as value
+    o[parent].push(n);
     return o;
   }, {});
   // Make sure we have exactly one root node
@@ -154,7 +161,17 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags)
     .data(nodes)
     .enter().append("g")
     .attr("class", "node")
-    .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+    .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+    .on("dblclick", (function(n) {
+      var skid = this.currentSkeletonId;
+      SkeletonAnnotations.staticMoveTo(
+          n.loc_z,
+          n.loc_y,
+          n.loc_x,
+          function () {
+             SkeletonAnnotations.staticSelectNode(n.id, skid);
+          });
+    }).bind(this));
 
   node.append("circle")
     .attr("r", 4.5);

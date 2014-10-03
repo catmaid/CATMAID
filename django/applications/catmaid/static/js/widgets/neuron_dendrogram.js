@@ -11,6 +11,7 @@ var NeuronDendrogram = function() {
 
   this.table = null;
   this.skeletonId = null;
+  this.collapsed = true;
 };
 
 NeuronDendrogram.prototype = {};
@@ -52,19 +53,14 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
     alert("Please provide a skeleton ID");
   }
 
-  // Read tag
-  var tag = $('input#dendrogram-tag-' + this.widgetID).val();
-
   // Retrieve skeleton data
   var url = django_url + project.id + '/' + skid + '/0/1/compact-skeleton';
   requestQueue.register(url, "GET", {}, jsonResponseHandler(
         (function(data) {
-          var taggedNodeIds = data[2].hasOwnProperty(tag) ? data[2][tag] : [];
-          var tree = this.createTreeRepresentation(data[0], taggedNodeIds);
           this.currentSkeletonId = skid;
-          this.currentSkeletonTree = tree;
+          this.currentSkeletonTree = data[0];
           this.currentSkeletonTags = data[2];
-          this.renderDendogram(tree, data[2], tag);
+          this.update();
         }).bind(this)));
 };
 
@@ -78,7 +74,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
    * Helper to create a tree representation of a skeleton. Expects data to be of
    * the format [id, parent_id, user_id, x, y, z, radius, confidence].
    */
-  var createTree = function(index, specialNodes, data, forceSpecial) {
+  var createTree = function(index, specialNodes, data, forceSpecial, collapsed) {
     var id = data[0];
     var special = forceSpecial || specialNodes.indexOf(id) != -1;
     // Basic node data structure
@@ -90,11 +86,28 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
       'loc_z': data[5],
       'tagged': special,
     };
+
     // Add children to node, if they exist
     if (index.hasOwnProperty(id)) {
-      node.children = index[id].map(function(c) {
-        return createTree(index, specialNodes, c, special);
+
+      var findNext = function(n) {
+        var cid = n[0];
+        var skip = collapsed && // collapse active?
+                   index.hasOwnProperty(cid) && // is parent?
+                   (1 === index[cid].length) && // only one child?
+                   specialNodes.indexOf(cid) == -1; // not special?
+        if (skip) {
+          // Test if child can also be skipped
+          return findNext(index[cid][0]);
+        } else {
+          return n;
+        }
+      };
+
+      node.children = index[id].map(findNext).map(function(c) {
+        return createTree(index, specialNodes, c, special, collapsed);
       });
+
     }
 
     return node;
@@ -123,17 +136,33 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
 
   // Create the tree, starting from the root node
   var root = parentToChildren[null][0];
-  var tree = createTree(parentToChildren, taggedNodes, root, false);
+  var tree = createTree(parentToChildren, taggedNodes, root, false, this.collapsed);
 
   return tree;
 };
 
 NeuronDendrogram.prototype.resize = function()
 {
+  this.update();
+};
+
+
+NeuronDendrogram.prototype.update = function()
+{
+  if (!(this.currentSkeletonTree && this.currentSkeletonTags))
+  {
+    return;
+  }
+
+  var tag = $('input#dendrogram-tag-' + this.widgetID).val();
+  var taggedNodeIds = this.currentSkeletonTags.hasOwnProperty(tag) ? this.currentSkeletonTags[tag] : [];
+  var tree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds);
   if (this.currentSkeletonTree && this.currentSkeletonTags) {
-    this.renderDendogram(this.currentSkeletonTree, this.currentSkeletonTags);
+    this.renderDendogram(tree, this.currentSkeletonTags);
   }
 };
+
+
 
 /**
   * Renders a new dendogram containing the provided list of nodes.

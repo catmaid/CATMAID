@@ -633,7 +633,13 @@ div#classification_graph_object img.roiimage {
   stroke-width: 1.5px;
 }
 
-.node {
+.taggedNode circle {
+  fill: #fff;
+  stroke: orangered;
+  stroke-width: 1.5px;
+}
+
+.node, .taggedNode {
   font: 10px sans-serif;
 }
 

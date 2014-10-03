@@ -215,12 +215,21 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .attr("class", "link")
     .attr("d", diagonal);
 
-  var node = svg.selectAll(".node")
-    .data(nodes)
-    .enter().append("g")
-    .attr("class", "node")
-    .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
-    .on("dblclick", (function(n) {
+  // Split nodes in those which are tagged and those which are not
+  var separatedNodes = nodes.reduce(function(o, n) {
+    if (n.tagged) {
+      o.taggedNodes.push(n);
+    } else {
+      o.regularNodes.push(n);
+    }
+    return o;
+  },
+  {
+    taggedNodes: [],
+    regularNodes: [],
+  });
+
+  var nodeClickHandler = function(n) {
       var skid = this.currentSkeletonId;
       SkeletonAnnotations.staticMoveTo(
           n.loc_z,
@@ -229,16 +238,28 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
           function () {
              SkeletonAnnotations.staticSelectNode(n.id, skid);
           });
-    }).bind(this));
+    };
 
-  node.append("circle")
-    .attr("r", 4.5);
+  var addNodes = function(elements, cls) {
+    var node = svg.selectAll(".node")
+      .data(elements)
+      .enter().append("g")
+      .attr("class", cls)
+      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+      .on("dblclick", nodeClickHandler.bind(this));
 
-  node.append("text")
-    .attr("dx", function(d) { return d.children ? -8 : 8; })
-    .attr("dy", 3)
-    .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
-    .text(function(d) { return d.name; });
+    node.append("circle")
+      .attr("r", 4.5);
+
+    node.append("text")
+      .attr("dx", function(d) { return d.children ? -8 : 8; })
+      .attr("dy", 3)
+      .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+      .text(function(d) { return d.name; });
+  };
+
+  addNodes(separatedNodes.taggedNodes, "taggedNode");
+  addNodes(separatedNodes.regularNodes, "node");
 
   d3.select(self.frameElement).style("height", height + "px");
 };

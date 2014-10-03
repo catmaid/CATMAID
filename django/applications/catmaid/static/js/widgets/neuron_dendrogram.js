@@ -242,3 +242,8 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 
   d3.select(self.frameElement).style("height", height + "px");
 };
+
+NeuronDendrogram.prototype.setCollapsed = function(value)
+{
+  this.collapsed = value;
+};

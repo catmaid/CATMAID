@@ -318,6 +318,20 @@ var WindowMaker = new function()
     collapse.appendChild(collapseInput);
     buttons.appendChild(collapse);
 
+    var naming = document.createElement('label');
+    naming.appendChild(document.createTextNode('Show node IDs'));
+    var namingInput = document.createElement('input');
+    namingInput.setAttribute('type', 'checkbox');
+    if (ND.showNodeIDs) {
+      namingInput.setAttribute('checked', 'checked');
+    }
+    namingInput.onchange = function() {
+      ND.setShowNodeIds(this.checked);
+      ND.update();
+    };
+    naming.appendChild(namingInput);
+    buttons.appendChild(naming);
+
     content.appendChild(buttons);
 
     var container = createContainer("dendrogram" + ND.widgetID);

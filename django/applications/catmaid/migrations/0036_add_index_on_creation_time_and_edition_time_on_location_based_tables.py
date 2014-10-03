@@ -22,17 +22,16 @@ class Migration(SchemaMigration):
 
             IF NOT EXISTS (
                 SELECT 1
-                FROM   pg_class c
-                JOIN   pg_namespace n ON n.oid = c.relnamespace
-                WHERE  c.relname = 'my_name'
-                AND    n.nspname = 'myschema' -- 'public' by default
+                FROM   pg_indexes
+                WHERE  tablename = '%s'
+                AND indexname ='%s'
                 ) THEN
 
                 CREATE INDEX %s ON %s (%s);
             END IF;
 
             END$$;
-        ''' % (index_name, table, column))
+        ''' % (table, index_name, index_name, table, column))
 
 
     def forwards(self, orm):

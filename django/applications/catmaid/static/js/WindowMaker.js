@@ -288,6 +288,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var buttons = document.createElement("div");
+    buttons.setAttribute("id", "dendrogram_buttons" + ND.widgetID);
     buttons.setAttribute("class", "buttonpanel");
 
     var load = document.createElement('input');
@@ -337,7 +338,7 @@ var WindowMaker = new function()
     var container = createContainer("dendrogram" + ND.widgetID);
     content.appendChild(container);
 
-    addListener(win, container, 'dendrogram' + ND.widgetID,
+    addListener(win, container, 'dendrogram_buttons' + ND.widgetID,
         ND.destroy.bind(ND), ND.resize.bind(ND));
     addLogic(win);
 

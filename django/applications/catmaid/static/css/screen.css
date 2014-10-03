@@ -626,3 +626,31 @@ div#classification_graph_object img.roiimage {
   color: #888;
   font-style:italic;
 }
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.taggedNode circle {
+  fill: #fff;
+  stroke: orangered;
+  stroke-width: 1.5px;
+}
+
+.node, .taggedNode {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+.taggedLink {
+  fill: none;
+  stroke: #fcc;
+  stroke-width: 1.5px;
+}

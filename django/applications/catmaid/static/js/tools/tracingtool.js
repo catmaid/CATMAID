@@ -619,11 +619,19 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Add TODO Tag (Shift: Remove) for the active node",
+    helpText: "Add TODO Tag (Shift: Remove) to the active node",
     keyShortcuts: {
       "L": [ 76 ]
     },
     run: tagFn('TODO')
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Add 'microtubules end' tag (Shift: Remove) to the active node",
+    keyShortcuts: {
+      "F": [ 70 ]
+    },
+    run: tagFn('microtubules end')
   }) );
 
   this.addAction( new Action({

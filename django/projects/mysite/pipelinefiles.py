@@ -48,7 +48,7 @@ libraries_js = {
     'fabric.js': ['all.modified.js'],
     'raphael': ['raphael.js', 'g.raphael.js', 'g.pie-min.js', 'g.line.altered.js',
                 'raphael-custom.js', 'colorwheel.js', 'raphael.export.js'],
-    'd3': ['d3.v2.js', 'venn.js', 'mds.js'],
+    'd3': ['d3.v3.js', 'venn.js', 'mds.js'],
     'sylvester': ['sylvester.js'],
     'numeric': ['numeric-1.2.6.js'],
     'three.js': ['three.js', 'js/controls/TrackballControls.js', 'js/Detector.js',

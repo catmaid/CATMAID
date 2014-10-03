@@ -229,7 +229,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     regularNodes: [],
   });
 
-  var nodeClickHandler = function(n) {
+  var nodeClickHandler = (function(n) {
       var skid = this.currentSkeletonId;
       SkeletonAnnotations.staticMoveTo(
           n.loc_z,
@@ -238,7 +238,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
           function () {
              SkeletonAnnotations.staticSelectNode(n.id, skid);
           });
-    };
+    }).bind(this);
 
   var addNodes = function(elements, cls) {
     var node = svg.selectAll(".node")
@@ -246,7 +246,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       .enter().append("g")
       .attr("class", cls)
       .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
-      .on("dblclick", nodeClickHandler.bind(this));
+      .on("dblclick", nodeClickHandler);
 
     node.append("circle")
       .attr("r", 4.5);

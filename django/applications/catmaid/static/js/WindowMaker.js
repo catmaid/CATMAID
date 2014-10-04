@@ -234,6 +234,12 @@ var WindowMaker = new function()
     update.onclick = AA.update.bind(AA);
     buttons.appendChild(update);
 
+    var pies = document.createElement('input');
+    pies.setAttribute("type", "button");
+    pies.setAttribute("value", "Export charts as SVG");
+    pies.onclick = AA.exportSVG.bind(AA);
+    buttons.appendChild(pies);
+
     content.appendChild(buttons);
 
     var container = createContainer("table_analyze_arbor_widget" + AA.widgetID);
@@ -269,6 +275,9 @@ var WindowMaker = new function()
           '</tr>' +
         '</thead>' +
       '</table>';
+
+    container.appendChild(document.createElement('br'));
+    container.appendChild(createContainer('analyze_widget_charts_div' + AA.widgetID));
 
     addListener(win, container, 'analyze_arbor' + AA.widgetID, AA.destroy.bind(AA));
 

@@ -9,6 +9,7 @@ var AnalyzeArbor = function() {
 
   this.table = null;
   this.skeleton_ids = [];
+  this.pie_radius = 100;
 };
 
 AnalyzeArbor.prototype = {};
@@ -102,6 +103,9 @@ AnalyzeArbor.prototype.init = function() {
   });
 
   this.table.fnClearTable();
+
+  // Fix CSS
+  $("#analyzearbor" + this.widgetID + "_wrapper")[0].style.minHeight = "0px";
 };
 
 AnalyzeArbor.prototype.append = function(models) {
@@ -116,7 +120,7 @@ AnalyzeArbor.prototype.appendOrdered = function(skids, models) {
         function(skid) { return {}; },
         this.appendOne.bind(this),
         function(skid) { growlAlert("ERROR", "Failed to load skeleton #" + skid); },
-        function() {});
+        this.updateCharts.bind(this))
   }).bind(this));
 };
 
@@ -239,4 +243,100 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
 
   this.table.fnAddData(row);
   this.skeleton_ids.push(Number(skid));
+};
+
+/** entries: an array of key/value maps. Order matters.
+ * [{name: "Apples", value: 10},
+ *  {name: "Pears", value: 15},
+ *  {name: "Oranges", value: 3}]. */
+AnalyzeArbor.prototype.createSVGPieChart = function(title, div, radius, entries) {
+  var arc = d3.svg.arc()
+    .outerRadius(radius - 10)
+    .innerRadius(0);
+  var pie = d3.layout.pie()
+    .sort(null)
+    .value(function(d) { return d.value; });
+  var svg = d3.select(div).append("svg")
+    .attr("width", radius * 2)
+    .attr("height", radius * 2 + 30)
+    .append("g")
+    .attr("transform", "translate(" + radius + "," + (radius + 30) + ")");
+  var g = svg.selectAll(".arc")
+    .data(pie(entries))
+    .enter().append("g").attr("class", "arc");
+  g.append("path")
+    .attr("d", arc)
+    .style("fill", function(d) { return d.data.color; });
+  g.append("text")
+    .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
+    .attr("dy", ".35em")
+    .style("text-anchor", "middle")
+    .text(function(d) { return d.data.name; });
+  svg.append("text")
+    .attr("x", 0)
+    .attr("y", -radius)
+    .style("text-anchor", "middle")
+    .style("font-size", "16px") 
+    .style("text-decoration", "underline")
+    .text(title);
+
+  return svg;
+};
+
+/** Must run after the table is filled in. */
+AnalyzeArbor.prototype.updateCharts = function() {
+  // Prepare
+  var divID = '#analyze_widget_charts_div' + this.widgetID;
+  $(divID).empty();
+  if (!this.table) return;
+  var rows = this.table.fnGetData();
+  if (rows.length < 1) return;
+  
+  // Sum the numeric columns
+  var rows = this.table.fnGetData(),
+      sums = rows[0].map(function() { return 0; });
+  for (var k=0; k<rows.length; ++k) {
+    var row = rows[k];
+    for (var i=1; i<sums.length; ++i) sums[i] += row[i];
+  }
+
+  // Create pie charts
+  var labels = ["Backbone", "Dendritic terminals", "Axon terminals"],
+      colors = ["#aaaaaa", "#00ffff", "#ff0000"];
+
+  var makePie = (function(offset, title) {
+    var entries = [];
+    [5, 9, 13].forEach(function(k, i) {
+      var sum = sums[k + offset];
+      if (sum > 0) entries.push({name: labels[i], value: sum, color: colors[i]});
+    });
+    if (entries.length > 0) {
+      this.createSVGPieChart(title, divID, this.pie_radius, entries);
+    }
+  }).bind(this);
+
+  var pie_cable = makePie(0, "Cable (nm)"),
+      pie_inputs = makePie(1, "# Inputs"),
+      pie_outputs = makePie(2, "# Outputs");
+};
+
+AnalyzeArbor.prototype.exportSVG = function() {
+  var div = document.getElementById("analyze_widget_charts_div" + this.widgetID);
+  if (!div) return;
+  var svg = div.getElementsByTagName('svg');
+  if (svg && svg.length > 0) {
+    var xmlns = "http://www.w3.org/2000/svg";
+    var all = document.createElementNS(xmlns, 'svg');
+    all.setAttributeNS(null, "width", this.pie_radius * 2 * svg.length);
+    all.setAttributeNS(null, "height", this.pie_radius * 2 + 30);
+    for (var i=0; i<svg.length; ++i) {
+      var g = document.createElementNS(xmlns, "g");
+      g.setAttributeNS(null, "transform", "translate(" + (i * this.pie_radius * 2) + ", 0)");
+      g.appendChild(svg[i].children[0].cloneNode(true));
+      all.appendChild(g);
+    }
+    var xml = new XMLSerializer().serializeToString(all);
+    var blob = new Blob([xml], {type: 'text/xml'});
+    saveAs(blob, "analyze_arbor_pie_charts.svg");
+  }
 };

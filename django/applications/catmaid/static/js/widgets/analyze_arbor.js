@@ -245,44 +245,6 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
   this.skeleton_ids.push(Number(skid));
 };
 
-/** entries: an array of key/value maps. Order matters.
- * [{name: "Apples", value: 10},
- *  {name: "Pears", value: 15},
- *  {name: "Oranges", value: 3}]. */
-AnalyzeArbor.prototype.createSVGPieChart = function(title, div, radius, entries) {
-  var arc = d3.svg.arc()
-    .outerRadius(radius - 10)
-    .innerRadius(0);
-  var pie = d3.layout.pie()
-    .sort(null)
-    .value(function(d) { return d.value; });
-  var svg = d3.select(div).append("svg")
-    .attr("width", radius * 2)
-    .attr("height", radius * 2 + 30)
-    .append("g")
-    .attr("transform", "translate(" + radius + "," + (radius + 30) + ")");
-  var g = svg.selectAll(".arc")
-    .data(pie(entries))
-    .enter().append("g").attr("class", "arc");
-  g.append("path")
-    .attr("d", arc)
-    .style("fill", function(d) { return d.data.color; });
-  g.append("text")
-    .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
-    .attr("dy", ".35em")
-    .style("text-anchor", "middle")
-    .text(function(d) { return d.data.name; });
-  svg.append("text")
-    .attr("x", 0)
-    .attr("y", -radius)
-    .style("text-anchor", "middle")
-    .style("font-size", "16px") 
-    .style("text-decoration", "underline")
-    .text(title);
-
-  return svg;
-};
-
 /** Must run after the table is filled in. */
 AnalyzeArbor.prototype.updateCharts = function() {
   // Prepare
@@ -292,7 +254,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
   var rows = this.table.fnGetData();
   if (rows.length < 1) return;
   
-  // Sum the numeric columns
+  // Create pie charts: summary of total each kind (cable, input, output) separated by region
   var rows = this.table.fnGetData(),
       sums = rows[0].map(function() { return 0; });
   for (var k=0; k<rows.length; ++k) {
@@ -300,7 +262,6 @@ AnalyzeArbor.prototype.updateCharts = function() {
     for (var i=1; i<sums.length; ++i) sums[i] += row[i];
   }
 
-  // Create pie charts
   var labels = ["Backbone", "Dendritic terminals", "Axon terminals"],
       colors = ["#aaaaaa", "#00ffff", "#ff0000"];
 
@@ -311,7 +272,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
       if (sum > 0) entries.push({name: labels[i], value: sum, color: colors[i]});
     });
     if (entries.length > 0) {
-      this.createSVGPieChart(title, divID, this.pie_radius, entries);
+      SVGUtil.insertPieChart(divID, this.pie_radius, entries, title);
     }
   }).bind(this);
 

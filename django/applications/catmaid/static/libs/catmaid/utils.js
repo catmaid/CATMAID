@@ -704,3 +704,50 @@ ArborParser.prototype.collapseArtifactualBranches = function(tags) {
         }
     }
 };
+
+
+var SVGUtil = {};
+
+/** Insert a pie chart into the div.
+ * title (optional): the text to place on top.
+ * entries: an array of key/value maps. Order matters. Like:
+ * [{name: "Apples", value: 10},
+ *  {name: "Pears", value: 15},
+ *  {name: "Oranges", value: 3}].
+ */
+SVGUtil.insertPieChart = function(divID, radius, entries, title) {
+	var extra = title ? 30 : 0;
+  var arc = d3.svg.arc()
+    .outerRadius(radius - 10)
+    .innerRadius(0);
+  var pie = d3.layout.pie()
+    .sort(null)
+    .value(function(d) { return d.value; });
+  var svg = d3.select(divID).append("svg")
+    .attr("width", radius * 2)
+    .attr("height", radius * 2 + extra)
+    .append("g")
+    .attr("transform", "translate(" + radius + "," + (radius + extra) + ")");
+  var g = svg.selectAll(".arc")
+    .data(pie(entries))
+    .enter().append("g").attr("class", "arc");
+  g.append("path")
+    .attr("d", arc)
+    .style("fill", function(d) { return d.data.color; });
+  g.append("text")
+    .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
+    .attr("dy", ".35em")
+    .style("text-anchor", "middle")
+    .text(function(d) { return d.data.name; });
+	if (title) {
+		svg.append("text")
+			.attr("x", 0)
+			.attr("y", -radius)
+			.style("text-anchor", "middle")
+			.style("font-size", "16px") 
+			.style("text-decoration", "underline")
+			.text(title);
+	}
+
+  return svg;
+};

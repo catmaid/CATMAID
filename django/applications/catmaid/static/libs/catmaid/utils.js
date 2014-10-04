@@ -751,3 +751,111 @@ SVGUtil.insertPieChart = function(divID, radius, entries, title) {
 
   return svg;
 };
+
+/** names: an array of names.
+ *  data: an array of arrays of {series: <name>, count: <number>}.
+ *  colors: an array of hex strings. */
+SVGUtil.insertMultipleBarChart = function(
+		container, id,
+		cwidth, cheight,
+		x_label, y_label,
+		names, data, colors) {
+	// The SVG element representing the plot
+	var margin = {top: 20, right: 20, bottom: 30, left: 40},
+			width = cwidth - margin.left - margin.right,
+			height = cheight / 2 - margin.top - margin.bottom;
+
+	var svg = d3.select(container).append("svg")
+			.attr("id", id) // already has widgetID in it
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	// Define the data domains/axes
+	var x0 = d3.scale.ordinal().rangeRoundBands([0, width], .1);
+	var x1 = d3.scale.ordinal();
+	var y = d3.scale.linear().range([height, 0]);
+	var xAxis = d3.svg.axis().scale(x0)
+													 .orient("bottom");
+	// "d" means integer, see
+	// https://github.com/mbostock/d3/wiki/Formatting#wiki-d3_format
+	var yAxis = d3.svg.axis().scale(y)
+													 .orient("left")
+													 .tickFormat(d3.format("d"));
+
+	// Define the ranges of the axes
+	// x0: For the counts
+	x0.domain(data.map(function(block, i) { return i+1; }));
+	// x1: For the indices of the series within synapse count bin
+	x1.domain(names).rangeRoundBands([0, x0.rangeBand()]);
+	// y: up to the maximum bin count
+	var max_count = data.reduce(function(c, block) {
+		return block.reduce(function(c, d) {
+			return Math.max(c, d.count);
+		}, c);
+	}, 0);
+	y.domain([0, max_count]);
+
+	// Color for the bar chart bars
+	var color = d3.scale.ordinal().range(colors);
+
+	// Insert the data
+	var state = svg.selectAll(".state")
+			.data(data)
+		.enter().append('g')
+			.attr('class', 'g')
+			// x0(i+1) has d +1 because the array is 0-based
+			.attr('transform', function(d, i) { return "translate(" + x0(i+1) + ", 0)"; });
+
+	// Define how each bar of the bar chart is drawn
+	state.selectAll("rect")
+			.data(function(block) { return block; })
+		.enter().append("rect")
+			.attr("width", x1.rangeBand())
+			.attr("x", function(d) { return x1(d.series); })
+			.attr("y", function(d) { return y(d.count); })
+			.attr("height", function(d) { return height - y(d.count); })
+			.style("fill", function(d) { return color(d.series); });
+
+	// Insert the graphics for the axes (after the data, so that they draw on top)
+	svg.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + height + ")")
+			.call(xAxis)
+		.append("text")
+			.attr("x", width)
+			.attr("y", -6)
+			.style("text-anchor", "end")
+			.text(x_label);
+
+	svg.append("g")
+			.attr("class", "y axis")
+			.call(yAxis)
+		.append("text")
+			.attr("transform", "rotate(-90)")
+			.attr("y", 6)
+			.attr("dy", ".71em")
+			.style("text-anchor", "end")
+			.text(y_label);
+
+	// The legend: which series is which
+	var legend = svg.selectAll(".legend")
+			.data(names)
+		.enter().append("g")
+			.attr("class", "legend")
+			.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+	legend.append("rect")
+			.attr("x", width - 18)
+			.attr("width", 18)
+			.attr("height", 18)
+			.style("fill", color);
+
+	legend.append("text")
+			.attr("x", width - 24)
+			.attr("y", 9)
+			.attr("dy", ".35em")
+			.style("text-anchor", "end")
+			.text(function(d) { return d; });
+};

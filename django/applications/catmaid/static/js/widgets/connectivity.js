@@ -1141,7 +1141,7 @@ ConnectivityGraphPlot.prototype.draw = function() {
     for (var i = 1; i < max_length; ++i) {
       a[i-1] = skids.reduce(function(block, skid) {
         var count = d[skid][i];
-        if (count) block.push({skid: skid, count: count});
+        if (count) block.push({series: skid, count: count});
         return block;
       }, []);
     }
@@ -1154,17 +1154,16 @@ ConnectivityGraphPlot.prototype.draw = function() {
    * partners that receive/make that many synapses from/onto the skeletons
    * involved (the active or the selected ones).
    */
-  var makeMultipleBarChart = function(skeletons, partners, container, title,
-        container_width) {
+  var makeMultipleBarChart = function(skeletons, partners, container, title, widgetID, container_width) {
     // Cancel drawing if there is no data
     if (0 === Object.keys(partners).length) return null;
 
     // Prepare data: (skip skeletons with less than 2 nodes)
     var a = distribution(partners, 2);
 
-    // The skeletons involved (the active, or the selected and visible)
+    // The names of the skeletons involved (the active, or the selected and visible)
     var skids = Object.keys(a.reduce(function(unique, block) {
-      if (block) block.forEach(function(ob) { unique[ob.skid] = null; });
+      if (block) block.forEach(function(ob) { unique[skeletons[ob.series]] = null; });
       return unique;
     }, {}));
 
@@ -1192,104 +1191,11 @@ ConnectivityGraphPlot.prototype.draw = function() {
       container_width = 400;
     }
 
-    // The SVG element representing the plot
-    var margin = {top: 20, right: 20, bottom: 30, left: 40},
-        width = container_width - margin.left - margin.right,
-        height = container_width / 2 - margin.top - margin.bottom;
+    var width = container_width,
+        height = container_width / 2,
+        id = "connectivity_plot_" + title + widgetID;
 
-    var svg = d3.select(container).append("svg")
-        .attr("id", "connectivity_plot_" + title) // already has widgetID in it
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    // Define the data domains/axes
-    var x0 = d3.scale.ordinal().rangeRoundBands([0, width], .1);
-    var x1 = d3.scale.ordinal();
-    var y = d3.scale.linear().range([height, 0]);
-    var xAxis = d3.svg.axis().scale(x0)
-                             .orient("bottom");
-    // "d" means integer, see
-    // https://github.com/mbostock/d3/wiki/Formatting#wiki-d3_format
-    var yAxis = d3.svg.axis().scale(y)
-                             .orient("left")
-                             .tickFormat(d3.format("d"));
-
-    // Define the ranges of the axes
-    // x0: For the counts of synapses
-    x0.domain(a.map(function(block, i) { return i+1; }));
-    // x1: For the IDs of the skeletons within each synapse count bin
-    x1.domain(skids).rangeRoundBands([0, x0.rangeBand()]);
-    // y: the number of partners that have that number of synapses
-    var max_count = a.reduce(function(c, block) {
-      return block.reduce(function(c, sk) {
-        return Math.max(c, sk.count);
-      }, c);
-    }, 0);
-    y.domain([0, max_count]);
-
-    // Color for the bar chart bars
-    var color = d3.scale.ordinal().range(colors);
-
-    // Insert the data
-    var state = svg.selectAll(".state")
-        .data(a)
-      .enter().append('g')
-        .attr('class', 'g')
-        // x0(i+1) has a +1 because the array is 0-based
-        .attr('transform', function(a, i) { return "translate(" + x0(i+1) + ", 0)"; });
-
-    // Define how each bar of the bar chart is drawn
-    state.selectAll("rect")
-        .data(function(block) { return block; })
-      .enter().append("rect")
-        .attr("width", x1.rangeBand())
-        .attr("x", function(sk) { return x1(sk.skid); })
-        .attr("y", function(sk) { return y(sk.count); })
-        .attr("height", function(sk) { return height - y(sk.count); })
-        .style("fill", function(sk) { return color(sk.skid); });
-
-    // Insert the graphics for the axes (after the data, so that they draw on top)
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis)
-      .append("text")
-        .attr("x", width)
-        .attr("y", -6)
-        .style("text-anchor", "end")
-        .text("N synapses");
-
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-      .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text("N " + title + " Partners");
-
-    // The legend: which skeleton is which
-    var legend = svg.selectAll(".legend")
-        .data(skids.map(function(skid) { return skeletons[skid]; } ))
-      .enter().append("g")
-        .attr("class", "legend")
-        .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-    legend.append("rect")
-        .attr("x", width - 18)
-        .attr("width", 18)
-        .attr("height", 18)
-        .style("fill", color);
-
-    legend.append("text")
-        .attr("x", width - 24)
-        .attr("y", 9)
-        .attr("dy", ".35em")
-        .style("text-anchor", "end")
-        .text(function(d) { return d; });
+    SVGUtil.insertMultipleBarChart(container, id, width, height, "N synapses", "N " + title + " Partners", skids, a, colors);
   };
 
   // Clear existing plot, if any
@@ -1299,7 +1205,7 @@ ConnectivityGraphPlot.prototype.draw = function() {
 
   // Draw plots
   makeMultipleBarChart(this.skeletons, this.incoming, containerID,
-      "Upstream" + this.widgetID, container.width());
+      "Upstream", this.widgetID, container.width());
   makeMultipleBarChart(this.skeletons, this.outgoing, containerID,
-      "Downstream" + this.widgetID, container.width());
+      "Downstream", this.widgetID, container.width());
 };

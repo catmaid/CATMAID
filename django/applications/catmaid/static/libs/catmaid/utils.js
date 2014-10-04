@@ -759,7 +759,8 @@ SVGUtil.insertMultipleBarChart = function(
 		container, id,
 		cwidth, cheight,
 		x_label, y_label,
-		names, data, colors) {
+		names, data,
+		colors, x_axis_labels) {
 	// The SVG element representing the plot
 	var margin = {top: 20, right: 20, bottom: 30, left: 40},
 			width = cwidth - margin.left - margin.right,
@@ -786,8 +787,8 @@ SVGUtil.insertMultipleBarChart = function(
 
 	// Define the ranges of the axes
 	// x0: For the counts
-	x0.domain(data.map(function(block, i) { return i+1; }));
-	// x1: For the indices of the series within synapse count bin
+	x0.domain(x_axis_labels);
+	// x1: For the indices of the series within count bin
 	x1.domain(names).rangeRoundBands([0, x0.rangeBand()]);
 	// y: up to the maximum bin count
 	var max_count = data.reduce(function(c, block) {

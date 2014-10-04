@@ -1107,7 +1107,7 @@ ConnectivityGraphPlot.prototype.draw = function() {
    * count: <partner count>}.  The skeleton_node_count_threshold is used to
    * avoid skeletons whose node count is too small, like e.g. a single node.
    */
-  var distribution = function(partners, skeleton_node_count_threshold) {
+  var distribution = function(partners, skeleton_node_count_threshold, skeletons) {
     var d = Object.keys(partners)
         .reduce(function(ob, partnerID) {
           var props = partners[partnerID];
@@ -1135,13 +1135,13 @@ ConnectivityGraphPlot.prototype.draw = function() {
 
     /* Reformat to an array of arrays where the index of the array is the
      * synaptic count minus 1 (arrays are zero-based), and each inner array
-     * has objects with {skid, count} keys. */
+     * has objects with {series, count} keys. */
     var a = [];
     var skids = Object.keys(d);
     for (var i = 1; i < max_length; ++i) {
       a[i-1] = skids.reduce(function(block, skid) {
         var count = d[skid][i];
-        if (count) block.push({series: skid, count: count});
+        if (count) block.push({series: skeletons[skid], count: count});
         return block;
       }, []);
     }
@@ -1159,23 +1159,23 @@ ConnectivityGraphPlot.prototype.draw = function() {
     if (0 === Object.keys(partners).length) return null;
 
     // Prepare data: (skip skeletons with less than 2 nodes)
-    var a = distribution(partners, 2);
+    var a = distribution(partners, 2, skeletons);
 
-    // The names of the skeletons involved (the active, or the selected and visible)
-    var skids = Object.keys(a.reduce(function(unique, block) {
-      if (block) block.forEach(function(ob) { unique[skeletons[ob.series]] = null; });
+    // The names of the skeletons involved
+    var names = Object.keys(a.reduce(function(unique, block) {
+      if (block) block.forEach(function(ob) { unique[ob.series] = null; });
       return unique;
     }, {}));
 
-    if (0 === skids.length) return null;
+    if (0 === names.length) return null;
 
     // Colors: an array of hex values
     var zeroPad = function(s) { return ("0" + s).slice(-2); };
-    var colors = skids.reduce(function(array, skid, i) {
+    var colors = names.reduce(function(array, skid, i) {
       // Start at Red 255, decrease towards 0
       //          Green 100, increase towards 255
       //          Blue 200, decrease towards 50
-      var ratio = (skids.length - i) / skids.length;
+      var ratio = (names.length - i) / names.length;
       var red = 255 * ratio;
       var green = 100 + 155 * (1 - ratio);
       var blue = 50 + 150 * ratio;
@@ -1195,7 +1195,10 @@ ConnectivityGraphPlot.prototype.draw = function() {
         height = container_width / 2,
         id = "connectivity_plot_" + title + widgetID;
 
-    SVGUtil.insertMultipleBarChart(container, id, width, height, "N synapses", "N " + title + " Partners", skids, a, colors);
+    SVGUtil.insertMultipleBarChart(container, id, width, height,
+        "N synapses", "N " + title + " Partners",
+        names, a, colors,
+        a.map(function(block, i) { return i+1; }));
   };
 
   // Clear existing plot, if any

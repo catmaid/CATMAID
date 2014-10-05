@@ -893,7 +893,7 @@ SVGUtil.insertMultipleBarChart2 = function(
 
   var xAxis = d3.svg.axis()
     .scale(x)
-    .tickFormat(d3.format("d"))
+    .tickFormat(function(d, i) { return x_axis_labels[i]; })
     .orient("bottom");
 
   var yAxis = d3.svg.axis()

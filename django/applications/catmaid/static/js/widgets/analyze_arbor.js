@@ -9,6 +9,8 @@ var AnalyzeArbor = function() {
 
   this.table = null;
   this.skeleton_ids = [];
+  this.terminal_subarbor_stats = [];
+
   this.pie_radius = 100;
 };
 
@@ -37,7 +39,9 @@ AnalyzeArbor.prototype.update = function() {
 
 AnalyzeArbor.prototype.clear = function() {
   this.table.fnClearTable();
+  $('#analyze_widget_charts_div' + this.widgetID).empty();
   this.skeleton_ids = [];
+  this.terminal_subarbor_stats = [];
 };
 
 AnalyzeArbor.prototype.removeSkeletons = function() {};
@@ -210,6 +214,32 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         d_n_inputs = inputs.filter(d_f).reduce(countInputs, 0),
         d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes())));
 
+    // Detect and measure terminal subarbors of each kind (axonic and dendritic)
+    var analyze_subs = function(subarbor) {
+      var subs = [];
+      microtubules_end.forEach(function(mend) {
+        if (subarbor.contains(mend)) {
+          // TODO should check if any overlap due to mistakenly placing a tag in an already existing subarbor
+          subs.push(subarbor.subArbor(mend));
+        }
+      });
+      var stats = {cable: [], inputs: [], outputs: [], branches: [], ends: []};
+      subs.forEach(function(sub) {
+        var nodes = sub.nodesArray(),
+            be = sub.findBranchAndEndNodes();
+        stats.cable.push(sub.cableLength(smooth_positions));
+        stats.inputs.push(nodes.filter(function(node) { return ap.inputs[node]; }).length);
+        stats.outputs.push(nodes.filter(function(node) { return ap.outputs[node]; }).length);
+        stats.branches.push(Object.keys(be.branches).length);
+        stats.ends.push(Object.keys(be.ends).length);
+      });
+      return stats;
+    };
+
+    this.terminal_subarbor_stats[skid] = {axonal: analyze_subs(axon_terminals),
+                                          dendritic: analyze_subs(dendrites)};
+
+
     ad = [Math.round(d_cable) | 0,
           d_n_inputs,
           d_n_outputs,
@@ -279,6 +309,68 @@ AnalyzeArbor.prototype.updateCharts = function() {
   var pie_cable = makePie(0, "Cable (nm)"),
       pie_inputs = makePie(1, "# Inputs"),
       pie_outputs = makePie(2, "# Outputs");
+
+
+  // Create histograms of terminal subarbors:
+  var skids = Object.keys(this.terminal_subarbor_stats),
+      labels = Object.keys(this.terminal_subarbor_stats[skids[0]].axonal);
+
+  (function() {
+    // Histograms of total [cable, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors
+    var axonal = labels.reduce(function(o, label) { o[label] = []; return o}, {}),
+        dendritic = labels.reduce(function(o, label) { o[label] = []; return o}, {}); // needs deep copy
+    skids.forEach(function(skid) {
+      var e = this.terminal_subarbor_stats[skid];
+      labels.forEach(function(label) {
+        var a = e.axonal[label];
+        axonal[label] = axonal[label].concat(a);
+        var d = e.dendritic[label];
+        dendritic[label] = dendritic[label].concat(d);
+      }, this);
+    }, this);
+    labels.forEach(function(label) {
+      var a = axonal[label],
+          d = dendritic[label],
+          inc = 1;
+      if ("cable" === label) {
+        // round to 5 micron increments
+        var round = function(v) { return v - v % 5000; }; 
+        a = a.map(round);
+        d = d.map(round);
+        inc = 5000;
+      }
+      // Binarize
+      var max = 0,
+          binarize = function(bins, v) {
+            max = Math.max(max, v);
+            var bin = bins[v];
+            if (bin) bins[v] += 1;
+            else bins[v] = 1;
+            return bins;
+          };
+      var abins = a.reduce(binarize, {}),
+          dbins = d.reduce(binarize, {});
+      // Add missing bins and thread together
+      var x_axis = [];
+      for (var bin=0; bin<=max; bin+=inc) {
+        var a = abins[bin],
+            d = dbins[bin];
+        if (!a) abins[bin] = 0;
+        if (!d) dbins[bin] = 0;
+        x_axis.push(bin);
+      }
+      var data = [dbins, abins];
+
+      SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
+        300, 300,
+        label, "counts",
+        data,
+        ["dendritic", "axonal"],
+        ["#00ffff", "#ff0000"],
+        x_axis,
+        false);
+    }, this);
+  }).bind(this)();
 };
 
 AnalyzeArbor.prototype.exportSVG = function() {

@@ -181,11 +181,19 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   $("#dendrogram" + this.widgetID).empty();
 
   // Create new SVG
-  var svg = d3.select("#dendrogram" + this.widgetID).append("svg")
+  var svg = d3.select("#dendrogram" + this.widgetID)
+    .append("svg:svg")
       .attr("width", width)
       .attr("height", height)
-      .append("g")
-      .attr("transform", "translate(40,0)");
+    .append("svg:g")
+      .call(d3.behavior.zoom().scaleExtent([0.1, 100]).on("zoom", zoom));
+
+  // Add a background rectangle to get all mouse events for panning and zoom
+  var rect = svg.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .style("fill", "none")
+    .style("pointer-events", "all");
 
   var nodes = dendrogram.nodes(tree);
   var links = dendrogram.links(nodes);
@@ -260,12 +268,18 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       .attr("dy", 3)
       .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
       .text(function(d) { return d.name; });
+
+    return node;
   };
 
   addNodes(separatedNodes.taggedNodes, "taggedNode");
   addNodes(separatedNodes.regularNodes, "node");
 
   d3.select(self.frameElement).style("height", height + "px");
+
+  function zoom() {
+    svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+  };
 };
 
 NeuronDendrogram.prototype.setCollapsed = function(value)

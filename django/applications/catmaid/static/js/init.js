@@ -530,7 +530,11 @@ function handle_openProjectStack( status, text, xml )
 		var e = eval( "(" + text + ")" );
 		if ( e.error )
 		{
-			alert( e.error );
+			if (e.permission_error) {
+				new LoginDialog(e.error, realInit).show();
+			} else {
+				new ErrorDialog(e.error, e.detail).show();
+			}
 		}
 		else
 		{

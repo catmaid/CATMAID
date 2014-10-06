@@ -1519,6 +1519,44 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
     }
   }).bind(this);
 
+  var dendrogram_button = document.createElement('input');
+  dendrogram_button.setAttribute('type', 'button');
+  dendrogram_button.setAttribute('value', 'Dendrogram');
+  container.append(dendrogram_button);
+
+  dendrogram_button.onclick = (function() {
+    if (this.skeleton_ids.length > 0) {
+      var ND = new NeuronDendrogram();
+      WindowMaker.create('neuron-dendrogram', ND);
+      ND.loadSkeleton(this.skeleton_ids[0]);
+    }
+  }).bind(this);
+
+  var treenodetable_button = document.createElement('input');
+  treenodetable_button.setAttribute('type', 'button');
+  treenodetable_button.setAttribute('value', 'Treenode table');
+  container.append(treenodetable_button);
+
+  treenodetable_button.onclick = (function() {
+    if (this.skeleton_ids.length > 0) {
+      var TNT = new TreenodeTable(this.skeleton_ids[0]);
+      WindowMaker.create('node-table', TNT);
+    }
+  }).bind(this);
+
+  var connectortable_button = document.createElement('input');
+  connectortable_button.setAttribute('type', 'button');
+  connectortable_button.setAttribute('value', 'Connector table');
+  container.append(connectortable_button);
+
+  connectortable_button.onclick = (function() {
+    if (this.skeleton_ids.length > 0) {
+      var TNT = new ConnectorTable(this.skeleton_ids[0]);
+      WindowMaker.create('connector-table', TNT);
+    }
+  }).bind(this);
+
+
   /* Skeletons: Request compact JSON data */
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_skeletonlist_content' +
@@ -1689,23 +1727,20 @@ NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
 
 
 /**
- * A neuron node displays information about a particular node. It shows all the
- * skeletons that are model for a neuron as well as all its annotations and the
- * user that has locked it.
+ * This mixin introduces fields and functions to work with the currently active
+ * neuron.
  */
-NeuronNavigator.ActiveNeuronNode = function()
+NeuronNavigator.ActiveNeuronMixin = function()
 {
-  this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
-  this.name = 'Active Neuron';
+  this.current_skid = null;
   this.sync_active_neuron = true;
 };
 
-NeuronNavigator.ActiveNeuronNode.prototype = {};
-$.extend(NeuronNavigator.ActiveNeuronNode.prototype,
+$.extend(NeuronNavigator.ActiveNeuronMixin.prototype,
     new NeuronNavigator.NeuronNode({id: -1, name: '', skeleton_ids: []}));
 
-NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
-    filters)
+NeuronNavigator.ActiveNeuronMixin.prototype.add_activeneuron_content =
+    function(container, filters)
 {
   // Add checkbox to indicate if this node should update automatically if the
   // active neuron changes.
@@ -1760,12 +1795,34 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
 /**
  * Triggers a reload of this node with update skeleton ID data.
  */
-NeuronNavigator.ActiveNeuronNode.prototype.highlight = function(skeleton_id)
+NeuronNavigator.ActiveNeuronMixin.prototype.highlight = function(skeleton_id)
 {
   if (this.sync_active_neuron) {
     this.current_skid = skeleton_id;
     this.navigator.select_node(this);
   }
+};
+
+
+/**
+ * A neuron node displays information about a particular node. It shows all the
+ * skeletons that are model for a neuron as well as all its annotations and the
+ * user that has locked it.
+ */
+NeuronNavigator.ActiveNeuronNode = function()
+{
+  this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
+  this.name = 'Active Neuron';
+};
+
+NeuronNavigator.ActiveNeuronNode.prototype = {};
+$.extend(NeuronNavigator.ActiveNeuronNode.prototype,
+    new NeuronNavigator.ActiveNeuronMixin());
+
+NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
+    filters)
+{
+  this.add_activeneuron_content(container, filters);
 };
 
 
@@ -1776,22 +1833,23 @@ NeuronNavigator.ActiveNeuronNode.prototype.highlight = function(skeleton_id)
  */
 NeuronNavigator.HomeNode = function()
 {
+  this.name = "Home";
   // A home node acts as the root node and has therefore no parent.
   this.link(null);
+  // The current skeleton is displayed
+  this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
 };
 
 NeuronNavigator.HomeNode.prototype = {};
 $.extend(NeuronNavigator.HomeNode.prototype,
-    new NeuronNavigator.Node("Home"));
-$.extend(NeuronNavigator.HomeNode.prototype,
-    new NeuronNavigator.NeuronListMixin());
+    new NeuronNavigator.ActiveNeuronMixin());
 
 NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
 {
   var content = document.createElement('div');
 
   // Create menu and add it to container
-  var menu_entries = ['Annotations', 'Users', 'Active Neuron'];
+  var menu_entries = ['Annotations', 'Users', 'All Neurons'];
   var table_rows = this.add_menu_table(menu_entries, content);
 
   // Add container to DOM
@@ -1812,16 +1870,16 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
   }, this));
   $(table_rows[2]).dblclick($.proxy(function() {
       // Show active neuron node
-      var users_node = new NeuronNavigator.ActiveNeuronNode();
-      users_node.link(this.navigator, this);
-      this.navigator.select_node(users_node);
+      var all_neurons_node = new NeuronNavigator.NeuronListNode();
+      all_neurons_node.link(this.navigator, this);
+      this.navigator.select_node(all_neurons_node);
   }, this));
 
   // Add some space
   var neuron_title = document.createElement('h4');
-  neuron_title.appendChild(document.createTextNode('All neurons'));
+  neuron_title.appendChild(document.createTextNode('Active neuron'));
   container.append(neuron_title);
 
-  // Add neuron list table
-  this.add_neuronlist_content(container, filters);
+  // Add active neuron content
+  this.add_activeneuron_content(container, filters);
 };

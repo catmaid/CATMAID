@@ -1,14 +1,16 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-var ConnectorTable = new function()
+var ConnectorTable = function(optionalSkid)
 {
+  this.widgetID = this.registerInstance();
+
   /** Pointer to the existing instance of table. */
   this.connectorTable = null;
 
   var self = this;
   var asInitValsSyn = new Array();
-  var skeletonID = -1;
+  var skeletonID = optionalSkid ? optionalSkid : -1;
   var last_displayed_skeletons = {};
   last_displayed_skeletons[0] = 'None';
   var possibleLengths = [25, 100, -1];
@@ -31,10 +33,11 @@ var ConnectorTable = new function()
   };
   
   this.init = function (pid) {
-    var tableid = '#connectortable';
+    var widgetID = this.widgetID;
+    var tableid = '#connectortable' + widgetID;
 
-    $("#connectortable_lastskeletons").change(function() {
-      skeletonID = parseInt( $('#connectortable_lastskeletons').val() );
+    $("#connectortable_lastskeletons" + widgetID).change(function() {
+      skeletonID = parseInt( $('#connectortable_lastskeletons' + widgetID).val() );
       self.refreshConnectorTable();
     });
     
@@ -64,7 +67,7 @@ var ConnectorTable = new function()
 
           aoData.push({
             "name": "relation_type",
-            "value" : $('#connector_relation_type :selected').attr("value")
+            "value" : $('#connector_relation_type' + widgetID + ' :selected').attr("value")
           });
           aoData.push({
             "name" : "pid",
@@ -81,8 +84,8 @@ var ConnectorTable = new function()
 
           if( skeletonID && !(skeletonID in last_displayed_skeletons) ) {
             // check if skeleton id already in list, of so, do not add it
-            last_displayed_skeletons[ skeletonID ] = $('#neuronName').text();
-            var new_skeletons = document.getElementById("connectortable_lastskeletons");
+            last_displayed_skeletons[ skeletonID ] = $('#neuronName' + widgetID).text();
+            var new_skeletons = document.getElementById("connectortable_lastskeletons" + widgetID);
             while (new_skeletons.length > 0)
                 new_skeletons.remove(0);
             for (var skid in last_displayed_skeletons) {
@@ -94,7 +97,7 @@ var ConnectorTable = new function()
               }
             }
           }
-          $('#connectortable_lastskeletons').val( skeletonID );
+          $('#connectortable_lastskeletons' + widgetID).val( skeletonID );
 
           $.ajax({
             "dataType": 'json',
@@ -212,10 +215,10 @@ var ConnectorTable = new function()
         });
     });
 
-    $('#connector_relation_type').change(function() {
+    $('#connector_relation_type' + widgetID).change(function() {
       var numberOfNodesText, otherSkeletonText, otherTreenodeText, adjective;
       self.connectorTable.fnDraw();
-      if ($('#connector_relation_type :selected').attr("value") === "0") {
+      if ($('#connector_relation_type' + widgetID + ' :selected').attr("value") === "0") {
         adjective = "source";
       } else {
         adjective = "target";
@@ -223,13 +226,24 @@ var ConnectorTable = new function()
       numberOfNodesText = "# nodes in " + adjective + " skeleton";
       otherSkeletonText = adjective + " skeleton ID";
       otherTreenodeText = adjective + " treenode ID";
-      $("#connector_nr_nodes_top").text(numberOfNodesText);
-      $("#connector_nr_nodes_bottom").text(numberOfNodesText);
-      $("#other_skeleton_top").text(otherSkeletonText);
-      $("#other_skeleton_bottom").text(otherSkeletonText);
-      $("#other_treenode_top").text(otherTreenodeText);
-      $("#other_treenode_bottom").text(otherTreenodeText);
+      $("#connector_nr_nodes_top" + widgetID).text(numberOfNodesText);
+      $("#connector_nr_nodes_bottom" + widgetID).text(numberOfNodesText);
+      $("#other_skeleton_top" + widgetID).text(otherSkeletonText);
+      $("#other_skeleton_bottom" + widgetID).text(otherSkeletonText);
+      $("#other_treenode_top" + widgetID).text(otherTreenodeText);
+      $("#other_treenode_bottom" + widgetID).text(otherTreenodeText);
     });
 
   };
-}();
+};
+
+ConnectorTable.prototype = {};
+$.extend(ConnectorTable.prototype, new InstanceRegistry());
+
+ConnectorTable.prototype.getName = function() {
+  return "Connector table " + this.widgetID;
+};
+
+ConnectorTable.prototype.destroy = function() {
+  this.unregisterInstance();
+};

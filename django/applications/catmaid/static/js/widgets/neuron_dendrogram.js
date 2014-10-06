@@ -147,7 +147,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
 
 NeuronDendrogram.prototype.resize = function()
 {
-  this.update();
+  // For now do nothing.
 };
 
 
@@ -203,31 +203,39 @@ NeuronDendrogram.prototype.getMaxDepth = function(node)
   */
 NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 {
-  var margin = {top: 0, right: 70, bottom: 0, left: 70};
-  var width = this.container.clientWidth - margin.left - margin.right;
-  var height = this.container.clientHeight - margin.top - margin.bottom;
+  var margin = {top: 50, right: 70, bottom: 50, left: 70};
+  var baseWidth = this.container.clientWidth - margin.left - margin.right;
+  var baseHeight = this.container.clientHeight - margin.top - margin.bottom;
 
   // Adjust the width and height so that each node has at least a space of 10 by 10 pixel
   var nodeSize = [20, 40];
-  width = Math.max(width, nodeSize[0] * this.getMaxDepth(tree));
-  height = Math.max(height, nodeSize[1] * this.getNumLeafs(tree));
+  var width = Math.max(baseWidth, nodeSize[0] * this.getMaxDepth(tree));
+  var height = Math.max(baseHeight, nodeSize[1] * this.getNumLeafs(tree));
 
-  // Create clustering
+  // Create clustering where each leaf node has the same distance to its
+  // neighbors.
   var dendrogram = d3.layout.cluster()
     .size([height, width])
     .separation(function() { return 1; });
+
+  // Find default scale so that everything can be seen
+  var defaultScale = width > height ? baseWidth / width : baseHeight / height;
 
   // Clear existing container
   $("#dendrogram" + this.widgetID).empty();
 
   // Create new SVG
+  var zoomHandler = d3.behavior.zoom().scaleExtent([0.1, 100]).on("zoom", zoom);
   var svg = d3.select("#dendrogram" + this.widgetID)
     .append("svg:svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-      .call(d3.behavior.zoom().scaleExtent([0.1, 100]).on("zoom", zoom));
+      .call(zoomHandler);
   var vis = svg.append("svg:g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")" +
+          "scale(" + defaultScale + ")");
+
+  zoomHandler.scale(defaultScale);
 
   // Add a background rectangle to get all mouse events for panning and zoom
   var rect = vis.append("rect")
@@ -239,8 +247,10 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   var nodes = dendrogram.nodes(tree);
   var links = dendrogram.links(nodes);
 
-  var diagonal = d3.svg.diagonal()
-    .projection(function(d) { return [d.y, d.x]; });
+  function elbow(d, i) {
+      return "M" + d.source.y + "," + d.source.x
+           + "V" + d.target.x + "H" + d.target.y;
+  }
 
   // Split links in such that are upstream of tagged nodes and those downstream.
   var separatedLinks = links.reduce(function(o, l) {
@@ -260,13 +270,13 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .data(separatedLinks.downstreamLinks)
     .enter().append("path")
     .attr("class", "taggedLink")
-    .attr("d", diagonal);
+    .attr("d", elbow);
 
   var upLink = vis.selectAll(".link")
     .data(separatedLinks.upstreamLinks)
     .enter().append("path")
     .attr("class", "link")
-    .attr("d", diagonal);
+    .attr("d", elbow);
 
   // Split nodes in those which are tagged and those which are not
   var separatedNodes = nodes.reduce(function(o, n) {

@@ -867,7 +867,8 @@ SVGUtil.insertMultipleBarChart2 = function(
     cwidth, cheight,
     x_label, y_label,
     data,
-    names, colors, x_axis_labels,
+    names, colors,
+		x_axis_labels, rotate_x_axis_labels,
 		show_legend) {
 
   var n = data.length,
@@ -879,7 +880,7 @@ SVGUtil.insertMultipleBarChart2 = function(
 	    m = layers[0].length,
       yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); });
 
-  var margin = {top: 20, right: 20, bottom: 30, left: 40},
+  var margin = {top: 20, right: 20, bottom: 50, left: 40},
       width = cwidth - margin.left - margin.right,
       height = cheight / 2 - margin.top - margin.bottom;
 
@@ -922,11 +923,21 @@ SVGUtil.insertMultipleBarChart2 = function(
       .attr("height", function(d) { return height - y(d.y); });
 
   // Insert the graphics for the axes (after the data, so that they draw on top)
-  svg.append("g")
+  var callx = svg.append("g")
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
-      .call(xAxis)
-    .append("text")
+      .call(xAxis);
+
+	if (rotate_x_axis_labels) {
+		callx.selectAll("text")
+				.style("text-anchor", "end")
+				.attr("dx", "-.8em")
+				.attr("dy", ".15em")
+				.attr("transform", function(d) { return "rotate(-65)" });
+	}
+
+	// Append after having transformed the tick labels
+  callx.append("text")
       .attr("x", width)
       .attr("y", -6)
       .style("text-anchor", "end")

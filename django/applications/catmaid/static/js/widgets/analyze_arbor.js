@@ -334,7 +334,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
           inc = 1;
       if ("cable" === label) {
         // round to 5 micron increments
-        inc = 500;
+        inc = 5000;
         var round = function(v) { return v - v % inc; }; 
         a = a.map(round);
         d = d.map(round);
@@ -360,10 +360,11 @@ AnalyzeArbor.prototype.updateCharts = function() {
         x_axis.push(bin);
       }
       var data = [dbins, abins];
-
+      var rotate_x_axis_labels = false;
       if ("cable" === label) {
         x_axis = x_axis.map(function(bin) { return bin/1000 + "-" + (bin + inc)/1000; });
         label = label + " (µm)";
+        rotate_x_axis_labels = true;
       }
 
       SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
@@ -372,7 +373,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         data,
         ["dendritic", "axonal"],
         ["#00ffff", "#ff0000"],
-        x_axis,
+        x_axis, rotate_x_axis_labels,
         false);
     }, this);
   }).bind(this)();

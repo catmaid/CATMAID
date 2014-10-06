@@ -2131,7 +2131,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       if (!arbor) arbor = this.createArbor();
       var upstream = arbor.upstreamArbor(cuts);
       pickColor = function(vertex) {
-        return upstream.edges[vertex.node_id] ? unreviewedColor : reviewedColor;
+        return upstream.contains(vertex.node_id) ? unreviewedColor : reviewedColor;
       };
     } else {
       pickColor = function() { return actorColor; };

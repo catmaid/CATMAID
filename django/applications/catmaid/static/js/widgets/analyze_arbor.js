@@ -337,8 +337,8 @@ AnalyzeArbor.prototype.updateCharts = function() {
           d = dendritic[label],
           inc = 1;
       if ("cable" === label) {
-        // round to 5 micron increments
-        inc = 5000;
+        // round to 1 micron increments
+        inc = 1000;
         var round = function(v) { return v - v % inc; }; 
         a = a.map(round);
         d = d.map(round);

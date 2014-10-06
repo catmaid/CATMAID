@@ -1380,31 +1380,32 @@ var WindowMaker = new function()
     return win;
   };
 
-  var createNodeTableWindow = function()
+  var createNodeTableWindow = function(tnt_instance)
   {
-    var win = new CMWWindow("Table of Skeleton Nodes");
+    var TNT = tnt_instance ? tnt_instance : new TreenodeTable();
+    var win = new CMWWindow(TNT.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
     var contentbutton = document.createElement('div');
-    contentbutton.setAttribute("id", 'table_of_skeleton_buttons');
+    contentbutton.setAttribute("id", 'table_of_skeleton_buttons' + TNT.widgetID);
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "update_treenodetable_current_skeleton");
+    add.setAttribute("id", "update_treenodetable_current_skeleton" + TNT.widgetID);
     add.setAttribute("value", "List active skeleton");
-    add.onclick = TreenodeTable.update; // function declared in table_treenode.js
+    add.onclick = TNT.update.bind(TNT);
     contentbutton.appendChild(add);
 
     var refresh = document.createElement('input');
     refresh.setAttribute("type", "button");
-    refresh.setAttribute("id", "refresh_treenodetable");
+    refresh.setAttribute("id", "refresh_treenodetable" + TNT.widgetID);
     refresh.setAttribute("value", "Refresh");
-    refresh.onclick = TreenodeTable.refresh; // function declared in table_treenode.js
+    refresh.onclick = TNT.refresh.bind(TNT);
     contentbutton.appendChild(refresh);
 
     var last = document.createElement('select');
-    last.setAttribute("id", "treenodetable_lastskeletons");
+    last.setAttribute("id", "treenodetable_lastskeletons" + TNT.widgetID);
     var option = document.createElement("option");
     option.text = "None";
     option.value = -1;
@@ -1413,22 +1414,22 @@ var WindowMaker = new function()
 
     content.appendChild( contentbutton );
 
-    var container = createContainer("treenode_table_widget");
+    var container = createContainer("treenode_table_widget" + TNT.widgetID);
     content.appendChild( container );
 
     container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">' +
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable' + TNT.widgetID + '">'
         '<thead>' +
           '<tr>' +
             '<th>id</th>' +
             '<th>type' +
         '' +
-        '<select name="search_type" id="search_type" class="search_init">' +
+        '<select name="search_type" id="search_type' + TNT.widgetID + '" class="search_init">' +
         '<option value="">Any</option><option value="R">Root</option><option value="LR" selected="selected">Leaf</option>' +
         '<option value="B">Branch</option><option value="S">Slab</option></select>' +
         '</th>' +
         // <input type="text" name="search_type" value="Search" class="search_init" />
-            '<th>tags<input type="text" name="search_labels" id="search_labels" value="Search" class="search_init" /></th>' +
+            '<th>tags<input type="text" name="search_labels" id="search_labels' + TNT.widgetID + '" value="Search" class="search_init" /></th>' +
             '<th>c</th>' +
             '<th>x</th>' +
             '<th>y</th>' +
@@ -1461,11 +1462,11 @@ var WindowMaker = new function()
         '</tbody>' +
       '</table>';
 
-    addListener(win, container, 'table_of_skeleton_buttons');
+    addListener(win, container, 'table_of_skeleton_buttons' + TNT.widgetID, TNT.destroy.bind(TNT));
 
     addLogic(win);
 
-    TreenodeTable.init( project.getId() );
+    TNT.init( project.getId() );
 
     return win;
   };

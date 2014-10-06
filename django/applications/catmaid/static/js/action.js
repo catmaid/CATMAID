@@ -341,7 +341,7 @@ var tracingWindowActions = [
     buttonID: "data_button_table_treenode",
     buttonName: 'table',
     run: function (e) {
-      WindowMaker.show('node-table');
+      WindowMaker.create('node-table');
       return true;
     }
   }),

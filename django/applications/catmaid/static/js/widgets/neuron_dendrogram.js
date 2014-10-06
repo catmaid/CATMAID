@@ -187,9 +187,9 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .append("svg:svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-    .append("svg:g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
       .call(d3.behavior.zoom().scaleExtent([0.1, 100]).on("zoom", zoom));
+  var vis = svg.append("svg:g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
   // Add a background rectangle to get all mouse events for panning and zoom
   var rect = vis.append("rect")
@@ -218,13 +218,13 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     downstreamLinks: [],
   });
 
-  var downLink = svg.selectAll(".link")
+  var downLink = vis.selectAll(".link")
     .data(separatedLinks.downstreamLinks)
     .enter().append("path")
     .attr("class", "taggedLink")
     .attr("d", diagonal);
 
-  var upLink = svg.selectAll(".link")
+  var upLink = vis.selectAll(".link")
     .data(separatedLinks.upstreamLinks)
     .enter().append("path")
     .attr("class", "link")
@@ -256,7 +256,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     }).bind(this);
 
   var addNodes = function(elements, cls) {
-    var node = svg.selectAll(".node")
+    var node = vis.selectAll(".node")
       .data(elements)
       .enter().append("g")
       .attr("class", cls)
@@ -281,7 +281,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   d3.select(self.frameElement).style("height", height + "px");
 
   function zoom() {
-    svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    vis.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
   };
 };
 

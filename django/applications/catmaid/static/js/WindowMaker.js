@@ -290,8 +290,8 @@ var WindowMaker = new function()
   };
 
 
-  var createNeuronDendrogram = function() {
-    var ND = new NeuronDendrogram();
+  var createNeuronDendrogram = function(ndInstance) {
+    var ND = ndInstance ? ndInstance : new NeuronDendrogram();
     var win = new CMWWindow(ND.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

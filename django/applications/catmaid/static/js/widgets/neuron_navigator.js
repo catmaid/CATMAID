@@ -1519,6 +1519,20 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
     }
   }).bind(this);
 
+  var dendrogram_button = document.createElement('input');
+  dendrogram_button.setAttribute('type', 'button');
+  dendrogram_button.setAttribute('value', 'Dendrogram');
+  container.append(dendrogram_button);
+
+  dendrogram_button.onclick = (function() {
+    if (this.skeleton_ids.length > 0) {
+      var ND = new NeuronDendrogram();
+      WindowMaker.create('neuron-dendrogram', ND);
+      ND.loadSkeleton(this.skeleton_ids[0]);
+    }
+  }).bind(this);
+
+
   /* Skeletons: Request compact JSON data */
   var content = document.createElement('div');
   content.setAttribute('id', 'navigator_skeletonlist_content' +

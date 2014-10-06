@@ -1795,22 +1795,23 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
  */
 NeuronNavigator.HomeNode = function()
 {
+  this.name = "Home";
   // A home node acts as the root node and has therefore no parent.
   this.link(null);
+  // The current skeleton is displayed
+  this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
 };
 
 NeuronNavigator.HomeNode.prototype = {};
 $.extend(NeuronNavigator.HomeNode.prototype,
-    new NeuronNavigator.Node("Home"));
-$.extend(NeuronNavigator.HomeNode.prototype,
-    new NeuronNavigator.NeuronListMixin());
+    new NeuronNavigator.ActiveNeuronMixin());
 
 NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
 {
   var content = document.createElement('div');
 
   // Create menu and add it to container
-  var menu_entries = ['Annotations', 'Users', 'Active Neuron'];
+  var menu_entries = ['Annotations', 'Users', 'All Neurons'];
   var table_rows = this.add_menu_table(menu_entries, content);
 
   // Add container to DOM
@@ -1831,16 +1832,16 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
   }, this));
   $(table_rows[2]).dblclick($.proxy(function() {
       // Show active neuron node
-      var users_node = new NeuronNavigator.ActiveNeuronNode();
-      users_node.link(this.navigator, this);
-      this.navigator.select_node(users_node);
+      var all_neurons_node = new NeuronNavigator.NeuronListNode();
+      all_neurons_node.link(this.navigator, this);
+      this.navigator.select_node(all_neurons_node);
   }, this));
 
   // Add some space
   var neuron_title = document.createElement('h4');
-  neuron_title.appendChild(document.createTextNode('All neurons'));
+  neuron_title.appendChild(document.createTextNode('Active neuron'));
   container.append(neuron_title);
 
-  // Add neuron list table
-  this.add_neuronlist_content(container, filters);
+  // Add active neuron content
+  this.add_activeneuron_content(container, filters);
 };

@@ -9,7 +9,7 @@
  * a vertical or horizontal resize handle
  *
  */
-ResizeHandle = function (type) {
+ResizeHandle = function (type, node) {
   /**
    * returns the html-element
    */
@@ -19,13 +19,11 @@ ResizeHandle = function (type) {
 
   var onmousemove = {
     h: function (e) {
-      view.parentNode.style.width = Math.max(24, view.parentNode.offsetWidth + ui.diffX) + "px";
-      ui.onresize(e);
+      ode.changeWidth( ui.diffX );
       return false;
     },
     v: function (e) {
-      view.parentNode.style.height = Math.max(24, view.parentNode.offsetHeight + ui.diffY) + "px";
-      ui.onresize(e);
+      node.changeHeight( ui.diffY );
       return false;
     }
   };
@@ -51,9 +49,7 @@ ResizeHandle = function (type) {
       ui.registerEvent("onmouseup", onmouseup.h);
       ui.catchEvents("e-resize");
       ui.onmousedown(e);
-
-      //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-      document.body.firstChild.focus();
+      ui.catchFocus();
 
       return false;
     },
@@ -61,10 +57,7 @@ ResizeHandle = function (type) {
       ui.registerEvent("onmousemove", onmousemove.v);
       ui.registerEvent("onmouseup", onmouseup.v);
       ui.catchEvents("s-resize");
-      ui.onmousedown(e);
-
-      //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-      document.body.firstChild.focus();
+      ui.catchFocus();
 
       return false;
     }

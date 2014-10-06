@@ -341,7 +341,7 @@ var tracingWindowActions = [
     buttonID: "data_button_table_connector",
     buttonName: 'table_connector',
     run: function (e) {
-      WindowMaker.show( 'connector-table' );
+      WindowMaker.create( 'connector-table' );
       return true;
     }
   }),

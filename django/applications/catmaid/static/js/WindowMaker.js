@@ -1471,31 +1471,32 @@ var WindowMaker = new function()
     return win;
   };
 
-  var createConnectorTableWindow = function()
+  var createConnectorTableWindow = function(ct_instance)
   {
-    var win = new CMWWindow("Table of Connectors");
+    var CT = ct_instance ? ct_instance : new ConnectorTable();
+    var win = new CMWWindow(CT.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
     var contentbutton = document.createElement('div');
-    contentbutton.setAttribute("id", 'table_of_connector_buttons');
+    contentbutton.setAttribute("id", 'table_of_connector_buttons' + CT.widgetID);
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "update_connectortable_current_skeleton");
+    add.setAttribute("id", "update_connectortable_current_skeleton" + CT.widgetID);
     add.setAttribute("value", "List current skeleton");
-    add.onclick = ConnectorTable.updateConnectorTable;
+    add.onclick = CT.updateConnectorTable.bind(CT);
     contentbutton.appendChild(add);
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "refresh_connectortable_current_skeleton");
+    add.setAttribute("id", "refresh_connectortable_current_skeleton" + CT.widgetID);
     add.setAttribute("value", "Refresh");
-    add.onclick = ConnectorTable.refreshConnectorTable;
+    add.onclick = CT.refreshConnectorTable.bind(CT);
     contentbutton.appendChild(add);
 
     var direction = document.createElement('select');
-    direction.setAttribute("id", "connector_relation_type");
+    direction.setAttribute("id", "connector_relation_type" + CT.widgetID);
     var objOption = document.createElement("option");
     objOption.innerHTML = "Incoming connectors";
     objOption.value = "0";
@@ -1508,7 +1509,7 @@ var WindowMaker = new function()
     contentbutton.appendChild(direction);
 
     var last = document.createElement('select');
-    last.setAttribute("id", "connectortable_lastskeletons");
+    last.setAttribute("id", "connectortable_lastskeletons" + CT.widgetID);
     var option = document.createElement("option");
     option.text = "None";
     option.value = -1;
@@ -1517,49 +1518,49 @@ var WindowMaker = new function()
 
     content.appendChild( contentbutton );
 
-    var container = createContainer("connectortable_widget");
+    var container = createContainer("connectortable_widget" + CT.widgetID);
     content.appendChild(container);
 
     container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable">' +
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable'+ CT.widgetID + '">' +
         '<thead>' +
           '<tr>' +
             '<th>connector id</th>' +
-            '<th id="other_skeleton_top">target skeleton ID</th>' +
+            '<th id="other_skeleton_top' + CT.widgetID + '">target skeleton ID</th>' +
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
             '<th>s</ht>' +
             '<th>tags</th>' +
-            '<th id="connector_nr_nodes_top"># nodes for target(s)</th>' +
+            '<th id="connector_nr_nodes_top' + CT.widgetID + '"># nodes for target(s)</th>' +
             '<th>username</th>' +
-            '<th id="other_treenode_top">target treenode ID</th>' +
+            '<th id="other_treenode_top' + CT.widgetID + '">target treenode ID</th>' +
             '<th>last modified</th>' +
           '</tr>' +
         '</thead>' +
         '<tfoot>' +
           '<tr>' +
             '<th>connector id</th>' +
-            '<th id="other_skeleton_bottom">target skeleton ID</th>' +
+            '<th id="other_skeleton_bottom' + CT.widgetID + '">target skeleton ID</th>' +
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
             '<th>s</ht>' +
             '<th>tags</th>' +
-            '<th id="connector_nr_nodes_bottom"># nodes for target(s)</th>' +
+            '<th id="connector_nr_nodes_bottom' + CT.widgetID + '"># nodes for target(s)</th>' +
             '<th>username</th>' +
-            '<th id="other_treenode_bottom">target treenode ID</th>' +
+            '<th id="other_treenode_bottom' + CT.widgetID + '">target treenode ID</th>' +
             '<th>last modified</th>' +
           '</tr>' +
         '</tfoot>' +
       '</table>';
 
 
-    addListener(win, container, 'table_of_connector_buttons');
+    addListener(win, container, 'table_of_connector_buttons' + CT.widgetID, CT.destroy.bind(CT));
 
     addLogic(win);
 
-    ConnectorTable.init( project.getId() );
+    CT.init( project.getId() );
 
     return win;
   };

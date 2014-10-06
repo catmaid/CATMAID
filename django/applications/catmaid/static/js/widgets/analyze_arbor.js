@@ -181,6 +181,29 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
 
   var ad;
 
+
+  var analyze_subs = function(subarbor) {
+    // Detect and measure terminal subarbors of each kind (axonic and dendritic)
+    var subs = [];
+    microtubules_end.forEach(function(mend) {
+      if (subarbor.contains(mend)) {
+        // TODO should check if any overlap due to mistakenly placing a tag in an already existing subarbor
+        subs.push(subarbor.subArbor(mend));
+      }
+    });
+    var stats = {cable: [], inputs: [], outputs: [], branches: [], ends: []};
+    subs.forEach(function(sub) {
+      var nodes = sub.nodesArray(),
+          be = sub.findBranchAndEndNodes();
+      stats.cable.push(sub.cableLength(smooth_positions));
+      stats.inputs.push(nodes.filter(function(node) { return ap.inputs[node]; }).length);
+      stats.outputs.push(nodes.filter(function(node) { return ap.outputs[node]; }).length);
+      stats.branches.push(Object.keys(be.branches).length);
+      stats.ends.push(Object.keys(be.ends).length);
+    });
+    return stats;
+  };
+
   // Split by synapse flow centrality
   if (0 !== ap.n_outputs && 0 !== ap.n_inputs) {
     var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
@@ -214,31 +237,8 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         d_n_inputs = inputs.filter(d_f).reduce(countInputs, 0),
         d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes())));
 
-    // Detect and measure terminal subarbors of each kind (axonic and dendritic)
-    var analyze_subs = function(subarbor) {
-      var subs = [];
-      microtubules_end.forEach(function(mend) {
-        if (subarbor.contains(mend)) {
-          // TODO should check if any overlap due to mistakenly placing a tag in an already existing subarbor
-          subs.push(subarbor.subArbor(mend));
-        }
-      });
-      var stats = {cable: [], inputs: [], outputs: [], branches: [], ends: []};
-      subs.forEach(function(sub) {
-        var nodes = sub.nodesArray(),
-            be = sub.findBranchAndEndNodes();
-        stats.cable.push(sub.cableLength(smooth_positions));
-        stats.inputs.push(nodes.filter(function(node) { return ap.inputs[node]; }).length);
-        stats.outputs.push(nodes.filter(function(node) { return ap.outputs[node]; }).length);
-        stats.branches.push(Object.keys(be.branches).length);
-        stats.ends.push(Object.keys(be.ends).length);
-      });
-      return stats;
-    };
-
     this.terminal_subarbor_stats[skid] = {axonal: analyze_subs(axon_terminals),
                                           dendritic: analyze_subs(dendrites)};
-
 
     ad = [Math.round(d_cable) | 0,
           d_n_inputs,
@@ -258,6 +258,9 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
           0,
           0,
           0];
+
+    this.terminal_subarbor_stats[skid] = {axonal: null,
+                                          dendritic: analyze_subs(ap.arbor)};
   }
 
   var row = [NeuronNameService.getInstance().getName(skid),
@@ -313,7 +316,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
   // Create histograms of terminal subarbors:
   var skids = Object.keys(this.terminal_subarbor_stats),
-      labels = Object.keys(this.terminal_subarbor_stats[skids[0]].axonal);
+      labels = Object.keys(this.terminal_subarbor_stats[skids[0]].dendritic);
 
   (function() {
     // Histograms of total [cable, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors
@@ -322,10 +325,9 @@ AnalyzeArbor.prototype.updateCharts = function() {
     skids.forEach(function(skid) {
       var e = this.terminal_subarbor_stats[skid];
       labels.forEach(function(label) {
-        var a = e.axonal[label];
-        axonal[label] = axonal[label].concat(a);
-        var d = e.dendritic[label];
-        dendritic[label] = dendritic[label].concat(d);
+        // axonal won't exist a neuron without outputs like a motorneuron or a dendritic fragment
+        if (e.axonal) axonal[label] = axonal[label].concat(e.axonal[label]);
+        dendritic[label] = dendritic[label].concat(e.dendritic[label]);
       }, this);
     }, this);
     labels.forEach(function(label) {

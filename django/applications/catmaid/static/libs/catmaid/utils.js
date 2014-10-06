@@ -764,7 +764,7 @@ SVGUtil.insertMultipleBarChart = function(
 	// The SVG element representing the plot
 	var margin = {top: 20, right: 20, bottom: 30, left: 40},
 			width = cwidth - margin.left - margin.right,
-			height = cheight / 2 - margin.top - margin.bottom;
+			height = cheight - margin.top - margin.bottom;
 
 	var svg = d3.select(container).append("svg")
 			.attr("id", id) // already has widgetID in it
@@ -861,6 +861,18 @@ SVGUtil.insertMultipleBarChart = function(
 			.text(function(d) { return d; });
 };
 
+/** Fix export formatting issues by explicitly defining SVG properties. */
+SVGUtil.setAxisProperties = function(c) {
+	c.selectAll("path")
+		.attr("fill", "none")
+		.attr("stroke", "black")
+		.attr("stroke-width", "1");
+	c.selectAll("line")
+		.attr("fill", "none")
+		.attr("stroke", "black")
+		.attr("stroke-width", "1");
+};
+
 /** As many names|colors|x_axis_labels as data. */
 SVGUtil.insertMultipleBarChart2 = function(
     container, id,
@@ -882,7 +894,7 @@ SVGUtil.insertMultipleBarChart2 = function(
 
   var margin = {top: 20, right: 20, bottom: 50, left: 40},
       width = cwidth - margin.left - margin.right,
-      height = cheight / 2 - margin.top - margin.bottom;
+      height = cheight - margin.top - margin.bottom;
 
   var x = d3.scale.ordinal()
     .domain(d3.range(m))
@@ -928,25 +940,30 @@ SVGUtil.insertMultipleBarChart2 = function(
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis);
 
-	if (rotate_x_axis_labels) {
-		callx.selectAll("text")
-				.style("text-anchor", "end")
-				.attr("dx", "-.8em")
-				.attr("dy", ".15em")
-				.attr("transform", function(d) { return "rotate(-65)" });
-	}
+  if (rotate_x_axis_labels) {
+    callx.selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", "-.8em")
+        .attr("dy", ".15em")
+        .attr("transform", function(d) { return "rotate(-65)" });
+  }
 
-	// Append after having transformed the tick labels
+	SVGUtil.setAxisProperties(callx);
+
+  // Append after having transformed the tick labels
   callx.append("text")
       .attr("x", width)
       .attr("y", -6)
       .style("text-anchor", "end")
       .text(x_label);
 
-  svg.append("g")
+  var cally = svg.append("g")
       .attr("class", "y axis")
-      .call(yAxis)
-    .append("text")
+      .call(yAxis);
+
+	SVGUtil.setAxisProperties(cally);
+
+  cally.append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 6)
       .attr("dy", ".71em")

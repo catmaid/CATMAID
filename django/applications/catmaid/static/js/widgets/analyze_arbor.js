@@ -193,7 +193,10 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         subs.push(subarbor.subArbor(mend));
       }
     });
-    var stats = {cable: [], inputs: [], outputs: [], branches: [], ends: []};
+    var stats = {cable: [], depths: [], inputs: [], outputs: [], branches: [], ends: []},
+        edgeLength = function(child, paren) {
+          return smooth_positions[child].distanceTo(smooth_positions[paren]);
+        };
     subs.forEach(function(sub) {
       var nodes = sub.nodesArray(),
           be = sub.findBranchAndEndNodes();
@@ -202,6 +205,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
       stats.outputs.push(nodes.filter(function(node) { return ap.outputs[node]; }).length);
       stats.branches.push(Object.keys(be.branches).length);
       stats.ends.push(Object.keys(be.ends).length);
+      stats.depths.push(sub.nodesDistanceTo(sub.root, edgeLength).max);
     });
     return stats;
   };
@@ -323,7 +327,8 @@ AnalyzeArbor.prototype.updateCharts = function() {
   (function() {
     // Histograms of total [cable, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors
     var axonal = labels.reduce(function(o, label) { o[label] = []; return o}, {}),
-        dendritic = labels.reduce(function(o, label) { o[label] = []; return o}, {}); // needs deep copy
+        dendritic = labels.reduce(function(o, label) { o[label] = []; return o}, {}), // needs deep copy
+        cable_labels = ["cable", "depths"];
     skids.forEach(function(skid) {
       var e = this.terminal_subarbor_stats[skid];
       labels.forEach(function(label) {
@@ -336,7 +341,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
       var a = axonal[label],
           d = dendritic[label],
           inc = 1;
-      if ("cable" === label) {
+      if (-1 !== cable_labels.indexOf(label)) {
         // round to 1 micron increments
         inc = 1000;
         var round = function(v) { return v - v % inc; }; 
@@ -365,7 +370,8 @@ AnalyzeArbor.prototype.updateCharts = function() {
       }
       var data = [dbins, abins];
       var rotate_x_axis_labels = false;
-      if ("cable" === label) {
+      if (-1 !== cable_labels.indexOf(label)) {
+        // From nanometers to microns
         x_axis = x_axis.map(function(bin) { return bin/1000 + "-" + (bin + inc)/1000; });
         label = label + " (µm)";
         rotate_x_axis_labels = true;

@@ -764,7 +764,7 @@ SVGUtil.insertMultipleBarChart = function(
 	// The SVG element representing the plot
 	var margin = {top: 20, right: 20, bottom: 30, left: 40},
 			width = cwidth - margin.left - margin.right,
-			height = cheight / 2 - margin.top - margin.bottom;
+			height = cheight - margin.top - margin.bottom;
 
 	var svg = d3.select(container).append("svg")
 			.attr("id", id) // already has widgetID in it
@@ -817,7 +817,7 @@ SVGUtil.insertMultipleBarChart = function(
 			.attr("x", function(d) { return x1(d.series); })
 			.attr("y", function(d) { return y(d.count); })
 			.attr("height", function(d) { return height - y(d.count); })
-			.style("fill", function(d) { return color(d.series); });
+			.style("fill", function(d, i) { return colors[i]; /*color(d.series);*/ });
 
 	// Insert the graphics for the axes (after the data, so that they draw on top)
 	svg.append("g")
@@ -859,4 +859,136 @@ SVGUtil.insertMultipleBarChart = function(
 			.attr("dy", ".35em")
 			.style("text-anchor", "end")
 			.text(function(d) { return d; });
+};
+
+/** Fix export formatting issues by explicitly defining SVG properties. */
+SVGUtil.setAxisProperties = function(c) {
+	c.selectAll("path")
+		.attr("fill", "none")
+		.attr("stroke", "black")
+		.attr("stroke-width", "1");
+	c.selectAll("line")
+		.attr("fill", "none")
+		.attr("stroke", "black")
+		.attr("stroke-width", "1");
+};
+
+/** As many names|colors|x_axis_labels as data. */
+SVGUtil.insertMultipleBarChart2 = function(
+    container, id,
+    cwidth, cheight,
+    x_label, y_label,
+    data,
+    names, colors,
+    x_axis_labels, rotate_x_axis_labels,
+    show_legend) {
+
+  var n = data.length,
+      layers = data.map(function(series, i) {
+        return Object.keys(series).map(function(key, k) {
+          return {x: k, y: series[key]};
+        });
+      }),
+      m = layers[0].length,
+      yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); });
+
+  var margin = {top: 20, right: 20, bottom: 50, left: 40},
+      width = cwidth - margin.left - margin.right,
+      height = cheight - margin.top - margin.bottom;
+
+  var x = d3.scale.ordinal()
+    .domain(d3.range(m))
+    .rangeRoundBands([0, width], .08);
+
+  var y = d3.scale.linear()
+    .domain([0, yGroupMax])
+    .range([height, 0]);
+
+  var xAxis = d3.svg.axis()
+    .scale(x)
+    .tickFormat(function(d, i) { return x_axis_labels[i]; })
+    .orient("bottom");
+
+  var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .tickFormat(d3.format("d"));
+
+  var svg = d3.select(container).append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var layer = svg.selectAll(".layer")
+      .data(layers)
+    .enter().append("g")
+      .attr("class", "layer")
+      .style("fill", function(d, i) { return colors[i]; });
+
+  var rect = layer.selectAll("rect")
+      .data(function(series) { return series; })
+    .enter().append("rect")
+      .attr("x", function(d, i, j) { return x(d.x) + x.rangeBand() / n * j; })
+      .attr("width", x.rangeBand() / n)
+      .attr("y", function(d) { return y(d.y); })
+      .attr("height", function(d) { return height - y(d.y); });
+
+  // Insert the graphics for the axes (after the data, so that they draw on top)
+  var callx = svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  if (rotate_x_axis_labels) {
+    callx.selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", "-.8em")
+        .attr("dy", ".15em")
+        .attr("transform", function(d) { return "rotate(-65)" });
+  }
+
+	SVGUtil.setAxisProperties(callx);
+
+  // Append after having transformed the tick labels
+  callx.append("text")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text(x_label);
+
+  var cally = svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+
+	SVGUtil.setAxisProperties(cally);
+
+  cally.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text(y_label);
+
+  // The legend: which series is which
+	if (show_legend) {
+		var legend = svg.selectAll(".legend")
+				.data(names)
+			.enter().append("g")
+				.attr("class", "legend")
+				.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+		legend.append("rect")
+				.attr("x", width - 18)
+				.attr("width", 18)
+				.attr("height", 18)
+				.style("fill", function(d, i) { return colors[i]; });
+
+		legend.append("text")
+				.attr("x", width - 24)
+				.attr("y", 9)
+				.attr("dy", ".35em")
+				.style("text-anchor", "end")
+				.text(function(d) { return d; });
+	}
 };

@@ -9,7 +9,11 @@ var AnalyzeArbor = function() {
 
   this.table = null;
   this.skeleton_ids = [];
+  this.terminal_subarbor_stats = [];
+
   this.pie_radius = 100;
+  this.plot_width = 300;
+  this.plot_height = 300;
 };
 
 AnalyzeArbor.prototype = {};
@@ -37,7 +41,9 @@ AnalyzeArbor.prototype.update = function() {
 
 AnalyzeArbor.prototype.clear = function() {
   this.table.fnClearTable();
+  $('#analyze_widget_charts_div' + this.widgetID).empty();
   this.skeleton_ids = [];
+  this.terminal_subarbor_stats = [];
 };
 
 AnalyzeArbor.prototype.removeSkeletons = function() {};
@@ -177,6 +183,29 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
 
   var ad;
 
+
+  var analyze_subs = function(subarbor) {
+    // Detect and measure terminal subarbors of each kind (axonic and dendritic)
+    var subs = [];
+    microtubules_end.forEach(function(mend) {
+      if (subarbor.contains(mend)) {
+        // TODO should check if any overlap due to mistakenly placing a tag in an already existing subarbor
+        subs.push(subarbor.subArbor(mend));
+      }
+    });
+    var stats = {cable: [], inputs: [], outputs: [], branches: [], ends: []};
+    subs.forEach(function(sub) {
+      var nodes = sub.nodesArray(),
+          be = sub.findBranchAndEndNodes();
+      stats.cable.push(sub.cableLength(smooth_positions));
+      stats.inputs.push(nodes.filter(function(node) { return ap.inputs[node]; }).length);
+      stats.outputs.push(nodes.filter(function(node) { return ap.outputs[node]; }).length);
+      stats.branches.push(Object.keys(be.branches).length);
+      stats.ends.push(Object.keys(be.ends).length);
+    });
+    return stats;
+  };
+
   // Split by synapse flow centrality
   if (0 !== ap.n_outputs && 0 !== ap.n_inputs) {
     var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
@@ -210,6 +239,9 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         d_n_inputs = inputs.filter(d_f).reduce(countInputs, 0),
         d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes())));
 
+    this.terminal_subarbor_stats[skid] = {axonal: analyze_subs(axon_terminals),
+                                          dendritic: analyze_subs(dendrites)};
+
     ad = [Math.round(d_cable) | 0,
           d_n_inputs,
           d_n_outputs,
@@ -228,6 +260,9 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
           0,
           0,
           0];
+
+    this.terminal_subarbor_stats[skid] = {axonal: null,
+                                          dendritic: analyze_subs(ap.arbor)};
   }
 
   var row = [NeuronNameService.getInstance().getName(skid),
@@ -279,6 +314,73 @@ AnalyzeArbor.prototype.updateCharts = function() {
   var pie_cable = makePie(0, "Cable (nm)"),
       pie_inputs = makePie(1, "# Inputs"),
       pie_outputs = makePie(2, "# Outputs");
+
+
+  // Create histograms of terminal subarbors:
+  var skids = Object.keys(this.terminal_subarbor_stats),
+      labels = Object.keys(this.terminal_subarbor_stats[skids[0]].dendritic);
+
+  (function() {
+    // Histograms of total [cable, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors
+    var axonal = labels.reduce(function(o, label) { o[label] = []; return o}, {}),
+        dendritic = labels.reduce(function(o, label) { o[label] = []; return o}, {}); // needs deep copy
+    skids.forEach(function(skid) {
+      var e = this.terminal_subarbor_stats[skid];
+      labels.forEach(function(label) {
+        // axonal won't exist a neuron without outputs like a motorneuron or a dendritic fragment
+        if (e.axonal) axonal[label] = axonal[label].concat(e.axonal[label]);
+        dendritic[label] = dendritic[label].concat(e.dendritic[label]);
+      }, this);
+    }, this);
+    labels.forEach(function(label) {
+      var a = axonal[label],
+          d = dendritic[label],
+          inc = 1;
+      if ("cable" === label) {
+        // round to 5 micron increments
+        inc = 5000;
+        var round = function(v) { return v - v % inc; }; 
+        a = a.map(round);
+        d = d.map(round);
+      }
+      // Binarize
+      var max = 0,
+          binarize = function(bins, v) {
+            max = Math.max(max, v);
+            var bin = bins[v];
+            if (bin) bins[v] += 1;
+            else bins[v] = 1;
+            return bins;
+          };
+      var abins = a.reduce(binarize, {}),
+          dbins = d.reduce(binarize, {});
+      // Add missing bins and thread together
+      var x_axis = [];
+      for (var bin=0; bin<=max; bin+=inc) {
+        var a = abins[bin],
+            d = dbins[bin];
+        if (!a) abins[bin] = 0;
+        if (!d) dbins[bin] = 0;
+        x_axis.push(bin);
+      }
+      var data = [dbins, abins];
+      var rotate_x_axis_labels = false;
+      if ("cable" === label) {
+        x_axis = x_axis.map(function(bin) { return bin/1000 + "-" + (bin + inc)/1000; });
+        label = label + " (µm)";
+        rotate_x_axis_labels = true;
+      }
+
+      SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
+        this.plot_width, this.plot_height,
+        label, "counts",
+        data,
+        ["dendritic", "axonal"],
+        ["#00ffff", "#ff0000"],
+        x_axis, rotate_x_axis_labels,
+        false);
+    }, this);
+  }).bind(this)();
 };
 
 AnalyzeArbor.prototype.exportSVG = function() {
@@ -288,14 +390,18 @@ AnalyzeArbor.prototype.exportSVG = function() {
   if (svg && svg.length > 0) {
     var xmlns = "http://www.w3.org/2000/svg";
     var all = document.createElementNS(xmlns, 'svg');
-    all.setAttributeNS(null, "width", this.pie_radius * 2 * svg.length);
-    all.setAttributeNS(null, "height", this.pie_radius * 2 + 30);
+    var dx = 0,
+        max_height = 0;
     for (var i=0; i<svg.length; ++i) {
       var g = document.createElementNS(xmlns, "g");
-      g.setAttributeNS(null, "transform", "translate(" + (i * this.pie_radius * 2) + ", 0)");
+      g.setAttributeNS(null, "transform", "translate(" + dx + ", 0)");
       g.appendChild(svg[i].children[0].cloneNode(true));
       all.appendChild(g);
+      dx += Number(svg[i].getAttributeNS(null, "width"));
+      max_height = Math.max(max_height, Number(svg[i].getAttributeNS(null, "height")));
     }
+    all.setAttributeNS(null, "width", dx);
+    all.setAttributeNS(null, "height", max_height);
     var xml = new XMLSerializer().serializeToString(all);
     var blob = new Blob([xml], {type: 'text/xml'});
     saveAs(blob, "analyze_arbor_pie_charts.svg");

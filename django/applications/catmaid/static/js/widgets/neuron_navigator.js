@@ -1689,23 +1689,20 @@ NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
 
 
 /**
- * A neuron node displays information about a particular node. It shows all the
- * skeletons that are model for a neuron as well as all its annotations and the
- * user that has locked it.
+ * This mixin introduces fields and functions to work with the currently active
+ * neuron.
  */
-NeuronNavigator.ActiveNeuronNode = function()
+NeuronNavigator.ActiveNeuronMixin = function()
 {
-  this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
-  this.name = 'Active Neuron';
+  this.current_skid = null;
   this.sync_active_neuron = true;
 };
 
-NeuronNavigator.ActiveNeuronNode.prototype = {};
-$.extend(NeuronNavigator.ActiveNeuronNode.prototype,
+$.extend(NeuronNavigator.ActiveNeuronMixin.prototype,
     new NeuronNavigator.NeuronNode({id: -1, name: '', skeleton_ids: []}));
 
-NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
-    filters)
+NeuronNavigator.ActiveNeuronMixin.prototype.add_activeneuron_content =
+    function(container, filters)
 {
   // Add checkbox to indicate if this node should update automatically if the
   // active neuron changes.
@@ -1760,12 +1757,34 @@ NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
 /**
  * Triggers a reload of this node with update skeleton ID data.
  */
-NeuronNavigator.ActiveNeuronNode.prototype.highlight = function(skeleton_id)
+NeuronNavigator.ActiveNeuronMixin.prototype.highlight = function(skeleton_id)
 {
   if (this.sync_active_neuron) {
     this.current_skid = skeleton_id;
     this.navigator.select_node(this);
   }
+};
+
+
+/**
+ * A neuron node displays information about a particular node. It shows all the
+ * skeletons that are model for a neuron as well as all its annotations and the
+ * user that has locked it.
+ */
+NeuronNavigator.ActiveNeuronNode = function()
+{
+  this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
+  this.name = 'Active Neuron';
+};
+
+NeuronNavigator.ActiveNeuronNode.prototype = {};
+$.extend(NeuronNavigator.ActiveNeuronNode.prototype,
+    new NeuronNavigator.ActiveNeuronMixin());
+
+NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
+    filters)
+{
+  this.add_activeneuron_content(container, filters);
 };
 
 

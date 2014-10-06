@@ -54,7 +54,7 @@ libraries_js = {
     'three.js': ['three.js', 'js/controls/TrackballControls.js', 'js/Detector.js',
                  'helvetiker_regular.typeface.js'],
     'threex': ['*.js'],
-    'cytoscapejs': ['*.js'],
+    'cytoscapejs': ['cytoscape.js'],
     'jsnetworkx': ['*.js'],
     'filesaver': ['*.js'],
     'catmaid': ['*.js'],
@@ -68,6 +68,10 @@ for k,v in libraries_js.iteritems():
         'output_filename': 'js/libs/%s-lib.js' % k,
     }
 
+PIPELINE_JS['arbor'] = {
+    'source_filenames': ('libs/cytoscapejs/arbor.js',),
+    'output_filename': 'js/arbor.js'
+}
 
 PIPELINE_JS['catmaid'] = {
     'source_filenames': (

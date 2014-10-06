@@ -147,7 +147,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
 
 NeuronDendrogram.prototype.resize = function()
 {
-  this.update();
+  // For now do nothing.
 };
 
 

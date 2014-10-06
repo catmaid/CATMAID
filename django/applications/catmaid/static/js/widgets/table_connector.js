@@ -1,7 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-var ConnectorTable = function()
+var ConnectorTable = function(optionalSkid)
 {
   this.widgetID = this.registerInstance();
 
@@ -10,7 +10,7 @@ var ConnectorTable = function()
 
   var self = this;
   var asInitValsSyn = new Array();
-  var skeletonID = -1;
+  var skeletonID = optionalSkid ? optionalSkid : -1;
   var last_displayed_skeletons = {};
   last_displayed_skeletons[0] = 'None';
   var possibleLengths = [25, 100, -1];

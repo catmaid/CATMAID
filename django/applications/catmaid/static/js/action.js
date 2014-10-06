@@ -337,16 +337,6 @@ var segmentationWindowActions = [
 var tracingWindowActions = [
 
   new Action({
-    helpText: "Show connector table",
-    buttonID: "data_button_table_connector",
-    buttonName: 'table_connector',
-    run: function (e) {
-      WindowMaker.create( 'connector-table' );
-      return true;
-    }
-  }),
-
-  new Action({
       helpText: "Review system",
       buttonID: "data_button_review",
       buttonName: 'table_review',

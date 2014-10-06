@@ -1544,6 +1544,18 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
     }
   }).bind(this);
 
+  var connectortable_button = document.createElement('input');
+  connectortable_button.setAttribute('type', 'button');
+  connectortable_button.setAttribute('value', 'Connector table');
+  container.append(connectortable_button);
+
+  connectortable_button.onclick = (function() {
+    if (this.skeleton_ids.length > 0) {
+      var TNT = new ConnectorTable(this.skeleton_ids[0]);
+      WindowMaker.create('connector-table', TNT);
+    }
+  }).bind(this);
+
 
   /* Skeletons: Request compact JSON data */
   var content = document.createElement('div');

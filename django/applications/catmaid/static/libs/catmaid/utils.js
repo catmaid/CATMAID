@@ -868,16 +868,16 @@ SVGUtil.insertMultipleBarChart2 = function(
     x_label, y_label,
     data,
     names, colors,
-		x_axis_labels, rotate_x_axis_labels,
-		show_legend) {
+    x_axis_labels, rotate_x_axis_labels,
+    show_legend) {
 
   var n = data.length,
       layers = data.map(function(series, i) {
-				return Object.keys(series).map(function(key, k) {
-					return {x: k, y: series[key]};
-				});
-			}),
-	    m = layers[0].length,
+        return Object.keys(series).map(function(key, k) {
+          return {x: k, y: series[key]};
+        });
+      }),
+      m = layers[0].length,
       yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); });
 
   var margin = {top: 20, right: 20, bottom: 50, left: 40},

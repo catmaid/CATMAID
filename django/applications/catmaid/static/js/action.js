@@ -337,16 +337,6 @@ var segmentationWindowActions = [
 var tracingWindowActions = [
 
   new Action({
-    helpText: "Show treenode table",
-    buttonID: "data_button_table_treenode",
-    buttonName: 'table',
-    run: function (e) {
-      WindowMaker.create('node-table');
-      return true;
-    }
-  }),
-
-  new Action({
     helpText: "Show connector table",
     buttonID: "data_button_table_connector",
     buttonName: 'table_connector',

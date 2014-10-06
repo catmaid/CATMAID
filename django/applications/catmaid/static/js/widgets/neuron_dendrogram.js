@@ -239,8 +239,10 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   var nodes = dendrogram.nodes(tree);
   var links = dendrogram.links(nodes);
 
-  var diagonal = d3.svg.diagonal()
-    .projection(function(d) { return [d.y, d.x]; });
+  function elbow(d, i) {
+      return "M" + d.source.y + "," + d.source.x
+           + "V" + d.target.x + "H" + d.target.y;
+  }
 
   // Split links in such that are upstream of tagged nodes and those downstream.
   var separatedLinks = links.reduce(function(o, l) {
@@ -260,13 +262,13 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .data(separatedLinks.downstreamLinks)
     .enter().append("path")
     .attr("class", "taggedLink")
-    .attr("d", diagonal);
+    .attr("d", elbow);
 
   var upLink = vis.selectAll(".link")
     .data(separatedLinks.upstreamLinks)
     .enter().append("path")
     .attr("class", "link")
-    .attr("d", diagonal);
+    .attr("d", elbow);
 
   // Split nodes in those which are tagged and those which are not
   var separatedNodes = nodes.reduce(function(o, n) {

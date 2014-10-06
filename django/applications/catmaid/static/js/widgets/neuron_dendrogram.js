@@ -173,9 +173,11 @@ NeuronDendrogram.prototype.update = function()
   */
 NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 {
-  var width = this.container.clientWidth;
-  var height = this.container.clientHeight;
-  var dendrogram = d3.layout.cluster().size([height, width - 160]);
+  var margin = {top: 0, right: 70, bottom: 0, left: 70};
+  var width = this.container.clientWidth - margin.left - margin.right;
+  var height = this.container.clientHeight - margin.top - margin.bottom;
+  var dendrogram = d3.layout.cluster()
+      .size([height, width]);
 
   // Clear existing container
   $("#dendrogram" + this.widgetID).empty();
@@ -183,15 +185,16 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   // Create new SVG
   var svg = d3.select("#dendrogram" + this.widgetID)
     .append("svg:svg")
-      .attr("width", width)
-      .attr("height", height)
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
     .append("svg:g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
       .call(d3.behavior.zoom().scaleExtent([0.1, 100]).on("zoom", zoom));
 
   // Add a background rectangle to get all mouse events for panning and zoom
-  var rect = svg.append("rect")
-    .attr("width", width)
-    .attr("height", height)
+  var rect = vis.append("rect")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
     .style("fill", "none")
     .style("pointer-events", "all");
 

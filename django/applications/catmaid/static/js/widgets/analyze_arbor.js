@@ -12,6 +12,8 @@ var AnalyzeArbor = function() {
   this.terminal_subarbor_stats = [];
 
   this.pie_radius = 100;
+  this.plot_width = 300;
+  this.plot_height = 300;
 };
 
 AnalyzeArbor.prototype = {};
@@ -370,7 +372,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
       }
 
       SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
-        300, 300,
+        this.plot_width, this.plot_height,
         label, "counts",
         data,
         ["dendritic", "axonal"],
@@ -388,14 +390,18 @@ AnalyzeArbor.prototype.exportSVG = function() {
   if (svg && svg.length > 0) {
     var xmlns = "http://www.w3.org/2000/svg";
     var all = document.createElementNS(xmlns, 'svg');
-    all.setAttributeNS(null, "width", this.pie_radius * 2 * svg.length);
-    all.setAttributeNS(null, "height", this.pie_radius * 2 + 30);
+    var dx = 0,
+        max_height = 0;
     for (var i=0; i<svg.length; ++i) {
       var g = document.createElementNS(xmlns, "g");
-      g.setAttributeNS(null, "transform", "translate(" + (i * this.pie_radius * 2) + ", 0)");
+      g.setAttributeNS(null, "transform", "translate(" + dx + ", 0)");
       g.appendChild(svg[i].children[0].cloneNode(true));
       all.appendChild(g);
+      dx += Number(svg[i].getAttributeNS(null, "width"));
+      max_height = Math.max(max_height, Number(svg[i].getAttributeNS(null, "height")));
     }
+    all.setAttributeNS(null, "width", dx);
+    all.setAttributeNS(null, "height", max_height);
     var xml = new XMLSerializer().serializeToString(all);
     var blob = new Blob([xml], {type: 'text/xml'});
     saveAs(blob, "analyze_arbor_pie_charts.svg");

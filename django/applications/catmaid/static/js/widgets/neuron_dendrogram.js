@@ -75,11 +75,12 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
    * Helper to create a tree representation of a skeleton. Expects data to be of
    * the format [id, parent_id, user_id, x, y, z, radius, confidence].
    */
-  var createTree = function(index, specialNodes, data, forceSpecial, collapsed,
+  var createTree = function(index, taggedNodes, data, belowTag, collapsed,
       showNodeIds)
   {
     var id = data[0];
-    var special = forceSpecial || specialNodes.indexOf(id) != -1;
+    var tagged = taggedNodes.indexOf(id) != -1;
+    belowTag =  belowTag || tagged;
     // Basic node data structure
     var node = {
       'name': showNodeIds ? id : "",
@@ -87,7 +88,8 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
       'loc_x': data[3],
       'loc_y': data[4],
       'loc_z': data[5],
-      'tagged': special,
+      'tagged': tagged,
+      'belowTag': belowTag,
     };
 
     // Add children to node, if they exist
@@ -98,7 +100,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
         var skip = collapsed && // collapse active?
                    index.hasOwnProperty(cid) && // is parent?
                    (1 === index[cid].length) && // only one child?
-                   specialNodes.indexOf(cid) == -1; // not special?
+                   taggedNodes.indexOf(cid) == -1; // not tagged?
         if (skip) {
           // Test if child can also be skipped
           return findNext(index[cid][0]);
@@ -108,7 +110,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
       };
 
       node.children = index[id].map(findNext).map(function(c) {
-        return createTree(index, specialNodes, c, special, collapsed, showNodeIds);
+        return createTree(index, taggedNodes, c, belowTag, collapsed, showNodeIds);
       });
 
     }
@@ -254,7 +256,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 
   // Split links in such that are upstream of tagged nodes and those downstream.
   var separatedLinks = links.reduce(function(o, l) {
-    if (l.source.tagged) {
+    if (l.source.belowTag) {
       o.downstreamLinks.push(l);
     } else {
       o.upstreamLinks.push(l);
@@ -280,7 +282,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 
   // Split nodes in those which are tagged and those which are not
   var separatedNodes = nodes.reduce(function(o, n) {
-    if (n.tagged) {
+    if (n.belowTag) {
       o.taggedNodes.push(n);
     } else {
       o.regularNodes.push(n);

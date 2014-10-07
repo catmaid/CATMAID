@@ -1584,7 +1584,18 @@ GroupGraph.prototype._exportSVG = function() {
       height = div.height();
   var svg = new SVGCanvas(width, height);
 
+  // Cytoscape uses Path2D if it is available. Unfortunately, SVGKit isn't able
+  // to make use of this as well and silently fails to draw paths. We therefore
+  // have to monkey-patch Cytoscape to not use Path2D by overriding its test.
+  // We reset to the original function after the graph has been rendered.
+  var CanvasRenderer = cytoscape('renderer', 'canvas');
+  var orignalUsePaths = CanvasRenderer.usePaths;
+  CanvasRenderer.usePaths = function() { return false; };
+
   this.cy.renderer().renderTo( svg, 1.0, {x: 0, y: 0}, 1.0 ); 
+
+  // Reset Path2D test of Cytoscape
+  CanvasRenderer.usePaths = orignalUsePaths;
 
   // Fix rendering issues.
   // Painting order is from bottom to top (logically).

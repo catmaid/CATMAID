@@ -13,6 +13,7 @@ var NeuronDendrogram = function() {
   this.skeletonId = null;
   this.collapsed = true;
   this.showNodeIDs = true;
+  this.showTags = true;
 };
 
 NeuronDendrogram.prototype = {};
@@ -75,15 +76,13 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
    * Helper to create a tree representation of a skeleton. Expects data to be of
    * the format [id, parent_id, user_id, x, y, z, radius, confidence].
    */
-  var createTree = function(index, taggedNodes, data, belowTag, collapsed,
-      showNodeIds)
+  var createTree = function(index, taggedNodes, data, belowTag, collapsed)
   {
     var id = data[0];
     var tagged = taggedNodes.indexOf(id) != -1;
     belowTag =  belowTag || tagged;
     // Basic node data structure
     var node = {
-      'name': showNodeIds ? id : "",
       'id': id,
       'loc_x': data[3],
       'loc_y': data[4],
@@ -110,7 +109,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
       };
 
       node.children = index[id].map(findNext).map(function(c) {
-        return createTree(index, taggedNodes, c, belowTag, collapsed, showNodeIds);
+        return createTree(index, taggedNodes, c, belowTag, collapsed);
       });
 
     }
@@ -141,8 +140,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
 
   // Create the tree, starting from the root node
   var root = parentToChildren[null][0];
-  var tree = createTree(parentToChildren, taggedNodes, root, false, this.collapsed,
-     this.showNodeIDs);
+  var tree = createTree(parentToChildren, taggedNodes, root, false, this.collapsed);
 
   return tree;
 };
@@ -164,7 +162,7 @@ NeuronDendrogram.prototype.update = function()
   var taggedNodeIds = this.currentSkeletonTags.hasOwnProperty(tag) ? this.currentSkeletonTags[tag] : [];
   var tree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds);
   if (this.currentSkeletonTree && this.currentSkeletonTags) {
-    this.renderDendogram(tree, this.currentSkeletonTags);
+    this.renderDendogram(tree, this.currentSkeletonTags, tag);
   }
 };
 
@@ -305,6 +303,22 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
           });
     }).bind(this);
 
+  var nodeName = function(showTags, showIds) {
+    if (showTags) {
+      return function(d) {
+        if (d.tagged) {
+          return referenceTag + (showIds ? " (" + d.id + ")" : "");
+        } else {
+          return showIds ? d.id : "";
+        }
+      }
+    } else {
+      return function(d) {
+        return showIds ? d.id : "";
+      };
+    }
+  }(this.showTags, this.showNodeIDs);
+
   var addNodes = function(elements, cls) {
     var node = vis.selectAll(".node")
       .data(elements)
@@ -320,7 +334,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       .attr("dx", function(d) { return d.children ? -8 : 8; })
       .attr("dy", 3)
       .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
-      .text(function(d) { return d.name; });
+      .text(nodeName);
 
     return node;
   };
@@ -343,4 +357,9 @@ NeuronDendrogram.prototype.setCollapsed = function(value)
 NeuronDendrogram.prototype.setShowNodeIds = function(value)
 {
   this.showNodeIDs = value;
+};
+
+NeuronDendrogram.prototype.setShowTags = function(value)
+{
+  this.showTags = value;
 };

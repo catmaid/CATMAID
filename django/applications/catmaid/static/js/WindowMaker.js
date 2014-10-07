@@ -342,6 +342,20 @@ var WindowMaker = new function()
     naming.appendChild(namingInput);
     buttons.appendChild(naming);
 
+    var showTags = document.createElement('label');
+    showTags.appendChild(document.createTextNode('Show tags'));
+    var showTagsInput = document.createElement('input');
+    showTagsInput.setAttribute('type', 'checkbox');
+    if (ND.showTags) {
+      showTagsInput.setAttribute('checked', 'checked');
+    }
+    showTagsInput.onchange = function() {
+      ND.setShowTags(this.checked);
+      ND.update();
+    };
+    showTags.appendChild(showTagsInput);
+    buttons.appendChild(showTags);
+
     content.appendChild(buttons);
 
     var container = createContainer("dendrogram" + ND.widgetID);

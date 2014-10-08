@@ -221,7 +221,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .separation(function() { return 1; });
 
   // Find default scale so that everything can be seen
-  var defaultScale = width > height ? baseWidth / width : baseHeight / height;
+  var defaultScale = baseWidth > baseHeight ? baseHeight / height : baseWidth / width;
 
   // Clear existing container
   $("#dendrogram" + this.widgetID).empty();

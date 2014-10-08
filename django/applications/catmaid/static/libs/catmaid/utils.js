@@ -728,13 +728,21 @@ SVGUtil.insertPieChart = function(divID, radius, entries, title) {
     .attr("height", radius * 2 + extra)
     .append("g")
     .attr("transform", "translate(" + radius + "," + (radius + extra) + ")");
-  var g = svg.selectAll(".arc")
+  svg.selectAll(".arc")
     .data(pie(entries))
-    .enter().append("g").attr("class", "arc");
-  g.append("path")
+    .enter()
+    .append("g")
+    .attr("class", "arc")
+    .append("path")
     .attr("d", arc)
     .style("fill", function(d) { return d.data.color; });
-  g.append("text")
+  // Prevent arcs from clipping text labels by creating new 'g' elements for each label
+  svg.selectAll(".arc-label")
+    .data(pie(entries))
+    .enter()
+    .append("g")
+    .attr("class", "arc-label")
+    .append("text")
     .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
     .attr("dy", ".35em")
     .style("text-anchor", "middle")

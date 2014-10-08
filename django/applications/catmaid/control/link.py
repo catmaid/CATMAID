@@ -3,9 +3,9 @@ import json
 from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, Project, Relation, Treenode, Connector, \
+        TreenodeConnector, ClassInstance
+from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 
 @requires_user_role(UserRole.Annotate)
 def create_link(request, project_id=None):

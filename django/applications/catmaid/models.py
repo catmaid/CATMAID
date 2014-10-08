@@ -10,10 +10,8 @@ import urllib
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.auth.models import Group, Permission
-from django.contrib.contenttypes.models import ContentType
 
-from .fields import Double3DField, Integer3DField, IntegerArrayField, RGBAField
+from fields import Double3DField, Integer3DField, RGBAField
 
 from guardian.shortcuts import get_objects_for_user
 

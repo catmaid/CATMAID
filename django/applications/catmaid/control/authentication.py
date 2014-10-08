@@ -1,29 +1,24 @@
-import sys
 import re
-import urllib
 import json
+
+from functools import wraps
+from itertools import groupby
+
+from guardian.models import UserObjectPermission, GroupObjectPermission
+from guardian.shortcuts import get_perms_for_model
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth import authenticate, logout, login
+from django.contrib.auth.models import User, Group
 from django.db import connection
-from django.http import HttpResponse, HttpResponseRedirect
-from django.core.urlresolvers import reverse
+from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset
 
-from catmaid.models import Project, UserRole, ClassInstance
-from catmaid.models import ClassInstanceClassInstance
-from django.contrib.auth.models import User, Group
-
-from catmaid.control.common import json_error_response
+from catmaid.models import Project, UserRole, ClassInstance, \
+        ClassInstanceClassInstance
 from catmaid.control.common import my_render_to_response
-
-from django.contrib.auth import authenticate, logout, login
-
-from guardian.models import UserObjectPermission, GroupObjectPermission
-from guardian.shortcuts import get_perms_for_model, get_objects_for_user, get_perms, get_objects_for_group
-from functools import wraps
-from itertools import groupby
 
 def login_vnc(request):
     return my_render_to_response(request,

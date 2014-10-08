@@ -5,26 +5,23 @@ from collections import defaultdict
 from django import forms
 from django.db.models import Q
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.forms.widgets import CheckboxSelectMultiple
 from django.http import HttpResponse
-from django.views.generic import TemplateView
+from django.views.generic.base import TemplateView
 from django.shortcuts import get_object_or_404, render_to_response
-from django.template import RequestContext
-from django.db.models import Count
 from django.contrib.contenttypes.models import ContentType
+from django.template.context import RequestContext
 
-from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
-from catmaid.control.common import insert_into_log
-from catmaid.control.ajax_templates import *
+from catmaid.control.common import get_class_to_id_map, \
+        get_relation_to_id_map, insert_into_log
+from catmaid.control.ajax_templates import render_block_to_string
 from catmaid.control.ontology import get_class_links_qs, get_features
-from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
-from catmaid.models import Relation, UserRole, Project, Restriction, Stack, User
-from catmaid.models import CardinalityRestriction, RegionOfInterest
-from catmaid.models import RegionOfInterestClassInstance, ProjectStack
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.roi import link_roi_to_class_instance
+from catmaid.models import Class, ClassClass, ClassInstance, \
+        ClassInstanceClassInstance, Relation, UserRole, Project, Restriction, \
+        CardinalityRestriction, RegionOfInterestClassInstance, ProjectStack
 
 from taggit.models import TaggedItem
 
@@ -1308,7 +1305,7 @@ def get_graphs_to_features(workspace_pid=None):
     """ This view returns a JSON representation of all classifications in this
     given workspace.
     """
-    from catmaid.control.clustering import get_features, graph_instanciates_feature
+    from catmaid.control.classification import graph_instanciates_feature
 
     # We want all ontologies represented (which are Class objects) that
     # live under the classification_root node.

@@ -3,10 +3,8 @@ import json
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import *
-from catmaid.objects import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, Project
+from catmaid.control.authentication import requires_user_role 
 from catmaid.control.graph import _skeleton_graph
 from catmaid.control.skeleton import _skeleton_info_raw
 

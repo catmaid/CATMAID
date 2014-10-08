@@ -10,7 +10,7 @@
 
 
 import time
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 
 def exportMutual(neuron_names, all_treenodes, connections, scale=0.001):
     """ Export a group of neuronal arbors and their synapses as NeuroML Level 3 v1.8.1.

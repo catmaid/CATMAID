@@ -10,16 +10,14 @@ except ImportError:
 from django.db import connection
 from django.http import HttpResponse
 
+from catmaid.models import UserRole, Treenode, TreenodeConnector, Class, \
+        ClassInstance, ClassInstanceClassInstance, Relation
 from catmaid.control.object import get_annotation_graph
-
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.control.authentication import requires_user_role, \
+        can_edit_class_instance_or_fail
+from catmaid.control.common import get_class_to_id_map, \
+        get_relation_to_id_map, insert_into_log
 from catmaid.control.tracing import check_tracing_setup_detailed
-
-from collections import defaultdict
-from functools import partial
-from itertools import imap, chain
 
 @requires_user_role(UserRole.Annotate)
 def instance_operation(request, project_id=None):

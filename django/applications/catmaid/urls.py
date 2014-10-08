@@ -1,9 +1,8 @@
-from django.conf.urls import patterns, include, url
-from django.conf import settings
+from django.conf.urls import patterns, url
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 
-from catmaid.views import *
+from catmaid.views import HomepageView, ExportWidgetView
 
 # A regular expression matching floating point and integer numbers
 num = r'[-+]?[0-9]*\.?[0-9]+'

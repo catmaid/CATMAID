@@ -1,5 +1,6 @@
-from __future__ import print_function
-
+import os.path
+import shutil
+import tarfile
 import json
 
 from django.conf import settings
@@ -7,18 +8,12 @@ from django.http import HttpResponse
 from django.db.models import Count
 
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
-from catmaid.control.common import json_error_response, id_generator
-from catmaid.control.cropping import CropJob, extract_substack, process_crop_job
-from catmaid.control.cropping import ImageRetrievalError
-from catmaid.models import ClassInstanceClassInstance, TreenodeConnector
-from catmaid.models import Message, User, UserRole, Treenode
+from catmaid.control.common import get_relation_to_id_map, id_generator
+from catmaid.control.cropping import CropJob, extract_substack, ImageRetrievalError
+from catmaid.models import ClassInstanceClassInstance, TreenodeConnector, \
+        Message, User, UserRole, Treenode
 
 from celery.task import task
-
-import os.path
-import shutil
-import tarfile
 
 
 # The path were archive files get stored in

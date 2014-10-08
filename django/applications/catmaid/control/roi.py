@@ -6,12 +6,11 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.core.cache import cache
 
-from pgmagick import Image, Blob
 from catmaid.control import cropping
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import urljoin
-from catmaid.models import UserRole, RegionOfInterest, Project, Relation
-from catmaid.models import Stack, ClassInstance, RegionOfInterestClassInstance
+from catmaid.models import UserRole, RegionOfInterest, Project, Relation, \
+        Stack, ClassInstance, RegionOfInterestClassInstance
 
 from celery.task import task
 from celery.utils.log import get_task_logger

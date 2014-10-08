@@ -1,12 +1,16 @@
 import json
-from django.db import connection
-from django.http import HttpResponse
-from catmaid.control.authentication import requires_user_role, UserRole
-from catmaid.control.skeleton import _neuronnames
-from itertools import combinations
 import networkx as nx
+
+from itertools import combinations
 from collections import defaultdict
 from functools import partial
+
+from django.db import connection
+from django.http import HttpResponse
+
+from catmaid.models import UserRole
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.skeleton import _neuronnames
 
 def _next_circle(skeleton_set, cursor):
     """ Return a dictionary of skeleton IDs in the skeleton_set vs a dictionary of connected skeletons vs how many connections."""

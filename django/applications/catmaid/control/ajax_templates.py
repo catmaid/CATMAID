@@ -1,5 +1,8 @@
+from django.http import HttpResponse
+
 from django.template.loader_tags import BlockNode, ExtendsNode
-from django.template import loader, Context, RequestContext, TextNode
+from django.template.context import Context, RequestContext
+from django.template import loader
 
 # Most parts of this code has been taken from this Django snippet:
 # http://djangosnippets.org/snippets/942/

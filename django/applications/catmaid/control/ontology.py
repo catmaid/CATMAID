@@ -1,8 +1,14 @@
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+import json
 
+from django.http import HttpResponse
+from django.db import connection
 from django.shortcuts import get_object_or_404
+
+from catmaid.models import UserRole, Relation, Class, ClassClass, Restriction, \
+        CardinalityRestriction
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
+
 
 # Root classes can be seen as namespaces in the semantic space. Different
 # tools use different root classes.

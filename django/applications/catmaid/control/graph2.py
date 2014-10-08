@@ -1,20 +1,19 @@
 import json
-from django.db import connection
-from django.http import HttpResponse
-from catmaid.control.authentication import *
-from catmaid.models import Relation
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
-from itertools import chain, ifilter, imap, izip, count
+from itertools import izip, count
 from functools import partial
 from synapseclustering import tree_max_density
 from numpy import subtract
 from numpy.linalg import norm
-from tree_util import edge_count_to_root, simplify, find_root, reroot, partition, spanning_tree, cable_length
-from math import sqrt
-import sys
-from operator import getitem
+
+from django.db import connection
+from django.http import HttpResponse
+
+from catmaid.models import UserRole
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.tree_util import simplify
 
 def basic_graph(project_id, skeleton_ids):
     if not skeleton_ids:

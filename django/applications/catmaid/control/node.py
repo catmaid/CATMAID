@@ -1,19 +1,20 @@
 import json
+import re
 
 from collections import defaultdict
 from datetime import datetime
 
 from django.db import connection
 from django.http import HttpResponse
+from django.contrib.auth.models import User 
 
-from django.shortcuts import get_object_or_404
-
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, Treenode, TreenodeConnector, Connector, \
+        Location, ClassInstanceClassInstance, Review
+from catmaid.control.authentication import requires_user_role, \
+        can_edit_all_or_fail, user_domain
+from catmaid.control.common import get_relation_to_id_map, insert_into_log
 from catmaid.control.treenode import can_edit_treenode_or_fail
 
-import sys
 try:
     import networkx as nx
 except:

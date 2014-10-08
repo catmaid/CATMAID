@@ -3,10 +3,13 @@ import json
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
+from django.contrib.auth.models import User
 
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-from catmaid.models import ClassInstance, ClassInstanceClassInstance, Treenode
+from catmaid.control.authentication import requires_user_role, \
+        can_edit_class_instance_or_fail, can_edit_all_or_fail
+from catmaid.control.common import insert_into_log
+from catmaid.models import UserRole, Project, Class, ClassInstance, \
+        ClassInstanceClassInstance, Relation, Treenode
 
 import operator
 from collections import defaultdict

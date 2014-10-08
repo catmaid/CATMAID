@@ -1,15 +1,14 @@
 import json
 import math
-from collections import defaultdict
 from string import upper
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 
-from catmaid.models import ProjectStack, Stack, Treenode
-from catmaid.models import TreenodeClassInstance, User, UserRole
 from catmaid.fields import Double3D
+from catmaid.models import ProjectStack, Stack, Treenode, \
+        TreenodeClassInstance, User, UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.review import get_treenodes_to_reviews

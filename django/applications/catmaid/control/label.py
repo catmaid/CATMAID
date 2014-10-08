@@ -1,14 +1,16 @@
 import json
 
 from collections import defaultdict
+
 from django.db import connection
 from django.http import HttpResponse, Http404
-from django.db.models import Count
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import Project, Class, ClassInstance, Relation, Connector, \
+        ConnectorClassInstance, UserRole, Treenode, TreenodeClassInstance, \
+        ChangeRequest
+from catmaid.control.authentication import requires_user_role, can_edit_or_fail
+from catmaid.fields import Double3D
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def label_remove(request, project_id=None):

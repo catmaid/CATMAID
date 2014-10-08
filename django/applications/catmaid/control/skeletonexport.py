@@ -1,26 +1,27 @@
 import json
-
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-from catmaid.control import export_NeuroML_Level3
-from catmaid.control.review import get_treenodes_to_reviews, \
-    get_treenodes_to_reviews_with_time
-
 import networkx as nx
+from itertools import imap
+from functools import partial
+from collections import defaultdict
+from math import sqrt
+from datetime import datetime
+
+from django.db import connection
+from django.http import HttpResponse
+
+from catmaid.models import UserRole, ClassInstance, Treenode, \
+        TreenodeClassInstance, ConnectorClassInstance, Review
+from catmaid.control import export_NeuroML_Level3
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.review import get_treenodes_to_reviews, \
+        get_treenodes_to_reviews_with_time
+
 from tree_util import edge_count_to_root, partition
 try:
     from exportneuroml import neuroml_single_cell, neuroml_network
 except ImportError:
     print "NeuroML is not loading"
 
-from itertools import imap
-from functools import partial
-from collections import defaultdict
-from math import sqrt
 
 def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)

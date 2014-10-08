@@ -1,17 +1,15 @@
-import json, sys
+import json
 from string import upper
+from itertools import izip
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.db.models import Count, Max, Q
 from django.db import connection
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-
-from itertools import chain, imap, izip
-
+from catmaid.models import UserRole, Project, Class, ClassInstance, \
+        ClassInstanceClassInstance, Relation
+from catmaid.control.authentication import requires_user_role, can_edit_or_fail
+from catmaid.control.common import defaultdict
 
 def create_basic_annotated_entity_query(project, params, relations, classes,
         allowed_classes=['neuron', 'annotation']):

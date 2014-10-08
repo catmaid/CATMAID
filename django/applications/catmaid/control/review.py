@@ -1,8 +1,8 @@
 from collections import defaultdict
 
-from catmaid.models import Review
-
 from django.db import connection
+
+from catmaid.models import Review
 
 
 def get_treenodes_to_reviews(treenode_ids=None, skeleton_ids=None,

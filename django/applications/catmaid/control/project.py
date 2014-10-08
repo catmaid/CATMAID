@@ -1,16 +1,15 @@
 import json
 
 from collections import defaultdict
-from django.contrib import auth
+
+from guardian.shortcuts import get_objects_for_user
+
 from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-
-from guardian.shortcuts import get_objects_for_user
+from catmaid.models import UserRole, Class, Project, Stack
+from catmaid.control.authentication import requires_user_role
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_project_tags(request, project_id=None):

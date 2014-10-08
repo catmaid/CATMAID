@@ -327,16 +327,15 @@ AnalyzeArbor.prototype.updateCharts = function() {
   // Create a pie with the number of terminal subarbors
   var n_subs = ["axonal", "dendritic"].map(function(type) {
     return skids.reduce((function(sum, skid) {
-      var s = this.terminal_subarbor_stats[skid][type].n_subs;
-      return sum + (s ? s : 0);
+      var s = this.terminal_subarbor_stats[skid][type];
+      return sum + (s ? s.n_subs : 0);
     }).bind(this), 0);
   }, this);
 
   var pie_n_subarbors = SVGUtil.insertPieChart(
       divID,
       this.pie_radius,
-      [{name: titles[1] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[1]},
-       {name: titles[2] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[2]}],
+      [{name: titles[1] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[1]}].concat(0 === n_subs[0] ? [] : [{name: titles[2] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[2]}]), // there could be no axonal terminals
       "# Subarbors (" + (n_subs[0] + n_subs[1]) + ")");
 
   (function() {

@@ -1514,14 +1514,6 @@ var WindowMaker = new function()
     direction.appendChild(objOption2);
     contentbutton.appendChild(direction);
 
-    var last = document.createElement('select');
-    last.setAttribute("id", "connectortable_lastskeletons" + CT.widgetID);
-    var option = document.createElement("option");
-    option.text = "None";
-    option.value = -1;
-    last.appendChild(option);
-    contentbutton.appendChild(last);
-
     content.appendChild( contentbutton );
 
     var container = createContainer("connectortable_widget" + CT.widgetID);

@@ -11,8 +11,6 @@ var ConnectorTable = function(optionalSkid)
   var self = this;
   var asInitValsSyn = new Array();
   var skeletonID = optionalSkid ? optionalSkid : -1;
-  var last_displayed_skeletons = {};
-  last_displayed_skeletons[0] = 'None';
   var possibleLengths = [25, 100, -1];
   var possibleLengthsLabels = possibleLengths.map(
     function (n) { return (n === -1) ? "All" : n.toString(); });
@@ -35,11 +33,6 @@ var ConnectorTable = function(optionalSkid)
   this.init = function (pid) {
     var widgetID = this.widgetID;
     var tableid = '#connectortable' + widgetID;
-
-    $("#connectortable_lastskeletons" + widgetID).change(function() {
-      skeletonID = parseInt( $('#connectortable_lastskeletons' + widgetID).val() );
-      self.refreshConnectorTable();
-    });
     
     self.connectorTable = $(tableid).dataTable(
       {
@@ -81,23 +74,6 @@ var ConnectorTable = function(optionalSkid)
             "name": "stack_id",
             "value": project.focusedStack.id
           });
-
-          if( skeletonID && !(skeletonID in last_displayed_skeletons) ) {
-            // check if skeleton id already in list, of so, do not add it
-            last_displayed_skeletons[ skeletonID ] = $('#neuronName' + widgetID).text();
-            var new_skeletons = document.getElementById("connectortable_lastskeletons" + widgetID);
-            while (new_skeletons.length > 0)
-                new_skeletons.remove(0);
-            for (var skid in last_displayed_skeletons) {
-              if (last_displayed_skeletons.hasOwnProperty(skid)) {
-                var option = document.createElement("option");
-                option.text = last_displayed_skeletons[ skid ];
-                option.value = skid;
-                new_skeletons.appendChild(option);
-              }
-            }
-          }
-          $('#connectortable_lastskeletons' + widgetID).val( skeletonID );
 
           $.ajax({
             "dataType": 'json',

@@ -281,12 +281,12 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
             neuron_query[display_start:display_start + display_length], relations)
     for entity in entities:
         if entity['type'] == 'neuron':
-          response['aaData'] += [[
-              entity['name'],
-              entity['annotations'],
-              entity['skeleton_ids'],
-              entity['id'],
-          ]]
+            response['aaData'] += [[
+                entity['name'],
+                entity['annotations'],
+                entity['skeleton_ids'],
+                entity['id'],
+            ]]
 
     return HttpResponse(json.dumps(response), content_type='text/json')
 

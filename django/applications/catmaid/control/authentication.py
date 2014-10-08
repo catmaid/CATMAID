@@ -51,9 +51,9 @@ def login_user(request):
                 profile_context['is_superuser'] = user.is_superuser
                 return HttpResponse(json.dumps(profile_context))
             else:
-               # Return a 'disabled account' error message
-               profile_context['error'] = ' Disabled account'
-               return HttpResponse(json.dumps(profile_context))
+                # Return a 'disabled account' error message
+                profile_context['error'] = ' Disabled account'
+                return HttpResponse(json.dumps(profile_context))
         else:
             # Return an 'invalid login' error message.
             profile_context['userprofile'] = request.user.userprofile.as_dict()

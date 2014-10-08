@@ -173,56 +173,56 @@ class TreenodeExporter:
             img.write(treenode_image_path)
 
     def post_process(self, nodes):
-      """ Create a meta data file for all the nodes passed (usually all of the
-      ones queries before). This file is a table with the following columns:
-      <treenode id> <parent id> <#presynaptic sites> <#postsynaptic sites> <x> <y> <z>
-      """
-      # Get pre- and post synaptic sites
-      presynaptic_to_rel = self.relation_map['presynaptic_to']
-      postsynaptic_to_rel = self.relation_map['postsynaptic_to']
-      connector_links = TreenodeConnector.objects.filter(
+        """ Create a meta data file for all the nodes passed (usually all of the
+        ones queries before). This file is a table with the following columns:
+        <treenode id> <parent id> <#presynaptic sites> <#postsynaptic sites> <x> <y> <z>
+        """
+        # Get pre- and post synaptic sites
+        presynaptic_to_rel = self.relation_map['presynaptic_to']
+        postsynaptic_to_rel = self.relation_map['postsynaptic_to']
+        connector_links = TreenodeConnector.objects.filter(
               project_id=self.job.project_id,
               relation_id__in=[presynaptic_to_rel, postsynaptic_to_rel],
               skeleton_id__in=self.job.skeleton_ids).values('treenode',
                       'relation').annotate(relcount=Count('relation'))
 
-      presynaptic_map = {}
-      postsynaptic_map = {}
-      for cl in connector_links:
-          if cl['relation'] == presynaptic_to_rel:
-              presynaptic_map[cl['treenode']] = cl['relcount']
-          elif cl['relation'] == postsynaptic_to_rel:
-              postsynaptic_map[cl['treenode']] = cl['relcount']
-          else:
-              raise Exception("Unexpected relation encountered")
+        presynaptic_map = {}
+        postsynaptic_map = {}
+        for cl in connector_links:
+            if cl['relation'] == presynaptic_to_rel:
+                presynaptic_map[cl['treenode']] = cl['relcount']
+            elif cl['relation'] == postsynaptic_to_rel:
+                postsynaptic_map[cl['treenode']] = cl['relcount']
+            else:
+                raise Exception("Unexpected relation encountered")
 
-      # Create log info for each treenode. Each line will contain treenode-id,
-      # parent-id, nr. presynaptic sites, nr. postsynaptic sites, x, y, z
-      skid_to_metadata = {}
-      for n in nodes:
-        ls = skid_to_metadata.get(n.skeleton.id)
-        if not ls:
-            ls = []
-            skid_to_metadata[n.skeleton.id] = ls
-        p = n.parent.id if n.parent else 'null'
-        n_pre = presynaptic_map.get(n.id, 0)
-        n_post = postsynaptic_map.get(n.id, 0)
-        x = n.location_x
-        y = n.location_y
-        z = n.location_z
-        line = ', '.join([str(e) for e in (n.id, p, n_pre, n_post, x, y, z)])
-        ls.append(line)
+        # Create log info for each treenode. Each line will contain treenode-id,
+        # parent-id, nr. presynaptic sites, nr. postsynaptic sites, x, y, z
+        skid_to_metadata = {}
+        for n in nodes:
+            ls = skid_to_metadata.get(n.skeleton.id)
+            if not ls:
+                ls = []
+                skid_to_metadata[n.skeleton.id] = ls
+            p = n.parent.id if n.parent else 'null'
+            n_pre = presynaptic_map.get(n.id, 0)
+            n_post = postsynaptic_map.get(n.id, 0)
+            x = n.location_x
+            y = n.location_y
+            z = n.location_z
+            line = ', '.join([str(e) for e in (n.id, p, n_pre, n_post, x, y, z)])
+            ls.append(line)
 
-      # Save metdata for each skeleton to files
-      for skid, metadata in skid_to_metadata.items():
-          path = self.skid_to_neuron_folder.get(skid)
-          with open(os.path.join(path, 'metadata.csv'), 'w') as f:
-              f.write("This CSV file contains meta data for CATMAID skeleton " \
-                      "%s. The columns represent the following data:\n" % skid)
-              f.write("treenode-id, parent-id, # presynaptic sites, " \
-                      "# postsynaptic sites, x, y, z\n")
-              for line in metadata:
-                  f.write("%s\n" % line)
+        # Save metdata for each skeleton to files
+        for skid, metadata in skid_to_metadata.items():
+            path = self.skid_to_neuron_folder.get(skid)
+            with open(os.path.join(path, 'metadata.csv'), 'w') as f:
+                f.write("This CSV file contains meta data for CATMAID skeleton " \
+                        "%s. The columns represent the following data:\n" % skid)
+                f.write("treenode-id, parent-id, # presynaptic sites, " \
+                        "# postsynaptic sites, x, y, z\n")
+                for line in metadata:
+                    f.write("%s\n" % line)
 
 class ConnectorExporter(TreenodeExporter):
     """ Most of the infrastructure can be used for both treenodes and
@@ -343,7 +343,7 @@ class ConnectorExporter(TreenodeExporter):
             img.write(connector_image_path)
 
     def post_process(self, nodes):
-      pass
+        pass
 
 @task()
 def process_export_job(exporter):

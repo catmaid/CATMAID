@@ -78,8 +78,8 @@ def search(request, project_id=None):
         row_with_node = label_rows[node['class_instance__name']]
         nodes = row_with_node.get('nodes', None)
         if not nodes:
-          nodes = []
-          row_with_node['nodes'] = nodes
+            nodes = []
+            row_with_node['nodes'] = nodes
         nodes.append(format_node_data(node))
 
     return HttpResponse(json.dumps(rows))

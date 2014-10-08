@@ -49,7 +49,7 @@ def create_ontology_selection_form( workspace_pid, class_ids=None ):
     return SelectOntologyForm
 
 class FeatureForm(forms.Form):
-	feature = forms.BooleanField()
+    feature = forms.BooleanField()
 
 class ClusteringSetupFeatures(forms.Form):
     #add_nonleafs = forms.BooleanField(initial=False,

@@ -48,10 +48,10 @@ def graphedge_list(request, project_id=None):
 
     result = []
     for k,v in edge.items():
-     if skeletonlist[0] in v['pre'] and skeletonlist[1] in v['post']:
-        connectordata[k]['pretreenode'] = v['pretreenode'][ v['pre'].index( skeletonlist[0] ) ]
-        connectordata[k]['posttreenode'] = v['posttreenode'][ v['post'].index( skeletonlist[1] ) ]
-        result.append(connectordata[k])
+        if skeletonlist[0] in v['pre'] and skeletonlist[1] in v['post']:
+            connectordata[k]['pretreenode'] = v['pretreenode'][ v['pre'].index( skeletonlist[0] ) ]
+            connectordata[k]['posttreenode'] = v['posttreenode'][ v['post'].index( skeletonlist[1] ) ]
+            result.append(connectordata[k])
 
     return HttpResponse(json.dumps( result ), content_type='text/json')
 

@@ -30,12 +30,12 @@ def export_jsongraph(request, project_id):
         raise ValueError("No skeleton IDs provided")
 
     if order > 2: # only allow to retrieve order two to limit server usage
-      order = 0
+        order = 0
 
     while order != 0:
-      incoming, outgoing = _skeleton_info_raw( project_id, skeletonlist, 'logic-OR' )
-      skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
-      order -= 1
+        incoming, outgoing = _skeleton_info_raw( project_id, skeletonlist, 'logic-OR' )
+        skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
+        order -= 1
     
     circuit = _skeleton_graph(project_id, skeletonlist, confidence_threshold, bandwidth, set(), compute_risk, cable_spread, path_confluence)
     newgraph = nx.DiGraph()

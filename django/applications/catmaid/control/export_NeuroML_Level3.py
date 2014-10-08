@@ -20,7 +20,7 @@ def exportMutual(neuron_names, all_treenodes, connections, scale=0.001):
     Returns a lazy sequence of strings that expresses the XML. """
     for source in ([header()], bodyMutual(neuron_names, all_treenodes, connections, scale), ["</neuroml>"]):
         for line in source:
-           yield line
+            yield line
 
 def exportSingle(neuron_names, all_treenodes, inputs, scale=0.001):
     """ Export a single neuronal arbor with a set of inputs as NeuroML Level 3 v1.8.1. """

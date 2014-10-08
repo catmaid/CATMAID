@@ -242,11 +242,11 @@ class ClassificationAdminWizard(SessionWizardView):
         })
 
 def classification_admin_view(request, *args, **kwargs):
-   """ Wraps the class based ClassificationAdminWizard view in
-   a function based view.
-   """
-   forms = [("settings", SettingsForm),
-            ("taggroups", TagGroupSelectionForm),
-            ("confirmation", ConfirmationForm)]
-   view = ClassificationAdminWizard.as_view(forms)
-   return view(request)
+    """ Wraps the class based ClassificationAdminWizard view in
+    a function based view.
+    """
+    forms = [("settings", SettingsForm),
+             ("taggroups", TagGroupSelectionForm),
+             ("confirmation", ConfirmationForm)]
+    view = ClassificationAdminWizard.as_view(forms)
+    return view(request)

@@ -1261,7 +1261,7 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1):
             .values_list('object_id', 'tag__name')
     pid_to_tags = defaultdict(set)
     for pid, t in tag_links:
-       pid_to_tags[pid].add(t)
+        pid_to_tags[pid].add(t)
 
     return cg_to_pids, pid_to_tags
 

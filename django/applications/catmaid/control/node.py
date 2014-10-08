@@ -121,15 +121,15 @@ def node_list_tuples(request, project_id=None):
 
         n_retrieved_nodes = 0 # at one per row, only those within the section
         for row in cursor.fetchall():
-          n_retrieved_nodes += 1
-          t1id = row[0]
-          if t1id not in treenode_ids:
-              treenode_ids.add(t1id)
-              treenodes.append(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
-          t2id = row[9]
-          if t2id not in treenode_ids:
-              treenode_ids.add(t2id)
-              treenodes.append(row[9:17] + (is_superuser or row[17] == user_id or row[17] in domain,))
+            n_retrieved_nodes += 1
+            t1id = row[0]
+            if t1id not in treenode_ids:
+                treenode_ids.add(t1id)
+                treenodes.append(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
+            t2id = row[9]
+            if t2id not in treenode_ids:
+                treenode_ids.add(t2id)
+                treenodes.append(row[9:17] + (is_superuser or row[17] == user_id or row[17] in domain,))
 
 
         # Find connectors related to treenodes in the field of view

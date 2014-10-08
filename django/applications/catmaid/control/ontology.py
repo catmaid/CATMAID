@@ -752,7 +752,7 @@ def get_feature_paths_remote( ontology, workspace_pid, add_nonleafs=False, depth
             class_ids.add(link_data[1])
             relation_ids.add(link_data[2])
             if link_data[3]:
-               class_ids.add(link_data[3])
+                class_ids.add(link_data[3])
 
     # Get all needed class and relation model objects
     classes = Class.objects.in_bulk(class_ids)

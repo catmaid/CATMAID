@@ -182,12 +182,14 @@ def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_
     return pk_dict
 
 def user_project_permissions(request):
-    """ If a user is authenticated, this method returns a dictionary
-    that stores whether the user has a specific permission on a project.
-    If a user is not authenticated, this dictionary will be empty.
+    """ If a user is authenticated, this method returns a dictionary that
+    stores whether the user has a specific permission on a project. If a user
+    is not authenticated and the request is done by the anonymous user, the
+    permissions for the anonymous user are returned. Otherwise, this dictionary
+    will be empty.
     """
     result = {}
-    if request.user.is_authenticated():
+    if request.user.is_authenticated() or request.user.is_anonymous:
         projectPerms = get_perms_for_model(Project)
         permNames = [perm.codename for perm in projectPerms]
         # Find out what permissions a user actually has for any of those projects.

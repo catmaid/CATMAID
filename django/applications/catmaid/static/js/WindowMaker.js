@@ -1418,14 +1418,6 @@ var WindowMaker = new function()
     refresh.onclick = TNT.refresh.bind(TNT);
     contentbutton.appendChild(refresh);
 
-    var last = document.createElement('select');
-    last.setAttribute("id", "treenodetable_lastskeletons" + TNT.widgetID);
-    var option = document.createElement("option");
-    option.text = "None";
-    option.value = -1;
-    last.appendChild(option);
-    contentbutton.appendChild(last);
-
     content.appendChild( contentbutton );
 
     var container = createContainer("treenode_table_widget" + TNT.widgetID);

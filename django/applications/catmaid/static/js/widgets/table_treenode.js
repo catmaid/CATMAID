@@ -10,8 +10,6 @@ var TreenodeTable = function(skid)
   var ns = this; // reference to the namespace
   ns.oTable = null;
   var skelid = skid ? skid : -1; // Skeleton currently shown
-  var last_displayed_skeletons = {};
-  last_displayed_skeletons[0] = 'None';
 
   var filter_nodetype = 'LR', filter_searchtag = '';
 
@@ -53,11 +51,6 @@ var TreenodeTable = function(skid)
   this.init = function (pid)
   {
     var widgetID = this.widgetID;
-
-    $("#treenodetable_lastskeletons" + this.widgetID).change(function() {
-      skelid = parseInt( $('#treenodetable_lastskeletons' + widgetID).val() );
-      ns.refresh();
-    });
 
     ns.pid = pid;
     ns.oTable = $('#treenodetable' + widgetID).dataTable({
@@ -101,23 +94,6 @@ var TreenodeTable = function(skid)
             aoData[i]['value'] = filter_searchtag;
           }
         }
-
-        if( skelid && !(skelid in last_displayed_skeletons) ) {
-          // check if skeleton id already in list, and if so, do not add it
-          last_displayed_skeletons[ skelid ] = $('#neuronName' + widgetID).text();
-          var new_skeletons = document.getElementById("treenodetable_lastskeletons" + widgetID);
-          while (new_skeletons.length > 0)
-              new_skeletons.remove(0);
-          for (var skid in last_displayed_skeletons) {
-            if (last_displayed_skeletons.hasOwnProperty(skid)) {
-              var option = document.createElement("option");
-              option.text = last_displayed_skeletons[ skid ];
-              option.value = skid;
-              new_skeletons.appendChild(option);
-            }
-          }
-        }
-        $('#treenodetable_lastskeletons' + widgetID).val( skelid );
 
         $.ajax({
           "dataType": 'json',

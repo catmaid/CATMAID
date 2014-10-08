@@ -340,16 +340,16 @@ AnalyzeArbor.prototype.updateCharts = function() {
       "# Subarbors (" + (n_subs[0] + n_subs[1]) + ")");
 
   if (skids.length > 1) {
-    var colorizer = new Colorizer();
+    var colors = d3.scale.category10();
     SVGUtil.insertPieChart(
         divID,
         this.pie_radius,
-        skids.map(function(skid) {
+        skids.map(function(skid, i) {
           var e = this.terminal_subarbor_stats[skid],
               sum = e.dendritic.n_subs + (e.axonal ? e.axonal.n_subs : 0);
           return {name: NeuronNameService.getInstance().getName(skid) + " (" + sum + ")",
                   value: sum,
-                  color: '#' + colorizer.pickColor().getHexString()};
+                  color: colors(i)};
         }, this),
         "# Subarbors");
   }

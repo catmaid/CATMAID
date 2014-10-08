@@ -323,6 +323,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
   // Create histograms of terminal subarbors:
   var skids = Object.keys(this.terminal_subarbor_stats),
       labels = Object.keys(this.terminal_subarbor_stats[skids[0]].dendritic);
+  labels.splice(labels.indexOf('n_subs'), 1);
 
   // Create a pie with the number of terminal subarbors
   var n_subs = ["axonal", "dendritic"].map(function(type) {

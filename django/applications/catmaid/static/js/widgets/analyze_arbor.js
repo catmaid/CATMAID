@@ -301,14 +301,14 @@ AnalyzeArbor.prototype.updateCharts = function() {
     for (var i=1; i<sums.length; ++i) sums[i] += row[i];
   }
 
-  var labels = ["Backbone", "Dendritic terminals", "Axon terminals"],
+  var titles = ["Backbone", "Dendritic terminals", "Axon terminals"],
       colors = ["#aaaaaa", "#00ffff", "#ff0000"];
 
   var makePie = (function(offset, title) {
     var entries = [];
     [5, 9, 13].forEach(function(k, i) {
       var sum = sums[k + offset];
-      if (sum > 0) entries.push({name: labels[i], value: sum, color: colors[i]});
+      if (sum > 0) entries.push({name: titles[i], value: sum, color: colors[i]});
     });
     if (entries.length > 0) {
       SVGUtil.insertPieChart(divID, this.pie_radius, entries, title);

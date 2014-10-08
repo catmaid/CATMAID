@@ -193,7 +193,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         subs.push(subarbor.subArbor(mend));
       }
     });
-    var stats = {cable: [], depths: [], inputs: [], outputs: [], branches: [], ends: []},
+    var stats = {cable: [], depths: [], inputs: [], outputs: [], branches: [], ends: [], n_subs: subs.length},
         edgeLength = function(child, paren) {
           return smooth_positions[child].distanceTo(smooth_positions[paren]);
         };
@@ -323,6 +323,21 @@ AnalyzeArbor.prototype.updateCharts = function() {
   // Create histograms of terminal subarbors:
   var skids = Object.keys(this.terminal_subarbor_stats),
       labels = Object.keys(this.terminal_subarbor_stats[skids[0]].dendritic);
+
+  // Create a pie with the number of terminal subarbors
+  var n_subs = ["axonal", "dendritic"].map(function(type) {
+    return skids.reduce((function(sum, skid) {
+      var s = this.terminal_subarbor_stats[skid][type].n_subs;
+      return sum + (s ? s : 0);
+    }).bind(this), 0);
+  }, this);
+
+  var pie_n_subarbors = SVGUtil.insertPieChart(
+      divID,
+      this.pie_radius,
+      [{name: titles[1] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[1]},
+       {name: titles[2] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[2]}],
+      "# Subarbors (" + (n_subs[0] + n_subs[1]) + ")");
 
   (function() {
     // Histograms of total [cable, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors

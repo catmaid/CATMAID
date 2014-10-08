@@ -339,6 +339,21 @@ AnalyzeArbor.prototype.updateCharts = function() {
       [{name: titles[1] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[1]}].concat(0 === n_subs[0] ? [] : [{name: titles[2] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[2]}]), // there could be no axonal terminals
       "# Subarbors (" + (n_subs[0] + n_subs[1]) + ")");
 
+  if (skids.length > 1) {
+    var colorizer = new Colorizer();
+    SVGUtil.insertPieChart(
+        divID,
+        this.pie_radius,
+        skids.map(function(skid) {
+          var e = this.terminal_subarbor_stats[skid],
+              sum = e.dendritic.n_subs + (e.axonal ? e.axonal.n_subs : 0);
+          return {name: NeuronNameService.getInstance().getName(skid) + " (" + sum + ")",
+                  value: sum,
+                  color: '#' + colorizer.pickColor().getHexString()};
+        }, this),
+        "# Subarbors");
+  }
+
   (function() {
     // Histograms of total [cable, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors
     var axonal = labels.reduce(function(o, label) { o[label] = []; return o}, {}),

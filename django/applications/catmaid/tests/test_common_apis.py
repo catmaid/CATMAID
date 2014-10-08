@@ -436,43 +436,66 @@ class ViewPageTests(TestCase):
         #self.assertEqual(response.status_code, 200)
 
     def test_project_list(self):
+        # Check that, pre-authentication, we can see none of the
+        # projects:
+        response = self.client.get('/projects')
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content)
+        self.assertEqual(len(result), 0)
+
+        # Add permission to the anonymous user to browse two projects
+        anon_user = User.objects.get(pk=settings.ANONYMOUS_USER_ID)
+        p = Project.objects.get(pk=self.test_project_id)
+        assign_perm('can_browse', anon_user, p)
+
         # Check that, pre-authentication, we can see two of the
         # projects:
         response = self.client.get('/projects')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
-        self.assertEqual(len(result.keys()), 2)
+        self.assertEqual(len(result), 1)
 
-        # Check the first project:
-        stacks = result['1']['action']
-        self.assertEqual(len(stacks), 1)
-
-        # Check the second project:
-        stacks = result['3']['action']
+        # Check the project:
+        stacks = result[0]['action']
         self.assertEqual(len(stacks), 1)
         stack = stacks['3']
         self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Now log in and check that we see a different set of projects:
-        self.client = Client()
         self.fake_authentication()
+
+        # Add permission to the test  user to browse three projects
+        test_user = User.objects.get(pk=self.test_user_id)
+        for pid in (1,2,3,5):
+            p = Project.objects.get(pk=pid)
+            assign_perm('can_browse', test_user, p)
+
+        # We expect three projects, because there are no stacks linked to
+        # project 2. This API should therefore not return it.
         response = self.client.get('/projects')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
-        self.assertEqual(len(result.keys()), 3)
+        print result
+        self.assertEqual(len(result), 3)
+
+        def get_project(result, pid):
+            rl = [r for r in result if r['pid'] == pid]
+            if len(rl) != 1:
+                raise ValueError("Malformed result")
+            return rl[0]
 
         # Check the first project:
-        stacks = result['1']['action']
+        stacks = get_project(result, 1)['action']
         self.assertEqual(len(stacks), 1)
 
         # Check the second project:
-        stacks = result['3']['action']
+        stacks = get_project(result, 3)['action']
         self.assertEqual(len(stacks), 1)
         stack = stacks['3']
         self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Check the third project:
-        stacks = result['5']['action']
+        stacks = get_project(result, 5)['action']
         self.assertEqual(len(stacks), 2)
 
     def test_login(self):

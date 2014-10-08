@@ -344,8 +344,6 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   addNodes(separatedNodes.taggedNodes, "taggedNode");
   addNodes(separatedNodes.regularNodes, "node");
 
-  d3.select(self.frameElement).style("height", height + "px");
-
   function zoom() {
     vis.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
   };

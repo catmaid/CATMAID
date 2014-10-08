@@ -14,6 +14,9 @@ var NeuronDendrogram = function() {
   this.collapsed = true;
   this.showNodeIDs = true;
   this.showTags = true;
+
+  // Stores a reference to the current SVG, if any
+  this.svg = null;
 };
 
 NeuronDendrogram.prototype = {};
@@ -226,12 +229,12 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 
   // Create new SVG
   var zoomHandler = d3.behavior.zoom().scaleExtent([0.1, 100]).on("zoom", zoom);
-  var svg = d3.select("#dendrogram" + this.widgetID)
+  this.svg = d3.select("#dendrogram" + this.widgetID)
     .append("svg:svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
       .call(zoomHandler);
-  var vis = svg.append("svg:g")
+  var vis = this.svg.append("svg:g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")" +
           "scale(" + defaultScale + ")");
 
@@ -347,6 +350,57 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   function zoom() {
     vis.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
   };
+};
+
+/**
+ * Exports the currently displayed dendrogram as SVG. This is done by converting
+ * the existing SVG DOM element to XML and adding the needed style sheets as
+ * CDATA into a style element.
+ */
+NeuronDendrogram.prototype.exportSVG = function()
+{
+  if (!this.svg) {
+    return;
+  }
+
+  // Create XML representation of SVG
+  var svg = this.svg[0][0];
+  var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+
+  // Find needed CSS rules, others are ignored
+  var rules = ['.node', '.taggedNode', '.node circle', '.taggedNode circle',
+      '.link', '.taggedLink'];
+
+  var css = rules.reduce(function(o, r) {
+    // Find element in SVG that matches the rule
+    var elems = $(svg).find(r);
+    // Ignore rules that we didn't find
+    if (elems.length > 0) {
+      // Get all computed CSS styles for it
+      var cs = window.getComputedStyle(elems[0], null);
+      var style = "";
+      for (var i=0;i<cs.length; i++) {
+        var s = cs[i];
+        style = style + s + ": " + cs.getPropertyValue(s) + ";";
+      }
+      // Append it to the style sheet string
+      o = o + r + " {" + style + "}";
+    }
+    return o;
+  }, "");
+
+  // Prepend CSS embedded in CDATA section
+  var styleTag = xml.createElement('style');
+  styleTag.setAttribute('type', 'text/css');
+  styleTag.appendChild(xml.createCDATASection(css));
+
+  // Add style tag to SVG node in XML document (first child)
+  xml.firstChild.appendChild(styleTag);
+
+  // Serialize SVG including CSS and export it as blob
+  var data = new XMLSerializer().serializeToString(xml);
+  var blob = new Blob([data], {type: 'text/svg'});
+  saveAs(blob, "dendrogram-" + this.skeletonID + "-" + this.widgetID + ".svg");
 };
 
 NeuronDendrogram.prototype.setCollapsed = function(value)

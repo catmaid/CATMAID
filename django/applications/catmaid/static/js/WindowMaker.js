@@ -306,6 +306,12 @@ var WindowMaker = new function()
     load.onclick = ND.loadActiveSkeleton.bind(ND);
     buttons.appendChild(load);
 
+    var exportSVG = document.createElement('input');
+    exportSVG.setAttribute("type", "button");
+    exportSVG.setAttribute("value", "Export SVG");
+    exportSVG.onclick = ND.exportSVG.bind(ND);
+    buttons.appendChild(exportSVG);
+
     var tag = document.createElement('label');
     tag.appendChild(document.createTextNode('Tag'));
     var tagInput = document.createElement('input');

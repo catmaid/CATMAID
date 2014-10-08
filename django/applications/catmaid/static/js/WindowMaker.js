@@ -317,6 +317,11 @@ var WindowMaker = new function()
     var tagInput = document.createElement('input');
     tagInput.setAttribute('type', 'text');
     tagInput.setAttribute('id', 'dendrogram-tag-' + ND.widgetID);
+    tagInput.onkeypress = function(e) {
+      if (13 === e.keyCode) {
+        ND.update();
+      }
+    };
     tag.appendChild(tagInput);
     buttons.appendChild(tag);
 

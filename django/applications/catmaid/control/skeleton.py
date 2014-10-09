@@ -952,7 +952,7 @@ def fetch_treenodes(request, project_id=None, skeleton_id=None, with_reviewers=N
     return HttpResponse(json.dumps(treenode_data))
 
 
-@requires_user_role(UserRole.Annotate)
+@requires_user_role(UserRole.Browse)
 def annotation_list(request, project_id=None):
     """ Returns a JSON serialized object that contains information about the
     given skeletons.

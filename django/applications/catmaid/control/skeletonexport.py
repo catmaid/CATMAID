@@ -64,7 +64,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors=None, with_tags=None):
     """
         Performance-critical function. Do not edit unless to improve performance.
@@ -137,7 +137,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
     """
     Performance-critical function. Do not edit unless to improve performance.

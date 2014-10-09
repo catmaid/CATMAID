@@ -880,7 +880,7 @@ class ViewPageTests(TestCase):
         treenode_id = 7
         self.fake_authentication()
         response = self.client.post(
-                '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4'})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
@@ -890,7 +890,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(4, treenode.confidence)
 
         response = self.client.post(
-                '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
                 {'new_confidence': '5'})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
@@ -904,7 +904,7 @@ class ViewPageTests(TestCase):
         treenode_connector_id = 360
         self.fake_authentication()
         response = self.client.post(
-                '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4', 'to_connector': 'true'})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
@@ -914,7 +914,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(4, connector.confidence)
 
         response = self.client.post(
-                '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
                 {'new_confidence': '5', 'to_connector': 'true'})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
@@ -1863,7 +1863,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector_id, treenode=treenode_id).count())
         self.assertEqual(tc_count - 1, TreenodeConnector.objects.all().count())
 
-    def test_reroot_treenodes(self):
+    def test_reroot_skeleton(self):
         self.fake_authentication()
 
         new_root = 407
@@ -1872,8 +1872,8 @@ class ViewPageTests(TestCase):
         log_count = count_logs()
 
         response = self.client.post(
-                '/%d/treenode/reroot' % self.test_project_id,
-                {'tnid': new_root})
+                '/%d/skeleton/reroot' % self.test_project_id,
+                {'treenode_id': new_root})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'newroot': 407}
@@ -1888,7 +1888,7 @@ class ViewPageTests(TestCase):
         assertHasParent(377, 405)
         assertHasParent(407, None)
 
-    def test_reroot_and_link_treenodes(self):
+    def test_reroot_and_join_skeletons(self):
         self.fake_authentication()
 
         new_root = 2394
@@ -1900,15 +1900,15 @@ class ViewPageTests(TestCase):
         new_skeleton_id = get_object_or_404(Treenode, id=link_from).skeleton_id
 
         response = self.client.post(
-                '/%d/treenode/reroot' % self.test_project_id,
-                {'tnid': new_root})
+                '/%d/skeleton/reroot' % self.test_project_id,
+                {'treenode_id': new_root})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'newroot': 2394}
         self.assertEqual(expected_result, parsed_response)
 
         response = self.client.post(
-                '/%d/treenode/link' % self.test_project_id, {
+                '/%d/skeleton/join' % self.test_project_id, {
                     'from_id': link_from,
                     'to_id': link_to})
         self.assertEqual(response.status_code, 200)

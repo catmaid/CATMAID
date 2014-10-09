@@ -7,8 +7,12 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 
 
-@requires_user_role(UserRole.Annotate)
+@requires_user_role(UserRole.Browse)
 def list_notifications(request, project_id = None):
+    """ Get a JSON representation of notifications for the requesting user.
+    This method does not write any data and retrieves only information linked
+    to the requesting user. It therefore needs only 'can_browse' permissions.
+    """
     # In the future there may be other kinds of notifications, but for now there are just change requests.
     requestType = request.POST.get('sSearch_1', '')
     if requestType == '0':

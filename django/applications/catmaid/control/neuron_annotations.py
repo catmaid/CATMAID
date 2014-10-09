@@ -399,7 +399,7 @@ def annotate_entities(request, project_id = None):
 
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Annotate)
 def remove_annotation(request, project_id=None, annotation_id=None):
     """ Removes an annotation from one or more entities.
     """

@@ -506,7 +506,7 @@ class ViewPageTests(TestCase):
 
     def test_skeletons_from_neuron(self):
         self.fake_authentication()
-        url = '/%d/neuron-to-skeletons/%d' % (self.test_project_id,
+        url = '/%d/neuron/%d/get-all-skeletons' % (self.test_project_id,
                                               233)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -540,7 +540,7 @@ class ViewPageTests(TestCase):
 
     def test_skeleton_root(self):
         self.fake_authentication()
-        response = self.client.get('/%d/root-for-skeleton/%d' % (self.test_project_id, 235))
+        response = self.client.get('/%d/skeleton/%d/get-root' % (self.test_project_id, 235))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertEqual(parsed_response['root_id'], 237)
@@ -2351,8 +2351,7 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         expected_result = {}
 
-        response = self.client.post('/%d/textlabels' % (self.test_project_id,), {
-                'pid': 3,
+        response = self.client.post('/%d/textlabel/all' % (self.test_project_id,), {
                 'sid': 3,
                 'z': 9,
                 'top': 0,
@@ -2391,7 +2390,7 @@ class ViewPageTests(TestCase):
                     'colour': {'r': 255, 'g': 127, 'b': 0, 'a': 1},
                     'location': {'x': 2345, 'y': 1785, 'z': 27}}}
 
-        response = self.client.post('/%d/textlabels' % (self.test_project_id,), {
+        response = self.client.post('/%d/textlabel/all' % (self.test_project_id,), {
                 'sid': 3,
                 'z': 27,
                 'top': 0,

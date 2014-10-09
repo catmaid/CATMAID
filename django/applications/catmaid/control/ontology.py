@@ -390,7 +390,7 @@ def rename_relation(request, project_id=None):
     relation.relation_name = new_name
     relation.save()
 
-    return HttpResponse(json.dumps({'renamed_relation': relid}))
+    return HttpResponse(json.dumps({'renamed_relation': rel_id}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_relation_from_ontology(request, project_id=None):

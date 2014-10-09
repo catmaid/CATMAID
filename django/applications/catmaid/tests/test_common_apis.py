@@ -1990,7 +1990,7 @@ class ViewPageTests(TestCase):
 
         response = self.client.get('/messages/mark_read', {'id': message_id})
         self.assertEqual(response.status_code, 200)
-        message = Message.objects.filter(id=message_id)[0]
+        message = Message.objects.get(id=message_id)
         self.assertEqual(True, message.read)
         self.assertContains(response, 'history.back()', count=2)
 

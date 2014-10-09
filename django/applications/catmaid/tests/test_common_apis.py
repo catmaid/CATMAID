@@ -30,6 +30,8 @@ class SimpleTest(TestCase):
 class TransactionTests(TransactionTestCase):
     fixtures = ['catmaid_testdata']
 
+    maxDiff = None
+
     def test_successful_commit(self):
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
@@ -114,6 +116,8 @@ class InsertionTest(TestCase):
     """ This test case insers various model objects and tests if this is done as
     expected. No fixture data is needed for this test.
     """
+    maxDiff = None
+
     def insert_project(self):
         p = Project()
         p.title = "Example Project"
@@ -159,6 +163,8 @@ class InsertionTest(TestCase):
 
 class RelationQueryTests(TestCase):
     fixtures = ['catmaid_testdata']
+
+    maxDiff = None
 
     def setUp(self):
         self.test_project_id = 3
@@ -235,6 +241,8 @@ def swc_string_to_sorted_matrix(s):
 
 class ViewPageTests(TestCase):
     fixtures = ['catmaid_testdata']
+
+    maxDiff = None
 
     def setUp(self):
         """ Creates a new test client and test user. The user is assigned
@@ -2406,6 +2414,8 @@ class ViewPageTests(TestCase):
 
 class TreenodeTests(TestCase):
     fixtures = ['catmaid_testdata']
+
+    maxDiff = None
 
     def setUp(self):
         self.test_project_id = 3

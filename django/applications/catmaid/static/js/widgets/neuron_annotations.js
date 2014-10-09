@@ -666,9 +666,10 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
   var has_target = (entity_ids && entity_ids.length > 0) ||
       (skeleton_ids && skeleton_ids.length > 0);
   if (!has_target) {
-    alert("Please select at least one annotation, neuron or skeleton!");
+    error("Please select at least one annotation, neuron or skeleton!");
     return;
   }
+
   // Get annotation terms
   var annotations = this.prompt_for_annotations(function(annotations,
       meta_annotations) {

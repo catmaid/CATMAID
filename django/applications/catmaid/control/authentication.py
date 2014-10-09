@@ -90,18 +90,18 @@ def logout_user(request):
 
 def requires_user_role(roles):
     """
-    This decorator will return a JSON error response unless the user is logged in 
+    This decorator will return a JSON error response unless the user is logged in
     and has at least one of the indicated roles or admin role for the project.
     """
-    
+
     def decorated_with_requires_user_role(f):
         def inner_decorator(request, roles=roles, *args, **kwargs):
             p = Project.objects.get(pk=kwargs['project_id'])
             u = request.user
-            
+
             # Check for admin privs in all cases.
             has_role = u.has_perm('can_administer', p)
-            
+
             if not has_role:
                 # Check the indicated role(s)
                 if isinstance(roles, str):
@@ -113,7 +113,7 @@ def requires_user_role(roles):
                         has_role = u.has_perm('can_browse', p)
                     if has_role:
                         break
-            
+
             if has_role:
                 # The user can execute the function.
                 return f(request, *args, **kwargs)
@@ -123,7 +123,7 @@ def requires_user_role(roles):
                         int(kwargs['project_id']))
                 return HttpResponse(json.dumps({'error': msg,
                         'permission_error': True}), mimetype='text/json')
-            
+
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role
 
@@ -363,4 +363,4 @@ def all_usernames(request, project_id=None):
     SELECT id, username FROM auth_user WHERE id != -1 ORDER BY username DESC
     ''')
     return HttpResponse(json.dumps(cursor.fetchall()))
- 
+

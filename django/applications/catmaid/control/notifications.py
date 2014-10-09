@@ -21,7 +21,7 @@ def list_notifications(request, project_id = None):
         change_requests = ChangeRequest.objects.filter(recipient = request.user, status = ChangeRequest.INVALID)
     else:
         change_requests = ChangeRequest.objects.filter(recipient = request.user)
-    
+
     # TODO: iDisplayStart = starting record #, iDisplayLength = # of records to return
     range_start = request.POST.get('iDisplayStart', '')
     if range_start == '':
@@ -33,39 +33,39 @@ def list_notifications(request, project_id = None):
         range_end = len(change_requests)
     else:
         range_end = range_start + int(range_length)
-    
-    change_request_list = [[cr.id, cr.type, cr.description, cr.status_name(), cr.location.x, cr.location.y, cr.location.z, 
-                            (cr.treenode if cr.treenode else cr.connector).id, cr.treenode.skeleton.id if cr.treenode else 'null', 
+
+    change_request_list = [[cr.id, cr.type, cr.description, cr.status_name(), cr.location.x, cr.location.y, cr.location.z,
+                            (cr.treenode if cr.treenode else cr.connector).id, cr.treenode.skeleton.id if cr.treenode else 'null',
                             cr.user.get_full_name(), cr.creation_time.strftime('%Y-%m-%d %I:%M %p')] for cr in change_requests[range_start:range_end]]
-    
+
     return HttpResponse(json.dumps({'iTotalRecords': len(change_request_list), 'iTotalDisplayRecords': len(change_request_list), 'aaData': change_request_list}))
 
 
 @requires_user_role(UserRole.Annotate)
 def approve_change_request(request, project_id = None):
     change_request_id = int(request.POST.get('id', -1))
-    
+
     if change_request_id == -1:
         raise Exception('Missing arguments to approve_change_request')
-    
+
     # TODO: make sure request.user has permission to approve the request
-    
+
     change_request = ChangeRequest.objects.get(pk = change_request_id)
     change_request.approve()
-    
+
     return HttpResponse(json.dumps({'change_request_id': change_request_id}))
 
 
 @requires_user_role(UserRole.Annotate)
 def reject_change_request(request, project_id = None):
     change_request_id = int(request.POST.get('id', -1))
-    
+
     if change_request_id == -1:
         raise Exception('Missing arguments to reject_change_request')
-    
+
     # TODO: make sure request.user has permission to reject the request
-    
+
     change_request = ChangeRequest.objects.get(pk = change_request_id)
     change_request.reject()
-    
+
     return HttpResponse(json.dumps({'change_request_id': change_request_id}))

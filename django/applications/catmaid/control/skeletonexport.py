@@ -350,7 +350,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             return name, nodes, tags, connectors, reviews
 
     return name, nodes, tags, connectors, reviews
-    
+
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -559,7 +559,7 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
             post[row[0]].append(row[1])
 
     return neuroml_single_cell(skeleton_id, nodes, pre, post)
- 
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeletons_neuroml(request, project_id=None):

@@ -1272,8 +1272,8 @@ class ViewPageTests(TestCase):
         label_location = TextlabelLocation.objects.filter(textlabel=textlabel_id)[0]
         self.assertEqual(label_before_update.project_id, label.project_id)
         self.assertEqual(label_location_before_update.location.x, label_location.location.x)
-        self.assertEqual(label_location_before_update.location_y, label_location.location_y)
-        self.assertEqual(label_location_before_update.location_z, label_location.location_z)
+        self.assertEqual(label_location_before_update.location.y, label_location.location.y)
+        self.assertEqual(label_location_before_update.location.z, label_location.location.z)
         self.assertEqual(params['type'], label.type)
         self.assertEqual(params['text'], label.text)
         self.assertEqual(label_before_update.font_name, label.font_name)

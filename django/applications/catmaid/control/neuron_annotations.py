@@ -354,7 +354,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
 
     return annotation_objects
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Annotate)
 def annotate_entities(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
 

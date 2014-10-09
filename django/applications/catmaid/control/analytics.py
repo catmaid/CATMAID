@@ -8,7 +8,7 @@ from functools import partial
 from networkx import Graph, single_source_shortest_path
 import json
 
-@requires_user_role(UserRole.Annotate)
+@requires_user_role(UserRole.Browse)
 def analyze_skeletons(request, project_id=None):
     project_id = int(project_id)
     skids = [int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids[')]

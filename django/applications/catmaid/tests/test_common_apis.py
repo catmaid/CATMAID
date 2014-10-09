@@ -2573,6 +2573,7 @@ class PermissionTests(TestCase):
                               '/accounts/login',
                               '/%(pid)s/skeleton/annotationlist' % url_params,
                               '/%(pid)s/notifications/list' % url_params,
+                              '/%(pid)s/skeleton/analytics' % url_params,
         ]
 
         # Make sure we get no permission error on anonymous accessible get

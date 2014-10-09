@@ -180,6 +180,8 @@ NeuronNavigator.Node = function(name)
 {
   this.name = name;
   this.navigator = null;
+  // If set to true, all upstream filters are ignored
+  this.ignore_filter = false;
 
   /* Because some nodes use tables to display data, some common options are
    * kept on the abstract node level.
@@ -268,7 +270,7 @@ NeuronNavigator.Node.prototype.create_path = function()
 
   if (this.parent_node) {
     var path_elements = this.parent_node.create_path();
-    var delimiter = this.breaks_filter_chain() ? '|' : '>';
+    var delimiter = (this.ignore_filter || this.breaks_filter_chain()) ? '|' : '>';
     path_elements.push(document.createTextNode(" " + delimiter + " "));
     path_elements.push(path_link);
     return path_elements;
@@ -286,9 +288,9 @@ NeuronNavigator.Node.prototype.collect_filters = function()
 {
   var filter = {};
 
-  filter.annotation_id = this.annotation_id || null;
-  filter.neuron_id = this.neuron_id || null;
-  filter.user_id = this.user_id || null;
+    filter.annotation_id = this.annotation_id || null;
+    filter.neuron_id = this.neuron_id || null;
+    filter.user_id = this.user_id || null;
 
   if (this.is_meta) {
     filter.is_meta = true;
@@ -297,8 +299,10 @@ NeuronNavigator.Node.prototype.collect_filters = function()
     }
   }
 
-  if (this.parent_node && !this.breaks_filter_chain()) {
-    return [filter].concat(this.parent_node.collect_filters());
+  if (!this.ignore_filter) {
+    if (this.parent_node && !this.breaks_filter_chain()) {
+      return [filter].concat(this.parent_node.collect_filters());
+    }
   }
 
   return [filter];
@@ -1860,18 +1864,21 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
       // Show annotation list
       var annotations_node = new NeuronNavigator.AnnotationListNode();
       annotations_node.link(this.navigator, this);
+      annotations_node.ignore_filter = true;
       this.navigator.select_node(annotations_node);
   }, this));
   $(table_rows[1]).dblclick($.proxy(function() {
       // Show user list
       var users_node = new NeuronNavigator.UserListNode();
       users_node.link(this.navigator, this);
+      users_node.ignore_filter = true;
       this.navigator.select_node(users_node);
   }, this));
   $(table_rows[2]).dblclick($.proxy(function() {
       // Show active neuron node
       var all_neurons_node = new NeuronNavigator.NeuronListNode();
       all_neurons_node.link(this.navigator, this);
+      all_neurons_node.ignore_filter = true;
       this.navigator.select_node(all_neurons_node);
   }, this));
 

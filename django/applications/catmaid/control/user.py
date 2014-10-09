@@ -4,10 +4,18 @@ from random import random
 from string import upper
 
 from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 
-@login_required
+def access_check(user):
+    """ Returns true if users are logged in or if they have the general
+    can_browse permission assigned (i.e. not with respect to a certain object).
+    This is used to also allow the not logged in anonymous user to retrieve
+    data if it is granted the 'can_browse' permission.
+    """
+    return user.is_authenticated() or user.has_perm('catmaid.can_browse')
+
+@user_passes_test(access_check)
 def user_list(request):
     result = []
     for u in User.objects.all().order_by('last_name', 'first_name'):
@@ -19,10 +27,10 @@ def user_list(request):
             "first_name": u.first_name,
             "last_name": u.last_name,
             "color": (up.color.r, up.color.g, up.color.b) })
-    
+
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
-@login_required
+@user_passes_test(access_check)
 def user_list_datatable(request):
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
@@ -126,9 +134,10 @@ def distinct_user_color():
         distinct_color = initial_colors[nr_users]
     else:
         distinct_color = colorsys.hsv_to_rgb(random(), random(), 1.0) + (1,)
-    
+
     return distinct_color
 
+@user_passes_test(access_check)
 def update_user_profile(request):
     """ Allows users to update some of their user settings, e.g. whether
     reference lines should be visible. If the request is done by the anonymous

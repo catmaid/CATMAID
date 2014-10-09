@@ -224,7 +224,7 @@ def label_exists(label_id, node_type):
             return False
     elif node_type == 'connector':
         try:
-            label = ConnectorClassInstance.get(pk=label_id)
+            label = ConnectorClassInstance.objects.get(pk=label_id)
             return True
         except ConnectorClassInstance.DoesNotExist:
             return False

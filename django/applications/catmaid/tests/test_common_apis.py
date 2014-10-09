@@ -416,33 +416,6 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(returned_labels), 2)
         self.assertEqual(set(returned_labels), set(['foo', 'bar']))
 
-    def test_view_neuron(self):
-        self.fake_authentication()
-        neuron_name = 'branched neuron'
-        neuron = ClassInstance.objects.get(name=neuron_name)
-        self.assertTrue(neuron)
-
-        url = '/%d/view/%d' % (self.test_project_id, neuron.id)
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        url = '/%d/view/%s' % (self.test_project_id,
-                               urllib.quote(neuron_name))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-    def test_line(self):
-        self.fake_authentication()
-        line = ClassInstance.objects.get(
-            name='c005',
-            class_column__class_name='driver_line')
-        self.assertTrue(line)
-        # FIXME: There is currently no such API
-        #url = '/%d/line/%d' % (self.test_project_id,
-        #                       line.id,)
-        #response = self.client.get(url)
-        #self.assertEqual(response.status_code, 200)
-
     def test_project_list(self):
         # Check that, pre-authentication, we can see none of the
         # projects:

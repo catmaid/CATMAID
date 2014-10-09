@@ -97,7 +97,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
       AND (relation_name = '%s'
            OR relation_name = '%s')
     ''' % (project_id, PRE, POST))
-    
+
     relations = {} # both ways
     for row in cursor.fetchall():
         relations[row[0]] = row[1]
@@ -144,7 +144,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
         # The 'other' could be null
         if row[4]:
             s[row[4]].add(Treenode(row[5], row[6]))
-    
+
     issues = []
 
     # Set of IDs of outgoing connectors

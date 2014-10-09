@@ -20,15 +20,15 @@ def graphedge_list(request, project_id=None):
     edge = {}
     connectordata = {}
 
-    qs_tc = TreenodeConnector.objects.filter( 
-        project=p, 
+    qs_tc = TreenodeConnector.objects.filter(
+        project=p,
         skeleton__in=skeletonlist ).select_related('relation__relation_name', 'connector__user', 'connector')
 
     for q in qs_tc:
         if not q.connector_id in edge:
             # has to be a list, not a set, because we need matching treenode id
             edge[ q.connector_id ] = {'pre': [], 'post': [], 'pretreenode': [], 'posttreenode': []}
-            connectordata[ q.connector_id ] = { 
+            connectordata[ q.connector_id ] = {
                 'connector_id': q.connector_id,
                 'x': q.connector.location_x,
                 'y': q.connector.location_y,
@@ -41,7 +41,7 @@ def graphedge_list(request, project_id=None):
         elif q.relation.relation_name == 'postsynaptic_to':
             edge[ q.connector_id ]['post'].append( q.skeleton_id )
             edge[ q.connector_id ]['posttreenode'].append( q.treenode_id )
-    
+
     result = []
     for k,v in edge.items():
      if skeletonlist[0] in v['pre'] and skeletonlist[1] in v['post']:

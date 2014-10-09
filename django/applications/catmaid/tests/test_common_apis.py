@@ -294,7 +294,7 @@ class ViewPageTests(TestCase):
         response = self.client.get('/permissions')
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = []
+        expected_result = [{}, []]
         self.assertEqual(expected_result, parsed_response)
 
     def test_user_project_permissions(self):

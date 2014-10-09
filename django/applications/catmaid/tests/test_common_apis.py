@@ -1,8 +1,10 @@
+from django.conf import settings
 from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from django.http import HttpResponse
 from django.db import connection
 from django.shortcuts import get_object_or_404
+from guardian.shortcuts import assign_perm
 import os
 import re
 import urllib
@@ -2539,3 +2541,54 @@ class TreenodeTests(TestCase):
         connectors = Connector.objects.filter(
             treenodeconnector__treenode__treenodeclassinstance__class_instance=skeleton)
         self.assertEqual(len(connectors), 3)
+
+class PermissionTests(TestCase):
+    fixtures = ['catmaid_testdata']
+
+    def setUp(self):
+        self.test_project_id = 3
+        self.client = Client()
+
+    def test_user_permissions(self):
+            response = self.client.get("/permissions")
+            self.assertEqual(response.status_code, 200)
+            # Expect [{}, []] as result, because the anonymous user is
+            # currently not assigned any permissions
+            self.assertJSONEqual(response.content, [{},[]])
+
+    def test_anonymous_access(self):
+        # Give anonymous usser browse permissions for the test project
+        anon_user = User.objects.get(pk=settings.ANONYMOUS_USER_ID)
+        p = Project.objects.get(pk=self.test_project_id)
+        assign_perm('can_browse', anon_user, p)
+
+        # Set up test API
+        url_params = {
+            'pid': self.test_project_id,
+        }
+        anonymous_get_api = ['/permissions',
+                             '/accounts/login',
+        ]
+        anonymous_post_api = ['/permissions',
+                              '/accounts/login',
+                              '/%(pid)s/skeleton/annotationlist' % url_params,
+                              '/%(pid)s/notifications/list' % url_params,
+        ]
+
+        # Make sure we get no permission error on anonymous accessible get
+        # methods
+        for api in anonymous_get_api:
+            msg = "GET %s" % api
+            response = self.client.get(api)
+            self.assertEqual(response.status_code, 200, msg)
+            parsed_response = json.loads(response.content)
+            self.assertFalse('permission_error' in parsed_response, msg)
+
+        # Make sure we get no permission error on anonymous accessible post
+        # methods
+        for api in anonymous_post_api:
+            msg = "POST %s" % api
+            response = self.client.get(api)
+            self.assertEqual(response.status_code, 200, msg)
+            parsed_response = json.loads(response.content)
+            self.assertFalse('permission_error' in parsed_response, msg)

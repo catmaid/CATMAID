@@ -963,6 +963,9 @@ def annotation_list(request, project_id=None):
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
 
+    if not skeleton_ids:
+        raise ValueError("No skeleton IDs provided")
+
     classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
 

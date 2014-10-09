@@ -65,7 +65,7 @@ var user_permissions = null;
 var user_groups = null;
 
 function checkPermission(p) {
-  return user_permissions && user_permissions[p][project.getId()];
+  return user_permissions && user_permissions[p] && user_permissions[p][project.getId()];
 }
 
 function mayEdit() {

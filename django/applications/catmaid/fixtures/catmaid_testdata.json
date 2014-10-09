@@ -107,7 +107,7 @@
     "pk": 3,
     "model": "catmaid.message",
     "fields": {
-        "action": "http://www.example.com/message3",
+        "action": "",
         "text": "Contents of message 3.",
         "time": "2014-10-05 11:12:01.360422",
         "title": "Message 3",

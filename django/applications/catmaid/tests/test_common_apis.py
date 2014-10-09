@@ -2019,7 +2019,7 @@ class ViewPageTests(TestCase):
 
         expected_result = {
                 '0': {
-                    'action': 'http://www.example.com/message3',
+                    'action': '',
                     'id': 3,
                     'text': 'Contents of message 3.',
                     'time': '2014-10-05 11:12:01.360422',

@@ -2011,8 +2011,23 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/messages/list', {})
         parsed_response = json.loads(response.content)
+
+        def get_message(data, id):
+            msgs = [d for d in data if d['id'] == id]
+            if len(msgs) != 1:
+                raise ValueError("Malformed message data")
+            return msgs[0]
+
         expected_result = {
-                u'0': {
+                '0': {
+                    'action': 'http://www.example.com/message3',
+                    'id': 3,
+                    'text': 'Contents of message 3.',
+                    'time': '2014-10-05 11:12:01.360422',
+                    'time_formatted': '2014-10-05 11:12:01 EDT',
+                    'title': 'Message 3'
+                },
+                '1': {
                     'action': 'http://www.example.com/message2',
                     'id': 2,
                     'text': 'Contents of message 2.',
@@ -2020,7 +2035,7 @@ class ViewPageTests(TestCase):
                     'time_formatted': '2011-12-20 16:46:01 EST',
                     'title': 'Message 2'
                 },
-                u'1': {
+                '2': {
                     'action': 'http://www.example.com/message1',
                     'id': 1,
                     'text': 'Contents of message 1.',
@@ -2028,13 +2043,15 @@ class ViewPageTests(TestCase):
                     'time_formatted': '2011-12-19 16:46:01 EST',
                     'title': 'Message 1'
                 },
-                u'2': {
+                '3': {
                     'id': -1,
                     'notification_count': 0
                 }
         }
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(expected_result, parsed_response)
+        # Check result independent from order
+        for mi in ('0','1','2','3'):
+            self.assertEqual(expected_result[mi], parsed_response[mi])
 
     def test_skeleton_ancestry(self):
         skeleton_id = 361

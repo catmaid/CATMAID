@@ -16,6 +16,9 @@ def analyze_skeletons(request, project_id=None):
     extra = int(request.POST.get('extra', 0))
     adjacents = int(request.POST.get('adjacents', 0))
 
+    if not skids:
+        raise ValueError("No skeleton IDs provided")
+
     cursor = connection.cursor()
 
     query = '''

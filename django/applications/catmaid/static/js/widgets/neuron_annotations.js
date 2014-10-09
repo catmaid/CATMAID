@@ -656,6 +656,12 @@ NeuronAnnotations.prototype.annotate_entities = function(entity_ids,
 NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
     callback)
 {
+  // Complain if the user has no annotation permissions for the current project
+  if (!checkPermission('can_annotate')) {
+    error("You don't have have permission to add annotations");
+    return;
+  }
+
   // Complain if there is no target
   var has_target = (entity_ids && entity_ids.length > 0) ||
       (skeleton_ids && skeleton_ids.length > 0);

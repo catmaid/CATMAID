@@ -475,7 +475,6 @@ class ViewPageTests(TestCase):
         response = self.client.get('/projects')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
-        print result
         self.assertEqual(len(result), 3)
 
         def get_project(result, pid):

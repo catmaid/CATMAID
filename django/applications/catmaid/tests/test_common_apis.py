@@ -37,10 +37,10 @@ class TransactionTests(TransactionTestCase):
 
         User.objects.all().delete()
         response = insert_user()
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'success'}
         self.assertEqual(1, User.objects.all().count())
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_report_error_dict(self):
@@ -51,10 +51,10 @@ class TransactionTests(TransactionTestCase):
 
         User.objects.all().delete()
         response = insert_user()
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'catch me if you can'}
         self.assertEqual(0, User.objects.all().count())
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_report_error_string(self):
@@ -65,10 +65,10 @@ class TransactionTests(TransactionTestCase):
 
         User.objects.all().delete()
         response = insert_user()
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'catch me if you can'}
         self.assertEqual(0, User.objects.all().count())
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_report_error_unrecognized_argument(self):
@@ -79,10 +79,10 @@ class TransactionTests(TransactionTestCase):
 
         User.objects.all().delete()
         response = insert_user()
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'Unknown error.'}
         self.assertEqual(0, User.objects.all().count())
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_catch_404(self):
@@ -92,9 +92,9 @@ class TransactionTests(TransactionTestCase):
 
         User.objects.all().delete()
         response = insert_user()
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'No User matches the given query.'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, User.objects.all().count())
 
@@ -284,21 +284,21 @@ class ViewPageTests(TestCase):
 
     def test_user_project_permissions_not_logged_in(self):
         response = self.client.get('/permissions')
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = []
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_user_project_permissions(self):
         self.fake_authentication()
         response = self.client.get('/permissions')
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 '1': {'can_edit_any': True, 'can_view_any': True},
                 '2': {'can_edit_any': True, 'can_view_any': True},
                 '3': {'can_edit_any': True, 'can_view_any': True},
                 '5': {'can_edit_any': True, 'can_view_any': True}}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_swc_file(self):
@@ -597,9 +597,9 @@ class ViewPageTests(TestCase):
                 'value': property_value,
                 'id': treenode_id,
                 'type': property_name})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'Can only modify confidence and radius.'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_update_treenode_table_confidence(self):
@@ -612,9 +612,9 @@ class ViewPageTests(TestCase):
                 'value': property_value,
                 'id': treenode_id,
                 'type': property_name})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(property_value, get_object_or_404(Treenode, id=treenode_id).confidence)
 
@@ -628,9 +628,9 @@ class ViewPageTests(TestCase):
                 'value': property_value,
                 'id': treenode_id,
                 'type': property_name})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(property_value, get_object_or_404(Treenode, id=treenode_id).radius)
 
@@ -882,20 +882,20 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4'})
+        self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'success'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(4, treenode.confidence)
 
         response = self.client.post(
                 '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
                 {'new_confidence': '5'})
+        self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'success'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(5, treenode.confidence)
 
@@ -906,20 +906,20 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4', 'to_connector': 'true'})
+        self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'success'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(4, connector.confidence)
 
         response = self.client.post(
                 '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
                 {'new_confidence': '5', 'to_connector': 'true'})
+        self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'success'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(5, connector.confidence)
 
@@ -928,13 +928,13 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/tree_object/list' % self.test_project_id, {
                     'parentid': 0})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = [{
             'data': {'title': 'neuropile'},
             'attr': {'id': 'node_2323', 'rel': 'root'},
             'state': 'closed'}]
         self.assertEqual(expected_response, parsed_response)
-        self.assertEqual(response.status_code, 200)
 
     def test_tree_object_list_empty(self):
         self.fake_authentication()
@@ -942,10 +942,10 @@ class ViewPageTests(TestCase):
                 '/%d/tree_object/list' % self.test_project_id, {
                     'parentid': 1,
                     'parentname': 'dull skeleton (gerhard)'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = []
         self.assertEqual(expected_response, parsed_response)
-        self.assertEqual(response.status_code, 200)
 
     def test_tree_object_list_groups(self):
         self.fake_authentication()
@@ -953,6 +953,7 @@ class ViewPageTests(TestCase):
                 '/%d/tree_object/list' % self.test_project_id, {
                     'parentid': 2323,
                     'parentname': 'neuropile'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = [{
             'data': {'title': 'Fragments'},
@@ -965,7 +966,6 @@ class ViewPageTests(TestCase):
             'attr': {'id': 'node_364', 'rel': 'group'},
             'state': 'closed'}]
         self.assertEqual(expected_response, parsed_response)
-        self.assertEqual(response.status_code, 200)
 
     def test_tree_object_list_isol_case(self):
         self.fake_authentication()
@@ -973,6 +973,7 @@ class ViewPageTests(TestCase):
                 '/%d/tree_object/list' % self.test_project_id, {
                     'parentid': 364,
                     'parentname': 'Isolated synaptic terminals'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = [{
             'data': {'title': 'downstream-A'},
@@ -982,7 +983,6 @@ class ViewPageTests(TestCase):
             'attr': {'id': 'node_362', 'rel': 'neuron'},
             'state': 'closed'}]
         self.assertEqual(expected_response, parsed_response)
-        self.assertEqual(response.status_code, 200)
 
     def test_tree_object_list_skeleton(self):
         self.fake_authentication()
@@ -990,13 +990,13 @@ class ViewPageTests(TestCase):
                 '/%d/tree_object/list' % self.test_project_id, {
                     'parentid': 2,
                     'parentname': 'dull neuron'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = [
                 {'data': {'title': 'dull skeleton (gerhard)'},
                 'attr': {'id': 'node_1', 'rel': 'skeleton'},
                 'state': 'closed'}]
         self.assertEqual(expected_response, parsed_response)
-        self.assertEqual(response.status_code, 200)
 
     def test_tree_object_list_neurons(self):
         self.fake_authentication()
@@ -1004,6 +1004,7 @@ class ViewPageTests(TestCase):
                 '/%d/tree_object/list' % self.test_project_id, {
                     'parentid': 4,
                     'parentname': 'Fragments'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = [
                 {'data': {'title': 'dull neuron'},
@@ -1031,17 +1032,16 @@ class ViewPageTests(TestCase):
                 'attr': {'id': 'node_2452', 'rel': 'neuron'},
                 'state': 'closed'}]
         self.assertEqual(expected_response, parsed_response)
-        self.assertEqual(response.status_code, 200)
 
     def test_tree_object_expand(self):
         self.fake_authentication()
         response = self.client.post(
                 '/%d/tree_object/expand' % self.test_project_id,
                 {'skeleton_id': 235})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = [2323, 231, 233, 235]
         self.assertEqual(expected_response, parsed_response)
-        self.assertEqual(response.status_code, 200)
 
     def test_list_connector_empty(self):
         self.fake_authentication()
@@ -1054,9 +1054,9 @@ class ViewPageTests(TestCase):
                     'sSortDir_0': 'asc',
                     'relation_type': 1,
                     'skeleton_id': 0})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'iTotalRecords': 0, 'iTotalDisplayRecords': 0, 'aaData': []}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_list_connector_outgoing_with_sorting_and_paging(self):
@@ -1070,6 +1070,7 @@ class ViewPageTests(TestCase):
                     'sSortDir_0': 'desc',
                     'relation_type': 1,
                     'skeleton_id': 235})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 u'iTotalRecords': 4,
@@ -1077,7 +1078,6 @@ class ViewPageTests(TestCase):
                 u'aaData': [
                     [421, 373, 6630.00, 4330.00, 0.0, 0, u"", 5, u"test2", 409, u'07-10-2011 07:02'],
                     [356, 373, 7620.00, 2890.00, 0.0, 0, u"", 5, u"test2", 377, u'27-10-2011 10:45']]}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_list_connector_outgoing_with_sorting(self):
@@ -1091,6 +1091,7 @@ class ViewPageTests(TestCase):
                     'sSortDir_0': 'desc',
                     'relation_type': 1,
                     'skeleton_id': 235})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 u'iTotalRecords': 4,
@@ -1101,7 +1102,6 @@ class ViewPageTests(TestCase):
                     [356, 373, 7620.00, 2890.00, 0.0, 0, u"", 5, u"test2", 377, u'27-10-2011 10:45'],
                     [356, 361, 7030.00, 1980.00, 0.0, 0, u"", 9, u"test2", 367, u'27-10-2011 10:45']]
         }
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_list_connector_incoming_with_connecting_skeletons(self):
@@ -1115,6 +1115,7 @@ class ViewPageTests(TestCase):
                     'sSortDir_0': 'asc',
                     'relation_type': 0,
                     'skeleton_id': 373})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 u'iTotalRecords': 2,
@@ -1124,7 +1125,6 @@ class ViewPageTests(TestCase):
                      u"test2", 285, u'27-10-2011 10:45'],
                     [421, 235, 5810.00, 3950.00, 0.0, 0, u"", 28,
                      u"test2", 415, u'07-10-2011 07:02']]}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_create_connector(self):
@@ -1133,8 +1133,8 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/connector/create' % self.test_project_id,
                 {'x': 111, 'y': 222, 'z': 333, 'confidence': 3})
-        parsed_response = json.loads(response.content)
         self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
         self.assertTrue('connector_id' in parsed_response.keys())
         connector_id = parsed_response['connector_id']
 
@@ -1154,11 +1154,11 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/connector/delete' % self.test_project_id,
                 {'connector_id': connector_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 'message': 'Removed connector and class_instances',
                 'connector_id': 356}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
         self.assertEqual(connector_count - 1, Connector.objects.all().count())
@@ -1175,9 +1175,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/link/delete' % self.test_project_id,
                 {'connector_id': connector_id, 'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'Failed to delete connector #%s from geometry domain.' % connector_id}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(tc_count, TreenodeConnector.objects.all().count())
 
@@ -1192,6 +1192,7 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/node/most_recent' % self.test_project_id,
                 {'skeleton_id': skeleton_id, 'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 'id': most_recent_node_id,
@@ -1199,7 +1200,6 @@ class ViewPageTests(TestCase):
                 'y': 6460,
                 'z': 0,
                 }
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_update_textlabel(self):
@@ -1291,9 +1291,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/textlabel/update' % self.test_project_id,
                 params)
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'Failed to find Textlabel with id %s.' % textlabel_id}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_delete_textlabel(self):
@@ -1306,9 +1306,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/textlabel/delete' % self.test_project_id,
                 {'tid': textlabel_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'Success.'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Textlabel.objects.filter(id=textlabel_id).count())
         self.assertEqual(0, TextlabelLocation.objects.filter(textlabel=textlabel_id).count())
@@ -1401,13 +1401,13 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         response = self.client.post(
                 '/%d/logs/list' % self.test_project_id, {'user_id': 1})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 'iTotalDisplayRecords': 0,
                 'iTotalRecords': 0,
                 'aaData': []
                 }
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_list_logs_sort(self):
@@ -1420,6 +1420,7 @@ class ViewPageTests(TestCase):
                     'iSortCol_1': 3,  # x
                     'iSortDir_1': 'DESC'
                     })
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 'iTotalDisplayRecords': 3,
@@ -1428,7 +1429,6 @@ class ViewPageTests(TestCase):
                     self.log_rows[0], self.log_rows[1], self.log_rows[2]
                     ]
                 }
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_list_logs_subset(self):
@@ -1438,8 +1438,8 @@ class ViewPageTests(TestCase):
                     'iDisplayStart': 1,
                     'iDisplayLength': 2
                     })
-        parsed_response = json.loads(response.content)
         self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
         self.assertEqual(2, parsed_response['iTotalDisplayRecords'])
         self.assertEqual(2, parsed_response['iTotalRecords'])
 
@@ -1447,8 +1447,8 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         response = self.client.post(
                 '/%d/logs/list' % self.test_project_id, {})
-        parsed_response = json.loads(response.content)
         self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
         self.assertEqual(3, parsed_response['iTotalDisplayRecords'])
         self.assertEqual(3, parsed_response['iTotalRecords'])
         self.assertTrue(self.log_rows[0] in parsed_response['aaData'])
@@ -1478,9 +1478,9 @@ class ViewPageTests(TestCase):
             'confidence': 5,
             'parent_id': -1,
             'radius': 2})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
 
-        self.assertEqual(response.status_code, 200)
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
 
@@ -1534,9 +1534,9 @@ class ViewPageTests(TestCase):
             'confidence': 5,
             'parent_id': -1,
             'radius': 2})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
 
-        self.assertEqual(response.status_code, 200)
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
 
@@ -1594,9 +1594,9 @@ class ViewPageTests(TestCase):
             'parent_id': -1,
             'useneuron': neuron_id,
             'radius': 2})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
 
-        self.assertEqual(response.status_code, 200)
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
         self.assertEqual(neuron_id, int(parsed_response['neuron_id']))
@@ -1633,9 +1633,9 @@ class ViewPageTests(TestCase):
             'confidence': 5,
             'parent_id': parent_id,
             'radius': 2})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'No skeleton and neuron for treenode %d' % parent_id}
-        self.assertEqual(response.status_code, 200)
         self.assertIn(expected_result['error'], parsed_response['error'])
         self.assertEqual(treenode_count, Treenode.objects.all().count())
         self.assertEqual(relation_count, TreenodeClassInstance.objects.all().count())
@@ -1649,10 +1649,10 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = "Could not delete root node: You can't delete the " \
                           "root node when it has children."
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response['error'])
         self.assertEqual(1, Treenode.objects.filter(id=treenode_id).count())
         self.assertEqual(tn_count, Treenode.objects.all().count())
@@ -1666,9 +1666,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = 'Removed treenode successfully.'
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response['success'])
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
         self.assertEqual(tn_count - 1, Treenode.objects.all().count())
@@ -1686,12 +1686,12 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
             'success': 'Removed treenode successfully.',
             'parent_id': None
         }
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
         self.assertEqual(tn_count - 1, Treenode.objects.all().count())
@@ -1715,9 +1715,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = 'Removed treenode successfully.'
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response['success'])
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
         self.assertEqual(0, get_skeleton().count())
@@ -1733,11 +1733,11 @@ class ViewPageTests(TestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 'tr'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [
                 {"id":374, "name":"downstream-A", "class_name":"neuron"},
                 {"id":362, "name":"downstream-B", "class_name":"neuron"}]
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_search_with_no_results(self):
@@ -1746,9 +1746,9 @@ class ViewPageTests(TestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 'bobobobobobobo'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = []
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_search_with_several_nodes(self):
@@ -1757,6 +1757,7 @@ class ViewPageTests(TestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 't'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [
                 {"id":465, "name":"tubby bye bye", "class_name":"driver_line"},
@@ -1781,7 +1782,6 @@ class ViewPageTests(TestCase):
                 {"id":2451, "name":"skeleton 2451", "class_name":"skeleton"},
                 {"id":361, "name":"skeleton 361", "class_name":"skeleton"},
                 {"id":373, "name":"skeleton 373", "class_name":"skeleton"}]
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_search_with_nodes_and_nonode_label(self):
@@ -1790,6 +1790,7 @@ class ViewPageTests(TestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 'a'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [
                 {"id":485, "name":"Local", "class_name":"cell_body_location"},
@@ -1803,7 +1804,6 @@ class ViewPageTests(TestCase):
                 {"id":233, "name":"branched neuron", "class_name":"neuron"},
                 {"id":374, "name":"downstream-A", "class_name":"neuron"},
                 {"id":362, "name":"downstream-B", "class_name":"neuron"}]
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_search_with_nodes(self):
@@ -1812,6 +1812,7 @@ class ViewPageTests(TestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 'c'})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [
                 {"id":485, "name":"Local", "class_name":"cell_body_location"},
@@ -1821,7 +1822,6 @@ class ViewPageTests(TestCase):
                 {"id":2342, "name":"uncertain end", "class_name":"label",
                     "nodes":[{"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
                 {"id":233, "name":"branched neuron", "class_name":"neuron"}]
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_remove_neuron_and_skeleton(self):
@@ -1833,9 +1833,9 @@ class ViewPageTests(TestCase):
         log_count = count_logs()
         response = self.client.post(
                 '/%d/neuron/%s/delete' % (self.test_project_id, neuron_id), {})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'status': 1, 'message': 'Removed skeleton successfully.'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
         self.assertEqual(0, Treenode.objects.filter(skeleton=node_id).count())
@@ -1856,9 +1856,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/link/delete' % self.test_project_id,
                 {'connector_id': connector_id, 'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'result': 'Removed treenode to connector link'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector_id, treenode=treenode_id).count())
         self.assertEqual(tc_count - 1, TreenodeConnector.objects.all().count())
@@ -1874,9 +1874,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/treenode/reroot' % self.test_project_id,
                 {'tnid': new_root})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'newroot': 407}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(1 + log_count, count_logs())
 
@@ -1902,21 +1902,21 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/treenode/reroot' % self.test_project_id,
                 {'tnid': new_root})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'newroot': 2394}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
         response = self.client.post(
                 '/%d/treenode/link' % self.test_project_id, {
                     'from_id': link_from,
                     'to_id': link_to})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 'message': 'success',
                 'fromid': link_from,
                 'toid': link_to}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
         self.assertEqual(2 + log_count, count_logs())
@@ -1946,9 +1946,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/treenode/info' % self.test_project_id,
                 {'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'No skeleton and neuron for treenode %s' % treenode_id}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_treenode_info_nonexisting_treenode_failure(self):
@@ -1958,9 +1958,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/treenode/info' % self.test_project_id,
                 {'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'No skeleton and neuron for treenode %s' % treenode_id}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_treenode_info(self):
@@ -1970,9 +1970,9 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/treenode/info' % self.test_project_id,
                 {'treenode_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'skeleton_id': 235, 'neuron_id': 233, 'skeleton_name': 'skeleton 235', 'neuron_name': 'branched neuron'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_read_message_error(self):
@@ -2009,6 +2009,7 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/messages/list', {})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
 
         def get_message(data, id):
@@ -2047,7 +2048,6 @@ class ViewPageTests(TestCase):
                     'notification_count': 0
                 }
         }
-        self.assertEqual(response.status_code, 200)
         # Check result independent from order
         for mi in ('0','1','2','3'):
             self.assertEqual(expected_result[mi], parsed_response[mi])
@@ -2059,12 +2059,12 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/skeleton/ancestry' % self.test_project_id,
                 {'skeleton_id': skeleton_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [
                 {"name":"downstream-B", "id":362, "class":"neuron"},
                 {"name":"Isolated synaptic terminals", "id":364, "class":"group"},
                 {"name":"neuropile", "id":2323, "class":"root"}]
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_skeleton_ancestry_2(self):
@@ -2074,12 +2074,12 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/skeleton/ancestry' % self.test_project_id,
                 {'skeleton_id': skeleton_id})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [
                 {"name":"neuron 2365", "id":2365, "class":"neuron"},
                 {"name":"Fragments", "id":4, "class":"group"},
                 {"name":"neuropile", "id":2323, "class":"root"}]
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_create_postsynaptic_link_success(self):
@@ -2094,9 +2094,9 @@ class ViewPageTests(TestCase):
                     'to_id': to_id,
                     'link_type': link_type
                     })
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'success'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_create_presynaptic_link_fail_due_to_other_presynaptic_links(self):
@@ -2111,9 +2111,9 @@ class ViewPageTests(TestCase):
                     'to_id': to_id,
                     'link_type': link_type
                     })
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'Connector %s does not have zero presynaptic connections.' % to_id}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_create_presynaptic_link_success(self):
@@ -2128,9 +2128,9 @@ class ViewPageTests(TestCase):
                     'to_id': to_id,
                     'link_type': link_type
                     })
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'success'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_node_nearest_for_skeleton(self):
@@ -2143,6 +2143,7 @@ class ViewPageTests(TestCase):
                     'z': 4050,
                     'skeleton_id': 2388,
                     })
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 "treenode_id": 2394,
@@ -2150,7 +2151,6 @@ class ViewPageTests(TestCase):
                 "y": 6030,
                 "z": 0,
                 "skeleton_id": 2388}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_node_nearest_for_neuron(self):
@@ -2163,6 +2163,7 @@ class ViewPageTests(TestCase):
                     'z': 0,
                     'neuron_id': 362,
                     })
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
                 "treenode_id": 367,
@@ -2170,7 +2171,6 @@ class ViewPageTests(TestCase):
                 "y": 1980,
                 "z": 0,
                 "skeleton_id": 361}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
     def test_node_update_single_treenode(self):
@@ -2186,9 +2186,9 @@ class ViewPageTests(TestCase):
                     't[0][1]': x,
                     't[0][2]': y,
                     't[0][3]': z})
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'updated': 1}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         treenode = Treenode.objects.filter(id=treenode_id)[0]
         self.assertEqual(x, treenode.location_x)
@@ -2219,9 +2219,9 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, param_dict)
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'updated': 4}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         i = 0
         for n_id in node_id:
@@ -2258,10 +2258,10 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, param_dict)
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'User test2 cannot edit all of the 4 '
                            'unique objects from table treenode'}
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result['error'], parsed_response['error'])
 
     def test_node_list_without_active_skeleton(self):

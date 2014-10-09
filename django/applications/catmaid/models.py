@@ -716,8 +716,8 @@ class DataView(models.Model):
         db_table = "data_view"
         ordering = ('position',)
         permissions = (
-            ("can_administer", "Can administer data views"),
-            ("can_browse", "Can browse data views")
+            ("can_administer_dataviews", "Can administer data views"),
+            ("can_browse_dataviews", "Can browse data views")
         )
     title = models.TextField()
     data_view_type = models.ForeignKey(DataViewType)

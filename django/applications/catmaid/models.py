@@ -38,8 +38,8 @@ class Project(models.Model):
         db_table = "project"
         managed = True
         permissions = (
-            ("can_administer", "Can administer projects"), 
-            ("can_annotate", "Can annotate projects"), 
+            ("can_administer", "Can administer projects"),
+            ("can_annotate", "Can annotate projects"),
             ("can_browse", "Can browse projects")
         )
     title = models.TextField()
@@ -373,10 +373,10 @@ class Settings(models.Model):
 
 class UserFocusedManager(models.Manager):
     # TODO: should there be a parameter or separate function that allows the caller to specify read-only vs. read-write objects?
-    
+
     def for_user(self, user):
         fullSet = super(UserFocusedManager, self).get_query_set()
-        
+
         if user.is_superuser:
             return fullSet
         else:
@@ -386,7 +386,7 @@ class UserFocusedManager(models.Manager):
             otherProjects = get_objects_for_user(user, ['can_annotate', 'can_browse'], Project, any_perm = True)
             otherProjects = [a for a in otherProjects if a not in adminProjects]
             print >> sys.stderr, 'user has access to ', str(otherProjects)
-            
+
             # Now filter to the data to which the user has access.
             return fullSet.filter(Q(project__in = adminProjects) | (Q(project__in = otherProjects) & Q(user = user)))
 
@@ -800,7 +800,7 @@ class UserProfile(models.Model):
         pdict['show_tracing_tool'] = self.show_tracing_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
         return pdict
-    
+
     # Fix a problem with duplicate keys when new users are added.
     # From <http://stackoverflow.com/questions/6117373/django-userprofile-m2m-field-in-admin-error>
     def save(self, *args, **kwargs):
@@ -862,10 +862,10 @@ class ChangeRequest(UserFocusedModel):
     APPROVED = 1
     REJECTED = 2
     INVALID = 3
-    
+
     class Meta:
         db_table = "change_request"
-    
+
     type = models.CharField(max_length = 32)
     description = models.TextField()
     status = models.IntegerField(default = OPEN)
@@ -877,16 +877,16 @@ class ChangeRequest(UserFocusedModel):
     approve_action = models.TextField()
     reject_action = models.TextField()
     completion_time = models.DateTimeField(default = None, null = True)
-    
+
     # TODO: get the project from the treenode/connector so it doesn't have to specified when creating a request
-    
+
     def status_name(self):
         self.is_valid() # Make sure invalid state is current
         return ['Open', 'Approved', 'Rejected', 'Invalid'][self.status]
-    
+
     def is_valid(self):
         """ Returns a boolean value indicating whether the change request is still valid."""
-        
+
         if self.status == ChangeRequest.OPEN:
             # Run the request's validation code snippet to determine whether it is still valid.
             # The action is required to set a value for the is_valid variable.
@@ -903,41 +903,41 @@ class ChangeRequest(UserFocusedModel):
                 raise Exception('Could not validate the request (%s)', str(e))
         else:
             is_valid = False
-                
+
         return is_valid;
-    
+
     def approve(self, *args, **kwargs):
         if not self.is_valid():
             raise Exception('Failed to approve change request: the change is no longer possible.')
-        
+
         try:
             exec(self.approve_action)
             self.status = ChangeRequest.APPROVED
             self.completion_time = datetime.now()
             self.save()
-            
+
             # Send a message and an e-mail to the requester.
             title = self.type + ' Request Approved'
             message = self.recipient.get_full_name() + ' has approved your ' + self.type.lower() + ' request.'
             notify_user(self.user, title, message)
         except Exception as e:
             raise Exception('Failed to approve change request: %s' % str(e))
-    
+
     def reject(self, *args, **kwargs):
         if not self.is_valid():
             raise Exception('Failed to reject change request: the change is no longer possible.')
-        
+
         try:
             exec(self.reject_action)
             self.status = ChangeRequest.REJECTED
             self.completion_time = datetime.now()
             self.save()
-            
+
             # Send a message and an e-mail to the requester.
             title = self.type + ' Request Rejected'
             message = self.recipient.get_full_name() + ' has rejected your ' + self.type.lower() + ' request.'
             notify_user(self.user, title, message)
-            
+
         except Exception as e:
             raise Exception('Failed to reject change request: %s' % str(e))
 
@@ -952,7 +952,7 @@ def validate_change_request(sender, **kwargs):
 
 def send_email_to_change_request_recipient(sender, instance, created, **kwargs):
     """ Send the recipient of a change request a message and an e-mail when the request is created."""
-    
+
     if created:
         title = instance.type + ' Request'
         message = instance.user.get_full_name() + ' has sent you a ' + instance.type.lower() + ' request.  Please check your notifications.'
@@ -963,12 +963,12 @@ post_save.connect(send_email_to_change_request_recipient, sender = ChangeRequest
 
 def notify_user(user, title, message):
     """ Send a user a message and an e-mail."""
-    
+
     # Create the message
 #     Message(user = user,
 #             title = title,
 #             text = message).save()
-    
+
     # Send the e-mail
     # TODO: only send one e-mail per day, probably using a Timer object <http://docs.python.org/2/library/threading.html#timer-objects>
     try:

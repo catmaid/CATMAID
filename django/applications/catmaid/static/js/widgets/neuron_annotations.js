@@ -756,6 +756,12 @@ NeuronAnnotations.remove_annotation = function(entity_id,
 NeuronAnnotations.remove_annotation_from_entities = function(entity_ids,
     annotation_id, callback)
 {
+  // Complain if the user has no annotation permissions for the current project
+  if (!checkPermission('can_annotate')) {
+    error("You don't have have permission to remove annotations");
+    return;
+  }
+
   if (!confirm('Are you sure you want to remove annotation "' +
         annotations.getName(annotation_id) + '"?')) {
     return;

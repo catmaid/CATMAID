@@ -17,6 +17,9 @@ import sys
 from operator import getitem
 
 def basic_graph(project_id, skeleton_ids):
+    if not skeleton_ids:
+        raise ValueError("No skeleton IDs provided")
+
     cursor = connection.cursor()
 
     cursor.execute('''
@@ -75,6 +78,9 @@ def basic_graph(project_id, skeleton_ids):
 
 def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
     """ Assumes 0 < confidence_threshold <= 5. """
+    if not skeleton_ids:
+        raise ValueError("No skeleton IDs provided")
+
     cursor = connection.cursor()
     skids = ",".join(str(int(skid)) for skid in skeleton_ids)
 
@@ -152,6 +158,9 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
     cursor = connection.cursor()
     skeleton_ids = set(skeleton_ids)
     expand = set(expand)
+
+    if not skeleton_ids:
+        raise ValueError("No skeleton IDs provided")
 
     # assumes all skeleton_id in expand are also present in skeleton_ids
 

@@ -134,7 +134,8 @@ SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
         var format = function(contributors) {
           return "<br /><table>" + Object.keys(contributors)
             .reduce(function(a, user_id) {
-              a.push([users[user_id].login, contributors[user_id]]);
+              a.push([users[user_id] ? users[user_id].login : "?",
+                  contributors[user_id]]);
               return a;
             }, [])
             .sort(function(a, b) {

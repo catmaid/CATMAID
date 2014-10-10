@@ -103,9 +103,7 @@ SkeletonAnalytics.prototype.loadData = function () {
 		{skeleton_ids: skids,
 		 extra: $('#skeleton_analytics_extra' + this.widgetID).val(),
 		 adjacents: $('#skeleton_analytics_adjacents' + this.widgetID).val()},
-		function(status, text, xml) {
-			if (200 !== status) return;
-			var json = $.parseJSON(text);
+		 jsonResponseHandler(function(json) {
 			var rows = [];
 			json.issues.forEach(function (sk) {
 				// sk[0]: skeleton ID
@@ -120,5 +118,5 @@ SkeletonAnalytics.prototype.loadData = function () {
 			});
 
 			table.fnAddData(rows);
-		}, 'skeleton_analytics_update');
+		}), 'skeleton_analytics_update');
 };

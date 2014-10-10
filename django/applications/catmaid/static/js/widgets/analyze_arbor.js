@@ -14,6 +14,8 @@ var AnalyzeArbor = function() {
   this.pie_radius = 100;
   this.plot_width = 300;
   this.plot_height = 300;
+  this.scatter_width = 550;
+  this.scatter_height = 470;
 };
 
 AnalyzeArbor.prototype = {};
@@ -465,7 +467,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
     }, this);
 
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_depth',
-        550, 470,
+        this.scatter_width, this.scatter_height,
         'cable (µm)', 'depth (µm)',
         cable_vs_depth,
         function(d) {
@@ -475,7 +477,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         false, true);
 
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_inputs',
-        550, 470,
+        this.scatter_width, this.scatter_height,
         'cable (µm)', 'inputs',
         cable_vs_inputs,
         function(d) {

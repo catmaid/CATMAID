@@ -1319,8 +1319,21 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
 
   this.mouseControls = new this.MouseControls();
   this.mouseControls.attach(this, this.renderer.domElement);
-};
 
+  // Add handlers for WebGL context lost and restore events
+  this.renderer.context.canvas.addEventListener('webglcontextlost', function(e) {
+    e.preventDefault();
+    // Notify user about reload
+    error("Due to limited system resources the 3D display can't be shown " +
+          "right now. Please try and restart the widget containing the 3D " +
+          "viewer.");
+  }, false);
+  this.renderer.context.canvas.addEventListener('webglcontextrestored', (function(e) {
+    // TODO: Calling init() isn't enough, but one can manually restart
+    // the widget.
+    tj
+  }).bind(this), false);
+};
 
 WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
   this.controls.removeListeners();

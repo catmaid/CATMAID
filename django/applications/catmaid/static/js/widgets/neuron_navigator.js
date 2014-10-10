@@ -180,6 +180,8 @@ NeuronNavigator.Node = function(name)
 {
   this.name = name;
   this.navigator = null;
+  // If set to true, all upstream filters are ignored
+  this.ignore_filter = false;
 
   /* Because some nodes use tables to display data, some common options are
    * kept on the abstract node level.
@@ -268,7 +270,7 @@ NeuronNavigator.Node.prototype.create_path = function()
 
   if (this.parent_node) {
     var path_elements = this.parent_node.create_path();
-    var delimiter = this.breaks_filter_chain() ? '|' : '>';
+    var delimiter = (this.ignore_filter || this.breaks_filter_chain()) ? '|' : '>';
     path_elements.push(document.createTextNode(" " + delimiter + " "));
     path_elements.push(path_link);
     return path_elements;
@@ -286,9 +288,9 @@ NeuronNavigator.Node.prototype.collect_filters = function()
 {
   var filter = {};
 
-  filter.annotation_id = this.annotation_id || null;
-  filter.neuron_id = this.neuron_id || null;
-  filter.user_id = this.user_id || null;
+    filter.annotation_id = this.annotation_id || null;
+    filter.neuron_id = this.neuron_id || null;
+    filter.user_id = this.user_id || null;
 
   if (this.is_meta) {
     filter.is_meta = true;
@@ -297,8 +299,10 @@ NeuronNavigator.Node.prototype.collect_filters = function()
     }
   }
 
-  if (this.parent_node && !this.breaks_filter_chain()) {
-    return [filter].concat(this.parent_node.collect_filters());
+  if (!this.ignore_filter) {
+    if (this.parent_node && !this.breaks_filter_chain()) {
+      return [filter].concat(this.parent_node.collect_filters());
+    }
   }
 
   return [filter];
@@ -726,6 +730,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
   var annotate_button = document.createElement('input');
   annotate_button.setAttribute('type', 'button');
   annotate_button.setAttribute('value', 'Annotate');
+  NeuronNavigator.disable_on_missing_permissions(annotate_button);
   $container.append(annotate_button);
 
   // Create button to remove annotations, based on the filters
@@ -737,6 +742,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
       deannotate_button.setAttribute('value', 'De-annotate ' +
           annotations.getName(aid));
       deannotate_button.setAttribute('data-annotationid', aid);
+      NeuronNavigator.disable_on_missing_permissions(deannotate_button);
       $container.append(deannotate_button);
       deannotate_buttons.push(deannotate_button);
     });
@@ -942,6 +948,16 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
   });
 
   return datatable;
+};
+
+/**
+ * Helper to disable elements if they lack the can_annotate permission.
+ */
+NeuronNavigator.disable_on_missing_permissions = function(html_element)
+{
+  if (!checkPermission('can_annotate')) {
+    html_element.setAttribute('disabled', 'disabled');
+  }
 };
 
 
@@ -1228,6 +1244,7 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
   var annotate_button = document.createElement('input');
   annotate_button.setAttribute('type', 'button');
   annotate_button.setAttribute('value', 'Annotate annotation');
+  NeuronNavigator.disable_on_missing_permissions(annotate_button);
   container.append(annotate_button);
 
   // Create menu and add it to container
@@ -1418,6 +1435,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   var refresh_button = document.createElement('input');
   refresh_button.setAttribute('type', 'button');
   refresh_button.setAttribute('value', 'Refresh');
+  NeuronNavigator.disable_on_missing_permissions(refresh_button);
   container.append(refresh_button);
 
   // When clicked, the refresh button will reload this node
@@ -1429,6 +1447,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   var annotate_button = document.createElement('input');
   annotate_button.setAttribute('type', 'button');
   annotate_button.setAttribute('value', 'Annotate');
+  NeuronNavigator.disable_on_missing_permissions(annotate_button);
   container.append(annotate_button);
 
   // When clicked, the annotate button should prompt for a new annotation and
@@ -1441,6 +1460,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   var rename_button = document.createElement('input');
   rename_button.setAttribute('type', 'button');
   rename_button.setAttribute('value', 'Rename');
+  NeuronNavigator.disable_on_missing_permissions(rename_button);
   container.append(rename_button);
 
   rename_button.onclick = (function() {
@@ -1491,6 +1511,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   var delete_button = document.createElement('input');
   delete_button.setAttribute('type', 'button');
   delete_button.setAttribute('value', 'Delete');
+  NeuronNavigator.disable_on_missing_permissions(delete_button);
   container.append(delete_button);
 
   delete_button.onclick = (function() {
@@ -1860,18 +1881,21 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
       // Show annotation list
       var annotations_node = new NeuronNavigator.AnnotationListNode();
       annotations_node.link(this.navigator, this);
+      annotations_node.ignore_filter = true;
       this.navigator.select_node(annotations_node);
   }, this));
   $(table_rows[1]).dblclick($.proxy(function() {
       // Show user list
       var users_node = new NeuronNavigator.UserListNode();
       users_node.link(this.navigator, this);
+      users_node.ignore_filter = true;
       this.navigator.select_node(users_node);
   }, this));
   $(table_rows[2]).dblclick($.proxy(function() {
       // Show active neuron node
       var all_neurons_node = new NeuronNavigator.NeuronListNode();
       all_neurons_node.link(this.navigator, this);
+      all_neurons_node.ignore_filter = true;
       this.navigator.select_node(all_neurons_node);
   }, this));
 

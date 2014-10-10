@@ -952,7 +952,7 @@ def fetch_treenodes(request, project_id=None, skeleton_id=None, with_reviewers=N
     return HttpResponse(json.dumps(treenode_data))
 
 
-@requires_user_role(UserRole.Annotate)
+@requires_user_role(UserRole.Browse)
 def annotation_list(request, project_id=None):
     """ Returns a JSON serialized object that contains information about the
     given skeletons.
@@ -962,6 +962,9 @@ def annotation_list(request, project_id=None):
     annotations = bool(int(request.POST.get("annotations", 0)))
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
+
+    if not skeleton_ids:
+        raise ValueError("No skeleton IDs provided")
 
     classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))

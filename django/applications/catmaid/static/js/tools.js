@@ -207,6 +207,14 @@ window.ErrorDialog.prototype.show = function() {
 };
 
 /**
+ * Convenience function to show an error dialog.
+ */
+window.error = function(msg, detail)
+{
+  new ErrorDialog(msg, detail).show();
+}
+
+/**
  * Creates a generic JSON response handler that complains when the response
  * status is different from 200 or a JSON error is set.
  */

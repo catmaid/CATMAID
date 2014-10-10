@@ -8,13 +8,16 @@ from functools import partial
 from networkx import Graph, single_source_shortest_path
 import json
 
-@requires_user_role(UserRole.Annotate)
+@requires_user_role(UserRole.Browse)
 def analyze_skeletons(request, project_id=None):
     project_id = int(project_id)
     skids = [int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids[')]
     s_skids = ",".join(map(str, skids))
     extra = int(request.POST.get('extra', 0))
     adjacents = int(request.POST.get('adjacents', 0))
+
+    if not skids:
+        raise ValueError("No skeleton IDs provided")
 
     cursor = connection.cursor()
 
@@ -94,7 +97,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
       AND (relation_name = '%s'
            OR relation_name = '%s')
     ''' % (project_id, PRE, POST))
-    
+
     relations = {} # both ways
     for row in cursor.fetchall():
         relations[row[0]] = row[1]
@@ -141,7 +144,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
         # The 'other' could be null
         if row[4]:
             s[row[4]].add(Treenode(row[5], row[6]))
-    
+
     issues = []
 
     # Set of IDs of outgoing connectors

@@ -64,7 +64,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors=None, with_tags=None):
     """
         Performance-critical function. Do not edit unless to improve performance.
@@ -137,7 +137,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
     """
     Performance-critical function. Do not edit unless to improve performance.
@@ -350,7 +350,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             return name, nodes, tags, connectors, reviews
 
     return name, nodes, tags, connectors, reviews
-    
+
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -559,9 +559,9 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
             post[row[0]].append(row[1])
 
     return neuroml_single_cell(skeleton_id, nodes, pre, post)
- 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+
+@requires_user_role(UserRole.Browse)
 def skeletons_neuroml(request, project_id=None):
     """ Export a list of skeletons each as a Cell in NeuroML. """
     project_id = int(project_id) # sanitize
@@ -590,7 +590,7 @@ def skeletons_neuroml(request, project_id=None):
     return response
 
 
-@requires_user_role([UserRole.Annotate])
+@requires_user_role(UserRole.Browse)
 def export_neuroml_level3_v181(request, project_id=None):
     """Export the NeuroML Level 3 version 1.8.1 representation of one or more skeletons.
     Considers synapses among the requested skeletons only. """

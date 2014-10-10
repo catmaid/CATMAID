@@ -14,7 +14,7 @@ class AnonymousAuthenticationMiddleware(object):
     def process_request(self, request):
         if request.user.is_anonymous() and settings.ANONYMOUS_USER_ID:
             request.user = User.objects.get(id=settings.ANONYMOUS_USER_ID)
-            request.user.is_anonymous = lambda: True
+            request.user.is_anonymous = lambda: False
             request.user.is_authenticated = lambda: False
         return None
 

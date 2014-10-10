@@ -656,13 +656,20 @@ NeuronAnnotations.prototype.annotate_entities = function(entity_ids,
 NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
     callback)
 {
+  // Complain if the user has no annotation permissions for the current project
+  if (!checkPermission('can_annotate')) {
+    error("You don't have have permission to add annotations");
+    return;
+  }
+
   // Complain if there is no target
   var has_target = (entity_ids && entity_ids.length > 0) ||
       (skeleton_ids && skeleton_ids.length > 0);
   if (!has_target) {
-    alert("Please select at least one annotation, neuron or skeleton!");
+    error("Please select at least one annotation, neuron or skeleton!");
     return;
   }
+
   // Get annotation terms
   var annotations = this.prompt_for_annotations(function(annotations,
       meta_annotations) {
@@ -749,6 +756,12 @@ NeuronAnnotations.remove_annotation = function(entity_id,
 NeuronAnnotations.remove_annotation_from_entities = function(entity_ids,
     annotation_id, callback)
 {
+  // Complain if the user has no annotation permissions for the current project
+  if (!checkPermission('can_annotate')) {
+    error("You don't have have permission to remove annotations");
+    return;
+  }
+
   if (!confirm('Are you sure you want to remove annotation "' +
         annotations.getName(annotation_id) + '"?')) {
     return;

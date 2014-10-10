@@ -306,16 +306,26 @@ var WindowMaker = new function()
     load.onclick = ND.loadActiveSkeleton.bind(ND);
     buttons.appendChild(load);
 
+    var exportSVG = document.createElement('input');
+    exportSVG.setAttribute("type", "button");
+    exportSVG.setAttribute("value", "Export SVG");
+    exportSVG.onclick = ND.exportSVG.bind(ND);
+    buttons.appendChild(exportSVG);
+
     var tag = document.createElement('label');
     tag.appendChild(document.createTextNode('Tag'));
     var tagInput = document.createElement('input');
     tagInput.setAttribute('type', 'text');
     tagInput.setAttribute('id', 'dendrogram-tag-' + ND.widgetID);
+    tagInput.onkeypress = function(e) {
+      if (13 === e.keyCode) {
+        ND.update();
+      }
+    };
     tag.appendChild(tagInput);
     buttons.appendChild(tag);
 
     var collapse = document.createElement('label');
-    collapse.appendChild(document.createTextNode('Only branches and tagged nodes'));
     var collapseInput = document.createElement('input');
     collapseInput.setAttribute('type', 'checkbox');
     if (ND.collapsed) {
@@ -326,10 +336,10 @@ var WindowMaker = new function()
       ND.update();
     };
     collapse.appendChild(collapseInput);
+    collapse.appendChild(document.createTextNode('Only branches and tagged nodes'));
     buttons.appendChild(collapse);
 
     var naming = document.createElement('label');
-    naming.appendChild(document.createTextNode('Show node IDs'));
     var namingInput = document.createElement('input');
     namingInput.setAttribute('type', 'checkbox');
     if (ND.showNodeIDs) {
@@ -340,10 +350,10 @@ var WindowMaker = new function()
       ND.update();
     };
     naming.appendChild(namingInput);
+    naming.appendChild(document.createTextNode('Show node IDs'));
     buttons.appendChild(naming);
 
     var showTags = document.createElement('label');
-    showTags.appendChild(document.createTextNode('Show tags'));
     var showTagsInput = document.createElement('input');
     showTagsInput.setAttribute('type', 'checkbox');
     if (ND.showTags) {
@@ -354,6 +364,7 @@ var WindowMaker = new function()
       ND.update();
     };
     showTags.appendChild(showTagsInput);
+    showTags.appendChild(document.createTextNode('Show tags'));
     buttons.appendChild(showTags);
 
     content.appendChild(buttons);

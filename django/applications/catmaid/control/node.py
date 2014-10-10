@@ -594,7 +594,7 @@ def find_previous_branchnode_or_root(request, project_id=None):
         alt = 1 == int(request.POST['alt'])
         skid = Treenode.objects.get(pk=tnid).skeleton_id
         graph = _skeleton_as_graph(skid)
-        # Travel upstream until finding a parent node with more than one child 
+        # Travel upstream until finding a parent node with more than one child
         # or reaching the root node
         seq = [] # Does not include the starting node tnid
         while True:

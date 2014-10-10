@@ -28,6 +28,9 @@ def export_jsongraph(request, project_id):
     order = int(request.POST.get('order', 0))
     skeletonlist = map(int, skeletonlist)
 
+    if not skeletonlist:
+        raise ValueError("No skeleton IDs provided")
+
     if order > 2: # only allow to retrieve order two to limit server usage
       order = 0
 

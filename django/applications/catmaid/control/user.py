@@ -144,7 +144,7 @@ def update_user_profile(request):
     user, nothing is updated, but no error is raised.
     """
     # Ignore anonymous user
-    if request.user.is_anonymous():
+    if not request.user.is_authenticated() or request.user.is_anonymous():
         return HttpResponse(json.dumps({'success': "The user profile of the " +
                 "anonymous user won't be updated"}), mimetype='text/json')
 

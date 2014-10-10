@@ -462,6 +462,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
           });
         }
       });
+    }, this);
 
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_depth',
         550, 470,
@@ -482,7 +483,6 @@ AnalyzeArbor.prototype.updateCharts = function() {
         },
         series,
         false, true);
-      }, this);
   }).bind(this)();
 };
 

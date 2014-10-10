@@ -176,15 +176,21 @@ function handle_login(status, text, xml, completionCallback) {
         }
       });
       
-      // Asynchronously get the full list of users.
-      // TODO: how to handle failure of this call?
-      User.getUsers();
     } else if (e.error) {
       alert(e.error);
     }
-    handle_profile_update(e);
-    
-    updateProjects(completionCallback);
+
+    // Continuation for user list retrieval
+    function done() {
+      handle_profile_update(e);
+      updateProjects(completionCallback);
+    };
+
+    // Asynchronously, try to get a full list of users. This will silently fail
+    // if the user is not logged in and the anonymous user has no permission to
+    // retrieve it.
+    // TODO: how to handle failure of this call?
+    User.getUsers(done);
   } else if (status != 200) {
     // Of course, lots of non-200 errors are fine - just report
     // all for the moment, however:

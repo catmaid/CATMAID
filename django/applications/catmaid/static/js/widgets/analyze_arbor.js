@@ -458,7 +458,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
           s.cables.forEach(function(cable, i) {
             cable /= 1000; // in microns
             cable_vs_depth.push(new Entry(cable, s.depths[i] / 1000, s.roots[i])); // depth in microns
-            cable_vs_inputs.push(new Entry(cable, s.inputs[i]), s.roots[i]);
+            cable_vs_inputs.push(new Entry(cable, s.inputs[i], s.roots[i]));
           });
         }
       });

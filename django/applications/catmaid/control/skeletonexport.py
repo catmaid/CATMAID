@@ -561,7 +561,7 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     return neuroml_single_cell(skeleton_id, nodes, pre, post)
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def skeletons_neuroml(request, project_id=None):
     """ Export a list of skeletons each as a Cell in NeuroML. """
     project_id = int(project_id) # sanitize
@@ -590,7 +590,7 @@ def skeletons_neuroml(request, project_id=None):
     return response
 
 
-@requires_user_role([UserRole.Annotate])
+@requires_user_role(UserRole.Browse)
 def export_neuroml_level3_v181(request, project_id=None):
     """Export the NeuroML Level 3 version 1.8.1 representation of one or more skeletons.
     Considers synapses among the requested skeletons only. """

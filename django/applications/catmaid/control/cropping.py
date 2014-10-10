@@ -468,6 +468,8 @@ def extract_substack_no_rotation( job ):
     # of the exported dimensions is XYCZ. This means all the channels of
     # one slice are exported, then the next slice follows, etc.
     cropped_stack = []
+    # Accumulator for estimated result size
+    estimated_total_size = 0
     # Iterate over all slices
     for nz in range(n_slices):
         for stack in job.stacks:
@@ -522,7 +524,6 @@ def extract_substack_no_rotation( job ):
             # Write out the image parts and make sure the maximum allowed file
             # size isn't exceeded.
             cropped_slice = None
-            estimated_total_size = 0
             for ip in image_parts:
                 # Get (correctly cropped) image
                 image = ip.get_image()

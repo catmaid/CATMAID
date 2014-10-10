@@ -2562,18 +2562,49 @@ class PermissionTests(TestCase):
         p = Project.objects.get(pk=self.test_project_id)
         assign_perm('can_browse', anon_user, p)
 
-        # Set up test API
+        # Set up test API. Because we want to test only general access to the
+        # methods, it doesn't matter if we use fake parameters.
         url_params = {
             'pid': self.test_project_id,
+            'skid': 123456,
+            'sid': 1,
         }
         anonymous_get_api = ['/permissions',
                              '/accounts/login',
+                             '/user-list',
+                             '/%(pid)s/stacks' % url_params,
+                             '/%(pid)s/search' % url_params,
+                             '/%(pid)s/tracing/setup/test' % url_params,
+                             '/%(pid)s/stats' % url_params,
+                             '/%(pid)s/stats/nodecount' % url_params,
+                             '/%(pid)s/stats/user-history' % url_params,
         ]
         anonymous_post_api = ['/permissions',
                               '/accounts/login',
-                              '/%(pid)s/skeleton/annotationlist' % url_params,
+                              '/user-table-list',
+                              '/user-profile/update'
                               '/%(pid)s/notifications/list' % url_params,
+                              '/%(pid)s/node/user-info' % url_params,
+                              '/%(pid)s/node/get_location' % url_params,
+                              '/%(pid)s/node/list' % url_params,
+                              '/%(pid)s/skeletongroup/skeletonlist_confidence_compartment_subgraph' % url_params,
+                              '/%(pid)s/graph/circlesofhell' % url_params,
+                              '/%(pid)s/connector/list/one_to_many' % url_params,
+                              '/%(pid)s/%(skid)s/1/1/0/compact-arbor' % url_params,
+                              '/%(pid)s/annotations/skeletons/list' % url_params,
+                              '/%(pid)s/annotations/table-list' % url_params,
                               '/%(pid)s/skeleton/analytics' % url_params,
+                              '/%(pid)s/skeleton/annotationlist' % url_params,
+                              '/%(pid)s/skeleton/review-status' % url_params,
+                              '/%(pid)s/skeleton/%(skid)s/neuronname' % url_params,
+                              '/%(pid)s/skeleton/connectors-by-partner' % url_params,
+                              '/%(pid)s/neuron/table/query-by-annotations' % url_params,
+                              '/%(pid)s/stack/%(sid)s/models' % url_params,
+                              '/%(pid)s/logs/list' % url_params,
+                              '/%(pid)s/graphexport/json' % url_params,
+                              '/%(pid)s/neuroml/neuroml_level3_v181' % url_params,
+                              '/%(pid)s/treenodearchive/export' % url_params,
+                              '/%(pid)s/connectorarchive/export' % url_params,
         ]
 
         # Make sure we get no permission error on anonymous accessible get

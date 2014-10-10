@@ -416,6 +416,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         ["dendritic", "axonal"],
         ["#00ffff", "#ff0000"],
         x_axis, rotate_x_axis_labels,
+        true,
         false);
 
       // Turn data into cummulative
@@ -435,6 +436,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         ["dendritic", "axonal"],
         ["#00ffff", "#ff0000"],
         x_axis, rotate_x_axis_labels,
+        false,
         false);
     }, this);
   }).bind(this)();

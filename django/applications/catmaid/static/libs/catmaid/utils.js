@@ -892,6 +892,7 @@ SVGUtil.insertMultipleBarChart2 = function(
     data,
     names, colors,
     x_axis_labels, rotate_x_axis_labels,
+    y_axis_log_scale,
     show_legend) {
 
   var n = data.length,
@@ -911,8 +912,8 @@ SVGUtil.insertMultipleBarChart2 = function(
     .domain(d3.range(m))
     .rangeRoundBands([0, width], .08);
 
-  var y = d3.scale.linear()
-    .domain([0, yGroupMax])
+  var y = (y_axis_log_scale ? d3.scale.log() : d3.scale.linear())
+    .domain([y_axis_log_scale ? 0.000001 : 0, yGroupMax])
     .range([height, 0]);
 
   var xAxis = d3.svg.axis()

@@ -1003,3 +1003,163 @@ SVGUtil.insertMultipleBarChart2 = function(
 				.text(function(d) { return d; });
 	}
 };
+
+/** entries: array of {x: 10, y: 20, color: "#123456", name: "aha"} where "name" is optional--signal so by making with_names true.
+ * onclick: a function that gets a single entry as argument, called when a circle is clicked.
+ * series: an array of {name: "neuron name", color: "#123456"} to show as legend. */
+SVGUtil.insertXYScatterPlot = function(
+    container, id,
+    width, height,
+    xTitle, yTitle,
+    entries,
+    onclick,
+    series,
+    with_names, with_tooltip_text) {
+
+  var margin = {top: 20, right: 100, bottom: 50, left: 50},
+      width = width - margin.left - margin.right,
+      height = height - margin.top - margin.bottom;
+
+  var extract = function(key) {
+    return function(e) { return e[key]; };
+  };
+  var xR = d3.scale.linear()
+    .domain(d3.extent(entries.map(extract('x'))))
+    .nice()
+    .range([0, width]);
+  var yR = d3.scale.linear()
+    .domain(d3.extent(entries.map(extract('y'))))
+    .nice()
+    .range([height, 0]);
+  var xAxis = d3.svg.axis()
+    .scale(xR)
+    .orient("bottom")
+    .ticks(10);
+  var yAxis = d3.svg.axis()
+    .scale(yR)
+    .orient("left")
+    .ticks(10);
+
+  var svg = d3.select(container).append("svg")
+      .attr("id", id)
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+
+  // Add an invisible layer to enable triggering zoom from anywhere, and panning
+  svg.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .style("opacity", "0");
+
+  // Function that maps from data domain to plot coordinates
+  var transform = function(d) {
+    return "translate(" + xR(d.x) + "," + yR(d.y) + ")";
+  };
+
+  var elems = svg.selectAll(".state")
+    .data(entries).enter()
+    .append('g')
+    .attr('transform', transform);
+
+  var zoomed = function() {
+    // Prevent panning beyond limits
+    var translate = zoom.translate(),
+        scale = zoom.scale(),
+        tx = Math.min(0, Math.max(width * (1 - scale), translate[0])),
+        ty = Math.min(0, Math.max(height * (1 - scale), translate[1]));
+
+    zoom.translate([tx, ty]);
+
+    // Scale as well the axes
+    svg.select(".x.axis").call(xAxis);
+    svg.select(".y.axis").call(yAxis);
+
+    elems.attr('transform', transform);
+  };
+
+  var zoom = d3.behavior.zoom().x(xR).y(yR).scaleExtent([1, 100]).on("zoom", zoomed);
+  // Assign the zooming behavior to the encapsulating root group
+  svg.call(zoom);
+
+  elems.append('circle')
+    .attr('class', 'dot')
+    .attr('r', '3')
+    .style('fill', function(d) { return d.color; })
+    .style('stroke', 'grey');
+
+  if (onclick) elems.on('click', function(d) { if (onclick) onclick(d); });
+
+  if (with_names) {
+    elems.append('text')
+      .text(function(d) { return d.name; })
+      .attr('id', 'name')
+      .attr('dx', '5');
+  }
+  if (with_tooltip_text) {
+     elems.append('svg:title')
+     .text(function(d) { return d.name; });
+  }
+
+  // Insert the graphics for the axes (after the data, so that they draw on top)
+  var xg = svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .attr("fill", "none")
+      .attr("stroke", "black")
+      .style("shape-rendering", "crispEdges")
+      .call(xAxis);
+  xg.selectAll("text")
+      .attr("fill", "black")
+      .attr("stroke", "none");
+  xg.append("text")
+      .attr("x", width)
+      .attr("y", -6)
+      .attr("fill", "black")
+      .attr("stroke", "none")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", "11px")
+      .style("text-anchor", "end")
+      .text(xTitle);
+
+  var yg = svg.append("g")
+      .attr("class", "y axis")
+      .attr("fill", "none")
+      .attr("stroke", "black")
+      .style("shape-rendering", "crispEdges")
+      .call(yAxis);
+  yg.selectAll("text")
+      .attr("fill", "black")
+      .attr("stroke", "none");
+  yg.append("text")
+      .attr("fill", "black")
+      .attr("stroke", "none")
+      .attr("transform", "rotate(-90)")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", "11px")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text(yTitle);
+
+  // The legend: which series is which
+  var legend = svg.selectAll(".legend")
+      .data(series)
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", width + 10)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", function(d) { return d.color; });
+
+  legend.append("text")
+      .attr("x", width + 34)
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .style("text-anchor", "left")
+      .text(function(d) { return d.name; });
+};

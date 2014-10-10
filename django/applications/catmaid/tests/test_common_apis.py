@@ -302,11 +302,13 @@ class ViewPageTests(TestCase):
         response = self.client.get('/permissions')
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {
-                '1': {'can_edit_any': True, 'can_view_any': True},
-                '2': {'can_edit_any': True, 'can_view_any': True},
-                '3': {'can_edit_any': True, 'can_view_any': True},
-                '5': {'can_edit_any': True, 'can_view_any': True}}
+        expected_result = [
+            {'can_administer': {'3': False},
+             'add_project': {'3': False},
+             'can_annotate': {'3': True},
+             'change_project': {'3': False},
+             'can_browse': {'3': True},
+             'delete_project': {'3': False}}, [u'test1']]
         self.assertEqual(expected_result, parsed_response)
 
     def test_swc_file(self):

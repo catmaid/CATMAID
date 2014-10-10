@@ -577,8 +577,9 @@ class ViewPageTests(TestCase):
                 'type': property_name})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'error': 'Can only modify confidence and radius.'}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = 'Can only modify confidence and radius.'
+        self.assertIn('error', parsed_response)
+        self.assertEqual(expected_result, parsed_response['error'])
 
     def test_update_treenode_table_confidence(self):
         self.fake_authentication()
@@ -1271,8 +1272,9 @@ class ViewPageTests(TestCase):
                 params)
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'error': 'Failed to find Textlabel with id %s.' % textlabel_id}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = 'Failed to find Textlabel with id %s.' % textlabel_id
+        self.assertIn('error', parsed_response)
+        self.assertIn(expected_result, parsed_response['error'])
 
     def test_delete_textlabel(self):
         self.fake_authentication()
@@ -1917,18 +1919,6 @@ class ViewPageTests(TestCase):
 
         self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
 
-    def test_treenode_info_too_many_neurons_failure(self):
-        self.fake_authentication()
-        treenode_id = 55555
-
-        response = self.client.post(
-                '/%d/treenode/info' % self.test_project_id,
-                {'treenode_id': treenode_id})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_result = {'error': 'No skeleton and neuron for treenode %s' % treenode_id}
-        self.assertEqual(expected_result, parsed_response)
-
     def test_treenode_info_nonexisting_treenode_failure(self):
         self.fake_authentication()
         treenode_id = 55555
@@ -1938,8 +1928,9 @@ class ViewPageTests(TestCase):
                 {'treenode_id': treenode_id})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'error': 'No skeleton and neuron for treenode %s' % treenode_id}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = 'No skeleton and neuron for treenode %s' % treenode_id
+        self.assertIn('error', parsed_response)
+        self.assertEqual(expected_result, parsed_response['error'])
 
     def test_treenode_info(self):
         self.fake_authentication()

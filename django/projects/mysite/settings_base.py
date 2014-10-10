@@ -116,7 +116,7 @@ MEDIA_TREENODE_SUBDIRECTORY = 'treenode_archives'
 # The maximum allowed size in Bytes for generated files. The cropping tool, for
 # instance, uses this to cancel a request if the generated file grows larger
 # than this. This defaults to 50 Megabyte.
-GENERATED_FILES_MAXIMUM_SIZE = 51200
+GENERATED_FILES_MAXIMUM_SIZE = 52428800
 
 # A sequence of modules that contain Celery tasks which we want Celery to know
 # about automatically.

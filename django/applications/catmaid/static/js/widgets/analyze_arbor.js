@@ -326,7 +326,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
   labels.splice(labels.indexOf('n_subs'), 1);
 
   // Create a pie with the number of terminal subarbors
-  var n_subs = ["axonal", "dendritic"].map(function(type) {
+  var n_subs = ["dendritic", "axonal"].map(function(type) {
     return skids.reduce((function(sum, skid) {
       var s = this.terminal_subarbor_stats[skid][type];
       return sum + (s ? s.n_subs : 0);
@@ -336,7 +336,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
   var pie_n_subarbors = SVGUtil.insertPieChart(
       divID,
       this.pie_radius,
-      [{name: titles[1] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[1]}].concat(0 === n_subs[0] ? [] : [{name: titles[2] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[2]}]), // there could be no axonal terminals
+      [{name: titles[1] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[1]}].concat(0 === n_subs[1] ? [] : [{name: titles[2] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[2]}]), // there could be no axonal terminals
       "# Subarbors (" + (n_subs[0] + n_subs[1]) + ")");
 
   if (skids.length > 1) {
@@ -411,6 +411,25 @@ AnalyzeArbor.prototype.updateCharts = function() {
         this.plot_width, this.plot_height,
         label, "counts",
         data,
+        ["dendritic", "axonal"],
+        ["#00ffff", "#ff0000"],
+        x_axis, rotate_x_axis_labels,
+        false);
+
+      // Turn data into cummulative
+      var cummulative = data.map(function(a, i) {
+        var b = {},
+            total = n_subs[i];
+        if (0 === total) return a;
+        b[0] = a[0] / total;
+        for (var bin=inc; bin<=max; bin+=inc) b[bin] = b[bin - inc] + a[bin] / total;
+        return b;
+      });
+
+      SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
+        this.plot_width, this.plot_height,
+        label, "cummulative counts (%)",
+        cummulative,
         ["dendritic", "axonal"],
         ["#00ffff", "#ff0000"],
         x_axis, rotate_x_axis_labels,

@@ -1331,7 +1331,6 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
   this.renderer.context.canvas.addEventListener('webglcontextrestored', (function(e) {
     // TODO: Calling init() isn't enough, but one can manually restart
     // the widget.
-    tj
   }).bind(this), false);
 };
 

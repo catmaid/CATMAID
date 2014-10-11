@@ -912,7 +912,7 @@ SVGUtil.insertMultipleBarChart2 = function(
     .domain(d3.range(m))
     .rangeRoundBands([0, width], .08);
 
-  var y = (y_axis_log_scale ? d3.scale.log() : d3.scale.linear())
+  var y = (y_axis_log_scale ? d3.scale.log(2) : d3.scale.linear())
     .domain([y_axis_log_scale ? 0.000001 : 0, yGroupMax])
     .range([height, 0]);
 

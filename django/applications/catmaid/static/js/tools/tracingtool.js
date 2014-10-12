@@ -824,17 +824,6 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-      helpText: "Neuron denrogram",
-      keyShortcuts: {
-          'F4': [ 115 ]
-      },
-      run: function (e) {
-        WindowMaker.create('neuron-dendrogram');
-        return true;
-      }
-  }) );
-
-  this.addAction( new Action({
       helpText: "Annotate active neuron",
       keyShortcuts: {
           'F3': [ 114 ]
@@ -846,6 +835,17 @@ function TracingTool()
           NeuronAnnotations.prototype.annotate_neurons_of_skeletons(
             [SkeletonAnnotations.getActiveSkeletonId()]);
           return true;
+      }
+  }) );
+
+  this.addAction( new Action({
+      helpText: "Neuron dendrogram",
+      keyShortcuts: {
+          'F4': [ 115 ]
+      },
+      run: function (e) {
+        WindowMaker.create('neuron-dendrogram');
+        return true;
       }
   }) );
 

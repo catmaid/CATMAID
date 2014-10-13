@@ -544,6 +544,9 @@ var WindowMaker = new function()
               // win.close();
             }
             break;
+          case CMWWindow.FOCUS:
+            ST.setLastFocused();
+            break;
           case CMWWindow.RESIZE:
             if( buttons.id !== undefined ) {
                 container.style.height = ( win.getContentHeight() - $('#' + buttons.id).height() ) + "px";

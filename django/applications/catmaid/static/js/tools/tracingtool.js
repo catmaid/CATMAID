@@ -535,6 +535,16 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
+    helpText: "Append the active skeleton to the last used selection widget",
+    keyShortcuts: {
+      "Y": [ 89 ]
+    },
+    run: function (e) {
+      SelectionTable.getLastFocused().append(SkeletonAnnotations.sourceView.getSelectedSkeletonModels());
+    }
+  }) );
+
+  this.addAction( new Action({
     helpText: "Split this skeleton at the active node",
     buttonName: "skelsplitting",
     buttonID: 'trace_button_skelsplitting',

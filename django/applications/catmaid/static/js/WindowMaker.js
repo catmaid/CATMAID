@@ -590,6 +590,7 @@ var WindowMaker = new function()
 
     SkeletonListSources.updateGUI();
     ST.init();
+    win.focus();
 
     return win;
   };

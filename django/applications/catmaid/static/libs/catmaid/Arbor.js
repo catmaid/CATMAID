@@ -710,33 +710,58 @@ Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
 	return values;
 };
 
-/** Return a map of node vs branch index relative to root. Terminal branches
- * have an index of 1, their parent branches of 2, etc., all the way too root.
- * The maximum number is that of the root branch.
+/**
+ * Return a map of node vs branch index relative to root. Terminal branches
+ * have an index of 1, their parent branches of 2 if two or more of their
+ * children are 1 as well as all others have a lower index, or their parent
+ * branches of 1 if one child is 1 and no child with greater index, etc., all
+ * the way to root. The maximum number is that of the root branch.
  */
 Arbor.prototype.strahlerAnalysis = function() {
     var topo = this.topologicalCopy(),
-        order = topo.nodesOrderFrom(topo.root),
-        be = topo.findBranchAndEndNodes(),
-        branches = be.branches,
-        ends = be.ends.sort(function(a, b) {
-          var orderA = order[a],
-              orderB = order[b];
-          return orderA === orderB ? 0 : (orderA < orderB ? 1 : -1); // descending
-        }),
+        successors = topo.allSuccessors(),
         strahler = {};
 
-    strahler[this.root] = order[ends[0]];
+    // Walk over nodes in a depth-first order and call visitor postorder
+    function depthFirst(discovered, tree, node, visitor)
+    {
+      discovered[node] = true;
+      var children = successors[node];
+      children.forEach(function(child) {
+        if (undefined === discovered[child]) {
+          depthFirst(discovered, tree, child, visitor);
+        }
+      });
+      visitor(node, children);
+    };
 
-    for (var i=0; i<ends.length; ++i) {
-      var node = ends[i],
-          index = 1;
-      do {
-        strahler[node] = index;
-        node = this.edges[node]; // parent
-        if (undefined !== branches[node]) ++index;
-      } while (undefined === strahler[node]);
-    }
+    function getStrahler(node, children) {
+      if (0 === children.length) {
+        // For a leaf node, the Strahler index will be 1
+        strahler[node] = 1;
+      } else {
+        // Get maximum and distribution of strahler indexes of children
+        var dist = children.reduce(function(o, c) {
+          var cs = strahler[c];
+          // Find maximum
+          if (cs > o.max) {
+            o.max = cs;
+          }
+          // Record histogram
+          o[cs] = (o[cs] + 1) || 1;
+          return o;
+        }, {max: -Infinity});
+        // Stick to maximum value if there is only one child of it. Increment
+        // otherwise (there are no zero or below entries).
+        if (1 === dist[dist.max]) {
+          strahler[node] = dist.max;
+        } else {
+          strahler[node] = dist.max + 1;
+        }
+      }
+    };
+
+    depthFirst({}, topo, topo.root, getStrahler);
 
     return strahler;
 };

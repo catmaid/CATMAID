@@ -850,6 +850,10 @@ NeuronAnnotations.prototype.toggle_annotation_display = function(
 NeuronAnnotations.prototype.prev_page = function()
 {
   if (this.display_start >= this.display_length) {
+    // Reset "select all" check box
+    $('#neuron_annotations_toggle_neuron_selections_checkbox' + this.widgetID)
+        .prop('checked', false);
+    // Go one page back
     this.display_start -= this.display_length;
     this.query(false);
   }
@@ -862,6 +866,10 @@ NeuronAnnotations.prototype.next_page = function()
 {
   var new_display_start = this.display_start + this.display_length;
   if (this.total_n_results >= new_display_start) {
+    // Reset "select all" check box
+    $('#neuron_annotations_toggle_neuron_selections_checkbox' + this.widgetID)
+        .prop('checked', false);
+    // Go one page forward
     this.display_start = new_display_start;
     this.query(false);
   }

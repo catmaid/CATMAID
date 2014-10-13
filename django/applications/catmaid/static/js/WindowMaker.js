@@ -367,6 +367,20 @@ var WindowMaker = new function()
     showTags.appendChild(document.createTextNode('Show tags'));
     buttons.appendChild(showTags);
 
+    var showStrahler = document.createElement('label');
+    var showStrahlerInput = document.createElement('input');
+    showStrahlerInput.setAttribute('type', 'checkbox');
+    if (ND.showStrahler) {
+      showStrahlerInput.setAttribute('checked', 'checked');
+    }
+    showStrahlerInput.onchange = function() {
+      ND.setShowStrahler(this.checked);
+      ND.update();
+    };
+    showStrahler.appendChild(showStrahlerInput);
+    showStrahler.appendChild(document.createTextNode('Show Strahler'));
+    buttons.appendChild(showStrahler);
+
     content.appendChild(buttons);
 
     var container = createContainer("dendrogram" + ND.widgetID);

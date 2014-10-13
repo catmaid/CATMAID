@@ -265,7 +265,12 @@ Arbor.prototype.findBranchNodes = function() {
   return branches;
 };
 
-/** Return a map of node vs topological distance from the given root. Rather than a distance, these are the hierarchical orders, where root has order 0, nodes directly downstream of root have order 1, and so on. Invoke with this.root as argument to get the distances to the root of this Arbor. Invoke with any non-end node to get distances to that node for nodes downstream of it. */
+/** Return a map of node vs topological distance from the given root. Rather
+ * than a distance, these are the hierarchical orders, where root has order 0,
+ * nodes directly downstream of root have order 1, and so on. Invoke with
+ * this.root as argument to get the distances to the root of this Arbor. Invoke
+ * with any non-end node to get distances to that node for nodes downstream of
+ * it. */
 Arbor.prototype.nodesOrderFrom = function(root) {
 	return this.nodesDistanceTo(root, function() { return 1; }).distances;
 };

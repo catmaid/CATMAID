@@ -60,32 +60,26 @@ User.getUsers = function(completionCallback)
       'GET',
       undefined,
       function (status, text, xml) {
-        User.prototype.handleGetUsers(status, text, xml);
+        if (status == 200 && text)
+        {
+          var jsonData = $.parseJSON(text);
+          for (var i = 0; i < jsonData.length; i++)
+          {
+            var userData = jsonData[i];
+            new User(userData.id, userData.login, userData.full_name,
+                userData.first_name, userData.last_name, new THREE.Color().setRGB(
+                    userData.color[0], userData.color[1], userData.color[2]));
+          }
+        }
+        else
+        {
+          new ErrorDialog("The list of users could not be retrieved.",
+            text + "\n\n(Status: " + status + ")").show();
+        }
         if (completionCallback !== undefined) {
           completionCallback();
         }
       });
-};
-
-
-User.prototype.handleGetUsers = function(status, text, xml)
-{
-  if (status == 200 && text)
-  {
-    var jsonData = $.parseJSON(text);
-    for (var i = 0; i < jsonData.length; i++)
-    {
-      var userData = jsonData[i];
-      new User(userData.id, userData.login, userData.full_name,
-          userData.first_name, userData.last_name, new THREE.Color().setRGB(
-              userData.color[0], userData.color[1], userData.color[2]));
-    }
-  }
-  else
-  {
-    new ErrorDialog("The list of users could not be retrieved.",
-      text + "\n\n(Status: " + status + ")").show();
-  }
 };
 
 /**

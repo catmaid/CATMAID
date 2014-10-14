@@ -766,8 +766,7 @@ Arbor.prototype.strahlerAnalysis2 = function() {
  * the way to root. The maximum number is that of the root branch.
  */
 Arbor.prototype.strahlerAnalysis = function() {
-    var topo = this.topologicalCopy(),
-        successors = topo.allSuccessors(),
+    var successors = this.allSuccessors(),
         strahler = {};
 
     // Walk over nodes in a depth-first order and call visitor postorder
@@ -809,7 +808,7 @@ Arbor.prototype.strahlerAnalysis = function() {
       }
     };
 
-    depthFirst({}, topo, topo.root, getStrahler);
+    depthFirst({}, this, this.root, getStrahler);
 
     return strahler;
 };

@@ -593,7 +593,7 @@ class ViewPageTests(TestCase):
                 'type': property_name})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}
+        expected_result = property_value
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(property_value, get_object_or_404(Treenode, id=treenode_id).confidence)
 
@@ -609,7 +609,7 @@ class ViewPageTests(TestCase):
                 'type': property_name})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}
+        expected_result = property_value
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(property_value, get_object_or_404(Treenode, id=treenode_id).radius)
 

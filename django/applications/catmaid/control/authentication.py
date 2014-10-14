@@ -44,6 +44,7 @@ def login_user(request):
 
         if user is not None:
             profile_context['userprofile'] = user.userprofile.as_dict()
+            profile_context['permissions'] = tuple(request.user.get_all_permissions())
             if user.is_active:
                 # Redirect to a success page.
                 request.session['user_id'] = user.id
@@ -65,6 +66,7 @@ def login_user(request):
             return HttpResponse(json.dumps(profile_context))
     else:   # request.method == 'GET'
         profile_context['userprofile'] = request.user.userprofile.as_dict()
+        profile_context['permissions'] = tuple(request.user.get_all_permissions())
         # Check if the user is logged in.
         if request.user.is_authenticated():
             profile_context['id'] = request.session.session_key

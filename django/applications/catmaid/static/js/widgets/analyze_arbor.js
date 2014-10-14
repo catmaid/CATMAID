@@ -193,7 +193,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         subs.push(subarbor.subArbor(mend));
       }
     });
-    var stats = {cables: [], depths: [], inputs: [], outputs: [], branches: [], ends: [], roots: [], n_subs: subs.length},
+    var stats = {cables: [], depths: [], inputs: [], outputs: [], branches: [], ends: [], roots: [], n_subs: subs.length, input_depths: [], output_depths: []},
         edgeLength = function(child, paren) {
           return smooth_positions[child].distanceTo(smooth_positions[paren]);
         };
@@ -201,12 +201,21 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
       var nodes = sub.nodesArray(),
           be = sub.findBranchAndEndNodes();
       stats.cables.push(sub.cableLength(smooth_positions));
-      stats.inputs.push(nodes.filter(function(node) { return ap.inputs[node]; }).length);
-      stats.outputs.push(nodes.filter(function(node) { return ap.outputs[node]; }).length);
+      var in_synapses = nodes.filter(function(node) { return ap.inputs[node]; }),
+          out_synapses = nodes.filter(function(node) { return ap.outputs[node]; });
+      stats.inputs.push(in_synapses.length);
+      stats.outputs.push(out_synapses.length);
       stats.branches.push(Object.keys(be.branches).length);
       stats.ends.push(Object.keys(be.ends).length);
-      stats.depths.push(sub.nodesDistanceTo(sub.root, edgeLength).max);
+      var distance_to_root = sub.nodesDistanceTo(sub.root, edgeLength);
+      stats.depths.push(distance_to_root.max);
       stats.roots.push(Number(sub.root));
+      in_synapses.forEach(function(syn_node) {
+        stats.input_depths.push(distance_to_root.distances[syn_node]);
+      });
+      out_synapses.forEach(function(syn_node) { 
+        stats.output_depths.push(distance_to_root.distances[syn_node]);
+      });
     });
     return stats;
   };
@@ -355,10 +364,10 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
   (function() {
     // Histograms of total [cables, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors
-    var hists = ['cables', 'depths', 'inputs', 'outputs', 'branches', 'ends'],
+    var hists = ['cables', 'depths', 'inputs', 'outputs', 'input_depths', 'output_depths', 'branches', 'ends'],
         axonal = hists.reduce(function(o, label) { o[label] = []; return o}, {}),
         dendritic = hists.reduce(function(o, label) { o[label] = []; return o}, {}), // needs deep copy
-        cable_labels = ["cables", "depths"];
+        cable_labels = ["cables", "depths", "input_depths", "output_depths"];
     skids.forEach(function(skid) {
       var e = this.terminal_subarbor_stats[skid];
       hists.forEach(function(label) {

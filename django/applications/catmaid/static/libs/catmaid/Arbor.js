@@ -711,61 +711,63 @@ Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
 };
 
 /**
- * Return a map of node vs branch index relative to root. Terminal branches
- * have an index of 1, their parent branches of 2 if two or more of their
- * children are 1 as well as all others have a lower index, or their parent
- * branches of 1 if one child is 1 and no child with greater index, etc., all
- * the way to root. The maximum number is that of the root branch.
- */
+* Return a map of node vs branch index relative to root. Terminal branches
+* have an index of 1, their parent branches of 2 if two or more of their
+* children are 1 as well as all others have a lower index, or their parent
+* branches have and index of 1 if one child is 1 and no child with greater
+* index, etc., all the way to root. The maximum number is that of the root
+* node.
+*/
 Arbor.prototype.strahlerAnalysis = function() {
-    var topo = this.topologicalCopy(),
-        successors = topo.allSuccessors(),
-        strahler = {};
+  var strahler = {},
+      be = this.findBranchAndEndNodes(),
+      branch = be.branches,
+      open = be.ends.slice(0), // clone. Never edit return values from internal functions, so that they can be cached
+      visited_branches = {}; // branch node vs array of strahler indices
 
-    // Walk over nodes in a depth-first order and call visitor postorder
-    function depthFirst(discovered, tree, node, visitor)
-    {
-      discovered[node] = true;
-      var children = successors[node];
-      children.forEach(function(child) {
-        if (undefined === discovered[child]) {
-          depthFirst(discovered, tree, child, visitor);
+  // All end nodes have by definition an index of 1
+  for (var i=0; i<open.length; ++i) strahler[open[i]] = 1;
+
+  while (open.length > 0) {
+    var node = open.shift(),
+        index = strahler[node],
+        n_children = branch[node],
+        paren = this.edges[node];
+    // Iterate slab towards first branch found
+    while (paren) {
+      n_children = branch[paren];
+      if (n_children) break; // found branch
+      strahler[paren] = index;
+      paren = this.edges[paren];
+    }
+    if (paren) {
+      // paren is a branch. Are all its branches minus one completed?
+      var si = visited_branches[paren];
+      if (si && si.length === n_children -1) {
+        // Yes: compute strahler:
+        //  A. If all equal, increase Strahler index by one
+        //  B. Otherwise pick the largest strahler index of its children
+        var v = index; // of the current branch
+        for (var k=0, same=0; k<si.length; k++) {
+          if (si[k] === v) ++same;
+          else v = Math.max(v, si[k]);
         }
-      });
-      visitor(node, children);
-    };
-
-    function getStrahler(node, children) {
-      if (0 === children.length) {
-        // For a leaf node, the Strahler index will be 1
-        strahler[node] = 1;
+        strahler[paren] = si.length === same ? v + 1 : v;
+        open.push(paren);
       } else {
-        // Get maximum and distribution of strahler indexes of children
-        var dist = children.reduce(function(o, c) {
-          var cs = strahler[c];
-          // Find maximum
-          if (cs > o.max) {
-            o.max = cs;
-          }
-          // Record histogram
-          o[cs] = (o[cs] + 1) || 1;
-          return o;
-        }, {max: -Infinity});
-        // Stick to maximum value if there is only one child of it. Increment
-        // otherwise (there are no zero or below entries).
-        if (1 === dist[dist.max]) {
-          strahler[node] = dist.max;
-        } else {
-          strahler[node] = dist.max + 1;
-        }
+        // No: compute later
+        if (si) si.push(index);
+        else visited_branches[paren] = [index];
       }
-    };
+    } else {
+      // else is the root
+      strahler[this.root] = index;
+    }
+  }
 
-    depthFirst({}, topo, topo.root, getStrahler);
 
-    return strahler;
+  return strahler;
 };
-
 
 /**
  * Perform Sholl analysis: returns two arrays, paired by index, of radius length and the corresponding number of cable crossings,

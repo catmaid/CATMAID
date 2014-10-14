@@ -381,6 +381,20 @@ var WindowMaker = new function()
     showStrahler.appendChild(document.createTextNode('Show Strahler'));
     buttons.appendChild(showStrahler);
 
+    var radial = document.createElement('label');
+    var radialInput = document.createElement('input');
+    radialInput.setAttribute('type', 'checkbox');
+    if (ND.radialDisplay) {
+      radialInput.setAttribute('checked', 'checked');
+    }
+    radialInput.onchange = function() {
+      ND.setRadialDisplay(this.checked);
+      ND.update();
+    };
+    radial.appendChild(radialInput);
+    radial.appendChild(document.createTextNode('Radial'));
+    buttons.appendChild(radial);
+
     content.appendChild(buttons);
 
     var container = createContainer("dendrogram" + ND.widgetID);

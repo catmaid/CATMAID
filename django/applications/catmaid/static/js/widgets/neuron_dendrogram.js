@@ -14,6 +14,7 @@ var NeuronDendrogram = function() {
   this.showNodeIDs = true;
   this.showTags = true;
   this.showStrahler = true;
+  this.radialDisplay = true;
 
   // Stores a reference to the current SVG, if any
   this.svg = null;
@@ -218,13 +219,21 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 
   // Adjust the width and height so that each node has at least a space of 10 by 10 pixel
   var nodeSize = [20, 40];
-  var width = Math.max(baseWidth, nodeSize[0] * this.getMaxDepth(tree));
-  var height = Math.max(baseHeight, nodeSize[1] * this.getNumLeafs(tree));
+  var width;
+  var height;
+  var factor = 1;
+  if (this.radialDisplay) {
+    width = baseWidth * factor;
+    height = baseHeight * factor;
+  } else {
+    width = Math.max(baseWidth, nodeSize[0] * this.getMaxDepth(tree));
+    height = Math.max(baseHeight, nodeSize[1] * this.getNumLeafs(tree));
+  }
 
   // Create clustering where each leaf node has the same distance to its
   // neighbors.
   var dendrogram = d3.layout.cluster()
-    .size([height, width])
+    .size([this.radialDisplay ? 360 * factor : height, this.radialDisplay ? 360: width])
     .separation(function() { return 1; });
 
   // Find default scale so that everything can be seen
@@ -239,15 +248,17 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .append("svg:svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-      .call(zoomHandler);
-  var vis = this.svg.append("svg:g")
+      .call(zoomHandler)
+      .on("mousemove", mouseMove);
+  var canvas = this.svg.append("svg:g");
+  var vis = canvas.append("svg:g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")" +
           "scale(" + defaultScale + ")");
 
   zoomHandler.scale(defaultScale);
 
   // Add a background rectangle to get all mouse events for panning and zoom
-  var rect = vis.append("rect")
+  var rect = this.svg.append("rect")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
     .style("fill", "none")
@@ -256,9 +267,46 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   var nodes = dendrogram.nodes(tree);
   var links = dendrogram.links(nodes);
 
-  function elbow(d, i) {
-      return "M" + d.source.y + "," + d.source.x
-           + "V" + d.target.x + "H" + d.target.y;
+  // Create display specific parts
+  var nodeTransform;
+  var styleNodeText;
+  var pathGenerator;
+  var layoutOffset;
+  if (this.radialDisplay) {
+    layoutOffset = [-width / 2, -height / 2];
+    // Radial scales for x and y.
+    var lx = function(d) { return factor * d.y * Math.cos((d.x - 90) / 180 * Math.PI); }
+    var ly = function(d) { return factor * d.y * Math.sin((d.x - 90) / 180 * Math.PI); }
+    pathGenerator = function(d) {
+      return "M" + lx(d.source) + "," + ly(d.source)
+           + "L" + lx(d.target) + "," + ly(d.target);
+    };
+    nodeTransform = function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y * factor) + ")"; };
+    styleNodeText = function(node) {
+      function inner(d) { return d.children ? !(d.x > 180) : d.x > 180; }
+      return node
+      .attr("dx", function(d) { return inner(d) ? -8 : 8; })
+      .attr("dy", 3)
+      .style("text-anchor", function(d) { return inner(d) ? "end" : "start"; })
+      .attr("transform", function(d) { return d.x > 180 ? "rotate(180)" : null; })
+    };
+
+    // Center canvas for radial display
+    canvas.attr("transform", "translate(" + (-layoutOffset[0]) + "," +
+        (-layoutOffset[1]) + ")");
+  } else {
+    layoutOffset = [0, 0];
+    pathGenerator = function elbow(d, i) {
+        return "M" + d.source.y + "," + d.source.x
+             + "V" + d.target.x + "H" + d.target.y;
+    };
+    nodeTransform = function(d) { return "translate(" + d.y + "," + d.x + ")"; }
+    styleNodeText = function(node) {
+      return node
+      .attr("dx", function(d) { return d.children ? -8 : 8; })
+      .attr("dy", 3)
+      .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+    };
   }
 
   // Split links in such that are upstream of tagged nodes and those downstream.
@@ -279,13 +327,13 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .data(separatedLinks.downstreamLinks)
     .enter().append("path")
     .attr("class", "taggedLink")
-    .attr("d", elbow);
+    .attr("d", pathGenerator);
 
   var upLink = vis.selectAll(".link")
     .data(separatedLinks.upstreamLinks)
     .enter().append("path")
     .attr("class", "link")
-    .attr("d", elbow);
+    .attr("d", pathGenerator);
 
   // Split nodes in those which are tagged and those which are not
   var separatedNodes = nodes.reduce(function(o, n) {
@@ -341,17 +389,13 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       .data(elements)
       .enter().append("g")
       .attr("class", cls)
-      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+      .attr("transform", nodeTransform)
       .on("dblclick", nodeClickHandler);
 
     node.append("circle")
       .attr("r", 4.5);
 
-    node.append("text")
-      .attr("dx", function(d) { return d.children ? -8 : 8; })
-      .attr("dy", 3)
-      .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
-      .text(nodeName);
+    styleNodeText(node.append("text")).text(nodeName);
 
     return node;
   };
@@ -360,7 +404,20 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   addNodes(separatedNodes.regularNodes, "node");
 
   function zoom() {
-    vis.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    // Compensate for margin
+    var tx = d3.event.translate[0] + margin.left,
+        ty = d3.event.translate[1] + margin.top;
+    vis.attr("transform", "translate(" + tx + "," + ty + ")scale(" + d3.event.scale + ")");
+  };
+
+  /**
+   * Compensate for margin and layout offset.
+   */
+  function mouseMove() {
+    var m = d3.mouse(this);
+    zoomHandler.center([
+        m[0] + layoutOffset[0] - margin.left,
+        m[1] + layoutOffset[1] - margin.top]);
   };
 };
 
@@ -433,4 +490,9 @@ NeuronDendrogram.prototype.setShowTags = function(value)
 NeuronDendrogram.prototype.setShowStrahler = function(value)
 {
   this.showStrahler = value;
+};
+
+NeuronDendrogram.prototype.setRadialDisplay = function(value)
+{
+  this.radialDisplay = value;
 };

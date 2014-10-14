@@ -211,7 +211,10 @@ def create_interpolated_treenode(request, project_id=None):
 
     last_treenode_id, skeleton_id = _create_interpolated_treenode(request, \
          params, project_id, False)
-    return HttpResponse(json.dumps({'treenode_id': last_treenode_id}))
+    return HttpResponse(json.dumps({
+        'treenode_id': last_treenode_id,
+        'skeleton_id': skeleton_id
+    }))
 
 
 def _create_interpolated_treenode(request, params, project_id, skip_last):

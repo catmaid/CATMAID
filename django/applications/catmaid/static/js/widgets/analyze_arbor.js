@@ -363,8 +363,8 @@ AnalyzeArbor.prototype.updateCharts = function() {
   }
 
   (function() {
-    // Histograms of total [cables, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors
-    var hists = ['cables', 'depths', 'inputs', 'outputs', 'input_depths', 'output_depths', 'branches', 'ends'],
+    // Histograms of total [cables, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors, and histograms of depth of individual synapses in the terminal subarbors.
+    var hists = ['cables', 'depths', 'inputs', 'output_depths', 'branches', 'ends', 'outputs', 'input_depths'],
         axonal = hists.reduce(function(o, label) { o[label] = []; return o}, {}),
         dendritic = hists.reduce(function(o, label) { o[label] = []; return o}, {}), // needs deep copy
         cable_labels = ["cables", "depths", "input_depths", "output_depths"];
@@ -429,6 +429,12 @@ AnalyzeArbor.prototype.updateCharts = function() {
       var cummulative = data.map(function(a, i) {
         var b = {},
             total = n_subs[i];
+        // Hack: these are not by terminal subarbor
+        if (0 === label.indexOf("input_depths") || 0 === label.indexOf("output_depths")) {
+          total = 0;
+          for (var bin=0; bin<=max; bin+=inc) total += a[bin];
+        }
+
         if (0 === total) return a;
         b[0] = a[0] / total;
         for (var bin=inc; bin<=max; bin+=inc) b[bin] = b[bin - inc] + a[bin] / total;

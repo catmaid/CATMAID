@@ -710,6 +710,54 @@ Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
 	return values;
 };
 
+Arbor.prototype.strahlerAnalysis2 = function() {
+  var strahler = {},
+      be = this.findBranchAndEndNodes(),
+      branch = be.branches,
+      open = be.ends.slice(0), // clone. Never edit return values from internal functions, so that they can be cached
+      visited_branches = {}; // branch node vs array of strahler indices
+
+  // All end nodes have by definition an index of 1
+  for (var i=0; i<open.length; ++i) strahler[open[i]] = 1;
+
+  while (open.length > 0) {
+    var node = open.shift(),
+        index = strahler[node],
+        n_children = branch[node],
+        paren = this.edges[node];
+    // Iterate slab towards first branch found
+    while (paren) {
+      n_children = branch[paren];
+      if (n_children) break; // found branch
+      strahler[paren] = index;
+      paren = this.edges[paren];
+    }
+    if (paren) {
+      // paren is a branch. Are all its branches minus one completed?
+      var si = visited_branches[paren];
+      if (si && si.length === n_children -1) {
+        // Yes: compute strahler:
+        //  A. If all equal, increase Strahler index by one
+        //  B. Otherwise pick the largest strahler index of its children
+        var v = index; // of the current branch
+        for (var k=0, same=0; k<si.length; k++) {
+          if (si[k] === v) ++same;
+          else v = Math.max(v, si[k]);
+        }
+        strahler[paren] = si.length === same ? v + 1 : v;
+        open.push(paren);
+      } else {
+        // No: compute later
+        if (si) si.push(index);
+        else visited_branches[paren] = [index];
+      }
+    } // else is the root
+  }
+
+
+  return strahler;
+};
+
 /**
  * Return a map of node vs branch index relative to root. Terminal branches
  * have an index of 1, their parent branches of 2 if two or more of their

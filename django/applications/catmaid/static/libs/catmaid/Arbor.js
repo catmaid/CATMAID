@@ -751,7 +751,10 @@ Arbor.prototype.strahlerAnalysis2 = function() {
         if (si) si.push(index);
         else visited_branches[paren] = [index];
       }
-    } // else is the root
+    } else {
+      // else is the root
+      strahler[this.root] = index;
+    }
   }
 
 

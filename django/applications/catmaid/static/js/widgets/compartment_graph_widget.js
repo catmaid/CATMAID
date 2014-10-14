@@ -2093,3 +2093,32 @@ GroupGraph.prototype.distributeCoordinate = function(axis) {
     }
   });
 };
+
+GroupGraph.prototype.quantificationDialog = function() {
+  var n_synapses = 0;
+  this.cy.edges().each(function(i, edge) {
+    n_synapses += edge.data('weight');
+  });
+  var dialog = document.createElement('div');
+  dialog.setAttribute("title", "Graph Quantification");
+  var table = document.createElement('table');
+  table.style.border = 1;
+  table.innerHTML = [
+    ["Number of nodes:", this.cy.nodes().length, "(includes splits)"],
+    ["Number of edges:", this.cy.edges().filter(function(i, edge) { return edge.data('directed'); }).length, "(only directed edges)"],
+    ["Number of neurons:", this.getSkeletons().length, ""],
+    ["Number of in-graph synapses:", n_synapses, "(edges times their synapse count)"],
+  ].map(function(row) {
+    return "<tr>" + row.map(function(cell) { return "<td>" + cell + "</td>"}).join('') + "</tr>";
+  }).join('');
+  dialog.appendChild(table);
+  $(dialog).dialog({
+    height: 400,
+    modal: true,
+    buttons: {
+      "OK": function() {
+        $(this).dialog("close");
+      }
+    }
+  });
+};

@@ -710,7 +710,15 @@ Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
 	return values;
 };
 
-Arbor.prototype.strahlerAnalysis2 = function() {
+/**
+* Return a map of node vs branch index relative to root. Terminal branches
+* have an index of 1, their parent branches of 2 if two or more of their
+* children are 1 as well as all others have a lower index, or their parent
+* branches have and index of 1 if one child is 1 and no child with greater
+* index, etc., all the way to root. The maximum number is that of the root
+* node.
+*/
+Arbor.prototype.strahlerAnalysis = function() {
   var strahler = {},
       be = this.findBranchAndEndNodes(),
       branch = be.branches,
@@ -760,62 +768,6 @@ Arbor.prototype.strahlerAnalysis2 = function() {
 
   return strahler;
 };
-
-/**
- * Return a map of node vs branch index relative to root. Terminal branches
- * have an index of 1, their parent branches of 2 if two or more of their
- * children are 1 as well as all others have a lower index, or their parent
- * branches of 1 if one child is 1 and no child with greater index, etc., all
- * the way to root. The maximum number is that of the root branch.
- */
-Arbor.prototype.strahlerAnalysis = function() {
-    var successors = this.allSuccessors(),
-        strahler = {};
-
-    // Walk over nodes in a depth-first order and call visitor postorder
-    function depthFirst(discovered, tree, node, visitor)
-    {
-      discovered[node] = true;
-      var children = successors[node];
-      children.forEach(function(child) {
-        if (undefined === discovered[child]) {
-          depthFirst(discovered, tree, child, visitor);
-        }
-      });
-      visitor(node, children);
-    };
-
-    function getStrahler(node, children) {
-      if (0 === children.length) {
-        // For a leaf node, the Strahler index will be 1
-        strahler[node] = 1;
-      } else {
-        // Get maximum and distribution of strahler indexes of children
-        var dist = children.reduce(function(o, c) {
-          var cs = strahler[c];
-          // Find maximum
-          if (cs > o.max) {
-            o.max = cs;
-          }
-          // Record histogram
-          o[cs] = (o[cs] + 1) || 1;
-          return o;
-        }, {max: -Infinity});
-        // Stick to maximum value if there is only one child of it. Increment
-        // otherwise (there are no zero or below entries).
-        if (1 === dist[dist.max]) {
-          strahler[node] = dist.max;
-        } else {
-          strahler[node] = dist.max + 1;
-        }
-      }
-    };
-
-    depthFirst({}, this, this.root, getStrahler);
-
-    return strahler;
-};
-
 
 /**
  * Perform Sholl analysis: returns two arrays, paired by index, of radius length and the corresponding number of cable crossings,

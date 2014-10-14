@@ -355,7 +355,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
   (function() {
     // Histograms of total [cables, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors
-    var hists = ['cables', 'inputs', 'outputs', 'branches', 'ends'],
+    var hists = ['cables', 'depths', 'inputs', 'outputs', 'branches', 'ends'],
         axonal = hists.reduce(function(o, label) { o[label] = []; return o}, {}),
         dendritic = hists.reduce(function(o, label) { o[label] = []; return o}, {}), // needs deep copy
         cable_labels = ["cables", "depths"];

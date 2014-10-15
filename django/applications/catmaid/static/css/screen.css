@@ -635,16 +635,16 @@ div#classification_graph_object img.roiimage {
 }
 
 .node.highlight circle {
-  fill: #00f;
+  fill: #00f !important;
 }
 
-.taggedNode circle {
+.node.tagged circle {
   fill: #fff;
   stroke: orangered;
   stroke-width: 1.5px;
 }
 
-.node, .taggedNode {
+.node {
   font: 10px sans-serif;
 }
 
@@ -654,7 +654,7 @@ div#classification_graph_object img.roiimage {
   stroke-width: 1.5px;
 }
 
-.taggedLink {
+.link.tagged {
   fill: none;
   stroke: #fcc;
   stroke-width: 1.5px;

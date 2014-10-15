@@ -311,45 +311,13 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     };
   }
 
-  // Split links in such that are upstream of tagged nodes and those downstream.
-  var separatedLinks = links.reduce(function(o, l) {
-    if (l.source.belowTag) {
-      o.downstreamLinks.push(l);
-    } else {
-      o.upstreamLinks.push(l);
-    }
-    return o;
-  },
-  {
-    upstreamLinks: [],
-    downstreamLinks: [],
-  });
-
-  var downLink = vis.selectAll(".link")
-    .data(separatedLinks.downstreamLinks)
-    .enter().append("path")
-    .attr("class", "taggedLink")
-    .attr("d", pathGenerator);
-
+  // Add all links
   var upLink = vis.selectAll(".link")
-    .data(separatedLinks.upstreamLinks)
+    .data(links)
     .enter().append("path")
     .attr("class", "link")
+    .classed('tagged', function(d) { return d.source.belowTag; })
     .attr("d", pathGenerator);
-
-  // Split nodes in those which are tagged and those which are not
-  var separatedNodes = nodes.reduce(function(o, n) {
-    if (n.belowTag) {
-      o.taggedNodes.push(n);
-    } else {
-      o.regularNodes.push(n);
-    }
-    return o;
-  },
-  {
-    taggedNodes: [],
-    regularNodes: [],
-  });
 
   /**
    * The node click handler is called if users double click on a node. It will
@@ -408,25 +376,18 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     };
   }(this.showTags, this.showNodeIDs, this.showStrahler);
 
-  var addNodes = function(elements, cls) {
-    var node = vis.selectAll(".node")
-      .data(elements)
-      .enter().append("g")
-      .attr("class", cls)
-      .attr("id", function(d) { return "node" + d.id; })
-      .attr("transform", nodeTransform)
-      .on("dblclick", nodeClickHandler);
-
-    node.append("circle")
-      .attr("r", 4.5);
-
-    styleNodeText(node.append("text")).text(nodeName);
-
-    return node;
-  };
-
-  addNodes(separatedNodes.taggedNodes, "taggedNode");
-  addNodes(separatedNodes.regularNodes, "node");
+  // Add all nodes
+  var node = vis.selectAll(".node")
+    .data(nodes)
+    .enter().append("g")
+    .attr("class", "node")
+    .attr("id", function(d) { return "node" + d.id; })
+    .attr("transform", nodeTransform)
+    .classed('tagged', function(d) { return d.belowTag; })
+    .on("dblclick", nodeClickHandler);
+  node.append("circle")
+    .attr("r", 4.5);
+  styleNodeText(node.append("text")).text(nodeName);
 
   function zoom() {
     // Compensate for margin

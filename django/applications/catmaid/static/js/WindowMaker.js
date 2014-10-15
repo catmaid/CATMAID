@@ -1043,7 +1043,8 @@ var WindowMaker = new function()
          ['Quantify', GG.quantificationDialog.bind(GG)]]);
 
     appendToTab(tabs['Subgraphs'],
-        [['Split axon and dendrite', GG.splitAxonAndDendrite.bind(GG)],
+        [[document.createTextNode('Select node(s) and: ')],
+         ['Split axon and dendrite', GG.splitAxonAndDendrite.bind(GG)],
          ['Split by synapse clustering', GG.splitBySynapseClustering.bind(GG)]]);
 
     content.appendChild( bar );

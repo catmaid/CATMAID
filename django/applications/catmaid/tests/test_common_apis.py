@@ -32,6 +32,19 @@ class TransactionTests(TransactionTestCase):
 
     maxDiff = None
 
+    def setUp(self):
+        self.test_project_id = 3
+        self.client = Client()
+
+    def fake_authentication(self):
+        self.client.login(username='test2', password='test')
+
+        user = User.objects.get(pk=3)
+        # Assign the new user permissions to browse and annotate projects
+        p = Project.objects.get(pk=self.test_project_id)
+        assign_perm('can_browse', user, p)
+        assign_perm('can_annotate', user, p)
+
     def test_successful_commit(self):
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
@@ -110,6 +123,33 @@ class TransactionTests(TransactionTestCase):
         with self.assertRaises(Exception):
             insert_user()
         self.assertEqual(0, User.objects.all().count())
+
+    def test_remove_neuron_and_skeleton(self):
+        """ The skeleton removal involves manual transaction management.
+        Therefore, we need to make its test part of a TransactionTest.
+        """
+        self.fake_authentication()
+        skeleton_id = 1
+        neuron_id = 2
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        response = self.client.post(
+                '/%d/neuron/%s/delete' % (self.test_project_id, neuron_id), {})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {'success': 'Deleted neuron #2 as well as its skeletons and annotations.'}
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(0, Treenode.objects.filter(skeleton_id=skeleton_id).count())
+        self.assertEqual(0, ClassInstanceClassInstance.objects.filter(class_instance_b=neuron_id).count())
+        self.assertEqual(0, ClassInstance.objects.filter(id=skeleton_id).count())
+        self.assertEqual(0, ClassInstance.objects.filter(id=neuron_id).count())
+        self.assertEqual(0, TreenodeClassInstance.objects.filter(class_instance=skeleton_id).count())
+        # This is a TCI related to a treenode included in the skeleton
+        self.assertEqual(0, TreenodeClassInstance.objects.filter(id=353).count())
+
+        self.assertEqual(log_count + 1, count_logs())
 
 
 class InsertionTest(TestCase):
@@ -1805,29 +1845,6 @@ class ViewPageTests(TestCase):
                     "nodes":[{"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
                 {"id":233, "name":"branched neuron", "class_name":"neuron"}]
         self.assertEqual(expected_result, parsed_response)
-
-    def test_remove_neuron_and_skeleton(self):
-        self.fake_authentication()
-        skeleton_id = 1
-        neuron_id = 2
-
-        count_logs = lambda: Log.objects.all().count()
-        log_count = count_logs()
-        response = self.client.post(
-                '/%d/neuron/%s/delete' % (self.test_project_id, neuron_id), {})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_result = {'status': 1, 'message': 'Removed skeleton successfully.'}
-        self.assertEqual(expected_result, parsed_response)
-
-        self.assertEqual(0, Treenode.objects.filter(skeleton=node_id).count())
-        self.assertEqual(0, ClassInstanceClassInstance.objects.filter(class_instance_b=node_id).count())
-        self.assertEqual(0, ClassInstance.objects.filter(id=node_id).count())
-        self.assertEqual(0, TreenodeClassInstance.objects.filter(class_instance=node_id).count())
-        # This is a TCI related to a treenode included in the skeleton
-        self.assertEqual(0, TreenodeClassInstance.objects.filter(id=353).count())
-
-        self.assertEqual(log_count + 1, count_logs())
 
     def test_delete_link_success(self):
         self.fake_authentication()

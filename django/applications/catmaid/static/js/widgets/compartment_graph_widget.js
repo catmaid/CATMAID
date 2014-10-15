@@ -7,7 +7,6 @@ var GroupGraph = function() {
   this.widgetID = this.registerInstance();
   this.registerSource();
 
-  this.confidence_threshold = 0;
   this.synaptic_count_edge_filter = 0; // value equal or higher than this number or kept
   this.label_valign = 'top';
   this.label_halign = 'center';
@@ -15,7 +14,6 @@ var GroupGraph = function() {
   this.trim_node_labels = false;
   this.node_width = 30; // pixels
   this.node_height = 30; // pixels
-  this.clustering_bandwidth = 0;
 
   this.color_circles_of_hell = this.colorCirclesOfHell.bind(this);
 
@@ -182,9 +180,6 @@ GroupGraph.prototype.toggle_show_node_labels = function() {
 GroupGraph.prototype.graph_properties = function() {
   
   var dialog = new OptionsDialog("Graph properties");
-  var conf_values = [0, 1, 2, 3, 4, 5];
-  var conf = dialog.appendChoice("Keep skeleton edges of this or higher confidence:", "confidence-threshold", conf_values, conf_values, 0);
-  var bandwidth = dialog.appendField("Synapse clustering bandwidth:", "bandwidth", this.clustering_bandwidth);
   var syncount = dialog.appendField("Show edges with this or higher synapses:", "edge_filter", this.synaptic_count_edge_filter); // TODO unused parameter
   var vpos = ["top", "center", "bottom"];
   var label_vpos = dialog.appendChoice("Node label vertical position", "valign", vpos, vpos, this.label_valign);
@@ -217,18 +212,6 @@ GroupGraph.prototype.graph_properties = function() {
   dialog.dialog.appendChild(p);
 
   dialog.onOK = (function() {
-    this.clustering_bandwidth = bandwidth.value;
-
-    if (!this.confidence_threshold && conf.value) {
-      if (Object.keys(this.groups).length > 0) {
-        if (confirm("Splitting by confidence ungroups all groups: proceed?")) {
-          this.confidence_threshold = conf.value;
-          this.resetGroups();
-        }
-      } else {
-        this.confidence_threshold = conf.value;
-      }
-    }
 
     var validate = function(name, old_value, new_value) {
       try {

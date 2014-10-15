@@ -19,6 +19,9 @@ var NeuronDendrogram = function() {
 
   // Stores a reference to the current SVG, if any
   this.svg = null;
+  // The current translation and scale, to preserve state between updates
+  this.translation = null;
+  this.scale = null;;
 };
 
 NeuronDendrogram.prototype = {};
@@ -51,6 +54,12 @@ NeuronDendrogram.prototype.loadActiveSkeleton = function()
   this.loadSkeleton(skid)
 };
 
+NeuronDendrogram.prototype.reset = function()
+{
+  this.scale = null;
+  this.translation = null;
+};
+
 /**
  * Load the given skeleton.
  */
@@ -64,6 +73,7 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
   var url = django_url + project.id + '/' + skid + '/0/1/compact-skeleton';
   requestQueue.register(url, "GET", {}, jsonResponseHandler(
         (function(data) {
+          this.reset();
           this.currentSkeletonId = skid;
           this.currentSkeletonTree = data[0];
           this.currentSkeletonTags = data[2];
@@ -247,14 +257,22 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .size([this.radialDisplay ? 360 * factor : height, this.radialDisplay ? 360: width])
     .separation(function() { return 1; });
 
-  // Find default scale so that everything can be seen
-  var defaultScale = baseWidth > baseHeight ? baseHeight / height : baseWidth / width;
+  // Find default scale so that everything can be seen, if no scale is cached.
+  if (!this.scale) {
+    this.scale =  baseWidth > baseHeight ? baseHeight / height : baseWidth / width;
+  }
+  // Set default translation to margin, if no translation is cached
+  if (!this.translation) {
+    this.translation = [margin.left, margin.top];
+  }
 
   // Clear existing container
   $("#dendrogram" + this.widgetID).empty();
 
   // Create new SVG
-  var zoomHandler = d3.behavior.zoom().scaleExtent([0.1, 100]).on("zoom", zoom);
+  var zoomHandler = d3.behavior.zoom()
+    .scaleExtent([0.1, 100])
+    .on("zoom", zoom.bind(this));
   this.svg = d3.select("#dendrogram" + this.widgetID)
     .append("svg:svg")
       .attr("width", width + margin.left + margin.right)
@@ -272,10 +290,10 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   // Add SVG groups that are used to draw the dendrogram
   var canvas = this.svg.append("svg:g");
   var vis = canvas.append("svg:g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")" +
-          "scale(" + defaultScale + ")");
+      .attr("transform", "translate(" + this.translation[0] + "," +
+          this.translation[1] + ")" + "scale(" + this.scale + ")");
 
-  zoomHandler.scale(defaultScale);
+  zoomHandler.scale(this.scale);
 
   var nodes = dendrogram.nodes(tree);
   var links = dendrogram.links(nodes);
@@ -404,6 +422,11 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     // Compensate for margin
     var tx = d3.event.translate[0] + margin.left,
         ty = d3.event.translate[1] + margin.top;
+    // Store current translation and scale
+    this.scale = d3.event.scale;
+    this.translation[0] = tx;
+    this.translation[1] = ty;
+    // Translate and scale dendrogram
     vis.attr("transform", "translate(" + tx + "," + ty + ")scale(" + d3.event.scale + ")");
   };
 
@@ -491,6 +514,7 @@ NeuronDendrogram.prototype.setShowStrahler = function(value)
 
 NeuronDendrogram.prototype.setRadialDisplay = function(value)
 {
+  this.reset();
   this.radialDisplay = value;
 };
 

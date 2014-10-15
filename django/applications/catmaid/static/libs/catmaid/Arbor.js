@@ -1638,3 +1638,65 @@ Arbor.prototype.upstreamArbor = function(cuts) {
   }
   return up;
 };
+
+/** Given a set of nodes to keep, create a new Arbor with only
+ * the nodes to keep and the branch points between them. */
+Arbor.prototype.simplify = function(keepers) {
+  // Reroot a copy at the first keeper node
+  var copy = this.clone(),
+      pins = Object.keys(keepers);
+  copy.reroot(pins[0]);
+
+  // Find child->parent paths between keeper nodes
+  var edges = copy.edges,
+      branches = copy.findBranchNodes(),
+      seen = {},
+      paths = [],
+      root = null;
+
+  for (var k=0; k<pins.length; ++k) {
+    var node = pins[k],
+        paren = edges[node],
+        path = [node],
+        child = node;
+    // Each path starts and ends at a keeper node,
+    // and may contain branch nodes in the middle.
+    while (paren) {
+      if (keepers[paren]) {
+        path.push(paren);
+        paths.push(path);
+        break;
+      }
+      if (branches[paren]) {
+        path.push(paren);
+        var s = seen[paren];
+        if (!s) {
+          s = {};
+          seen[paren] = s;
+        }
+        s[child] = true;
+      }
+      child = paren;
+      paren = edges[paren];
+    }
+  }
+
+  var simple = new Arbor();
+  simple.root = copy.root;
+
+  // Branch nodes are added only if they have been seen
+  // from more than one of their child slabs.
+  for (var k=0; k<paths.length; ++k) {
+    var path = paths[k],
+        child = path[0];
+    for (var i=1; i<path.length-1; ++i) {
+      var branch = path[i];
+      if (Object.keys(seen[branch]).length > 1) {
+        simple.edges[child] = branch;
+        child = branch;
+      }
+    }
+    simple.edges[child] = path[path.length -1];
+  }
+  return simple;
+};

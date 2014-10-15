@@ -961,7 +961,7 @@ var WindowMaker = new function()
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
-    var tabs = ['Main', 'Grow', 'Layout', 'Selection', 'Align', 'Export'].reduce(function(o, name) {
+    var tabs = ['Main', 'Grow', 'Layout', 'Selection', 'Subgraphs', 'Align', 'Export'].reduce(function(o, name) {
           titles.appendChild($('<li><a href="#' + name + GG.widgetID + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
           div.setAttribute('id', name + GG.widgetID);
@@ -1020,7 +1020,9 @@ var WindowMaker = new function()
          ['Hide', GG.hideSelected.bind(GG)],
          ['Show hidden', GG.showHidden.bind(GG), {id: 'graph_show_hidden' + GG.widgetID, disabled: true}],
          [document.createTextNode(' - ')],
-         ['Remove', GG.removeSelected.bind(GG)]]);
+         ['Remove', GG.removeSelected.bind(GG)],
+         [document.createTextNode(' - ')],
+        ]);
 
     appendToTab(tabs['Align'],
         [[document.createTextNode('Align: ')],
@@ -1077,6 +1079,11 @@ var WindowMaker = new function()
          ['Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG)],
          ['Open plot', GG.openPlot.bind(GG)],
          ['Quantify', GG.quantificationDialog.bind(GG)]]);
+
+    appendToTab(tabs['Subgraphs'],
+        [[document.createTextNode('Select node(s) and: ')],
+         ['Split axon and dendrite', GG.splitAxonAndDendrite.bind(GG)],
+         ['Split by synapse clustering', GG.splitBySynapseClustering.bind(GG)]]);
 
     content.appendChild( bar );
 

@@ -353,7 +353,8 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 
   /**
    * The node click handler is called if users double click on a node. It will
-   * select the current node and highlight it.
+   * select the current node and highlight all downstream neurons in the
+   * dendrogram.
    */
   var nodeClickHandler = function(skid) {
     return function(n) {
@@ -361,8 +362,16 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       d3.event.stopPropagation();
       // Reset all previous highlights
       d3.selectAll('.node').classed('highlight', false);
-      // Set node to be higlighted
-      d3.select(this).classed('highlight', true);
+      // Highlight current node and children
+      function highlightNodeAndChildren(node) {
+        // Set node to be higlighted
+        d3.select("#node" + node.id).classed('highlight', true);
+        // Highlight children
+        if (node.children) {
+          node.children.forEach(highlightNodeAndChildren);
+        }
+      }
+      highlightNodeAndChildren(n);
 
       // Select node in tracing layer
       SkeletonAnnotations.staticMoveTo(
@@ -404,6 +413,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       .data(elements)
       .enter().append("g")
       .attr("class", cls)
+      .attr("id", function(d) { return "node" + d.id; })
       .attr("transform", nodeTransform)
       .on("dblclick", nodeClickHandler);
 

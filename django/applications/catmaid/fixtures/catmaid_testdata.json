@@ -3449,6 +3449,16 @@
     }
   }, 
   {
+    "pk": 2456, 
+    "model": "catmaid.concept", 
+    "fields": {
+      "project": 3, 
+      "creation_time": "2011-10-04T13:32:34.506", 
+      "user": 3, 
+      "edition_time": "2011-10-04T13:32:34.506"
+    }
+  }, 
+  {
     "pk": 5, 
     "model": "catmaid.class", 
     "fields": {
@@ -4375,6 +4385,20 @@
       "edition_time": "2011-10-04T13:32:34.506", 
       "project": 3, 
       "relation_name": "has_cell_body", 
+      "user": 3
+    }
+  }, 
+  {
+    "pk": 2456, 
+    "model": "catmaid.relation", 
+    "fields": {
+      "description": null, 
+      "isreciprocal": false, 
+      "creation_time": "2011-10-04T13:32:34.506", 
+      "uri": null, 
+      "edition_time": "2011-10-04T13:32:34.506", 
+      "project": 3, 
+      "relation_name": "annotated_with", 
       "user": 3
     }
   }, 

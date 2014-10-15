@@ -446,6 +446,10 @@ div#classification_graph_object img.roiimage {
   vertical-align: middle;
 }
 
+.buttonpanel label {
+  margin: 0.5em;
+}
+
 .connectivity_widget table {
   padding: 3px;
   border-collapse: collapse;

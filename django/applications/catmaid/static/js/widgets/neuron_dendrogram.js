@@ -11,9 +11,9 @@ var NeuronDendrogram = function() {
 
   this.skeletonId = null;
   this.collapsed = true;
-  this.showNodeIDs = true;
+  this.showNodeIDs = false;
   this.showTags = true;
-  this.showStrahler = true;
+  this.showStrahler = false;
   this.radialDisplay = true;
 
   // Stores a reference to the current SVG, if any

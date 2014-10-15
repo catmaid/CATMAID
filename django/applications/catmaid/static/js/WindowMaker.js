@@ -982,7 +982,10 @@ var WindowMaker = new function()
          ['Hide', GG.hideSelected.bind(GG)],
          ['Show hidden', GG.showHidden.bind(GG), {id: 'graph_show_hidden' + GG.widgetID, disabled: true}],
          [document.createTextNode(' - ')],
-         ['Remove', GG.removeSelected.bind(GG)]]);
+         ['Remove', GG.removeSelected.bind(GG)],
+         [document.createTextNode(' - ')],
+         ['Split axon and dendrite', GG.splitAxonAndDendrite.bind(GG)]
+        ]);
 
     appendToTab(tabs['Align'],
         [[document.createTextNode('Align: ')],

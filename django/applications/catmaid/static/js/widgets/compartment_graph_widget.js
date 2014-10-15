@@ -41,11 +41,20 @@ var GroupGraph = function() {
 
   this.grid_snap = false;
   this.grid_side = 10; // px
+
+  // Map of skeleton ID vs one of:
+  // * SUBGRAPH_AXON_DENDRITE
+  // * SUBGRAPH_AXON_BACKBONE_TERMINALS
+  // * a number larger than zero (bandwidth value for synapse clustering)
+  this.subgraphs = {};
 };
 
 GroupGraph.prototype = {};
 $.extend(GroupGraph.prototype, new InstanceRegistry());
 $.extend(GroupGraph.prototype, new SkeletonSource());
+
+GroupGraph.prototype.SUBGRAPH_AXON_DENDRITE =  -1;
+GroupGraph.prototype.SUBGRAPH_AXON_BACKBONE_TERMINALS = -2;
 
 GroupGraph.prototype.getName = function() {
   return "Graph " + this.widgetID;
@@ -529,13 +538,28 @@ GroupGraph.prototype.updateNeuronNames = function() {
   this.cy.nodes().each(function(i, node) {
     var models = node.data('skeletons');
     // skip groups
-    if (1 == models.length) node.data('label', NeuronNameService.getInstance().getName(models[0].id));
+    if (1 === models.length) node.data('label', NeuronNameService.getInstance().getName(models[0].id));
   });
 };
 
 /** There is a model for every skeleton ID included in json.
  *  But there could be models for which there isn't a skeleton_id in json: these are disconnected nodes. */
-GroupGraph.prototype.updateGraph = function(json, models) {
+GroupGraph.prototype.updateGraph = function(json, models, morphology) {
+
+  var subgraph_skids = Object.keys(this.subgraphs);
+  if (subgraph_skids.length > 0 && !morphology) {
+    // Need to load skeleton + connectors of skids in subgraph_skids
+    var morphologies = {};
+    fetchSkeletons(
+        subgraph_skids,
+        function(skid) { return django_url + project.id + '/' + skid + '/1/1/0/compact-arbor'; },
+        function(skid) { return {}; },
+        function(skid, json) { morphologies[skid] = json; },
+        (function(skid) { delete this.subgraphs[skid]; }).bind(this), // failed loading
+        (function() { this.updateGraph(json, models, morphologies); }).bind(this));
+    return;
+  }
+
   // A neuron that is split cannot be part of a group anymore: makes no sense.
   // Neither by confidence nor by synapse clustering.
 
@@ -563,77 +587,31 @@ GroupGraph.prototype.updateGraph = function(json, models) {
                       color: '#' + model.color.getHexString()}};
   };
 
-  // Figure out what kind of response we got
-  var modes = {basic: false,
-                confidence_split: false,
-                dual_split: false};
-  if ('branch_nodes' in json && 'intraedges' in json) modes.dual_split = true;
-  else if ('nodes' in json) modes.confidence_split = true;
-  else modes.basic = true;
+  // Infer nodes from json.edges
+  var elements = {},
+      seen = {},
+      nodes = [],
+      appendNode = (function(skid) {
+        //if (seen[skid]) return;
+        if (undefined !== this.subgraphs[skid]) return; // will be added later
+        var node = asNode('' + skid);
+        seen[skid] = true;
+        nodes.push(node);
+      }).bind(this);
 
+  Object.keys(models).forEach(appendNode);
 
-  var elements = {};
-
-  if (modes.basic) {
-    // Basic graph: infer nodes from json.edges
-    var seen = {},
-        nodes = [],
-        appendNode = function(skid) {
-          if (seen[skid]) return;
-          var node = asNode('' + skid);
-          seen[skid] = true;
-          nodes.push(node);
-        };
-
-    json.edges.forEach(function(edge) {
-      edge.slice(0, 2).forEach(appendNode);
-    });
-
-    // For nodes without edges, add them from the local list
-    Object.keys(models).forEach(appendNode);
-
-    elements.nodes = nodes;
-    elements.edges = json.edges.map(asEdge);
-
-  } else if (modes.confidence_split) {
-    // Graph with skeletons potentially split at low confidence edges
-    elements.nodes = json.nodes.map(asNode);
-    elements.edges = json.edges.map(asEdge);
-
-  } else {
-    // Graph with skeletons potentially split both at low confidence edges
-    // and by synapse clustering
-    elements.nodes = json.nodes.map(asNode).concat(json.branch_nodes.map(function(bnodeID) {
-      var node = asNode(bnodeID);
-      node.data.label = '';
-      node.data.branch = true;
-      return node;
-    }));
-
-    elements.edges = json.edges.map(asEdge).concat(json.intraedges.map(function(edge) {
-      return {data: {directed: false,
-                      arrow: 'none',
-                      id: edge[0] + '_' + edge[1],
-                      label: edge[2],
-                      color: '#F00',
-                      source: edge[0],
-                      target: edge[1],
-                      weight: 10}}; // default weight for intraedge
-    }));
-  }
+  elements.nodes = nodes;
+  elements.edges = [];
+  
+  json.edges.forEach((function(e) {
+    // Skip edges that will be created later
+    if (this.subgraphs[e[0]] || this.subgraphs[e[1]]) return;
+    elements.edges.push(asEdge(e));
+  }).bind(this));
 
   // Group neurons, if any groups exist, skipping splitted neurons
-  // (Neurons may have been splitted either by synapse clustering or at low-confidence edges.)
-  var splitted = {};
-  if (elements.nodes) {
-    splitted = elements.nodes.reduce(function(o, nodeID) {
-      nodeID = nodeID + '';
-      var i_ = nodeID.lastIndexOf('_');
-      if (-1 !== i_) o[nodeID.substring(0, i_)] = true;
-      return o;
-    }, {});
-  }
-  this._regroup(elements, splitted, models);
+  this._regroup(elements, this.subgraphs, models);
 
   // Compute edge width for rendering the edge width
   var edgeWidth = this.edgeWidthFn();
@@ -652,6 +630,108 @@ GroupGraph.prototype.updateGraph = function(json, models) {
     if (node.selected()) selected[id] = true;
     if (node.hidden()) hidden[id] = true;
   });
+
+  // Recreate subgraphs
+  var subnodes = [],
+      subedges = {}; // map of {connectorID: {pre: graph node ID,
+                     //                       post: {graph node ID: count}}}
+  subgraph_skids.forEach((function(skid) {
+    var m = morphology[skid];
+    var ap = new ArborParser().init('compact-arbor', m),
+        mode = this.subgraphs[skid];
+    if (mode === this.SUBGRAPH_AXON_DENDRITE) {
+      if (ap.n_inputs > 0 && ap.n_outputs > 0) {
+        var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs);
+        var nodes = ap.arbor.nodesArray(),
+            max = 0,
+            cut = null;
+        for (var i=0; i<nodes.length; ++i) {
+          var c = fc[nodes[i]].centrifugal;
+          if (c > max) {
+            max = c;
+            cut = nodes[i];
+          }
+        }
+        var axon = ap.arbor.subArbor(cut);
+
+        // Create two nodes, one for the axon and one for the dendrite
+        var name = NeuronNameService.getInstance().getName(skid),
+            common = {skeletons: [models[skid]],
+                      node_count: 0,
+                      color: '#' + models[skid].color.getHexString()},
+            node_axon = {data: $.extend({}, common, {id: skid + '_axon', label: name + ' (axon)'})},
+            node_dend = {data: $.extend({}, common, {id: skid + '_dendrite', label: name + ' (dendrite)'})};
+
+        subnodes.push(node_axon);
+        subnodes.push(node_dend);
+
+        // ... connected by an undirected edge
+        elements.edges.push({data: {directed: false,
+                                    arrow: 'none',
+                                    id: node_axon.data.id + '_' + node_dend.data.id,
+                                    color: common.color,
+                                    source: node_axon.data.id,
+                                    target: node_dend.data.id,
+                                    weight: 10}});
+
+        // ... and connected to all other nodes: preparing data
+        // m[1] is the array of connectors as returned in json
+        m[1].forEach(function(row) {
+          if (!models[row[5]]) return; // other skeleton is not in the graph
+          var treenodeID = row[0],
+              connectorID = row[2],
+              presynaptic = 0 === row[6],
+              sourceSkid = presynaptic ? skid : row[5],
+              targetSkid = presynaptic ? row[5] : skid,
+              node_id = (axon.contains(treenodeID) ? node_axon : node_dend).data.id,
+              connector = subedges[connectorID];
+          if (!connector) {
+            connector = {pre: null,
+                         post: {}};
+            subedges[connectorID] = connector;
+          }
+          if (presynaptic) {
+            connector.pre = node_id;
+            if (undefined === this.subgraphs[targetSkid]) {
+              var count = connector.post[targetSkid];
+              connector.post[targetSkid] = count ? count + 1 : 1;
+            }
+          } else {
+            if (undefined === this.subgraphs[sourceSkid]) connector.pre = sourceSkid;
+            var count = connector.post[node_id];
+            connector.post[node_id] = count ? count + 1 : 1;
+          }
+        }, this);
+      } else {
+        // Not computable
+        delete this.subgraphs[skid];
+        elements.nodes.push(asNode('' + skid));
+      }
+    } else if (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
+      // TODO not yet implemented
+    } else if (mode > 0) {
+      // synapse clustering
+    }
+  }).bind(this));
+
+  // Append all new nodes from the subgraphs
+  elements.nodes = elements.nodes.concat(subnodes);
+
+  // Create edges for subgraph nodes
+  Object.keys(subedges).forEach(function(connectorID) {
+    var connector = subedges[connectorID],
+        source_id = connector.pre;
+    Object.keys(connector.post).forEach(function(target_id) {
+      elements.edges.push({data: {directed: true,
+                                  arrow: 'triangle',
+                                  color: edge_color,
+                                  id: source_id + '_' + target_id,
+                                  source: source_id,
+                                  target: target_id,
+                                  weight: connector.post[target_id]}});
+    });
+  });
+
 
   // Remove all nodes (and their edges)
   // (Can't just remove removed ones: very hard to get right if the value of the clustering_bandwidth changes. Additionally, their size may have changed.)
@@ -726,6 +806,7 @@ GroupGraph.prototype.toggleTrimmedNodeLabels = function() {
 
 GroupGraph.prototype.clear = function() {
   this.groups = {};
+  this.subgraphs = {};
   if (this.cy) this.cy.elements("node").remove();
 };
 
@@ -941,31 +1022,11 @@ GroupGraph.prototype.load = function(models) {
 /** Fetch data from the database and remake the graph. */
 GroupGraph.prototype._load = function(models) {
   var skeleton_ids = Object.keys(models);
-  if (0 === skeleton_ids.length) {
-    growlAlert("Info", "Nothing to load!");
-    return;
-  }
-  var post = {skeleton_list: skeleton_ids,
-              confidence_threshold: this.confidence_threshold};
-  if (this.clustering_bandwidth > 0) {
-    var selected = Object.keys(this.cy.nodes().toArray().reduce(function(m, node) {
-      if (node.selected()) {
-        return node.data('skeletons').reduce(function(m, model) {
-          m[model.id] = true;
-          return m;
-        }, m);
-      }
-      return m;
-    }, {}));
-    if (selected.length > 0) {
-      post.bandwidth = this.clustering_bandwidth;
-      post.expand = selected;
-    }
-  }
+  if (0 === skeleton_ids.length) return growlAlert("Info", "Nothing to load!");
 
   requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
       "POST",
-      post,
+      {skeleton_list: skeleton_ids},
       (function (status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);
@@ -2125,4 +2186,11 @@ GroupGraph.prototype.quantificationDialog = function() {
       }
     }
   });
+};
+
+GroupGraph.prototype.splitAxonAndDendrite = function() {
+  this.getSelectedSkeletons().forEach(function(skid) {
+    this.subgraphs[skid] = this.SUBGRAPH_AXON_DENDRITE;
+  }, this);
+  this.update();
 };

@@ -180,7 +180,6 @@ GroupGraph.prototype.toggle_show_node_labels = function() {
 GroupGraph.prototype.graph_properties = function() {
   
   var dialog = new OptionsDialog("Graph properties");
-  var syncount = dialog.appendField("Show edges with this or higher synapses:", "edge_filter", this.synaptic_count_edge_filter); // TODO unused parameter
   var vpos = ["top", "center", "bottom"];
   var label_vpos = dialog.appendChoice("Node label vertical position", "valign", vpos, vpos, this.label_valign);
   var hpos = ["left", "center", "right"];
@@ -244,8 +243,6 @@ GroupGraph.prototype.graph_properties = function() {
 
     this.grid_side = validate('grid_side', this.grid_side, grid_side.value);
     this.grid_snap = grid_snap.checked;
-
-    this.synaptic_count_edge_filter = syncount.value; // TODO not used?
 
     var edge_opacity = Number(props[0].value.trim());
     if (!Number.isNaN(edge_opacity) && edge_opacity >= 0 && edge_opacity <= 1) this.edge_opacity = edge_opacity;

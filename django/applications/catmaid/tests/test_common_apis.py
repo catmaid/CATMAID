@@ -1909,7 +1909,8 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/skeleton/join' % self.test_project_id, {
                     'from_id': link_from,
-                    'to_id': link_to})
+                    'to_id': link_to,
+                    'annotation_set': '{}'})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {

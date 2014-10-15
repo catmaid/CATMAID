@@ -133,7 +133,7 @@ def delete_neuron(request, project_id=None, neuron_id=None):
                     ', '.join([str(s) for s in skeleton_ids])))
 
     return HttpResponse(json.dumps({
-        'success': "Deleted neuron #%s as well as it's skeletons and " \
+        'success': "Deleted neuron #%s as well as its skeletons and " \
                 "annotations." % neuron_id}))
 
 @requires_user_role(UserRole.Annotate)

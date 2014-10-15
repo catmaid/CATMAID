@@ -434,8 +434,8 @@ NeuronDendrogram.prototype.exportSVG = function()
   var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
 
   // Find needed CSS rules, others are ignored
-  var rules = ['.node', '.taggedNode', '.node circle', '.taggedNode circle',
-      '.link', '.taggedLink'];
+  var rules = ['.node', '.node.tagged', '.node circle', '.node.tagged circle',
+      '.node.highlight circle', '.link', '.link.tagged'];
 
   var css = rules.reduce(function(o, r) {
     // Find element in SVG that matches the rule

@@ -546,13 +546,13 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
   var edge_color = this.edge_color;
   var asEdge = function(edge) {
       return {data: {directed: true,
-                      arrow: 'triangle',
-                      id: edge[0] + '_' + edge[1],
-                      label: edge[2],
-                      color: edge_color,
-                      source: edge[0],
-                      target: edge[1],
-                      weight: edge[2]}};
+                     arrow: 'triangle',
+                     id: edge[0] + '_' + edge[1],
+                     label: edge[2],
+                     color: edge_color,
+                     source: edge[0],
+                     target: edge[1],
+                     weight: edge[2]}};
   };
 
   var asNode = function(nodeID) {
@@ -592,13 +592,6 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
 
   // Group neurons, if any groups exist, skipping splitted neurons
   this._regroup(elements, this.subgraphs, models);
-
-  // Compute edge width for rendering the edge width
-  var edgeWidth = this.edgeWidthFn();
-
-  elements.edges.forEach(function(edge) {
-    edge.data.width = this.edge_min_width + edgeWidth(edge.data.weight);
-  }, this);
 
   // Store positions of current nodes and their selected state
   var positions = {},
@@ -779,21 +772,43 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
   // Append all new nodes from the subgraphs
   elements.nodes = elements.nodes.concat(subnodes);
 
-  // Create edges for subgraph nodes
+  // Add up connectors to create edges for subgraph nodes
+  var cedges = {};
   Object.keys(subedges).forEach(function(connectorID) {
     var connector = subedges[connectorID],
-        source_id = connector.pre;
+        source_id = connector.pre,
+        e = cedges[source_id];
+    if (!e) {
+      e = {};
+      cedges[source_id] = e;
+    }
     Object.keys(connector.post).forEach(function(target_id) {
+      var count = e[target_id];
+      e[target_id] = (count ? count : 0) + connector.post[target_id];
+    });
+  });
+
+  Object.keys(cedges).forEach(function(source_id) {
+    var e = cedges[source_id];
+    Object.keys(e).forEach(function(target_id) {
+      var count = e[target_id];
       elements.edges.push({data: {directed: true,
                                   arrow: 'triangle',
                                   color: edge_color,
                                   id: source_id + '_' + target_id,
                                   source: source_id,
                                   target: target_id,
-                                  weight: connector.post[target_id]}});
+                                  label: count,
+                                  weight: count}});
     });
   });
 
+  // Compute edge width for rendering the edge width
+  var edgeWidth = this.edgeWidthFn();
+
+  elements.edges.forEach(function(edge) {
+    edge.data.width = this.edge_min_width + edgeWidth(edge.data.weight);
+  }, this);
 
   // Remove all nodes (and their edges)
   // (Can't just remove removed ones: very hard to get right if the value of the clustering_bandwidth changes. Additionally, their size may have changed.)

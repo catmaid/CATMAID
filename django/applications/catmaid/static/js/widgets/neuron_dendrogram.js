@@ -250,19 +250,21 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       .attr("height", height + margin.top + margin.bottom)
       .call(zoomHandler)
       .on("mousemove", mouseMove);
+  // Add a background rectangle to get all mouse events for panning and zoom.
+  // This is added before the group containing the dendrogram to give the graph
+  // a chave to react to mouse events.
+  var rect = this.svg.append("rect")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .style("fill", "none")
+    .style("pointer-events", "all");
+  // Add SVG groups that are used to draw the dendrogram
   var canvas = this.svg.append("svg:g");
   var vis = canvas.append("svg:g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")" +
           "scale(" + defaultScale + ")");
 
   zoomHandler.scale(defaultScale);
-
-  // Add a background rectangle to get all mouse events for panning and zoom
-  var rect = this.svg.append("rect")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .style("fill", "none")
-    .style("pointer-events", "all");
 
   var nodes = dendrogram.nodes(tree);
   var links = dendrogram.links(nodes);
@@ -351,6 +353,9 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 
   var nodeClickHandler = (function(n) {
       var skid = this.currentSkeletonId;
+      // Don't let the event bubble up
+      d3.event.stopPropagation();
+      // Select node in tracing layer
       SkeletonAnnotations.staticMoveTo(
           n.loc_z,
           n.loc_y,

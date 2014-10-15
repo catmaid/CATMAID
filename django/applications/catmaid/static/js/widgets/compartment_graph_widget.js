@@ -2095,9 +2095,13 @@ GroupGraph.prototype.distributeCoordinate = function(axis) {
 };
 
 GroupGraph.prototype.quantificationDialog = function() {
-  var n_synapses = 0;
+  var n_synapses = 0,
+      n_edges = 0;
   this.cy.edges().each(function(i, edge) {
-    n_synapses += edge.data('weight');
+    if (edge.data('directed')) {
+      n_synapses += edge.data('weight');
+      n_edges += 1;
+    }
   });
   var dialog = document.createElement('div');
   dialog.setAttribute("title", "Graph Quantification");
@@ -2105,7 +2109,7 @@ GroupGraph.prototype.quantificationDialog = function() {
   table.style.border = 1;
   table.innerHTML = [
     ["Number of nodes:", this.cy.nodes().length, "(includes splits)"],
-    ["Number of edges:", this.cy.edges().filter(function(i, edge) { return edge.data('directed'); }).length, "(only directed edges)"],
+    ["Number of edges:", n_edges, "(only directed edges)"],
     ["Number of neurons:", this.getSkeletons().length, ""],
     ["Number of in-graph synapses:", n_synapses, "(edges times their synapse count)"],
   ].map(function(row) {

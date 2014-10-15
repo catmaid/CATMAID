@@ -359,7 +359,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       d3.selectAll('.node').classed('highlight', false);
       // Highlight current node and children
       function highlightNodeAndChildren(node) {
-        // Set node to be higlighted
+        // Set node to be highlighted
         d3.select("#node" + node.id).classed('highlight', true);
         // Highlight children
         if (node.children) {

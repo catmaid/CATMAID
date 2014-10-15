@@ -661,8 +661,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         var axon = ap.arbor.subArbor(cut);
 
         // Create two nodes, one for the axon and one for the dendrite
-        var node_axon = {data: $.extend({}, common, {id: skid + '_axon', label: name + ' (axon)'})},
-            node_dend = {data: $.extend({}, common, {id: skid + '_dendrite', label: name + ' (dendrite)'})};
+        var node_axon = {data: $.extend({}, common, {id: skid + '_axon', label: name + ' [axon]'})},
+            node_dend = {data: $.extend({}, common, {id: skid + '_dendrite', label: name + ' [dendrite]'})};
 
         parts[node_axon.data.id] = function(treenodeID) { return axon.contains(treenodeID); };
         parts[node_dend.data.id] = function(treenodeID) { return !axon.contains(treenodeID); };
@@ -920,7 +920,8 @@ GroupGraph.prototype.removeSkeletons = function(skeleton_ids) {
 GroupGraph.prototype.append = function(models) {
   var set = {},
       removed_from_group = 0,
-      added_to_group = 0;
+      added_to_group = 0,
+      subgraphs = this.subgraphs;
 
   var member_of = Object.keys(this.groups).reduce((function(o, gid) {
     return Object.keys(this.groups[gid].models).reduce(function(o, skid) {
@@ -949,8 +950,14 @@ GroupGraph.prototype.append = function(models) {
         // Update node properties
 
         if (new_model.baseName) {
-          var name = NeuronNameService.getInstance().getName(new_model.id);
-          node.data('label', name ? name : new_model.baseName);
+          var name = NeuronNameService.getInstance().getName(new_model.id),
+              name = name ? name : new_model.baseName,
+              label = node.data('label');
+          if (subgraphs[new_model.id] && label.length > 0) {
+            var i_ = label.lastIndexOf(' [');
+            name = name + (-1 !== i_ ? label.substring(i_) : '');
+          }
+          node.data('label', name);
         }
         skeleton.color = new_model.color.clone();
 
@@ -974,8 +981,30 @@ GroupGraph.prototype.append = function(models) {
         }
       }
 
-		});
+		}, this);
   });
+
+  // Update colors of undirected edges, if any
+  var subs = Object.keys(this.subgraphs);
+  if (subs.length > 0) {
+    var colors = {};
+    var to_update = subs.filter(function(skid) {
+      var model = models[skid];
+      if (model) {
+        colors[model.id] = '#' + model.color.getHexString();
+        return true;
+      }
+      return false;
+    });
+
+    if (to_update.length > 0) {
+      this.cy.edges().each((function(i, edge) {
+        var props = edge.data();
+        if (props.directed) return;
+        edge.data('color', colors[props.id.substring(0, props.id.indexOf('_'))]);
+      }).bind(this));
+    }
+  }
 
   var additions = 0;
 

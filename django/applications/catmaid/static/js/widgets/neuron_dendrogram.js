@@ -38,7 +38,7 @@ NeuronDendrogram.prototype.destroy = function() {
 };
 
 /**
- * Load the active skelton
+ * Load the active skeleton
  */
 NeuronDendrogram.prototype.loadActiveSkeleton = function()
 {
@@ -52,7 +52,7 @@ NeuronDendrogram.prototype.loadActiveSkeleton = function()
 };
 
 /**
- * Load the given sekelton.
+ * Load the given skeleton.
  */
 NeuronDendrogram.prototype.loadSkeleton = function(skid)
 {
@@ -220,7 +220,7 @@ NeuronDendrogram.prototype.getMaxDepth = function(node)
 };
 
 /**
-  * Renders a new dendogram containing the provided list of nodes.
+  * Renders a new dendrogram containing the provided list of nodes.
   */
 NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 {
@@ -263,7 +263,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       .on("mousemove", mouseMove);
   // Add a background rectangle to get all mouse events for panning and zoom.
   // This is added before the group containing the dendrogram to give the graph
-  // a chave to react to mouse events.
+  // a chance to react to mouse events.
   var rect = this.svg.append("rect")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)

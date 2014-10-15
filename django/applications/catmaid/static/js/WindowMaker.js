@@ -325,6 +325,30 @@ var WindowMaker = new function()
     tag.appendChild(tagInput);
     buttons.appendChild(tag);
 
+    var minStrahler = document.createElement('label');
+    minStrahler.appendChild(document.createTextNode('Collapse Strahler <'));
+    var minStrahlerInput = document.createElement('input');
+    minStrahlerInput.setAttribute('type', 'number');
+    minStrahlerInput.setAttribute('min', 1);
+    minStrahlerInput.setAttribute('max', 999);
+    minStrahlerInput.setAttribute('id', 'dendrogram-minStrahler-' + ND.widgetID);
+    if (ND.minStrahler) {
+      minStrahlerInput.value = ND.minStrahler;
+    }
+    minStrahlerInput.onchange = function(e) {
+        ND.setMinStrahler(parseInt(this.value));
+        ND.update();
+    };
+    minStrahlerInput.oninput = function(e) {
+      if (13 === e.keyCode) {
+        ND.update();
+      } else {
+        ND.setMinStrahler(parseInt(this.value));
+      }
+    };
+    minStrahler.appendChild(minStrahlerInput);
+    buttons.appendChild(minStrahler);
+
     var collapse = document.createElement('label');
     var collapseInput = document.createElement('input');
     collapseInput.setAttribute('type', 'checkbox');
@@ -380,6 +404,20 @@ var WindowMaker = new function()
     showStrahler.appendChild(showStrahlerInput);
     showStrahler.appendChild(document.createTextNode('Show Strahler'));
     buttons.appendChild(showStrahler);
+
+    var radial = document.createElement('label');
+    var radialInput = document.createElement('input');
+    radialInput.setAttribute('type', 'checkbox');
+    if (ND.radialDisplay) {
+      radialInput.setAttribute('checked', 'checked');
+    }
+    radialInput.onchange = function() {
+      ND.setRadialDisplay(this.checked);
+      ND.update();
+    };
+    radial.appendChild(radialInput);
+    radial.appendChild(document.createTextNode('Radial'));
+    buttons.appendChild(radial);
 
     content.appendChild(buttons);
 

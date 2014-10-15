@@ -11,9 +11,11 @@ var NeuronDendrogram = function() {
 
   this.skeletonId = null;
   this.collapsed = true;
-  this.showNodeIDs = true;
+  this.showNodeIDs = false;
   this.showTags = true;
-  this.showStrahler = true;
+  this.showStrahler = false;
+  this.radialDisplay = true;
+  this.minStrahler = 1;
 
   // Stores a reference to the current SVG, if any
   this.svg = null;
@@ -36,7 +38,7 @@ NeuronDendrogram.prototype.destroy = function() {
 };
 
 /**
- * Load the active skelton
+ * Load the active skeleton
  */
 NeuronDendrogram.prototype.loadActiveSkeleton = function()
 {
@@ -50,7 +52,7 @@ NeuronDendrogram.prototype.loadActiveSkeleton = function()
 };
 
 /**
- * Load the given sekelton.
+ * Load the given skeleton.
  */
 NeuronDendrogram.prototype.loadSkeleton = function(skid)
 {
@@ -81,7 +83,8 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
    * Helper to create a tree representation of a skeleton. Expects data to be of
    * the format [id, parent_id, user_id, x, y, z, radius, confidence].
    */
-  var createTree = function(index, taggedNodes, data, belowTag, collapsed, strahler)
+  var createTree = function(index, taggedNodes, data, belowTag, collapsed, strahler,
+      minStrahler)
   {
     var id = data[0];
     var tagged = taggedNodes.indexOf(id) != -1;
@@ -102,20 +105,28 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
 
       var findNext = function(n) {
         var cid = n[0];
-        var skip = collapsed && // collapse active?
-                   index.hasOwnProperty(cid) && // is parent?
-                   (1 === index[cid].length) && // only one child?
-                   taggedNodes.indexOf(cid) == -1; // not tagged?
+        var skip = (collapsed && // collapse active?
+                    index.hasOwnProperty(cid) && // is parent?
+                    (1 === index[cid].length) && // only one child?
+                    taggedNodes.indexOf(cid) == -1) || // not tagged?
+                   (minStrahler && // Alternatively, is min Strahler set?
+                    strahler[cid] < minStrahler);
         if (skip) {
-          // Test if child can also be skipped
-          return findNext(index[cid][0]);
+            // Test if child can also be skipped, if available
+            var c = index[cid];
+            return c ? findNext(c[0]) : null;
         } else {
           return n;
         }
       };
 
-      node.children = index[id].map(findNext).map(function(c) {
-        return createTree(index, taggedNodes, c, belowTag, collapsed, strahler);
+      var notNull = function(o) {
+        return o !== null;
+      };
+
+      node.children = index[id].map(findNext).filter(notNull).map(function(c) {
+        return createTree(index, taggedNodes, c, belowTag, collapsed, strahler,
+            minStrahler);
       });
 
     }
@@ -149,7 +160,8 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
 
   // Create the tree, starting from the root node
   var root = parentToChildren[null][0];
-  var tree = createTree(parentToChildren, taggedNodes, root, false, this.collapsed, strahler);
+  var tree = createTree(parentToChildren, taggedNodes, root, false, this.collapsed, strahler,
+      this.minStrahler);
 
   return tree;
 };
@@ -208,7 +220,7 @@ NeuronDendrogram.prototype.getMaxDepth = function(node)
 };
 
 /**
-  * Renders a new dendogram containing the provided list of nodes.
+  * Renders a new dendrogram containing the provided list of nodes.
   */
 NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 {
@@ -218,13 +230,21 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
 
   // Adjust the width and height so that each node has at least a space of 10 by 10 pixel
   var nodeSize = [20, 40];
-  var width = Math.max(baseWidth, nodeSize[0] * this.getMaxDepth(tree));
-  var height = Math.max(baseHeight, nodeSize[1] * this.getNumLeafs(tree));
+  var width;
+  var height;
+  var factor = 1;
+  if (this.radialDisplay) {
+    width = baseWidth * factor;
+    height = baseHeight * factor;
+  } else {
+    width = Math.max(baseWidth, nodeSize[0] * this.getMaxDepth(tree));
+    height = Math.max(baseHeight, nodeSize[1] * this.getNumLeafs(tree));
+  }
 
   // Create clustering where each leaf node has the same distance to its
   // neighbors.
   var dendrogram = d3.layout.cluster()
-    .size([height, width])
+    .size([this.radialDisplay ? 360 * factor : height, this.radialDisplay ? 360: width])
     .separation(function() { return 1; });
 
   // Find default scale so that everything can be seen
@@ -239,70 +259,100 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .append("svg:svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-      .call(zoomHandler);
-  var vis = this.svg.append("svg:g")
+      .call(zoomHandler)
+      .on("mousemove", mouseMove);
+  // Add a background rectangle to get all mouse events for panning and zoom.
+  // This is added before the group containing the dendrogram to give the graph
+  // a chance to react to mouse events.
+  var rect = this.svg.append("rect")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .style("fill", "none")
+    .style("pointer-events", "all");
+  // Add SVG groups that are used to draw the dendrogram
+  var canvas = this.svg.append("svg:g");
+  var vis = canvas.append("svg:g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")" +
           "scale(" + defaultScale + ")");
 
   zoomHandler.scale(defaultScale);
 
-  // Add a background rectangle to get all mouse events for panning and zoom
-  var rect = vis.append("rect")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .style("fill", "none")
-    .style("pointer-events", "all");
-
   var nodes = dendrogram.nodes(tree);
   var links = dendrogram.links(nodes);
 
-  function elbow(d, i) {
-      return "M" + d.source.y + "," + d.source.x
-           + "V" + d.target.x + "H" + d.target.y;
+  // Create display specific parts
+  var nodeTransform;
+  var styleNodeText;
+  var pathGenerator;
+  var layoutOffset;
+  if (this.radialDisplay) {
+    layoutOffset = [-width / 2, -height / 2];
+    // Radial scales for x and y.
+    var lx = function(d) { return factor * d.y * Math.cos((d.x - 90) / 180 * Math.PI); }
+    var ly = function(d) { return factor * d.y * Math.sin((d.x - 90) / 180 * Math.PI); }
+    pathGenerator = function(d) {
+      return "M" + lx(d.source) + "," + ly(d.source)
+           + "L" + lx(d.target) + "," + ly(d.target);
+    };
+    nodeTransform = function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y * factor) + ")"; };
+    styleNodeText = function(node) {
+      function inner(d) { return d.children ? !(d.x > 180) : d.x > 180; }
+      return node
+      .attr("dx", function(d) { return inner(d) ? -8 : 8; })
+      .attr("dy", 3)
+      .style("text-anchor", function(d) { return inner(d) ? "end" : "start"; })
+      .attr("transform", function(d) { return d.x > 180 ? "rotate(180)" : null; })
+    };
+
+    // Center canvas for radial display
+    canvas.attr("transform", "translate(" + (-layoutOffset[0]) + "," +
+        (-layoutOffset[1]) + ")");
+  } else {
+    layoutOffset = [0, 0];
+    pathGenerator = function elbow(d, i) {
+        return "M" + d.source.y + "," + d.source.x
+             + "V" + d.target.x + "H" + d.target.y;
+    };
+    nodeTransform = function(d) { return "translate(" + d.y + "," + d.x + ")"; }
+    styleNodeText = function(node) {
+      return node
+      .attr("dx", function(d) { return d.children ? -8 : 8; })
+      .attr("dy", 3)
+      .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+    };
   }
 
-  // Split links in such that are upstream of tagged nodes and those downstream.
-  var separatedLinks = links.reduce(function(o, l) {
-    if (l.source.belowTag) {
-      o.downstreamLinks.push(l);
-    } else {
-      o.upstreamLinks.push(l);
-    }
-    return o;
-  },
-  {
-    upstreamLinks: [],
-    downstreamLinks: [],
-  });
-
-  var downLink = vis.selectAll(".link")
-    .data(separatedLinks.downstreamLinks)
-    .enter().append("path")
-    .attr("class", "taggedLink")
-    .attr("d", elbow);
-
+  // Add all links
   var upLink = vis.selectAll(".link")
-    .data(separatedLinks.upstreamLinks)
+    .data(links)
     .enter().append("path")
     .attr("class", "link")
-    .attr("d", elbow);
+    .classed('tagged', function(d) { return d.source.belowTag; })
+    .attr("d", pathGenerator);
 
-  // Split nodes in those which are tagged and those which are not
-  var separatedNodes = nodes.reduce(function(o, n) {
-    if (n.belowTag) {
-      o.taggedNodes.push(n);
-    } else {
-      o.regularNodes.push(n);
-    }
-    return o;
-  },
-  {
-    taggedNodes: [],
-    regularNodes: [],
-  });
+  /**
+   * The node click handler is called if users double click on a node. It will
+   * select the current node and highlight all downstream neurons in the
+   * dendrogram.
+   */
+  var nodeClickHandler = function(skid) {
+    return function(n) {
+      // Don't let the event bubble up
+      d3.event.stopPropagation();
+      // Reset all previous highlights
+      d3.selectAll('.node').classed('highlight', false);
+      // Highlight current node and children
+      function highlightNodeAndChildren(node) {
+        // Set node to be higlighted
+        d3.select("#node" + node.id).classed('highlight', true);
+        // Highlight children
+        if (node.children) {
+          node.children.forEach(highlightNodeAndChildren);
+        }
+      }
+      highlightNodeAndChildren(n);
 
-  var nodeClickHandler = (function(n) {
-      var skid = this.currentSkeletonId;
+      // Select node in tracing layer
       SkeletonAnnotations.staticMoveTo(
           n.loc_z,
           n.loc_y,
@@ -310,7 +360,8 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
           function () {
              SkeletonAnnotations.staticSelectNode(n.id, skid);
           });
-    }).bind(this);
+      }
+    }(this.currentSkeletonId);
 
   var nodeName = function(showTags, showIds, showStrahler) {
     function addTag(d, wrapped) {
@@ -336,31 +387,34 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     };
   }(this.showTags, this.showNodeIDs, this.showStrahler);
 
-  var addNodes = function(elements, cls) {
-    var node = vis.selectAll(".node")
-      .data(elements)
-      .enter().append("g")
-      .attr("class", cls)
-      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
-      .on("dblclick", nodeClickHandler);
-
-    node.append("circle")
-      .attr("r", 4.5);
-
-    node.append("text")
-      .attr("dx", function(d) { return d.children ? -8 : 8; })
-      .attr("dy", 3)
-      .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
-      .text(nodeName);
-
-    return node;
-  };
-
-  addNodes(separatedNodes.taggedNodes, "taggedNode");
-  addNodes(separatedNodes.regularNodes, "node");
+  // Add all nodes
+  var node = vis.selectAll(".node")
+    .data(nodes)
+    .enter().append("g")
+    .attr("class", "node")
+    .attr("id", function(d) { return "node" + d.id; })
+    .attr("transform", nodeTransform)
+    .classed('tagged', function(d) { return d.belowTag; })
+    .on("dblclick", nodeClickHandler);
+  node.append("circle")
+    .attr("r", 4.5);
+  styleNodeText(node.append("text")).text(nodeName);
 
   function zoom() {
-    vis.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    // Compensate for margin
+    var tx = d3.event.translate[0] + margin.left,
+        ty = d3.event.translate[1] + margin.top;
+    vis.attr("transform", "translate(" + tx + "," + ty + ")scale(" + d3.event.scale + ")");
+  };
+
+  /**
+   * Compensate for margin and layout offset.
+   */
+  function mouseMove() {
+    var m = d3.mouse(this);
+    zoomHandler.center([
+        m[0] + layoutOffset[0] - margin.left,
+        m[1] + layoutOffset[1] - margin.top]);
   };
 };
 
@@ -433,4 +487,14 @@ NeuronDendrogram.prototype.setShowTags = function(value)
 NeuronDendrogram.prototype.setShowStrahler = function(value)
 {
   this.showStrahler = value;
+};
+
+NeuronDendrogram.prototype.setRadialDisplay = function(value)
+{
+  this.radialDisplay = value;
+};
+
+NeuronDendrogram.prototype.setMinStrahler = function(value)
+{
+  this.minStrahler = value;
 };

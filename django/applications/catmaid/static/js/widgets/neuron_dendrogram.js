@@ -269,35 +269,6 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   // Clear existing container
   $("#dendrogram" + this.widgetID).empty();
 
-  // Create new SVG
-  var zoomHandler = d3.behavior.zoom()
-    .scaleExtent([0.1, 100])
-    .on("zoom", zoom.bind(this));
-  this.svg = d3.select("#dendrogram" + this.widgetID)
-    .append("svg:svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .call(zoomHandler)
-      .on("mousemove", mouseMove);
-  // Add a background rectangle to get all mouse events for panning and zoom.
-  // This is added before the group containing the dendrogram to give the graph
-  // a chance to react to mouse events.
-  var rect = this.svg.append("rect")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .style("fill", "none")
-    .style("pointer-events", "all");
-  // Add SVG groups that are used to draw the dendrogram
-  var canvas = this.svg.append("svg:g");
-  var vis = canvas.append("svg:g")
-      .attr("transform", "translate(" + this.translation[0] + "," +
-          this.translation[1] + ")" + "scale(" + this.scale + ")");
-
-  zoomHandler.scale(this.scale);
-
-  var nodes = dendrogram.nodes(tree);
-  var links = dendrogram.links(nodes);
-
   // Create display specific parts
   var nodeTransform;
   var styleNodeText;
@@ -321,10 +292,6 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       .style("text-anchor", function(d) { return inner(d) ? "end" : "start"; })
       .attr("transform", function(d) { return d.x > 180 ? "rotate(180)" : null; })
     };
-
-    // Center canvas for radial display
-    canvas.attr("transform", "translate(" + (-layoutOffset[0]) + "," +
-        (-layoutOffset[1]) + ")");
   } else {
     layoutOffset = [0, 0];
     pathGenerator = function elbow(d, i) {
@@ -339,6 +306,37 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
       .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
     };
   }
+
+  // Create new SVG
+  var zoomHandler = d3.behavior.zoom()
+    .scaleExtent([0.1, 100])
+    .on("zoom", zoom.bind(this));
+  this.svg = d3.select("#dendrogram" + this.widgetID)
+    .append("svg:svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .call(zoomHandler)
+      .on("mousemove", mouseMove);
+  // Add a background rectangle to get all mouse events for panning and zoom.
+  // This is added before the group containing the dendrogram to give the graph
+  // a chance to react to mouse events.
+  var rect = this.svg.append("rect")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .style("fill", "none")
+    .style("pointer-events", "all");
+  // Add SVG groups that are used to draw the dendrogram
+  var canvas = this.svg.append("svg:g")
+      .attr("transform", "translate(" + (-layoutOffset[0]) + "," +
+        (-layoutOffset[1]) + ")");
+  var vis = canvas.append("svg:g")
+      .attr("transform", "translate(" + this.translation[0] + "," +
+          this.translation[1] + ")" + "scale(" + this.scale + ")");
+
+  zoomHandler.scale(this.scale);
+
+  var nodes = dendrogram.nodes(tree);
+  var links = dendrogram.links(nodes);
 
   // Add all links
   var upLink = vis.selectAll(".link")

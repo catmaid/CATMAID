@@ -638,7 +638,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
   subgraph_skids.forEach((function(skid) {
     var m = morphology[skid];
     var ap = new ArborParser().init('compact-arbor', m),
-        mode = this.subgraphs[skid];
+        mode = this.subgraphs[skid],
+        parts = {};
     if (mode === this.SUBGRAPH_AXON_DENDRITE) {
       if (ap.n_inputs > 0 && ap.n_outputs > 0) {
         var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs);
@@ -662,6 +663,9 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
             node_axon = {data: $.extend({}, common, {id: skid + '_axon', label: name + ' (axon)'})},
             node_dend = {data: $.extend({}, common, {id: skid + '_dendrite', label: name + ' (dendrite)'})};
 
+        parts[node_axon.data.id] = function(treenodeID) { return axon.contains(treenodeID); };
+        parts[node_dend.data.id] = function(treenodeID) { return !axon.contains(treenodeID); };
+
         subnodes.push(node_axon);
         subnodes.push(node_dend);
 
@@ -673,45 +677,50 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
                                     source: node_axon.data.id,
                                     target: node_dend.data.id,
                                     weight: 10}});
-
-        // ... and connected to all other nodes: preparing data
-        // m[1] is the array of connectors as returned in json
-        m[1].forEach(function(row) {
-          if (!models[row[5]]) return; // other skeleton is not in the graph
-          var treenodeID = row[0],
-              connectorID = row[2],
-              presynaptic = 0 === row[6],
-              sourceSkid = presynaptic ? skid : row[5],
-              targetSkid = presynaptic ? row[5] : skid,
-              node_id = (axon.contains(treenodeID) ? node_axon : node_dend).data.id,
-              connector = subedges[connectorID];
-          if (!connector) {
-            connector = {pre: null,
-                         post: {}};
-            subedges[connectorID] = connector;
-          }
-          if (presynaptic) {
-            connector.pre = node_id;
-            if (undefined === this.subgraphs[targetSkid]) {
-              var count = connector.post[targetSkid];
-              connector.post[targetSkid] = count ? count + 1 : 1;
-            }
-          } else {
-            if (undefined === this.subgraphs[sourceSkid]) connector.pre = sourceSkid;
-            var count = connector.post[node_id];
-            connector.post[node_id] = count ? count + 1 : 1;
-          }
-        }, this);
       } else {
         // Not computable
         delete this.subgraphs[skid];
         elements.nodes.push(asNode('' + skid));
+        return;
       }
-    } else if (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
-      // TODO not yet implemented
-    } else if (mode > 0) {
-      // synapse clustering
     }
+
+    var findPartID = function(treenodeID) {
+      var IDs = Object.keys(parts);
+      for (var i=0; i<IDs.length; ++i) {
+        if (parts[IDs[i]](treenodeID)) return IDs[i];
+      }
+      return null;
+    };
+
+    // ... and connected to all other nodes: preparing data
+    // m[1] is the array of connectors as returned in json
+    m[1].forEach(function(row) {
+      if (!models[row[5]]) return; // other skeleton is not in the graph
+      var treenodeID = row[0],
+          connectorID = row[2],
+          presynaptic = 0 === row[6],
+          sourceSkid = presynaptic ? skid : row[5],
+          targetSkid = presynaptic ? row[5] : skid,
+          node_id = findPartID(treenodeID),
+          connector = subedges[connectorID];
+      if (!connector) {
+        connector = {pre: null,
+                     post: {}};
+        subedges[connectorID] = connector;
+      }
+      if (presynaptic) {
+        connector.pre = node_id;
+        if (undefined === this.subgraphs[targetSkid]) {
+          var count = connector.post[targetSkid];
+          connector.post[targetSkid] = count ? count + 1 : 1;
+        }
+      } else {
+        if (undefined === this.subgraphs[sourceSkid]) connector.pre = sourceSkid;
+        var count = connector.post[node_id];
+        connector.post[node_id] = count ? count + 1 : 1;
+      }
+    }, this);
   }).bind(this));
 
   // Append all new nodes from the subgraphs
@@ -2188,9 +2197,36 @@ GroupGraph.prototype.quantificationDialog = function() {
   });
 };
 
-GroupGraph.prototype.splitAxonAndDendrite = function() {
+GroupGraph.prototype.split = function(mode) {
   this.getSelectedSkeletons().forEach(function(skid) {
-    this.subgraphs[skid] = this.SUBGRAPH_AXON_DENDRITE;
+    this.subgraphs[skid] = mode;
   }, this);
   this.update();
+};
+
+GroupGraph.prototype.splitAxonAndDendrite = function() {
+  this.split(this.SUBGRAPH_AXON_DENDRITE);
+};
+
+GroupGraph.prototype.splitBySynapseClustering = function() {
+  var skids = this.getSelectedSkeletons(),
+      bandwidth = 5000;
+  for (var i=0; i<skids.length; ++i) {
+    var p = this.subgraphs[skid];
+    if (undefined !== p && p > 0) {
+      bandwidth = p;
+      break;
+    }
+  };
+  var new_bandwidth = prompt("Synapse clustering bandwidth", p);
+  if (undefined !== new_bandwidth) {
+    try {
+      new_bandwidth = Number(new_bandwidth);
+      if (Number.NaN === new_bandwidth) throw new Exception("Invalud bandwidth " + new_bandwidth);
+      this.split(new_bandwidth);
+    } catch (e) {
+      alert("Invalid bandwidth: " + new_bandwidth + "\n" + e);
+      console.log(e);
+    }
+  }
 };

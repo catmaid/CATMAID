@@ -351,10 +351,19 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     regularNodes: [],
   });
 
-  var nodeClickHandler = (function(n) {
-      var skid = this.currentSkeletonId;
+  /**
+   * The node click handler is called if users double click on a node. It will
+   * select the current node and highlight it.
+   */
+  var nodeClickHandler = function(skid) {
+    return function(n) {
       // Don't let the event bubble up
       d3.event.stopPropagation();
+      // Reset all previous highlights
+      d3.selectAll('.node').classed('highlight', false);
+      // Set node to be higlighted
+      d3.select(this).classed('highlight', true);
+
       // Select node in tracing layer
       SkeletonAnnotations.staticMoveTo(
           n.loc_z,
@@ -363,7 +372,8 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
           function () {
              SkeletonAnnotations.staticSelectNode(n.id, skid);
           });
-    }).bind(this);
+      }
+    }(this.currentSkeletonId);
 
   var nodeName = function(showTags, showIds, showStrahler) {
     function addTag(d, wrapped) {

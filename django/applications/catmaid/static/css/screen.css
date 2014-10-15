@@ -627,10 +627,15 @@ div#classification_graph_object img.roiimage {
   font-style:italic;
 }
 
+
 .node circle {
   fill: #fff;
   stroke: steelblue;
   stroke-width: 1.5px;
+}
+
+.node.highlight circle {
+  fill: #00f;
 }
 
 .taggedNode circle {

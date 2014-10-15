@@ -636,10 +636,15 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       subedges = {}; // map of {connectorID: {pre: graph node ID,
                      //                       post: {graph node ID: count}}}
   subgraph_skids.forEach((function(skid) {
-    var m = morphology[skid];
-    var ap = new ArborParser().init('compact-arbor', m),
+    var m = morphology[skid],
+        ap = new ArborParser().init('compact-arbor', m),
         mode = this.subgraphs[skid],
-        parts = {};
+        parts = {},
+        name = NeuronNameService.getInstance().getName(skid),
+        common = {skeletons: [models[skid]],
+                  node_count: 0,
+                  color: '#' + models[skid].color.getHexString()};
+
     if (mode === this.SUBGRAPH_AXON_DENDRITE) {
       if (ap.n_inputs > 0 && ap.n_outputs > 0) {
         var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs);
@@ -656,11 +661,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         var axon = ap.arbor.subArbor(cut);
 
         // Create two nodes, one for the axon and one for the dendrite
-        var name = NeuronNameService.getInstance().getName(skid),
-            common = {skeletons: [models[skid]],
-                      node_count: 0,
-                      color: '#' + models[skid].color.getHexString()},
-            node_axon = {data: $.extend({}, common, {id: skid + '_axon', label: name + ' (axon)'})},
+        var node_axon = {data: $.extend({}, common, {id: skid + '_axon', label: name + ' (axon)'})},
             node_dend = {data: $.extend({}, common, {id: skid + '_dendrite', label: name + ' (dendrite)'})};
 
         parts[node_axon.data.id] = function(treenodeID) { return axon.contains(treenodeID); };
@@ -683,6 +684,78 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         elements.nodes.push(asNode('' + skid));
         return;
       }
+    } else if (mode > 0) {
+      // Synapse clustering: mode is the bandwidth
+      var synapse_map = Object.keys(ap.outputs).reduce(function(m, node) {
+        var no = ap.outputs[node],
+            ni = m[node];
+        if (ni) m[node] = ni + no;
+        else m[node] = no;
+        return m;
+      }, $.extend({}, ap.inputs));
+      var sc = new SynapseClustering(ap.arbor, ap.positions, synapse_map, mode),
+          clusters = sc.clusterMaps(sc.densityHillMap());
+      // TODO the nodes in between clusters get assigned to undefined in SynapseClustering
+      delete clusters[undefined]; // quick fix
+      var clusterIDs = Object.keys(clusters);
+      if (1 === clusterIDs.length) {
+        // Not splittable
+        delete this.subgraphs[skid];
+        elements.nodes.push(asNode('' + skid));
+        return;
+      }
+      // Relabel clusters (could be skipping indices and start at zero)
+      clusters = clusterIDs.reduce(function(o, clusterID, i) {
+        o[i+1] = clusters[clusterID];
+        return o;
+      }, {});
+      clusterIDs = Object.keys(clusters);
+      // Else, create subgraph
+      var orders = ap.arbor.nodesOrderFrom(ap.arbor.root),
+          roots = clusterIDs.reduce(function(o, clusterID) {
+            var nodes = Object.keys(clusters[clusterID]),
+                root = null,
+                min = Number.MAX_VALUE;
+            for (var i=0; i<nodes.length; ++i) {
+              var node = nodes[i],
+                  ord = orders[node];
+              if (ord < min) {
+                root = node;
+                min = ord;
+              }
+            }
+            o[root] = clusterID;
+            return o;
+          }, {}),
+          keepers = Object.keys(roots).reduce(function(o, root) { o[root] = true; return o; }, {}),
+          simple = ap.arbor.simplify(keepers);
+      
+      simple.nodesArray().forEach(function(node) {
+        // Create a node and a part
+        var clusterID = roots[node],
+            source_id;
+        if (undefined === clusterID) {
+          // Branch point
+          source_id = skid + '_' + node;
+          subnodes.push({data: $.extend({}, common, {id: source_id, label: '', branch: true})});
+        } else {
+          source_id = skid + '_' + clusterID;
+          parts[source_id] = function(treenodeID) { return clusters[clusterID][treenodeID]; };
+          subnodes.push({data: $.extend({}, common, {id: source_id, label: name + ' [' + clusterID + ']'})});
+        }
+        // Add undirected edges: one less than nodes
+        var paren = simple.edges[node];
+        if (!paren) return; // node is the root
+        var parent_clusterID = roots[paren],
+            target_id = skid + '_' + (undefined === parent_clusterID ? paren : parent_clusterID);
+        elements.edges.push({data: {directed: false,
+                                    arrow: 'none',
+                                    id: source_id + '_' + target_id,
+                                    color: common.color,
+                                    source: source_id,
+                                    target: target_id,
+                                    weight: 10}});
+      });
     }
 
     var findPartID = function(treenodeID) {
@@ -2212,14 +2285,14 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
   var skids = this.getSelectedSkeletons(),
       bandwidth = 5000;
   for (var i=0; i<skids.length; ++i) {
-    var p = this.subgraphs[skid];
-    if (undefined !== p && p > 0) {
+    var p = this.subgraphs[skids[i]];
+    if (p) {
       bandwidth = p;
       break;
     }
   };
-  var new_bandwidth = prompt("Synapse clustering bandwidth", p);
-  if (undefined !== new_bandwidth) {
+  var new_bandwidth = prompt("Synapse clustering bandwidth", bandwidth);
+  if (new_bandwidth) {
     try {
       new_bandwidth = Number(new_bandwidth);
       if (Number.NaN === new_bandwidth) throw new Exception("Invalud bandwidth " + new_bandwidth);

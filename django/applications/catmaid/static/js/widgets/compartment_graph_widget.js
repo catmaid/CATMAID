@@ -1064,8 +1064,10 @@ GroupGraph.prototype.appendGroup = function(models) {
 
     // All neuron names
     var names = Object.keys(models).map(function(skid) {
+      // Groups and subgraphs are incompatible
+      delete this.subgraphs[skid];
       return models[skid].baseName;
-    }).sort();
+    }, this).sort();
 
     common.unshift("--");
     all.unshift("--");

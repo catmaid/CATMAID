@@ -671,6 +671,16 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       // TODO the nodes in between clusters get assigned to undefined in SynapseClustering
       delete clusters[undefined]; // quick fix
       var clusterIDs = Object.keys(clusters);
+      // Remove clusters of treenodes that lack synapses
+      var synapse_treenodes = Object.keys(synapse_map);
+      clusterIDs = clusterIDs.filter(function(clusterID) {
+        var count = 0,
+            treenodes = clusters[clusterID];
+        for (var k=0; k<synapse_treenodes.length; ++k) {
+          if (treenodes[synapse_treenodes[k]]) return true;
+        }
+        return false;
+      });
       if (1 === clusterIDs.length) {
         // Not splittable
         delete this.subgraphs[skid];

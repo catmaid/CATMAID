@@ -592,15 +592,6 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
   elements.nodes = nodes;
   elements.edges = [];
   
-  json.edges.forEach((function(e) {
-    // Skip edges that will be created later
-    if (this.subgraphs[e[0]] || this.subgraphs[e[1]]) return;
-    elements.edges.push(asEdge(e));
-  }).bind(this));
-
-  // Group neurons, if any groups exist, skipping splitted neurons
-  this._regroup(elements, this.subgraphs, models);
-
   // Store positions of current nodes and their selected state
   var positions = {},
       selected = {},
@@ -820,6 +811,16 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
                                   weight: count}});
     });
   });
+
+  // Add all other edges
+  json.edges.forEach((function(e) {
+    // Skip edges that are part of subgraphs
+    if (this.subgraphs[e[0]] || this.subgraphs[e[1]]) return;
+    elements.edges.push(asEdge(e));
+  }).bind(this));
+
+  // Group neurons, if any groups exist, skipping splitted neurons
+  this._regroup(elements, this.subgraphs, models);
 
   // Compute edge width for rendering the edge width
   var edgeWidth = this.edgeWidthFn();

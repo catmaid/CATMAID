@@ -515,11 +515,19 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
 };
 
 GroupGraph.prototype.updateNeuronNames = function() {
-  this.cy.nodes().each(function(i, node) {
+  this.cy.nodes().each((function(i, node) {
     var models = node.data('skeletons');
     // skip groups
-    if (1 === models.length) node.data('label', NeuronNameService.getInstance().getName(models[0].id));
-  });
+    if (1 === models.length) {
+      var name = NeuronNameService.getInstance().getName(models[0].id);
+      if (this.subgraphs[models[0].id]) {
+        var label = node.data('label');
+        var i_ = label.lastIndexOf(' [');
+        if (-1 !== i_) name = name + label.substring(i_);
+      }
+      node.data('label', name);
+    }
+  }).bind(this));
 };
 
 /** There is a model for every skeleton ID included in json.

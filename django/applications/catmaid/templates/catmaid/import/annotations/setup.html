@@ -1,0 +1,56 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+{% endblock %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+
+  <form action="" method="post">{% csrf_token %}
+    <div class="module">
+      {% block setup_content %}
+      {% endblock %}
+
+        <div class="aligned">
+        {{ wizard.management_form }}
+        {% for field in wizard.form %}
+            <div class="form-row">
+                {{ field.label_tag }}
+                {{ field }}
+                <p class="help">{{ field.help_text|safe }}</p>
+            </div>
+        {% endfor %}
+        </div>
+
+      <div class="submit-row">
+          <p>
+          {% if wizard.steps.prev %}
+              <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}">{% trans "first step" %}</button>
+              <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}">{% trans "prev step" %}</button>
+          {% endif %}
+        {% if wizard.steps.next %}
+          <input type="submit" value="next step"/>
+        {% else %}
+          <input type="submit" value="import"/>
+        {% endif %}
+          </p>
+          </p>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

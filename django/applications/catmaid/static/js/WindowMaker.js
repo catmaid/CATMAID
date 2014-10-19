@@ -1081,9 +1081,10 @@ var WindowMaker = new function()
          ['Quantify', GG.quantificationDialog.bind(GG)]]);
 
     appendToTab(tabs['Subgraphs'],
-        [[document.createTextNode('Select node(s) and: ')],
-         ['Split axon and dendrite', GG.splitAxonAndDendrite.bind(GG)],
-         ['Split by synapse clustering', GG.splitBySynapseClustering.bind(GG)]]);
+        [[document.createTextNode('Select node(s) and split by: ')],
+         ['Axon & dendrite', GG.splitAxonAndDendrite.bind(GG)],
+         ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)], 
+         ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)]]);
 
     content.appendChild( bar );
 

@@ -540,7 +540,10 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
     var morphologies = {};
     fetchSkeletons(
         subgraph_skids,
-        function(skid) { return django_url + project.id + '/' + skid + '/1/1/0/compact-arbor'; },
+        (function(skid) {
+          var with_tags = (this.subgraphs[skid] === this.SUBGRAPH_AXON_BACKBONE_TERMINALS ? 1 : 0);
+          return django_url + project.id + '/' + skid + '/1/1/' + with_tags + '/compact-arbor';
+        }).bind(this),
         function(skid) { return {}; },
         function(skid, json) { morphologies[skid] = json; },
         (function(skid) { delete this.subgraphs[skid]; }).bind(this), // failed loading
@@ -617,7 +620,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
                   node_count: 0,
                   color: '#' + models[skid].color.getHexString()};
 
-    if (mode === this.SUBGRAPH_AXON_DENDRITE) {
+    if (mode === this.SUBGRAPH_AXON_DENDRITE
+      || mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
       if (ap.n_inputs > 0 && ap.n_outputs > 0) {
         var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs);
         var nodes = ap.arbor.nodesArray(),
@@ -632,24 +636,50 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         }
         var axon = ap.arbor.subArbor(cut);
 
-        // Create two nodes, one for the axon and one for the dendrite
-        var node_axon = {data: $.extend({}, common, {id: skid + '_axon', label: name + ' [axon]'})},
-            node_dend = {data: $.extend({}, common, {id: skid + '_dendrite', label: name + ' [dendrite]'})};
-
+        // Subgraph with a node for the axon
+        var node_axon = {data: $.extend({}, common, {id: skid + '_axon', label: name + ' [axon]'})};
+        var graph = [node_axon];
         parts[node_axon.data.id] = function(treenodeID) { return axon.contains(treenodeID); };
-        parts[node_dend.data.id] = function(treenodeID) { return !axon.contains(treenodeID); };
-
         subnodes.push(node_axon);
-        subnodes.push(node_dend);
 
-        // ... connected by an undirected edge
-        elements.edges.push({data: {directed: false,
-                                    arrow: 'none',
-                                    id: node_axon.data.id + '_' + node_dend.data.id,
-                                    color: common.color,
-                                    source: node_axon.data.id,
-                                    target: node_dend.data.id,
-                                    weight: 10}});
+        // Create nodes for dendrites
+        if (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS && !m[2].hasOwnProperty('microtubules end')) {
+          // Fall back
+          mode = this.SUBGRAPH_AXON_DENDRITE;
+        }
+
+        if (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
+          // Split dendrite further into backbone and terminal subarbors
+          var backbone = ap.arbor.upstreamArbor(m[2]['microtubules end'].reduce(function(o, nodeID) { o[nodeID] = true; return o; }, {}));
+          var node_dend1 = {data: $.extend({}, common, {id: skid + '_backbone_dendrite', label: name + ' [backbone dendrite]'})},
+              node_dend2 = {data: $.extend({}, common, {id: skid + '_dendritic_terminals', label: name + ' [dendritic terminals]'})};
+          graph.push(node_dend1);
+          graph.push(node_dend2);
+          subnodes.push(node_dend1);
+          subnodes.push(node_dend2);
+          parts[node_dend1.data.id] = function(treenodeID) {
+            return backbone.contains(treenodeID) && !axon.contains(treenodeID);
+          };
+          parts[node_dend2.data.id] = function(treenodeID) {
+            return !backbone.contains(treenodeID) && !axon.contains(treenodeID);
+          }
+        } else if (mode === this.SUBGRAPH_AXON_DENDRITE) {
+          var node_dend = {data: $.extend({}, common, {id: skid + '_dendrite', label: name + ' [dendrite]'})};
+          graph.push(node_dend);
+          subnodes.push(node_dend);
+          parts[node_dend.data.id] = function(treenodeID) { return !axon.contains(treenodeID); };
+        }
+
+        for (var i=1; i<graph.length; ++i) {
+          // ... connected by an undirected edge, in sequence
+          elements.edges.push({data: {directed: false,
+                                      arrow: 'none',
+                                      id: graph[i-1].data.id + '_' + graph[i].data.id,
+                                      color: common.color,
+                                      source: graph[i-1].data.id,
+                                      target: graph[i].data.id,
+                                      weight: 10}});
+        }
       } else {
         // Not computable
         delete this.subgraphs[skid];
@@ -2324,6 +2354,10 @@ GroupGraph.prototype.split = function(mode) {
 
 GroupGraph.prototype.splitAxonAndDendrite = function() {
   this.split(this.SUBGRAPH_AXON_DENDRITE);
+};
+
+GroupGraph.prototype.splitAxonAndTwoPartDendrite = function() {
+  this.split(this.SUBGRAPH_AXON_BACKBONE_TERMINALS);
 };
 
 GroupGraph.prototype.splitBySynapseClustering = function() {

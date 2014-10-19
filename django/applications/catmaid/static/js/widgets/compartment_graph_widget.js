@@ -607,7 +607,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
   });
 
   // Recreate subgraphs
-  var subnodes = [],
+  var subnodes = {},
       subedges = {}; // map of {connectorID: {pre: graph node ID,
                      //                       post: {graph node ID: count}}}
   subgraph_skids.forEach((function(skid) {
@@ -618,7 +618,14 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         name = NeuronNameService.getInstance().getName(skid),
         common = {skeletons: [models[skid]],
                   node_count: 0,
-                  color: '#' + models[skid].color.getHexString()};
+                  color: '#' + models[skid].color.getHexString()},
+        createNode = function(id, label, is_branch) {
+          return {data: $.extend(is_branch ? {branch: true} : {}, common,
+            {id: id,
+             label: label,
+             upstream_skids: {}, // map of skeleton ID vs number of postsynaptic relations
+             downstream_skids: {}})}; // map of skeleton ID vs number of presynaptic relations
+        };
 
     if (mode === this.SUBGRAPH_AXON_DENDRITE
       || mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
@@ -637,10 +644,10 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         var axon = ap.arbor.subArbor(cut);
 
         // Subgraph with a node for the axon
-        var node_axon = {data: $.extend({}, common, {id: skid + '_axon', label: name + ' [axon]'})};
+        var node_axon = createNode(skid + '_axon', name + ' [axon]');
         var graph = [node_axon];
         parts[node_axon.data.id] = function(treenodeID) { return axon.contains(treenodeID); };
-        subnodes.push(node_axon);
+        subnodes[node_axon.data.id] = node_axon;
 
         // Create nodes for dendrites
         if (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS && !m[2].hasOwnProperty('microtubules end')) {
@@ -651,12 +658,12 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         if (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
           // Split dendrite further into backbone and terminal subarbors
           var backbone = ap.arbor.upstreamArbor(m[2]['microtubules end'].reduce(function(o, nodeID) { o[nodeID] = true; return o; }, {}));
-          var node_dend1 = {data: $.extend({}, common, {id: skid + '_backbone_dendrite', label: name + ' [backbone dendrite]'})},
-              node_dend2 = {data: $.extend({}, common, {id: skid + '_dendritic_terminals', label: name + ' [dendritic terminals]'})};
+          var node_dend1 = createNode(skid + '_backbone_dendrite', name + ' [backbone dendrite]'),
+              node_dend2 = createNode(skid + '_dendritic_terminals', name + ' [dendritic terminals]');
           graph.push(node_dend1);
           graph.push(node_dend2);
-          subnodes.push(node_dend1);
-          subnodes.push(node_dend2);
+          subnodes[node_dend1.data.id] = node_dend1;
+          subnodes[node_dend2.data.id] = node_dend2;
           parts[node_dend1.data.id] = function(treenodeID) {
             return backbone.contains(treenodeID) && !axon.contains(treenodeID);
           };
@@ -664,9 +671,9 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
             return !backbone.contains(treenodeID) && !axon.contains(treenodeID);
           }
         } else if (mode === this.SUBGRAPH_AXON_DENDRITE) {
-          var node_dend = {data: $.extend({}, common, {id: skid + '_dendrite', label: name + ' [dendrite]'})};
+          var node_dend = createNode(skid + '_dendrite', name + ' [dendrite]');
           graph.push(node_dend);
-          subnodes.push(node_dend);
+          subnodes[node_dend.data.id] = node_dend;
           parts[node_dend.data.id] = function(treenodeID) { return !axon.contains(treenodeID); };
         }
 
@@ -741,7 +748,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
           }, {}),
           keepers = Object.keys(roots).reduce(function(o, root) { o[root] = true; return o; }, {}),
           simple = ap.arbor.simplify(keepers);
-      
+
       simple.nodesArray().forEach(function(node) {
         // Create a node and a part
         var clusterID = roots[node],
@@ -749,11 +756,11 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         if (undefined === clusterID) {
           // Branch point
           source_id = skid + '_' + node;
-          subnodes.push({data: $.extend({}, common, {id: source_id, label: '', branch: true})});
+          subnodes[source_id] = createNode(source_id, '', true);
         } else {
           source_id = skid + '_' + clusterID;
           parts[source_id] = function(treenodeID) { return clusters[clusterID][treenodeID]; };
-          subnodes.push({data: $.extend({}, common, {id: source_id, label: name + ' [' + clusterID + ']'})});
+          subnodes[source_id] = createNode(source_id, name + ' [' + clusterID + ']');
         }
         // Add undirected edges: one less than nodes
         var paren = simple.edges[node];
@@ -780,13 +787,27 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
 
     // ... and connected to all other nodes: preparing data
     // m[1] is the array of connectors as returned in json
+    var upstream = {},
+        downstream = {};
     m[1].forEach(function(row) {
-      if (!models[row[5]]) return; // other skeleton is not in the graph
+      // Accumulate connection into the node_id for later use in e.g. grow command
       var treenodeID = row[0],
-          connectorID = row[2],
+          node_id = findPartID(treenodeID),
+          other_skid = row[5],
           presynaptic = 0 === row[6],
-          sourceSkid = presynaptic ? skid : row[5],
-          targetSkid = presynaptic ? row[5] : skid,
+          ob = presynaptic ? downstream : upstream,
+          map = ob[node_id];
+      if (!map) {
+        map = {};
+        ob[node_id] = map;
+      }
+      var n_synapses = map[other_skid];
+      map[other_skid] = n_synapses ? n_synapses + 1 : 1;
+      // Accumulate synapses for an edge with another node in the graph
+      if (!models[other_skid]) return; // other skeleton is not in the graph
+      var connectorID = row[2],
+          sourceSkid = presynaptic ? skid : other_skid,
+          targetSkid = presynaptic ? other_skid : skid,
           node_id = findPartID(treenodeID),
           connector = subedges[connectorID];
       if (!connector) {
@@ -806,10 +827,18 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         connector.post[node_id] = count ? count + 1 : 1;
       }
     }, this);
+
+    // Assign partners to each subnode
+    Object.keys(upstream).forEach(function(id) {
+      subnodes[id].data.upstream_skids = upstream[id];
+    });
+    Object.keys(downstream).forEach(function(id) {
+      subnodes[id].data.downstream_skids = downstream[id];
+    });
   }).bind(this));
 
   // Append all new nodes from the subgraphs
-  elements.nodes = elements.nodes.concat(subnodes);
+  elements.nodes = elements.nodes.concat(Object.keys(subnodes).map(function(id) { return subnodes[id]; }));
 
   // Add up connectors to create edges for subgraph nodes
   var cedges = {};
@@ -2365,7 +2394,7 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
       bandwidth = 5000;
   for (var i=0; i<skids.length; ++i) {
     var p = this.subgraphs[skids[i]];
-    if (p) {
+    if (p && p > 0) {
       bandwidth = p;
       break;
     }

@@ -438,8 +438,9 @@ function TileLayer(
 	self.tileSource = tileSource;
 
 	/* Contains all tiles in a 2d-array */
-	var tiles = new Array();
-	
+	var tiles = [];
+	var tiles_buf = [];
+
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
 

@@ -1499,7 +1499,7 @@ var WindowMaker = new function()
     content.appendChild( container );
 
     container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable' + TNT.widgetID + '">'
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable' + TNT.widgetID + '">' +
         '<thead>' +
           '<tr>' +
             '<th>id</th>' +

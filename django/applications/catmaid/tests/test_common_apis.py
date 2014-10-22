@@ -588,15 +588,11 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         response = self.client.get('/%d/stats/summary' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
-        expected_result = {u"proj_users": 2,
-                           u'proj_presyn': 0,
-                           u'proj_postsyn': 0,
-                           u'proj_synapses': 0,
-                           u"proj_neurons": 11,
-                           u"proj_treenodes": 89,
-                           u"proj_skeletons": 10,
-                           u"proj_textlabels": 2,
-                           u"proj_tags": 4}
+        expected_result = {
+            u"connectors_created": 0,
+            u'skeletons_created': 0,
+            u'treenodes_created': 0,
+        }
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)
 

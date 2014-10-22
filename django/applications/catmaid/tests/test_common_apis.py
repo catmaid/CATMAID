@@ -808,27 +808,41 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response)
 
     def test_treenode_create_interpolated_single_new_node(self):
-        self.fake_authentication()
         x = 585
         y = 4245
         z = 0
         radius = -1
         confidence = 5
         parent_id = 289
-        response = self.client.post(
-                '/%d/treenode/create/interpolated' % self.test_project_id, {
-                    'parent_id': parent_id,
-                    'x': x,
-                    'y': y,
-                    'z': z,
-                    'radius': radius,
-                    'confidence': confidence,
-                    'atnx': 6210,
-                    'atny': 3480,
-                    'atnz': 0,
-                    'resx': 5,
-                    'resy': 5,
-                    'resz': 9})
+
+        def call_backend():
+            return self.client.post(
+                    '/%d/treenode/create/interpolated' % self.test_project_id, {
+                        'parent_id': parent_id,
+                        'x': x,
+                        'y': y,
+                        'z': z,
+                        'radius': radius,
+                        'confidence': confidence,
+                        'atnx': 6210,
+                        'atny': 3480,
+                        'atnz': 0,
+                        'resx': 5,
+                        'resy': 5,
+                        'resz': 9})
+
+        # Expect a permission error, because we
+        self.client.login(username='test1', password='test')
+        response = call_backend()
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        print parsed_response
+        self.assertTrue('permission_error' in parsed_response)
+        self.assertTrue(parsed_response['permission_error'])
+
+        # Login with correct user
+        self.fake_authentication()
+        response = call_backend()
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         treenode = get_object_or_404(Treenode, id=parsed_response['treenode_id'])
@@ -841,7 +855,6 @@ class ViewPageTests(TestCase):
         self.assertEqual(get_object_or_404(Treenode, id=parent_id).skeleton_id, treenode.skeleton_id)
 
     def test_treenode_create_interpolated_many_new_nodes(self):
-        self.fake_authentication()
         x = 9135
         y = 1215
         z = 36
@@ -853,7 +866,8 @@ class ViewPageTests(TestCase):
 
         treenode_count = count_treenodes()
 
-        response = self.client.post(
+        def call_backend():
+            return self.client.post(
                 '/%d/treenode/create/interpolated' % self.test_project_id, {
                     'parent_id': parent_id,
                     'x': x,
@@ -867,6 +881,17 @@ class ViewPageTests(TestCase):
                     'resx': 5,
                     'resy': 5,
                     'resz': 9})
+
+        # Expect a permission error, because we
+        self.client.login(username='test1', password='test')
+        response = call_backend()
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue('permission_error' in parsed_response)
+        self.assertTrue(parsed_response['permission_error'])
+
+        self.fake_authentication()
+        response = call_backend()
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         treenode = get_object_or_404(Treenode, id=parsed_response['treenode_id'])

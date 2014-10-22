@@ -36,14 +36,15 @@ class TransactionTests(TransactionTestCase):
         self.test_project_id = 3
         self.client = Client()
 
-    def fake_authentication(self):
-        self.client.login(username='test2', password='test')
+    def fake_authentication(username='test2', password='test'):
+        self.client.login(username=username, password=password)
 
-        user = User.objects.get(pk=3)
+        user = User.objects.get(username=username)
         # Assign the new user permissions to browse and annotate projects
         p = Project.objects.get(pk=self.test_project_id)
         assign_perm('can_browse', user, p)
         assign_perm('can_annotate', user, p)
+
 
     def test_successful_commit(self):
         def insert_user():
@@ -292,16 +293,22 @@ class ViewPageTests(TestCase):
         self.test_user_id = 3
         self.client = Client()
 
+        p = Project.objects.get(pk=self.test_project_id)
+
         user = User.objects.get(pk=3)
         # Assign the new user permissions to browse and annotate projects
-        p = Project.objects.get(pk=self.test_project_id)
         assign_perm('can_browse', user, p)
         assign_perm('can_annotate', user, p)
 
+    def fake_authentication(self, username='test2', password='test', add_default_permissions=False):
+        self.client.login(username=username, password=password)
 
-
-    def fake_authentication(self):
-        self.client.login(username='test2', password='test')
+        if add_default_permissions:
+            p = Project.objects.get(pk=self.test_project_id)
+            user = User.objects.get(username=username)
+            # Assign the new user permissions to browse and annotate projects
+            assign_perm('can_browse', user, p)
+            assign_perm('can_annotate', user, p)
 
     def compare_swc_data(self, s1, s2):
         m1 = swc_string_to_sorted_matrix(s1)
@@ -832,7 +839,8 @@ class ViewPageTests(TestCase):
                         'resz': 9})
 
         # Expect a permission error, because we
-        self.client.login(username='test1', password='test')
+        self.fake_authentication(username='test1', password='test',
+                add_default_permissions=True)
         response = call_backend()
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -882,8 +890,10 @@ class ViewPageTests(TestCase):
                     'resy': 5,
                     'resz': 9})
 
-        # Expect a permission error, because we
-        self.client.login(username='test1', password='test')
+        # Expect a permission error, because we are not logged in as a user
+        # with permissions on the neuron---at least if we lock the neuron.
+        self.fake_authentication(username='test0', password='test',
+                add_default_permissions=True)
         response = call_backend()
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)

@@ -979,7 +979,7 @@ class ViewPageTests(TestCase):
     def test_tree_object_list_no_parent(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/tree_object/list' % self.test_project_id, {
+                '/%d/object-tree/list' % self.test_project_id, {
                     'parentid': 0})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -992,7 +992,7 @@ class ViewPageTests(TestCase):
     def test_tree_object_list_empty(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/tree_object/list' % self.test_project_id, {
+                '/%d/object-tree/list' % self.test_project_id, {
                     'parentid': 1,
                     'parentname': 'dull skeleton (gerhard)'})
         self.assertEqual(response.status_code, 200)
@@ -1003,7 +1003,7 @@ class ViewPageTests(TestCase):
     def test_tree_object_list_groups(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/tree_object/list' % self.test_project_id, {
+                '/%d/object-tree/list' % self.test_project_id, {
                     'parentid': 2323,
                     'parentname': 'neuropile'})
         self.assertEqual(response.status_code, 200)
@@ -1023,7 +1023,7 @@ class ViewPageTests(TestCase):
     def test_tree_object_list_isol_case(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/tree_object/list' % self.test_project_id, {
+                '/%d/object-tree/list' % self.test_project_id, {
                     'parentid': 364,
                     'parentname': 'Isolated synaptic terminals'})
         self.assertEqual(response.status_code, 200)
@@ -1040,21 +1040,21 @@ class ViewPageTests(TestCase):
     def test_tree_object_list_skeleton(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/tree_object/list' % self.test_project_id, {
+                '/%d/object-tree/list' % self.test_project_id, {
                     'parentid': 2,
                     'parentname': 'dull neuron'})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = [
-                {'data': {'title': 'dull skeleton (gerhard)'},
-                'attr': {'id': 'node_1', 'rel': 'skeleton'},
-                'state': 'closed'}]
+                {u'data': {u'title': u'dull skeleton'},
+                u'attr': {u'id': u'node_1', u'rel': u'skeleton'},
+                u'state': u'closed'}]
         self.assertEqual(expected_response, parsed_response)
 
     def test_tree_object_list_neurons(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/tree_object/list' % self.test_project_id, {
+                '/%d/object-tree/list' % self.test_project_id, {
                     'parentid': 4,
                     'parentname': 'Fragments'})
         self.assertEqual(response.status_code, 200)
@@ -1089,8 +1089,8 @@ class ViewPageTests(TestCase):
     def test_tree_object_expand(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/tree_object/expand' % self.test_project_id,
-                {'skeleton_id': 235})
+                '/%d/object-tree/expand' % self.test_project_id,
+                {'class_instance_id': 235})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = [2323, 231, 233, 235]

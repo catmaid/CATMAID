@@ -1891,8 +1891,8 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
 
         new_root = 2394
-        link_to = 2394
-        link_from = 2415
+        link_to = 2394 # Skeleton ID: 2388
+        link_from = 2415 # Skeleton ID: 2411
 
         count_logs = lambda: Log.objects.all().count()
         log_count = count_logs()
@@ -1932,10 +1932,6 @@ class ViewPageTests(TestCase):
 
         self.assertEqual(0, ClassInstance.objects.filter(id=2388).count())
         self.assertEqual(0, ClassInstanceClassInstance.objects.filter(id=2390).count())
-
-        self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeClassInstance, id=2393).class_instance_id)
-        self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeClassInstance, id=2395).class_instance_id)
-        self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeClassInstance, id=2397).class_instance_id)
 
         self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
 

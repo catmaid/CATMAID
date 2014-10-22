@@ -220,6 +220,10 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
     node, used by the join_skeletons_interpolated. """
     response_on_error = 'Could not create interpolated treenode'
     try:
+        # Raise an Exception if the user doesn't have permission to edit
+        # the neuron the skeleton of the treenode is modeling.
+        can_edit_treenode_or_fail(request.user, project_id, params['parent_id'])
+
         parent = Treenode.objects.get(pk=params['parent_id'])
         parent_skeleton_id = parent.skeleton_id
         parent_x = decimal.Decimal(parent.location_x)

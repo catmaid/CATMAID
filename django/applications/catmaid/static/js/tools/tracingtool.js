@@ -535,6 +535,16 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
+    helpText: "Append the active skeleton to the last used selection widget",
+    keyShortcuts: {
+      "Y": [ 89 ]
+    },
+    run: function (e) {
+      SelectionTable.getLastFocused().append(SkeletonAnnotations.sourceView.getSelectedSkeletonModels());
+    }
+  }) );
+
+  this.addAction( new Action({
     helpText: "Split this skeleton at the active node",
     buttonName: "skelsplitting",
     buttonID: 'trace_button_skelsplitting',
@@ -824,17 +834,6 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-      helpText: "Neuron denrogram",
-      keyShortcuts: {
-          'F4': [ 115 ]
-      },
-      run: function (e) {
-        WindowMaker.create('neuron-dendrogram');
-        return true;
-      }
-  }) );
-
-  this.addAction( new Action({
       helpText: "Annotate active neuron",
       keyShortcuts: {
           'F3': [ 114 ]
@@ -846,6 +845,17 @@ function TracingTool()
           NeuronAnnotations.prototype.annotate_neurons_of_skeletons(
             [SkeletonAnnotations.getActiveSkeletonId()]);
           return true;
+      }
+  }) );
+
+  this.addAction( new Action({
+      helpText: "Neuron dendrogram",
+      keyShortcuts: {
+          'F4': [ 115 ]
+      },
+      run: function (e) {
+        WindowMaker.create('neuron-dendrogram');
+        return true;
       }
   }) );
 

@@ -325,6 +325,30 @@ var WindowMaker = new function()
     tag.appendChild(tagInput);
     buttons.appendChild(tag);
 
+    var minStrahler = document.createElement('label');
+    minStrahler.appendChild(document.createTextNode('Collapse Strahler <'));
+    var minStrahlerInput = document.createElement('input');
+    minStrahlerInput.setAttribute('type', 'number');
+    minStrahlerInput.setAttribute('min', 1);
+    minStrahlerInput.setAttribute('max', 999);
+    minStrahlerInput.setAttribute('id', 'dendrogram-minStrahler-' + ND.widgetID);
+    if (ND.minStrahler) {
+      minStrahlerInput.value = ND.minStrahler;
+    }
+    minStrahlerInput.onchange = function(e) {
+        ND.setMinStrahler(parseInt(this.value));
+        ND.update();
+    };
+    minStrahlerInput.oninput = function(e) {
+      if (13 === e.keyCode) {
+        ND.update();
+      } else {
+        ND.setMinStrahler(parseInt(this.value));
+      }
+    };
+    minStrahler.appendChild(minStrahlerInput);
+    buttons.appendChild(minStrahler);
+
     var collapse = document.createElement('label');
     var collapseInput = document.createElement('input');
     collapseInput.setAttribute('type', 'checkbox');
@@ -366,6 +390,34 @@ var WindowMaker = new function()
     showTags.appendChild(showTagsInput);
     showTags.appendChild(document.createTextNode('Show tags'));
     buttons.appendChild(showTags);
+
+    var showStrahler = document.createElement('label');
+    var showStrahlerInput = document.createElement('input');
+    showStrahlerInput.setAttribute('type', 'checkbox');
+    if (ND.showStrahler) {
+      showStrahlerInput.setAttribute('checked', 'checked');
+    }
+    showStrahlerInput.onchange = function() {
+      ND.setShowStrahler(this.checked);
+      ND.update();
+    };
+    showStrahler.appendChild(showStrahlerInput);
+    showStrahler.appendChild(document.createTextNode('Show Strahler'));
+    buttons.appendChild(showStrahler);
+
+    var radial = document.createElement('label');
+    var radialInput = document.createElement('input');
+    radialInput.setAttribute('type', 'checkbox');
+    if (ND.radialDisplay) {
+      radialInput.setAttribute('checked', 'checked');
+    }
+    radialInput.onchange = function() {
+      ND.setRadialDisplay(this.checked);
+      ND.update();
+    };
+    radial.appendChild(radialInput);
+    radial.appendChild(document.createTextNode('Radial'));
+    buttons.appendChild(radial);
 
     content.appendChild(buttons);
 
@@ -544,6 +596,9 @@ var WindowMaker = new function()
               // win.close();
             }
             break;
+          case CMWWindow.FOCUS:
+            ST.setLastFocused();
+            break;
           case CMWWindow.RESIZE:
             if( buttons.id !== undefined ) {
                 container.style.height = ( win.getContentHeight() - $('#' + buttons.id).height() ) + "px";
@@ -587,6 +642,7 @@ var WindowMaker = new function()
 
     SkeletonListSources.updateGUI();
     ST.init();
+    win.focus();
 
     return win;
   };
@@ -905,7 +961,7 @@ var WindowMaker = new function()
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
-    var tabs = ['Main', 'Grow', 'Layout', 'Selection', 'Align', 'Export'].reduce(function(o, name) {
+    var tabs = ['Main', 'Grow', 'Layout', 'Selection', 'Subgraphs', 'Align', 'Export'].reduce(function(o, name) {
           titles.appendChild($('<li><a href="#' + name + GG.widgetID + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
           div.setAttribute('id', name + GG.widgetID);
@@ -964,7 +1020,9 @@ var WindowMaker = new function()
          ['Hide', GG.hideSelected.bind(GG)],
          ['Show hidden', GG.showHidden.bind(GG), {id: 'graph_show_hidden' + GG.widgetID, disabled: true}],
          [document.createTextNode(' - ')],
-         ['Remove', GG.removeSelected.bind(GG)]]);
+         ['Remove', GG.removeSelected.bind(GG)],
+         [document.createTextNode(' - ')],
+        ]);
 
     appendToTab(tabs['Align'],
         [[document.createTextNode('Align: ')],
@@ -1019,7 +1077,13 @@ var WindowMaker = new function()
         [['Export GML', GG.exportGML.bind(GG)],
          ['Export SVG', GG.exportSVG.bind(GG)],
          ['Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG)],
-         ['Open plot', GG.openPlot.bind(GG)]]);
+         ['Open plot', GG.openPlot.bind(GG)],
+         ['Quantify', GG.quantificationDialog.bind(GG)]]);
+
+    appendToTab(tabs['Subgraphs'],
+        [[document.createTextNode('Select node(s) and: ')],
+         ['Split axon and dendrite', GG.splitAxonAndDendrite.bind(GG)],
+         ['Split by synapse clustering', GG.splitBySynapseClustering.bind(GG)]]);
 
     content.appendChild( bar );
 
@@ -1435,7 +1499,7 @@ var WindowMaker = new function()
     content.appendChild( container );
 
     container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable' + TNT.widgetID + '">'
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable' + TNT.widgetID + '">' +
         '<thead>' +
           '<tr>' +
             '<th>id</th>' +

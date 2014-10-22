@@ -320,6 +320,18 @@ SynapseClustering.prototype.clusters = function(density_hill_map) {
 };
 
 /** Given a density_hill_map computed with densityHillMap(),
+ * return a map of cluster ID vs map of treenode IDs vs true.
+ */
+SynapseClustering.prototype.clusterMaps = function(density_hill_map) {
+  return this._clusters(density_hill_map,
+                        function(treenode_id) { var o = {}; o[treenode_id] = true;  return o; },
+                        function(entry, treenode_id) {
+                          entry[treenode_id] = true;
+                          return entry;
+                        });
+};
+
+/** Given a density_hill_map computed with densityHillMap(),
  * return a map of cluster ID vs cluster size (number of treenode IDs labeled).
  */
 SynapseClustering.prototype.clusterSizes = function(density_hill_map) {

@@ -972,8 +972,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     },
     aoColumnDefs: [
       { aTargets: [0], sSortDataType: 'dom-checkbox' }, // Checkbox column
-      { aTargets: [1], sType: 'html' },                 // Neuron name column
-      { aTargets: ['_all'], sType: 'wrapped-numeric' }  // All other columns
+      { aTargets: [1], sType: 'html', bSearchable: true }, // Neuron name column
+      { aTargets: ['_all'], sType: 'wrapped-numeric', bSearchable: false } // All other columns
     ]
   };
 

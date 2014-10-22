@@ -265,7 +265,12 @@ Arbor.prototype.findBranchNodes = function() {
   return branches;
 };
 
-/** Return a map of node vs topological distance from the given root. Rather than a distance, these are the hierarchical orders, where root has order 0, nodes directly downstream of root have order 1, and so on. Invoke with this.root as argument to get the distances to the root of this Arbor. Invoke with any non-end node to get distances to that node for nodes downstream of it. */
+/** Return a map of node vs topological distance from the given root. Rather
+ * than a distance, these are the hierarchical orders, where root has order 0,
+ * nodes directly downstream of root have order 1, and so on. Invoke with
+ * this.root as argument to get the distances to the root of this Arbor. Invoke
+ * with any non-end node to get distances to that node for nodes downstream of
+ * it. */
 Arbor.prototype.nodesOrderFrom = function(root) {
 	return this.nodesDistanceTo(root, function() { return 1; }).distances;
 };
@@ -705,37 +710,64 @@ Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
 	return values;
 };
 
-/** Return a map of node vs branch index relative to root. Terminal branches
- * have an index of 1, their parent branches of 2, etc., all the way too root.
- * The maximum number is that of the root branch.
- */
+/**
+* Return a map of node vs branch index relative to root. Terminal branches
+* have an index of 1, their parent branches of 2 if two or more of their
+* children are 1 as well as all others have a lower index, or their parent
+* branches have and index of 1 if one child is 1 and no child with greater
+* index, etc., all the way to root. The maximum number is that of the root
+* node.
+*/
 Arbor.prototype.strahlerAnalysis = function() {
-    var topo = this.topologicalCopy(),
-        order = topo.nodesOrderFrom(topo.root),
-        be = topo.findBranchAndEndNodes(),
-        branches = be.branches,
-        ends = be.ends.sort(function(a, b) {
-          var orderA = order[a],
-              orderB = order[b];
-          return orderA === orderB ? 0 : (orderA < orderB ? 1 : -1); // descending
-        }),
-        strahler = {};
+  var strahler = {},
+      be = this.findBranchAndEndNodes(),
+      branch = be.branches,
+      open = be.ends.slice(0), // clone. Never edit return values from internal functions, so that they can be cached
+      visited_branches = {}; // branch node vs array of strahler indices
 
-    strahler[this.root] = order[ends[0]];
+  // All end nodes have by definition an index of 1
+  for (var i=0; i<open.length; ++i) strahler[open[i]] = 1;
 
-    for (var i=0; i<ends.length; ++i) {
-      var node = ends[i],
-          index = 1;
-      do {
-        strahler[node] = index;
-        node = this.edges[node]; // parent
-        if (undefined !== branches[node]) ++index;
-      } while (undefined === strahler[node]);
+  while (open.length > 0) {
+    var node = open.shift(),
+        index = strahler[node],
+        n_children = branch[node],
+        paren = this.edges[node];
+    // Iterate slab towards first branch found
+    while (paren) {
+      n_children = branch[paren];
+      if (n_children) break; // found branch
+      strahler[paren] = index;
+      paren = this.edges[paren];
     }
+    if (paren) {
+      // paren is a branch. Are all its branches minus one completed?
+      var si = visited_branches[paren];
+      if (si && si.length === n_children -1) {
+        // Yes: compute strahler:
+        //  A. If all equal, increase Strahler index by one
+        //  B. Otherwise pick the largest strahler index of its children
+        var v = index; // of the current branch
+        for (var k=0, same=0; k<si.length; k++) {
+          if (si[k] === v) ++same;
+          else v = Math.max(v, si[k]);
+        }
+        strahler[paren] = si.length === same ? v + 1 : v;
+        open.push(paren);
+      } else {
+        // No: compute later
+        if (si) si.push(index);
+        else visited_branches[paren] = [index];
+      }
+    } else {
+      // else is the root
+      strahler[this.root] = index;
+    }
+  }
 
-    return strahler;
+
+  return strahler;
 };
-
 
 /**
  * Perform Sholl analysis: returns two arrays, paired by index, of radius length and the corresponding number of cable crossings,
@@ -1605,4 +1637,66 @@ Arbor.prototype.upstreamArbor = function(cuts) {
     for (var i=0; i<succ.length; ++i) open.push(succ[i]);
   }
   return up;
+};
+
+/** Given a set of nodes to keep, create a new Arbor with only
+ * the nodes to keep and the branch points between them. */
+Arbor.prototype.simplify = function(keepers) {
+  // Reroot a copy at the first keeper node
+  var copy = this.clone(),
+      pins = Object.keys(keepers);
+  copy.reroot(pins[0]);
+
+  // Find child->parent paths between keeper nodes
+  var edges = copy.edges,
+      branches = copy.findBranchNodes(),
+      seen = {},
+      paths = [],
+      root = null;
+
+  for (var k=0; k<pins.length; ++k) {
+    var node = pins[k],
+        paren = edges[node],
+        path = [node],
+        child = node;
+    // Each path starts and ends at a keeper node,
+    // and may contain branch nodes in the middle.
+    while (paren) {
+      if (keepers[paren]) {
+        path.push(paren);
+        paths.push(path);
+        break;
+      }
+      if (branches[paren]) {
+        path.push(paren);
+        var s = seen[paren];
+        if (!s) {
+          s = {};
+          seen[paren] = s;
+        }
+        s[child] = true;
+      }
+      child = paren;
+      paren = edges[paren];
+    }
+  }
+
+  var simple = new Arbor();
+  simple.root = copy.root;
+
+  // Branch nodes are added only if they have been seen
+  // from more than one of their child slabs.
+  for (var k=0; k<paths.length; ++k) {
+    var path = paths[k],
+        child = path[0];
+    for (var i=1; i<path.length-1; ++i) {
+      var branch = path[i];
+      if (Object.keys(seen[branch]).length > 1) {
+        simple.edges[child] = branch;
+        child = branch;
+      }
+    }
+    simple.edges[child] = path[path.length -1];
+  }
+  return simple;
 };

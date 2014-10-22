@@ -51,9 +51,11 @@ var TreenodeTable = function(skid)
   this.init = function (pid)
   {
     var widgetID = this.widgetID;
+    var tableSelector = "#treenodetable" + widgetID
+    var self = this;
 
     ns.pid = pid;
-    ns.oTable = $('#treenodetable' + widgetID).dataTable({
+    ns.oTable = $(tableSelector).dataTable({
       // http://www.datatables.net/usage/options
       "bDestroy": true,
       "sDom": '<"H"lr>t<"F"ip>',
@@ -203,16 +205,16 @@ var TreenodeTable = function(skid)
       ]
     });
 
-    $("#treenodetable thead input" + widgetID).keydown(function (event) { /* Filter on the column (the index) of this element */
+    $(tableSelector + " thead input").keydown(function (event) { /* Filter on the column (the index) of this element */
       // filter table on hit enter
       if( event.which == 13 ) {
         filter_searchtag = $('#search_labels' + widgetID).val();
-        TreenodeTable.refresh();
+        self.refresh();
       }
     });
 
     // remove the 'Search' string when first focusing the search box
-    $("#treenodetable thead input" + widgetID).focus(function () {
+    $(tableSelector + " thead input").focus(function () {
       if (this.className === "search_init") {
         this.className = "";
         this.value = "";
@@ -221,10 +223,10 @@ var TreenodeTable = function(skid)
 
     $('select#search_type' + widgetID).change( function() {
       filter_nodetype = $(this).val();
-      TreenodeTable.refresh();
+      self.refresh();
     });
 
-    $("#treenodetable" + widgetID + " tbody tr").live('dblclick', function () {
+    $(tableSelector + " tbody tr").live('dblclick', function () {
       var aData = ns.oTable.fnGetData(this);
       // retrieve coordinates and moveTo
       var x = parseFloat(aData[4]);

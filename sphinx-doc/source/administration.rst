@@ -83,6 +83,76 @@ thing. Those, however, don't ask for a password, but require a
 ``.pgpass`` file (see `PostgreSQL documentation
 <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_).
 
+Performance tuning
+------------------
+
+There are various application involved to make CATMAID work: A web-server/load
+balancer, a WSGI server to run the Python back-end and a PostgreSQL database
+server. The configuration of all of them can be optimized to experience better
+performance. The following list of suggestions is not exhaustive and if you have
+suggestions we are happy to hear about them.
+
+Operationg system and infrastructure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* In conjunction with the shared memory setting of PostgreSQL (see below), one
+  should increase the kernel's shared memory limit. It defines how much memory
+  can be used as a shared resource by different processes. A rule of thumb is
+  that one should use about 25% of the system's RAM, but if the machine is
+  equipped with plenty of RAM one should be fine for most setups with 4GB (or
+  even less). You  can check this kernel setting with ``sysctl kernel.shmmax``.
+  The default for most distributions is in the range of kilobytes and megabytes.
+
+* The partition that is hosting the image tiles should be mounted with the
+  ``noatime`` option. This makes sure no access time is written every time an
+  image file is read.
+
+* If LDAP is used to authenticate users and to check permissions on the server
+  CATMAID is running or the image data is loaded from, LDAP queries should be
+  cached locally. Otherwise, an LDAP request will be made every time a file is
+  accessed.
+
+Webserver
+^^^^^^^^^
+
+* The access log should be turned off and only critical errors should be written
+  to the log. CATMAID can produce a lot of requests and writing every single one
+  to disk, especially if multiple users use CATMAID, can be a real performance
+  hit.
+
+* A cache server like Varnish can be beneficial on the machine that serves the
+  image data. If multiple users load the same image data, it will reduce the
+  number of times image data has to be loaded from the hard drive.
+
+* Have the webserver transfer data with GZIP.
+
+* The webserver should mark image tiles to not expire so that they can be cached
+  by a client. If the image data is public, one could let the webserver also set
+  the ``Cache-Control: public`` header for the images..
+
+Database management system
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* PostgresSQL's shared memory setting should match what is allowed by the
+  kernel. So if you set your kernel to allow 4GB (see above), Postgres should
+  use make use of it. This can be adjusted with the setting ``shared_buffers`` in
+  ``postgresql.conf``.
+
+* Keeping statistics of the CATMAID tables up to date is very important. These
+  statistics are used by the query planer to decide about the optimal
+  realization of a query. This can be done manually by calling ``VACUUM
+  ANALYZE`` while being connected to the CATMAID database in a psql shell. It is
+  also possible (and advisable) to automate this with by setting ``autovacuum =
+  on`` in ``postgresql.conf``.
+
+CATMAID
+^^^^^^^
+
+* Make sure CATMAID is not running in debug mode by checking ``settings.py`` in
+  ``django/projects/mysite``: It should contain ``DEBUG = False``. If you get a
+  `Bad Request (400)` response, make sure you have set your ``ALLOWED_HOSTS``
+  setting in the ``settings.py`` file correct.
+
 Making CATMAID available through SSL
 ------------------------------------
 

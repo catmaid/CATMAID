@@ -193,19 +193,29 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         subs.push(subarbor.subArbor(mend));
       }
     });
-    var stats = {cable: [], depths: [], inputs: [], outputs: [], branches: [], ends: [], n_subs: subs.length},
+    var stats = {cables: [], depths: [], inputs: [], outputs: [], branches: [], ends: [], roots: [], n_subs: subs.length, input_depths: [], output_depths: []},
         edgeLength = function(child, paren) {
           return smooth_positions[child].distanceTo(smooth_positions[paren]);
         };
     subs.forEach(function(sub) {
       var nodes = sub.nodesArray(),
           be = sub.findBranchAndEndNodes();
-      stats.cable.push(sub.cableLength(smooth_positions));
-      stats.inputs.push(nodes.filter(function(node) { return ap.inputs[node]; }).length);
-      stats.outputs.push(nodes.filter(function(node) { return ap.outputs[node]; }).length);
+      stats.cables.push(sub.cableLength(smooth_positions));
+      var in_synapses = nodes.filter(function(node) { return ap.inputs[node]; }),
+          out_synapses = nodes.filter(function(node) { return ap.outputs[node]; });
+      stats.inputs.push(in_synapses.length);
+      stats.outputs.push(out_synapses.length);
       stats.branches.push(Object.keys(be.branches).length);
       stats.ends.push(Object.keys(be.ends).length);
-      stats.depths.push(sub.nodesDistanceTo(sub.root, edgeLength).max);
+      var distance_to_root = sub.nodesDistanceTo(sub.root, edgeLength);
+      stats.depths.push(distance_to_root.max);
+      stats.roots.push(Number(sub.root));
+      in_synapses.forEach(function(syn_node) {
+        stats.input_depths.push(distance_to_root.distances[syn_node]);
+      });
+      out_synapses.forEach(function(syn_node) { 
+        stats.output_depths.push(distance_to_root.distances[syn_node]);
+      });
     });
     return stats;
   };
@@ -321,12 +331,10 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
 
   // Create histograms of terminal subarbors:
-  var skids = Object.keys(this.terminal_subarbor_stats),
-      labels = Object.keys(this.terminal_subarbor_stats[skids[0]].dendritic);
-  labels.splice(labels.indexOf('n_subs'), 1);
+  var skids = Object.keys(this.terminal_subarbor_stats);
 
   // Create a pie with the number of terminal subarbors
-  var n_subs = ["axonal", "dendritic"].map(function(type) {
+  var n_subs = ["dendritic", "axonal"].map(function(type) {
     return skids.reduce((function(sum, skid) {
       var s = this.terminal_subarbor_stats[skid][type];
       return sum + (s ? s.n_subs : 0);
@@ -336,7 +344,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
   var pie_n_subarbors = SVGUtil.insertPieChart(
       divID,
       this.pie_radius,
-      [{name: titles[1] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[1]}].concat(0 === n_subs[0] ? [] : [{name: titles[2] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[2]}]), // there could be no axonal terminals
+      [{name: titles[1] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[1]}].concat(0 === n_subs[1] ? [] : [{name: titles[2] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[2]}]), // there could be no axonal terminals
       "# Subarbors (" + (n_subs[0] + n_subs[1]) + ")");
 
   if (skids.length > 1) {
@@ -355,19 +363,20 @@ AnalyzeArbor.prototype.updateCharts = function() {
   }
 
   (function() {
-    // Histograms of total [cable, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors
-    var axonal = labels.reduce(function(o, label) { o[label] = []; return o}, {}),
-        dendritic = labels.reduce(function(o, label) { o[label] = []; return o}, {}), // needs deep copy
-        cable_labels = ["cable", "depths"];
+    // Histograms of total [cables, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors, and histograms of depth of individual synapses in the terminal subarbors.
+    var hists = ['cables', 'depths', 'inputs', 'outputs', 'branches', 'ends', 'input_depths', 'output_depths'],
+        axonal = hists.reduce(function(o, label) { o[label] = []; return o}, {}),
+        dendritic = hists.reduce(function(o, label) { o[label] = []; return o}, {}), // needs deep copy
+        cable_labels = ["cables", "depths", "input_depths", "output_depths"];
     skids.forEach(function(skid) {
       var e = this.terminal_subarbor_stats[skid];
-      labels.forEach(function(label) {
+      hists.forEach(function(label) {
         // axonal won't exist a neuron without outputs like a motorneuron or a dendritic fragment
         if (e.axonal) axonal[label] = axonal[label].concat(e.axonal[label]);
         dendritic[label] = dendritic[label].concat(e.dendritic[label]);
       }, this);
     }, this);
-    labels.forEach(function(label) {
+    hists.forEach(function(label) {
       var a = axonal[label],
           d = dendritic[label],
           inc = 1;
@@ -407,6 +416,9 @@ AnalyzeArbor.prototype.updateCharts = function() {
         rotate_x_axis_labels = true;
       }
 
+      // Prettify label
+      label = label.replace(/_/g, ' ');
+
       SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
         this.plot_width, this.plot_height,
         label, "counts",
@@ -415,7 +427,80 @@ AnalyzeArbor.prototype.updateCharts = function() {
         ["#00ffff", "#ff0000"],
         x_axis, rotate_x_axis_labels,
         false);
+
+      // Turn data into cummulative
+      var cummulative = data.map(function(a, i) {
+        var b = {},
+            total = n_subs[i];
+        // Hack: these are not by terminal subarbor
+        if (0 === label.indexOf("input depths") || 0 === label.indexOf("output depths")) {
+          total = 0;
+          for (var bin=0; bin<=max; bin+=inc) total += a[bin];
+        }
+
+        if (0 === total) return a;
+        b[0] = a[0] / total;
+        for (var bin=inc; bin<=max; bin+=inc) b[bin] = b[bin - inc] + a[bin] / total;
+        return b;
+      });
+
+      SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
+        this.plot_width, this.plot_height,
+        label, "cummulative counts (%)",
+        cummulative,
+        ["dendritic", "axonal"],
+        ["#00ffff", "#ff0000"],
+        x_axis, rotate_x_axis_labels,
+        false);
     }, this);
+  }).bind(this)();
+
+  (function() {
+    // Add XY scatterplots of:
+    // * cable vs depth
+    // * cable vs inputs
+    var colors = d3.scale.category10();
+    var cable_vs_depth = [],
+        cable_vs_inputs = [],
+        series = [];
+    skids.forEach(function(skid, k) {
+      var stats = this.terminal_subarbor_stats[skid],
+          Entry = function(x, y, root) { this.x = x; this.y = y; this.root = root},
+          neuron = {color: colors(k),
+                    name : NeuronNameService.getInstance().getName(skid)};
+      Entry.prototype = neuron;
+      series.push(neuron);
+      ["dendritic", "axonal"].forEach(function(type) {
+        var s = stats[type];
+        if (s) {
+          s.cables.forEach(function(cable, i) {
+            cable /= 1000; // in microns
+            cable_vs_depth.push(new Entry(cable, s.depths[i] / 1000, s.roots[i])); // depth in microns
+            cable_vs_inputs.push(new Entry(cable, s.inputs[i], s.roots[i]));
+          });
+        }
+      });
+    }, this);
+
+    SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_depth',
+        550, 470,
+        'cable (µm)', 'depth (µm)',
+        cable_vs_depth,
+        function(d) {
+          SkeletonAnnotations.staticMoveToAndSelectNode(d.root);
+        },
+        series,
+        false, true);
+
+    SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_inputs',
+        550, 470,
+        'cable (µm)', 'inputs',
+        cable_vs_inputs,
+        function(d) {
+          SkeletonAnnotations.staticMoveToAndSelectNode(d.root);
+        },
+        series,
+        false, true);
   }).bind(this)();
 };
 

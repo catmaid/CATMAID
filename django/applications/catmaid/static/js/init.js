@@ -186,11 +186,13 @@ function handle_login(status, text, xml, completionCallback) {
       updateProjects(completionCallback);
     };
 
-    // Asynchronously, try to get a full list of users. This will silently fail
-    // if the user is not logged in and the anonymous user has no permission to
-    // retrieve it.
-    // TODO: how to handle failure of this call?
-    User.getUsers(done);
+    if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
+      // Asynchronously, try to get a full list of users if a user is logged in
+      // or the anonymous user has can_browse permissions.
+      User.getUsers(done);
+    } else {
+      done();
+    }
   } else if (status != 200) {
     // Of course, lots of non-200 errors are fine - just report
     // all for the moment, however:

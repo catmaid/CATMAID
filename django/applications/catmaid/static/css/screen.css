@@ -446,6 +446,10 @@ div#classification_graph_object img.roiimage {
   vertical-align: middle;
 }
 
+.buttonpanel label {
+  margin: 0.5em;
+}
+
 .connectivity_widget table {
   padding: 3px;
   border-collapse: collapse;
@@ -627,19 +631,24 @@ div#classification_graph_object img.roiimage {
   font-style:italic;
 }
 
+
 .node circle {
   fill: #fff;
   stroke: steelblue;
   stroke-width: 1.5px;
 }
 
-.taggedNode circle {
+.node.highlight circle {
+  fill: #00f !important;
+}
+
+.node.tagged circle {
   fill: #fff;
   stroke: orangered;
   stroke-width: 1.5px;
 }
 
-.node, .taggedNode {
+.node {
   font: 10px sans-serif;
 }
 
@@ -649,7 +658,7 @@ div#classification_graph_object img.roiimage {
   stroke-width: 1.5px;
 }
 
-.taggedLink {
+.link.tagged {
   fill: none;
   stroke: #fcc;
   stroke-width: 1.5px;

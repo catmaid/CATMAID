@@ -17,6 +17,8 @@ var SelectionTable = function() {
   this.gui = new this.GUI(this, 20);
 };
 
+SelectionTable._lastFocused = null; // Static reference to last focused instance
+
 SelectionTable.prototype = {};
 $.extend(SelectionTable.prototype, new InstanceRegistry());
 $.extend(SelectionTable.prototype, new SkeletonSource());
@@ -34,6 +36,7 @@ SelectionTable.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
   NeuronNameService.getInstance().unregister(this);
+  if (SelectionTable._lastFocused === this) SelectionTable._lastFocused = null;
 };
 
 SelectionTable.prototype.updateModels = function(models, source_chain) {
@@ -201,6 +204,17 @@ SelectionTable.prototype.getOrCreate = function() {
   var selection = SelectionTable.prototype.getFirstInstance();
   if (!selection) WindowMaker.create('neuron-staging-area');
   return SelectionTable.prototype.getFirstInstance();
+};
+
+SelectionTable.prototype.setLastFocused = function () {
+  SelectionTable._lastFocused = this;
+};
+
+SelectionTable.getLastFocused = function () {
+  if (SelectionTable._lastFocused === null)
+    SelectionTable._lastFocused = SelectionTable.prototype.getOrCreate();
+
+  return SelectionTable._lastFocused;
 };
 
 SelectionTable.prototype.toggleSelectAllSkeletons = function() {

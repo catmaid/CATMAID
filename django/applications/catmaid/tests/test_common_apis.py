@@ -102,19 +102,6 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(0, User.objects.all().count())
         self.assertEqual(expected_result, parsed_response)
 
-    def test_catch_404(self):
-        def insert_user():
-            get_object_or_404(User, pk=12)
-            return HttpResponse(json.dumps({'should not': 'return this'}))
-
-        User.objects.all().delete()
-        response = insert_user()
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_result = {'error': 'No User matches the given query.'}
-        self.assertEqual(expected_result, parsed_response)
-        self.assertEqual(0, User.objects.all().count())
-
     def test_fail_unexpectedly(self):
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()

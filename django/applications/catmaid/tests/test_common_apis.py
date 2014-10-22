@@ -849,7 +849,6 @@ class ViewPageTests(TestCase):
         response = call_backend()
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        print parsed_response
         self.assertTrue('error' in parsed_response)
         self.assertEqual(parsed_response['error'], "Could not create "
                 "interpolated treenode:User test0 with id #1 cannot "

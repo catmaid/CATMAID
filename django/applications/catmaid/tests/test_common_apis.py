@@ -18,6 +18,7 @@ from catmaid.models import Treenode, Connector, TreenodeConnector, User
 from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from catmaid.fields import Double3D, Integer3D
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
+from catmaid.control.neuron_annotations import _annotate_entities
 
 
 class SimpleTest(TestCase):
@@ -838,15 +839,22 @@ class ViewPageTests(TestCase):
                         'resy': 5,
                         'resz': 9})
 
+        # Lock this neuron to user three
+        _annotate_entities(self.test_project_id, [233],
+                {'locked': self.test_user_id})
+
         # Expect a permission error, because we
-        self.fake_authentication(username='test1', password='test',
+        self.fake_authentication(username='test0', password='test',
                 add_default_permissions=True)
         response = call_backend()
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         print parsed_response
-        self.assertTrue('permission_error' in parsed_response)
-        self.assertTrue(parsed_response['permission_error'])
+        self.assertTrue('error' in parsed_response)
+        self.assertEqual(parsed_response['error'], "Could not create "
+                "interpolated treenode:User test0 with id #1 cannot "
+                "edit neuron #233")
+        self.client.logout()
 
         # Login with correct user
         self.fake_authentication()
@@ -890,6 +898,10 @@ class ViewPageTests(TestCase):
                     'resy': 5,
                     'resz': 9})
 
+        # Lock this neuron to user three
+        _annotate_entities(self.test_project_id, [2365],
+                {'locked': self.test_user_id})
+
         # Expect a permission error, because we are not logged in as a user
         # with permissions on the neuron---at least if we lock the neuron.
         self.fake_authentication(username='test0', password='test',
@@ -897,8 +909,11 @@ class ViewPageTests(TestCase):
         response = call_backend()
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        self.assertTrue('permission_error' in parsed_response)
-        self.assertTrue(parsed_response['permission_error'])
+        self.assertTrue('error' in parsed_response)
+        self.assertEqual(parsed_response['error'], "Could not create "
+                "interpolated treenode:User test0 with id #1 cannot "
+                "edit neuron #2365")
+        self.client.logout()
 
         self.fake_authentication()
         response = call_backend()

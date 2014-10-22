@@ -144,40 +144,11 @@ class ImportingWizard(SessionWizardView):
         target_project = scd['target_project']
 
         if scd["source_type"] == 'project':
-            # Use raw SQL to duplicate the rows, because there is no
-            # need to transfer the data to Django and back to Postgres
-            # again.
-            cursor = connection.cursor()
             projects = self.get_cleaned_data_for_step('projectimport')['projects']
             for p in projects:
-                # For every project the
-                if scd['import_treenodes']:
-                    cursor.execute('''
-                        INSERT INTO treenode (project_id, location_x,
-                            location_y, location_z, editor_id, user_id,
-                            creation_time, edition_time, skeleton_id,
-                            radius, confidence, parent_id)
-                        SELECT %s, location_x, location_y, location_z,
-                            editor_id, user_id, creation_time, edition_time,
-                            skeleton_id, radius, confidence, parent_id
-                        FROM treenode tn
-                        WHERE tn.project_id=%s
-                        ''', (target_project.id, p.id))
-                if scd['import_connectors']:
-                    cursor.execute('''
-                        INSERT INTO connector (project_id, location_x,
-                            location_y, location_z, editor_id, user_id,
-                            creation_time, edition_time,  confidence)
-                        SELECT %s, location_x, location_y, location_z,
-                            editor_id, user_id, creation_time, edition_time,
-                            confidence
-                        FROM connector cn
-                        WHERE cn.project_id=%s
-                        ''', (target_project.id, p.id))
-                if scd['import_annotations']:
-                    pass
-                if scd['import_tags']:
-                    pass
+                copy_annotations(p.id, target_project.id,
+                        scd['import_treenodes'], scd['import_connectors'],
+                        scd['import_annotations'], scd['import_tags'])
 
         return render_to_response(IMPORT_TEMPLATES['done'])
 
@@ -188,3 +159,149 @@ class ExportingWizard(SessionWizardView):
     representation.
     """
     pass
+
+
+def copy_annotations(source_pid, target_pid, import_treenodes=True,
+        import_connectors=True, import_connectortreenodes=True,
+        import_annotations=True, import_tags=True):
+    """ Copy annotation data (treenodes, connectors, annotations, tags) to
+    another (existing) project. The newly created entities will have new IDs
+    and are independent from the old ones.
+
+    import_treenodes: if true, all treenodes from the source will be imported
+    import_connectors: if ture, all connectors from the source will be imported
+    import_connectortreenodes: if true, all connectors and treenodes that are
+                               linked are imported, along with the links themself
+    """
+    # Use raw SQL to duplicate the rows, because there is no
+    # need to transfer the data to Django and back to Postgres
+    # again.
+    cursor = connection.cursor()
+
+    imported_treenodes = []
+
+    if import_treenodes:
+        # Copy treenodes from source to target
+        cursor.execute('''
+            WITH get_data (
+                SELECT 5, location_x, location_y, location_z,
+                    editor_id, user_id, creation_time, edition_time,
+                    skeleton_id, radius, confidence, parent_id
+                FROM treenode tn
+                WHERE tn.project_id=3
+                RETURNING *),
+                copy AS (
+                INSERT
+                INTO treenode (project_id, location_x,
+                    location_y, location_z, editor_id, user_id,
+                    creation_time, edition_time, skeleton_id,
+                    radius, confidence, parent_id)
+                SELECT 5, location_x, location_y, location_z,
+                    editor_id, user_id, creation_time, edition_time,
+                    skeleton_id, radius, confidence, parent_id
+                FROM get_data
+                RETURNING *, get_data.id),
+
+            SELECT id FROM copy
+            ''', (target_pid, source_pid))
+
+    if import_connectors:
+        # Copy connectors from source to target
+        cursor.execute('''
+            INSERT INTO connector (project_id, location_x,
+                location_y, location_z, editor_id, user_id,
+                creation_time, edition_time,  confidence)
+            SELECT %s, location_x, location_y, location_z,
+                editor_id, user_id, creation_time, edition_time,
+                confidence
+            FROM connector cn
+            WHERE cn.project_id=%s
+            AND cn.proj
+            ''', (target_pid, source_pid))
+
+    if import_connectortreenodes:
+        # If not all treenodes have been inserted
+        cursor.execute('''
+            INSERT INTO treenode (project_id, location_x,
+                location_y, location_z, editor_id, user_id,
+                creation_time, edition_time, skeleton_id,
+                radius, confidence, parent_id)
+            SELECT %s, location_x, location_y, location_z,
+                editor_id, user_id, creation_time, edition_time,
+                skeleton_id, radius, confidence, parent_id
+            FROM treenode tn
+            WHERE tn.project_id=%s
+            ''', (target_pid, source_pid))
+
+        # Link connectors to treenodes
+        currsor.execute('''
+            INSERT INTO connector_treenode ()
+            SELECT
+            FROM connector_treenode ct
+            WHERE ct.project_id=%s
+            ''' % (target_pid, source_pid))
+
+    if import_annotations:
+        try:
+            # Make sure the target has the 'annotation' class and the
+            # 'annotated_with' relation.
+            annotation_src = Class.objects.get(
+                    project_id=source_pid, class_name="annotation")
+            annotated_with_src = Relation.objects.get(
+                    project_id=source_pid, relation_name="annotated_with")
+            annotation_tgt = Class.objects.get_or_create(
+                    project_id=target_pid, class_name="annotation", defaults={
+                        "user": annotation_src.user,
+                        "creation_time": annotation_src.creation_time,
+                        "edition_time": annotation_src.edition_time,
+                        "description": annotation_src.description,
+                    })[0]
+            annotated_with_tgt = Relation.objects.get_or_create(
+                    project_id=target_pid, relation_name="annotated_with", defaults={
+                        "user": annotation_src.user,
+                        "creation_time": annotated_with_src.creation_time,
+                        "edition_time": annotated_with_src.edition_time,
+                        "description": annotated_with_src.description,
+                        "isreciprocal": annotated_with_src.isreciprocal,
+                        "uri": annotated_with_src.uri,
+                    })[0]
+
+            # Get all source annotations and import them into target
+            annotations_src = ClassInstance.objects.filter(
+                    project_id=source_pid, class_column=annotation_src)
+            existing_target_annotations = [a.name for a in ClassInstance.objects.filter(
+                    project_id=target_pid, class_column=annotation_tgt)]
+            annotations_tgt = []
+            for a in annotations_src:
+                # Ignore if there is already a target annotation like this
+                if a.name in existing_target_annotations:
+                    continue
+                annotations_tgt.append(ClassInstance(
+                        project_id=source_pid,
+                        class_column=annotation_src,
+                        name=a.name,
+                        user=a.user,
+                        creation_time=a.creation_time,
+                        edition_time=a.edition_time))
+            ClassInstance.objects.bulk_create(annotations_tgt)
+
+            # Import annotation links
+            cursor.execute('''
+                INSERT INTO class_instance_class_instance (user_id,
+                    creation_time, edition_time, project_id, relation_id,
+                    class_instance_a, class_instance_b)
+                SELECT %s
+                    editor_id, user_id, creation_time, edition_time,
+                FROM class_instance_class_instance cici
+                JOIN class_instance ci_s ON ci_s.id=cici.class_instance_b
+                WHERE cici.project_id=%s AND relation_id=%s
+                ''')
+        except DoesNotExist:
+            # No annotations need to be imported if no source annotations are
+            # found
+            pass
+
+    if import_tags:
+        # TreenodeClassInstance
+        # ConnectorClassInstance
+        pass

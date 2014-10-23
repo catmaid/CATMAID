@@ -719,7 +719,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
                 //name:  skeleton.baseName,
                 value: skeleton.id,
                 type:  'checkbox',
-                checked:true
+                checked: skeleton.pre_visible,
         })
         .click( function( event )
         {
@@ -736,7 +736,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
                 //name:  skeleton.baseName,
                 value: skeleton.id,
                 type:  'checkbox',
-                checked:true
+                checked: skeleton.post_visible,
         })
         .click( function( event )
         {
@@ -752,7 +752,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
                 //name:  skeleton.baseName,
                 value: skeleton.id,
                 type:  'checkbox',
-                checked:false
+                checked: skeleton.text_visible,
         })
         .click( function( event )
         {

@@ -508,7 +508,7 @@ def _skeleton_as_graph(skeleton_id):
     return graph
 
 
-def _fetch_location(treenode_id):
+def _fetch_treenode_location(treenode_id):
     cursor = connection.cursor()
     cursor.execute('''
         SELECT
@@ -522,7 +522,7 @@ def _fetch_location(treenode_id):
     return cursor.fetchone()
 
 
-def _fetch_location_connector(connector_id):
+def _fetch_connector_location(connector_id):
     cursor = connection.cursor()
     cursor.execute('''
         SELECT
@@ -541,9 +541,9 @@ def get_location(request, project_id=None):
         tnid = int(request.POST['tnid'])
         nodetype = request.POST.get('type', 'treenode')
         if nodetype == 'connector':
-            return HttpResponse(json.dumps(_fetch_location_connector(tnid)))
+            return HttpResponse(json.dumps(_fetch_connector_location(tnid)))
         else:
-            return HttpResponse(json.dumps(_fetch_location(tnid)))
+            return HttpResponse(json.dumps(_fetch_treenode_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain the location of node with id #%s' % tnid)
 
@@ -610,7 +610,7 @@ def find_previous_branchnode_or_root(request, project_id=None):
         if seq and alt:
             tnid = _find_first_interesting_node(seq)
 
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
+        return HttpResponse(json.dumps(_fetch_treenode_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
 
@@ -649,7 +649,7 @@ def find_next_branchnode_or_end(request, project_id=None):
         if seq and alt:
             tnid = _find_first_interesting_node(seq)
 
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
+        return HttpResponse(json.dumps(_fetch_treenode_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain next branch node or root:' + str(e))
 

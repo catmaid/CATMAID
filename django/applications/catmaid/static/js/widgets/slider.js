@@ -357,6 +357,14 @@ Slider = function(
     {
       self.setByValue( values[ 0 ], true );
     }
+
+    if (input)
+    {
+      // Resize input text box size to accomodate the number of digits in range.
+      input.size = [min, max].map(function (x) {
+          return typeof x === "undefined" ? 0 : x.toString().length;
+        }).reduce(function (m, x) { return Math.max(m, x); }, 2) + 1;
+    }
     
     return;
   };
@@ -414,7 +422,7 @@ Slider = function(
     var name = uniqueId();
     
     inputView = document.createElement( "p" );
-    inputView.style.paddingLeft = "1em";
+    inputView.style.paddingLeft = "0.5em";
     input = document.createElement( "input" );
     input.type = "text";
     input.size = "3";

@@ -1953,6 +1953,19 @@ NeuronNavigator.ActiveNeuronMixin.prototype.highlight = function(skeleton_id)
   }
 };
 
+NeuronNavigator.ActiveNeuronMixin.prototype.refresh_activeneuron = function()
+{
+  if (this.navigator && this.current_skid) {
+    this.navigator.unregister(this, this.current_skid);
+  }
+
+  this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
+
+  if (this.navigator && this.current_skid) {
+      this.navigator.register(this, this.current_skid);
+  }
+};
+
 
 /**
  * A neuron node displays information about a particular node. It shows all the
@@ -1961,12 +1974,8 @@ NeuronNavigator.ActiveNeuronMixin.prototype.highlight = function(skeleton_id)
  */
 NeuronNavigator.ActiveNeuronNode = function()
 {
-  this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
   this.name = 'Active Neuron';
-
-  if (this.navigator) {
-      this.navigator.register(this, this.current_skid);
-  }
+  this.refresh_activeneuron();
 };
 
 NeuronNavigator.ActiveNeuronNode.prototype = {};
@@ -1976,6 +1985,7 @@ $.extend(NeuronNavigator.ActiveNeuronNode.prototype,
 NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
     filters)
 {
+  this.refresh_activeneuron();
   this.add_activeneuron_content(container, filters);
 };
 
@@ -2038,5 +2048,6 @@ NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
   container.append(neuron_title);
 
   // Add active neuron content
+  this.refresh_activeneuron();
   this.add_activeneuron_content(container, filters);
 };

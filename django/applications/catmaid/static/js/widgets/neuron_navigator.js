@@ -52,7 +52,6 @@ NeuronNavigator.prototype.getSelectedSkeletonModels = function()
 
 NeuronNavigator.prototype.highlight = function(skeleton_id)
 {
-  if (!skeleton_id) return;
   this.current_node.highlight(skeleton_id);
 };
 
@@ -1094,15 +1093,18 @@ NeuronNavigator.NeuronListMixin.prototype.highlight = function(skeleton_id)
       ' tbody td');
   // Remove any highlighting
   $cells.css('background-color', '');
-  // Highlight corresponding row if present
-  this.listed_neurons.forEach(function(n) {
-    if (n.skeleton_ids.indexOf(skeleton_id) != -1) {
-      var $row_cells = $cells.find('input[neuron_id=' + n.id + ']').
-          parent().parent().find('td');
-      $row_cells.css('background-color',
-          SelectionTable.prototype.highlighting_color);
-    }
-  });
+
+  if (skeleton_id) {
+    // Highlight corresponding row if present
+    this.listed_neurons.forEach(function(n) {
+      if (n.skeleton_ids.indexOf(skeleton_id) != -1) {
+        var $row_cells = $cells.find('input[neuron_id=' + n.id + ']').
+            parent().parent().find('td');
+        $row_cells.css('background-color',
+            SelectionTable.prototype.highlighting_color);
+      }
+    });
+  }
 };
 
 /**
@@ -1845,9 +1847,12 @@ NeuronNavigator.NeuronNode.prototype.highlight = function(skeleton_id)
       this.navigator.widgetID + ' tbody tr');
   // Remove any highlighting
   $rows.css('background-color', '');
-  // Highlight corresponding row if present
-  $rows.find('td:contains(' + skeleton_id + ')').parent().css(
-      'background-color', SelectionTable.prototype.highlighting_color);
+
+  if (skeleton_id) {
+    // Highlight corresponding row if present
+    $rows.find('td:contains(' + skeleton_id + ')').parent().css(
+        'background-color', SelectionTable.prototype.highlighting_color);
+  }
 };
 
 /**
@@ -1942,7 +1947,9 @@ NeuronNavigator.ActiveNeuronMixin.prototype.highlight = function(skeleton_id)
       // Update state
       this.current_skid = skeleton_id;
       // Register new neuron
-      this.navigator.register(this, skeleton_id);
+      if (this.current_skid) {
+        this.navigator.register(this, skeleton_id);
+      }
     } else {
       // Update state only
       this.current_skid = skeleton_id;

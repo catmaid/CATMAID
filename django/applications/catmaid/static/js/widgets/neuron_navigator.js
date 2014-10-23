@@ -111,6 +111,9 @@ NeuronNavigator.prototype.set_annotation_node = function(
 
 NeuronNavigator.prototype.select_node = function(node)
 {
+  if (!node) {
+    return;
+  }
 
   // Find all nodes that will be removed after this selection
   var current_nodes = this.get_node_list(this.current_node);

@@ -8,6 +8,7 @@
  */
 var NeuronDendrogram = function() {
   this.widgetID = this.registerInstance();
+  this.registerSource();
 
   this.skeletonId = null;
   this.collapsed = true;
@@ -26,18 +27,59 @@ var NeuronDendrogram = function() {
 
 NeuronDendrogram.prototype = {};
 $.extend(NeuronDendrogram.prototype, new InstanceRegistry());
+$.extend(NeuronDendrogram.prototype, new SkeletonSource());
 
-NeuronDendrogram.prototype.getName = function() {
-  return "Neuron Dendrogram " + this.widgetID;
-};
+/* Implement interfaces */
 
-NeuronDendrogram.prototype.init = function(container)
+NeuronDendrogram.prototype.getName = function()
 {
-  this.container = container;
+  return "Neuron Dendrogram " + this.widgetID;
 };
 
 NeuronDendrogram.prototype.destroy = function() {
   this.unregisterInstance();
+  this.unregisterSource();
+};
+
+NeuronDendrogram.prototype.append = function() {};
+NeuronDendrogram.prototype.clear = function(source_chain) {};
+NeuronDendrogram.prototype.removeSkeletons = function() {};
+NeuronDendrogram.prototype.updateModels = function() {};
+
+NeuronDendrogram.prototype.getSelectedSkeletons = function()
+{
+  if (this.currentSkeletonId) {
+    return [this.currentSkeletonId];
+  } else {
+    return [];
+  }
+};
+
+NeuronDendrogram.prototype.hasSkeleton = function(skeleton_id)
+{
+  return this.currentSkeletonId === skeleton_id;
+};
+
+NeuronDendrogram.prototype.getSelectedSkeletonModels = function()
+{
+  var models = {};
+  if (this.currentSkeletonId) {
+    models[this.currentSkeletonId] = new SelectionTable.prototype.SkeletonModel(
+        this.currentSkeletonId, "", new THREE.Color().setRGB(1, 1, 0));
+  }
+  return models;
+};
+
+NeuronDendrogram.prototype.highlight = function(skeleton_id)
+{
+  // TODO: Highlight
+};
+
+/* Non-interface methods */
+
+NeuronDendrogram.prototype.init = function(container)
+{
+  this.container = container;
 };
 
 /**

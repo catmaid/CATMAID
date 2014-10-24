@@ -67,11 +67,17 @@ var NotificationsTable = new function()
     });
   };
   
-  this.perform_action = function(row_index) {
-    var node = document.getElementById('action_select_' + row_index);
+  this.perform_action = function(row_id) {
+    var node = document.getElementById('action_select_' + row_id);
 
     if (node && node.tagName == "SELECT") {
-      var row_data = ns.oTable.fnGetData(row_index);
+      var row = $(node).closest('tr');
+      if (1 !== row.length) {
+        error("Couldn't find table row for notification")
+        return;
+      }
+      var row_data = ns.oTable.fnGetData(row[0]);
+
       var action = node.options[node.selectedIndex].value;
       if (action == 'Show') {
         SkeletonAnnotations.staticMoveTo(row_data[6], row_data[5], row_data[4], function () {SkeletonAnnotations.staticSelectNode(row_data[7], row_data[8]);});
@@ -182,10 +188,11 @@ var NotificationsTable = new function()
         "sClass": "center",
         "bSearchable": false,
         "bSortable": false,
-        "mDataProp": null,
-        "fnRender" : function(obj) {
-           var disabled = (obj.aData[3] == 'Open' ? '' : ' disabled');
-           return '<select id="action_select_' + obj.iDataRow + '" onchange="NotificationsTable.perform_action(' + obj.iDataRow + ')">' + 
+        "mData": null,
+        "mRender" : function(obj, type, full) {
+           var id = full[0];
+           var disabled = (full[3] == 'Open' ? '' : ' disabled');
+           return '<select id="action_select_' + id + '" onchange="NotificationsTable.perform_action(' + id + ')">' +
                   '  <option>Action:</option>' + 
                   '  <option>Show</option>' + 
                   '  <option' + disabled + '>Approve</option>' + 

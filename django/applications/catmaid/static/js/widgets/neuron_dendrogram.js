@@ -10,7 +10,6 @@ var NeuronDendrogram = function() {
   this.widgetID = this.registerInstance();
   this.registerSource();
 
-  this.skeletonId = null;
   this.collapsed = true;
   this.showNodeIDs = false;
   this.showTags = true;

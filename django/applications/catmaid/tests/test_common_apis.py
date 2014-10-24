@@ -537,16 +537,38 @@ class ViewPageTests(TestCase):
     def test_user_list(self):
         self.fake_authentication()
         response = self.client.get('/user-list')
-        expected_result = {
-            "3": {"id": 3,
-                  "name": "gerhard",
-                  "longname": "Stephan Gerhard"},
-            "1": {"id": 1,
-                  "name": "saalfeld",
-                  "longname": "Stephan Saalfeld"},
-            "2": {"id": 2,
-                  "name": "test",
-                  "longname": "Theo Test"}}
+        expected_result = [
+            {
+                u'first_name': u'Anonymous',
+                u'last_name': u'User',
+                u'color': [1.0, 0.0, 0.0],
+                u'full_name': u'Anonymous User',
+                u'login': u'AnonymousUser',
+                u'id': -1
+            }, {
+                u'first_name': u'Test',
+                u'last_name': u'User 0',
+                u'color': [0.0, 1.0, 0.0],
+                u'full_name': u'Test User 0',
+                u'login': u'test0',
+                u'id': 1
+            }, {
+                u'first_name': u'Test',
+                u'last_name': u'User 1',
+                u'color': [0.0, 0.0, 1.0],
+                u'full_name': u'Test User 1',
+                u'login': u'test1',
+                u'id': 2
+            }, {
+                u'first_name': u'Test',
+                u'last_name': u'User 2',
+                u'color': [1.0, 0.0, 1.0],
+                u'full_name': u'Test User 2',
+                u'login': u'test2',
+                u'id': 3
+            }
+        ]
+
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)

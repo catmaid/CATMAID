@@ -123,7 +123,7 @@ def delete_neuron(request, project_id=None, neuron_id=None):
         DELETE FROM treenode_connector WHERE skeleton_id=%s AND project_id=%s;
         DELETE FROM class_instance WHERE id=%s AND project_id=%s;
         COMMIT;
-        ''', (skid, project_id, skid, project_id, skid, project_id, skid, project_id, skid, project_id, skid, project_id))
+        ''', (skid, project_id) * 6)
 
     # Insert log entry and refer to position of the first skeleton's root node
     insert_into_log(project_id, request.user.id, 'remove_neuron', root_location,

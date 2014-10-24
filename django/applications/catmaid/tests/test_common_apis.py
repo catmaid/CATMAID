@@ -821,8 +821,10 @@ class ViewPageTests(TestCase):
                     'resz': 9})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'error': 'Can not find skeleton for parent treenode %s in this project.' % parent_id}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = 'Could not create interpolated treenode:No skeleton ' \
+            'and neuron for treenode %s' % parent_id
+        self.assertTrue('error' in parsed_response)
+        self.assertEqual(expected_result, parsed_response['error'])
 
     def test_treenode_create_interpolated_single_new_node(self):
         x = 585

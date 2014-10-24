@@ -2393,7 +2393,7 @@ class ViewPageTests(TestCase):
                     'font_size': 160,
                     'scaling': 1,
                     'z_diff': 0,
-                    'colour': {'r': 255, 'g': 127, 'b': 0, 'a': 1},
+                    'colour': {'r': 255, 'g': 126, 'b': 0, 'a': 1},
                     'location': {'x': 3155, 'y': 1775, 'z': 27}},
                 '1': {
                     'tid': 2,
@@ -2404,7 +2404,7 @@ class ViewPageTests(TestCase):
                     'font_size': 160,
                     'scaling': 1,
                     'z_diff': 0,
-                    'colour': {'r': 255, 'g': 127, 'b': 0, 'a': 1},
+                    'colour': {'r': 255, 'g': 126, 'b': 0, 'a': 1},
                     'location': {'x': 2345, 'y': 1785, 'z': 27}}}
 
         response = self.client.post('/%d/textlabel/all' % (self.test_project_id,), {

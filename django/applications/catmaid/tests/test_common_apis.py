@@ -1042,23 +1042,6 @@ class ViewPageTests(TestCase):
             'state': 'closed'}]
         self.assertEqual(expected_response, parsed_response)
 
-    def test_tree_object_list_isol_case(self):
-        self.fake_authentication()
-        response = self.client.post(
-                '/%d/object-tree/list' % self.test_project_id, {
-                    'parentid': 364,
-                    'parentname': 'Isolated synaptic terminals'})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_response = [{
-            'data': {'title': 'downstream-A'},
-            'attr': {'id': 'node_374', 'rel': 'neuron'},
-            'state': 'closed'},
-            {'data': {'title':'downstream-B'},
-            'attr': {'id': 'node_362', 'rel': 'neuron'},
-            'state': 'closed'}]
-        self.assertEqual(expected_response, parsed_response)
-
     def test_tree_object_list_skeleton(self):
         self.fake_authentication()
         response = self.client.post(

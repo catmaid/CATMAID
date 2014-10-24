@@ -958,6 +958,7 @@ var WindowMaker = new function()
 
     var bar = document.createElement('div');
     bar.setAttribute("id", 'compartment_graph_window_buttons' + GG.widgetID);
+    bar.setAttribute('class', 'buttonpanel');
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
@@ -1088,27 +1089,6 @@ var WindowMaker = new function()
     content.appendChild( bar );
 
     $(bar).tabs();
-
-    // Remove excessive padding in ui-tabs-panel and ui-tabs-nav classes
-    // and reduce font size in buttons
-    Object.keys(tabs).forEach(function(name) {
-      tabs[name].style.padding = "0px";
-      var c = tabs[name].children;
-      for (var i=0; i<c.length; ++i) {
-        c[i].style['font-family'] = "Arial, Helvetica, sans-serif";
-        c[i].style['font-size'] = '11px';
-      }
-    });
-    var ul = bar.childNodes[0];
-    ul.style.padding = "0px";
-    var lis = ul.childNodes;
-    for (var i=0; i<lis.length; ++i) {
-      lis[i].style.padding = "";
-      var a = lis[i].childNodes[0];
-      a.style.padding = ".2em 1em";
-      a.style['font-family'] = "Arial, Helvetica, sans-serif";
-      a.style['font-size'] = '11px';
-    }
 
     /* Create graph container and assure that it's overflow setting is set to
      * 'hidden'. This is required, because cytoscape.js' redraw can be delayed

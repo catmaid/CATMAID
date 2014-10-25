@@ -328,10 +328,9 @@ Arbor.prototype.childrenArray = function() {
 
 /** Return an Object with node keys and true values, in O(2n) time. */
 Arbor.prototype.nodes = function() {
-  var children = this.childrenArray(),
+  var a = this.nodesArray(),
       nodes = {};
-  for (var i=0; i<children.length; ++i) nodes[children[i]] = true;
-  if (null !== this.root) nodes[this.root] = true;
+  for (var i=0; i<a.length; ++i) nodes[a[i]] = true;
 	return nodes;
 };
 
@@ -344,7 +343,7 @@ Arbor.prototype.nodesArray = function() {
 
 /** Counts number of nodes in O(n) time. */
 Arbor.prototype.countNodes = function() {
-	return this.childrenArray().length + (null !== this.root ? 1 : 0);
+	return this.nodesArray().length;
 };
 
 /** Returns an array of arrays, unsorted, where the longest array contains the linear
@@ -1002,6 +1001,9 @@ Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabIni
     return accum;
 };
 
+/** Compute the cable length of the arbor after performing a Gaussian convolution.
+ * Does not alter the given positions map. Conceptually equivalent to
+ * var cable = arbor.cableLength(arbor.smoothPositions(positions, sigma)); */
 Arbor.prototype.smoothCableLength = function(positions, sigma) {
     return this.convolveSlabs(positions, sigma, 0,
             function(sum, id, p) {
@@ -1012,6 +1014,8 @@ Arbor.prototype.smoothCableLength = function(positions, sigma) {
             });
 };
 
+/** Alter the positions map to express the new positions of the nodes
+ * after a Gaussian convolution. */
 Arbor.prototype.smoothPositions = function(positions, sigma, accum) {
     return this.convolveSlabs(positions, sigma, accum ? accum : {},
             function(s, id, p) {
@@ -1281,7 +1285,7 @@ Arbor.prototype.pathToUpstreamNodeIn = function(node, stops) {
   return null;
 };
 
-/** For each branch node, record of a measurement for each of its subtrees.
+/** For each branch node, record a measurement for each of its subtrees.
  *
  *  - initialFn: returns the value to start accumulating on.
  *  - accumFn: can alter its accum parameter.
@@ -1553,7 +1557,7 @@ Arbor.prototype.pruneAt = function(nodes) {
 /** Find the nearest upstream node common to all given nodes.
  * nodes: a map of nodes vs not undefined.
  * Runs in less than O(n).*/
-Arbor.prototype.lowestCommonAncestor = function(nodes) {
+Arbor.prototype.nearestCommonAncestor = function(nodes) {
   // Corner cases
   if (null === this.root) return null;
   if (undefined !== nodes[this.root]) return this.root;

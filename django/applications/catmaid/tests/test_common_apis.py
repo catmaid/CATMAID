@@ -114,7 +114,7 @@ class InsertionTest(TestCase):
         the custom psycopg2 driver is needed for.)
         """
         p = self.insert_project()
-        self.assertEqual(p.id, 1)
+        self.assertIsInstance(p.id, (int, long))
 
     def test_stack_insertion(self):
         p = self.insert_project()

@@ -111,11 +111,15 @@ def one_to_many_synapses(request, project_id=None):
 def list_connector(request, project_id=None):
     stack_id = request.POST.get('stack_id', None)
     skeleton_id = request.POST.get('skeleton_id', None)
-    if skeleton_id is None:
+
+    def empty_result():
         return HttpResponse(json.dumps({
             'iTotalRecords': 0,
             'iTotalDisplayRecords': 0,
             'aaData': []}))
+
+    if not skeleton_id:
+        return empty_result()
     else:
         skeleton_id = int(skeleton_id)
 
@@ -139,10 +143,6 @@ def list_connector(request, project_id=None):
         else:
             relation_type_id = relation_map['postsynaptic_to']
             inverse_relation_type_id = relation_map['presynaptic_to']
-
-        response_on_error = 'Could not retrieve resolution and translation parameters for project.'
-        resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
-        translation = get_object_or_404(ProjectStack, stack=int(stack_id), project=project_id).translation
 
         response_on_error = 'Failed to select connectors.'
         cursor = connection.cursor()
@@ -259,6 +259,9 @@ def list_connector(request, project_id=None):
 
         total_result_count = len(connectors)
 
+        if 0 == total_result_count:
+            return empty_result()
+
         # Paging
         if display_length == 0:
             connectors = connectors[display_start:]
@@ -266,6 +269,14 @@ def list_connector(request, project_id=None):
         else:
             connectors = connectors[display_start:display_start + display_length]
             connector_ids = connector_ids[display_start:display_start + display_length]
+
+        response_on_error = 'Could not retrieve resolution and translation parameters for project.'
+        if stack_id:
+            resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
+            translation = get_object_or_404(ProjectStack, stack=int(stack_id), project=project_id).translation
+        else:
+            resolution = Double3D(1.0, 1.0, 1.0)
+            translation = Double3D(0.0, 0.0, 0.0)
 
         # Format output
         aaData_output = []
@@ -293,6 +304,9 @@ def list_connector(request, project_id=None):
             row.append(c['other_treenode_y'])
             z = c['other_treenode_z']
             row.append(z)
+            # FIXME: This is the only place we need a stack nad this can be
+            # done in the client as well. So we really want to keep this and
+            # have a more complicated API?
             row.append(int((z - translation.z) / resolution.z))
             row.append(labels)
             row.append(connected_skeleton_treenode_count)

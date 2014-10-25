@@ -78,6 +78,9 @@ def get_project_qs_for_user(user):
     return get_objects_for_user(user, perms, Project, any_perm=True)
 
 def projects(request):
+    """ Returns a list of project objects that are visible for the requesting
+    user and that have at least one stack linked to it.
+    """
     # This is somewhat ridiculous - four queries where one could be
     # used in raw SQL.  The problem here is chiefly that
     # 'select_related' in Django doesn't work through

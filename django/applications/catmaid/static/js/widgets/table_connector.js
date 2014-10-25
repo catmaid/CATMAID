@@ -36,15 +36,12 @@ var ConnectorTable = function(optionalSkid)
     
     self.connectorTable = $(tableid).dataTable(
       {
-        // http://www.datatables.net/usage/options
         "bDestroy": true,
         "sDom": '<"H"lr>t<"F"ip>',
-        // default: <"H"lfr>t<"F"ip>
         "bProcessing": true,
         "bServerSide": true,
         "bAutoWidth": false,
         "iDisplayLength": possibleLengths[0],
-        // "sAjaxSource": 'model/connector.list.php',
         "sAjaxSource": django_url + project.id + '/connector/table/list',
         "fnServerData": function (sSource, aoData, fnCallback) {
 

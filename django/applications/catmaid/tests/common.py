@@ -6,6 +6,8 @@ from catmaid.models import User
 class CatmaidTestCase(TestCase):
     fixtures = ['catmaid_testdata']
 
+    maxDiff = None
+
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user('temporary',

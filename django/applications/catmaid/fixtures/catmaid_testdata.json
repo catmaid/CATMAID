@@ -18,6 +18,24 @@
     }
   },
   {
+    "pk": 1,
+    "model": "auth.user",
+    "fields": {
+      "username": "test0",
+      "first_name": "Test",
+      "last_name": "User 0",
+      "is_active": true,
+      "is_superuser": false,
+      "is_staff": false,
+      "last_login": "2014-09-03T11:17:50.752",
+      "groups": [],
+      "user_permissions": [],
+      "password": "pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=",
+      "email": "",
+      "date_joined": "2014-04-26T12:49:36"
+    }
+  },
+  {
     "pk": 2,
     "model": "auth.user",
     "fields": {
@@ -46,11 +64,55 @@
       "is_superuser": false,
       "is_staff": false,
       "last_login": "2014-09-03T11:17:50.752",
-      "groups": [],
+      "groups": [1],
       "user_permissions": [],
       "password": "pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=",
       "email": "",
       "date_joined": "2014-03-26T17:49:36"
+    }
+  },
+  {
+    "pk": 1,
+    "model": "auth.group",
+    "fields": {
+        "name": "test1",
+        "permissions": []
+    }
+  },
+  {
+    "pk": 1,
+    "model": "catmaid.message",
+    "fields": {
+        "action": "http://www.example.com/message1",
+        "text": "Contents of message 1.",
+        "time": "2011-12-19T16:46:01",
+        "title": "Message 1",
+        "read": false,
+        "user": 3
+    }
+  },
+  {
+    "pk": 2,
+    "model": "catmaid.message",
+    "fields": {
+        "action": "http://www.example.com/message2",
+        "text": "Contents of message 2.",
+        "time": "2011-12-20 16:46:01.360422",
+        "title": "Message 2",
+        "read": false,
+        "user": 3
+    }
+  },
+  {
+    "pk": 3,
+    "model": "catmaid.message",
+    "fields": {
+        "action": "",
+        "text": "Contents of message 3.",
+        "time": "2014-10-05 11:12:01.360422",
+        "title": "Message 3",
+        "read": false,
+        "user": 3
     }
   },
   {
@@ -170,6 +232,42 @@
       "edition_time": "2010-08-26T12:23:53.551"
     }
   }, 
+  {
+    "pk": 1,
+    "model": "catmaid.projectstack",
+    "fields": {
+        "project": 1,
+        "stack": 1,
+        "translation": "(0.0, 0.0, 0.0)"
+    }
+  },
+  {
+    "pk": 2,
+    "model": "catmaid.projectstack",
+    "fields": {
+        "project": 3,
+        "stack": 3,
+        "translation": "(0.0, 0.0, 0.0)"
+    }
+  },
+  {
+    "pk": 3,
+    "model": "catmaid.projectstack",
+    "fields": {
+        "project": 5,
+        "stack": 5,
+        "translation": "(0.0, 0.0, 0.0)"
+    }
+  },
+  {
+    "pk": 4,
+    "model": "catmaid.projectstack",
+    "fields": {
+        "project": 5,
+        "stack": 6,
+        "translation": "(0.0, 0.0, 0.0)"
+    }
+  },
   {
     "pk": 14, 
     "model": "catmaid.concept", 
@@ -2321,6 +2419,16 @@
     }
   }, 
   {
+    "pk": 2457, 
+    "model": "catmaid.concept", 
+    "fields": {
+      "project": 3, 
+      "creation_time": "2012-07-22T19:15:24.010", 
+      "user": 3, 
+      "edition_time": "2012-07-22T19:15:24.010"
+    }
+  }, 
+  {
     "pk": 360, 
     "model": "catmaid.concept", 
     "fields": {
@@ -3196,7 +3304,7 @@
     "fields": {
       "project": 3, 
       "creation_time": "2011-11-01T12:54:44.436", 
-      "user": 2, 
+      "user": 1, 
       "edition_time": "2011-12-05T13:51:36.955"
     }
   }, 
@@ -3206,7 +3314,7 @@
     "fields": {
       "project": 3, 
       "creation_time": "2011-11-01T12:54:45.793", 
-      "user": 2, 
+      "user": 1, 
       "edition_time": "2011-12-05T13:51:36.955"
     }
   }, 
@@ -3216,7 +3324,7 @@
     "fields": {
       "project": 3, 
       "creation_time": "2011-11-01T12:54:47.472", 
-      "user": 2, 
+      "user": 1, 
       "edition_time": "2011-12-05T13:51:36.955"
     }
   }, 
@@ -3226,7 +3334,7 @@
     "fields": {
       "project": 3, 
       "creation_time": "2011-11-01T12:54:48.503", 
-      "user": 2, 
+      "user": 1, 
       "edition_time": "2011-12-05T13:51:36.955"
     }
   }, 
@@ -3348,6 +3456,16 @@
       "creation_time": "2012-07-22T19:15:24.010", 
       "user": 3, 
       "edition_time": "2012-07-22T19:15:24.010"
+    }
+  }, 
+  {
+    "pk": 2456, 
+    "model": "catmaid.concept", 
+    "fields": {
+      "project": 3, 
+      "creation_time": "2011-10-04T13:32:34.506", 
+      "user": 3, 
+      "edition_time": "2011-10-04T13:32:34.506"
     }
   }, 
   {
@@ -3588,6 +3706,18 @@
       "edition_time": "2011-10-29T04:33:34.263", 
       "project": 5, 
       "user": 3
+    }
+  }, 
+  {
+    "pk": 2457, 
+    "model": "catmaid.class", 
+    "fields": {
+      "description": null, 
+      "class_name": "annotation", 
+      "creation_time": "2012-07-22T19:15:24.010", 
+      "edition_time": "2012-07-22T19:15:24.010", 
+      "project": 3, 
+      "user": 1
     }
   }, 
   {
@@ -4277,6 +4407,20 @@
       "edition_time": "2011-10-04T13:32:34.506", 
       "project": 3, 
       "relation_name": "has_cell_body", 
+      "user": 3
+    }
+  }, 
+  {
+    "pk": 2456, 
+    "model": "catmaid.relation", 
+    "fields": {
+      "description": null, 
+      "isreciprocal": false, 
+      "creation_time": "2011-10-04T13:32:34.506", 
+      "uri": null, 
+      "edition_time": "2011-10-04T13:32:34.506", 
+      "project": 3, 
+      "relation_name": "annotated_with", 
       "user": 3
     }
   }, 
@@ -7467,7 +7611,7 @@
       "location_y": 4600.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -7481,7 +7625,7 @@
       "location_y": 5190.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -7495,7 +7639,7 @@
       "location_y": 4330.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -7509,7 +7653,7 @@
       "location_y": 4880.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -9009,7 +9153,7 @@
       "location_y": 4600.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -9027,7 +9171,7 @@
       "location_y": 5190.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -9045,7 +9189,7 @@
       "location_y": 4330.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -9063,7 +9207,7 @@
       "location_y": 4880.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 2
+      "user": 1
     }
   }, 
   {
@@ -10812,24 +10956,7 @@
       "position": 1, 
       "config": "{\"sample_images\":true}"
     }
-  }, 
-  {
-    "pk": 1, 
-    "model": "catmaid.userprofile", 
-    "fields": {
-      "color": "(1.000, 0.000, 0.000, 1.000)", 
-      "show_text_label_tool": false, 
-      "show_segmentation_tool": false, 
-      "show_ontology_tool": false, 
-      "inverse_mouse_wheel": false, 
-      "display_stack_reference_lines": false, 
-      "show_cropping_tool": false, 
-      "user": -1, 
-      "independent_ontology_workspace_is_default": false, 
-      "show_tracing_tool": false, 
-      "show_tagging_tool": false
-    }
-  }, 
+  },
   {
     "pk": "2011-07-10T19:23:39", 
     "model": "catmaid.deprecatedappliedmigrations", 

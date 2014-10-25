@@ -211,7 +211,10 @@ def create_interpolated_treenode(request, project_id=None):
 
     last_treenode_id, skeleton_id = _create_interpolated_treenode(request, \
          params, project_id, False)
-    return HttpResponse(json.dumps({'treenode_id': last_treenode_id}))
+    return HttpResponse(json.dumps({
+        'treenode_id': last_treenode_id,
+        'skeleton_id': skeleton_id
+    }))
 
 
 def _create_interpolated_treenode(request, params, project_id, skip_last):
@@ -373,7 +376,7 @@ def delete_treenode(request, project_id=None):
             response_on_error = 'Could not retrieve children for ' \
                 'treenode #%s' % treenode_id
             n_children = Treenode.objects.filter(parent=treenode).count()
-            response_on_error = "Can't delete root node when it has children"
+            response_on_error = "Could not delete root node"
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children,
                 # and other children become independent skeletons
@@ -416,7 +419,10 @@ def delete_treenode(request, project_id=None):
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
         Treenode.objects.filter(pk=treenode_id).delete()
-        return HttpResponse(json.dumps({'parent_id': parent_id}))
+        return HttpResponse(json.dumps({
+            'parent_id': parent_id,
+            'success': "Removed treenode successfully."
+        }))
 
     except Exception as e:
         raise Exception(response_on_error + ': ' + str(e))
@@ -450,10 +456,10 @@ def _treenode_info(project_id, treenode_id):
         for row in c.fetchall()
     ]
     if (len(results) > 1):
-        raise Exception('Found more than one skeleton and neuron for '
+        raise ValueError('Found more than one skeleton and neuron for '
                         'treenode %s' % treenode_id)
     elif (len(results) == 0):
-        raise Exception('No skeleton and neuron for treenode %s' % treenode_id)
+        raise ValueError('No skeleton and neuron for treenode %s' % treenode_id)
 
     return results[0]
 

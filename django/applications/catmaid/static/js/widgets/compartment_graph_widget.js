@@ -790,7 +790,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
     var upstream = {},
         downstream = {};
     m[1].forEach(function(row) {
-      // Accumulate connection into the node_id for later use in e.g. grow command
+      // Accumulate connection into the subnode for later use in e.g. grow command
       var treenodeID = row[0],
           node_id = findPartID(treenodeID),
           other_skid = row[5],
@@ -1330,51 +1330,129 @@ GroupGraph.prototype.exportGML = function() {
   saveAs(blob, "graph.gml");
 };
 
-GroupGraph.prototype.growGraph = function() {
-  this.grow('circlesofhell', 1);
-};
-
-GroupGraph.prototype.growPaths = function() {
-  this.grow('directedpaths', 2);
-};
-
-GroupGraph.prototype.grow = function(subURL, minimum) {
-  var skeleton_ids = this.getSelectedSkeletons();
-  if (skeleton_ids.length < minimum) {
-    growlAlert("Information", "Need at least " + minimum + " skeletons selected!");
-    return;
-  }
-
+// Find skeletons to grow from groups or single skeleton nodes
+// and skeletons to append from subnodes
+GroupGraph.prototype._findSkeletonsToGrow = function() {
   var n_circles = $('#n_circles_of_hell' + this.widgetID).val(),
       min_pre = $('#n_circles_min_pre' + this.widgetID).val(),
       min_post = $('#n_circles_min_post' + this.widgetID).val();
 
-  var self = this;
+  var skids = {},
+      split_partners = {},
+      find = function(node, min, map_name) {
+        if (0 === min) return;
+        var map = node.data(map_name);
+        if (map) {
+          Object.keys(map).forEach(function(skid) {
+            if (map[skid] >= min) split_partners[skid] = true;
+          });
+        }
+      };
+  this.cy.nodes((function(i, node) {
+    if (node.selected() && node.visible()) {
+			node.data("skeletons").forEach(function(skeleton) {
+        if (this.subgraphs[skeleton.id]) {
+          find(node, min_post, 'downstream_skids');
+          find(node, min_pre, 'upstream_skids');
+        } else {
+				  skids[skeleton.id] = true;
+        }
+			}, this);
+    }
+  }).bind(this));
+
+  return {skids: skids,
+          split_partners: split_partners,
+          n_circles: n_circles,
+          min_pre: min_pre,
+          min_post: min_post};
+};
+
+GroupGraph.prototype.growGraph = function() {
+  var s = this._findSkeletonsToGrow(),
+      accum = $.extend({}, s.split_partners);
+  this._growRecursive(Object.keys(s.split_partners), accum, s.min_pre, s.min_post, s.n_circles -1,
+      function() {
+        var skids = Object.keys(s.skids);
+        // TODO this is wrong. Could do it with just two calls: to grow the non-split nodes by n_cicles and the partners of the split nodes by n_circles -1.
+        //
+        //
+        // **********
+        //
+        //
+        //
+        //
+        if (0 === skids.length) return;
+        this.grow('circlesofhell', skids, Object.keys(accum), s.min_pre, s.min_post, 1);
+      });
+};
+
+/** Adds skeleton IDs to accum, recursively. */
+GroupGraph.prototype._growRecursive = function(skids, accum, min_pre, min_post, n_circles, callback) {
+  if (n_circles > 0) {
+    requestQueue.register(django_url + project.id + "/graph/" + subURL,
+        "POST",
+        {skeleton_ids: skids,
+         n_circles: n_circles,
+         min_pre: min_pre,
+         min_post: min_post},
+        (function(status, text) {
+          if (200 !== status) return;
+          var json = $.parseJSON(text);
+          if (json.error) return alert(json.error);
+          json[0].forEach(function(skid) { accum[skid] = true; });
+          // Subtract from json[0] all that are in accum already
+          var next_skids = json[0].filter(function(skid) { return !accum[skid]; });
+          if (next_skids.length > 0) {
+            this._growRecursive(next_skids, accum, min_pre, min_post, n_circles -1, callback);
+          } else {
+            callback();
+          }
+        }).bind(this));
+  } else {
+    callback();
+  }
+};
+
+GroupGraph.prototype.growPaths = function() {
+  var s = this._findSkeletonsToGrow();
+  this._findPathsForSplits(s.split_partners, s.skids, s.min_pre, s.min_post,
+      function() {
+        var skids = Object.keys(s.skids);
+        if (skids.length < 2) return;
+        this.grow('directedpaths', skids, s.min_pre, s.min_post);
+      });
+};
+
+GroupGraph.prototype._findPathsForSplits = function(split_partners, skids, min_pre, min_post, callback) {
+  // Find paths between split nodes and other split or non-split nodes.
+  // TODO need to think about this. Should be recursive as well
+};
+
+GroupGraph.prototype.grow = function(subURL, skids, additional, min_pre, min_post, n_circles) {
   requestQueue.register(django_url + project.id + "/graph/" + subURL,
       "POST",
-      {skeleton_ids: skeleton_ids,
+      {skeleton_ids: skids,
        n_circles: n_circles,
        min_pre: min_pre,
        min_post: min_post},
-      function(status, text) {
+      (function(status, text) {
         if (200 !== status) return;
         var json = $.parseJSON(text);
-        if (json.error) {
-          alert(json.error);
-          return;
-        }
+        if (json.error) return alert(json.error);
         if (0 === json.length) {
           growlAlert("Information", "No further skeletons found, with parameters min_pre=" + min_pre + ", min_post=" + min_post);
           return;
         }
         var color = new THREE.Color().setHex(0xffae56);
-        self.append(json[0].reduce(function(m, skid) {
+        this.append(json[0].concat(additional).reduce(function(m, skid) {
+          // Skids in additional will have an undefined name, but that's OK: names in SkeletonModel are obsolete.
           var model = new SelectionTable.prototype.SkeletonModel(skid, json[1][skid], color);
           model.selected = true;
           m[skid] = model;
           return m;
         }, {}));
-      });
+      }).bind(this));
 };
 
 GroupGraph.prototype.hideSelected = function() {
@@ -2278,7 +2356,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
             return;
           }
 
-          var lca = ap.arbor.lowestCommonAncestor(edge_synapses),
+          var lca = ap.arbor.nearestCommonAncestor(edge_synapses),
               sub_nodes = ap.arbor.subArbor(lca).nodes(),
               lost_inputs = Object.keys(ap.inputs).reduce(function(sum, node) {
                 return undefined === sub_nodes[node] ? sum : sum + ap.inputs[node];

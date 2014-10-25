@@ -21,13 +21,6 @@ from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.control.neuron_annotations import _annotate_entities
 
 
-class SimpleTest(TestCase):
-    def test_basic_addition(self):
-        """
-        Tests that 1 + 1 always equals 2.
-        """
-        self.assertEqual(1 + 1, 2)
-
 class TransactionTests(TransactionTestCase):
     fixtures = ['catmaid_testdata']
 

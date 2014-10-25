@@ -3,7 +3,7 @@ from django.conf import settings
 from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from django.http import HttpResponse
-from django.db import connection
+from django.db import connection, transaction
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
 import os
@@ -37,7 +37,7 @@ class TransactionTests(TransactionTestCase):
         self.test_project_id = 3
         self.client = Client()
 
-    def fake_authentication(username='test2', password='test'):
+    def fake_authentication(self, username='test2', password='test'):
         self.client.login(username=username, password=password)
 
         user = User.objects.get(username=username)
@@ -46,65 +46,10 @@ class TransactionTests(TransactionTestCase):
         assign_perm('can_browse', user, p)
         assign_perm('can_annotate', user, p)
 
-
-    def test_successful_commit(self):
-        def insert_user():
-            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            return HttpResponse(json.dumps({'message': 'success'}))
-
-        User.objects.all().delete()
-        response = insert_user()
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(1, User.objects.all().count())
-        self.assertEqual(expected_result, parsed_response)
-
-    def test_report_error_dict(self):
-        def insert_user():
-            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            raise Exception({'error': 'catch me if you can'})
-            return HttpResponse(json.dumps({'should not': 'return this'}))
-
-        User.objects.all().delete()
-        response = insert_user()
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_result = {'error': 'catch me if you can'}
-        self.assertEqual(0, User.objects.all().count())
-        self.assertEqual(expected_result, parsed_response)
-
-    def test_report_error_string(self):
-        def insert_user():
-            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            raise Exception('catch me if you can')
-            return HttpResponse(json.dumps({'should not': 'return this'}))
-
-        User.objects.all().delete()
-        response = insert_user()
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_result = {'error': 'catch me if you can'}
-        self.assertEqual(0, User.objects.all().count())
-        self.assertEqual(expected_result, parsed_response)
-
-    def test_report_error_unrecognized_argument(self):
-        def insert_user():
-            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            raise Exception(5)
-            return HttpResponse(json.dumps({'should not': 'return this'}))
-
-        User.objects.all().delete()
-        response = insert_user()
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_result = {'error': 'Unknown error.'}
-        self.assertEqual(0, User.objects.all().count())
-        self.assertEqual(expected_result, parsed_response)
-
     def test_fail_unexpectedly(self):
+        @transaction.atomic
         def insert_user():
-            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            User(username='matri', password='boop').save()
             raise Exception()
             return HttpResponse(json.dumps({'should not': 'return this'}))
 

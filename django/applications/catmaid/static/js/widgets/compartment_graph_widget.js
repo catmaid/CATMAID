@@ -1535,9 +1535,10 @@ GroupGraph.prototype.colorBy = function(mode, select) {
 };
 
 GroupGraph.prototype.colorCirclesOfHell = function() {
+  // Make all nodes white when deselecting
   var selected = this.cy.nodes().toArray().filter(function(node) { return node.selected(); });
   if (1 !== selected.length) {
-    growlAlert("Info", "Need 1 (and only 1) selected node!");
+    if (0 !== selected.length) growlAlert("Info", "Need 1 (and only 1) selected node!");
     this.cy.nodes().data('color', '#fff');
     return;
   }
@@ -1562,14 +1563,15 @@ GroupGraph.prototype.colorCirclesOfHell = function() {
     Object.keys(current).forEach(function(id1) {
       var k = indices[id1];
       // Downstream:
-      m.AdjM[k].forEach(function(count, i) {
-        if (0 === count) return;
+      var ud = m.AdjM[k]; // Uint32Array lacks forEach
+      for (var i=0; i<ud.length; ++i) {
+        if (0 === ud[i]) return; // no synapses
         var id2 = m.ids[i];
         if (consumed[id2]) return;
         next[id2] = true;
         consumed[id2] = true;
         n += 1;
-      });
+      }
       // Upstream:
       m.AdjM.forEach(function(row, i) {
         if (0 === row[k]) return;

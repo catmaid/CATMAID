@@ -1565,9 +1565,9 @@ GroupGraph.prototype.colorCirclesOfHell = function() {
       // Downstream:
       var ud = m.AdjM[k]; // Uint32Array lacks forEach
       for (var i=0; i<ud.length; ++i) {
-        if (0 === ud[i]) return; // no synapses
+        if (0 === ud[i]) continue; // no synapses
         var id2 = m.ids[i];
-        if (consumed[id2]) return;
+        if (consumed[id2]) continue;
         next[id2] = true;
         consumed[id2] = true;
         n += 1;

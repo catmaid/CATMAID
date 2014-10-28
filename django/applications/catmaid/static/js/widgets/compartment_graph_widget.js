@@ -673,8 +673,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       // Remove clusters of treenodes that lack synapses
       var synapse_treenodes = Object.keys(synapse_map);
       clusterIDs = clusterIDs.filter(function(clusterID) {
-        var count = 0,
-            treenodes = clusters[clusterID];
+        var treenodes = clusters[clusterID];
         for (var k=0; k<synapse_treenodes.length; ++k) {
           if (treenodes[synapse_treenodes[k]]) return true;
         }
@@ -1533,6 +1532,8 @@ GroupGraph.prototype.colorBy = function(mode, select) {
     this.color_circles_of_hell();
   }
 };
+
+// TODO needs fixing: either only upstream or only downstream, otherwise makes no sense.
 
 GroupGraph.prototype.colorCirclesOfHell = function() {
   // Make all nodes white when deselecting

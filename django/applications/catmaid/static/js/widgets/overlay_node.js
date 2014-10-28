@@ -3,7 +3,30 @@
 
 "use strict";
 
-/** Namespace where Raphael SVG element instances are created, cached and edited. */
+d3.selection.prototype.toFront = function () {
+  return this.each(function () {
+    this.parentNode.appendChild(this);
+  });
+};
+
+d3.selection.prototype.toBack = function () {
+  return this.each(function () {
+    var firstChild = this.parentNode.firstChild;
+    if (firstChild) {
+      this.parentNode.insertBefore(this, firstChild);
+    }
+  });
+};
+
+d3.selection.prototype.hide = function () {
+  return this.attr('visibility', 'hidden');
+};
+
+d3.selection.prototype.show = function () {
+  return this.attr('visibility', 'visible');
+};
+
+/** Namespace where SVG element instances are created, cached and edited. */
 var SkeletonElements = function(paper)
 {
   this.cache = {
@@ -167,7 +190,7 @@ SkeletonElements.prototype.ElementPool.prototype = (function() {
 /** A prototype for both Treenode and Connector. */
 SkeletonElements.prototype.NodePrototype = new (function() {
   /** Update the local x,y coordinates of the node
-   * and for its raphael objects c, mc as well. */
+   * and for its SVG objects c, mc as well. */
   this.setXY = function(xnew, ynew) {
     this.x = xnew;
     this.y = ynew;
@@ -183,7 +206,7 @@ SkeletonElements.prototype.NodePrototype = new (function() {
     }
   };
 
-  /** Create the Raphael circle elements if and only if the zdiff is zero, that is, if the node lays on the current section. */
+  /** Create the SVG circle elements if and only if the zdiff is zero, that is, if the node lays on the current section. */
   this.createCircle = function() {
     if (!this.shouldDisplay()) {
       return;
@@ -192,10 +215,18 @@ SkeletonElements.prototype.NodePrototype = new (function() {
     if (this.c && this.mc) {
       // Do nothing
     } else {
-      // create a raphael circle object
-      this.c = this.paper.circle(this.x, this.y, this.NODE_RADIUS);
-      // a raphael circle oversized for the mouse logic
-      this.mc = this.paper.circle(this.x, this.y, this.CATCH_RADIUS);
+      // create a circle object
+      this.c = this.paper.append('circle')
+                          .attr('cx', this.x)
+                          .attr('cy', this.y)
+                          .attr('r', this.NODE_RADIUS)
+                          .classed('overlay-node', true);
+      // create a circle oversized for the mouse logic
+      this.mc = this.paper.append('circle')
+                          .attr('cx', this.x)
+                          .attr('cy', this.y)
+                          .attr('r', this.CATCH_RADIUS)
+                          .classed('overlayer-node-catcher', true);
 
       SkeletonElements.prototype.mouseEventManager.attach(this.mc, this.type);
     }
@@ -215,7 +246,7 @@ SkeletonElements.prototype.NodePrototype = new (function() {
       opacity: 0
     });
 
-    if ("none" === this.c.node.style.display) {
+    if ("hidden" === this.c.attr('visibility')) {
       this.c.show();
       this.mc.show();
     }
@@ -250,9 +281,9 @@ SkeletonElements.prototype.AbstractTreenode = function() {
   this.leaf_node_color = "rgb(128,0,0)";
 
   // For drawing:
-  this.NODE_RADIUS = 6;
+  this.NODE_RADIUS = 8;
   this.CATCH_RADIUS = 16;
-  this.EDGE_WIDTH = 2;
+  this.EDGE_WIDTH = 4;
 
   // ID of the disabled nodes
   this.DISABLED = -1;
@@ -298,8 +329,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     }
   };
 
-  /** Updates the coordinates of the raphael path
-   * that represents the line from the node to the parent. */
+  /** Updates the coordinates of the SVG line from the node to the parent. */
   this.drawLineToParent = function() {
     if (!this.parent) {
       return;
@@ -310,23 +340,19 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     var lineColor = this.colorFromZDiff();
 
     if (!this.line) {
-      this.line = this.paper.path();
+      this.line = this.paper.append('line');
       this.line.toBack();
     }
 
     this.line.attr({
-      path: [
-        ["M", this.x, this.y],
-        ["L", this.parent.x, this.parent.y]
-      ],
-      stroke: lineColor,
-      "stroke-width": this.EDGE_WIDTH
+        x1: this.x, y1: this.y,
+        x2: this.parent.x, y2: this.parent.y,
+        stroke: lineColor,
+        'stroke-width': this.EDGE_WIDTH
     });
 
     // May be hidden if the node was reused
-    if ("none" === this.line.node.style.display) {
-      this.line.show();
-    }
+    this.line.show();
 
     if (this.confidence < 5) {
       // Create new or update
@@ -425,7 +451,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     }
   };
 
-  /** Reset all member variables and reposition Raphael circles when existing. */
+  /** Reset all member variables and reposition SVG circles when existing. */
   this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit) {
     this.id = id;
     this.parent = parent;
@@ -496,9 +522,9 @@ SkeletonElements.prototype.Node = function(
   this.skeleton_id = skeleton_id;
   this.can_edit = can_edit;
   this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
-  this.c = null; // The Raphael circle for drawing
-  this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
-  this.line = null; // The Raphael line element that represents an edge between nodes
+  this.c = null; // The SVG circle for drawing
+  this.mc = null; // The SVG circle for mouse actions (it's a bit larger)
+  this.line = null; // The SVG line element that represents an edge between nodes
 };
 
 SkeletonElements.prototype.Node.prototype = new SkeletonElements.prototype.AbstractTreenode();
@@ -659,8 +685,8 @@ SkeletonElements.prototype.ConnectorNode = function(
   this.can_edit = can_edit;
   this.pregroup = {}; // set of presynaptic treenodes
   this.postgroup = {}; // set of postsynaptic treenodes
-  this.c = null; // The Raphael circle for drawing
-  this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
+  this.c = null; // The SVG circle for drawing
+  this.mc = null; // The SVG circle for mouse actions (it's a bit larger)
   this.preLines = null; // Array of ArrowLine to the presynaptic nodes
   this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
 };
@@ -888,48 +914,42 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   };
 
   this.attach = function(mc, type) {
-    mc.drag(mc_move, mc_start, mc_up);
-    mc.mousedown(mc_mousedown);
-    mc.dblclick(mc_dblclick);
+    mc.on('dragstart', mc_move);
+    mc.on('drag', mc_start);
+    mc.on('dragstop', mc_up);
+    mc.on('mousedown', mc_mousedown);
+    mc.on("dblclick", mc_dblclick);
 
     if (SkeletonAnnotations.TYPE_NODE === type) {
-      mc.click(this.mc_click);
+      mc.on("click", this.mc_click);
     } else {
       // SkeletonAnnotations.TYPE_CONNECTORNODE
-      mc.click(connector_mc_click);
+      mc.on("click", connector_mc_click);
     }
   };
   
   this.forget = function(mc, type) {
-    mc.undrag();
-    mc.unmousedown(mc_mousedown);
-    mc.undblclick(mc_dblclick);
-
-    if (SkeletonAnnotations.TYPE_NODE === type) {
-      mc.unclick(this.mc_click);
-    } else {
-      // SkeletonAnnotations.TYPE_CONNECTORNODE
-      mc.unclick(connector_mc_click);
-    }
+    ['dragstart', 'drag', 'dragstop', 'mousedown', 'dblclick', 'click'].forEach(function (l) {
+      mc.on(l, null);
+    });
   };
 })();
 
 
 SkeletonElements.prototype.ArrowLine = function(paper) {
-  this.line = paper.path(this.pathString);
-  this.arrowPath = paper.path(this.arrowString);
-  this.arrowPath.mousedown(this.mousedown);
+  this.line = paper.append('line');
+  this.arrowPath = paper.append('path').attr('d', this.arrowString);
+  this.arrowPath.on('mousedown', this.mousedown);
   this.confidence_text = null;
 };
 
 SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   this.PRE_COLOR = "rgb(200,0,0)";
   this.POST_COLOR = "rgb(0,217,232)";
-  this.EDGE_WIDTH = 2;
-  this.pathString = "M0,0,L1,0";
+  this.EDGE_WIDTH = 4;
   this.arrowString = "M0,0,L-5,-5,L-5,5,L0,0";
 
-  /** Function to assign to the Raphael arrowPath. */
+  /** Function to assign to the SVG arrowPath. */
   this.mousedown = (function(e) {
     e.stopPropagation();
     if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
@@ -974,19 +994,14 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
 
     var angle = Raphael.angle(x2new, y2new, x1new, y1new);
 
-    // Reset transform
-    this.line.transform("");
-    // Translate, rotate and scale
-    var length = Math.sqrt((x2new - x1new) * (x2new - x1new) +
-                           (y2new - y1new) * (y2new - y1new));
-    this.line.transform( "t" + x1new + "," + y1new +
-                         "r" + angle + ",0,0" +
-                         "s" + length + "," + length + ",0,0");
+    this.line.attr({x1: x1, y1: y1, x2: x2, y2: y2});
 
     // Reset transform
-    this.arrowPath.transform("");
+    this.arrowPath.attr('transform', null);
     // Translate and then rotate relative to 0,0 (preconcatenates)
-    this.arrowPath.transform("t" + x2new + "," + y2new + "r" + angle + ",0,0");
+    this.arrowPath.attr('transform',
+                        "translate(" + x2new + "," + y2new + ") " +
+                        "rotate(" + angle + ")");
 
     if (confidence < 5) {
       this.confidence_text = this.updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, this.confidence_text);
@@ -1009,12 +1024,9 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
 
   this.show = function() {
     // Ensure visible
-    if ("none" === this.line.node.style.display) {
+    if ('hidden' === this.line.attr('visibility')) {
       this.line.show();
       this.arrowPath.show();
-      // show may not enough
-      this.line.node.style.display = "block";
-      this.arrowPath.node.style.display = "block";
     }
   };
 
@@ -1029,7 +1041,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   this.obliterate = function() {
     this.arrowPath.connector_id = null;
     this.arrowPath.treenode_id = null;
-    this.arrowPath.unmousedown(this.mousedown);
+    this.arrowPath.on('mousedown', null);
     this.arrowPath.remove();
     this.arrowPath = null;
     this.line.remove();
@@ -1075,7 +1087,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
       text = existing;
       text.show();
     } else {
-      text = this.line.paper.text(newConfidenceX, newConfidenceY, ""+confidence);
+      text = d3.select(this.line.node().parentNode).append('text');
       text.toBack();
     }
 

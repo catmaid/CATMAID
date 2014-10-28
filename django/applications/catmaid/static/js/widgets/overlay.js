@@ -270,7 +270,15 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
   this.view.onmousemove = this.createViewMouseMoveFn(this.stack, this.coords);
 
-  this.paper = Raphael(this.view, stack.viewWidth, stack.viewHeight);
+  this.paper = d3.select(this.view)
+                  .append('svg')
+                  .attr({
+                      width: stack.viewWidth,
+                      height: stack.viewHeight,
+                      style: 'overflow: hidden; position: relative;'});
+// If the equal ratio between stack, SVG viewBox and overlay DIV size is not
+// maintained, this additional attribute would be necessary:
+// this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
   this.graphics = new SkeletonElements(this.paper);
 };
 
@@ -1084,7 +1092,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   // Now that all edges have been created, disable unused arrows
   this.graphics.disableRemainingArrows();
 
-  // Create raphael's circles on top of the edges
+  // Create circles on top of the edges
   // so that the events reach the circles first
   for (var i in this.nodes) {
     if (this.nodes.hasOwnProperty(i)) {
@@ -1152,9 +1160,12 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
     this.updateNodes(completionCallback);
   }
 
-  this.paper.setViewBox(pl, pt,
-    (stack.viewWidth / stack.scale) * stack.resolution.x,
-    (stack.viewHeight / stack.scale) * stack.resolution.y);
+  this.paper.attr({
+      viewBox: [pl, pt,
+          (stack.viewWidth / stack.scale) * stack.resolution.x,
+          (stack.viewHeight / stack.scale) * stack.resolution.y].join(' '),
+      width: stack.viewWidth,     // Width and height only need to be updated on
+      height: stack.viewHeight}); // resize.
 
   if (doNotUpdate) {
     if (typeof completionCallback !== "undefined") {

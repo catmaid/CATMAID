@@ -6,7 +6,8 @@
 /**
  * A very simple event bus. One can register to events and trigger them, both
  * work with custom arguments. A callback can also be registered along with its
- * context, so it will be executed in it.
+ * context, so it will be executed in it. The general design is adapted from
+ * https://corcoran.io/2013/06/01/building-a-minimal-javascript-event-system/
  */
 var Events = {
   Event: {

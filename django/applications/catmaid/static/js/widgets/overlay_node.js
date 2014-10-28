@@ -29,6 +29,39 @@ d3.selection.prototype.show = function () {
 /** Namespace where SVG element instances are created, cached and edited. */
 var SkeletonElements = function(paper)
 {
+  // Create marker arrow for connector edges
+  var defs = paper.append('defs');
+  defs.append('marker').attr({
+    id: 'markerArrowPost',
+    viewBox: '0 0 10 10',
+    markerWidth: '5',
+    markerHeight: '4',
+    markerUnits: 'strokeWidth',
+    refX: '10',
+    refY: '5',
+    orient: 'auto'
+  }).append('path').attr({
+    d: 'M 0 0 L 10 5 L 0 10 z',
+    fill: SkeletonElements.prototype.ArrowLine.prototype.POST_COLOR
+  });
+  // Note that in SVG2 the above fill could be set to 'context-stroke' and would
+  // work appropriately as an end marker for both pre- and post- connectors.
+  // However, this SVG2 feature is not supported in current browsers, so two
+  // connectors are created, one for each color.
+  defs.append('marker').attr({
+    id: 'markerArrowPre',
+    viewBox: '0 0 10 10',
+    markerWidth: '5',
+    markerHeight: '4',
+    markerUnits: 'strokeWidth',
+    refX: '0',
+    refY: '5',
+    orient: 'auto'
+  }).append('path').attr({
+    d: 'M 0 0 L 10 5 L 0 10 z',
+    fill: SkeletonElements.prototype.ArrowLine.prototype.PRE_COLOR
+  });
+
   this.cache = {
     nodePool : new this.ElementPool(100),
     connectorPool : new this.ElementPool(20),
@@ -901,8 +934,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
 
 SkeletonElements.prototype.ArrowLine = function(paper) {
   this.line = paper.append('line');
-  this.arrowPath = paper.append('path').attr('d', this.arrowString);
-  this.arrowPath.on('mousedown', this.mousedown);
+  this.line.on('mousedown', this.mousedown);
   this.confidence_text = null;
 };
 
@@ -910,15 +942,14 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   this.PRE_COLOR = "rgb(200,0,0)";
   this.POST_COLOR = "rgb(0,217,232)";
   this.EDGE_WIDTH = 4;
-  this.arrowString = "M0,0,L-5,-5,L-5,5,L0,0";
 
-  /** Function to assign to the SVG arrowPath. */
+  /** Function to assign to the SVG arrow. */
   this.mousedown = (function(e) {
     e.stopPropagation();
     if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
       return;
     }
-    // 'this' will be the the arrowPath
+    // 'this' will be the the connector line
     var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.paper);
     requestQueue.register(django_url + project.id + '/link/delete', "POST", {
       pid: project.id,
@@ -941,7 +972,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     });
   });
 
-  this.update = function(x1, y1, x2, y2, stroke_color, confidence) {
+  this.update = function(x1, y1, x2, y2, is_pre, confidence) {
     var rloc = 9;
     var xdiff = (x2 - x1);
     var ydiff = (y2 - y1);
@@ -955,16 +986,9 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     var x2new = (x2 - x1) * F + x1;
     var y2new = (y2 - y1) * F + y1;
 
-    var angle = Raphael.angle(x2new, y2new, x1new, y1new);
+    this.line.attr({x1: x1, y1: y1, x2: x2new, y2: y2new});
 
-    this.line.attr({x1: x1, y1: y1, x2: x2, y2: y2});
-
-    // Reset transform
-    this.arrowPath.attr('transform', null);
-    // Translate and then rotate relative to 0,0 (preconcatenates)
-    this.arrowPath.attr('transform',
-                        "translate(" + x2new + "," + y2new + ") " +
-                        "rotate(" + angle + ")");
+    var stroke_color = is_pre ? this.PRE_COLOR : this.POST_COLOR;
 
     if (confidence < 5) {
       this.confidence_text = this.updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, this.confidence_text);
@@ -974,13 +998,9 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     }
 
     // Adjust
-    this.line.attr({"stroke": stroke_color,
-                    "stroke-width": this.EDGE_WIDTH});
-    // Adjust color
-    this.arrowPath.attr({
-      "fill": stroke_color,
-      "stroke": stroke_color
-    });
+    this.line.attr({stroke: stroke_color,
+                    'stroke-width': this.EDGE_WIDTH,
+                    'marker-end': is_pre ? 'url(#markerArrowPre)' : 'url(#markerArrowPost)'});
 
     this.show();
   };
@@ -989,24 +1009,20 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     // Ensure visible
     if ('hidden' === this.line.attr('visibility')) {
       this.line.show();
-      this.arrowPath.show();
     }
   };
 
   this.disable = function() {
-    this.arrowPath.connector_id = null;
-    this.arrowPath.treenode_id = null;
+    this.line.connector_id = null;
+    this.line.treenode_id = null;
     this.line.hide();
-    this.arrowPath.hide();
     if (this.confidence_text) this.confidence_text.hide();
   };
 
   this.obliterate = function() {
-    this.arrowPath.connector_id = null;
-    this.arrowPath.treenode_id = null;
-    this.arrowPath.on('mousedown', null);
-    this.arrowPath.remove();
-    this.arrowPath = null;
+    this.line.connector_id = null;
+    this.line.treenode_id = null;
+    this.line.on('mousedown', null);
     this.line.remove();
     this.line = null;
     if (this.confidence_text) {
@@ -1016,12 +1032,12 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   };
 
   this.init = function(connector, node, confidence, is_pre) {
-    this.arrowPath.connector_id = connector.id;
-    this.arrowPath.treenode_id = node.id;
+    this.line.connector_id = connector.id;
+    this.line.treenode_id = node.id;
     if (is_pre) {
-      this.update(node.x, node.y, connector.x, connector.y, this.PRE_COLOR, confidence);
+      this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence);
     } else {
-      this.update(connector.x, connector.y, node.x, node.y, this.POST_COLOR, confidence);
+      this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence);
     }
   };
 })();

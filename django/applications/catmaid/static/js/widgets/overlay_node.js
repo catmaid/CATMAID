@@ -190,16 +190,12 @@ SkeletonElements.prototype.ElementPool.prototype = (function() {
 /** A prototype for both Treenode and Connector. */
 SkeletonElements.prototype.NodePrototype = new (function() {
   /** Update the local x,y coordinates of the node
-   * and for its SVG objects c, mc as well. */
+   * and for its SVG object c well. */
   this.setXY = function(xnew, ynew) {
     this.x = xnew;
     this.y = ynew;
     if (this.c) {
       this.c.attr({
-        cx: xnew,
-        cy: ynew
-      });
-      this.mc.attr({
         cx: xnew,
         cy: ynew
       });
@@ -211,47 +207,31 @@ SkeletonElements.prototype.NodePrototype = new (function() {
     if (!this.shouldDisplay()) {
       return;
     }
-    // c and mc may already exist if the node is being reused
-    if (this.c && this.mc) {
-      // Do nothing
-    } else {
+    // c may already exist if the node is being reused
+    if (!this.c) {
       // create a circle object
       this.c = this.paper.append('circle')
                           .attr('cx', this.x)
                           .attr('cy', this.y)
                           .attr('r', this.NODE_RADIUS)
                           .classed('overlay-node', true);
-      // create a circle oversized for the mouse logic
-      this.mc = this.paper.append('circle')
-                          .attr('cx', this.x)
-                          .attr('cy', this.y)
-                          .attr('r', this.CATCH_RADIUS)
-                          .classed('overlayer-node-catcher', true);
 
-      SkeletonElements.prototype.mouseEventManager.attach(this.mc, this.type);
+      SkeletonElements.prototype.mouseEventManager.attach(this.c, this.type);
     }
 
     var fillcolor = this.color();
 
     this.c.attr({
       fill: fillcolor,
-      stroke: "none",
-      opacity: 1.0
+      stroke: fillcolor,
+      opacity: 1.0,
+      'stroke-width': this.CATCH_RADIUS,  // Use a large transparent stroke to
+      'stroke-opacity': 0                 // catch mouse events near the circle.
     });
 
-    // mc (where mc stands for 'mouse catcher circle') is fully transparent
-    this.mc.attr({
-      fill: fillcolor,  // If opacity is zero it must have a fillcolor, otherwise the mouse events ignore it
-      stroke: "none",
-      opacity: 0
-    });
+    if ("hidden" === this.c.attr('visibility')) this.c.show();
 
-    if ("hidden" === this.c.attr('visibility')) {
-      this.c.show();
-      this.mc.show();
-    }
-
-    this.mc.catmaidNode = this; // for event handlers
+    this.c.catmaidNode = this; // for event handlers
   };
 
   /** Recreate the GUI components, namely the circle and edges.
@@ -282,7 +262,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
 
   // For drawing:
   this.NODE_RADIUS = 8;
-  this.CATCH_RADIUS = 16;
+  this.CATCH_RADIUS = 32;
   this.EDGE_WIDTH = 4;
 
   // ID of the disabled nodes
@@ -411,12 +391,10 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.type = null;
     this.children = null;
     if (this.c) {
+      SkeletonElements.prototype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
+      this.c.catmaidNode = null; // break circular reference
       this.c.remove();
       this.c = null;
-      SkeletonElements.prototype.mouseEventManager.forget(this.mc, SkeletonAnnotations.TYPE_NODE);
-      this.mc.catmaidNode = null; // break circular reference
-      this.mc.remove();
-      this.mc = null;
     }
     if (this.line) {
       this.line.remove();
@@ -431,7 +409,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
   /** Before reusing a node, clear all the member variables that
    * are relevant to the skeleton structure.
    * All numeric variables will be overwritten,
-   * and the c, mc and line will be reused. */
+   * and the c and line will be reused. */
   this.disable = function() {
     this.id = this.DISABLED;
     this.parent = null;
@@ -440,7 +418,6 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.numberOfChildren = 0;
     if (this.c) {
       this.c.hide();
-      this.mc.hide();
     }
     if (this.line) {
       this.line.hide();
@@ -472,11 +449,8 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     if (this.c) {
       if (0 !== zdiff) {
         this.c.hide();
-        this.mc.hide();
       } else {
-        var newCoords = {cx: x, cy: y};
-        this.c.attr(newCoords);
-        this.mc.attr(newCoords);
+        this.c.attr({cx: x, cy: y});
       }
     }
     if (this.line) {
@@ -523,7 +497,6 @@ SkeletonElements.prototype.Node = function(
   this.can_edit = can_edit;
   this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
   this.c = null; // The SVG circle for drawing
-  this.mc = null; // The SVG circle for mouse actions (it's a bit larger)
   this.line = null; // The SVG line element that represents an edge between nodes
 };
 
@@ -551,14 +524,13 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     this.paper = null;
     this.id = null;
     if (this.c) {
+      SkeletonElements.prototype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_CONNECTORNODE);
+      this.c.catmaidNode = null; // break circular reference
       this.c.remove();
-      SkeletonElements.prototype.mouseEventManager.forget(this.mc, SkeletonAnnotations.TYPE_CONNECTORNODE);
-      this.mc.catmaidNode = null; // break circular reference
-      this.mc.remove();
     }
     this.pregroup = null;
     this.postgroup = null;
-    // Note: mouse event handlers are removed by c.remove and mc.remove()
+    // Note: mouse event handlers are removed by c.remove()
     this.removeConnectorArrows(); // also removes confidence text associated with edges
     this.preLines = null;
     this.postLines = null;
@@ -568,7 +540,6 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     this.id = this.DISABLED;
     if (this.c) {
       this.c.hide();
-      this.mc.hide();
     }
     this.removeConnectorArrows();
     this.pregroup = null;
@@ -647,12 +618,9 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
 
     if (this.c) {
       if (this.shouldDisplay()) {
-        var newCoords = {cx: x, cy: y};
-        this.c.attr(newCoords);
-        this.mc.attr(newCoords);
+        this.c.attr({cx: x, cy: y});
       } else {
         this.c.hide();
-        this.mc.hide();
       }
     }
 
@@ -686,18 +654,17 @@ SkeletonElements.prototype.ConnectorNode = function(
   this.pregroup = {}; // set of presynaptic treenodes
   this.postgroup = {}; // set of postsynaptic treenodes
   this.c = null; // The SVG circle for drawing
-  this.mc = null; // The SVG circle for mouse actions (it's a bit larger)
   this.preLines = null; // Array of ArrowLine to the presynaptic nodes
   this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
 };
 
 SkeletonElements.prototype.ConnectorNode.prototype = new SkeletonElements.prototype.AbstractConnectorNode();
 
-/** Event handling functions for 'mc'
+/** Event handling functions for 'c'
 * Realize that:
-*    mc.prev === c
-* and that, on constructing the mc, we declared:
-*    mc.catmaidNode = this;  // 'this' is the node
+*    c.prev === c
+* and that, on constructing the c, we declared:
+*    c.catmaidNode = this;  // 'this' is the node
  *
  * Below, the function() is but a namespace that returns a manager object
  * with functions attach and forget.
@@ -713,7 +680,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     return 2 === e.which;
   };
 
-  /** Here 'this' is mc. */
+  /** Here 'this' is c. */
   var mc_dblclick = function(e) {
     e.stopPropagation();
     var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.paper);
@@ -721,7 +688,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   };
 
   /** 
-   * Here 'this' is mc, and node is the Node instance
+   * Here 'this' is c, and node is the Node instance
    */
   this.mc_click = function(e) {
     e.stopPropagation();
@@ -780,7 +747,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     }
   };
 
-  /** Here 'this' is mc, and node is the Node instance. */
+  /** Here 'this' is c, and node is the Node instance. */
   var mc_move = function(dx, dy, x, y, e) {
     if (is_middle_click(e)) {
       // Allow middle-click panning
@@ -811,17 +778,13 @@ SkeletonElements.prototype.mouseEventManager = new (function()
       cx: node.x,
       cy: node.y
     });
-    node.mc.attr({
-      cx: node.x,
-      cy: node.y
-    });
     node.drawEdges(true); // TODO for connector this is overkill
     statusBar.replaceLast("Moving node #" + node.id);
 
     node.needsync = true;
   };
 
-  /** Here 'this' is mc. */
+  /** Here 'this' is c. */
   var mc_up = function(e) {
     e.stopPropagation();
     if (!checkNodeID(this.catmaidNode)) return;
@@ -840,7 +803,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     return true;
   };
 
-  /** Here 'this' is mc. */
+  /** Here 'this' is c. */
   var mc_start = function(x, y, e) {
     
     if (is_middle_click(e)) {
@@ -883,7 +846,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
       return;
     }
     // return some log information when clicked on the node
-    // this usually refers here to the mc object
+    // this usually refers here to the c object
     if (e.shiftKey) {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
         if (connectornode.id === atnID) {

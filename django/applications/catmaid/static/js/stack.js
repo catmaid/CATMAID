@@ -417,14 +417,6 @@ function Stack(
 			}
 		}
 
-
-		/**
-		 * This question is completely useless but without asking it, Firefox on
-		 * Linux systems will not redraw the screen properly.  Took me ... to
-		 * find this out.
-		 */
-		var a = view.offsetWidth;
-
 		self.old_z = self.z;
 		self.old_y = self.y;
 		self.old_x = self.x;

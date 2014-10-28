@@ -43,6 +43,9 @@ var Events = {
     trigger: function(event) {
       var args = Array.prototype.slice.call(arguments, 1);
       var callbacks = this.events[event];
+      if (undefined === callbacks) {
+        return;
+      }
       for (var i=0, l=callbacks.length; i<l; i++) {
         var callback = callbacks[i][0];
         var context = callbacks[i][1] === undefined ? this : callbacks[i][1];

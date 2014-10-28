@@ -29,6 +29,15 @@ var Events = {
       this.events[event].push([callback, context]);
     },
     /**
+     * Remove all listeners from the given event.
+     */
+    clear: function(event) {
+      if (this.hasOwnProperty('events') && this.events.hasOwnProperty(event)) {
+        return delete this.events[event];
+      }
+      return false;
+    },
+    /**
      * Triggers the given event and calls all its listeners.
      */
     trigger: function(event) {

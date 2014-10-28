@@ -50,6 +50,17 @@ QUnit.test('Event system test', function( assert ) {
   });
   e.trigger('foo4');
 
+  // Test removal of all listeners of an event
+  var wasExecuted = false;
+  e.on('foo5', function() {
+    wasExecuted = true;
+  })
+  assert.strictEqual(e.clear('foo5'), true, 'removal of listeners for an ' +
+      'existing event was successful');
+  e.trigger('foo5');
+  assert.strictEqual(wasExecuted, false, 'removed all listeners after ' +
+        'call to off function for an event');
+
   // Test extension of object with event system
   var obj2 = {};
   Events.extend(obj2);

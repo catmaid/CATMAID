@@ -298,7 +298,7 @@ def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
     potential_skeletons = nx.bfs_tree(g, int(node_id)).nodes()
     result = tuple(nid for nid in potential_skeletons if 'skeleton' == g.node[nid]['class'])
     json_return = json.dumps({'skeletons': result}, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
+    return HttpResponse(json_return, content_type='text/json')
 
 
 def _collect_neuron_ids(node_id, node_type=None):

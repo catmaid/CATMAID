@@ -290,7 +290,7 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
               entity['id'],
           ]]
 
-    return HttpResponse(json.dumps(response), mimetype='text/json')
+    return HttpResponse(json.dumps(response), content_type='text/json')
 
 def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
     """ Ensure that the neuron is annotated_with only the annotations given.
@@ -397,7 +397,7 @@ def annotate_entities(request, project_id = None):
                 for a,e in annotation_objs.items()],
     }
 
-    return HttpResponse(json.dumps(result), mimetype='text/json')
+    return HttpResponse(json.dumps(result), content_type='text/json')
 
 @requires_user_role(UserRole.Annotate)
 def remove_annotation(request, project_id=None, annotation_id=None):
@@ -455,7 +455,7 @@ def remove_annotation(request, project_id=None, annotation_id=None):
         message += " There are %s links left to this annotation." \
                 % num_annotation_links
 
-    return HttpResponse(json.dumps({'message': message}), mimetype='text/json')
+    return HttpResponse(json.dumps({'message': message}), content_type='text/json')
 
 def create_annotation_query(project_id, param_dict):
 
@@ -652,7 +652,7 @@ def list_annotations(request, project_id=None):
         ls.append({'id': uid, 'name': username})
     # Flatten dictionary to list
     annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.iteritems())
-    return HttpResponse(json.dumps({'annotations': annotations}), mimetype="text/json")
+    return HttpResponse(json.dumps({'annotations': annotations}), content_type="text/json")
 
 def _fast_co_annotations(request, project_id, display_start, display_length):
     classIDs = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
@@ -718,7 +718,7 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
                        row[0]])
 
     response['aaData'] = aaData
-    return HttpResponse(json.dumps(response), mimetype='text/json')
+    return HttpResponse(json.dumps(response), content_type='text/json')
 
 
 @requires_user_role([UserRole.Browse])
@@ -820,7 +820,7 @@ def list_annotations_datatable(request, project_id=None):
             annotation[4], # Annotator ID
             annotation[0]]) # ID
 
-    return HttpResponse(json.dumps(response), mimetype='text/json')
+    return HttpResponse(json.dumps(response), content_type='text/json')
 
 
 @requires_user_role([UserRole.Browse])

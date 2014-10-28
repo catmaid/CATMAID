@@ -49,5 +49,11 @@ QUnit.test('Event system test', function( assert ) {
     assert.strictEqual(this, e);
   });
   e.trigger('foo4');
+
+  // Test extension of object with event system
+  var obj2 = {};
+  Events.extend(obj2);
+  assert.strictEqual(obj2.on, Events.Event.on);
+  assert.strictEqual(obj2.trigger, Events.Event.trigger);
 });
 

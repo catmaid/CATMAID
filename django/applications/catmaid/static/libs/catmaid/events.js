@@ -58,11 +58,11 @@ var Events = {
      * Triggers the given event and calls all its listeners.
      */
     trigger: function(event) {
-      var args = Array.prototype.slice.call(arguments, 1);
-      var callbacks = this.events[event];
-      if (undefined === callbacks) {
+      if (undefined === this.events || undefined === this.events[event]) {
         return;
       }
+      var args = Array.prototype.slice.call(arguments, 1);
+      var callbacks = this.events[event];
       for (var i=0, l=callbacks.length; i<l; i++) {
         var callback = callbacks[i][0];
         var context = callbacks[i][1] === undefined ? this : callbacks[i][1];

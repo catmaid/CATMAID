@@ -29,6 +29,23 @@ var Events = {
       this.events[event].push([callback, context]);
     },
     /**
+     * Unregister a callback from an event.
+     */
+    off: function(event, callback) {
+      if (this.hasOwnProperty('events') && this.events.hasOwnProperty(event)) {
+        var indexes = [];
+        for (var i=0, l=this.events[event].length; i<l; i++) {
+          if (callback === this.events[event][i][0]) {
+            indexes.push(i);
+          }
+        }
+        for (var i=0, l=indexes.length; i<l; i++) {
+          // Remove the event and keep offset due to removed elements in mind
+          this.events[event].splice(indexes[i] - i, 1);
+        }
+      }
+    },
+    /**
      * Remove all listeners from the given event.
      */
     clear: function(event) {

@@ -61,6 +61,22 @@ QUnit.test('Event system test', function( assert ) {
   assert.strictEqual(wasExecuted, false, 'removed all listeners after ' +
         'call to off function for an event');
 
+  // Test removal of single listeners of an event
+  var wasExecuted2 = false;
+  var wasExecuted3 = false;
+  function callback3() {
+    wasExecuted2 = true;
+  };
+  e.on('foo6', callback3);
+  e.on('foo6', function() {
+    wasExecuted3 = true;
+  });
+  e.on('foo6', callback3);
+  e.off('foo6', callback3);
+  e.trigger('foo6');
+  assert.strictEqual(wasExecuted2, false, 'removed single listener');
+  assert.strictEqual(wasExecuted3, true, 'left correct listeners in place');
+
   // Test extension of object with event system
   var obj2 = {};
   Events.extend(obj2);

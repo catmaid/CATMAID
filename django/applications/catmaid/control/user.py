@@ -28,7 +28,7 @@ def user_list(request):
             "last_name": u.last_name,
             "color": (up.color.r, up.color.g, up.color.b) })
 
-    return HttpResponse(json.dumps(result), mimetype='text/json')
+    return HttpResponse(json.dumps(result), content_type='text/json')
 
 @user_passes_test(access_check)
 def user_list_datatable(request):
@@ -105,7 +105,7 @@ def user_list_datatable(request):
             user.id,
         ]]
 
-    return HttpResponse(json.dumps(response), mimetype='text/json')
+    return HttpResponse(json.dumps(response), content_type='text/json')
 
 
 initial_colors = ((1, 0, 0, 1),
@@ -146,7 +146,7 @@ def update_user_profile(request):
     # Ignore anonymous user
     if not request.user.is_authenticated() or request.user.is_anonymous():
         return HttpResponse(json.dumps({'success': "The user profile of the " +
-                "anonymous user won't be updated"}), mimetype='text/json')
+                "anonymous user won't be updated"}), content_type='text/json')
 
     # Display stack reference lines
     display_stack_reference_lines = request.POST.get(
@@ -161,4 +161,4 @@ def update_user_profile(request):
     request.user.userprofile.save()
 
     return HttpResponse(json.dumps({'success': 'Updated user profile'}),
-            mimetype='text/json')
+            content_type='text/json')

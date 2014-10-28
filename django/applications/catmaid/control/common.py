@@ -82,7 +82,7 @@ def json_error_response(message):
     helper method to return such a structure:
     """
     return HttpResponse(json.dumps({'error': message}),
-                        mimetype='text/json')
+                        content_type='text/json')
 
 
 def order_neurons(neurons, order_by=None):

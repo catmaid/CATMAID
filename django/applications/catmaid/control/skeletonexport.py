@@ -57,9 +57,9 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
     treenode_qs, labels_qs, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id)
 
     if format == 'swc':
-        return HttpResponse(get_swc_string(treenode_qs), mimetype='text/plain')
+        return HttpResponse(get_swc_string(treenode_qs), content_type='text/plain')
     elif format == 'json':
-        return HttpResponse(get_json_string(treenode_qs), mimetype='text/json')
+        return HttpResponse(get_json_string(treenode_qs), content_type='text/json')
     else:
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
@@ -690,7 +690,7 @@ def export_neuroml_level3_v181(request, project_id=None):
 
         generator = export_NeuroML_Level3.exportSingle(neuron_names, cursor.fetchall(), inputs)
 
-    response = HttpResponse(generator, mimetype='text/plain')
+    response = HttpResponse(generator, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename=neuronal-circuit.neuroml'
 
     return response

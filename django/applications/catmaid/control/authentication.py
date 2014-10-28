@@ -124,7 +124,7 @@ def requires_user_role(roles):
                         "project %d" % (u.first_name + ' ' + u.last_name, \
                         int(kwargs['project_id']))
                 return HttpResponse(json.dumps({'error': msg,
-                        'permission_error': True}), mimetype='text/json')
+                        'permission_error': True}), content_type='text/json')
 
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role

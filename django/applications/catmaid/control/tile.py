@@ -33,7 +33,7 @@ def get_tile(request, project_id=None, stack_id=None):
     if not os.path.exists( fpath ):
         data=np.zeros( (height, width) )
         pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
-        response = HttpResponse(mimetype="image/png")
+        response = HttpResponse(content_type="image/png")
         pilImage.save(response, "PNG")
         return response
         # return HttpResponse(json.dumps({'error': 'HDF5 file does not exists: {0}'.format(fpath)}))
@@ -45,14 +45,14 @@ def get_tile(request, project_id=None, stack_id=None):
         if not str(int(scale)) in hfile['/'].keys():
             data=np.zeros( (height, width) )
             pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
-            response = HttpResponse(mimetype="image/png")
+            response = HttpResponse(content_type="image/png")
             pilImage.save(response, "PNG")
             return response            
             # return HttpResponse(json.dumps({'error': 'HDF5 file does not contain scale: {0}'.format(str(int(scale)))}))
         image_data=hfile[hdfpath]
         data=image_data[y:y+height,x:x+width]
         pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
-        response = HttpResponse(mimetype="image/png")
+        response = HttpResponse(content_type="image/png")
         pilImage.save(response, "PNG")
         return response
 
@@ -82,4 +82,4 @@ def put_tile(request, project_id=None, stack_id=None):
         image_from_canvas = np.asarray( Image.open( cStringIO.StringIO(base64.decodestring(image)) ) )
         hfile[hdfpath][y:y+height,x:x+width,z] = image_from_canvas[:,:,0]
 
-    return HttpResponse("Image pushed to HDF5.", mimetype="plain/text")
+    return HttpResponse("Image pushed to HDF5.", content_type="plain/text")

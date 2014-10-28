@@ -56,4 +56,4 @@ def export_jsongraph(request, project_id):
            'label': str(props['c']) if props['directed'] else None,
            'directed': props['directed'] })
 
-    return HttpResponse(json.dumps(json_graph.node_link_data(newgraph), indent=2), mimetype='text/json')
+    return HttpResponse(json.dumps(json_graph.node_link_data(newgraph), indent=2), content_type='text/json')

@@ -49,7 +49,7 @@ def graphedge_list(request, project_id=None):
         connectordata[k]['posttreenode'] = v['posttreenode'][ v['post'].index( skeletonlist[1] ) ]
         result.append(connectordata[k])
 
-    return HttpResponse(json.dumps( result ), mimetype='text/json')
+    return HttpResponse(json.dumps( result ), content_type='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def one_to_many_synapses(request, project_id=None):

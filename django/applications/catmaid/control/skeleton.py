@@ -115,7 +115,7 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
         'postsynaptic_sites': skel.postsynaptic_sites_count(),
         'cable_length': int(skel.cable_length()),
         'measure_construction_time': construction_time,
-        'percentage_reviewed': "%.2f" % skel.percentage_reviewed() }), mimetype='text/json')
+        'percentage_reviewed': "%.2f" % skel.percentage_reviewed() }), content_type='text/json')
 
 # Will fail if skeleton_id does not exist
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -165,7 +165,7 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
         skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
     return HttpResponse(json.dumps({
         'count': Treenode.objects.filter(skeleton_id=skeleton_id).count(),
-        'skeleton_id': skeleton_id}), mimetype='text/json')
+        'skeleton_id': skeleton_id}), content_type='text/json')
 
 def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
     p = get_object_or_404(Project, pk=project_id)
@@ -182,7 +182,7 @@ def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronname(request, project_id=None, skeleton_id=None):
-    return HttpResponse(json.dumps(_get_neuronname_from_skeletonid(project_id, skeleton_id)), mimetype='text/json')
+    return HttpResponse(json.dumps(_get_neuronname_from_skeletonid(project_id, skeleton_id)), content_type='text/json')
 
 def _neuronnames(skeleton_ids, project_id):
     qs = ClassInstanceClassInstance.objects.filter(
@@ -366,7 +366,7 @@ def split_skeleton(request, project_id=None):
     insert_into_log(project_id, request.user.id, "split_skeleton", location,
                     "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
 
-    return HttpResponse(json.dumps({}), mimetype='text/json')
+    return HttpResponse(json.dumps({}), content_type='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def root_for_skeleton(request, project_id=None, skeleton_id=None):
@@ -379,7 +379,7 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None):
         'x': tn.location_x,
         'y': tn.location_y,
         'z': tn.location_z}),
-        mimetype='text/json')
+        content_type='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_ancestry(request, project_id=None):
@@ -588,7 +588,7 @@ def skeleton_info_raw(request, project_id=None):
 
     incoming, outgoing = _skeleton_info_raw(project_id, skeletons, op)
 
-    return HttpResponse(json.dumps({'incoming': incoming, 'outgoing': outgoing}), mimetype='text/json')
+    return HttpResponse(json.dumps({'incoming': incoming, 'outgoing': outgoing}), content_type='text/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -639,7 +639,7 @@ def skeleton_info(request, project_id=None, skeleton_id=None):
         'outgoing': list(reversed(sorted(data['outgoing'].values(), key=itemgetter('synaptic_count'))))
     }
     json_return = json.dumps(result, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
+    return HttpResponse(json_return, content_type='text/json')
 
 @requires_user_role([UserRole.Browse, UserRole.Annotate])
 def review_status(request, project_id=None):
@@ -927,7 +927,7 @@ def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
     """
     skeleton_id = int(skeleton_id) # sanitize
     Review.objects.filter(skeleton_id=skeleton_id, reviewer=request.user).delete();
-    return HttpResponse(json.dumps({'status': 'success'}), mimetype='text/json')
+    return HttpResponse(json.dumps({'status': 'success'}), content_type='text/json')
 
 
 @requires_user_role(UserRole.Annotate)
@@ -1063,4 +1063,4 @@ def annotation_list(request, project_id=None):
             })
         response['metaannotations'] = metaannotations
 
-    return HttpResponse(json.dumps(response), mimetype="text/json")
+    return HttpResponse(json.dumps(response), content_type="text/json")

@@ -4,8 +4,8 @@
 "use strict";
 
 /**
- * A very simple event bus. One can register a callback to events and trigger
- * them.
+ * A very simple event bus. One can register to events and trigger them, both
+ * work with custom arguments.
  */
 var Events = {
   Event: {
@@ -15,9 +15,10 @@ var Events = {
       this.events[event].push(callback);
     },
     trigger: function(event) {
+      var args = Array.prototype.slice.call(arguments, 1);
       var callbacks = this.events[event];
       for (var i=0, l=callbacks.length; i<l; i++) {
-        callbacks[i]();
+        callbacks[i].apply(this, args);
       }
     },
   }

@@ -22,5 +22,19 @@ QUnit.test('Event system test', function( assert ) {
   e.on('foo', callback);
   e.trigger('foo');
   assert.ok(wasCalled, 'executes callback when even is triggered');
+
+  // Test if callback is called with correct number of arguments
+  var receivedArguments;
+  function callback2() {
+    receivedArguments = [];
+    for (var i=0, l=arguments.length; i<l; i++) {
+      receivedArguments.push(arguments[i]);
+    }
+
+  };
+  e.on('foo2', callback2);
+  e.trigger('foo2', 1, 2);
+  assert.deepEqual(receivedArguments, [1, 2], 'executes callback with ' +
+        'correct number of arguments when event is triggered');
 });
 

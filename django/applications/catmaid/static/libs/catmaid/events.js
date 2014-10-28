@@ -49,5 +49,6 @@ var Events = {
     for (var property in this.Event) {
       other[property] = this.Event[property];
     }
+    return other;
   },
 };

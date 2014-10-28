@@ -55,5 +55,9 @@ QUnit.test('Event system test', function( assert ) {
   Events.extend(obj2);
   assert.strictEqual(obj2.on, Events.Event.on);
   assert.strictEqual(obj2.trigger, Events.Event.trigger);
+
+  // Test if extension of an object returns the object
+  var obj3 = {};
+  assert.strictEqual(Events.extend(obj3), obj3);
 });
 

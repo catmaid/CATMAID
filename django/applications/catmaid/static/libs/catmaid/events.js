@@ -13,12 +13,24 @@
  * https://corcoran.io/2013/06/01/building-a-minimal-javascript-event-system/
  */
 var Events = {
+  /**
+   * The object implementing the event system.
+   */
   Event: {
+    /**
+     * Register with the event bus for a specific event. If this event is
+     * triggered, the callback is executed. If a context is provided, this
+     * context is used for the callback (i.e. what 'this' is referring to
+     * in the callback), otherwise the event object is used as context.
+     */
     on: function(event, callback, context) {
       this.hasOwnProperty('events') || (this.events = {});
       this.events.hasOwnProperty(event) || (this.events[event] = []);
       this.events[event].push([callback, context]);
     },
+    /**
+     * Triggers the given event and calls all its listeners.
+     */
     trigger: function(event) {
       var args = Array.prototype.slice.call(arguments, 1);
       var callbacks = this.events[event];

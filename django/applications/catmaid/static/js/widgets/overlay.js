@@ -25,11 +25,15 @@ var SkeletonAnnotations = {
   TYPE_NODE : "treenode",
   TYPE_CONNECTORNODE : "connector",
 
-  sourceView : new ActiveSkeleton()
+  sourceView : new ActiveSkeleton(),
+
+  // Event name constants
+  EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
 };
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
+Events.extend(SkeletonAnnotations);
 
 /**
  * Sets the active node, if node is not null. Otherwise, the active node is
@@ -37,17 +41,33 @@ SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
  * coordinates, its position has to be unscaled.
  */
 SkeletonAnnotations.atn.set = function(node, stack_id) {
+  var changed = false;
+
   if (node) {
+    // Find out if there was a change
     var stack = project.getStack(stack_id);
+    var new_x = node.x / stack.scale;
+    var new_y = node.y / stack.scale;
+    changed = (this.id !== node.id) ||
+              (this.skeleton_id !== node.skeleton_id) ||
+              (this.type !== node.type) ||
+              (this.z !== node.z) ||
+              (this.y !== new_y)  ||
+              (this.x !== new_x) ||
+              (this.parent_id !== node.parent_id) ||
+              (this.stack_id !== stack_id);
+
+    // Assign new properties
     this.id = node.id;
     this.skeleton_id = node.skeleton_id;
     this.type = node.type;
-    this.x = node.x / stack.scale;
-    this.y = node.y / stack.scale;
+    this.x = new_x;
+    this.y = new_y;
     this.z = node.z;
     this.parent_id = node.parent ? node.parent.id : null;
     this.stack_id = stack_id;
   } else {
+    changed = true;
     // Set all to null
     for (var prop in this) {
       if (this.hasOwnProperty(prop)) {
@@ -57,6 +77,12 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
         this[prop] = null;
       }
     }
+  }
+
+  // Trigger event if node ID or position changed
+  if (changed) {
+    SkeletonAnnotations.trigger(
+          SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, this);
   }
 };
 

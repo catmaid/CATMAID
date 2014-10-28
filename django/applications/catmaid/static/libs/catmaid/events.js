@@ -5,20 +5,23 @@
 
 /**
  * A very simple event bus. One can register to events and trigger them, both
- * work with custom arguments.
+ * work with custom arguments. A callback can also be registered along with its
+ * context, so it will be executed in it.
  */
 var Events = {
   Event: {
-    on: function(event, callback) {
+    on: function(event, callback, context) {
       this.hasOwnProperty('events') || (this.events = {});
       this.events.hasOwnProperty(event) || (this.events[event] = []);
-      this.events[event].push(callback);
+      this.events[event].push([callback, context]);
     },
     trigger: function(event) {
       var args = Array.prototype.slice.call(arguments, 1);
       var callbacks = this.events[event];
       for (var i=0, l=callbacks.length; i<l; i++) {
-        callbacks[i].apply(this, args);
+        var callback = callbacks[i][0];
+        var context = callbacks[i][1] === undefined ? this : callbacks[i][1];
+        callback.apply(context, args);
       }
     },
   }

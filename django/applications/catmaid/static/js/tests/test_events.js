@@ -36,5 +36,18 @@ QUnit.test('Event system test', function( assert ) {
   e.trigger('foo2', 1, 2);
   assert.deepEqual(receivedArguments, [1, 2], 'executes callback with ' +
         'correct number of arguments when event is triggered');
+
+  // Test if callback is executed in context of another object
+  var obj = {};
+  e.on('foo3', function() {
+    assert.strictEqual(this, obj);
+  }, obj);
+  e.trigger('foo3');
+
+  // Test fallback to event object as context, if no context is provided
+  e.on('foo4', function() {
+    assert.strictEqual(this, e);
+  });
+  e.trigger('foo4');
 });
 

@@ -47,7 +47,7 @@ def get_roi_info(request, project_id=None, roi_id=None):
 
     return HttpResponse(json.dumps(info))
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Annotate)
 def link_roi_to_class_instance(request, project_id=None, relation_id=None,
         stack_id=None, ci_id=None):
     """ With the help of this method one can link a region of interest

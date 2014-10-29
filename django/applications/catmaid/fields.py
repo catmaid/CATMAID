@@ -135,7 +135,7 @@ class RGBA(object):
                         a=float(m.group(4)))
         else:
             raise Exception, "Couldn't parse value as an RGBA: " + str(s)
-    
+
     def hex_color(self):
         return "#{0:06x}".format((int(self.r * 255) << 16) + (int(self.g * 255) << 8) + int(self.b * 255))
 
@@ -165,7 +165,7 @@ class RGBAField(models.Field):
         # here; return a new RGBA for any falsy value:
         elif not value:
             return RGBA()
-        elif isinstance(value, str):
+        elif isinstance(value, str) or isinstance(value, unicode):
             return RGBA.from_str(value)
         else:
             return RGBA()    #.from_str(value)

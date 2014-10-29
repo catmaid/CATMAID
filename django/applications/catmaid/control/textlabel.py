@@ -10,16 +10,9 @@ from catmaid.control.common import *
 @requires_user_role(UserRole.Annotate)
 def update_textlabel(request, project_id=None):
     params = {}
-    parameter_names = ['tid', 'pid', 'x', 'y', 'z', 'text', 'type', 'r', 'g', 'b', 'a', 'fontname', 'fontstyle', 'fontsize', 'scaling']
+    parameter_names = ['tid', 'pid', 'x', 'y', 'z', 'text', 'type', 'r', 'g', 'b', 'a', 'font_name', 'font_style', 'font_size', 'scaling']
     for p in parameter_names:
         params[p] = request.POST.get(p, None)
-        # Rename params in to match model parameter names.
-    params['font_name'] = params['fontname']
-    params['font_style'] = params['fontstyle']
-    params['font_size'] = params['fontsize']
-    del params['fontname']
-    del params['fontstyle']
-    del params['fontsize']
 
     # Scaling is given 0 or 1 value by the caller, but our models use bool
     if params['scaling'] is not None:
@@ -79,7 +72,6 @@ def delete_textlabel(request, project_id=None):
 
 @requires_user_role(UserRole.Annotate)
 def create_textlabel(request, project_id=None):
-    print >> sys.stderr, 'creating text label'
     params = {}
     param_defaults = {
         'x': 0,
@@ -91,9 +83,9 @@ def create_textlabel(request, project_id=None):
         'g': 0.5,
         'b': 0,
         'a': 1,
-        'fontname': False,
-        'fontstyle': False,
-        'fontsize': False,
+        'font_name': False,
+        'font_style': False,
+        'font_size': False,
         'scaling': False}
     for p in param_defaults.keys():
         params[p] = request.POST.get(p, param_defaults[p])
@@ -106,12 +98,12 @@ def create_textlabel(request, project_id=None):
         scaling=params['scaling']
     )
     new_label.project_id = project_id
-    if params['fontname']:
-        new_label.font_name = params['fontname']
-    if params['fontstyle']:
-        new_label.font_style = params['fontstyle']
-    if params['fontsize']:
-        new_label.font_size = params['fontsize']
+    if params['font_name']:
+        new_label.font_name = params['font_name']
+    if params['font_style']:
+        new_label.font_style = params['font_style']
+    if params['font_size']:
+        new_label.font_size = params['font_size']
     new_label.save()
 
     TextlabelLocation(

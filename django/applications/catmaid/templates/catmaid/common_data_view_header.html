@@ -1,3 +1,8 @@
 <h1>CATMAID v0.24</h1>
 <p>Please feel free to open one of the public projects or log in with your account and password. In total there are currently {{ projects|length }} projects available.</p>
+
+{% if projects|length > 0 %}
 <h2>Projects</h2>
+{% else %}
+<h2>There is currently no project visible or available.</h2>
+{% endif %}

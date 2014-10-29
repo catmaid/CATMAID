@@ -2355,17 +2355,28 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
   } else if ('synapse-clustering' === options.connector_color) {
     var sc = this.createSynapseClustering(options.synapse_clustering_bandwidth),
         density_hill_map = sc.densityHillMap(),
-        clusters = sc.clusterSizes(density_hill_map),
-        colorizer = new Colorizer(),
-        cluster_colors = Object.keys(clusters)
+        clusters = sc.clusterMaps(density_hill_map),
+        colorizer = d3.scale.category10(),
+        synapse_treenodes = Object.keys(sc.synapses);
+    // Remove bogus cluster - TODO fix this bogus cluster in SynapseClustering
+    delete clusters[undefined];
+    // Filter out clusters without synapses
+    var clusterIDs = Object.keys(clusters).filter(function(id) {
+      var treenodes = clusters[id];
+      for (var k=0; k<synapse_treenodes.length; ++k) {
+        if (treenodes[synapse_treenodes[k]]) return true;
+      }
+      return false;
+    });
+    var cluster_colors = clusterIDs
           .map(function(cid) { return [cid, clusters[cid]]; })
           .sort(function(a, b) {
             var la = a[1].length,
                 lb = b[1].length;
             return la === lb ? 0 : (la > lb ? -1 : 1);
           })
-          .reduce(function(o, c) {
-            o[c[0]] = colorizer.pickColor();
+          .reduce(function(o, c, i) {
+            o[c[0]] = new THREE.Color().set(colorizer(i));
             return o;
           }, {});
 

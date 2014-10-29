@@ -53,7 +53,7 @@ def create_link(request, project_id=None):
         connector=to_connector  # connector_id = to_id
     ).save()
 
-    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+    return HttpResponse(json.dumps({'message': 'success'}), content_type='text/json')
 
 
 @requires_user_role(UserRole.Annotate)

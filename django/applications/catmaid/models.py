@@ -499,6 +499,7 @@ class RegionOfInterest(UserFocusedModel):
     class Meta:
         db_table = "region_of_interest"
     # Repeat the columns inherited from 'location'
+    editor = models.ForeignKey(User, related_name='roi_editor', db_column='editor_id')
     location_x = models.FloatField()
     location_y = models.FloatField()
     location_z = models.FloatField()

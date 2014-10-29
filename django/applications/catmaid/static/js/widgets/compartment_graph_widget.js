@@ -15,7 +15,8 @@ var GroupGraph = function() {
   this.node_width = 30; // pixels
   this.node_height = 30; // pixels
 
-  this.color_circles_of_hell = this.colorCirclesOfHell.bind(this);
+  this.color_circles_of_hell_upstream = this.colorCirclesOfHell.bind(this, true);
+  this.color_circles_of_hell_downstream = this.colorCirclesOfHell.bind(this, false);
 
   this.edge_color = '#555';
   this.edge_opacity = 1.0;
@@ -710,8 +711,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       // Remove clusters of treenodes that lack synapses
       var synapse_treenodes = Object.keys(synapse_map);
       clusterIDs = clusterIDs.filter(function(clusterID) {
-        var count = 0,
-            treenodes = clusters[clusterID];
+        var treenodes = clusters[clusterID];
         for (var k=0; k<synapse_treenodes.length; ++k) {
           if (treenodes[synapse_treenodes[k]]) return true;
         }
@@ -1565,8 +1565,10 @@ GroupGraph.prototype.colorBy = function(mode, select) {
 
   this.setState('color_mode', mode);
 
-  this.cy.nodes().off({'select': this.color_circles_of_hell,
-                       'unselect': this.color_circles_of_hell});
+  this.cy.nodes().off({'select': this.color_circles_of_hell_upstream,
+                       'unselect': this.color_circles_of_hell_upstream});
+  this.cy.nodes().off({'select': this.color_circles_of_hell_downstream,
+                       'unselect': this.color_circles_of_hell_downstream});
 
   if ('source' === mode) {
     // Color by the color given in the SkeletonModel
@@ -1664,17 +1666,20 @@ GroupGraph.prototype.colorBy = function(mode, select) {
     }
     $.unblockUI();
 
-  } else if ('circles_of_hell' === mode) {
-    this.cy.nodes().on({'select': this.color_circles_of_hell,
-                        'unselect': this.color_circles_of_hell});
-    this.color_circles_of_hell();
+  } else if (0 === mode.indexOf('circles_of_hell_')) {
+    var fnName = 'color_circles_of_hell_' + mode.substring(16);
+    this.cy.nodes().on({'select': this[fnName],
+                        'unselect': this[fnName]});
+    this[fnName]();
   }
 };
 
-GroupGraph.prototype.colorCirclesOfHell = function() {
+/** upstream: true when coloring circles upstream of node. False when coloring downstream. */
+GroupGraph.prototype.colorCirclesOfHell = function(upstream) {
+  // Make all nodes white when deselecting
   var selected = this.cy.nodes().toArray().filter(function(node) { return node.selected(); });
   if (1 !== selected.length) {
-    growlAlert("Info", "Need 1 (and only 1) selected node!");
+    if (0 !== selected.length) growlAlert("Info", "Need 1 (and only 1) selected node!");
     this.cy.nodes().data('color', '#fff');
     return;
   }
@@ -1698,24 +1703,28 @@ GroupGraph.prototype.colorCirclesOfHell = function() {
     n = 0;
     Object.keys(current).forEach(function(id1) {
       var k = indices[id1];
-      // Downstream:
-      m.AdjM[k].forEach(function(count, i) {
-        if (0 === count) return;
-        var id2 = m.ids[i];
-        if (consumed[id2]) return;
-        next[id2] = true;
-        consumed[id2] = true;
-        n += 1;
-      });
-      // Upstream:
-      m.AdjM.forEach(function(row, i) {
-        if (0 === row[k]) return;
-        var id2 = m.ids[i];
-        if (consumed[id2]) return;
-        next[id2] = true;
-        consumed[id2] = true;
-        n += 1;
-      });
+      if (upstream) {
+        // Upstream:
+        m.AdjM.forEach(function(row, i) {
+          if (0 === row[k]) return;
+          var id2 = m.ids[i];
+          if (consumed[id2]) return;
+          next[id2] = true;
+          consumed[id2] = true;
+          n += 1;
+        });
+      } else {
+        // Downstream:
+        var ud = m.AdjM[k]; // Uint32Array lacks forEach
+        for (var i=0; i<ud.length; ++i) {
+          if (0 === ud[i]) continue; // no synapses
+          var id2 = m.ids[i];
+          if (consumed[id2]) continue;
+          next[id2] = true;
+          consumed[id2] = true;
+          n += 1;
+        }
+      }
     });
     if (0 === n) break;
     n_consumed += n;

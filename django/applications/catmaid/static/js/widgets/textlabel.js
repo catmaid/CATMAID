@@ -59,8 +59,8 @@ function TextlabelTool()
       a: 1,
       type: "text",
       scaling: (document.getElementById("fontscaling").checked ? 1 : 0),
-      fontsize: (document.getElementById("fontscaling").checked ? Math.max(16 / scale, parseInt(document.getElementById("fontsize").value)) : parseInt(document.getElementById("fontsize").value)) * tlr,
-      fontstyle: (document.getElementById("fontstylebold").checked ? "bold" : "")
+      font_size: (document.getElementById("fontscaling").checked ? Math.max(16 / scale, parseInt(document.getElementById("fontsize").value)) : parseInt(document.getElementById("fontsize").value)) * tlr,
+      font_style: (document.getElementById("fontstylebold").checked ? "bold" : "")
     }, function (status, text, xml) {
       statusBar.replaceLast(text);
       if (status == 200) {
@@ -478,9 +478,9 @@ Textlabel = function(
 				a : self.colour.a,
 				type : self.type,
 				scaling : ( self.scaling ? 1 : 0 ),
-				fontsize : self.fontSize * resolution.y,
-				fontstyle : self.fontStyle,
-				fontname : self.fontName,
+				font_size : self.fontSize * resolution.y,
+				font_style : self.fontStyle,
+				font_name : self.fontName,
 				offset_left : self.offset.left,
 				offset_top : self.offset.top },
 			function( status, text, xml )

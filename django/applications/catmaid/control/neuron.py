@@ -23,7 +23,7 @@ def get_all_skeletons_of_neuron(request, project_id=None, neuron_id=None):
         project=p,
         cici_via_a__relation__relation_name='model_of',
         cici_via_a__class_instance_b=neuron)
-    return HttpResponse(json.dumps([x.id for x in qs]), mimetype="text/json")
+    return HttpResponse(json.dumps([x.id for x in qs]), content_type="text/json")
 
 def _delete_if_empty(neuron_id):
     """ Delete this neuron if no class_instance is a model_of it;
@@ -122,8 +122,9 @@ def delete_neuron(request, project_id=None, neuron_id=None):
         DELETE FROM treenode WHERE skeleton_id=%s AND project_id=%s;
         DELETE FROM treenode_connector WHERE skeleton_id=%s AND project_id=%s;
         DELETE FROM class_instance WHERE id=%s AND project_id=%s;
+        DELETE FROM review WHERE skeleton_id=%s AND project_id=%s;
         COMMIT;
-        ''', (skid, project_id, skid, project_id, skid, project_id, skid, project_id, skid, project_id, skid, project_id))
+        ''', (skid, project_id) * 7)
 
     # Insert log entry and refer to position of the first skeleton's root node
     insert_into_log(project_id, request.user.id, 'remove_neuron', root_location,
@@ -131,7 +132,7 @@ def delete_neuron(request, project_id=None, neuron_id=None):
                     ', '.join([str(s) for s in skeleton_ids])))
 
     return HttpResponse(json.dumps({
-        'success': "Deleted neuron #%s as well as it's skeletons and " \
+        'success': "Deleted neuron #%s as well as its skeletons and " \
                 "annotations." % neuron_id}))
 
 @requires_user_role(UserRole.Annotate)

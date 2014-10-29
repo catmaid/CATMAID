@@ -789,8 +789,6 @@ var WindowMaker = new function()
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas" + WA.widgetID);
-    // canvas.style.width = "800px";
-    // canvas.style.height = "600px";
     canvas.style.backgroundColor = "#000000";
     container.appendChild(canvas);
 
@@ -817,13 +815,11 @@ var WindowMaker = new function()
                 if (windows.hasOwnProperty(name)) {
                   if (win === windows[name]) {
                     delete windows[name];
-                    // console.log("deleted " + name);
                     break;
                   }
                 }
               }
               WA.destroy();
-              // win.close(); // it is done anyway
             }
             break;
           case CMWWindow.RESIZE:

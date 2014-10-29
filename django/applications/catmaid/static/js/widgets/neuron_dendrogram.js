@@ -120,11 +120,13 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
 
   // Find either node itself or closest parent
   var nodeToHighlight = node_id;
+  var numDownstreamSteps = 0;
   while (true) {
     if (-1 !== this.renderedNodeIds.indexOf(nodeToHighlight)) {
       break;
     } else {
       // Try next parent
+      numDownstreamSteps++;
       nodeToHighlight = childToParent[nodeToHighlight];
     }
   }
@@ -132,6 +134,10 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
   if (!nodeToHighlight) {
     error("Couldn't find node to highlight in dendrogram");
     return;
+  } else if (nodeToHighlight !== node_id) {
+    growlAlert("Information", "The active node is currently not visible in " +
+        "the dendrogram. Therefore, the next visible node downstream has " +
+        "been selected, which is " + numDownstreamSteps + " hop(s) away.");
   }
 
   this.highlightNode(nodeToHighlight);

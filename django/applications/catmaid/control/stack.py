@@ -1,12 +1,18 @@
-from django.shortcuts import get_object_or_404
-
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-
-import os, os.path
+import os.path
 from contextlib import closing
 import h5py
+import json
+import httplib
+
+import settings
+
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
+
+from catmaid.models import UserRole, Project, Stack, ProjectStack, \
+        BrokenSlice, Overlay
+from catmaid.control.authentication import requires_user_role
+
 
 def get_stack_info(project_id=None, stack_id=None, user=None):
     """ Returns a dictionary with relevant information for stacks.

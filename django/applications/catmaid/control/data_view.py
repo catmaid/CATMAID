@@ -1,22 +1,20 @@
 import json
+import re
 
 from collections import defaultdict
 
 from django.conf import settings
-from django.db import models
 from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template import Context, loader
 from django.contrib.contenttypes.models import ContentType
 
+from taggit.models import TaggedItem
+
 from catmaid.control.common import makeJSON_legacy_list
 from catmaid.control.project import get_project_qs_for_user, extend_projects
 from catmaid.models import DataView, DataViewType, Project, Stack, ProjectStack
-
-from taggit.models import TaggedItem
-
-import re
 
 def get_data_view_type_comment( request ):
     """ Return the comment of a specific data view type.

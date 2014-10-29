@@ -2,9 +2,8 @@ import json
 
 from django.http import HttpResponse
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, ChangeRequest
+from catmaid.control.authentication import requires_user_role 
 
 
 @requires_user_role(UserRole.Browse)

@@ -4,12 +4,12 @@ from datetime import timedelta, datetime
 from dateutil import parser as dateparser
 
 from django.http import HttpResponse
-from django.db.models import Count
+from django.db.models.aggregates import Count
 from django.db import connection
 
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, \
-    Review, Relation, TreenodeConnector
+        Review, Relation, TreenodeConnector
 
 
 def _process(query, minus1name):

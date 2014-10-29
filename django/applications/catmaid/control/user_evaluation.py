@@ -1,16 +1,19 @@
+import json
+
 from datetime import datetime, timedelta
-from catmaid.control.review import get_review_count, get_review_status
-from catmaid.models import Treenode, Log, Relation, TreenodeConnector, UserRole, Review
-from catmaid.control.authentication import requires_user_role
-from django.db.models import Count
-from django.http import HttpResponse
-from catmaid.control.tree_util import lazy_load_trees
 from collections import defaultdict, namedtuple
 from itertools import imap
-import json
-from operator import attrgetter
 from networkx import connected_components
 from functools import partial
+
+from django.db.models import Count
+from django.http import HttpResponse
+
+from catmaid.models import Treenode, Log, Relation, TreenodeConnector, \
+        UserRole, Review
+from catmaid.control.review import get_review_status
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.tree_util import lazy_load_trees
 
 
 def _find_nearest(tree, nodes, loc1):

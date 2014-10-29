@@ -1,7 +1,9 @@
+import json
+
 from django.http import HttpResponse
 
-from catmaid.models import *
-from catmaid.control.authentication import *
+from catmaid.models import UserRole, ClassInstanceClassInstance
+from catmaid.control.authentication import requires_user_role
 
 try:
     import networkx as nx

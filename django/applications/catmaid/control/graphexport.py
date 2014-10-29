@@ -3,10 +3,8 @@ import json
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import *
-from catmaid.objects import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, Project
+from catmaid.control.authentication import requires_user_role 
 from catmaid.control.graph import _skeleton_graph
 from catmaid.control.skeleton import _skeleton_info_raw
 
@@ -32,12 +30,12 @@ def export_jsongraph(request, project_id):
         raise ValueError("No skeleton IDs provided")
 
     if order > 2: # only allow to retrieve order two to limit server usage
-      order = 0
+        order = 0
 
     while order != 0:
-      incoming, outgoing = _skeleton_info_raw( project_id, skeletonlist, 'logic-OR' )
-      skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
-      order -= 1
+        incoming, outgoing = _skeleton_info_raw( project_id, skeletonlist, 'logic-OR' )
+        skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
+        order -= 1
     
     circuit = _skeleton_graph(project_id, skeletonlist, confidence_threshold, bandwidth, set(), compute_risk, cable_spread, path_confluence)
     newgraph = nx.DiGraph()

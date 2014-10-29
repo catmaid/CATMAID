@@ -1,5 +1,6 @@
 import json
 import colorsys
+
 from random import random
 from string import upper
 

@@ -6,7 +6,8 @@
 from collections import defaultdict
 
 try:
-    from neuroml import Cell, Segment, SegmentParent, Morphology, NeuroMLDocument, Point3DWithDiam
+    from neuroml import Cell, Segment, SegmentParent, Morphology, \
+            NeuroMLDocument, Point3DWithDiam
 except ImportError:
     print "NeuroML module could not be loaded."
 

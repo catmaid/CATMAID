@@ -95,7 +95,7 @@ SkeletonAnnotations.getSVGOverlayByPaper = function(paper) {
   for (var stackID in instances) {
     if (instances.hasOwnProperty(stackID)) {
       var s = instances[stackID];
-      if (paper === s.paper) {
+      if (paper === s.paper.node()) {
         return s;
       }
     }

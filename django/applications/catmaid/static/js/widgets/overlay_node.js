@@ -54,7 +54,7 @@ var SkeletonElements = function(paper)
     markerWidth: '5',
     markerHeight: '4',
     markerUnits: 'strokeWidth',
-    refX: '0',
+    refX: '10',
     refY: '5',
     orient: 'auto'
   }).append('path').attr({
@@ -261,10 +261,9 @@ SkeletonElements.prototype.NodePrototype = new (function() {
       'stroke-width': this.CATCH_RADIUS,  // Use a large transparent stroke to
       'stroke-opacity': 0                 // catch mouse events near the circle.
     });
+    this.c.datum(this.id);
 
     if ("hidden" === this.c.attr('visibility')) this.c.show();
-
-    this.c.catmaidNode = this; // for event handlers
   };
 
   /** Recreate the GUI components, namely the circle and edges.
@@ -425,7 +424,6 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.children = null;
     if (this.c) {
       SkeletonElements.prototype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
-      this.c.catmaidNode = null; // break circular reference
       this.c.remove();
       this.c = null;
     }
@@ -450,6 +448,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.children = {};
     this.numberOfChildren = 0;
     if (this.c) {
+      this.c.datum(null);
       this.c.hide();
     }
     if (this.line) {
@@ -480,6 +479,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.needsync = false;
 
     if (this.c) {
+      this.c.datum(id);
       if (0 !== zdiff) {
         this.c.hide();
       } else {
@@ -558,7 +558,6 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     this.id = null;
     if (this.c) {
       SkeletonElements.prototype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_CONNECTORNODE);
-      this.c.catmaidNode = null; // break circular reference
       this.c.remove();
     }
     this.pregroup = null;
@@ -572,6 +571,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
   this.disable = function() {
     this.id = this.DISABLED;
     if (this.c) {
+      this.c.datum(null);
       this.c.hide();
     }
     this.removeConnectorArrows();
@@ -650,6 +650,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     this.needsync = false;
 
     if (this.c) {
+      this.c.datum(id);
       if (this.shouldDisplay()) {
         this.c.attr({cx: x, cy: y});
       } else {
@@ -709,27 +710,28 @@ SkeletonElements.prototype.mouseEventManager = new (function()
    * These are set at mc_start, then used at mc_move, and set to null at mc_up. */
   var o = null;
 
-  var is_middle_click = function(e) {
-    return 2 === e.which;
+  var is_middle_click = function() {
+    return 2 === d3.event.button;
   };
 
-  /** Here 'this' is c. */
-  var mc_dblclick = function(e) {
-    e.stopPropagation();
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.paper);
+  /** Here 'this' is c's SVG node. */
+  var mc_dblclick = function(d) {
+    d3.event.stopPropagation();
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
     catmaidSVGOverlay.ensureFocused();
   };
 
   /** 
-   * Here 'this' is c, and node is the Node instance
+   * Here 'this' is c's SVG node, and node is the Node instance
    */
-  this.mc_click = function(e) {
+  this.mc_click = function(d) {
+    var e = d3.event;
     e.stopPropagation();
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.paper);
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
     if (catmaidSVGOverlay.ensureFocused()) {
       return;
     }
-    var node = this.catmaidNode,
+    var node = catmaidSVGOverlay.nodes[d],
         wasActiveNode = false;
     if (e.shiftKey) {
       var atnID = SkeletonAnnotations.getActiveNodeId();
@@ -780,33 +782,34 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     }
   };
 
-  /** Here 'this' is c, and node is the Node instance. */
-  var mc_move = function(dx, dy, x, y, e) {
-    if (is_middle_click(e)) {
+  /** Here 'this' is c's SVG node, and node is the Node instance. */
+  var mc_move = function(d) {
+    var e = d3.event;
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
+    var node = catmaidSVGOverlay.nodes[d];
+    if (is_middle_click()) {
       // Allow middle-click panning
       return;
     }
     if (!o) {
       // Not properly initialized with mc_start
-      e.stopPropagation();
+      e.sourceEvent.stopPropagation();
       return;
     }
-    e.stopPropagation();
+    e.sourceEvent.stopPropagation();
     if (e.shiftKey) {
       return;
     }
-    if (!mayEdit() || !this.catmaidNode.can_edit) {
+    if (!mayEdit() || !node.can_edit) {
       statusBar.replaceLast("You don't have permission to move node #" + this.catmaidNode.id);
       return;
     }
 
     if (o.id !== SkeletonAnnotations.getActiveNodeId()) return;
-    if (!checkNodeID(this.catmaidNode)) return;
+    if (!checkNodeID(this)) return;
 
-    var node = this.catmaidNode;
-
-    node.x = o.ox + dx;
-    node.y = o.oy + dy;
+    node.x += e.dx;
+    node.y += e.dy;
     node.c.attr({
       cx: node.x,
       cy: node.y
@@ -817,63 +820,68 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     node.needsync = true;
   };
 
-  /** Here 'this' is c. */
-  var mc_up = function(e) {
-    e.stopPropagation();
-    if (!checkNodeID(this.catmaidNode)) return;
+  /** Here 'this' is c's SVG node. */
+  var mc_up = function(d) {
+    var e = d3.event;
+    e.sourceEvent.stopPropagation();
+    if (!checkNodeID(this)) return;
     o = null;
-    this.catmaidNode.c.attr({
+    d3.select(this).attr({
       opacity: 1
     });
   };
 
-  var checkNodeID = function(catmaidNode) {
-    if (!o || o.id !== catmaidNode.id) {
+  var checkNodeID = function(svgNode) {
+    if (!o || o.id !== svgNode.__data__) {
       console.log("WARNING: detected ID mismatch in mouse event system.");
-      SkeletonAnnotations.getSVGOverlayByPaper(catmaidNode.paper).updateNodes();
+      SkeletonAnnotations.getSVGOverlayByPaper(svgNode.parentNode).updateNodes();
       return false;
     }
     return true;
   };
 
-  /** Here 'this' is c. */
-  var mc_start = function(x, y, e) {
-    
-    if (is_middle_click(e)) {
+  /** Here 'this' is c's SVG node. */
+  var mc_start = function(d) {
+    var e = d3.event;
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
+    var node = catmaidSVGOverlay.nodes[d];
+    if (is_middle_click()) {
       // Allow middle-click panning
       return;
     }
-    e.stopPropagation();
+    e.sourceEvent.stopPropagation();
 
     // If not trying to join or remove a node, but merely click on it to drag it or select it:
-    if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      SkeletonAnnotations
-        .getSVGOverlayByPaper(this.paper)
-        .activateNode(this.catmaidNode);
+    if (!e.sourceEvent.shiftKey && !e.sourceEvent.ctrlKey && !e.sourceEvent.metaKey) {
+      catmaidSVGOverlay.activateNode(node);
     }
 
-    o = {ox: this.catmaidNode.x,
-         oy: this.catmaidNode.y,
-         id: this.catmaidNode.id};
+    o = {ox: node.x,
+         oy: node.y,
+         id: node.id};
 
-    this.catmaidNode.c.attr({
+    node.c.attr({
       opacity: 0.7
     });
   };
 
-  var mc_mousedown = function(e) {
-    if (is_middle_click(e)) {
+  var mc_mousedown = function(d) {
+    if (is_middle_click()) {
       // Allow middle-click panning
       return;
     }
-    e.stopPropagation();
+    d3.event.stopPropagation();
   };
 
-  var connector_mc_click = function(e) {
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.paper);
+  var connector_mc_click = function(d) {
+    var e = d3.event;
     e.stopPropagation();
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
+    if (catmaidSVGOverlay.ensureFocused()) {
+      return;
+    }
     var atnID = SkeletonAnnotations.getActiveNodeId(),
-        connectornode = this.catmaidNode,
+        connectornode = catmaidSVGOverlay.nodes[d],
         wasActiveNode = false;
     if (catmaidSVGOverlay.ensureFocused()) {
       return;
@@ -910,11 +918,13 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   };
 
   this.attach = function(mc, type) {
-    mc.on('dragstart', mc_move);
-    mc.on('drag', mc_start);
-    mc.on('dragstop', mc_up);
-    mc.on('mousedown', mc_mousedown);
-    mc.on("dblclick", mc_dblclick);
+    var drag = d3.behavior.drag();
+    drag.on('dragstart', mc_start)
+        .on('drag', mc_move)
+        .on('dragend', mc_up);
+    mc.on('mousedown', mc_mousedown)
+      .on("dblclick", mc_dblclick)
+      .call(drag);
 
     if (SkeletonAnnotations.TYPE_NODE === type) {
       mc.on("click", this.mc_click);
@@ -944,17 +954,18 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   this.EDGE_WIDTH = 4;
 
   /** Function to assign to the SVG arrow. */
-  this.mousedown = (function(e) {
+  this.mousedown = (function(d) {
+    var e = d3.event;
     e.stopPropagation();
     if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
       return;
     }
     // 'this' will be the the connector line
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.paper);
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
     requestQueue.register(django_url + project.id + '/link/delete', "POST", {
       pid: project.id,
-      connector_id: this.connector_id,
-      treenode_id: this.treenode_id
+      connector_id: d.connector_id,
+      treenode_id: d.treenode_id
     }, function (status, text) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
@@ -972,8 +983,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     });
   });
 
-  this.update = function(x1, y1, x2, y2, is_pre, confidence) {
-    var rloc = 9;
+  this.update = function(x1, y1, x2, y2, is_pre, confidence, rloc) {
     var xdiff = (x2 - x1);
     var ydiff = (y2 - y1);
     var le = Math.sqrt(xdiff * xdiff + ydiff * ydiff);
@@ -1013,15 +1023,13 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   };
 
   this.disable = function() {
-    this.line.connector_id = null;
-    this.line.treenode_id = null;
+    this.line.datum(null);
     this.line.hide();
     if (this.confidence_text) this.confidence_text.hide();
   };
 
   this.obliterate = function() {
-    this.line.connector_id = null;
-    this.line.treenode_id = null;
+    this.line.datum(null);
     this.line.on('mousedown', null);
     this.line.remove();
     this.line = null;
@@ -1032,12 +1040,11 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   };
 
   this.init = function(connector, node, confidence, is_pre) {
-    this.line.connector_id = connector.id;
-    this.line.treenode_id = node.id;
+    this.line.datum({connector_id: connector.id, treenode_id: node.id});
     if (is_pre) {
-      this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence);
+      this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS);
     } else {
-      this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence);
+      this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS);
     }
   };
 })();
@@ -1052,8 +1059,8 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
                                        confidence,
                                        existing) {
     var text,
-    numberOffset = 12,
-    confidenceFontSize = '20px',
+    numberOffset = 18,
+    confidenceFontSize = '40px',
     xdiff = parentx - x,
     ydiff = parenty - y,
     length = Math.sqrt(xdiff*xdiff + ydiff*ydiff),
@@ -1073,10 +1080,11 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     text.attr({x: newConfidenceX,
                y: newConfidenceY,
                'font-size': confidenceFontSize,
+               'text-anchor': 'middle',
                stroke: 'black',
-               'stroke-width': 0.25,
-               fill: fillColor,
-               text: ""+confidence});
+               'stroke-width': 0.5,
+               fill: fillColor})
+        .text(""+confidence);
 
     return text;
   };

@@ -36,6 +36,10 @@ div.sliceView div.sliceSVGOverlay
   background-color: #eee;
 }
 
+svg .overlay-node:hover {
+  stroke-opacity: 0.25;
+}
+
 /*
 div.sliceView div.sliceSVGOverlay p
 {

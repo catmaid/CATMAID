@@ -271,6 +271,42 @@ NeuronDendrogram.prototype.getMaxDepth = function(node)
 };
 
 /**
+ * Remove the 'highlight' class from all nodes.
+ */
+NeuronDendrogram.prototype.resetHighlighting = function()
+{
+  d3.selectAll('.node').classed('highlight', false);
+};
+
+/**
+ * Add the 'highlight' class to a node element and its children.
+ */
+NeuronDendrogram.prototype.highlightNode = function(node_id)
+{
+  this.resetHighlighting();
+
+  // Get the actual node
+  var node = d3.select("#node" + node_id).data();
+  if (node.length !== 1) {
+    error("Couldn't find node " + node_id + " in dendrogram");
+    return;
+  } else {
+    node = node[0];
+  }
+
+  // Highlight current node and children
+  function highlightNodeAndChildren(n) {
+    // Set node to be highlighted
+    d3.select("#node" + n.id).classed('highlight', true);
+    // Highlight children
+    if (n.children) {
+      n.children.forEach(highlightNodeAndChildren);
+    }
+  }
+  highlightNodeAndChildren(node);
+};
+
+/**
   * Renders a new dendrogram containing the provided list of nodes.
   */
 NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
@@ -396,18 +432,8 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     return function(n) {
       // Don't let the event bubble up
       d3.event.stopPropagation();
-      // Reset all previous highlights
-      d3.selectAll('.node').classed('highlight', false);
-      // Highlight current node and children
-      function highlightNodeAndChildren(node) {
-        // Set node to be highlighted
-        d3.select("#node" + node.id).classed('highlight', true);
-        // Highlight children
-        if (node.children) {
-          node.children.forEach(highlightNodeAndChildren);
-        }
-      }
-      highlightNodeAndChildren(n);
+      // Highlight node
+      this.highlightNode(n.id);
 
       // Select node in tracing layer
       SkeletonAnnotations.staticMoveTo(
@@ -452,7 +478,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
     .attr("id", function(d) { return "node" + d.id; })
     .attr("transform", nodeTransform)
     .classed('tagged', function(d) { return d.belowTag; })
-    .on("dblclick", nodeClickHandler);
+    .on("dblclick", nodeClickHandler.bind(this));
   node.append("circle")
     .attr("r", 4.5);
   styleNodeText(node.append("text")).text(nodeName);

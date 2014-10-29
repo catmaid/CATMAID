@@ -1371,46 +1371,47 @@ GroupGraph.prototype._findSkeletonsToGrow = function() {
 GroupGraph.prototype.growGraph = function() {
   var s = this._findSkeletonsToGrow(),
       accum = $.extend({}, s.split_partners);
-  this._growRecursive(Object.keys(s.split_partners), accum, s.min_pre, s.min_post, s.n_circles -1,
-      function() {
-        var skids = Object.keys(s.skids);
-        // TODO this is wrong. Could do it with just two calls: to grow the non-split nodes by n_cicles and the partners of the split nodes by n_circles -1.
-        //
-        //
-        // **********
-        //
-        //
-        //
-        //
-        if (0 === skids.length) return;
-        this.grow('circlesofhell', skids, Object.keys(accum), s.min_pre, s.min_post, 1);
-      });
-};
 
-/** Adds skeleton IDs to accum, recursively. */
-GroupGraph.prototype._growRecursive = function(skids, accum, min_pre, min_post, n_circles, callback) {
-  if (n_circles > 0) {
-    requestQueue.register(django_url + project.id + "/graph/" + subURL,
-        "POST",
-        {skeleton_ids: skids,
-         n_circles: n_circles,
-         min_pre: min_pre,
-         min_post: min_post},
-        (function(status, text) {
-          if (200 !== status) return;
-          var json = $.parseJSON(text);
-          if (json.error) return alert(json.error);
-          json[0].forEach(function(skid) { accum[skid] = true; });
-          // Subtract from json[0] all that are in accum already
-          var next_skids = json[0].filter(function(skid) { return !accum[skid]; });
-          if (next_skids.length > 0) {
-            this._growRecursive(next_skids, accum, min_pre, min_post, n_circles -1, callback);
-          } else {
-            callback();
-          }
-        }).bind(this));
+  var grow = function(skids, n_circles, callback) {
+        requestQueue.register(django_url + project.id + "/graph/circlesofhell",
+            "POST",
+            {skeleton_ids: skids,
+             n_circles: n_circles,
+             min_pre: s.min_pre,
+             min_post: s.min_post},
+            function(status, text) {
+              if (200 !== status) return;
+              var json = $.parseJSON(text);
+              if (json.error) return alert(json.error);
+              callback(skids.concat(json[0]));
+            });
+      },
+      append = (function(skids) {
+        var color = new THREE.Color().setHex(0xffae56),
+            models = skids.reduce(function(m, skid) {
+              var model = new SelectionTable.prototype.SkeletonModel(skid, "", color);
+              model.selected = true;
+              m[skid] = model;
+              return m;
+            }, {});
+        this.append(models);
+      }).bind(this),
+      rest = function(skids, n_circles) {
+        if (0 === s.n_circles -1) append(Object.keys(skids));
+        else grow(Object.keys(skids), n_circles, append);
+      },
+      skids = Object.keys(s.skids);
+
+  // If there are any non-split skeletons, grow these first by one, then load the rest
+  if (skids.length > 0) {
+    grow(skids, 1, function(ids) {
+      var unique = $.extend({}, s.split_partners);
+      ids.forEach(function(id) { unique[id] = true; });
+      rest(unique, s.n_circles -1);
+    });
   } else {
-    callback();
+    // Otherwise directly just grow the partners of the split nodes by n_circles -1
+    rest(s.split_partners, s.n_circles -1);
   }
 };
 
@@ -1426,7 +1427,7 @@ GroupGraph.prototype.growPaths = function() {
 
 GroupGraph.prototype._findPathsForSplits = function(split_partners, skids, min_pre, min_post, callback) {
   // Find paths between split nodes and other split or non-split nodes.
-  // TODO need to think about this. Should be recursive as well
+  // TODO need to think about this.
 };
 
 GroupGraph.prototype.grow = function(subURL, skids, additional, min_pre, min_post, n_circles) {

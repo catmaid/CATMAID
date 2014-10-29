@@ -22,11 +22,16 @@ var NeuronDendrogram = function() {
   // The current translation and scale, to preserve state between updates
   this.translation = null;
   this.scale = null;;
+
+  // Listen to change events of the active node
+  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+      this.selectActiveNode, this);
 };
 
 NeuronDendrogram.prototype = {};
 $.extend(NeuronDendrogram.prototype, new InstanceRegistry());
 $.extend(NeuronDendrogram.prototype, new SkeletonSource());
+$.extend(NeuronDendrogram.prototype, Events.Event);
 
 /* Implement interfaces */
 
@@ -36,6 +41,8 @@ NeuronDendrogram.prototype.getName = function()
 };
 
 NeuronDendrogram.prototype.destroy = function() {
+  SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+      this.selectActiveNode, this);
   this.unregisterInstance();
   this.unregisterSource();
 };
@@ -82,6 +89,55 @@ NeuronDendrogram.prototype.init = function(container)
 };
 
 /**
+ * Will select the active node, if its skeleton is laoded. If the active node is
+ * a collapsed node, the next visible child will be selected.
+ */
+NeuronDendrogram.prototype.selectActiveNode = function(activeNode)
+{
+  if (activeNode) {
+    this.selectNode(activeNode.id, activeNode.skeleton_id);
+  } else {
+    this.resetHighlighting();
+  }
+}
+
+/**
+ * Will select the node with the given ID, if its skeleton is laoded. If the
+ * active node is a collapsed node, the next visible child will be selected.
+ */
+NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
+{
+  if (!node_id || skeleton_id !== this.currentSkeletonId || !this.renderTree) {
+    this.resetHighlighting();
+    return;
+  }
+
+  var childToParent = this.currentSkeletonTree.reduce(function(o, n) {
+    // Map node ID to parent ID
+    o[n[0]] = n[1];
+    return o;
+  }, {});
+
+  // Find either node itself or closest parent
+  var nodeToHighlight = node_id;
+  while (true) {
+    if (-1 !== this.renderedNodeIds.indexOf(nodeToHighlight)) {
+      break;
+    } else {
+      // Try next parent
+      nodeToHighlight = childToParent[nodeToHighlight];
+    }
+  }
+
+  if (!nodeToHighlight) {
+    error("Couldn't find node to highlight in dendrogram");
+    return;
+  }
+
+  this.highlightNode(nodeToHighlight);
+}
+
+/**
  * Load the active skeleton
  */
 NeuronDendrogram.prototype.loadActiveSkeleton = function()
@@ -123,6 +179,31 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
           this.update();
         }).bind(this)));
 };
+
+/**
+ * Traverses the given tree and returns a list of the IDs of all nodes in it.
+ */
+NeuronDendrogram.prototype.getNodesInTree = function(rootNode)
+{
+  function traverse(node, node_ids)
+  {
+    node_ids.push(node.id);
+
+    if (node.children) {
+      node.children.forEach(function(c) {
+        traverse(c, node_ids);
+      });
+    }
+  };
+
+  var node_ids = [];
+
+  if (rootNode) {
+    traverse(rootNode, node_ids);
+  }
+
+  return node_ids;
+}
 
 /**
  * Creates a tree representation of a node array. Nodes that appear in
@@ -232,9 +313,11 @@ NeuronDendrogram.prototype.update = function()
 
   var tag = $('input#dendrogram-tag-' + this.widgetID).val();
   var taggedNodeIds = this.currentSkeletonTags.hasOwnProperty(tag) ? this.currentSkeletonTags[tag] : [];
-  var tree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds);
+  this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds);
+  this.renderedNodeIds = this.getNodesInTree(this.renderTree);
+
   if (this.currentSkeletonTree && this.currentSkeletonTags) {
-    this.renderDendogram(tree, this.currentSkeletonTags, tag);
+    this.renderDendogram(this.renderTree, this.currentSkeletonTags, tag);
   }
 };
 
@@ -426,14 +509,12 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   /**
    * The node click handler is called if users double click on a node. It will
    * select the current node and highlight all downstream neurons in the
-   * dendrogram.
+   * dendrogram. The highlighting is done as response to the active node change.
    */
   var nodeClickHandler = function(skid) {
     return function(n) {
       // Don't let the event bubble up
       d3.event.stopPropagation();
-      // Highlight node
-      this.highlightNode(n.id);
 
       // Select node in tracing layer
       SkeletonAnnotations.staticMoveTo(

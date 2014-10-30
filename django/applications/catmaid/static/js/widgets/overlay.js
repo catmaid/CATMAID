@@ -1471,38 +1471,65 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
   this.moveToAndSelectNode(node.parent_id);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
+/**
+ * Shows a dialog to edit the radius property of a node. By default, it also
+ * lets the user estimate the radius with the help of a small measurement tool,
+ * which can be disabled by setting the no_measurement_tool parameter to true.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
   this.goToNode(treenode_id,
       function() {
-        var dialog = new OptionsDialog("Edit radius");
-        var input = dialog.appendField("Radius: ", "treenode-edit-radius", self.nodes[treenode_id].radius);
-        var choice = dialog.appendChoice("Apply: ", "treenode-edit-radius-scope",
-          ['Only this node', 'From this node to the next branch or end node (included)',
-           'From this node to the previous branch node or root (excluded)',
-           'From this node to root (included)', 'All nodes'],
-          [0, 1, 2, 3, 4],
-          self.editRadius_defaultValue);
-        dialog.onOK = function() {
-          var radius = parseFloat(input.value);
-          if (isNaN(radius)) {
-            alert("Invalid number: '" + input.value + "'");
-            return;
-          }
-          self.editRadius_defaultValue = choice.selectedIndex;
-          self.submit(
-            django_url + project.id + '/treenode/' + treenode_id + '/radius',
-            {radius: radius,
-             option: choice.selectedIndex},
-            function(json) {
-              // Refresh 3d views if any
-              WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
-              // Reinit SVGOverlay to read in the radius of each altered treenode
-              self.updateNodes();
-            });
+        function show_dialog(defaultRadius)
+        {
+          var dialog = new OptionsDialog("Edit radius");
+          var input = dialog.appendField("Radius: ", "treenode-edit-radius", defaultRadius);
+          var choice = dialog.appendChoice("Apply: ", "treenode-edit-radius-scope",
+            ['Only this node', 'From this node to the next branch or end node (included)',
+             'From this node to the previous branch node or root (excluded)',
+             'From this node to root (included)', 'All nodes'],
+            [0, 1, 2, 3, 4],
+            self.editRadius_defaultValue);
+          dialog.onOK = function() {
+            var radius = parseFloat(input.value);
+            if (isNaN(radius)) {
+              alert("Invalid number: '" + input.value + "'");
+              return;
+            }
+            self.editRadius_defaultValue = choice.selectedIndex;
+            self.submit(
+              django_url + project.id + '/treenode/' + treenode_id + '/radius',
+              {radius: radius,
+               option: choice.selectedIndex},
+              function(json) {
+                // Refresh 3d views if any
+                WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
+                // Reinit SVGOverlay to read in the radius of each altered treenode
+                self.updateNodes();
+              });
+          };
+          dialog.show();
         };
-        dialog.show();
+
+        // If there was a measurement tool based radius change was started
+        // before, stop this.
+        if (self.nodes[treenode_id].surroundingCircleElements) {
+          self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
+            // Convert pixel radius components to nanometers
+            rx = rx / self.stack.scale;
+            ry = ry / self.stack.scale;
+            var rxnm = self.stack.stackToProjectX(self.stack.z, ry, rx);
+            var rynm = self.stack.stackToProjectY(self.stack.z, ry, rx);
+            var r = Math.round(Math.sqrt(Math.pow(rxnm, 2) + Math.pow(rynm, 2)));
+            // Show dialog with the new radius
+            show_dialog(r);
+          });
+        } else if (no_measurement_tool) {
+          show_dialog(self.nodes[treenode_id].radius);
+        } else {
+          self.nodes[treenode_id].drawSurroundingCircle();
+        }
       });
 };
 

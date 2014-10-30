@@ -388,12 +388,13 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Edit the radius of the active node",
+    helpText: "Edit the radius of the active node (Shift: without measurment tool)",
     keyShortcuts: { "O": [ 79 ] },
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.editRadius(SkeletonAnnotations.getActiveNodeId());
+      tracingLayer.svgOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
+          e.shiftKey);
       return true;
     }
   }) );

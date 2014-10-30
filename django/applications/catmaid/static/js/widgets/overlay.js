@@ -1228,7 +1228,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         if (e.shiftKey) {
           // Create a new connector and a new link
           var synapse_type = e.altKey ? 'post' : 'pre';
-          statusBar.replaceLast("created connector, with " + synapse_type + "synaptic treenode id " + atn.id);
+          statusBar.replaceLast("Created connector with " + synapse_type + "synaptic treenode #" + atn.id);
           var self = this;
           this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
               function (connectorID) {
@@ -1240,7 +1240,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         return true;
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         // create new treenode (and skeleton) postsynaptic to activated connector
-        statusBar.replaceLast("created treenode with id " + atn.id + "postsynaptic to activated connector");
+        statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
         this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         e.stopPropagation();
         return true;

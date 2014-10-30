@@ -1001,7 +1001,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     var stroke_color = is_pre ? this.PRE_COLOR : this.POST_COLOR;
 
     if (confidence < 5) {
-      this.confidence_text = this.updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, this.confidence_text);
+      this.confidence_text = this.updateConfidenceText(x2, y2, x1, y1, stroke_color, confidence, this.confidence_text);
     } else if (this.confidence_text) {
       this.confidence_text.remove();
       this.confidence_text = null;

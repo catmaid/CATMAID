@@ -703,9 +703,12 @@ def skeleton_swc(*args, **kwargs):
     return export_skeleton_response(*args, **kwargs)
 
 
-def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
+def _export_review_skeleton(project_id=None, skeleton_id=None, format=None,
+                            subarbor_node_id=None):
     """ Returns a list of segments for the requested skeleton. Each segment
     contains information about the review status of this part of the skeleton.
+    If a valid subarbor_node_id is given, only data for the sub-arbor is
+    returned that starts at this node.
     """
     # Get all treenodes of the requested skeleton
     treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list(
@@ -727,6 +730,26 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None):
             g.add_edge(t[1], t[0]) # edge from parent to child
         else:
             root_id = t[0]
+
+    if subarbor_node_id and subarbor_node_id != root_id:
+        # Make sure the subarbor node ID (if any) is part of this skeleton
+        if subarbor_node_id not in g:
+            raise ValueError("Supplied subarbor node ID (%s) is not part of "
+                             "provided skeleton (%s)" % (subarbor_node_id, skeleton_id))
+
+        # Remove connection to parent
+        parent = g.predecessors(subarbor_node_id)[0]
+        g.remove_edge(parent, subarbor_node_id)
+        # Remove all nodes that are upstream from the subarbor node
+        to_delete = set()
+        to_lookat = [root_id]
+        while to_lookat:
+            n = to_lookat.pop()
+            to_lookat.extend(g.successors(n))
+            to_delete.add(n)
+        g.remove_nodes_from(to_delete)
+        # Replace root id with sub-arbor ID
+        root_id=subarbor_node_id
 
     # Create all sequences, as long as possible and always from end towards root
     distances = edge_count_to_root(g, root_node=root_id) # distance in number of edges from root
@@ -766,7 +789,13 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, format=No
     Export the skeleton as a list of sequences of entries, each entry containing
     an id, a sequence of nodes, the percent of reviewed nodes, and the node count.
     """
-    segments = _export_review_skeleton( project_id, skeleton_id, format)
+    try:
+        subarbor_node_id = int(request.POST.get('subarbor_node_id', ''))
+    except ValueError:
+        subarbor_node_id = None
+
+    segments = _export_review_skeleton( project_id, skeleton_id, format,
+            subarbor_node_id )
     return HttpResponse(json.dumps(segments))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

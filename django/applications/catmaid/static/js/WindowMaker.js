@@ -1813,9 +1813,16 @@ var WindowMaker = new function()
 
         var start = document.createElement('input');
         start.setAttribute("type", "button");
-        start.setAttribute("id", "start_review_skeleton");
+        start.setAttribute("id", "start_review_whole skeleton");
         start.setAttribute("value", "Start to review skeleton");
-        start.onclick = function(ev) { ReviewSystem.startSkeletonToReview(); };
+        start.onclick = ReviewSystem.startReviewActiveSkeleton.bind(ReviewSystem, false);
+        contentbutton.appendChild(start);
+
+        var start = document.createElement('input');
+        start.setAttribute("type", "button");
+        start.setAttribute("id", "start_review_subarbor");
+        start.setAttribute("value", "Start to review current sub-arbor");
+        start.onclick = ReviewSystem.startReviewActiveSkeleton.bind(ReviewSystem, true);
         contentbutton.appendChild(start);
 
         var end = document.createElement('input');

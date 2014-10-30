@@ -3,7 +3,7 @@
 
 var ReviewSystem = new function()
 {
-    var projectID, skeletonID;
+    var projectID, skeletonID, subarborNodeId;
     var self = this;
     self.skeleton_segments = null;
     self.current_segment = null;
@@ -117,7 +117,7 @@ var ReviewSystem = new function()
                 self.selectNextSegment();
                 return;
             } else {
-                self.startSkeletonToReview(skeletonID);
+                self.startSkeletonToReview(skeletonID, subarborNodeId);
                 return;                
             }
         }
@@ -254,8 +254,13 @@ var ReviewSystem = new function()
         }
     };
 
-    /** Clears the #review_segment_table prior to adding rows to it. */
-    this.createReviewSkeletonTable = function( skeleton_data, users ) {
+    /**
+     * Clears the table with ID 'review_segment_table' prior to adding rows to
+     * it. If a subarborNodeId is given, not the whole skeleton will be
+     * reviewed, but onlt the sub-arbor starting at the given node ID. If
+     * ommitted or null it will default to the root node.
+     * */
+    this.createReviewSkeletonTable = function( skeleton_data, users, subarborNodeId ) {
         self.skeleton_segments = skeleton_data;
         var butt, table, tbody, row;
         if( $('#review_segment_table').length > 0 ) {
@@ -395,21 +400,36 @@ var ReviewSystem = new function()
         return true;
     };
 
-    this.startSkeletonToReview = function( skid ) {
+    this.startReviewActiveSkeleton = function(subarborOnly) {
+        var skid = SkeletonAnnotations.getActiveSkeletonId();
+        var subarborNodeId = undefined;
+        if (subarborOnly) {
+            subarborNodeId = SkeletonAnnotations.getActiveNodeId();
+        }
+        this.startSkeletonToReview( skid, subarborNodeId );
+    };
+
+    this.startSkeletonToReview = function( skid, nodeId ) {
         if (!skid) {
-            skeletonID = SkeletonAnnotations.getActiveSkeletonId();
+            error('No skeleton ID provided for review.');
+            return;
+        } else {
+            skeletonID = skid;
+            subarborNodeId = nodeId;
         }
         if (!checkSkeletonID()) {
             return;
         }
+
         // empty caching text
         $('#counting-cache').text('');
 
         submit(django_url + "accounts/" + projectID + "/all-usernames", {},
             function(usernames) {
-                submit(django_url + projectID + "/skeleton/" + skeletonID + "/review", {},
+                submit(django_url + projectID + "/skeleton/" + skeletonID + "/review",
+                    {'subarbor_node_id': subarborNodeId},
                     function(skeleton_data) {
-                            self.createReviewSkeletonTable( skeleton_data, usernames );
+                          self.createReviewSkeletonTable( skeleton_data, usernames );
                     });
             });
 
@@ -424,7 +444,7 @@ var ReviewSystem = new function()
         }
         submit(django_url+projectID+"/skeleton/" + skeletonID + "/review/" + fnName, {},
             function(json) {
-                self.startSkeletonToReview();
+                self.startReviewActiveSkeleton();
             });
     };
 

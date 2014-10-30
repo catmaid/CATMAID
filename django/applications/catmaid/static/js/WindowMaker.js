@@ -250,28 +250,32 @@ var WindowMaker = new function()
         '<thead>' +
           '<tr>' +
             '<th rowspan="2">Neuron name</th>' +
-            '<th colspan="4">Arbor</th>' +
-            '<th colspan="4">Backbone</th>' +
-            '<th colspan="4">Dendrites</th>' +
-            '<th colspan="4">Axon terminals</th>' +
+            '<th colspan="5">Arbor</th>' +
+            '<th colspan="5">Backbone</th>' +
+            '<th colspan="5">Dendrites</th>' +
+            '<th colspan="5">Axon terminals</th>' +
           '</tr>' +
           '<tr>' +
             '<th>Cable (nm)</th>' +
             '<th>Inputs</th>' +
             '<th>Outputs</th>' +
             '<th>Time (min)</th>' +
+            '<th>Mito -chondria</th>' +
             '<th>Cable (nm)</th>' +
             '<th>Inputs</th>' +
             '<th>Outputs</th>' +
             '<th>Time (min)</th>' +
+            '<th>Mito -chondria</th>' +
             '<th>Cable (nm)</th>' +
             '<th>Inputs</th>' +
             '<th>Outputs</th>' +
             '<th>Time (min)</th>' +
+            '<th>Mito -chondria</th>' +
             '<th>Cable (nm)</th>' +
             '<th>Inputs</th>' +
             '<th>Outputs</th>' +
             '<th>Time (min)</th>' +
+            '<th>Mito -chondria</th>' +
           '</tr>' +
         '</thead>' +
       '</table>';

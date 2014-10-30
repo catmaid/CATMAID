@@ -103,7 +103,7 @@ AnalyzeArbor.prototype.init = function() {
       "bJQueryUI": true,
       "aoColumns": [{bSearchable: true, bSortable: true}].concat((function() {
         var a = [];
-        for (var i=0; i<16; ++i) a.push({bSearchable: true, bSortable: true});
+        for (var i=0; i<20; ++i) a.push({bSearchable: true, bSortable: true});
         return a;
       })()),
   });
@@ -133,11 +133,14 @@ AnalyzeArbor.prototype.appendOrdered = function(skids, models) {
 /** json: from URL compact-arbor (nodes, synapses and tags). */
 AnalyzeArbor.prototype.appendOne = function(skid, json) {
   var tags = json[2],
-      microtubules_end = tags['microtubules end'];
+      microtubules_end = tags['microtubules end'],
+      mitochondrium = tags['mitochondrium'];
 
   if (!microtubules_end || 0 === microtubules_end.length) {
     return alert("Skeleton #" + skid + " does not have any node tagged 'microtubules end'.");
   }
+
+  if (!mitochondrium) mitochondrium = [];
 
   var ap = new ArborParser(json).init('compact-arbor', json);
   // Collapse "not a branch"
@@ -179,7 +182,8 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
       bb_f = function(nodeID) { return backbone.contains(nodeID); },
       bb_n_outputs = outputs.filter(bb_f).reduce(countOutputs, 0),
       bb_n_inputs = inputs.filter(bb_f).reduce(countInputs, 0),
-      bb_minutes = countMinutes(backbone.nodesArray());
+      bb_minutes = countMinutes(backbone.nodesArray()),
+      bb_n_mitochondria = mitochondrium.filter(bb_f).length;
 
   var ad;
 
@@ -238,7 +242,8 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         at_f = function(nodeID) { return axon_terminals.contains(nodeID) && !at_backbone.contains(nodeID); },
         at_n_outputs = outputs.filter(at_f).reduce(countOutputs, 0),
         at_n_inputs = inputs.filter(at_f).reduce(countInputs, 0),
-        at_minutes = countMinutes(Object.keys(subtract(axon_terminals.nodes(), at_backbone.nodes())));
+        at_minutes = countMinutes(Object.keys(subtract(axon_terminals.nodes(), at_backbone.nodes()))),
+        at_n_mitochondria = mitochondrium.filter(at_f).length;
 
     // Detect and measure the dendrites
     var dendrites = ap.arbor.clone();
@@ -251,7 +256,8 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         d_f = function(nodeID) { return dendrites.contains(nodeID) && !d_backbone.contains(nodeID); },
         d_n_outputs = outputs.filter(d_f).reduce(countOutputs, 0),
         d_n_inputs = inputs.filter(d_f).reduce(countInputs, 0),
-        d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes())));
+        d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes()))),
+        d_n_mitochondria = mitochondrium.filter(d_f).length;
 
     this.terminal_subarbor_stats[skid] = {axonal: analyze_subs(axon_terminals),
                                           dendritic: analyze_subs(dendrites)};
@@ -260,16 +266,20 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
           d_n_inputs,
           d_n_outputs,
           d_minutes,
+          d_n_mitochondria,
           Math.round(at_cable) | 0,
           at_n_inputs,
           at_n_outputs,
-          at_minutes];
+          at_minutes,
+          at_n_mitochondria];
   } else {
     // Consider non-backbone parts as "dendrites"
     ad = [Math.round(cable - bb_cable) | 0,
           ap.n_inputs - bb_n_inputs,
           ap.n_outputs - bb_n_outputs,
           countMinutes(Object.keys(subtract(ap.arbor.nodes(), backbone.nodes()))),
+          mitochondrium.length,
+          0,
           0,
           0,
           0,
@@ -284,10 +294,12 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
              ap.n_inputs,
              ap.n_outputs,
              Object.keys(minutes).length,
+             mitochondrium.length,
              Math.round(bb_cable) | 0,
              bb_n_inputs,
              bb_n_outputs,
-             bb_minutes].concat(ad);
+             bb_minutes,
+             bb_n_mitochondria].concat(ad);
 
 
   this.table.fnAddData(row);
@@ -316,7 +328,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
   var makePie = (function(offset, title) {
     var entries = [];
-    [5, 9, 13].forEach(function(k, i) {
+    [6, 11, 16].forEach(function(k, i) {
       var sum = sums[k + offset];
       if (sum > 0) entries.push({name: titles[i], value: sum, color: colors[i]});
     });
@@ -327,7 +339,8 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
   var pie_cable = makePie(0, "Cable (nm)"),
       pie_inputs = makePie(1, "# Inputs"),
-      pie_outputs = makePie(2, "# Outputs");
+      pie_outputs = makePie(2, "# Outputs"),
+      pie_mitochondria = makePie(4, "# mitochondria");
 
 
   // Create histograms of terminal subarbors:

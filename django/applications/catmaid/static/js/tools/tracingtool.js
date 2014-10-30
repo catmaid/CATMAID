@@ -12,9 +12,6 @@
  */
 
 /**
- */
-
-/**
  * Constructor for the tracing tool.
  */
 function TracingTool()
@@ -60,7 +57,6 @@ function TracingTool()
   {
     stack = parentStack;
     tracingLayer = new TracingLayer( parentStack );
-    //this.prototype.mouseCatcher = tracingLayer.svgOverlay.getView();
     self.prototype.setMouseCatcher( tracingLayer.svgOverlay.view );
     parentStack.addLayer( "TracingLayer", tracingLayer );
 
@@ -712,9 +708,10 @@ function TracingTool()
 
   var keyCodeToAction = getKeyCodeToActionMap(actions);
 
-  /** This function should return true if there was any action
-      linked to the key code, or false otherwise. */
-
+  /**
+   * This function should return true if there was any action linked to the key
+   * code, or false otherwise.
+   */
   this.handleKeyPress = function( e ) {
     var keyAction = keyCodeToAction[e.keyCode];
     if (keyAction) {
@@ -793,7 +790,6 @@ TracingTool.search = function()
   };
 
   setSearchingMessage('Search in progress...');
-  //requestQueue.register("model/search.php", "GET", {
   requestQueue.register(django_url + project.id + '/search', "GET", {
     pid: project.id,
     substring: $('#search-box').val()

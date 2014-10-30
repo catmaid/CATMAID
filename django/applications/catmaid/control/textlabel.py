@@ -1,11 +1,13 @@
 import json
+import sys
 
 from django.http import HttpResponse
+from django.db import connection
 
-from catmaid.models import *
+from catmaid.models import UserRole, Textlabel, TextlabelLocation
 from catmaid.fields import Double3D
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import cursor_fetch_dictionary, makeJSON_legacy_list
 
 @requires_user_role(UserRole.Annotate)
 def update_textlabel(request, project_id=None):

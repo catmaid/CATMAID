@@ -1,8 +1,14 @@
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+import json
 
+from django.http import HttpResponse
+from django.db import connection
 from django.shortcuts import get_object_or_404
+
+from catmaid.models import UserRole, Relation, Class, ClassClass, Restriction, \
+        CardinalityRestriction
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
+
 
 # Root classes can be seen as namespaces in the semantic space. Different
 # tools use different root classes.
@@ -384,7 +390,7 @@ def rename_relation(request, project_id=None):
     relation.relation_name = new_name
     relation.save()
 
-    return HttpResponse(json.dumps({'renamed_relation': relid}))
+    return HttpResponse(json.dumps({'renamed_relation': rel_id}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_relation_from_ontology(request, project_id=None):
@@ -746,7 +752,7 @@ def get_feature_paths_remote( ontology, workspace_pid, add_nonleafs=False, depth
             class_ids.add(link_data[1])
             relation_ids.add(link_data[2])
             if link_data[3]:
-               class_ids.add(link_data[3])
+                class_ids.add(link_data[3])
 
     # Get all needed class and relation model objects
     classes = Class.objects.in_bulk(class_ids)

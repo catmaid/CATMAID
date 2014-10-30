@@ -1,16 +1,13 @@
 import json
 
-from django.db import models
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import Stack, Project, ProjectStack, Message, User
+from catmaid.control.common import id_generator, json_error_response
 
-import numpy as np
 import urllib2 as urllib
 import os.path
 import glob
@@ -20,9 +17,8 @@ from math import cos, sin, radians
 # The libuuid import is a workaround for a bug with GraphicsMagick
 # which expects the library to be loaded already. Therefore, it
 # has to be loaded before pgmagick.
-import libuuid
-from pgmagick import Blob, Image, ImageList, Geometry, Color
-from pgmagick import CompositeOperator as co, ResolutionType, ChannelType
+from pgmagick import Blob, Image, ImageList, Geometry, ChannelType, \
+        CompositeOperator as co
 
 from celery.task import task
 

@@ -2157,6 +2157,35 @@ class ViewPageTests(TestCase):
         self.assertEqual(y, treenode.location_y)
         self.assertEqual(z, treenode.location_z)
 
+    def test_node_update_invalid_location(self):
+        self.fake_authentication()
+        treenode_id = 289
+        treenode = Treenode.objects.filter(id=treenode_id)[0]
+        orig_x = treenode.location_x
+        orig_y = treenode.location_y
+        orig_z = treenode.location_z
+        x = 5690
+        z = 0
+
+        for y in [float('NaN'), float('Infinity')]:
+            response = self.client.post(
+                    '/%d/node/update' % self.test_project_id, {
+                        't[0][0]': treenode_id,
+                        't[0][1]': x,
+                        't[0][2]': y,
+                        't[0][3]': z})
+            self.assertEqual(response.status_code, 200)
+            parsed_response = json.loads(response.content)
+            self.assertIn('error', parsed_response)
+            cursor = connection.cursor()
+            cursor.execute('''
+                SELECT location_x, location_y, location_z FROM location
+                WHERE id=%s''' % treenode_id)
+            treenode = cursor.fetchall()[0]
+            self.assertEqual(orig_x, treenode[0])
+            self.assertEqual(orig_y, treenode[1])
+            self.assertEqual(orig_z, treenode[2])
+
     def test_node_update_many_nodes(self):
         self.fake_authentication()
         self.maxDiff = None

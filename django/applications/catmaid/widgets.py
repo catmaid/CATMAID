@@ -18,9 +18,9 @@ class Integer3DWidget(forms.MultiWidget):
         if value:
             if isinstance(value, str) or isinstance(value, unicode):
                 try:
-                   # Expect value to be of the form '(0,0,0)'
-                   str_list = value.replace('(', '').replace(')', '').split(',')
-                   return [float(num) for num in str_list]
+                    # Expect value to be of the form '(0,0,0)'
+                    str_list = value.replace('(', '').replace(')', '').split(',')
+                    return [float(num) for num in str_list]
                 except ValueError:
                     pass
             elif isinstance(value, Integer3D):
@@ -49,9 +49,9 @@ class Double3DWidget(forms.MultiWidget):
         if value:
             if isinstance(value, str) or isinstance(value, unicode):
                 try:
-                   # Expect value to be of the form '(0,0,0)'
-                   str_list = value.replace('(', '').replace(')', '').split(',')
-                   return [float(num) for num in str_list]
+                    # Expect value to be of the form '(0,0,0)'
+                    str_list = value.replace('(', '').replace(')', '').split(',')
+                    return [float(num) for num in str_list]
                 except ValueError:
                     pass
             elif isinstance(value, Double3D):
@@ -85,9 +85,9 @@ class RGBAWidget(forms.MultiWidget):
                 return value
             elif isinstance(value, str) or isinstance(value, unicode):
                 try:
-                   # Expect value to be of the form '(0,0,0,0)'
-                   str_list = value.replace('(', '').replace(')', '').split(',')
-                   return [float(num) for num in str_list]
+                    # Expect value to be of the form '(0,0,0,0)'
+                    str_list = value.replace('(', '').replace(')', '').split(',')
+                    return [float(num) for num in str_list]
                 except ValueError:
                     pass
             elif isinstance(value, RGBA):

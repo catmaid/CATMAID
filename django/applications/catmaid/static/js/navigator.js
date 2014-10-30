@@ -389,7 +389,7 @@ function Navigator()
 		new Action({
 			helpText: "Move down 1 slice in z (or 10 with Shift held)",
 			keyShortcuts: {
-				'.': [ 46, 190 ]
+				'.': [ 190 ]
 			},
 			run: function (e) {
 				self.slider_z.move((e.shiftKey ? 10 : 1));

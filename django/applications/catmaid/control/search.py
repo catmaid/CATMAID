@@ -2,9 +2,9 @@ import json
 
 from django.http import HttpResponse
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, ClassInstance, TreenodeClassInstance
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -78,8 +78,8 @@ def search(request, project_id=None):
         row_with_node = label_rows[node['class_instance__name']]
         nodes = row_with_node.get('nodes', None)
         if not nodes:
-          nodes = []
-          row_with_node['nodes'] = nodes
+            nodes = []
+            row_with_node['nodes'] = nodes
         nodes.append(format_node_data(node))
 
     return HttpResponse(json.dumps(rows))

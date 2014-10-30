@@ -557,8 +557,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     function createSynapseCountCell(count, partner, skids, title) {
       var td = document.createElement('td');
       td.setAttribute('class', 'syncount');
-      // Only add the actual count as text if it is greater zero. This reduces
-      // the visual noise for larger tables.
+      // Only add the count as displayed text if it is greater zero. This
+      // reduces visual noise for larger tables.
       if (count > 0) {
         var a = document.createElement('a');
         td.appendChild(a);
@@ -576,6 +576,11 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         a.onmouseout = onmouseout;
         // Create tool-tip
         a.setAttribute('title', title);
+      } else { // Make a hidden span including the zero for semantic clarity and table exports.
+        var s = document.createElement('span');
+        td.appendChild(s);
+        s.appendChild(document.createTextNode(count));
+        s.style.display = 'none';
       }
       td.setAttribute('title', title);
       return td;

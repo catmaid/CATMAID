@@ -1,9 +1,11 @@
-from collections import defaultdict
-
-from models import *
-
 import numpy as np
 import networkx as nx
+
+from collections import defaultdict
+
+from models import ( ClassInstance, ClassInstanceClassInstance, Relation,
+        Review, Treenode, TreenodeConnector, TreenodeClassInstance )
+
 
 class Neuron(object):
 

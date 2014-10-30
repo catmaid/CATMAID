@@ -1,8 +1,11 @@
+import numpy as np
 from numpy import array, float32
 from numpy.linalg import norm
 import networkx as nx
-from catmaid.objects import *
-from collections import namedtuple, defaultdict
+from collections import namedtuple
+
+from catmaid.models import Treenode, TreenodeConnector, ClassInstance, Relation
+
 
 try:
     from scipy.sparse.csgraph import dijkstra

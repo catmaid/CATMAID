@@ -1,10 +1,11 @@
 import json
 
+from django.http import HttpResponse
+
 from catmaid.models import Class, ClassInstance, Relation, UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 
-from django.http import HttpResponse
 
 # All classes needed by the tracing system alongside their
 # descriptions.

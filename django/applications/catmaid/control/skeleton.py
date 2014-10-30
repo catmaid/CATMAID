@@ -1,24 +1,26 @@
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-
-from catmaid.models import *
-from catmaid.objects import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-from catmaid.control.neuron import _delete_if_empty
-from catmaid.control.neuron_annotations import create_annotation_query
-from catmaid.control.neuron_annotations import _annotate_entities
-from catmaid.control.neuron_annotations import _update_neuron_annotations
-from catmaid.control.review import get_treenodes_to_reviews, get_review_status
-from catmaid.control.treenode import _create_interpolated_treenode
-from collections import defaultdict
-
 import decimal
 import json
-
-from operator import itemgetter
 import networkx as nx
-from tree_util import reroot, edge_count_to_root
+from operator import itemgetter
+from datetime import datetime
+from collections import defaultdict
+
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.db import connection
+
+from catmaid.models import Project, UserRole, Class, ClassInstance, Review, \
+        ClassInstanceClassInstance, Relation, Treenode, TreenodeConnector
+from catmaid.objects import Skeleton
+from catmaid.control.authentication import requires_user_role, \
+        can_edit_class_instance_or_fail, can_edit_or_fail
+from catmaid.control.common import insert_into_log, get_relation_to_id_map 
+from catmaid.control.neuron import _delete_if_empty
+from catmaid.control.neuron_annotations import create_annotation_query, \
+        _annotate_entities, _update_neuron_annotations
+from catmaid.control.review import get_treenodes_to_reviews, get_review_status
+from catmaid.control.treenode import _create_interpolated_treenode
+from catmaid.control.tree_util import reroot, edge_count_to_root
 
 
 def get_skeleton_permissions(request, project_id, skeleton_id):

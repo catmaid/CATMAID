@@ -1,20 +1,24 @@
 import json
-from django.db import connection
-from django.http import HttpResponse
-from catmaid.control.authentication import *
-from catmaid.control.review import get_treenodes_to_reviews
-from catmaid.models import Relation
+import sys
+
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
-from itertools import chain, ifilter, imap
+from itertools import chain, ifilter
 from functools import partial
-from synapseclustering import tree_max_density
+from synapseclustering import  tree_max_density
 from numpy import subtract
 from numpy.linalg import norm
-from tree_util import edge_count_to_root, simplify, find_root, reroot, partition, spanning_tree, cable_length
 from math import sqrt
-import sys
+
+from django.db import connection
+from django.http import HttpResponse
+
+from catmaid.models import Relation, UserRole
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.review import get_treenodes_to_reviews
+from catmaid.control.tree_util import simplify, find_root, reroot, partition, \
+        spanning_tree, cable_length
 
 def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows):
     """ dipgrahs is a dictionary of skeleton IDs as keys and DiGraph instances as values,

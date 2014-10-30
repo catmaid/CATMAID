@@ -7,8 +7,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.shortcuts import render_to_response
 
-from catmaid.control.classification import get_classification_links_qs
-from catmaid.control.classification import link_existing_classification
+from catmaid.control.classification import get_classification_links_qs, \
+        link_existing_classification
 from catmaid.models import ClassInstance, Project
 
 from taggit.models import TaggedItem
@@ -242,11 +242,11 @@ class ClassificationAdminWizard(SessionWizardView):
         })
 
 def classification_admin_view(request, *args, **kwargs):
-   """ Wraps the class based ClassificationAdminWizard view in
-   a function based view.
-   """
-   forms = [("settings", SettingsForm),
-            ("taggroups", TagGroupSelectionForm),
-            ("confirmation", ConfirmationForm)]
-   view = ClassificationAdminWizard.as_view(forms)
-   return view(request)
+    """ Wraps the class based ClassificationAdminWizard view in
+    a function based view.
+    """
+    forms = [("settings", SettingsForm),
+             ("taggroups", TagGroupSelectionForm),
+             ("confirmation", ConfirmationForm)]
+    view = ClassificationAdminWizard.as_view(forms)
+    return view(request)

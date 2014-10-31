@@ -4,7 +4,7 @@ from contextlib import closing
 import h5py
 import numpy as np
 import base64
-import settings
+from django.conf import settings
 
 try:
     from PIL import Image

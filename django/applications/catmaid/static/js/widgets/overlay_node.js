@@ -29,38 +29,19 @@ d3.selection.prototype.show = function () {
 /** Namespace where SVG element instances are created, cached and edited. */
 var SkeletonElements = function(paper)
 {
-  // Create marker arrow for connector edges
+  // Create definitions for reused elements and markers
   var defs = paper.append('defs');
-  defs.append('marker').attr({
-    id: 'markerArrowPost',
-    viewBox: '0 0 10 10',
-    markerWidth: '5',
-    markerHeight: '4',
-    markerUnits: 'strokeWidth',
-    refX: '10',
-    refY: '5',
-    orient: 'auto'
-  }).append('path').attr({
-    d: 'M 0 0 L 10 5 L 0 10 z',
-    fill: SkeletonElements.prototype.ArrowLine.prototype.POST_COLOR
-  });
-  // Note that in SVG2 the above fill could be set to 'context-stroke' and would
-  // work appropriately as an end marker for both pre- and post- connectors.
-  // However, this SVG2 feature is not supported in current browsers, so two
-  // connectors are created, one for each color.
-  defs.append('marker').attr({
-    id: 'markerArrowPre',
-    viewBox: '0 0 10 10',
-    markerWidth: '5',
-    markerHeight: '4',
-    markerUnits: 'strokeWidth',
-    refX: '10',
-    refY: '5',
-    orient: 'auto'
-  }).append('path').attr({
-    d: 'M 0 0 L 10 5 L 0 10 z',
-    fill: SkeletonElements.prototype.ArrowLine.prototype.PRE_COLOR
-  });
+
+  // Let (concrete) element classes initialize any shared SVG definitions
+  // required by their instances. Even though called statically, initDefs is an
+  // instance (prototype) method so that we can get overriding inheritance of
+  // pseudo-static variables.
+  var concreteElements = [
+    SkeletonElements.prototype.Node.prototype,
+    SkeletonElements.prototype.ConnectorNode.prototype,
+    SkeletonElements.prototype.ArrowLine.prototype,
+  ];
+  concreteElements.forEach(function (klass) {klass.initDefs(defs);});
 
   this.cache = {
     nodePool : new this.ElementPool(100),
@@ -83,6 +64,12 @@ var SkeletonElements = function(paper)
   this.destroy = function() {
     this.cache.clear();
     paper = null;
+  };
+
+  this.scale = function(baseScale, resScale, dynamicScale) {
+    concreteElements.forEach(function (klass) {
+      klass.scale(baseScale, resScale, dynamicScale);
+    });
   };
 
   /** Invoked at the start of the continuation that updates all nodes. */
@@ -222,6 +209,9 @@ SkeletonElements.prototype.ElementPool.prototype = (function() {
 
 /** A prototype for both Treenode and Connector. */
 SkeletonElements.prototype.NodePrototype = new (function() {
+  this.CONFIDENCE_FONT_PT = 15;
+  this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
+
   /** Update the local x,y coordinates of the node
    * and for its SVG object c well. */
   this.setXY = function(xnew, ynew) {
@@ -229,8 +219,8 @@ SkeletonElements.prototype.NodePrototype = new (function() {
     this.y = ynew;
     if (this.c) {
       this.c.attr({
-        cx: xnew,
-        cy: ynew
+        x: xnew,
+        y: ynew
       });
     }
   };
@@ -243,10 +233,10 @@ SkeletonElements.prototype.NodePrototype = new (function() {
     // c may already exist if the node is being reused
     if (!this.c) {
       // create a circle object
-      this.c = this.paper.append('circle')
-                          .attr('cx', this.x)
-                          .attr('cy', this.y)
-                          .attr('r', this.NODE_RADIUS)
+      this.c = this.paper.append('use')
+                          .attr('xlink:href', '#' + this.USE_HREF)
+                          .attr('x', this.x)
+                          .attr('y', this.y)
                           .classed('overlay-node', true);
 
       SkeletonElements.prototype.mouseEventManager.attach(this.c, this.type);
@@ -281,6 +271,26 @@ SkeletonElements.prototype.NodePrototype = new (function() {
   this.mustDrawLineWith = function(node) {
     return this.shouldDisplay() || (node && node.shouldDisplay());
   };
+
+  this.scale = function(baseScale, resScale, dynamicScale) {
+    var scale = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+    // To account for SVG non-scaling-stroke in screen scale mode the resolution
+    // scaling must not be applied to edge. While all three scales could be
+    // combined to avoid this without the non-scaling-stroke, this is necessary
+    // to avoid the line size be inconcistent on zoom until a redraw.
+    this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * baseScale * (dynamicScale ? 1 : resScale);
+    this.confidenceFontSize = this.CONFIDENCE_FONT_PT*scale + 'pt';
+    this.circleDef.attr('r', this.NODE_RADIUS*scale);
+  };
+
+  this.initDefs = function(defs) {
+    this.circleDef = defs.append('circle').attr({
+      id: this.USE_HREF,
+      cx: 0,
+      cy: 0,
+      r: this.NODE_RADIUS
+    });
+  };
 })();
 
 SkeletonElements.prototype.AbstractTreenode = function() {
@@ -293,9 +303,10 @@ SkeletonElements.prototype.AbstractTreenode = function() {
   this.leaf_node_color = "rgb(128,0,0)";
 
   // For drawing:
-  this.NODE_RADIUS = 8;
-  this.CATCH_RADIUS = 32;
-  this.EDGE_WIDTH = 4;
+  this.USE_HREF = 'treenodeCircle';
+  this.NODE_RADIUS = 4;
+  this.CATCH_RADIUS = 16;
+  this.BASE_EDGE_WIDTH = 2;
 
   // ID of the disabled nodes
   this.DISABLED = -1;
@@ -483,7 +494,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
       if (0 !== zdiff) {
         this.c.hide();
       } else {
-        this.c.attr({cx: x, cy: y});
+        this.c.attr({x: x, y: y});
       }
     }
     if (this.line) {
@@ -497,7 +508,6 @@ SkeletonElements.prototype.AbstractTreenode = function() {
 };
 
 SkeletonElements.prototype.AbstractTreenode.prototype = SkeletonElements.prototype.NodePrototype;
-
 
 SkeletonElements.prototype.Node = function(
   paper,
@@ -538,7 +548,8 @@ SkeletonElements.prototype.Node.prototype = new SkeletonElements.prototype.Abstr
 
 SkeletonElements.prototype.AbstractConnectorNode = function() {
   // For drawing:
-  this.NODE_RADIUS = 16;
+  this.USE_HREF = 'connectornodeCircle';
+  this.NODE_RADIUS = 8;
   this.CATCH_RADIUS = 16;
 
   /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
@@ -652,7 +663,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     if (this.c) {
       this.c.datum(id);
       if (this.shouldDisplay()) {
-        this.c.attr({cx: x, cy: y});
+        this.c.attr({x: x, y: y});
       } else {
         this.c.hide();
       }
@@ -811,8 +822,8 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     node.x += e.dx;
     node.y += e.dy;
     node.c.attr({
-      cx: node.x,
-      cy: node.y
+      x: node.x,
+      y: node.y
     });
     node.drawEdges(true); // TODO for connector this is overkill
     statusBar.replaceLast("Moving node #" + node.id);
@@ -951,7 +962,9 @@ SkeletonElements.prototype.ArrowLine = function(paper) {
 SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   this.PRE_COLOR = "rgb(200,0,0)";
   this.POST_COLOR = "rgb(0,217,232)";
-  this.EDGE_WIDTH = 4;
+  this.BASE_EDGE_WIDTH = 2;
+  this.CONFIDENCE_FONT_PT = 15;
+  this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
 
   /** Function to assign to the SVG arrow. */
   this.mousedown = (function(d) {
@@ -990,9 +1003,8 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     if( le === 0 ) {
         le = 0.9 * rloc;
     }
+    rloc *= 2; // rloc is the radius of target node, which we don't want to touch.
     var F = (1 - rloc / le);
-    var x1new = (x1 - x2) * F + x2;
-    var y1new = (y1 - y2) * F + y2;
     var x2new = (x2 - x1) * F + x1;
     var y2new = (y2 - y1) * F + y1;
 
@@ -1047,6 +1059,49 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
       this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS);
     }
   };
+
+  var markerSize = [5, 4];
+
+  this.scale = function(baseScale, resScale, dynamicScale) {
+    var scale = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+    this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * baseScale * (dynamicScale ? 1 : resScale);
+    this.confidenceFontSize = this.CONFIDENCE_FONT_PT*scale + 'pt';
+    // If not in screen scaling mode, do not need to scale markers (but must reset scale).
+    scale = dynamicScale ? resScale*dynamicScale : 1;
+    this.markerDefs.forEach(function (m) {
+      m.attr({
+        markerWidth: markerSize[0]*scale,
+        markerHeight: markerSize[1]*scale
+      });
+    });
+  };
+
+  this.initDefs = function(defs) {
+    // Note that in SVG2 the fill could be set to 'context-stroke' and would
+    // work appropriately as an end marker for both pre- and post- connectors.
+    // However, this SVG2 feature is not supported in current browsers, so two
+    // connectors are created, one for each color.
+    this.markerDefs = [
+      defs.append('marker'),
+      defs.append('marker')];
+    var ids = ['markerArrowPost', 'markerArrowPre'];
+    var colors = [this.POST_COLOR, this.PRE_COLOR];
+    this.markerDefs.forEach(function (m, i) {
+        m.attr({
+        id: ids[i],
+        viewBox: '0 0 10 10',
+        markerWidth: markerSize[0],
+        markerHeight: markerSize[1],
+        markerUnits: 'strokeWidth',
+        refX: '10',
+        refY: '5',
+        orient: 'auto'
+      }).append('path').attr({
+        d: 'M 0 0 L 10 5 L 0 10 z',
+        fill: colors[i]
+      });
+    });
+  };
 })();
 
 
@@ -1059,8 +1114,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
                                        confidence,
                                        existing) {
     var text,
-    numberOffset = 18,
-    confidenceFontSize = '40px',
+    numberOffset = this.CONFIDENCE_FONT_PT * 1.5,
     xdiff = parentx - x,
     ydiff = parenty - y,
     length = Math.sqrt(xdiff*xdiff + ydiff*ydiff),
@@ -1079,7 +1133,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
 
     text.attr({x: newConfidenceX,
                y: newConfidenceY,
-               'font-size': confidenceFontSize,
+               'font-size': this.confidenceFontSize,
                'text-anchor': 'middle',
                stroke: 'black',
                'stroke-width': 0.5,

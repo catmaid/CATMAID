@@ -508,22 +508,27 @@ SkeletonElements.prototype.AbstractTreenode = function() {
 
   /**
    * Draws a circle around the treenode and control its radius with the help of
-   * the mouse. On a mouse click, the circle is removed and the callback is
-   * executed with the last radius of the circle as parameter.
+   * the mouse (and a mouse-to-stack transform function).
    */
-  this.drawSurroundingCircle = function(callback) {
+  this.drawSurroundingCircle = function(transform) {
     var self = this;
     // Create a raphael circle object that represents the surrounding circle
     var color = "rgb(255,255,0)";
-    var c = this.paper.circle(this.x, this.y, 0)
+    var c = this.paper.append('circle')
       .attr({
+        cx: this.x,
+        cy: this.y,
+        r: 0,
         fill: "none",
         stroke: color,
         'stroke-width': 1.5,
       });
     // Create an adhoc mouse catcher
-    var mc = this.paper.rect(0, 0, '100%', '100%')
+    var mc = this.paper.append('circle')
       .attr({
+        cx: this.x,
+        cy: this.y,
+        r: '300%',
         fill: color,  // If opacity is zero it must have a fillcolor, otherwise the mouse events ignore it
         stroke: "none",
         opacity: 0
@@ -533,23 +538,23 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.surroundingCircleElements = [c, mc];
 
     // Update radius on mouse move
-    mc.mousemove(function(e) {
-      var rx = e.layerX - self.x;
-      var ry = e.layerY - self.y;
-      var newR = Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2));
-      c[0].setAttribute('r', newR);
+    mc.on('mousemove', function() {
+      var e = d3.event;
+      var r = transform({x: e.layerX, y: e.layerY});
+      r.x -= self.x;
+      r.y -= self.y;
+      var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2));
+      c.attr('r', newR);
       // Strore also x and y components
-      c.data('rx', rx);
-      c.data('ry', ry);
+      c.datum(r);
     });
 
     // Don't let mouse down events bubble up
-    mc.mousedown(function(e) {
-        e.stopPropagation();
+    mc.on('mousedown', function() {
+        d3.event.stopPropagation();
     });
-    // Remove all added data and execute callback on a click
-    mc.click(function(e) {
-      e.stopPropagation();
+    mc.on('click', function() {
+      d3.event.stopPropagation();
     });
   };
 
@@ -562,15 +567,15 @@ SkeletonElements.prototype.AbstractTreenode = function() {
       return;
     }
     // Get last radius components
-    var rx = this.surroundingCircleElements[0].data('rx');
-    var ry = this.surroundingCircleElements[0].data('ry');
+    var r = this.surroundingCircleElements[0].datum();
     // Clean up
     this.surroundingCircleElements[0].remove();
     this.surroundingCircleElements[1].remove();
     delete this.surroundingCircleElements;
     // Execute callback, if any, with radius in nm as argument
     if (callback) {
-      callback(rx, ry);
+      if (r) callback(r.x, r.y);
+      else callback();
     }
   };
 };

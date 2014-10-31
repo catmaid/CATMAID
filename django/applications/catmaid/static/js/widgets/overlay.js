@@ -1169,7 +1169,9 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
   }
 
   this.paper.attr({
-      viewBox: [pl, pt,
+      viewBox: [
+          pl - stack.translation.x,
+          pt - stack.translation.y,
           (stack.viewWidth / stack.scale) * stack.resolution.x,
           (stack.viewHeight / stack.scale) * stack.resolution.y].join(' '),
       width: stack.viewWidth,     // Width and height only need to be updated on
@@ -1294,19 +1296,19 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (x) {
-  return x - this.stack.translation.x;
+  return x;
 };
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (y) {
-  return y - this.stack.translation.y;
+  return y;
 };
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (z) {
   return (z - this.stack.translation.z) / this.stack.resolution.z;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physX = function (x) {
-  return this.stack.translation.x + x;
+  return x;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physY = function (y) {
-  return this.stack.translation.y + y;
+  return y;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physZ = function (z) {
   return z *this.stack.resolution.z + this.stack.translation.z;

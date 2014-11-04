@@ -190,7 +190,9 @@ function Project( pid )
 	
 	this.setTool = function( newTool )
 	{
-		if ( tool )
+		// Destroy the old project only, if it isn't the very same project that gets
+		// set again.
+		if( tool && newTool !== tool )
 			tool.destroy();
 		tool = newTool;
 		

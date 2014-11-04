@@ -196,6 +196,10 @@ function TracingTool()
         delete bindings[b];
       }
     }
+
+    // Forget the current stack
+    self.stack = null;
+
     return;
   };
 

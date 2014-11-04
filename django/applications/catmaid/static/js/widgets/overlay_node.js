@@ -311,8 +311,8 @@ SkeletonElements.prototype.AbstractTreenode = function() {
 
   // For drawing:
   this.USE_HREF = 'treenodeCircle';
-  this.NODE_RADIUS = 4;
-  this.CATCH_RADIUS = 16;
+  this.NODE_RADIUS = 3;
+  this.CATCH_RADIUS = 5;
   this.BASE_EDGE_WIDTH = 2;
 
   // ID of the disabled nodes
@@ -630,7 +630,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
   // For drawing:
   this.USE_HREF = 'connectornodeCircle';
   this.NODE_RADIUS = 8;
-  this.CATCH_RADIUS = 16;
+  this.CATCH_RADIUS = 0;
 
   /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
   this.removeConnectorArrows = function() {

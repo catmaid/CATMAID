@@ -854,7 +854,7 @@ function Stack(
 	vert.style.opacity = horr.style.opacity = "0.5";
 	view.appendChild( vert );
 	view.appendChild( horr );
-	self.showReferenceLines( userprofile.display_stack_reference_lines );
+	self.showReferenceLines( userprofile ? userprofile.display_stack_reference_lines : false );
 
 	// take care, that all values are within a proper range
 	// Declare the x,y,z,s as coordinates in pixels

@@ -258,8 +258,9 @@ SettingsWidget.prototype.init = function(space)
     ds.append($('<div/>').addClass('setting').append("Choose how nodes, " +
         "edges, connectors, and labels are scaled in the tracing overlay. " +
         "This setting can be saved to your user profile and will persist " +
-        "across sessions. (Note: changes will not appear in the stack view " +
-        "until you zoom, switch sections or pan.)"));
+        "across sessions. (Note: changes to text labels, edges and arrows " +
+        "will not appear correctly in the stack view until you zoom, switch " +
+        "sections or pan.)"));
 
     ds.append(createRadioSetting('overlay-scaling', [
         {id: 'overlay-scaling-screen', desc: 'Fixed screen size',
@@ -268,6 +269,7 @@ SettingsWidget.prototype.init = function(space)
             checked: !userprofile.tracing_overlay_screen_scaling}
     ], function () {
       userprofile.tracing_overlay_screen_scaling = this.value === 'overlay-scaling-screen';
+      project.getStacks().forEach(function (s) {s.redraw();});
     }).addClass('setting'));
 
     ds.append(createLabeledControl(
@@ -281,6 +283,7 @@ SettingsWidget.prototype.init = function(space)
             change: function (event, ui) {
               userprofile.tracing_overlay_scale = Math.pow(2, ui.value);
               $('#overlay-scale-value').text((userprofile.tracing_overlay_scale*100).toFixed());
+              project.getStacks().forEach(function (s) {s.redraw();});
             }})));
 
     ds.append($('<button>Save to your profile</button>').click(function () {

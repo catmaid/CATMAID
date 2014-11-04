@@ -9,7 +9,7 @@ var AnalyzeArbor = function() {
 
   this.table = null;
   this.skeleton_ids = [];
-  this.terminal_subarbor_stats = [];
+  this.arbor_stats = [];
 
   this.pie_radius = 100;
   this.plot_width = 300;
@@ -43,7 +43,7 @@ AnalyzeArbor.prototype.clear = function() {
   this.table.fnClearTable();
   $('#analyze_widget_charts_div' + this.widgetID).empty();
   this.skeleton_ids = [];
-  this.terminal_subarbor_stats = [];
+  this.arbor_stats = [];
 };
 
 AnalyzeArbor.prototype.removeSkeletons = function() {};
@@ -103,7 +103,7 @@ AnalyzeArbor.prototype.init = function() {
       "bJQueryUI": true,
       "aoColumns": [{bSearchable: true, bSortable: true}].concat((function() {
         var a = [];
-        for (var i=0; i<16; ++i) a.push({bSearchable: true, bSortable: true});
+        for (var i=0; i<20; ++i) a.push({bSearchable: true, bSortable: true});
         return a;
       })()),
   });
@@ -133,15 +133,20 @@ AnalyzeArbor.prototype.appendOrdered = function(skids, models) {
 /** json: from URL compact-arbor (nodes, synapses and tags). */
 AnalyzeArbor.prototype.appendOne = function(skid, json) {
   var tags = json[2],
-      microtubules_end = tags['microtubules end'];
+      microtubules_end = tags['microtubules end'],
+      mitochondrium = tags['mitochondrium'];
 
   if (!microtubules_end || 0 === microtubules_end.length) {
     return alert("Skeleton #" + skid + " does not have any node tagged 'microtubules end'.");
   }
 
+  if (!mitochondrium) mitochondrium = [];
+
   var ap = new ArborParser(json).init('compact-arbor', json);
   // Collapse "not a branch"
   ap.collapseArtifactualBranches(tags);
+  // Cache functions that are called many times
+  ap.cache(["childrenArray", "allSuccessors"]);
 
   var minutes = json[3],
       inv_minutes = {};
@@ -179,18 +184,30 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
       bb_f = function(nodeID) { return backbone.contains(nodeID); },
       bb_n_outputs = outputs.filter(bb_f).reduce(countOutputs, 0),
       bb_n_inputs = inputs.filter(bb_f).reduce(countInputs, 0),
-      bb_minutes = countMinutes(backbone.nodesArray());
+      bb_minutes = countMinutes(backbone.nodesArray()),
+      bb_n_mitochondria = mitochondrium.filter(bb_f).length;
 
   var ad;
 
+  var seen = {};
 
   var analyze_subs = function(subarbor) {
     // Detect and measure terminal subarbors of each kind (axonic and dendritic)
     var subs = [];
     microtubules_end.forEach(function(mend) {
       if (subarbor.contains(mend)) {
-        // TODO should check if any overlap due to mistakenly placing a tag in an already existing subarbor
-        subs.push(subarbor.subArbor(mend));
+        var sub = subarbor.subArbor(mend),
+            nodes = sub.nodesArray();
+        // Check if any overlap due to mistakenly placing a tag in an already existing subarbor
+        if (nodes.some(function(node) { return seen[node]; })) {
+          // Error: subarbor has nodes that have already been seen
+          var msg = "Subarbor rooted at node #" + sub.root + " shares nodes with other subarbors. Check the dendrogram.";
+          growlAlert("WARNING", msg);
+          console.log("WARNING", msg);
+        }
+        // Add the subarbor in any case
+        nodes.forEach(function(node) { seen[node] = true; });
+        subs.push(sub);
       }
     });
     var stats = {cables: [], depths: [], inputs: [], outputs: [], branches: [], ends: [], roots: [], n_subs: subs.length, input_depths: [], output_depths: []},
@@ -220,6 +237,20 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
     return stats;
   };
 
+  // Measure minimal distances from each synapse to the nearest mitochondrium
+  var analyze_synapse_mitochondrium = function() {
+    if (mitochondrium.length > 0) {
+      var mit = {};
+      for (var k=0; k<mitochondrium.length; ++k) mit[mitochondrium[k]] = true;
+      var distanceFn = function(child, paren) {
+        return smooth_positions[child].distanceTo(smooth_positions[paren]);
+      };
+      return {pre: ap.arbor.minDistancesFromTo(ap.outputs, mit, distanceFn),
+              post: ap.arbor.minDistancesFromTo(ap.inputs, mit, distanceFn)};
+    }
+    return {pre: {}, post: {}};
+  };
+
   // Split by synapse flow centrality
   if (0 !== ap.n_outputs && 0 !== ap.n_inputs) {
     var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
@@ -238,7 +269,8 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         at_f = function(nodeID) { return axon_terminals.contains(nodeID) && !at_backbone.contains(nodeID); },
         at_n_outputs = outputs.filter(at_f).reduce(countOutputs, 0),
         at_n_inputs = inputs.filter(at_f).reduce(countInputs, 0),
-        at_minutes = countMinutes(Object.keys(subtract(axon_terminals.nodes(), at_backbone.nodes())));
+        at_minutes = countMinutes(Object.keys(subtract(axon_terminals.nodes(), at_backbone.nodes()))),
+        at_n_mitochondria = mitochondrium.filter(at_f).length;
 
     // Detect and measure the dendrites
     var dendrites = ap.arbor.clone();
@@ -251,32 +283,40 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         d_f = function(nodeID) { return dendrites.contains(nodeID) && !d_backbone.contains(nodeID); },
         d_n_outputs = outputs.filter(d_f).reduce(countOutputs, 0),
         d_n_inputs = inputs.filter(d_f).reduce(countInputs, 0),
-        d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes())));
+        d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes()))),
+        d_n_mitochondria = mitochondrium.filter(d_f).length;
 
-    this.terminal_subarbor_stats[skid] = {axonal: analyze_subs(axon_terminals),
-                                          dendritic: analyze_subs(dendrites)};
+
+    this.arbor_stats[skid] = {axonal: analyze_subs(axon_terminals),
+                              dendritic: analyze_subs(dendrites),
+                              syn_mit: analyze_synapse_mitochondrium()};
 
     ad = [Math.round(d_cable) | 0,
           d_n_inputs,
           d_n_outputs,
           d_minutes,
+          d_n_mitochondria,
           Math.round(at_cable) | 0,
           at_n_inputs,
           at_n_outputs,
-          at_minutes];
+          at_minutes,
+          at_n_mitochondria];
   } else {
     // Consider non-backbone parts as "dendrites"
     ad = [Math.round(cable - bb_cable) | 0,
           ap.n_inputs - bb_n_inputs,
           ap.n_outputs - bb_n_outputs,
           countMinutes(Object.keys(subtract(ap.arbor.nodes(), backbone.nodes()))),
+          mitochondrium.length,
+          0,
           0,
           0,
           0,
           0];
 
-    this.terminal_subarbor_stats[skid] = {axonal: null,
-                                          dendritic: analyze_subs(ap.arbor)};
+    this.arbor_stats[skid] = {axonal: null,
+                              dendritic: analyze_subs(ap.arbor),
+                              syn_mit: analyze_synapse_mitochondrium()};
   }
 
   var row = [NeuronNameService.getInstance().getName(skid),
@@ -284,10 +324,12 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
              ap.n_inputs,
              ap.n_outputs,
              Object.keys(minutes).length,
+             mitochondrium.length,
              Math.round(bb_cable) | 0,
              bb_n_inputs,
              bb_n_outputs,
-             bb_minutes].concat(ad);
+             bb_minutes,
+             bb_n_mitochondria].concat(ad);
 
 
   this.table.fnAddData(row);
@@ -316,7 +358,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
   var makePie = (function(offset, title) {
     var entries = [];
-    [5, 9, 13].forEach(function(k, i) {
+    [6, 11, 16].forEach(function(k, i) {
       var sum = sums[k + offset];
       if (sum > 0) entries.push({name: titles[i], value: sum, color: colors[i]});
     });
@@ -327,16 +369,17 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
   var pie_cable = makePie(0, "Cable (nm)"),
       pie_inputs = makePie(1, "# Inputs"),
-      pie_outputs = makePie(2, "# Outputs");
+      pie_outputs = makePie(2, "# Outputs"),
+      pie_mitochondria = makePie(4, "# mitochondria");
 
 
   // Create histograms of terminal subarbors:
-  var skids = Object.keys(this.terminal_subarbor_stats);
+  var skids = Object.keys(this.arbor_stats);
 
   // Create a pie with the number of terminal subarbors
   var n_subs = ["dendritic", "axonal"].map(function(type) {
     return skids.reduce((function(sum, skid) {
-      var s = this.terminal_subarbor_stats[skid][type];
+      var s = this.arbor_stats[skid][type];
       return sum + (s ? s.n_subs : 0);
     }).bind(this), 0);
   }, this);
@@ -353,7 +396,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         divID,
         this.pie_radius,
         skids.map(function(skid, i) {
-          var e = this.terminal_subarbor_stats[skid],
+          var e = this.arbor_stats[skid],
               sum = e.dendritic.n_subs + (e.axonal ? e.axonal.n_subs : 0);
           return {name: NeuronNameService.getInstance().getName(skid) + " (" + sum + ")",
                   value: sum,
@@ -362,6 +405,33 @@ AnalyzeArbor.prototype.updateCharts = function() {
         "# Subarbors");
   }
 
+  // Binarize two arrays simultaneously
+  var binarizeTwo = function(a1, a2, inc) {
+    var max = 0,
+        binarize = function(bins, v) {
+          max = Math.max(max, v);
+          var bin = bins[v];
+          if (bin) bins[v] += 1;
+          else bins[v] = 1;
+          return bins;
+        };
+    var bins1 = a1.reduce(binarize, {}),
+        bins2 = a2.reduce(binarize, {});
+    // Add missing bins and populate axis
+    var axis = [];
+    for (var bin=0; bin<=max; bin+=inc) {
+      var b1 = bins1[bin],
+          b2 = bins2[bin];
+      if (!b1) bins1[bin] = 0;
+      if (!b2) bins2[bin] = 0;
+      axis.push(bin);
+    }
+    return {axis: axis,
+            bins1: bins1,
+            bins2: bins2,
+            max: max};
+  };
+
   (function() {
     // Histograms of total [cables, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors, and histograms of depth of individual synapses in the terminal subarbors.
     var hists = ['cables', 'depths', 'inputs', 'outputs', 'branches', 'ends', 'input_depths', 'output_depths'],
@@ -369,9 +439,9 @@ AnalyzeArbor.prototype.updateCharts = function() {
         dendritic = hists.reduce(function(o, label) { o[label] = []; return o}, {}), // needs deep copy
         cable_labels = ["cables", "depths", "input_depths", "output_depths"];
     skids.forEach(function(skid) {
-      var e = this.terminal_subarbor_stats[skid];
+      var e = this.arbor_stats[skid];
       hists.forEach(function(label) {
-        // axonal won't exist a neuron without outputs like a motorneuron or a dendritic fragment
+        // axonal won't exist for a neuron without outputs like a motor neuron or a dendritic fragment
         if (e.axonal) axonal[label] = axonal[label].concat(e.axonal[label]);
         dendritic[label] = dendritic[label].concat(e.dendritic[label]);
       }, this);
@@ -388,26 +458,11 @@ AnalyzeArbor.prototype.updateCharts = function() {
         d = d.map(round);
       }
       // Binarize
-      var max = 0,
-          binarize = function(bins, v) {
-            max = Math.max(max, v);
-            var bin = bins[v];
-            if (bin) bins[v] += 1;
-            else bins[v] = 1;
-            return bins;
-          };
-      var abins = a.reduce(binarize, {}),
-          dbins = d.reduce(binarize, {});
-      // Add missing bins and thread together
-      var x_axis = [];
-      for (var bin=0; bin<=max; bin+=inc) {
-        var a = abins[bin],
-            d = dbins[bin];
-        if (!a) abins[bin] = 0;
-        if (!d) dbins[bin] = 0;
-        x_axis.push(bin);
-      }
-      var data = [dbins, abins];
+      var b = binarizeTwo(d, a, inc),
+          data = [b.bins1, b.bins2],
+          x_axis = b.axis,
+          max = b.max;
+      //
       var rotate_x_axis_labels = false;
       if (-1 !== cable_labels.indexOf(label)) {
         // From nanometers to microns
@@ -444,7 +499,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         return b;
       });
 
-      SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
+      SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label + ' cummulative',
         this.plot_width, this.plot_height,
         label, "cummulative counts (%)",
         cummulative,
@@ -464,7 +519,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         cable_vs_inputs = [],
         series = [];
     skids.forEach(function(skid, k) {
-      var stats = this.terminal_subarbor_stats[skid],
+      var stats = this.arbor_stats[skid],
           Entry = function(x, y, root) { this.x = x; this.y = y; this.root = root},
           neuron = {color: colors(k),
                     name : NeuronNameService.getInstance().getName(skid)};
@@ -501,6 +556,60 @@ AnalyzeArbor.prototype.updateCharts = function() {
         },
         series,
         false, true);
+  }).bind(this)();
+
+  (function() {
+    // Histogram of distances from pre or post to a mitochondrium
+    var pre = [],
+        post = [],
+        inc = 1000, // 1 micron
+        round1 = function(o) {
+          return Object.keys(o).map(function(node) {
+            var v = o[node];
+            return v - v % inc;
+          });
+        };
+
+    skids.forEach(function(skid) {
+      var stats = this.arbor_stats[skid];
+      pre = pre.concat(round1(stats.syn_mit.pre));
+      post = post.concat(round1(stats.syn_mit.post));
+    }, this);
+
+    // Binarize
+    var b = binarizeTwo(pre, post, inc),
+        data = [b.bins2, b.bins1],
+        x_axis = b.axis.map(function(bin) { return bin/1000 + "-" + (bin + inc)/1000; }), // in microns rather than nanometers
+        max = b.max,
+        label = "Distance to nearest mitochondrium (µm)";
+
+    SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
+      this.plot_width, this.plot_height,
+      label, "counts",
+      data,
+      ["postsynaptic", "presynaptic"],
+      ["#00ffff", "#ff0000"],
+      x_axis, true,
+      true);
+
+    // As cummulative
+    var cummulative = data.map(function(a, i) {
+      var b = {},
+          total = Object.keys(a).reduce(function(sum, bin) { return sum + a[bin]; }, 0);
+      if (0 === total) return a;
+      b[0] = a[0] / total;
+      for (var bin=inc; bin<=max; bin+=inc) b[bin] = b[bin - inc] + a[bin] / total;
+      return b;
+    });
+
+    SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label + ' cummulative',
+      this.plot_width, this.plot_height,
+      label, "cummulative counts (%)",
+      cummulative,
+      ["postsynaptic", "presynaptic"],
+      ["#00ffff", "#ff0000"],
+      x_axis, true,
+      true);
   }).bind(this)();
 };
 

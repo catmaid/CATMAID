@@ -4,7 +4,7 @@ from operator import itemgetter
 from networkx import Graph, DiGraph
 from collections import defaultdict
 from math import sqrt
-from itertools import izip, islice, imap
+from itertools import izip, islice
 from catmaid.models import Treenode
 
 def find_root(tree):

@@ -1,24 +1,26 @@
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-
-from catmaid.models import *
-from catmaid.objects import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-from catmaid.control.neuron import _delete_if_empty
-from catmaid.control.neuron_annotations import create_annotation_query
-from catmaid.control.neuron_annotations import _annotate_entities
-from catmaid.control.neuron_annotations import _update_neuron_annotations
-from catmaid.control.review import get_treenodes_to_reviews, get_review_status
-from catmaid.control.treenode import _create_interpolated_treenode
-from collections import defaultdict
-
 import decimal
 import json
-
-from operator import itemgetter
 import networkx as nx
-from tree_util import reroot, edge_count_to_root
+from operator import itemgetter
+from datetime import datetime
+from collections import defaultdict
+
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.db import connection
+
+from catmaid.models import Project, UserRole, Class, ClassInstance, Review, \
+        ClassInstanceClassInstance, Relation, Treenode, TreenodeConnector
+from catmaid.objects import Skeleton
+from catmaid.control.authentication import requires_user_role, \
+        can_edit_class_instance_or_fail, can_edit_or_fail
+from catmaid.control.common import insert_into_log, get_relation_to_id_map 
+from catmaid.control.neuron import _delete_if_empty
+from catmaid.control.neuron_annotations import create_annotation_query, \
+        _annotate_entities, _update_neuron_annotations
+from catmaid.control.review import get_treenodes_to_reviews, get_review_status
+from catmaid.control.treenode import _create_interpolated_treenode
+from catmaid.control.tree_util import reroot, edge_count_to_root
 
 
 def get_skeleton_permissions(request, project_id, skeleton_id):
@@ -124,12 +126,32 @@ def contributor_statistics(request, project_id=None, skeleton_id=None):
     n_nodes = 0
     # Count the total number of 60-second intervals with at least one treenode in them
     minutes = set()
+    min_review_minutes = set()
+    multi_review_minutes = 0
     epoch = datetime.utcfromtimestamp(0)
 
-    for row in Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'parent_id', 'user_id', 'creation_time'):
+    for row in Treenode.objects.filter(skeleton_id=skeleton_id).values_list('user_id', 'creation_time'):
         n_nodes += 1
-        contributors[row[2]] += 1
-        minutes.add(int((row[3] - epoch).total_seconds() / 60))
+        contributors[row[0]] += 1
+        minutes.add(int((row[1] - epoch).total_seconds() / 60))
+
+    # Take into account that multiple people may have reviewed the same nodes
+    # Therefore measure the time for the user that has the most nodes reviewed,
+    # then add the nodes not reviewed by that user but reviewed by the rest
+    rev = defaultdict(dict)
+    for row in Review.objects.filter(skeleton_id=skeleton_id).values_list('reviewer', 'treenode', 'review_time'):
+        rev[row[0]][row[1]] = row[2]
+    seen = set()
+
+    for reviewer, treenodes in sorted(rev.iteritems(), key=itemgetter(1), reverse=True):
+        reviewer_minutes = set()
+        for treenode, timestamp in treenodes.iteritems():
+            minute = int((timestamp - epoch).total_seconds() / 60)
+            reviewer_minutes.add(minute)
+            if not (treenode in seen):
+                seen.add(treenode)
+                min_review_minutes.add(minute)
+        multi_review_minutes += len(reviewer_minutes)
 
     relations = {row[0]: row[1] for row in Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id')}
 
@@ -149,6 +171,8 @@ def contributor_statistics(request, project_id=None, skeleton_id=None):
     return HttpResponse(json.dumps({
         'name': neuron_name,
         'construction_minutes': len(minutes),
+        'min_review_minutes': len(min_review_minutes),
+        'multiuser_review_minutes': multi_review_minutes,
         'n_nodes': n_nodes,
         'node_contributors': contributors,
         'n_pre': sum(synapses[relations['presynaptic_to']].values()),

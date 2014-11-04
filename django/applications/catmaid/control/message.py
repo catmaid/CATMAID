@@ -3,9 +3,8 @@ import json
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import Message, ChangeRequest
+from catmaid.control.common import my_render_to_response, makeJSON_legacy_list
 
 
 @login_required

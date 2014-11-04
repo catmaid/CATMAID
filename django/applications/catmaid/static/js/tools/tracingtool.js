@@ -12,9 +12,6 @@
  */
 
 /**
- */
-
-/**
  * Constructor for the tracing tool.
  */
 function TracingTool()
@@ -60,7 +57,6 @@ function TracingTool()
   {
     stack = parentStack;
     tracingLayer = new TracingLayer( parentStack );
-    //this.prototype.mouseCatcher = tracingLayer.svgOverlay.getView();
     self.prototype.setMouseCatcher( tracingLayer.svgOverlay.view );
     parentStack.addLayer( "TracingLayer", tracingLayer );
 
@@ -200,6 +196,10 @@ function TracingTool()
         delete bindings[b];
       }
     }
+
+    // Forget the current stack
+    self.stack = null;
+
     return;
   };
 
@@ -234,122 +234,27 @@ function TracingTool()
     return true;
   };
 
-  var actions = [];
+  /**
+   * ACTIONS
+   *
+   **/
 
-  this.addAction = function ( action ) {
-    actions.push( action );
-  };
+  // get basic Actions from Navigator
+  var actions = self.prototype.getActions();
 
   this.getActions = function () {
     return actions;
   };
 
-  var arrowKeyCodes = {
-    left: 37,
-    up: 38,
-    right: 39,
-    down: 40
+  this.addAction = function ( action ) {
+    actions.push( action );
   };
-
-  this.addAction( new Action({
-    helpText: "Zoom in",
-    keyShortcuts: {
-      '+': [ 43, 107, 61, 187 ]
-    },
-    run: function (e) {
-      self.prototype.slider_s.move(1);
-      return true;
-    }
-  }) );
-
-  this.addAction( new Action({
-    helpText: "Zoom out",
-    keyShortcuts: {
-      '-': [ 45, 109, 173, 189 ]
-    },
-    run: function (e) {
-      self.prototype.slider_s.move(-1);
-      return true;
-    }
-  }) );
-
-  this.addAction( new Action({
-    helpText: "Move up 1 slice in z (or 10 with Shift held)",
-    keyShortcuts: {
-      ',': [ 44, 188 ]
-    },
-    run: function (e) {
-      self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
-      return true;
-    }
-  }) );
-
-  this.addAction( new Action({
-    helpText: "Move down 1 slice in z (or 10 with Shift held)",
-    keyShortcuts: {
-      '.': [ 190 ]
-    },
-    run: function (e) {
-      self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
-      return true;
-    }
-  }) );
-
-  this.addAction( new Action({
-    helpText: "Move left (towards negative x)",
-    keyShortcuts: {
-      "\u2190": [ arrowKeyCodes.left ]
-    },
-    run: function (e) {
-      self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-      self.prototype.input_x.onchange(e);
-      return true;
-    }
-  }) );
-
-  this.addAction( new Action({
-    helpText: "Move right (towards positive x)",
-    keyShortcuts: {
-      "\u2192": [ arrowKeyCodes.right ]
-    },
-    run: function (e) {
-      self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-      self.prototype.input_x.onchange(e);
-      return true;
-    }
-  }) );
-
-  this.addAction( new Action({
-    helpText: "Move up (towards negative y)",
-    keyShortcuts: {
-      "\u2191": [ arrowKeyCodes.up ]
-    },
-    run: function (e) {
-      self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-      self.prototype.input_y.onchange(e);
-      return true;
-    }
-  }) );
-
-  this.addAction( new Action({
-    helpText: "Move down (towards positive y)",
-    keyShortcuts: {
-      "\u2193": [ arrowKeyCodes.down ]
-    },
-    run: function (e) {
-      self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-      self.prototype.input_y.onchange(e);
-      return true;
-    }
-  }) );
 
     this.addAction( new Action({
         helpText: "Switch to skeleton tracing mode",
         buttonName: "skeleton",
         buttonID: 'trace_button_skeleton',
-        keyShortcuts: {
-            ";": [ 186 ]
-        },
+        keyShortcuts: { ";": [ 186 ] },
         run: function (e) {
           SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
           return true;
@@ -389,41 +294,31 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Add ends Tag (Shift: Remove) for the active node",
-    keyShortcuts: {
-      "K": [ 75 ]
-    },
+    keyShortcuts: { "K": [ 75 ] },
       run: tagFn('ends')
   } ) );
 
   this.addAction( new Action({
     helpText: "Add 'uncertain end' Tag (Shift: Remove) for the active node",
-    keyShortcuts: {
-      "U": [ 85 ]
-    },
+    keyShortcuts: { "U": [ 85 ] },
       run: tagFn('uncertain end')
   } ) );
 
   this.addAction( new Action({
     helpText: "Add 'uncertain continuation' Tag (Shift: Remove) for the active node",
-    keyShortcuts: {
-      "C": [ 67 ]
-    },
+    keyShortcuts: { "C": [ 67 ] },
       run: tagFn('uncertain continuation')
   } ) );
 
   this.addAction( new Action({
     helpText: "Add 'not a branch' Tag (Shift: Remove) for the active node",
-    keyShortcuts: {
-      "N": [ 78 ]
-    },
+    keyShortcuts: { "N": [ 78 ] },
       run: tagFn('not a branch')
   } ) );
 
   this.addAction( new Action({
     helpText: "Add 'soma' Tag (Shift: Remove) for the active node",
-    keyShortcuts: {
-      "M": [ 77 ]
-    },
+    keyShortcuts: { "M": [ 77 ] },
       run: tagFn('soma')
   } ) );
 
@@ -431,9 +326,7 @@ function TracingTool()
     helpText: "Go to active node",
     buttonName: "goactive",
     buttonID: 'trace_button_goactive',
-    keyShortcuts: {
-      "A": [ 65 ]
-    },
+    keyShortcuts: { "A": [ 65 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -444,9 +337,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Next open leaf node",
-    keyShortcuts: {
-      "R": [ 82 ]
-    },
+    keyShortcuts: { "R": [ 82 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -457,9 +348,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or low confidence; with shift and at a branch node, move down the other branch)",
-    keyShortcuts: {
-      "V": [ 86 ]
-    },
+    keyShortcuts: { "V": [ 86 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -470,9 +359,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Go to previous branch or end node (with alt, stop earlier at node with tag, synapse or low confidence)",
-    keyShortcuts: {
-      "B": [ 66 ]
-    },
+    keyShortcuts: { "B": [ 66 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -484,9 +371,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Deselect the active node",
-    keyShortcuts:  {
-      "D": [ 68 ]
-    },
+    keyShortcuts: { "D": [ 68 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -497,9 +382,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Go to the parent of the active node",
-    keyShortcuts: {
-      "P": [ 80 ]
-    },
+    keyShortcuts: { "P": [ 80 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -509,23 +392,20 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Edit the radius of the active node",
-    keyShortcuts: {
-      "O": [ 79 ]
-    },
+    helpText: "Edit the radius of the active node (Shift: without measurment tool)",
+    keyShortcuts: { "O": [ 79 ] },
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.editRadius(SkeletonAnnotations.getActiveNodeId());
+      tracingLayer.svgOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
+          e.shiftKey);
       return true;
     }
   }) );
 
   this.addAction( new Action({
     helpText: "Go to last edited node in this skeleton",
-    keyShortcuts: {
-      "H": [ 72 ]
-    },
+    keyShortcuts: { "H": [ 72 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -560,9 +440,7 @@ function TracingTool()
     helpText: "Re-root this skeleton at the active node",
     buttonName: "skelrerooting",
     buttonID: 'trace_button_skelrerooting',
-    keyShortcuts: {
-      "6": [ 54 ]
-    },
+    keyShortcuts: { "6": [ 54 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -575,9 +453,7 @@ function TracingTool()
     helpText: "Toggle the display of labels",
     buttonName: "togglelabels",
     buttonID: 'trace_button_togglelabels',
-    keyShortcuts: {
-      "7": [ 55 ]
-    },
+    keyShortcuts: { "7": [ 55 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -600,9 +476,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Switch between a terminal and its connector",
-    keyShortcuts: {
-      "S": [ 83 ]
-    },
+    keyShortcuts: { "S": [ 83 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -613,9 +487,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Tag the active node",
-    keyShortcuts: {
-      "T": [ 84 ]
-    },
+    keyShortcuts: { "T": [ 84 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -630,9 +502,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Add TODO Tag (Shift: Remove) to the active node",
-    keyShortcuts: {
-      "L": [ 76 ]
-    },
+    keyShortcuts: { "L": [ 76 ] },
     run: tagFn('TODO')
   }) );
 
@@ -646,9 +516,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Select the nearest node to the mouse cursor",
-    keyShortcuts: {
-      "G": [ 71 ]
-    },
+    keyShortcuts: { "G": [ 71 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -663,9 +531,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Create treenode with z axis interpolation (Shift on another node: interpolate and join)",
-    keyShortcuts: {
-      'Z': [ 90 ]
-    },
+    keyShortcuts: { 'Z': [ 90 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -676,9 +542,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Delete the active node",
-    keyShortcuts: {
-      'DEL': [ 46 ]
-    },
+    keyShortcuts: { 'DEL': [ 46 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -701,9 +565,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Retrieve information about the active node.",
-    keyShortcuts: {
-      'I': [ 73 ]
-    },
+    keyShortcuts: { 'I': [ 73 ] },
     run: function (e) {
       if (!mayView())
         return false;
@@ -714,9 +576,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Set confidence in node link to 1 (Alt: with a connector)",
-    keyShortcuts: {
-      '1': [ 49 ]
-    },
+    keyShortcuts: { '1': [ 49 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -727,9 +587,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Set confidence in node link to 2 (Alt: with a connector)",
-    keyShortcuts: {
-      '2': [ 50 ]
-    },
+    keyShortcuts: { '2': [ 50 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -740,9 +598,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Set confidence in node link to 3 (Alt: with a connector)",
-    keyShortcuts: {
-      '3': [ 51 ]
-    },
+    keyShortcuts: { '3': [ 51 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -753,9 +609,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Set confidence in node link to 4 (Alt: with a connector)",
-    keyShortcuts: {
-      '4': [ 52 ]
-    },
+    keyShortcuts: { '4': [ 52 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -766,9 +620,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Set confidence in node link to 5 (Alt: with a connector)",
-    keyShortcuts: {
-      '5': [ 53 ]
-    },
+    keyShortcuts: { '5': [ 53 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -779,9 +631,7 @@ function TracingTool()
 
   this.addAction( new Action({
       helpText: "Move to previous node in segment for review. At an end node, moves one section beyond for you to check that it really ends.",
-      keyShortcuts: {
-          'Q': [ 81 ]
-      },
+      keyShortcuts: { 'Q': [ 81 ] },
       run: function (e) {
           if (!mayEdit())
               return false;
@@ -793,9 +643,7 @@ function TracingTool()
 
   this.addAction( new Action({
       helpText: "Move to next node in segment for review (with shift, move to next unreviewed node in the segment)",
-      keyShortcuts: {
-          'W': [ 87 ]
-      },
+      keyShortcuts: { 'W': [ 87 ] },
       run: function (e) {
           if (!mayEdit())
               return false;
@@ -807,9 +655,7 @@ function TracingTool()
 
   this.addAction( new Action({
       helpText: "Start reviewing the next skeleton segment.",
-      keyShortcuts: {
-          'E': [ 69 ]
-      },
+      keyShortcuts: { 'E': [ 69 ] },
       run: function (e) {
           if (!mayEdit())
               return false;
@@ -821,9 +667,7 @@ function TracingTool()
 
   this.addAction( new Action({
       helpText: "Rename active neuron",
-      keyShortcuts: {
-          'F2': [ 113 ]
-      },
+      keyShortcuts: { 'F2': [ 113 ] },
       run: function (e) {
           if (!mayEdit()) {
               return false;
@@ -835,9 +679,7 @@ function TracingTool()
 
   this.addAction( new Action({
       helpText: "Annotate active neuron",
-      keyShortcuts: {
-          'F3': [ 114 ]
-      },
+      keyShortcuts: { 'F3': [ 114 ] },
       run: function (e) {
           if (!mayEdit()) {
               return false;
@@ -861,9 +703,7 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Open the neuron/annotation search widget",
-    keyShortcuts: {
-      '/': [ 191 ]
-    },
+    keyShortcuts: { '/': [ 191 ] },
     run: function (e) {
       WindowMaker.create('neuron-annotations');
       return true;
@@ -873,9 +713,10 @@ function TracingTool()
 
   var keyCodeToAction = getKeyCodeToActionMap(actions);
 
-  /** This function should return true if there was any action
-      linked to the key code, or false otherwise. */
-
+  /**
+   * This function should return true if there was any action linked to the key
+   * code, or false otherwise.
+   */
   this.handleKeyPress = function( e ) {
     var keyAction = keyCodeToAction[e.keyCode];
     if (keyAction) {
@@ -954,7 +795,6 @@ TracingTool.search = function()
   };
 
   setSearchingMessage('Search in progress...');
-  //requestQueue.register("model/search.php", "GET", {
   requestQueue.register(django_url + project.id + '/search', "GET", {
     pid: project.id,
     substring: $('#search-box').val()

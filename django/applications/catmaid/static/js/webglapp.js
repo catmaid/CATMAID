@@ -11,6 +11,10 @@ var WebGLApplication = function() {
   this.registerSource();
   // Indicates whether init has been called
   this.initialized = false;
+
+  // Listen to changes of the active node
+  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+    this.staticUpdateActiveNodePosition, this);
 };
 
 WebGLApplication.prototype = {};
@@ -36,6 +40,8 @@ WebGLApplication.prototype.getName = function() {
 };
 
 WebGLApplication.prototype.destroy = function() {
+  SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+      this.staticUpdateActiveNodePosition);
   this.unregisterInstance();
   this.unregisterSource();
   this.space.destroy();

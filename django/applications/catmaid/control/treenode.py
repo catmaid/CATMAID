@@ -2,13 +2,17 @@ import decimal
 import json
 import math
 
+from collections import defaultdict
+
 from django.db import connection
 from django.http import HttpResponse
 
-from catmaid.models import *
-from catmaid.fields import Double3D
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, Treenode, BrokenSlice, ClassInstance, \
+        ClassInstanceClassInstance
+from catmaid.control.authentication import requires_user_role, \
+        can_edit_class_instance_or_fail
+from catmaid.control.common import get_relation_to_id_map, \
+        get_class_to_id_map, insert_into_log
 from catmaid.control.neuron import _delete_if_empty
 
 

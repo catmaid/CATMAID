@@ -1,14 +1,12 @@
-from django.http import HttpResponse
-from django.db.models import Count
+import numpy as np
 
-from catmaid.models import *
-from catmaid.objects import *
+from datetime import timedelta, datetime
+
+from django.http import HttpResponse
+
+from catmaid.models import Connector, Treenode, Review
 from catmaid.control.user_evaluation import _parse_date
 
-from datetime import timedelta, time
-
-import numpy as np
-import copy
 
 try:
     # Because we don't want to show generated images in a window, we can use
@@ -17,9 +15,8 @@ try:
     matplotlib.use('Agg')
 
     import matplotlib.pyplot as plt
-    import matplotlib.colors as colors
     from matplotlib.dates import  DateFormatter, DayLocator
-    from pylab import figure, axes, pie, title
+    from pylab import figure
     from matplotlib.backends.backend_agg import FigureCanvasAgg
 except:
     pass

@@ -3,9 +3,8 @@ from string import upper
 
 from django.http import HttpResponse
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, Log
+from catmaid.control.authentication import requires_user_role 
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

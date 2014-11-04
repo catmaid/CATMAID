@@ -2,7 +2,6 @@
 # this file to settings.py and customize it.
 
 from settings_base import *
-import sys, os
 import djcelery
 
 DATABASES = {

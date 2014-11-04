@@ -1,27 +1,19 @@
-import sys
 import json
-import string
+import scipy.cluster.hierarchy as hier
+import scipy.spatial.distance as dist
+from numpy import array as nparray
 
 from django import forms
-from django.db import connection
-from django.db.models import Q
 from django.forms.formsets import formset_factory
 from django.forms.widgets import CheckboxSelectMultiple
 from django.shortcuts import render_to_response
 from django.contrib.formtools.wizard.views import SessionWizardView
-from django.http import HttpResponse
-from django.template import RequestContext
+from django.template.context import RequestContext
 
-from catmaid.models import Class, ClassInstance, ClassClass, ClassInstanceClassInstance
-from catmaid.models import Relation
-from catmaid.control.classification import ClassProxy, ClassInstanceProxy
-from catmaid.control.classification import get_root_classes_qs, get_classification_links_qs
-from catmaid.control.classification import graph_instanciates_feature
+from catmaid.models import Class
+from catmaid.control.classification import ClassInstanceProxy, \
+        get_root_classes_qs, graph_instanciates_feature
 from catmaid.control.ontology import get_features
-
-from numpy import array as nparray
-import scipy.cluster.hierarchy as hier
-import scipy.spatial.distance as dist
 
 metrics = (
     ('jaccard', 'Jaccard'),
@@ -57,7 +49,7 @@ def create_ontology_selection_form( workspace_pid, class_ids=None ):
     return SelectOntologyForm
 
 class FeatureForm(forms.Form):
-	feature = forms.BooleanField()
+    feature = forms.BooleanField()
 
 class ClusteringSetupFeatures(forms.Form):
     #add_nonleafs = forms.BooleanField(initial=False,

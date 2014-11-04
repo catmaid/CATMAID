@@ -557,8 +557,8 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     function createSynapseCountCell(count, partner, skids, title) {
       var td = document.createElement('td');
       td.setAttribute('class', 'syncount');
-      // Only add the actual count as text if it is greater zero. This reduces
-      // the visual noise for larger tables.
+      // Only add the count as displayed text if it is greater zero. This
+      // reduces visual noise for larger tables.
       if (count > 0) {
         var a = document.createElement('a');
         td.appendChild(a);
@@ -576,6 +576,11 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         a.onmouseout = onmouseout;
         // Create tool-tip
         a.setAttribute('title', title);
+      } else { // Make a hidden span including the zero for semantic clarity and table exports.
+        var s = document.createElement('span');
+        td.appendChild(s);
+        s.appendChild(document.createTextNode(count));
+        s.style.display = 'none';
       }
       td.setAttribute('title', title);
       return td;
@@ -1081,15 +1086,13 @@ ConnectivityGraphPlot.prototype.exportSVG = function() {
   var div = document.getElementById('connectivity_graph_plot_div' + this.widgetID);
   if (!div) return;
   var images = div.getElementsByTagName('svg');
-  if (!images || images.length != 2) {
-    alert("Couldn't find expected number of images");
-    return;
-  }
+  if (0 === images.length) return;
   // Export upstream image
   var xml = new XMLSerializer().serializeToString(images[0]);
   var blob = new Blob([xml], {type : 'text/xml'});
   saveAs(blob, 'upstream_connectivity_chart.svg');
   // Export downstream image
+  if (1 === images.length) return;
   xml = new XMLSerializer().serializeToString(images[1]);
   blob = new Blob([xml], {type : 'text/xml'});
   saveAs(blob, 'downstream_connectivity_chart.svg');
@@ -1170,21 +1173,8 @@ ConnectivityGraphPlot.prototype.draw = function() {
     if (0 === names.length) return null;
 
     // Colors: an array of hex values
-    var zeroPad = function(s) { return ("0" + s).slice(-2); };
-    var colors = names.reduce(function(array, skid, i) {
-      // Start at Red 255, decrease towards 0
-      //          Green 100, increase towards 255
-      //          Blue 200, decrease towards 50
-      var ratio = (names.length - i) / names.length;
-      var red = 255 * ratio;
-      var green = 100 + 155 * (1 - ratio);
-      var blue = 50 + 150 * ratio;
-      array.push("#"
-          + zeroPad(Number(red | 0).toString(16))
-          + zeroPad(Number(green | 0).toString(16))
-          + zeroPad(Number(blue | 0).toString(16))); // as hex
-      return array;
-    }, []);
+    var colorizer = d3.scale.category10(),
+        colors = names.map(function(_, i) { return colorizer(i); });
 
     // Don't let the canvas be less than 400px wide
     if (container_width < 400) {

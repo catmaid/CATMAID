@@ -1,18 +1,13 @@
+import json
+
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import *
-from catmaid.objects import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-
-try:
-    import networkx as nx
-    from networkx.readwrite import json_graph
-except ImportError:
-    pass
-
-import sys
+from catmaid.models import UserRole, Project
+from catmaid.objects import SkeletonGroup, \
+        compartmentalize_skeletongroup_by_edgecount, \
+        compartmentalize_skeletongroup_by_confidence
+from catmaid.control.authentication import requires_user_role
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

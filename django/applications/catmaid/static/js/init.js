@@ -530,7 +530,11 @@ function handle_openProjectStack( status, text, xml )
 		var e = eval( "(" + text + ")" );
 		if ( e.error )
 		{
-			alert( e.error );
+			if (e.permission_error) {
+				new LoginDialog(e.error, realInit).show();
+			} else {
+				new ErrorDialog(e.error, e.detail).show();
+			}
 		}
 		else
 		{
@@ -1046,7 +1050,12 @@ var realInit = function()
 			
 			for ( var i = 0; values[ "sid" + i ]; ++i )
 			{
-				sids.push( parseInt( values[ "sid" + i ] ) );
+				var sid = parseInt( values[ "sid" + i ] );
+				// Make sure a stack isn't opened multiple times
+				if ( -1 !== sids.indexOf( sid ) ) {
+					continue;
+				}
+				sids.push( sid );
 				if ( values[ "s" + i ] )
 					ss.push( parseInt( values[ "s" + i ] ) );
 				else

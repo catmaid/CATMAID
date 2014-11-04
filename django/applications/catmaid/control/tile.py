@@ -1,20 +1,19 @@
 import os
+import cStringIO
 from contextlib import closing
 import h5py
-import json
 import numpy as np
+import base64
+from django.conf import settings
 
 try:
     from PIL import Image
 except:
     pass
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from django.http import HttpResponse
 
 def get_tile(request, project_id=None, stack_id=None):
-    import sys
 
     scale = float(request.GET.get('scale', '0'))
     height = int(request.GET.get('height', '0'))

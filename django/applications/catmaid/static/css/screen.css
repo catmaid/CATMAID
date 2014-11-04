@@ -455,9 +455,12 @@ div#classification_graph_object img.roiimage {
   font-family: sans-serif;
 }
 
-.buttonpanel ul.ui-tabs-nav,
-.buttonpanel div.ui-tabs-panel {
+.buttonpanel ul.ui-tabs-nav {
   padding: 0;
+}
+
+.buttonpanel div.ui-tabs-panel {
+  padding: 0.2em 0.2em 0.1em 0.2em;
 }
 
 .buttonpanel ul.ui-tabs-nav li .ui-tabs-anchor {

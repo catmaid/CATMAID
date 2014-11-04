@@ -25,11 +25,15 @@ var SkeletonAnnotations = {
   TYPE_NODE : "treenode",
   TYPE_CONNECTORNODE : "connector",
 
-  sourceView : new ActiveSkeleton()
+  sourceView : new ActiveSkeleton(),
+
+  // Event name constants
+  EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
 };
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
+Events.extend(SkeletonAnnotations);
 
 /**
  * Sets the active node, if node is not null. Otherwise, the active node is
@@ -37,17 +41,33 @@ SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
  * coordinates, its position has to be unscaled.
  */
 SkeletonAnnotations.atn.set = function(node, stack_id) {
+  var changed = false;
+
   if (node) {
+    // Find out if there was a change
     var stack = project.getStack(stack_id);
+    var new_x = node.x / stack.scale;
+    var new_y = node.y / stack.scale;
+    changed = (this.id !== node.id) ||
+              (this.skeleton_id !== node.skeleton_id) ||
+              (this.type !== node.type) ||
+              (this.z !== node.z) ||
+              (this.y !== new_y)  ||
+              (this.x !== new_x) ||
+              (this.parent_id !== node.parent_id) ||
+              (this.stack_id !== stack_id);
+
+    // Assign new properties
     this.id = node.id;
     this.skeleton_id = node.skeleton_id;
     this.type = node.type;
-    this.x = node.x / stack.scale;
-    this.y = node.y / stack.scale;
+    this.x = new_x;
+    this.y = new_y;
     this.z = node.z;
     this.parent_id = node.parent ? node.parent.id : null;
     this.stack_id = stack_id;
   } else {
+    changed = true;
     // Set all to null
     for (var prop in this) {
       if (this.hasOwnProperty(prop)) {
@@ -57,6 +77,12 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
         this[prop] = null;
       }
     }
+  }
+
+  // Trigger event if node ID or position changed
+  if (changed) {
+    SkeletonAnnotations.trigger(
+          SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, this);
   }
 };
 
@@ -448,7 +474,6 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
       SkeletonAnnotations.setNeuronNameInTopbar(this.stack.getId(), node.skeleton_id);
       atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
-      WebGLApplication.prototype.staticUpdateActiveNodePosition();
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
       statusBar.replaceLast("Activated connector node #" + node.id);
       atn.set(node, this.getStack().getId());
@@ -1203,7 +1228,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         if (e.shiftKey) {
           // Create a new connector and a new link
           var synapse_type = e.altKey ? 'post' : 'pre';
-          statusBar.replaceLast("created connector, with " + synapse_type + "synaptic treenode id " + atn.id);
+          statusBar.replaceLast("Created connector with " + synapse_type + "synaptic treenode #" + atn.id);
           var self = this;
           this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
               function (connectorID) {
@@ -1215,7 +1240,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         return true;
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         // create new treenode (and skeleton) postsynaptic to activated connector
-        statusBar.replaceLast("created treenode with id " + atn.id + "postsynaptic to activated connector");
+        statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
         this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         e.stopPropagation();
         return true;
@@ -1446,38 +1471,65 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
   this.moveToAndSelectNode(node.parent_id);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
+/**
+ * Shows a dialog to edit the radius property of a node. By default, it also
+ * lets the user estimate the radius with the help of a small measurement tool,
+ * which can be disabled by setting the no_measurement_tool parameter to true.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
   this.goToNode(treenode_id,
       function() {
-        var dialog = new OptionsDialog("Edit radius");
-        var input = dialog.appendField("Radius: ", "treenode-edit-radius", self.nodes[treenode_id].radius);
-        var choice = dialog.appendChoice("Apply: ", "treenode-edit-radius-scope",
-          ['Only this node', 'From this node to the next branch or end node (included)',
-           'From this node to the previous branch node or root (excluded)',
-           'From this node to root (included)', 'All nodes'],
-          [0, 1, 2, 3, 4],
-          self.editRadius_defaultValue);
-        dialog.onOK = function() {
-          var radius = parseFloat(input.value);
-          if (isNaN(radius)) {
-            alert("Invalid number: '" + input.value + "'");
-            return;
-          }
-          self.editRadius_defaultValue = choice.selectedIndex;
-          self.submit(
-            django_url + project.id + '/treenode/' + treenode_id + '/radius',
-            {radius: radius,
-             option: choice.selectedIndex},
-            function(json) {
-              // Refresh 3d views if any
-              WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
-              // Reinit SVGOverlay to read in the radius of each altered treenode
-              self.updateNodes();
-            });
+        function show_dialog(defaultRadius)
+        {
+          var dialog = new OptionsDialog("Edit radius");
+          var input = dialog.appendField("Radius: ", "treenode-edit-radius", defaultRadius);
+          var choice = dialog.appendChoice("Apply: ", "treenode-edit-radius-scope",
+            ['Only this node', 'From this node to the next branch or end node (included)',
+             'From this node to the previous branch node or root (excluded)',
+             'From this node to root (included)', 'All nodes'],
+            [0, 1, 2, 3, 4],
+            self.editRadius_defaultValue);
+          dialog.onOK = function() {
+            var radius = parseFloat(input.value);
+            if (isNaN(radius)) {
+              alert("Invalid number: '" + input.value + "'");
+              return;
+            }
+            self.editRadius_defaultValue = choice.selectedIndex;
+            self.submit(
+              django_url + project.id + '/treenode/' + treenode_id + '/radius',
+              {radius: radius,
+               option: choice.selectedIndex},
+              function(json) {
+                // Refresh 3d views if any
+                WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
+                // Reinit SVGOverlay to read in the radius of each altered treenode
+                self.updateNodes();
+              });
+          };
+          dialog.show();
         };
-        dialog.show();
+
+        // If there was a measurement tool based radius change was started
+        // before, stop this.
+        if (self.nodes[treenode_id].surroundingCircleElements) {
+          self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
+            // Convert pixel radius components to nanometers
+            rx = rx / self.stack.scale;
+            ry = ry / self.stack.scale;
+            var rxnm = self.stack.stackToProjectX(self.stack.z, ry, rx);
+            var rynm = self.stack.stackToProjectY(self.stack.z, ry, rx);
+            var r = Math.round(Math.sqrt(Math.pow(rxnm, 2) + Math.pow(rynm, 2)));
+            // Show dialog with the new radius
+            show_dialog(r);
+          });
+        } else if (no_measurement_tool) {
+          show_dialog(self.nodes[treenode_id].radius);
+        } else {
+          self.nodes[treenode_id].drawSurroundingCircle();
+        }
       });
 };
 

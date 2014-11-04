@@ -1,15 +1,13 @@
-import json
 import glob
 import os.path
 import yaml
+import urllib
 
 from django import forms
 from django.db.models import Count
 from django.conf import settings
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
-from django.http import HttpResponse, HttpResponseRedirect
-from django.template import Context, loader
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.shortcuts import render_to_response
 from django.utils.datastructures import SortedDict
@@ -17,17 +15,11 @@ from django.utils.datastructures import SortedDict
 from guardian.models import Permission, User, Group
 from guardian.shortcuts import get_perms_for_model, assign
 
-import urllib
-
 from catmaid.models import ClassInstance, Project, Stack, ProjectStack, Overlay
 from catmaid.fields import Double3D
-from catmaid.control.classificationadmin import get_tag_sets
 from catmaid.control.common import urljoin
-from catmaid.control.classification import get_classification_links_qs
-from catmaid.control.classification import link_existing_classification
-from catmaid.control.classification import ClassInstanceClassInstanceProxy
-
-from taggit.models import Tag
+from catmaid.control.classification import get_classification_links_qs, \
+        link_existing_classification, ClassInstanceClassInstanceProxy
 
 TEMPLATES = {"pathsettings": "catmaid/import/setup_path.html",
              "projectselection": "catmaid/import/setup_projects.html",

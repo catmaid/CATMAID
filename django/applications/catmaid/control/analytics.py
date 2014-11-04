@@ -1,12 +1,15 @@
-from django.db import connection
-from django.http import HttpResponse
-from catmaid.control.authentication import requires_user_role
-from catmaid.models import UserRole
+import json
+
 from collections import namedtuple, defaultdict
 from itertools import chain, islice
 from functools import partial
 from networkx import Graph, single_source_shortest_path
-import json
+
+from django.db import connection
+from django.http import HttpResponse
+
+from catmaid.control.authentication import requires_user_role
+from catmaid.models import UserRole
 
 @requires_user_role(UserRole.Browse)
 def analyze_skeletons(request, project_id=None):

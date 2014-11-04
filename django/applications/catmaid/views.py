@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.views.generic import TemplateView
-from django.conf import settings
 
 class HomepageView(TemplateView):
     """ This view returns the index page of CATMAID and passes some

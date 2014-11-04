@@ -1,15 +1,19 @@
 import json
-from string import upper
 
-from django.http import HttpResponse
+from string import upper
+from itertools import imap
+
+from django.db import connection
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-
-from itertools import imap
+from catmaid.fields import Double3D
+from catmaid.models import Project, Stack, ProjectStack, Connector, \
+        ConnectorClassInstance, Treenode, TreenodeConnector, UserRole
+from catmaid.control.authentication import requires_user_role, can_edit_or_fail
+from catmaid.control.common import cursor_fetch_dictionary, \
+        get_relation_to_id_map
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def graphedge_list(request, project_id=None):
@@ -44,10 +48,10 @@ def graphedge_list(request, project_id=None):
 
     result = []
     for k,v in edge.items():
-     if skeletonlist[0] in v['pre'] and skeletonlist[1] in v['post']:
-        connectordata[k]['pretreenode'] = v['pretreenode'][ v['pre'].index( skeletonlist[0] ) ]
-        connectordata[k]['posttreenode'] = v['posttreenode'][ v['post'].index( skeletonlist[1] ) ]
-        result.append(connectordata[k])
+        if skeletonlist[0] in v['pre'] and skeletonlist[1] in v['post']:
+            connectordata[k]['pretreenode'] = v['pretreenode'][ v['pre'].index( skeletonlist[0] ) ]
+            connectordata[k]['posttreenode'] = v['posttreenode'][ v['post'].index( skeletonlist[1] ) ]
+            result.append(connectordata[k])
 
     return HttpResponse(json.dumps( result ), content_type='text/json')
 

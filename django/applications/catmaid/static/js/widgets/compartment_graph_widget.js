@@ -340,6 +340,7 @@ GroupGraph.prototype.init = function() {
     } else if (evt.originalEvent.shiftKey && (evt.originalEvent.ctrlKey || evt.originalEvent.metaKey)) {
       // Remove node
       delete this.groups[node.id()]; // if present
+      delete this.subgraphs[node.id()]; // if present
       node.remove();
       unselect(evt); // remove should have triggered, but not always
     }

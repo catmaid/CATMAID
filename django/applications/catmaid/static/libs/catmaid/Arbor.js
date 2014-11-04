@@ -1704,3 +1704,61 @@ Arbor.prototype.simplify = function(keepers) {
   }
   return simple;
 };
+
+/** Given source nodes and target nodes, find for each source node 
+ * the nearest target node.
+ * distanceFn: a function that takes two nodes as arguments and returns a number.
+ * If targets is empty will return Number.MAX_VALUE for each source. */
+Arbor.prototype.minDistancesFromTo = function(sources, targets, distanceFn) {
+  var neighbors = this.allNeighbors(),
+      distances = {},
+      sourceIDs = Object.keys(sources);
+
+  // Breadth-first search starting from each source node
+  for (var i=0; i<sourceIDs.length; ++i) {
+    var source = sourceIDs[i];
+    // Maybe source and target coincide
+    if (targets[source]) {
+      distances[source] = 0;
+      continue;
+    }
+    // Else grow breadth-first
+    var surround = neighbors[source],
+        circle = new Array(surround.length),
+        min = Number.MAX_VALUE;
+    for (var k=0; k<circle.length; ++k) {
+      circle[k] = {child: surround[k],
+                   paren: source,
+                   dist: 0}; // cummulative distance
+    }
+    while (true) {
+      var next = []; // reset
+      // Iterate through nodes of one circle
+      for (var k=0; k<circle.length; ++k) {
+        var t = circle[k],
+            d = t.dist + distanceFn(t.child, t.paren);
+        if (d > min) continue; // terminate exploration in this direction
+        if (targets[t.child]) {
+          if (d < min) min = d;
+          // terminate exploration in this direction
+          continue;
+        }
+        // Else, grow the next circle
+        var s = neighbors[t.child];
+        for (var j=0; j<s.length; ++j) {
+          if (t.paren == s[j]) continue; // == and not === so that numbers and "numbers" can be compared properly
+          next.push({child: s[j],
+                     paren: t.child,
+                     dist: d});
+        }
+      }
+      if (!next || 0 === next.length) {
+        distances[source] = min;
+        break;
+      }
+      circle = next;
+    }
+  }
+
+  return distances;
+};

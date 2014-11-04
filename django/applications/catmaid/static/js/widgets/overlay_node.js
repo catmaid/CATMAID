@@ -779,10 +779,8 @@ SkeletonElements.prototype.ConnectorNode = function(
 SkeletonElements.prototype.ConnectorNode.prototype = new SkeletonElements.prototype.AbstractConnectorNode();
 
 /** Event handling functions for 'c'
-* Realize that:
-*    c.prev === c
-* and that, on constructing the c, we declared:
-*    c.catmaidNode = this;  // 'this' is the node
+ * Realize that on constructing the c, we declared:
+ *    c.datum() = node.id;  // 'node' is the node
  *
  * Below, the function() is but a namespace that returns a manager object
  * with functions attach and forget.

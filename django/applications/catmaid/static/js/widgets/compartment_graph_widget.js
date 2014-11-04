@@ -629,6 +629,25 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
              downstream_skids: {}})}; // map of skeleton ID vs number of presynaptic relations
         };
 
+    var graph = [];
+
+    var splitDendrite = function(axon) {
+      // Split dendrite further into backbone and terminal subarbors
+      var backbone = ap.arbor.upstreamArbor(m[2]['microtubules end'].reduce(function(o, nodeID) { o[nodeID] = true; return o; }, {}));
+      var node_dend1 = createNode(skid + '_backbone_dendrite', name + ' [backbone dendrite]'),
+          node_dend2 = createNode(skid + '_dendritic_terminals', name + ' [dendritic terminals]');
+      graph.push(node_dend1);
+      graph.push(node_dend2);
+      subnodes[node_dend1.data.id] = node_dend1;
+      subnodes[node_dend2.data.id] = node_dend2;
+      parts[node_dend1.data.id] = function(treenodeID) {
+        return backbone.contains(treenodeID) && !axon.contains(treenodeID);
+      };
+      parts[node_dend2.data.id] = function(treenodeID) {
+        return !backbone.contains(treenodeID) && !axon.contains(treenodeID);
+      }
+    }
+
     if (mode === this.SUBGRAPH_AXON_DENDRITE
       || mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
       if (ap.n_inputs > 0 && ap.n_outputs > 0) {
@@ -647,7 +666,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
 
         // Subgraph with a node for the axon
         var node_axon = createNode(skid + '_axon', name + ' [axon]');
-        var graph = [node_axon];
+        graph.push(node_axon);
         parts[node_axon.data.id] = function(treenodeID) { return axon.contains(treenodeID); };
         subnodes[node_axon.data.id] = node_axon;
 
@@ -659,41 +678,33 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
 
         if (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
           // Split dendrite further into backbone and terminal subarbors
-          var backbone = ap.arbor.upstreamArbor(m[2]['microtubules end'].reduce(function(o, nodeID) { o[nodeID] = true; return o; }, {}));
-          var node_dend1 = createNode(skid + '_backbone_dendrite', name + ' [backbone dendrite]'),
-              node_dend2 = createNode(skid + '_dendritic_terminals', name + ' [dendritic terminals]');
-          graph.push(node_dend1);
-          graph.push(node_dend2);
-          subnodes[node_dend1.data.id] = node_dend1;
-          subnodes[node_dend2.data.id] = node_dend2;
-          parts[node_dend1.data.id] = function(treenodeID) {
-            return backbone.contains(treenodeID) && !axon.contains(treenodeID);
-          };
-          parts[node_dend2.data.id] = function(treenodeID) {
-            return !backbone.contains(treenodeID) && !axon.contains(treenodeID);
-          }
+          splitDendrite(axon);
         } else if (mode === this.SUBGRAPH_AXON_DENDRITE) {
           var node_dend = createNode(skid + '_dendrite', name + ' [dendrite]');
           graph.push(node_dend);
           subnodes[node_dend.data.id] = node_dend;
           parts[node_dend.data.id] = function(treenodeID) { return !axon.contains(treenodeID); };
         }
-
-        for (var i=1; i<graph.length; ++i) {
-          // ... connected by an undirected edge, in sequence
-          elements.edges.push({data: {directed: false,
-                                      arrow: 'none',
-                                      id: graph[i-1].data.id + '_' + graph[i].data.id,
-                                      color: common.color,
-                                      source: graph[i-1].data.id,
-                                      target: graph[i].data.id,
-                                      weight: 10}});
-        }
       } else {
-        // Not computable
-        delete this.subgraphs[skid];
-        elements.nodes.push(asNode('' + skid));
-        return;
+        // Axon-dendrite not computable
+        if (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS && m[2].hasOwnProperty('microtubules end')) {
+          splitDendrite({contains: function() { return false; }});
+        } else {
+          delete this.subgraphs[skid];
+          elements.nodes.push(asNode('' + skid));
+          return;
+        }
+      }
+
+      for (var i=1; i<graph.length; ++i) {
+        // ... connected by an undirected edge, in sequence
+        elements.edges.push({data: {directed: false,
+                                    arrow: 'none',
+                                    id: graph[i-1].data.id + '_' + graph[i].data.id,
+                                    color: common.color,
+                                    source: graph[i-1].data.id,
+                                    target: graph[i].data.id,
+                                    weight: 10}});
       }
     } else if (mode > 0) {
       // Synapse clustering: mode is the bandwidth

@@ -1,3 +1,5 @@
+{% load compressed %}
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -5,10 +7,9 @@
     <title>CATMAID front-end tests (using QUnit)---to be run with manage.py testerver</title>
     <link rel="stylesheet" href="//code.jquery.com/qunit/qunit-1.14.0.css">
 
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
-    <script src="{{ STATIC_URL }}libs/catmaid/neuron_name_service.js"></script>
-    <script src="{{ STATIC_URL }}libs/catmaid/Arbor.js"></script>
-    <script src="{{ STATIC_URL }}libs/catmaid/events.js"></script>
+    {% for f in JS_FILES %}
+      {% compressed_js f %}
+    {% endfor %}
   </head>
   <body>
     <div id="qunit"></div>

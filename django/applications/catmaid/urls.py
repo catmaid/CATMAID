@@ -371,7 +371,7 @@ urlpatterns += patterns('catmaid.control.clustering',
 
 # Front-end tests
 urlpatterns += patterns('',
-    url(r'^tests$', login_required(TemplateView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),
+    url(r'^tests$', login_required(CatmaidView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),
 )
 
 # Collection of various parts of the CATMAID API. These methods are usually

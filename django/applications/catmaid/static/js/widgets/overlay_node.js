@@ -67,6 +67,13 @@ var SkeletonElements = function(paper)
   };
 
   this.scale = function(baseScale, resScale, dynamicScale) {
+    // Check for unchanged scale to prevent unnecessary SVG manipulation.
+    if (this.scales &&
+        this.scales.base === baseScale &&
+        this.scales.res === resScale &&
+        this.scales.dyn == dynamicScale) return;
+    this.scales = {base: baseScale, res: resScale, dyn: dynamicScale};
+
     concreteElements.forEach(function (klass) {
       klass.scale(baseScale, resScale, dynamicScale);
     });

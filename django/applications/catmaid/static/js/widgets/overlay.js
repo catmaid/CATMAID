@@ -1157,14 +1157,14 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
   }
 
   var screenScale = userprofile.tracing_overlay_screen_scaling;
-  if ( !doNotUpdate ) {
-    this.paper.classed('screen-scale', screenScale);
-    var dynamicScale = screenScale ? (1 / new_scale) : false;
-    this.graphics.scale(
-        userprofile.tracing_overlay_scale,
-        Math.max(stack.resolution.x, stack.resolution.y),
-        dynamicScale);
+  this.paper.classed('screen-scale', screenScale);
+  var dynamicScale = screenScale ? (1 / new_scale) : false;
+  this.graphics.scale(
+      userprofile.tracing_overlay_scale,
+      Math.max(stack.resolution.x, stack.resolution.y),
+      dynamicScale);
 
+  if ( !doNotUpdate ) {
     this.updateNodes(completionCallback);
   }
 

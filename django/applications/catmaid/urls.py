@@ -2,7 +2,7 @@ from django.conf.urls import patterns, url
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 
-from catmaid.views import HomepageView, ExportWidgetView
+from catmaid.views import CatmaidView, ExportWidgetView
 
 # A regular expression matching floating point and integer numbers
 num = r'[-+]?[0-9]*\.?[0-9]+'
@@ -14,7 +14,7 @@ wordlist= r'\w+(,\w+)*'
 
 # Add the main index.html page at the root:
 urlpatterns = patterns('',
-    (r'^$', HomepageView.as_view())
+    (r'^$', CatmaidView.as_view(template_name='catmaid/index.html'))
 )
 
 # Authentication and permissions

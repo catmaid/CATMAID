@@ -683,7 +683,7 @@ var WindowMaker = new function()
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
-    var tabs = ['Main', 'Perspective', 'Shading', 'Display'].reduce(function(o, name) {
+    var tabs = ['Main', 'Display', 'Shading'].reduce(function(o, name) {
           titles.appendChild($('<li><a href="#' + name + WA.widgetID + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
           div.setAttribute('id', name + WA.widgetID);
@@ -712,16 +712,18 @@ var WindowMaker = new function()
           ['Clear', WA.clear.bind(WA)],
           ['Refresh', WA.updateSkeletons.bind(WA)],
           ['Options', WA.configureParameters.bind(WA)],
-          ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
         ]);
 
-    appendToTab(tabs['Perspective'],
+    appendToTab(tabs['Display'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
           ['XY', WA.XYView.bind(WA)],
           ['XZ', WA.XZView.bind(WA)],
           ['ZY', WA.ZYView.bind(WA)],
           ['ZX', WA.ZXView.bind(WA)],
+          ['Restrict connectors', WA.toggleConnectors.bind(WA)],
+          ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
+          ['Refresh', WA.updateSkeletons.bind(WA)], // repeated on purpose
         ]);
     
     var shadingMenu = document.createElement('select');
@@ -773,12 +775,6 @@ var WindowMaker = new function()
           [synColors],
           ['User colormap', WA.toggle_usercolormap_dialog.bind(WA)],
         ]);
-
-    appendToTab(tabs['Display'],
-        [
-          ['Restrict connectors', WA.toggleConnectors.bind(WA)],
-        ]);
-
 
     content.appendChild( bar );
 

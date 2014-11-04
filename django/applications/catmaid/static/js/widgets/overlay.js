@@ -95,7 +95,7 @@ SkeletonAnnotations.getSVGOverlayByPaper = function(paper) {
   for (var stackID in instances) {
     if (instances.hasOwnProperty(stackID)) {
       var s = instances[stackID];
-      if (paper === s.paper) {
+      if (paper === s.paper.node()) {
         return s;
       }
     }
@@ -270,7 +270,15 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
   this.view.onmousemove = this.createViewMouseMoveFn(this.stack, this.coords);
 
-  this.paper = Raphael(this.view, Math.floor(stack.dimension.x * stack.scale), Math.floor(stack.dimension.y * stack.scale));
+  this.paper = d3.select(this.view)
+                  .append('svg')
+                  .attr({
+                      width: stack.viewWidth,
+                      height: stack.viewHeight,
+                      style: 'overflow: hidden; position: relative;'});
+// If the equal ratio between stack, SVG viewBox and overlay DIV size is not
+// maintained, this additional attribute would be necessary:
+// this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
   this.graphics = new SkeletonElements(this.paper);
 };
 
@@ -1084,7 +1092,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   // Now that all edges have been created, disable unused arrows
   this.graphics.disableRemainingArrows();
 
-  // Create raphael's circles on top of the edges
+  // Create circles on top of the edges
   // so that the events reach the circles first
   for (var i in this.nodes) {
     if (this.nodes.hasOwnProperty(i)) {
@@ -1148,14 +1156,27 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
     }
   }
 
+  var screenScale = userprofile.tracing_overlay_screen_scaling;
+  this.paper.classed('screen-scale', screenScale);
+  var dynamicScale = screenScale ? (1 / new_scale) : false;
+  this.graphics.scale(
+      userprofile.tracing_overlay_scale,
+      Math.max(stack.resolution.x, stack.resolution.y),
+      dynamicScale);
+
   if ( !doNotUpdate ) {
     this.updateNodes(completionCallback);
   }
 
-  this.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
-  this.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
+  this.paper.attr({
+      viewBox: [
+          pl - stack.translation.x,
+          pt - stack.translation.y,
+          (stack.viewWidth / stack.scale) * stack.resolution.x,
+          (stack.viewHeight / stack.scale) * stack.resolution.y].join(' '),
+      width: stack.viewWidth,     // Width and height only need to be updated on
+      height: stack.viewHeight}); // resize.
 
-  this.updatePaperDimensions(stack);
   if (doNotUpdate) {
     if (typeof completionCallback !== "undefined") {
       completionCallback();
@@ -1192,8 +1213,8 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   }
 
   // take into account current local offset coordinates and scale
-  var pos_x = m.offsetX;
-  var pos_y = m.offsetY;
+  var pos_x = this.coords.offsetXPhysical;
+  var pos_y = this.coords.offsetYPhysical;
   var pos_z = this.phys2pixZ(project.coordinates.z);
 
   // get physical coordinates for node position creation
@@ -1274,30 +1295,20 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   return true;
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.updatePaperDimensions = function () {
-  var wi = Math.floor(this.stack.dimension.x * this.stack.scale);
-  var he = Math.floor(this.stack.dimension.y * this.stack.scale);
-  // update width/height with the dimension from the database, which is in pixel unit
-  this.view.style.width = wi + "px";
-  this.view.style.height = he + "px";
-  // update the raphael canvas as well
-  this.paper.setSize(wi, he);
-};
-
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (x) {
-  return (x - this.stack.translation.x) / this.stack.resolution.x * this.stack.scale;
+  return x;
 };
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (y) {
-  return (y - this.stack.translation.y) / this.stack.resolution.y * this.stack.scale;
+  return y;
 };
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (z) {
   return (z - this.stack.translation.z) / this.stack.resolution.z;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physX = function (x) {
-  return this.stack.translation.x + ((x) / this.stack.scale) * this.stack.resolution.x;
+  return x;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physY = function (y) {
-  return this.stack.translation.y + ((y) / this.stack.scale) * this.stack.resolution.y;
+  return y;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physZ = function (z) {
   return z *this.stack.resolution.z + this.stack.translation.z;
@@ -1516,19 +1527,27 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
         // before, stop this.
         if (self.nodes[treenode_id].surroundingCircleElements) {
           self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
+            if (typeof rx === 'undefined' || typeof ry === 'undefined') {
+              show_dialog(self.nodes[treenode_id].radius);
+              return;
+            }
             // Convert pixel radius components to nanometers
-            rx = rx / self.stack.scale;
-            ry = ry / self.stack.scale;
-            var rxnm = self.stack.stackToProjectX(self.stack.z, ry, rx);
-            var rynm = self.stack.stackToProjectY(self.stack.z, ry, rx);
-            var r = Math.round(Math.sqrt(Math.pow(rxnm, 2) + Math.pow(rynm, 2)));
+            var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
             // Show dialog with the new radius
             show_dialog(r);
           });
         } else if (no_measurement_tool) {
           show_dialog(self.nodes[treenode_id].radius);
         } else {
-          self.nodes[treenode_id].drawSurroundingCircle();
+          self.nodes[treenode_id].drawSurroundingCircle(function (r) {
+            r.x /= self.stack.scale;
+            r.y /= self.stack.scale;
+            r.x += ( self.stack.x - self.stack.viewWidth / self.stack.scale / 2 );
+            r.y += ( self.stack.y - self.stack.viewHeight / self.stack.scale / 2 );
+            return {
+                x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
+                y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
+          });
         }
       });
 };

@@ -113,6 +113,8 @@ Userprofile.prototype.getOptions = function() {
     show_segmentation_tool: false,
     show_tracing_tool: false,
     show_ontology_tool: false,
+    tracing_overlay_screen_scaling: true,
+    tracing_overlay_scale: true
   };
 };
 
@@ -126,7 +128,7 @@ Userprofile.prototype.saveAll = function(success, error) {
   var option_permissions = this.getOptions();
   for (var field in option_permissions) {
     if (option_permissions[field]) {
-      options_to_save[field] = this[field] ? 1 : 0;
+      options_to_save[field] = this[field];
     }
   }
   // Make the current set persistent

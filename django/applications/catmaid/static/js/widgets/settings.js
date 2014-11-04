@@ -71,6 +71,22 @@ SettingsWidget.prototype.init = function(space)
     return createLabeledControl(name, input);
   };
 
+  /**
+   * Helper function to create a set of radio buttons.
+   */
+  var createRadioSetting = function(name, values, handler)
+  {
+    return values.reduce(function (cont, val) {
+      return cont.append(createLabeledControl(val.desc, $('<input />').attr({
+          type: 'radio',
+          name: name,
+          id: val.id,
+          value: val.id,
+          checked: val.checked
+      }).change(handler)));
+    }, $('<div />'));
+  };
+
   /*
    * Adds a grid settings to the given container.
    */
@@ -234,6 +250,47 @@ SettingsWidget.prototype.init = function(space)
     };
     // Initialize fallback ist
     updateFallbackList();
+
+
+    // Overlay settings
+    ds = addSettingsContainer(container, "Tracing Overlay");
+    // Add explanatory text
+    ds.append($('<div/>').addClass('setting').append("Choose how nodes, " +
+        "edges, connectors, and labels are scaled in the tracing overlay. " +
+        "This setting can be saved to your user profile and will persist " +
+        "across sessions. (Note: changes to text labels, edges and arrows " +
+        "will not appear correctly in the stack view until you zoom, switch " +
+        "sections or pan.)"));
+
+    ds.append(createRadioSetting('overlay-scaling', [
+        {id: 'overlay-scaling-screen', desc: 'Fixed screen size',
+            checked: userprofile.tracing_overlay_screen_scaling},
+        {id: 'overlay-scaling-stack', desc: 'Fixed stack size',
+            checked: !userprofile.tracing_overlay_screen_scaling}
+    ], function () {
+      userprofile.tracing_overlay_screen_scaling = this.value === 'overlay-scaling-screen';
+      project.getStacks().forEach(function (s) {s.redraw();});
+    }).addClass('setting'));
+
+    ds.append(createLabeledControl(
+        $('<span>Size adjustment: <span id="overlay-scale-value">' +
+            (userprofile.tracing_overlay_scale*100).toFixed() + '</span>%</span>'),
+        $('<div id="overlay-scaling-slider" />').slider({
+            min: -2,
+            max: 2,
+            step: 0.1,
+            value: Math.log(userprofile.tracing_overlay_scale)/Math.LN2,
+            change: function (event, ui) {
+              userprofile.tracing_overlay_scale = Math.pow(2, ui.value);
+              $('#overlay-scale-value').text((userprofile.tracing_overlay_scale*100).toFixed());
+              project.getStacks().forEach(function (s) {s.redraw();});
+            }})));
+
+    ds.append($('<button>Save to your profile</button>').click(function () {
+      userprofile.saveAll(function () {
+        growlAlert('Success', 'User profile updated successfully.');
+      });
+    }).addClass('setting'));
   };
 
 

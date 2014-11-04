@@ -777,6 +777,10 @@ class UserProfile(models.Model):
     show_ontology_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_ONTOLOGY_TOOL)
     color = RGBAField(default=distinct_user_color)
+    tracing_overlay_screen_scaling = models.BooleanField(
+        default=settings.PROFILE_TRACING_OVERLAY_SCREEN_SCALING)
+    tracing_overlay_scale = models.FloatField(
+        default=settings.PROFILE_TRACING_OVERLAY_SCALE)
 
     def __unicode__(self):
         return self.user.username
@@ -796,6 +800,8 @@ class UserProfile(models.Model):
         pdict['show_segmentation_tool'] = self.show_segmentation_tool
         pdict['show_tracing_tool'] = self.show_tracing_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
+        pdict['tracing_overlay_screen_scaling'] = self.tracing_overlay_screen_scaling
+        pdict['tracing_overlay_scale'] = self.tracing_overlay_scale
         return pdict
 
     # Fix a problem with duplicate keys when new users are added.

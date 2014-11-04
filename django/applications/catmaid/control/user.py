@@ -149,14 +149,14 @@ def update_user_profile(request):
         return HttpResponse(json.dumps({'success': "The user profile of the " +
                 "anonymous user won't be updated"}), content_type='text/json')
 
-    # Display stack reference lines
-    display_stack_reference_lines = request.POST.get(
-            'display_stack_reference_lines', None)
-    if display_stack_reference_lines:
-        display_stack_reference_lines = bool(int(display_stack_reference_lines))
-        # Set new user profile values
-        request.user.userprofile.display_stack_reference_lines = \
-                display_stack_reference_lines
+    for var in [{'name': 'display_stack_reference_lines', 'parse': json.loads},
+                {'name': 'tracing_overlay_screen_scaling', 'parse': json.loads},
+                {'name': 'tracing_overlay_scale', 'parse': float}]:
+        request_var = request.POST.get(var['name'], None)
+        if request_var:
+            request_var = var['parse'](request_var)
+            # Set new user profile values
+            setattr(request.user.userprofile, var['name'], request_var)
 
     # Save user profile
     request.user.userprofile.save()

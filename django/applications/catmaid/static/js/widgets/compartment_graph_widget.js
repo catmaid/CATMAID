@@ -104,7 +104,7 @@ GroupGraph.prototype.getSkeletons = function() {
 GroupGraph.prototype.getNodes = function(skeleton_id) {
   return this.cy.nodes().filter(function(i, node) {
 		return node.data("skeletons").some(function(skeleton) {
-			return skeleton_id === skeleton.id;
+			return skeleton_id == skeleton.id; // == and not === to allow number and "number"
 		});
   });
 };
@@ -798,6 +798,10 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
           presynaptic = 0 === row[6],
           ob = presynaptic ? downstream : upstream,
           map = ob[node_id];
+      if (null === node_id) {
+        console.log("Oops: could not find a partID for treenode ", treenodeID);
+        return;
+      }
       if (!map) {
         map = {};
         ob[node_id] = map;
@@ -1340,13 +1344,19 @@ GroupGraph.prototype._findSkeletonsToGrow = function() {
 
   var skids = {},
       split_partners = {},
+      splits = [],
       find = function(node, min, map_name) {
         if (0 === min) return;
         var map = node.data(map_name);
         if (map) {
+          var partners = {};
           Object.keys(map).forEach(function(skid) {
-            if (map[skid] >= min) split_partners[skid] = true;
+            if (map[skid] >= min) {
+              partners[skid] = true;
+              split_partners[skid] = true;
+            }
           });
+          splits.push([node.id(), partners, node.data('skeletons')[0].id]);
         }
       };
   this.cy.nodes((function(i, node) {
@@ -1364,6 +1374,7 @@ GroupGraph.prototype._findSkeletonsToGrow = function() {
 
   return {skids: skids,
           split_partners: split_partners,
+          splits: splits,
           n_circles: n_circles,
           min_pre: min_pre,
           min_post: min_post};
@@ -1418,43 +1429,94 @@ GroupGraph.prototype.growGraph = function() {
 
 GroupGraph.prototype.growPaths = function() {
   var s = this._findSkeletonsToGrow();
-  this._findPathsForSplits(s.split_partners, s.skids, s.min_pre, s.min_post,
-      function() {
-        var skids = Object.keys(s.skids);
-        if (skids.length < 2) return;
-        this.grow('directedpaths', skids, s.min_pre, s.min_post);
-      });
-};
 
-GroupGraph.prototype._findPathsForSplits = function(split_partners, skids, min_pre, min_post, callback) {
-  // Find paths between split nodes and other split or non-split nodes.
-  // TODO need to think about this.
-};
+  // Paths:
+  // 1. skids to skids
+  // 2. skids to split_partners with hops -1
+  // 3. split_partners to split_partners with hops -2
 
-GroupGraph.prototype.grow = function(subURL, skids, additional, min_pre, min_post, n_circles) {
-  requestQueue.register(django_url + project.id + "/graph/" + subURL,
-      "POST",
-      {skeleton_ids: skids,
-       n_circles: n_circles,
-       min_pre: min_pre,
-       min_post: min_post},
-      (function(status, text) {
-        if (200 !== status) return;
-        var json = $.parseJSON(text);
-        if (json.error) return alert(json.error);
-        if (0 === json.length) {
-          growlAlert("Information", "No further skeletons found, with parameters min_pre=" + min_pre + ", min_post=" + min_post);
-          return;
+  var new_skids = {},
+      errors = [];
+
+  var findPaths = function(skids, n_hops, process, continuation) {
+    requestQueue.register(django_url + project.id + "/graph/directedpaths", "POST",
+        {skeleton_ids: skids,
+         n_circles: n_hops,
+         min_pre: s.min_pre,
+         min_post: s.min_post},
+         function(status, text) {
+           if (200 !== status) return;
+           var json = $.parseJSON(text);
+           if (json.error) errors.push(json.error);
+           else process(json);
+           continuation();
+         });
+  };
+
+  var end = (function() {
+    var skids = Object.keys(new_skids);
+    if (0 === skids.length) return growlAlert("Information", "No paths found.");
+    skids = skids.filter(function(skid) { return !this.hasSkeleton(skid); }, this);
+    if (0 === skids.length) return growlAlert("Information", "No other paths found.");
+    this.append(skids.reduce(function(o, skid) {
+      o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setHex(0xffae56));
+      return o;
+    }, {}));
+  }).bind(this);
+
+  var step3 = function() {
+    // 3. split_partners to split_partners with hops -2
+    if (s.n_circles -2 < 1) return end();
+    var skids = Object.keys(s.split_partners);
+    if (skids.length < 2) return end();
+    findPaths(skids, s.n_circles -2,
+        function(json) {
+          var origins = s.splits.reduce(function(o, e) {
+            Object.keys(e[1]).forEach(function(skid) { o[skid] = e[0]; });
+            return o;
+          }, {});
+          for (var i=0; i<json.length; ++i) {
+            var path = json[i],
+                first = path[0],
+                last = path[path.length -1];
+            if (origins[first] == origins[last]) continue;
+            for (var j=0; j<path.length; ++j) new_skids[path[j]] = true;
+          }
+        },
+        end);
+  };
+
+  var step2 = function() {
+    // 2. skids to split partners with hops -1
+    if (s.n_circles -1 < 1) return step3();
+    var skids = Object.keys(s.skids),
+        split_skids = Object.keys(s.split_partners);
+    if (skids.length < 1 || split_skids.length < 1) return step3();
+    findPaths(skids.concat(split_skids), s.n_circles -1,
+        function(json) {
+          for (var i=0; i<json.length; ++i) {
+            var path = json[i],
+                first = path[0],
+                last = path[path.length -1];
+            if (  (s.skids[first] && s.split_partners[last])
+               || (s.skids[last] && s.split_partners[first])) {
+              for (var j=0; j<path.length; ++j) new_skids[path[j]] = true;
+            }
+          }
+        },
+        step3);
+  };
+
+  // 1. skids to skids
+  var skids = Object.keys(s.skids);
+  if (skids.length < 2) step2();
+  else findPaths(skids, s.n_circles,
+      function(json) {
+        for (var i=0; i<json.length; ++i) {
+          for (var j=0, p=json[i]; j<p.length; ++j) new_skids[p[j]] = true;
         }
-        var color = new THREE.Color().setHex(0xffae56);
-        this.append(json[0].concat(additional).reduce(function(m, skid) {
-          // Skids in additional will have an undefined name, but that's OK: names in SkeletonModel are obsolete.
-          var model = new SelectionTable.prototype.SkeletonModel(skid, json[1][skid], color);
-          model.selected = true;
-          m[skid] = model;
-          return m;
-        }, {}));
-      }).bind(this));
+      },
+      step2);
 };
 
 GroupGraph.prototype.hideSelected = function() {

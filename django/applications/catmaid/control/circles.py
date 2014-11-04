@@ -117,14 +117,12 @@ def find_directed_paths(request, project_id=None):
         all_sources = all_sources.union(next_sources)
 
     # Find all directed paths between all pairs of inputs
-    unique = set()
+    all_paths = []
     for start, end in combinations(sources, 2):
         for paths in [nx.all_simple_paths(graph, start, end, path_length + 1),
                       nx.all_simple_paths(graph, end, start, path_length + 1)]:
             for path in paths:
-                for node in path:
-                    unique.add(node)
+                all_paths.append(path)
 
-    skeleton_ids = tuple(unique - sources)
-    return HttpResponse(json.dumps([skeleton_ids, _neuronnames(skeleton_ids, project_id)]))
+    return HttpResponse(json.dumps(all_paths))
 

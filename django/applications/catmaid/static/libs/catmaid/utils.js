@@ -831,20 +831,26 @@ SVGUtil.insertMultipleBarChart = function(
 			.style("fill", function(d, i) { return colors[i]; /*color(d.series);*/ });
 
 	// Insert the graphics for the axes (after the data, so that they draw on top)
-	svg.append("g")
+	var callx = svg.append("g")
 			.attr("class", "x axis")
 			.attr("transform", "translate(0," + height + ")")
-			.call(xAxis)
-		.append("text")
+			.call(xAxis);
+
+  SVGUtil.setAxisProperties(callx);
+	
+  callx.append("text")
 			.attr("x", width)
 			.attr("y", -6)
 			.style("text-anchor", "end")
 			.text(x_label);
 
-	svg.append("g")
+	var cally = svg.append("g")
 			.attr("class", "y axis")
-			.call(yAxis)
-		.append("text")
+			.call(yAxis);
+
+  SVGUtil.setAxisProperties(cally);
+
+  cally.append("text")
 			.attr("transform", "rotate(-90)")
 			.attr("y", 6)
 			.attr("dy", ".71em")

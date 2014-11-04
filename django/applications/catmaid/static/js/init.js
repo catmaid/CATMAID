@@ -1050,7 +1050,12 @@ var realInit = function()
 			
 			for ( var i = 0; values[ "sid" + i ]; ++i )
 			{
-				sids.push( parseInt( values[ "sid" + i ] ) );
+				var sid = parseInt( values[ "sid" + i ] );
+				// Make sure a stack isn't opened multiple times
+				if ( -1 !== sids.indexOf( sid ) ) {
+					continue;
+				}
+				sids.push( sid );
 				if ( values[ "s" + i ] )
 					ss.push( parseInt( values[ "s" + i ] ) );
 				else

@@ -43,23 +43,3 @@ svg .overlay-node:hover {
 svg.screen-scale line, svg.screen-scale marker, svg.screen-scale circle {
   vector-effect: non-scaling-stroke;
 }
-
-/*
-div.sliceView div.sliceSVGOverlay p
-{
-  border:none;
-  margin:0px;
-  margin-top:-12px;
-  padding:3px 6px 3px 14px;
-  color:#FFFFFF;
-
-  background:url(../images/blue20.png);
-  overflow:hidden;
-}
-
-div.sliceView div.sliceSVGOverlay p span
-{
-  padding:3px 6px 3px 6px;
-  background:#0000FF;
-}
-*/

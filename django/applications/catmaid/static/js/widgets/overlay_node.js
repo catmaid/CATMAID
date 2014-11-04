@@ -792,8 +792,8 @@ SkeletonElements.prototype.mouseEventManager = new (function()
    * These are set at mc_start, then used at mc_move, and set to null at mc_up. */
   var o = null;
 
-  var is_middle_click = function() {
-    return 2 === d3.event.button;
+  var is_middle_click = function(e) {
+    return 1 === e.button;
   };
 
   /** Here 'this' is c's SVG node. */
@@ -866,32 +866,27 @@ SkeletonElements.prototype.mouseEventManager = new (function()
 
   /** Here 'this' is c's SVG node, and node is the Node instance. */
   var mc_move = function(d) {
-    var e = d3.event;
+    var e = d3.event.sourceEvent;
     var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
     var node = catmaidSVGOverlay.nodes[d];
-    if (is_middle_click()) {
-      // Allow middle-click panning
-      return;
-    }
-    if (!o) {
-      // Not properly initialized with mc_start
-      e.sourceEvent.stopPropagation();
-      return;
-    }
-    e.sourceEvent.stopPropagation();
-    if (e.shiftKey) {
-      return;
-    }
+
+    if (is_middle_click(e)) return; // Allow middle-click panning
+
+    e.stopPropagation();
+
+    if (!o) return; // Not properly initialized with mc_start
+    if (e.shiftKey) return;
+
     if (!mayEdit() || !node.can_edit) {
-      statusBar.replaceLast("You don't have permission to move node #" + this.catmaidNode.id);
+      statusBar.replaceLast("You don't have permission to move node #" + d);
       return;
     }
 
     if (o.id !== SkeletonAnnotations.getActiveNodeId()) return;
     if (!checkNodeID(this)) return;
 
-    node.x += e.dx;
-    node.y += e.dy;
+    node.x += d3.event.dx;
+    node.y += d3.event.dy;
     node.c.attr({
       x: node.x,
       y: node.y
@@ -904,8 +899,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
 
   /** Here 'this' is c's SVG node. */
   var mc_up = function(d) {
-    var e = d3.event;
-    e.sourceEvent.stopPropagation();
+    d3.event.sourceEvent.stopPropagation();
     if (!checkNodeID(this)) return;
     o = null;
     d3.select(this).attr({
@@ -924,17 +918,17 @@ SkeletonElements.prototype.mouseEventManager = new (function()
 
   /** Here 'this' is c's SVG node. */
   var mc_start = function(d) {
-    var e = d3.event;
+    var e = d3.event.sourceEvent;
     var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
     var node = catmaidSVGOverlay.nodes[d];
-    if (is_middle_click()) {
+    if (is_middle_click(e)) {
       // Allow middle-click panning
       return;
     }
-    e.sourceEvent.stopPropagation();
+    e.stopPropagation();
 
     // If not trying to join or remove a node, but merely click on it to drag it or select it:
-    if (!e.sourceEvent.shiftKey && !e.sourceEvent.ctrlKey && !e.sourceEvent.metaKey) {
+    if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
       catmaidSVGOverlay.activateNode(node);
     }
 
@@ -948,11 +942,9 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   };
 
   var mc_mousedown = function(d) {
-    if (is_middle_click()) {
-      // Allow middle-click panning
-      return;
-    }
-    d3.event.stopPropagation();
+    var e = d3.event;
+    if (is_middle_click(e)) return; // Allow middle-click panning
+    e.stopPropagation();
   };
 
   var connector_mc_click = function(d) {

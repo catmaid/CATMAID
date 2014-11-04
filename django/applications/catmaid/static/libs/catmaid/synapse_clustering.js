@@ -424,7 +424,7 @@ SynapseClustering.prototype.findAxonCut = function(arbor, outputs, above) {
   }
 
   // Else, find highest-order end node
-  var subs = arbor.subArbors(above),
+  var subs = arbor.connectedFractions(above),
       orders = (1 === subs.length) ?
     subs[0].nodesOrderFrom(subs[0].root)
     : arbor.nodesOrderFrom(arbor.root);

@@ -1588,7 +1588,7 @@ Arbor.prototype.nearestCommonAncestor = function(nodes) {
 /** Returns an array of Arbor instances.
  * Each Arbor contains a subset of the given array of nodes.
  * If all given nodes are connected will return a single Arbor. */
-Arbor.prototype.subArbors = function(nodes) {
+Arbor.prototype.connectedFractions = function(nodes) {
   var members = {},
       arbors = {},
       seen = {};

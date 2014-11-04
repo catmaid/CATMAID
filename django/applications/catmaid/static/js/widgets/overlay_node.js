@@ -926,6 +926,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
       return;
     }
     e.stopPropagation();
+    e.preventDefault();
 
     // If not trying to join or remove a node, but merely click on it to drag it or select it:
     if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {

@@ -1540,7 +1540,6 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
           show_dialog(self.nodes[treenode_id].radius);
         } else {
           self.nodes[treenode_id].drawSurroundingCircle(function (r) {
-            console.log(self.stack.scale);
             r.x /= self.stack.scale;
             r.y /= self.stack.scale;
             r.x += ( self.stack.x - self.stack.viewWidth / self.stack.scale / 2 );

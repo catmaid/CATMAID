@@ -46,8 +46,6 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
   if (node) {
     // Find out if there was a change
     var stack = project.getStack(stack_id);
-    var new_x = node.x;
-    var new_y = node.y;
     changed = (this.id !== node.id) ||
               (this.skeleton_id !== node.skeleton_id) ||
               (this.type !== node.type) ||

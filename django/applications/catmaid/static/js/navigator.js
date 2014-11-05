@@ -443,6 +443,43 @@ function Navigator()
 				self.input_y.onchange(e);
 				return true;
 			}
+		}),
+
+		new Action({
+			helpText: "Hide all layers except image tile layer (while held)",
+			keyShortcuts: {
+				"SPACE": [ 32 ]
+			},
+			run: function (e) {
+				// Avoid repeated onkeydown events in some browsers.
+				if (self.hideLayersHeld) return;
+				self.hideLayersHeld = true;
+
+				// Hide any visible layers (besides the tile layer).
+				var layers = self.stack.getLayers();
+				var layerOpacities = Object.keys(layers).reduce(function (opacities, k) {
+					if (k !== 'TileLayer') {
+						opacities[k] = layers[k].getOpacity();
+						layers[k].setOpacity(0);
+					}
+					return opacities;
+				}, {});
+
+				// Set a key up a listener to make these layers visible again
+				// when the key is released.
+				var target = e.target;
+				var oldListener = target.onkeyup;
+				target.onkeyup = function (e) {
+					if (e.keyCode == 32) {
+						Object.keys(layerOpacities).forEach(function (k) {
+							layers[k].setOpacity(layerOpacities[k]);
+						});
+						target.onkeyup = oldListener;
+						self.hideLayersHeld = false;
+					} else if (oldListener) oldListener(e);
+				};
+				return true;
+			}
 		})];
 
 	var keyCodeToAction = getKeyCodeToActionMap(actions);

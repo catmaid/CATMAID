@@ -117,10 +117,10 @@ var SkeletonElements = function(paper)
     parent,     // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
     parent_id,  // the id of the parent node, or null if it is root
     radius,
-    x,          // the x coordinate in pixel coordinates
-    y,          // y coordinates
-    z,          // z coordinates
-    zdiff,      // the difference in Z from the current slice
+    x,          // the x coordinate in oriented project coordinates
+    y,          // the y coordinate in oriented project coordinates
+    z,          // the z coordinate in oriented project coordinates
+    zdiff,      // the difference in Z from the current slice in stack space
     confidence,
     skeleton_id,// the id of the skeleton this node is an element of
     can_edit)   // a boolean combining (is_superuser or user owns the node)
@@ -139,10 +139,10 @@ var SkeletonElements = function(paper)
    * See "newNode" for explanations. */
   this.newConnectorNode = function(
     id,         // unique id for the node from the database
-    x,          // the x coordinate in pixel coordinates
-    y,          // y coordinates
-    z,          // z coordinates
-    zdiff,      // the different from the current slices
+    x,          // the x coordinate in oriented project coordinates
+    y,          // the y coordinate in oriented project coordinates
+    z,          // the z coordinate in oriented project coordinates
+    zdiff,      // the difference in Z from the current slice in stack space
     confidence,
     can_edit)   // a boolean combining (is_superuser or user owns the node)
   {
@@ -759,10 +759,10 @@ SkeletonElements.prototype.AbstractConnectorNode.prototype = SkeletonElements.pr
 SkeletonElements.prototype.ConnectorNode = function(
   paper,
   id,         // unique id for the node from the database
-  x,          // the x coordinate in pixel coordinates
-  y,          // y coordinates
-  z,          // z coordinates
-  zdiff,      // the difference from the current slice
+  x,          // the x coordinate in oriented project coordinates
+  y,          // the y coordinate in oriented project coordinates
+  z,          // the z coordinate in oriented project coordinates
+  zdiff,      // the difference in Z from the current slice in stack space
   confidence, // (TODO: UNUSED)
   can_edit) // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
 {
@@ -770,7 +770,7 @@ SkeletonElements.prototype.ConnectorNode = function(
   this.id = id;
   this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
   this.needsync = false; // state variable; whether this node is already synchronized with the database
-  this.x = x; // local screen coordinates relative to the div, in pixel coordinates
+  this.x = x;
   this.y = y;
   this.z = z;
   this.zdiff = zdiff;

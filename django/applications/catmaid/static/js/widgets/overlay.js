@@ -163,8 +163,8 @@ SkeletonAnnotations.getActiveNodePosition = function() {
 SkeletonAnnotations.getActiveNodeVector3 = function() {
   var stack = project.getStack(this.atn.stack_id);
   return new THREE.Vector3(
-      stack.stackToProjectX(this.atn.z, this.atn.y, this.atn.x),
-      stack.stackToProjectY(this.atn.z, this.atn.y, this.atn.x),
+      this.atn.x,
+      this.atn.y,
       stack.stackToProjectZ(this.atn.z, this.atn.y, this.atn.x));
 };
 

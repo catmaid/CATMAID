@@ -1564,8 +1564,8 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototype.updatePosition = function(space, options) {
-	var pos = SkeletonAnnotations.getActiveNodePosition();
-	if (!pos) {
+  var pos = SkeletonAnnotations.getActiveNodePosition();
+  if (!pos) {
     space.updateSplitShading(this.skeleton_id, null, options);
     this.skeleton_id = null;
     return;
@@ -1575,17 +1575,14 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
   space.updateSplitShading(this.skeleton_id, skeleton_id, options);
   this.skeleton_id = skeleton_id;
 
-	var stack = space.stack,
-      t = stack.translation,
-			r = stack.resolution,
-			// Get world coordinates of active node (which is already unscaled)
-			c = new THREE.Vector3(t.x + pos.x * r.x,
-														t.y + pos.y * r.y,
-														t.z + pos.z * r.z);
+  // Get world coordinates of active node (which is already unscaled)
+  var c = new THREE.Vector3(pos.x,
+                            pos.y,
+                            pos.z * space.stack.resolution.z);
 
-	space.toSpace(c);
-
-	this.mesh.position.set(c.x, c.y, c.z);
+  space.toSpace(c);
+  
+  this.mesh.position.set(c.x, c.y, c.z);
 };
 
 WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json, options) {

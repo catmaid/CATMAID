@@ -46,14 +46,12 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
   if (node) {
     // Find out if there was a change
     var stack = project.getStack(stack_id);
-    var new_x = node.x / stack.scale;
-    var new_y = node.y / stack.scale;
     changed = (this.id !== node.id) ||
               (this.skeleton_id !== node.skeleton_id) ||
               (this.type !== node.type) ||
               (this.z !== node.z) ||
-              (this.y !== new_y)  ||
-              (this.x !== new_x) ||
+              (this.y !== node.y)  ||
+              (this.x !== node.x) ||
               (this.parent_id !== node.parent_id) ||
               (this.stack_id !== stack_id);
 
@@ -61,8 +59,8 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
     this.id = node.id;
     this.skeleton_id = node.skeleton_id;
     this.type = node.type;
-    this.x = new_x;
-    this.y = new_y;
+    this.x = node.x;
+    this.y = node.y;
     this.z = node.z;
     this.parent_id = node.parent ? node.parent.id : null;
     this.stack_id = stack_id;
@@ -1997,7 +1995,11 @@ SkeletonAnnotations.Tag = new (function() {
   this.handle_tagbox = function(atn, svgOverlay) {
     var atnID = SkeletonAnnotations.getActiveNodeId();
     var stack = project.getStack(atn.stack_id);
-    var screenPos = [atn.x * stack.scale, atn.y * stack.scale];
+    var screenOrigin = stack.screenPosition();
+    var screenPos = [
+      stack.scale * (stack.projectToStackX(atn.z * stack.resolution.z, atn.y, atn.x) - screenOrigin.left),
+      stack.scale * (stack.projectToStackY(atn.z * stack.resolution.z, atn.y, atn.x) - screenOrigin.top),
+    ];
     this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID +
         "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " +
         screenPos[0] + "px; top: " + screenPos[1] + "px;' />");

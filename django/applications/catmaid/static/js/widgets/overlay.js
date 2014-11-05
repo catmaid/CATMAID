@@ -46,14 +46,14 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
   if (node) {
     // Find out if there was a change
     var stack = project.getStack(stack_id);
-    var new_x = node.x / stack.scale;
-    var new_y = node.y / stack.scale;
+    var new_x = node.x;
+    var new_y = node.y;
     changed = (this.id !== node.id) ||
               (this.skeleton_id !== node.skeleton_id) ||
               (this.type !== node.type) ||
               (this.z !== node.z) ||
-              (this.y !== new_y)  ||
-              (this.x !== new_x) ||
+              (this.y !== node.y)  ||
+              (this.x !== node.x) ||
               (this.parent_id !== node.parent_id) ||
               (this.stack_id !== stack_id);
 
@@ -61,8 +61,8 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
     this.id = node.id;
     this.skeleton_id = node.skeleton_id;
     this.type = node.type;
-    this.x = new_x;
-    this.y = new_y;
+    this.x = node.x;
+    this.y = node.y;
     this.z = node.z;
     this.parent_id = node.parent ? node.parent.id : null;
     this.stack_id = stack_id;

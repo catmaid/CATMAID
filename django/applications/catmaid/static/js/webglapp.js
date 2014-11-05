@@ -1576,9 +1576,11 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
   this.skeleton_id = skeleton_id;
 
   // Get world coordinates of active node (which is already unscaled)
+  // x,y are in stack space, and z is the slice index
+  var s = space.stack;
   var c = new THREE.Vector3(pos.x,
                             pos.y,
-                            pos.z * space.stack.resolution.z);
+                            pos.z * s.resolution.z + s.translation.z);
 
   space.toSpace(c);
   

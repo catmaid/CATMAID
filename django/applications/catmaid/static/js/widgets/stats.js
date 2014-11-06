@@ -17,21 +17,28 @@ var ProjectStatistics = new function()
   };
 
   var get_formated_entry = function(data) {
+    function wrapWithLink(num, type) {
+      // Create a new link that retrieves the required information.
+      var link = '<a href="#" data-from="' + data.from + '" data-to="' +
+          data.to + '" data-type="' + type +'" data-user="' + data.user + '">' + num + '</a>';
+      return link;
+    };
+
     var entry = '', points = 0;
-    if( data.hasOwnProperty('new_treenodes') ) {
-      entry += data['new_treenodes'] + ' /';
+    if( data.hasOwnProperty('new_treenodes') && data['new_treenodes'] > 0 ) {
+      entry += wrapWithLink(data['new_treenodes'], 'created') + ' /';
       points += data['new_treenodes'];
     } else {
       entry += '0 /';
     }
-    if( data.hasOwnProperty('new_connectors') ) {
+    if( data.hasOwnProperty('new_connectors') && data['new_connectors'] > 0 ) {
       entry += ' ' + data['new_connectors'] + ' /';
       points += data['new_connectors'];
     } else {
       entry += ' 0 /';
     }
-    if( data.hasOwnProperty('new_reviewed_nodes') ) {
-      entry += ' ' + data['new_reviewed_nodes'];
+    if( data.hasOwnProperty('new_reviewed_nodes') && data['new_reviewed_nodes'] > 0 ) {
+      entry += ' ' + wrapWithLink(data['new_reviewed_nodes'], 'reviewed');
       points += data['new_reviewed_nodes'];
     } else {
       entry += ' 0';
@@ -134,6 +141,55 @@ var ProjectStatistics = new function()
         odd_row = !odd_row;
         // Add row
         $('#project_stats_history_table').append( row );
+      }
+    });
+
+    // Add handler for embedded links
+    $('#project_stats_history_table').find('a').click(function(e) {
+      var type = this.getAttribute('data-type');
+      var user_id = this.getAttribute('data-user');
+      var from = this.getAttribute('data-from');
+      var to = this.getAttribute('data-to');
+
+      switch (type)
+      {
+
+        case 'created':
+        case 'reviewed':
+          var params = {
+            'from': from,
+            'to': to,
+          };
+          if (type === 'created') {
+            params['created_by'] = user_id;
+          } else {
+            params['reviewed_by'] = user_id;
+          }
+
+          // Query all neurons reviewed by the given user in the given timeframe
+          requestQueue.register(django_url + project.id + '/skeleton/list',
+              'GET', params, jsonResponseHandler(function(skeleton_ids) {
+                // Open a new selection table with the returned set of
+                // skeleton IDs, if any.
+                if (0 === skeleton_ids.length) {
+                  growlAlert('Information', 'No skeletons found for your selection');
+                  return;
+                }
+                var ST = new SelectionTable();
+                var models = skeleton_ids.reduce(function(o, skid) {
+                  o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "",
+                      new THREE.Color().setRGB(1, 1, 0));
+                  return o;
+                }, {});
+                WindowMaker.create('neuron-staging-area', ST);
+                ST.append(models);
+              }));
+          break;
+        case 'connectors':
+          // Query all connectors created by the given user in the given timeframe
+          break;
+        default:
+          return;
       }
     });
   };

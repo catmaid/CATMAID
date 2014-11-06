@@ -137,7 +137,9 @@ var NeuronNameService = (function()
        */
       register: function(client, model, callback)
       {
-        this.registerAll(client, [model], callback);
+        var models = {};
+        models[model.id] = model;
+        this.registerAll(client, models, callback);
       },
 
       /**

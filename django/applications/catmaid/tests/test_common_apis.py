@@ -2401,8 +2401,10 @@ class ViewPageTests(TestCase):
         url = '/%d/skeleton/list' % self.test_project_id
         response = self.client.get(url)
         parsed_response = json.loads(response.content)
-        expected_result = [2388, 235, 373, 2411, 1, 361, 2364, 2451, 2440, 2433]
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = frozenset([2388, 235, 373, 2411, 1, 361, 2364, 2451, 2440, 2433])
+        self.assertEqual(expected_result, frozenset(parsed_response))
+        # Also check response length to be sure there were no duplicates.
+        self.assertEqual(len(expected_result), len(parsed_response))
 
         # Query skeletons of user 2
         response = self.client.get(url, {'created_by': 2})
@@ -2419,8 +2421,10 @@ class ViewPageTests(TestCase):
         # Query skeletons of user 3 on a date where neurons where created
         response = self.client.get(url, {'created_by': 3, 'from': '20111209', 'to': '20111210'})
         parsed_response = json.loads(response.content)
-        expected_result = [2411, 2388]
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = frozenset([2411, 2388])
+        self.assertEqual(expected_result, frozenset(parsed_response))
+        # Also check response length to be sure there were no duplicates.
+        self.assertEqual(len(expected_result), len(parsed_response))
 
 
 class TreenodeTests(TestCase):

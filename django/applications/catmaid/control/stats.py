@@ -203,11 +203,20 @@ def stats_user_history(request, project_id=None):
             dict(project_id=project_id, start_date=start_date, end_date=end_date))
     treenode_stats = cursor.fetchall()
 
+    # Retrieve a list of how many completed connector relations a user has
+    # created in a given time frame. A completed connector relation is either
+    # one were a user created both the presynaptic and the postsynaptic side
+    # (one of them in the given time frame) or if a user completes an existing
+    # 'half connection'. To avoid duplicates, only links are counted, where the
+    # second node is younger than the first one
     cursor.execute('''
         SELECT t1.user_id, (date_trunc('day', t1.creation_time)) AS date, count(*)
         FROM treenode_connector t1
+        JOIN treenode_connector t2 ON t1.connector_id = t2.connector_id
         WHERE t1.project_id=%s
         AND t1.creation_time BETWEEN %s AND %s
+        AND t1.relation_id <> t2.relation_id
+        AND t1.creation_time > t2.creation_time
         GROUP BY t1.user_id, date
     ''', (project_id, start_date, end_date))
     connector_stats = cursor.fetchall()

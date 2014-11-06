@@ -203,14 +203,14 @@ def stats_user_history(request, project_id=None):
             dict(project_id=project_id, start_date=start_date, end_date=end_date))
     treenode_stats = cursor.fetchall()
 
-    connector_stats = Connector.objects \
-        .filter(
-            project=project_id,
-            creation_time__range=(start_date, end_date)) \
-        .extra(select={'date': "date_trunc('day', creation_time)"}) \
-        .order_by('user', 'date') \
-        .values_list('user', 'date') \
-        .annotate(count=Count('id'))
+    cursor.execute('''
+        SELECT t1.user_id, (date_trunc('day', t1.creation_time)) AS date, count(*)
+        FROM treenode_connector t1
+        WHERE t1.project_id=%s
+        AND t1.creation_time BETWEEN %s AND %s
+        GROUP BY t1.user_id, date
+    ''', (project_id, start_date, end_date))
+    connector_stats = cursor.fetchall()
 
     tree_reviewed_nodes = Review.objects \
         .filter(

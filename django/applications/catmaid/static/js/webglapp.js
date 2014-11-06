@@ -1575,12 +1575,8 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
   space.updateSplitShading(this.skeleton_id, skeleton_id, options);
   this.skeleton_id = skeleton_id;
 
-  // Get world coordinates of active node (which is already unscaled)
-  // x,y are in stack space, and z is the slice index
-  var s = space.stack;
-  var c = new THREE.Vector3(pos.x,
-                            pos.y,
-                            pos.z * s.resolution.z + s.translation.z);
+  // Get world coordinates of active node
+  var c = new THREE.Vector3(pos.x, pos.y, pos.z);
 
   space.toSpace(c);
   

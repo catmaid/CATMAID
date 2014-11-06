@@ -2394,6 +2394,34 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)
 
+    def test_skeleton_list(self):
+        self.fake_authentication()
+
+        # Query all skeletons
+        url = '/%d/skeleton/list' % self.test_project_id
+        response = self.client.get(url)
+        parsed_response = json.loads(response.content)
+        expected_result = [2388, 235, 373, 2411, 1, 361, 2364, 2451, 2440, 2433]
+        self.assertEqual(expected_result, parsed_response)
+
+        # Query skeletons of user 2
+        response = self.client.get(url, {'created_by': 2})
+        parsed_response = json.loads(response.content)
+        expected_result = [2364]
+        self.assertEqual(expected_result, parsed_response)
+
+        # Query skeletons of user 2 on a date where no neuron was created
+        response = self.client.get(url, {'created_by': 2, 'to': '19990505'})
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(expected_result, parsed_response)
+
+        # Query skeletons of user 3 on a date where neurons where created
+        response = self.client.get(url, {'created_by': 3, 'from': '20111209', 'to': '20111210'})
+        parsed_response = json.loads(response.content)
+        expected_result = [2411, 2388]
+        self.assertEqual(expected_result, parsed_response)
+
 
 class TreenodeTests(TestCase):
     fixtures = ['catmaid_testdata']

@@ -17,21 +17,28 @@ var ProjectStatistics = new function()
   };
 
   var get_formated_entry = function(data) {
+    function wrapWithLink(num, type) {
+      // Create a new link that retrieves the required information.
+      var link = '<a href="#" data-from="' + data.from + '" data-to="' +
+          data.to + '" data-type="' + type +'" data-user="' + data.user + '">' + num + '</a>';
+      return link;
+    };
+
     var entry = '', points = 0;
-    if( data.hasOwnProperty('new_treenodes') ) {
-      entry += data['new_treenodes'] + ' /';
+    if( data.hasOwnProperty('new_treenodes') && data['new_treenodes'] > 0 ) {
+      entry += wrapWithLink(data['new_treenodes'], 'created') + ' /';
       points += data['new_treenodes'];
     } else {
       entry += '0 /';
     }
-    if( data.hasOwnProperty('new_connectors') ) {
+    if( data.hasOwnProperty('new_connectors') && data['new_connectors'] > 0 ) {
       entry += ' ' + data['new_connectors'] + ' /';
       points += data['new_connectors'];
     } else {
       entry += ' 0 /';
     }
-    if( data.hasOwnProperty('new_reviewed_nodes') ) {
-      entry += ' ' + data['new_reviewed_nodes'];
+    if( data.hasOwnProperty('new_reviewed_nodes') && data['new_reviewed_nodes'] > 0 ) {
+      entry += ' ' + wrapWithLink(data['new_reviewed_nodes'], 'reviewed');
       points += data['new_reviewed_nodes'];
     } else {
       entry += ' 0';
@@ -83,12 +90,19 @@ var ProjectStatistics = new function()
     header += '</tr>';
     $('#project_stats_history_table').append( header );
 
-    // Draw table body, add up numbers for each interval
+    // Sort by username
     var odd_row = true;
-    for(var username in data['stats_table']) {
+    var usernamesToIds = Object.keys(data['stats_table']).reduce(function(o, id) {
+      var u = User.all()[id];
+      o[u ? u.login : id] = id;
+      return o;
+    }, {});
+    // Draw table body, add up numbers for each interval
+    Object.keys(usernamesToIds).sort().forEach(function(username) {
+      var uid = usernamesToIds[username];
       var row = '', weekpointcount = 0;
       row += '<tr class="' + (odd_row ? "odd" : "") + '">';
-      if( data['stats_table'].hasOwnProperty( username ) ) {
+      if( data['stats_table'].hasOwnProperty( uid ) ) {
         row += '<td>' + username + '</td>';
         // Print statistics cells, wrt. time interval
         for (var i = 0; i < data['days'].length; i=i+timeinterval) {
@@ -96,6 +110,9 @@ var ProjectStatistics = new function()
             new_treenodes: 0,
             new_connectors: 0,
             new_reviewed_nodes: 0,
+            user: uid,
+            from: data['days'][i],
+            to: data['days'][i+timeinterval] || data['days'][data['days'].length],
           };
           // Aggregate statistics for current time interval
           for (var j = 0; j< timeinterval; ++j) {
@@ -105,7 +122,7 @@ var ProjectStatistics = new function()
               }
               // Add current day's data
               var datekey = data['days'][i + j];
-              var stats = data['stats_table'][username][datekey];
+              var stats = data['stats_table'][uid][datekey];
               intervalData.new_treenodes += stats.new_treenodes || 0;
               intervalData.new_connectors += stats.new_connectors || 0;
               intervalData.new_reviewed_nodes += stats.new_reviewed_nodes || 0;
@@ -118,14 +135,63 @@ var ProjectStatistics = new function()
       }
       row += '</tr>';
       if( weekpointcount === 0 ) {
-        continue;
+        return;
       } else {
         // Flip odd row marker
         odd_row = !odd_row;
         // Add row
         $('#project_stats_history_table').append( row );
       }
-    }
+    });
+
+    // Add handler for embedded links
+    $('#project_stats_history_table').find('a').click(function(e) {
+      var type = this.getAttribute('data-type');
+      var user_id = this.getAttribute('data-user');
+      var from = this.getAttribute('data-from');
+      var to = this.getAttribute('data-to');
+
+      switch (type)
+      {
+
+        case 'created':
+        case 'reviewed':
+          var params = {
+            'from': from,
+            'to': to,
+          };
+          if (type === 'created') {
+            params['created_by'] = user_id;
+          } else {
+            params['reviewed_by'] = user_id;
+          }
+
+          // Query all neurons reviewed by the given user in the given timeframe
+          requestQueue.register(django_url + project.id + '/skeleton/list',
+              'GET', params, jsonResponseHandler(function(skeleton_ids) {
+                // Open a new selection table with the returned set of
+                // skeleton IDs, if any.
+                if (0 === skeleton_ids.length) {
+                  growlAlert('Information', 'No skeletons found for your selection');
+                  return;
+                }
+                var ST = new SelectionTable();
+                var models = skeleton_ids.reduce(function(o, skid) {
+                  o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "",
+                      new THREE.Color().setRGB(1, 1, 0));
+                  return o;
+                }, {});
+                WindowMaker.create('neuron-staging-area', ST);
+                ST.append(models);
+              }));
+          break;
+        case 'connectors':
+          // Query all connectors created by the given user in the given timeframe
+          break;
+        default:
+          return;
+      }
+    });
   };
 
   var update_piechart = function(data, chart_name) {

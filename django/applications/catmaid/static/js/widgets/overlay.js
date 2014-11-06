@@ -161,11 +161,7 @@ SkeletonAnnotations.getActiveNodePosition = function() {
 };
 
 SkeletonAnnotations.getActiveNodeVector3 = function() {
-  var stack = project.getStack(this.atn.stack_id);
-  return new THREE.Vector3(
-      this.atn.x,
-      this.atn.y,
-      stack.stackToProjectZ(this.atn.z, this.atn.y, this.atn.x));
+  return new THREE.Vector3(this.atn.x, this.atn.y, this.atn.z);
 };
 
 SkeletonAnnotations.getActiveStackId = function() {
@@ -957,7 +953,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
 
         // Check whether the Z coordinate of the new node is beyond one section away
         // from the Z coordinate of the parent node (which is the active by definition)
-        if (active_node_z !== null && Math.abs(active_node_z - nn.z) > 1) {
+        if (active_node_z !== null && Math.abs(active_node_z - nn.z) > self.stack.resolution.z) {
           growlAlert('BEWARE', 'Node added beyond one section from its parent node!');
         }
       });
@@ -1300,7 +1296,7 @@ SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (y) {
   return y;
 };
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (z) {
-  return (z - this.stack.translation.z) / this.stack.resolution.z;
+  return z;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physX = function (x) {
   return x;
@@ -1309,7 +1305,7 @@ SkeletonAnnotations.SVGOverlay.prototype.pix2physY = function (y) {
   return y;
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physZ = function (z) {
-  return z *this.stack.resolution.z + this.stack.translation.z;
+  return z;
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.show = function () {

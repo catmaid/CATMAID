@@ -449,9 +449,9 @@ var WindowMaker = new function()
   };
 
 
-  var createStagingListWindow = function( webglwin, webglwin_name ) {
+  var createStagingListWindow = function( instance, webglwin, webglwin_name ) {
 
-    var ST = new SelectionTable();
+    var ST = instance ? instance : new SelectionTable();
 
     var win = new CMWWindow(ST.getName());
     var content = win.getFrame();
@@ -799,7 +799,7 @@ var WindowMaker = new function()
     addLogic(win);
     WA.init( 800, 600, canvas.getAttribute("id") );
     // Create a Selection Table, preset as the sync target
-    createStagingListWindow( win, WA.getName() );
+    createStagingListWindow( null, win, WA.getName() );
 
     win.addListener(
       function(callingWindow, signal) {

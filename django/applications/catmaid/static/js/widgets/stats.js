@@ -96,6 +96,9 @@ var ProjectStatistics = new function()
             new_treenodes: 0,
             new_connectors: 0,
             new_reviewed_nodes: 0,
+            user: username,
+            from: data['days'][i],
+            to: data['days'][i+timeinterval] || data['days'][data['days'].length],
           };
           // Aggregate statistics for current time interval
           for (var j = 0; j< timeinterval; ++j) {

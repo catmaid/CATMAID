@@ -166,10 +166,7 @@ def stats_user_history(request, project_id=None):
     # Calculate number of days between (including) start and end
     daydelta = (end_date + timedelta(days=1) - start_date).days
 
-    all_users = User.objects.filter().values('username', 'id')
-    map_userid_to_name = {}
-    for user in all_users:
-        map_userid_to_name[user['id']] = user['username']
+    all_users = User.objects.filter().values_list('id', flat=True)
     days = []
     daysformatted = []
     for i in range(daydelta):
@@ -177,14 +174,14 @@ def stats_user_history(request, project_id=None):
         days.append(tmp_date.strftime("%Y%m%d"))
         daysformatted.append(tmp_date.strftime("%a %d, %h %Y"))
     stats_table = {}
-    for userid in map_userid_to_name.keys():
+    for userid in all_users:
         if userid == -1:
             continue
-        stats_table[map_userid_to_name[userid]] = {}
+        userid = str(userid)
+        stats_table[userid] = {}
         for i in range(daydelta):
-            name = map_userid_to_name[userid]
             date = (start_date + timedelta(days=i)).strftime("%Y%m%d")
-            stats_table[name][date] = {}
+            stats_table[userid][date] = {}
 
     # Look up all tree nodes for the project in the given date range. Also add
     # a computed field which is just the day of the last edited date/time.
@@ -228,19 +225,19 @@ def stats_user_history(request, project_id=None):
         .annotate(count = Count('treenode'))
 
     for di in treenode_stats:
-        name = map_userid_to_name[di[0]]
+        user_id = str(di[0])
         date = di[1].strftime('%Y%m%d')
-        stats_table[name][date]['new_treenodes'] = di[2]
+        stats_table[user_id][date]['new_treenodes'] = di[2]
 
     for di in connector_stats:
-        name = map_userid_to_name[di[0]]
+        user_id = str(di[0])
         date = di[1].strftime('%Y%m%d')
-        stats_table[name][date]['new_connectors'] = di[2]
+        stats_table[user_id][date]['new_connectors'] = di[2]
 
     for di in tree_reviewed_nodes:
-        name = map_userid_to_name[di[0]]
+        user_id = str(di[0])
         date = di[1].strftime('%Y%m%d')
-        stats_table[name][date]['new_reviewed_nodes'] = di[2]
+        stats_table[user_id][date]['new_reviewed_nodes'] = di[2]
 
     return HttpResponse(json.dumps({
         'stats_table': stats_table,

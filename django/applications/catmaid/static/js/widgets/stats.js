@@ -83,12 +83,19 @@ var ProjectStatistics = new function()
     header += '</tr>';
     $('#project_stats_history_table').append( header );
 
-    // Draw table body, add up numbers for each interval
+    // Sort by username
     var odd_row = true;
-    for(var username in data['stats_table']) {
+    var usernamesToIds = Object.keys(data['stats_table']).reduce(function(o, id) {
+      var u = User.all()[id];
+      o[u ? u.login : id] = id;
+      return o;
+    }, {});
+    // Draw table body, add up numbers for each interval
+    Object.keys(usernamesToIds).sort().forEach(function(username) {
+      var uid = usernamesToIds[username];
       var row = '', weekpointcount = 0;
       row += '<tr class="' + (odd_row ? "odd" : "") + '">';
-      if( data['stats_table'].hasOwnProperty( username ) ) {
+      if( data['stats_table'].hasOwnProperty( uid ) ) {
         row += '<td>' + username + '</td>';
         // Print statistics cells, wrt. time interval
         for (var i = 0; i < data['days'].length; i=i+timeinterval) {
@@ -96,7 +103,7 @@ var ProjectStatistics = new function()
             new_treenodes: 0,
             new_connectors: 0,
             new_reviewed_nodes: 0,
-            user: username,
+            user: uid,
             from: data['days'][i],
             to: data['days'][i+timeinterval] || data['days'][data['days'].length],
           };
@@ -108,7 +115,7 @@ var ProjectStatistics = new function()
               }
               // Add current day's data
               var datekey = data['days'][i + j];
-              var stats = data['stats_table'][username][datekey];
+              var stats = data['stats_table'][uid][datekey];
               intervalData.new_treenodes += stats.new_treenodes || 0;
               intervalData.new_connectors += stats.new_connectors || 0;
               intervalData.new_reviewed_nodes += stats.new_reviewed_nodes || 0;
@@ -121,14 +128,14 @@ var ProjectStatistics = new function()
       }
       row += '</tr>';
       if( weekpointcount === 0 ) {
-        continue;
+        return;
       } else {
         // Flip odd row marker
         odd_row = !odd_row;
         // Add row
         $('#project_stats_history_table').append( row );
       }
-    }
+    });
   };
 
   var update_piechart = function(data, chart_name) {

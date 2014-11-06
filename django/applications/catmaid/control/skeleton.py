@@ -1088,3 +1088,69 @@ def annotation_list(request, project_id=None):
         response['metaannotations'] = metaannotations
 
     return HttpResponse(json.dumps(response), content_type="text/json")
+
+@requires_user_role(UserRole.Browse)
+def list(request, project_id):
+    created_by = request.GET.get('created_by', None)
+    reviewed_by = request.GET.get('reviewed_by', None)
+    from_date = request.GET.get('from', None)
+    to_date = request.GET.get('to', None)
+
+    # Sanitize
+    if reviewed_by:
+        reviewed_by = int(reviewed_by)
+    if created_by:
+        created_by = int(created_by)
+    if from_date:
+        from_date = datetime.strptime(from_date, '%Y%m%d').isoformat()
+    if to_date:
+        to_date = datetime.strptime(to_date, '%Y%m%d').isoformat()
+
+    response = _list(project_id, created_by, reviewed_by, from_date, to_date)
+    return HttpResponse(json.dumps(response), content_type="text/json")
+
+def _list(project_id, created_by=None, reviewed_by=None, from_date=None, to_date=None):
+    """ Returns a list of skeleton IDs of which nodes exist that fulfill the
+    given constraints (if any). It can be constrained who created nodes in this
+    skeleton during a given period of time. Having nodes that are reviewed by
+    a certain user is another constraint.
+    """
+    if created_by and reviewed_by:
+        raise ValueError("Please specify node creator or node reviewer")
+
+    if reviewed_by:
+        params = [project_id, reviewed_by]
+        query = '''
+            SELECT DISTINCT r.skeleton_id
+            FROM review r
+            WHERE r.project_id=%s AND r.reviewer_id=%s
+        '''
+
+        if from_date:
+            params.append(from_date)
+            query += " AND r.review_time >= %s"
+        if to_date:
+            params.append(to_date)
+            query += " AND r.review_time < %s"
+    else:
+        params = [project_id]
+        query = '''
+            SELECT DISTINCT skeleton_id
+            FROM treenode t
+            WHERE t.project_id=%s
+        '''
+
+    if created_by:
+        params.append(created_by)
+        query += " AND t.user_id=%s"
+
+        if from_date:
+            params.append(from_date)
+            query += " AND t.creation_time >= %s"
+        if to_date:
+            params.append(to_date)
+            query += " AND t.creation_time < %s"
+
+    cursor = connection.cursor()
+    cursor.execute(query, params)
+    return [r[0] for r in cursor.fetchall()]

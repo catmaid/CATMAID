@@ -16,8 +16,20 @@ var ConnectorSelection = new function()
             alert(json.error);
             return;
           }
-          show_table(skid, relation, json);
+          var text = 'Synapses ' + ('presynaptic_to' === relation ? 'post' : 'pre') + 'synaptic to skeleton #' + skid;
+          show_table(text, json);
         });
+  };
+
+  /**
+   * Display a list of already aquired connector links. A list of lists
+   * (connectors) is expected, each connector has entries that correspond to the
+   * displayed table: connector id, connector X, Y, Z, node 1, skeleton 1,
+   * confidence 1, creator 1, node 1 X, Y, Y, node 2, skeleton 2, confidence 2,
+   * creator 2, node 2 X, Y, Z.
+   */
+  this.show_connectors = function(connectors) {
+    show_table("", connectors);
   };
 
   this.init = function() {
@@ -81,20 +93,19 @@ var ConnectorSelection = new function()
     });
   };
 
-  var show_table = function(skid, relation, json) {
+  var show_table = function(header, connectors) {
     WindowMaker.show('create-connector-selection');
     // Write the label
-    var text = 'Synapses ' + ('presynaptic_to' === relation ? 'post' : 'pre') + 'synaptic to skeleton #' + skid;
-    $('#connector-selection-label').text(text);
+    $('#connector-selection-label').text(header);
 
     // Split up the JSON reply
     var locations = {}; // keys are connector IDs
     var rows = [];
 
-    json.forEach(function(row) {
+    connectors.forEach(function(row) {
       rows.push([row[0],
-                 row[2], row[3], row[4], row[5],
-                 row[7], row[8], row[9], row[10]]);
+                 row[2], row[3], row[4], User.safe_get(row[5]).login,
+                 row[7], row[8], row[9], User.safe_get(row[10]).login]);
       locations[row[0]] = {connector: row[1],
                            treenode1: row[6],
                            treenode2: row[11]};

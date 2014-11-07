@@ -1095,6 +1095,7 @@ def list(request, project_id):
     reviewed_by = request.GET.get('reviewed_by', None)
     from_date = request.GET.get('from', None)
     to_date = request.GET.get('to', None)
+    nodecount_gt = int(request.GET.get('nodecount_gt', 0))
 
     # Sanitize
     if reviewed_by:
@@ -1106,14 +1107,16 @@ def list(request, project_id):
     if to_date:
         to_date = datetime.strptime(to_date, '%Y%m%d')
 
-    response = _list(project_id, created_by, reviewed_by, from_date, to_date)
+    response = _list(project_id, created_by, reviewed_by, from_date, to_date, nodecount_gt)
     return HttpResponse(json.dumps(response), content_type="text/json")
 
-def _list(project_id, created_by=None, reviewed_by=None, from_date=None, to_date=None):
+def _list(project_id, created_by=None, reviewed_by=None, from_date=None,
+          to_date=None, nodecount_gt=0):
     """ Returns a list of skeleton IDs of which nodes exist that fulfill the
     given constraints (if any). It can be constrained who created nodes in this
     skeleton during a given period of time. Having nodes that are reviewed by
-    a certain user is another constraint.
+    a certain user is another constraint. And so is the node count that one can
+    specify which each result node must exceed.
     """
     if created_by and reviewed_by:
         raise ValueError("Please specify node creator or node reviewer")
@@ -1152,6 +1155,17 @@ def _list(project_id, created_by=None, reviewed_by=None, from_date=None, to_date
             to_date = to_date + timedelta(days=1)
             params.append(to_date.isoformat())
             query += " AND t.creation_time < %s"
+
+    if nodecount_gt > 0:
+        params.append(nodecount_gt)
+        query = '''
+            SELECT sub.skeleton_id
+            FROM (
+                SELECT t.skeleton_id AS skeleton_id, COUNT(*) AS count
+                FROM (%s) q JOIN treenode t ON q.skeleton_id = t.skeleton_id
+                GROUP BY t.skeleton_id
+            ) AS sub WHERE sub.count > %%s
+        ''' % query
 
     cursor = connection.cursor()
     cursor.execute(query, params)

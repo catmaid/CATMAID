@@ -159,6 +159,7 @@ var ProjectStatistics = new function()
           var params = {
             'from': from,
             'to': to,
+            'nodecount_gt': 1,
           };
           if (type === 'created') {
             params['created_by'] = user_id;

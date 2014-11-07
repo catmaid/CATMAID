@@ -307,7 +307,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
           ap.n_inputs - bb_n_inputs,
           ap.n_outputs - bb_n_outputs,
           countMinutes(Object.keys(subtract(ap.arbor.nodes(), backbone.nodes()))),
-          mitochondrium.length,
+          mitochondrium.length - bb_n_mitochondria,
           0,
           0,
           0,

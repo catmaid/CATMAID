@@ -32,7 +32,7 @@ var ProjectStatistics = new function()
       entry += '0 /';
     }
     if( data.hasOwnProperty('new_connectors') && data['new_connectors'] > 0 ) {
-      entry += ' ' + data['new_connectors'] + ' /';
+      entry += ' ' + wrapWithLink(data['new_connectors'], 'connectors') + ' /';
       points += data['new_connectors'];
     } else {
       entry += ' 0 /';
@@ -187,7 +187,21 @@ var ProjectStatistics = new function()
               }));
           break;
         case 'connectors':
-          // Query all connectors created by the given user in the given timeframe
+          // Query all connectors created by the given user in the given
+          // timeframe and open the connector selection table
+          requestQueue.register(django_url + project.id + '/connector/list/completed',
+              'GET', {
+                completed_by: user_id,
+                from: from,
+                to: to,
+              }, jsonResponseHandler(function(connectors) {
+                if (0 === connectors.length) {
+                  growlAlert('Information', 'No connectors found for your selection');
+                  return;
+                }
+
+                ConnectorSelection.show_connectors(connectors);
+              }));
           break;
         default:
           return;

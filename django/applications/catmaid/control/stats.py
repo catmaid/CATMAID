@@ -187,33 +187,39 @@ def stats_user_history(request, project_id=None):
     # a computed field which is just the day of the last edited date/time.
     treenode_stats = []
     cursor = connection.cursor()
-    try:
-        cursor.execute('''\
-            SELECT "treenode"."user_id", (date_trunc('day', creation_time)) AS "date", COUNT("treenode"."id") AS "count"
-              FROM "treenode"
-              INNER JOIN (
-                SELECT "treenode"."skeleton_id", COUNT("treenode"."id") as "skeleton_nodes"
-                  FROM "treenode"
-                  GROUP BY "treenode"."skeleton_id") as tn2
-                ON "treenode"."skeleton_id" = tn2."skeleton_id"
-              WHERE ("treenode"."project_id" = %(project_id)s
-                AND "treenode"."creation_time" BETWEEN %(start_date)s AND %(end_date)s
-                AND tn2."skeleton_nodes" > 1)
-              GROUP BY "treenode"."user_id", "date"
-              ORDER BY "treenode"."user_id" ASC, "date" ASC''', \
-              dict(project_id=project_id, start_date=start_date, end_date=end_date))
-        treenode_stats = cursor.fetchall()
-    finally:
-        cursor.close()
+    cursor.execute('''\
+        SELECT "treenode"."user_id", (date_trunc('day', creation_time)) AS "date", COUNT("treenode"."id") AS "count"
+            FROM "treenode"
+            INNER JOIN (
+            SELECT "treenode"."skeleton_id", COUNT("treenode"."id") as "skeleton_nodes"
+                FROM "treenode"
+                GROUP BY "treenode"."skeleton_id") as tn2
+            ON "treenode"."skeleton_id" = tn2."skeleton_id"
+            WHERE ("treenode"."project_id" = %(project_id)s
+            AND "treenode"."creation_time" BETWEEN %(start_date)s AND %(end_date)s
+            AND tn2."skeleton_nodes" > 1)
+            GROUP BY "treenode"."user_id", "date"
+            ORDER BY "treenode"."user_id" ASC, "date" ASC''', \
+            dict(project_id=project_id, start_date=start_date, end_date=end_date))
+    treenode_stats = cursor.fetchall()
 
-    connector_stats = Connector.objects \
-        .filter(
-            project=project_id,
-            creation_time__range=(start_date, end_date)) \
-        .extra(select={'date': "date_trunc('day', creation_time)"}) \
-        .order_by('user', 'date') \
-        .values_list('user', 'date') \
-        .annotate(count=Count('id'))
+    # Retrieve a list of how many completed connector relations a user has
+    # created in a given time frame. A completed connector relation is either
+    # one were a user created both the presynaptic and the postsynaptic side
+    # (one of them in the given time frame) or if a user completes an existing
+    # 'half connection'. To avoid duplicates, only links are counted, where the
+    # second node is younger than the first one
+    cursor.execute('''
+        SELECT t1.user_id, (date_trunc('day', t1.creation_time)) AS date, count(*)
+        FROM treenode_connector t1
+        JOIN treenode_connector t2 ON t1.connector_id = t2.connector_id
+        WHERE t1.project_id=%s
+        AND t1.creation_time BETWEEN %s AND %s
+        AND t1.relation_id <> t2.relation_id
+        AND t1.creation_time > t2.creation_time
+        GROUP BY t1.user_id, date
+    ''', (project_id, start_date, end_date))
+    connector_stats = cursor.fetchall()
 
     tree_reviewed_nodes = Review.objects \
         .filter(

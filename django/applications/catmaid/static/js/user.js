@@ -35,6 +35,26 @@ User.all = function()
   return User.prototype.users;
 };
 
+/**
+ * Returns a user object that matches the given ID or a dummy object if the ID
+ * was not found.
+ */
+User.safe_get = function(id)
+{
+  if (User.prototype.users[id]) {
+    return User.prototype.users[id];
+  } else {
+    return {
+      // Return dummy instance
+      id: id,
+      login: 'unknown',
+      fullName: 'unknown',
+      firstName: 'unknown',
+      lastName: 'unknown',
+      color: new THREE.Color().setRGB(255, 0, 0),
+    }
+  }
+};
 
 /**
  * Gets the user object belonging the passed ID and calls the passed function

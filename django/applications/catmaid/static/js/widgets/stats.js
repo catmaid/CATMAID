@@ -112,7 +112,7 @@ var ProjectStatistics = new function()
             new_reviewed_nodes: 0,
             user: uid,
             from: data['days'][i],
-            to: data['days'][i+timeinterval] || data['days'][data['days'].length],
+            to: data['days'][i + timeinterval - 1] || data['days'][data['days'].length - 1],
           };
           // Aggregate statistics for current time interval
           for (var j = 0; j< timeinterval; ++j) {

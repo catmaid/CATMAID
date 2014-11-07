@@ -2,7 +2,7 @@ import decimal
 import json
 import networkx as nx
 from operator import itemgetter
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import defaultdict
 
 from django.http import HttpResponse
@@ -1102,9 +1102,9 @@ def list(request, project_id):
     if created_by:
         created_by = int(created_by)
     if from_date:
-        from_date = datetime.strptime(from_date, '%Y%m%d').isoformat()
+        from_date = datetime.strptime(from_date, '%Y%m%d')
     if to_date:
-        to_date = datetime.strptime(to_date, '%Y%m%d').isoformat()
+        to_date = datetime.strptime(to_date, '%Y%m%d')
 
     response = _list(project_id, created_by, reviewed_by, from_date, to_date)
     return HttpResponse(json.dumps(response), content_type="text/json")
@@ -1127,10 +1127,11 @@ def _list(project_id, created_by=None, reviewed_by=None, from_date=None, to_date
         '''
 
         if from_date:
-            params.append(from_date)
+            params.append(from_date.isoformat())
             query += " AND r.review_time >= %s"
         if to_date:
-            params.append(to_date)
+            to_date = to_date + timedelta(days=1)
+            params.append(to_date.isoformat())
             query += " AND r.review_time < %s"
     else:
         params = [project_id]
@@ -1145,10 +1146,11 @@ def _list(project_id, created_by=None, reviewed_by=None, from_date=None, to_date
         query += " AND t.user_id=%s"
 
         if from_date:
-            params.append(from_date)
+            params.append(from_date.isoformat())
             query += " AND t.creation_time >= %s"
         if to_date:
-            params.append(to_date)
+            to_date = to_date + timedelta(days=1)
+            params.append(to_date.isoformat())
             query += " AND t.creation_time < %s"
 
     cursor = connection.cursor()

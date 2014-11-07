@@ -106,9 +106,10 @@ var ConnectorSelection = new function()
       rows.push([row[0],
                  row[2], row[3], row[4], User.safe_get(row[5]).login,
                  row[7], row[8], row[9], User.safe_get(row[10]).login]);
-      locations[row[0]] = {connector: row[1],
-                           treenode1: row[6],
-                           treenode2: row[11]};
+      // Store all locations (overwriting can be ignored, it is the same data)
+      locations[row[0]] = row[1];
+      locations[row[2]] = row[6];
+      locations[row[7]] = row[11];
     });
 
     // Populate the table
@@ -119,21 +120,18 @@ var ConnectorSelection = new function()
     $('#connectorselectiontable tbody tr').on('dblclick', function(evt) {
       var aData = table.fnGetData(this);
       var cell = $(evt.target).closest('td').index();
-      var loc = locations[aData[0]];
-      var tnid;
+      var nid;
       if (0 === cell) {
-        loc = loc.connector;
-        tnid = aData[0];
+        nid = aData[0];
       } else if (cell < 5) {
-        loc = loc.treenode1;
-        tnid = aData[1];
+        nid = aData[1];
       } else {
-        loc = loc.treenode2;
-        tnid = aData[5];
+        nid = aData[5];
       }
+      var loc = locations[nid];
       SkeletonAnnotations.staticMoveTo(loc[2], loc[1], loc[0],
         function() {
-          SkeletonAnnotations.staticSelectNode(tnid);
+          SkeletonAnnotations.staticSelectNode(nid);
         });
     });
   };

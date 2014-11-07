@@ -75,16 +75,14 @@ def one_to_many_synapses(request, project_id=None):
     cursor = connection.cursor();
     cursor.execute('''
     SELECT tc1.connector_id, c.location_x, c.location_y, c.location_z,
-           tc1.treenode_id, tc1.skeleton_id, tc1.confidence, u1.username,
+           tc1.treenode_id, tc1.skeleton_id, tc1.confidence, tc1.user_id,
            t1.location_x, t1.location_y, t1.location_z,
-           tc2.treenode_id, tc2.skeleton_id, tc2.confidence, u2.username,
+           tc2.treenode_id, tc2.skeleton_id, tc2.confidence, tc2.user_id,
            t2.location_x, t2.location_y, t2.location_z
     FROM treenode_connector tc1,
          treenode_connector tc2,
          treenode t1,
          treenode t2,
-         auth_user u1,
-         auth_user u2,
          relation r1,
          connector c
     WHERE tc1.skeleton_id = %s
@@ -96,8 +94,6 @@ def one_to_many_synapses(request, project_id=None):
       AND tc1.relation_id != tc2.relation_id
       AND tc1.treenode_id = t1.id
       AND tc2.treenode_id = t2.id
-      AND tc1.user_id = u1.id
-      AND tc2.user_id = u2.id
     ''' % (skid, ','.join(map(str, skids)), relation_name))
 
     def parse(loc):

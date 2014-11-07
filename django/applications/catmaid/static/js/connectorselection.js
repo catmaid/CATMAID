@@ -104,8 +104,8 @@ var ConnectorSelection = new function()
 
     connectors.forEach(function(row) {
       rows.push([row[0],
-                 row[2], row[3], row[4], row[5],
-                 row[7], row[8], row[9], row[10]]);
+                 row[2], row[3], row[4], User.safe_get(row[5]).login,
+                 row[7], row[8], row[9], User.safe_get(row[10]).login]);
       locations[row[0]] = {connector: row[1],
                            treenode1: row[6],
                            treenode2: row[11]};

@@ -73,7 +73,7 @@ def one_to_many_synapses(request, project_id=None):
         raise Exception("Cannot accept a relation named '%s'" % relation_name)
     cursor = connection.cursor();
     cursor.execute('''
-    SELECT tc1.connector_id, c.location_x, c.location_y, c.location_y,
+    SELECT tc1.connector_id, c.location_x, c.location_y, c.location_z,
            tc1.treenode_id, tc1.skeleton_id, tc1.confidence, u1.username,
            t1.location_x, t1.location_y, t1.location_z,
            tc2.treenode_id, tc2.skeleton_id, tc2.confidence, u2.username,

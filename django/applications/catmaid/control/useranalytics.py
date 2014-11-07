@@ -8,18 +8,15 @@ from catmaid.models import Connector, Treenode, Review
 from catmaid.control.user_evaluation import _parse_date
 
 
-try:
-    # Because we don't want to show generated images in a window, we can use
-    # the Agg backend. This avoids some potential threading issues.
-    import matplotlib
-    matplotlib.use('Agg')
+# Because we don't want to show generated images in a window, we can use
+# the Agg backend. This avoids some potential threading issues.
+import matplotlib
+matplotlib.use('Agg')
 
-    import matplotlib.pyplot as plt
-    from matplotlib.dates import  DateFormatter, DayLocator
-    from pylab import figure
-    from matplotlib.backends.backend_agg import FigureCanvasAgg
-except:
-    pass
+import matplotlib.pyplot as plt
+from matplotlib.dates import  DateFormatter, DayLocator
+from pylab import figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 class Bout(object):
     """ Represents one bout, based on a list of events. The first event ist the

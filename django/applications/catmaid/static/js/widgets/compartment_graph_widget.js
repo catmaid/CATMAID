@@ -2030,7 +2030,7 @@ GroupGraph.prototype._exportSVG = function() {
   // Fix edge arrowheads if necessary
   for (var k=0; k<edges.length; ++k) {
     var edge = edges[k];
-    if (1 === edge.length) continue;
+    if (1 === edge.length) continue; // undirected edge
     // Fix the style
     var path = edge[2],
         attr = path.attributes;
@@ -2052,10 +2052,10 @@ GroupGraph.prototype._exportSVG = function() {
   // and one for the contour), add a fill value to the contour
   // and delete the other.
   // Also add the text-anchor: middle to the text.
-  for (; i<children.length; i+=3) {
+  for (; i<children.length;) {
     // The second one is the contour
     var child = children[i+1],
-      path = child.pathSegList;
+        path = child.pathSegList;
     // Find out the type
     var commands = {};
     for (var k=0; k<path.length; ++k) {
@@ -2073,9 +2073,17 @@ GroupGraph.prototype._exportSVG = function() {
     }
     // Set the fill value
     child.attributes.fill.value = children[i].attributes.fill.value;
-    // Fix text anchor
-    children[i+2].style.textAnchor = 'middle';
+    // Mark the first circle for removal
     remove.push(children[i]);
+    // Fix text anchor if present
+    var c = children[i+2];
+    if (c && 'text' === c.nodeName) {
+      c.style.textAnchor = 'middle';
+      i += 3;
+    } else {
+      // Node without text label (branch node in synapse clustering)
+      i += 2;
+    }
   }
 
 

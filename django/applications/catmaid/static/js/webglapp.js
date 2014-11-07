@@ -1918,33 +1918,12 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.splitByFlowCentral
       if (arbor.root != soma) arbor.reroot(soma);
     }
 
-    var syn = new ArborParser().synapses(json[1]),
-        flow_centrality = arbor.flowCentrality(syn.outputs, syn.inputs, syn.n_outputs, syn.n_inputs);
+    var ap = new ArborParser();
+    ap.arbor = arbor;
+    ap.synapses(json[1]);
 
-    if (!flow_centrality) return null;
-
-    var max = 0,
-        nodes = Object.keys(flow_centrality);
-    for (var i=0; i<nodes.length; ++i) {
-      var node = nodes[i],
-          fc = flow_centrality[node].centrifugal;
-      if (fc > max) {
-        max = fc;
-      }
-    }
-
-    var above = [],
-        threshold = 0.9 * max;
-    for (var i=0; i<nodes.length; ++i) {
-      var node = nodes[i];
-      if (flow_centrality[node].centrifugal > threshold) {
-        above.push(node);
-      }
-    }
-
-    var cut = SynapseClustering.prototype.findAxonCut(arbor, syn.outputs, above);
-
-    return arbor.subArbor(cut).nodes();
+    var axon = SynapseClustering.prototype.findAxon(ap, 0.9);
+    return axon ? axon.nodes() : null;
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {

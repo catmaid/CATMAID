@@ -651,18 +651,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
     if (mode === this.SUBGRAPH_AXON_DENDRITE
       || mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
       if (ap.n_inputs > 0 && ap.n_outputs > 0) {
-        var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs);
-        var nodes = ap.arbor.nodesArray(),
-            max = 0,
-            cut = null;
-        for (var i=0; i<nodes.length; ++i) {
-          var c = fc[nodes[i]].centrifugal;
-          if (c > max) {
-            max = c;
-            cut = nodes[i];
-          }
-        }
-        var axon = ap.arbor.subArbor(cut);
+
+        var axon = SynapseClustering.prototype.findAxon(ap, 0.9);
 
         // Subgraph with a node for the axon
         var node_axon = createNode(skid + '_axon', name + ' [axon]');

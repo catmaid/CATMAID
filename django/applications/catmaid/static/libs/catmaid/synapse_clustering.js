@@ -400,7 +400,37 @@ SynapseClustering.prototype.segregationIndex = function(clusters, outputs, input
   return 1 - S / S_norm;
 };
 
-/** Find a node ID at which is its optical to cut an arbor so that the downstream
+/** ap: ArborParser instance
+ *  fraction: value between 0 and 1, generally 0.9 works well.
+ *  Returns a new Arbor representing the axon. The root of the new Arbor is where the cut was made.
+ *  If the flow centrality cannot be computed, returns null. */
+SynapseClustering.prototype.findAxon = function(ap, fraction) {
+    var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs);
+
+    if (!fc) return null;
+
+    var max = 0,
+        nodes = ap.arbor.nodesArray();
+    for (var i=0; i<nodes.length; ++i) {
+      var c = fc[nodes[i]].centrifugal;
+      if (c > max) max = c;
+    }
+
+    var above = [],
+        threshold =  fraction * max;
+    for (var i=0; i<nodes.length; ++i) {
+      var node = nodes[i];
+      if (fc[node].centrifugal > threshold) {
+        above.push(node);
+      }
+    }
+
+    var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, above);
+
+    return ap.arbor.subArbor(cut);
+};
+
+/** Find a node ID at which is its optimal to cut an arbor so that the downstream
  * sub-arbor is the axon and the rest is the dendrites.
  *
  * arbor: an Arbor instance

@@ -2,6 +2,7 @@ import json
 
 from string import upper
 from itertools import imap
+from datetime import datetime, timedelta
 
 from django.db import connection
 from django.db.models import Count
@@ -480,4 +481,59 @@ def delete_connector(request, project_id=None):
         'message': 'Removed connector and class_instances',
         'connector_id': connector_id}))
 
+
+@requires_user_role(UserRole.Browse)
+def list_completed(request, project_id):
+    completed_by = request.GET.get('completed_by', None)
+    from_date = request.GET.get('from', None)
+    to_date = request.GET.get('to', None)
+
+    # Sanitize
+    if completed_by:
+        completed_by = int(completed_by)
+    if from_date:
+        from_date = datetime.strptime(from_date, '%Y%m%d')
+    if to_date:
+        to_date = datetime.strptime(to_date, '%Y%m%d')
+
+    response = _list_completed(project_id, completed_by, from_date, to_date)
+    return HttpResponse(json.dumps(response), content_type="text/json")
+
+
+def _list_completed(project_id, completed_by=None, from_date=None, to_date=None):
+    """ Get a list of connector links that can be optionally constrained to be
+    completed by a certain user in a given time frame. The returned connector
+    links are by default only constrained by both sides having different
+    relations and the first link was created before the second one.
+    """
+    params = [project_id]
+    query = '''
+        SELECT tc2.connector_id, c.location_x, c.location_y, c.location_z,
+            tc2.treenode_id, tc2.skeleton_id, tc2.confidence, tc2.user_id,
+            t2.location_x, t2.location_y, t2.location_z,
+            tc1.treenode_id, tc1.skeleton_id, tc1.confidence, tc1.user_id,
+            t1.location_x, t1.location_y, t1.location_z
+        FROM treenode_connector tc1
+        JOIN treenode_connector tc2 ON tc1.connector_id = tc2.connector_id
+        JOIN connector c ON tc1.connector_id = c.id
+        JOIN treenode t1 ON t1.id = tc1.treenode_id
+        JOIN treenode t2 ON t2.id = tc2.treenode_id
+        WHERE t1.project_id=%s
+        AND tc1.relation_id <> tc2.relation_id
+        AND tc1.creation_time > tc2.creation_time'''
+
+    if completed_by:
+        params.append(completed_by)
+        query += " AND tc1.user_id=%s"
+    if from_date:
+        params.append(from_date.isoformat())
+        query += " AND tc1.creation_time >= %s"
+    if to_date:
+        to_date =  to_date + timedelta(days=1)
+        params.append(to_date.isoformat())
+        query += " AND tc1.creation_time < %s"
+
+    cursor = connection.cursor()
+    cursor.execute(query, params)
+    return cursor.fetchall()
 

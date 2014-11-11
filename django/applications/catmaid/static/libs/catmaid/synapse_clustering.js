@@ -427,7 +427,7 @@ SynapseClustering.prototype.findAxon = function(ap, fraction) {
 
     var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, above);
 
-    return ap.arbor.subArbor(cut);
+    return cut ? ap.arbor.subArbor(cut) : null;
 };
 
 /** Find a node ID at which is its optimal to cut an arbor so that the downstream

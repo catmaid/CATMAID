@@ -658,7 +658,7 @@ Arbor.prototype.subArbor = function(new_root) {
 	sub.root = new_root;
 
 	while (open.length > 0) {
-		paren = open.shift(), // faster than pop
+		paren = open.shift(); // faster than pop
 		children = successors[paren];
 		while (children.length > 0) {
 			child = children[0];

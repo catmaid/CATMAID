@@ -259,7 +259,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
           return c > max ? c : max;
         }, 0),
         fc_plateau = Object.keys(fc).filter(function(nodeID) { return fc[nodeID].centrifugal === fc_max; }),
-        cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, fc_plateau);
+        cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, fc_plateau, smooth_positions);
 
     // Detect and measure the axon
     var axon_terminals = ap.arbor.subArbor(cut),

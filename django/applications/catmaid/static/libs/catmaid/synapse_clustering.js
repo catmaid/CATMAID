@@ -404,7 +404,7 @@ SynapseClustering.prototype.segregationIndex = function(clusters, outputs, input
  *  fraction: value between 0 and 1, generally 0.9 works well.
  *  Returns a new Arbor representing the axon. The root of the new Arbor is where the cut was made.
  *  If the flow centrality cannot be computed, returns null. */
-SynapseClustering.prototype.findAxon = function(ap, fraction) {
+SynapseClustering.prototype.findAxon = function(ap, fraction, positions) {
     var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs);
 
     if (!fc) return null;
@@ -425,7 +425,7 @@ SynapseClustering.prototype.findAxon = function(ap, fraction) {
       }
     }
 
-    var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, above);
+    var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, above, positions);
 
     return cut ? ap.arbor.subArbor(cut) : null;
 };
@@ -433,37 +433,89 @@ SynapseClustering.prototype.findAxon = function(ap, fraction) {
 /** Find a node ID at which is its optimal to cut an arbor so that the downstream
  * sub-arbor is the axon and the rest is the dendrites.
  *
+ * The heuristic is fidgety: finds the lowest-order node (relative to root)
+ * that contains an output synapse or is a branch where more than one of the downstream branches
+ * contains output synapses and is on the lower 50% of the cable for the flow centrality plateau
+ * (the "above" array).
+ *
  * arbor: an Arbor instance
  * outputs: map of node ID vs non-undefined to signal there are one or more output synapses at the node
  * above: array of nodes with e.g. maximum centrifugal flow centrality.
+ * positions: the map of node ID vs object with a distanceTo function like THREE.Vector3.
  *
  * The returned node is present in 'above'.
  */
-SynapseClustering.prototype.findAxonCut = function(arbor, outputs, above) {
-  var cut,
-      sel = above.filter(function(node) { return undefined !== outputs[node]; });
+SynapseClustering.prototype.findAxonCut = function(arbor, outputs, above, positions) {
+  // Corner case
+  if (1 === above.length) return above[0];
 
-  if (sel.length > 0) {
-    // Find lowest-order node with an output synapse
-    var orders = arbor.nodesOrderFrom(arbor.root);
-    return sel.sort(function(a, b) {
-      var oa = orders[a],
-          ob = orders[b];
-      return oa === ob ? 0 : (oa < ob ? -1 : 1); // Ascending
-    })[0];
+  var orders = arbor.nodesOrderFrom(arbor.root),
+      successors = arbor.allSuccessors(),
+      sorted = above.sort(function(a, b) { return orders[b] - orders[a]; }),
+      furthest_from_root = sorted[0],
+      closest_to_root = sorted[sorted.length -1],
+      is_above = above.reduce(function(o, id) { o[id] = true; return o; }, {}),
+      distances = {};
+
+  // Compute distances of all nodes in above to the node in above that is closest to root
+  var node = closest_to_root,
+      open = [node],
+      max = 0;
+  distances[node] = 0;
+  while (open.length > 0) {
+    var paren = open.shift(),
+        children = successors[paren],
+        d = distances[paren],
+        p = positions[paren];
+    for (var i=0; i<children.length; ++i) {
+      var child = children[i];
+      if (is_above[child]) {
+        var dc = d + p.distanceTo(positions[child]);
+        distances[child] = dc;
+        if (dc > max) max = dc;
+        open.push(child);
+      }
+    }
   }
 
-  // Else, find highest-order end node
-  var subs = arbor.connectedFractions(above),
-      orders = (1 === subs.length) ?
-    subs[0].nodesOrderFrom(subs[0].root)
-    : arbor.nodesOrderFrom(arbor.root);
+  // Select nodes that are at least 50% or beyond the max distance from the node
+  // in above that is closest to root.
+  var threshold = max / 2;
+  var beyond = above.filter(function(node) {
+    var d = distances[node]; // can be null if "above" has nodes from disconnected parts
+    return d && d > threshold;
+  });
 
-  return subs.reduce(function(ends, sub) {
-    return ends.concat(sub.findEndNodes());
-  }, []).sort(function(a, b) {
-    var oa = orders[a],
-        ob = orders[b];
-    return oa === ob ? 0 : (oa > ob ? -1 : 1); // Descending
-  })[0];
+  var be = arbor.findBranchAndEndNodes(),
+      lowest = null,
+      lowest_order = Number.MAX_VALUE;
+
+  for (var i=0; i<beyond.length; ++i) {
+    var node = beyond[i];
+    var order = orders[node];
+    if (outputs[node]) {
+      if (order < lowest_order) {
+        lowest = node;
+        lowest_order = order;
+      }
+    } else if (be.branches[node]) {
+      // Exclude branch points whose parent is not part of above (generally the lowest-order node in the "above" array)
+      if (order < lowest_order && is_above[arbor.edges[node]]) {
+        // Check if more than one branch has downstream outputs
+        var succ = successors[node],
+            count = 0;
+        for (var k=0; k<succ.length; ++k) {
+          var child = succ[k];
+          if (is_above[child] || arbor.subArbor(child).nodesArray().filter(function(nid) { return outputs[nid]; }).length > 0) ++count;
+        }
+        if (count > 1) {
+          lowest = node;
+          lowest_order = order;
+        }
+      }
+    }
+  }
+
+  // If none found, use the highest-order node
+  return lowest ? lowest : furthest_from_root;
 };

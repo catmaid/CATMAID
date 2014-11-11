@@ -1901,7 +1901,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = func
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getPositions = function() {
-  return this.geometry['neurite'].vertices.reduce(function(o, v) { o[v.node_id] = v; return o; }, {});
+  var vs = this.geometry['neurite'].vertices,
+      p = {};
+  for (var i=0; i<vs.length; ++i) {
+    var v = vs[i];
+    p[v.node_id] = v;
+  }
+  return p;
 };
 
 /** Determine the nodes that belong to the axon by computing the centrifugal flow
@@ -1922,7 +1928,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.splitByFlowCentral
     ap.arbor = arbor;
     ap.synapses(json[1]);
 
-    var axon = SynapseClustering.prototype.findAxon(ap, 0.9);
+    var axon = SynapseClustering.prototype.findAxon(ap, 0.9, this.getPositions());
     return axon ? axon.nodes() : null;
 };
 

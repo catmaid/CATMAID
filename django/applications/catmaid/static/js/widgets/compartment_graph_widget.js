@@ -652,7 +652,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       || mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
       if (ap.n_inputs > 0 && ap.n_outputs > 0) {
 
-        var axon = SynapseClustering.prototype.findAxon(ap, 0.9);
+        var axon = SynapseClustering.prototype.findAxon(ap, 0.9, ap.positions);
 
         // Subgraph with a node for the axon
         var node_axon = createNode(skid + '_axon', name + ' [axon]');

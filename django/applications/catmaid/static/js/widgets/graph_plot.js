@@ -590,12 +590,13 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
             }
 
             var cut = SynapseClustering.prototype.findAxonCut(arbor, ap.outputs, above, positions);
-
-            var cluster1 = arbor.subArbor(cut).nodes(),
-                cluster2 = arbor.nodesArray().filter(function(node) {
-                  return undefined === cluster1[node];
-                });
-            segregationIndex = SynapseClustering.prototype.segregationIndex({0: Object.keys(cluster1), 1: cluster2}, ap.outputs, ap.inputs);
+            if (cut) {
+              var cluster1 = arbor.subArbor(cut).nodes(),
+                  cluster2 = arbor.nodesArray().filter(function(node) {
+                    return undefined === cluster1[node];
+                  });
+              segregationIndex = SynapseClustering.prototype.segregationIndex({0: Object.keys(cluster1), 1: cluster2}, ap.outputs, ap.inputs);
+            }
           }
           return {hillock_cable: hillock_cable,
                   main_dendritic_shaft_cable: main_dendritic_shaft_cable,

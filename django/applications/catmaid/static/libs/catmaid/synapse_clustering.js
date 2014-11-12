@@ -416,6 +416,9 @@ SynapseClustering.prototype.findAxon = function(ap, fraction, positions) {
       if (c > max) max = c;
     }
 
+    // Corner case: strangely rooted arbors
+    if (0 === max) return null;
+
     var above = [],
         threshold =  fraction * max;
     for (var i=0; i<nodes.length; ++i) {
@@ -424,7 +427,7 @@ SynapseClustering.prototype.findAxon = function(ap, fraction, positions) {
         above.push(node);
       }
     }
-
+    
     var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, above, positions);
 
     return cut ? ap.arbor.subArbor(cut) : null;
@@ -439,7 +442,7 @@ SynapseClustering.prototype.findAxon = function(ap, fraction, positions) {
  * (the "above" array).
  *
  * arbor: an Arbor instance
- * outputs: map of node ID vs non-undefined to signal there are one or more output synapses at the node
+ * outputs: map of node ID vs non-undefined to signal there are one or more output synapses at the node. There MUST be at least one output.
  * above: array of nodes with e.g. maximum centrifugal flow centrality.
  * positions: the map of node ID vs object with a distanceTo function like THREE.Vector3.
  *
@@ -448,6 +451,8 @@ SynapseClustering.prototype.findAxon = function(ap, fraction, positions) {
 SynapseClustering.prototype.findAxonCut = function(arbor, outputs, above, positions) {
   // Corner case
   if (1 === above.length) return above[0];
+  // Arbor with inputs and outputs but no centrifugal flow
+  if (0 === above.length) return null;
 
   var orders = arbor.nodesOrderFrom(arbor.root),
       successors = arbor.allSuccessors(),

@@ -251,6 +251,9 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
     return {pre: {}, post: {}};
   };
 
+  var can_split = false,
+      axon_terminals = null;
+
   // Split by synapse flow centrality
   if (0 !== ap.n_outputs && 0 !== ap.n_inputs) {
     var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
@@ -260,7 +263,10 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         }, 0),
         fc_plateau = Object.keys(fc).filter(function(nodeID) { return fc[nodeID].centrifugal === fc_max; }),
         cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, fc_plateau, smooth_positions);
+    if (cut) axon_terminals = ap.arbor.subArbor(cut);
+  }
 
+  if (axon_terminals) {
     // Detect and measure the axon
     var axon_terminals = ap.arbor.subArbor(cut),
         at_backbone = axon_terminals.upstreamArbor(microtubules_end_nodes),

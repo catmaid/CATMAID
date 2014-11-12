@@ -650,10 +650,14 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
 
     if (mode === this.SUBGRAPH_AXON_DENDRITE
       || mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
+
+      var axon = null;
+
       if (ap.n_inputs > 0 && ap.n_outputs > 0) {
+        axon = SynapseClustering.prototype.findAxon(ap, 0.9, ap.positions);
+      }
 
-        var axon = SynapseClustering.prototype.findAxon(ap, 0.9, ap.positions);
-
+      if (axon) {
         // Subgraph with a node for the axon
         var node_axon = createNode(skid + '_axon', name + ' [axon]');
         graph.push(node_axon);

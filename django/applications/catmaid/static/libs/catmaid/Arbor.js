@@ -244,7 +244,7 @@ Arbor.prototype.findBranchAndEndNodes = function() {
   }
 
   // Corner case: an Arbor with a root and no children
-  if (0 === children.length && root) ends.push(root);
+  if (0 === children.length && this.root) ends.push(this.root);
 
   return {ends: ends,
           branches: branches,

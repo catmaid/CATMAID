@@ -9,6 +9,7 @@ from guardian.shortcuts import get_perms_for_model
 
 from django import forms
 from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.models import User, Group
@@ -367,13 +368,13 @@ def all_usernames(request, project_id=None):
 def register(request):
     # Return right away if user registration is not enabled
     if not settings.USER_REGISTRATION_ALLOWED:
-        return HttpResponseRedirect("/")
+        return HttpResponseRedirect(reverse("home"))
 
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             new_user = form.save()
-            return HttpResponseRedirect("/")
+            return HttpResponseRedirect(reverse("home"))
     else:
         form = UserCreationForm()
     return render(request, "catmaid/registration/register.html", {

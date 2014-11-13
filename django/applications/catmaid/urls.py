@@ -14,7 +14,8 @@ wordlist= r'\w+(,\w+)*'
 
 # Add the main index.html page at the root:
 urlpatterns = patterns('',
-    (r'^$', CatmaidView.as_view(template_name='catmaid/index.html'))
+    url(r'^$', CatmaidView.as_view(template_name='catmaid/index.html'),
+        name="home")
 )
 
 # Authentication and permissions

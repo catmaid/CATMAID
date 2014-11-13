@@ -7,14 +7,17 @@ from itertools import groupby
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from guardian.shortcuts import get_perms_for_model
 
+from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.models import User, Group
+from django.contrib.auth.forms import UserCreationForm
 from django.db import connection
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.core.exceptions import ObjectDoesNotExist
-from django.shortcuts import _get_queryset
+from django.shortcuts import _get_queryset, render
+
 
 from catmaid.models import Project, UserRole, ClassInstance, \
         ClassInstanceClassInstance
@@ -361,3 +364,18 @@ def all_usernames(request, project_id=None):
     ''')
     return HttpResponse(json.dumps(cursor.fetchall()))
 
+def register(request):
+    # Return right away if user registration is not enabled
+    if not settings.USER_REGISTRATION_ALLOWED:
+        return HttpResponseRedirect("/")
+
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            new_user = form.save()
+            return HttpResponseRedirect("/")
+    else:
+        form = UserCreationForm()
+    return render(request, "catmaid/registration/register.html", {
+        'form': form,
+    })

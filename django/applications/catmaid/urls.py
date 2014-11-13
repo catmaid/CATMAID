@@ -26,6 +26,7 @@ urlpatterns += patterns('catmaid.control.authentication',
     (r'^permissions$', 'user_project_permissions'),
     (r'^classinstance/(?P<ci_id>\d+)/permissions$',
             'get_object_permissions'),
+    (r'^register$', 'register'),
 )
 
 # Users

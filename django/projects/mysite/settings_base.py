@@ -120,6 +120,9 @@ MEDIA_TREENODE_SUBDIRECTORY = 'treenode_archives'
 # than this. This defaults to 50 Megabyte.
 GENERATED_FILES_MAXIMUM_SIZE = 52428800
 
+# Specifies if user registration is allowed
+USER_REGISTRATION_ALLOWED = False
+
 # A sequence of modules that contain Celery tasks which we want Celery to know
 # about automatically.
 CELERY_IMPORTS = (

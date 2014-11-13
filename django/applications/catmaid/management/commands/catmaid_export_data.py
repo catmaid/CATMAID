@@ -47,6 +47,8 @@ class Exporter():
             a_to_id = dict(ClassInstance.objects.filter(
                     project=self.project, class_column=classes['annotation'],
                     name__in=self.required_annotations).values_list('name', 'id'))
+            print("Found entities with the following annotations: %s" % \
+                  ", ".join(a_to_id.keys()))
 
             entities = ClassInstance.objects.filter(project=self.project,
                 class_column=classes['neuron'],

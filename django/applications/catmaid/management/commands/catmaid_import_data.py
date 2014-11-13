@@ -3,13 +3,14 @@ from django.core import serializers
 from django.core.management.base import NoArgsCommand, CommandError
 from django.db import connection
 from catmaid.control.annotationadmin import copy_annotations
-from catmaid.models import Project
+from catmaid.models import Project, User
 
 class FileImporter:
-    def __init__(self, source, target, options):
+    def __init__(self, source, target, user, options):
         self.source = source
         self.target = target
         self.options = options
+        self.user = user
 
         self.format = 'json'
 
@@ -20,6 +21,15 @@ class FileImporter:
                 # Override project to match target project
                 if hasattr(deserialized_object.object, 'project'):
                     deserialized_object.object.project = self.target
+                # Override user
+                if self.user:
+                    if hasattr(deserialized_object.object, 'user_id'):
+                        deserialized_object.object.user = self.user
+                    if hasattr(deserialized_object.object, 'reviewer_id'):
+                        deserialized_object.object.reviewer = self.user
+                    if hasattr(deserialized_object.object, 'editor_id'):
+                        deserialized_object.object.editor = self.user
+
                 deserialized_object.save()
 
         # Reset counters to current maximum IDs
@@ -33,7 +43,7 @@ class FileImporter:
 
 
 class InternalImporter:
-    def __init__(self, source, target, options):
+    def __init__(self, source, target, user, options):
         self.source = source
         self.target = target
         self.options = options
@@ -52,6 +62,8 @@ class Command(NoArgsCommand):
             help='The ID of the source project'),
         make_option('--target', dest='target', default=None,
             help='The ID of the target project'),
+        make_option('--user', dest='user', default=None,
+            help='The ID of the owner of all created objects'),
         make_option('--treenodes', dest='import_treenodes', default=True,
             action='store_true', help='Import treenodes from source'),
         make_option('--notreenodes', dest='import_treenodes',
@@ -88,6 +100,25 @@ class Command(NoArgsCommand):
             p = ask()
             if p:
                 return p
+
+    def ask_for_user(self):
+        """ Return a valid user object.
+        """
+        def ask():
+            print("Please enter the number of the user wanted:")
+            users = User.objects.all()
+            for n,u in enumerate(users):
+                print("%s: %s (ID %s)" % (n, u, u.id))
+            selection = raw_input("Selection: ")
+            try:
+                return users[int(selection)]
+            except ValueError, IndexError:
+                return None
+
+        while True:
+            u = ask()
+            if u:
+                return u
 
     def handle_noargs(self, **options):
         # Give some information about the import
@@ -126,7 +157,12 @@ class Command(NoArgsCommand):
         else:
             target = Project.objects.get(pk=options['target'])
 
-        importer = Importer(source, target, options)
+        if not options['user']:
+            user = self.ask_for_user()
+        else:
+            user = User.objects.get(pk=options['user'])
+
+        importer = Importer(source, target, user, options)
         importer.import_data()
 
         print("Finished import into project with ID %s" % importer.target.id)

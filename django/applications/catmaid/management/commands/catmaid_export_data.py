@@ -41,6 +41,8 @@ class Exporter():
         skeleton_links = ClassInstanceClassInstance.objects.filter(
                 project_id=self.project.id, relation=relations['model_of'],
                 class_instance_a__class_column=classes['skeleton'])
+        skeletons = ClassInstance.objects.filter(project=self.project,
+                class_column__in=[classes['skeleton']])
 
         if self.required_annotations:
             # Get mapping from annotations to IDs
@@ -62,6 +64,8 @@ class Exporter():
                     class_instance_b__in=entities)
             skeleton_id_constraints = set(skeleton_links.values_list(
                     'class_instance_a', flat=True))
+            skeletons = ClassInstance.objects.filter(project=self.project,
+                    id__in=skeleton_id_constraints)
 
         print("Will export %s entities" % entities.count())
 
@@ -72,6 +76,7 @@ class Exporter():
         # Export skeleton-neuron links
         self.to_serialize.append(entities)
         self.to_serialize.append(skeleton_links)
+        self.to_serialize.append(skeletons)
 
         if skeleton_id_constraints:
             # Export treenodes

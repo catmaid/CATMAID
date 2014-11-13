@@ -69,6 +69,8 @@ class Exporter():
             skeleton_id_constraints = set(skeleton_links.values_list(
                     'class_instance_a', flat=True))
 
+        print("Will export %s entities" % entities.count())
+
         # Export classes and relations
         self.to_serialize.append(Class.objects.filter(project=self.project))
         self.to_serialize.append(Relation.objects.filter(project=self.project))

@@ -123,6 +123,9 @@ GENERATED_FILES_MAXIMUM_SIZE = 52428800
 # Specifies if user registration is allowed
 USER_REGISTRATION_ALLOWED = False
 
+# A new user's defaul groups
+NEW_USER_DEFAULT_GROUPS = []
+
 # A sequence of modules that contain Celery tasks which we want Celery to know
 # about automatically.
 CELERY_IMPORTS = (

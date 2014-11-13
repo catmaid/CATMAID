@@ -9,7 +9,7 @@ import re
 import urllib
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
 from fields import Double3DField, Integer3DField, RGBAField
 
@@ -827,6 +827,19 @@ def create_user_profile(sender, instance, created, **kwargs):
 # Connect the a User object's post save signal to the profile
 # creation
 post_save.connect(create_user_profile, sender=User)
+
+def add_user_to_default_groups(sender, instance, created, **kwargs):
+    if created and settings.NEW_USER_DEFAULT_GROUPS:
+        for group in settings.NEW_USER_DEFAULT_GROUPS:
+            try:
+                g = Group.objects.get(name=group)
+                g.user_set.add(instance)
+            except Group.DoesNotExist:
+                print("Default group %s does not exist" % group)
+
+# Connect the a User object's post save signal to the profile
+# creation
+post_save.connect(add_user_to_default_groups, sender=User)
 
 # Prevent interactive question about wanting a superuser created.  (This code
 # has to go in this "models" module so that it gets processed by the "syncdb"

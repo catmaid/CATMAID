@@ -1063,8 +1063,8 @@ var WindowMaker = new function()
          [document.createTextNode(" by ")],
          [n_circles],
          [document.createTextNode("hops, limit:")],
-         [f("pre")],
-         [f("post")]]);
+         [f("upstream")],
+         [f("downstream")]]);
 
     appendToTab(tabs['Export'],
         [['Export GML', GG.exportGML.bind(GG)],

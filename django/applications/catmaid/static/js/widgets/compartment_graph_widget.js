@@ -1343,15 +1343,15 @@ GroupGraph.prototype.exportGML = function() {
 // Find skeletons to grow from groups or single skeleton nodes
 // and skeletons to append from subnodes
 GroupGraph.prototype._findSkeletonsToGrow = function() {
-  var n_circles = $('#n_circles_of_hell' + this.widgetID).val(),
-      min_pre = $('#n_circles_min_pre' + this.widgetID).val(),
-      min_post = $('#n_circles_min_post' + this.widgetID).val();
+  var n_circles = Number($('#n_circles_of_hell' + this.widgetID).val()),
+      min_downstream = Number($('#n_circles_min_downstream' + this.widgetID).val()),
+      min_upstream = Number($('#n_circles_min_upstream' + this.widgetID).val());
 
   var skids = {},
       split_partners = {},
       splits = [],
       find = function(node, min, map_name) {
-        if (0 === min) return;
+        if (-1 === min) return; // none
         var map = node.data(map_name);
         if (map) {
           var partners = {};
@@ -1368,8 +1368,8 @@ GroupGraph.prototype._findSkeletonsToGrow = function() {
     if (node.selected() && node.visible()) {
 			node.data("skeletons").forEach(function(skeleton) {
         if (this.subgraphs[skeleton.id]) {
-          find(node, min_post, 'downstream_skids');
-          find(node, min_pre, 'upstream_skids');
+          find(node, min_downstream, 'downstream_skids');
+          find(node, min_upstream, 'upstream_skids');
         } else {
 				  skids[skeleton.id] = true;
         }
@@ -1381,8 +1381,8 @@ GroupGraph.prototype._findSkeletonsToGrow = function() {
           split_partners: split_partners,
           splits: splits,
           n_circles: n_circles,
-          min_pre: min_pre,
-          min_post: min_post};
+          min_downstream: min_downstream,
+          min_upstream: min_upstream};
 };
 
 GroupGraph.prototype.growGraph = function() {
@@ -1394,8 +1394,8 @@ GroupGraph.prototype.growGraph = function() {
             "POST",
             {skeleton_ids: skids,
              n_circles: n_circles,
-             min_pre: s.min_pre,
-             min_post: s.min_post},
+             min_pre: s.min_upstream,
+             min_post: s.min_downstream},
             function(status, text) {
               if (200 !== status) return;
               var json = $.parseJSON(text);
@@ -1426,9 +1426,11 @@ GroupGraph.prototype.growGraph = function() {
       ids.forEach(function(id) { unique[id] = true; });
       rest(unique, s.n_circles -1);
     });
-  } else {
+  } else if (s.splits.length > 0) {
     // Otherwise directly just grow the partners of the split nodes by n_circles -1
     rest(s.split_partners, s.n_circles -1);
+  } else {
+    growlAlert("Information", "No partners found.");
   }
 };
 
@@ -1441,14 +1443,17 @@ GroupGraph.prototype.growPaths = function() {
   // 3. split_partners to split_partners with hops -2
 
   var new_skids = {},
-      errors = [];
+      errors = [],
+      min = Math.max(s.min_upstream, s.min_downstream);
 
+
+  // Will grow in both directions, therefore use the max as the min synapse count
   var findPaths = function(skids, n_hops, process, continuation) {
     requestQueue.register(django_url + project.id + "/graph/directedpaths", "POST",
         {skeleton_ids: skids,
          n_circles: n_hops,
-         min_pre: s.min_pre,
-         min_post: s.min_post},
+         min_pre: min,
+         min_post: min},
          function(status, text) {
            if (200 !== status) return;
            var json = $.parseJSON(text);

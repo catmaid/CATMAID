@@ -102,7 +102,7 @@ Alias /{subdir} {cmpath}/django/projects/mysite/django.wsgi
         Options +ExecCGI
 </Location>
 
-Alias /{subdir}/static/ {cmpath}/django/static/
+Alias /{subdir}/static {cmpath}/django/static/
 <Directory {cmpath}/django/static/>
     Options FollowSymLinks
     AllowOverride AuthConfig Limit FileInfo

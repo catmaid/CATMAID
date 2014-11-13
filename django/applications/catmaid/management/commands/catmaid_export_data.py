@@ -100,6 +100,21 @@ class Exporter():
                 extra_tids = connector_tids - present_tids
                 self.to_serialize.append(Treenode.objects.filter(id__in=extra_tids))
 
+                # Add additional skeletons and neuron-skeleton links
+                extra_skids = set(Treenode.objects.filter(id__in=extra_tids,
+                        project=self.project).values_list('skeleton_id', flat=True))
+                self.to_serialize.append(ClassInstance.objects.filter(id__in=extra_skids))
+
+                extra_links = ClassInstanceClassInstance.objects \
+                        .filter(project=self.project,
+                                class_instance_a__in=extra_skids,
+                                relation=relations['model_of'])
+                self.to_serialize.append(extra_links)
+
+                extra_nids = extra_links.values_list('class_instance_b', flat=True)
+                self.to_serialize.append(ClassInstance.objects.filter(
+                    project=self.project, id__in=extra_nids))
+
             # Export annotations and annotation-neurin links
             if self.export_annotations and 'annotated_with' in relations:
                 annotation_links = ClassInstanceClassInstance.objects.filter(

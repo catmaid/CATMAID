@@ -714,9 +714,18 @@ var WindowMaker = new function()
           ['Options', WA.configureParameters.bind(WA)],
         ]);
 
+    var follow_active = document.createElement('input');
+    follow_active.setAttribute('type', 'checkbox');
+    follow_active.checked = false;
+    follow_active.onclick = function() {
+      WA.setFollowActive(this.checked);
+    };
+
     appendToTab(tabs['Display'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
+          [follow_active],
+          [document.createTextNode('Follow active')],
           ['XY', WA.XYView.bind(WA)],
           ['XZ', WA.XZView.bind(WA)],
           ['ZY', WA.ZYView.bind(WA)],

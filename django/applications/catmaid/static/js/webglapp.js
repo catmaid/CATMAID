@@ -155,6 +155,7 @@ WebGLApplication.prototype.Options = function() {
   this.resampling_delta = 3000; // nm
   this.skeleton_line_width = 3;
   this.invert_shading = false;
+  this.follow_active = false;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -409,6 +410,10 @@ WebGLApplication.prototype.updateActiveNodePosition = function() {
 WebGLApplication.prototype.staticUpdateActiveNodePosition = function() {
   this.getInstances().map(function(instance) {
     instance.updateActiveNodePosition();
+    // Center the active node, if wanted
+    if (instance.options.follow_active) {
+      instance.look_at_active_node();
+    }
   });
 };
 
@@ -2825,4 +2830,9 @@ WebGLApplication.prototype.toggleInvertShading = function() {
   this.options.invert_shading = !this.options.invert_shading;
   if (this.options.shading_method === 'none') return;
   this.set_shading_method();
+};
+
+WebGLApplication.prototype.setFollowActive = function(value) {
+  this.options.follow_active = value ? true : false;
+  this.space.render();
 };

@@ -3,7 +3,6 @@ from optparse import make_option
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from catmaid.control.tracing import check_tracing_setup
-from catmaid.control.annotationadmin import copy_annotations
 from catmaid.control.neuron_annotations import create_basic_annotated_entity_query
 from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, \
          Relation, Connector, Project, Treenode, TreenodeConnector

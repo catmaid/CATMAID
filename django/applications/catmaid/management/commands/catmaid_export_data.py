@@ -3,7 +3,6 @@ from optparse import make_option
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from catmaid.control.tracing import check_tracing_setup
-from catmaid.control.neuron_annotations import create_basic_annotated_entity_query
 from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, \
          Relation, Connector, Project, Treenode, TreenodeConnector
 
@@ -49,17 +48,10 @@ class Exporter():
                     project=self.project, class_column=classes['annotation'],
                     name__in=self.required_annotations).values_list('name', 'id'))
 
-            # Find all annotated neurons
-            params = {}
-            for i,a in enumerate(self.required_annotations):
-                try:
-                    params['neuron_query_by_annotation[%s]' % i] = a_to_id[a]
-                except KeyError:
-                    # Ignore annorations that don't exist
-                    print("Couldn't find annotation '%s'" % a)
-
-            entities = create_basic_annotated_entity_query(
-                    self.project.id, params, relations, classes, ['neuron'])
+            entities = ClassInstance.objects.filter(project=self.project,
+                class_column=classes['neuron'],
+                cici_via_a__relation_id=relations['annotated_with'],
+                cici_via_a__class_instance_b_id__in=a_to_id.values())
 
             # Get the corresponding skeleton IDs
             skeleton_links = ClassInstanceClassInstance.objects.filter(

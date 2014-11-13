@@ -2539,8 +2539,11 @@ GroupGraph.prototype.quantificationDialog = function() {
 };
 
 GroupGraph.prototype.split = function(mode) {
-  this.getSelectedSkeletons().forEach(function(skid) {
-    this.subgraphs[skid] = mode;
+  var sel = this.getSelectedSkeletons();
+  if (0 === sel.length) return growlAlert("Information", "Select one or more nodes first!");
+  sel.forEach(function(skid) {
+    if (undefined === mode) delete this.subgraphs[skid];
+    else this.subgraphs[skid] = mode;
   }, this);
   this.update();
 };
@@ -2574,4 +2577,8 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
       console.log(e);
     }
   }
+};
+
+GroupGraph.prototype.unsplit = function() {
+  this.split(); // without argument
 };

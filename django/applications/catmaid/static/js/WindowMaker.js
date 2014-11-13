@@ -1077,7 +1077,8 @@ var WindowMaker = new function()
         [[document.createTextNode('Select node(s) and split by: ')],
          ['Axon & dendrite', GG.splitAxonAndDendrite.bind(GG)],
          ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)], 
-         ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)]]);
+         ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)],
+         ['Reset', GG.unsplit.bind(GG)]]);
 
     content.appendChild( bar );
 

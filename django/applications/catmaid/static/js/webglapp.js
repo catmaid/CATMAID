@@ -131,6 +131,22 @@ WebGLApplication.prototype.fullscreenWebGL = function() {
 	this.space.render();
 };
 
+
+/**
+ * Store the current view as PNG image.
+ */
+WebGLApplication.prototype.exportPNG = function() {
+  this.space.render();
+  try {
+    var imageData = this.space.view.getImageData();
+    var blob = dataURItoBlob(imageData);
+    growlAlert("Information", "The exported PNG will have a transparent background");
+    saveAs(blob, "catmaid_3d_view.png");
+  } catch (e) {
+    error("Could not export current 3D view, there was an error.", e);
+  }
+};
+
 WebGLApplication.prototype.Options = function() {
 	this.show_meshes = false;
   this.meshes_color = "#ffffff";
@@ -1373,6 +1389,12 @@ WebGLApplication.prototype.Space.prototype.View.prototype.render = function() {
 	}
 };
 
+/**
+ * Get the toDataURL() image data of the renderer in PNG format.
+ */
+WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function() {
+  return this.renderer.domElement.toDataURL("image/png");
+};
 
 /**
  * Set camera position so that the whole XY side of the bounding box facing +Z

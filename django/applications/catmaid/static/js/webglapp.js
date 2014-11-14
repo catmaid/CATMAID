@@ -147,6 +147,21 @@ WebGLApplication.prototype.exportPNG = function() {
   }
 };
 
+/**
+ * Store the current view as SVG image.
+ */
+WebGLApplication.prototype.exportSVG = function() {
+  try {
+    var svg = this.space.view.getSVGData();
+    var xml = new XMLSerializer().serializeToString(svg);
+    var blob = new Blob([xml], {type: 'text/svg'});
+    saveAs(blob, "catmaid-3d-view.svg");
+  } catch (e) {
+    error("Could not export current 3D view, there was an error.", e);
+  }
+};
+
+
 WebGLApplication.prototype.Options = function() {
 	this.show_meshes = false;
   this.meshes_color = "#ffffff";
@@ -1333,9 +1348,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
 
 	this.projector = new THREE.Projector();
 
-	this.renderer = new THREE.WebGLRenderer({ antialias: true });
-  this.renderer.sortObjects = false;
-  this.renderer.setSize( this.space.canvasWidth, this.space.canvasHeight );
+	this.renderer = this.createRenderer('webgl');
 
 	this.controls = this.createControls();
 
@@ -1359,6 +1372,27 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
     // TODO: Calling init() isn't enough, but one can manually restart
     // the widget.
   }).bind(this), false);
+};
+
+
+/**
+ * Crate and setup a WebGL or SVG renderer.
+ */
+WebGLApplication.prototype.Space.prototype.View.prototype.createRenderer = function(type) {
+  var renderer = null;
+  if ('webgl' === type) {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } else if ('svg' === type) {
+    renderer = new THREE.SVGRenderer();
+  } else {
+    error("Unknon renderer type: " + type);
+    return null;
+  }
+
+  renderer.sortObjects = false;
+  renderer.setSize( this.space.canvasWidth, this.space.canvasHeight );
+
+  return renderer;
 };
 
 WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
@@ -1394,6 +1428,17 @@ WebGLApplication.prototype.Space.prototype.View.prototype.render = function() {
  */
 WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function() {
   return this.renderer.domElement.toDataURL("image/png");
+};
+
+/**
+ * Return SVG data of the rendered image.
+ */
+WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function() {
+  var svgRenderer = this.createRenderer('svg');
+  svgRenderer.clear();
+  svgRenderer.render(this.space.scene, this.camera);
+
+  return svgRenderer.domElement;
 };
 
 /**

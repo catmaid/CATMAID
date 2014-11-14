@@ -820,22 +820,11 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     if (catmaidSVGOverlay.ensureFocused()) {
       return;
     }
-    var node = catmaidSVGOverlay.nodes[d],
-        wasActiveNode = false;
+    var node = catmaidSVGOverlay.nodes[d];
     if (e.shiftKey) {
       var atnID = SkeletonAnnotations.getActiveNodeId();
       if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-        if (!mayEdit() || !node.can_edit) {
-          alert("You don't have permission to delete node #" + node.id);
-          return;
-        }
-        // if it is active node, set active node to null
-        if (node.id === atnID) {
-          catmaidSVGOverlay.activateNode(null);
-          wasActiveNode = true;
-        }
-        catmaidSVGOverlay.deleteTreenode(node, wasActiveNode);
-        return true;
+        return catmaidSVGOverlay.deleteNode(node.id)
       }
       if (atnID) {
         var atnType = SkeletonAnnotations.getActiveNodeType();
@@ -963,8 +952,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
       return;
     }
     var atnID = SkeletonAnnotations.getActiveNodeId(),
-        connectornode = catmaidSVGOverlay.nodes[d],
-        wasActiveNode = false;
+        connectornode = catmaidSVGOverlay.nodes[d];
     if (catmaidSVGOverlay.ensureFocused()) {
       return;
     }
@@ -972,12 +960,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     // this usually refers here to the c object
     if (e.shiftKey) {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-        if (connectornode.id === atnID) {
-          catmaidSVGOverlay.activateNode(null);
-          wasActiveNode = true;
-        }
-        catmaidSVGOverlay.deleteConnectorNode(connectornode);
-        return true;
+        return catmaidSVGOverlay.deleteNode(connectornode.id);
       }
       if (atnID) {
         var atnType = SkeletonAnnotations.getActiveNodeType();

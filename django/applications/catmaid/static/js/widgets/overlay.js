@@ -1854,73 +1854,117 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
   }
 };
 
-/** Delete the connector from the database and removes it from
- * the current view and local objects. */
-SkeletonAnnotations.SVGOverlay.prototype.deleteConnectorNode = function(connectornode) {
+/**
+ * Delete a node with the given ID. The node can either be a connector or a
+ * treenode.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
+  var node = this.nodes[nodeId];
   var self = this;
-  this.submit(
-      django_url + project.id + '/connector/delete',
-      {pid: project.id,
-       connector_id: connectornode.id},
-      function(json) {
-        connectornode.needsync = false;
-        // If there was a presynaptic node, select it
-        var preIDs  = Object.keys(connectornode.pregroup);
-        var postIDs = Object.keys(connectornode.postgroup);
-        if (preIDs.length > 0) {
-            self.selectNode(preIDs[0]);
-        } else if (postIDs.length > 0) {
-            self.selectNode(postIDs[0]);
-        } else {
-            self.activateNode(null);
-        }
-        // capture ID prior to refreshing nodes and connectors
-        var cID = connectornode.id;
-        // Refresh all nodes in any case, to reflect the new state of the database
-        self.updateNodes();
 
-        statusBar.replaceLast("Deleted connector #" + cID);
-      });
-};
+  if (!node) {
+    error("Could not find a node with id " + nodeId);
+    return false;
+  }
 
-/** Delete the node from the database and removes it from
- * the current view and local objects.  */
-SkeletonAnnotations.SVGOverlay.prototype.deleteTreenode = function (node, wasActiveNode) {
-  var self = this;
-  this.submit(
-      django_url + project.id + '/treenode/delete',
-      {pid: project.id,
-       treenode_id: node.id},
-      function(json) {
-        // nodes not refreshed yet: node still contains the properties of the deleted node
-        // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
-        node.needsync = false;
-        // activate parent node when deleted
-        if (wasActiveNode) {
-          if (json.parent_id) {
-            self.selectNode(json.parent_id);
+  if (!mayEdit() || !node.can_edit) {
+    if (node.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+      error("You don't have permission to delete connector #" + node.id);
+    } else {
+      error("You don't have permission to delete node #" + node.id);
+    }
+    return false;
+  }
+
+  // Unset active node to avoid actions that involve the deleted node
+  var isActiveNode = (node.id === SkeletonAnnotations.getActiveNodeId());
+  if (isActiveNode) {
+    this.activateNode(null);
+  }
+
+  // Call actual delete methods defined below (which are callable due to
+  // hoisting)
+  switch (node.type) {
+    case SkeletonAnnotations.TYPE_CONNECTORNODE:
+      deleteConnectorNode(node);
+      break;
+    case SkeletonAnnotations.TYPE_NODE:
+      deleteTreenode(node, isActiveNode);
+      break;
+  }
+
+  /**
+   * Delete the connector from the database and removes it from the current view
+   * and local objects.
+   */
+  function deleteConnectorNode(connectornode) {
+    self.submit(
+        django_url + project.id + '/connector/delete',
+        {pid: project.id,
+        connector_id: connectornode.id},
+        function(json) {
+          connectornode.needsync = false;
+          // If there was a presynaptic node, select it
+          var preIDs  = Object.keys(connectornode.pregroup);
+          var postIDs = Object.keys(connectornode.postgroup);
+          if (preIDs.length > 0) {
+              self.selectNode(preIDs[0]);
+          } else if (postIDs.length > 0) {
+              self.selectNode(postIDs[0]);
           } else {
-            // No parent. But if this node was postsynaptic or presynaptic
-            // to a connector, the connector must be selected:
-            var pp = self.findConnectors(node.id);
-            // Try first connectors for which node is postsynaptic:
-            if (pp[1].length > 0) {
-              self.selectNode(pp[1][0]);
-            // Then try connectors for which node is presynaptic
-            } else if (pp[0].length > 0) {
-              self.selectNode(pp[0][0]);
-            } else {
               self.activateNode(null);
+          }
+          // capture ID prior to refreshing nodes and connectors
+          var cID = connectornode.id;
+          // Refresh all nodes in any case, to reflect the new state of the database
+          self.updateNodes();
+
+          statusBar.replaceLast("Deleted connector #" + cID);
+        });
+  };
+
+  /**
+   * Delete the node from the database and removes it from the current view and
+   * local objects.
+   */
+  function deleteTreenode(node, wasActiveNode) {
+    self.submit(
+        django_url + project.id + '/treenode/delete',
+        {pid: project.id,
+        treenode_id: node.id},
+        function(json) {
+          // nodes not refreshed yet: node still contains the properties of the deleted node
+          // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
+          node.needsync = false;
+          // activate parent node when deleted
+          if (wasActiveNode) {
+            if (json.parent_id) {
+              self.selectNode(json.parent_id);
+            } else {
+              // No parent. But if this node was postsynaptic or presynaptic
+              // to a connector, the connector must be selected:
+              var pp = self.findConnectors(node.id);
+              // Try first connectors for which node is postsynaptic:
+              if (pp[1].length > 0) {
+                self.selectNode(pp[1][0]);
+              // Then try connectors for which node is presynaptic
+              } else if (pp[0].length > 0) {
+                self.selectNode(pp[0][0]);
+              } else {
+                self.activateNode(null);
+              }
             }
           }
-        }
-        // capture ID prior to refreshing nodes and connectors
-        var nodeID = node.id;
-        // Refresh all nodes in any case, to reflect the new state of the database
-        self.updateNodes();
+          // capture ID prior to refreshing nodes and connectors
+          var nodeID = node.id;
+          // Refresh all nodes in any case, to reflect the new state of the database
+          self.updateNodes();
 
-        statusBar.replaceLast("Deleted node #" + nodeID);
-      });
+          statusBar.replaceLast("Deleted node #" + nodeID);
+        });
+  };
+
+  return true;
 };
 
 // Now that functions exist:

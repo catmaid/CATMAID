@@ -546,19 +546,7 @@ function TracingTool()
     run: function (e) {
       if (!mayEdit())
         return false;
-      var node = tracingLayer.svgOverlay.nodes[SkeletonAnnotations.getActiveNodeId()];
-      var nodeType = SkeletonAnnotations.getActiveNodeType();
-      tracingLayer.svgOverlay.activateNode(null);
-
-      switch (nodeType) {
-        case SkeletonAnnotations.TYPE_CONNECTORNODE:
-          tracingLayer.svgOverlay.deleteConnectorNode(node);
-          break;
-        case SkeletonAnnotations.TYPE_NODE:
-          tracingLayer.svgOverlay.deleteTreenode(node, true);
-          break;
-      }
-      
+      tracingLayer.svgOverlay.deleteNode(SkeletonAnnotations.getActiveNodeId());
       return true;
     }
   }) );

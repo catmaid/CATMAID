@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from catmaid.models import UserRole, Treenode, BrokenSlice, ClassInstance, \
         ClassInstanceClassInstance
 from catmaid.control.authentication import requires_user_role, \
-        can_edit_class_instance_or_fail
+        can_edit_class_instance_or_fail, can_edit_or_fail
 from catmaid.control.common import get_relation_to_id_map, \
         get_class_to_id_map, insert_into_log
 from catmaid.control.neuron import _delete_if_empty
@@ -367,9 +367,13 @@ def delete_treenode(request, project_id=None):
     """ Deletes a treenode. If the skeleton has a single node, deletes the
     skeleton and its neuron. Returns the parent_id, if any."""
     treenode_id = int(request.POST.get('treenode_id', -1))
+    # Raise an exception if the user doesn't have permission to edit the
+    # treenode.
+    can_edit_or_fail(request.user, treenode_id, 'treenode')
     # Raise an Exception if the user doesn't have permission to edit the neuron
     # the skeleton of the treenode is modeling.
     can_edit_treenode_or_fail(request.user, project_id, treenode_id)
+
     treenode = Treenode.objects.get(pk=treenode_id)
     parent_id = treenode.parent_id
 

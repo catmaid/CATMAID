@@ -863,7 +863,9 @@ WebGLApplication.prototype.Space = function( w, h, container, stack ) {
 	this.scene = new THREE.Scene();
 	this.view = new this.View(this);
 	this.lights = this.createLights(stack.dimension, stack.resolution, this.view.camera);
-	this.lights.forEach(this.scene.add, this.scene);
+	this.lights.forEach(function(l) {
+		this.add(l);
+	}, this.scene);
 
 	// Content
 	this.staticContent = new this.StaticContent(this.dimensions, stack, this.center);
@@ -882,6 +884,9 @@ WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canva
 	this.view.camera.setSize(canvasWidth, canvasHeight);
 	this.view.camera.toPerspective(); // invokes update of camera matrices
 	this.view.renderer.setSize(canvasWidth, canvasHeight);
+	if (this.view.controls) {
+		this.view.controls.handleResize();
+	}
 };
 
 /** Transform a THREE.Vector3d from stack coordinates to Space coordinates.
@@ -1467,7 +1472,6 @@ WebGLApplication.prototype.Space.prototype.View.prototype.createRenderer = funct
 };
 
 WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
-  this.controls.removeListeners();
   this.mouseControls.detach(this.renderer.domElement);
   this.space.container.removeChild(this.renderer.domElement);
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
@@ -1487,7 +1491,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.createControls = funct
 };
 
 WebGLApplication.prototype.Space.prototype.View.prototype.render = function() {
-	this.controls.update();
+	if (this.controls) {
+		this.controls.update();
+	}
 	if (this.renderer) {
 		this.renderer.clear();
 		this.renderer.render(this.space.scene, this.camera);

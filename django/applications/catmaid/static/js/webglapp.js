@@ -1192,31 +1192,46 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor =
         max_z = zExtent * zStep + zOffset;
 
     // Create planar mesh for floor
-    var xLines = nBaseLines + 2 * xExtent;
-    var zLines = nBaseLines + 2 * zExtent;
+    var xLines = nBaseLines + 2 * xExtent + 1;
+    var zLines = nBaseLines + 2 * zExtent + 1;
     var width = max_x - min_x;
     var height = max_z - min_z;
 
-    var geometry = new THREE.Geometry();
-    for (var x=0; x<=xLines; ++x) {
-      for (var z=0; z<=zLines; ++z) {
-        geometry.vertices.push(
-          new THREE.Vector3(min_x, floor, min_z + z*zStep),
-          new THREE.Vector3(max_x, floor, min_z + z*zStep),
-          new THREE.Vector3(min_x + x*xStep, floor, min_z),
-          new THREE.Vector3(min_x + x*xStep, floor, max_z)
-        );
-      }
+    // There are two three-component positions per line
+    var positions = new Float32Array((xLines * 2 + zLines * 2) * 3);
+
+    for (var z=0; z<zLines; ++z) {
+      var i = z * 6;
+      positions[i    ] = 0;
+      positions[i + 1] = 0;
+      positions[i + 2] = z*zStep;
+
+      positions[i + 3] = width;
+      positions[i + 4] = 0;
+      positions[i + 5] = z*zStep;
     }
 
-    geometry.computeLineDistances();
+    for (var x=0; x<xLines; ++x) {
+      var i = zLines * 6 + x * 6;
+      positions[i    ] = x*xStep;
+      positions[i + 1] = 0;
+      positions[i + 2] = 0;
+
+      positions[i + 3] = x*xStep;
+      positions[i + 4] = 0;
+      positions[i + 5] = height;
+    }
+
+    var geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.computeBoundingSphere();
 
     var material = new THREE.LineBasicMaterial({
       color: o['color'] || 0x535353
     });
     var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
 
-    mesh.position.set(min_x + 0.5 * width, floor, min_z + 0.5 * height);
+    mesh.position.set(min_x, floor, min_z);
 
     return mesh;
 };

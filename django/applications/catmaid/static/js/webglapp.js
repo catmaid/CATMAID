@@ -1284,7 +1284,8 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane 
 	geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
 	geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
 	geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
-	geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
+	geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+	geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
 
 	return new THREE.Mesh( geometry, material );
 };
@@ -1310,7 +1311,8 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissing
 	geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
 	geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
 	geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
-	geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
+	geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+	geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
 
   return space.stack.broken_slices.reduce(function(missing_sections, sliceZ) {
 		var z = -sliceZ * r.z - t.z;

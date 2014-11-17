@@ -1107,14 +1107,60 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.dispose = fun
 };
 
 WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(center, dimension, resolution) {
-  var width = dimension.x * resolution.x;
-  var height = dimension.y * resolution.y;
-  var depth = dimension.z * resolution.z;
-  var geometry = new THREE.CubeGeometry( width, height, depth );
-  var material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
-  var mesh = new THREE.Mesh( geometry, material );
+  var w2 = (dimension.x * resolution.x) / 2;
+  var h2 = (dimension.y * resolution.y) / 2;
+  var d2 = (dimension.z * resolution.z) / 2;
+
+  var geometry = new THREE.Geometry();
+
+  geometry.vertices.push(
+    new THREE.Vector3(-w2, -h2, -d2),
+    new THREE.Vector3(-w2,  h2, -d2),
+
+    new THREE.Vector3(-w2,  h2, -d2),
+    new THREE.Vector3( w2,  h2, -d2),
+
+    new THREE.Vector3( w2,  h2, -d2),
+    new THREE.Vector3( w2, -h2, -d2),
+
+    new THREE.Vector3( w2, -h2, -d2),
+    new THREE.Vector3(-w2, -h2, -d2),
+
+
+    new THREE.Vector3(-w2, -h2,  d2),
+    new THREE.Vector3(-w2,  h2,  d2),
+
+    new THREE.Vector3(-w2,  h2,  d2),
+    new THREE.Vector3( w2,  h2,  d2),
+
+    new THREE.Vector3( w2,  h2,  d2),
+    new THREE.Vector3( w2, -h2,  d2),
+
+    new THREE.Vector3( w2, -h2,  d2),
+    new THREE.Vector3(-w2, -h2,  d2),
+
+
+    new THREE.Vector3(-w2, -h2, -d2),
+    new THREE.Vector3(-w2, -h2,  d2),
+
+    new THREE.Vector3(-w2,  h2, -d2),
+    new THREE.Vector3(-w2,  h2,  d2),
+
+    new THREE.Vector3( w2,  h2, -d2),
+    new THREE.Vector3( w2,  h2,  d2),
+
+    new THREE.Vector3( w2, -h2, -d2),
+    new THREE.Vector3( w2, -h2,  d2)
+  );
+
+  geometry.computeLineDistances();
+
+  var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+  var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
+
   mesh.position.set(center.x, center.y, center.z);
-	return mesh;
+
+  return mesh;
 };
 
 /**

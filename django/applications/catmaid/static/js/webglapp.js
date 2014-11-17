@@ -147,6 +147,21 @@ WebGLApplication.prototype.exportPNG = function() {
   }
 };
 
+/**
+ * Store the current view as SVG image.
+ */
+WebGLApplication.prototype.exportSVG = function() {
+  try {
+    var svg = this.space.view.getSVGData();
+    var xml = new XMLSerializer().serializeToString(svg);
+    var blob = new Blob([xml], {type: 'text/svg'});
+    saveAs(blob, "catmaid-3d-view.svg");
+  } catch (e) {
+    error("Could not export current 3D view, there was an error.", e);
+  }
+};
+
+
 WebGLApplication.prototype.Options = function() {
 	this.show_meshes = false;
   this.meshes_color = "#ffffff";
@@ -848,7 +863,9 @@ WebGLApplication.prototype.Space = function( w, h, container, stack ) {
 	this.scene = new THREE.Scene();
 	this.view = new this.View(this);
 	this.lights = this.createLights(stack.dimension, stack.resolution, this.view.camera);
-	this.lights.forEach(this.scene.add, this.scene);
+	this.lights.forEach(function(l) {
+		this.add(l);
+	}, this.scene);
 
 	// Content
 	this.staticContent = new this.StaticContent(this.dimensions, stack, this.center);
@@ -867,6 +884,9 @@ WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canva
 	this.view.camera.setSize(canvasWidth, canvasHeight);
 	this.view.camera.toPerspective(); // invokes update of camera matrices
 	this.view.renderer.setSize(canvasWidth, canvasHeight);
+	if (this.view.controls) {
+		this.view.controls.handleResize();
+	}
 };
 
 /** Transform a THREE.Vector3d from stack coordinates to Space coordinates.
@@ -1092,14 +1112,60 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.dispose = fun
 };
 
 WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(center, dimension, resolution) {
-  var width = dimension.x * resolution.x;
-  var height = dimension.y * resolution.y;
-  var depth = dimension.z * resolution.z;
-  var geometry = new THREE.CubeGeometry( width, height, depth );
-  var material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
-  var mesh = new THREE.Mesh( geometry, material );
+  var w2 = (dimension.x * resolution.x) / 2;
+  var h2 = (dimension.y * resolution.y) / 2;
+  var d2 = (dimension.z * resolution.z) / 2;
+
+  var geometry = new THREE.Geometry();
+
+  geometry.vertices.push(
+    new THREE.Vector3(-w2, -h2, -d2),
+    new THREE.Vector3(-w2,  h2, -d2),
+
+    new THREE.Vector3(-w2,  h2, -d2),
+    new THREE.Vector3( w2,  h2, -d2),
+
+    new THREE.Vector3( w2,  h2, -d2),
+    new THREE.Vector3( w2, -h2, -d2),
+
+    new THREE.Vector3( w2, -h2, -d2),
+    new THREE.Vector3(-w2, -h2, -d2),
+
+
+    new THREE.Vector3(-w2, -h2,  d2),
+    new THREE.Vector3(-w2,  h2,  d2),
+
+    new THREE.Vector3(-w2,  h2,  d2),
+    new THREE.Vector3( w2,  h2,  d2),
+
+    new THREE.Vector3( w2,  h2,  d2),
+    new THREE.Vector3( w2, -h2,  d2),
+
+    new THREE.Vector3( w2, -h2,  d2),
+    new THREE.Vector3(-w2, -h2,  d2),
+
+
+    new THREE.Vector3(-w2, -h2, -d2),
+    new THREE.Vector3(-w2, -h2,  d2),
+
+    new THREE.Vector3(-w2,  h2, -d2),
+    new THREE.Vector3(-w2,  h2,  d2),
+
+    new THREE.Vector3( w2,  h2, -d2),
+    new THREE.Vector3( w2,  h2,  d2),
+
+    new THREE.Vector3( w2, -h2, -d2),
+    new THREE.Vector3( w2, -h2,  d2)
+  );
+
+  geometry.computeLineDistances();
+
+  var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+  var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
+
   mesh.position.set(center.x, center.y, center.z);
-	return mesh;
+
+  return mesh;
 };
 
 /**
@@ -1131,21 +1197,46 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor =
         max_z = zExtent * zStep + zOffset;
 
     // Create planar mesh for floor
-    var xLines = nBaseLines + 2 * xExtent;
-    var zLines = nBaseLines + 2 * zExtent;
+    var xLines = nBaseLines + 2 * xExtent + 1;
+    var zLines = nBaseLines + 2 * zExtent + 1;
     var width = max_x - min_x;
     var height = max_z - min_z;
-    var plane = new THREE.PlaneGeometry(width, height, xLines, zLines);
-    var material = new THREE.MeshBasicMaterial({
-        color: o['color'] || 0x535353,
-        wireframe: true,
-        side: THREE.DoubleSide,
-        transparent: true
+
+    // There are two three-component positions per line
+    var positions = new Float32Array((xLines * 2 + zLines * 2) * 3);
+
+    for (var z=0; z<zLines; ++z) {
+      var i = z * 6;
+      positions[i    ] = 0;
+      positions[i + 1] = 0;
+      positions[i + 2] = z*zStep;
+
+      positions[i + 3] = width;
+      positions[i + 4] = 0;
+      positions[i + 5] = z*zStep;
+    }
+
+    for (var x=0; x<xLines; ++x) {
+      var i = zLines * 6 + x * 6;
+      positions[i    ] = x*xStep;
+      positions[i + 1] = 0;
+      positions[i + 2] = 0;
+
+      positions[i + 3] = x*xStep;
+      positions[i + 4] = 0;
+      positions[i + 5] = height;
+    }
+
+    var geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.computeBoundingSphere();
+
+    var material = new THREE.LineBasicMaterial({
+      color: o['color'] || 0x535353
     });
-    var mesh = new THREE.Mesh(plane, material);
-    // Center the mesh and rotate it to be XZ parallel
-    mesh.position.set(min_x + 0.5 * width, floor, min_z + 0.5 * height);
-    mesh.rotation.x = Math.PI * 0.5;
+    var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
+
+    mesh.position.set(min_x, floor, min_z);
 
     return mesh;
 };
@@ -1193,7 +1284,8 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane 
 	geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
 	geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
 	geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
-	geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
+	geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+	geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
 
 	return new THREE.Mesh( geometry, material );
 };
@@ -1219,7 +1311,8 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissing
 	geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
 	geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
 	geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
-	geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
+	geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+	geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
 
   return space.stack.broken_slices.reduce(function(missing_sections, sliceZ) {
 		var z = -sliceZ * r.z - t.z;
@@ -1333,9 +1426,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
 
 	this.projector = new THREE.Projector();
 
-	this.renderer = new THREE.WebGLRenderer({ antialias: true });
-  this.renderer.sortObjects = false;
-  this.renderer.setSize( this.space.canvasWidth, this.space.canvasHeight );
+	this.renderer = this.createRenderer('webgl');
 
 	this.controls = this.createControls();
 
@@ -1361,8 +1452,28 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
   }).bind(this), false);
 };
 
+
+/**
+ * Crate and setup a WebGL or SVG renderer.
+ */
+WebGLApplication.prototype.Space.prototype.View.prototype.createRenderer = function(type) {
+  var renderer = null;
+  if ('webgl' === type) {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } else if ('svg' === type) {
+    renderer = new THREE.SVGRenderer();
+  } else {
+    error("Unknon renderer type: " + type);
+    return null;
+  }
+
+  renderer.sortObjects = false;
+  renderer.setSize( this.space.canvasWidth, this.space.canvasHeight );
+
+  return renderer;
+};
+
 WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
-  this.controls.removeListeners();
   this.mouseControls.detach(this.renderer.domElement);
   this.space.container.removeChild(this.renderer.domElement);
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
@@ -1382,7 +1493,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.createControls = funct
 };
 
 WebGLApplication.prototype.Space.prototype.View.prototype.render = function() {
-	this.controls.update();
+	if (this.controls) {
+		this.controls.update();
+	}
 	if (this.renderer) {
 		this.renderer.clear();
 		this.renderer.render(this.space.scene, this.camera);
@@ -1394,6 +1507,17 @@ WebGLApplication.prototype.Space.prototype.View.prototype.render = function() {
  */
 WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function() {
   return this.renderer.domElement.toDataURL("image/png");
+};
+
+/**
+ * Return SVG data of the rendered image.
+ */
+WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function() {
+  var svgRenderer = this.createRenderer('svg');
+  svgRenderer.clear();
+  svgRenderer.render(this.space.scene, this.camera);
+
+  return svgRenderer.domElement;
 };
 
 /**
@@ -2186,7 +2310,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       if (mesh) {
         var material = mesh.material.clone();
         material.color = color;
-        mesh.setMaterial(material);
+        mesh.material = material;
       }
 
       return color;
@@ -2213,7 +2337,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     for (var k in this.radiusVolumes) {
       if (this.radiusVolumes.hasOwnProperty(k)) {
-        this.radiusVolumes[k].setMaterial(material);
+        this.radiusVolumes[k].material = material;
       }
     }
   }
@@ -2460,7 +2584,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype._colorConnectorsBy
         material.color = color;
         seen_materials[value] = material;
       }
-      mesh.setMaterial(material);
+      mesh.material = material;
     }
   }
 

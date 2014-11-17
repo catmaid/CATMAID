@@ -163,7 +163,8 @@ SkeletonSourceManager.prototype.updateGUI = function() {
 	$("[id^='skeleton-source-select-']").each(function(index, select) {
 		var ipush = this.id.indexOf('-push-');
 		var name = (-1 === ipush ? this.id.substring(23) : this.id.substring(23, ipush)).replace(/-/g, ' ');
-		var selected = select.options[select.selectedIndex].value;
+		var selectedIndex = select.selectedIndex === -1 ? 0 : select.selectedIndex;
+		var selected = select.options[selectedIndex].value;
 		select.options.length = select.options[0].value === 'None' ? 1 : 0; // preserve manually added initial void entry when present in push selects
 		select.selectedIndex = 0;
 		options().forEach(function(option, i) {

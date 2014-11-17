@@ -713,6 +713,7 @@ var WindowMaker = new function()
           ['Refresh', WA.updateSkeletons.bind(WA)],
           ['Options', WA.configureParameters.bind(WA)],
           ['Export PNG', WA.exportPNG.bind(WA)],
+          ['Export SVG', WA.exportSVG.bind(WA)],
         ]);
 
     var follow_active = document.createElement('input');

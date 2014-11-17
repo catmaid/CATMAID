@@ -2310,7 +2310,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       if (mesh) {
         var material = mesh.material.clone();
         material.color = color;
-        mesh.setMaterial(material);
+        mesh.material = material;
       }
 
       return color;
@@ -2337,7 +2337,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     for (var k in this.radiusVolumes) {
       if (this.radiusVolumes.hasOwnProperty(k)) {
-        this.radiusVolumes[k].setMaterial(material);
+        this.radiusVolumes[k].material = material;
       }
     }
   }
@@ -2584,7 +2584,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype._colorConnectorsBy
         material.color = color;
         seen_materials[value] = material;
       }
-      mesh.setMaterial(material);
+      mesh.material = material;
     }
   }
 

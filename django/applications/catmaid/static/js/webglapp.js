@@ -1196,17 +1196,27 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor =
     var zLines = nBaseLines + 2 * zExtent;
     var width = max_x - min_x;
     var height = max_z - min_z;
-    var plane = new THREE.PlaneGeometry(width, height, xLines, zLines);
-    var material = new THREE.MeshBasicMaterial({
-        color: o['color'] || 0x535353,
-        wireframe: true,
-        side: THREE.DoubleSide,
-        transparent: true
+
+    var geometry = new THREE.Geometry();
+    for (var x=0; x<=xLines; ++x) {
+      for (var z=0; z<=zLines; ++z) {
+        geometry.vertices.push(
+          new THREE.Vector3(min_x, floor, min_z + z*zStep),
+          new THREE.Vector3(max_x, floor, min_z + z*zStep),
+          new THREE.Vector3(min_x + x*xStep, floor, min_z),
+          new THREE.Vector3(min_x + x*xStep, floor, max_z)
+        );
+      }
+    }
+
+    geometry.computeLineDistances();
+
+    var material = new THREE.LineBasicMaterial({
+      color: o['color'] || 0x535353
     });
-    var mesh = new THREE.Mesh(plane, material);
-    // Center the mesh and rotate it to be XZ parallel
+    var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
+
     mesh.position.set(min_x + 0.5 * width, floor, min_z + 0.5 * height);
-    mesh.rotation.x = Math.PI * 0.5;
 
     return mesh;
 };

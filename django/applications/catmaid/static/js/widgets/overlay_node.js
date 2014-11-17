@@ -255,7 +255,7 @@ SkeletonElements.prototype.NodePrototype = new (function() {
       fill: fillcolor,
       stroke: fillcolor,
       opacity: 1.0,
-      'stroke-width': this.CATCH_RADIUS,  // Use a large transparent stroke to
+      'stroke-width': this.CATCH_RADIUS*2,// Use a large transparent stroke to
       'stroke-opacity': 0                 // catch mouse events near the circle.
     });
     this.c.datum(this.id);

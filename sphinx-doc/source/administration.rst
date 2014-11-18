@@ -83,6 +83,8 @@ thing. Those, however, don't ask for a password, but require a
 ``.pgpass`` file (see `PostgreSQL documentation
 <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_).
 
+.. _performance-tuning:
+
 Performance tuning
 ------------------
 

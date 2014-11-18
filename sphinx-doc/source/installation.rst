@@ -269,6 +269,11 @@ following options:
 2. Nginx and either gevent, uWSGI or Gunicorn, in which case see
    :ref:`alternative-install`
 
+In general you want to fine-tune your setup to improve performance. Please have
+a look at our :ref:`collection of advice <performance-tuning>` for the various
+infrastructure parts (e.g.  webserver, database, file system). This can really
+make a difference.
+
 11. Using the admin interface
 #############################
 

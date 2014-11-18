@@ -128,7 +128,7 @@ Webserver
 
 * The webserver should mark image tiles to not expire so that they can be cached
   by a client. If the image data is public, one could let the webserver also set
-  the ``Cache-Control: public`` header for the images..
+  the ``Cache-Control: public`` header for the images.
 
 Database management system
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

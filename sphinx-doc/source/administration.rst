@@ -1,4 +1,4 @@
-.. _administering
+.. _administering:
 
 Administering a CATMAID instance
 ================================

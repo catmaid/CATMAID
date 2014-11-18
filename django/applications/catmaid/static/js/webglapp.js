@@ -153,8 +153,19 @@ WebGLApplication.prototype.exportPNG = function() {
 WebGLApplication.prototype.exportSVG = function() {
   try {
     var svg = this.space.view.getSVGData();
-    var xml = new XMLSerializer().serializeToString(svg);
-    var blob = new Blob([xml], {type: 'text/svg'});
+    var styleDict = SVGUtil.classifyStyles(svg);
+
+    var styles = Object.keys(styleDict).reduce(function(o, s) {
+      var cls = styleDict[s];
+      o = o + "." + cls + "{" + s + "}";
+      return o;
+    }, "");
+
+    var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+    SVGUtil.addStyles(xml, styles);
+
+    var data = new XMLSerializer().serializeToString(xml);
+    var blob = new Blob([data], {type: 'text/svg'});
     saveAs(blob, "catmaid-3d-view.svg");
   } catch (e) {
     error("Could not export current 3D view, there was an error.", e);

@@ -1200,3 +1200,23 @@ SVGUtil.classifyStyles = function(svg)
 
   return foundStyles;
 };
+
+/**
+ * Adds a CDATA section to the given XML document that contains the given
+ * styles. The XML document is *not* a regular SVG DOM element, but one that can
+ * be created from such an element as following:
+ *
+ * var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+ */
+SVGUtil.addStyles = function(xml, styles)
+{
+  // Prepend CSS embedded in CDATA section
+  var styleTag = xml.createElement('style');
+  styleTag.setAttribute('type', 'text/css');
+  styleTag.appendChild(xml.createCDATASection(styles));
+
+  // Add style tag to SVG node in XML document (first child)
+  xml.firstChild.appendChild(styleTag);
+
+  return xml;
+};

@@ -629,14 +629,7 @@ NeuronDendrogram.prototype.exportSVG = function()
     }
     return o;
   }, "");
-
-  // Prepend CSS embedded in CDATA section
-  var styleTag = xml.createElement('style');
-  styleTag.setAttribute('type', 'text/css');
-  styleTag.appendChild(xml.createCDATASection(css));
-
-  // Add style tag to SVG node in XML document (first child)
-  xml.firstChild.appendChild(styleTag);
+  SVGUtil.addStyles(xml, css);
 
   // Serialize SVG including CSS and export it as blob
   var data = new XMLSerializer().serializeToString(xml);

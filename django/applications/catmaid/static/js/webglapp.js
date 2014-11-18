@@ -1428,9 +1428,11 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
 
 	this.renderer = this.createRenderer('webgl');
 
-	this.controls = this.createControls();
-
   this.space.container.appendChild(this.renderer.domElement);
+
+  // Create controls after the renderer's DOM element has been added, so they
+  // are initialized with the correct dimensions right from the start.
+  this.controls = this.createControls();
 
   this.mouse = {position: new THREE.Vector2(),
                 is_mouse_down: false};

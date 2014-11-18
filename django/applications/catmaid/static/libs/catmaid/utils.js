@@ -1170,3 +1170,33 @@ SVGUtil.insertXYScatterPlot = function(
       .style("text-anchor", "left")
       .text(function(d) { return d.name; });
 };
+
+/**
+ * Simplify style representations of a SVG element. All style tags are replaced
+ * by classes, which refer to the same style properties. An object containing
+ * the styles as keys and the class names as values is returned.
+ */
+SVGUtil.classifyStyles = function(svg)
+{
+  var styleCount = 0;
+  var foundStyles = {};
+
+  // Iterate all elements that have a style attribute
+  $(svg).find("[style]").each(function(i, e) {
+    var style = this.getAttribute('style');
+    this.removeAttribute('style');
+    var cls = foundStyles[style];
+    if (!cls) {
+      styleCount++;
+      cls = "style" + styleCount;
+      foundStyles[style] = cls;
+    }
+    var existingClasses = this.getAttribute('class');
+    if (existingClasses) {
+      cls = existingClasses + "," + cls;
+    }
+    this.setAttribute('class', cls);
+  });
+
+  return foundStyles;
+};

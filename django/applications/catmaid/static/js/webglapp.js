@@ -1523,12 +1523,51 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = functio
 };
 
 /**
- * Return SVG data of the rendered image.
+ * Return SVG data of the rendered image. The rendered scene is slightly
+ * modified to not include the triangle-heavy spheres.
  */
 WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function() {
+  // Find all spheres
+  var skeletons = this.space.content.skeletons;
+  var visible_spheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
+    var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
+    var skeleton = skeletons[skeleton_id];
+    if (!skeleton.visible) return;
+
+    // Append all spheres
+    fields.map(function(field) {
+      return skeleton[field];
+    }).forEach(function(spheres) {
+      Object.keys(spheres).forEach(function(id) {
+        var sphere = spheres[id];
+        if (sphere.visible) {
+          this.push(sphere);
+        }
+      }, this);
+    }, o);
+
+    return o;
+  }, []);
+
+  var self = this;
+  function setVisibility(value)
+  {
+    // Hide all sphere meshes
+    visible_spheres.forEach(function(mesh) {
+      mesh.visible = value;
+    });
+
+    // Hide the active node
+    self.space.content.active_node.mesh.visible = value;
+  };
+
+  setVisibility(false);
+
   var svgRenderer = this.createRenderer('svg');
   svgRenderer.clear();
   svgRenderer.render(this.space.scene, this.camera);
+
+  setVisibility(true);
 
   return svgRenderer.domElement;
 };

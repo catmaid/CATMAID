@@ -982,8 +982,6 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
           annotation_id, function(message) {
               // Display message returned by the server
               growlAlert('Information', message);
-              // Refresh node
-              self.navigator.select_node(self);
           });
     } else {
       alert("Please select at least one neuron to remove the annotation from first!");
@@ -1357,8 +1355,7 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
 
   // Handle annotation of annotations
   $(annotate_button).click((function() {
-    NeuronAnnotations.prototype.annotate_entities([this.annotation_id],
-        (function() { this.navigator.select_node(this); }).bind(this));
+    NeuronAnnotations.prototype.annotate_entities([this.annotation_id]);
   }).bind(this));
 
   // Append double click handler
@@ -1573,8 +1570,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   // When clicked, the annotate button should prompt for a new annotation and
   // reload the node
   $(annotate_button).click((function() {
-    NeuronAnnotations.prototype.annotate_entities([this.neuron_id],
-        (function() { this.navigator.select_node(this); }).bind(this));
+    NeuronAnnotations.prototype.annotate_entities([this.neuron_id]);
   }).bind(this));
 
   var rename_button = document.createElement('input');
@@ -1809,8 +1805,6 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
               annotation_id, function(message) {
                   // Display message returned by the server
                   growlAlert('Information', message);
-                  // Refresh node
-                  self.navigator.select_node(self);
               });
       }, this.create_ann_post_process_fn(this, container));
 

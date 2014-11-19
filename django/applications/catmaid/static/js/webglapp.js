@@ -1681,7 +1681,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
 
 		// Find object under the mouse
 		var vector = new THREE.Vector3(mouse.position.x, mouse.position.y, 0.5);
-		projector.unprojectVector(vector, camera);
+		vector.unproject(camera);
 		var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
 
 		// Attempt to intersect visible skeleton spheres, stopping at the first found
@@ -2716,8 +2716,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = f
 	mesh.scale.z = radius;
 
 	var arrow = new THREE.ArrowHelper(direction.clone().normalize(), v1);
-	mesh.rotation = new THREE.Vector3().setEulerFromQuaternion(arrow.quaternion);
-	mesh.position = new THREE.Vector3().addVectors(v1, direction.multiplyScalar(0.5));
+	mesh.quaternion.copy(arrow.quaternion);
+	mesh.position.addVectors(v1, direction.multiplyScalar(0.5));
 
 	mesh.node_id = v1.node_id;
 

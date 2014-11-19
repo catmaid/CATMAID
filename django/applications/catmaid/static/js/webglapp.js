@@ -1061,8 +1061,8 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
 
   this.destroy = function() {
     Object.keys(this.geometryCache).forEach(function(entry) {
-      entry.geometry.dispose();
-    });
+      this[entry].geometry.dispose();
+    }, this.geometryCache);
     delete this.geometryCache;
   };
 };

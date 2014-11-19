@@ -725,11 +725,11 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
                     "cache, please close and re-open the tool", err).show();
               }
 
-              // Let the neuron name service update itself
-              NeuronNameService.getInstance().refresh();
-
-              // Execute callback, if any
-              if (callback) callback();
+              // Let the neuron name service update itself and execute the
+              // callbackback after this is done
+              NeuronNameService.getInstance().refresh(function() {
+                if (callback) callback();
+              });
             }
           }
         });

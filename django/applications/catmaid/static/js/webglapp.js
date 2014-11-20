@@ -1536,7 +1536,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = functio
 
 /**
  * Return SVG data of the rendered image. The rendered scene is slightly
- * modified to not include the triangle-heavy spheres.
+ * modified to not include the triangle-heavy spheres. Instead, these spheres
+ * are replaced with very short lines with a width that corresponds to the
+ * diameter of the sphers.
  */
 WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function() {
   // Find all spheres
@@ -1573,12 +1575,73 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     self.space.content.active_node.mesh.visible = value;
   };
 
+  function addSphereReplacements(meshes, scene)
+  {
+    // Spheres will be replaced with very short lines
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+    geometry.vertices.push(new THREE.Vector3(0, 0, 1));
+    geometry.computeLineDistances();
+
+    var addedData = {
+      m: {},
+      g: geometry,
+      d: []
+    };
+
+    var tmp = new THREE.Vector3();
+    var line = new THREE.Line3();
+    var screenXWorld = new THREE.Vector3(1,0,0).unproject(self.camera).normalize();
+    addedData.d = meshes.map(function(mesh) {
+      var hex = mesh.material.color.getHexString();
+      // Get radius of sphere in 3D world coordinates, but only use a 3x3 world
+      // matrix, since we don't need the translation.
+      var r = tmp.set(mesh.geometry.boundingSphere.radius,0,0)
+                    .applyMatrix3(mesh.matrixWorld).length();
+      // The radius has to be corrected for perspective
+      var sr = tmp.copy(screenXWorld).multiplyScalar(r);
+      line.set(mesh.position.clone(), sr.add(mesh.position));
+      line.start.project(self.camera);
+      line.end.project(self.camera);
+      var l = line.distance();
+      // Get material from index or create a new one
+      var key = hex + "-" + l;
+      var material = this.m[key]
+      if (!material) {
+        material = new THREE.LineBasicMaterial({
+          color: mesh.material.color.clone(),
+          linewidth: l * self.space.canvasWidth
+        });
+        material
+        this.m[hex] = material;
+      }
+      var newMesh = new THREE.Line( this.g, material, THREE.LinePieces );
+      // Move new mesh to position of replaced mesh and adapt size
+      newMesh.position.copy(mesh.position);
+      scene.add(newMesh);
+      return newMesh;
+    }, addedData);
+
+    return addedData;
+  };
+
+  function removeSphereReplacements(addedData, scene)
+  {
+    addedData.d.forEach(function(m) { scene.remove(m); });
+    Object.keys(addedData.m).forEach(function(m) {
+      this[m].dispose();
+    }, addedData.m);
+    addedData.g.dispose();
+  };
+
   setVisibility(false);
+  var replacements = addSphereReplacements(visible_spheres, this.space);
 
   var svgRenderer = this.createRenderer('svg');
   svgRenderer.clear();
   svgRenderer.render(this.space.scene, this.camera);
 
+  removeSphereReplacements(replacements, this.space);
   setVisibility(true);
 
   return svgRenderer.domElement;

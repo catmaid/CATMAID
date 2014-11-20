@@ -1193,7 +1193,7 @@ SVGUtil.classifyStyles = function(svg)
     }
     var existingClasses = this.getAttribute('class');
     if (existingClasses) {
-      cls = existingClasses + "," + cls;
+      cls = existingClasses + " " + cls;
     }
     this.setAttribute('class', cls);
   });

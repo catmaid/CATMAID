@@ -174,6 +174,36 @@ WebGLApplication.prototype.exportSVG = function() {
   $.unblockUI();
 };
 
+/**
+ * Create an store a neuron catalog SVG for the current view.
+ */
+WebGLApplication.prototype.exportCatalogSVG = function() {
+  $.blockUI();
+  try {
+    // TODO: Ask the user about column size and sorting name
+  
+    // Export catalog
+    var svg = this.space.view.getSVGData(true);
+    var styleDict = SVGUtil.classifyStyles(svg);
+
+    var styles = Object.keys(styleDict).reduce(function(o, s) {
+      var cls = styleDict[s];
+      o = o + "." + cls + "{" + s + "}";
+      return o;
+    }, "");
+
+    var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+    SVGUtil.addStyles(xml, styles);
+
+    var data = new XMLSerializer().serializeToString(xml);
+    var blob = new Blob([data], {type: 'text/svg'});
+    saveAs(blob, "catmaid-neuron-catalog.svg");
+  } catch (e) {
+    error("Could not export neuron catalog. There was an error.", e);
+  }
+  $.unblockUI();
+};
+
 /** Return a list of skeleton IDs that have nodes within radius of the active node. */
 WebGLApplication.prototype.spatialSelect = function(radius) {
   // TODO create a dialog that enlarges the size of the active node and makes it transparent
@@ -1286,14 +1316,20 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = functio
  * modified to not include the triangle-heavy spheres. Instead, these spheres
  * are replaced with very short lines with a width that corresponds to the
  * diameter of the sphers.
+ *
+ * If createCatalog is true, a catalog representation is crated where each
+ * neuron will be rendered in its own view, organized in a table.
  */
-WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function() {
+WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(createCatalog) {
+  var self = this;
   // Find all spheres
   var skeletons = this.space.content.skeletons;
-  var visible_spheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
+  var visibleSpheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
     var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
     var skeleton = skeletons[skeleton_id];
     if (!skeleton.visible) return;
+
+    var meshes = [];
 
     // Append all spheres
     fields.map(function(field) {
@@ -1305,21 +1341,42 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
           this.push(sphere);
         }
       }, this);
-    }, o);
+    }, meshes);
+
+    o[skeleton_id] = meshes;
 
     return o;
-  }, []);
+  }, {});
 
-  var self = this;
-  function setVisibility(value)
+  // Hide the active node
+  var atnVisible = self.space.content.active_node.mesh.visible;
+  self.space.content.active_node.mesh.visible = false;
+
+  // Render
+  var svgData = null;
+  if (createCatalog) {
+    svgData = createCatalogData(visibleSpheres, 2);
+  } else {
+    svgData = renderSkeletons(visibleSpheres);
+  }
+
+  // Show active node, if it was visible before
+  self.space.content.active_node.mesh.visible = atnVisible;
+
+  // Let 3D viewer update
+  self.space.render();
+
+  return svgData;
+
+  /**
+   * Set visibility of the given meshes.
+   */
+  function setVisibility(meshes, value)
   {
     // Hide all sphere meshes
-    visible_spheres.forEach(function(mesh) {
+    meshes.forEach(function(mesh) {
       mesh.visible = value;
     });
-
-    // Hide the active node
-    self.space.content.active_node.mesh.visible = value;
   };
 
   function addSphereReplacements(meshes, scene)
@@ -1381,17 +1438,139 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     addedData.g.dispose();
   };
 
-  setVisibility(false);
-  var replacements = addSphereReplacements(visible_spheres, this.space);
+  /**
+   * Updates the visibility of all skeletons. If a skeleton ID is given as a
+   * second argument, only this skeleton will be set visible (if it was visible
+   * before), otherwise all skeletons are set to the state in the given map.
+   */
+  function setSkeletonVisibility(visMap, visibleSkid)
+  {
+    for (var skid in self.space.content.skeletons) {
+      var s = self.space.content.skeletons[skid];
+      var visible = visibleSkid ? (skid === visibleSkid) : true;
+      s.setActorVisibility(visMap[skid].actor ? visible : false);
+      s.setPreVisibility(visMap[skid].pre ? visible : false);
+      s.setPostVisibility(visMap[skid].post ? visible : false);
+      s.setTextVisibility(visMap[skid].text ? visible : false);
+    }
+  };
 
-  var svgRenderer = this.createRenderer('svg');
-  svgRenderer.clear();
-  svgRenderer.render(this.space.scene, this.camera);
+  /**
+   * Create an SVG catalog of the current view.
+   */
+  function createCatalogData(sphereMeshes, numColumns)
+  {
+    // TODO: sort skeletons
+    var orderedSkids = Object.keys(self.space.content.skeletons);
 
-  removeSphereReplacements(replacements, this.space);
-  setVisibility(true);
+    // SVG namespace to use
+    var namespace = 'http://www.w3.org/2000/svg';
+    // Size of the label text
+    var fontsize = 14;
 
-  return svgRenderer.domElement;
+    // Margin of whole document
+    var margin = 10;
+    // Padding around each sub-svg
+    var padding = 10;
+
+    var imageWidth = self.space.canvasWidth;
+    var imageHeight = self.space.canvasHeight;
+    var numRows = Math.ceil(orderedSkids.length / numColumns);
+
+    // Crate a map of current visibility
+    var visibilityMap = {};
+    for (var skid in self.space.content.skeletons) {
+      var s = self.space.content.skeletons[skid];
+      visibilityMap[skid] = {
+        actor: s.visible,
+        pre: s.skeletonmodel.pre_visible,
+        post: s.skeletonmodel.post_visible,
+        text: s.skeletonmodel.text_visible
+      }
+    }
+
+    // Iterate over skeletons and create SVG views
+    var views = {};
+    for (var skid in self.space.content.skeletons) {
+      // Display only current skeleton
+      setSkeletonVisibility(visibilityMap, skid);
+
+      // Render view and replace sphere meshes of current skeleton
+      var spheres = {};
+      spheres[skid] = sphereMeshes[skid];
+      var svg = renderSkeletons(spheres);
+
+      // Add name of neuron
+      var text = document.createElementNS(namespace, 'text');
+      text.setAttribute('x', svg.viewBox.baseVal.x + 5);
+      text.setAttribute('y', svg.viewBox.baseVal.y + fontsize + 5);
+      text.setAttribute('style', 'font-family: Arial; font-size: ' + fontsize + 'px;');
+      var name = NeuronNameService.getInstance().getName(skid);
+      text.appendChild(document.createTextNode(name));
+      svg.appendChild(text);
+
+      // Store
+      views[skid] = svg;
+    }
+
+    // Restore visibility
+    setSkeletonVisibility(visibilityMap);
+
+    // Create result svg
+    var svg = document.createElement('svg');
+    svg.setAttribute('xmlns', namespace);
+    svg.setAttribute('width', 2 * margin + numColumns * (imageWidth + 2 * padding));
+    svg.setAttribute('height', 2 * margin + numRows * (imageHeight + 2 * padding));
+
+    // Title
+    var title = document.createElementNS(namespace, 'title');
+    title.appendChild(document.createTextNode('CATMAID neuron catalog'));
+    svg.appendChild(title);
+
+    // Combine all generated SVGs into one
+    for (var i=0, l=orderedSkids.length; i<l; ++i) {
+      var skid = orderedSkids[i];
+      var data = views[skid];
+
+      // Add a translation to current image
+      var col = i % numColumns;
+      var row = Math.floor(i / numColumns);
+      data.setAttribute('x', margin + col * imageWidth + (col * 2 + 1) * padding);
+      data.setAttribute('y', margin + row * imageHeight + (row * 2 * padding) + padding);
+
+      // Append the group to the SVG
+      svg.appendChild(data);
+    }
+
+    return svg;
+  };
+
+  /**
+   * Render the current scene and replace the given sphere meshes beforehand.
+   */
+  function renderSkeletons(sphereMeshes)
+  {
+    // Hide spherical meshes of all given skeletons
+    var sphereReplacemens = {};
+    for (var skid in sphereMeshes) {
+      setVisibility(sphereMeshes[skid], false);
+      sphereReplacemens[skid] = addSphereReplacements(sphereMeshes[skid], self.space);
+    }
+
+    // Create a new SVG renderer (which is faster than cleaning an existing one)
+    // and render the image
+    var svgRenderer = self.createRenderer('svg');
+    svgRenderer.clear();
+    svgRenderer.render(self.space.scene, self.camera);
+
+    // Show spherical meshes again and remove substitutes
+    for (skid in sphereMeshes) {
+      removeSphereReplacements(sphereReplacemens[skid], self.space);
+      setVisibility(sphereMeshes[skid], true);
+    }
+
+    return svgRenderer.domElement;
+  }
 };
 
 /**

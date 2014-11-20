@@ -151,6 +151,7 @@ WebGLApplication.prototype.exportPNG = function() {
  * Store the current view as SVG image.
  */
 WebGLApplication.prototype.exportSVG = function() {
+  $.blockUI();
   try {
     var svg = this.space.view.getSVGData();
     var styleDict = SVGUtil.classifyStyles(svg);
@@ -170,6 +171,7 @@ WebGLApplication.prototype.exportSVG = function() {
   } catch (e) {
     error("Could not export current 3D view, there was an error.", e);
   }
+  $.unblockUI();
 };
 
 

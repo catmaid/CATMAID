@@ -735,6 +735,7 @@ var WindowMaker = new function()
           ['Restrict connectors', WA.toggleConnectors.bind(WA)],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
           ['Refresh', WA.updateSkeletons.bind(WA)], // repeated on purpose
+          ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
         ]);
     
     var shadingMenu = document.createElement('select');

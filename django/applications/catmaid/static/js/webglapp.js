@@ -537,6 +537,18 @@ WebGLApplication.prototype.updateSkeletons = function() {
   this.append(models);
 };
 
+WebGLApplication.prototype.updateActiveSkeleton = function() {
+  var skid = SkeletonAnnotations.getActiveSkeletonId();
+  if (undefined === skid) return growlAlert("Information", "No active skeleton");
+  var sk = this.space.content.skeletons[skid];
+  if (!sk) return growlAlert("Information", "Active skeleton is not present in the 3D viewer");
+  // Remove and re-add (without removing, only properties are updated upon append, not the geometry)
+  this.space.removeSkeleton(sk.id);
+  var models = {};
+  models[sk.id] = sk.skeletonmodel;
+  this.append(models);
+};
+
 WebGLApplication.prototype.append = function(models) {
   if (0 === Object.keys(models).length) {
     growlAlert("Info", "No skeletons selected!");

@@ -683,7 +683,7 @@ var WindowMaker = new function()
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
-    var tabs = ['Main', 'Display', 'Shading'].reduce(function(o, name) {
+    var tabs = ['Main', 'View', 'Shading'].reduce(function(o, name) {
           titles.appendChild($('<li><a href="#' + name + WA.widgetID + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
           div.setAttribute('id', name + WA.widgetID);
@@ -723,7 +723,7 @@ var WindowMaker = new function()
       WA.setFollowActive(this.checked);
     };
 
-    appendToTab(tabs['Display'],
+    appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
           [follow_active],

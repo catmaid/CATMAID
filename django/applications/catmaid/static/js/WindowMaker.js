@@ -683,10 +683,11 @@ var WindowMaker = new function()
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
-    var tabs = ['Main', 'View', 'Shading'].reduce(function(o, name) {
-          titles.appendChild($('<li><a href="#' + name + WA.widgetID + '">' + name + '</a></li>')[0]);
+    var tabs = ['Main', 'View', 'Shading', 'View settings', 'Skeleton settings', 'Export'].reduce(function(o, name) {
+          var id = name.replace(/ /, '') + WA.widgetID;
+          titles.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
-          div.setAttribute('id', name + WA.widgetID);
+          div.setAttribute('id', id);
           bar.appendChild(div);
           o[name] = div;
           return o;
@@ -698,6 +699,8 @@ var WindowMaker = new function()
           case 1: tab.appendChild(e[0]); break;
           case 2: appendButton(tab, e[0], e[1]); break;
           case 3: appendButton(tab, e[0], e[1], e[2]); break;
+          case 4: appendCheckbox(tab, e[0], e[1], e[2], e[3]); break;
+          case 5: appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]); break;
         }
       });
     };
@@ -711,32 +714,21 @@ var WindowMaker = new function()
           ['Append', WA.loadSource.bind(WA)],
           ['Clear', WA.clear.bind(WA)],
           ['Refresh', WA.updateSkeletons.bind(WA)],
-          ['Options', WA.configureParameters.bind(WA)],
-          ['Export PNG', WA.exportPNG.bind(WA)],
-          ['Export SVG', WA.exportSVG.bind(WA)],
         ]);
-
-    var follow_active = document.createElement('input');
-    follow_active.setAttribute('type', 'checkbox');
-    follow_active.checked = false;
-    follow_active.onclick = function() {
-      WA.setFollowActive(this.checked);
-    };
 
     appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
-          [follow_active],
-          [document.createTextNode('Follow active')],
+          ['Follow active', false, function() { WA.setFollowActive(this.checked); }, false],
           ['XY', WA.XYView.bind(WA)],
           ['XZ', WA.XZView.bind(WA)],
           ['ZY', WA.ZYView.bind(WA)],
           ['ZX', WA.ZXView.bind(WA)],
           ['Restrict connectors', WA.toggleConnectors.bind(WA)],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
-          ['Refresh', WA.updateSkeletons.bind(WA)], // repeated on purpose
           ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
         ]);
+
     
     var shadingMenu = document.createElement('select');
     shadingMenu.setAttribute("id", "skeletons_shading" + WA.widgetID);
@@ -752,11 +744,6 @@ var WindowMaker = new function()
     $('<option/>', {value : 'partitions', text: 'Principal branch length'}).appendTo(shadingMenu);
     $('<option/>', {value : 'strahler', text: 'Strahler analysis'}).appendTo(shadingMenu);
     shadingMenu.onchange = WA.set_shading_method.bind(WA);
-
-    var invert = document.createElement('input');
-    invert.setAttribute('type', 'checkbox');
-    invert.checked = false;
-    invert.onclick = WA.toggleInvertShading.bind(WA);
 
     var colorMenu = document.createElement('select');
     colorMenu.setAttribute('id', 'webglapp_color_menu' + WA.widgetID);
@@ -779,13 +766,53 @@ var WindowMaker = new function()
         [
           [document.createTextNode('Shading: ')],
           [shadingMenu],
-          [document.createTextNode(' Inv: ')],
-          [invert],
+          [' Inv:', false, WA.toggleInvertShading.bind(WA), true],
           [document.createTextNode(' Color:')],
           [colorMenu],
           [document.createTextNode(' Synapse color:')],
           [synColors],
           ['User colormap', WA.toggle_usercolormap_dialog.bind(WA)],
+        ]);
+
+    var adjustFn = function(param_name) {
+      return function() {
+        WA.options[param_name] = this.checked;
+        WA.adjustStaticContent();
+      };
+    };
+    var o = WebGLApplication.prototype.OPTIONS;
+
+    appendToTab(tabs['View settings'],
+        [
+          ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent()}, false],
+          [WA.createMeshColorButton()],
+          ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
+          ['Black background -', true, adjustFn('show_background'), false],
+          ['Floor -', true, adjustFn('show_floor'), false],
+          ['Bounding box -', true, adjustFn('show_box'), false],
+          ['Z plane -', false, adjustFn('show_zplane'), false],
+          ['Missing sections', false, adjustFn('show_missing_sections'), false],
+          [' with height: ', o.missing_section_height, ' % - ', function() {
+              WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));
+              WA.adjustStaticContent();
+            }, 10],
+          ['Line width ', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 10],
+        ]);
+
+    appendToTab(tabs['Skeleton settings'],
+        [
+          ['Synapse clustering bandwidth ', o.synapse_clustering_bandwidth, ' nm -', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 10],
+          ['Smooth ', o.smooth_skeletons, function() { WA.options.smooth_skeletons = this.checked; WA.updateSkeletons(); }, false],
+          [' with sigma ', o.smooth_skeletons_sigma, ' nm -', function() { WA.updateSmoothSkeletonsSigma(this.value); }, 10],
+          ['Resample ', o.resample_skeletons, function() { WA.options.resample_skeletons = this.checked; WA.updateSkeletons(); }, false],
+          [' with delta ', o.resampling_delta, ' nm -', function() { WA.updateResampleDelta(this.value); }, 10],
+          ['Lean mode (no synapses, no tags)', o.lean_mode, function() { WA.options.lean_mode = this.checked; WA.updateSkeletons();}, false],
+        ]);
+
+    appendToTab(tabs['Export'],
+        [
+          ['Export PNG', WA.exportPNG.bind(WA)],
+          ['Export SVG', WA.exportSVG.bind(WA)],
         ]);
 
     content.appendChild( bar );
@@ -1637,6 +1664,30 @@ var WindowMaker = new function()
     div.appendChild(b);
     return b;
   };
+
+  var appendCheckbox = function(div, title, value, onclickFn, left) {
+    var cb = document.createElement('input');
+    cb.setAttribute('type', 'checkbox');
+    cb.checked = value ? true : false;
+    cb.onclick = onclickFn;
+    var elems = [cb, document.createTextNode(title)];
+    if (left) elems.reverse();
+    elems.forEach(function(elem) { div.appendChild(elem); });
+    return cb;
+  };
+
+  var appendNumericField = function(div, label, value, postlabel, onchangeFn, length) {
+    var nf = document.createElement('input');
+    nf.setAttribute('type', 'text');
+    nf.setAttribute('value', value);
+    if (length) nf.setAttribute('size', length);
+    if (onchangeFn) nf.onchange = onchangeFn;
+    if (label) div.appendChild(document.createTextNode(label));
+    div.appendChild(nf);
+    if (postlabel) div.appendChild(document.createTextNode(postlabel));
+    return nf;
+  };
+
 
   var createSkeletonAnalyticsWindow = function()
   {

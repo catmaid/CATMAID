@@ -172,6 +172,19 @@ WebGLApplication.prototype.exportSVG = function() {
   }
 };
 
+/** Return a list of skeleton IDs that have nodes within radius of the active node. */
+WebGLApplication.prototype.spatialSelect = function(radius) {
+  // TODO create a dialog that enlarges the size of the active node and makes it transparent
+  // so that one can visualize the change as well as the returned skeletons, by
+  // listing them below the radius adjustment slider.
+  //
+  // TODO add a second function to select along the cable of the active skeleton, selecting synaptic partners (pre, post or both).
+  // TODO and a third to select downstream or upstream of the active node.
+  //
+  // TODO
+};
+
+
 
 WebGLApplication.prototype.Options = function() {
 	this.show_meshes = false;
@@ -608,263 +621,6 @@ WebGLApplication.prototype.addActiveObjectToStagingArea = function() {
 WebGLApplication.prototype.showActiveNode = function() {
   this.space.content.active_node.setVisible(true);
 };
-
-
-WebGLApplication.prototype.configureParameters = function() {
-  var space = this.space;
-  var options = this.options;
-  var updateSkeletons = this.updateSkeletons.bind(this);
-
-  var dialog = document.createElement('div');
-  dialog.setAttribute("id", "dialog-confirm");
-  dialog.setAttribute("title", "Configuration");
-
-  var msg = document.createElement('p');
-  msg.innerHTML = "Missing sections height [0,100]:";
-  dialog.appendChild(msg);
-
-  var missingsectionheight = document.createElement('input');
-  missingsectionheight.setAttribute("type", "text");
-  missingsectionheight.setAttribute("id", "missing-section-height");
-  missingsectionheight.setAttribute("value", options.missing_section_height);
-  dialog.appendChild(missingsectionheight);
-  dialog.appendChild(document.createElement("br"));
-
-  var bzplane = document.createElement('input');
-  bzplane.setAttribute("type", "checkbox");
-  bzplane.setAttribute("id", "enable_z_plane");
-  bzplane.setAttribute("value", "Enable z-plane");
-  if ( options.show_zplane )
-    bzplane.setAttribute("checked", "true");
-  dialog.appendChild(bzplane);
-  dialog.appendChild(document.createTextNode('Enable z-plane'));
-  dialog.appendChild(document.createElement("br"));
-
-  var bmeshes = document.createElement('input');
-  bmeshes.setAttribute("type", "checkbox");
-  bmeshes.setAttribute("id", "show_meshes");
-  bmeshes.setAttribute("value", "Show meshes");
-  if( options.show_meshes )
-    bmeshes.setAttribute("checked", "true");
-  dialog.appendChild(bmeshes);
-  dialog.appendChild(document.createTextNode('Show meshes, with color: '));
-
-  var c = $(document.createElement("button")).attr({
-      id: 'meshes-color',
-      value: 'color'
-    })
-      .css('background-color', options.meshes_color)
-      .click( function( event )
-      {
-        var sel = $('#meshes-colorwheel');
-
-        if (sel.is(':hidden')) {
-          var cw = Raphael.colorwheel(sel[0], 150);
-          cw.color($('#meshes-color').css('background-color'),
-                   $('#meshes-opacity').text());
-          cw.onchange(function(color, alpha) {
-            color = new THREE.Color().setRGB(parseInt(color.r) / 255.0,
-                parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
-            $('#meshes-color').css('background-color', color.getStyle());
-            $('#meshes-opacity').text(alpha.toFixed(2));
-            if (options.show_meshes) {
-              var material = options.createMeshMaterial(color, alpha);
-              space.content.meshes.forEach(function(mesh) {
-                mesh.material = material;
-              });
-              space.render();
-            }
-          });
-          sel.show();
-        } else {
-          sel.hide();
-          sel.empty();
-        }
-      })
-      .text('color')
-      .get(0);
-  dialog.appendChild(c);
-  dialog.appendChild($(
-    '<span>(Opacity: <span id="meshes-opacity">' +
-      options.meshes_opacity + '</span>)</span>').get(0));
-  dialog.appendChild($('<div id="meshes-colorwheel">').hide().get(0));
-  dialog.appendChild(document.createElement("br"));
-
-  var bactive = document.createElement('input');
-  bactive.setAttribute("type", "checkbox");
-  bactive.setAttribute("id", "enable_active_node");
-  bactive.setAttribute("value", "Enable active node");
-  if( options.show_active_node )
-    bactive.setAttribute("checked", "true");
-  dialog.appendChild(bactive);
-  dialog.appendChild(document.createTextNode('Enable active node'));
-  dialog.appendChild(document.createElement("br"));
-
-  var bmissing = document.createElement('input');
-  bmissing.setAttribute("type", "checkbox");
-  bmissing.setAttribute("id", "enable_missing_sections");
-  bmissing.setAttribute("value", "Missing sections");
-  if( options.show_missing_sections )
-    bmissing.setAttribute("checked", "true");
-  dialog.appendChild(bmissing);
-  dialog.appendChild(document.createTextNode('Missing sections'));
-  dialog.appendChild(document.createElement("br"));
-
-  /*var bortho = document.createElement('input');
-  bortho.setAttribute("type", "checkbox");
-  bortho.setAttribute("id", "toggle_ortho");
-  bortho.setAttribute("value", "Toggle Ortho");
-  container.appendChild(bortho);
-  container.appendChild(document.createTextNode('Toggle Ortho'));*/
-
-  var bfloor = document.createElement('input');
-  bfloor.setAttribute("type", "checkbox");
-  bfloor.setAttribute("id", "toggle_floor");
-  bfloor.setAttribute("value", "Toggle Floor");
-  if( options.show_floor )
-    bfloor.setAttribute("checked", "true");
-  dialog.appendChild(bfloor);
-  dialog.appendChild(document.createTextNode('Toggle floor'));
-  dialog.appendChild(document.createElement("br"));
-
-  var bbox = document.createElement('input');
-  bbox.setAttribute("type", "checkbox");
-  bbox.setAttribute("id", "toggle_aabb");
-  bbox.setAttribute("value", "Toggle Bounding Box");
-  if( options.show_box )
-    bbox.setAttribute("checked", "true");
-  dialog.appendChild(bbox);
-  dialog.appendChild(document.createTextNode('Toggle Bounding Box'));
-  dialog.appendChild(document.createElement("br"));
-
-  var bbackground = document.createElement('input');
-  bbackground.setAttribute("type", "checkbox");
-  bbackground.setAttribute("id", "toggle_bgcolor");
-  bbackground.setAttribute("value", "Toggle Background Color");
-  if( options.show_background )
-    bbackground.setAttribute("checked", "true");
-  dialog.appendChild(bbackground);
-  dialog.appendChild(document.createTextNode('Toggle Background Color'));
-  dialog.appendChild(document.createElement("br"));
-
-  var blean = document.createElement('input');
-  blean.setAttribute("type", "checkbox");
-  blean.setAttribute("id", "toggle_lean");
-  if( options.lean_mode )
-    blean.setAttribute("checked", "true");
-  dialog.appendChild(blean);
-  dialog.appendChild(document.createTextNode('Toggle lean mode (no synapses, no tags)'));
-  dialog.appendChild(document.createElement("br"));
-
-  dialog.appendChild(document.createTextNode('Synapse clustering bandwidth: '));
-  var ibandwidth = document.createElement('input');
-  ibandwidth.setAttribute('type', 'text');
-  ibandwidth.setAttribute('id', 'synapse-clustering-bandwidth');
-  ibandwidth.setAttribute('value', options.synapse_clustering_bandwidth);
-  ibandwidth.setAttribute('size', '7');
-  dialog.appendChild(ibandwidth);
-  dialog.appendChild(document.createTextNode(' nm.'));
-  dialog.appendChild(document.createElement("br"));
-
-  var optionField = function(label, units, size, checkboxKey, valueKey) {
-    var checkbox;
-    if (checkboxKey) {
-      checkbox = document.createElement('input');
-      checkbox.setAttribute("type", "checkbox");
-      if (options[checkboxKey])
-        checkbox.setAttribute("checked", true);
-      dialog.appendChild(checkbox);
-    }
-    dialog.appendChild(document.createTextNode(label));
-    var number = document.createElement('input');
-    number.setAttribute('type', 'text');
-    number.setAttribute('value', options[valueKey]);
-    number.setAttribute('size', size);
-    dialog.appendChild(number);
-    dialog.appendChild(document.createTextNode(units));
-    dialog.appendChild(document.createElement("br"));
-    return [checkbox, number];
-  };
-
-  var smooth = optionField('Toggle smoothing skeletons by Gaussian convolution of the slabs, with sigma: ', ' nm.', 5, 'smooth_skeletons', 'smooth_skeletons_sigma');
-
-  var resample = optionField('Toogle resampling skeleton slabs, with delta: ', ' nm.', 5, 'resample_skeletons', 'resampling_delta');
-
-  var linewidth = optionField('Skeleton rendering line width: ', ' pixels.', 5, null, 'skeleton_line_width');
-
-  var submit = this.submit;
-
-  $(dialog).dialog({
-    height: 440,
-    width: 600,
-    modal: true,
-    buttons: {
-      "Cancel": function() {
-        $(this).dialog("close");
-      },
-      "OK": function() {
-        var missing_section_height = missingsectionheight.value;  
-        try {
-          missing_section_height = parseInt(missing_section_height);
-          if (missing_section_height < 0) missing_section_height = 20;
-        } catch (e) {
-          alert("Invalid value for the height of missing sections!");
-        }
-
-        options.missing_section_height = missing_section_height;
-        options.show_zplane = bzplane.checked;
-        options.show_missing_sections = bmissing.checked;
-        options.show_floor = bfloor.checked;
-        options.show_box = bbox.checked;
-        options.show_background = bbackground.checked;
-
-        options.show_active_node = bactive.checked;
-        options.show_meshes = bmeshes.checked;
-        options.meshes_color = $('#meshes-color').css('background-color').replace(/\s/g, '');
-        options.meshes_opacity = $('#meshes-opacity').text();
-        options.lean_mode = blean.checked;
-
-        var read = function(checkbox, checkboxKey, valueField, valueKey) {
-          var old_value = options[checkboxKey];
-          if (checkbox) options[checkboxKey] = checkbox.checked;
-          try {
-            var new_value = parseInt(valueField.value);
-            if (new_value > 0) {
-              options[valueKey] = new_value;
-              return old_value != new_value;
-            } else alert("'" + valueKey + "' must be larger than zero.");
-          } catch (e) {
-            alert("Invalid value for '" + valueKey + "': " + valueField.value);
-          }
-          return false;
-        };
-
-        var changed_sigma = read(smooth[0], 'smooth_skeletons', smooth[1], 'smooth_skeletons_sigma'),
-            changed_bandwidth = read(null, null, ibandwidth, 'synapse_clustering_bandwidth', null),
-            changed_delta = read(resample[0], 'resample_skeletons', resample[1], 'resampling_delta'),
-            changed_line_width = read(null, null, linewidth[1], 'skeleton_line_width', null);
-
-        space.staticContent.adjust(options, space);
-        space.content.adjust(options, space, submit, changed_bandwidth, changed_line_width);
-
-        // Copy
-        WebGLApplication.prototype.OPTIONS = options.clone();
-
-        if (changed_sigma || changed_delta) updateSkeletons();
-        else space.render();
-
-        $(this).dialog("close");
-      }
-    },
-    close: function(event, ui) {
-      $('#dialog-confirm').remove();
-
-      // Remove the binding
-      $(document).off('keyup', "#meshes-color");
-    }
-  });
-};
-
 
 
 /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
@@ -1398,7 +1154,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.newJSONLoader = fun
 };
 
 /** Adjust content according to the persistent options. */
-WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit, changed_bandwidth, changed_line_width) {
+WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit) {
 	if (options.show_meshes) {
     if (0 === this.meshes.length) {
 		  this.loadMeshes(space, submit, options.createMeshMaterial());
@@ -1409,18 +1165,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
 	}
 
 	this.active_node.setVisible(options.show_active_node);
-
-  if (changed_bandwidth && 'synapse-clustering' === options.connector_color) {
-    space.updateConnectorColors(options, Object.keys(this.skeletons).map(function(skid) { return this.skeletons[skid]; }, this));
-  }
-
-  if (changed_line_width) {
-    Object.keys(this.skeletons).forEach(function(skid) {
-      this.skeletons[skid].changeSkeletonLineWidth(options.skeleton_line_width);
-    }, this);
-  }
 };
-
 
 WebGLApplication.prototype.Space.prototype.View = function(space) {
 	this.space = space;
@@ -3045,4 +2790,108 @@ WebGLApplication.prototype.toggleInvertShading = function() {
 WebGLApplication.prototype.setFollowActive = function(value) {
   this.options.follow_active = value ? true : false;
   this.space.render();
+};
+
+WebGLApplication.prototype.adjustStaticContent = function() {
+  this.space.staticContent.adjust(this.options, this.space);
+  this.space.render();
+};
+
+WebGLApplication.prototype.adjustContent = function() {
+  this.space.content.adjust(this.options, this.space, this.submit);
+  this.space.render();
+};
+
+
+WebGLApplication.prototype._validate = function(number, error_msg) {
+  if (!number) return null;
+  var value = +number; // cast
+  if (Number.isNaN(value) || value < 1) return growlAlert("WARNING", error_msg);
+  return value;
+};
+
+WebGLApplication.prototype.updateSynapseClusteringBandwidth = function(value) {
+  value = this._validate(value, "Invalid synapse clustering value");
+  if (!value) return;
+  this.options.synapse_clustering_bandwidth = value;
+  if ('synapse-clustering' === this.options.connector_color) {
+    var skeletons = this.space.content.skeletons;
+    this.space.updateConnectorColors(this.options, Object.keys(skeletons).map(function(skid) { return skeletons[skid]; }, this));
+  }
+};
+
+WebGLApplication.prototype.updateSkeletonLineWidth = function(value) {
+  value = this._validate(value, "Invalid skeleton line width value");
+  if (!value) return;
+  this.options.skeleton_line_width = value;
+  var sks = this.space.content.skeletons;
+  Object.keys(sks).forEach(function(skid) { sks[skid].changeSkeletonLineWidth(value); });
+  this.space.render();
+};
+
+WebGLApplication.prototype.updateSmoothSkeletonsSigma = function(value) {
+  value = this._validate(value, "Invalid sigma value");
+  if (!value) return;
+  this.options.smooth_skeletons_sigma = value;
+  if (this.options.smooth_skeletons) this.updateSkeletons();
+};
+
+WebGLApplication.prototype.updateResampleDelta = function(value) {
+  value = this._validate(value, "Invalid resample delta");
+  if (!value) return;
+  this.options.resampling_delta = value;
+  if (this.options.resample_skeletons) this.updateSkeletons();
+}
+
+WebGLApplication.prototype.createMeshColorButton = function() {
+  var mesh_color = '#meshes-color' + this.widgetID,
+      mesh_opacity = '#mesh-opacity' + this.widgetID,
+      mesh_colorwheel = '#mesh-colorwheel' + this.widgetID,
+      mesh_opacity = '#mesh-opacity' + this.widgetID;
+  var onchange = (function(color, alpha) {
+    color = new THREE.Color().setRGB(parseInt(color.r) / 255.0,
+        parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
+    $(mesh_color).css('background-color', color.getStyle());
+    $(mesh_opacity).text(alpha.toFixed(2));
+    this.options.meshes_color = $(mesh_color).css('background-color').replace(/\s/g, '');
+    if (this.options.show_meshes) {
+      var material = this.options.createMeshMaterial(color, alpha);
+      this.space.content.meshes.forEach(function(mesh) {
+        mesh.material = material;
+      });
+      this.space.render();
+    }
+  }).bind(this);
+
+  // Defaults for initialization:
+  var options = WebGLApplication.prototype.OPTIONS;
+
+  var c = $(document.createElement("button")).attr({
+      id: mesh_color.slice(1),
+      value: 'color'
+    })
+      .css('background-color', options.meshes_color)
+      .click( function( event )
+      {
+        var sel = $(mesh_colorwheel);
+        if (sel.is(':hidden')) {
+          var cw = Raphael.colorwheel(sel[0], 150);
+          cw.color($(mesh_color).css('background-color'),
+                   $(mesh_opacity).text());
+          cw.onchange(onchange);
+          sel.show();
+        } else {
+          sel.hide();
+          sel.empty();
+        }
+      })
+      .text('color')
+      .get(0);
+  var div = document.createElement('span');
+  div.appendChild(c);
+  div.appendChild($(
+    '<span>(Opacity: <span id="' + mesh_opacity.slice(1) + '">' +
+      options.meshes_opacity + '</span>)</span>').get(0));
+  div.appendChild($('<div id="' + mesh_colorwheel.slice(1) + '">').hide().get(0));
+  return div;
 };

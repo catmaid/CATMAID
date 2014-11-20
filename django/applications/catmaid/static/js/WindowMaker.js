@@ -378,6 +378,20 @@ var WindowMaker = new function()
     collapse.appendChild(document.createTextNode('Only branches and tagged nodes'));
     buttons.appendChild(collapse);
 
+    var collapseNotABranch = document.createElement('label');
+    var collapseNotABranchInput = document.createElement('input');
+    collapseNotABranchInput.setAttribute('type', 'checkbox');
+    if (ND.collapseNotABranch) {
+      collapseNotABranchInput.setAttribute('checked', 'checked');
+    }
+    collapseNotABranchInput.onchange = function() {
+      ND.setCollapseNotABranch(this.checked);
+      ND.update();
+    };
+    collapseNotABranch.appendChild(collapseNotABranchInput);
+    collapseNotABranch.appendChild(document.createTextNode('Collapse \"not a branch\" nodes'));
+    buttons.appendChild(collapseNotABranch);
+
     var naming = document.createElement('label');
     var namingInput = document.createElement('input');
     namingInput.setAttribute('type', 'checkbox');

@@ -16,6 +16,7 @@ var NeuronDendrogram = function() {
   this.showStrahler = false;
   this.radialDisplay = true;
   this.minStrahler = 1;
+  this.collapseNotABranch = true;
 
   // Stores a reference to the current SVG, if any
   this.svg = null;
@@ -318,13 +319,19 @@ NeuronDendrogram.prototype.update = function()
     return;
   }
 
-  var tag = $('input#dendrogram-tag-' + this.widgetID).val();
-  var taggedNodeIds = this.currentSkeletonTags.hasOwnProperty(tag) ? this.currentSkeletonTags[tag] : [];
-  this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds, []);
+  var getTaggedNodes = (function(tag)
+  {
+    return this.currentSkeletonTags.hasOwnProperty(tag) ? this.currentSkeletonTags[tag] : [];
+  }).bind(this);
+
+  var filterTag = $('input#dendrogram-tag-' + this.widgetID).val();
+  var taggedNodeIds = getTaggedNodes(filterTag);
+  var blacklist = this.collapseNotABranch ? getTaggedNodes('not a branch'): [];
+  this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds, blacklist);
   this.renderedNodeIds = this.getNodesInTree(this.renderTree);
 
   if (this.currentSkeletonTree && this.currentSkeletonTags) {
-    this.renderDendogram(this.renderTree, this.currentSkeletonTags, tag);
+    this.renderDendogram(this.renderTree, this.currentSkeletonTags, filterTag);
   }
 };
 
@@ -667,4 +674,9 @@ NeuronDendrogram.prototype.setRadialDisplay = function(value)
 NeuronDendrogram.prototype.setMinStrahler = function(value)
 {
   this.minStrahler = value;
+};
+
+NeuronDendrogram.prototype.setCollapseNotABranch = function(value)
+{
+  this.collapseNotABranch = Boolean(value);
 };

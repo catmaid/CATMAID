@@ -639,28 +639,28 @@ NeuronDendrogram.prototype.exportSVG = function()
 
 NeuronDendrogram.prototype.setCollapsed = function(value)
 {
-  this.collapsed = value;
+  this.collapsed = Boolean(value);
 };
 
 NeuronDendrogram.prototype.setShowNodeIds = function(value)
 {
-  this.showNodeIDs = value;
+  this.showNodeIDs = Boolean(value);
 };
 
 NeuronDendrogram.prototype.setShowTags = function(value)
 {
-  this.showTags = value;
+  this.showTags = Boolean(value);
 };
 
 NeuronDendrogram.prototype.setShowStrahler = function(value)
 {
-  this.showStrahler = value;
+  this.showStrahler = Boolean(value);
 };
 
 NeuronDendrogram.prototype.setRadialDisplay = function(value)
 {
   this.reset();
-  this.radialDisplay = value;
+  this.radialDisplay = Boolean(value);
 };
 
 NeuronDendrogram.prototype.setMinStrahler = function(value)

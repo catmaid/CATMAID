@@ -215,14 +215,14 @@ NeuronDendrogram.prototype.getNodesInTree = function(rootNode)
  * Creates a tree representation of a node array. Nodes that appear in
  * taggedNodes get a label attached.
  */
-NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNodes)
+NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNodes, nodesToSkip)
 {
   /**
    * Helper to create a tree representation of a skeleton. Expects data to be of
    * the format [id, parent_id, user_id, x, y, z, radius, confidence].
    */
   var createTree = function(index, taggedNodes, data, belowTag, collapsed, strahler,
-      minStrahler)
+      minStrahler, blacklist)
   {
     var id = data[0];
     var tagged = taggedNodes.indexOf(id) != -1;
@@ -248,7 +248,8 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
                     (1 === index[cid].length) && // only one child?
                     taggedNodes.indexOf(cid) == -1) || // not tagged?
                    (minStrahler && // Alternatively, is min Strahler set?
-                    strahler[cid] < minStrahler);
+                    strahler[cid] < minStrahler) || // Strahler below threshold?
+                   (blacklist.indexOf(cid) !== -1); // Alternatively, blacklisted?
         if (skip) {
             // Test if child can also be skipped, if available
             var c = index[cid];
@@ -264,7 +265,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
 
       node.children = index[id].map(findNext).filter(notNull).map(function(c) {
         return createTree(index, taggedNodes, c, belowTag, collapsed, strahler,
-            minStrahler);
+            minStrahler, blacklist);
       });
 
     }
@@ -299,7 +300,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
   // Create the tree, starting from the root node
   var root = parentToChildren[null][0];
   var tree = createTree(parentToChildren, taggedNodes, root, false, this.collapsed, strahler,
-      this.minStrahler);
+      this.minStrahler, nodesToSkip);
 
   return tree;
 };
@@ -319,7 +320,7 @@ NeuronDendrogram.prototype.update = function()
 
   var tag = $('input#dendrogram-tag-' + this.widgetID).val();
   var taggedNodeIds = this.currentSkeletonTags.hasOwnProperty(tag) ? this.currentSkeletonTags[tag] : [];
-  this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds);
+  this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds, []);
   this.renderedNodeIds = this.getNodesInTree(this.renderTree);
 
   if (this.currentSkeletonTree && this.currentSkeletonTags) {

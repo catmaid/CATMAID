@@ -1215,8 +1215,12 @@ SVGUtil.addStyles = function(xml, styles)
   styleTag.setAttribute('type', 'text/css');
   styleTag.appendChild(xml.createCDATASection(styles));
 
-  // Add style tag to SVG node in XML document (first child)
-  xml.firstChild.appendChild(styleTag);
-
+  // Add style tag to SVG node in XML document (first child if there are
+  // elements already)
+  if (0 === xml.firstChild.childElementCount) {
+    xml.firstChild.appendChild(styleTag);
+  } else {
+    xml.firstChild.insertBefore(styleTag, xml.firstChild.firstChild);
+  }
   return xml;
 };

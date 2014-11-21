@@ -226,7 +226,7 @@ var TreenodeTable = function(skid)
       self.refresh();
     });
 
-    $(tableSelector + " tbody tr").live('dblclick', function () {
+    $(tableSelector).on("dblclick", "tbody tr", function () {
       var aData = ns.oTable.fnGetData(this);
       // retrieve coordinates and moveTo
       var x = parseFloat(aData[4]);

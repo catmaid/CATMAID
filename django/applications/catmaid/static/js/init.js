@@ -12,6 +12,15 @@ if (!window.console) {
   window.console.log = function() {};
 }
 
+// Attach a general error handler
+window.onerror = function( msg, url, num )
+{
+  error('An error occured in CATMAID and the current action can\'t be ' +
+        'completed. You can try to reload the widget or tool you just used.',
+        'Error: ' + msg + '\nURL: ' + url + '\nLine: ' + num);
+  return true;
+};
+
 var global_bottom = 29;
 var statusBar; //!< global statusBar
 var slider_trace_z;

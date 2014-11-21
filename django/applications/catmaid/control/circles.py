@@ -1,12 +1,16 @@
 import json
-from django.db import connection
-from django.http import HttpResponse
-from catmaid.control.authentication import requires_user_role, UserRole
-from catmaid.control.skeleton import _neuronnames
-from itertools import combinations
 import networkx as nx
+
+from itertools import combinations
 from collections import defaultdict
 from functools import partial
+
+from django.db import connection
+from django.http import HttpResponse
+
+from catmaid.models import UserRole
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.skeleton import _neuronnames
 
 def _next_circle(skeleton_set, cursor):
     """ Return a dictionary of skeleton IDs in the skeleton_set vs a dictionary of connected skeletons vs how many connections."""
@@ -18,7 +22,7 @@ def _next_circle(skeleton_set, cursor):
       AND tc1.connector_id = tc2.connector_id
       AND tc1.skeleton_id != tc2.skeleton_id
       AND tc1.relation_id != tc2.relation_id
-    ''' % ','.join(str(skid) for skid in skeleton_set))
+    ''' % ','.join(map(str, skeleton_set)))
     connections = defaultdict(partial(defaultdict, partial(defaultdict, int)))
     for row in cursor.fetchall():
         connections[row[0]][row[1]][row[2]] += 1
@@ -113,14 +117,12 @@ def find_directed_paths(request, project_id=None):
         all_sources = all_sources.union(next_sources)
 
     # Find all directed paths between all pairs of inputs
-    unique = set()
+    all_paths = []
     for start, end in combinations(sources, 2):
         for paths in [nx.all_simple_paths(graph, start, end, path_length + 1),
                       nx.all_simple_paths(graph, end, start, path_length + 1)]:
             for path in paths:
-                for node in path:
-                    unique.add(node)
+                all_paths.append(path)
 
-    skeleton_ids = tuple(unique - sources)
-    return HttpResponse(json.dumps([skeleton_ids, _neuronnames(skeleton_ids, project_id)]))
+    return HttpResponse(json.dumps(all_paths))
 

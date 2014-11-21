@@ -1,14 +1,16 @@
 import json
 
 from collections import defaultdict
+
 from django.db import connection
 from django.http import HttpResponse, Http404
-from django.db.models import Count
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import Project, Class, ClassInstance, Relation, Connector, \
+        ConnectorClassInstance, UserRole, Treenode, TreenodeClassInstance, \
+        ChangeRequest
+from catmaid.control.authentication import requires_user_role, can_edit_or_fail
+from catmaid.fields import Double3D
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def label_remove(request, project_id=None):
@@ -16,15 +18,15 @@ def label_remove(request, project_id=None):
     class_instance_for_label = int(request.POST['class_instance_id'])
     if request.user.is_superuser:
         ClassInstance.objects.filter(id=class_instance_for_label).delete()
-        return HttpResponse(json.dumps({'message': 'success'}), mimetype="text/plain")
-    return HttpResponse(json.dumps({}), mimetype="text/plain")
+        return HttpResponse(json.dumps({'message': 'success'}), content_type="text/plain")
+    return HttpResponse(json.dumps({}), content_type="text/plain")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_all(request, project_id=None):
     qs = ClassInstance.objects.filter(
         class_column__class_name='label',
         project=project_id)
-    return HttpResponse(json.dumps(list(x.name for x in qs)), mimetype="text/plain")
+    return HttpResponse(json.dumps(list(x.name for x in qs)), content_type="text/plain")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_node(request, project_id=None, ntype=None, location_id=None):
@@ -42,13 +44,14 @@ def labels_for_node(request, project_id=None, ntype=None, location_id=None):
             project=project_id).select_related('class_instance__name')
     else:
         raise Http404('Unknown node type: "%s"' % (ntype,))
-    return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), mimetype="text/plain")
+    return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), content_type="text/plain")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_nodes(request, project_id=None):
-    # Two POST variables, which are each an array of integers stringed together with commas as separators
-    treenode_ids = request.POST['treenode_ids'].strip()
-    connector_ids = request.POST['connector_ids'].strip()
+    # Two POST variables, which are each an array of integers stringed together
+    # with commas as separators
+    treenode_ids = request.POST.get('treenode_ids', '').strip()
+    connector_ids = request.POST.get('connector_ids', '').strip()
     result = defaultdict(list)
     cursor = connection.cursor();
 
@@ -105,7 +108,7 @@ def labels_for_nodes(request, project_id=None):
             result[cci.connector.id].append(cci.class_instance.name)
         """
 
-    return HttpResponse(json.dumps(result), mimetype="text/plain")
+    return HttpResponse(json.dumps(result), content_type="text/plain")
 
 @requires_user_role(UserRole.Annotate)
 def label_update(request, project_id=None, location_id=None, ntype=None):
@@ -135,15 +138,21 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     # Get the existing list of tags for the tree node/connector and delete any that are not in the new list.
     existingLabels = table.objects.filter(**kwargs).select_related('class_instance__name')
     labels_to_delete = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags)
-    other_labels = labels_to_delete.exclude(user = request.user)
 
-    # Delete labels
-    if request.user.is_superuser:
-        # All labels
-        labels_to_delete.delete()
-    else:
-        # Only labels associated to the treenode by the request.user
-        labels_to_delete.filter(user=request.user).delete()
+    # Iterate over all labels that should get deleted to check permission
+    # on each one. Remember each label that couldn't be deleted in the
+    # other_labels array.
+    other_labels = []
+    deleted_labels = []
+    for l in labels_to_delete:
+        try:
+            can_edit_or_fail(request.user, l.id, table._meta.db_table)
+            if remove_label(l.id, ntype):
+                deleted_labels.append(l)
+            else:
+                other_labels.append(l)
+        except:
+            other_labels.append(l)
 
     # Create change requests for labels associated to the treenode by other users
     for label in other_labels:
@@ -151,7 +160,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                        'project': p,
                        'user': request.user,
                        'recipient': node.user,
-                       'location': node.location,
+                       'location': Double3D(node.location_x, node.location_y, node.location_z),
                        ntype: node,
                        'description': 'Remove tag \'' + label.class_instance.name + '\'',
                        'validate_action': 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(label.id) + ', "' + ntype + '")',
@@ -195,13 +204,13 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                                'project': p, 
                                'user': request.user,
                                'recipient': node.user,
-                               'location': node.location,
+                               'location': Double3D(node.location_x, node.location_y, node.location_z),
                                'treenode': node,
                                'validate_action': 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(tci.id) + ', "' + ntype + '")',
                               'reject_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "' + ntype + '")'}).save()
 
 
-    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+    return HttpResponse(json.dumps({'message': 'success'}), content_type='text/json')
 
 
 def label_exists(label_id, node_type):
@@ -215,7 +224,7 @@ def label_exists(label_id, node_type):
             return False
     elif node_type == 'connector':
         try:
-            label = ConnectorClassInstance.get(pk=label_id)
+            label = ConnectorClassInstance.objects.get(pk=label_id)
             return True
         except ConnectorClassInstance.DoesNotExist:
             return False
@@ -227,14 +236,21 @@ def remove_label(label_id, node_type):
     # This removes an exact instance of a tag being applied to a node/connector, it does not look up the tag by name.
     # If the tag was removed and added again then this will do nothing and the tag will remain.
     if node_type == 'treenode':
-        try:
-            label = TreenodeClassInstance.objects.get(pk=label_id).delete()
-        except TreenodeClassInstance.DoesNotExist:
-            pass
+        table = TreenodeClassInstance
     elif node_type == 'connector':
-        try:
-            label = ConnectorClassInstance.objects.get(pk=label_id).delete()
-        except ConnectorClassInstance.DoesNotExist:
-            pass
+        table = ConnectorClassInstance
     else:
         raise Exception('Unknown node type: "%s"', node_type)
+
+    try:
+        label_link = table.objects.get(pk=label_id)
+        label = label_link.class_instance
+        label_link.delete()
+        # Remove class instance for all deleted labels, if it isn't linked to any
+        # treenode anymore.
+        if 0 == table.objects.filter(class_instance=label).count():
+            label.delete()
+
+        return True
+    except table.DoesNotExist:
+        return False

@@ -1,12 +1,17 @@
 import string
 import random
+import json
+
 from collections import defaultdict
+
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
-from django.template import RequestContext
+from django.template.context import RequestContext
 
-from catmaid.models import Relation, Class, Log, NeuronSearch, CELL_BODY_CHOICES, ClassInstance, ClassInstanceClassInstance, SORT_ORDERS_DICT
-import json
+from catmaid.fields import Double3D
+from catmaid.models import Log, NeuronSearch, CELL_BODY_CHOICES, \
+        SORT_ORDERS_DICT,  Relation, Class, ClassInstance, \
+        ClassInstanceClassInstance
 
 def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
     relation = ClassInstanceClassInstance()
@@ -19,6 +24,9 @@ def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id
     return relation
 
 def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
+    """ Inserts a new entry into the log table. If the location parameter is
+    passed, it is expected to be an iteratable (list, tuple).
+    """
     # valid operation types
     operation_type_array = [
         "rename_root",
@@ -52,7 +60,7 @@ def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
     new_log.project_id = project_id
     new_log.operation_type = op_type
     if not location is None:
-        new_log.location = location
+        new_log.location = Double3D(*location)
     if not freetext is None:
         new_log.freetext = freetext
 
@@ -78,7 +86,7 @@ def json_error_response(message):
     helper method to return such a structure:
     """
     return HttpResponse(json.dumps({'error': message}),
-                        mimetype='text/json')
+                        content_type='text/json')
 
 
 def order_neurons(neurons, order_by=None):

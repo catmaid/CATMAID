@@ -1,8 +1,14 @@
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+import json
 
+from django.http import HttpResponse
+from django.db import connection
 from django.shortcuts import get_object_or_404
+
+from catmaid.models import UserRole, Relation, Class, ClassClass, Restriction, \
+        CardinalityRestriction
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
+
 
 # Root classes can be seen as namespaces in the semantic space. Different
 # tools use different root classes.
@@ -24,6 +30,30 @@ class ClassElement:
     def __init__(self, id, name):
         self.id = id
         self.name = name
+
+class Feature:
+    """ A small container to keep a list of class-class links.
+    """
+    def __init__(self, class_class_links):
+        self.links = class_class_links
+        if self.links:
+            self.short_name = ",".join(
+                [l.class_a.class_name for l in self.links] )
+            self.name = "%s: %s" % (self.links[0].class_b.class_name, self.short_name)
+        else:
+            raise ValueError("A feature needs at least one element")
+
+    def __str__(self):
+        return self.name
+    def __len__(self):
+        return len(self.links)
+
+class FeatureLink:
+    def __init__(self, class_a, class_b, relation, super_class = None):
+        self.class_a = class_a
+        self.class_b = class_b
+        self.relation = relation
+        self.super_class = super_class
 
 def get_known_ontology_roots(request):
     """ Returns an array of all known root class names.
@@ -360,7 +390,7 @@ def rename_relation(request, project_id=None):
     relation.relation_name = new_name
     relation.save()
 
-    return HttpResponse(json.dumps({'renamed_relation': relid}))
+    return HttpResponse(json.dumps({'renamed_relation': rel_id}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_relation_from_ontology(request, project_id=None):
@@ -623,3 +653,175 @@ def get_class_links_qs( project_id, rel_name, class_name, class_is_b=True ):
         cici_q = ClassClass.objects.filter(project_id=project_id,
             relation__in=relation, class_a__in=other_class)
     return cici_q
+
+def get_by_graphs_instantiated_features(graphs, features):
+    """ Creates one complex query that thest which feature are instanciated in one of
+    the graphs.
+    """
+
+    # Make sure there are features at all
+    if not features:
+        raise ValueError("Need at least one feature to continue")
+
+    # Find maximum feature length
+    max_links = 0
+    for f in features:
+        if len(f.links) > max_links:
+            max_links = len(f.links)
+
+    # Create feature array
+    normalized_features = []
+    for f in features:
+        links = []
+        for i in range(max_links):
+            if i < len(f.links):
+                fl = f.links[i]
+                links.append( '[%s,%s]' % (fl.class_a.id, fl.relation.id))
+            else:
+                links.append( '[-1,-1]' )
+        normalized_features.append(links)
+
+    # Build query with custom ID arrays: An array of graph ids and an array
+    # of features. Those features are arrays of links and those links are
+    # each an array of the class a ID and the relation ID of that link. All
+    # features need to have the same number of links in the array. So if they
+    # have actually less, pad with [-1, -1] elements.
+    query = "SELECT * FROM filter_used_features(ARRAY[%s], ARRAY[%s] );" % \
+        (",".join([str(g.id) for g in graphs]),
+         ",".join(['[%s]' % ','.join(f) for f in normalized_features]))
+
+    # Run query
+    cursor = connection.cursor()
+    cursor.execute(query)
+
+    # Parse result
+    used_features = []
+    rows = cursor.fetchall()
+    for r in rows:
+        # PostgreSQL uses one based indexing, subtract 1 to get 0 based indices
+        idx = r[0] - 1
+        used_features.append( features[idx] )
+
+    return used_features
+
+def get_features( ontology, workspace_pid, graphs, add_nonleafs=False, only_used_features=False ):
+    """ Return a list of Feature instances which represent paths
+    to leafs of the ontology.
+    """
+    feature_lists = get_feature_paths( ontology, workspace_pid, add_nonleafs )
+    features = [Feature(fl) for fl in feature_lists]
+    if only_used_features and features:
+        used_features = get_by_graphs_instantiated_features(graphs, features)
+        return used_features
+    else:
+        return features
+
+def get_feature_paths( ontology, workspace_pid, add_nonleafs=False, depth=0, max_depth=100 ):
+    """ Returns all root-leaf paths of the passed ontology. It respects
+    is_a relationships.
+    """
+    return get_feature_paths_remote(ontology, workspace_pid, add_nonleafs, depth, max_depth)
+
+def get_feature_paths_remote( ontology, workspace_pid, add_nonleafs=False, depth=0, max_depth=100 ):
+    """ Returns all root-leaf paths of the passed ontology. It respects
+    is_a relationships. It uses an implementation stored remotely in the
+    database server. It needs three database queries in total.
+    """
+
+    query = "SELECT * FROM get_feature_paths(%s, %s, %s, %s, %s);" % \
+        (ontology.id, workspace_pid, add_nonleafs, depth, max_depth)
+
+    # Run query
+    cursor = connection.cursor()
+    cursor.execute(query)
+
+    # Parse result
+    class_ids = set()
+    relation_ids = set()
+    rows = cursor.fetchall()
+    for r in rows:
+        # We get back tuples of feature links with each consisting of the
+        # IDs of class_a, class_b, relation and a super class. To create
+        # FeatureLink objects out of this, we need to get the class objects
+        # first. So collect all class IDs we have got.
+        # The link data can be found in the first row of the result set
+        if not r:
+            raise Exception('Could not parse feature path data received from data base.')
+        for link_data in r[0]:
+            class_ids.add(link_data[0])
+            class_ids.add(link_data[1])
+            relation_ids.add(link_data[2])
+            if link_data[3]:
+                class_ids.add(link_data[3])
+
+    # Get all needed class and relation model objects
+    classes = Class.objects.in_bulk(class_ids)
+    relations = Relation.objects.in_bulk(relation_ids)
+
+    # Create feature links
+    features = []
+    for r in rows:
+        feature = []
+        for link_data in r[0]:
+            class_a = classes[link_data[0]]
+            class_b = classes[link_data[1]]
+            relation = relations[link_data[2]]
+            super_a = classes.get(link_data[3], None)
+            fl = FeatureLink(class_a, class_b, relation, super_a)
+            feature.append(fl)
+        features.append(feature)
+
+    return features
+
+def get_feature_paths_simple( ontology, add_nonleafs=False, depth=0, max_depth=100 ):
+    """ Returns all root-leaf paths of the passed ontology. It respects
+    is_a relationships.
+    """
+    features = []
+    # Get all links, but exclude 'is_a' relationships
+    links_q = ClassClass.objects.filter(class_b_id=ontology.id).exclude(
+        relation__relation_name='is_a')
+    # Check if this link is followed by an 'is_a' relatiship. If so
+    # use the classes below.
+    feature_links = []
+    for link in links_q:
+        is_a_links_q = ClassClass.objects.filter(class_b_id=link.class_a.id,
+            relation__relation_name='is_a')
+        # Add all sub-classes instead of the root if there is at least one.
+        if is_a_links_q.count() > 0:
+            for is_a_link in is_a_links_q:
+                fl = FeatureLink(is_a_link.class_a, link.class_b, link.relation, link.class_a)
+                feature_links.append(fl)
+        else:
+            fl = FeatureLink(link.class_a, link.class_b, link.relation)
+            feature_links.append(fl)
+
+    # Look at the feature link paths
+    for flink in feature_links:
+        add_single_link = False
+
+        if depth < max_depth:
+            # Get features of the current feature's class a
+            child_features = get_feature_paths( flink.class_a, add_nonleafs, depth+1 )
+            # If there is a super class, get the children in addition
+            # to the children of the current class.
+            if flink.super_class:
+                child_features = child_features + \
+                    get_feature_paths( flink.super_class, add_nonleafs, depth+1 )
+
+            # Remember the path to this node as feature if a leaf is reached
+            # or if non-leaf nodes should be added, too.
+            is_leaf = (len(child_features) == 0)
+            add_single_link = is_leaf or add_nonleafs
+            for cf in child_features:
+                features.append( [flink] + cf )
+        else:
+            # Add current node if we reached the maximum depth
+            # and don't recurse any further.
+            add_single_link = True
+
+        # Add single link if no more children are found/wanted
+        if add_single_link:
+            features.append( [flink] )
+
+    return features

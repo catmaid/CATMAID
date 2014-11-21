@@ -64,7 +64,7 @@ def neuron_treenode_counts(neuron_ids):
     WHERE cici.class_instance_b IN (%s)
       AND cici.relation_id = r.id
       AND r.relation_name = 'model_of'
-    """ % ','.join(str(nid) for nid in neuron_ids))
+    """ % ','.join(map(str, neuron_ids)))
     # Collect a map of skeleton IDs vs neuron IDs
     # (Keep in mind that a neuron may have one skeleton, more than one, or none)
     skeleton_neuron = {row[0]: row[1] for row in cursor.fetchall()}

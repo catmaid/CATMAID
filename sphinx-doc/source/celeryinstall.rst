@@ -57,7 +57,7 @@ This will make kombu use the Django database for its messages. Although,
 this is fine for a small and simple setup, it is recommended to use a
 different message broker for larger setups. There is more information on
 the limitations of and alternatives to this approach in
-`Celery's documentation<http://docs.celeryproject.org/en/latest/getting-started/brokers/django.html>`_.
+`Celery's documentation <http://docs.celeryproject.org/en/latest/getting-started/brokers/django.html>`_.
 
 To initialize Celery, call the syncdb sub-command of your ``manage.py``
 (from within the virtualenv)::

@@ -37,7 +37,7 @@
             <dl>
                 <dt>{{ p.title }}</dt>
                 {% for s in p.stacks|order_by:"id" %}
-                <dd><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">{{ s.title }}</a></dd><dd>{{ s.comment|safe }}</dd>
+                <dd><a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1" onclick="openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}</a></dd><dd>{{ s.comment|safe }}</dd>
                 {% endfor %}
                 {# Optionally, add the the neuron catalogue link #}
                 {% if p.is_catalogueable and catalogue_link %}

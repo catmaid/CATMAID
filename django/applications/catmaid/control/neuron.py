@@ -3,10 +3,13 @@ import json
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
+from django.contrib.auth.models import User
 
-from catmaid.control.authentication import *
-from catmaid.control.common import *
-from catmaid.models import ClassInstance, ClassInstanceClassInstance, Treenode
+from catmaid.control.authentication import requires_user_role, \
+        can_edit_class_instance_or_fail, can_edit_all_or_fail
+from catmaid.control.common import insert_into_log
+from catmaid.models import UserRole, Project, Class, ClassInstance, \
+        ClassInstanceClassInstance, Relation, Treenode
 
 import operator
 from collections import defaultdict
@@ -23,7 +26,7 @@ def get_all_skeletons_of_neuron(request, project_id=None, neuron_id=None):
         project=p,
         cici_via_a__relation__relation_name='model_of',
         cici_via_a__class_instance_b=neuron)
-    return HttpResponse(json.dumps([x.id for x in qs]), mimetype="text/json")
+    return HttpResponse(json.dumps([x.id for x in qs]), content_type="text/json")
 
 def _delete_if_empty(neuron_id):
     """ Delete this neuron if no class_instance is a model_of it;
@@ -85,7 +88,8 @@ def delete_neuron(request, project_id=None, neuron_id=None):
         try:
             root_node = Treenode.objects.get(
                     skeleton_id=skeleton_ids[0], parent=None)
-            root_location = root_node.location
+            root_location = (root_node.location_x, root_node.location_y,
+                             root_node.location_z)
         except (Treenode.DoesNotExist, Treenode.MultipleObjectsReturned):
             root_location = None
     else:
@@ -121,8 +125,9 @@ def delete_neuron(request, project_id=None, neuron_id=None):
         DELETE FROM treenode WHERE skeleton_id=%s AND project_id=%s;
         DELETE FROM treenode_connector WHERE skeleton_id=%s AND project_id=%s;
         DELETE FROM class_instance WHERE id=%s AND project_id=%s;
+        DELETE FROM review WHERE skeleton_id=%s AND project_id=%s;
         COMMIT;
-        ''', (skid, project_id, skid, project_id, skid, project_id, skid, project_id, skid, project_id, skid, project_id))
+        ''', (skid, project_id) * 7)
 
     # Insert log entry and refer to position of the first skeleton's root node
     insert_into_log(project_id, request.user.id, 'remove_neuron', root_location,
@@ -130,7 +135,7 @@ def delete_neuron(request, project_id=None, neuron_id=None):
                     ', '.join([str(s) for s in skeleton_ids])))
 
     return HttpResponse(json.dumps({
-        'success': "Deleted neuron #%s as well as it's skeletons and " \
+        'success': "Deleted neuron #%s as well as its skeletons and " \
                 "annotations." % neuron_id}))
 
 @requires_user_role(UserRole.Annotate)

@@ -6,13 +6,11 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.core.cache import cache
 
-from pgmagick import Image, Blob
 from catmaid.control import cropping
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import urljoin
-from catmaid.models import UserRole, RegionOfInterest, Project, Relation
-from catmaid.models import Stack, ClassInstance, RegionOfInterestClassInstance
-from catmaid.fields import Double3D
+from catmaid.models import UserRole, RegionOfInterest, Project, Relation, \
+        Stack, ClassInstance, RegionOfInterestClassInstance
 
 from celery.task import task
 from celery.utils.log import get_task_logger
@@ -39,7 +37,7 @@ def get_roi_info(request, project_id=None, roi_id=None):
     info = {
         'id': roi.id,
         'zoom_level': roi.zoom_level,
-        'location': [roi.location.x, roi.location.y, roi.location.z],
+        'location': [roi.location_x, roi.location_y, roi.location_z],
         'width': roi.width,
         'height': roi.height,
         'rotation_cw': roi.rotation_cw,
@@ -48,7 +46,7 @@ def get_roi_info(request, project_id=None, roi_id=None):
 
     return HttpResponse(json.dumps(info))
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Annotate)
 def link_roi_to_class_instance(request, project_id=None, relation_id=None,
         stack_id=None, ci_id=None):
     """ With the help of this method one can link a region of interest
@@ -84,7 +82,9 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
     roi.project = project
     roi.stack = stack
     roi.zoom_level = zoom_level
-    roi.location = Double3D(cx, cy, cz)
+    roi.location_x = cx
+    roi.location_y = cy
+    roi.location_z = cz
     roi.width = width
     roi.height = height
     roi.rotation_cw = rotation_cw
@@ -174,12 +174,12 @@ def create_roi_image_task(user, project_id, roi_id, file_path):
         roi = RegionOfInterest.objects.get(id=roi_id)
         # Prepare parameters
         hwidth = roi.width * 0.5
-        x_min = roi.location.x - hwidth
-        x_max = roi.location.x + hwidth
+        x_min = roi.location_x - hwidth
+        x_max = roi.location_x + hwidth
         hheight = roi.height * 0.5
-        y_min = roi.location.y - hheight
-        y_max = roi.location.y + hheight
-        z_min = z_max = roi.location.z
+        y_min = roi.location_y - hheight
+        y_max = roi.location_y + hheight
+        z_min = z_max = roi.location_z
         single_channel = False
         # Create a cropping job
         job = cropping.CropJob(user, project_id, [roi.stack.id],
@@ -218,7 +218,7 @@ def get_roi_image(request, project_id=None, roi_id=None):
         create_roi_image(request.user, project_id, roi_id, file_path)
         # Use waiting image
         url = urljoin(settings.STATIC_URL,
-            "widgets/themes/kde/wait_bgwhite.gif")
+            "images/wait_bgwhite.gif")
     else:
         # Create real image di
         url_base = urljoin(settings.MEDIA_URL,

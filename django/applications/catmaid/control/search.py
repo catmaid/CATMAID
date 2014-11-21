@@ -2,10 +2,9 @@ import json
 
 from django.http import HttpResponse
 
-from catmaid.models import *
-from catmaid.fields import Double3D
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, ClassInstance, TreenodeClassInstance
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -18,12 +17,11 @@ def search(request, project_id=None):
         .values('treenode__xxx'), and will then be able to access a proper location
         object.
         '''
-        location = Double3D.from_str(node['treenode__location'])
         return {
             'id': node['treenode'],
-            'x': int(location.x),
-            'y': int(location.y),
-            'z': int(location.z),
+            'x': int(node['treenode__location_x']),
+            'y': int(node['treenode__location_y']),
+            'z': int(node['treenode__location_z']),
             'skid': node['treenode__skeleton']}
 
     search_string = request.GET.get('substring', "")
@@ -70,7 +68,9 @@ def search(request, project_id=None):
         class_instance__name__in=label_rows.keys())\
     .order_by('-treenode__id')\
     .values('treenode',
-        'treenode__location',
+        'treenode__location_x',
+        'treenode__location_y',
+        'treenode__location_z',
         'treenode__skeleton',
         'class_instance__name')
 
@@ -78,8 +78,8 @@ def search(request, project_id=None):
         row_with_node = label_rows[node['class_instance__name']]
         nodes = row_with_node.get('nodes', None)
         if not nodes:
-          nodes = []
-          row_with_node['nodes'] = nodes
+            nodes = []
+            row_with_node['nodes'] = nodes
         nodes.append(format_node_data(node))
 
     return HttpResponse(json.dumps(rows))

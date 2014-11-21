@@ -1,16 +1,13 @@
 import json
 
-from django.db import models
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import Stack, Project, ProjectStack, Message, User
+from catmaid.control.common import id_generator, json_error_response
 
-import numpy as np
 import urllib2 as urllib
 import os.path
 import glob
@@ -20,9 +17,8 @@ from math import cos, sin, radians
 # The libuuid import is a workaround for a bug with GraphicsMagick
 # which expects the library to be loaded already. Therefore, it
 # has to be loaded before pgmagick.
-import libuuid
-from pgmagick import Blob, Image, ImageList, Geometry, Color
-from pgmagick import CompositeOperator as co, ResolutionType, ChannelType
+from pgmagick import Blob, Image, ImageList, Geometry, ChannelType, \
+        CompositeOperator as co
 
 from celery.task import task
 
@@ -177,6 +173,7 @@ class ImagePart:
         self.y_dst = y_dst
         self.width = x_max_src - x_min_src
         self.height = y_max_src - y_min_src
+        self.estimated_size = 0
         # Complain if the width or the height is zero
         if self.width == 0 or self.height == 0:
             raise ValueError( "An image part must have an area, hence no " \
@@ -186,12 +183,14 @@ class ImagePart:
         # Open the image
         try:
             img_file = urllib.urlopen( self.path )
+            img_data = img_file.read()
+            bytes_read = len(img_data)
         except urllib.HTTPError as e:
             raise ImageRetrievalError(self.path, "Error code: %s" % e.code)
         except urllib.URLError as e:
             raise ImageRetrievalError(self.path, e.reason)
 
-        blob = Blob( img_file.read() )
+        blob = Blob( img_data )
         image = Image( blob )
         # Check if the whole image should be used and cropped if necessary.
         src_width = image.size().width()
@@ -199,6 +198,12 @@ class ImagePart:
         if self.width != src_width or self.height != src_height:
             box = Geometry( self.width, self.height, self.x_min_src, self.y_min_src )
             image.crop( box )
+
+        # Estimates the size in Bytes of this image part by scaling the number
+        # of Bytes read with the ratio between the needed part of the image and
+        # its actual size.
+        self.estimated_size = bytes_read * abs(float(self.width * self.height) /
+                                               float(src_width * src_height))
         return image
 
 def to_x_index( x, job, enforce_bounds=True ):
@@ -459,6 +464,8 @@ def extract_substack_no_rotation( job ):
     # of the exported dimensions is XYCZ. This means all the channels of
     # one slice are exported, then the next slice follows, etc.
     cropped_stack = []
+    # Accumulator for estimated result size
+    estimated_total_size = 0
     # Iterate over all slices
     for nz in range(n_slices):
         for stack in job.stacks:
@@ -510,11 +517,23 @@ def extract_substack_no_rotation( job ):
                 # Update x component of destination position
                 x_dst += cur_px_x_max - cur_px_x_min
 
-            # write out the image parts
+            # Write out the image parts and make sure the maximum allowed file
+            # size isn't exceeded.
             cropped_slice = None
             for ip in image_parts:
                 # Get (correctly cropped) image
                 image = ip.get_image()
+
+                # Estimate total file size and abort if this exceeds the
+                # maximum allowed file size.
+                estimated_total_size = estimated_total_size + ip.estimated_size
+                if estimated_total_size > settings.GENERATED_FILES_MAXIMUM_SIZE:
+                    raise ValueError("The estimated size of the requested image "
+                                     "region is larger than the maximum allowed "
+                                     "file size: %0.2f > %s Bytes" % \
+                                     (estimated_total_size,
+                                      settings.GENERATED_FILES_MAXIMUM_SIZE))
+
                 # It is unfortunately not possible to create proper composite
                 # images based on a canvas image newly created like this:
                 # cropped_slice = Image( Geometry(bb.width, bb.height), Color("black"))
@@ -529,11 +548,13 @@ def extract_substack_no_rotation( job ):
                 cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
                 # Delete tile image - it's not needed anymore
                 del image
-            # Optionally, use only a single channel
-            if job.single_channel:
-                cropped_slice.channel( ChannelType.RedChannel )
-            # Add the image to the cropped stack
-            cropped_stack.append( cropped_slice )
+
+            if cropped_slice:
+                # Optionally, use only a single channel
+                if job.single_channel:
+                    cropped_slice.channel( ChannelType.RedChannel )
+                # Add the image to the cropped stack
+                cropped_stack.append( cropped_slice )
 
     return cropped_stack
 
@@ -577,7 +598,7 @@ def process_crop_job(job, create_message=True):
             no_error_occured = False
             error_message = "A region outside the stack has been selected. " \
                     "Therefore, no image was produced."
-    except (IOError, OSError), e:
+    except (IOError, OSError, ValueError), e:
         no_error_occured = False
         error_message = str(e)
         # Delete the file if parts of it have been written already
@@ -618,7 +639,7 @@ def start_asynch_process( job ):
     result = process_crop_job.delay( job )
 
     # Create closing response
-    closingResponse = HttpResponse(json.dumps(""), mimetype="text/json")
+    closingResponse = HttpResponse(json.dumps(""), content_type="text/json")
 
     return closingResponse
 

@@ -1,0 +1,37 @@
+div.eventCatcher,
+div.eventCatcherTop,
+div.eventCatcherBottom,
+div.eventCatcherLeft,
+div.eventCatcherRight
+{
+	position:absolute;
+	top:0px;
+	left:0px;
+	margin:0px;
+	padding:0px;
+	width:100%;
+	height:100%;
+	z-index:10;
+	display:none;
+	cursor:move;
+}
+div.eventCatcherTop
+{
+	background:url(../images/red50-20x20.png) repeat-x top;
+	display:block;
+}
+div.eventCatcherBottom
+{
+	background:url(../images/red50-20x20.png) repeat-x bottom;
+	display:block;
+}
+div.eventCatcherLeft
+{
+	background:url(../images/red50-20x20.png) repeat-y left;
+	display:block;
+}
+div.eventCatcherRight
+{
+	background:url(../images/red50-20x20.png) repeat-y right;
+	display:block;
+}

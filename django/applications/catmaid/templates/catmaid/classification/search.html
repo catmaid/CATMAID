@@ -1,0 +1,46 @@
+{% load i18n %}
+
+<p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+<p>{{ description|safe }}</p>
+
+{# Add "Select all" checkboxes for the ontology feature selections step #}
+{% if wizard.steps.current == "features" %}
+  <p>
+    <div id="classification-search-warning"></div>
+  </p>
+{% endif %}
+<form method="post" id="classification-search-form"
+      action="{% url 'search_classifications' workspace_pid %}">
+  {% csrf_token %}
+  {{ wizard.management_form }}
+
+  {% if wizard.form.forms %}
+    {{ wizard.form.management_form }}
+    {% for form in wizard.form.forms %}
+        {{ form.as_p }}
+    {% endfor %}
+  {% else %}
+    {{ wizard.form.as_p }}
+  {% endif %}
+
+  {% if wizard.steps.current == "features" %}
+    {# Add extra div for feature selection on 'features' step #}
+    <div class="classification-search-features"></div>
+  {% endif %}
+
+  <p>
+    {% if wizard.steps.prev %}
+      <button class="button" name="wizard_goto_step" type="submit"
+          value="{{ wizard.steps.first }}">{% trans "first step" %}</button>
+      <button class="button" name="wizard_goto_step" type="submit"
+          value="{{ wizard.steps.prev }}">{% trans "prev step" %}</button>
+    {% endif %}
+    {% if wizard.steps.step1 == wizard.steps.count %}
+      <input class="button" name="next_step" type="submit"
+          value="{% trans "submit" %}"/>
+    {% else %}
+      <input class="button" name="next_step" type="submit"
+          value="{% trans "next step" %}"/>
+    {% endif %}
+  </p>
+</form>

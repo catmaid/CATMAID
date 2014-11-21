@@ -1,0 +1,42 @@
+{% load common %}
+{% load data_view_config %}
+<b>Results</b>
+
+<div id="data_view">
+<table>
+  <tr>
+    {# Have one empty field in the upper left corner #}
+    <td></td>
+    {% for ct in col_tags %}
+      <td class="head">{{ ct }}</td>
+    {% endfor %}
+  </tr>
+  {% for rt in row_tags %}
+    <tr class="{% cycle 'even' 'odd' %}">
+      <td class="head">{{ rt }}</td>
+      {% for ct in col_tags %}
+        {% with row_set=tag_index|get:rt %}
+        {% with tpids=tag_index|get:ct|intersect:row_set %}
+        {% pids_to_projects tpids project_index sort as tprojects %}
+		{% cycle 'even' 'odd' as rowtype silent %}
+        <td class="{{ rowtype }}-stackname"
+          title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
+          {% for p in tprojects %}
+            {% with stacks=pid_to_sids|get:p.id %}
+              {% if stacks %}
+              <a href="#" onclick="javascript:openProjectStack({{p.id}},{{stacks.0}});">{{ p.title }}</a><br />
+              {% else %}
+                {{ p.title }}
+              {% endif %}
+            {% endwith %}
+          {% empty %}
+            -
+          {% endfor %}
+        </td>
+        {% endwith %}
+        {% endwith %}
+      {% endfor %}
+    </tr>
+  {% endfor %}
+</table>
+</div>

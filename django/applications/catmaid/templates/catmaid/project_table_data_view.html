@@ -22,7 +22,7 @@
 					Couldn't find requested slice: {{ sample_slice }}
 				{% else %}
 					<figure>
-					<a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">
+					<a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1" onclick="openProjectStack({{p.id}}, {{s.id}});return false">
 						<img src="{{ s.image_base }}{{ slice }}/small.{{ s.file_extension }}"
 							alt="Sample image for {{ s.title }} on slice {{ slice }}"
 							title="{{ s.comment|striptags|safe }}"
@@ -35,7 +35,7 @@
 				{% endwith %}
 				</td>
 			{% else %}
-				<td class="stackname"><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})" title="{{s.comment}}">{{ s.title }}</a></td>
+				<td class="stackname"><a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1" onclick="openProjectStack({{p.id}}, {{s.id}});return false" title="{{s.comment}}">{{ s.title }}</a></td>
 			{% endif %}
 		{% endfor %}
 		{% if p.is_catalogueable and catalogue_link %}

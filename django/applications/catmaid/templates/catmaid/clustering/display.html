@@ -90,7 +90,7 @@
 				<p><a href="#" id="dendrogram_export_link">Export SVG file</a></p>
 			</div>
 			{# Smuggle the dendrogram data into the DOM #}
-			<img width="1" height="1" src="{{ STATIC_URL }}widgets/themes/kde/empty.gif" alt=""
+			<img width="1" height="1" src="{{ STATIC_URL }}images/empty.gif" alt=""
 				onload="ClusteringWidget.render_clustering('{{ dendrogram_json }}');
 					this.parentNode.removeChild(this);" />
 			<div id="clustering-graph" class="indented"></div>

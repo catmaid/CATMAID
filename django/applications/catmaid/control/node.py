@@ -1,20 +1,20 @@
 import json
+import re
 
 from collections import defaultdict
 from datetime import datetime
 
 from django.db import connection
 from django.http import HttpResponse
+from django.contrib.auth.models import User 
 
-from django.shortcuts import get_object_or_404
-
-from catmaid.models import *
-from catmaid.fields import Double3D
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.models import UserRole, Treenode, TreenodeConnector, Connector, \
+        Location, ClassInstanceClassInstance, Review
+from catmaid.control.authentication import requires_user_role, \
+        can_edit_all_or_fail, user_domain
+from catmaid.control.common import get_relation_to_id_map, insert_into_log
 from catmaid.control.treenode import can_edit_treenode_or_fail
 
-import sys
 try:
     import networkx as nx
 except:
@@ -77,18 +77,18 @@ def node_list_tuples(request, project_id=None):
         SELECT
             t1.id,
             t1.parent_id,
-            (t1.location).x,
-            (t1.location).y,
-            (t1.location).z,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
             t1.user_id,
             t2.id,
             t2.parent_id,
-            (t2.location).x,
-            (t2.location).y,
-            (t2.location).z,
+            t2.location_x,
+            t2.location_y,
+            t2.location_z,
             t2.confidence,
             t2.radius,
             t2.skeleton_id,
@@ -98,11 +98,11 @@ def node_list_tuples(request, project_id=None):
                (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
                 OR (t1.parent_id IS NULL AND t1.id = t2.id))
         WHERE
-            (t1.location).z = %(z)s
-            AND (t1.location).x > %(left)s
-            AND (t1.location).x < %(right)s
-            AND (t1.location).y > %(top)s
-            AND (t1.location).y < %(bottom)s
+            t1.location_z = %(z)s
+            AND t1.location_x > %(left)s
+            AND t1.location_x < %(right)s
+            AND t1.location_y > %(top)s
+            AND t1.location_y < %(bottom)s
             AND t1.project_id = %(project_id)s
         LIMIT %(limit)s
         ''', params)
@@ -121,15 +121,15 @@ def node_list_tuples(request, project_id=None):
 
         n_retrieved_nodes = 0 # at one per row, only those within the section
         for row in cursor.fetchall():
-          n_retrieved_nodes += 1
-          t1id = row[0]
-          if t1id not in treenode_ids:
-              treenode_ids.add(t1id)
-              treenodes.append(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
-          t2id = row[9]
-          if t2id not in treenode_ids:
-              treenode_ids.add(t2id)
-              treenodes.append(row[9:17] + (is_superuser or row[17] == user_id or row[17] in domain,))
+            n_retrieved_nodes += 1
+            t1id = row[0]
+            if t1id not in treenode_ids:
+                treenode_ids.add(t1id)
+                treenodes.append(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
+            t2id = row[9]
+            if t2id not in treenode_ids:
+                treenode_ids.add(t2id)
+                treenodes.append(row[9:17] + (is_superuser or row[17] == user_id or row[17] in domain,))
 
 
         # Find connectors related to treenodes in the field of view
@@ -140,9 +140,9 @@ def node_list_tuples(request, project_id=None):
             response_on_error = 'Failed to query connector locations.'
             cursor.execute('''
             SELECT connector.id,
-                (connector.location).x,
-                (connector.location).y,
-                (connector.location).z,
+                connector.location_x,
+                connector.location_y,
+                connector.location_z,
                 connector.confidence,
                 treenode_connector.relation_id,
                 treenode_connector.treenode_id,
@@ -152,7 +152,7 @@ def node_list_tuples(request, project_id=None):
                  connector
             WHERE treenode_connector.treenode_id IN (%s)
               AND treenode_connector.connector_id = connector.id
-            ''' % ','.join(str(x) for x in treenode_ids))
+            ''' % ','.join(map(str, treenode_ids)))
 
             crows = list(cursor.fetchall())
 
@@ -162,9 +162,9 @@ def node_list_tuples(request, project_id=None):
 
         cursor.execute('''
         SELECT connector.id,
-            (connector.location).x,
-            (connector.location).y,
-            (connector.location).z,
+            connector.location_x,
+            connector.location_y,
+            connector.location_z,
             connector.confidence,
             treenode_connector.relation_id,
             treenode_connector.treenode_id,
@@ -173,11 +173,11 @@ def node_list_tuples(request, project_id=None):
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
-          AND (connector.location).z = %(z)s
-          AND (connector.location).x > %(left)s
-          AND (connector.location).x < %(right)s
-          AND (connector.location).y > %(top)s
-          AND (connector.location).y < %(bottom)s
+          AND connector.location_z = %(z)s
+          AND connector.location_x > %(left)s
+          AND connector.location_x < %(right)s
+          AND connector.location_y > %(top)s
+          AND connector.location_y < %(bottom)s
         ''', params)
 
         crows.extend(cursor.fetchall())
@@ -246,9 +246,9 @@ def node_list_tuples(request, project_id=None):
             cursor.execute('''
             SELECT id,
                 parent_id,
-                (location).x,
-                (location).y,
-                (location).z,
+                location_x,
+                location_y,
+                location_z,
                 confidence,
                 radius,
                 skeleton_id,
@@ -261,7 +261,7 @@ def node_list_tuples(request, project_id=None):
                 treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
 
         labels = defaultdict(list)
-        if 'true' == request.POST['labels']:
+        if 'true' == request.POST.get('labels', None):
             z0 = params['z']
             # Collect treenodes visible in the current section
             visible = ','.join(str(row[0]) for row in treenodes if row[4] == z0)
@@ -300,14 +300,20 @@ def node_list_tuples(request, project_id=None):
 @requires_user_role(UserRole.Annotate)
 def update_location_reviewer(request, project_id=None, node_id=None):
     """ Updates the reviewer id and review time of a node """
-    p = get_object_or_404(Project, pk=project_id)
-    loc = Location.objects.get(
-        pk=node_id,
-        project=p)
-    loc.reviewer_id=request.user.id
-    loc.review_time=datetime.now()
-    loc.save()
-    return HttpResponse(json.dumps({'reviewer_id': request.user.id}), mimetype='text/json')
+    try:
+        # Try to get the review object. If this fails we create a new one. Doing
+        # it in a try/except instead of get_or_create allows us to retrieve the
+        # skeleton ID only if needed.
+        r = Review.objects.get(treenode_id=node_id, reviewer=request.user)
+    except Review.DoesNotExist:
+        r = Review(project_id=project_id, treenode_id=node_id, reviewer=request.user)
+        # Find the skeleton
+        r.skeleton = Treenode.objects.get(pk=node_id).skeleton
+
+    r.review_time = datetime.now()
+    r.save()
+
+    return HttpResponse(json.dumps({'reviewer_id': request.user.id}), content_type='text/json')
 
 
 @requires_user_role(UserRole.Annotate)
@@ -326,9 +332,10 @@ def update_confidence(request, project_id=None, node_id=0):
         rows_affected = Treenode.objects.filter(id=tnid).update(confidence=new_confidence,editor=request.user)
 
     if rows_affected > 0:
-        location = Location.objects.get(id=tnid).location
+        location = Location.objects.filter(id=tnid).values_list('location_x',
+                'location_y', 'location_z')[0]
         insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
-        return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+        return HttpResponse(json.dumps({'message': 'success'}), content_type='text/json')
 
     # Else, signal error
     if to_connector:
@@ -357,9 +364,9 @@ def most_recent_treenode(request, project_id=None):
     return HttpResponse(json.dumps({
         'id': tn.id,
         #'skeleton_id': tn.skeleton.id,
-        'x': int(tn.location.x),
-        'y': int(tn.location.y),
-        'z': int(tn.location.z),
+        'x': int(tn.location_x),
+        'y': int(tn.location_y),
+        'z': int(tn.location_z),
         #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
         #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
         #'type': 'treenode'
@@ -378,7 +385,10 @@ def _update(Kind, table, nodes, now, user):
         Kind.objects.filter(id=int(node[0])).update(
             editor=user,
             edition_time=now,
-            location=Double3D(float(node[1]), float(node[2]), float(node[3])))
+            location_x=float(node[1]),
+            location_y=float(node[2]),
+            location_z=float(node[3]))
+
 
 @requires_user_role(UserRole.Annotate)
 def node_update(request, project_id=None):
@@ -402,7 +412,8 @@ def node_update(request, project_id=None):
     _update(Treenode, 'treenode', nodes['t'], now, request.user)
     _update(Connector, 'connector', nodes['c'], now, request.user)
 
-    return HttpResponse(json.dumps(len(nodes)))
+    num_updated_nodes = len(nodes['t'].keys()) + len(nodes['c'].keys())
+    return HttpResponse(json.dumps({'updated': num_updated_nodes}))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -452,9 +463,9 @@ def node_nearest(request, project_id=None):
             minDistance = -1
             nearestTreenode = None
             for tn in treenodes:
-                xdiff = x - tn.location.x
-                ydiff = y - tn.location.y
-                zdiff = z - tn.location.z
+                xdiff = x - tn.location_x
+                ydiff = y - tn.location_y
+                zdiff = z - tn.location_z
                 distanceSquared = xdiff ** 2 + ydiff ** 2 + zdiff ** 2
                 if distanceSquared < minDistance or minDistance < 0:
                     nearestTreenode = tn
@@ -471,9 +482,9 @@ def node_nearest(request, project_id=None):
 
         return HttpResponse(json.dumps({
             'treenode_id': nearestTreenode.id,
-            'x': int(nearestTreenode.location.x),
-            'y': int(nearestTreenode.location.y),
-            'z': int(nearestTreenode.location.z),
+            'x': int(nearestTreenode.location_x),
+            'y': int(nearestTreenode.location_y),
+            'z': int(nearestTreenode.location_z),
             'skeleton_id': nearestTreenode.skeleton_id}))
 
     except Exception as e:
@@ -499,42 +510,49 @@ def _skeleton_as_graph(skeleton_id):
     return graph
 
 
-def _fetch_location(treenode_id):
+def _fetch_treenode_location(treenode_id):
     cursor = connection.cursor()
     cursor.execute('''
         SELECT
           id,
-          (location).x AS x,
-          (location).y AS y,
-          (location).z AS z,
+          location_x AS x,
+          location_y AS y,
+          location_z AS z,
           skeleton_id
         FROM treenode
         WHERE id=%s''', [treenode_id])
     return cursor.fetchone()
 
 
-def _fetch_location_connector(connector_id):
+def _fetch_connector_location(connector_id):
     cursor = connection.cursor()
     cursor.execute('''
         SELECT
           id,
-          (location).x AS x,
-          (location).y AS y,
-          (location).z AS z
+          location_x AS x,
+          location_y AS y,
+          location_z AS z
         FROM connector
         WHERE id=%s''', [connector_id])
     return cursor.fetchone()
 
+def _fetch_location(location_id):
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT
+          id,
+          location_x AS x,
+          location_y AS y,
+          location_z AS z
+        FROM location
+        WHERE id=%s''', [location_id])
+    return cursor.fetchone()
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_location(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
-        nodetype = request.POST.get('type', 'treenode')
-        if nodetype == 'connector':
-            return HttpResponse(json.dumps(_fetch_location_connector(tnid)))
-        else:
-            return HttpResponse(json.dumps(_fetch_location(tnid)))
+        return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain the location of node with id #%s' % tnid)
 
@@ -560,7 +578,7 @@ def _find_first_interesting_node(sequence):
          LEFT OUTER JOIN treenode_connector tc ON (tc.treenode_id = t.id)
          LEFT OUTER JOIN treenode_class_instance tci ON (tci.treenode_id = t.id)
     WHERE t.id IN (%s)
-    ''' % ",".join(str(x) for x in sequence))
+    ''' % ",".join(map(str, sequence)))
 
     nodes = {row[0]: row for row in cursor.fetchall()}
     for nodeID in sequence:
@@ -585,7 +603,7 @@ def find_previous_branchnode_or_root(request, project_id=None):
         alt = 1 == int(request.POST['alt'])
         skid = Treenode.objects.get(pk=tnid).skeleton_id
         graph = _skeleton_as_graph(skid)
-        # Travel upstream until finding a parent node with more than one child 
+        # Travel upstream until finding a parent node with more than one child
         # or reaching the root node
         seq = [] # Does not include the starting node tnid
         while True:
@@ -601,7 +619,7 @@ def find_previous_branchnode_or_root(request, project_id=None):
         if seq and alt:
             tnid = _find_first_interesting_node(seq)
 
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
+        return HttpResponse(json.dumps(_fetch_treenode_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
 
@@ -621,8 +639,7 @@ def find_next_branchnode_or_end(request, project_id=None):
             # The closest to 0,0,0 or the furthest if shift is down
             sqDist = 0 if shift else float('inf')
             for t in Treenode.objects.filter(parent_id=tnid):
-                p = t.location
-                d = pow(p.x, 2) + pow(p.y, 2) + pow(p.z, 2)
+                d = pow(t.location_x, 2) + pow(t.location_y, 2) + pow(t.location_z, 2)
                 if (shift and d > sqDist) or (not shift and d < sqDist):
                     sqDist = d
                     tnid = t.id
@@ -641,7 +658,7 @@ def find_next_branchnode_or_end(request, project_id=None):
         if seq and alt:
             tnid = _find_first_interesting_node(seq)
 
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
+        return HttpResponse(json.dumps(_fetch_treenode_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain next branch node or root:' + str(e))
 
@@ -654,11 +671,15 @@ def user_info(request, project_id=None):
         if not ts:
             return HttpResponse(json.dumps({'error': 'Object #%s is not a treenode or a connector' % treenode_id}))
     t = ts[0]
-    reviewer = None
-    review_time = None
-    if -1 != t.reviewer_id:
-        reviewer = User.objects.filter(pk=t.reviewer_id).values('username', 'first_name', 'last_name')[0]
-        review_time = str(datetime.date(t.review_time))
+    # Get all reviews for this treenode
+    reviewers = []
+    review_times = []
+    for r, rt in Review.objects.filter(treenode=t) \
+            .values_list('reviewer', 'review_time'):
+        reviewers.append(User.objects.filter(pk=r) \
+                .values('username', 'first_name', 'last_name')[0])
+        review_times.append(str(datetime.date(rt)))
+    # Build result
     return HttpResponse(json.dumps({'user': {'username': t.user.username,
                                              'first_name': t.user.first_name,
                                              'last_name': t.user.last_name},
@@ -667,7 +688,7 @@ def user_info(request, project_id=None):
                                                'first_name': t.editor.first_name,
                                                'last_name': t.editor.last_name},
                                     'edition_time': str(datetime.date(t.edition_time)),
-                                    'reviewer': reviewer,
-                                    'review_time': review_time}))
+                                    'reviewers': reviewers,
+                                    'review_times': review_times}))
 
 

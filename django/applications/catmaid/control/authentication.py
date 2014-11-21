@@ -1,29 +1,28 @@
-import sys
 import re
-import urllib
 import json
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.db import connection
-from django.http import HttpResponse, HttpResponseRedirect
-from django.core.urlresolvers import reverse
-from django.core.exceptions import ObjectDoesNotExist
-from django.shortcuts import _get_queryset
-
-from catmaid.models import Project, UserRole, ClassInstance
-from catmaid.models import ClassInstanceClassInstance
-from django.contrib.auth.models import User, Group
-
-from catmaid.control.common import json_error_response
-from catmaid.control.common import my_render_to_response
-
-from django.contrib.auth import authenticate, logout, login
-
-from guardian.models import UserObjectPermission, GroupObjectPermission
-from guardian.shortcuts import get_perms_for_model, get_objects_for_user, get_perms, get_objects_for_group
 from functools import wraps
 from itertools import groupby
+
+from guardian.models import UserObjectPermission, GroupObjectPermission
+from guardian.shortcuts import get_perms_for_model
+
+from django import forms
+from django.conf import settings
+from django.core.urlresolvers import reverse
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth import authenticate, logout, login
+from django.contrib.auth.models import User, Group
+from django.contrib.auth.forms import UserCreationForm
+from django.db import connection
+from django.http import HttpResponse, HttpResponseRedirect
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import _get_queryset, render
+
+
+from catmaid.models import Project, UserRole, ClassInstance, \
+        ClassInstanceClassInstance
+from catmaid.control.common import my_render_to_response
 
 def login_vnc(request):
     return my_render_to_response(request,
@@ -44,6 +43,7 @@ def login_user(request):
 
         if user is not None:
             profile_context['userprofile'] = user.userprofile.as_dict()
+            profile_context['permissions'] = tuple(request.user.get_all_permissions())
             if user.is_active:
                 # Redirect to a success page.
                 request.session['user_id'] = user.id
@@ -55,9 +55,9 @@ def login_user(request):
                 profile_context['is_superuser'] = user.is_superuser
                 return HttpResponse(json.dumps(profile_context))
             else:
-               # Return a 'disabled account' error message
-               profile_context['error'] = ' Disabled account'
-               return HttpResponse(json.dumps(profile_context))
+                # Return a 'disabled account' error message
+                profile_context['error'] = ' Disabled account'
+                return HttpResponse(json.dumps(profile_context))
         else:
             # Return an 'invalid login' error message.
             profile_context['userprofile'] = request.user.userprofile.as_dict()
@@ -65,6 +65,7 @@ def login_user(request):
             return HttpResponse(json.dumps(profile_context))
     else:   # request.method == 'GET'
         profile_context['userprofile'] = request.user.userprofile.as_dict()
+        profile_context['permissions'] = tuple(request.user.get_all_permissions())
         # Check if the user is logged in.
         if request.user.is_authenticated():
             profile_context['id'] = request.session.session_key
@@ -90,18 +91,18 @@ def logout_user(request):
 
 def requires_user_role(roles):
     """
-    This decorator will return a JSON error response unless the user is logged in 
+    This decorator will return a JSON error response unless the user is logged in
     and has at least one of the indicated roles or admin role for the project.
     """
-    
+
     def decorated_with_requires_user_role(f):
         def inner_decorator(request, roles=roles, *args, **kwargs):
             p = Project.objects.get(pk=kwargs['project_id'])
             u = request.user
-            
+
             # Check for admin privs in all cases.
             has_role = u.has_perm('can_administer', p)
-            
+
             if not has_role:
                 # Check the indicated role(s)
                 if isinstance(roles, str):
@@ -113,7 +114,7 @@ def requires_user_role(roles):
                         has_role = u.has_perm('can_browse', p)
                     if has_role:
                         break
-            
+
             if has_role:
                 # The user can execute the function.
                 return f(request, *args, **kwargs)
@@ -122,8 +123,8 @@ def requires_user_role(roles):
                         "project %d" % (u.first_name + ' ' + u.last_name, \
                         int(kwargs['project_id']))
                 return HttpResponse(json.dumps({'error': msg,
-                        'permission_error': True}), mimetype='text/json')
-            
+                        'permission_error': True}), content_type='text/json')
+
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role
 
@@ -182,12 +183,14 @@ def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_
     return pk_dict
 
 def user_project_permissions(request):
-    """ If a user is authenticated, this method returns a dictionary
-    that stores whether the user has a specific permission on a project.
-    If a user is not authenticated, this dictionary will be empty.
+    """ If a user is authenticated, this method returns a dictionary that
+    stores whether the user has a specific permission on a project. If a user
+    is not authenticated and the request is done by the anonymous user, the
+    permissions for the anonymous user are returned. Otherwise, this dictionary
+    will be empty.
     """
     result = {}
-    if request.user.is_authenticated():
+    if request.user.is_authenticated() or request.user.is_anonymous:
         projectPerms = get_perms_for_model(Project)
         permNames = [perm.codename for perm in projectPerms]
         # Find out what permissions a user actually has for any of those projects.
@@ -296,7 +299,7 @@ def can_edit_all_or_fail(user, ob_ids, table_name):
         raise Exception('Invalid table name: %s' % table_name)
 
     cursor = connection.cursor()
-    cursor.execute("SELECT user_id, count(user_id) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
+    cursor.execute("SELECT user_id, count(*) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
     rows = tuple(cursor.fetchall())
     # Check that all ids to edit exist
     if rows and len(ob_ids) == sum(row[1] for row in rows):
@@ -361,4 +364,19 @@ def all_usernames(request, project_id=None):
     SELECT id, username FROM auth_user WHERE id != -1 ORDER BY username DESC
     ''')
     return HttpResponse(json.dumps(cursor.fetchall()))
- 
+
+def register(request):
+    # Return right away if user registration is not enabled
+    if not settings.USER_REGISTRATION_ALLOWED:
+        return HttpResponseRedirect(reverse("home"))
+
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            new_user = form.save()
+            return HttpResponseRedirect(reverse("home"))
+    else:
+        form = UserCreationForm()
+    return render(request, "catmaid/registration/register.html", {
+        'form': form,
+    })

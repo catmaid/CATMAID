@@ -22,7 +22,7 @@ password: password_of_your_catmaid_user''' % (path,)
 
 # Make a variable for each of these so that they can be imported:
 db_host = conf['host']
-db_port = conf['port']
+db_port = conf['port'] if 'port' in conf else 5432
 db_database = conf['database']
 db_username = conf['username']
 db_password = conf['password']

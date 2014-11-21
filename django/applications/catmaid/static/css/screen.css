@@ -1,0 +1,682 @@
+html, body
+{
+	border:none;
+	min-width:300px;
+	margin:0px;
+	padding:0px;
+}
+html, body, input, textarea, p, dl, select, button
+{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:11px;
+	font-weight:normal;
+	line-height:13px;
+}
+h1
+{
+	margin:1.5em 16px 0.5em 20px;
+	font-size:25px;
+	line-height:1.1em;
+	font-weight:normal;
+}
+
+h2
+{
+	margin:1.5em 16px 0.5em 20px;
+	font-size:16px;
+	line-height:1.1em;
+	font-weight:bold;
+}
+
+p, dl
+{
+	margin:1.5em 16px 0.5em 20px;
+}
+
+#project_filter_form
+{
+	margin:1.5em 16px 0.5em 20px;
+}
+
+#project_filter_indicator.filtering
+{
+	padding:4px 24px 4px 0px;
+	vertical-align:middle;
+	background:url(../images/wait_bgwhite.gif) no-repeat right center;
+}
+
+dt,
+dd
+{
+	margin-bottom:0.5em;
+}
+dl p
+{
+	font-style:italic;
+	margin:0px;
+}
+
+.wait_bgwhite, div.form .wait_bgwhite
+{
+	padding:4px 0px 4px 24px;
+	vertical-align:middle;
+	background:url(../images/wait_bgwhite.gif) no-repeat left center;
+}
+
+dt
+{
+	font-weight:bold;
+}
+dd
+{
+	margin-left:1em;
+}
+
+div#imprint
+{
+	height:32px;
+	width:100%;
+	background:url(../images/bar32_bg.gif) repeat-x left top;
+	position:absolute;
+	left:0px;
+	bottom:0px;
+	margin:0px;
+	padding:0px;
+	overflow:hidden;
+	border:none;
+	border-top:solid 4px #000000;
+}
+div#imprint p
+{
+	border:none;
+	margin:0px;
+	padding:4px 0px 0px 20px;
+	vertical-align:middle;
+	line-height:20px;
+}
+div#spinner
+{
+	position:absolute;
+  right:20px;
+  top:4px;
+  display:none;
+}
+
+div#content
+{
+	position:absolute;
+	left:0px;
+	top:0px;
+	bottom:0px;
+	width:100%;
+	overflow:auto;
+	background:#FFFFFF;
+}
+
+/* Hide the browser warning messsage if all features are present */
+html.mod-js.mod-opacity.mod-canvas.mod-svg.mod-webgl.mod-json #browser_unsupported
+{
+  display:none;
+}
+
+/* Relative position and z-index on this div are important for .message
+ * to show over other elements in IE6 */
+div#browser_unsupported
+{
+  position:relative;
+  z-index:90;
+  width:100%;
+  top:0;
+  left:0;
+}
+
+div#browser_unsupported .message
+{
+  position:fixed;
+  left:30%;
+  top:20%;
+  width:40%;
+  background:#FF8636;
+  color:#000000;
+  z-index:99;
+}
+
+div#browser_unsupported h1
+{
+  margin-bottom: 2em;
+}
+
+div#browser_unsupported p
+{
+  padding:0.5em 2em 1.5em 2em;
+  font-size:14px;
+  line-height:1.2;
+}
+
+/**
+ * Forms
+ */
+div.form
+{
+	display:none;
+}
+
+div.form table
+{
+	margin:1.5em 16px 0.5em 20px;
+}
+
+div.form table td
+{
+	padding-right:1em;
+	vertical-align:top;
+}
+
+div.form p
+{
+	margin:0px;
+	border:dashed 1px #FFFFFF;
+	padding:0.5em 0em 0.5em 0em;
+}
+
+div.form textarea, div.form input, div.form select
+{
+	border:dashed 1px #AAAAAA;
+	background:#F4F4F4;
+	padding:0.5em 1em 0.5em 1em;
+}
+
+div#data_view table
+{
+	margin:1.5em 16px 0.5em 20px;
+	line-height:1.1em;
+	font-weight:normal;
+	border: 0px;
+}
+
+div#data_view tr.odd
+{
+	background-color: #E6E6E6;
+}
+
+div#data_view tr.even
+{
+	background-color: #E2E4FF;
+}
+
+div#data_view td.projectname
+{
+	font-weight:bold;
+	vertical-align: top;
+}
+
+div#data_view td.stackimage, div#data_view td.odd-stackimage, div#data_view td.even-stackimage
+{
+	vertical-align: top;
+	text-align: right;
+}
+
+div#data_view td.odd-stackimage
+{
+	background-color: #E6E6E6;
+}
+
+div#data_view td.even-stackimage
+{
+	background-color: #E2E4FF;
+}
+
+div#data_view td.stackname, div#data_view td.odd-stackname, div#data_view td.even-stackname
+{
+	vertical-align: top;
+	text-align: left;
+}
+
+div#data_view td.odd-stackname
+{
+	background-color: #E6E6E6;
+}
+
+div#data_view td.even-stackname
+{
+	background-color: #E2E4FF;
+}
+
+div#data_view td.head
+{
+	vertical-align: top;
+	text-align: center;
+	font-weight:bold;
+	background-color: #FFFFFF;
+}
+
+div#data_view .highlight
+{
+	font-weight:bold;
+}
+
+div#data_view figure
+{
+	margin-top: 0px;
+	margin-right: 10px;
+	margin-bottom: 11px;
+	margin-left: 10px;
+}
+
+div#data_view .comment
+{
+	font-style: italic;
+}
+
+div#ontology_editor_widget div#ontology_known_roots
+{
+	margin-top: 10px;
+}
+
+div#ontology_editor_widget span#known_root_names
+{
+	font-style: italic;
+}
+
+div#ontology_editor_widget div#ontology_warnings
+{
+    color: red;
+}
+
+.wider-context-menu
+{
+    min-width: 220px;
+}
+
+.even-wider-context-menu
+{
+    min-width: 235px;
+}
+
+div#classification_graph_object a {
+    padding-bottom: 2px;
+}
+
+div#classification_graph_object a.jstree-hovered,
+div#classification_graph_object a.jstree-clicked {
+    padding-bottom: 1px;
+}
+
+div#classification_graph_object li.editnode a {
+    padding-bottom: 3px;
+    color: #767676;
+}
+
+div#classification_graph_object li.editnode a.jstree-hovered,
+div#classification_graph_object li.editnode a.jstree-clicked {
+    padding-bottom: 2px;
+}
+
+div#classification_graph_object div.select_new_classification_instance {
+    cursor: pointer;
+    background: white;
+    color: #767676;
+    margin-top: 2px;
+    position: absolute;
+}
+
+div#classification_graph_object img.roiimage {
+    margin: -4px;
+    padding-left: 4px;
+}
+
+#imagepreview {
+    position: absolute;
+    border: 1px solid #ccc;
+    background: #333;
+    padding: 5px;
+    display: none;
+    color: #fff;
+}
+
+#clustering_content .indented {
+    margin: 1.5em 16px 0.5em 20px;
+}
+
+#clustering_content #distance_matrix td.lowertriangle {
+    background-color: #CED8F6;
+}
+
+#clustering_content .title {
+	font-weight:bold;
+}
+
+/* This is needed to make jQuery's slideToggle() not override
+ * the overflow property to 'hidded' and thereby cause jumping. */
+#clustering_content .content {
+    position: relative;
+    overflow: visible !important;
+}
+
+.extend-box-open,
+.extend-box-closed {
+	width: 0px;
+	height: 0px;
+	float: left;
+	margin-top: 1px;
+	margin-right: 3px;
+	border-style: solid;
+}
+
+.extend-box-open {
+	border-width: 8px 4px 0 4px;
+	border-color: #0000ff transparent transparent transparent;
+}
+
+.extend-box-closed {
+	border-width: 4px 0 4px 8px;
+	border-color: transparent transparent transparent #0000ff;
+}
+
+.navigator_navi_bar {
+    margin-top: 0.5em;
+    width: 100%
+}
+
+.navigator_navi_bar .navigator_button {
+    float: right;
+    margin-right: 5px;
+}
+
+.navigator_content {
+    clear: both;
+    margin-top: 1em;
+}
+
+.navigator_content_option {
+    float: left;
+    clear: both;
+}
+
+.navigator_content.multi_table_node .dataTables_wrapper {
+    min-height: 0px;
+    margin-bottom: 1em;
+}
+
+.neuron_annotations_query_results_table td {
+    padding: 2px;
+    vertical-align: top;
+}
+
+.neuron_annotations_query_results_table label input,
+.neuron_annotations_query_results_table label a {
+    margin-top: 0px;
+    vertical-align: top;
+}
+
+.neuron_annotations_query_results_table ul {
+    margin-top: 0px;
+}
+
+.neuron_annotations_query_results_table th input[type=checkbox] {
+    padding: 3px;
+    width: auto;
+    margin-left: 6px;
+    margin-right: -6px;
+    float: left;
+}
+
+.neuron_annotations_query_results_table th label {
+    font-weight: normal;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.neuron_annotations_query_results_table th input[type=radio] {
+    width: auto;
+}
+
+.neuron_annotations_query_results_table li.remove_annotation {
+    white-space: normal;
+    display: inline-block;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.ui-front {
+    z-index: 10000 !important;
+}
+
+.buttonpanel input {
+  vertical-align: middle;
+}
+
+.buttonpanel label {
+  margin: 0.5em;
+}
+
+.buttonpanel.ui-tabs {
+  font-size: 11px;
+  font-family: sans-serif;
+}
+
+.buttonpanel ul.ui-tabs-nav {
+  padding: 0;
+}
+
+.buttonpanel div.ui-tabs-panel {
+  padding: 0.2em 0.2em 0.1em 0.2em;
+}
+
+.buttonpanel ul.ui-tabs-nav li .ui-tabs-anchor {
+  padding: .2em 1em;
+}
+
+.connectivity_widget table {
+  padding: 3px;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+
+.connectivity_widget .header {
+  margin: 1em 0 1em 1em;
+  clear: left;
+}
+
+.connectivity_widget .header input {
+  margin: 0 3px 0 3px;
+  vertical-align: middle;
+}
+
+.connectivity_widget .header th {
+  border-bottom: 1px solid black;
+}
+
+.connectivity_widget .header th:nth-child(4),
+.connectivity_widget .header th:nth-child(5) {
+  width: 7em;
+}
+
+.connectivity_widget .header tfoot td {
+  border-top: 1px solid #ccc;
+  font-style: italic;
+}
+
+.connectivity_widget label {
+  display: block;
+  padding-right: 10px;
+  padding-left: 22px;
+  text-indent: -22px;
+}
+
+.connectivity_widget .input-container {
+  text-align: center;
+}
+
+.connectivity_widget .table_container_half {
+  display: table-cell;
+  width: 50%;
+  vertical-align: top;
+}
+
+.connectivity_widget .table_container_wide {
+  width: 100%;
+  margin-bottom: 6em;
+}
+
+.connectivity_widget .table_container_wide:last-child {
+  margin-bottom: 0;
+}
+
+.connectivity_widget .content {
+  display: table;
+  clear: both;
+}
+
+.connectivity_widget .connectivity_table_actions {
+  position: relative;
+  clear: both;
+  width: 100%;
+}
+
+.connectivity_widget .dataTables_filter {
+  float: none;
+  text-align: left;
+}
+
+.connectivity_widget .dataTables_filter label {
+  margin: 0.5em;
+  padding-left: 10px;
+  text-indent: 0;
+}
+
+.connectivity_widget .dataTables_export {
+  position: absolute;
+  float: none;
+  bottom: 0;
+  right: 0;
+  margin: 0.5em 0.5em 0 0;
+}
+
+.connectivity_widget .partner_table {
+  padding: 3px;
+  border-collapse: collapse;
+  border: 1px solid black;
+  width: 100%;
+  margin-bottom: 1em;
+}
+
+.connectivity_widget .partner_table td,
+.connectivity_widget .partner_table th {
+  border: 1px solid black;
+}
+
+.connectivity_widget .partner_table thead input {
+  width: auto;
+  margin-right: 12px;
+}
+
+.connectivity_widget .partner_table .syncount {
+  text-align: center;
+}
+
+.connectivity_widget .partner_table tfoot {
+  color: grey;
+}
+
+.clear {
+  clear: both;
+}
+
+.left {
+  float: left;
+}
+
+.right {
+  float: right;
+}
+
+#review_segment_table tr.highlight {
+	font-weight:bold;
+}
+
+#review_segment_table th {
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-bottom: 1px solid black;
+}
+
+#settings_widget .title {
+  font-weight: bold;
+}
+
+#settings_widget .content {
+  margin-left: 3em;
+}
+
+.setting {
+  float: left;
+  clear: left;
+  padding: 0.1em 0 0.1em 0;
+}
+
+.setting .description {
+  width: 15em;
+  display: inline-block
+}
+
+.setting input[type=checkbox] {
+  position: relative;
+  margin-left: 0;
+  margin-bottom: 0;
+  bottom: -0.2em;
+}
+
+.settings-container {
+  clear: both;
+  float: left;
+  display: inline-block;
+}
+
+
+#settings_widget select {
+  min-width:  20em;
+}
+
+#settings_widget select.multiline {
+  height: 8em;
+}
+
+.ontology_search .helptext {
+  display: block;
+  color: #888;
+  font-style:italic;
+}
+
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node.highlight circle {
+  fill: #00f !important;
+}
+
+.node.tagged circle {
+  fill: #fff;
+  stroke: orangered;
+  stroke-width: 1.5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+.link.tagged {
+  fill: none;
+  stroke: #fcc;
+  stroke-width: 1.5px;
+}

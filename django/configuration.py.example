@@ -3,8 +3,9 @@
 
 abs_catmaid_path = ''
 
-# Absolute path to the site-packages folder of your virtual Python environment without trailing slash
-# e.g. /home/alice/.virtualenvs/catmaid
+# Absolute path to the site-packages folder of your virtual Python environment
+# without trailing slash
+# e.g. /home/alice/.virtualenvs/catmaid/lib/python2.7/site-packages
 
 abs_virtualenv_python_library_path = ''
 

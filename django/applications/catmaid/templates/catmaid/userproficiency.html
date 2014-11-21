@@ -1,12 +1,11 @@
 {% extends "admin/base_site.html" %}
+{% load compressed %}
 {% load i18n %}
 
 {% block extrahead %}
-<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.blockUI.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery-ui-1.10.1.custom.min.js"></script>
-<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/datatable/themes/smoothness/jquery-ui-1.10.1.custom.css" />
-<script type="text/javascript" src="{{ STATIC_URL }}libs/d3/d3.v2.js"></script>
+{% compressed_css 'libraries' %}
+{% compressed_js 'jquery-lib' %}
+{% compressed_js 'd3-lib' %}
 <style>
 
 .axis path,
@@ -26,6 +25,10 @@
   stroke-width: 1.5px;
 }
 
+.result {
+  display: none;
+}
+
 </style>
 {% endblock %}
 
@@ -38,15 +41,10 @@
 {% block content %}
 
 <h2>User Proficiency</h2>
+
 <table>
   <tr>
     <td>User: <select id="logtable_username"></select></td>
-    <td rowspan="7">
-      <div id="splits-merges"></div>
-			<div id="percent"></div>
-      <div id="synapses"></div>
-      <div id="nodes"></div>
-    </td>
   </tr>
   <tr><td>
     Project: <select id="project"></select>
@@ -67,6 +65,13 @@
     <button id="refresh" >Update</button>
   </td></tr>
 </table>
+
+<h3 class="result">Results</h3>
+
+<div class="result" id="splits-merges"></div>
+<div class="result" id="percent"></div>
+<div class="result" id="synapses"></div>
+<div class="result" id="nodes"></div>
 
 <script type="text/javascript">
 
@@ -160,10 +165,14 @@
                    min_nodes: min_nodes},
           "error": function(xml, msg, e) {
             $.unblockUI();
+            $('.result').hide();
             alert("An error occurred. Check the console.\n" + msg);
             if (e) console.log(e);
           },
-          "success": draw
+          "success": function(data) {
+            $('.result').show();
+            draw(data);
+          }
         });
       } catch (e) {
         alert(e);

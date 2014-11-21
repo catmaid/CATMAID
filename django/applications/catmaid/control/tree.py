@@ -10,16 +10,14 @@ except ImportError:
 from django.db import connection
 from django.http import HttpResponse
 
+from catmaid.models import UserRole, Treenode, TreenodeConnector, Class, \
+        ClassInstance, ClassInstanceClassInstance, Relation
 from catmaid.control.object import get_annotation_graph
-
-from catmaid.models import *
-from catmaid.control.authentication import *
-from catmaid.control.common import *
+from catmaid.control.authentication import requires_user_role, \
+        can_edit_class_instance_or_fail
+from catmaid.control.common import get_class_to_id_map, \
+        get_relation_to_id_map, insert_into_log
 from catmaid.control.tracing import check_tracing_setup_detailed
-
-from collections import defaultdict
-from functools import partial
-from itertools import imap, chain
 
 @requires_user_role(UserRole.Annotate)
 def instance_operation(request, project_id=None):
@@ -94,8 +92,9 @@ def instance_operation(request, project_id=None):
         nodes_to_rename = ClassInstance.objects.filter(id=params['id'])
         node_ids = [node.id for node in nodes_to_rename]
         if len(node_ids) > 0:
+            old_name = ",".join([n.name for n in nodes_to_rename])
             nodes_to_rename.update(name=params['title'])
-            insert_into_log(project_id, request.user.id, "rename_%s" % params['classname'], None, "Renamed %s with ID %s to %s" % (params['classname'], params['id'], params['title']))
+            insert_into_log(project_id, request.user.id, "rename_%s" % params['classname'], None, "Renamed %s with ID %s from %s to %s" % (params['classname'], params['id'], old_name, params['title']))
             return HttpResponse(json.dumps({'class_instance_ids': node_ids}))
         else:
             instance_operation.res_on_err = ''
@@ -297,7 +296,7 @@ def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
     potential_skeletons = nx.bfs_tree(g, int(node_id)).nodes()
     result = tuple(nid for nid in potential_skeletons if 'skeleton' == g.node[nid]['class'])
     json_return = json.dumps({'skeletons': result}, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
+    return HttpResponse(json_return, content_type='text/json')
 
 
 def _collect_neuron_ids(node_id, node_type=None):
@@ -384,7 +383,7 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None,
           AND cici.relation_id = r.id
           AND r.relation_name = 'model_of'
           AND ci.id = cici.class_instance_b
-        ''' % ','.join(str(x) for x in neuron_ids)) # no need to sanitize
+        ''' % ','.join(map(str, neuron_ids))) # no need to sanitize
         skeletons = dict(cursor.fetchall())
     else:
         skeletons = {}
@@ -394,7 +393,7 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None,
         cursor = connection.cursor()
         cursor.execute('''
         SELECT skeleton_id FROM treenode WHERE skeleton_id IN (%s) GROUP BY skeleton_id HAVING count(*) > %s
-        ''' % (",".join(str(skid) for skid in skeletons), int(threshold)))
+        ''' % (",".join(map(str, skeletons)), int(threshold)))
         skeleton_ids = {row[0]: skeletons[row[0]] for row in cursor.fetchall()}
     else:
         skeleton_ids = skeletons
@@ -571,7 +570,7 @@ def remove_empty_neurons(request, project_id=None, group_id=None):
       AND cici.class_instance_a = ci.id
       AND ci.class_id = class.id
       AND class.class_name = 'skeleton'
-    ''' % (",".join(str(nid) for nid in neurons), relations['model_of']))
+    ''' % (",".join(map(str, neurons)), relations['model_of']))
     # Filter out neurons modeled by skeletons
     empty_neurons = neurons - set(row[0] for row in cursor.fetchall())
     if empty_neurons:

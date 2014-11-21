@@ -4,7 +4,7 @@ Basic Installation Instructions
 ===============================
 
 These installation instructions have been tested on the most
-recent stable release of Ubuntu (12.04 precise), so may need
+recent stable release of Ubuntu (14.04 precise), so may need
 some minor changes for other Debian-based distributions.
 
 As an alternative, we have generated an AMI (Amazon Machine
@@ -18,14 +18,14 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL >= 9.0
+1. PostgreSQL >= 9.2
 2. Python 2.7
 3. Imagemagick (for generating image tiles)
 
 On Debian-based systems, such as Ubuntu, you can install these
 with::
 
-    sudo apt-get install python postgresql-9.1 imagemagick
+    sudo apt-get install python postgresql-9.3 imagemagick
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on
@@ -44,7 +44,7 @@ The git repository is hosted at `https://github.com/acardona/CATMAID
 somewhere outside your web root, e.g. in ``/home/alice``, so that
 the source code is in ``/home/alice/catmaid``::
 
-   git clone git://github.com/acardona/CATMAID.git catmaid
+   git clone https://github.com/acardona/CATMAID.git catmaid
 
 2. Install required Python packages
 ###################################
@@ -60,19 +60,27 @@ Some of these Python packages depend on system-wide libraries
 that you will need to install in advance, however.  You can do
 this with::
 
-    sudo apt-get install gcc gfortran apt-file \
-                         python2.7-dev postgresql-common \
-                         libpq-dev libgraphicsmagick++1-dev \
-                         libhdf5-serial-dev libboost1.48-dev \
-                         libboost-python1.48-dev uuid-dev \
-                         libxml2-dev libxslt1-dev libjpeg-dev \
-                         libtiff-dev virtualenvwrapper \
-                         libblas-dev liblapack-dev
+    sudo apt-get install gcc gfortran apt-file python2.7-dev postgresql-common \
+                         libpq-dev libgraphicsmagick++1-dev graphicsmagick \
+                         libhdf5-serial-dev libboost1.55-dev virtualenvwrapper \
+                         libboost-python1.55-dev uuid-dev libxml2-dev \
+                         libxslt1-dev libjpeg-dev libtiff-dev libblas-dev \
+                         liblapack-dev
 
-Virtual Env Wrapper needs to source your environment. Start a new terminal
+Virtualenv Wrapper needs to source your environment. Start a new terminal
 or if you are using the bash::
 
     source ~/.bashrc
+
+Please test if ``virtualenvwrapper`` is set up correctly, by executing::
+
+    mkvirtualenv --version
+
+If it gives you a version, everything is fine. Otherwise, e.g. if the command
+``mkvirtualenv`` is not found, add the following line to your ``~/.bashrc`` file
+and call ``source ~/.bashrc`` again::
+
+    source /etc/bash_completion.d/virtualenvwrapper
 
 To create a new virtualenv for CATMAID's Python dependencies,
 you can do::
@@ -87,19 +95,22 @@ shells, for example, you will need to activate it by running::
 
     workon catmaid
 
-Ubuntu 12.04 ships a rather old version of Pip, the tool we use to install
-Python packages within the virtualenv. Let's update it therefor first---within
-the virtualenv::
+.. note::
 
-    pip install pip==1.5.4
+    On Ubuntu versions before 14.04 a rather old version of Pip is shipped.
+    This is the tool we use to install Python packages within the virtualenv, so
+    let's update it therefor first---within the virtualenv::
 
-You can probably use a later version as well, but we tested it with Pip v1.5.4.
+        pip install pip==1.5.4
+
+    You can probably use a later version as well, but we tested it with Pip
+    v1.5.4.
 
 Due to `a dependency problem
 <https://github.com/h5py/h5py/issues/96>`_, we need to install
-NumPy separately::
+NumPy and Distribute separately::
 
-   pip install numpy==1.6.1
+   pip install numpy==1.6.1 distribute==0.7.3
 
 You should then install all the rest of the required Python
 packages with::
@@ -136,7 +147,7 @@ database called ``catmaid`` and a database user called
 ``catmaid_user``.  Firstly, we need to reconfigure PostgreSQL to
 allow password-based authentication for that user to that
 database.  To do that, edit the file
-``/etc/postgresql/9.1/main/pg_hba.conf`` (where ``9.1`` may be a
+``/etc/postgresql/9.3/main/pg_hba.conf`` (where ``9.3`` may be a
 slightly different version for you) and add this line as the
 *first* rule in that file::
 
@@ -161,7 +172,7 @@ currently empty, e.g.::
 
     psql -U catmaid_user catmaid
     Password:
-    psql (9.1.8)
+    psql (9.3.4)
     Type "help" for help.
 
     catmaid=> \d
@@ -180,7 +191,7 @@ details requested.  Then you should run::
 
     ./create_configuration.py
 
-This will output some suggested Apache configuration in the
+This will output some suggested Nginx and Apache configuration in the
 terminal, and generate the files ``django.wsgi`` and ``settings.py``
 in ``/home/alice/catmaid/django/projects/mysite``.
 
@@ -258,6 +269,11 @@ following options:
 2. Nginx and either gevent, uWSGI or Gunicorn, in which case see
    :ref:`alternative-install`
 
+In general you want to fine-tune your setup to improve performance. Please have
+a look at our :ref:`collection of advice <performance-tuning>` for the various
+infrastructure parts (e.g.  webserver, database, file system). This can really
+make a difference.
+
 11. Using the admin interface
 #############################
 
@@ -268,10 +284,10 @@ development server, this would be::
 
     http://localhost:8000/admin/
 
-... or if your CATMAID instance is at
-``http://myserver.example.org/catmaid``, it would be at::
+... or, to use the variables used in the ``configuration.py`` (see step 4), the
+URL would be::
 
-    http://myserver.example.org/catmaid/admin/
+    http://<catmaid_servername>/<catmaid_subdirectory>/admin/
 
 12. Creating tiles for new CATMAID stacks
 #########################################

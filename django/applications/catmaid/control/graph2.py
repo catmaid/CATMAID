@@ -1,22 +1,24 @@
 import json
-from django.db import connection
-from django.http import HttpResponse
-from catmaid.control.authentication import *
-from catmaid.models import Relation
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
-from itertools import chain, ifilter, imap, izip, count
+from itertools import izip, count
 from functools import partial
 from synapseclustering import tree_max_density
 from numpy import subtract
 from numpy.linalg import norm
-from tree_util import edge_count_to_root, simplify, find_root, reroot, partition, spanning_tree, cable_length
-from math import sqrt
-import sys
-from operator import getitem
+
+from django.db import connection
+from django.http import HttpResponse
+
+from catmaid.models import UserRole
+from catmaid.control.authentication import requires_user_role
+from catmaid.control.tree_util import simplify
 
 def basic_graph(project_id, skeleton_ids):
+    if not skeleton_ids:
+        raise ValueError("No skeleton IDs provided")
+
     cursor = connection.cursor()
 
     cursor.execute('''
@@ -75,6 +77,9 @@ def basic_graph(project_id, skeleton_ids):
 
 def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
     """ Assumes 0 < confidence_threshold <= 5. """
+    if not skeleton_ids:
+        raise ValueError("No skeleton IDs provided")
+
     cursor = connection.cursor()
     skids = ",".join(str(int(skid)) for skid in skeleton_ids)
 
@@ -153,6 +158,9 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
     skeleton_ids = set(skeleton_ids)
     expand = set(expand)
 
+    if not skeleton_ids:
+        raise ValueError("No skeleton IDs provided")
+
     # assumes all skeleton_id in expand are also present in skeleton_ids
 
     skids = ",".join(str(int(skid)) for skid in skeleton_ids)
@@ -228,7 +236,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
     # Now fetch all treenodes of all skeletons to expand
     cursor.execute('''
-    SELECT skeleton_id, id, parent_id, confidence, (location).x, (location).y, (location).z
+    SELECT skeleton_id, id, parent_id, confidence, location_x, location_y, location_z
     FROM treenode
     WHERE project_id = %s
       AND skeleton_id IN (%s)

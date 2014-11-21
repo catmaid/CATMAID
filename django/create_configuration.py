@@ -57,7 +57,7 @@ data = re.sub('CATMAID_SUBDIR', catmaid_subdirectory, data)
 # If CATMAID doesn't live in a sub-directery, double-slashes can occur
 # in the generated configurations. Remove those, if they are not part
 # of a recognized protocol specification:
-known_protocols = ["http", "https", "ftp", "ssh", "nfs", "smb"]
+known_protocols = ["http", "https", "ftp", "ssh", "nfs", "smb", "django"]
 known_protocols = ["(?<!%s:)" % p for p in known_protocols]
 known_protocols = ''.join(known_protocols)
 data = re.sub('%s//' % known_protocols, '/', data)
@@ -70,27 +70,55 @@ if len(catmaid_subdirectory) == 0:
 o.write( data )
 o.close()
 
+nginx_out = """
+upstream catmaid-wsgi {{
+    # Configure host and IP of WSGI server here
+    server 127.0.0.1:8020 fail_timeout=0;
+}}
 
-out = """
+server {{
+    location /{subdir}/static/ {{
+        alias {cmpath}/django/static/;
+    }}
+
+    # Route all CATMAID Django WSGI requests to the Gevent WSGI server
+    location /{subdir}/ {{
+        proxy_pass http://catmaid-wsgi/;
+        proxy_redirect http://catmaid-wsgi/ http://$host/;
+        proxy_set_header Host $http_host;
+        # This is required to tell Django it is behind a proxy
+        proxy_set_header X-Forwarded-For $host;
+    }}
+}}
+""".format(cmpath=abs_catmaid_path, subdir=catmaid_subdirectory)
+
+# Remove any double slashes from this configuration too:
+nginx_out = re.sub('(?<!(http:))//', '/', nginx_out)
+
+apache_out = """
 Alias /{subdir} {cmpath}/django/projects/mysite/django.wsgi
 <Location /{subdir}>
         SetHandler wsgi-script
         Options +ExecCGI
 </Location>
 
-Alias /{subdir}/static/ {cmpath}/django/static/
+Alias /{subdir}/static {cmpath}/django/static/
 <Directory {cmpath}/django/static/>
     Options FollowSymLinks
     AllowOverride AuthConfig Limit FileInfo
     Order deny,allow
     Allow from all
 </Directory>
-
 """.format(cmpath = abs_catmaid_path, subdir = catmaid_subdirectory)
 
 # Remove any double slashes from this configuration too:
-out = re.sub('//', '/', out)
+apache_out = re.sub('//', '/', apache_out)
 
-print('Apache configuration settings')
-print('-----------------------------')
-print(out)
+print("""
+Nginx configuration settings
+----------------------------
+%s
+Apache configuration settings
+-----------------------------
+%s
+""" % (nginx_out, apache_out))

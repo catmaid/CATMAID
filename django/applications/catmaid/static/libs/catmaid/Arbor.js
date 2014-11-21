@@ -1,3 +1,6 @@
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+
 /** Albert Cardona 2013-10-28
  *
  * Functions for creating, iterating and inspecting trees as represented by CATMAID,
@@ -24,7 +27,11 @@ Arbor.prototype = {};
 Arbor.prototype.clone = function() {
 	var arbor = new Arbor();
 	arbor.root = this.root;
-	arbor.edges = Object.create(this.edges);
+  var children = this.childrenArray();
+  for (var i=0; i<children.length; ++i) {
+    var node = children[i];
+    arbor.edges[node] = this.edges[node];
+  }
 	return arbor;
 };
 
@@ -44,7 +51,7 @@ Arbor.prototype.addEdges = function(edges, accessor) {
 	} else {
 		for (var i=0; i<length; i+=2) {
 			// Add edge from child to parent
-			this.edges[accessor(edges[i])] = accessor(edges[i+1]);
+			this.edges[edges[i]] = edges[i+1];
 		}
 	}
 
@@ -121,103 +128,152 @@ Arbor.prototype.reroot = function(new_root) {
 /** Returns an array with all end nodes, in O(3*n) time.
  * Does not include the root node. */
 Arbor.prototype.findEndNodes = function() {
-	var edges = this.edges,
-			children = Object.keys(edges),
-			parents = children.reduce(function(o, child) {
-				o[edges[child]] = true;
-				return o;
-			}, {});
+  var edges = this.edges,
+      children = this.childrenArray(),
+      parents = {};
 
-	return children.reduce(function(a, child) {
-		if (child in parents) return a;
-		a.push(child);
-		return a;
-	}, []);
+  for (var k=0, l=children.length; k<l; ++k) {
+    parents[edges[children[k]]] = true;
+  }
+
+  var ends = [];
+  for (var j=0, l=children.length; j<l; ++j) {
+    var child = children[j];
+    if (undefined === parents[child]) ends.push(child);
+  }
+  return ends;
 };
 
 /** Return an object with parent node as keys and arrays of children as values.
  * End nodes have empty arrays. */
 Arbor.prototype.allSuccessors = function() {
-	var edges = this.edges,
-			children = Object.keys(edges);
-	// Handle corner cases
-	if (0 === children.length) {
-		if (this.root) {
-			var a = {};
-			a[this.root] = [];
-			return a;
-		}
-		return {};
-	}
-	return children.reduce(function(o, child) {
-		var paren = edges[child],
-			  children = o[paren];
-	  if (children) children.push(child);
-		else o[paren] = [child];
-		if (!(child in o)) o[child] = [];
-		return o;
-	}, {});
+  var edges = this.edges,
+      children = this.childrenArray();
+  // Handle corner cases
+  if (0 === children.length) {
+    if (this.root) {
+      var a = {};
+      a[this.root] = [];
+      return a;
+    }
+    return {};
+  }
+  var successors = {};
+  for (var k=0, l=children.length; k<l; ++k) {
+    var child = children[k],
+        paren = edges[child],
+        succ = successors[paren];
+    if (succ) succ.push(child);
+    else successors[paren] = [child];
+    if (undefined === successors[child]) successors[child] = [];
+  }
+  return successors;
+};
+
+/** Finds the next branch node, starting at node (inclusive).
+ *  Assumes the node belongs to the arbor.
+ *  Returns null when no branches are found. */
+Arbor.prototype.nextBranchNode = function(node) {
+  var all_succ = this.allSuccessors(),
+      succ  = all_succ[node];
+  while (1 === succ.length) {
+    node = succ[0];
+    succ = all_succ[node];
+  }
+  if (all_succ[node].length > 1) return node;
+  return null;
 };
 
 /** Return an object with each nodes as keys and arrays of children plus the parent as values, or an empty array for an isolated root node. Runs in O(2n) time.*/
 Arbor.prototype.allNeighbors = function() {
-	var edges = this.edges,
-			nodes = Object.keys(edges); // except the root
-	// Handle corner cases
-	if (0 === nodes.length) {
-		if (this.root) {
-			var a = {};
-			a[this.root] = [];
-			return a;
-		}
-		return {};
-	}
-	return nodes.reduce(function(o, node) {
-		var paren = edges[node], // always exists in well-formed arbors; root node not included in nodes
-		    neighbors = o[node],
-				paren_neighbors = o[paren];
-	  // Add paren as neighbor of node
-	  if (neighbors) neighbors.push(paren);
-		else o[node] = [paren];
-		// Add node as neighbor of parent
-		if (paren_neighbors) paren_neighbors.push(node);
-		else o[paren] = [node];
-		return o;
-	}, {});
+  var edges = this.edges,
+      nodes = this.childrenArray();
+  // Handle corner cases
+  if (0 === nodes.length) {
+    if (this.root) {
+      var a = {};
+      a[this.root] = [];
+      return a;
+    }
+    return {};
+  }
+  var o = {};
+  for (var i=0; i<nodes.length; ++i) {
+    var node = nodes[i],
+        paren = edges[node], // always exists in well-formed arbors; root node not included in nodes
+        neighbors = o[node],
+        paren_neighbors = o[paren];
+    // Add paren as neighbor of node
+    if (neighbors) neighbors.push(paren);
+    else o[node] = [paren];
+    // Add node as neighbor of parent
+    if (paren_neighbors) paren_neighbors.push(node);
+    else o[paren] = [node];
+  }
+  return o;
 };
 
-/** Find branch and end nodes in O(4*n) time. */
+/** Find branch and end nodes in O(3n) time.
+ * Returns {ends: array of end nodes,
+ *          branches: map of branch node vs count of branches,
+ *          n_branches: number of branch nodes} */
 Arbor.prototype.findBranchAndEndNodes = function() {
-	var edges = this.edges,
-			children = Object.keys(edges),
-			parents = children.reduce(function(o, child) {
-				o[edges[child]] = 0;
-				return o;
-			}, {}),
-			ends = [];
+  var edges = this.edges,
+      children = this.childrenArray(),
+      parents = {},
+      branches = {},
+      n_branches = 0,
+      ends = [];
 
-	children.forEach(function(node) {
-		parents[this.edges[node]] += 1;
-		if (!(node in parents)) ends.push(node);
-	}, this);
+  for (var i=0, l=children.length; i<l; ++i) {
+    var paren = edges[children[i]];
+    if (parents[paren]) {
+      var count = branches[paren];
+      if (undefined === count) {
+        branches[paren] = 2;
+        n_branches += 1;
+      } else branches[paren] = count + 1;
+    } else {
+      parents[paren] = true;
+    }
+  }
 
-	return {ends: ends,
-		      branching: Object.keys(parents).filter(function(k) { return parents[k] > 1; })};
+  for (var i=0, l=children.length; i<l; ++i) {
+    var node = children[i];
+    if (undefined === parents[node]) ends.push(node);
+  }
+
+  // Corner case: an Arbor with a root and no children
+  if (0 === children.length && this.root) ends.push(this.root);
+
+  return {ends: ends,
+          branches: branches,
+          n_branches: n_branches};
 };
 
-/** Returns an array with all branch nodes. Runs in O(n + m) time,
- * where n is the number of nodes and m the number of branches. */
+/** Returns a map of branch node vs true.
+ * Runs in O(2n) time. */
 Arbor.prototype.findBranchNodes = function() {
-	var successors = this.allSuccessors(),
-			node_ids = Object.keys(successors);
-	// Handle corner case
-	if (0 === node_ids.length) return [];
-	return node_ids.filter(function(node) {
-		return successors[node].length > 1;
-	});
+  var edges = this.edges,
+      children = this.childrenArray(),
+      parents = {},
+      branches = {};
+
+  for (var i=0, l=children.length; i<l; ++i) {
+    var paren = edges[children[i]];
+    if (parents[paren]) branches[paren] = true;
+    else parents[paren] = true;
+  }
+
+  return branches;
 };
 
-/** Return a map of node vs topological distance from the given root. Rather than a distance, these are the hierarchical orders, where root has order 0, nodes directly downstream of root have order 1, and so on. Invoke with this.root as argument to get the distances to the root of this Arbor. Invoke with any non-end node to get distances to that node for nodes downstream of it. */
+/** Return a map of node vs topological distance from the given root. Rather
+ * than a distance, these are the hierarchical orders, where root has order 0,
+ * nodes directly downstream of root have order 1, and so on. Invoke with
+ * this.root as argument to get the distances to the root of this Arbor. Invoke
+ * with any non-end node to get distances to that node for nodes downstream of
+ * it. */
 Arbor.prototype.nodesOrderFrom = function(root) {
 	return this.nodesDistanceTo(root, function() { return 1; }).distances;
 };
@@ -268,54 +324,90 @@ Arbor.prototype.nodesDistanceTo = function(root, distanceFn) {
 	return r;
 };
 
+/** Return an array will all nodes that are not the root. */
+Arbor.prototype.childrenArray = function() {
+  return Object.keys(this.edges);
+};
+
 /** Return an Object with node keys and true values, in O(2n) time. */
 Arbor.prototype.nodes = function() {
-	var nodes = Object.keys(this.edges).reduce(function(o, child) {
-		o[child] = true;
-		return o;
-	}, {});
-	nodes[this.root] = true;
+  var a = this.nodesArray(),
+      nodes = {};
+  for (var i=0; i<a.length; ++i) nodes[a[i]] = true;
 	return nodes;
 };
 
 /** Return an Array of all nodes in O(n) time. */
 Arbor.prototype.nodesArray = function() {
 	var nodes = Object.keys(this.edges);
-	nodes.push(this.root);
+	if (null !== this.root) nodes.push(this.root);
 	return nodes;
 };
 
 /** Counts number of nodes in O(n) time. */
 Arbor.prototype.countNodes = function() {
-	return Object.keys(this.edges).length + (this.root ? 1 : 0);
+	return this.nodesArray().length;
 };
 
 /** Returns an array of arrays, unsorted, where the longest array contains the linear
  * path between the furthest end node and the root node, and all other arrays are shorter
  * paths always starting at an end node and finishing at a node already included in
- * another path. Runs in O(4n + nlog(n)) time. */
+ * another path. Runs in O(4*n + m) where n is the number of nodes and m the number of ends. */
 Arbor.prototype.partition = function() {
-	var ends = this.findEndNodes(),
-		  distances = this.nodesOrderFrom(this.root),
-			seen = {};
+  var be = this.findBranchAndEndNodes(),
+      ends = be.ends,
+      branches = be.branches,
+      partitions = new Array(ends.length),
+      next = 0,
+      junctions = {};
 
-	// Sort nodes by distance to root, so that the first end node is the furthest
-	return ends.sort(function(a, b) {
-		var da = distances[a],
-		    db = distances[b];
-		return da === db ? 0 : (da < db ? 1 : -1);
-	}).map(function(child) {
-		// Iterate nodes sorted from highest to lowest distance to root
-		var sequence = [child],
-				paren = this.edges[child];
-	  while (paren) {
-			sequence.push(paren);
-			if (seen[paren]) break;
-			seen[paren] = true;
-			paren = this.edges[paren];
-		}
-		return sequence;
-	}, this);
+  var open = new Array(ends.length);
+  for (var k=0; k<ends.length; ++k) open[k] = [ends[k]];
+
+  while (open.length > 0) {
+    var seq = open.shift(),
+        node = seq[seq.length -1],
+        paren,
+        n_successors;
+    do {
+        var paren = this.edges[node];
+        if (undefined === paren) break; // reached root
+        seq.push(paren);
+        n_successors = branches[paren];
+        node = paren;
+    } while (undefined === n_successors);
+
+    if (undefined === paren) {
+      // Reached the root
+      partitions[next++] = seq;
+    } else {
+      // Reached a branch node
+      var junction = junctions[node];
+      if (undefined === junction) {
+        junctions[node] = [seq];
+      } else {
+        junction.push(seq);
+        if (junction.length === n_successors) {
+          // Append longest to open, and all others to partitions
+          var max = 0,
+              ith = 0;
+          for (var k=0; k<junction.length; ++k) {
+            var len = junction[k].length;
+            if (len > max) {
+              max = len;
+              ith = k;
+            }
+          }
+          for (var k=0; k<junction.length; ++k) {
+            if (k === ith) open.push(junction[k]);
+            else partitions[next++] = junction[k];
+          }
+        }
+      }
+    }
+  }
+
+  return partitions;
 };
 
 /** Like this.partition, but returns the arrays sorted by length from small to large. */
@@ -330,22 +422,28 @@ Arbor.prototype.partitionSorted = function() {
 /** Returns an array of child nodes in O(n) time.
  * See also this.allSuccessors() to get them all in one single shot at O(n) time. */
 Arbor.prototype.successors = function(node) {
-	var edges = this.edges;
-	return Object.keys(edges).reduce(function(a, child) {
-		if (edges[child] === node) a.push(child);
-		return a;
-	}, []);
+  var edges = this.edges,
+      children = this.childrenArray(),
+      a = [];
+  for (var i=0; i<children.length; ++i) {
+    var child = children[i];
+    if (edges[child] === node) a.push(child);
+  }
+  return a;
 };
 
 /** Returns an array of child nodes plus the parent node in O(n) time.
  * See also this.allNeighbors() to get them all in one single shot at O(2n) time. */
 Arbor.prototype.neighbors = function(node) {
-	var edges = this.edges,
-			paren = this.edges[node];
-	return Object.keys(edges).reduce(function(a, child) {
-		if (edges[child] === node) a.push(child);
-		return a;
-	}, undefined === paren ? [] : [paren]);
+  var edges = this.edges,
+      children = this.childrenArray(),
+      paren = this.edges[node],
+      neighbors = undefined === paren ? [] : [paren];
+  for (var i=0; i<children.length; ++i) {
+    var child = children[i];
+    if (edges[child] === node) a.push(child);
+  }
+  return a;
 };
 
 /** Return a new Arbor that has all nodes in the array of nodes to preserve,
@@ -362,7 +460,7 @@ Arbor.prototype.spanningTree = function(keepers) {
 	var arbor = this;
 	if (this.successors(this.root).length > 1) {
 		// Root has two children. Reroot a copy at the first end node found
-		arbor = this.clone().reroot(this.findEndNodes()[0])
+		arbor = this.clone().reroot(this.findEndNodes()[0]);
 	}
 
 	var n_seen = 0,
@@ -563,7 +661,7 @@ Arbor.prototype.subArbor = function(new_root) {
 	sub.root = new_root;
 
 	while (open.length > 0) {
-		paren = open.shift(), // faster than pop
+		paren = open.shift(); // faster than pop
 		children = successors[paren];
 		while (children.length > 0) {
 			child = children[0];
@@ -612,4 +710,1058 @@ Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
 	}
 
 	return values;
+};
+
+/**
+* Return a map of node vs branch index relative to root. Terminal branches
+* have an index of 1, their parent branches of 2 if two or more of their
+* children are 1 as well as all others have a lower index, or their parent
+* branches have and index of 1 if one child is 1 and no child with greater
+* index, etc., all the way to root. The maximum number is that of the root
+* node.
+*/
+Arbor.prototype.strahlerAnalysis = function() {
+  var strahler = {},
+      be = this.findBranchAndEndNodes(),
+      branch = be.branches,
+      open = be.ends.slice(0), // clone. Never edit return values from internal functions, so that they can be cached
+      visited_branches = {}; // branch node vs array of strahler indices
+
+  // All end nodes have by definition an index of 1
+  for (var i=0; i<open.length; ++i) strahler[open[i]] = 1;
+
+  while (open.length > 0) {
+    var node = open.shift(),
+        index = strahler[node],
+        n_children = branch[node],
+        paren = this.edges[node];
+    // Iterate slab towards first branch found
+    while (paren) {
+      n_children = branch[paren];
+      if (n_children) break; // found branch
+      strahler[paren] = index;
+      paren = this.edges[paren];
+    }
+    if (paren) {
+      // paren is a branch. Are all its branches minus one completed?
+      var si = visited_branches[paren];
+      if (si && si.length === n_children -1) {
+        // Yes: compute strahler:
+        //  A. If all equal, increase Strahler index by one
+        //  B. Otherwise pick the largest strahler index of its children
+        var v = index; // of the current branch
+        for (var k=0, same=0; k<si.length; k++) {
+          if (si[k] === v) ++same;
+          else v = Math.max(v, si[k]);
+        }
+        strahler[paren] = si.length === same ? v + 1 : v;
+        open.push(paren);
+      } else {
+        // No: compute later
+        if (si) si.push(index);
+        else visited_branches[paren] = [index];
+      }
+    } else {
+      // else is the root
+      strahler[this.root] = index;
+    }
+  }
+
+
+  return strahler;
+};
+
+/**
+ * Perform Sholl analysis: returns two arrays, paired by index, of radius length and the corresponding number of cable crossings,
+ * sampled every radius_increment.
+ *
+ * E.g.:
+ *
+ * {radius:   [0.75, 1.5, 2.25, 3.0],
+ *  crossings:[   3,   2,    1,   1]}
+ *
+ * A segment of cable defined two nodes that hold a parent-child relationship is considered to be crossing a sampling radius if the distance from the center for one of them is beyond the radius, and below for the other.
+ *
+ * Notice that if parent-child segments are longer than radius-increment in the radial direction, some parent-child segments will be counted more than once, which is correct.
+ *
+ * radius_increment: distance between two consecutive samplings.
+ * distanceToCenterFn: determines the distance of a node from the origin of coordinates, in the same units as the radius_increment.
+ */
+Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
+    // Create map of radius index to number of crossings.
+    // (The index, being an integer, is a far safer key for a map than the distance as floating-point.)
+    var indexMap = {},
+        cache = {},
+        children = this.childrenArray();
+    for (var i=0; i<children.length; ++i) {
+      var child = children[i];
+      // Compute distance of both parent and child to the center
+      // and then divide by radius_increment and find out
+      // which boundaries are crossed, and accumulate the cross counts in sholl.
+      var paren = this.edges[child],
+          dc = cache[child],
+          dp = cache[paren];
+      if (undefined === dc) cache[child] = dc = distanceToCenterFn(child);
+      if (undefined === dp) cache[paren] = dp = distanceToCenterFn(paren);
+      var index = Math.floor(Math.min(dc, dp) / radius_increment) + 1,
+          next = Math.round(Math.max(dc, dp) / radius_increment + 0.5); // proper ceil
+      while (index < next) {
+          var count = indexMap[index];
+          if (undefined === count) indexMap[index] = 1;
+          else indexMap[index] += 1;
+          ++index;
+      }
+    }
+
+    // Convert indices to distances
+    return Object.keys(indexMap).reduce(function(o, index) {
+        o.radius.push(index * radius_increment);
+        o.crossings.push(indexMap[index]);
+        return o;
+    }, {radius: [], crossings: []});
+};
+
+
+/**
+ * Return two correlated arrays, one with bin starting position and the other
+ * with the quantity of nodes whose position falls within the bin.
+ *
+ * Bins have a size of radius_increment.
+ *
+ * Only nodes included in the map of positions will be measured. This enables
+ * computing Sholl for e.g. only branch and end nodes, or only for nodes with synapses.
+ *
+ * center: an object with a distanceTo method, like THREE.Vector3.
+ * radius_increment: difference between the radius of a sphere and that of the next sphere.
+ * positions: map of node ID vs objects like THREE.Vector3.
+ * fnCount: a function to e.g. return 1 when counting, or the length of a segment when measuring cable.
+ */
+Arbor.prototype.radialDensity = function(center, radius_increment, positions, fnCount) {
+    var density = this.nodesArray().reduce(function(bins, node) {
+        var p = positions[node];
+        // Ignore missing nodes
+        if (undefined === p) return bins;
+        var index = Math.floor(center.distanceTo(p) / radius_increment),
+            count = bins[index];
+        if (undefined === count) bins[index] = fnCount(node);
+        else bins[index] += fnCount(node);
+        return bins;
+    }, {});
+
+    // Convert indices to distances
+    return Object.keys(density).reduce(function(o, index) {
+        o.bins.push(index * radius_increment);
+        o.counts.push(density[index]);
+        return o;
+    }, {bins: [], counts: []});
+};
+
+/** Return a map of node vs number of paths from any node in the set of inputs to any node in the set of outputs.
+ *  outputs: a map of node keys vs number of outputs at the node.
+ *  inputs: a map of node keys vs number of inputs at the node. */
+Arbor.prototype.flowCentrality = function(outputs, inputs, totalOutputs, totalInputs) {
+    if (undefined === totalOutputs) {
+      totalOutputs = Object.keys(outputs).reduce(function(sum, node) {
+          return sum + outputs[node];
+      }, 0);
+    }
+
+    if (undefined === totalInputs) {
+      totalInputs = Object.keys(inputs).reduce(function(sum, node) {
+          return sum + inputs[node];
+      }, 0);
+    }
+
+    if (0 === totalOutputs || 0 === totalInputs) {
+        // Not computable
+        return null;
+    }
+
+    // Traverse all partitions counting synapses seen
+    var partitions = this.partitionSorted(),
+        cs = {},
+        centrality = {};
+    for (var i=0; i<partitions.length; ++i) {
+      var partition = partitions[i];
+        var seenI = 0,
+            seenO = 0;
+        for (var k=0, l=partition.length; k<l; ++k) {
+          var node = partition[k],
+              counts = cs[node];
+          if (undefined === counts) {
+            var n_inputs = inputs[node],
+                n_outputs = outputs[node];
+            if (n_inputs) seenI += n_inputs;
+            if (n_outputs) seenO += n_outputs;
+            // Last node of the partition is a branch or root
+            if (k === l -1) cs[node] = {seenInputs: seenI,
+                                        seenOutputs: seenO};
+          } else {
+            seenI += counts.seenInputs;
+            seenO += counts.seenOutputs;
+            counts.seenInputs = seenI;
+            counts.seenOutputs = seenO;
+          }
+          var centripetal = seenI * (totalOutputs - seenO),
+              centrifugal = seenO * (totalInputs  - seenI);
+          centrality[node] = {centrifugal: centrifugal,
+                              centripetal: centripetal,
+                              sum: centrifugal + centripetal};
+        }
+    }
+
+    return centrality;
+};
+
+/**
+ * positions: map of node ID vs objects like THREE.Vector3.
+ */
+Arbor.prototype.cableLength = function(positions) {
+  var children = this.childrenArray(),
+      sum = 0;
+  for (var i=0; i<children.length; ++i) {
+    var node = children[i];
+    sum += positions[node].distanceTo(positions[this.edges[node]]);
+  }
+  return sum;
+};
+
+/** Sum the cable length by smoothing using a Gaussian convolution.
+ * For simplicity, considers the root, all branch and end nodes as fixed points,
+ * and will only therefore adjust slab nodes.
+ * - positions: map of node ID vs objects like THREE.Vector3.
+ * - sigma: for tracing neurons, use e.g. 100 nm
+ * - initialValue: initial value for the reduce to accumulate on.
+ * - slabInitFn: take the accumulator value, the node and its point, return a new accumulator value.
+ * - accumulatorFn: given an accumulated value, the last point, the node ID and its new point, return a new value that will be the next value in the next round.
+ */
+Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabInitFn, accumulatorFn) {
+    // Gaussian:  a * Math.exp(-Math.pow(x - b, 2) / (2 * c * c)) + d 
+    // where a=1, d=0, x-b is the distance to the point in space, and c is sigma=0.5.
+    // Given that the distance between points is computed as the sqrt of the sum of the squared differences of each dimension, and it is then squared, we can save two ops: one sqrt and one squaring, to great performance gain.
+    var S = 2 * sigma * sigma,
+        slabs = this.slabs(),
+        threshold = 0.01,
+        accum = initialValue;
+
+    for (var j=0, l=slabs.length; j<l; ++j) {
+        var slab = slabs[j],
+            last = positions[slab[0]];
+        accum = slabInitFn(accum, slab[0], last);
+        for (var i=1, len=slab.length -1; i<len; ++i) {
+            // Estimate new position of the point at i
+            // by convolving adjacent points
+            var node = slab[i],
+                point = positions[node],
+                weights = [1],
+                points = [point],
+                k, w, pk;
+            // TODO: could memoize the distances to points for reuse
+            // TODO: or use the _gaussianWeights one-pass computation. Need to measure what is faster: to create a bunch of arrays or to muliply multiple times the same values.
+            k = i - 1;
+            while (k > -1) {
+                pk = positions[slab[k]];
+                //w = Math.exp(-Math.pow(point.distanceTo(pk), 2) / S);
+                //Same as above, saving two ops (sqrt and squaring):
+                w = Math.exp(- (point.distanceToSquared(pk) / S));
+                if (w < threshold) break;
+                points.push(pk);
+                weights.push(w);
+                --k;
+            }
+            k = i + 1;
+            while (k < slab.length) {
+                pk = positions[slab[k]];
+                //w = Math.exp(-Math.pow(point.distanceTo(pk), 2) / S);
+                //Same as above, saving two ops (sqrt and squaring):
+                w = Math.exp(- (point.distanceToSquared(pk) / S));
+                if (w < threshold) break;
+                points.push(pk);
+                weights.push(w);
+                ++k;
+            }
+            var weightSum = 0,
+                n = weights.length;
+            for (k=0; k<n; ++k) weightSum += weights[k];
+
+            var x = 0,
+                y = 0,
+                z = 0;
+            for (k=0; k<n; ++k) {
+                w = weights[k] / weightSum;
+                pk = points[k];
+                x += pk.x * w;
+                y += pk.y * w;
+                z += pk.z * w;
+            }
+
+            var pos = new THREE.Vector3(x, y, z);
+            accum = accumulatorFn(accum, last, slab[i], pos);
+            last = pos;
+        }
+        accum = accumulatorFn(accum, last, slab[slab.length -1], positions[slab[slab.length -1]]);
+    }
+    return accum;
+};
+
+/** Compute the cable length of the arbor after performing a Gaussian convolution.
+ * Does not alter the given positions map. Conceptually equivalent to
+ * var cable = arbor.cableLength(arbor.smoothPositions(positions, sigma)); */
+Arbor.prototype.smoothCableLength = function(positions, sigma) {
+    return this.convolveSlabs(positions, sigma, 0,
+            function(sum, id, p) {
+                return sum;
+            },
+            function(sum, p0, id, p1) {
+                return sum + p0.distanceTo(p1);
+            });
+};
+
+/** Alter the positions map to express the new positions of the nodes
+ * after a Gaussian convolution. */
+Arbor.prototype.smoothPositions = function(positions, sigma, accum) {
+    return this.convolveSlabs(positions, sigma, accum ? accum : {},
+            function(s, id, p) {
+                s[id] = p;
+                return s;
+            },
+            function(s, p0, id, p1) {
+                s[id] = p1;
+                return s;
+            });
+};
+
+/** Resample the arbor to fix the node interdistance to a specific value.
+ * The distance of an edge prior to a slab terminating node (branch or end)
+ * will most often be within +/- 50% of the specified delta value, given that
+ * branch and end nodes are fixed. The root is also fixed.
+ *
+ * The resampling is done using a Gaussian convolution with adjacent nodes,
+ * weighing them by distance to relevant node to use as the focus for resampling,
+ * which is the first node beyond delta from the last resampled node.
+ *
+ * - positions: map of node ID vs THREE.Vector3, or equivalent object with distanceTo and clone methods.
+ * - sigma: value to use for Gaussian convolution to smooth the slabs prior to resampling.
+ * - delta: desired new node interdistance.
+ * - minNeighbors: minimum number of neighbors to inspect; defaults to zero. Aids in situations of extreme jitter, where otherwise spatially close but not topologically adjancent nodes would not be looked at because the prior node would have a Gaussian weight below 0.01.
+ *
+ * Returns a new Arbor, with new numeric node IDs that bear no relation to the IDs of this Arbor, and a map of the positions of its nodes.  */
+Arbor.prototype.resampleSlabs = function(positions, sigma, delta, minNeighbors) {
+    var arbor = new Arbor(),
+        new_positions = {},
+        next_id = 0,
+        starts = {},
+        slabs = this.slabs(),
+        S = 2 * sigma * sigma,
+        sqDelta = delta * delta,
+        minNeighbors = (Number.NaN === Math.min(minNeighbors | 0, 0) ? 0 : minNeighbors) | 0;
+
+    arbor.root = 0;
+    new_positions[0] = positions[this.root];
+
+    starts[this.root] = 0;
+
+    // In a slab, the first node is the closest one to the root.
+    for (var i=0, l=slabs.length; i<l; ++i) {
+        var slab = slabs[i],
+            a = this._resampleSlab(slab, positions, S, delta, sqDelta, minNeighbors),
+            first = slab[0],
+            paren = starts[first];
+        if (undefined === paren) {
+            paren = ++next_id;
+            starts[first] = paren;
+            new_positions[paren] = positions[first];
+        }
+        var child;
+        // In the new slab, the first and last nodes have not moved positions.
+        for (var k=1, la=a.length-1; k<la; ++k) {
+            child = ++next_id;
+            arbor.edges[child] = paren;
+            new_positions[child] = a[k];
+            paren = child;
+        }
+        // Find the ID of the last node of the slab, which may exist
+        var last = slab[slab.length -1];
+        child = starts[last];
+        if (undefined === child) {
+            child = ++next_id;
+            starts[last] = child;
+            new_positions[child] = positions[last];
+        }
+        // Set the last edge of the slab
+        arbor.edges[child] = paren;
+    }
+
+    return {arbor: arbor,
+            positions: new_positions};
+};
+
+/** Helper function for resampleSlabs. */
+Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta, minNeighbors) {
+    var slabP = slab.map(function(node) { return positions[node]; }),
+        gw = this._gaussianWeights(slab, slabP, S, minNeighbors),
+        len = slab.length,
+        last = slabP[0].clone(),
+        a = [last],
+        k,
+        i = 1;
+
+    while (i < len) {
+        // Find k ahead of i that is just over delta from last
+        for (k=i; k<len; ++k) {
+            if (last.distanceToSquared(slabP[k]) > sqDelta) break;
+        }
+
+        if (k === len) break;
+
+        // NOTE: should check which is closer: k or k-1; but when assuming a Gaussian-smoothed arbor, k will be closer in all reasonable situations. Additionally, k (the node past) is the one to drift towards when nodes are too far apart.
+
+        // Collect all nodes before and after k with a weight under 0.01,
+        // as precomputed in gw: only weights > 0.01 exist
+        var pivot = slab[k],
+            points = [k],
+            weights = [1],
+            j = k - 1;
+        while (j > 0) {
+            var w = gw[j][k-j];
+            if (undefined === w && (k - j) >= minNeighbors) break;
+            points.push(j);
+            weights.push(w);
+            --j;
+        }
+
+        j = k + 1;
+        while (j < len) {
+            var w = gw[k][j-k];
+            if (undefined === w && (j - k) >= minNeighbors) break;
+            points.push(j);
+            weights.push(w);
+            ++j;
+        }
+
+        var x = 0,
+            y = 0,
+            z = 0;
+
+        if (1 === points.length) {
+            // All too far: advance towards next node's position
+            var pk = slabP[k];
+            x = pk.x;
+            y = pk.y;
+            z = pk.z;
+        } else {
+            var weightSum = 0,
+                n = weights.length;
+
+            for (j=0; j<n; ++j) weightSum += weights[j];
+
+            for (j=0; j<n; ++j) {
+                var w = weights[j] / weightSum,
+                    pk = slabP[points[j]];
+                x += pk.x * w;
+                y += pk.y * w;
+                z += pk.z * w;
+            }
+        }
+
+        // Create a direction vector from last to the x,y,z point, scale by delta,
+        // and then create the new point by translating the vector to last
+        var next = new THREE.Vector3(x - last.x, y - last.y, z - last.z)
+            .normalize()
+            .multiplyScalar(delta)
+            .add(last);
+        a.push(next);
+        last = next;
+
+        i = k;
+    }
+
+    var slabLast = slabP[len -1].clone();
+    if (last.distanceToSquared(slabLast) < sqDelta / 2) {
+        // Replace last: too close to slabLast
+        a[a.length -1] = slabLast;
+    } else {
+        a.push(slabLast);
+    }
+
+    return a;
+};
+
+/** Helper function.
+ *
+ * Starting at the first node, compute the Gaussian weight
+ * towards forward in the slab until it is smaller than 1%. Then do the
+ * same for the second node, etc. Store all weights in an array per node
+ * that has as first element '1' (weight with itself is 1), and then
+ * continues with weights for the next node, etc. until one node's weight
+ * falls below 0.01.
+ *
+ * BEWARE that if nodes are extremely jittery, the computation of weights
+ * may terminate earlier than would be appropriate. To overcome this,
+ * pass a value of e.g. 3 neighbor nodes minimum to look at.
+ *
+ * Gaussian as: a * Math.exp(-Math.pow(x - b, 2) / (2 * c * c)) + d
+ * ignoring a and d, given that the weights will then be used for normalizing
+ * 
+ * slab: array of node IDs
+ * slabP: array of corresponding THREE.Vector3
+ * S: 2 * Math.pow(sigma, 2)
+ */
+Arbor.prototype._gaussianWeights = function(slab, slabP, S, minNeighbors) {
+    var weights = [];
+    for (var i=0, l=slab.length; i<l; ++i) {
+        var pos1 = slabP[i],
+            a = [1.0];
+        for (var k=i+1; k<l; ++k) {
+            var w = Math.exp(- (pos1.distanceToSquared(slabP[k]) / S));
+            if (w < 0.01 && (k - i) >= minNeighbors) break;
+            a.push(w);
+        }
+        weights.push(a);
+    }
+    return weights;
+};
+
+/** Measure cable distance from node to a parent of it that exists in stops.
+ * If no node in stops is upstream of node, then returns null.
+ * Will traverse towards upstream regardless of whether the initial node belongs to stops or not. */
+Arbor.prototype.distanceToUpstreamNodeIn = function(node, positions, stops) {
+  var loc1 = positions[node],
+      paren = this.edges[node],
+      len = 0;
+  while (paren) {
+    var loc2 = positions[paren];
+    len += loc1.distanceTo(loc2);
+    if (undefined !== stops[paren]) return len;
+    loc1 = loc2;
+    paren = this.edges[paren];
+  }
+  // Reached root without having found a stop
+  return null;
+};
+
+/** Compute the amount of able of all terminal slabs together.
+ * Returns both the cable and the number of end nodes (equivalent to the number of terminal segments). */
+Arbor.prototype.terminalCableLength = function(positions) {
+  var be = this.findBranchAndEndNodes(),
+      branches = be.branches,
+      ends = be.ends,
+      cable = 0;
+
+  // catch corner case: no branches, perhaps just the root in isolation
+  if (ends.length < 2) {
+    return {cable: this.cableLength(positions),
+            n_branches: 0,
+            n_ends: ends.length}; // 1 or 0
+  }
+
+  for (var i=0; i<ends.length; ++i) {
+    var node = ends[i],
+        pos1 = positions[node],
+        node = this.edges[node];
+    do {
+        var pos2 = positions[node];
+        cable += pos1.distanceTo(pos2);
+        pos1 = pos2;
+        node = this.edges[node];
+        if (undefined === node) break; // Root node is a branch
+    } while (undefined === branches[node]);
+  }
+
+  return {cable: cable,
+          n_branches: be.n_branches,
+          n_ends: ends.length};
+};
+
+/** Find path from node to an upstream node that is in stops.
+ * If no node in stops is upstrem of node, then returns null.
+ * Will traverse towards upstream regardless of whether the initial node belongs to stops or not. */
+Arbor.prototype.pathToUpstreamNodeIn = function(node, stops) {
+  var path = [node],
+      paren = this.edges[node];
+  while (paren) {
+    path.push(paren);
+    if (stops.hasOwnProperty(paren)) return path;
+    paren = this.edges[paren];
+  }
+  // Reached root without having found a stop
+  return null;
+};
+
+/** For each branch node, record a measurement for each of its subtrees.
+ *
+ *  - initialFn: returns the value to start accumulating on.
+ *  - accumFn: can alter its accum parameter.
+ *  - mergeFn: merge two accumulated values into a new one; must not alter its parameters.
+ *
+ *  Returns a map of branch node vs array of measurements, one per subtree.
+ */
+Arbor.prototype.subtreesMeasurements = function(initialFn, cummulativeFn, mergeFn) {
+  // Iterate partitions from shortest to longest.
+  // At the end of each partition, accumulate the cable length onto the ending node
+  // (which is a branch, except for root).
+  // As shorter branches are traversed, append the cable so far into them.
+  var branch = {},
+      partitions = this.partitionSorted();
+
+  for (var p=0; p < partitions.length; ++p) {
+    var partition = partitions[p],
+        node1 = partition[0],
+        accum = initialFn(node1),
+        node2,
+        i=1;
+    for (var l=partition.length -1; i<l; ++i) {
+      node2 = partition[i];
+      accum = cummulativeFn(accum, node1, node2);
+      // Check if current node is a branch
+      // By design, the branch will already have been seen and contain a list
+      var list = branch[node2];
+      if (list) {
+        var tmp = accum;
+        accum = list.reduce(mergeFn, accum);
+        list.push(tmp);
+      }
+      // Prepare next iteration
+      node1 = node2;
+    }
+    // Handle last node separately
+    // (there could be issues otherwise with branches that split into more than 2)
+    node2 = partition[i];
+    accum = cummulativeFn(accum, node1, node2);
+    var list = branch[node2];
+    if (list) list.push(accum);
+    else branch[node2] = [accum];
+  }
+
+  // Check if root node was not a branch
+  var list = branch[this.root];
+  if (1 === list.length) delete branch[this.root];
+
+  return branch;
+};
+
+/**
+ * At each branch node, measure the amount of cable on each of the 2 or more subtrees.
+ *
+ * positions: map of node vs THREE.Vector3.
+ *
+ * Returns a map of branch node vs array of values, one for each subtree.
+ */
+Arbor.prototype.subtreesCable = function(positions) {
+  return this.subtreesMeasurements(
+      function(node1) {
+        return 0;
+      },
+      function(accum, node1, node2) {
+        return accum + positions[node1].distanceTo(positions[node2]);
+      },
+      function(accum1, accum2) {
+        return accum1 + accum2;
+      });
+};
+
+/**
+ * At each branch node, count the number of terminal ends on each of the 2 or more subtrees.
+ * Returns a map of branch node vs array of values, one for each subtree.
+ */
+Arbor.prototype.subtreesEndCount = function() {
+  return this.subtreesMeasurements(
+      function(node1) {
+        return 1;
+      },
+      function(accum, node1, node2) {
+        return accum;
+      },
+      function(accum1, accum2) {
+        return accum1 + accum2;
+      });
+};
+
+/**
+ * At each branch node, count the number of associated elements on each of the 2 or more subtrees.
+ * load: map of node vs number of associated elements (e.g. input synapses). Nodes with a count of zero do not need to be present.
+ * Returns a map of branch node vs array of values, of for each subtree.
+ */
+Arbor.prototype.subtreesLoad = function(load) {
+  return this.subtreesMeasurements(
+      function(node1) {
+        var count = load[node1];
+        return count ? count : 0;
+      },
+      function(accum, node1, node2) {
+        var count = load[node2];
+        if (count) return accum + count;
+        return accum;
+      },
+      function(accum1, accum2) {
+        return accum1 + accum2;
+      });
+};
+
+/** Compute the mean and stdDev of the asymmetries of the subtrees at each branch node,
+ * assuming binary branches. When branches are trinary or higher, these are considered
+ * as nested binary branches, with the smallest subtree as being closest to the soma.
+ *
+ * m: a map of branch node vs an array of numeric measurements of each of its subtrees.
+ * asymmetryFn: given two numeric measurements of two subtrees, compute the asymmetry.
+ *
+ * return: the mean and standard deviation of the asymmetries, and the histogram with 10 bins and the number of branches (the sum of all bin counts).
+ */
+Arbor.prototype.asymmetry = function(m, asymmetryFn) {
+  var branches = Object.keys(m),
+      len = branches.length,
+      asym = [],
+      sum = 0,
+      descending = function(a, b) { return a === b ? 0 : (a < b ? 1 : -1); };
+
+  for (var i=0; i<len; ++i) {
+    // Sorted from large to small
+    var subtrees = m[branches[i]];
+    if (2 === subtrees.length) {
+      var value = asymmetryFn(subtrees[0], subtrees[1]);
+      sum += value;
+      asym.push(value);
+    } else {
+      // Branch splits into more than 2
+      // Sort from large to small
+      subtrees.sort(descending);
+      var last = subtrees[0];
+      for (var k=1; k<subtrees.length; ++k) {
+        var sub = subtrees[k];
+        // Equation 1 in Uylings and van Pelt, 2002:
+        var value = asymmetryFn(last, sub);
+        sum += value;
+        asym.push(value);
+        // Accumulate for next iteration
+        last += sub;
+      }
+    }
+  }
+
+  // Beware that asym.length !== len
+  var mean = sum / asym.length,
+      histogram = new Float64Array(10),
+      sumSqDiffs = 0;
+
+  for (var i=0; i<asym.length; ++i) {
+    var value = asym[i],
+        index = (value * 10) | 0;
+    if (10 === index) index = 9 | 0;
+    histogram[index] += 1;
+    //
+    sumSqDiffs += Math.pow(value - mean, 2);
+  }
+
+  return {mean: mean,
+          histogram: histogram,
+          n_branches: asym.length,
+          stdDev: Math.sqrt(sumSqDiffs / asym.length)};
+};
+
+
+/** Mean of all "partition asymmetries" at each branch node, as defined by van Pelt et al. 1992.
+ * Considers trinary and higher as nested binary branches, with the smallest subtree as being the closest to the soma.
+ *
+ * Returns the average and standard deviation of the distribution of asymmetries at each branch.
+ *
+ * After:
+ *  - van Pelt et al. 1992. "Tree asymmetry--a sensitive and practical measure for binary topological trees.
+ *  - Uylings and van Pelt. 2002. Measures for quantifying dendritic arborizations.
+ */
+Arbor.prototype.asymmetryIndex = function() {
+  return this.asymmetry(
+      this.subtreesEndCount(),
+      function(sub1, sub2) {
+        // Equation 1 in Uylings and van Pelt, 2002:
+        return sub1 === sub2 ? 0 : Math.abs(sub1 - sub2) / (sub1 + sub2 - 2);
+      });
+};
+
+/** Mean of all asymmetries in the measurement of cable lengths of subtrees at each branch node.
+ * Considers trinary and higher as nested binary branches, with the smallest subtree as being the closest to the soma.
+ * positions: map of node vs THREE.Vector3.
+ * Returns the average and standard deviation of the distribution of asymmetries at each branch.
+ */
+Arbor.prototype.cableAsymmetryIndex = function(positions) {
+  return this.asymmetry(
+      this.subtreesCable(positions),
+      function(sub1, sub2) {
+        return sub1 === sub2 ? 0 : Math.abs(sub1 - sub2) / (sub1 + sub2);
+      });
+};
+
+/** Mean of all asymmetries in the counts of load (e.g. input synapses) of subtres at each branch node.
+ * Considers trinary and higher as nested binary branches, with the smallest subtree as being the closest to the soma.
+ * load: map of node vs counts at node. Nodes with a count of zero do not need to be present.
+ * Returns the average and standard deviation of the distribution of asymmetries at each branch.
+ *
+ */
+Arbor.prototype.loadAsymmetryIndex = function(load) {
+  return this.asymmetry(
+      this.subtreesLoad(load),
+      function(sub1, sub2) {
+        return sub1 === sub2 ? 0 : Math.abs(sub1 - sub2) / (sub1 + sub2);
+      });
+};
+
+// Note: could compute all the asymmetries in one pass, by generalizing the asymmetry function to return the list of asymmetries instead of computing the mean and std. Then, a multipurpose function could do all desired measurements (this would already work with subtreesMeasurements), and the mean and stdDev could be computed for all.
+
+
+/** Remove terminal segments when none of their nodes carries a load (e.g. a synapse). */
+Arbor.prototype.pruneBareTerminalSegments = function(load) {
+  var be = this.findBranchAndEndNodes(),
+      ends = be.ends,
+      branches = be.branches;
+  ends.forEach(function(node) {
+    var path = [];
+    while (undefined === branches[node]) {
+      if (undefined !== load[node]) return;
+      path.push(node);
+      node = this[node]; // parent
+    }
+    path.forEach(function(node) { delete this[node]; }, this);
+  }, this.edges);
+};
+
+/** Prune the arbor at all the given nodes, inclusive.
+ * nodes: a map of nodes vs not undefined.
+ * Returns a map of removed nodes vs true values. */
+Arbor.prototype.pruneAt = function(nodes) {
+  // Speed-up special case
+  if (undefined !== nodes[this.root]) {
+    var removed = this.nodes();
+    this.root = null;
+    this.edges = {};
+    return removed;
+  }
+
+  var removed = {},
+      partitions = this.partitionSorted();
+
+  for (var k=0; k<partitions.length; ++k) {
+    var partition = partitions[k],
+        cut = -1;
+    // Find node nearest to root to cut, if any
+    for (var i=0; i<partition.length; ++i) {
+      if (undefined !== nodes[partition[i]]) cut = i;
+    }
+    if (-1 !== cut) {
+      for (var i=0; i<=cut; ++i) {
+        var node = partition[i];
+        removed[node] = true;
+        delete this.edges[node];
+      }
+    }
+  }
+
+  return removed;
+};
+
+/** Find the nearest upstream node common to all given nodes.
+ * nodes: a map of nodes vs not undefined.
+ * Runs in less than O(n).*/
+Arbor.prototype.nearestCommonAncestor = function(nodes) {
+  // Corner cases
+  if (null === this.root) return null;
+  if (undefined !== nodes[this.root]) return this.root;
+
+  var open = Object.keys(nodes),
+      n_nodes = open.length,
+      seen = {};
+
+  if (0 == n_nodes) return null;
+  if (1 === n_nodes) return open[0];
+
+  for (var i=0; i<n_nodes; ++i) {
+    var node = open[i];
+    do {
+      var count = seen[node];
+      if (count) {
+        ++count;
+        if (count === n_nodes) return node;
+        seen[node] = count;
+      } else {
+        seen[node] = 1;
+      }
+      node = this.edges[node]; // parent
+    } while (undefined !== node);
+  }
+};
+
+/** Returns an array of Arbor instances.
+ * Each Arbor contains a subset of the given array of nodes.
+ * If all given nodes are connected will return a single Arbor. */
+Arbor.prototype.connectedFractions = function(nodes) {
+  var members = {},
+      arbors = {},
+      seen = {};
+
+  for (var i=0; i<nodes.length; ++i) {
+    members[nodes[i]] = true;
+  }
+
+  for (var i=0; i<nodes.length; ++i) {
+    var node = nodes[i];
+    if (seen[node]) continue;
+    var p = new Arbor(),
+        p_root = node;
+    p.root = node;
+    arbors[node] = p;
+    var paren = this.edges[node];
+    while (members[paren]) {
+      seen[paren] = true;
+      var p2 = arbors[paren];
+      if (p2) {
+        $.extend(p2.edges, p.edges);
+        p2.edges[node] = paren;
+        delete arbors[p_root];
+        p_root = paren;
+        p = p2;
+      } else {
+        p.edges[node] = paren;
+        p.root = paren;
+      }
+      node = paren;
+      paren = this.edges[paren];
+    }
+  }
+
+  return Object.keys(arbors).map(function(node) { return arbors[node]; });
+};
+
+/** Return a new Arbor that contains nodes from root all the way to either end nodes or the nodes found in the cuts map. */
+Arbor.prototype.upstreamArbor = function(cuts) {
+  var up = new Arbor(),
+      successors = this.allSuccessors(),
+      open = successors[this.root].slice(0); // clone
+  up.root = this.root;
+  while (open.length > 0) {
+    var node = open.pop(),
+        paren = this.edges[node];
+    up.edges[node] = paren;
+    if (cuts[node]) continue;
+    var succ = successors[node];
+    for (var i=0; i<succ.length; ++i) open.push(succ[i]);
+  }
+  return up;
+};
+
+/** Given a set of nodes to keep, create a new Arbor with only
+ * the nodes to keep and the branch points between them. */
+Arbor.prototype.simplify = function(keepers) {
+  // Reroot a copy at the first keeper node
+  var copy = this.clone(),
+      pins = Object.keys(keepers);
+  copy.reroot(pins[0]);
+
+  // Find child->parent paths between keeper nodes
+  var edges = copy.edges,
+      branches = copy.findBranchNodes(),
+      seen = {},
+      paths = [],
+      root = null;
+
+  for (var k=0; k<pins.length; ++k) {
+    var node = pins[k],
+        paren = edges[node],
+        path = [node],
+        child = node;
+    // Each path starts and ends at a keeper node,
+    // and may contain branch nodes in the middle.
+    while (paren) {
+      if (keepers[paren]) {
+        path.push(paren);
+        paths.push(path);
+        break;
+      }
+      if (branches[paren]) {
+        path.push(paren);
+        var s = seen[paren];
+        if (!s) {
+          s = {};
+          seen[paren] = s;
+        }
+        s[child] = true;
+      }
+      child = paren;
+      paren = edges[paren];
+    }
+  }
+
+  var simple = new Arbor();
+  simple.root = copy.root;
+
+  // Branch nodes are added only if they have been seen
+  // from more than one of their child slabs.
+  for (var k=0; k<paths.length; ++k) {
+    var path = paths[k],
+        child = path[0];
+    for (var i=1; i<path.length-1; ++i) {
+      var branch = path[i];
+      if (Object.keys(seen[branch]).length > 1) {
+        simple.edges[child] = branch;
+        child = branch;
+      }
+    }
+    simple.edges[child] = path[path.length -1];
+  }
+  return simple;
+};
+
+/** Given source nodes and target nodes, find for each source node 
+ * the nearest target node.
+ * distanceFn: a function that takes two nodes as arguments and returns a number.
+ * If targets is empty will return Number.MAX_VALUE for each source. */
+Arbor.prototype.minDistancesFromTo = function(sources, targets, distanceFn) {
+  var neighbors = this.allNeighbors(),
+      distances = {},
+      sourceIDs = Object.keys(sources);
+
+  // Breadth-first search starting from each source node
+  for (var i=0; i<sourceIDs.length; ++i) {
+    var source = sourceIDs[i];
+    // Maybe source and target coincide
+    if (targets[source]) {
+      distances[source] = 0;
+      continue;
+    }
+    // Else grow breadth-first
+    var surround = neighbors[source],
+        circle = new Array(surround.length),
+        min = Number.MAX_VALUE;
+    for (var k=0; k<circle.length; ++k) {
+      circle[k] = {child: surround[k],
+                   paren: source,
+                   dist: 0}; // cummulative distance
+    }
+    while (true) {
+      var next = []; // reset
+      // Iterate through nodes of one circle
+      for (var k=0; k<circle.length; ++k) {
+        var t = circle[k],
+            d = t.dist + distanceFn(t.child, t.paren);
+        if (d > min) continue; // terminate exploration in this direction
+        if (targets[t.child]) {
+          if (d < min) min = d;
+          // terminate exploration in this direction
+          continue;
+        }
+        // Else, grow the next circle
+        var s = neighbors[t.child];
+        for (var j=0; j<s.length; ++j) {
+          if (t.paren == s[j]) continue; // == and not === so that numbers and "numbers" can be compared properly
+          next.push({child: s[j],
+                     paren: t.child,
+                     dist: d});
+        }
+      }
+      if (!next || 0 === next.length) {
+        distances[source] = min;
+        break;
+      }
+      circle = next;
+    }
+  }
+
+  return distances;
 };

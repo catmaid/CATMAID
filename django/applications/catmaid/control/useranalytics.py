@@ -1,23 +1,22 @@
-from django.http import HttpResponse
-from django.db.models import Count
+import numpy as np
 
-from catmaid.models import *
-from catmaid.objects import *
+from datetime import timedelta, datetime
+
+from django.http import HttpResponse
+
+from catmaid.models import Connector, Treenode, Review
 from catmaid.control.user_evaluation import _parse_date
 
-from datetime import timedelta, time
 
-import numpy as np
-import copy
+# Because we don't want to show generated images in a window, we can use
+# the Agg backend. This avoids some potential threading issues.
+import matplotlib
+matplotlib.use('Agg')
 
-try:
-    import matplotlib.pyplot as plt
-    import matplotlib.colors as colors
-    from matplotlib.dates import  DateFormatter, DayLocator
-    from pylab import figure, axes, pie, title
-    from matplotlib.backends.backend_agg import FigureCanvasAgg
-except:
-    pass
+import matplotlib.pyplot as plt
+from matplotlib.dates import  DateFormatter, DayLocator
+from pylab import figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 class Bout(object):
     """ Represents one bout, based on a list of events. The first event ist the
@@ -83,12 +82,12 @@ def eventTimes(user_id, start_date, end_date):
     cns = Connector.objects.filter(
         editor_id = user_id,
         edition_time__range=dr).values_list('edition_time', flat=True)
-    rns = Treenode.objects.filter(
+    rns = Review.objects.filter(
         reviewer_id = user_id,
         review_time__range=dr).values_list('review_time', flat=True)
 
     return list(tns), list(cns), list(rns)
-    
+
 def eventsPerInterval(times, start_date, end_date, interval='day'):
     """ Creates a histogram of how many events fall into all intervals between
     <start_data> and <end_date>. The interval type can be day, hour and
@@ -279,7 +278,7 @@ def splitBout(bout,increment):
 def generateErrorImage(msg):
     """ Creates an empty image (based on image nr. 1) and adds a message to it.
     """
-    fig = figure(1, figsize=(6,6))
+    fig = plt.figure(1, figsize=(6,6))
     fig.clf()
     fig.suptitle(msg)
     return fig

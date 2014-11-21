@@ -1,5 +1,6 @@
-from __future__ import print_function
-
+import os.path
+import shutil
+import tarfile
 import json
 
 from django.conf import settings
@@ -7,18 +8,12 @@ from django.http import HttpResponse
 from django.db.models import Count
 
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
-from catmaid.control.common import json_error_response, id_generator
-from catmaid.control.cropping import CropJob, extract_substack, process_crop_job
-from catmaid.control.cropping import ImageRetrievalError
-from catmaid.models import ClassInstanceClassInstance, TreenodeConnector
-from catmaid.models import Message, User, UserRole, Treenode
+from catmaid.control.common import get_relation_to_id_map, id_generator
+from catmaid.control.cropping import CropJob, extract_substack, ImageRetrievalError
+from catmaid.models import ClassInstanceClassInstance, TreenodeConnector, \
+        Message, User, UserRole, Treenode
 
 from celery.task import task
-
-import os.path
-import shutil
-import tarfile
 
 
 # The path were archive files get stored in
@@ -155,12 +150,12 @@ class TreenodeExporter:
         and writable.
         """
         # Calculate bounding box for current connector
-        x_min = treenode.location.x - self.job.x_radius
-        x_max = treenode.location.x + self.job.x_radius
-        y_min = treenode.location.y - self.job.y_radius
-        y_max = treenode.location.y + self.job.y_radius
-        z_min = treenode.location.z - self.job.z_radius
-        z_max = treenode.location.z + self.job.z_radius
+        x_min = treenode.location_x - self.job.x_radius
+        x_max = treenode.location_x + self.job.x_radius
+        y_min = treenode.location_y - self.job.y_radius
+        y_max = treenode.location_y + self.job.y_radius
+        z_min = treenode.location_z - self.job.z_radius
+        z_max = treenode.location_z + self.job.z_radius
         rotation_cw = 0
         zoom_level = 0
 
@@ -178,56 +173,56 @@ class TreenodeExporter:
             img.write(treenode_image_path)
 
     def post_process(self, nodes):
-      """ Create a meta data file for all the nodes passed (usually all of the
-      ones queries before). This file is a table with the following columns:
-      <treenode id> <parent id> <#presynaptic sites> <#postsynaptic sites> <x> <y> <z>
-      """
-      # Get pre- and post synaptic sites
-      presynaptic_to_rel = self.relation_map['presynaptic_to']
-      postsynaptic_to_rel = self.relation_map['postsynaptic_to']
-      connector_links = TreenodeConnector.objects.filter(
+        """ Create a meta data file for all the nodes passed (usually all of the
+        ones queries before). This file is a table with the following columns:
+        <treenode id> <parent id> <#presynaptic sites> <#postsynaptic sites> <x> <y> <z>
+        """
+        # Get pre- and post synaptic sites
+        presynaptic_to_rel = self.relation_map['presynaptic_to']
+        postsynaptic_to_rel = self.relation_map['postsynaptic_to']
+        connector_links = TreenodeConnector.objects.filter(
               project_id=self.job.project_id,
               relation_id__in=[presynaptic_to_rel, postsynaptic_to_rel],
               skeleton_id__in=self.job.skeleton_ids).values('treenode',
                       'relation').annotate(relcount=Count('relation'))
 
-      presynaptic_map = {}
-      postsynaptic_map = {}
-      for cl in connector_links:
-          if cl['relation'] == presynaptic_to_rel:
-              presynaptic_map[cl['treenode']] = cl['relcount']
-          elif cl['relation'] == postsynaptic_to_rel:
-              postsynaptic_map[cl['treenode']] = cl['relcount']
-          else:
-              raise Exception("Unexpected relation encountered")
+        presynaptic_map = {}
+        postsynaptic_map = {}
+        for cl in connector_links:
+            if cl['relation'] == presynaptic_to_rel:
+                presynaptic_map[cl['treenode']] = cl['relcount']
+            elif cl['relation'] == postsynaptic_to_rel:
+                postsynaptic_map[cl['treenode']] = cl['relcount']
+            else:
+                raise Exception("Unexpected relation encountered")
 
-      # Create log info for each treenode. Each line will contain treenode-id,
-      # parent-id, nr. presynaptic sites, nr. postsynaptic sites, x, y, z
-      skid_to_metadata = {}
-      for n in nodes:
-        ls = skid_to_metadata.get(n.skeleton.id)
-        if not ls:
-            ls = []
-            skid_to_metadata[n.skeleton.id] = ls
-        p = n.parent.id if n.parent else 'null'
-        n_pre = presynaptic_map.get(n.id, 0)
-        n_post = postsynaptic_map.get(n.id, 0)
-        x = n.location.x
-        y = n.location.y
-        z = n.location.z
-        line = ', '.join([str(e) for e in (n.id, p, n_pre, n_post, x, y, z)])
-        ls.append(line)
+        # Create log info for each treenode. Each line will contain treenode-id,
+        # parent-id, nr. presynaptic sites, nr. postsynaptic sites, x, y, z
+        skid_to_metadata = {}
+        for n in nodes:
+            ls = skid_to_metadata.get(n.skeleton.id)
+            if not ls:
+                ls = []
+                skid_to_metadata[n.skeleton.id] = ls
+            p = n.parent.id if n.parent else 'null'
+            n_pre = presynaptic_map.get(n.id, 0)
+            n_post = postsynaptic_map.get(n.id, 0)
+            x = n.location_x
+            y = n.location_y
+            z = n.location_z
+            line = ', '.join([str(e) for e in (n.id, p, n_pre, n_post, x, y, z)])
+            ls.append(line)
 
-      # Save metdata for each skeleton to files
-      for skid, metadata in skid_to_metadata.items():
-          path = self.skid_to_neuron_folder.get(skid)
-          with open(os.path.join(path, 'metadata.csv'), 'w') as f:
-              f.write("This CSV file contains meta data for CATMAID skeleton " \
-                      "%s. The columns represent the following data:\n" % skid)
-              f.write("treenode-id, parent-id, # presynaptic sites, " \
-                      "# postsynaptic sites, x, y, z\n")
-              for line in metadata:
-                  f.write("%s\n" % line)
+        # Save metdata for each skeleton to files
+        for skid, metadata in skid_to_metadata.items():
+            path = self.skid_to_neuron_folder.get(skid)
+            with open(os.path.join(path, 'metadata.csv'), 'w') as f:
+                f.write("This CSV file contains meta data for CATMAID skeleton " \
+                        "%s. The columns represent the following data:\n" % skid)
+                f.write("treenode-id, parent-id, # presynaptic sites, " \
+                        "# postsynaptic sites, x, y, z\n")
+                for line in metadata:
+                    f.write("%s\n" % line)
 
 class ConnectorExporter(TreenodeExporter):
     """ Most of the infrastructure can be used for both treenodes and
@@ -321,12 +316,12 @@ class ConnectorExporter(TreenodeExporter):
         connector = connector_link.connector
 
         # Calculate bounding box for current connector
-        x_min = connector.location.x - self.job.x_radius
-        x_max = connector.location.x + self.job.x_radius
-        y_min = connector.location.y - self.job.y_radius
-        y_max = connector.location.y + self.job.y_radius
-        z_min = connector.location.z - self.job.z_radius
-        z_max = connector.location.z + self.job.z_radius
+        x_min = connector.location_x - self.job.x_radius
+        x_max = connector.location_x + self.job.x_radius
+        y_min = connector.location_y - self.job.y_radius
+        y_max = connector.location_y + self.job.y_radius
+        z_min = connector.location_z - self.job.z_radius
+        z_max = connector.location_z + self.job.z_radius
         rotation_cw = 0
         zoom_level = 0
 
@@ -340,15 +335,15 @@ class ConnectorExporter(TreenodeExporter):
         for i, img in enumerate(cropped_stack):
             # Save image in output path, named after the image center's coordinates,
             # rounded to full integers.
-            x = int(connector.location.x + 0.5)
-            y = int(connector.location.y + 0.5)
-            z = int(z_min + i * crop_self.stacks[0].resolution.z  + 0.5)
+            x = int(connector.location_x + 0.5)
+            y = int(connector.location_y + 0.5)
+            z = int(z_min + i * crop_self.stacks[0].resolution_z  + 0.5)
             image_name = "%s_%s_%s.tiff" % (x, y, z)
             connector_image_path = os.path.join(connector_path, image_name)
             img.write(connector_image_path)
 
     def post_process(self, nodes):
-      pass
+        pass
 
 @task()
 def process_export_job(exporter):
@@ -443,7 +438,8 @@ def create_request_based_export_job(request, project_id):
         if request.user.is_superuser:
             raise Exception("Please make sure your output folder (%s) exists " \
                     "and is writable. It is configured by MEDIA_ROOT and " \
-                    "MEDIA_TREENODE_SUBDIRECTORY in settings.py.")
+                    "MEDIA_TREENODE_SUBDIRECTORY in settings.py." % \
+                    treenode_output_path)
         else:
             raise Exception("Sorry, the output path for the node export tool " \
                     "isn't set up correctly. Please contact an administrator.")
@@ -474,8 +470,8 @@ def export_connectors(request, project_id=None):
         raise Exception("Something went wrong while queuing the export: " + \
                 proc.result)
     json_data = json.dumps({'message': 'The connector archive is currently ' \
-            'exported. You will be notified once it is ready for download.'})
-    return HttpResponse(json_data, mimetype='text/json')
+            'exporting. You will be notified once it is ready for download.'})
+    return HttpResponse(json_data, content_type='text/json')
 
 @requires_user_role(UserRole.Browse)
 def export_treenodes(request, project_id=None):
@@ -488,5 +484,5 @@ def export_treenodes(request, project_id=None):
         raise Exception("Something went wrong while queuing the export: " + \
                 proc.result)
     json_data = json.dumps({'message': 'The treenode archive is currently ' \
-            'exported. You will be notified once it is ready for download.'})
-    return HttpResponse(json_data, mimetype='text/json')
+            'exporting. You will be notified once it is ready for download.'})
+    return HttpResponse(json_data, content_type='text/json')

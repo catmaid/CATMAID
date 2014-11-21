@@ -4,9 +4,8 @@ from operator import itemgetter
 from networkx import Graph, DiGraph
 from collections import defaultdict
 from math import sqrt
-from itertools import izip, islice, imap
+from itertools import izip, islice
 from catmaid.models import Treenode
-from catmaid.fields import Double3D
 
 def find_root(tree):
     """ Search and return the first node that has zero predecessors.
@@ -214,13 +213,8 @@ def lazy_load_trees(skeleton_ids, node_properties):
             skid = t[2]
             tree = DiGraph()
 
-        props = {k: v for k,v in izip(props, islice(t, 3, 3 + len(props)))}
-
-        # Hack: why doesn't django parse well the location?
-        loc = props.get('location')
-        if loc:
-            props['location'] = Double3D(*(imap(float, loc[1:-1].split(','))))
-        tree.add_node(t[0], props)
+        fields = {k: v for k,v in izip(props, islice(t, 3, 3 + len(props)))}
+        tree.add_node(t[0], fields)
 
         if t[1]:
             # From child to parent

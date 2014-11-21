@@ -13,10 +13,12 @@
 Raphael.colorwheel = function(target, color_wheel_size, no_segments){
   var canvas,
       current_color,
+      current_alpha,
       size,
       segments = no_segments || 60,
       bs_square = {},
       hue_ring = {},
+      alpha_rect = {},
       tri_size,
       cursor = {},
       drag_target,
@@ -27,7 +29,8 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
       drag_callbacks = [function(){}, function(){}],
       offset,
       padding = 2,
-      sdim; // holds the dimensions for the saturation square
+      sdim, // holds the dimensions for the saturation square
+      rdim; // holds the dimensions for the alpha rectangle
 
   function point(x, y){ return {x:x, y:y};}
   function radians(a){ return a * (Math.PI/180);}
@@ -44,11 +47,14 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
     parent   = $(target);
     canvas   = Raphael(parent[0],size, size);
     canvas.safari();
+    current_alpha = 1;
 
     create_bs_square();
     create_hue_ring();
+    create_alpha_rect();
     hue_ring.cursor = cursor_create(tri_size);
     bs_square.cursor = cursor_create(tri_size*0.5);
+    alpha_rect.cursor = cursor_create(tri_size*0.5);
     events_setup();
     parent.css({height:size+"px", width:size+"px"});
     disable_select(parent);
@@ -120,6 +126,12 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
       run_onchange_event();
       return true;
     }
+    if(drag_target == alpha_rect){
+      set_alpha_cursor(x,y);
+      update_color();
+      run_onchange_event();
+      return true;
+    }
   }
 
   function start_drag(event, target){
@@ -146,6 +158,8 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
                                                         function(e){start_drag(e,hue_ring);});
     $([bs_square.b.node, bs_square.cursor[0].node]).on("mousedown touchstart",
                                                        function(e){start_drag(e,bs_square);});
+    $([alpha_rect.a.node, alpha_rect.cursor[0].node]).on("mousedown touchstart",
+                                                       function(e){start_drag(e,alpha_rect);});
   }
 
   function cursor_create(size){
@@ -180,7 +194,8 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
     return Raphael.rgb2hsb(bs_square.h.attr("fill")).h;
   }
 
-  function public_set_color(value){
+  function public_set_color(value, alpha){
+    if (typeof alpha !== "undefined") current_alpha = alpha;
     var ret = set_color(value);
     update_color(false);
     return ret;
@@ -196,6 +211,7 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
       (0-sdim.l/2) + (sdim.l*hsb.s),
       sdim.l/2 - (sdim.l*hsb.b));
     set_hue_cursor((360*(hsb.h))-90);
+    set_alpha_cursor((current_alpha-0.5)*rdim.w, 0);
     temp.remove();
     return public_methods();
   }
@@ -211,6 +227,10 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
         };
 
     current_color = Raphael.hsb2rgb(hsb.h, hsb.s,hsb.b);
+    current_alpha = (alpha_rect.cursor.items[0].attr("cx") - rdim.x)/rdim.w;
+
+    var rgbstr = Raphael.format("rgba({0},{1},{2},", current_color.r, current_color.g, current_color.b);
+    alpha_rect.a.attr("fill", "180-"+rgbstr+"255)-"+rgbstr+"0)");
 
     if(input_target){
       var c = current_color.hex;
@@ -306,9 +326,45 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
     hue_ring.event.node.style.cursor = "crosshair";
   }
 
+  function alpha_rect_dim(){
+    if(rdim){ return rdim;}
+    rdim = {
+      x:sdim.x+tri_size+padding,
+      y:sdim.y+sdim.l+padding,
+      w:sdim.l-(2*(tri_size+padding)),
+      h:tri_size
+    };
+    return rdim;
+  }
+
+  function create_alpha_rect(){
+    alpha_rect_dim();
+    box = [rdim.x, rdim.y, rdim.w, rdim.h];
+    alpha_rect.bg = [];
+    for (var dx = 0; dx < Math.ceil(rdim.w/rdim.h); dx++) {
+      var rem = Math.min(rdim.h, rdim.w - dx*rdim.h);
+      alpha_rect.bg[2*dx] = canvas.rect.apply(canvas, [rdim.x + dx*rdim.h, rdim.y, rem, rdim.h/2]).attr({
+        stroke: null, fill: dx % 2 ? "#888" : "#fff", opacity:1});
+      alpha_rect.bg[2*dx+1] = canvas.rect.apply(canvas, [rdim.x + dx*rdim.h, rdim.y + rdim.h/2, rem, rdim.h/2]).attr({
+        stroke: null, fill: dx % 2 ? "#fff" : "#888", opacity:1});
+    }
+    alpha_rect.a = canvas.rect.apply(canvas, box).attr({
+      stroke:"#EEE", gradient: "0-rgba(100%,100%,100%,100%)-rgba(100%,100%,100%,0%)", opacity:0});
+    alpha_rect.a.node.style.cursor = "crosshair";
+  }
+
+  function set_alpha_cursor(x,y){
+    x = x+center;
+    if(x < rdim.x){x = rdim.x}
+    if(x > rdim.x+rdim.w){x = rdim.x+rdim.w}
+    y = rdim.y+rdim.h/2;
+
+    alpha_rect.cursor.attr({cx:x, cy:y}).transform("t0,0");
+  }
+
   function run_onchange_event(){
     if (({}).toString.call(change_callback).match(/function/i)){
-      change_callback(current_color);
+      change_callback(current_color, current_alpha);
     }
   }
 

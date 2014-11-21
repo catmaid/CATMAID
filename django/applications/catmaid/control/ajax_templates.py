@@ -1,5 +1,8 @@
+from django.http import HttpResponse
+
 from django.template.loader_tags import BlockNode, ExtendsNode
-from django.template import loader, Context, RequestContext, TextNode
+from django.template.context import Context, RequestContext
+from django.template import loader
 
 # Most parts of this code has been taken from this Django snippet:
 # http://djangosnippets.org/snippets/942/
@@ -52,7 +55,7 @@ def render_block_to_string(template_name, block, dictionary=None, context_instan
     template_block = render_template_block(t, block, context_instance)
     return re.sub(r'\s+', ' ', template_block)
 
-def direct_block_to_template(request, template, block, extra_context=None, mimetype=None, **kwargs):
+def direct_block_to_template(request, template, block, extra_context=None, content_type=None, **kwargs):
     """
     Render a given block in a given template with any extra URL parameters in the context as
     ``{{ params }}``.
@@ -68,4 +71,4 @@ def direct_block_to_template(request, template, block, extra_context=None, mimet
     c = RequestContext(request, dictionary)
     t = get_template(template)
     t.render(c)
-    return HttpResponse(render_template_block(t, block, c), mimetype=mimetype)
+    return HttpResponse(render_template_block(t, block, c), content_type=content_type)

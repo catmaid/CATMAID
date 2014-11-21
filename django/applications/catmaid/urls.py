@@ -1,18 +1,21 @@
-from django.conf.urls import patterns, include, url
-from django.conf import settings
+from django.conf.urls import patterns, url
+from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 
-from catmaid.views import *
+from catmaid.views import CatmaidView, ExportWidgetView
 
 # A regular expression matching floating point and integer numbers
 num = r'[-+]?[0-9]*\.?[0-9]+'
 integer = r'[-+]?[0-9]+'
 # A regular expression matching lists of integers with comma as delimiter
 intlist = r'[0-9]+(,[0-9]+)*'
+# A list of words, not containing commas
+wordlist= r'\w+(,\w+)*'
 
 # Add the main index.html page at the root:
 urlpatterns = patterns('',
-    (r'^$', HomepageView.as_view())
+    url(r'^$', CatmaidView.as_view(template_name='catmaid/index.html'),
+        name="home")
 )
 
 # Authentication and permissions
@@ -24,6 +27,7 @@ urlpatterns += patterns('catmaid.control.authentication',
     (r'^permissions$', 'user_project_permissions'),
     (r'^classinstance/(?P<ci_id>\d+)/permissions$',
             'get_object_permissions'),
+    (r'^register$', 'register'),
 )
 
 # Users
@@ -31,6 +35,11 @@ urlpatterns += patterns('catmaid.control.user',
     (r'^user-list$', 'user_list'),
     (r'^user-table-list$', 'user_list_datatable'),
     (r'^user-profile/update$', 'update_user_profile'),
+)
+
+# Django related user URLs
+urlpatterns += patterns('django.contrib.auth.views',
+    url(r'^user/password_change/$', 'password_change', {'post_change_redirect': '/'}),
 )
 
 # Log
@@ -42,6 +51,7 @@ urlpatterns += patterns('catmaid.control.log',
 urlpatterns += patterns('catmaid.control.message',
     (r'^messages/list$', 'list_messages'),
     (r'^messages/mark_read$', 'read_message'),
+    (r'^messages/latestunreaddate', 'get_latest_unread_date'),
 )
 
 # General project model access
@@ -74,10 +84,10 @@ urlpatterns += patterns('catmaid.control.stats',
         TemplateView.as_view(template_name="catmaid/projectstatistics.html")),
     (r'^(?P<project_id>\d+)/stats/nodecount$', 'stats_nodecount'),
     (r'^(?P<project_id>\d+)/stats/editor$', 'stats_editor'),
-    (r'^(?P<project_id>\d+)/stats/reviewer$', 'stats_reviewer'),
     (r'^(?P<project_id>\d+)/stats/summary$', 'stats_summary'),
     (r'^(?P<project_id>\d+)/stats/history$', 'stats_history'),
     (r'^(?P<project_id>\d+)/stats/user-history$', 'stats_user_history'),
+    (r'^(?P<project_id>\d+)/stats/user-activity$', 'stats_user_activity'),
 )
 
 # Annotations
@@ -86,9 +96,10 @@ urlpatterns += patterns('catmaid.control.neuron_annotations',
     (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
             'query_neurons_by_annotations_datatable'),
     (r'^(?P<project_id>\d+)/annotations/list$', 'list_annotations'),
+    (r'^(?P<project_id>\d+)/annotations/skeletons/list$', 'annotations_for_skeletons'),
     (r'^(?P<project_id>\d+)/annotations/table-list$', 'list_annotations_datatable'),
     (r'^(?P<project_id>\d+)/annotations/add$', 'annotate_entities'),
-    (r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/entity/(?P<entity_id>\d+)/remove$',
+    (r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/remove$',
             'remove_annotation'),
 )
 
@@ -122,7 +133,9 @@ urlpatterns += patterns('catmaid.control.connector',
     (r'^(?P<project_id>\d+)/connector/table/list$', 'list_connector'),
     (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'graphedge_list'),
     (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'one_to_many_synapses'),
+    (r'^(?P<project_id>\d+)/connector/list/completed$', 'list_completed'),
     (r'^(?P<project_id>\d+)/connector/skeletons$', 'connector_skeletons'),
+    (r'^(?P<project_id>\d+)/connector/edgetimes$', 'connector_associated_edgetimes'),
 )
 
 # Neuron acess
@@ -161,12 +174,11 @@ urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', 'neuronname'),
     (r'^(?P<project_id>\d+)/skeleton/neuronnames$', 'neuronnames'),
     (r'^(?P<project_id>\d+)/skeleton/node/(?P<treenode_id>\d+)/node_count$', 'node_count'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-all$', 'reset_reviewer_ids'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-own$', 'reset_own_reviewer_ids'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-others$', 'reset_other_reviewer_ids'),
     (r'^(?P<project_id>\d+)/skeleton/connectivity$', 'skeleton_info_raw'),
     (r'^(?P<project_id>\d+)/skeleton/review-status$', 'review_status'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', 'skeleton_statistics'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', 'contributor_statistics'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/openleaf$', 'last_openleaf'),
     (r'^(?P<project_id>\d+)/skeleton/split$', 'split_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/get-root$', 'root_for_skeleton'),
@@ -176,6 +188,8 @@ urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
             'get_skeleton_permissions'),
     (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'join_skeletons_interpolated'),
+    (r'^(?P<project_id>\d+)/skeleton/annotationlist$', 'annotation_list'),
+    (r'^(?P<project_id>\d+)/skeleton/list$', 'list'),
 )
 
 # Skeleton export
@@ -183,9 +197,13 @@ urlpatterns += patterns('catmaid.control.skeletonexport',
     (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'export_neuroml_level3_v181'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'skeleton_swc'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'skeletons_neuroml'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'skeleton_json'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'skeleton_with_metadata'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/compact-json$', 'skeleton_for_3d_viewer'),
+    (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-skeleton$', 'compact_skeleton'),
+    (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor$', 'compact_arbor'),
+    (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor-with-minutes$', 'compact_arbor_with_minutes'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/reviewed-nodes$', 'export_skeleton_reviews'),
     (r'^(?P<project_id>\d+)/skeletons/measure$', 'measure_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
 )
@@ -317,6 +335,14 @@ urlpatterns += patterns('catmaid.control.classification',
         'link_classification_graph', name='link_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/stack/(?P<stack_id>{0})/linkroi/(?P<ci_id>{0})/$'.format(integer),
         'link_roi_to_classification', name='link_roi_to_classification'),
+    url(r'^classification/(?P<workspace_pid>{0})/export$'.format(integer),
+        'export', name='export_classification'),
+    url(r'^classification/(?P<workspace_pid>{0})/export/excludetags/(?P<exclusion_tags>{1})/$'.format(integer, wordlist),
+        'export', name='export_classification'),
+    url(r'^classification/(?P<workspace_pid>{0})/search$'.format(integer),
+        'search', name='search_classifications'),
+    url(r'^classification/(?P<workspace_pid>{0})/export_ontology$'.format(integer),
+        'export_ontology', name='export_ontology'),
 )
 
 # Notifications
@@ -345,6 +371,11 @@ urlpatterns += patterns('catmaid.control.clustering',
     url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),
         TemplateView.as_view(template_name="catmaid/clustering/display.html"),
         name="clustering_display"),
+)
+
+# Front-end tests
+urlpatterns += patterns('',
+    url(r'^tests$', login_required(CatmaidView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),
 )
 
 # Collection of various parts of the CATMAID API. These methods are usually

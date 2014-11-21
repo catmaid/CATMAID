@@ -1,7 +1,9 @@
+import json
+
 from django.http import HttpResponse
 
-from catmaid.models import *
-from catmaid.control.authentication import *
+from catmaid.models import UserRole, ClassInstanceClassInstance
+from catmaid.control.authentication import requires_user_role
 
 try:
     import networkx as nx
@@ -36,4 +38,4 @@ def convert_annotations_to_networkx(request, project_id=None):
     g = get_annotation_graph( project_id )
     data = json_graph.node_link_data(g)
     json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
+    return HttpResponse(json_return, content_type='text/json')

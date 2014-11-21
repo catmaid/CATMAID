@@ -9,11 +9,9 @@ import re
 import urllib
 
 from django.conf import settings
-from django.contrib.auth.models import User
-from django.contrib.auth.models import Group, Permission
-from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import User, Group
 
-from .fields import Double3DField, Integer3DField, IntegerArrayField, RGBAField
+from fields import Double3DField, Integer3DField, RGBAField
 
 from guardian.shortcuts import get_objects_for_user
 
@@ -38,34 +36,48 @@ class Project(models.Model):
         db_table = "project"
         managed = True
         permissions = (
-            ("can_administer", "Can administer projects"), 
-            ("can_annotate", "Can annotate projects"), 
+            ("can_administer", "Can administer projects"),
+            ("can_annotate", "Can annotate projects"),
             ("can_browse", "Can browse projects")
         )
     title = models.TextField()
-    public = models.BooleanField(default=True)
+    comment = models.TextField(blank=True, null=True)
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
     tags = TaggableManager(blank=True)
-    
+
     def __unicode__(self):
         return self.title
 
 class Stack(models.Model):
     class Meta:
         db_table = "stack"
-    title = models.TextField()
-    dimension = Integer3DField()
-    resolution = Double3DField()
-    image_base = models.TextField()
-    comment = models.TextField(blank=True, null=True)
-    trakem2_project = models.BooleanField(default=False)
-    num_zoom_levels = models.IntegerField(default=-1)
-    file_extension = models.TextField(default='jpg', blank=True)
-    tile_width = models.IntegerField(default=256)
-    tile_height = models.IntegerField(default=256)
-    tile_source_type = models.IntegerField(default=1)
-    metadata = models.TextField(default='', blank=True)
+    title = models.TextField(help_text="Descriptive title of this stack.")
+    dimension = Integer3DField(help_text="The pixel dimensionality of the "
+            "stack.")
+    resolution = Double3DField(help_text="The resolution of the stack in "
+            "nanometers.")
+    image_base = models.TextField(help_text="Fully qualified URL where the "
+            "tile data can be found.")
+    comment = models.TextField(blank=True, null=True,
+            help_text="A comment that describes the image data.")
+    trakem2_project = models.BooleanField(default=False,
+            help_text="Is TrakEM2 the source of this stack?")
+    num_zoom_levels = models.IntegerField(default=-1,
+            help_text="The number of zoom levels a stack has data for. A "
+            "value of -1 lets CATMAID dynamically determine the actual value "
+            "so that at this value the largest extent (X or Y) won't be "
+            "smaller than 1024 pixels. Values larger -1 will be used directly.")
+    file_extension = models.TextField(default='jpg', blank=True,
+            help_text="The file extension of the data files.")
+    tile_width = models.IntegerField(default=256,
+            help_text="The width of one tile.")
+    tile_height = models.IntegerField(default=256,
+            help_text="The height of one tile.")
+    tile_source_type = models.IntegerField(default=1,
+            help_text="This represents how the tile data is organized.")
+    metadata = models.TextField(default='', blank=True,
+            help_text="Arbitrary text that is displayed alongside the stack.")
     tags = TaggableManager(blank=True)
 
     def __unicode__(self):
@@ -359,20 +371,18 @@ class Settings(models.Model):
 
 class UserFocusedManager(models.Manager):
     # TODO: should there be a parameter or separate function that allows the caller to specify read-only vs. read-write objects?
-    
+
     def for_user(self, user):
         fullSet = super(UserFocusedManager, self).get_query_set()
-        
+
         if user.is_superuser:
             return fullSet
         else:
             # Get the projects that the user can see.
             adminProjects = get_objects_for_user(user, 'can_administer', Project)
-            print >> sys.stderr, 'user is admin for ', str(adminProjects)
             otherProjects = get_objects_for_user(user, ['can_annotate', 'can_browse'], Project, any_perm = True)
             otherProjects = [a for a in otherProjects if a not in adminProjects]
-            print >> sys.stderr, 'user has access to ', str(otherProjects)
-            
+
             # Now filter to the data to which the user has access.
             return fullSet.filter(Q(project__in = adminProjects) | (Q(project__in = otherProjects) & Q(user = user)))
 
@@ -413,31 +423,31 @@ class Location(UserFocusedModel):
     class Meta:
         db_table = "location"
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
-    location = Double3DField()
-    reviewer_id = models.IntegerField(default=-1)
-    review_time = models.DateTimeField()
+    location_x = models.FloatField()
+    location_y = models.FloatField()
+    location_z = models.FloatField()
 
 class Treenode(UserFocusedModel):
     class Meta:
         db_table = "treenode"
     editor = models.ForeignKey(User, related_name='treenode_editor', db_column='editor_id')
-    location = Double3DField()
+    location_x = models.FloatField()
+    location_y = models.FloatField()
+    location_z = models.FloatField()
     parent = models.ForeignKey('self', null=True, related_name='children')
     radius = models.FloatField()
     confidence = models.IntegerField(default=5)
     skeleton = models.ForeignKey(ClassInstance)
-    reviewer_id = models.IntegerField(default=-1)
-    review_time = models.DateTimeField()
 
 
 class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
-    location = Double3DField()
+    location_x = models.FloatField()
+    location_y = models.FloatField()
+    location_z = models.FloatField()
     confidence = models.IntegerField(default=5)
-    reviewer_id = models.IntegerField(default=-1)
-    review_time = models.DateTimeField()
 
 
 class TreenodeClassInstance(UserFocusedModel):
@@ -469,11 +479,28 @@ class TreenodeConnector(UserFocusedModel):
     skeleton = models.ForeignKey(ClassInstance)
     confidence = models.IntegerField(default=5)
 
+class Review(models.Model):
+    """ This model represents the review of a user of one particular tree node
+    of a specific skeleton. Technically, the treenode ID is enough to get the
+    skeleton and the project. However, both of them are included for
+    performance reasons (to avoid a join in the database for retrieval).
+    """
+    class Meta:
+        db_table = "review"
+    project = models.ForeignKey(Project)
+    reviewer = models.ForeignKey(User)
+    review_time = models.DateTimeField(default=datetime.now)
+    skeleton = models.ForeignKey(ClassInstance)
+    treenode = models.ForeignKey(Treenode)
+
 class RegionOfInterest(UserFocusedModel):
     class Meta:
         db_table = "region_of_interest"
     # Repeat the columns inherited from 'location'
-    location = Double3DField()
+    editor = models.ForeignKey(User, related_name='roi_editor', db_column='editor_id')
+    location_x = models.FloatField()
+    location_y = models.FloatField()
+    location_z = models.FloatField()
     # Now new columns:
     stack = models.ForeignKey(Stack)
     zoom_level = models.IntegerField()
@@ -686,8 +713,8 @@ class DataView(models.Model):
         db_table = "data_view"
         ordering = ('position',)
         permissions = (
-            ("can_administer", "Can administer data views"),
-            ("can_browse", "Can browse data views")
+            ("can_administer_dataviews", "Can administer data views"),
+            ("can_browse_dataviews", "Can browse data views")
         )
     title = models.TextField()
     data_view_type = models.ForeignKey(DataViewType)
@@ -750,6 +777,10 @@ class UserProfile(models.Model):
     show_ontology_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_ONTOLOGY_TOOL)
     color = RGBAField(default=distinct_user_color)
+    tracing_overlay_screen_scaling = models.BooleanField(
+        default=settings.PROFILE_TRACING_OVERLAY_SCREEN_SCALING)
+    tracing_overlay_scale = models.FloatField(
+        default=settings.PROFILE_TRACING_OVERLAY_SCALE)
 
     def __unicode__(self):
         return self.user.username
@@ -769,8 +800,10 @@ class UserProfile(models.Model):
         pdict['show_segmentation_tool'] = self.show_segmentation_tool
         pdict['show_tracing_tool'] = self.show_tracing_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
+        pdict['tracing_overlay_screen_scaling'] = self.tracing_overlay_screen_scaling
+        pdict['tracing_overlay_scale'] = self.tracing_overlay_scale
         return pdict
-    
+
     # Fix a problem with duplicate keys when new users are added.
     # From <http://stackoverflow.com/questions/6117373/django-userprofile-m2m-field-in-admin-error>
     def save(self, *args, **kwargs):
@@ -794,6 +827,19 @@ def create_user_profile(sender, instance, created, **kwargs):
 # Connect the a User object's post save signal to the profile
 # creation
 post_save.connect(create_user_profile, sender=User)
+
+def add_user_to_default_groups(sender, instance, created, **kwargs):
+    if created and settings.NEW_USER_DEFAULT_GROUPS:
+        for group in settings.NEW_USER_DEFAULT_GROUPS:
+            try:
+                g = Group.objects.get(name=group)
+                g.user_set.add(instance)
+            except Group.DoesNotExist:
+                print("Default group %s does not exist" % group)
+
+# Connect the a User object's post save signal to the profile
+# creation
+post_save.connect(add_user_to_default_groups, sender=User)
 
 # Prevent interactive question about wanting a superuser created.  (This code
 # has to go in this "models" module so that it gets processed by the "syncdb"
@@ -832,10 +878,10 @@ class ChangeRequest(UserFocusedModel):
     APPROVED = 1
     REJECTED = 2
     INVALID = 3
-    
+
     class Meta:
         db_table = "change_request"
-    
+
     type = models.CharField(max_length = 32)
     description = models.TextField()
     status = models.IntegerField(default = OPEN)
@@ -847,16 +893,16 @@ class ChangeRequest(UserFocusedModel):
     approve_action = models.TextField()
     reject_action = models.TextField()
     completion_time = models.DateTimeField(default = None, null = True)
-    
+
     # TODO: get the project from the treenode/connector so it doesn't have to specified when creating a request
-    
+
     def status_name(self):
         self.is_valid() # Make sure invalid state is current
         return ['Open', 'Approved', 'Rejected', 'Invalid'][self.status]
-    
+
     def is_valid(self):
         """ Returns a boolean value indicating whether the change request is still valid."""
-        
+
         if self.status == ChangeRequest.OPEN:
             # Run the request's validation code snippet to determine whether it is still valid.
             # The action is required to set a value for the is_valid variable.
@@ -873,41 +919,41 @@ class ChangeRequest(UserFocusedModel):
                 raise Exception('Could not validate the request (%s)', str(e))
         else:
             is_valid = False
-                
+
         return is_valid;
-    
+
     def approve(self, *args, **kwargs):
         if not self.is_valid():
             raise Exception('Failed to approve change request: the change is no longer possible.')
-        
+
         try:
             exec(self.approve_action)
             self.status = ChangeRequest.APPROVED
             self.completion_time = datetime.now()
             self.save()
-            
+
             # Send a message and an e-mail to the requester.
             title = self.type + ' Request Approved'
             message = self.recipient.get_full_name() + ' has approved your ' + self.type.lower() + ' request.'
             notify_user(self.user, title, message)
         except Exception as e:
             raise Exception('Failed to approve change request: %s' % str(e))
-    
+
     def reject(self, *args, **kwargs):
         if not self.is_valid():
             raise Exception('Failed to reject change request: the change is no longer possible.')
-        
+
         try:
             exec(self.reject_action)
             self.status = ChangeRequest.REJECTED
             self.completion_time = datetime.now()
             self.save()
-            
+
             # Send a message and an e-mail to the requester.
             title = self.type + ' Request Rejected'
             message = self.recipient.get_full_name() + ' has rejected your ' + self.type.lower() + ' request.'
             notify_user(self.user, title, message)
-            
+
         except Exception as e:
             raise Exception('Failed to reject change request: %s' % str(e))
 
@@ -922,7 +968,7 @@ def validate_change_request(sender, **kwargs):
 
 def send_email_to_change_request_recipient(sender, instance, created, **kwargs):
     """ Send the recipient of a change request a message and an e-mail when the request is created."""
-    
+
     if created:
         title = instance.type + ' Request'
         message = instance.user.get_full_name() + ' has sent you a ' + instance.type.lower() + ' request.  Please check your notifications.'
@@ -933,12 +979,12 @@ post_save.connect(send_email_to_change_request_recipient, sender = ChangeRequest
 
 def notify_user(user, title, message):
     """ Send a user a message and an e-mail."""
-    
+
     # Create the message
 #     Message(user = user,
 #             title = title,
 #             text = message).save()
-    
+
     # Send the e-mail
     # TODO: only send one e-mail per day, probably using a Timer object <http://docs.python.org/2/library/threading.html#timer-objects>
     try:

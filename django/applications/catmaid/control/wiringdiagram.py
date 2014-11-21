@@ -1,10 +1,12 @@
 import json
+import networkx as nx
+from networkx.readwrite import json_graph
 
 from django.http import HttpResponse
 from django.db.models import Count
 
-from catmaid.models import *
-from catmaid.control.authentication import *
+from catmaid.models import Treenode, TreenodeConnector, UserRole
+from catmaid.control.authentication import requires_user_role
 
 
 def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):
@@ -101,7 +103,7 @@ def export_wiring_diagram_nx(request, project_id=None):
 
     data = json_graph.node_link_data(g)
     json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
+    return HttpResponse(json_return, content_type='text/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -131,4 +133,4 @@ def export_wiring_diagram(request, project_id=None):
     }
 
     json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
+    return HttpResponse(json_return, content_type='text/json')

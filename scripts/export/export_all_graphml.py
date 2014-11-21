@@ -4,6 +4,8 @@
 # [2] project_id = 12
 # [2] export(project_id, "all.graphml")
 #
+# Will generate a gzip'ed file like "all.graphml.gz"
+#
 # Includes all skeletons with more than 1 treenode;
 # each skeleton is an undirected graph, where each treenode is a node
 # (with the skeleton ID and the location as extra attributes)
@@ -16,6 +18,7 @@
 from __future__ import with_statement
 from django.db import connection
 from django.db import transaction
+import gzip
 import sys
 
 def writeOneSkeleton(file, cursor, skid):
@@ -34,7 +37,7 @@ def writeOneSkeleton(file, cursor, skid):
 def export(project_id, filename):
     cursor = connection.cursor()
 
-    with open(filename, 'w') as file:
+    with gzip.open(filename + '.gz', 'w') as file:
         file.write('''<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

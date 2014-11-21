@@ -77,7 +77,7 @@ def export(project_id, filename):
         for row in cursor.fetchall():
             file.write('<edge id="e%s" directed="true" source="n%s" target="n%s" source_skid="%s" target_skid="%s"/>\n' % row)
         #
-        file.write("</graph>\n")
+        file.write("</graph>\n</graphml>\n</xml>")
 
 def run():
     if sys.argv < 3:

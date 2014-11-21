@@ -40,6 +40,7 @@ def writeOneSkeleton(file, cursor, skid):
 
 @transaction.atomic
 def export(project_id, filename):
+    project_id = int(project_id)
     cursor = connection.cursor()
 
     with gzip.open(filename + '.gz', 'w') as file:

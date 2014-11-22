@@ -746,27 +746,33 @@ var WindowMaker = new function()
     
     var shadingMenu = document.createElement('select');
     shadingMenu.setAttribute("id", "skeletons_shading" + WA.widgetID);
-    $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
-    $('<option/>', {value : 'active_node_split', text: 'Active node split'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'downstream_amount', text: 'Downstream cable'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'slab_centrality', text: 'Slab centrality'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'flow_centrality', text: 'Flow centrality'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'centrifugal flow_centrality', text: 'Centrifugal flow centrality'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'centripetal flow_centrality', text: 'Centripetal flow centrality'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'distance_to_root', text: 'Distance to root'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'partitions', text: 'Principal branch length'}).appendTo(shadingMenu);
-    $('<option/>', {value : 'strahler', text: 'Strahler analysis'}).appendTo(shadingMenu);
+    [['none', 'None'],
+     ['active_node_split', 'Active node split'],
+     ['downstream_amount', 'Downstream cable'],
+     ['betweenness_centrality', 'Betweenness centrality'],
+     ['slab_centrality', 'Slab centrality'],
+     ['flow_centrality', 'Flow centrality'],
+     ['centrifugal flow_centrality', 'Centrifugal flow centrality'],
+     ['centripetal flow_centrality', 'Centripetal flow centrality'],
+     ['distance_to_root', 'Distance to root'],
+     ['partitions', 'Principal branch length'],
+     ['strahler', 'Strahler analysis']].forEach(function(e) {
+       shadingMenu.options.add(new Option(e[1], e[0]));
+     });
+    shadingMenu.selectedIndex = 0;
     shadingMenu.onchange = WA.set_shading_method.bind(WA);
 
     var colorMenu = document.createElement('select');
     colorMenu.setAttribute('id', 'webglapp_color_menu' + WA.widgetID);
-    $('<option/>', {value : 'none', text: 'Source', selected: true}).appendTo(colorMenu);
-    $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
-    $('<option/>', {value : 'all-reviewed', text: 'All Reviewed'}).appendTo(colorMenu);
-    $('<option/>', {value : 'own-reviewed', text: 'Own Reviewed'}).appendTo(colorMenu);
-    $('<option/>', {value : 'axon-and-dendrite', text: 'Axon and dendrite'}).appendTo(colorMenu);
-    $('<option/>', {value : 'downstream-of-tag', text: 'Downstream of tag'}).appendTo(colorMenu);
+    [['none', 'Source'],
+     ['creator', 'By Creator'],
+     ['all-reviewed', 'All Reviewed'],
+     ['own-reviewed', 'Own Reviewed'],
+     ['axon-and-dendrite', 'Axon and dendrite'],
+     ['downstream-of-tag', 'Downstream of tag']].forEach(function(e) {
+       colorMenu.options.add(new Option(e[1], e[0]));
+    });
+    colorMenu.selectedIndex = 0;
     colorMenu.onchange = WA.updateColorMethod.bind(WA, colorMenu);
 
     var synColors = document.createElement('select');

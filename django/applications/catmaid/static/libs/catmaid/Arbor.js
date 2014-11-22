@@ -1765,3 +1765,26 @@ Arbor.prototype.minDistancesFromTo = function(sources, targets, distanceFn) {
 
   return distances;
 };
+
+/** Return a map of nodes within a max distance of the source node.
+ * The map has node ID as keys and distance to source as values. */
+Arbor.prototype.findNodesWithin = function(source, distanceFn, max_distance) {
+  var neighbors = this.allNeighbors(),
+      within = {},
+      open = [source, 0];
+  while (open.length > 0) {
+    var node = open.shift(),
+        dist = open.shift(),
+        s = neighbors[node];
+    within[node] = dist;
+    for (var i=0; i<s.length; ++i) {
+      var next = s[i];
+      if (within[next]) continue; // seen
+      var d = dist + distanceFn(node, next);
+      if (d > max_distance) continue;
+      open.push(next);
+      open.push(d);
+    }
+  }
+  return within;
+};

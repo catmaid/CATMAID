@@ -697,7 +697,7 @@ var WindowMaker = new function()
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
-    var tabs = ['Main', 'View', 'Shading', 'View settings', 'Skeleton settings', 'Export'].reduce(function(o, name) {
+    var tabs = ['Main', 'View', 'Shading', 'Skeleton filters', 'View settings', 'Shading parameters', 'Export'].reduce(function(o, name) {
           var id = name.replace(/ /, '') + WA.widgetID;
           titles.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
@@ -748,6 +748,7 @@ var WindowMaker = new function()
     shadingMenu.setAttribute("id", "skeletons_shading" + WA.widgetID);
     [['none', 'None'],
      ['active_node_split', 'Active node split'],
+     ['near_active_node', 'Near active node'],
      ['downstream_amount', 'Downstream cable'],
      ['betweenness_centrality', 'Betweenness centrality'],
      ['slab_centrality', 'Slab centrality'],
@@ -756,7 +757,8 @@ var WindowMaker = new function()
      ['centripetal flow_centrality', 'Centripetal flow centrality'],
      ['distance_to_root', 'Distance to root'],
      ['partitions', 'Principal branch length'],
-     ['strahler', 'Strahler analysis']].forEach(function(e) {
+     ['strahler', 'Strahler analysis']
+    ].forEach(function(e) {
        shadingMenu.options.add(new Option(e[1], e[0]));
      });
     shadingMenu.selectedIndex = 0;
@@ -769,7 +771,8 @@ var WindowMaker = new function()
      ['all-reviewed', 'All Reviewed'],
      ['own-reviewed', 'Own Reviewed'],
      ['axon-and-dendrite', 'Axon and dendrite'],
-     ['downstream-of-tag', 'Downstream of tag']].forEach(function(e) {
+     ['downstream-of-tag', 'Downstream of tag']
+    ].forEach(function(e) {
        colorMenu.options.add(new Option(e[1], e[0]));
     });
     colorMenu.selectedIndex = 0;
@@ -819,14 +822,20 @@ var WindowMaker = new function()
           ['Line width ', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 10],
         ]);
 
-    appendToTab(tabs['Skeleton settings'],
+    appendToTab(tabs['Skeleton filters'],
         [
-          ['Synapse clustering bandwidth ', o.synapse_clustering_bandwidth, ' nm -', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 10],
           ['Smooth ', o.smooth_skeletons, function() { WA.options.smooth_skeletons = this.checked; WA.updateSkeletons(); }, false],
           [' with sigma ', o.smooth_skeletons_sigma, ' nm -', function() { WA.updateSmoothSkeletonsSigma(this.value); }, 10],
           ['Resample ', o.resample_skeletons, function() { WA.options.resample_skeletons = this.checked; WA.updateSkeletons(); }, false],
           [' with delta ', o.resampling_delta, ' nm -', function() { WA.updateResampleDelta(this.value); }, 10],
           ['Lean mode (no synapses, no tags)', o.lean_mode, function() { WA.options.lean_mode = this.checked; WA.updateSkeletons();}, false],
+        ]);
+
+    appendToTab(tabs['Shading parameters'],
+        [
+          ['Synapse clustering bandwidth ', o.synapse_clustering_bandwidth, ' nm - ', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 8],
+          ['Near active node ', o.distance_to_active_node, ' nm', function() {
+            WA.updateActiveNodeNeighborhoodRadius(this.value); }, 8]
         ]);
 
     appendToTab(tabs['Export'],

@@ -213,6 +213,7 @@ WebGLApplication.prototype.Options = function() {
   this.skeleton_line_width = 3;
   this.invert_shading = false;
   this.follow_active = false;
+  this.distance_to_active_node = 5000; // nm
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -781,7 +782,7 @@ WebGLApplication.prototype.Space.prototype.removeSkeleton = function(skeleton_id
 };
 
 WebGLApplication.prototype.Space.prototype.updateSplitShading = function(old_skeleton_id, new_skeleton_id, options) {
-  if ('active_node_split' === options.shading_method) {
+  if ('active_node_split' === options.shading_method || 'near_active_node' === options.shading_method) {
     if (old_skeleton_id !== new_skeleton_id) {
       if (old_skeleton_id && old_skeleton_id in this.content.skeletons) this.content.skeletons[old_skeleton_id].updateSkeletonColor(options);
     }
@@ -2013,14 +2014,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       node_weights = c;
 
     } else if ('distance_to_root' === options.shading_method) {
-      var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
-        vs[v.node_id] = v;
-        return vs;
-      }, {});
-
       var distanceFn = (function(child, paren) {
         return this[child].distanceTo(this[paren]);
-      }).bind(locations);
+      }).bind(this.getPositions());
 
       var dr = arbor.nodesDistanceTo(arbor.root, distanceFn),
           distances = dr.distances,
@@ -2034,14 +2030,9 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       node_weights = distances;
 
     } else if ('downstream_amount' === options.shading_method) {
-      var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
-        vs[v.node_id] = v;
-        return vs;
-      }, {});
-
       var distanceFn = (function(paren, child) {
         return this[child].distanceTo(this[paren]);
-      }).bind(locations);
+      }).bind(this.getPositions());
 
       node_weights = arbor.downstreamAmount(distanceFn, true);
 
@@ -2066,10 +2057,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     } else if ('partitions' === options.shading_method) {
       // Shade by euclidian length, relative to the longest branch
-      var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
-        vs[v.node_id] = v;
-        return vs;
-      }, {});
+      var locations = this.getPositions();
       var partitions = arbor.partitionSorted();
       node_weights = partitions.reduce(function(o, seq, i) {
         var loc1 = locations[seq[0]],
@@ -2097,6 +2085,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       Object.keys(node_weights).forEach(function(node) {
         node_weights[node] /= max;
       });
+    } else if ('near_active_node' === options.shading_method) {
+      var active = SkeletonAnnotations.getActiveNodeId();
+      if (!active || !arbor.contains(active)) node_weights = null;
+      else {
+        var distanceFn = (function(paren, child) {
+          return this[child].distanceTo(this[paren]);
+        }).bind(this.getPositions());
+        var within = arbor.findNodesWithin(active, distanceFn, options.distance_to_active_node);
+        node_weights = {};
+        arbor.nodesArray().forEach(function(node) {
+          node_weights[node] = undefined === within[node] ? 0 : 1;
+        });
+      }
     }
   }
 

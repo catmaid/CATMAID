@@ -697,7 +697,7 @@ def export_neuroml_level3_v181(request, project_id=None):
     return response
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def skeleton_swc(*args, **kwargs):
     kwargs['format'] = 'swc'
     return export_skeleton_response(*args, **kwargs)
@@ -783,7 +783,7 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None,
         })
     return segments
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
     """
     Export the skeleton as a list of sequences of entries, each entry containing
@@ -798,7 +798,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, format=No
             subarbor_node_id )
     return HttpResponse(json.dumps(segments))
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def skeleton_connectors_by_partner(request, project_id):
     """ Return a dict of requested skeleton vs relation vs partner skeleton vs list of connectors.
     Connectors lacking a skeleton partner will of course not be included. """
@@ -830,7 +830,7 @@ def skeleton_connectors_by_partner(request, project_id):
     return HttpResponse(json.dumps(partners))
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
     """ Return a map of treenode ID vs list of reviewer IDs,
     without including any unreviewed treenode. """

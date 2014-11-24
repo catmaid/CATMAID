@@ -287,7 +287,6 @@ WebGLApplication.prototype.spatialSelect = function() {
         Object.keys(skeletons).forEach(function(skid) {
           if (skid === active_skid) return;
           var partner = skeletons[skid];
-          if (ignore_placeholders && 1 === partner.geometry['neurite'].length) return;
           synapticTypes.forEach(function(type) {
             var vs = partner.geometry[type].vertices;
             for (var i=0; i<vs.length; i+=2) {

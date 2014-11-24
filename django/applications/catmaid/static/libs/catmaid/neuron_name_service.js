@@ -345,19 +345,21 @@ var NeuronNameService = (function()
               }
             }
 
-            // Return the skeleton ID as last option
-            return "" + skid;
+            // Return null if no valid skeleton name could be found
+            return null;
           };
 
           if (skids) {
             skids.forEach(function(skid) {
-              managedSkeletons[skid].name = name(skid) +
-                   (appendSkeletonId ? " #" + skid : "");
+              var n = name(skid)
+              if (appendSkeletonId) { n += " #" + skid; };
+              managedSkeletons[skid].name = n;
             });
           } else {
             for (var skid in managedSkeletons) {
-              managedSkeletons[skid].name = name(skid) +
-                   (appendSkeletonId ? " #" + skid : "");
+              var n = name(skid)
+              if (appendSkeletonId) { n += " #" + skid; };
+              managedSkeletons[skid].name = n;
             }
           }
 

@@ -178,30 +178,54 @@ WebGLApplication.prototype.exportSVG = function() {
  * Create an store a neuron catalog SVG for the current view.
  */
 WebGLApplication.prototype.exportCatalogSVG = function() {
-  $.blockUI();
-  try {
-    // TODO: Ask the user about column size and sorting name
+  var dialog = new OptionsDialog("Catalog export options");
+  dialog.appendMessage('Adjust the catalog export settings to your liking.');
   
-    // Export catalog
-    var svg = this.space.view.getSVGData(true);
-    var styleDict = SVGUtil.classifyStyles(svg);
+  var columns = dialog.appendField("# Columns: ", "svg-catalog-num-columns", '2');
+  var displayNames = dialog.appendCheckbox('Display names', 'svg-catalog-display-names', true);
+  var fontsize = dialog.appendField("Fontsize: ", "svg-catalog-fontsize", '14');
+  var margin = dialog.appendField("Margin: ", "svg-catalog-margin", '10');
+  var padding = dialog.appendField("Padding: ", "svg-catalog-pading", '10');
+  var title = dialog.appendField("Title: ", "svg-catalog-title", 'CATMAID neuron catalog');
 
-    var styles = Object.keys(styleDict).reduce(function(o, s) {
-      var cls = styleDict[s];
-      o = o + "." + cls + "{" + s + "}";
-      return o;
-    }, "");
+  dialog.onOK = createSVG.bind(this);
 
-    var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
-    SVGUtil.addStyles(xml, styles);
+  dialog.show(350, 350, true);
 
-    var data = new XMLSerializer().serializeToString(xml);
-    var blob = new Blob([data], {type: 'text/svg'});
-    saveAs(blob, "catmaid-neuron-catalog.svg");
-  } catch (e) {
-    error("Could not export neuron catalog. There was an error.", e);
-  }
-  $.unblockUI();
+  function createSVG() {
+    $.blockUI();
+    try {
+      var options = {
+        layout: 'catalog',
+        columns: parseInt(columns.value),
+        displaynames: Boolean(displayNames.checked),
+        fontsize: parseFloat(fontsize.value),
+        margin: parseInt(margin.value),
+        padding: parseInt(padding.value),
+        title: title.value,
+      };
+
+      // Export catalog
+      var svg = this.space.view.getSVGData(options);
+      var styleDict = SVGUtil.classifyStyles(svg);
+
+      var styles = Object.keys(styleDict).reduce(function(o, s) {
+        var cls = styleDict[s];
+        o = o + "." + cls + "{" + s + "}";
+        return o;
+      }, "");
+
+      var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+      SVGUtil.addStyles(xml, styles);
+
+      var data = new XMLSerializer().serializeToString(xml);
+      var blob = new Blob([data], {type: 'text/svg'});
+      saveAs(blob, "catmaid-neuron-catalog.svg");
+    } catch (e) {
+      error("Could not export neuron catalog. There was an error.", e);
+    }
+    $.unblockUI();
+  };
 };
 
 /** Return a list of skeleton IDs that have nodes within radius of the active node. */
@@ -1320,8 +1344,10 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = functio
  * If createCatalog is true, a catalog representation is crated where each
  * neuron will be rendered in its own view, organized in a table.
  */
-WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(createCatalog) {
+WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(options) {
   var self = this;
+  var o = options || {};
+
   // Find all spheres
   var skeletons = this.space.content.skeletons;
   var visibleSpheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
@@ -1354,8 +1380,8 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
 
   // Render
   var svgData = null;
-  if (createCatalog) {
-    svgData = createCatalogData(visibleSpheres, 2);
+  if ('catalog' === o['layout']) {
+    svgData = createCatalogData(visibleSpheres, o);
   } else {
     svgData = renderSkeletons(visibleSpheres);
   }
@@ -1458,7 +1484,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
   /**
    * Create an SVG catalog of the current view.
    */
-  function createCatalogData(sphereMeshes, numColumns)
+  function createCatalogData(sphereMeshes, options)
   {
     // TODO: sort skeletons
     var orderedSkids = Object.keys(self.space.content.skeletons);
@@ -1466,15 +1492,17 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     // SVG namespace to use
     var namespace = 'http://www.w3.org/2000/svg';
     // Size of the label text
-    var fontsize = 14;
+    var fontsize = options['fontsize'] || 14;
+    var displayNames = options['displaynames'] === undefined ? true : options['displaynames'];
 
     // Margin of whole document
-    var margin = 10;
+    var margin = options['margin'] || 10;
     // Padding around each sub-svg
-    var padding = 10;
+    var padding = options['padding'] || 10;
 
     var imageWidth = self.space.canvasWidth;
     var imageHeight = self.space.canvasHeight;
+    var numColumns = options['columns'] || 2;
     var numRows = Math.ceil(orderedSkids.length / numColumns);
 
     // Crate a map of current visibility
@@ -1500,14 +1528,16 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       spheres[skid] = sphereMeshes[skid];
       var svg = renderSkeletons(spheres);
 
-      // Add name of neuron
-      var text = document.createElementNS(namespace, 'text');
-      text.setAttribute('x', svg.viewBox.baseVal.x + 5);
-      text.setAttribute('y', svg.viewBox.baseVal.y + fontsize + 5);
-      text.setAttribute('style', 'font-family: Arial; font-size: ' + fontsize + 'px;');
-      var name = NeuronNameService.getInstance().getName(skid);
-      text.appendChild(document.createTextNode(name));
-      svg.appendChild(text);
+      if (displayNames) {
+        // Add name of neuron
+        var text = document.createElementNS(namespace, 'text');
+        text.setAttribute('x', svg.viewBox.baseVal.x + 5);
+        text.setAttribute('y', svg.viewBox.baseVal.y + fontsize + 5);
+        text.setAttribute('style', 'font-family: Arial; font-size: ' + fontsize + 'px;');
+        var name = NeuronNameService.getInstance().getName(skid);
+        text.appendChild(document.createTextNode(name));
+        svg.appendChild(text);
+      }
 
       // Store
       views[skid] = svg;
@@ -1524,7 +1554,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
 
     // Title
     var title = document.createElementNS(namespace, 'title');
-    title.appendChild(document.createTextNode('CATMAID neuron catalog'));
+    title.appendChild(document.createTextNode(options['title'] || 'CATMAID neuron catalog'));
     svg.appendChild(title);
 
     // Combine all generated SVGs into one

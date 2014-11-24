@@ -374,7 +374,7 @@ var NeuronNameService = (function()
             return 'skeletonid' !== l.id;
         }).length;
 
-        if (needsNoBackend) {
+        if (needsNoBackend || (!skids && !Object.keys(managedSkeletons).length)) {
           // If no back-end is needed, call the update method right away, without
           // any data.
           update(null);

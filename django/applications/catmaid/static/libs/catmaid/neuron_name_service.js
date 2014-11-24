@@ -12,9 +12,10 @@ var NeuronNameService = (function()
   var instance;
 
   /**
-   * Creates a new instance of the neuron name service.
+   * Creates a new instance of the neuron name service. If empty is true, the
+   * fallback list is empty.
    */
-  function init() {
+  function init(empty) {
     // All available naming options. If an entry needs a parameter and includes
     // the pattern "..." in its name, this pattern will be replaced by the
     // parameter when added to the actual fallback list.
@@ -28,7 +29,7 @@ var NeuronNameService = (function()
     ];
 
     // The current fallback/naming list
-    var fallbackList = [
+    var fallbackList = empty ? [] : [
       {id: 'skeletonid', name: "Skeleton ID"},
       {id: 'neuronname', name: "Neuron name"}
     ];
@@ -344,19 +345,21 @@ var NeuronNameService = (function()
               }
             }
 
-            // Return the skeleton ID as last option
-            return "" + skid;
+            // Return null if no valid skeleton name could be found
+            return null;
           };
 
           if (skids) {
             skids.forEach(function(skid) {
-              managedSkeletons[skid].name = name(skid) +
-                   (appendSkeletonId ? " #" + skid : "");
+              var n = name(skid)
+              if (appendSkeletonId) { n += " #" + skid; };
+              managedSkeletons[skid].name = n;
             });
           } else {
             for (var skid in managedSkeletons) {
-              managedSkeletons[skid].name = name(skid) +
-                   (appendSkeletonId ? " #" + skid : "");
+              var n = name(skid)
+              if (appendSkeletonId) { n += " #" + skid; };
+              managedSkeletons[skid].name = n;
             }
           }
 
@@ -371,7 +374,7 @@ var NeuronNameService = (function()
             return 'skeletonid' !== l.id;
         }).length;
 
-        if (needsNoBackend) {
+        if (needsNoBackend || (!skids && !Object.keys(managedSkeletons).length)) {
           // If no back-end is needed, call the update method right away, without
           // any data.
           update(null);
@@ -461,6 +464,14 @@ var NeuronNameService = (function()
       }
 
       return instance;
-    }
+    },
+
+    /**
+     * Crate a new name service instance which is independent from the
+     * singleton.
+     */
+    newInstance: function(empty) {
+      return init(empty);
+    },
   };
 })();

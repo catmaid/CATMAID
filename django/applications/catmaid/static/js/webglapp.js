@@ -180,51 +180,116 @@ WebGLApplication.prototype.exportSVG = function() {
 WebGLApplication.prototype.exportCatalogSVG = function() {
   var dialog = new OptionsDialog("Catalog export options");
   dialog.appendMessage('Adjust the catalog export settings to your liking.');
-  
+
+  // Create a new empty neuron name service that takes care of the sorting names
+  var ns = NeuronNameService.newInstance(true);
+  var namingOptions = ns.getOptions();
+  var namingOptionNames = namingOptions.map(function(o) { return o.name; });
+  var namingOptionIds = namingOptions.map(function(o) { return o.id; });
+
+  // Add options to dialog
   var columns = dialog.appendField("# Columns: ", "svg-catalog-num-columns", '2');
+  var sorting = dialog.appendChoice("Sorting name: ", "svg-catalog-sorting",
+      namingOptionNames, namingOptionIds);
   var displayNames = dialog.appendCheckbox('Display names', 'svg-catalog-display-names', true);
   var fontsize = dialog.appendField("Fontsize: ", "svg-catalog-fontsize", '14');
   var margin = dialog.appendField("Margin: ", "svg-catalog-margin", '10');
   var padding = dialog.appendField("Padding: ", "svg-catalog-pading", '10');
   var title = dialog.appendField("Title: ", "svg-catalog-title", 'CATMAID neuron catalog');
 
-  dialog.onOK = createSVG.bind(this);
-
-  dialog.show(350, 350, true);
-
-  function createSVG() {
-    $.blockUI();
-    try {
-      var options = {
-        layout: 'catalog',
-        columns: parseInt(columns.value),
-        displaynames: Boolean(displayNames.checked),
-        fontsize: parseFloat(fontsize.value),
-        margin: parseInt(margin.value),
-        padding: parseInt(padding.value),
-        title: title.value,
+  // Use change chandler of labeling select to ask user for annotations
+  var labelingOption;
+  $(sorting).on('change', function() {
+    var newLabel = namingOptionIds[sorting.selectedIndex];
+    if (newLabel === 'all-meta' || newLabel === 'own-meta') {
+      // Ask for meta annotation
+      var dialog = new OptionsDialog("Please enter meta annotation");
+      var field = dialog.appendField("Meta annotation", 'meta-annotation',
+          '', true);
+      dialog.onOK = function() {
+        labelingOption = field.value;
       };
 
-      // Export catalog
-      var svg = this.space.view.getSVGData(options);
-      var styleDict = SVGUtil.classifyStyles(svg);
-
-      var styles = Object.keys(styleDict).reduce(function(o, s) {
-        var cls = styleDict[s];
-        o = o + "." + cls + "{" + s + "}";
-        return o;
-      }, "");
-
-      var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
-      SVGUtil.addStyles(xml, styles);
-
-      var data = new XMLSerializer().serializeToString(xml);
-      var blob = new Blob([data], {type: 'text/svg'});
-      saveAs(blob, "catmaid-neuron-catalog.svg");
-    } catch (e) {
-      error("Could not export neuron catalog. There was an error.", e);
+      // Update all annotations before, showing the dialog
+      annotations.update(function() {
+        dialog.show();
+        // Add auto complete to input field
+        $(field).autocomplete({
+          source: annotations.getAllNames()
+        });
+      });
+    } else {
+      labelingOption = undefined;
     }
-    $.unblockUI();
+  });
+
+  dialog.onOK = handleOK.bind(this);
+
+  dialog.show(400, 400, true);
+
+  function handleOK() {
+    $.blockUI();
+    // Configure labeling of name service
+    var labelingId = namingOptionIds[sorting.selectedIndex];
+    ns.addLabeling(labelingId, labelingOption);
+
+    // Fetch names for the sorting
+    var models = this.getSelectedSkeletonModels();
+    ns.registerAll(dialog, models, createSVG.bind(this));
+
+    function createSVG() {
+      try {
+        // Build sorting name list
+        var skeletonIds = Object.keys(models);
+        var sortingNames = skeletonIds.reduce(function(o, skid) {
+          var name = ns.getName(skid);
+          if (!name) {
+            throw "No valid name found for skeleton " + skid +
+                " with labeling " + labelingId +
+                labelingOption ? "(" + labelingOption + ")" : "";
+          }
+          o[skid] = name;
+          return o;
+        }, {});
+        // Sort skeleton IDs based on the names
+        skeletonIds.sort(function(a, b) {
+          return sortingNames[a].localeCompare(sortingNames[b], 'en',
+              {numeric: true});
+        });
+
+        // Collect options
+        var options = {
+          layout: 'catalog',
+          columns: parseInt(columns.value),
+          skeletons: skeletonIds,
+          displaynames: Boolean(displayNames.checked),
+          fontsize: parseFloat(fontsize.value),
+          margin: parseInt(margin.value),
+          padding: parseInt(padding.value),
+          title: title.value,
+        };
+
+        // Export catalog
+        var svg = this.space.view.getSVGData(options);
+        var styleDict = SVGUtil.classifyStyles(svg);
+
+        var styles = Object.keys(styleDict).reduce(function(o, s) {
+          var cls = styleDict[s];
+          o = o + "." + cls + "{" + s + "}";
+          return o;
+        }, "");
+
+        var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+        SVGUtil.addStyles(xml, styles);
+
+        var data = new XMLSerializer().serializeToString(xml);
+        var blob = new Blob([data], {type: 'text/svg'});
+        saveAs(blob, "catmaid-neuron-catalog.svg");
+      } catch (e) {
+        error("Could not export neuron catalog. There was an error.", e);
+      }
+      $.unblockUI();
+    };
   };
 };
 
@@ -1486,8 +1551,21 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
    */
   function createCatalogData(sphereMeshes, options)
   {
-    // TODO: sort skeletons
-    var orderedSkids = Object.keys(self.space.content.skeletons);
+    // Sort skeletons
+    var skeletons;
+    if (options['skeletons']) {
+      // Make sure all requested skeletons are actually part of the 3D view
+      var existingSkids = Object.keys(self.space.content.skeletons);
+      options['skeletons'].forEach(function(s) {
+        if (-1 === existingSkids.indexOf(s)) {
+          throw "Only skeletons currently loaded in the 3D viewer can be exported"
+        }
+      });
+      skeletons = options['skeletons'];
+    } else {
+      // If no skeletons where given, don't try to sort
+      skeletons = Object.keys(self.space.content.skeletons);
+    }
 
     // SVG namespace to use
     var namespace = 'http://www.w3.org/2000/svg';
@@ -1503,7 +1581,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     var imageWidth = self.space.canvasWidth;
     var imageHeight = self.space.canvasHeight;
     var numColumns = options['columns'] || 2;
-    var numRows = Math.ceil(orderedSkids.length / numColumns);
+    var numRows = Math.ceil(skeletons.length / numColumns);
 
     // Crate a map of current visibility
     var visibilityMap = {};
@@ -1519,7 +1597,8 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
 
     // Iterate over skeletons and create SVG views
     var views = {};
-    for (var skid in self.space.content.skeletons) {
+    for (var i=0, l=skeletons.length; i<l; ++i) {
+      var skid = skeletons[i];
       // Display only current skeleton
       setSkeletonVisibility(visibilityMap, skid);
 
@@ -1558,8 +1637,8 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     svg.appendChild(title);
 
     // Combine all generated SVGs into one
-    for (var i=0, l=orderedSkids.length; i<l; ++i) {
-      var skid = orderedSkids[i];
+    for (var i=0, l=skeletons.length; i<l; ++i) {
+      var skid = skeletons[i];
       var data = views[skid];
 
       // Add a translation to current image

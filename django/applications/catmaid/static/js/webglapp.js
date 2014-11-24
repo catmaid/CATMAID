@@ -175,15 +175,163 @@ WebGLApplication.prototype.exportSVG = function() {
 };
 
 /** Return a list of skeleton IDs that have nodes within radius of the active node. */
-WebGLApplication.prototype.spatialSelect = function(radius) {
-  // TODO create a dialog that enlarges the size of the active node and makes it transparent
-  // so that one can visualize the change as well as the returned skeletons, by
-  // listing them below the radius adjustment slider.
-  //
-  // TODO add a second function to select along the cable of the active skeleton, selecting synaptic partners (pre, post or both).
-  // TODO and a third to select downstream or upstream of the active node.
-  //
-  // TODO
+WebGLApplication.prototype.spatialSelect = function() {
+  if (!this.options.show_active_node) return alert("Enable active node!");
+  var active_skid = SkeletonAnnotations.getActiveSkeletonId(),
+      skeletons = this.space.content.skeletons;
+  if (!active_skid) return alert("No active skeleton!");
+  if (!skeletons[active_skid]) return alert("Active skeleton is not present in the 3D view!");
+  var od = new OptionsDialog("Spatial select"),
+      choice = od.appendChoice("Select neurons ", "spatial-mode",
+          ["in nearby space",
+           "synapting with active neuron",
+           "synapting and downstream of active node",
+           "synapting and upstream of active node"],
+           [0, 1, 2, 3], 1),
+      field = od.appendField("... within distance from the active node (nm):", "spatial-distance", this.options.distance_to_active_node),
+      choice2 = od.appendChoice("If synapting, pick ", "spatial-synapse-type",
+          ["both",
+           "downstream partner",
+           "upstream partner"],
+          [-1, 0, 1], -1),
+      choice3 = od.appendChoice("... of which load: ", "spatial-filter",
+          ["skeletons with more than 1 node",
+           "skeletons with 1 single node",
+           "all"],
+          [0, 1, 2], 0),
+      checkbox = od.appendCheckbox("Only among loaded in 3D view", "spatial-loaded", true);
+
+  od.onOK = (function() {
+    var distance = this._validate(field.value, "Invalid distance value");
+    if (!distance) return;
+    var mode = Number(choice.value),
+        synapse_mode = Number(choice2.value),
+        skeleton_mode = Number(choice3.value),
+        loaded_only = checkbox.checked,
+        active_node = SkeletonAnnotations.getActiveNodeId(),
+        p = SkeletonAnnotations.getActiveNodePosition(),
+        va = new THREE.Vector3(p.x, p.y, p.z),
+        synapticTypes = WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes,
+        near = null,
+        query = null,
+        post = null,
+        filter = function(sk) {
+          if (2 == skeleton_mode) return true;
+          else if (0 === skeleton_mode) return sk.geometry['neurite'].length > 1;
+          else if (1 == skeleton_mode) return 1 === sk.geometry['neurite'].length;
+        };
+    // Restrict by synaptic relation
+    switch (synapse_mode) {
+      case 1: synapticTypes = synapticTypes.slice(0, 1); break;
+      case 2: synapticTypes = synapticTypes.slice(1, 1); break;
+    }
+
+    var newSelection = function(skids) {
+      if (0 === skids.length) return growlAlert("Information", "No skeletons found");
+      var models = {};
+      skids.forEach(function(skid) {
+        models[skid] = new SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setRGB(0.5, 0.5, 0.5));
+      });
+      WindowMaker.create('neuron-staging-area');
+      var sel = SelectionTable.prototype.getLastInstance();
+      sel.append(models);
+    };
+
+    // Restrict by spatial position
+    if (0 === mode) {
+      // Intersect 3D viewer's skeletons
+      if (loaded_only) {
+        near = [];
+        Object.keys(skeletons).forEach(function(skid) {
+          if (active_skid == skid) return; // == to enable string vs int comparison
+          var s = skeletons[skid];
+          if (s.visible && s.geometry['neurite'].some(function(v) {
+            return va.distanceTo(v) < distance;
+          })) {
+            if (filter(s)) near.push(skid);
+          }
+        });
+      } else {
+        query = "within-spatial-distance";
+        post = {distance: distance,
+                treenode: active_node,
+                size_mode: skeleton_mode};
+      }
+    } else {
+      var sk = skeletons[active_skid],
+          arbor = sk.createArbor();
+      // Restrict part of the arbor to look at
+      switch(mode) {
+        case 2: // Only downstream
+          arbor = arbor.subArbor(active_node);
+          break;
+        case 3: // Only upstream
+          arbor.subArbor(active_node).nodesArray().forEach(function(node) {
+            if (node === active_node) return;
+            delete arbor.edges[node];
+          });
+      }
+      var within = arbor.findNodesWithin(active_node, sk.createNodeDistanceFn(), distance);
+      // Find connectors within the part to look at
+      var connectors = {};
+      synapticTypes.forEach(function(type) {
+        var vs = sk.geometry[type].vertices;
+        for (var i=0; i<vs.length; i+=2) {
+          if (within[vs[i+1].node_id]) connectors[vs[i].node_id] = true;
+        }
+      });
+      // Find partner skeletons
+      if (loaded_only) {
+        near = [];
+        // Find the same connectors in other loaded skeletons
+        Object.keys(skeletons).forEach(function(skid) {
+          if (skid === active_skid) return;
+          var partner = skeletons[skid];
+          if (ignore_placeholders && 1 === partner.geometry['neurite'].length) return;
+          synapticTypes.forEach(function(type) {
+            var vs = partner.geometry[type].vertices;
+            for (var i=0; i<vs.length; i+=2) {
+              var connector_id = vs[i].node_id;
+              if (connectors[connector_id]) {
+                if (filter(partner)) near.push(skid);
+                break;
+              }
+            }
+          });
+        });
+      } else {
+        var cs = Object.keys(connectors).map(Number);
+        if (cs.length > 0) {
+          query = "partners-by-connector";
+          post = {connectors: cs,
+                  skid: active_skid,
+                  relation: synapse_mode,
+                  size_mode: skeleton_mode};
+        } else {
+          newSelection([]);
+        }
+      }
+    }
+    // List selected skeletons if any
+    if (near) {
+      newSelection(near);
+    } else if (query) {
+      requestQueue.register(django_url + project.id + '/skeletons/' + query, "POST", post,
+        function(status, text) {
+          if (200 !== status) return;
+          var json = $.parseJSON(text);
+          if (json.error) return new ErrorDialog("Could not fetch skeletons.", json.error);
+          if (json.skeletons) {
+            if (json.reached_limit) growlAlert("Warning", "Too many: loaded only a subset");
+            newSelection(json.skeletons);
+          } else {
+            newSelection(json);
+          }
+        });
+    }
+  }).bind(this);
+
+  od.show(300, 300, false);
 };
 
 
@@ -1936,6 +2084,12 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getPositions = fun
   return p;
 };
 
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeDistanceFn = function() {
+ return (function(child, paren) {
+   return this[child].distanceTo(this[paren]);
+ }).bind(this.getPositions());
+}
+
 /** Determine the nodes that belong to the axon by computing the centrifugal flow
  * centrality.
  * Takes as argument the json of compact-arbor, but uses only index 1: the inputs and outputs, parseable by the ArborParser.synapse function.
@@ -2960,4 +3114,20 @@ WebGLApplication.prototype.createMeshColorButton = function() {
       options.meshes_opacity + '</span>)</span>').get(0));
   div.appendChild($('<div id="' + mesh_colorwheel.slice(1) + '">').hide().get(0));
   return div;
+};
+
+WebGLApplication.prototype.updateActiveNodeNeighborhoodRadius = function(value) {
+  value = this._validate(value, "Invalid value");
+  if (!value) return;
+  this.options.distance_to_active_node = value;
+  if ('near_active_node' === this.options.shading_method) {
+    var skid = SkeletonAnnotations.getActiveSkeletonId();
+    if (skid) {
+      var skeleton = this.space.content.skeletons[skid];
+      if (skeleton) {
+        skeleton.updateSkeletonColor(this.options);
+        this.space.render();
+      }
+    }
+  }
 };

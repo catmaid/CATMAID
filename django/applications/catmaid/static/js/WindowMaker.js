@@ -728,6 +728,8 @@ var WindowMaker = new function()
           ['Append', WA.loadSource.bind(WA)],
           ['Clear', WA.clear.bind(WA)],
           ['Refresh', WA.updateSkeletons.bind(WA)],
+          [document.createTextNode(' - ')],
+          ['Spatial select', WA.spatialSelect.bind(WA)],
         ]);
 
     appendToTab(tabs['View'],

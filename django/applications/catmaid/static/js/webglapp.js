@@ -2088,7 +2088,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeDistance
  return (function(child, paren) {
    return this[child].distanceTo(this[paren]);
  }).bind(this.getPositions());
-}
+};
 
 /** Determine the nodes that belong to the axon by computing the centrifugal flow
  * centrality.
@@ -2168,11 +2168,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       node_weights = c;
 
     } else if ('distance_to_root' === options.shading_method) {
-      var distanceFn = (function(child, paren) {
-        return this[child].distanceTo(this[paren]);
-      }).bind(this.getPositions());
-
-      var dr = arbor.nodesDistanceTo(arbor.root, distanceFn),
+      var dr = arbor.nodesDistanceTo(arbor.root, this.createNodeDistanceFn()),
           distances = dr.distances,
           max = dr.max;
 
@@ -2184,11 +2180,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       node_weights = distances;
 
     } else if ('downstream_amount' === options.shading_method) {
-      var distanceFn = (function(paren, child) {
-        return this[child].distanceTo(this[paren]);
-      }).bind(this.getPositions());
-
-      node_weights = arbor.downstreamAmount(distanceFn, true);
+      node_weights = arbor.downstreamAmount(this.createNodeDistanceFn(), true);
 
     } else if ('active_node_split' === options.shading_method) {
       var atn = SkeletonAnnotations.getActiveNodeId();
@@ -2243,10 +2235,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       var active = SkeletonAnnotations.getActiveNodeId();
       if (!active || !arbor.contains(active)) node_weights = null;
       else {
-        var distanceFn = (function(paren, child) {
-          return this[child].distanceTo(this[paren]);
-        }).bind(this.getPositions());
-        var within = arbor.findNodesWithin(active, distanceFn, options.distance_to_active_node);
+        var within = arbor.findNodesWithin(active, this.createNodeDistanceFn(), options.distance_to_active_node);
         node_weights = {};
         arbor.nodesArray().forEach(function(node) {
           node_weights[node] = undefined === within[node] ? 0 : 1;

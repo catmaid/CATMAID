@@ -1566,7 +1566,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
   var visibleSpheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
     var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
     var skeleton = skeletons[skeleton_id];
-    if (!skeleton.visible) return;
+    if (!skeleton.visible) return o;
 
     var meshes = [];
 

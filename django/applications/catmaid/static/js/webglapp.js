@@ -199,7 +199,7 @@ WebGLApplication.prototype.spatialSelect = function() {
            "skeletons with 1 single node",
            "all"],
           [0, 1, 2], 0),
-      checkbox = od.appendCheckbox("Only among loaded in 3D view", "spatial-loaded", true);
+      checkbox = od.appendCheckbox("Only among loaded in 3D view", "spatial-loaded", false);
 
   od.onOK = (function() {
     var distance = this._validate(field.value, "Invalid distance value");

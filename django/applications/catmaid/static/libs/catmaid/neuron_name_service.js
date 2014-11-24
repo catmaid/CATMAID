@@ -464,6 +464,14 @@ var NeuronNameService = (function()
       }
 
       return instance;
-    }
+    },
+
+    /**
+     * Crate a new name service instance which is independent from the
+     * singleton.
+     */
+    newInstance: function(empty) {
+      return init(empty);
+    },
   };
 })();

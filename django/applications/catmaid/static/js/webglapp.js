@@ -45,6 +45,7 @@ WebGLApplication.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
   this.space.destroy();
+  NeuronNameService.getInstance().unregister(this);
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
 
@@ -786,30 +787,32 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
       url2 = '/' + lean  + '/' + lean + '/compact-skeleton';
 
 
-  fetchSkeletons(
-      skeleton_ids,
-      function(skeleton_id) {
-        return url1 + skeleton_id + url2;
-      },
-      function(skeleton_id) {
-        return {}; // the post
-      },
-      (function(skeleton_id, json) {
-        var sk = this.space.updateSkeleton(models[skeleton_id], json, options);
-        if (sk) sk.show(this.options);
-      }).bind(this),
-      function(skeleton_id) {
-        // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
-      },
-      (function() {
-        this.updateSkeletonColors(
-          (function() {
-              if (this.options.connector_filter) this.refreshRestrictedConnectors();
-              if (typeof callback === "function") {
-                try { callback(); } catch (e) { alert(e); }
-              }
-          }).bind(this));
-      }).bind(this));
+  // Register with the neuron name service and fetch the skeleton data
+  NeuronNameService.getInstance().registerAll(this, models,
+    fetchSkeletons.bind(this,
+        skeleton_ids,
+        function(skeleton_id) {
+          return url1 + skeleton_id + url2;
+        },
+        function(skeleton_id) {
+          return {}; // the post
+        },
+        (function(skeleton_id, json) {
+          var sk = this.space.updateSkeleton(models[skeleton_id], json, options);
+          if (sk) sk.show(this.options);
+        }).bind(this),
+        function(skeleton_id) {
+          // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
+        },
+        (function() {
+          this.updateSkeletonColors(
+            (function() {
+                if (this.options.connector_filter) this.refreshRestrictedConnectors();
+                if (typeof callback === "function") {
+                  try { callback(); } catch (e) { alert(e); }
+                }
+            }).bind(this));
+        }).bind(this)));
 };
 
 /** Reload skeletons from database. */

@@ -79,7 +79,6 @@ PIPELINE_JS['catmaid'] = {
     'source_filenames': (
         'js/action.js',
         'js/init.js',
-        'js/measurements_table.js',
         'js/navigator.js',
         'js/network-api.js',
         'js/neuronstagingarea.js',

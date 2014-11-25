@@ -697,7 +697,7 @@ def export_neuroml_level3_v181(request, project_id=None):
     return response
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def skeleton_swc(*args, **kwargs):
     kwargs['format'] = 'swc'
     return export_skeleton_response(*args, **kwargs)
@@ -783,7 +783,7 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None,
         })
     return segments
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
     """
     Export the skeleton as a list of sequences of entries, each entry containing
@@ -798,7 +798,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, format=No
             subarbor_node_id )
     return HttpResponse(json.dumps(segments))
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def skeleton_connectors_by_partner(request, project_id):
     """ Return a dict of requested skeleton vs relation vs partner skeleton vs list of connectors.
     Connectors lacking a skeleton partner will of course not be included. """
@@ -830,7 +830,7 @@ def skeleton_connectors_by_partner(request, project_id):
     return HttpResponse(json.dumps(partners))
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
     """ Return a map of treenode ID vs list of reviewer IDs,
     without including any unreviewed treenode. """
@@ -839,4 +839,101 @@ def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
         m[row[0]].append(row[1])
 
     return HttpResponse(json.dumps(m, separators=(',', ':')))
+
+@requires_user_role(UserRole.Browse)
+def within_spatial_distance(request, project_id=None):
+    """ Find skeletons within a given Euclidean distance of a treenode. """
+    project_id = int(project_id)
+    tnid = request.POST.get('treenode', None)
+    if not tnid:
+        raise Exception("Need a treenode!")
+    tnid = int(tnid)
+    distance = int(request.POST.get('distance', 0))
+    if 0 == distance:
+        return HttpResponse(json.dumps({"skeletons": []}))
+    size_mode = int(request.POST.get("size_mode", 0))
+    having = ""
+
+    if 0 == size_mode:
+        having = "HAVING count(*) > 1"
+    elif 1 == size_mode:
+        having = "HAVING count(*) = 1"
+    # else, no constraint
+
+    cursor = connection.cursor()
+    cursor.execute('SELECT location_x, location_y, location_z FROM treenode WHERE id=%s' % tnid)
+    pos = cursor.fetchone()
+
+    limit = 100
+    x0 = pos[0] - distance
+    x1 = pos[0] + distance
+    y0 = pos[1] - distance
+    y1 = pos[1] + distance
+    z0 = pos[2] - distance
+    z1 = pos[2] + distance
+
+    # Cheap emulation of the distance
+    cursor.execute('''
+SELECT skeleton_id, count(*)
+FROM treenode
+WHERE project_id = %s
+  AND location_x > %s
+  AND location_x < %s
+  AND location_y > %s
+  AND location_y < %s
+  AND location_z > %s
+  AND location_z < %s
+GROUP BY skeleton_id
+%s
+LIMIT %s
+''' % (project_id, x0, x1, y0, y1, z0, z1, having, limit))
+
+ 
+    skeletons = tuple(row[0] for row in cursor.fetchall())
+
+    return HttpResponse(json.dumps({"skeletons": skeletons,
+                                    "reached_limit": 100 == len(skeletons)}))
+
+@requires_user_role(UserRole.Browse)
+def partners_by_connector(request, project_id=None):
+    """ Return a list of skeleton IDs related to the given list of connector IDs of the given skeleton ID.
+    Will optionally filter for only presynaptic (relation=0) or only postsynaptic (relation=1). """
+    skid = request.POST.get('skid', None)
+    if not skid:
+        raise Exception("Need a reference skeleton ID!")
+    skid = int(skid)
+    connectors = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('connectors['))
+    rel_type = int(request.POST.get("relation", 0))
+    size_mode = int(request.POST.get("size_mode", 0))
+
+    query = '''
+SELECT DISTINCT tc2.skeleton_id
+FROM treenode_connector tc1,
+     treenode_connector tc2
+WHERE tc1.project_id = %s
+  AND tc1.skeleton_id = %s
+  AND tc1.connector_id = tc2.connector_id
+  AND tc1.skeleton_id != tc2.skeleton_id
+  AND tc1.relation_id != tc2.relation_id
+  AND tc1.connector_id IN (%s)
+''' % (project_id, skid, ",".join(str(x) for x in connectors))
+
+    # Constrain the relation of the second part
+    if 0 == rel_type or 1 == rel_type:
+        query += "AND tc2.relation_id = (SELECT id FROM relation WHERE project_id = %s AND relation_name = '%s')" % (project_id, 'presynaptic_to' if 1 == rel_type else 'postsynaptic_to')
+
+    cursor = connection.cursor()
+    cursor.execute(query)
+
+    if 0 == size_mode or 1 == size_mode:
+        # Filter by size: only those with more than one treenode or with exactly one
+        cursor.execute('''
+SELECT skeleton_id
+FROM treenode
+WHERE skeleton_id IN (%s)
+GROUP BY skeleton_id
+HAVING count(*) %s 1
+''' % (",".join(str(row[0]) for row in cursor.fetchall()), ">" if 0 == size_mode else "="))
+
+    return HttpResponse(json.dumps(tuple(row[0] for row in cursor.fetchall())))
 

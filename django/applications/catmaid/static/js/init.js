@@ -12,6 +12,15 @@ if (!window.console) {
   window.console.log = function() {};
 }
 
+// Attach a general error handler
+window.onerror = function( msg, url, num )
+{
+  error('An error occured in CATMAID and the current action can\'t be ' +
+        'completed. You can try to reload the widget or tool you just used.',
+        'Error: ' + msg + '\nURL: ' + url + '\nLine: ' + num);
+  return true;
+};
+
 var global_bottom = 29;
 var statusBar; //!< global statusBar
 var slider_trace_z;
@@ -1019,7 +1028,7 @@ var realInit = function()
 		if ( isNaN( y ) ) y = undefined;
 		if ( values[ "x" ] ) x = parseInt( values[ "x" ] );
 		if ( isNaN( x ) ) x = undefined;
-		if ( values[ "s" ] ) s = parseInt( values[ "s" ] );
+		if ( values[ "s" ] ) s = parseFloat( values[ "s" ] );
         if ( isNaN( s ) ) s = undefined;
         if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
         if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
@@ -1057,7 +1066,7 @@ var realInit = function()
 				}
 				sids.push( sid );
 				if ( values[ "s" + i ] )
-					ss.push( parseInt( values[ "s" + i ] ) );
+					ss.push( parseFloat( values[ "s" + i ] ) );
 				else
 					ss.push( NaN );
 				if ( isNaN( sids[ i ] ) || isNaN( ss[ i ] ) )

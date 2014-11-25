@@ -29,12 +29,18 @@ def writeOneSkeleton(file, cursor, skid):
     ''' % skid)
 
     for row in cursor.fetchall():
-        file.write('<node id="n%s" skid="%s" position="(%s,%s,%s)" />\n' % (row[0], skid, row[2], row[3], row[4]))
+        file.write('''<node id="n%s">
+<data key="skid">%s</data>
+<data key="x">%s</data>
+<data key="y">%s</data>
+<data key="z">%s</data>
+</node>\n''' % (row[0], skid, row[2], row[3], row[4]))
         if row[1]:
-            file.write('<edge id="e%s" directed="false" skid="%s" source="n%s" target="n%s" />\n' % (row[0], skid, row[0], row[1]))
+            file.write('<edge id="e%s" directed="false" source="n%s" target="n%s" />\n' % (row[0], row[0], row[1]))
 
 @transaction.atomic
 def export(project_id, filename):
+    project_id = int(project_id)
     cursor = connection.cursor()
 
     with gzip.open(filename + '.gz', 'w') as file:
@@ -42,6 +48,12 @@ def export(project_id, filename):
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+<key id="skid" for="node" attr.name="skeleton id" attr.type="long"/>
+<key id="x" for="node" attr.name="x" attr.type="float"/>
+<key id="y" for="node" attr.name="y" attr.type="float"/>
+<key id="z" for="node" attr.name="z" attr.type="float"/>
+<key id="pre_skid" for="edge" attr.name="presynaptic skeleton id" attr.type="long"/>
+<key id="post_skid" for="edge" attr.name="postsynaptic skeleton id" attr.type="long"/>
 <graph id="CNS">\n''')
         #
         cursor.execute('''
@@ -75,9 +87,9 @@ def export(project_id, filename):
         #
         print("Writing synapses")
         for row in cursor.fetchall():
-            file.write('<edge id="e%s" directed="true" source="n%s" target="n%s" source_skid="%s" target_skid="%s"/>\n' % row)
+            file.write('<edge id="e%s" directed="true" source="n%s" target="n%s">\n<data key="pre_skid">%s</data>\n<data key="post_skid">%s</data>\n</edge>\n' % row)
         #
-        file.write("</graph>\n</graphml>\n</xml>")
+        file.write("</graph>\n</graphml>")
 
 def run():
     if sys.argv < 3:

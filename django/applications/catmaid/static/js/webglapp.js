@@ -45,6 +45,7 @@ WebGLApplication.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
   this.space.destroy();
+  NeuronNameService.getInstance().unregister(this);
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
 
@@ -174,16 +175,282 @@ WebGLApplication.prototype.exportSVG = function() {
   $.unblockUI();
 };
 
+/**
+ * Create an store a neuron catalog SVG for the current view.
+ */
+WebGLApplication.prototype.exportCatalogSVG = function() {
+  var dialog = new OptionsDialog("Catalog export options");
+  dialog.appendMessage('Adjust the catalog export settings to your liking.');
+
+  // Create a new empty neuron name service that takes care of the sorting names
+  var ns = NeuronNameService.newInstance(true);
+  var namingOptions = ns.getOptions();
+  var namingOptionNames = namingOptions.map(function(o) { return o.name; });
+  var namingOptionIds = namingOptions.map(function(o) { return o.id; });
+
+  // Add options to dialog
+  var columns = dialog.appendField("# Columns: ", "svg-catalog-num-columns", '2');
+  var sorting = dialog.appendChoice("Sorting name: ", "svg-catalog-sorting",
+      namingOptionNames, namingOptionIds);
+  var displayNames = dialog.appendCheckbox('Display names', 'svg-catalog-display-names', true);
+  var fontsize = dialog.appendField("Fontsize: ", "svg-catalog-fontsize", '14');
+  var margin = dialog.appendField("Margin: ", "svg-catalog-margin", '10');
+  var padding = dialog.appendField("Padding: ", "svg-catalog-pading", '10');
+  var title = dialog.appendField("Title: ", "svg-catalog-title", 'CATMAID neuron catalog');
+
+  // Use change chandler of labeling select to ask user for annotations
+  var labelingOption;
+  $(sorting).on('change', function() {
+    var newLabel = namingOptionIds[sorting.selectedIndex];
+    if (newLabel === 'all-meta' || newLabel === 'own-meta') {
+      // Ask for meta annotation
+      var dialog = new OptionsDialog("Please enter meta annotation");
+      var field = dialog.appendField("Meta annotation", 'meta-annotation',
+          '', true);
+      dialog.onOK = function() {
+        labelingOption = field.value;
+      };
+
+      // Update all annotations before, showing the dialog
+      annotations.update(function() {
+        dialog.show();
+        // Add auto complete to input field
+        $(field).autocomplete({
+          source: annotations.getAllNames()
+        });
+      });
+    } else {
+      labelingOption = undefined;
+    }
+  });
+
+  dialog.onOK = handleOK.bind(this);
+
+  dialog.show(400, 400, true);
+
+  function handleOK() {
+    $.blockUI();
+    // Configure labeling of name service
+    var labelingId = namingOptionIds[sorting.selectedIndex];
+    ns.addLabeling(labelingId, labelingOption);
+
+    // Fetch names for the sorting
+    var models = this.getSelectedSkeletonModels();
+    ns.registerAll(dialog, models, createSVG.bind(this));
+
+    function createSVG() {
+      try {
+        // Build sorting name list
+        var skeletonIds = Object.keys(models);
+        var sortingNames = skeletonIds.reduce(function(o, skid) {
+          var name = ns.getName(skid);
+          if (!name) {
+            throw "No valid name found for skeleton " + skid +
+                " with labeling " + labelingId +
+                labelingOption ? "(" + labelingOption + ")" : "";
+          }
+          o[skid] = name;
+          return o;
+        }, {});
+        // Sort skeleton IDs based on the names
+        skeletonIds.sort(function(a, b) {
+          return sortingNames[a].localeCompare(sortingNames[b], 'en',
+              {numeric: true});
+        });
+
+        // Collect options
+        var options = {
+          layout: 'catalog',
+          columns: parseInt(columns.value),
+          skeletons: skeletonIds,
+          displaynames: Boolean(displayNames.checked),
+          fontsize: parseFloat(fontsize.value),
+          margin: parseInt(margin.value),
+          padding: parseInt(padding.value),
+          title: title.value,
+        };
+
+        // Export catalog
+        var svg = this.space.view.getSVGData(options);
+        var styleDict = SVGUtil.classifyStyles(svg);
+
+        var styles = Object.keys(styleDict).reduce(function(o, s) {
+          var cls = styleDict[s];
+          o = o + "." + cls + "{" + s + "}";
+          return o;
+        }, "");
+
+        var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+        SVGUtil.addStyles(xml, styles);
+
+        var data = new XMLSerializer().serializeToString(xml);
+        var blob = new Blob([data], {type: 'text/svg'});
+        saveAs(blob, "catmaid-neuron-catalog.svg");
+      } catch (e) {
+        error("Could not export neuron catalog. There was an error.", e);
+      }
+      $.unblockUI();
+    };
+  };
+};
+
 /** Return a list of skeleton IDs that have nodes within radius of the active node. */
-WebGLApplication.prototype.spatialSelect = function(radius) {
-  // TODO create a dialog that enlarges the size of the active node and makes it transparent
-  // so that one can visualize the change as well as the returned skeletons, by
-  // listing them below the radius adjustment slider.
-  //
-  // TODO add a second function to select along the cable of the active skeleton, selecting synaptic partners (pre, post or both).
-  // TODO and a third to select downstream or upstream of the active node.
-  //
-  // TODO
+WebGLApplication.prototype.spatialSelect = function() {
+  if (!this.options.show_active_node) return alert("Enable active node!");
+  var active_skid = SkeletonAnnotations.getActiveSkeletonId(),
+      skeletons = this.space.content.skeletons;
+  if (!active_skid) return alert("No active skeleton!");
+  if (!skeletons[active_skid]) return alert("Active skeleton is not present in the 3D view!");
+  var od = new OptionsDialog("Spatial select"),
+      choice = od.appendChoice("Select neurons ", "spatial-mode",
+          ["in nearby space",
+           "synapting with active neuron",
+           "synapting and downstream of active node",
+           "synapting and upstream of active node"],
+           [0, 1, 2, 3], 1),
+      field = od.appendField("... within distance from the active node (nm):", "spatial-distance", this.options.distance_to_active_node),
+      choice2 = od.appendChoice("If synapting, pick ", "spatial-synapse-type",
+          ["both",
+           "downstream partner",
+           "upstream partner"],
+          [-1, 0, 1], -1),
+      choice3 = od.appendChoice("... of which load: ", "spatial-filter",
+          ["skeletons with more than 1 node",
+           "skeletons with 1 single node",
+           "all"],
+          [0, 1, 2], 0),
+      checkbox = od.appendCheckbox("Only among loaded in 3D view", "spatial-loaded", false);
+
+  od.onOK = (function() {
+    var distance = this._validate(field.value, "Invalid distance value");
+    if (!distance) return;
+    var mode = Number(choice.value),
+        synapse_mode = Number(choice2.value),
+        skeleton_mode = Number(choice3.value),
+        loaded_only = checkbox.checked,
+        active_node = SkeletonAnnotations.getActiveNodeId(),
+        p = SkeletonAnnotations.getActiveNodePosition(),
+        va = new THREE.Vector3(p.x, p.y, p.z),
+        synapticTypes = WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes,
+        near = null,
+        query = null,
+        post = null,
+        filter = function(sk) {
+          if (2 == skeleton_mode) return true;
+          else if (0 === skeleton_mode) return sk.geometry['neurite'].length > 1;
+          else if (1 == skeleton_mode) return 1 === sk.geometry['neurite'].length;
+        };
+    // Restrict by synaptic relation
+    switch (synapse_mode) {
+      case 1: synapticTypes = synapticTypes.slice(0, 1); break;
+      case 2: synapticTypes = synapticTypes.slice(1, 1); break;
+    }
+
+    var newSelection = function(skids) {
+      if (0 === skids.length) return growlAlert("Information", "No skeletons found");
+      var models = {};
+      skids.forEach(function(skid) {
+        models[skid] = new SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setRGB(0.5, 0.5, 0.5));
+      });
+      WindowMaker.create('neuron-staging-area');
+      var sel = SelectionTable.prototype.getLastInstance();
+      sel.append(models);
+    };
+
+    // Restrict by spatial position
+    if (0 === mode) {
+      // Intersect 3D viewer's skeletons
+      if (loaded_only) {
+        near = [];
+        Object.keys(skeletons).forEach(function(skid) {
+          if (active_skid == skid) return; // == to enable string vs int comparison
+          var s = skeletons[skid];
+          if (s.visible && s.geometry['neurite'].some(function(v) {
+            return va.distanceTo(v) < distance;
+          })) {
+            if (filter(s)) near.push(skid);
+          }
+        });
+      } else {
+        query = "within-spatial-distance";
+        post = {distance: distance,
+                treenode: active_node,
+                size_mode: skeleton_mode};
+      }
+    } else {
+      var sk = skeletons[active_skid],
+          arbor = sk.createArbor();
+      // Restrict part of the arbor to look at
+      switch(mode) {
+        case 2: // Only downstream
+          arbor = arbor.subArbor(active_node);
+          break;
+        case 3: // Only upstream
+          arbor.subArbor(active_node).nodesArray().forEach(function(node) {
+            if (node === active_node) return;
+            delete arbor.edges[node];
+          });
+      }
+      var within = arbor.findNodesWithin(active_node, sk.createNodeDistanceFn(), distance);
+      // Find connectors within the part to look at
+      var connectors = {};
+      synapticTypes.forEach(function(type) {
+        var vs = sk.geometry[type].vertices;
+        for (var i=0; i<vs.length; i+=2) {
+          if (within[vs[i+1].node_id]) connectors[vs[i].node_id] = true;
+        }
+      });
+      // Find partner skeletons
+      if (loaded_only) {
+        near = [];
+        // Find the same connectors in other loaded skeletons
+        Object.keys(skeletons).forEach(function(skid) {
+          if (skid === active_skid) return;
+          var partner = skeletons[skid];
+          synapticTypes.forEach(function(type) {
+            var vs = partner.geometry[type].vertices;
+            for (var i=0; i<vs.length; i+=2) {
+              var connector_id = vs[i].node_id;
+              if (connectors[connector_id]) {
+                if (filter(partner)) near.push(skid);
+                break;
+              }
+            }
+          });
+        });
+      } else {
+        var cs = Object.keys(connectors).map(Number);
+        if (cs.length > 0) {
+          query = "partners-by-connector";
+          post = {connectors: cs,
+                  skid: active_skid,
+                  relation: synapse_mode,
+                  size_mode: skeleton_mode};
+        } else {
+          newSelection([]);
+        }
+      }
+    }
+    // List selected skeletons if any
+    if (near) {
+      newSelection(near);
+    } else if (query) {
+      requestQueue.register(django_url + project.id + '/skeletons/' + query, "POST", post,
+        function(status, text) {
+          if (200 !== status) return;
+          var json = $.parseJSON(text);
+          if (json.error) return new ErrorDialog("Could not fetch skeletons.", json.error);
+          if (json.skeletons) {
+            if (json.reached_limit) growlAlert("Warning", "Too many: loaded only a subset");
+            newSelection(json.skeletons);
+          } else {
+            newSelection(json);
+          }
+        });
+    }
+  }).bind(this);
+
+  od.show(300, 300, false);
 };
 
 
@@ -213,6 +480,7 @@ WebGLApplication.prototype.Options = function() {
   this.skeleton_line_width = 3;
   this.invert_shading = false;
   this.follow_active = false;
+  this.distance_to_active_node = 5000; // nm
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -519,30 +787,32 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
       url2 = '/' + lean  + '/' + lean + '/compact-skeleton';
 
 
-  fetchSkeletons(
-      skeleton_ids,
-      function(skeleton_id) {
-        return url1 + skeleton_id + url2;
-      },
-      function(skeleton_id) {
-        return {}; // the post
-      },
-      (function(skeleton_id, json) {
-        var sk = this.space.updateSkeleton(models[skeleton_id], json, options);
-        if (sk) sk.show(this.options);
-      }).bind(this),
-      function(skeleton_id) {
-        // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
-      },
-      (function() {
-        this.updateSkeletonColors(
-          (function() {
-              if (this.options.connector_filter) this.refreshRestrictedConnectors();
-              if (typeof callback === "function") {
-                try { callback(); } catch (e) { alert(e); }
-              }
-          }).bind(this));
-      }).bind(this));
+  // Register with the neuron name service and fetch the skeleton data
+  NeuronNameService.getInstance().registerAll(this, models,
+    fetchSkeletons.bind(this,
+        skeleton_ids,
+        function(skeleton_id) {
+          return url1 + skeleton_id + url2;
+        },
+        function(skeleton_id) {
+          return {}; // the post
+        },
+        (function(skeleton_id, json) {
+          var sk = this.space.updateSkeleton(models[skeleton_id], json, options);
+          if (sk) sk.show(this.options);
+        }).bind(this),
+        function(skeleton_id) {
+          // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
+        },
+        (function() {
+          this.updateSkeletonColors(
+            (function() {
+                if (this.options.connector_filter) this.refreshRestrictedConnectors();
+                if (typeof callback === "function") {
+                  try { callback(); } catch (e) { alert(e); }
+                }
+            }).bind(this));
+        }).bind(this)));
 };
 
 /** Reload skeletons from database. */
@@ -781,7 +1051,7 @@ WebGLApplication.prototype.Space.prototype.removeSkeleton = function(skeleton_id
 };
 
 WebGLApplication.prototype.Space.prototype.updateSplitShading = function(old_skeleton_id, new_skeleton_id, options) {
-  if ('active_node_split' === options.shading_method) {
+  if ('active_node_split' === options.shading_method || 'near_active_node' === options.shading_method) {
     if (old_skeleton_id !== new_skeleton_id) {
       if (old_skeleton_id && old_skeleton_id in this.content.skeletons) this.content.skeletons[old_skeleton_id].updateSkeletonColor(options);
     }
@@ -1286,14 +1556,22 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = functio
  * modified to not include the triangle-heavy spheres. Instead, these spheres
  * are replaced with very short lines with a width that corresponds to the
  * diameter of the sphers.
+ *
+ * If createCatalog is true, a catalog representation is crated where each
+ * neuron will be rendered in its own view, organized in a table.
  */
-WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function() {
+WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(options) {
+  var self = this;
+  var o = options || {};
+
   // Find all spheres
   var skeletons = this.space.content.skeletons;
-  var visible_spheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
+  var visibleSpheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
     var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
     var skeleton = skeletons[skeleton_id];
-    if (!skeleton.visible) return;
+    if (!skeleton.visible) return o;
+
+    var meshes = [];
 
     // Append all spheres
     fields.map(function(field) {
@@ -1305,21 +1583,42 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
           this.push(sphere);
         }
       }, this);
-    }, o);
+    }, meshes);
+
+    o[skeleton_id] = meshes;
 
     return o;
-  }, []);
+  }, {});
 
-  var self = this;
-  function setVisibility(value)
+  // Hide the active node
+  var atnVisible = self.space.content.active_node.mesh.visible;
+  self.space.content.active_node.mesh.visible = false;
+
+  // Render
+  var svgData = null;
+  if ('catalog' === o['layout']) {
+    svgData = createCatalogData(visibleSpheres, o);
+  } else {
+    svgData = renderSkeletons(visibleSpheres);
+  }
+
+  // Show active node, if it was visible before
+  self.space.content.active_node.mesh.visible = atnVisible;
+
+  // Let 3D viewer update
+  self.space.render();
+
+  return svgData;
+
+  /**
+   * Set visibility of the given meshes.
+   */
+  function setVisibility(meshes, value)
   {
     // Hide all sphere meshes
-    visible_spheres.forEach(function(mesh) {
+    meshes.forEach(function(mesh) {
       mesh.visible = value;
     });
-
-    // Hide the active node
-    self.space.content.active_node.mesh.visible = value;
   };
 
   function addSphereReplacements(meshes, scene)
@@ -1381,17 +1680,157 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     addedData.g.dispose();
   };
 
-  setVisibility(false);
-  var replacements = addSphereReplacements(visible_spheres, this.space);
+  /**
+   * Updates the visibility of all skeletons. If a skeleton ID is given as a
+   * second argument, only this skeleton will be set visible (if it was visible
+   * before), otherwise all skeletons are set to the state in the given map.
+   */
+  function setSkeletonVisibility(visMap, visibleSkid)
+  {
+    for (var skid in self.space.content.skeletons) {
+      var s = self.space.content.skeletons[skid];
+      var visible = visibleSkid ? (skid === visibleSkid) : true;
+      s.setActorVisibility(visMap[skid].actor ? visible : false);
+      s.setPreVisibility(visMap[skid].pre ? visible : false);
+      s.setPostVisibility(visMap[skid].post ? visible : false);
+      s.setTextVisibility(visMap[skid].text ? visible : false);
+    }
+  };
 
-  var svgRenderer = this.createRenderer('svg');
-  svgRenderer.clear();
-  svgRenderer.render(this.space.scene, this.camera);
+  /**
+   * Create an SVG catalog of the current view.
+   */
+  function createCatalogData(sphereMeshes, options)
+  {
+    // Sort skeletons
+    var skeletons;
+    if (options['skeletons']) {
+      // Make sure all requested skeletons are actually part of the 3D view
+      var existingSkids = Object.keys(self.space.content.skeletons);
+      options['skeletons'].forEach(function(s) {
+        if (-1 === existingSkids.indexOf(s)) {
+          throw "Only skeletons currently loaded in the 3D viewer can be exported"
+        }
+      });
+      skeletons = options['skeletons'];
+    } else {
+      // If no skeletons where given, don't try to sort
+      skeletons = Object.keys(self.space.content.skeletons);
+    }
 
-  removeSphereReplacements(replacements, this.space);
-  setVisibility(true);
+    // SVG namespace to use
+    var namespace = 'http://www.w3.org/2000/svg';
+    // Size of the label text
+    var fontsize = options['fontsize'] || 14;
+    var displayNames = options['displaynames'] === undefined ? true : options['displaynames'];
 
-  return svgRenderer.domElement;
+    // Margin of whole document
+    var margin = options['margin'] || 10;
+    // Padding around each sub-svg
+    var padding = options['padding'] || 10;
+
+    var imageWidth = self.space.canvasWidth;
+    var imageHeight = self.space.canvasHeight;
+    var numColumns = options['columns'] || 2;
+    var numRows = Math.ceil(skeletons.length / numColumns);
+
+    // Crate a map of current visibility
+    var visibilityMap = {};
+    for (var skid in self.space.content.skeletons) {
+      var s = self.space.content.skeletons[skid];
+      visibilityMap[skid] = {
+        actor: s.visible,
+        pre: s.skeletonmodel.pre_visible,
+        post: s.skeletonmodel.post_visible,
+        text: s.skeletonmodel.text_visible
+      }
+    }
+
+    // Iterate over skeletons and create SVG views
+    var views = {};
+    for (var i=0, l=skeletons.length; i<l; ++i) {
+      var skid = skeletons[i];
+      // Display only current skeleton
+      setSkeletonVisibility(visibilityMap, skid);
+
+      // Render view and replace sphere meshes of current skeleton
+      var spheres = {};
+      spheres[skid] = sphereMeshes[skid];
+      var svg = renderSkeletons(spheres);
+
+      if (displayNames) {
+        // Add name of neuron
+        var text = document.createElementNS(namespace, 'text');
+        text.setAttribute('x', svg.viewBox.baseVal.x + 5);
+        text.setAttribute('y', svg.viewBox.baseVal.y + fontsize + 5);
+        text.setAttribute('style', 'font-family: Arial; font-size: ' + fontsize + 'px;');
+        var name = NeuronNameService.getInstance().getName(skid);
+        text.appendChild(document.createTextNode(name));
+        svg.appendChild(text);
+      }
+
+      // Store
+      views[skid] = svg;
+    }
+
+    // Restore visibility
+    setSkeletonVisibility(visibilityMap);
+
+    // Create result svg
+    var svg = document.createElement('svg');
+    svg.setAttribute('xmlns', namespace);
+    svg.setAttribute('width', 2 * margin + numColumns * (imageWidth + 2 * padding));
+    svg.setAttribute('height', 2 * margin + numRows * (imageHeight + 2 * padding));
+
+    // Title
+    var title = document.createElementNS(namespace, 'title');
+    title.appendChild(document.createTextNode(options['title'] || 'CATMAID neuron catalog'));
+    svg.appendChild(title);
+
+    // Combine all generated SVGs into one
+    for (var i=0, l=skeletons.length; i<l; ++i) {
+      var skid = skeletons[i];
+      var data = views[skid];
+
+      // Add a translation to current image
+      var col = i % numColumns;
+      var row = Math.floor(i / numColumns);
+      data.setAttribute('x', margin + col * imageWidth + (col * 2 + 1) * padding);
+      data.setAttribute('y', margin + row * imageHeight + (row * 2 * padding) + padding);
+
+      // Append the group to the SVG
+      svg.appendChild(data);
+    }
+
+    return svg;
+  };
+
+  /**
+   * Render the current scene and replace the given sphere meshes beforehand.
+   */
+  function renderSkeletons(sphereMeshes)
+  {
+    // Hide spherical meshes of all given skeletons
+    var sphereReplacemens = {};
+    for (var skid in sphereMeshes) {
+      setVisibility(sphereMeshes[skid], false);
+      sphereReplacemens[skid] = addSphereReplacements(sphereMeshes[skid], self.space);
+    }
+
+    // Create a new SVG renderer (which is faster than cleaning an existing one)
+    // and render the image
+    var svgRenderer = self.createRenderer('svg');
+    svgRenderer.clear();
+    svgRenderer.render(self.space.scene, self.camera);
+
+    // Show spherical meshes again and remove substitutes
+    for (skid in sphereMeshes) {
+      removeSphereReplacements(sphereReplacemens[skid], self.space);
+      setVisibility(sphereMeshes[skid], true);
+    }
+
+    return svgRenderer.domElement;
+  }
 };
 
 /**
@@ -1935,6 +2374,12 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getPositions = fun
   return p;
 };
 
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeDistanceFn = function() {
+ return (function(child, paren) {
+   return this[child].distanceTo(this[paren]);
+ }).bind(this.getPositions());
+};
+
 /** Determine the nodes that belong to the axon by computing the centrifugal flow
  * centrality.
  * Takes as argument the json of compact-arbor, but uses only index 1: the inputs and outputs, parseable by the ArborParser.synapse function.
@@ -2013,16 +2458,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       node_weights = c;
 
     } else if ('distance_to_root' === options.shading_method) {
-      var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
-        vs[v.node_id] = v;
-        return vs;
-      }, {});
-
-      var distanceFn = (function(child, paren) {
-        return this[child].distanceTo(this[paren]);
-      }).bind(locations);
-
-      var dr = arbor.nodesDistanceTo(arbor.root, distanceFn),
+      var dr = arbor.nodesDistanceTo(arbor.root, this.createNodeDistanceFn()),
           distances = dr.distances,
           max = dr.max;
 
@@ -2034,16 +2470,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       node_weights = distances;
 
     } else if ('downstream_amount' === options.shading_method) {
-      var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
-        vs[v.node_id] = v;
-        return vs;
-      }, {});
-
-      var distanceFn = (function(paren, child) {
-        return this[child].distanceTo(this[paren]);
-      }).bind(locations);
-
-      node_weights = arbor.downstreamAmount(distanceFn, true);
+      node_weights = arbor.downstreamAmount(this.createNodeDistanceFn(), true);
 
     } else if ('active_node_split' === options.shading_method) {
       var atn = SkeletonAnnotations.getActiveNodeId();
@@ -2066,10 +2493,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     } else if ('partitions' === options.shading_method) {
       // Shade by euclidian length, relative to the longest branch
-      var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
-        vs[v.node_id] = v;
-        return vs;
-      }, {});
+      var locations = this.getPositions();
       var partitions = arbor.partitionSorted();
       node_weights = partitions.reduce(function(o, seq, i) {
         var loc1 = locations[seq[0]],
@@ -2097,6 +2521,16 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       Object.keys(node_weights).forEach(function(node) {
         node_weights[node] /= max;
       });
+    } else if ('near_active_node' === options.shading_method) {
+      var active = SkeletonAnnotations.getActiveNodeId();
+      if (!active || !arbor.contains(active)) node_weights = null;
+      else {
+        var within = arbor.findNodesWithin(active, this.createNodeDistanceFn(), options.distance_to_active_node);
+        node_weights = {};
+        arbor.nodesArray().forEach(function(node) {
+          node_weights[node] = undefined === within[node] ? 0 : 1;
+        });
+      }
     }
   }
 
@@ -2959,4 +3393,20 @@ WebGLApplication.prototype.createMeshColorButton = function() {
       options.meshes_opacity + '</span>)</span>').get(0));
   div.appendChild($('<div id="' + mesh_colorwheel.slice(1) + '">').hide().get(0));
   return div;
+};
+
+WebGLApplication.prototype.updateActiveNodeNeighborhoodRadius = function(value) {
+  value = this._validate(value, "Invalid value");
+  if (!value) return;
+  this.options.distance_to_active_node = value;
+  if ('near_active_node' === this.options.shading_method) {
+    var skid = SkeletonAnnotations.getActiveSkeletonId();
+    if (skid) {
+      var skeleton = this.space.content.skeletons[skid];
+      if (skeleton) {
+        skeleton.updateSkeletonColor(this.options);
+        this.space.render();
+      }
+    }
+  }
 };

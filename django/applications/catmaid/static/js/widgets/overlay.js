@@ -380,7 +380,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack,
       worldY = wc.worldTop + ((m.offsetY / stack.scale) * stack.resolution.y);
       coords.lastX = worldX;
       coords.lastY = worldY;
-      statusBar.printCoords('['+worldX+', '+worldY+', '+project.coordinates.z+']');
+      statusBar.printCoords('['+[worldX, worldY, project.coordinates.z].map(Math.round).join(', ')+']');
       coords.offsetXPhysical = worldX;
       coords.offsetYPhysical = worldY;
     }

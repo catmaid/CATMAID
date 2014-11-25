@@ -766,6 +766,8 @@ var WindowMaker = new function()
       WA.activateView(name);
     };
     storedViewsSelect.onclick = storedViewsSelect.onchange;
+    // Update the list when the element is focused
+    storedViewsSelect.onfocus = updateAvailableViews;
 
     function storeView()
     {

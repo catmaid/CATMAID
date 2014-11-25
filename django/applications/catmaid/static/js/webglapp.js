@@ -32,9 +32,11 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.options = new WebGLApplication.prototype.OPTIONS.clone();
 	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack);
   this.updateActiveNodePosition();
-	this.availableViews = {};
 	this.initialized = true;
 };
+
+// Store views in the prototype to make them available for all intances.
+WebGLApplication.prototype.availableViews = {};
 
 WebGLApplication.prototype.getName = function() {
   return "3D View " + this.widgetID;

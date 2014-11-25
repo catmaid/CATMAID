@@ -81,7 +81,6 @@ PIPELINE_JS['catmaid'] = {
         'js/init.js',
         'js/navigator.js',
         'js/network-api.js',
-        'js/neuronstagingarea.js',
         'js/ontologytool.js',
         'js/overview.js',
         'js/project.js',

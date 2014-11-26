@@ -5,7 +5,7 @@ function getTileSource( tileSourceType, baseURL, fileExtension )
 {
     var tileSources = [DefaultTileSource, RequestTileSource,
         HDF5TileSource, BackslashTileSource, LargeDataTileSource,
-        DVIDTileSource];
+        DVIDTileSource, RenderServTileSource];
 
     if (tileSourceType > 0 && tileSourceType <= tileSources.length)
     {
@@ -180,6 +180,43 @@ function DVIDTileSource( baseURL, fileExtension )
         return new DummyOverviewLayer();
     };
 }
+
+
+/*
+ * Tile source for the Janelia tile render web-service
+ * 
+ * https://github.com/saalfeldlab/render/tree/ws_phase_1
+ *
+ * Documentation on
+ * 
+ * http://wiki/wiki/display/flyTEM/Render+Web+Service+APIs
+ *
+ * Source type: 7
+ */
+function RenderServTileSource( baseURL, fileExtension )
+{
+	var self = this;
+	this.mimeType = fileExtension == "png" ? "/png-image" : "/jpeg-image";
+	this.getTileURL = function( project, stack, baseName, tileWidth, tileHeight, col, row, zoom_level )
+	{
+		var scale = Math.pow( 2, zoom_level );
+		var tw = tileWidth * scale;
+		var th = tileHeight * scale;
+		var invScale = 1.0 / scale;
+		return baseURL + "z/" + stack.z + "/box/" + col * tw + "," + row * th + "," + tw + "," + th + "," + invScale + self.mimeType;
+	};
+
+	this.getOverviewURL = function( stack ) {
+		return baseURL + "z/" + stack.z + "/box/0,0," + stack.dimension.x + "," + stack.dimension.y + "," + 192 / stack.dimension.x + self.mimeType;
+	};
+
+	this.getOverviewLayer = function( layer )
+	{
+		return new GenericOverviewLayer( layer, baseURL, fileExtension, this.getOverviewURL );
+	};
+}
+
+
 
 /**
  * This is an overview layer that doesn't display anything.

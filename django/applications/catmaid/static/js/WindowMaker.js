@@ -732,6 +732,8 @@ var WindowMaker = new function()
           ['Spatial select', WA.spatialSelect.bind(WA)],
         ]);
 
+    var storedViewsSelect = document.createElement('select');
+
     appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
@@ -740,11 +742,68 @@ var WindowMaker = new function()
           ['XZ', WA.XZView.bind(WA)],
           ['ZY', WA.ZYView.bind(WA)],
           ['ZX', WA.ZXView.bind(WA)],
+          [storedViewsSelect],
+          ['Save view', storeView],
           ['Restrict connectors', WA.toggleConnectors.bind(WA)],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
           ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
         ]);
 
+    // Wait for the 3D viewer to have initialized to get existing views
+    var initInterval = window.setInterval(function() {
+      if (WA.initialized) {
+        window.clearInterval(initInterval);
+        updateAvailableViews();
+      }
+    }, 200);
+
+    // Change view if the drop down is changed or clicked
+    storedViewsSelect.onchange = function() {
+      if (-1 === this.selectedIndex || 0 === WA.getStoredViews().length) {
+        return;
+      }
+      var name = this.options[this.selectedIndex].value;
+      WA.activateView(name);
+    };
+    storedViewsSelect.onclick = storedViewsSelect.onchange;
+    // Update the list when the element is focused
+    storedViewsSelect.onfocus = updateAvailableViews;
+
+    function storeView()
+    {
+      WA.storeCurrentView(null, function() {
+        updateAvailableViews();
+        storedViewsSelect.selectedIndex = storedViewsSelect.options.length - 1;
+      });
+    };
+
+    function updateAvailableViews()
+    {
+      // Get currently selected view
+      var lastIdx = storedViewsSelect.selectedIndex;
+      var lastView = -1 === lastIdx ? -1 : storedViewsSelect[lastIdx].value;
+      // Re-populate the view
+      $(storedViewsSelect).empty();
+      var views = WA.getStoredViews();
+      if (views.length > 0) {
+        views.forEach(function(name, i) {
+          storedViewsSelect.options.add(new Option(name, name));
+        });
+        // Select view that was selected before
+        var newIndex = -1;
+        for (var i=0; i<views.length; ++i) {
+          var view = storedViewsSelect.options[i].value;
+          if (view === lastView) {
+            newIndex = i;
+            break;
+          }
+        }
+        storedViewsSelect.selectedIndex = newIndex;
+      } else {
+        storedViewsSelect.options.add(new Option("(None)", -1));
+        storedViewsSelect.selectedIndex = 0;
+      }
+    };
     
     var shadingMenu = document.createElement('select');
     shadingMenu.setAttribute("id", "skeletons_shading" + WA.widgetID);

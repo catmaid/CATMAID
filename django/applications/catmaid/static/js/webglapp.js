@@ -35,6 +35,9 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.initialized = true;
 };
 
+// Store views in the prototype to make them available for all intances.
+WebGLApplication.prototype.availableViews = {};
+
 WebGLApplication.prototype.getName = function() {
   return "3D View " + this.widgetID;
 };
@@ -613,6 +616,60 @@ WebGLApplication.prototype.ZYView = function() {
 
 WebGLApplication.prototype.ZXView = function() {
 	this.space.view.ZX();
+	this.space.render();
+};
+
+/**
+ * Store the curren view with the given name.
+ */
+WebGLApplication.prototype.storeCurrentView = function(name, callback) {
+  if (!name) {
+    var dialog = new OptionsDialog("Store current view");
+    dialog.appendMessage('Please enter a name for the current view');
+    var n = this.getStoredViews().length + 1;
+    var nameField = dialog.appendField("Name: ", "new-view-name", 'View ' + n);
+
+    // Call this function with a name as parameter
+    dialog.onOK = (function() {
+      this.storeCurrentView(nameField.value, callback);
+    }).bind(this);
+    dialog.show(200, 200, true);
+  } else {
+    // Abort if a view with this name exists already
+    if (name in this.availableViews) {
+      error("A view with the name \"" + name + "\" already exists.");
+      return;
+    }
+    // Store view
+    this.availableViews[name] = this.space.view.getView();
+
+    if (callback) {
+      callback();
+    }
+  }
+};
+
+/**
+ * Return the list of stored views.
+ */
+WebGLApplication.prototype.getStoredViews = function() {
+  return Object.keys(this.availableViews);
+};
+
+/**
+ * Set the view to a previously stored one and return true. Returns false if
+ * no views was found under the given name.
+ *
+ * @param {String} name - name of the view to activate
+ */
+WebGLApplication.prototype.activateView = function(name) {
+  if (!(name in this.availableViews)) {
+    error("There is no view named \"" + name + "\"!");
+    return;
+  }
+  // Activate view by executing the stored function
+  var view = this.availableViews[name]
+  this.space.view.setView(view.target, view.position, view.up);
 	this.space.render();
 };
 
@@ -1919,6 +1976,30 @@ WebGLApplication.prototype.Space.prototype.View.prototype.ZX = function() {
 	this.camera.position.y = center.y + (dimensions.y / 2) + bbDistance;
 	this.camera.position.z = center.z;
 	this.camera.up.set(-1, 0, 0);
+};
+
+/**
+ * Get properties of current view.
+ */
+WebGLApplication.prototype.Space.prototype.View.prototype.getView = function() {
+  return {
+    target: this.controls.target.clone(),
+    position: this.camera.position.clone(),
+    up: this.camera.up.clone(),
+  };
+};
+
+/**
+ * Set properties of current view.
+ *
+ * @param {THREE.Vector3} target - the target of the camera
+ * @param {THREE.Vector3} position - the position of the camera
+ * @param {THREE.Vector3} up - up direction
+ */
+WebGLApplication.prototype.Space.prototype.View.prototype.setView = function(target, position, up) {
+	this.controls.target.copy(target);
+	this.camera.position.copy(position);
+	this.camera.up.copy(up);
 };
 
 /** Construct mouse controls as objects, so that no context is retained. */

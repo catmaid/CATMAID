@@ -6,7 +6,7 @@ from datetime import datetime
 
 from django.db import connection
 from django.http import HttpResponse
-from django.contrib.auth.models import User 
+from django.contrib.auth.models import User
 
 from catmaid.models import UserRole, Treenode, TreenodeConnector, Connector, \
         Location, ClassInstanceClassInstance, Review
@@ -690,5 +690,3 @@ def user_info(request, project_id=None):
                                     'edition_time': str(datetime.date(t.edition_time)),
                                     'reviewers': reviewers,
                                     'review_times': review_times}))
-
-

@@ -584,6 +584,7 @@ var WindowMaker = new function()
             '<th>pre</th>' +
             '<th>post</th>' +
             '<th>text</th>' +
+            '<th>meta</th>' +
             '<th>property  </th>' +
           '</tr>' +
         '</thead>' +
@@ -595,7 +596,8 @@ var WindowMaker = new function()
             '<td><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked /></td>' +
-            '<td></td>' +
+            '<td><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" /></td>' +
+            '<td><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked /></td>' +
             '<td><input type="button" id="selection-table-sort-by-color' + ST.widgetID + '" value="Sort by color" /></td>' +
           '</tr>' +
         '</tbody>';

@@ -11,7 +11,7 @@ var SelectionTable = function() {
   this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
   this.reviews = {};  // skeleton_id vs review percentage
   this.all_visible = true;
-  this.all_synapses_visible = {pre: true, post: true};
+  this.all_items_visible = {pre: true, post: true, text: false, meta: true};
   this.selected_skeleton_id = null;
   this.next_color_index = 0;
   this.gui = new this.GUI(this, 20);
@@ -67,6 +67,7 @@ SelectionTable.prototype.SkeletonModel = function( id, neuronname, color ) {
     this.pre_visible = true;
     this.post_visible = true;
     this.text_visible = false;
+    this.meta_visible = true;
     this.color = color;
     this.opacity = 1; // from 0 to 1
 };
@@ -78,6 +79,7 @@ SelectionTable.prototype.SkeletonModel.prototype.setVisible = function(v) {
     this.pre_visible = v;
     this.post_visible = v;
     if (!v) this.text_visible = v;
+    this.meta_visible = v;
 };
 
 SelectionTable.prototype.SkeletonModel.prototype.clone = function() {
@@ -86,6 +88,7 @@ SelectionTable.prototype.SkeletonModel.prototype.clone = function() {
   m.pre_visible = this.pre_visible;
   m.post_visible = this.post_visible;
   m.text_visible = this.text_visible;
+  m.meta_visible = this.meta_visible;
   m.opacity = this.opacity;
   return m;
 };
@@ -117,11 +120,8 @@ SelectionTable.prototype.SkeletonModel.prototype.property_dialog = function() {
 };
 
 SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
-  // TODO if the skeleton is loaded in the WebGLApp, then all of this information
-  // is already present in the client
-  // Additionally, the node count should be continued by the user contribution
-  // (that is, how many nodes each user contributed). Same for review status.
-  // And the "Downstream skeletons" should be split into two: skeletons with more than one node, and skeletons with one single node (placeholder pre- or postsynaptic nodes).
+  // If the skeleton is loaded in the WebGLApp, then all of this information is already present in the client, but potentially not up to date: so reload.
+  // TODO the "Downstream skeletons" should be split into two: skeletons with more than one node, and skeletons with one single node (placeholder pre- or postsynaptic nodes).
   requestQueue.register(django_url + project.id + '/skeleton/' + this.id + '/contributor_statistics', "POST", {},
       (function (status, text, xml) {
         if (200 !== status) return;
@@ -226,58 +226,38 @@ SelectionTable.getLastFocused = function () {
   return SelectionTable._lastFocused;
 };
 
-SelectionTable.prototype.toggleSelectAllSkeletons = function() {
-  this.all_visible = !this.all_visible;
-  $("[id^='skeletonshow" + this.widgetID + "-']").attr('checked', this.all_visible);
-  $("[id^='skeletonpre" + this.widgetID + "-']").attr('checked', this.all_visible);
-  $("[id^='skeletonpost" + this.widgetID + "-']").attr('checked', this.all_visible);
-  if (!this.all_visible) {
-    $("[id^='skeletontext" + this.widgetID + "-']").attr('checked', this.all_visible);
-  }
-  this.skeletons.map(function(skeleton) {
-    skeleton.setVisible(this.all_visible);
-  }, this);
-  if (this.linkTarget && this.skeletons.length > 0) {
-    this.updateLink(this.skeletons.reduce(function(o, skeleton) {
-      o[skeleton.id] = skeleton.clone();
-      return o;
-    }, {}));
-  }
-};
-
 SelectionTable.prototype.toggleSelectAllSkeletonsUI = function() {
-  if (this.match) {
-    this.all_visible = !this.all_visible;
-    // Update only skeletons that match the text
-    var updated = {};
-    this.filteredSkeletons(false).forEach(function(skeleton) {
-        // Update checkboxes
-        $("#skeletonshow" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
-        $("#skeletonpre" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
-        $("#skeletonpost" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
-        if (!this.all_visible) {
-          $("#skeletontext" + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
-        }
-        // Update model
-        skeleton.setVisible(this.all_visible);
-        updated[skeleton.id] = skeleton.clone();
+  this.all_visible = !this.all_visible;
+  var updated = {};
+  ['pre', 'post', 'text', 'meta'].forEach(function(suffix, i) {
+    if (2 === i && this.all_visible) return; // don't turn on text
+    $('#selection-table-show-all-' + suffix + this.widgetID).attr('checked', this.all_visible);
+  }, this);
+  this.filteredSkeletons(false).forEach(function(skeleton) {
+      // Update checkboxes
+      ['selected', 'pre_visible', 'post_visible', 'text_visible', 'meta_visible'].forEach(function(key, i) {
+        if (3 === i && this.all_visible) return; // don't turn on text
+        $("#skeleton" + key + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
       }, this);
-    if (this.linkTarget && Object.keys(updated).length > 0) {
-      this.updateLink(updated);
-    }
-  } else {
-    this.toggleSelectAllSkeletons();
+      // Update model
+      skeleton.setVisible(this.all_visible);
+      updated[skeleton.id] = skeleton.clone();
+    }, this);
+  if (this.linkTarget && Object.keys(updated).length > 0) {
+    this.updateLink(updated);
   }
 };
 
-/** Where 'type' is 'pre' or 'post'. */
-SelectionTable.prototype.toggleSynapsesUI = function(type) {
-  var state = !this.all_synapses_visible[type];
-  this.all_synapses_visible[type] = state;
+/** Where 'type' is 'pre' or 'post' or 'text' or 'meta', which are the prefixes of
+ * the keys in SkeletonModel that end with "_visible". */
+SelectionTable.prototype.toggleAllKeyUI = function(type) {
+  var state = !this.all_items_visible[type];
+  this.all_items_visible[type] = state;
   var skeletons = this.filteredSkeletons(true);
+  var key = type + '_visible';
   skeletons.forEach(function(skeleton) {
-    $("#skeleton" + type + this.widgetID + "-" + skeleton.id).attr('checked', state);
-    skeleton[type + "_visible"] = state;
+    $("#skeleton" + key + this.widgetID + "-" + skeleton.id).attr('checked', state);
+    skeleton[key] = state;
   }, this);
   if (this.linkTarget && skeletons.length > 0) {
     this.updateLink(skeletons.reduce(function(o, skeleton) {
@@ -338,8 +318,10 @@ SelectionTable.prototype.init = function() {
   }).bind(this));
 
   $('#selection-table-show-all' + this.widgetID).click(this.toggleSelectAllSkeletonsUI.bind(this));
-  $('#selection-table-show-all-pre' + this.widgetID).click(this.toggleSynapsesUI.bind(this, 'pre'));
-  $('#selection-table-show-all-post' + this.widgetID).click(this.toggleSynapsesUI.bind(this, 'post'));
+
+  ['pre', 'post', 'text', 'meta'].forEach(function(suffix) {
+    $('#selection-table-show-all-' + suffix + this.widgetID).click(this.toggleAllKeyUI.bind(this, suffix));
+  }, this);
 
   $('#selection-table-sort-by-name' + this.widgetID).click(this.sortByName.bind(this));
   $('#selection-table-sort-by-color' + this.widgetID).click(this.sortByColor.bind(this));
@@ -693,82 +675,35 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       .css('background-color',
           ReviewSystem.getBackgroundColor(this.table.reviews[skeleton.id])));
 
-  // show skeleton
-  rowElement.append(
-    $(document.createElement("td")).append(
-      $(document.createElement("input")).attr({
-                id:    'skeletonshow' + widgetID + '-' + skeleton.id,
-                //name:  skeleton.baseName,
-                value: skeleton.id,
-                type:  'checkbox',
-                checked: skeleton.selected
-        })
-        .click( function( event )
-        {
-          var vis = $('#skeletonshow' + widgetID + '-' + skeleton.id).is(':checked');
-          skeleton.selected = vis;
-          $('#skeletonpre' + widgetID + '-' + skeleton.id).attr({checked: vis});
-          skeleton.pre_visible = vis;
-          $('#skeletonpost' + widgetID + '-' + skeleton.id).attr({checked: vis});
-          skeleton.post_visible = vis;
-          if (!vis) {
-            // hide text
-            $('#skeletontext' + widgetID + '-' + skeleton.id).attr({checked: vis});
-            skeleton.text_visible = vis;
-          }
-          table.notifyLink(skeleton);
-        } )
-  ));
-
-  // show pre
-  rowElement.append(
-    $(document.createElement("td")).append(
-      $(document.createElement("input")).attr({
-                id:    'skeletonpre' + widgetID + '-' + skeleton.id,
-                //name:  skeleton.baseName,
-                value: skeleton.id,
-                type:  'checkbox',
-                checked: skeleton.pre_visible,
-        })
-        .click( function( event )
-        {
-          skeleton.pre_visible = $('#skeletonpre' + widgetID + '-' + skeleton.id).is(':checked');
-          table.notifyLink(skeleton);
-        } )
-  ));
-
-  // show post
-  rowElement.append(
-    $(document.createElement("td")).append(
-      $(document.createElement("input")).attr({
-                id:    'skeletonpost' + widgetID + '-' + skeleton.id,
-                //name:  skeleton.baseName,
-                value: skeleton.id,
-                type:  'checkbox',
-                checked: skeleton.post_visible,
-        })
-        .click( function( event )
-        {
-          skeleton.post_visible = $('#skeletonpost' + widgetID + '-' + skeleton.id).is(':checked');
-          table.notifyLink(skeleton);
-        } )
-  ));
-
-  rowElement.append(
-    $(document.createElement("td")).append(
-      $(document.createElement("input")).attr({
-                id:    'skeletontext' + widgetID + '-' + skeleton.id,
-                //name:  skeleton.baseName,
-                value: skeleton.id,
-                type:  'checkbox',
-                checked: skeleton.text_visible,
-        })
-        .click( function( event )
-        {
-          skeleton.text_visible = $('#skeletontext' + widgetID + '-' + skeleton.id).is(':checked');
-          table.notifyLink(skeleton);
-        } )
-  ));
+  ['selected',
+   'pre_visible',
+   'post_visible',
+   'text_visible',
+   'meta_visible'].forEach(function(key, i, keys) {
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("input"))
+          .attr({
+                  id:    'skeleton' + key + widgetID + '-' + skeleton.id,
+                  value: skeleton.id,
+                  type:  'checkbox',
+                  checked: skeleton[key]
+          })
+          .click( function( event ) {
+            var visible = $('#skeleton' + key + widgetID + '-' + skeleton.id).is(':checked');
+            skeleton[key] = visible;
+            // The first checkbox controls all others
+            if (0 === i) {
+              keys.slice(1).forEach(function(other, k) {
+                if (visible && 2 === k) return; // don't make text visible
+                skeleton[other] = visible;
+                $('#skeleton' + other + widgetID + '-' + skeleton.id).attr({checked: visible});
+              });
+            }
+            table.notifyLink(skeleton);
+          } )
+    ));
+  });
 
   var td = $(document.createElement("td"));
   td.append(
@@ -840,7 +775,7 @@ SelectionTable.prototype.selectSkeletonById = function(id) {
 };
 
 SelectionTable.prototype.selectSkeleton = function( skeleton, vis ) {
-  $('#skeletonshow' + this.widgetID + '-' + skeleton.id).attr('checked', vis);
+  $('#skeletonselect' + this.widgetID + '-' + skeleton.id).attr('checked', vis);
   skeleton.setVisible(vis);
   this.notifyLink(skeleton);
 };

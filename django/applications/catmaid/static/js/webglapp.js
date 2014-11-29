@@ -828,6 +828,7 @@ WebGLApplication.prototype.addSkeletons = function(models, callback) {
       skeleton.setPreVisibility(model.pre_visible);
       skeleton.setPostVisibility(model.post_visible);
       skeleton.setTextVisibility(model.text_visible);
+      skeleton.setMetaVisibility(model.meta_visible);
       skeleton.actorColor = model.color.clone();
       skeleton.opacity = model.opacity;
       skeleton.updateSkeletonColor(this.options);
@@ -1751,6 +1752,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       s.setPreVisibility(visMap[skid].pre ? visible : false);
       s.setPostVisibility(visMap[skid].post ? visible : false);
       s.setTextVisibility(visMap[skid].text ? visible : false);
+      s.setMetaVisibility(visMap[skid].meta ? visible : false);
     }
   };
 
@@ -1799,7 +1801,8 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
         actor: s.visible,
         pre: s.skeletonmodel.pre_visible,
         post: s.skeletonmodel.post_visible,
-        text: s.skeletonmodel.text_visible
+        text: s.skeletonmodel.text_visible,
+        meta: s.skeletonmodel.meta_visible
       }
     }
 
@@ -2264,6 +2267,14 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSynapticVisibil
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setPreVisibility = WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSynapticVisibilityFn('presynaptic_to');
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setPostVisibility = WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSynapticVisibilityFn('postsynaptic_to');
+
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setMetaVisibility = function(vis) {
+  for (var idx in this.specialTagSpheres) {
+    if (this.specialTagSpheres.hasOwnProperty(idx)) {
+      this.specialTagSpheres[idx].visible = vis;
+    }
+  }
+};
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTextMeshes = function() {
 	// Sort out tags by node: some nodes may have more than one

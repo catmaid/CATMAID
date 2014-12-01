@@ -1182,21 +1182,25 @@ SVGUtil.classifyStyles = function(svg, precision, attrsToRemove)
   var foundStyles = {};
 
   // Iterate all elements that have a style attribute
-  $(svg).find("[style]").each(function(i, e) {
+  SVGUtil.map(svg, function(node) {
+    if (node.nodeType !== 1 || !node.hasAttribute("style")) {
+      return;
+    }
+
     // Replace style with class
-    var style = this.getAttribute('style');
-    this.removeAttribute('style');
+    var style = node.getAttribute('style');
+    node.removeAttribute('style');
     var cls = foundStyles[style];
     if (!cls) {
       styleCount++;
       cls = "style" + styleCount;
       foundStyles[style] = cls;
     }
-    var existingClasses = this.getAttribute('class');
+    var existingClasses = node.getAttribute('class');
     if (existingClasses) {
       cls = existingClasses + " " + cls;
     }
-    this.setAttribute('class', cls);
+    node.setAttribute('class', cls);
   });
 
   return foundStyles;
@@ -1233,9 +1237,13 @@ SVGUtil.reduceStylePrecision = function(svg, precision)
   })(precision);
 
   // Iterate all elements that have a style attribute
-  $(svg).find("[style]").each(function(i, e) {
+  SVGUtil.map(svg, function(node) {
+    if (node.nodeType !== 1 || !node.hasAttribute("style")) {
+      return;
+    }
+
     // Update precision
-    updatePrecision(this);
+    updatePrecision(node);
   });
 
   return svg;
@@ -1271,9 +1279,13 @@ SVGUtil.stripStyleProperties = function(svg, properties)
     })(properties);
 
     // Iterate all elements that have a style attribute
-    $(svg).find("[style]").each(function(i, e) {
+    SVGUtil.map(svg, function(node) {
+      if (node.nodeType !== 1 || node.hasAttribute("style")) {
+        return;
+      }
+
       // Discard unwanted styles
-      removeStylesToDiscard(this);
+      removeStylesToDiscard(node);
     });
   }
 
@@ -1297,15 +1309,48 @@ SVGUtil.reduceCoordinatePrecision = function(svg, digits)
   })(digits);
 
   // Change precision of lines
-  $(svg).find("line").each(function(i, l) {
-    reducePrecision(l, 'x1');
-    reducePrecision(l, 'y1');
-    reducePrecision(l, 'x2');
-    reducePrecision(l, 'y2');
+  SVGUtil.map(svg, function(node) {
+    if (node.nodeType !== 1 || node.nodeName !== "line") {
+      return;
+    }
+
+    reducePrecision(node, 'x1');
+    reducePrecision(node, 'y1');
+    reducePrecision(node, 'x2');
+    reducePrecision(node, 'y2');
   });
 
   return svg;
 };
+
+/**
+ * Execute a function on every element of the given SVG.
+ */
+SVGUtil.map = function(root, fn)
+{
+  for (var node = root; node; ) {
+    // Call mapped function in context of node
+    fn(node);
+
+    // Find next
+    var next = null;
+    // Depth first iteration
+    if (node.hasChildNodes()) {
+      next = node.firstChild;
+    } else {
+      while (!(next = node.nextSibling)) {
+        node = node.parentNode;
+        if (!node) {
+          break;
+        }
+        if (root == node) {
+          break;
+        }
+      }
+    }
+    node = next;
+  }
+}
 
 /**
  * Adds a CDATA section to the given XML document that contains the given

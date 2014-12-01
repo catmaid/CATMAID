@@ -1175,36 +1175,39 @@ SVGUtil.insertXYScatterPlot = function(
  * Simplify style representations of a SVG element. All style tags are replaced
  * by classes, which refer to the same style properties. An object containing
  * the styles as keys and the class names as values is returned.
- *
- * If precision is set, the precision of the 'stroke-width' style property can
- * be adjusted to the number of decimals given. All attributes in the
- * 'attrToRemove' list will be discarded from the parsed styles.
  */
 SVGUtil.classifyStyles = function(svg, precision, attrsToRemove)
 {
   var styleCount = 0;
   var foundStyles = {};
 
-  /**
-   * Remove a style property from the context object.
-   */
-  function removeStyleProperty(p) {
-    $(this).css(p, "");
-  }
-
-  /**
-   * Remove all unwanted styles from an element.
-   */
-  var removeStylesToDiscard = (function(attrs) {
-    if (attrs) {
-      return function(e) {
-        attrs.forEach(removeStyleProperty, e);
-      };
-    } else {
-      return function() {};
+  // Iterate all elements that have a style attribute
+  $(svg).find("[style]").each(function(i, e) {
+    // Replace style with class
+    var style = this.getAttribute('style');
+    this.removeAttribute('style');
+    var cls = foundStyles[style];
+    if (!cls) {
+      styleCount++;
+      cls = "style" + styleCount;
+      foundStyles[style] = cls;
     }
-  })(attrsToRemove);
+    var existingClasses = this.getAttribute('class');
+    if (existingClasses) {
+      cls = existingClasses + " " + cls;
+    }
+    this.setAttribute('class', cls);
+  });
 
+  return foundStyles;
+};
+
+/**
+ * Reduce the precision of the 'stroke-width' style property to the number of
+ * given decimals.
+ */
+SVGUtil.reduceStylePrecision = function(svg, precision)
+{
   /**
    * Change the precision of a style property of a given object.
    */
@@ -1231,28 +1234,46 @@ SVGUtil.classifyStyles = function(svg, precision, attrsToRemove)
 
   // Iterate all elements that have a style attribute
   $(svg).find("[style]").each(function(i, e) {
-    // Discard unwanted styles
-    removeStylesToDiscard(this);
     // Update precision
     updatePrecision(this);
-
-    // Replace style with class
-    var style = this.getAttribute('style');
-    this.removeAttribute('style');
-    var cls = foundStyles[style];
-    if (!cls) {
-      styleCount++;
-      cls = "style" + styleCount;
-      foundStyles[style] = cls;
-    }
-    var existingClasses = this.getAttribute('class');
-    if (existingClasses) {
-      cls = existingClasses + " " + cls;
-    }
-    this.setAttribute('class', cls);
   });
 
-  return foundStyles;
+  return svg;
+};
+
+/**
+ * All attributes in the 'properties' list will be discarded from the parsed
+ * styles.
+ */
+SVGUtil.stripStyleProperties = function(svg, properties)
+{
+  /**
+   * Remove a style property from the context object.
+   */
+  function removeStyleProperty(p) {
+    $(this).css(p, "");
+  }
+
+  /**
+   * Remove all unwanted styles from an element.
+   */
+  var removeStylesToDiscard = (function(props) {
+    if (props) {
+      return function(e) {
+        props.forEach(removeStyleProperty, e);
+      };
+    } else {
+      return function() {};
+    }
+  })(properties);
+
+  // Iterate all elements that have a style attribute
+  $(svg).find("[style]").each(function(i, e) {
+    // Discard unwanted styles
+    removeStylesToDiscard(this);
+  });
+
+  return svg;
 };
 
 /**

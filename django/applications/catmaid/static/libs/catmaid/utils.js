@@ -1176,10 +1176,11 @@ SVGUtil.insertXYScatterPlot = function(
  * by classes, which refer to the same style properties. An object containing
  * the styles as keys and the class names as values is returned.
  *
- * All attributes in the 'attrToRemove' list will be discarded from the parsed
- * styles.
+ * If precision is set, the precision of the 'stroke-width' style property can
+ * be adjusted to the number of decimals given. All attributes in the
+ * 'attrToRemove' list will be discarded from the parsed styles.
  */
-SVGUtil.classifyStyles = function(svg, attrsToRemove)
+SVGUtil.classifyStyles = function(svg, precision, attrsToRemove)
 {
   var styleCount = 0;
   var foundStyles = {};
@@ -1204,10 +1205,36 @@ SVGUtil.classifyStyles = function(svg, attrsToRemove)
     }
   })(attrsToRemove);
 
+  /**
+   * Change the precision of a style property of a given object.
+   */
+  function changePrecision(e, a, d) {
+    var w = $(e).css(a);
+    if (w.length > 0) {
+      $(e).css(a, parseFloat(w).toFixed(d));
+    }
+  };
+
+  /**
+   * Create a function to update the precision of the stroke-width style
+   * property of an element, if this is requested.
+   */
+  var updatePrecision = (function(p) {
+    if (p) {
+      return function(e) {
+        changePrecision(e, 'stroke-width', p);
+      };
+    } else {
+      return function() {};
+    }
+  })(precision);
+
   // Iterate all elements that have a style attribute
   $(svg).find("[style]").each(function(i, e) {
     // Discard unwanted styles
     removeStylesToDiscard(this);
+    // Update precision
+    updatePrecision(this);
 
     // Replace style with class
     var style = this.getAttribute('style');

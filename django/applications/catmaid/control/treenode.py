@@ -282,6 +282,24 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
 
 
 @requires_user_role(UserRole.Annotate)
+def update_parent(request, project_id=None, treenode_id=None):
+    treenode_id = int(treenode_id)
+    parent_id = int(request.POST.get('parent_id', -1))
+
+    child = Treenode.objects.get(pk=treenode_id)
+    parent = Treenode.objects.get(pk=parent_id)
+
+    if (child.skeleton_id != parent.skeleton_id):
+        raise Exception("Child node %s is in skeleton %s but parent node %s is in skeleton %s!", \
+                        treenode_id, child.skeleton_id, parent_id, parent.skeleton_id)
+
+    child.parent_id = parent_id
+    child.save()
+
+    return HttpResponse(json.dumps({'success': True}))
+
+
+@requires_user_role(UserRole.Annotate)
 def update_radius(request, project_id=None, treenode_id=None):
     treenode_id = int(treenode_id)
     radius = float(request.POST.get('radius', -1))

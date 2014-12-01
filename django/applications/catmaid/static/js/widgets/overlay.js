@@ -530,6 +530,60 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, 
   return nearestnode;
 };
 
+/** Find the point along the edge from node to node.parent nearest (x, y, z),
+ *  optionally exluding a radius around the nodes. */
+SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z, node, exclusion) {
+  var a, b, p, ab, ap, r, ablen;
+
+  exclusion = exclusion || 0;
+
+  a = new THREE.Vector3(this.pix2physX(node.x),
+                        this.pix2physY(node.y),
+                        this.pix2physZ(node.z));
+  b = new THREE.Vector3(this.pix2physX(node.parent.x),
+                        this.pix2physY(node.parent.y),
+                        this.pix2physZ(node.parent.z));
+  p = new THREE.Vector3(x, y, z);
+  ab = new THREE.Vector3().subVectors(b, a);
+  ablen = ab.lengthSq();
+  if (ablen === 0) return {point: a, distsq: p.distanceToSquared(a)};
+  ap = new THREE.Vector3().subVectors(p, a);
+  r = ab.dot(ap)/ablen;
+  exclusion *= exclusion/ablen;
+
+  // If r is not in [0, 1], the point nearest the line through the node and
+  // its parent lies beyond the edge between them, so clamp the point to the
+  // edge excluding a radius near the nodes.
+  if (r < 0) r = exclusion;
+  else if (r > 1) r = 1 - exclusion;
+
+  a.lerp(b, r);
+  return  {point: a, distsq: p.distanceToSquared(a)};
+};
+
+/** Find the point nearest physical coordinates (x, y, z) nearest the
+ *  specified skeleton */
+SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (x, y, z, skeleton_id) {
+  var tmp, mindistsq = Infinity, nearestnode = null, nearestpoint = null, node, parent;
+  var phys_radius = (30.0 / this.stack.scale) * Math.max(this.stack.resolution.x, this.stack.resolution.y);
+
+  for (var nodeid in this.nodes) {
+    if (this.nodes.hasOwnProperty(nodeid)) {
+      node = this.nodes[nodeid];
+
+      if (node.skeleton_id === skeleton_id && node.parent !== null) {
+        tmp = this.pointEdgeDistanceSq(x, y, z, node, phys_radius);
+        if (tmp.distsq < mindistsq) {
+          mindistsq = tmp.distsq;
+          nearestnode = node;
+          nearestpoint = tmp.point;
+        }
+      }
+    }
+  }
+  return {node: nearestnode, point: nearestpoint};
+};
+
 /** Remove and hide all node labels. */
 SkeletonAnnotations.SVGOverlay.prototype.hideLabels = function() {
   document.getElementById( "trace_button_togglelabels" ).className = "button";
@@ -911,7 +965,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
 };
 
 /** Create a node and activate it. */
-SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate) {
   if (!parentID) { parentID = -1; }
 
   // Check if we want the newly create node to be a model of an existing empty neuron
@@ -956,6 +1010,9 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
         if (active_node_z !== null && Math.abs(active_node_z - nn.z) > self.stack.resolution.z) {
           growlAlert('BEWARE', 'Node added beyond one section from its parent node!');
         }
+
+        // Invoke callback if necessary
+        if (afterCreate) afterCreate(self, nn);
       });
 };
 
@@ -1221,15 +1278,32 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
 
   // e.metaKey should correspond to the command key on Mac OS
   if (e.ctrlKey || e.metaKey) {
-    // ctrl-click deselects the current active node
-    if (null !== atn.id) {
-      statusBar.replaceLast("Deactivated node #" + atn.id);
-    }
-    SkeletonAnnotations.clearTopbar(this.stack.getId());
-    this.activateNode(null);
-    if (!e.shiftKey) {
+    if (e.altKey && null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
+      // Insert a treenode along an edge on the active skeleton
+      var insertion = this.findNearestSkeletonPoint(phys_x, phys_y, phys_z, atn.skeleton_id);
+      this.createNode(insertion.node.parent.id, insertion.point.x, insertion.point.y, phys_z,
+        -1, 5, this.phys2pixX(insertion.point.x), this.phys2pixY(insertion.point.y), this.phys2pixZ(phys_z),
+        // Callback after creating the new node to make it the parent of the node it was inserted before
+        function (self, nn) {
+          self.submit(
+            django_url + project.id + '/treenode/' + insertion.node.id + '/parent',
+            {parent_id: nn.id},
+            function(json) {
+              self.updateNodes();
+            });
+        });
       e.stopPropagation();
-    } // else, a node under the mouse will be removed
+    } else {
+      // ctrl-click deselects the current active node
+      if (null !== atn.id) {
+        statusBar.replaceLast("Deactivated node #" + atn.id);
+      }
+      SkeletonAnnotations.clearTopbar(this.stack.getId());
+      this.activateNode(null);
+      if (!e.shiftKey) {
+        e.stopPropagation();
+      } // else, a node under the mouse will be removed
+    }
   } else if (e.shiftKey) {
     if (null === atn.id) {
       if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {

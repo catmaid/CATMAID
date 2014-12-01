@@ -159,8 +159,11 @@ WebGLApplication.prototype.exportSVG = function() {
   try {
     var svg = this.space.view.getSVGData();
     SVGUtil.reduceCoordinatePrecision(svg, 1);
-    SVGUtil.stripStyleProperties(svg, ['fill', 'stroke-opacity',
-        'stroke-linejoin']);
+    SVGUtil.stripStyleProperties(svg, {
+      'fill': 'none',
+      'stroke-opacity': 1,
+      'stroke-linejoin': undefined
+    });
     SVGUtil.reduceStylePrecision(svg, 1);
 
     var styleDict = SVGUtil.classifyStyles(svg);
@@ -283,8 +286,11 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
         var svg = this.space.view.getSVGData(options);
         var precision = parseInt(coordDigits.value)
         SVGUtil.reduceCoordinatePrecision(svg, precision);
-        SVGUtil.stripStyleProperties(svg, ['fill', 'stroke-opacity',
-            'stroke-linejoin']);
+        SVGUtil.stripStyleProperties(svg, {
+          'fill': 'none',
+          'stroke-opacity': 1,
+          'stroke-linejoin': undefined
+        });
         SVGUtil.reduceStylePrecision(svg, precision);
 
         var styleDict = SVGUtil.classifyStyles(svg);

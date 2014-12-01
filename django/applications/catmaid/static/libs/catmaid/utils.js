@@ -1247,31 +1247,35 @@ SVGUtil.reduceStylePrecision = function(svg, precision)
  */
 SVGUtil.stripStyleProperties = function(svg, properties)
 {
-  /**
-   * Remove a style property from the context object.
-   */
-  function removeStyleProperty(p) {
-    $(this).css(p, "");
-  }
-
-  /**
-   * Remove all unwanted styles from an element.
-   */
-  var removeStylesToDiscard = (function(props) {
-    if (props) {
-      return function(e) {
-        props.forEach(removeStyleProperty, e);
-      };
-    } else {
-      return function() {};
+  if (properties !== undefined) {
+    /**
+     * Remove a style property from the context object.
+     */
+    var removeStyleProperty = function(e, p, val) {
+      // Don't check the type for the value comparison, because it is probably
+      // more robust (here!).
+      if (val === undefined || $(e).css(p) == val) {
+        $(e).css(p, "");
+      }
     }
-  })(properties);
 
-  // Iterate all elements that have a style attribute
-  $(svg).find("[style]").each(function(i, e) {
-    // Discard unwanted styles
-    removeStylesToDiscard(this);
-  });
+    /**
+     * Remove all unwanted styles from an element.
+     */
+    var removeStylesToDiscard = (function(props) {
+      return function(e) {
+        for (var p in props) {
+          removeStyleProperty(e, p, props[p]);
+        }
+      };
+    })(properties);
+
+    // Iterate all elements that have a style attribute
+    $(svg).find("[style]").each(function(i, e) {
+      // Discard unwanted styles
+      removeStylesToDiscard(this);
+    });
+  }
 
   return svg;
 };

@@ -159,7 +159,8 @@ WebGLApplication.prototype.exportSVG = function() {
   try {
     var svg = this.space.view.getSVGData();
     SVGUtil.reduceCoordinatePrecision(svg, 1);
-    var styleDict = SVGUtil.classifyStyles(svg);
+    var stylesToDiscard = ['fill', 'stroke-opacity', 'stroke-linejoin'];
+    var styleDict = SVGUtil.classifyStyles(svg, stylesToDiscard);
 
     var styles = Object.keys(styleDict).reduce(function(o, s) {
       var cls = styleDict[s];
@@ -278,7 +279,8 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
         // Export catalog
         var svg = this.space.view.getSVGData(options);
         SVGUtil.reduceCoordinatePrecision(svg, parseInt(coordDigits.value));
-        var styleDict = SVGUtil.classifyStyles(svg);
+        var stylesToDiscard = ['fill', 'stroke-opacity', 'stroke-linejoin'];
+        var styleDict = SVGUtil.classifyStyles(svg, stylesToDiscard);
 
         var styles = Object.keys(styleDict).reduce(function(o, s) {
           var cls = styleDict[s];

@@ -1175,14 +1175,41 @@ SVGUtil.insertXYScatterPlot = function(
  * Simplify style representations of a SVG element. All style tags are replaced
  * by classes, which refer to the same style properties. An object containing
  * the styles as keys and the class names as values is returned.
+ *
+ * All attributes in the 'attrToRemove' list will be discarded from the parsed
+ * styles.
  */
-SVGUtil.classifyStyles = function(svg)
+SVGUtil.classifyStyles = function(svg, attrsToRemove)
 {
   var styleCount = 0;
   var foundStyles = {};
 
+  /**
+   * Remove a style property from the context object.
+   */
+  function removeStyleProperty(p) {
+    $(this).css(p, "");
+  }
+
+  /**
+   * Remove all unwanted styles from an element.
+   */
+  var removeStylesToDiscard = (function(attrs) {
+    if (attrs) {
+      return function(e) {
+        attrs.forEach(removeStyleProperty, e);
+      };
+    } else {
+      return function() {};
+    }
+  })(attrsToRemove);
+
   // Iterate all elements that have a style attribute
   $(svg).find("[style]").each(function(i, e) {
+    // Discard unwanted styles
+    removeStylesToDiscard(this);
+
+    // Replace style with class
     var style = this.getAttribute('style');
     this.removeAttribute('style');
     var cls = foundStyles[style];

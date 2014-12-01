@@ -3,6 +3,7 @@ import re
 
 from collections import defaultdict
 from datetime import datetime
+import itertools as itertools
 
 from django.db import connection
 from django.http import HttpResponse
@@ -510,33 +511,11 @@ def _skeleton_as_graph(skeleton_id):
     return graph
 
 
-def _fetch_treenode_location(treenode_id):
-    cursor = connection.cursor()
-    cursor.execute('''
-        SELECT
-          id,
-          location_x AS x,
-          location_y AS y,
-          location_z AS z,
-          skeleton_id
-        FROM treenode
-        WHERE id=%s''', [treenode_id])
-    return cursor.fetchone()
-
-
-def _fetch_connector_location(connector_id):
-    cursor = connection.cursor()
-    cursor.execute('''
-        SELECT
-          id,
-          location_x AS x,
-          location_y AS y,
-          location_z AS z
-        FROM connector
-        WHERE id=%s''', [connector_id])
-    return cursor.fetchone()
-
 def _fetch_location(location_id):
+    return _fetch_locations([location_id])[0]
+
+
+def _fetch_locations(location_ids):
     cursor = connection.cursor()
     cursor.execute('''
         SELECT
@@ -545,8 +524,8 @@ def _fetch_location(location_id):
           location_y AS y,
           location_z AS z
         FROM location
-        WHERE id=%s''', [location_id])
-    return cursor.fetchone()
+        WHERE id IN (%s)''' % ','.join(map(str, location_ids)))
+    return cursor.fetchall()
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_location(request, project_id=None):
@@ -619,7 +598,7 @@ def find_previous_branchnode_or_root(request, project_id=None):
         if seq and alt:
             tnid = _find_first_interesting_node(seq)
 
-        return HttpResponse(json.dumps(_fetch_treenode_location(tnid)))
+        return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
 
@@ -628,39 +607,45 @@ def find_previous_branchnode_or_root(request, project_id=None):
 def find_next_branchnode_or_end(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
-        shift = 1 == int(request.POST['shift'])
-        alt = 1 == int(request.POST['alt'])
         skid = Treenode.objects.get(pk=tnid).skeleton_id
         graph = _skeleton_as_graph(skid)
 
         children = graph.successors(tnid)
+        branches = []
+        for childNodeID in children:
+            # Travel downstream until finding a child node with more than one
+            # child or reaching an end node
+            seq = [childNodeID] # Does not include the starting node tnid
+            branchEnd = childNodeID
+            while True:
+                branchChildren = graph.successors(branchEnd)
+                if 1 == len(branchChildren):
+                    branchEnd = branchChildren[0]
+                    seq.append(branchEnd)
+                else:
+                    break # Found an end node or a branch node
+
+            branches.append([childNodeID,
+                             _find_first_interesting_node(seq),
+                             branchEnd])
+
+        # If more than one branch exists, sort based on downstream arbor size.
         if len(children) > 1:
-            # Choose one of the children:
-            # The closest to 0,0,0 or the furthest if shift is down
-            sqDist = 0 if shift else float('inf')
-            for t in Treenode.objects.filter(parent_id=tnid):
-                d = pow(t.location_x, 2) + pow(t.location_y, 2) + pow(t.location_z, 2)
-                if (shift and d > sqDist) or (not shift and d < sqDist):
-                    sqDist = d
-                    tnid = t.id
+            sorted(branches,
+                   key=lambda b: len(nx.algorithms.traversal.depth_first_search.dfs_successors(graph, b[0])),
+                   reverse=True)
 
-        # Travel downstream until finding a child node with more than one child
-        # or reaching an end node
-        seq = [] # Does not include the starting node tnid
-        while True:
-            children = graph.successors(tnid)
-            if 1 == len(children):
-                tnid = children[0]
-                seq.append(tnid)
-            else:
-                break # Found an end node or a branch node
+        # Leaf nodes will have no branches
+        if len(children) > 0:
+            # Create a dict of node ID -> node location
+            nodeIDsFlat = list(itertools.chain.from_iterable(branches))
+            nodeLocations = {row[0]: row for row in _fetch_locations(nodeIDsFlat)}
 
-        if seq and alt:
-            tnid = _find_first_interesting_node(seq)
-
-        return HttpResponse(json.dumps(_fetch_treenode_location(tnid)))
+        branches = [[nodeLocations[id] for id in branch] for branch in branches]
+        return HttpResponse(json.dumps(branches))
     except Exception as e:
-        raise Exception('Could not obtain next branch node or root:' + str(e))
+        raise Exception('Could not obtain next branch node or leaf: ' + str(e))
+
 
 @requires_user_role([UserRole.Browse])
 def user_info(request, project_id=None):

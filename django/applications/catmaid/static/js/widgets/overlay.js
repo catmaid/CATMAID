@@ -1438,26 +1438,46 @@ SkeletonAnnotations.SVGOverlay.prototype.goToPreviousBranchOrRootNode = function
 
 SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(treenode_id, e) {
   if (this.isIDNull(treenode_id)) return;
-  var self = this;
-  this.submit(
-      django_url + project.id + "/node/next_branch_or_end",
-      {tnid: treenode_id,
-       shift: e.shiftKey ? 1 : 0,
-       alt: e.altKey ? 1 : 0},
-      function(json) {
-        // json is a tuple:
-        // json[0]: treenode id
-        // json[1], [2], [3]: x, y, z in calibrated world units
-        if (treenode_id === json[0]) {
-          // Already at a branch or end node
-          growlAlert('Already there', 'You are already at a branch or end node');
-        } else {
-          self.moveTo(json[3], json[2], json[1],
-            function() {
-              self.selectNode(json[0]);
-            });
-        }
-      });
+  if (e.shiftKey) {
+    this.cycleThroughBranches(treenode_id, e.altKey ? 1 : 2);
+  } else {
+    var self = this;
+    this.submit(
+        django_url + project.id + "/node/next_branch_or_end",
+        {tnid: treenode_id},
+        function(json) {
+          // json is an array of branches
+          // each branch is a tuple:
+          // [child head of branch, first node of interest, first branch or leaf]
+          // each node is a tuple:
+          // node[0]: treenode id
+          // node[1], [2], [3]: x, y, z in calibrated world units
+          if (json.length === 0) {
+            // Already at a branch or end node
+            growlAlert('Already there', 'You are at an end node');
+          } else {
+            self.nextBranches = {tnid: treenode_id, branches: json};
+            self.cycleThroughBranches(null, e.altKey ? 1 : 2);
+          }
+        });
+  }
+};
+
+SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (treenode_id, node_index) {
+  if (typeof this.nextBranches === 'undefined') return;
+
+  var currentBranch = this.nextBranches.branches.map(function (branch) {
+    return branch.some(function (node) { return node[0] === treenode_id; });
+  }).indexOf(true);
+
+  // Cycle through branches. If treenode_id was not in the branch nodes (such as
+  // when first selecting a branch), currentBranch will be -1, so the following
+  // line will make it 0 and still produce the desired behavior.
+  currentBranch = (currentBranch + 1) % this.nextBranches.branches.length;
+
+  var branch = this.nextBranches.branches[currentBranch];
+  var node = branch[node_index];
+  this.moveTo(node[3], node[2], node[1], this.selectNode.bind(this, node[0]));
 };
 
 /** Checks first if the parent is loaded,

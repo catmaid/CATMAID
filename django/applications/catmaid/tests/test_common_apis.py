@@ -2135,6 +2135,40 @@ class ViewPageTests(TestCase):
                 "skeleton_id": 361}
         self.assertEqual(expected_result, parsed_response)
 
+    def test_node_find_end_of_linear_branch(self):
+        self.fake_authentication()
+        treenode_id = 391
+
+        response = self.client.post(
+                '/%d/node/next_branch_or_end' % self.test_project_id, {
+                    'tnid': treenode_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [[[393, 6910.0, 990.0, 0.0],
+                            [393, 6910.0, 990.0, 0.0],
+                            [399, 5670.0, 640.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_node_find_next_branch(self):
+        self.fake_authentication()
+        treenode_id = 253
+
+        response = self.client.post(
+                '/%d/node/next_branch_or_end' % self.test_project_id, {
+                    'tnid': treenode_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain two branches, and the larger branch headed by
+        # node 263 should be first.
+        expected_result = [[[263, 3915.0, 2105.0, 0.0],
+                            [263, 3915.0, 2105.0, 0.0],
+                            [265, 4570.0, 2125.0, 0.0]],
+                           [[255, 3850.0, 1790.0, 0.0],
+                            [255, 3850.0, 1790.0, 0.0],
+                            [261, 2820.0, 1345.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
     def test_node_update_single_treenode(self):
         self.fake_authentication()
         treenode_id = 289

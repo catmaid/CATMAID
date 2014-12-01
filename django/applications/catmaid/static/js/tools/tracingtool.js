@@ -347,7 +347,7 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
-    helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or low confidence; with shift and at a branch node, move down the other branch)",
+    helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or low confidence; subsequent shift+V: cycle through other branches)",
     keyShortcuts: { "V": [ 86 ] },
     run: function (e) {
       if (!mayView())

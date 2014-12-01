@@ -158,6 +158,7 @@ WebGLApplication.prototype.exportSVG = function() {
   $.blockUI();
   try {
     var svg = this.space.view.getSVGData();
+    SVGUtil.reduceCoordinatePrecision(svg, 1);
     var styleDict = SVGUtil.classifyStyles(svg);
 
     var styles = Object.keys(styleDict).reduce(function(o, s) {
@@ -196,6 +197,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
   var sorting = dialog.appendChoice("Sorting name: ", "svg-catalog-sorting",
       namingOptionNames, namingOptionIds);
   var displayNames = dialog.appendCheckbox('Display names', 'svg-catalog-display-names', true);
+  var coordDigits = dialog.appendField("# Coordinate digits", 'svg-catalog-coord-digis', '1');
   var fontsize = dialog.appendField("Fontsize: ", "svg-catalog-fontsize", '14');
   var margin = dialog.appendField("Margin: ", "svg-catalog-margin", '10');
   var padding = dialog.appendField("Padding: ", "svg-catalog-pading", '10');
@@ -229,7 +231,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
 
   dialog.onOK = handleOK.bind(this);
 
-  dialog.show(400, 400, true);
+  dialog.show(400, 450, true);
 
   function handleOK() {
     $.blockUI();
@@ -275,6 +277,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
 
         // Export catalog
         var svg = this.space.view.getSVGData(options);
+        SVGUtil.reduceCoordinatePrecision(svg, parseInt(coordDigits.value));
         var styleDict = SVGUtil.classifyStyles(svg);
 
         var styles = Object.keys(styleDict).reduce(function(o, s) {

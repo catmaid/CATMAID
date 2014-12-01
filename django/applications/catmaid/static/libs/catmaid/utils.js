@@ -1202,6 +1202,33 @@ SVGUtil.classifyStyles = function(svg)
 };
 
 /**
+ * Reduce the precision of coordinates used in the given SVG to the number of
+ * decimal digits requested. Currently, only the precision of lines is reduced.
+ */
+SVGUtil.reduceCoordinatePrecision = function(svg, digits)
+{
+  /**
+   * Create a function to read attribute 'attr' of element 'e' and change its
+   * precision
+   */
+  var reducePrecision = (function(nDigits) {
+    return function (e, attr) {
+      e.setAttribute(attr, parseFloat(e.getAttribute(attr)).toFixed(nDigits));
+    };
+  })(digits);
+
+  // Change precision of lines
+  $(svg).find("line").each(function(i, l) {
+    reducePrecision(l, 'x1');
+    reducePrecision(l, 'y1');
+    reducePrecision(l, 'x2');
+    reducePrecision(l, 'y2');
+  });
+
+  return svg;
+};
+
+/**
  * Adds a CDATA section to the given XML document that contains the given
  * styles. The XML document is *not* a regular SVG DOM element, but one that can
  * be created from such an element as following:

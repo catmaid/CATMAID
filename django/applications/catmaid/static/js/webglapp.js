@@ -198,7 +198,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
   var sorting = dialog.appendChoice("Sorting name: ", "svg-catalog-sorting",
       namingOptionNames, namingOptionIds);
   var displayNames = dialog.appendCheckbox('Display names', 'svg-catalog-display-names', true);
-  var coordDigits = dialog.appendField("# Coordinate digits", 'svg-catalog-coord-digis', '1');
+  var coordDigits = dialog.appendField("# Coordinate decimals", 'svg-catalog-coord-digits', '1');
   var fontsize = dialog.appendField("Fontsize: ", "svg-catalog-fontsize", '14');
   var margin = dialog.appendField("Margin: ", "svg-catalog-margin", '10');
   var padding = dialog.appendField("Padding: ", "svg-catalog-pading", '10');

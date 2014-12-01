@@ -382,11 +382,22 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Go to the parent of the active node",
-    keyShortcuts: { "P": [ 80 ] },
+    keyShortcuts: { "[": [ 219 ] },
     run: function (e) {
       if (!mayView())
         return false;
       tracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId());
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Go to the child of the active node (Subsequent shift+]: cycle through children)",
+    keyShortcuts: { "]": [ 221 ] },
+    run: function (e) {
+      if (!mayView())
+        return false;
+      tracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e);
       return true;
     }
   }) );

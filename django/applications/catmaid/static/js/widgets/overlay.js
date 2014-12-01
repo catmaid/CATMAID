@@ -1496,6 +1496,31 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
   this.moveToAndSelectNode(node.parent_id);
 };
 
+SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, e) {
+  if (this.isIDNull(treenode_id)) return;
+  // If the existing nextBranches was fetched for this treenode, reuse it to
+  // prevent repeated queries when quickly alternating between child and parent.
+  if (e.shiftKey ||
+      typeof this.nextBranches !== 'undefined' && this.nextBranches.tnid === treenode_id) {
+        this.cycleThroughBranches(treenode_id, 0);
+  } else {
+    var self = this;
+    this.submit(
+        django_url + project.id + "/node/next_branch_or_end",
+        {tnid: treenode_id},
+        function(json) {
+          // See goToNextBranchOrEndNode for JSON schema description.
+          if (json.length === 0) {
+            // Already at a branch or end node
+            growlAlert('Already there', 'You are at an end node');
+          } else {
+            self.nextBranches = {tnid: treenode_id, branches: json};
+            self.cycleThroughBranches(null, 0);
+          }
+        });
+  }
+};
+
 /**
  * Shows a dialog to edit the radius property of a node. By default, it also
  * lets the user estimate the radius with the help of a small measurement tool,

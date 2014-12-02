@@ -13,11 +13,34 @@ if (!window.console) {
 }
 
 // Attach a general error handler
-window.onerror = function( msg, url, num )
+window.onerror = function(msg, url, lineno, colno, err)
 {
-  error('An error occured in CATMAID and the current action can\'t be ' +
-        'completed. You can try to reload the widget or tool you just used.',
-        'Error: ' + msg + '\nURL: ' + url + '\nLine: ' + num);
+  var info = 'An error occured in CATMAID and the current action can\'t be ' +
+      'completed. You can try to reload the widget or tool you just used.';
+  var detail = 'Error: ' + msg + ' URL: ' + url + ' Line: ' + lineno +
+      ' Column: ' + colno + ' Stacktrace: ' + (err ? err.stack : 'N/A');
+
+  // Log the error detail to the console
+  console.log(detail);
+
+  // Log the error object, if available
+  if (err) {
+    console.log('Error object:')
+    console.log(err)
+  } else {
+    console.log('No error object was provided');
+  }
+
+  // Use alert() to inform the user, if the error function isn't available for
+  // some reason
+  if (error) {
+    error(info, detail);
+  } else {
+    alert(info + ' Detail: ' + detail);
+  }
+
+  // Return true to indicate the exception is handled and doesn't need to be
+  // shown to the user.
   return true;
 };
 

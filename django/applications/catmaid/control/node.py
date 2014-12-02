@@ -631,7 +631,7 @@ def find_next_branchnode_or_end(request, project_id=None):
 
         # If more than one branch exists, sort based on downstream arbor size.
         if len(children) > 1:
-            sorted(branches,
+            branches.sort(
                    key=lambda b: len(nx.algorithms.traversal.depth_first_search.dfs_successors(graph, b[0])),
                    reverse=True)
 

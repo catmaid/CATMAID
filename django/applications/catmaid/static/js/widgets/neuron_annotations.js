@@ -587,7 +587,16 @@ NeuronAnnotations.prototype.get_unselected_neurons = function()
 NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
 {
   var dialog = new OptionsDialog("Add new annotation");
-  dialog.appendMessage("Add a new annotation for the selected objects");
+  dialog.appendMessage("Add a new annotation for the selected objects.");
+
+  var helpMsg = dialog.appendMessage("Click here for details");
+  $(helpMsg).click(function() {
+    $(this).empty().append(document.createTextNode("Every occurence of " +
+      "'{nX}' with X being a number is replaced by a number that is " +
+      "autmatically incremented (starting from X) for each annotated " +
+      "object."));
+  });
+
   // Add annotation input field supporting auto-completion
   var annotation_input = dialog.appendField('Annotation: ', 'new-annotation',
       '', true);
@@ -633,7 +642,7 @@ NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
     success_fn([annotation], meta_annotations);
   };
 
-  dialog.show('auto', 'auto', true);
+  dialog.show(400, 'auto', true);
 
   // Auto-completion has to be added after the dialog has been created to ensure
   // the auto completion controls com after the dialog in the DOM (to display

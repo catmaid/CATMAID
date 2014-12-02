@@ -388,21 +388,25 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
 def annotate_entities(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
 
-    annotations = [v for k,v in request.POST.iteritems()
+    # Read keys in a sorted manner
+    sorted_keys = sorted(request.POST.keys())
+
+    annotations = [request.POST[k] for k in sorted_keys
             if k.startswith('annotations[')]
-    meta_annotations = [v for k,v in request.POST.iteritems()
+    meta_annotations = [request.POST[k] for k in sorted_keys
             if k.startswith('meta_annotations[')]
-    entity_ids = [int(v) for k,v in request.POST.iteritems()
+    entity_ids = [int(request.POST[k]) for k in sorted_keys
             if k.startswith('entity_ids[')]
-    skeleton_ids = [int(v) for k,v in request.POST.iteritems()
+    skeleton_ids = [int(request.POST[k]) for k in sorted_keys
             if k.startswith('skeleton_ids[')]
 
     if any(skeleton_ids):
-        entity_ids += ClassInstance.objects.filter(project = p,
+        skid_to_eid = dict(ClassInstance.objects.filter(project = p,
                 class_column__class_name = 'neuron',
                 cici_via_b__relation__relation_name = 'model_of',
                 cici_via_b__class_instance_a__in = skeleton_ids).values_list(
-                        'id', flat=True)
+                        'cici_via_b__class_instance_a', 'id'))
+        entity_ids += [skid_to_eid[skid] for skid in skeleton_ids]
 
     # Annotate enties
     annotation_map = {a: request.user.id for a in annotations}

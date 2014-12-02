@@ -582,17 +582,17 @@ function handle_openProjectStack( status, text, xml )
 
 			var tilesource = getTileSource( e.tile_source_type, e.image_base,
 					e.file_extension );
-			var tilelayername = "TileLayer";
 			var tilelayer = new TileLayer(
-					tilelayername,
+					"Image data",
 					stack,
 					e.tile_width,
 					e.tile_height,
 					tilesource,
 					true,
-					1);
+					1,
+					true);
 
-			stack.addLayer( tilelayername, tilelayer );
+			stack.addLayer( "TileLayer", tilelayer );
 
 			$.each(e.overlay, function(key, value) {
 				var tilesource = getTileSource( value.tile_source_type,
@@ -607,7 +607,8 @@ function handle_openProjectStack( status, text, xml )
 								value.tile_height,
 								tilesource,
 								layer_visibility,
-								value.default_opacity / 100 );
+								value.default_opacity / 100,
+								false);
 				stack.addLayer( value.title, tilelayer2 );
 			});
 

@@ -54,3 +54,11 @@
       "sample_height": [pixel size], "sort": [true|false]. By default projects
       are sorted and displayed without images. A valid configuration could look
       like: {"row_tags":["DAPI","Crb"], "col_tags":["Wing Disc","CNS"]}
+- model: catmaid.dataviewtype
+  pk: 5
+  fields:
+    title: Dynamic projects view
+    code_type: dynamic_projects_list_data_view
+    comment: >
+      Loads project and stack information dynamically based on a JSON representation
+      returned by configured URLs.

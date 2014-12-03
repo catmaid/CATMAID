@@ -1,0 +1,72 @@
+{% load common %}
+{% load data_view_config %}
+
+<h1>CATMAID v0.24</h1>
+
+<div id='availableProjects'></div>
+
+<script type="text/javascript">
+
+  /**
+   * Will retrieve available projects and stacks from the given URL. A * list of
+   * objects is expected as result. Each object must have the fields * 'project'
+   * and 'stack'.
+   */
+  function listAvailableProjects(url)
+  {
+    // This request requires that the 'Access-Control-Allow-Origin' header is
+    // set on the response.
+    $.ajax({
+      "dataType": 'json',
+      "type": "GET",
+      "cache": false,
+      "url": url,
+      "data": {},
+      "success": function( json ) {
+        console.log(json);
+        // Parse result
+        var projectsToStacks = json.sort(function(s1, s2) {
+          return s1.project.toLowerCase() > s2.project.toLowerCase() ? 1 : -1;
+        }).reduce(function(o, s) {
+          var l = o[s.project];
+          if (undefined === l) {
+            l = [];
+            o[s.project = l;
+          }
+          l.push(s.stack);
+
+          return o;  
+        }, {});
+
+        console.log(projectsToStacks);
+
+        var list = $('<ul />');
+
+        // Append list
+        $('div#availableProjects').append(list);
+      },
+      "error": function(jqXHR, textStatus, errorThrown)
+      {
+        var msg = "Could not load data view";
+        console.log(msg);
+        error(msg, textStatus);
+      }
+    });
+  };
+
+  /**
+   * Entry point.
+   */
+  function loadDynamicView()
+  {
+    console.log('Loading dynamic data view');
+
+    var projectURL = "http://renderer-data1.int.janelia.org:8080/render-ws/v1/owner/flyTEM/stackIds";
+    listAvailableProjects(projectURL);
+  };
+
+</script>
+
+<img src="{{ STATIC_URL }}images/empty.gif"
+     onload="eval($('script', this.parentNode)[0].innerHTML); loadDynamicView();
+     this.parentNode.removeChild(this);" />

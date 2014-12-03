@@ -2024,6 +2024,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.setView = function(tar
 	this.camera.position.copy(position);
 	this.camera.up.copy(up);
 	this.camera.zoom = zoom;
+	this.camera.updateProjectionMatrix();
 };
 
 /** Construct mouse controls as objects, so that no context is retained. */

@@ -1552,8 +1552,8 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
   var d = this.space.dimensions;
   var fov = 75;
   var near = 1;
-  var far = 3 * Math.max(d.x, Math.max(d.y, d.z));
-  var orthoNear = 1;
+  var far = 5 * Math.max(d.x, Math.max(d.y, d.z));
+  var orthoNear = -far;
   var orthoFar =  far;
 	this.camera = new THREE.CombinedCamera(-this.space.canvasWidth,
       -this.space.canvasHeight, fov, near, far, orthoNear, orthoFar);

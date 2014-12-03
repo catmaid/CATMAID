@@ -1602,7 +1602,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.createControls = funct
   controls.rotateSpeed = 1.0;
   controls.zoomSpeed = 3.2;
   controls.panSpeed = 1.5;
-  controls.noZoom = false;
+  controls.noZoom = true;
   controls.noPan = false;
   controls.staticMoving = true;
   controls.dynamicDampingFactor = 0.3;
@@ -2048,6 +2048,16 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
   };
 
   this.MouseWheel = function(ev) {
+    // Move the camera and the target in target direction
+    var distance = 3500 * (ev.wheelDelta > 0 ? -1 : 1);
+    var camera = this.CATMAID_view.camera;
+    var controls = this.CATMAID_view.controls;
+    var change = new THREE.Vector3().copy(camera.position)
+      .sub(controls.target).normalize().multiplyScalar(distance);
+
+    controls.target.add(change);
+    camera.position.add(change);
+
     this.CATMAID_view.space.render();
   };
 

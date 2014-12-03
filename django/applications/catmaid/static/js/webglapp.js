@@ -688,7 +688,7 @@ WebGLApplication.prototype.activateView = function(name) {
   }
   // Activate view by executing the stored function
   var view = this.availableViews[name]
-  this.space.view.setView(view.target, view.position, view.up);
+  this.space.view.setView(view.target, view.position, view.up, view.zoom);
 	this.space.render();
 };
 
@@ -2008,6 +2008,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getView = function() {
     target: this.controls.target.clone(),
     position: this.camera.position.clone(),
     up: this.camera.up.clone(),
+    zoom: this.camera.zoom,
   };
 };
 
@@ -2018,10 +2019,11 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getView = function() {
  * @param {THREE.Vector3} position - the position of the camera
  * @param {THREE.Vector3} up - up direction
  */
-WebGLApplication.prototype.Space.prototype.View.prototype.setView = function(target, position, up) {
+WebGLApplication.prototype.Space.prototype.View.prototype.setView = function(target, position, up, zoom) {
 	this.controls.target.copy(target);
 	this.camera.position.copy(position);
 	this.camera.up.copy(up);
+	this.camera.zoom = zoom;
 };
 
 /** Construct mouse controls as objects, so that no context is retained. */

@@ -116,7 +116,7 @@ WebGLApplication.prototype.resizeView = function(w, h) {
     $('#viewer-3d-webgl-canvas' + this.widgetID).height(canvasHeight);
     $('#viewer-3d-webgl-canvas' + this.widgetID).css("background-color", "#000000");
 
-    this.space.setSize(canvasWidth, canvasHeight);
+    this.space.setSize(canvasWidth, canvasHeight, this.options);
 
     this.space.render();
   }
@@ -492,6 +492,7 @@ WebGLApplication.prototype.Options = function() {
   this.color_method = 'none';
   this.tag_regex = '';
   this.connector_color = 'cyan-red';
+  this.camera_view = 'perspective';
   this.lean_mode = false;
   this.synapse_clustering_bandwidth = 5000;
   this.smooth_skeletons = false;
@@ -687,7 +688,7 @@ WebGLApplication.prototype.activateView = function(name) {
   }
   // Activate view by executing the stored function
   var view = this.availableViews[name]
-  this.space.view.setView(view.target, view.position, view.up);
+  this.space.view.setView(view.target, view.position, view.up, view.zoom);
 	this.space.render();
 };
 
@@ -1009,7 +1010,7 @@ WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canva
 	this.canvasWidth = canvasWidth;
 	this.canvasHeight = canvasHeight;
 	this.view.camera.setSize(canvasWidth, canvasHeight);
-	this.view.camera.toPerspective(); // invokes update of camera matrices
+	this.view.camera.updateProjectionMatrix();
 	this.view.renderer.setSize(canvasWidth, canvasHeight);
 	if (this.view.controls) {
 		this.view.controls.handleResize();
@@ -1533,8 +1534,8 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
   var d = this.space.dimensions;
   var fov = 75;
   var near = 1;
-  var far = 3 * Math.max(d.x, Math.max(d.y, d.z));
-  var orthoNear = 1;
+  var far = 5 * Math.max(d.x, Math.max(d.y, d.z));
+  var orthoNear = -far;
   var orthoFar =  far;
 	this.camera = new THREE.CombinedCamera(-this.space.canvasWidth,
       -this.space.canvasHeight, fov, near, far, orthoNear, orthoFar);
@@ -1602,7 +1603,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.createControls = funct
   controls.rotateSpeed = 1.0;
   controls.zoomSpeed = 3.2;
   controls.panSpeed = 1.5;
-  controls.noZoom = false;
+  controls.noZoom = true;
   controls.noPan = false;
   controls.staticMoving = true;
   controls.dynamicDampingFactor = 0.3;
@@ -2007,6 +2008,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getView = function() {
     target: this.controls.target.clone(),
     position: this.camera.position.clone(),
     up: this.camera.up.clone(),
+    zoom: this.camera.zoom,
   };
 };
 
@@ -2017,10 +2019,12 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getView = function() {
  * @param {THREE.Vector3} position - the position of the camera
  * @param {THREE.Vector3} up - up direction
  */
-WebGLApplication.prototype.Space.prototype.View.prototype.setView = function(target, position, up) {
+WebGLApplication.prototype.Space.prototype.View.prototype.setView = function(target, position, up, zoom) {
 	this.controls.target.copy(target);
 	this.camera.position.copy(position);
 	this.camera.up.copy(up);
+	this.camera.zoom = zoom;
+	this.camera.updateProjectionMatrix();
 };
 
 /** Construct mouse controls as objects, so that no context is retained. */
@@ -2048,6 +2052,31 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
   };
 
   this.MouseWheel = function(ev) {
+    // Move the camera and the target in target direction
+    var distance = 3500 * (ev.wheelDelta > 0 ? -1 : 1);
+    var camera = this.CATMAID_view.camera;
+    var controls = this.CATMAID_view.controls;
+    var change = new THREE.Vector3().copy(camera.position)
+      .sub(controls.target).normalize().multiplyScalar(distance);
+
+    controls.target.add(change);
+    camera.position.add(change);
+
+    // The distance to the target does not make any difference for an
+    // orthographic projection, the depth is fixed.
+    if (camera.inOrthographicMode) {
+      var new_zoom = camera.zoom;
+      if (ev.wheelDelta > 0) {
+        new_zoom += 0.25;
+      } else {
+        new_zoom -= 0.25;
+      }
+      if (new_zoom < 0 ) {
+        new_zoom = 0.1;
+      }
+      camera.setZoom( new_zoom );
+    }
+
     this.CATMAID_view.space.render();
   };
 
@@ -2772,6 +2801,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeColor = func
 		this.updateSkeletonColor(options);
 	}
 };
+
+WebGLApplication.prototype.updateCameraView = function(toOrthographic) {
+  if(toOrthographic) {
+    this.options.camera_view = 'orthographic';
+    this.space.view.camera.toOrthographic();
+  } else {
+    this.options.camera_view = 'perspective';
+    this.space.view.camera.setZoom(1.0);
+    this.space.view.camera.toPerspective();
+  }
+  this.space.render();
+};
+
 
 WebGLApplication.prototype.updateConnectorColors = function(select) {
   this.options.connector_color = select.value;

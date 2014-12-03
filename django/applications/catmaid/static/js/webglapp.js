@@ -503,8 +503,6 @@ WebGLApplication.prototype.Options = function() {
   this.invert_shading = false;
   this.follow_active = false;
   this.distance_to_active_node = 5000; // nm
-  this.orthocam_fov = 50;
-  this.orthocam_zoom = 1.0;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -1008,15 +1006,11 @@ WebGLApplication.prototype.Space = function( w, h, container, stack ) {
 
 WebGLApplication.prototype.Space.prototype = {};
 
-WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canvasHeight, options) {
+WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canvasHeight) {
 	this.canvasWidth = canvasWidth;
 	this.canvasHeight = canvasHeight;
 	this.view.camera.setSize(canvasWidth, canvasHeight);
-      if( options.camera_view === 'orthographic') {
-       this.view.camera.toOrthographic();
-      } else {
-	 this.view.camera.toPerspective();
-      }
+	this.view.camera.updateProjectionMatrix();
 	this.view.renderer.setSize(canvasWidth, canvasHeight);
 	if (this.view.controls) {
 		this.view.controls.handleResize();
@@ -1509,7 +1503,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.newJSONLoader = fun
 };
 
 /** Adjust content according to the persistent options. */
-WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit, changed_ortho_fov, changed_ortho_zoom) {
+WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit) {
 	if (options.show_meshes) {
     if (0 === this.meshes.length) {
 		  this.loadMeshes(space, submit, options.createMeshMaterial());
@@ -1520,18 +1514,6 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
 	}
 
 	this.active_node.setVisible(options.show_active_node);
-
-  if (changed_ortho_fov) {
-     if (options.camera_view === 'orthographic') {
-        space.view.camera.setFov( options.orthocam_fov );
-     }
-  }
-
-  if (changed_ortho_zoom) {
-     if (options.camera_view === 'orthographic') {
-        space.view.camera.setZoom( options.orthocam_zoom );
-     }
-  }
 };
 
 WebGLApplication.prototype.Space.prototype.View = function(space) {

@@ -32,6 +32,17 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
                          'one link.' % (stack_id, project_id)}
     ps=ps_all[0]
 
+    broken_slices_qs = BrokenSlice.objects.filter(stack=stack_id)
+    broken_slices = {}
+    for ele in broken_slices:
+	broken_slices[ele.index] = 1
+
+    overlay_data = Overlay.objects.filter(stack=stack_id)
+
+    return get_stack_info_response(p, s, ps, overlay_data, broken_slices)
+
+def get_stack_info_response(p, s, ps, overlay_data, broken_slices):
+
     # https://github.com/acardona/CATMAID/wiki/Convention-for-Stack-Image-Sources
     if int(s.tile_source_type) == 2:
         # request appropriate stack metadata from tile source
@@ -48,13 +59,8 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
         # convert it back to dictionary str->dict
         return json.loads(read_response)
     else:
-        broken_slices_qs = BrokenSlice.objects.filter(stack=stack_id)
-        broken_slices = {}
-        for ele in broken_slices_qs:
-            broken_slices[ele.index] = 1
         overlays = []
-        overlays_qs = Overlay.objects.filter(stack=stack_id)
-        for ele in overlays_qs:
+        for ele in overlay_data:
             overlays.append( {
                 'id': ele.id,
                 'title': ele.title,
@@ -66,8 +72,8 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
                 'file_extension': ele.file_extension
                 } )
         result={
-            'sid': int(s.id),
-            'pid': int(p.id),
+            'sid': s.id,
+            'pid': p.id,
             'ptitle': p.title,
             'stitle': s.title,
             'image_base': s.image_base,

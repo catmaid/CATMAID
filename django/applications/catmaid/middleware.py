@@ -1,4 +1,5 @@
 import json
+import re
 
 from django.http import HttpResponse
 from django.contrib.auth.models import User
@@ -35,9 +36,13 @@ class AjaxExceptionMiddleware(object):
 
 class FlyTEMMiddleware(object):
 
+    stack_info_pattern = re.compile(r'^/.+/stack/.+/info$')
+
     def process_request(self, request):
-        if request.path == '/projects':
-            new_path = '/flytem/projects'
-            request.path_info = new_path
-            request.path = new_path
+        new_path = (request.path == '/projects') or \
+                    self.stack_info_pattern.search(request.path)
+
+        if new_path:
+            request.path_info = '/flytem' + request.path_info
+            request.path = '/flytem' + request.path
 

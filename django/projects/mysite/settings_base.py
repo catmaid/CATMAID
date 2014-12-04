@@ -155,6 +155,14 @@ PIPELINE_JS_COMPRESSOR = None
 # yet.
 PIPELINE_DISABLE_WRAPPER = True
 
+# FlyTEM rendering service. To activate add the following lines to your
+# settings.py file:
+# MIDDLEWARE_CLASSES += ('catmaid.middleware.FlyTEMMiddleware',)
+# FLYTEM_SERVICE_URL = 'http://renderer-2.int.janelia.org:8080/render-ws/v1/owner/flyTEM'
+# FLYTEM_STACK_RESOLUTION = (4,4,40)
+# FLYTEM_STACK_TILE_WIDTH = 512
+# FLYTEM_STACK_TILE_HEIGHT = 512
+
 # A couple of functions useful for generating default directories to
 # be used in the settings files:
 

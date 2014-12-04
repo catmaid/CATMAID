@@ -139,6 +139,7 @@ def get_data_view( request, data_view_id ):
         'project_index': project_index,
         'stack_index': stack_index,
         'stacks_of': stacks_of,
+        'STATIC_URL': settings.STATIC_URL,
     })
 
     return HttpResponse( template.render( context ) );

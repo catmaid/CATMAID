@@ -49,11 +49,22 @@ class FlyTEMStack:
             raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
 
         zvalues_json = json.loads(zvalues_json)
+        zvalues = [int(v) for v in zvalues_json]
+        zvalues.sort()
 
+        # Dimensions
         width = int(bounds_json['maxX'])
         height = int(bounds_json['maxY'])
-        depth = max(zvalues_json) + 1
+        depth = zvalues[-1] + 1
         self.dimension = FlyTEMDimension(width, height, depth)
+
+        # Broken slices
+        self.broken_slices = []
+        last = -1
+        for i in zvalues:
+            for j in range(last + 1, i):
+                self.broken_slices.append(j)
+            last = i
 
 class FlyTEMProjectStacks:
     def __init__(self):

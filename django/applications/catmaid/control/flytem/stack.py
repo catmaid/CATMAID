@@ -19,7 +19,7 @@ def stack_info(request, project_id=None, stack_id=None):
 
     overlay_data = {}
 
-    broken_slices = {}
+    broken_slices = {i:1 for i in stack.broken_slices}
 
     result = get_stack_info_response(project, stack, ps, overlay_data, broken_slices)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")

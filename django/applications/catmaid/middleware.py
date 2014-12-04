@@ -37,10 +37,12 @@ class AjaxExceptionMiddleware(object):
 class FlyTEMMiddleware(object):
 
     stack_info_pattern = re.compile(r'^/.+/stack/.+/info$')
+    stacks_pattern = re.compile(r'/.+/stacks')
 
     def process_request(self, request):
         new_path = (request.path == '/projects') or \
-                    self.stack_info_pattern.search(request.path)
+                    self.stack_info_pattern.search(request.path) or \
+                    self.stacks_pattern.search(request.path)
 
         if new_path:
             request.path_info = '/flytem' + request.path_info

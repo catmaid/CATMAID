@@ -23,3 +23,10 @@ def stack_info(request, project_id=None, stack_id=None):
 
     result = get_stack_info_response(project, stack, ps, overlay_data, broken_slices)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")
+
+def stacks(request, project_id=None):
+    """ Returns a response containing the JSON object with menu information
+    about the project's stacks.
+    """
+    return HttpResponse(json.dumps({}, sort_keys=True, indent=4),
+        content_type="text/json")

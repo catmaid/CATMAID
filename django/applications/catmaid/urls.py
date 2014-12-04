@@ -422,4 +422,5 @@ urlpatterns += patterns('catmaid.control',
 urlpatterns += patterns('catmaid.control.flytem',
     (r'^flytem/projects$', 'project.projects'),
     (r'^flytem/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', 'stack.stack_info'),
+    (r'^flytem/(?P<project_id>.+)/stacks$', 'stack.stacks'),
 )

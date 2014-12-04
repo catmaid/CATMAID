@@ -2,24 +2,16 @@ import json
 import urllib2
 from django.http import HttpResponse
 from django.conf import settings
+from catmaid.control.flytem.models import FlyTEMProjectStacks
 
 def projects(request):
     """ Returns a list of project objects that are visible for the requesting
     user and that have at least one stack linked to it.
     """
-    # Request JSON from 
-    try:
-        project_stacks_json = urllib2.urlopen(settings.FLYTEM_PROJECT_URL)
-        project_stacks_json = project_stacks_json.read()
-    except urllib2.HTTPError as e:
-        raise ValueError("Couldn't retrieve FlyTEM project information from %s" % settings.FLYTEM_PROJECT_URL)
-    except urllib2.URLError as e:
-        raise ValueError("Couldn't retrieve FlyTEM project information from %s" % settings.FLYTEM_PROJECT_URL)
-
-    project_stacks = json.loads(project_stacks_json)
+    project_stacks = FlyTEMProjectStacks()
 
     projects = []
-    for p in project_stacks:
+    for p in project_stacks.data:
         projects.append({
             'note': '',
             'pid': p['stack'],

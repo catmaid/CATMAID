@@ -417,3 +417,8 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/treenode/table/list$', 'treenodetable.list_treenode_table'),
     (r'^(?P<project_id>\d+)/treenode/table/update$', 'treenodetable.update_treenode_table'),
 )
+
+# Patterns for FlyTEM access
+urlpatterns += patterns('catmaid.control.flytem.project',
+    (r'^flytem/projects$', 'projects'),
+)

@@ -32,3 +32,12 @@ class AjaxExceptionMiddleware(object):
             response['info'] = str(exc_info)
             response['traceback'] = ''.join(traceback.format_tb(tb))
         return HttpResponse(json.dumps(response))
+
+class FlyTEMMiddleware(object):
+
+    def process_request(self, request):
+        if request.path == '/projects':
+            new_path = '/flytem/projects'
+            request.path_info = new_path
+            request.path = new_path
+

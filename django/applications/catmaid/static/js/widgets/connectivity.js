@@ -276,6 +276,44 @@ SkeletonConnectivity.prototype.update = function() {
       'update_connectivity_table');
 };
 
+/**
+ * Change the selection state of a single skeleton and update the appropriate
+ * checkboxes (instead of triggering a redraw()).
+ */
+SkeletonConnectivity.prototype.selectSkeleton = function(skid, selected) {
+    this.skeletonSelection[skid] = selected;
+    this.updateVisibility(skid, selected);
+    $('#neuron-selector-' + this.widgetID + '-' + skid).prop('checked', selected);
+    $('#presynaptic_to-show-skeleton-' + this.widgetID + '-' + skid).prop('checked', selected);
+    $('#postsynaptic_to-show-skeleton-' + this.widgetID + '-' + skid).prop('checked', selected);
+
+    // Check the select all box, if all skeletons are selected
+    var notSelected = function(skid) { return !this.skeletonSelection[skid]; };
+    var allLookedAtSelected = !this.ordered_skeleton_ids.some(notSelected, this);
+    $('#neuron-select-all-' + this.widgetID).prop('checked', allLookedAtSelected);
+};
+
+/**
+ *  Support function to update the visibility of a neuron in another widget.
+ */
+SkeletonConnectivity.prototype.updateVisibility = function(skid, visible) {
+    // Tell all linked widgets about this change or return if there are none
+    var linkTarget = this.getLinkTarget();
+    if (!linkTarget) return;
+
+    var model = linkTarget.getSkeletonModel(skid);
+    if (visible) {
+      if (!model) model = getSkeletonModel(skid);
+      else model.setVisible(true);
+      linkTarget.updateOneModel(model);
+    } else {
+      if (model) {
+        model.setVisible(false);
+        linkTarget.updateOneModel(model);
+      }
+    }
+};
+
 SkeletonConnectivity.prototype.redraw = function() {
 
   // Record the state of checkboxes
@@ -390,27 +428,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   };
 
   /**
-   *  Support function to update the visibility of a neuron in another widget.
-   */
-  var updateVisibility = function(skid, visible) {
-      // Tell all linked widgets about this change or return if there are none
-      var linkTarget = getLinkTarget();
-      if (!linkTarget) return;
-
-      var model = linkTarget.getSkeletonModel(skid);
-      if (visible) {
-        if (!model) model = getSkeletonModel(skid);
-        else model.setVisible(true);
-        linkTarget.updateOneModel(model);
-      } else {
-        if (model) {
-          model.setVisible(false);
-          linkTarget.updateOneModel(model);
-        }
-      }
-  };
-
-  /**
    * Support function for creating a partner table.
    */
   var create_table = function(skids, skeletons, thresholds, partners, title, relation,
@@ -421,13 +438,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var set_as_selected = function(ev) {
       var skelid = parseInt( ev.target.value );
       var checked = $('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked');
-      // Update the checkbox for the same skeleton on the other table, if any
-      var r = {presynaptic_to: 'postsynaptic_to',
-               postsynaptic_to: 'presynaptic_to'}[relation];
-      $('#' + r + '-show-skeleton-' + widgetID + '-' + skelid).attr('checked', checked);
-
-      // Remember this selection
-      this.skeletonSelection[skelid] = checked;
+      this.selectSkeleton(skelid, checked);
 
       // Uncheck the select-all checkbox if it is checked and this checkbox is
       // now unchecked
@@ -435,8 +446,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         $('#' + title.toLowerCase() + 'stream-selectall' + widgetID + ':checked')
             .prop('checked', false);
       }
-
-      updateVisibility(skelid, checked);
     };
 
     var table = $('<table />').attr('id', relation + 'stream_connectivity_table' + widgetID)
@@ -767,11 +776,24 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // The content container
   var content = $("#connectivity_widget" + widgetID);
 
+  // A select all check box
+  var selectAllCb = $('<input />').attr({
+    'id': 'neuron-select-all-' + widgetID,
+    'type': 'checkbox',
+  }).change((function(widget) {
+    return function() {
+      var selected = this.checked;
+      widget.ordered_skeleton_ids.forEach(function(id) {
+        widget.selectSkeleton(id, selected);
+      });
+    };
+  })(this));
+
   // Create list of selected neurons
   var neuronTable = $('<table />').attr('class', 'header left')
         .append($('<thead />').append($('<tr />')
             .append($('<th />'))
-            .append($('<th />').text('Selected'))
+            .append($('<th />').text('Selected').append(selectAllCb))
             .append($('<th />').text('Neuron'))
             .append($('<th />').text('Upstream Threshold'))
             .append($('<th />').text('Downstream Threshold'))));
@@ -808,8 +830,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         .attr('type', 'checkbox')
         .change(function(widget, neuronId) {
           return function() {
-            widget.skeletonSelection[neuronId] = this.checked;
-            updateVisibility(neuronId, this.checked);
+            widget.selectSkeleton(skid, this.checked);
           };
         }(this, skid));
     if (this.skeletonSelection[skid]) {
@@ -829,6 +850,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     neuronTable.append(row);
   }, this);
   content.append(neuronTable);
+
+  // Check the select all box, if all skeletons are selected
+  var notSelected = function(skid) {
+    return !this.skeletonSelection[skid];
+  };
+  selectAllCb.prop('checked', !this.ordered_skeleton_ids.some(notSelected, this));
+
   // If there is more than one neuron looked at, add a sum row
   if (this.ordered_skeleton_ids.length > 1) {
     var id = this.widgetID + '-sum';

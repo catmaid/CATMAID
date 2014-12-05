@@ -419,8 +419,8 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
   var baseWidth = this.container.clientWidth - margin.left - margin.right;
   var baseHeight = this.container.clientHeight - margin.top - margin.bottom;
 
-  // Adjust the width and height so that each node has at least a space of 10 by 10 pixel
-  var nodeSize = [20, 40];
+  // Adjust the width and height so that each node has at least a space of 20x80px
+  var nodeSize = [20, 80];
   var width;
   var height;
   var factor = 1;

@@ -632,6 +632,13 @@ function Stack(
 	this.getId = function(){ return id; };
 
 	/**
+	 * Determines whether this stack is semantically equal to the provided stack.
+	 */
+	this.isEqual = function (otherStack) {
+		return id === otherStack.id;
+	};
+
+	/**
 	 * Get a layer. Layers are associated by a unique key.
 	 *
 	 * @param key

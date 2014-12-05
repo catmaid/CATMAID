@@ -32,11 +32,8 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
                          'one link.' % (stack_id, project_id)}
     ps=ps_all[0]
 
-    broken_slices_qs = BrokenSlice.objects.filter(stack=stack_id)
-    broken_slices = {}
-    for ele in broken_slices:
-	broken_slices[ele.index] = 1
-
+    broken_slices = {i:1 for i in  BrokenSlice.objects.filter(stack=stack_id) \
+                     .values_list('index', flat=True)}
     overlay_data = Overlay.objects.filter(stack=stack_id)
 
     return get_stack_info_response(p, s, ps, overlay_data, broken_slices)

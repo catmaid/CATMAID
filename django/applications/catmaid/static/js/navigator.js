@@ -356,23 +356,23 @@ function Navigator()
 	var actions = [
 
 		new Action({
-			helpText: "Zoom in (faster with Shift held)",
+			helpText: "Zoom in (smaller increments with Shift held)",
 			keyShortcuts: {
 				'+': [ 43, 107, 61, 187 ]
 			},
 			run: function (e) {
-				self.slider_s.move(1, e.shiftKey);
+				self.slider_s.move(1, !e.shiftKey);
 				return true;
 			}
 		}),
 
 		new Action({
-			helpText: "Zoom out (faster with Shift held)",
+			helpText: "Zoom out (smaller increments with Shift held)",
 			keyShortcuts: {
 				'-': [ 45, 109, 173, 189 ]
 			},
 			run: function (e) {
-				self.slider_s.move(-1, e.shiftKey);
+				self.slider_s.move(-1, !e.shiftKey);
 				return true;
 			}
 		}),

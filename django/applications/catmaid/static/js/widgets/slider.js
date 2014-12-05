@@ -140,7 +140,11 @@ Slider = function(
    */
   var setByInput = function( e )
   {
-    self.setByValue(Number(this.value));
+    var inputVal = Number(this.value);
+    // If not a valid Number, reset slider to previous value (or first value if
+    // previous value is also NaN, such as through bad initialization).
+    if (isNaN(inputVal)) this.value = isNaN(self.val) ? self.values[0] : self.val;
+    else self.setByValue(inputVal);
   };
 
   /**

@@ -319,19 +319,26 @@ NeuronDendrogram.prototype.update = function()
     return;
   }
 
-  var getTaggedNodes = (function(tag)
+  var getTaggedNodes = (function(tags)
   {
-    return this.currentSkeletonTags.hasOwnProperty(tag) ? this.currentSkeletonTags[tag] : [];
+    var mapping = this.currentSkeletonTags;
+    // Split tags into single tags and add all tagged node IDs to result
+    return tags.split(',').map(function(t) { return t.trim(); }).reduce(function(o, tag) {
+      if (mapping.hasOwnProperty(tag)) {
+        o = o.concat(mapping[tag]);
+      }
+      return o;
+    }, []);
   }).bind(this);
 
-  var filterTag = $('input#dendrogram-tag-' + this.widgetID).val();
-  var taggedNodeIds = getTaggedNodes(filterTag);
+  var filterTags = $('input#dendrogram-tag-' + this.widgetID).val();
+  var taggedNodeIds = getTaggedNodes(filterTags);
   var blacklist = this.collapseNotABranch ? getTaggedNodes('not a branch'): [];
   this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds, blacklist);
   this.renderedNodeIds = this.getNodesInTree(this.renderTree);
 
   if (this.currentSkeletonTree && this.currentSkeletonTags) {
-    this.renderDendogram(this.renderTree, this.currentSkeletonTags, filterTag);
+    this.renderDendogram(this.renderTree, this.currentSkeletonTags, filterTags);
   }
 };
 
@@ -406,7 +413,7 @@ NeuronDendrogram.prototype.highlightNode = function(node_id)
 /**
   * Renders a new dendrogram containing the provided list of nodes.
   */
-NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
+NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
 {
   var margin = {top: 50, right: 70, bottom: 50, left: 70};
   var baseWidth = this.container.clientWidth - margin.left - margin.right;
@@ -544,7 +551,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTag)
   var nodeName = function(showTags, showIds, showStrahler) {
     function addTag(d, wrapped) {
       if (d.tagged) {
-        return referenceTag + (wrapped.length > 0 ? " (" + wrapped + ")" : "");
+        return referenceTags + (wrapped.length > 0 ? " (" + wrapped + ")" : "");
       } else {
         return wrapped;
       }

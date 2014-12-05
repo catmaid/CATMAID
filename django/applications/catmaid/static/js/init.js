@@ -541,12 +541,12 @@ function openProjectStack( pid, sid, completionCallback, stackConstructor )
 		function(args)
 		{
 			// Convert arguments to array and append stackConstructor
-			handle_openProjectStack.apply(
+			var stack = handle_openProjectStack.apply(
 					this,
 					Array.prototype.slice.call(arguments).concat(stackConstructor));
 			if (completionCallback)
 			{
-				completionCallback();
+				completionCallback(stack);
 			}
 		});
 	return;
@@ -560,6 +560,7 @@ function openProjectStack( pid, sid, completionCallback, stackConstructor )
  */
 function handle_openProjectStack( status, text, xml, stackConstructor )
 {
+	var stack = null;
 	if ( status == 200 && text )
 	{
 		var e = eval( "(" + text + ")" );
@@ -588,7 +589,7 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 			}
 
 			if (typeof stackConstructor === 'undefined') stackConstructor = Stack;
-			var stack = new stackConstructor(
+			stack = new stackConstructor(
 					project,
 					e.sid,
 					e.stitle,
@@ -721,7 +722,7 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 		}
 	}
 	ui.releaseEvents();
-	return;
+	return stack;
 }
 
 /**

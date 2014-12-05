@@ -526,7 +526,7 @@ function updateProjectListFromCache() {
  * queue an open-project-stack-request to the request queue
  * freeze the window to wait for an answer
  */
-function openProjectStack( pid, sid, completionCallback )
+function openProjectStack( pid, sid, completionCallback, stackConstructor )
 {
 	if ( project && project.id != pid )
 	{
@@ -540,7 +540,10 @@ function openProjectStack( pid, sid, completionCallback )
 		{ },
 		function(args)
 		{
-			handle_openProjectStack.apply(this, arguments);
+			// Convert arguments to array and append stackConstructor
+			handle_openProjectStack.apply(
+					this,
+					Array.prototype.slice.call(arguments).concat(stackConstructor));
 			if (completionCallback)
 			{
 				completionCallback();
@@ -555,7 +558,7 @@ function openProjectStack( pid, sid, completionCallback )
  *
  * free the window
  */
-function handle_openProjectStack( status, text, xml )
+function handle_openProjectStack( status, text, xml, stackConstructor )
 {
 	if ( status == 200 && text )
 	{
@@ -584,7 +587,8 @@ function handle_openProjectStack( status, text, xml )
 				labelupload = e.labelupload_url;
 			}
 
-			var stack = new Stack(
+			if (typeof stackConstructor === 'undefined') stackConstructor = Stack;
+			var stack = new stackConstructor(
 					project,
 					e.sid,
 					e.stitle,

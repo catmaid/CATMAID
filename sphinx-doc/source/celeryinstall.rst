@@ -182,11 +182,11 @@ a folder ready where the user running Celery has permissions to write.
 Here we assume that there is a folder ``run`` in which log and pid files
 are created::
 
-  python manage.py celeryd --logfile run/celeryd log --pidfile run/celeryd.pid -l info
+  python manage.py celeryd --logfile run/celeryd.log --pidfile run/celeryd.pid -l info
 
 Or when using ``celerybeat`` as well::
 
-  python manage.py celeryd --logfile run/celeryd log --pidfile run/celeryd.pid -B -l info
+  python manage.py celeryd --logfile run/celeryd.log --pidfile run/celeryd.pid -B -l info
 
 Now this could be run in a Screen session and you can safely disconnect from
 the server. However, like said before, this won't survive a server reboot.

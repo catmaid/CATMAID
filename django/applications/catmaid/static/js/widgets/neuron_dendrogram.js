@@ -24,9 +24,20 @@ var NeuronDendrogram = function() {
   this.translation = null;
   this.scale = null;;
 
-  // Listen to change events of the active node
+  // Indicates if an update is currently in progress
+  this.updating = false;
+
+  // Listen to change events of the active node and skeletons
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.selectActiveNode, this);
+  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+      function(skid) {
+        // Update the current skeleton representation, if the current skeleton
+        // was changed.
+        if (this.currentSkeletonId === skid) {
+          this.loadSkeleton(skid);
+        }
+      }, this);
 };
 
 NeuronDendrogram.prototype = {};
@@ -108,6 +119,13 @@ NeuronDendrogram.prototype.selectActiveNode = function(activeNode)
  */
 NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
 {
+  // If there is an update in progress, currently, then wait for it to finish
+  if (this.updating) {
+    // Try again in 100ms
+    setTimeout(this.selectNode.bind(this, node_id, skeleton_id), 100);
+    return;
+  }
+
   if (!node_id || skeleton_id !== this.currentSkeletonId || !this.renderTree) {
     this.resetHighlighting();
     return;
@@ -181,6 +199,9 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
     return;
   }
 
+  // Indicate update
+  this.updating = true;
+
   // Retrieve skeleton data
   var url = django_url + project.id + '/' + skid + '/0/1/compact-skeleton';
   requestQueue.register(url, "GET", {}, jsonResponseHandler(
@@ -192,6 +213,11 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
           var ap  = new ArborParser().init('compact-skeleton', data);
           this.currentArbor = ap.arbor;
           this.update();
+          this.updating = false;
+        }).bind(this),
+        (function(data) {
+          this.updating = false;
+          error("Neuron dendrogram: couldn't update skeleton data");
         }).bind(this)));
 };
 

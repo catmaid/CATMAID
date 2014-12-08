@@ -29,6 +29,7 @@ var SkeletonAnnotations = {
 
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
+  EVENT_SKELETON_CHANGED: "tracing_skeleton_changed",
 };
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
@@ -987,8 +988,14 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
       function(jso) {
         // add treenode to the display and update it
         var nid = parseInt(jso.treenode_id);
+        var skid = parseInt(jso.skeleton_id);
+
+        // Trigger change event for skeleton
+        SkeletonAnnotations.trigger(
+              SkeletonAnnotations.EVENT_SKELETON_CHANGED, skid);
+
         // The parent will be null if there isn't one or if the parent Node object is not within the set of retrieved nodes, but the parentID will be defined.
-        var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
+        var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, true);
 
         self.nodes[nid] = nn;
         nn.createGraphics();

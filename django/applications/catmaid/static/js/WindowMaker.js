@@ -2450,8 +2450,9 @@ var WindowMaker = new function()
           '<a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, ' +
           '<a href="http://www.unidesign.ch/">Stephan Gerhard</a>, ' +
           '<a href="http://longair.net/mark/">Mark Longair</a>, ' +
-          '<a href="http://albert.rierol.net/">Albert Cardona</a> and ' +
-          'Tom Kazimiers.<br /><br />' +
+          '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +
+          '<a href="https://github.com/tomka">Tom Kazimiers</a> and ' +
+          '<a href="https://github.com/aschampion">Andrew Champion</a>.<br /><br />' +
           'Funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">' +
           'Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and ' +
           '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +

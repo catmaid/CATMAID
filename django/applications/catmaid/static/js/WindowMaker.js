@@ -2403,6 +2403,11 @@ var WindowMaker = new function()
     }
     keysHTML += '</p>';
 
+    // If on Mac OS, replace all occurences of 'Ctrl' with '⌘'
+    if ('MAC' === window.getOS()) {
+      keysHTML = keysHTML.replace(/Ctrl/gi, '⌘');
+    }
+
     container.innerHTML = keysHTML;
     return container;
   };

@@ -301,3 +301,22 @@ window.LoginDialog.prototype = {};
 window.LoginDialog.prototype.show = function() {
   this.dialog.show('400', 'auto', true);
 };
+
+/**
+ * Does a simple user agent test and returns one of 'MAC', 'WIN', 'LINUX' or
+ * 'UNKNOWN'.
+ */
+window.getOS = function()
+{
+  var ua = navigator.userAgent.toUpperCase();
+  console.log(ua);
+  if (-1 !== ua.indexOf('MAC')) {
+    return 'MAC';
+  } else if (-1 !== ua.indexOf('WIN')) {
+    return 'WIN';
+  } else if (-1 !== ua.indexOf('LINUX')) {
+    return 'LINUX';
+  } else {
+    return 'UNKNOWN';
+  }
+};

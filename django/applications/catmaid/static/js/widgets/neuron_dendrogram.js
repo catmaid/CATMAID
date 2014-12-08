@@ -119,6 +119,13 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
     return o;
   }, {});
 
+  // Make sure the requested node is part of the current skeleton
+  if (!(node_id in childToParent)) {
+    error("The requested node (" + node_id + ") was not found in the " +
+        "internal skeleton representation. Try updating it.");
+    return;
+  }
+
   // Find either node itself or closest parent
   var nodeToHighlight = node_id;
   var numDownstreamSteps = 0;

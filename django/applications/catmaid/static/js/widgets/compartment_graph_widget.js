@@ -608,6 +608,13 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
     if (node.hidden()) hidden[id] = true;
   });
 
+  // Store visibility and selection state of edges as well
+  this.cy.edges().each(function(i, edge) {
+    var id = edge.id();
+    if (edge.selected()) selected[id] = true;
+    if (edge.hidden()) hidden[id] = true;
+  });
+
   // Recreate subgraphs
   var subnodes = {},
       subedges = {}; // map of {connectorID: {pre: graph node ID,
@@ -921,6 +928,14 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       node.css('height', 15);
       node.css('width', 15);
     }
+  });
+
+  this.cy.edges().each(function(i, edge) {
+    var id = edge.id();
+    // Restore selection state
+    if (id in selected) edge.select();
+    // Restore visibility state
+    if (id in hidden) edge.hide();
   });
 
   // If hide labels, hide them

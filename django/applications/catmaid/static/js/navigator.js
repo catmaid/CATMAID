@@ -458,14 +458,16 @@ function Navigator()
 				self.hideLayersHeld = true;
 
 				// Hide any visible layers (besides the tile layer).
-				var layers = self.stack.getLayers();
-				var layerOpacities = Object.keys(layers).reduce(function (opacities, k) {
-					if (k !== 'TileLayer') {
-						opacities[k] = layers[k].getOpacity();
-						layers[k].setOpacity(0);
-					}
-					return opacities;
-				}, {});
+				var stackLayers = project.getStacks().map(function (s) { return s.getLayers(); });
+				var layerOpacities = stackLayers.map(function (layers) {
+					return Object.keys(layers).reduce(function (opacities, k) {
+						if (k !== 'TileLayer') {
+							opacities[k] = layers[k].getOpacity();
+							layers[k].setOpacity(0);
+						}
+						return opacities;
+					}, {});
+				});
 
 				// Set a key up a listener to make these layers visible again
 				// when the key is released.
@@ -473,11 +475,13 @@ function Navigator()
 				var oldListener = target.onkeyup;
 				target.onkeyup = function (e) {
 					if (e.keyCode == 32) {
-						Object.keys(layerOpacities).forEach(function (k) {
-							layers[k].setOpacity(layerOpacities[k]);
+						stackLayers.forEach(function (layers, ind) {
+							Object.keys(layerOpacities[ind]).forEach(function (k) {
+								layers[k].setOpacity(layerOpacities[ind][k]);
+							});
+							target.onkeyup = oldListener;
+							self.hideLayersHeld = false;
 						});
-						target.onkeyup = oldListener;
-						self.hideLayersHeld = false;
 					} else if (oldListener) oldListener(e);
 				};
 				return true;

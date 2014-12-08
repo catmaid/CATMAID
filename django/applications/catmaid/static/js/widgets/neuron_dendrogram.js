@@ -178,6 +178,7 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
 {
   if (!skid) {
     alert("Please provide a skeleton ID");
+    return;
   }
 
   // Retrieve skeleton data

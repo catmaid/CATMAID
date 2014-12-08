@@ -2,6 +2,7 @@
 # this file to settings.py and customize it.
 
 from settings_base import *
+import hashlib
 import djcelery
 
 DATABASES = {
@@ -79,6 +80,13 @@ FORCE_SCRIPT_NAME = '/CATMAID_SUBDIR'
 
 # URL of your CATMAID's Django instance, relative to the domain root
 CATMAID_URL = '/CATMAID_SUBDIR/'
+
+# Use different cookie names for each CATMAID instance. This increases the size
+# of the cookie. So if you run only one instance on this domain, you could also
+# remove the next three lines.
+COOKIE_SUFFIX = hashlib.md5(CATMAID_URL).hexdigest()
+SESSION_COOKIE_NAME = 'sessionid_' + COOKIE_SUFFIX
+CSRF_COOKIE_NAME = 'csrftoken_' + COOKIE_SUFFIX
 
 # Local path to store HDF5 files
 # File name convention: {projectid}_{stackid}.hdf

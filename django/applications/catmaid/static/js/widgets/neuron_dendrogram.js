@@ -24,6 +24,8 @@ var NeuronDendrogram = function() {
   // The current translation and scale, to preserve state between updates
   this.translation = null;
   this.scale = null;;
+  // The last node selected
+  this.selectedNodeId = null;
 
   // Indicates if an update is currently in progress
   this.updating = false;
@@ -128,6 +130,7 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
   }
 
   if (!node_id || skeleton_id !== this.currentSkeletonId || !this.renderTree) {
+    this.selectedNodeId = null;
     this.resetHighlighting();
     return;
   }
@@ -144,6 +147,8 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
         "internal skeleton representation. Try updating it.");
     return;
   }
+
+  this.selectedNodeId = node_id;
 
   // Find either node itself or closest parent
   var nodeToHighlight = node_id;
@@ -374,6 +379,11 @@ NeuronDendrogram.prototype.update = function()
 
   if (this.currentSkeletonTree && this.currentSkeletonTags) {
     this.renderDendogram(this.renderTree, this.currentSkeletonTags, filterTags);
+  }
+
+  // Select the active node after every change
+  if (this.selectedNodeId && this.currentSkeletonId) {
+    this.selectNode(this.selectedNodeId, this.currentSkeletonId);
   }
 };
 

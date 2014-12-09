@@ -49,16 +49,16 @@ the source code is in ``/home/alice/catmaid``::
 2. Install required Python packages
 ###################################
 
-We recommend the use of Python 2.7. CATMAID is likely to run
-with Python 2.6 as well, but Python 2.7 is used for development
-and testing.
+We recommend the use of Python 2.7. CATMAID is likely to run with Python 2.6 as
+well, but Python 2.7 is used for development and testing.
 
-We strongly recommend that you install all Python package
-dependencies into a virtualenv, so that they are isolated from
-the system-wide installed packages and can be upgraded easily.
-Some of these Python packages depend on system-wide libraries
-that you will need to install in advance, however.  You can do
-this with::
+We strongly recommend that you install all Python package dependencies into a
+virtualenv, so that they are isolated from the system-wide installed packages
+and can be upgraded easily.  Some of these Python packages depend on system-wide
+libraries that you will need to install in advance, however. You can do this
+with one of the following commands (the one suiting best your OS):
+
+Ubuntu 14.04::
 
     sudo apt-get install gcc gfortran apt-file python2.7-dev postgresql-common \
                          libpq-dev libgraphicsmagick++1-dev graphicsmagick \
@@ -66,6 +66,13 @@ this with::
                          libboost-python1.55-dev uuid-dev libxml2-dev \
                          libxslt1-dev libjpeg-dev libtiff-dev libblas-dev \
                          liblapack-dev
+
+
+Ubuntu 12.04:
+
+    .. fileinclude:: ../../packagelist-ubuntu-12.04-apt.txt
+       :removelinebreaks:
+       :prepend: sudo apt-get install
 
 Virtualenv Wrapper needs to source your environment. Start a new terminal
 or if you are using the bash::

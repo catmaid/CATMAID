@@ -2051,20 +2051,25 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
     Object.keys(this).forEach(function(key) { delete this[key]; }, this);
   };
 
+  /**
+   * Modifies the zoom (and therefore the effective focal length) of the camera.
+   * If the Ctrl-key is pressed and the camera is not in orthographic mode, the
+   * camera (and target) is moved instead.
+   */
   this.MouseWheel = function(ev) {
-    // Move the camera and the target in target direction
-    var distance = 3500 * (ev.wheelDelta > 0 ? -1 : 1);
     var camera = this.CATMAID_view.camera;
-    var controls = this.CATMAID_view.controls;
-    var change = new THREE.Vector3().copy(camera.position)
-      .sub(controls.target).normalize().multiplyScalar(distance);
+    if (ev.ctrlKey && !camera.inOrthographicMode) {
+      // Move the camera and the target in target direction
+      var distance = 3500 * (ev.wheelDelta > 0 ? -1 : 1);
+      var controls = this.CATMAID_view.controls;
+      var change = new THREE.Vector3().copy(camera.position)
+        .sub(controls.target).normalize().multiplyScalar(distance);
 
-    controls.target.add(change);
-    camera.position.add(change);
-
-    // The distance to the target does not make any difference for an
-    // orthographic projection, the depth is fixed.
-    if (camera.inOrthographicMode) {
+      controls.target.add(change);
+      camera.position.add(change);
+    } else {
+      // The distance to the target does not make any difference for an
+      // orthographic projection, the depth is fixed.
       var new_zoom = camera.zoom;
       if (ev.wheelDelta > 0) {
         new_zoom += 0.25;

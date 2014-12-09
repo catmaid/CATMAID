@@ -776,6 +776,8 @@ class UserProfile(models.Model):
         default=settings.PROFILE_SHOW_TRACING_TOOL)
     show_ontology_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_ONTOLOGY_TOOL)
+    show_roi_tool = models.BooleanField(
+        default=settings.PROFILE_SHOW_ROI_TOOL)
     color = RGBAField(default=distinct_user_color)
     tracing_overlay_screen_scaling = models.BooleanField(
         default=settings.PROFILE_TRACING_OVERLAY_SCREEN_SCALING)
@@ -800,6 +802,7 @@ class UserProfile(models.Model):
         pdict['show_segmentation_tool'] = self.show_segmentation_tool
         pdict['show_tracing_tool'] = self.show_tracing_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
+        pdict['show_roi_tool'] = self.show_roi_tool
         pdict['tracing_overlay_screen_scaling'] = self.tracing_overlay_screen_scaling
         pdict['tracing_overlay_scale'] = self.tracing_overlay_scale
         return pdict

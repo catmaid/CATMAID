@@ -322,6 +322,19 @@ var createEditToolActions = function() {
         }
       }));
   }
+
+  if (userprofile.show_roi_tool) {
+    editToolActions.push(
+      new Action({
+        helpText: "Show ROI tool",
+        buttonID: "edit_button_roi",
+        buttonName: 'roitool',
+        run: function (e) {
+          project.setTool( new RoiTool() );
+          return true;
+        }
+      }));
+  }
 };
 
 /* Edit tools are dependent on the current user. Therefore,

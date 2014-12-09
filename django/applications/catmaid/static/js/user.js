@@ -133,6 +133,7 @@ Userprofile.prototype.getOptions = function() {
     show_segmentation_tool: false,
     show_tracing_tool: false,
     show_ontology_tool: false,
+    show_roi_tool: false,
     tracing_overlay_screen_scaling: true,
     tracing_overlay_scale: true
   };

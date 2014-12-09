@@ -2076,9 +2076,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
       } else {
         new_zoom -= 0.25;
       }
-      if (new_zoom < 0 ) {
-        new_zoom = 0.1;
-      }
+      new_zoom = Math.max(new_zoom, 1.0);
       camera.setZoom( new_zoom );
     }
 

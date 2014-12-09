@@ -42,3 +42,17 @@ version or manually set different names for the relevant cookies in all your
 ``settings.py`` files by overriding the variables ``SESSION_COOKIE_NAME`` and
 ``CSRF_COOKIE_NAME``. Recent CATMAID versions do this automatically, based on
 the specified sub-folder.
+
+*I get an error 500 response and in debug mode I see the error "libhdf5.so.8:
+cannot open shared object file: No such file or directory". This might have
+started after the system update.*
+
+Apparently, your system's HDF5 library was changed. Therefore, the Python
+bindings that are used by CATMAID have to be updated. Given you are within the
+``virtualenv`` and in CATMAID's ``django`` directory, the following should fix
+it::
+
+    grep h5py pip-frozen | xargs pip install -I
+
+This will reinstall (and recompile) the HDF5 python bindings with the version
+specified in our dependency file (``pip-frozen``).

@@ -434,6 +434,22 @@ var WindowMaker = new function()
     showStrahler.appendChild(document.createTextNode('Show Strahler'));
     buttons.appendChild(showStrahler);
 
+    var warnCollapsed = document.createElement('label');
+    var warnCollapsedInput = document.createElement('input');
+    warnCollapsedInput.setAttribute('type', 'checkbox');
+    if (ND.warnCollapsed) {
+      warnCollapsedInput.setAttribute('checked', 'checked');
+    }
+    warnCollapsedInput.onchange = function() {
+      ND.setWarnCollapsed(this.checked);
+      ND.update();
+    };
+    warnCollapsed.appendChild(warnCollapsedInput);
+    warnCollapsed.appendChild(document.createTextNode('Warn if collapsed'));
+    warnCollapsed.setAttribute('alt', 'If activated, a warning is displayed ' +
+        'everytime one tries to select a node that is currently collapsed.')
+    buttons.appendChild(warnCollapsed);
+
     var radial = document.createElement('label');
     var radialInput = document.createElement('input');
     radialInput.setAttribute('type', 'checkbox');

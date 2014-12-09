@@ -135,14 +135,14 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
     return;
   }
 
-  var childToParent = this.currentSkeletonTree.reduce(function(o, n) {
+  var parentToChild = this.currentSkeletonTree.reduce(function(o, n) {
     // Map node ID to parent ID
-    o[n[0]] = n[1];
+    o[n[1]] = n[0];
     return o;
   }, {});
 
   // Make sure the requested node is part of the current skeleton
-  if (!(node_id in childToParent)) {
+  if (!(node_id in parentToChild)) {
     error("The requested node (" + node_id + ") was not found in the " +
         "internal skeleton representation. Try updating it.");
     return;
@@ -157,9 +157,15 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
     if (-1 !== this.renderedNodeIds.indexOf(nodeToHighlight)) {
       break;
     } else {
-      // Try next parent
+      // Try next child
       numDownstreamSteps++;
-      nodeToHighlight = childToParent[nodeToHighlight];
+      nodeToHighlight = parentToChild[nodeToHighlight];
+      if (!nodeToHighlight) {
+        growlAlert("Information", "Couldn highlight the currently selected " +
+            "node, because it is collapsed and no visible node downstream " +
+            "was found");
+        return;
+      }
     }
   }
 

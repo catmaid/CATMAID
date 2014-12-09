@@ -51,6 +51,7 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     # Add annotator and time constraints, if available
     if annotator_id:
         filters['cici_via_a__user'] = annotator_id
+        filters['cici_via_a__relation_id'] = annotated_with
     if start_date:
         filters['cici_via_a__creation_time__gte'] = start_date
     if end_date:

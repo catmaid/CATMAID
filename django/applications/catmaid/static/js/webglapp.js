@@ -1726,17 +1726,20 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       line.set(mesh.position.clone(), sr.add(mesh.position));
       line.start.project(self.camera);
       line.end.project(self.camera);
-      var l = line.distance();
+      // The projected line distance is given in a screen space that ranges from
+      // (-1,-1) to (1,1). We therefore have to divide by 2 to get a normalized
+      // value that we can use to create actual screen distances.  For the final
+      // length, there is no need to be more precise than 1 decimal
+      var l = (0.5 * line.distance() * self.space.canvasWidth).toFixed(1);
       // Get material from index or create a new one
       var key = hex + "-" + l;
       var material = this.m[key]
       if (!material) {
         material = new THREE.LineBasicMaterial({
           color: mesh.material.color.clone(),
-          linewidth: l * self.space.canvasWidth
+          linewidth: l
         });
-        material
-        this.m[hex] = material;
+        this.m[key] = material;
       }
       var newMesh = new THREE.Line( this.g, material, THREE.LinePieces );
       // Move new mesh to position of replaced mesh and adapt size

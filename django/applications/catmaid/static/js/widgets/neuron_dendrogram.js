@@ -135,14 +135,26 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
     return;
   }
 
-  var parentToChild = this.currentSkeletonTree.reduce(function(o, n) {
+  var nodesToChildren = this.currentSkeletonTree.reduce(function(o, n) {
     // Map node ID to parent ID
-    o[n[1]] = n[0];
+    var c = o[n[0]];
+    if (!c) {
+      o[n[0]] = [];
+    }
+
+    // Map all children to parent
+    var p = o[n[1]];
+    if (!p) {
+     p = [];
+     o[n[1]] = p;
+    }
+    p.push(n[0]);
+
     return o;
   }, {});
 
   // Make sure the requested node is part of the current skeleton
-  if (!(node_id in parentToChild)) {
+  if (!(node_id in nodesToChildren)) {
     error("The requested node (" + node_id + ") was not found in the " +
         "internal skeleton representation. Try updating it.");
     return;
@@ -152,20 +164,22 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
 
   // Find either node itself or closest parent
   var nodeToHighlight = node_id;
-  var numDownstreamSteps = 0;
+  var toExplore = [];
   while (true) {
     if (-1 !== this.renderedNodeIds.indexOf(nodeToHighlight)) {
       break;
     } else {
-      // Try next child
-      numDownstreamSteps++;
-      nodeToHighlight = parentToChild[nodeToHighlight];
-      if (!nodeToHighlight) {
+      // Get set of child nodes
+      toExplore.push.apply(toExplore, nodesToChildren[nodeToHighlight]);
+
+      if (0 === toExplore.length) {
         growlAlert("Information", "Couldn highlight the currently selected " +
             "node, because it is collapsed and no visible node downstream " +
             "was found");
         return;
       }
+      // test next node in queue
+      nodeToHighlight = toExplore.pop();
     }
   }
 
@@ -173,6 +187,20 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
     error("Couldn't find node to highlight in dendrogram");
     return;
   } else if (nodeToHighlight !== node_id && this.warnCollapsed) {
+    var getDepth = function(node, depth) {
+      var children = nodesToChildren[node];
+      if (node === nodeToHighlight) { return depth; }
+      if (0 === children.length) { return null; }
+
+      for (var i=0; i<children.length; ++i) {
+        var result = getDepth(children[i], depth + 1);
+        if (null !== result) { return result; }
+      }
+
+      return null;
+    };
+    var numDownstreamSteps = getDepth(node_id, 0);
+
     growlAlert("Information", "The active node is currently not visible in " +
         "the dendrogram. Therefore, the next visible node downstream has " +
         "been selected, which is " + numDownstreamSteps + " hop(s) away.");

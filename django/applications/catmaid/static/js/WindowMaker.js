@@ -2457,6 +2457,10 @@ var WindowMaker = new function()
     keysHTML += '</div>';
 
     container.innerHTML = keysHTML;
+
+    // Focus search box
+    setTimeout(function() { $('input#search-box', container).focus(); }, 10);
+
     return container;
   };
 
@@ -2788,6 +2792,11 @@ var WindowMaker = new function()
     $(container).hide();
 
     SkeletonListSources.updateGUI();
+
+    // Focus search box
+    setTimeout(function() {
+      $('input#neuron_query_by_name' + NA.widgetID).focus();
+    }, 10);
 
     return win;
   };

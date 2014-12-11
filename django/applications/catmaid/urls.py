@@ -45,6 +45,7 @@ urlpatterns += patterns('django.contrib.auth.views',
 # Log
 urlpatterns += patterns('catmaid.control.log',
     (r'^(?P<project_id>\d+)/logs/list$', 'list_logs'),
+    (r'^log/(?P<level>(info|error|debug))$', 'log_frontent_event'),
 )
 
 # Messages

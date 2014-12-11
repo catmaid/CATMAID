@@ -23,6 +23,16 @@ window.onerror = function(msg, url, lineno, colno, err)
   // Log the error detail to the console
   console.log(detail);
 
+  // Log the error in the backend, bypass the request queue and make a direct
+  // AJAX call through jQuery.
+  $.ajax({
+    'url': django_url + 'log/error',
+    'type': 'POST',
+    'data': {
+      'msg': detail,
+    }
+  });
+
   // Log the error object, if available
   if (err) {
     console.log('Error object:')

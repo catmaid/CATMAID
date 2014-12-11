@@ -622,7 +622,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
           n.loc_y,
           n.loc_x,
           function () {
-             SkeletonAnnotations.staticSelectNode(n.id, skid);
+             SkeletonAnnotations.staticSelectNode(n.id);
           });
       }
     }(this.currentSkeletonId);

@@ -199,10 +199,17 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
   var namingOptionNames = namingOptions.map(function(o) { return o.name; });
   var namingOptionIds = namingOptions.map(function(o) { return o.id; });
 
+  // Get available skeleton list sources
+	var pinSourceOptions = SkeletonListSources.createOptions();
+  var pinSourceOptionNames = ["(None)"].concat(pinSourceOptions.map(function(o) { return o.text; }));
+  var pinSourceOptionIds = ['null'].concat(pinSourceOptions.map(function(o) { return o.value; }));
+
   // Add options to dialog
   var columns = dialog.appendField("# Columns: ", "svg-catalog-num-columns", '2');
   var sorting = dialog.appendChoice("Sorting name: ", "svg-catalog-sorting",
       namingOptionNames, namingOptionIds);
+  var pinSources = dialog.appendChoice("Skeletons to pin: ", "svg-catalog-pin-source",
+      pinSourceOptionNames, pinSourceOptionIds);
   var displayNames = dialog.appendCheckbox('Display names', 'svg-catalog-display-names', true);
   var coordDigits = dialog.appendField("# Coordinate decimals", 'svg-catalog-coord-digits', '1');
   var fontsize = dialog.appendField("Fontsize: ", "svg-catalog-fontsize", '14');
@@ -238,17 +245,42 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
 
   dialog.onOK = handleOK.bind(this);
 
-  dialog.show(400, 450, true);
+  dialog.show(400, 460, true);
 
   function handleOK() {
     $.blockUI();
+    // Get models of exported skeletons
+    var models = this.getSelectedSkeletonModels();
     // Configure labeling of name service
     var labelingId = namingOptionIds[sorting.selectedIndex];
     ns.addLabeling(labelingId, labelingOption);
 
+    // Check if there are pinned skeletons that have to be loaded first
+    var pinnedSkeletonModels = {};
+    if (pinSources.selectedIndex > 0) {
+      var srcId = pinSourceOptionIds[pinSources.selectedIndex];
+      var src = SkeletonListSources.getSource(srcId);
+      pinnedSkeletonModels = src.getSelectedSkeletonModels();
+    }
+    var pinnedSkeletonIds = Object.keys(pinnedSkeletonModels);
+    var addedPinnendSkeletons = pinnedSkeletonIds.filter(function(skid) {
+      return !(skid in models);
+    });
+
     // Fetch names for the sorting
-    var models = this.getSelectedSkeletonModels();
-    ns.registerAll(dialog, models, createSVG.bind(this));
+    ns.registerAll(dialog, models, (function() {
+      if (0 === addedPinnendSkeletons.length) {
+        createSVG.call(this);
+      } else {
+        // Make sure all pinned skeletons are available in the 3D viewer
+        this.addSkeletons(pinnedSkeletonModels, (function() {
+          this.space.render();
+          createSVG.call(this);
+          // Remove all added pinned skeletons again
+          this.removeSkeletons(addedPinnendSkeletons);
+        }).bind(this));
+      }
+    }).bind(this));
 
     function createSVG() {
       try {
@@ -275,6 +307,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
           layout: 'catalog',
           columns: parseInt(columns.value),
           skeletons: skeletonIds,
+          pinnedSkeletons: pinnedSkeletonIds,
           displaynames: Boolean(displayNames.checked),
           fontsize: parseFloat(fontsize.value),
           margin: parseInt(margin.value),
@@ -1765,11 +1798,11 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
    * second argument, only this skeleton will be set visible (if it was visible
    * before), otherwise all skeletons are set to the state in the given map.
    */
-  function setSkeletonVisibility(visMap, visibleSkid)
+  function setSkeletonVisibility(visMap, visibleSkids)
   {
     for (var skid in self.space.content.skeletons) {
       var s = self.space.content.skeletons[skid];
-      var visible = visibleSkid ? (skid === visibleSkid) : true;
+      var visible = visibleSkids ? (-1 !== visibleSkids.indexOf(skid)) : true;
       s.setActorVisibility(visMap[skid].actor ? visible : false);
       s.setPreVisibility(visMap[skid].pre ? visible : false);
       s.setPostVisibility(visMap[skid].post ? visible : false);
@@ -1828,16 +1861,22 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       }
     }
 
+    // Append missing pinned skeletons
+    var visibleSkids = options['pinnedSkeletons'] || [];
+
     // Iterate over skeletons and create SVG views
     var views = {};
     for (var i=0, l=skeletons.length; i<l; ++i) {
       var skid = skeletons[i];
-      // Display only current skeleton
-      setSkeletonVisibility(visibilityMap, skid);
+      // Display only current skeleton along with pinned ones
+      visibleSkids.push(skid);
+      setSkeletonVisibility(visibilityMap, visibleSkids);
 
       // Render view and replace sphere meshes of current skeleton
-      var spheres = {};
-      spheres[skid] = sphereMeshes[skid];
+      var spheres = visibleSkids.reduce(function(o, s) {
+        o[s] = sphereMeshes[s];
+        return o;
+      }, {});
       var svg = renderSkeletons(spheres);
 
       if (displayNames) {
@@ -1850,6 +1889,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
         text.appendChild(document.createTextNode(name));
         svg.appendChild(text);
       }
+
+      // Remove current skeleton again from visibility list
+      visibleSkids.pop();
 
       // Store
       views[skid] = svg;

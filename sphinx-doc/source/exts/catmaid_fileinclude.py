@@ -13,7 +13,10 @@ class FileInputDirective(Directive):
     final_argument_whitespace = True
     option_spec = {
         'removelinebreaks': directives.flag,
-        'prepend': directives.unchanged_required,
+        'prepend': directives.unchanged,
+        'indent': directives.flag,
+        'split': int,
+        'splitend': directives.unchanged,
     }
 
     def run(self):
@@ -51,7 +54,40 @@ class FileInputDirective(Directive):
 
         prepend = self.options.get('prepend')
         if prepend is not None:
-            text = prepend + ' ' + text
+            prepend = prepend + ' '
+            text = prepend + text
+
+        split = self.options.get('split')
+        if split is not None:
+            splitend = self.options.get('splitend', '')
+
+            linelength = split - len(splitend)
+
+            # Add a line break if the text will be split into multiple lines
+            if len(text) > split:
+                splitend += '\n'
+
+            output, start, end = '', 0, linelength
+            while True:
+                # Find last space in range and extract text before it
+                end = min(text.rfind(' ', start, end) + 1, len(text))
+                line = text[start:end]
+                # Prepend spaces in the length of 'prepend' for all but the
+                # first line.
+                if start > 0:
+                    line = ' ' * len(prepend) + line
+
+                output += line
+                start = end
+                end += linelength - len(prepend)
+
+                if start == len(text):
+                    text = output.rstrip()
+                    break
+                else:
+                    # Don't insert split end on last line
+                    output += splitend
+
 
         retnode = nodes.literal_block(text, text, source=filename)
         set_source_info(self, retnode)

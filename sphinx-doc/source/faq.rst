@@ -1,7 +1,8 @@
 Frequently Asked Questions
 ==========================
 
-*I updated to Ubuntu 12.04 and I have postgres 8.4 and 9.1 installed on my system*
+I updated to Ubuntu 12.04 and I have postgres 8.4 and 9.1 installed on my system
+--------------------------------------------------------------------------------
 
 Remove all postgres version 8.4 packages (this removes also the databases).
 Then change the port in /etc/postgresql/9.1/main/postgresql.conf to::
@@ -14,8 +15,8 @@ Restart postgres::
    
 Now you should be able to call the ./scripts/createuser.sh script.
 
-*My CATMAID instance is working in debug mode, but can't be reached in
-production. What is the problem?*
+My CATMAID instance is working in debug mode, but can't be reached in production. What is the problem?
+------------------------------------------------------------------------------------------------------
 
 Check the `ALLOWED_HOSTS` setting in your Django configuration file:
 
@@ -26,9 +27,8 @@ host/domain names that your CATMAID instance is reachable under. Access will be
 blocked if target host isn't found in this list. For more detail have a look at
 the `Django documentation <https://docs.djangoproject.com/en/1.6/ref/settings/#allowed-hosts>`_.
 
-*I have more than one CATMAID instance running on the same (sub-)domain, but in
-different folders. When I open different instances in the same browser at the
-same time, one session is always logged out. Why?*
+I have more than one CATMAID instance running on the same (sub-)domain, but in different folders. When I open different instances in the same browser at the same time, one session is always logged out. Why?
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Django uses the cookie name 'sessionid' for its session information in a cookie
 called 'csrftoken' for CSRF information. This is fine if only one instance is
@@ -43,9 +43,9 @@ version or manually set different names for the relevant cookies in all your
 ``CSRF_COOKIE_NAME``. Recent CATMAID versions do this automatically, based on
 the specified sub-folder.
 
-*I get an error 500 response and in debug mode I see the error "libhdf5.so.8:
-cannot open shared object file: No such file or directory". This might have
-started after the system update.*
+
+I get an error 500 response and in debug mode I see the error "libhdf5.so.8: cannot open shared object file: No such file or directory". This might have started after the system update.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Apparently, your system's HDF5 library was changed. Therefore, the Python
 bindings that are used by CATMAID have to be updated. Given you are within the

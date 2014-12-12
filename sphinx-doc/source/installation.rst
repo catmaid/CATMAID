@@ -58,15 +58,14 @@ and can be upgraded easily.  Some of these Python packages depend on system-wide
 libraries that you will need to install in advance, however. You can do this
 with one of the following commands (the one suiting best your OS):
 
-Ubuntu 14.04::
+Ubuntu 14.04:
 
-    sudo apt-get install gcc gfortran apt-file python2.7-dev postgresql-common \
-                         libpq-dev libgraphicsmagick++1-dev graphicsmagick \
-                         libhdf5-serial-dev libboost1.55-dev virtualenvwrapper \
-                         libboost-python1.55-dev uuid-dev libxml2-dev \
-                         libxslt1-dev libjpeg-dev libtiff-dev libblas-dev \
-                         liblapack-dev
-
+    .. fileinclude:: ../../packagelist-ubuntu-14.04-apt.txt
+       :removelinebreaks:
+       :indent:
+       :prepend: sudo apt-get install
+       :split: 75
+       :splitend:  \
 
 Ubuntu 12.04:
 

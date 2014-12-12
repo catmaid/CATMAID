@@ -1612,6 +1612,41 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
   var self = this;
   this.goToNode(treenode_id,
       function() {
+        // If there was a measurement tool based radius change was started
+        // before, stop this.
+        if (self.nodes[treenode_id].surroundingCircleElements) {
+          hideCircleAndShowDialog();
+        } else if (no_measurement_tool) {
+          show_dialog(self.nodes[treenode_id].radius);
+        } else {
+          self.nodes[treenode_id].drawSurroundingCircle(transform);
+        }
+
+        function hideCircleAndShowDialog()
+        {
+          self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
+            if (typeof rx === 'undefined' || typeof ry === 'undefined') {
+              show_dialog(self.nodes[treenode_id].radius);
+              return;
+            }
+            // Convert pixel radius components to nanometers
+            var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
+            // Show dialog with the new radius
+            show_dialog(r);
+          });
+        };
+
+        function transform(r)
+        {
+          r.x /= self.stack.scale;
+          r.y /= self.stack.scale;
+          r.x += ( self.stack.x - self.stack.viewWidth / self.stack.scale / 2 );
+          r.y += ( self.stack.y - self.stack.viewHeight / self.stack.scale / 2 );
+          return {
+              x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
+              y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
+        };
+
         function show_dialog(defaultRadius)
         {
           var dialog = new OptionsDialog("Edit radius");
@@ -1643,32 +1678,6 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
           dialog.show();
         };
 
-        // If there was a measurement tool based radius change was started
-        // before, stop this.
-        if (self.nodes[treenode_id].surroundingCircleElements) {
-          self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
-            if (typeof rx === 'undefined' || typeof ry === 'undefined') {
-              show_dialog(self.nodes[treenode_id].radius);
-              return;
-            }
-            // Convert pixel radius components to nanometers
-            var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
-            // Show dialog with the new radius
-            show_dialog(r);
-          });
-        } else if (no_measurement_tool) {
-          show_dialog(self.nodes[treenode_id].radius);
-        } else {
-          self.nodes[treenode_id].drawSurroundingCircle(function (r) {
-            r.x /= self.stack.scale;
-            r.y /= self.stack.scale;
-            r.x += ( self.stack.x - self.stack.viewWidth / self.stack.scale / 2 );
-            r.y += ( self.stack.y - self.stack.viewHeight / self.stack.scale / 2 );
-            return {
-                x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
-                y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
-          });
-        }
       });
 };
 

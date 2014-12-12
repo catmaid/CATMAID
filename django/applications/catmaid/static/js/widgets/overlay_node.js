@@ -517,7 +517,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
    * Draws a circle around the treenode and control its radius with the help of
    * the mouse (and a mouse-to-stack transform function).
    */
-  this.drawSurroundingCircle = function(transform) {
+  this.drawSurroundingCircle = function(transform, onclickHandler) {
     var self = this;
     // Create a raphael circle object that represents the surrounding circle
     var color = "rgb(255,255,0)";
@@ -562,6 +562,8 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     });
     mc.on('click', function() {
       d3.event.stopPropagation();
+      if (onclickHandler) { onclickHandler(); }
+      return true;
     });
   };
 

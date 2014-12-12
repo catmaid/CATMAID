@@ -1619,7 +1619,8 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
         } else if (no_measurement_tool) {
           show_dialog(self.nodes[treenode_id].radius);
         } else {
-          self.nodes[treenode_id].drawSurroundingCircle(transform);
+          self.nodes[treenode_id].drawSurroundingCircle(transform,
+              hideCircleAndShowDialog);
         }
 
         function hideCircleAndShowDialog()

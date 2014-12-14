@@ -1011,7 +1011,11 @@ SkeletonElements.prototype.mouseEventManager = new (function()
 
 SkeletonElements.prototype.ArrowLine = function(paper) {
   this.line = paper.append('line');
-  this.line.on('mousedown', this.mousedown);
+  // Because the transparent stroke trick will not work for lines, a separate,
+  // larger stroked, transparent line is needed to catch mouse events. In SVG2
+  // this can be achieved on the original line with a marker-segment.
+  this.catcher = paper.append('line');
+  this.catcher.on('mousedown', this.mousedown);
   this.confidence_text = null;
 };
 
@@ -1019,6 +1023,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   this.PRE_COLOR = "rgb(200,0,0)";
   this.POST_COLOR = "rgb(0,217,232)";
   this.BASE_EDGE_WIDTH = 2;
+  this.CATCH_SCALE = 3;
   this.CONFIDENCE_FONT_PT = 15;
   this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
 
@@ -1029,7 +1034,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
       return;
     }
-    // 'this' will be the the connector line
+    // 'this' will be the the connector's mouse catcher line
     var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
     requestQueue.register(django_url + project.id + '/link/delete', "POST", {
       pid: project.id,
@@ -1065,6 +1070,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     var y2new = (y2 - y1) * F + y1;
 
     this.line.attr({x1: x1, y1: y1, x2: x2new, y2: y2new});
+    this.catcher.attr({x1: x1, y1: y1, x2: x2new, y2: y2new});
 
     var stroke_color = is_pre ? this.PRE_COLOR : this.POST_COLOR;
 
@@ -1079,6 +1085,9 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     this.line.attr({stroke: stroke_color,
                     'stroke-width': this.EDGE_WIDTH,
                     'marker-end': is_pre ? 'url(#markerArrowPre)' : 'url(#markerArrowPost)'});
+    this.catcher.attr({stroke: stroke_color, // Though invisible, must be set for mouse events to trigger
+                       'stroke-opacity': 0,
+                       'stroke-width': this.EDGE_WIDTH*this.CATCH_SCALE });
 
     this.show();
   };
@@ -1087,20 +1096,24 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     // Ensure visible
     if ('hidden' === this.line.attr('visibility')) {
       this.line.show();
+      this.catcher.show();
     }
   };
 
   this.disable = function() {
-    this.line.datum(null);
+    this.catcher.datum(null);
     this.line.hide();
+    this.catcher.hide();
     if (this.confidence_text) this.confidence_text.hide();
   };
 
   this.obliterate = function() {
-    this.line.datum(null);
-    this.line.on('mousedown', null);
+    this.catcher.datum(null);
+    this.catcher.on('mousedown', null);
     this.line.remove();
     this.line = null;
+    this.catcher.remove();
+    this.catcher = null;
     if (this.confidence_text) {
       this.confidence_text.remove();
       this.confidence_text = null;
@@ -1108,7 +1121,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   };
 
   this.init = function(connector, node, confidence, is_pre) {
-    this.line.datum({connector_id: connector.id, treenode_id: node.id});
+    this.catcher.datum({connector_id: connector.id, treenode_id: node.id});
     if (is_pre) {
       this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS);
     } else {

@@ -1621,10 +1621,23 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
         } else {
           self.nodes[treenode_id].drawSurroundingCircle(transform,
               hideCircleAndShowDialog);
+          // Attach a handler for the ESC key to cancel input
+          $('body').on('keydown.catmaidRadiusEdit', function(event) {
+            if (27 === event.keyCode) {
+              // Unbind key handler and remove circle
+              $('body').off('keydown.catmaidRadiusEdit');
+              self.nodes[treenode_id].removeSurroundingCircle();
+              return true;
+            }
+            return false;
+          });
         }
 
         function hideCircleAndShowDialog()
         {
+          // Unbind key handler
+          $('body').off('keydown.catmaidRadiusEdit');
+          // Remove circle and show dialog
           self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
             if (typeof rx === 'undefined' || typeof ry === 'undefined') {
               show_dialog(self.nodes[treenode_id].radius);

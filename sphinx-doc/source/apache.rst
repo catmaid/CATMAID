@@ -56,7 +56,7 @@ earlier (or by running it again) or follow the example here::
                      Options +ExecCGI
              </Location>
 
-             Alias /catmaid/static/ /home/alice/catmaid/django/static/
+             Alias /catmaid/static /home/alice/catmaid/django/static/
              <Directory /home/alice/catmaid/django/static/>
                  Options FollowSymLinks
                  AllowOverride AuthConfig Limit FileInfo
@@ -80,14 +80,15 @@ a new file in ``/etc/apache2/sites-available/`` (called
     <VirtualHost *:80>
         ServerName your-catmaid-hostname.example.org
 
-        Alias /static/ /home/alice/catmaid/django/static/
+        WSGIScriptAlias / /home/alice/catmaid/django/projects/mysite/django.wsgi
 
-        <Directory /home/alice/catmaid/django/static>
+        Alias /static /home/alice/catmaid/django/static/
+        <Directory /home/alice/catmaid/django/static/>
+            Options FollowSymLinks
+            AllowOverride AuthConfig Limit FileInfo
             Order deny,allow
             Allow from all
         </Directory>
-
-        WSGIScriptAlias / /home/alice/catmaid/django/projects/mysite/django.wsgi
 
         CustomLog /var/log/apache2/catmaid/access_log combined
         ErrorLog /var/log/apache2/catmaid/error.log

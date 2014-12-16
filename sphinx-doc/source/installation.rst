@@ -273,10 +273,13 @@ You have various options for setting up CATMAID with a
 production webserver - you can choose from (at least) the
 following options:
 
-1. Apache + mod_wsgi, in which case see :ref:`apache`
-
-2. Nginx and either gevent, uWSGI or Gunicorn, in which case see
+1. Nginx and either gevent, uWSGI or Gunicorn, in which case see
    :ref:`alternative-install`
+
+2. Apache + mod_wsgi, in which case see :ref:`apache`
+
+We usually prefer to use Nginx because of a more straight-forward configuration,
+smaller memory footprint and better performance with Gunicorn.
 
 In general you want to fine-tune your setup to improve performance. Please have
 a look at our :ref:`collection of advice <performance-tuning>` for the various

@@ -46,6 +46,60 @@ def get_roi_info(request, project_id=None, roi_id=None):
 
     return HttpResponse(json.dumps(info))
 
+def _add_roi(project_id, stack_id, user_id, x_min, x_max, y_min, y_max, z,
+             zoom_level, rotation_cw):
+    """ Add a new ROI database object and return it.
+    """
+
+    # Calculate ROI center and extent
+    cx = (x_max + x_min) * 0.5
+    cy = (y_max + y_min) * 0.5
+    cz = z
+    width = abs(x_max - x_min)
+    height = abs(y_max - y_min)
+
+    # Create a new ROI class instance
+    roi = RegionOfInterest()
+    roi.user_id = user_id
+    roi.editor_id = user_id
+    roi.project_id = project_id
+    roi.stack_id = stack_id
+    roi.zoom_level = zoom_level
+    roi.location_x = cx
+    roi.location_y = cy
+    roi.location_z = cz
+    roi.width = width
+    roi.height = height
+    roi.rotation_cw = rotation_cw
+    roi.save()
+
+    # Create cropped image, if wanted
+    if settings.ROI_AUTO_CREATE_IMAGE:
+        file_name, file_path = create_roi_path(roi.id)
+        create_roi_image(request.user, project_id, roi.id, file_path)
+
+    return roi
+
+@requires_user_role(UserRole.Annotate)
+def add_roi(request, project_id=None):
+    # Try to get all needed POST parameters
+    x_min = float(request.POST['x_min'])
+    x_max = float(request.POST['x_max'])
+    y_min = float(request.POST['y_min'])
+    y_max = float(request.POST['y_max'])
+    z = float(request.POST['z'])
+    zoom_level = int(request.POST['zoom_level'])
+    rotation_cw = int(request.POST['rotation_cw'])
+    stack_id = int(request.POST['stack'])
+
+    roi = _add_roi(project_id, stack_id, request.user.id, x_min, x_max,
+                   y_min, y_max, z, zoom_level, rotation_cw)
+
+    # Build result data set
+    status = {'status': "Created new ROI with ID %s." % roi.id}
+
+    return HttpResponse(json.dumps(status))
+
 @requires_user_role(UserRole.Annotate)
 def link_roi_to_class_instance(request, project_id=None, relation_id=None,
         stack_id=None, ci_id=None):
@@ -68,27 +122,8 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
     ci = ClassInstance.objects.get(id=ci_id)
     rel = Relation.objects.get(id=relation_id)
 
-    # Calculate ROI center and extent
-    cx = (x_max + x_min) * 0.5
-    cy = (y_max + y_min) * 0.5
-    cz = z
-    width = abs(x_max - x_min)
-    height = abs(y_max - y_min)
-
-    # Create a new ROI class instance
-    roi = RegionOfInterest()
-    roi.user = request.user
-    roi.editor = request.user
-    roi.project = project
-    roi.stack = stack
-    roi.zoom_level = zoom_level
-    roi.location_x = cx
-    roi.location_y = cy
-    roi.location_z = cz
-    roi.width = width
-    roi.height = height
-    roi.rotation_cw = rotation_cw
-    roi.save()
+    roi = _add_roi(project.id, stack.id, request.user.id, x_min, x_max, y_min,
+                   y_max, z, zoom_level, rotation_cw)
 
     # Link ROI and class instance
     roi_ci = RegionOfInterestClassInstance()
@@ -98,11 +133,6 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
     roi_ci.region_of_interest = roi
     roi_ci.class_instance = ci
     roi_ci.save()
-
-    # Create cropped image, if wanted
-    if settings.ROI_AUTO_CREATE_IMAGE:
-        file_name, file_path = create_roi_path(roi.id)
-        create_roi_image(request.user, project_id, roi.id, file_path)
 
     # Build result data set
     status = {'status': "Created new ROI with ID %s." % roi.id}

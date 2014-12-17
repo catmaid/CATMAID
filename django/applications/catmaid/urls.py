@@ -366,6 +366,8 @@ urlpatterns += patterns('catmaid.control.roi',
         'remove_roi_link', name='remove_roi_link'),
     url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer),
         'get_roi_image', name='get_roi_image'),
+    url(r'^(?P<project_id>{0})/roi/add$'.format(integer),
+        'add_roi', name='add_roi'),
 )
 
 # Clustering

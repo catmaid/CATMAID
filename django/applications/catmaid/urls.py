@@ -118,6 +118,7 @@ urlpatterns += patterns('catmaid.control.label',
     (r'^(?P<project_id>\d+)/labels-for-nodes$', 'labels_for_nodes'),
     (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'labels_for_node'),
     (r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', 'label_update'),
+    (r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/remove$', 'remove_label_link'),
     (r'^(?P<project_id>\d+)/label/remove$', 'label_remove'),
 )
 

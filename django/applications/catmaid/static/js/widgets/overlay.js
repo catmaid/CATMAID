@@ -2165,18 +2165,30 @@ SkeletonAnnotations.Tag = new (function() {
     }
   };
 
-  this.tagATNwithLabel = function(label, svgOverlay) {
+  this.tagATNwithLabel = function(label, svgOverlay, deleteExisting) {
     var atn = SkeletonAnnotations.atn;
     svgOverlay.submit(
       django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
       {pid: project.id,
-       tags: label},
+       tags: label,
+       delete_existing: deleteExisting ? true : false},
       function(json) {
         if ('' === label) {
           growlAlert('Information', 'Tags removed.');
         } else {
           growlAlert('Information', 'Tag ' + label + ' added.');
         }
+        svgOverlay.updateNodes();
+    });
+  };
+
+  this.removeATNLabel = function(label, svgOverlay) {
+    var atn = SkeletonAnnotations.atn;
+    svgOverlay.submit(
+      django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/remove',
+      {tag: label},
+      function(json) {
+        growlAlert('Information', 'Tag "' + label + '" removed.');
         svgOverlay.updateNodes();
     });
   };

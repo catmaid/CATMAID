@@ -373,6 +373,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(returned_labels), 1)
         self.assertEqual(returned_labels[0], "uncertain end")
 
+        # Test label update with, removing existing tags
         response = self.client.post('/%d/label/treenode/%d/update' % (self.test_project_id,
                                                                       403),
                                     {'tags': ",".join(['foo', 'bar'])})
@@ -385,6 +386,35 @@ class ViewPageTests(TestCase):
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 2)
         self.assertEqual(set(returned_labels), set(['foo', 'bar']))
+
+        # Test label update without removing existing tags
+        response = self.client.post('/%d/label/treenode/%d/update' % (self.test_project_id,
+                                                                      403),
+                                    {'tags': ",".join(['green', 'apple']),
+                                     'delete_existing': 'false'})
+        parsed_response = json.loads(response.content)
+        self.assertTrue('message' in parsed_response)
+        self.assertTrue(parsed_response['message'] == 'success')
+
+        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+                                                                    403))
+        returned_labels = json.loads(response.content)
+        self.assertEqual(len(returned_labels), 4)
+        self.assertEqual(set(returned_labels), set(['foo', 'bar', 'green', 'apple']))
+
+        # Test removal of a single label
+        response = self.client.post('/%d/label/treenode/%d/remove' % (self.test_project_id,
+                                                                      403),
+                                    {'tag': 'bar'})
+        parsed_response = json.loads(response.content)
+        self.assertTrue('message' in parsed_response)
+        self.assertTrue(parsed_response['message'] == 'success')
+
+        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+                                                                    403))
+        returned_labels = json.loads(response.content)
+        self.assertEqual(len(returned_labels), 3)
+        self.assertEqual(set(returned_labels), set(['foo', 'green', 'apple']))
 
     def test_project_list(self):
         # Check that, pre-authentication, we can see none of the

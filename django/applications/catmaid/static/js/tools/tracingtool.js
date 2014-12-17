@@ -286,8 +286,12 @@ function TracingTool()
               + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
           return true;
         }
-        // If any modifier key is pressed, remove all tags
-        SkeletonAnnotations.Tag.tagATNwithLabel( modifier ? '' : tag, tracingLayer.svgOverlay);
+        // If any modifier key is pressed, remove the tag
+        if (modifier) {
+          SkeletonAnnotations.Tag.removeATNLabel(tag, tracingLayer.svgOverlay);
+        } else {
+          SkeletonAnnotations.Tag.tagATNwithLabel(tag, tracingLayer.svgOverlay, false);
+        }
         return true;
       };
     };

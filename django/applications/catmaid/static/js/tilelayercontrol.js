@@ -60,9 +60,9 @@ function TilelayerControl( stack )
       var slider = new Slider(
           SLIDER_HORIZONTAL,
           false,
-          1,
+          0,
           100,
-          100,
+          101,
           layers[key].getOpacity() * 100,
           setOpac );
 

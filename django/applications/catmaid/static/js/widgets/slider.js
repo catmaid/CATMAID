@@ -98,7 +98,6 @@ Slider = function(
    * are made about order or interval.
    */
   this.setByValue = function(val, cancelOnchange) {
-    if (self.val === val) return; // If value is unchanged, don't needlessly update.
     var valBin, index;
 
     if (values.length > 1) {

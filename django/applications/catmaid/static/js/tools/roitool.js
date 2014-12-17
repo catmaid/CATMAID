@@ -34,7 +34,13 @@ function RoiTool()
 	this.mouseCatcher.className = "sliceMouseCatcher";
 	this.mouseCatcher.style.cursor = "default";
 
+    // initialize roi button
     this.button_roi_apply = document.getElementById( "button_roi_apply" );
+    this.button_roi_apply.onclick = this.createRoi.bind(this, function(result) {
+        if (result.status) {
+            growlAlert("Success", result.status);
+        }
+    });
 
     // bind event handlers to current calling context
     this.onmousedown_bound = this.onmousedown.bind(this);
@@ -402,9 +408,6 @@ RoiTool.prototype.register = function( parentStack )
     this.box_roi_r.onchange = this.changeCropBoxRByInput.bind(this);
     this.addMousewheelListener( this.box_roi_r, this.cropBoxMouseWheel );
 
-    // initialize crop button
-    //this.button_roi_apply.onclick = crop;
-
     document.getElementById( "toolbar_roi" ).style.display = "block";
 
     this.updateControls();
@@ -458,3 +461,24 @@ RoiTool.prototype.handleKeyPress = function( e ) {
     return false;
 };
 
+RoiTool.prototype.createRoi = function(callback)
+{
+    // Collect relevant information
+    var cb = this.getCropBox();
+    var data = {
+        x_min: cb.left,
+        x_max: cb.right,
+        y_min: cb.top,
+        y_max: cb.bottom,
+        z: this.stack.z * this.stack.resolution.z + this.stack.translation.z,
+        zoom_level: this.stack.s,
+        rotation_cw: cb.rotation_cw,
+        stack: this.stack.getId(),
+    };
+    // The actual creation and linking of the ROI happens in
+    // the back-end. Create URL for initiating this:
+    var roi_url = django_url + project.id + "/roi/add";
+    // Make Ajax call and handle response in callback
+    requestQueue.register(roi_url, 'POST', data,
+        jsonResponseHandler(callback));
+}

@@ -2546,6 +2546,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createInverseSynap
   }).bind(this), {});
 };
 
+/** For skeletons with a single node will return an Arbor without edges and with a null root,
+ * given that it has no edges, and therefore no vertices, at all. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = function() {
   return new Arbor().addEdges(this.geometry['neurite'].vertices,
                               function(v) { return v.node_id; });
@@ -3333,10 +3335,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 	}, this);
 
   if (options.smooth_skeletons) {
-    var smoothed = this.createArbor().smoothPositions(vs, options.smooth_skeletons_sigma);
-    Object.keys(vs).forEach(function(node_id) {
-      vs[node_id].copy(smoothed[node_id]);
-    });
+    var arbor = this.createArbor();
+    if (arbor.root) {
+      Object.keys(vs).forEach(function(node_id) {
+        // Copy coords and not replace, given that the same instances are reused
+        vs[node_id].copy(this[node_id]);
+      }, arbor.smoothPositions(vs, options.smooth_skeletons_sigma));
+    }
   }
 
 	// Create edges between all connector nodes and their associated skeleton nodes,
@@ -3378,26 +3383,29 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
   if (options.resample_skeletons) {
     // WARNING: node IDs no longer resemble actual skeleton IDs.
     // All node IDs will now have negative values to avoid accidental similarities.
-    var res = this.createArbor().resampleSlabs(vs, options.smooth_skeletons_sigma, options.resampling_delta, 2);
-    var vs = this.geometry['neurite'].vertices;
-    // Remove existing lines
-    vs.length = 0;
-    // Add all new lines
-    var edges = res.arbor.edges,
-        positions = res.positions;
-    Object.keys(edges).forEach(function(nodeID) {
-      // Fix up Vector3 instances
-      var v_child = positions[nodeID];
-      v_child.user_id = -1;
-      v_child.node_id = -nodeID;
-      // Add line
-      vs.push(v_child);
-      vs.push(positions[edges[nodeID]]); // parent
-    });
-    // Fix up root
-    var v_root = positions[res.arbor.root];
-    v_root.user_id = -1;
-    v_root.node_id = -res.arbor.root;
+    var arbor = this.createArbor();
+    if (arbor.root) {
+      var res = arbor.resampleSlabs(vs, options.smooth_skeletons_sigma, options.resampling_delta, 2);
+      var vs = this.geometry['neurite'].vertices;
+      // Remove existing lines
+      vs.length = 0;
+      // Add all new lines
+      var edges = res.arbor.edges,
+          positions = res.positions;
+      Object.keys(edges).forEach(function(nodeID) {
+        // Fix up Vector3 instances
+        var v_child = positions[nodeID];
+        v_child.user_id = -1;
+        v_child.node_id = -nodeID;
+        // Add line
+        vs.push(v_child);
+        vs.push(positions[edges[nodeID]]); // parent
+      });
+      // Fix up root
+      var v_root = positions[res.arbor.root];
+      v_root.user_id = -1;
+      v_root.node_id = -res.arbor.root;
+    }
   }
 };
 

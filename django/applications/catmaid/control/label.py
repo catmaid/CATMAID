@@ -12,6 +12,17 @@ from catmaid.models import Project, Class, ClassInstance, Relation, Connector, \
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.fields import Double3D
 
+def get_link_model(node_type):
+    """ Return the model class that represents the a label link for nodes of
+    the given node type.
+    """
+    if node_type == 'treenode':
+        return TreenodeClassInstance
+    elif node_type == 'connector':
+        return ConnectorClassInstance
+    else:
+        raise Exception('Unknown node type: "%s"', node_type)
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def label_remove(request, project_id=None):
     # check if superuser, then delete label and all associated instances
@@ -124,12 +135,11 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     kwargs = {'relation': labeled_as_relation,
               'class_instance__class_column__class_name': 'label'}
 
+    table = get_link_model(ntype)
     if 'treenode' == ntype:
-        table = TreenodeClassInstance
         kwargs['treenode__id'] = location_id
         node = Treenode.objects.get(id=location_id)
     elif 'connector' == ntype:
-        table = ConnectorClassInstance
         kwargs['connector__id'] = location_id
         node = Connector.objects.get(id=location_id)
 
@@ -218,20 +228,12 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
 def label_exists(label_id, node_type):
     # This checks to see if the exact instance of the tag being applied to a node/connector still exists.
     # If the tag was removed and added again then this will return False.
-    if node_type == 'treenode':
-        try:
-            label = TreenodeClassInstance.objects.get(pk=label_id)
-            return True
-        except TreenodeClassInstance.DoesNotExist:
-            return False
-    elif node_type == 'connector':
-        try:
-            label = ConnectorClassInstance.objects.get(pk=label_id)
-            return True
-        except ConnectorClassInstance.DoesNotExist:
-            return False
-    else:
-        raise Exception('Unknown node type: "%s"', node_type)
+    table = get_link_model(node_type)
+    try:
+        label = table.objects.get(pk=label_id)
+        return True
+    except table.DoesNotExist:
+        return False
 
 @requires_user_role(UserRole.Annotate)
 def remove_label_link(request, project_id, ntype, location_id):
@@ -252,12 +254,7 @@ def remove_label_link(request, project_id, ntype, location_id):
 def remove_label(label_id, node_type):
     # This removes an exact instance of a tag being applied to a node/connector, it does not look up the tag by name.
     # If the tag was removed and added again then this will do nothing and the tag will remain.
-    if node_type == 'treenode':
-        table = TreenodeClassInstance
-    elif node_type == 'connector':
-        table = ConnectorClassInstance
-    else:
-        raise Exception('Unknown node type: "%s"', node_type)
+    table = get_link_model(node_type)
 
     try:
         label_link = table.objects.get(pk=label_id)

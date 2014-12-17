@@ -167,6 +167,7 @@ def list_connector(request, project_id=None):
             tn_this.id AS this_treenode_id,
             tc_this.relation_id AS this_to_connector_relation_id,
             tc_other.relation_id AS connector_to_other_relation_id,
+            tc_other.confidence AS confidence,
             to_char(connector.edition_time, 'DD-MM-YYYY HH24:MI') AS last_modified
             FROM
             treenode tn_other,
@@ -217,6 +218,7 @@ def list_connector(request, project_id=None):
             connector.location_z AS connector_z,
             tn_this.id AS this_treenode_id,
             tc_this.relation_id AS this_to_connector_relation_id,
+            tc_this.confidence AS confidence,
             to_char(connector.edition_time, 'DD-MM-YYYY HH24:MI') AS last_modified
             FROM
             connector,
@@ -309,6 +311,7 @@ def list_connector(request, project_id=None):
             # done in the client as well. So we really want to keep this and
             # have a more complicated API?
             row.append(int((z - translation.z) / resolution.z))
+            row.append(c['confidence'])
             row.append(labels)
             row.append(connected_skeleton_treenode_count)
             row.append(c['connector_username'])

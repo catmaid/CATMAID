@@ -120,6 +120,10 @@ var ConnectorTable = function(optionalSkid)
           {
             "bSearchable": false,
             "bSortable": true
+          }, // confidence
+          {
+            "bSearchable": false,
+            "bSortable": true
           }, // number of nodes
           {
             "bVisible": true,
@@ -174,8 +178,8 @@ var ConnectorTable = function(optionalSkid)
 
       // If there is a partner treenode, activate that - otherwise
       // activate the connector itself:
-      if (aData[9]) {
-        idToActivate = parseInt(aData[9], 10);
+      if (aData[10]) {
+        idToActivate = parseInt(aData[10], 10);
         skeletonID = parseInt(aData[1], 10);
       } else {
         idToActivate = parseInt(aData[0], 10);

@@ -1718,6 +1718,7 @@ var WindowMaker = new function()
             '<th>y</th>' +
             '<th>z</th>' +
             '<th>s</ht>' +
+            '<th>confidence</ht>' +
             '<th>tags</th>' +
             '<th id="connector_nr_nodes_top' + CT.widgetID + '"># nodes for target(s)</th>' +
             '<th>username</th>' +
@@ -1733,6 +1734,7 @@ var WindowMaker = new function()
             '<th>y</th>' +
             '<th>z</th>' +
             '<th>s</ht>' +
+            '<th>confidence</ht>' +
             '<th>tags</th>' +
             '<th id="connector_nr_nodes_bottom' + CT.widgetID + '"># nodes for target(s)</th>' +
             '<th>username</th>' +

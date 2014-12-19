@@ -1,7 +1,7 @@
 from optparse import make_option
 from django.core import serializers
 from django.core.management.base import NoArgsCommand, CommandError
-from django.db import connection
+from django.db import connection, transaction
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.models import Project, User
 
@@ -14,7 +14,15 @@ class FileImporter:
 
         self.format = 'json'
 
+    @transaction.atomic
     def import_data(self):
+        """ Imports data from a file and overrides irs properties, if wanted.
+        This method also deactivates auto commit (if it is activated)
+        temporary.
+        """
+        cursor = connection.cursor()
+        # Defer all constraint checks
+        cursor.execute('SET CONSTRAINTS ALL DEFERRED')
         # Read the file and import data
         with open(self.source, "r") as data:
             for deserialized_object in serializers.deserialize(self.format, data):
@@ -33,7 +41,6 @@ class FileImporter:
                 deserialized_object.save()
 
         # Reset counters to current maximum IDs
-        cursor = connection.cursor()
         cursor.execute('''
             SELECT setval('concept_id_seq', coalesce(max("id"), 1), max("id") IS NOT null)
             FROM concept;

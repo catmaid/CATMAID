@@ -1,0 +1,35 @@
+{% extends "catmaid/import/annotations/setup.html" %}
+
+{% block setup_content %}
+    <p>Below you will find a list of all annotation data that will get importet.
+    These are for the most part neurons and their representation alongside meta
+    information on them. Once you continue, everthing will be imported.</p>
+    <hr />
+
+    <table>
+      <tr>
+        {% if source_type == 'project' %}
+          <th>Project</th>
+        {% elif source_type == 'file' %}
+          <th>File</th>
+        {% else %}
+          <th>Unknown source</th>
+        {% endif %}
+        <th># Treenodes</th>
+        <th># Connectors</th>
+        <th># Annotations</th>
+        <th># Annotation links</th>
+        <th># Tags</th>
+      </tr>
+      {% for s in stats %}
+        <tr>
+          <td>{{ s.source }}</td>
+          <td>{{ s.ntreenodes }}</td>
+          <td>{{ s.nconnectors }}</td>
+          <td>{{ s.nannotations }}</td>
+          <td>{{ s.nannotationlinks }}</td>
+          <td>{{ s.ntags }}</td>
+        </tr>
+      {% endfor %} 
+    </table>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div id="content-main">
+    {% if not_imported_projects %}
+        {% if imported_projects %}
+            Unfortunately, not all projects could have been imported. The
+            following projects failed:
+        {% else %}
+            Sorry, no project could have been imported. All project failed:
+        {% endif %}
+        <ul>
+        {% for p, e in not_imported_projects %}
+            <li>{{ p.name }}<br />Error: {{ e }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>All selected projects have been added to CATMAID:</p>
+        <p><ul>
+        {% for p in imported_projects %}
+            <li>{{ p.name }}</li>
+        {% endfor %}
+        </ul></p>
+        <p><a href="{% url "admin:index" %}">Return to the administration home page.</a></p>
+    {% endif %}
+  </div>
+{% endblock %}
+

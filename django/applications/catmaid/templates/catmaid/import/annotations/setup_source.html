@@ -1,0 +1,12 @@
+{% extends "catmaid/import/annotations/setup.html" %}
+
+{% block setup_content %}
+    <p>This tool assists you with importing data into your CATMAID instance.
+    The first step is to declare a source for the data to be importet into an
+    existing (!) project of this instance. Please be aware of the fact that
+    importing data can take a while and your HTTP connection might be dropped
+    before the import can successfully finish, causing the import to be canceled
+    altogether. In this event, you should resort to importing using the
+    management command "copy_annotations".</p>
+    <hr />
+{% endblock %}

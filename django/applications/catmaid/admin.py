@@ -9,6 +9,7 @@ from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile
 from catmaid.models import BrokenSlice, Overlay
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
+from catmaid.control.annotationadmin import ImportingWizard
 from catmaid.views import UseranalyticsView, UserProficiencyView
 
 
@@ -206,7 +207,9 @@ admin.site.register(ProjectStack)
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 # Register additional views
-admin.site.register_view('importer', 'Importer',
+admin.site.register_view('annotationimporter', 'Annotation data importer',
+                         view=ImportingWizard.as_view())
+admin.site.register_view('importer', 'Image data importer',
                          view=importer_admin_view)
 admin.site.register_view('useranalytics', 'User Analytics',
                          view=UseranalyticsView.as_view())

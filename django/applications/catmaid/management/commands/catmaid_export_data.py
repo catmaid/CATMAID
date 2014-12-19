@@ -86,23 +86,31 @@ class Exporter():
                         skeleton_id__in=skeleton_id_constraints)
                 self.to_serialize.append(treenodes)
 
+                exported_tids = set(treenodes.values_list('id', flat=True))
+                print("Exporting %s treenodes" % len(exported_tids))
+
             # Export connectors and connector links
             if self.export_connectors:
                 connector_links = TreenodeConnector.objects.filter(
                         project=self.project, skeleton_id__in=skeleton_id_constraints).values_list('id', 'connector', 'treenode')
 
                 # Add matching connecots
+                connector_ids = set(c for _,c,_ in connector_links)
                 self.to_serialize.append(Connector.objects.filter(
-                        id__in=[c for _,c,_ in connector_links]))
+                        id__in=connector_ids))
+                print("Exporting %s connectors" % len(connector_ids))
 
                 # Add matching connector links
                 self.to_serialize.append(TreenodeConnector.objects.filter(
                         id__in=[l for l,_,_ in connector_links]))
 
                 # Add addition placeholde treenodes
-                present_tids = set(treenodes.values_list('id', flat=True))
-                connector_tids = set(t for _,_,t in connector_links)
-                extra_tids = connector_tids - present_tids
+                connector_tids = set(TreenodeConnector.objects \
+                    .filter(project=self.project, connector__in=connector_ids) \
+                    .exclude(skeleton_id__in=skeleton_id_constraints) \
+                    .values_list('treenode', flat=True))
+                extra_tids = connector_tids - exported_tids
+                print("Exporting %s placeholder nodes" % len(extra_tids))
                 self.to_serialize.append(Treenode.objects.filter(id__in=extra_tids))
 
                 # Add additional skeletons and neuron-skeleton links
@@ -120,7 +128,8 @@ class Exporter():
                 self.to_serialize.append(ClassInstance.objects.filter(
                     project=self.project, id__in=extra_nids))
 
-            # Export annotations and annotation-neurin links
+            # Export annotations and annotation-neuron links, liked to selected
+            # entities.
             if self.export_annotations and 'annotated_with' in relations:
                 annotation_links = ClassInstanceClassInstance.objects.filter(
                     project_id=self.project.id, relation=relations['annotated_with'],
@@ -147,7 +156,7 @@ class Exporter():
                 self.to_serialize.append(TreenodeConnector.objects.filter(
                         project=self.project))
 
-            # Export annotations and annotation-neurin links
+            # Export annotations and annotation-neuron links
             if self.export_annotations and 'annotated_with' in relations:
                 annotation_links = ClassInstanceClassInstance.objects.filter(
                     project_id=self.project.id, relation=relations['annotated_with'],

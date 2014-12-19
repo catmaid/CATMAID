@@ -1,8 +1,75 @@
-Importing Data
-==============
+Exporting and importing Data
+============================
 
-Introduction
-------------
+For importing, there are currently two different tool-sets available in CATMAID.
+A front-end in Django's admin interface is only available for importing project
+and stack information. If you want to import tracing data, you have to resort to
+the command line.
+
+Exporting and importing neuron tracing data
+-------------------------------------------
+
+Two management commands for Django's ``manage.py`` tool are available in CATMAID
+that allow exporting and importing neuron tracing data. They are called
+``catmaid_export_data`` and ``catmaid_import_data``. To use them, you have to be
+in the ``virtualenv`` and it is probably easiest to work from the
+``django/projects/mysite/`` directory.
+
+Exporting data
+^^^^^^^^^^^^^^
+
+At the moment, the export command is able to create a JSON representation of
+neurons, connectors, tags and annotations. To constrain the exported neurons,
+annotations can be used. To export data, you have to use the
+``catmaid_export_data`` command::
+
+  manage.py catmaid_export_data
+
+Adding the ``--help`` option will show an overview over all available options.
+When called without any option, the command will ask the user for the project to
+export from and will start exporting the whole project right away. Use the
+additional options to be more precise about what should be exported.
+
+Without any parameter, everything is exported. The type of data to be exported
+can be adjusted by the ``--notreenodes``, ``--noconnectors``,
+``--noannotations`` and ``--notags`` parameters. To constrain the exported
+neurons, the ``--required-annotation`` option can be used. For instance, to
+export all neurons from the project with ID ``1`` that are annotated with
+"Kenyon cells", one would have to call::
+
+  manage.py catmaid_export_data --source 1 --required-annotation "Kenyon cells"
+
+This will create a file called ``export_pid_1.json``.
+
+Importing data
+^^^^^^^^^^^^^^
+
+The JSON file generated in the previous section can be used to import data into
+a CATMAID instance. *Currently, the importer won't change the primary key IDs in
+the input data, so be aware of potential data loss if you import into an
+instance with existing data.* For now, this is only practical to import data
+into a new CATMAID instance. To do this, the ``catmaid_import_data`` management
+command has to be used::
+
+  manage.py catmaid_import_data
+
+You can use the ``--help`` switch to get an overview of the available options.
+Like the exporter, the importer will ask a user if it needs more information.
+Required are currently the source file and a user. The importer does currently
+not preserve ownership if the imported models. The user (and editor and
+reviewer) is needed to override the information in the source data set.
+
+Assuming a file called ``export_pid_1.json`` is available and a new CATMAID
+project with ID ``1`` has been created, the following command will start the
+import::
+
+  manage.py catmaid_import_data --source export_pid_1.json --target 1
+
+The tool will ask for a user to use for all data before it actually starts the
+import.
+
+Importing project and stack information
+---------------------------------------
 
 Image data in CATMAID is referenced by stacks. Stacks in turn are
 organized in projects. The data used by a stack can have one of
@@ -24,7 +91,7 @@ explained.
 How to use the importing tool will be shown in the last section.
 
 Project Files
--------------
+^^^^^^^^^^^^^
 
 If the importing tool encounters a folder with a file called
 ``project.yaml`` in it, it will look at it as a potential project. If
@@ -126,7 +193,7 @@ whitespace indentation (but simple spaces) as this isn't allowed in
 YAML.
 
 File and Folder Layout
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 The importing tool expects a certain file any folder layout to work with.
 It assumes that there is one data folder per CATMAID instance that is
@@ -163,7 +230,7 @@ project. A folder is ignored, though, when the project file is not
 available.
 
 Using the Importer
-------------------
+^^^^^^^^^^^^^^^^^^
 
 To use the importer, you have to adjust your CATMAID settings file to
 make your data path and its URL known. These settings are called

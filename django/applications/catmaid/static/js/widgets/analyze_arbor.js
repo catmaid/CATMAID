@@ -9,7 +9,7 @@ var AnalyzeArbor = function() {
 
   this.table = null;
   this.skeleton_ids = [];
-  this.arbor_stats = [];
+  this.arbor_stats = {};
 
   this.pie_radius = 100;
   this.plot_width = 300;
@@ -43,7 +43,7 @@ AnalyzeArbor.prototype.clear = function() {
   this.table.fnClearTable();
   $('#analyze_widget_charts_div' + this.widgetID).empty();
   this.skeleton_ids = [];
-  this.arbor_stats = [];
+  this.arbor_stats = {};
 };
 
 AnalyzeArbor.prototype.removeSkeletons = function() {};

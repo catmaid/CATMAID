@@ -535,8 +535,6 @@ var WindowMaker = new function()
     link.onchange = ST.syncLink.bind(ST, link);
     buttons.appendChild(link);
 
-    buttons.appendChild(document.createElement('br'));
-
     var annotate = document.createElement('input');
     annotate.setAttribute("type", "button");
     annotate.setAttribute("id", "annotate_skeleton_list");
@@ -545,10 +543,19 @@ var WindowMaker = new function()
     annotate.onclick = ST.annotate_skeleton_list.bind(ST);
     buttons.appendChild(annotate);
     
+    buttons.appendChild(document.createTextNode(' Color scheme'));
+    var c = appendSelect(buttons, 'ST-color-scheme' + ST.widgetID,
+        ['CATMAID',
+         'category10',
+         'category20',
+         'category20b',
+         'category20c'].concat(Object.keys(colorbrewer)));
+
+
     var random = document.createElement('input');
     random.setAttribute("type", "button");
-    random.setAttribute("value", "Randomize colors");
-    random.onclick = ST.randomizeColorsOfSelected.bind(ST);
+    random.setAttribute("value", "Colorize");
+    random.onclick = function() { ST.colorizeWith(c.options[c.selectedIndex].text); };
     buttons.appendChild(random);
     
     var measure = document.createElement('input');

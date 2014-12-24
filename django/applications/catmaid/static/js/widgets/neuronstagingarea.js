@@ -461,6 +461,37 @@ SelectionTable.prototype.randomizeColorsOfSelected = function() {
   }, this);
   this.updateLink(this.getSelectedSkeletonModels());
 };
+
+SelectionTable.prototype.colorizeWith = function(scheme) {
+  if ('CATMAID' === scheme) return this.randomizeColorsOfSelected();
+
+  var skeletons = this.filteredSkeletons(true),
+      colorFn;
+
+  if (0 === scheme.indexOf('category') && d3.scale.hasOwnProperty(scheme)) {
+    colorFn = d3.scale[scheme]();
+  } else if (colorbrewer.hasOwnProperty(scheme)) {
+    var sets = colorbrewer[scheme];
+    if (skeletons.size <= 3) {
+      colorFn = function(i) { return sets[3][i]; };
+    } else if (sets.hasOwnProperty(skeletons.size)) {
+      colorFn = function(i) { return sets[skeletons.size][i]; };
+    } else {
+      // circular indexing
+      var keys = Object.keys(sets),
+          largest = sets[keys.sort(function(a, b) { return a < b ? 1 : -1; })[0]];
+      colorFn = function(i) { return largest[i % largest.length]; };
+    }
+  }
+
+  if (colorFn) {
+    skeletons.forEach(function(sk, i) {
+      sk.color.setStyle(colorFn(i));
+      this.gui.update_skeleton_color_button(sk);
+    }, this);
+    this.updateLink(this.getSelectedSkeletonModels());
+  }
+};
  
 SelectionTable.prototype.getSkeletonModel = function( id ) {
   if (id in this.skeleton_ids) {

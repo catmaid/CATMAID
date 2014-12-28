@@ -124,16 +124,16 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
 def contributor_statistics(request, project_id=None, skeleton_id=None):
     contributors = defaultdict(int)
     n_nodes = 0
-    # Count the total number of 60-second intervals with at least one treenode in them
-    minutes = set()
-    min_review_minutes = set()
-    multi_review_minutes = 0
+    # Count the total number of 20-second intervals with at least one treenode in them
+    time_bins = set()
+    min_review_bins = set()
+    multi_review_bins = 0
     epoch = datetime.utcfromtimestamp(0)
 
     for row in Treenode.objects.filter(skeleton_id=skeleton_id).values_list('user_id', 'creation_time'):
         n_nodes += 1
         contributors[row[0]] += 1
-        minutes.add(int((row[1] - epoch).total_seconds() / 60))
+        time_bins.add(int((row[1] - epoch).total_seconds() / 20))
 
     # Take into account that multiple people may have reviewed the same nodes
     # Therefore measure the time for the user that has the most nodes reviewed,
@@ -144,14 +144,14 @@ def contributor_statistics(request, project_id=None, skeleton_id=None):
     seen = set()
 
     for reviewer, treenodes in sorted(rev.iteritems(), key=itemgetter(1), reverse=True):
-        reviewer_minutes = set()
+        reviewer_bins = set()
         for treenode, timestamp in treenodes.iteritems():
-            minute = int((timestamp - epoch).total_seconds() / 60)
-            reviewer_minutes.add(minute)
+            time_bin = int((timestamp - epoch).total_seconds() / 20)
+            reviewer_bins.add(time_bin)
             if not (treenode in seen):
                 seen.add(treenode)
-                min_review_minutes.add(minute)
-        multi_review_minutes += len(reviewer_minutes)
+                min_review_bins.add(time_bin)
+        multi_review_bins += len(reviewer_bins)
 
     relations = {row[0]: row[1] for row in Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id')}
 
@@ -170,9 +170,9 @@ def contributor_statistics(request, project_id=None, skeleton_id=None):
 
     return HttpResponse(json.dumps({
         'name': neuron_name,
-        'construction_minutes': len(minutes),
-        'min_review_minutes': len(min_review_minutes),
-        'multiuser_review_minutes': multi_review_minutes,
+        'construction_minutes': int(len(time_bins) / 3.0),
+        'min_review_minutes': int(len(min_review_bins) / 3.0),
+        'multiuser_review_minutes': int(multi_review_bins / 3.0),
         'n_nodes': n_nodes,
         'node_contributors': contributors,
         'n_pre': sum(synapses[relations['presynaptic_to']].values()),

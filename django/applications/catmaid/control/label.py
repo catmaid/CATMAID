@@ -242,7 +242,10 @@ def remove_label_link(request, project_id, ntype, location_id):
         raise ValueError("No label parameter given")
 
     table = get_link_model(ntype)
-    link_id = table.objects.get(class_instance__name=label).id
+    if 'treenode' == ntype:
+        link_id = table.objects.get(treenode_id=location_id, class_instance__name=label).id
+    elif 'connector' == ntype:
+        link_id = table.objects.get(connector_id=location_id, class_instance__name=label).id
 
     if remove_label(link_id, ntype):
         return HttpResponse(json.dumps({'message': 'success'}),

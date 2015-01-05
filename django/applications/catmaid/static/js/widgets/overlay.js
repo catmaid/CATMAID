@@ -2217,7 +2217,6 @@ SkeletonAnnotations.Tag = new (function() {
         if ("" === input.tagEditorGetTags()) {
           SkeletonAnnotations.Tag.updateTags(svgOverlay);
           SkeletonAnnotations.Tag.removeTagbox();
-          svgOverlay.hideLabels();
           svgOverlay.updateNodes();
         }
         event.stopPropagation();

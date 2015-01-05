@@ -4,7 +4,6 @@ gcc
 gfortran
 apt-file
 python2.7-dev
-postgresql-common
 libpq-dev
 libgraphicsmagick++1-dev
 graphicsmagick

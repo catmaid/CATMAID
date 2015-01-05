@@ -2830,7 +2830,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     this.actor['neurite'].material.transparent = this.opacity !== 1;
     this.actor['neurite'].material.needsUpdate = true; // TODO repeated it's the line_material
 
-    var material = new THREE.MeshBasicMaterial({color: this.actorColor, opacity:1.0, transparent:false});
+    var material = new THREE.MeshBasicMaterial({color: this.actorColor, opacity: this.opacity, transparent: this.opacity !== 1});
 
     for (var k in this.radiusVolumes) {
       if (this.radiusVolumes.hasOwnProperty(k)) {

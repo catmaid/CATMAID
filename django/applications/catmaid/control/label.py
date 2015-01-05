@@ -260,9 +260,9 @@ def remove_label(label_id, node_type):
         label_link = table.objects.get(pk=label_id)
         label = label_link.class_instance
         label_link.delete()
-        # Remove class instance for all deleted labels, if it isn't linked to any
-        # treenode anymore.
-        if 0 == table.objects.filter(class_instance=label).count():
+        # Remove class instance for the deleted label if it is no longer linked
+        # to any nodes.
+        if 0 == label.treenodeclassinstance_set.count() + label.connectorclassinstance_set.count():
             label.delete()
 
         return True

@@ -279,8 +279,8 @@ function TracingTool()
     var tagFn = function(tag) {
       return function(e) {
         if (!mayEdit()) return false;
-        if (e.ctrlKey) return false;
-        var modifier = e.metaKey || e.shiftKey;
+        if (e.altKey || e.ctrlKey || e.metaKey) return false;
+        var modifier = e.shiftKey;
         if (null === SkeletonAnnotations.getActiveNodeId()) {
           alert('Must activate a treenode or connector before '
               + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');

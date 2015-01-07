@@ -2159,6 +2159,10 @@ SkeletonAnnotations.Tag = new (function() {
   };
 
   this.removeTagbox = function() {
+    // Remove ATN change listener, if any
+    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        this.handleATNChange);
+    // Remove tag box, if any
     if (this.tagbox) {
       this.tagbox.remove();
       this.tagbox = null;
@@ -2191,6 +2195,13 @@ SkeletonAnnotations.Tag = new (function() {
         growlAlert('Information', 'Tag "' + label + '" removed.');
         svgOverlay.updateNodes();
     });
+  };
+
+  this.handleATNChange = function(activeNode) {
+    if (!activeNode || activeNode.id === null) {
+      // If no node is active anymore, destroy the tag box.
+      this.removeTagbox();
+    }
   };
 
   this.handle_tagbox = function(atn, svgOverlay) {
@@ -2240,6 +2251,10 @@ SkeletonAnnotations.Tag = new (function() {
           SkeletonAnnotations.Tag.removeTagbox();
         }
       });
+
+    // Register to change events of active treenode
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        this.handleATNChange, this);
 
     svgOverlay.submit(
         django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atnID,

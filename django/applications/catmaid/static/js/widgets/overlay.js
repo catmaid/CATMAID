@@ -1217,9 +1217,8 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (c
 /** Recreate all nodes (or reuse existing ones if possible).
  *
  * @param jso is an array of JSON objects, where each object may specify a Node or a ConnectorNode
- * @param pz is the z of the section in calibrated coordinates
  */
-SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso, pz) {
+SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso) {
   // Reset nodes and labels
   this.nodes = {};
   // remove labels, but do not hide them
@@ -1232,10 +1231,12 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   jso[0].forEach(function(a, index, array) {
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
+    var z = this.stack.projectToStackZ(a[4], a[3], a[2]);
     this.nodes[a[0]] = this.graphics.newNode(
-      a[0], null, a[1], a[6], this.phys2pixX(a[2]),
-      this.phys2pixY(a[3]), this.phys2pixZ(a[4]),
-      (a[4] - pz) / this.stack.resolution.z, a[5], a[7], a[8]);
+      a[0], null, a[1], a[6],
+      this.stack.projectToStackX(a[4], a[3], a[2]),
+      this.stack.projectToStackY(a[4], a[3], a[2]),
+      z, z - this.stack.z, a[5], a[7], a[8]);
   }, this);
 
   // Populate ConnectorNodes
@@ -1244,10 +1245,12 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     // a[5]: presynaptic nodes as array of arrays with treenode id
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
     // and confidence, a[7]: whether the user can edit the connector
+    var z = this.stack.projectToStackZ(a[3], a[2], a[1]);
     this.nodes[a[0]] = this.graphics.newConnectorNode(
-      a[0], this.phys2pixX(a[1]),
-      this.phys2pixY(a[2]), this.phys2pixZ(a[3]),
-      (a[3] - pz) / this.stack.resolution.z, a[4], a[7]);
+      a[0],
+      this.stack.projectToStackX(a[3], a[2], a[1]),
+      this.stack.projectToStackY(a[3], a[2], a[1]),
+      z, z - this.stack.z, a[4], a[7]);
   }, this);
 
   // Disable any unused instances
@@ -1587,7 +1590,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
                 json.missing_classes, json.missing_relations,
                 json.missing_classinstances);
         } else {
-          self.refreshNodesFromTuples(json, pz);
+          self.refreshNodesFromTuples(json);
 
           // initialization hack for "URL to this view"
           if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {

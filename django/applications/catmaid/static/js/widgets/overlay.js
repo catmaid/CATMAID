@@ -2280,6 +2280,10 @@ SkeletonAnnotations.Tag = new (function() {
 
   this.updateTags = function(svgOverlay) {
     var atn = SkeletonAnnotations.atn;
+    if (null === atn.id) {
+      error("Can't update tags, because there is no active node selected.");
+      return;
+    }
     // TODO why pass the atnID both as POST and in the URL?
     svgOverlay.submit(
         django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',

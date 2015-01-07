@@ -2284,12 +2284,9 @@ SkeletonAnnotations.Tag = new (function() {
       error("Can't update tags, because there is no active node selected.");
       return;
     }
-    // TODO why pass the atnID both as POST and in the URL?
     svgOverlay.submit(
         django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
         {pid: project.id,
-         nid: atn.id,
-         ntype: atn.type,
          tags: $("#Tags" + atn.id).tagEditorGetTags()},
         function(json) {});
   };

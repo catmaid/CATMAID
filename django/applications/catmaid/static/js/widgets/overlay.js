@@ -1341,11 +1341,6 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
    completionCallback.  Otherwise, just fire the
    completionCallback at the end of this method. */
 SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCallback ) {
-  var wc = this.stack.getWorldTopLeft();
-  var pl = wc.worldLeft,
-      pt = wc.worldTop,
-      new_scale = wc.scale;
-  
   // TODO: this should also check for the size of the containing
   // div having changed.  You can see this problem if you have
   // another window open beside one with the tracing overlay -
@@ -1371,11 +1366,12 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
 
   var screenScale = userprofile.tracing_overlay_screen_scaling;
   this.paper.classed('screen-scale', screenScale);
-  var dynamicScale = screenScale ? (1 / new_scale) : false;
-  this.graphics.scale(
-      userprofile.tracing_overlay_scale,
-      Math.max(stack.resolution.x, stack.resolution.y),
-      dynamicScale);
+  // All SVG elements scale automatcally, if the viewport on the SVG data
+  // changes. If in screen scale mode, where the size of all elements should
+  // stay the same (regardless of zoom level), counter acting this is required.
+  var resScale = Math.max(stack.resolution.x, stack.resolution.y);
+  var dynamicScale = screenScale ? (1 / (stack.scale * resScale)) : false;
+  this.graphics.scale(userprofile.tracing_overlay_scale, resScale, dynamicScale);
 
   if ( !doNotUpdate ) {
     // If changing scale or slice, remove tagbox.
@@ -1383,12 +1379,15 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
     this.updateNodes(completionCallback);
   }
 
+  var stackViewBox = stack.createStackViewBox();
+
+  // Use project coordinates for the SVG's view box
   this.paper.attr({
       viewBox: [
-          pl - stack.translation.x,
-          pt - stack.translation.y,
-          (stack.viewWidth / stack.scale) * stack.resolution.x,
-          (stack.viewHeight / stack.scale) * stack.resolution.y].join(' '),
+          stackViewBox.min.x,
+          stackViewBox.min.y,
+          stackViewBox.max.x - stackViewBox.min.x,
+          stackViewBox.max.y - stackViewBox.min.y].join(' '),
       width: stack.viewWidth,     // Width and height only need to be updated on
       height: stack.viewHeight}); // resize.
 

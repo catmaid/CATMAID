@@ -930,6 +930,7 @@ var WindowMaker = new function()
           ['Export PNG', WA.exportPNG.bind(WA)],
           ['Export SVG', WA.exportSVG.bind(WA)],
           ['Export catalog SVG', WA.exportCatalogSVG.bind(WA)],
+          ['Export skeletons as CSV', WA.exportSkeletonsAsCSV.bind(WA)],
         ]);
 
     content.appendChild( bar );

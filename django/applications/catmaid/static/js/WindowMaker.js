@@ -600,7 +600,7 @@ var WindowMaker = new function()
     tab.innerHTML =
         '<thead>' +
           '<tr>' +
-            '<th width="60px">action</th>' +
+            '<th>action</th>' +
             '<th>name</th>' +
             '<th>% reviewed</th>' +
             '<th>selected</th>' +

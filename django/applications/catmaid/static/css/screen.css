@@ -680,3 +680,12 @@ div#classification_graph_object img.roiimage {
   stroke: #fcc;
   stroke-width: 1.5px;
 }
+
+a.neuron-selection-link {
+  color: black;
+  text-decoration: none;
+}
+
+a.neuron-selection-link:hover {
+  text-decoration: underline;
+}

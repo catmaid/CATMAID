@@ -675,15 +675,6 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
 
   var td = $(document.createElement("td"));
   td.append( $(document.createElement("img")).attr({
-    value: 'Nearest node'
-  })
-    .click( function( event )
-    {
-      TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
-    })
-    .attr('src', STATIC_URL_JS + 'images/activate.gif')
-  );
-  td.append( $(document.createElement("img")).attr({
         value: 'Remove'
         })
         .click( function( event )
@@ -697,8 +688,13 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
 
   // name
   var name = NeuronNameService.getInstance().getName(skeleton.id);
-  rowElement.append($(document.createElement("td")).text(
-        name ? name : 'undefined'));
+  rowElement.append($(document.createElement("td")).append($('<a />')
+      .text(name ? name : 'undefined')
+      .attr('href', '#')
+      .attr('class', 'neuron-selection-link')
+      .click(function() {
+        TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
+      })));
 
   // percent reviewed
   rowElement.append($('<td/>')

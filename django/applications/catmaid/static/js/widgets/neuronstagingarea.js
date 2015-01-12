@@ -1,5 +1,22 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+/* global
+  Colorizer,
+  ErrorDialog,
+  growlAlert,
+  jsonResponseHandler,
+  InstanceRegistry,
+  NeuronNameService,
+  project,
+  requestQueue,
+  ReviewSystem,
+  SkeletonAnnotations,
+  SkeletonMeasurementsTable,
+  SkeletonSource,
+  TracingTool,
+  User,
+  WindowMaker
+*/
 
 "use strict";
 

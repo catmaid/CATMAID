@@ -3594,8 +3594,7 @@ WebGLApplication.prototype.updateResampleDelta = function(value) {
 WebGLApplication.prototype.createMeshColorButton = function() {
   var mesh_color = '#meshes-color' + this.widgetID,
       mesh_opacity = '#mesh-opacity' + this.widgetID,
-      mesh_colorwheel = '#mesh-colorwheel' + this.widgetID,
-      mesh_opacity = '#mesh-opacity' + this.widgetID;
+      mesh_colorwheel = '#mesh-colorwheel' + this.widgetID;
   var onchange = (function(color, alpha) {
     color = new THREE.Color().setRGB(parseInt(color.r) / 255.0,
         parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);

@@ -384,8 +384,6 @@ function TileLayer(
 	
 	this.resize = function( width, height )
 	{
-//		alert( "resize tileLayer of stack" + stack.getId() );
-		
 		var rows = Math.floor( height / tileHeight ) + 2;
 		var cols = Math.floor( width / tileWidth ) + 2;
 		initTiles( rows, cols );

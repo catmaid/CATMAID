@@ -831,7 +831,7 @@ TextlabelLayer = function(
   var self = this;
 	var stack = stack;
 	var parentTool = parentTool;
-	var textlabels = new Array();
+	var textlabels = [];
 	var stackWindow = stack.getWindow();
 	var opacity = 1.0;
 

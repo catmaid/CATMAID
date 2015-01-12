@@ -83,8 +83,8 @@ var message_menu;
 var user_menu;
 
 var pid;
-var sids = new Array();
-var ss = new Array();
+var sids = [];
+var ss = [];
 var zp;
 var yp;
 var xp;
@@ -711,7 +711,7 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 			getStackMenuInfo(project.id, function(stacks) {
 				if (stacks.length > 1)
 				{
-					var stack_menu_content = new Array();
+					var stack_menu_content = [];
 					$.each(stacks, function(i, s) {
 						stack_menu_content.push(
 							{
@@ -1070,9 +1070,9 @@ var realInit = function()
 				typeof s == "undefined" ) )
 		{
 			pid = 1;
-			sids = new Array();
+			sids = [];
 			sids[ 0 ] = 1;
-			ss = new Array();
+			ss = [];
 			ss[ 0 ] = 1;
 		}
 		else

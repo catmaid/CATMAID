@@ -221,7 +221,7 @@ var toolActions = [
  */
 var createEditToolActions = function() {
   // re-create the whole array
-  editToolActions = new Array();
+  editToolActions = [];
 
   if (userprofile.show_text_label_tool) {
     editToolActions.push(
@@ -341,7 +341,7 @@ var createEditToolActions = function() {
  * they get initialized when we know whether the user is
  * logged in or not.
  */
-var editToolActions = new Array();
+var editToolActions = [];
 
 var segmentationWindowActions = [
 

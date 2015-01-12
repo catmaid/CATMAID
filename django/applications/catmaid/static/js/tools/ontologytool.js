@@ -6,7 +6,7 @@ function OntologyTool()
     this.prototype = new Navigator();
     this.toolname = "ontologytool";
     var self = this;
-    var actions = new Array();
+    var actions = [];
     // The workspace mode indicates whether the semantic space of the
     // current project ("project") or of a dummy project ("classification")
     // should be used. The latter is of use for a semantic space to be

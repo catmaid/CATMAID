@@ -526,7 +526,7 @@ function Profile() {
   var spt; //!< string {'before', 'key', 'after'} selected part of curve key
   //view.style.width = "200px";
   //view.style.height = "200px";
-  var keys = new Array(); //!< curve points
+  var keys = []; //!< curve points
   keys[0] = new CurveKey(
   CK_SYMMETRIC, 5000, 5000, 6000, 4000, 4000, 6000);
   keys[1] = new CurveKey(

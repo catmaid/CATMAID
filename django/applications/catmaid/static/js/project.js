@@ -523,7 +523,7 @@ function Project( pid )
 	var template;				//!< DTD like abstract object tree (classes)
 	var data;					//!< instances in a DOM representation
 	
-	var stacks = new Array();	//!< a list of stacks related to the project
+	var stacks = [];	//!< a list of stacks related to the project
 	this.focusedStack;
 	
 	var mode = "move";

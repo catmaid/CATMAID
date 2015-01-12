@@ -202,7 +202,7 @@ var CM = function()
      */
     var flattenValueArraysById = function(map) {
       var m = {};
-      var arr = new Array();
+      var arr = [];
       for (var ID in map) {
         if (map.hasOwnProperty(ID)) {
           for (var k in Object.keys(map[ID])) {

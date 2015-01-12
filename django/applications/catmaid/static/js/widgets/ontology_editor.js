@@ -6,13 +6,13 @@
 var OntologyEditor = new function()
 {
     this.workspace_pid;
-    this.trees = new Array();
+    this.trees = [];
     var content_div_id = "ontology_editor_widget";
 
     this.init = function( pid )
     {
         // clear the trees array
-        self.trees = new Array();
+        self.trees = [];
         // display the known root class names
         $.getJSON(django_url + 'ontology/knownroots',
                 function(data) {

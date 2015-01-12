@@ -51,7 +51,7 @@ function CroppingTool() {
 	var toolbar_button = document.getElementById("button_roi_apply").parentNode;
 
 	// Keep a list of added elements
-	var added_elements = new Array();
+	var added_elements = [];
 
 	// A procedure to create a toolbar box
 	var create_tb_box = function()
@@ -228,7 +228,7 @@ function CroppingTool() {
 		// only create and show the menu when there is more than one stack
 		if (self.stacks_to_crop.length > 1)
 		{
-			var current_menu_content = new Array();
+			var current_menu_content = [];
 			for (var s in self.stacks_to_crop)
 			{
 				var stack = self.stacks_to_crop[ s ];
@@ -375,7 +375,7 @@ function CroppingTool() {
 
 		// initialize the stacks we offer to crop
 		getStackMenuInfo(project.id, function(stacks) {
-			self.stacks_to_crop = new Array();
+			self.stacks_to_crop = [];
 			$.each(stacks, function(index, value) {
 				// By default, mark only the current stack to be cropped
 				self.stacks_to_crop.push(

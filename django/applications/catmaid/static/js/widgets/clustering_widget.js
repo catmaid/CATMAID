@@ -371,7 +371,7 @@ var ClusteringWidget = new function()
         if (found) {
             // Replace the null values with 1.0 (for the maximum Jaccard
             // distance) to make them drawable and remember the null indices.
-            var nan_clusters = new Array();
+            var nan_clusters = [];
             $.each(dendrogram.dcoord, function(i, val) {
                 var contains_nans = false;
                 $.each(val, function(j, val2) {
@@ -415,8 +415,8 @@ var ClusteringWidget = new function()
 
             // Sort clusters in a way that NaN clusters are drawn first
             // and create color array.
-            var x_coords = new Array();
-            var y_coords = new Array();
+            var x_coords = [];
+            var y_coords = [];
             var colors = [];
             $.each(nan_clusters, function(i, val) {
                 x_coords.push(dendrogram.icoord[val]);
@@ -467,7 +467,7 @@ var ClusteringWidget = new function()
             // draw labels
             var label_center_y = null;
 			var max_label_width = null;
-			var labels = new Array();
+			var labels = [];
             $.each(label_coords, function(i, coord) {
                 // only draw labels for real leaves
                 if (dendrogram.leaves[i] < dendrogram.ivl.length) {

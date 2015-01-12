@@ -748,8 +748,8 @@ function Stack(
 	self.MIN_S = max_zoom_level;
 
 	//! all possible slices
-	self.slices = new Array();
-	self.broken_slices = new Array();
+	self.slices = [];
+	self.broken_slices = [];
 	for ( var i = 0; i < dimension.z; ++i )
 	{
 		if ( !skip_planes[ i ] )

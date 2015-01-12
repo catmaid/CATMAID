@@ -27,11 +27,11 @@ UI = function()
 	var y = 0;
 	
 	var events = {};
-	events[ "onmousemove" ] = new Array();	//!< bound to eventCatcher
-	events[ "onmousedown" ] = new Array();
-	events[ "onmouseup" ] = new Array();	//!< bound to eventCatcher
-	events[ "onmousewheel" ] = new Array();
-	events[ "onresize" ] = new Array();		//!< bound to the window itself
+	events[ "onmousemove" ] = [];	//!< bound to eventCatcher
+	events[ "onmousedown" ] = [];
+	events[ "onmouseup" ] = [];	//!< bound to eventCatcher
+	events[ "onmousewheel" ] = [];
+	events[ "onresize" ] = [];		//!< bound to the window itself
 	
 	var eventCatcher = document.createElement( "div" );
 	eventCatcher.id = "eventCatcher";
@@ -120,7 +120,7 @@ UI = function()
 	)
 	{
 		delete events[ e ];
-		events[ e ] = new Array();
+		events[ e ] = [];
 	};
 		
 	this.getFrameWidth = function()

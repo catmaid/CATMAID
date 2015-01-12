@@ -125,7 +125,7 @@ function CMWRootNode()
 
 	this.getChildren = function()
 	{
-		var children = new Array();
+		var children = [];
 		if ( child != null ) 
 		{
 			children.push( child );
@@ -770,7 +770,7 @@ function CMWWindow( title )
 	eventCatcher.className = "eventCatcher";
 	frame.appendChild( eventCatcher );
 	
-	var listeners = new Array();
+	var listeners = [];
 	
 	this.catchDrag = function()
 	{

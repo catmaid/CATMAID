@@ -9,7 +9,7 @@ var ConnectorTable = function(optionalSkid)
   this.connectorTable = null;
 
   var self = this;
-  var asInitValsSyn = new Array();
+  var asInitValsSyn = [];
   var skeletonID = optionalSkid ? optionalSkid : -1;
   var possibleLengths = [25, 100, -1];
   var possibleLengthsLabels = possibleLengths.map(

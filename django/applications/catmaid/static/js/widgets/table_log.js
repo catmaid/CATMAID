@@ -12,7 +12,7 @@ var LogTable = new function()
     this.logTable = null;
 
     var self = this;
-    var asInitValsSyn = new Array();
+    var asInitValsSyn = [];
 
     var possibleLengths = [25, 100, 500, 2000, -1];
     var possibleLengthsLabels = possibleLengths.map(

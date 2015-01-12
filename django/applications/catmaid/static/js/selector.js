@@ -19,7 +19,7 @@ function Selector()
 {
 	var self = this;
 	var stack = null;
-	var position_markers = new Array();
+	var position_markers = [];
 	// settings for duplicated cursors
 	var img_path = STATIC_URL_JS + "images/svg-cursor-light-30px.png";
 	var img_width = 30;

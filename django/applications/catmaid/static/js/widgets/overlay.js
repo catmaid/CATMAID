@@ -2509,6 +2509,25 @@ SplitMergeDialog.prototype.populate = function(extension) {
   this.dialog.appendChild(left);
   this.dialog.appendChild(right);
 
+  var create_labeled_checkbox = function(annotation, annotator, checked, disabled, label) {
+    var cb_label = document.createElement('label');
+    cb_label.style.cssFloat = 'left';
+    cb_label.style.clear = 'left';
+    var cb = document.createElement('input');
+    cb.checked = checked;
+    cb.disabled = disabled;
+    cb.setAttribute('class', 'split_skeleton_annotation');
+    cb.setAttribute('annotation', annotation);
+    cb.setAttribute('annotator', annotator);
+    cb.setAttribute('type', 'checkbox');
+    cb_label.appendChild(cb);
+    // There should only be one user who has used this annotation
+    // with the current neuron.
+    cb_label.appendChild(document.createTextNode(label));
+
+    return cb_label;
+  };
+
   // Get all annotations for a skeleton and fill the list boxes
   var add_annotations_fn = function(skid, listboxes, disable_unpermitted) {
     NeuronAnnotations.retrieve_annotations_for_skeleton(skid,
@@ -2516,20 +2535,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
           // Create annotation check boxes
           annotations.forEach(function(aobj) {
             var create_cb = function(a_info, checked) {
-              var cb_label = document.createElement('label');
-              cb_label.style.cssFloat = 'left';
-              cb_label.style.clear = 'left';
-              var cb = document.createElement('input');
-              cb.checked = checked;
-              cb.setAttribute('class', 'split_skeleton_annotation');
-              cb.setAttribute('annotation', a_info.name);
-              cb.setAttribute('annotator', a_info.users[0].id);
-              cb.setAttribute('type', 'checkbox');
-              cb_label.appendChild(cb);
-              // There should only be one user who has used this annotation
-              // with the current neuron.
-              cb_label.appendChild(document.createTextNode(
-                  a_info.name + ' (by ' + a_info.users[0].name + ')'));
+              var disabled = false;
               // The front end shouldn't allow the removal of annotations one
               // hasn't permissions on in merge mode: If the current user has no
               // permission to change this annotation, check and disable this
@@ -2538,17 +2544,21 @@ SplitMergeDialog.prototype.populate = function(extension) {
                   a_info.users[0].id != session.userid &&
                   user_groups.indexOf(a_info.users[0].name) == -1 &&
                   !session.is_superuser) {
-                cb.checked = true;
-                cb.disabled = true;
+                checked = true;
+                disabled = true;
               }
-              return cb_label;
+              return create_labeled_checkbox(a_info.name, a_info.users[0].id,
+                  checked, disabled, a_info.name + ' (by ' + a_info.users[0].name + ')');
             };
             listboxes.forEach(function(lb) {
               lb.obj.appendChild(create_cb(aobj, lb.checked));
             });
           });
           // If there is no annotation, add a note
-          if (annotations.length == 0) {
+          var numAnnotations = listboxes.reduce(function(count, lb) {
+            return count + lb.obj.childElementCount;
+          }, 0)
+          if (0 === numAnnotations) {
             var msg = "no annotations found";
             listboxes.forEach(function(lb) {
               lb.obj.appendChild(document.createTextNode(msg));
@@ -2606,6 +2616,18 @@ SplitMergeDialog.prototype.populate = function(extension) {
       // Color the small and big node count boxes
       colorBig.style.backgroundColor = '#' + over_skeleton.getActorColorAsHTMLHex();
       colorSmall.style.backgroundColor = '#' + under_skeleton.getActorColorAsHTMLHex();
+      // Add annotation for name of neuron that gets joined into the other (i.e.
+      // add name of model 2 to model 1). Don't check it, if it is named in the
+      // default pattern "neuron 123456".
+      var name = this.models[this.model2_id].baseName;
+      var checked = (null === name.match(/neuron \d+/));
+      var cb = create_labeled_checkbox(name, session.userid, checked, false,
+          name + " (reference to merged in neuron)");
+      if (count1 > count2) {
+        big.appendChild(cb, checked);
+      } else {
+        small.appendChild(cb, checked);
+      }
       // Add annotations
       add_annotations_fn(this.over_model_id, [{obj: big, checked: true}], true);
       add_annotations_fn(this.under_model_id, [{obj: small, checked: true}], true);

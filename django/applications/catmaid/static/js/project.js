@@ -46,7 +46,7 @@ function Project( pid )
 		if ( !opened )
 		{
 			stacks.push( stack );
-			if ( rootWindow.getChild() == null )
+			if ( rootWindow.getChild() === null )
 				rootWindow.replaceChild( stack.getWindow() );
 			else
 				rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), stack.getWindow() ) );
@@ -110,7 +110,7 @@ function Project( pid )
 			if ( stacks[ i ].id == sid )
 			{
 				stacks.splice( i, 1 );
-				if ( stacks.length == 0 )
+				if ( stacks.length === 0 )
 					self.destroy();
 				else
 					stacks[ ( i + 1 ) % stacks.length ].getWindow().focus();

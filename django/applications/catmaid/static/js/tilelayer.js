@@ -406,7 +406,7 @@ function TileLayer(
 	 */
 	this.numTileColumns = function()
 	{
-		if ( tiles.length == 0 )
+		if ( tiles.length === 0 )
 			return 0;
 		else
 			return tiles[ 0 ].length;

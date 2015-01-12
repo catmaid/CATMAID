@@ -216,7 +216,7 @@ function TaggingTool()
         /* If there are zero pending, tell the user about the result
          * of all the requests. Else, try again in 200ms.
          */
-        if (pending_count == 0)
+        if (pending_count === 0)
         {
             var failed_count = 0;
             var failed_objs = "";

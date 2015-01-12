@@ -162,7 +162,7 @@ var ConnectorTable = function(optionalSkid)
     });
 
     $(tableid + " tfoot input").blur(function (i) {
-      if (this.value == "") {
+      if (this.value == "") { // jshint ignore:line
         this.className = "search_init";
         this.value = asInitValsSyn[$("tfoot input").index(this)];
       }

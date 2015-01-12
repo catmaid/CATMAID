@@ -101,7 +101,7 @@ var ClusteringWidget = new function()
                         // update the position of the dendrogram handle
                         var canvas = document.getElementById("clustering-canvas");
                         var handle = document.getElementById("dendrogram-handle");
-                        if (canvas != null && handle != null) {
+                        if (canvas !== null && handle !== null) {
                             handle.style.left = (canvas.offsetLeft + canvas.offsetWidth - 10) + "px";
                             handle.style.top = (canvas.offsetTop + canvas.offsetHeight -20) + "px";
                         }
@@ -390,7 +390,7 @@ var ClusteringWidget = new function()
             var max_y = null;
             $.each(dendrogram.dcoord, function(i, val) {
                 $.each(val, function(j, val2) {
-                    if (max_y == null)
+                    if (max_y === null)
                         max_y = val2;
                     else if (val2 > max_y)
                         max_y = val2;
@@ -475,7 +475,7 @@ var ClusteringWidget = new function()
                     var text = r.text(coord.x, coord.y, dendrogram.ivl[i]);
                     // find maximum text width
                     var bb = text.getBBox();
-                    if (max_label_width == null)
+                    if (max_label_width === null)
                         max_label_width = bb.width;
                     else if (bb.width > max_label_width)
                         max_label_width = bb.width;
@@ -488,7 +488,7 @@ var ClusteringWidget = new function()
                         'text-anchor': "end",
                         'font': "11px 'Fontin Sans', Fontin-Sans, sans-serif" });
                     // store vertical label center if not already done
-                    if (label_center_y == null) {
+                    if (label_center_y === null) {
                         label_center_y = bb.y + h;
                     }
                     // remember this label
@@ -555,7 +555,7 @@ var ClusteringWidget = new function()
                     var rel_leaf_x = Math.round(chart.paperToWorldX(this.x) - 5);
                     // Only show tags if a leaf column is hovered, i.e. the relative
                     // x coordinate can be divided by 10 without remainder.
-                    if (rel_leaf_x % 10 == 0) {
+                    if (rel_leaf_x % 10 === 0) {
                         var graph_idx = rel_leaf_x / 10;
                         var graph_name = dendrogram.ivl[graph_idx];
                         // highlight label

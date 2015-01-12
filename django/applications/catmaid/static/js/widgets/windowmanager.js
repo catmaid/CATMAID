@@ -126,7 +126,7 @@ function CMWRootNode()
 	this.getChildren = function()
 	{
 		var children = [];
-		if ( child != null ) 
+		if ( child !== null )
 		{
 			children.push( child );
 			children = children.concat( child.getChildren() );
@@ -136,7 +136,7 @@ function CMWRootNode()
 
 	this.getWindows = function()
 	{
-		if ( child != null )
+		if ( child !== null )
 			return child.getWindows();
 		else	
 			return [];
@@ -367,7 +367,7 @@ function CMWHSplitNode( child1, child2 )
 	{
 		var oldChild = child1;
 		self.removeResizeHandle();
-		if ( newChild.getFrame().parentNode != null )
+		if ( newChild.getFrame().parentNode !== null )
 			newChild.getFrame().parentNode.removeChild( newChild.getFrame() );
 		newChild.getFrame().appendChild( resizeHandle.getView() );
 		if ( child1.getFrame().parentNode == frame )
@@ -383,7 +383,7 @@ function CMWHSplitNode( child1, child2 )
 	this.replaceRightChild = function( newChild )
 	{
 		var oldChild = child2;
-		if ( newChild.getFrame().parentNode != null )
+		if ( newChild.getFrame().parentNode !== null )
 			newChild.getFrame().parentNode.removeChild( newChild.getFrame() );
 		if ( child2.getFrame().parentNode == frame )
 			frame.replaceChild( newChild.getFrame(), child2.getFrame() );
@@ -577,7 +577,7 @@ function CMWVSplitNode( child1, child2 )
 		var oldChild = child1;
 		self.removeResizeHandle();
 		var newChildFrame = newChild.getFrame();
-		if ( newChildFrame.parentNode != null )
+		if ( newChildFrame.parentNode !== null )
 			newChildFrame.parentNode.removeChild( newChildFrame );
 		newChildFrame.appendChild( resizeHandle.getView() );
 		if ( child1.getFrame().parentNode == frame )
@@ -593,7 +593,7 @@ function CMWVSplitNode( child1, child2 )
 	this.replaceBottomChild = function( newChild )
 	{
 		var oldChild = child2;
-		if ( newChild.getFrame().parentNode != null )
+		if ( newChild.getFrame().parentNode !== null )
 			newChild.getFrame().parentNode.removeChild( newChild.getFrame() );
 		if ( child2.getFrame().parentNode == frame )
 			frame.replaceChild( newChild.getFrame(), child2.getFrame() );

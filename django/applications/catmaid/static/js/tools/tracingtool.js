@@ -893,7 +893,7 @@ TracingTool.search = function()
                            })
                            .text("[" + index + "]")
                   ).append("&nbsp;");
-                if( index % 20 == 0)
+                if( index % 20 === 0)
                   td.append('<br />');
                 return index + 1;
               }, 1);

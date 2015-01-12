@@ -98,7 +98,7 @@ var ClassificationEditor = new function()
             });
 
         var url = self.get_cls_url(pid, '/list');
-        if (link_id != null) {
+        if (link_id != null) { // jshint ignore:line
             url += "/" + link_id;
         }
 
@@ -246,7 +246,7 @@ var ClassificationEditor = new function()
                                 "separator_after": false,
                                 "label": "Remove region of interest",
                                 "_class": "wider-context-menu",
-                                "_disabled": rois.length == 0,
+                                "_disabled": rois.length === 0,
                                 "submenu": submenu,
                             };
 

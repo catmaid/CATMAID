@@ -146,7 +146,7 @@ function stopDefault(e) {
  * http://stackoverflow.com/questions/122102
  */
 function deepCopy(obj) {
-    if(obj == null || typeof(obj) !== 'object'){
+    if(obj === null || typeof(obj) !== 'object'){
         return obj;
     }
     //make sure the returned object has the same prototype as the original

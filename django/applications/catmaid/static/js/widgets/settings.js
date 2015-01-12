@@ -236,7 +236,7 @@ SettingsWidget.prototype.init = function(space)
         // element is disabled by default.
         var optionElement = $('<option/>').attr('value', o.id)
             .text(o.name);
-        if (i==0) {
+        if (i === 0) {
           optionElement.attr('disabled', 'disabled');
         }
         return optionElement[0];

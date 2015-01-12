@@ -441,7 +441,7 @@ NeuronAnnotations.prototype.query = function(initialize)
                 "[" + this.display_start + ", " + last_n_displayed + "] of " +
                 this.total_n_results);
             $('#neuron_annotation_prev_page' + this.widgetID).prop('disabled',
-                this.display_start == 0);
+                this.display_start === 0);
             $('#neuron_annotation_next_page' + this.widgetID).prop('disabled',
                 this.total_n_results == last_n_displayed);
 

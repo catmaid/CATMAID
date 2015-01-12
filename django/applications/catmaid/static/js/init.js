@@ -413,7 +413,7 @@ function updateProjectListFromCacheDelayed()
   window.setTimeout( function() { indicator.className = "filtering"; }, 1);
 
   // clear timeout if already present and create a new one
-  if (cacheLoadingTimeout != null)
+  if (cacheLoadingTimeout !== null)
   {
     clearTimeout(cacheLoadingTimeout);
   }
@@ -787,7 +787,7 @@ function handle_message( status, text, xml )
 		else
 		{
 			var message_container = document.getElementById( "message_container" );
-			if ( !( typeof message_container == "undefined" || message_container == null ) )
+			if ( !( typeof message_container === "undefined" || message_container === null ) )
 			{
 				//! remove old messages	
 				while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
@@ -976,7 +976,7 @@ function load_dataview( view_id ) {
 function handle_load_dataview(status, text, xml) {
 	var data_view_container = document.getElementById("data_view");
 
-	if ( !( typeof data_view_container == "undefined" || data_view_container == null ) )
+	if ( !( typeof data_view_container === "undefined" || data_view_container === null ) )
 	{
 		//! remove old content
 		while ( data_view_container.firstChild )
@@ -1259,7 +1259,7 @@ function showMessages()
 					if ( messageContext.parentNode )
 						messageContext.parentNode.removeChild( messageContext );
 					document.getElementById( "dump" ).appendChild( messageContext );
-					if ( typeof project == undefined || project == null )
+					if ( typeof project === undefined || project === null )
 					{
 						rootWindow.close();
 						document.getElementById( "content" ).style.display = "block";
@@ -1280,7 +1280,7 @@ function showMessages()
 			document.getElementById( "content" ).style.display = "none";
 		}
 		
-		if ( rootWindow.getChild() == null )
+		if ( rootWindow.getChild() === null )
 			rootWindow.replaceChild( messageWindow );
 		else
 			rootWindow.replaceChild( new CMWVSplitNode( messageWindow, rootWindow.getChild() ) );

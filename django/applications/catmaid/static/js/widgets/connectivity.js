@@ -1013,7 +1013,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   // Sorting function for checkbox column
   $.fn.dataTableExt.afnSortData['dom-checkbox'] = function (oSettings, iColumn) {
     return $('td:eq('+iColumn+') input', oSettings.oApi._fnGetTrNodes(oSettings)).map(function () {
-        return this.checked == true ? "1" : "0";
+        return this.checked ? "1" : "0";
     });
   };
 

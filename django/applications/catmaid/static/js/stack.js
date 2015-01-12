@@ -535,7 +535,7 @@ function Stack(
 	{
 		var layerWithBeforeMove;
 
-		if ( layersWithBeforeMove.length == 0 )
+		if ( layersWithBeforeMove.length === 0 )
 		{
 			// Then carry on to the actual move:
 

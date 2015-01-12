@@ -1833,7 +1833,7 @@ GroupGraph.prototype.colorCirclesOfHell = function(upstream) {
   var colors = ['#b0ff72'].concat(circles.slice(1).map(function(circle, i) {
     return '#' + new THREE.Color().setHSL(0.66, 1, 0.55 + 0.45 * (i+1) / circles.length).getHexString();
   }));
-  colors.push['#fff']; // white
+  colors.push('#fff'); // white
 
   circles.push(disconnected);
 

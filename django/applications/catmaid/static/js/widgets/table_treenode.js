@@ -51,7 +51,7 @@ var TreenodeTable = function(skid)
   this.init = function (pid)
   {
     var widgetID = this.widgetID;
-    var tableSelector = "#treenodetable" + widgetID
+    var tableSelector = "#treenodetable" + widgetID;
     var self = this;
 
     ns.pid = pid;

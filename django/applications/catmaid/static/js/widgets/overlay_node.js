@@ -826,7 +826,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     if (e.shiftKey) {
       var atnID = SkeletonAnnotations.getActiveNodeId();
       if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-        return catmaidSVGOverlay.deleteNode(node.id)
+        return catmaidSVGOverlay.deleteNode(node.id);
       }
       if (atnID) {
         var atnType = SkeletonAnnotations.getActiveNodeType();

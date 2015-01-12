@@ -1648,7 +1648,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
             // Show dialog with the new radius
             show_dialog(r);
           });
-        };
+        }
 
         function transform(r)
         {
@@ -1659,7 +1659,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
           return {
               x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
               y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
-        };
+        }
 
         function show_dialog(defaultRadius)
         {
@@ -1690,7 +1690,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
               });
           };
           dialog.show();
-        };
+        }
 
       });
 };
@@ -2070,7 +2070,7 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
 
           statusBar.replaceLast("Deleted connector #" + cID);
         });
-  };
+  }
 
   /**
    * Delete the node from the database and removes it from the current view and
@@ -2111,7 +2111,7 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
 
           statusBar.replaceLast("Deleted node #" + nodeID);
         });
-  };
+  }
 
   return true;
 };
@@ -2557,7 +2557,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
           // If there is no annotation, add a note
           var numAnnotations = listboxes.reduce(function(count, lb) {
             return count + lb.obj.childElementCount;
-          }, 0)
+          }, 0);
           if (0 === numAnnotations) {
             var msg = "no annotations found";
             listboxes.forEach(function(lb) {

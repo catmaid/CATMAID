@@ -126,7 +126,7 @@ AnalyzeArbor.prototype.appendOrdered = function(skids, models) {
         function(skid) { return {}; },
         this.appendOne.bind(this),
         function(skid) { growlAlert("ERROR", "Failed to load skeleton #" + skid); },
-        this.updateCharts.bind(this))
+        this.updateCharts.bind(this));
   }).bind(this));
 };
 
@@ -441,8 +441,8 @@ AnalyzeArbor.prototype.updateCharts = function() {
   (function() {
     // Histograms of total [cables, inputs, outputs, branches, ends] for axonal vs dendritic terminal subarbors, and histograms of depth of individual synapses in the terminal subarbors.
     var hists = ['cables', 'depths', 'inputs', 'outputs', 'branches', 'ends', 'input_depths', 'output_depths'],
-        axonal = hists.reduce(function(o, label) { o[label] = []; return o}, {}),
-        dendritic = hists.reduce(function(o, label) { o[label] = []; return o}, {}), // needs deep copy
+        axonal = hists.reduce(function(o, label) { o[label] = []; return o; }, {}),
+        dendritic = hists.reduce(function(o, label) { o[label] = []; return o; }, {}), // needs deep copy
         cable_labels = ["cables", "depths", "input_depths", "output_depths"];
     skids.forEach(function(skid) {
       var e = this.arbor_stats[skid];
@@ -526,7 +526,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         series = [];
     skids.forEach(function(skid, k) {
       var stats = this.arbor_stats[skid],
-          Entry = function(x, y, root) { this.x = x; this.y = y; this.root = root},
+          Entry = function(x, y, root) { this.x = x; this.y = y; this.root = root; },
           neuron = {color: colors(k),
                     name : NeuronNameService.getInstance().getName(skid)};
       Entry.prototype = neuron;

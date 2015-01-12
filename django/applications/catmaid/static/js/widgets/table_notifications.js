@@ -73,7 +73,7 @@ var NotificationsTable = new function()
     if (node && node.tagName == "SELECT") {
       var row = $(node).closest('tr');
       if (1 !== row.length) {
-        error("Couldn't find table row for notification")
+        error("Couldn't find table row for notification");
         return;
       }
       var row_data = ns.oTable.fnGetData(row[0]);

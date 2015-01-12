@@ -35,8 +35,8 @@ window.onerror = function(msg, url, lineno, colno, err)
 
   // Log the error object, if available
   if (err) {
-    console.log('Error object:')
-    console.log(err)
+    console.log('Error object:');
+    console.log(err);
   } else {
     console.log('No error object was provided');
   }
@@ -225,7 +225,7 @@ function handle_login(status, text, xml, completionCallback) {
     function done() {
       handle_profile_update(e);
       updateProjects(completionCallback);
-    };
+    }
 
     if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
       // Asynchronously, try to get a full list of users if a user is logged in

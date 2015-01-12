@@ -317,7 +317,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
 
         // Export catalog
         var svg = this.space.view.getSVGData(options);
-        var precision = parseInt(coordDigits.value)
+        var precision = parseInt(coordDigits.value);
         SVGUtil.reduceCoordinatePrecision(svg, precision);
         SVGUtil.stripStyleProperties(svg, {
           'fill': 'none',
@@ -344,8 +344,8 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
         error("Could not export neuron catalog. There was an error.", e);
       }
       $.unblockUI();
-    };
-  };
+    }
+  }
 };
 
 WebGLApplication.prototype.exportSkeletonsAsCSV = function() {
@@ -735,7 +735,7 @@ WebGLApplication.prototype.activateView = function(name) {
     return;
   }
   // Activate view by executing the stored function
-  var view = this.availableViews[name]
+  var view = this.availableViews[name];
   this.space.view.setView(view.target, view.position, view.up, view.zoom);
 	this.space.render();
 };
@@ -1744,7 +1744,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     meshes.forEach(function(mesh) {
       mesh.visible = value;
     });
-  };
+  }
 
   function addSphereReplacements(meshes, scene)
   {
@@ -1781,7 +1781,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       var l = (0.5 * line.distance() * self.space.canvasWidth).toFixed(1);
       // Get material from index or create a new one
       var key = hex + "-" + l;
-      var material = this.m[key]
+      var material = this.m[key];
       if (!material) {
         material = new THREE.LineBasicMaterial({
           color: mesh.material.color.clone(),
@@ -1797,7 +1797,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     }, addedData);
 
     return addedData;
-  };
+  }
 
   function removeSphereReplacements(addedData, scene)
   {
@@ -1806,7 +1806,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       this[m].dispose();
     }, addedData.m);
     addedData.g.dispose();
-  };
+  }
 
   /**
    * Updates the visibility of all skeletons. If a skeleton ID is given as a
@@ -1824,7 +1824,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       s.setTextVisibility(visMap[skid].text ? visible : false);
       s.setMetaVisibility(visMap[skid].meta ? visible : false);
     }
-  };
+  }
 
   /**
    * Create an SVG catalog of the current view.
@@ -1838,7 +1838,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       var existingSkids = Object.keys(self.space.content.skeletons);
       options['skeletons'].forEach(function(s) {
         if (-1 === existingSkids.indexOf(s)) {
-          throw "Only skeletons currently loaded in the 3D viewer can be exported"
+          throw "Only skeletons currently loaded in the 3D viewer can be exported";
         }
       });
       skeletons = options['skeletons'];
@@ -1873,7 +1873,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
         post: s.skeletonmodel.post_visible,
         text: s.skeletonmodel.text_visible,
         meta: s.skeletonmodel.meta_visible
-      }
+      };
     }
 
     // Append missing pinned skeletons
@@ -1942,7 +1942,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     }
 
     return svg;
-  };
+  }
 
   /**
    * Render the current scene and replace the given sphere meshes beforehand.
@@ -3563,7 +3563,7 @@ WebGLApplication.prototype.updateResampleDelta = function(value) {
   if (!value) return;
   this.options.resampling_delta = value;
   if (this.options.resample_skeletons) this.updateSkeletons();
-}
+};
 
 WebGLApplication.prototype.createMeshColorButton = function() {
   var mesh_color = '#meshes-color' + this.widgetID,

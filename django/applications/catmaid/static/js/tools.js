@@ -179,7 +179,7 @@ function dataURItoBlob(dataURI) {
     }
 
     return new Blob([ia], {type:mimeString});
-};
+}
 
 /**
  * Creates a jQuery UI based error dialog. If detail is passed, it is hidden by
@@ -236,7 +236,7 @@ window.ErrorDialog.prototype.show = function() {
 window.error = function(msg, detail)
 {
   new ErrorDialog(msg, detail).show();
-}
+};
 
 /**
  * Creates a generic JSON response handler that complains when the response
@@ -290,7 +290,7 @@ window.LoginDialog = function(text, callback) {
   // If OK is pressed, the dialog should cause a (re-)login
   this.dialog.onOK = function() {
     login($(user_field).val(), $(pass_field).val(), callback);
-  }
+  };
 };
 
 window.LoginDialog.prototype = {};

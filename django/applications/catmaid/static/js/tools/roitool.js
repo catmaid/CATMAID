@@ -481,4 +481,4 @@ RoiTool.prototype.createRoi = function(callback)
     // Make Ajax call and handle response in callback
     requestQueue.register(roi_url, 'POST', data,
         jsonResponseHandler(callback));
-}
+};

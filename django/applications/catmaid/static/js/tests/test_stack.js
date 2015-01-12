@@ -8,7 +8,7 @@ QUnit.test('Multi-view stack test', function( assert ) {
     var trs = {'x': 1, 'y': 2, 'z': 3};
     return new Stack(1, 1, name, dim, res, trs,
         [], false, 3, 4, 1, "", "", false, orientation);
-  };
+  }
 
   // Create test stacks for each orientation
   var xy_stack = create_stack("XY Stack", Stack.ORIENTATION_XY);

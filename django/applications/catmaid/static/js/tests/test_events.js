@@ -8,7 +8,7 @@ QUnit.test('Event system test', function( assert ) {
   function isFunction(functionToCheck) {
      var getType = {};
      return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
-  };
+  }
 
   // Make sure the event object has an on and a trigger function
   assert.ok(isFunction(e.on), 'has on function');
@@ -18,7 +18,7 @@ QUnit.test('Event system test', function( assert ) {
   var wasCalled = false;
   function callback() {
     wasCalled = true;
-  };
+  }
   e.on('foo', callback);
   e.trigger('foo');
   assert.ok(wasCalled, 'executes callback when even is triggered');
@@ -31,7 +31,7 @@ QUnit.test('Event system test', function( assert ) {
       receivedArguments.push(arguments[i]);
     }
 
-  };
+  }
   e.on('foo2', callback2);
   e.trigger('foo2', 1, 2);
   assert.deepEqual(receivedArguments, [1, 2], 'executes callback with ' +
@@ -54,7 +54,7 @@ QUnit.test('Event system test', function( assert ) {
   var wasExecuted = false;
   e.on('foo5', function() {
     wasExecuted = true;
-  })
+  });
   assert.strictEqual(e.clear('foo5'), true, 'removal of listeners for an ' +
       'existing event was successful');
   e.trigger('foo5');
@@ -66,7 +66,7 @@ QUnit.test('Event system test', function( assert ) {
   var wasExecuted3 = false;
   function callback3() {
     wasExecuted2 = true;
-  };
+  }
   e.on('foo6', callback3);
   e.on('foo6', function() {
     wasExecuted3 = true;

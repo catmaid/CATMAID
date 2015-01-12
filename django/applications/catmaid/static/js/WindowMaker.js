@@ -473,7 +473,7 @@ var WindowMaker = new function()
     warnCollapsed.appendChild(warnCollapsedInput);
     warnCollapsed.appendChild(document.createTextNode('Warn if collapsed'));
     warnCollapsed.setAttribute('alt', 'If activated, a warning is displayed ' +
-        'everytime one tries to select a node that is currently collapsed.')
+        'everytime one tries to select a node that is currently collapsed.');
     buttons.appendChild(warnCollapsed);
 
     var radial = document.createElement('label');
@@ -534,7 +534,7 @@ var WindowMaker = new function()
       if (confirm("Do you really want to clear the current selection?")) {
         ST.clear();
       }
-    }
+    };
     buttons.appendChild(clear);
 
     var update = document.createElement('input');
@@ -831,7 +831,7 @@ var WindowMaker = new function()
         updateAvailableViews();
         storedViewsSelect.selectedIndex = storedViewsSelect.options.length - 1;
       });
-    };
+    }
 
     function updateAvailableViews()
     {
@@ -859,7 +859,7 @@ var WindowMaker = new function()
         storedViewsSelect.options.add(new Option("(None)", -1));
         storedViewsSelect.selectedIndex = 0;
       }
-    };
+    }
     
     var shadingMenu = document.createElement('select');
     shadingMenu.setAttribute("id", "skeletons_shading" + WA.widgetID);
@@ -924,7 +924,7 @@ var WindowMaker = new function()
 
     appendToTab(tabs['View settings'],
         [
-          ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent()}, false],
+          ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Black background -', true, adjustFn('show_background'), false],

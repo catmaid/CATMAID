@@ -23,7 +23,7 @@ var NeuronDendrogram = function() {
   this.svg = null;
   // The current translation and scale, to preserve state between updates
   this.translation = null;
-  this.scale = null;;
+  this.scale = null;
   // The last node selected
   this.selectedNodeId = null;
 
@@ -114,7 +114,7 @@ NeuronDendrogram.prototype.selectActiveNode = function(activeNode)
   } else {
     this.resetHighlighting();
   }
-}
+};
 
 /**
  * Will select the node with the given ID, if its skeleton is laoded. If the
@@ -207,7 +207,7 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
   }
 
   this.highlightNode(nodeToHighlight);
-}
+};
 
 /**
  * Load the active skeleton
@@ -217,10 +217,10 @@ NeuronDendrogram.prototype.loadActiveSkeleton = function()
   var skid = SkeletonAnnotations.getActiveSkeletonId();
   if (!skid) {
     alert("There is currently no skeleton selected.");
-    return
-  } else
- 
-  this.loadSkeleton(skid)
+    return;
+  }
+
+  this.loadSkeleton(skid);
 };
 
 NeuronDendrogram.prototype.reset = function()
@@ -275,7 +275,7 @@ NeuronDendrogram.prototype.getNodesInTree = function(rootNode)
         traverse(c, node_ids);
       });
     }
-  };
+  }
 
   var node_ids = [];
 
@@ -284,7 +284,7 @@ NeuronDendrogram.prototype.getNodesInTree = function(rootNode)
   }
 
   return node_ids;
-}
+};
 
 /**
  * Creates a tree representation of a node array. Nodes that appear in
@@ -365,7 +365,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
     return;
   }
   if (parentToChildren[null].length > 1) {
-    alert("Found more than one root node. Aborting dendrogram rendering!")
+    alert("Found more than one root node. Aborting dendrogram rendering!");
     return;
   }
 
@@ -537,8 +537,8 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
   if (this.radialDisplay) {
     layoutOffset = [width / 2, height / 2];
     // Radial scales for x and y.
-    var lx = function(d) { return factor * d.y * Math.cos((d.x - 90) / 180 * Math.PI); }
-    var ly = function(d) { return factor * d.y * Math.sin((d.x - 90) / 180 * Math.PI); }
+    var lx = function(d) { return factor * d.y * Math.cos((d.x - 90) / 180 * Math.PI); };
+    var ly = function(d) { return factor * d.y * Math.sin((d.x - 90) / 180 * Math.PI); };
     pathGenerator = function(d) {
       return "M" + lx(d.source) + "," + ly(d.source)
            + "L" + lx(d.target) + "," + ly(d.target);
@@ -550,7 +550,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
       .attr("dx", function(d) { return inner(d) ? -8 : 8; })
       .attr("dy", 3)
       .style("text-anchor", function(d) { return inner(d) ? "end" : "start"; })
-      .attr("transform", function(d) { return d.x > 180 ? "rotate(180)" : null; })
+      .attr("transform", function(d) { return d.x > 180 ? "rotate(180)" : null; });
     };
   } else {
     layoutOffset = [0, 0];
@@ -558,12 +558,12 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
         return "M" + d.source.y + "," + d.source.x
              + "V" + d.target.x + "H" + d.target.y;
     };
-    nodeTransform = function(d) { return "translate(" + d.y + "," + d.x + ")"; }
+    nodeTransform = function(d) { return "translate(" + d.y + "," + d.x + ")"; };
     styleNodeText = function(node) {
       return node
       .attr("dx", function(d) { return d.children ? -8 : 8; })
       .attr("dy", 3)
-      .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+      .style("text-anchor", function(d) { return d.children ? "end" : "start"; });
     };
   }
 
@@ -624,7 +624,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
           function () {
              SkeletonAnnotations.staticSelectNode(n.id);
           });
-      }
+      };
     }(this.currentSkeletonId);
 
   var nodeName = function(showTags, showIds, showStrahler) {
@@ -674,7 +674,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
     this.translation[1] = ty;
     // Translate and scale dendrogram
     vis.attr("transform", "translate(" + tx + "," + ty + ")scale(" + d3.event.scale + ")");
-  };
+  }
 
   /**
    * Compensate for margin and layout offset.
@@ -684,7 +684,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
     zoomHandler.center([
         m[0] - layoutOffset[0] - margin.left,
         m[1] - layoutOffset[1] - margin.top]);
-  };
+  }
 };
 
 /**

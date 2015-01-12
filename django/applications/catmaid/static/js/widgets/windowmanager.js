@@ -1050,4 +1050,4 @@ function ResizeHandle(type, node) {
   view.className = "resize_handle_" + type;
   view.onmousedown = onmousedown[type];
   view.onmouseup = onmouseup[type];
-};
+}

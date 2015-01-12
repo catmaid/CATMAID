@@ -53,7 +53,7 @@ QUnit.test('Arbor.js test', function( assert ) {
       18: 1,
       19: 1,
       20: 1,
-  }
+  };
 
   assert.propEqual(strahler1, expected_result1,
       "The returned Strahler indexes for the first neuron are correct.");

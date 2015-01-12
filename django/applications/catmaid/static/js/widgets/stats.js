@@ -22,7 +22,7 @@ var ProjectStatistics = new function()
       var link = '<a href="#" data-from="' + data.from + '" data-to="' +
           data.to + '" data-type="' + type +'" data-user="' + data.user + '">' + num + '</a>';
       return link;
-    };
+    }
 
     var entry = '', points = 0;
     if( data.hasOwnProperty('new_treenodes') && data['new_treenodes'] > 0 ) {

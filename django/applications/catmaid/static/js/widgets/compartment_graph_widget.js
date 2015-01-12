@@ -652,8 +652,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       };
       parts[node_dend2.data.id] = function(treenodeID) {
         return !backbone.contains(treenodeID) && !axon.contains(treenodeID);
-      }
-    }
+      };
+    };
 
     if (mode === this.SUBGRAPH_AXON_DENDRITE
       || mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS) {
@@ -2544,7 +2544,7 @@ GroupGraph.prototype.quantificationDialog = function() {
     ["Number of neurons:", this.getSkeletons().length, ""],
     ["Number of in-graph synapses:", n_synapses, "(edges times their synapse count)"],
   ].map(function(row) {
-    return "<tr>" + row.map(function(cell) { return "<td>" + cell + "</td>"}).join('') + "</tr>";
+    return "<tr>" + row.map(function(cell) { return "<td>" + cell + "</td>"; }).join('') + "</tr>";
   }).join('');
   dialog.appendChild(table);
   $(dialog).dialog({
@@ -2585,7 +2585,7 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
       bandwidth = p;
       break;
     }
-  };
+  }
   var new_bandwidth = prompt("Synapse clustering bandwidth", bandwidth);
   if (new_bandwidth) {
     try {

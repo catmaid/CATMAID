@@ -52,7 +52,7 @@ User.safe_get = function(id)
       firstName: 'unknown',
       lastName: 'unknown',
       color: new THREE.Color().setRGB(255, 0, 0),
-    }
+    };
   }
 };
 

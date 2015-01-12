@@ -122,7 +122,7 @@ NeuronNavigator.prototype.select_node = function(node)
     return -1 === new_nodes.indexOf(n);
   });
   // Destroy all removed nodes
-  removed_nodes.forEach(function (n) { n.destroy() });
+  removed_nodes.forEach(function (n) { n.destroy(); });
 
   // Remember this node as the current node
   this.current_node = node;
@@ -223,7 +223,7 @@ NeuronNavigator.prototype.register = function(node, skeleton_id)
     this.registered_neurons[skeleton_id] = this.registered_neurons[skeleton_id] + 1;
   } else {
     // Register with the neuron name service to get notified about updates
-    var model = {}
+    var model = {};
     model[skeleton_id] = {};
     NeuronNameService.getInstance().registerAll(this, model);
     this.registered_neurons[skeleton_id] = 1;
@@ -236,7 +236,7 @@ NeuronNavigator.prototype.register = function(node, skeleton_id)
 NeuronNavigator.prototype.unregister = function(node, skeleton_id)
 {
   if (!this.registered_neurons.hasOwnProperty(skeleton_id)) {
-    return
+    return;
   }
 
   var n_references = this.registered_neurons[skeleton_id];

@@ -1,0 +1,47 @@
+{
+    // JSHint Default Configuration File (as on JSHint website)
+    // See http://jshint.com/docs/ for more details
+
+    "maxerr"        : 500,      // {int} Maximum error before stopping
+
+    // Enforcing
+    "bitwise"       : false,    // true: Prohibit bitwise operators (&, |, ^, etc.)
+    "newcap"        : false,    // true: Require capitalization of all constructor functions e.g. `new F()`
+    "plusplus"      : false,    // true: Prohibit use of `++` & `--`
+    "strict"        : false,    // true: Requires all functions run in ES5 Strict Mode
+
+    // Relaxing
+    "evil"          : true,     // true: Tolerate use of `eval` and `new Function()`
+    "funcscope"     : true,     // true: Tolerate defining variables inside control statements
+    "globalstrict"  : true,     // true: Allow global "use strict" (also enables 'strict')
+    "laxbreak"      : true,     // true: Tolerate possibly unsafe line breakings
+    "loopfunc"      : true,     // true: Tolerate functions being defined in loops
+    "shadow"        : true,     // true: Allows re-define variables later in code e.g. `var x=1; x=2;`
+    "sub"           : true,     // true: Tolerate using `[]` notation when it can still be expressed in dot notation
+    "supernew"      : true,     // true: Tolerate `new function () { ... };` and `new Object;`
+
+    // Environments
+    "browser"       : true,     // Web Browser (window, document, etc)
+    "devel"         : true,     // Development/debugging (alert, confirm, etc)
+    "jquery"        : true,     // jQuery
+    "qunit"         : true,     // QUnit
+
+    // Custom Globals
+    "globals"       : {
+        "$": false,
+        "Blob": false,
+        "colorbrewer": false,
+        "d3": false,
+        "error": false,
+        "jsnx": false,
+        "numeric": false,
+        "Raphael": false,
+        "saveAs": false,
+        "THREE": false,
+        "THREEx": false,
+        "venn": false,
+
+        "django_url": false,
+        "STATIC_URL_JS": false
+    }
+}

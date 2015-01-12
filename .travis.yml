@@ -12,6 +12,7 @@ install:
   - travis_retry pip install -q pip==1.5.4
   - travis_retry travis_wait pip install -q numpy==1.6.1 distribute==0.7.3
   - travis_retry travis_wait 60 pip install -q -r django/pip-frozen
+  - npm install jshint
 before_script:
   - psql -c 'CREATE DATABASE catmaid;' -U postgres
   - cd django
@@ -26,6 +27,7 @@ before_script:
   - python create_configuration.py
   - cd ..
 script:
+  - jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications
   - cd django/projects/mysite
   - python manage.py syncdb --migrate --noinput
   - python manage.py runserver &

@@ -1663,7 +1663,7 @@ GroupGraph.prototype.colorBy = function(mode, select) {
     // Color by the color given in the SkeletonModel
     var colors = this.getState().colors;
     if (!colors) {
-      ("Oops: color state was not preserved.");
+      // Color state was not preserved. This can occur when updateGraph resets state.
       return;
     }
     this.cy.nodes().each(function(i, node) {

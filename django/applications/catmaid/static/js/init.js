@@ -191,7 +191,6 @@ function login(
 
 function handle_login(status, text, xml, completionCallback) {
   if (status == 200 && text) {
-    // console.log(text);
     var e = eval("(" + text + ")");
 
     if (e.id) {
@@ -334,7 +333,6 @@ function updateProjects(completionCallback) {
 		}
 	}, 'json');
 
-	//ui.catchEvents( "wait" );
 	project_menu.update(null);
 
 	document.getElementById("projects_h").style.display = "none";
@@ -1032,13 +1030,6 @@ function global_resize( e )
  */
 var realInit = function()
 {
-	//! set some non standard attributes
-	/*
-	document.body.oncontextmenu = function( e ){ return false; };
-	document.body.onselectstart = function( e ){ return false; };
-	document.body.ondragstart = function( e ){ return false; };
-	*/
-	
 	// If the browser supports everything but webgl, let the user dismiss the warning message
 	if (Modernizr.opacity && Modernizr.canvas && Modernizr.svg && Modernizr.json)
 	{
@@ -1208,13 +1199,6 @@ var realInit = function()
 	document.getElementById( "input_fontcolourgreen" ).appendChild( input_fontcolourgreen.getView() );
 	input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
 	document.getElementById( "input_fontcolourblue" ).appendChild( input_fontcolourblue.getView() );
-	
-	
-	/*
-	var testLabel = new Textlabel( 1, "This is a textlabel containing some useless text." );
-	document.body.appendChild( testLabel.getView() );
-	testLabel.redraw( 200, 100, 600, 600 );
-	*/
 	
 	ui.registerEvent( "onresize", global_resize );
 	

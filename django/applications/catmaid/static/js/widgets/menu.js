@@ -121,5 +121,5 @@ Menu = function () {
   var view = document.createElement("div");
   view.className = "menu_text";
 
-  var pulldowns = new Object();
+  var pulldowns = {};
 };

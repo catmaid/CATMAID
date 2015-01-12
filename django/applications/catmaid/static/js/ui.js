@@ -26,7 +26,7 @@ UI = function()
 	var x = 0;
 	var y = 0;
 	
-	var events = new Object();
+	var events = {};
 	events[ "onmousemove" ] = new Array();	//!< bound to eventCatcher
 	events[ "onmousedown" ] = new Array();
 	events[ "onmouseup" ] = new Array();	//!< bound to eventCatcher
@@ -203,7 +203,7 @@ UI = function()
 		var offset;
 		var target;
 		propagate = (typeof propagate == "undefined") ? false : propagate;
-		var m = new Object();
+		var m = {};
 		m.x = realPagePosition.x;
 		m.y = realPagePosition.y;
 		if (relativeTo) {

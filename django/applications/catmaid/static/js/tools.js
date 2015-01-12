@@ -34,7 +34,7 @@ function parseFragment() {
     fragment = /#(.*?)$/i;
     if (r = fragment.exec(location.hash)) {
       var o, p, value;
-      o = new Object();
+      o = {};
       value = /([^&=]+)=([^&=]+)/gi;
       while (p = value.exec(r[1])) {
         o[p[1]] = p[2];
@@ -56,7 +56,7 @@ function parseQuery() {
     query = /\?(.*?)$/i;
     if (r = query.exec(location.search)) {
       var o, p, value;
-      o = new Object();
+      o = {};
       value = /([^&=]+)=([^&=]+)/gi;
       while (p = value.exec(r[1])) {
         o[p[1]] = p[2];

@@ -255,7 +255,7 @@ function Selector()
 			{
 				mouseCatcher.onmousewheel = onmousewheel;
 			}
-			catch ( error ) {}
+			catch ( error2 ) {}
 		}
 
 		mouseCatcher.style.cursor = "url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";

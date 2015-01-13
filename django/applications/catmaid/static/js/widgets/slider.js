@@ -575,7 +575,7 @@ Slider = function(
       {
         input.onmousewheel = mouseWheel;
       }
-      catch ( error ) {}
+      catch ( error2 ) {}
     }
   }
   
@@ -591,7 +591,7 @@ Slider = function(
     {
       view.onmousewheel = mouseWheel;
     }
-    catch ( error ) {}
+    catch ( error2 ) {}
   }
   
   this.update( min, max, steps, def, onchange, split);

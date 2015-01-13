@@ -157,6 +157,6 @@ name, size, onchange, defaultvalue) {
   } catch (error) {
     try {
       input.onmousewheel = mouseWheel;
-    } catch (error) {}
+    } catch (error2) {}
   }
 }

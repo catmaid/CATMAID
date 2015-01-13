@@ -514,7 +514,7 @@ function Navigator()
 			{
 				self.mouseCatcher.onmousewheel = onmousewheel.zoom;
 			}
-			catch ( error ) {}
+			catch ( error2 ) {}
 		}
 		
 		self.stack.getView().appendChild( self.mouseCatcher );
@@ -555,7 +555,7 @@ function Navigator()
 			{
 				self.input_x.onmousewheel = YXMouseWheel;
 			}
-			catch ( error ) {}
+			catch ( error2 ) {}
 		}
 		
 		self.input_y.onchange = changeYByInput;
@@ -569,7 +569,7 @@ function Navigator()
 			{
 				self.input_y.onmousewheel = YXMouseWheel;
 			}
-			catch ( error ) {}
+			catch ( error2 ) {}
 		}
 
 		self.checkbox_reflines.checked = userprofile.display_stack_reference_lines;
@@ -643,7 +643,7 @@ function Navigator()
 			{
 				self.input_x.onmousewheel = null;
 			}
-			catch ( error ) {}
+			catch ( error2 ) {}
 		}
 		
 		self.input_y.onchange = null;
@@ -657,7 +657,7 @@ function Navigator()
 			{
 				self.input_y.onmousewheel = null;
 			}
-			catch ( error ) {}
+			catch ( error2 ) {}
 		}
 		
 		self.checkbox_reflines.onchange = null;

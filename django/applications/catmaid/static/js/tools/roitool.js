@@ -337,7 +337,7 @@ RoiTool.prototype.addMousewheelListener = function( component, handler )
         {
             component.onmousewheel = handler;
         }
-        catch ( error ) {}
+        catch ( error2 ) {}
     }
 };
 
@@ -356,7 +356,7 @@ RoiTool.prototype.removeMousewheelListener = function( component, handler )
         {
             component.onmousewheel = null;
         }
-        catch ( error ) {}
+        catch ( error2 ) {}
     }
 };
 
@@ -391,7 +391,7 @@ RoiTool.prototype.register = function( parentStack )
         {
             this.mouseCatcher.onmousewheel = onmousewheel;
         }
-        catch ( error ) {}
+        catch ( error2 ) {}
     }
 
     this.stack.getView().appendChild( this.mouseCatcher );

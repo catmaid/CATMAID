@@ -158,7 +158,7 @@ UI = function()
 	 */
 	this.getMouseButton = function( e )
 	{
-		var which = undefined;
+		var which;
 		if ( e && e.which )
 		{
 			which = e.which;

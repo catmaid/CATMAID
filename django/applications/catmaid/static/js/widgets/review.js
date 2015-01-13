@@ -402,7 +402,7 @@ var ReviewSystem = new function()
 
     this.startReviewActiveSkeleton = function(subarborOnly) {
         var skid = SkeletonAnnotations.getActiveSkeletonId();
-        var subarborNodeId = undefined;
+        var subarborNodeId = undefined; // jshint ignore:line
         if (subarborOnly) {
             subarborNodeId = SkeletonAnnotations.getActiveNodeId();
         }

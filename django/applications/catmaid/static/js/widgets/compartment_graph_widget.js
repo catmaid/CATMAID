@@ -386,9 +386,9 @@ GroupGraph.prototype.init = function() {
 
   this.cy.on('mouseup', 'node', {}, (function(evt) {
     if (this.grid_snap) {
-      var list = undefined === this.selection.entries[evt.cyTarget.id()] ?
+      var list = (undefined === this.selection.entries[evt.cyTarget.id()] ?
         [evt.cyTarget]
-        : Object.keys(this.selection.entries).map(function(nodeID) { return this.cy.nodes("[id='" + nodeID + "']"); }, this);
+        : Object.keys(this.selection.entries).map(function(nodeID) { return this.cy.nodes("[id='" + nodeID + "']"); }, this));
       list.forEach(function(node) {
         var p = node.position();
         node.position({x: p.x + p.x % this.grid_side,

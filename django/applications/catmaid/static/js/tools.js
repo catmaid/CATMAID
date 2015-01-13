@@ -32,6 +32,7 @@ function parseFragment() {
   if (location.hash) {
     var r, fragment;
     fragment = /#(.*?)$/i;
+    /* jshint boss:true */ // Allow assignment in conditional
     if (r = fragment.exec(location.hash)) {
       var o, p, value;
       o = {};
@@ -54,6 +55,7 @@ function parseQuery() {
   if (location.search) {
     var r, query;
     query = /\?(.*?)$/i;
+    /* jshint boss:true */ // Allow assignment in conditional
     if (r = query.exec(location.search)) {
       var o, p, value;
       o = {};
@@ -76,6 +78,7 @@ function parseQuery() {
 function ieCSSWidth(o) {
   var c = o.firstChild;
   var w = c.offsetWidth;
+  /* jshint boss:true */ // Allow assignment in conditional
   while (c = c.nextSibling) {
     w += c.offsetWidth;
   }

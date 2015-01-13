@@ -317,7 +317,7 @@ SkeletonConnectivity.prototype.updateVisibility = function(skid, visible) {
 
     var model = linkTarget.getSkeletonModel(skid);
     if (visible) {
-      if (!model) model = getSkeletonModel(skid);
+      if (!model) model = this.getSkeletonModel(skid);
       else model.setVisible(true);
       linkTarget.updateOneModel(model);
     } else {

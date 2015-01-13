@@ -119,7 +119,7 @@ SelectionTable.prototype.SkeletonModel.prototype.property_dialog = function() {
   var entry = document.createElement('input');
   entry.setAttribute("type", "text");
   entry.setAttribute("id", "skeleton-selected");
-  entry.setAttribute("value", self.selected );
+  entry.setAttribute("value", this.selected );
   dialog.appendChild(entry);
 
   $(dialog).dialog({

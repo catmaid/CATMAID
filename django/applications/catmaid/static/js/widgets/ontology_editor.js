@@ -5,7 +5,7 @@
  */
 var OntologyEditor = new function()
 {
-    this.workspace_pid;
+    this.workspace_pid = undefined;
     this.trees = [];
     var content_div_id = "ontology_editor_widget";
 

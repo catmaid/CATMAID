@@ -524,7 +524,7 @@ function Project( pid )
 	var data;					//!< instances in a DOM representation
 	
 	var stacks = [];	//!< a list of stacks related to the project
-	this.focusedStack;
+	this.focusedStack = undefined;
 	
 	var mode = "move";
 	var show_textlabels = true;

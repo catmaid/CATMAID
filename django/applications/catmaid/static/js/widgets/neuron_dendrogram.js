@@ -558,7 +558,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
     };
     nodeTransform = function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y * factor) + ")"; };
     styleNodeText = function(node) {
-      function inner(d) { return d.children ? !(d.x > 180) : d.x > 180; }
+      function inner(d) { return d.children ? d.x <= 180 : d.x > 180; }
       return node
       .attr("dx", function(d) { return inner(d) ? -8 : 8; })
       .attr("dy", 3)

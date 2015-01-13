@@ -82,6 +82,32 @@ var WindowMaker = new function()
     win.focus();
   };
 
+  /**
+   * Clones the given form into a dynamically created iframe and submits it
+   * there. This can be used to store autocompletion information of a form that
+   * actually isn't submitted (where e.g. an AJAX request is done manually).  A
+   * search term is only added to the autocomplete history if the form is
+   * actually submitted. This, however, triggers a reload (or redirect) of the
+   * current page. To prevent this, an iframe is created where the submit of the
+   * form is done and where a reload doesn't matter. The search term is stored
+   * and the actual search can be executed.
+   * Based on http://stackoverflow.com/questions/8400269.
+   */
+  var submitFormInIFrame = function(form) {
+    // Create a new hidden iframe element as sibling of the form
+    var iframe = document.createElement('iframe');
+    iframe.setAttribute('src', '');
+    iframe.setAttribute('style', 'display:none');
+    form.parentNode.appendChild(iframe);
+    // Submit form in iframe to store autocomplete information
+    var iframeWindow = iframe.contentWindow;
+    iframeWindow.document.body.appendChild(form.cloneNode(true));
+    var frameForm = iframeWindow.document.getElementById(form.id);
+    frameForm.onsubmit = null;
+    frameForm.submit();
+    // Remove the iframe again after the submit (hopefully) run
+    setTimeout(function() { form.parentNode.removeChild(iframe); }, 100);
+  };
 
   var createConnectorSelectionWindow = function()
   {
@@ -2463,14 +2489,21 @@ var WindowMaker = new function()
       content.appendChild( container );
     }
 
-    var keysHTML = '<form onsubmit="TracingTool.search(); return false">';
-    keysHTML += '<input type="text" id="search-box" name="search-box">';
-    keysHTML += '<input type="submit" style="display: hidden">';
-    keysHTML += '</form>';
-    keysHTML += '<div id="search-results">';
-    keysHTML += '</div>';
-
-    container.innerHTML = keysHTML;
+    $(container).empty()
+      .append($('<form />')
+          .attr('id', 'search-form')
+          .attr('autocomplete', 'on')
+          .on('submit', function(e) {
+            // Submit form in iframe to store autocomplete information
+            submitFormInIFrame(document.getElementById('search-form'));
+            // Do actual search
+            TracingTool.search();
+            // Cancel submit in this context to not reload the page
+            return false;
+          })
+          .append($('<input type="text" id="search-box" name="search-box" />'))
+          .append($('<input type="submit" />')))
+      .append('<div id="search-results" />');
 
     // Focus search box
     setTimeout(function() { $('input#search-box', container).focus(); }, 10);
@@ -2617,7 +2650,7 @@ var WindowMaker = new function()
     // Create the query fields HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
     var queryFields_html =
-      '<form id="neuron_query_by_annotations{{NA-ID}}">' +
+      '<form id="neuron_query_by_annotations{{NA-ID}}" autocomplete="on">' +
       '<table cellpadding="0" cellspacing="0" border="0" ' +
           'class="neuron_annotations_query_fields" ' +
           'id="neuron_annotations_query_fields{{NA-ID}}">' +
@@ -2632,7 +2665,7 @@ var WindowMaker = new function()
         '<tr id="neuron_query_by_annotation{{NA-ID}}">' +
           '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
           '<td class="neuron_annotations_query_field">' +
-            '<input type="text" name="neuron_query_by_annotation" ' +
+            '<input type="text" name="neuron_query_by_annotation" autocomplete="off" ' +
                 'class="neuron_query_by_annotation_name{{NA-ID}}" value="" />' +
             '<input type="checkbox" name="neuron_query_include_subannotation" ' +
                 'class="neuron_query_include_subannotation{{NA-ID}}" value="" />' +
@@ -2740,8 +2773,14 @@ var WindowMaker = new function()
     $('#neuron_annotations_add_annotation' + NA.widgetID)[0].onclick =
         NA.add_query_field.bind(NA);
     $('#neuron_query_by_annotations' + NA.widgetID).submit(function(event) {
+          // Submit form in iframe to make browser save search terms for
+          // autocompletion.
+          var form = document.getElementById('neuron_query_by_annotations' + NA.widgetID);
+          submitFormInIFrame(form);
+          // Do actual query
           NA.query.call(NA, true);
           event.preventDefault();
+          return false;
         });
     $('#neuron_annotations_annotate' + NA.widgetID)[0].onclick = (function() {
         // Get IDs of selected entities

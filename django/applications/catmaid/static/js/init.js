@@ -222,10 +222,10 @@ function handle_login(status, text, xml, completionCallback) {
     }
 
     // Continuation for user list retrieval
-    function done() {
+    done = function () {
       handle_profile_update(e);
       updateProjects(completionCallback);
-    }
+    };
 
     if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
       // Asynchronously, try to get a full list of users if a user is logged in

@@ -678,6 +678,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
   styleNodeText(node.append("text")).text(nodeName);
 
   function zoom() {
+    /* jshint validthis: true */ // `this` is bound to this NeuronDendrogram
     // Compensate for margin
     var tx = d3.event.translate[0] + margin.left,
         ty = d3.event.translate[1] + margin.top;
@@ -693,6 +694,7 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
    * Compensate for margin and layout offset.
    */
   function mouseMove() {
+    /* jshint validthis: true */ // `this` is the D3 svg object
     var m = d3.mouse(this);
     zoomHandler.center([
         m[0] - layoutOffset[0] - margin.left,

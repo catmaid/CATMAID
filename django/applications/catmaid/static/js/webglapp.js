@@ -274,6 +274,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
   dialog.show(400, 460, true);
 
   function handleOK() {
+    /* jshint validthis: true */ // `this` is bound to this WebGLApplication
     $.blockUI();
     // Get models of exported skeletons
     var models = this.getSelectedSkeletonModels();

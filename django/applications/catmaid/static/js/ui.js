@@ -169,8 +169,7 @@ UI = function()
 			if ( which == 2 ) which = 3;	//!< right
 			if ( which == 4 ) which = 2;	//!< middle
 		}
-		//statusBar.replaceLast( "mouse button " + which + " pressed" );
-		
+
 		return which;
 	};
 	
@@ -468,5 +467,3 @@ UI.getRealPagePosition = function (e) {
   // posx and posy contain the mouse position relative to the document
   return {'x': posx, 'y': posy};
 };
-
-//var UI = new UI();

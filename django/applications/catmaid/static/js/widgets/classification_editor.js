@@ -228,7 +228,7 @@ var ClassificationEditor = new function()
                             // Add entry and submenu for removing a region of interest
                             var rois = JSON.parse(obj.attr("rois"));
                             var submenu = {};
-                            for (i=0; i<rois.length; i++) {
+                            for (var i=0; i<rois.length; i++) {
                                 var roi = rois[i];
                                 submenu['remove_roi_' + roi] = {
                                     "separator_before": false,

@@ -2612,7 +2612,7 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
   if (new_bandwidth) {
     try {
       new_bandwidth = Number(new_bandwidth);
-      if (Number.NaN === new_bandwidth) throw new Exception("Invalud bandwidth " + new_bandwidth);
+      if (Number.NaN === new_bandwidth) throw ("Invalid bandwidth " + new_bandwidth);
       this.split(new_bandwidth);
     } catch (e) {
       alert("Invalid bandwidth: " + new_bandwidth + "\n" + e);

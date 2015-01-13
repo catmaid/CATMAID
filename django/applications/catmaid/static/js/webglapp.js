@@ -150,8 +150,6 @@ WebGLApplication.prototype.resizeView = function(w, h) {
 
 WebGLApplication.prototype.fullscreenWebGL = function() {
 	if (THREEx.FullScreen.activated()){
-		var w = canvasWidth, h = canvasHeight;
-		this.resizeView( w, h );
 		THREEx.FullScreen.cancel();
 	} else {
 		THREEx.FullScreen.request(document.getElementById('viewer-3d-webgl-canvas' + this.widgetID));

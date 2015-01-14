@@ -589,26 +589,95 @@ SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z
 };
 
 /** Find the point nearest physical coordinates (x, y, z) nearest the
- *  specified skeleton */
-SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (x, y, z, skeleton_id) {
-  var tmp, mindistsq = Infinity, nearestnode = null, nearestpoint = null, node, parent;
+ *  specified skeleton, including any nodes in additionalNodes. */
+SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (x, y, z, skeleton_id, additionalNodes) {
+  var nearest = { distsq: Infinity, node: null, point: null };
   var phys_radius = (30.0 / this.stack.scale) * Math.max(this.stack.resolution.x, this.stack.resolution.y);
 
-  for (var nodeid in this.nodes) {
-    if (this.nodes.hasOwnProperty(nodeid)) {
-      node = this.nodes[nodeid];
-
+  var self = this;
+  var nearestReduction = function (nodes, nearest) {
+    return Object.keys(nodes).reduce(function (nearest, nodeId) {
+      var node = nodes[nodeId];
       if (node.skeleton_id === skeleton_id && node.parent !== null) {
-        tmp = this.pointEdgeDistanceSq(x, y, z, node, phys_radius);
-        if (tmp.distsq < mindistsq) {
-          mindistsq = tmp.distsq;
-          nearestnode = node;
-          nearestpoint = tmp.point;
-        }
+        var tmp = self.pointEdgeDistanceSq(x, y, z, node, phys_radius);
+        if (tmp.distsq < nearest.distsq) return {
+          distsq: tmp.distsq,
+          node: node,
+          point: tmp.point
+        };
       }
-    }
-  }
-  return {node: nearestnode, point: nearestpoint};
+      return nearest;
+    }, nearest);
+  };
+
+  nearest = nearestReduction(this.nodes, nearest);
+  if (additionalNodes) nearest = nearestReduction(additionalNodes, nearest);
+  return nearest;
+};
+
+/** Insert a node along the edge in the active skeleton nearest the specified
+ *  point. Includes the active node (atn), its children, and its parent, even if
+ *  they are beyond one section away. */
+SkeletonAnnotations.SVGOverlay.prototype.insertNodeInActiveSkeleton = function (phys_x, phys_y, phys_z, atn) {
+  var insertNode = (function (additionalNodes) {
+    var insertion = this.findNearestSkeletonPoint(phys_x, phys_y, phys_z, atn.skeleton_id, additionalNodes);
+    if (insertion.node) this.createNode(insertion.node.parent.id, phys_x, phys_y, phys_z,
+      -1, 5, this.phys2pixX(phys_x), this.phys2pixY(phys_y), this.phys2pixZ(phys_z),
+      // Callback after creating the new node to make it the parent of the node it was inserted before
+      function (self, nn) {
+        self.submit(
+          django_url + project.id + '/treenode/' + insertion.node.id + '/parent',
+          {parent_id: nn.id},
+          function(json) {
+            self.updateNodes();
+          });
+      });
+  }).bind(this);
+
+  var self = this;
+  this.submit(
+      django_url + project.id + "/node/next_branch_or_end",
+      {tnid: atn.id},
+      function(json) {
+        // See goToNextBranchOrEndNode for JSON schema description.
+        // Construct a list of child nodes of the active node in case they are
+        // not loaded in the overlay nodes.
+        var additionalNodes = json.reduce(function (nodes, branch) {
+          var child = branch[0];
+          nodes[child[0]] = {
+            id: child[0],
+            x: child[1],
+            y: child[2],
+            z: child[3],
+            skeleton_id: atn.skeleton_id,
+            parent: atn
+          };
+          return nodes;
+        }, {});
+        if (atn.parent_id && !self.nodes.hasOwnProperty(atn.parent_id)) {
+          // Need to fetch the parent node first.
+          self.submit(
+              django_url + project.id + "/node/get_location",
+              {tnid: atn.parent_id},
+              function(json) {
+                additionalNodes[atn.id] = {
+                  id: atn.id,
+                  x: atn.x,
+                  y: atn.y,
+                  z: atn.z,
+                  skeleton_id: atn.skeleton_id,
+                  parent: {
+                    id: atn.parent_id,
+                    x: json[1],
+                    y: json[2],
+                    z: json[3],
+                    skeleton_id: atn.skeleton_id,
+                  }
+                };
+                insertNode(additionalNodes);
+              });
+        } else insertNode(additionalNodes); // No need to fetch the parent.
+      });
 };
 
 /** Remove and hide all node labels. */
@@ -1313,18 +1382,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   if (e.ctrlKey || e.metaKey) {
     if (e.altKey && null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
       // Insert a treenode along an edge on the active skeleton
-      var insertion = this.findNearestSkeletonPoint(phys_x, phys_y, phys_z, atn.skeleton_id);
-      if (insertion.node) this.createNode(insertion.node.parent.id, phys_x, phys_y, phys_z,
-        -1, 5, this.phys2pixX(phys_x), this.phys2pixY(phys_y), this.phys2pixZ(phys_z),
-        // Callback after creating the new node to make it the parent of the node it was inserted before
-        function (self, nn) {
-          self.submit(
-            django_url + project.id + '/treenode/' + insertion.node.id + '/parent',
-            {parent_id: nn.id},
-            function(json) {
-              self.updateNodes();
-            });
-        });
+      this.insertNodeInActiveSkeleton(phys_x, phys_y, phys_z, atn);
       e.stopPropagation();
     } else {
       // ctrl-click deselects the current active node

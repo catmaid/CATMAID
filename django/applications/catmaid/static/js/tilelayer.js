@@ -400,23 +400,7 @@ function TileLayer(
 	 * Get the height of an image tile.
 	 */
 	this.getTileHeight = function(){ return tileHeight; };
-	
-	/**
-	 * Get the number of tile columns.
-	 */
-	this.numTileColumns = function()
-	{
-		if ( tiles.length === 0 )
-			return 0;
-		else
-			return tiles[ 0 ].length;
-	};
-	
-	/**
-	 * Get the number of tile rows.
-	 */
-	this.numTileColumns = function(){ return tiles.length; };
-	
+
 	/**
 	 * Get the stack.
 	 */

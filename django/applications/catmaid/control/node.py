@@ -47,7 +47,7 @@ def node_list_tuples(request, project_id=None):
     # top: the Y coordinate of the bounding box (field of view) in calibrated units
     # left: the X coordinate of the bounding box (field of view) in calibrated units
     atnid = int(request.POST.get('atnid', -1))
-    for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
+    for p in ('top', 'left', 'bottom', 'right', 'z1', 'z2'):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
@@ -72,8 +72,6 @@ def node_list_tuples(request, project_id=None):
         # Fetch treenodes which are in the bounding box,
         # which in z it includes the full thickess of the prior section
         # and of the next section (therefore the '<' and not '<=' for zhigh)
-        params['bottom'] = params['top'] + params['height']
-        params['right'] = params['left'] + params['width']
         cursor.execute('''
         SELECT
             t1.id,
@@ -99,11 +97,12 @@ def node_list_tuples(request, project_id=None):
                (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
                 OR (t1.parent_id IS NULL AND t1.id = t2.id))
         WHERE
-            t1.location_z = %(z)s
-            AND t1.location_x > %(left)s
-            AND t1.location_x < %(right)s
-            AND t1.location_y > %(top)s
-            AND t1.location_y < %(bottom)s
+                t1.location_z >= %(z1)s
+            AND t1.location_z <  %(z2)s
+            AND t1.location_x >= %(left)s
+            AND t1.location_x <  %(right)s
+            AND t1.location_y >= %(top)s
+            AND t1.location_y <  %(bottom)s
             AND t1.project_id = %(project_id)s
         LIMIT %(limit)s
         ''', params)
@@ -174,11 +173,12 @@ def node_list_tuples(request, project_id=None):
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
-          AND connector.location_z = %(z)s
-          AND connector.location_x > %(left)s
-          AND connector.location_x < %(right)s
-          AND connector.location_y > %(top)s
-          AND connector.location_y < %(bottom)s
+          AND connector.location_z >= %(z1)s
+          AND connector.location_z <  %(z2)s
+          AND connector.location_x >= %(left)s
+          AND connector.location_x <  %(right)s
+          AND connector.location_y >= %(top)s
+          AND connector.location_y <  %(bottom)s
         ''', params)
 
         crows.extend(cursor.fetchall())
@@ -263,9 +263,10 @@ def node_list_tuples(request, project_id=None):
 
         labels = defaultdict(list)
         if 'true' == request.POST.get('labels', None):
-            z0 = params['z']
+            z1 = params['z1']
+            z2 = params['z2']
             # Collect treenodes visible in the current section
-            visible = ','.join(str(row[0]) for row in treenodes if row[4] == z0)
+            visible = ','.join(str(row[0]) for row in treenodes if row[4] >= z1 and row[4] < z2)
             if visible:
                 cursor.execute('''
                 SELECT treenode.id, class_instance.name
@@ -279,7 +280,7 @@ def node_list_tuples(request, project_id=None):
                     labels[row[0]].append(row[1])
 
             # Collect connectors visible in the current section
-            visible = ','.join(str(row[0]) for row in connectors if row[3] == z0)
+            visible = ','.join(str(row[0]) for row in connectors if row[3] >= z1 and row[3] < z2)
             if visible:
                 cursor.execute('''
                 SELECT connector.id, class_instance.name

@@ -262,10 +262,9 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.switchingConnectorID = null;
   this.switchingTreenodeID = null;
 
-  /* lastX, lastY: for the 'z' key to know where was the mouse.
-   * offsetXPhysical, offsetYPhysical: offset of stack in physical coordinates */
-  this.coords = {lastX: null, lastY: null,
-                 offsetXPhysical: 0, offsetYPhysical: 0};
+  /* lastX, lastY: in unscaled stack coordinates, for the 'z' key to know where
+   * the mouse was. */
+  this.coords = {lastX: null, lastY: null}
 
   /* padding beyond screen borders for fetching data and updating nodes */
   this.PAD = 256;
@@ -396,23 +395,21 @@ SkeletonAnnotations.SVGOverlay.prototype.getStack = function() {
   return this.stack;
 };
 
+/**
+ * Stores the current mouse coordinates in unscaled stack coordinates in the
+ * @coords parameter.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack, coords) {
   return function(e) {
-    var wc;
-    var worldX, worldY;
     var m = CATMAID.ui.getMouse(e, stack.getView(), true);
     if (m) {
-      wc = stack.getWorldTopLeft();
-      worldX = wc.worldLeft + ((m.offsetX / stack.scale) * stack.resolution.x);
-      worldY = wc.worldTop + ((m.offsetY / stack.scale) * stack.resolution.y);
-      coords.lastX = worldX;
-      coords.lastY = worldY;
-      coords.offsetXPhysical = worldX;
-      coords.offsetYPhysical = worldY;
+      var screenPosition = stack.screenPosition();
+      coords.lastX = screenPosition.left + m.offsetX / stack.scale;
+      coords.lastY = screenPosition.top  + m.offsetY / stack.scale;
       // This function is called often, so the least memory consuming way should
       // be used to create the status bar update.
-      CATMAID.statusBar.printCoords('['+ Math.round(worldX) + ", " +
-          Math.round(worldY) + ", " + Math.round(project.coordinates.z) +']');
+      CATMAID.statusBar.printCoords('['+ Math.round(coords.lastX) + ", " +
+          Math.round(coords.lastY) + ", " + Math.round(project.coordinates.z) +']');
     }
     return true; // Bubble mousemove events.
   };
@@ -536,13 +533,10 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
 
 /** Activate the node nearest to the mouse. */
 SkeletonAnnotations.SVGOverlay.prototype.activateNearestNode = function () {
-  var x = this.coords.lastX,
-      y = this.coords.lastY,
-      z = project.coordinates.z;
-  var nearestnode = this.findNodeWithinRadius(x, y, z, Number.MAX_VALUE);
+  var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
+      this.coords.lastY, Number.MAX_VALUE);
   if (nearestnode) {
-    var physZ = this.pix2physZ(nearestnode.z);
-    if (physZ >= z && physZ < z + this.stack.resolution.z) {
+    if (Math.abs(nearestnode.z - this.stack.z) < 0.5) {
       this.activateNode(nearestnode);
     } else {
       CATMAID.statusBar.replaceLast("No nodes were visible in the current section - can't activate the nearest");
@@ -551,15 +545,26 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNearestNode = function () {
   return nearestnode;
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, z, radius) {
-  var xdiff, ydiff, zdiff, distsq, mindistsq = radius * radius, nearestnode = null, node, nodeid;
+/**
+ * Expects x and y in scaled (!) stack coordinates.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, radius) {
+  var xdiff,
+      ydiff,
+      distsq,
+      mindistsq = radius * radius,
+      nearestnode = null,
+      node,
+      nodeid;
+
   for (nodeid in this.nodes) {
     if (this.nodes.hasOwnProperty(nodeid)) {
       node = this.nodes[nodeid];
-      xdiff = x - this.pix2physX(node.x);
-      ydiff = y - this.pix2physY(node.y);
-      zdiff = z - this.pix2physZ(node.z);
-      distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
+      xdiff = x - node.x;
+      ydiff = y - node.y;
+      // Must discard those not within current z
+      if (Math.abs(this.stack.z - node.z) > 0.5) continue;
+      distsq = xdiff*xdiff + ydiff*ydiff;
       if (distsq < mindistsq) {
         mindistsq = distsq;
         nearestnode = node;
@@ -594,12 +599,12 @@ SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z
 
   exclusion = exclusion || 0;
 
-  a = new THREE.Vector3(this.pix2physX(node.x),
-                        this.pix2physY(node.y),
-                        this.pix2physZ(node.z));
-  b = new THREE.Vector3(this.pix2physX(node.parent.x),
-                        this.pix2physY(node.parent.y),
-                        this.pix2physZ(node.parent.z));
+  a = new THREE.Vector3(this.pix2physX(node.z, node.y, node.x),
+                        this.pix2physY(node.z, node.y, node.x),
+                        this.pix2physZ(node.z, node.y, node.x));
+  b = new THREE.Vector3(this.pix2physX(node.parent.z, node.parent.y, node.parent.x),
+                        this.pix2physY(node.parent.z, node.parent.y, node.parent.x),
+                        this.pix2physZ(node.parent.z, node.parent.y, node.parent.x));
   p = new THREE.Vector3(x, y, z);
   ab = new THREE.Vector3().subVectors(b, a);
   ablen = ab.lengthSq();
@@ -862,12 +867,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
             var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
                 c = self.nodes[toid];
             extension[from_model.id] = [
-                new THREE.Vector3(self.pix2physX(p.x),
-                                  self.pix2physY(p.y),
-                                  self.pix2physZ(p.z)),
-                new THREE.Vector3(self.pix2physX(c.x),
-                                  self.pix2physY(c.y),
-                                  self.pix2physZ(c.z))
+                new THREE.Vector3(self.pix2physX(p.z, p.y, p.x),
+                                  self.pix2physY(p.z, p.y, p.x),
+                                  self.pix2physZ(p.z, p.y, p.x)),
+                new THREE.Vector3(self.pix2physX(c.z, c.y, c.x),
+                                  self.pix2physY(c.z, c.y, c.x),
+                                  self.pix2physZ(c.z, c.y, c.x))
             ];
             dialog.show(extension);
           };
@@ -1183,9 +1188,9 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (c
         if (node.needsync) {
           node.needsync = false;
           update[node.type].push([node.id,
-                                  this.pix2physX(node.x),
-                                  this.pix2physY(node.y),
-                                  this.pix2physZ(node.z)]);
+                                  this.pix2physX(node.z, node.y, node.x),
+                                  this.pix2physY(node.z, node.y, node.x),
+                                  this.pix2physZ(node.z, node.y, node.x)]);
         }
       }
       if (update.treenode.length > 0 || update.connector.length > 0) {
@@ -1430,14 +1435,14 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   }
 
   // take into account current local offset coordinates and scale
-  var pos_x = this.coords.offsetXPhysical;
-  var pos_y = this.coords.offsetYPhysical;
-  var pos_z = this.phys2pixZ(project.coordinates.z);
+  var pos_x = this.coords.lastX;
+  var pos_y = this.coords.lastY;
+  var pos_z = this.stack.z; // or this.phys2pixZ(project.coordinates.z);
 
   // get physical coordinates for node position creation
-  var phys_x = this.pix2physX(pos_x);
-  var phys_y = this.pix2physY(pos_y);
-  var phys_z = project.coordinates.z;
+  var phys_x = this.pix2physX(pos_z, pos_y, pos_x);
+  var phys_y = this.pix2physY(pos_z, pos_y, pos_x);
+  var phys_z = this.pix2physZ(pos_z, pos_y, pos_x);
 
   var targetTreenodeID,
       atn = SkeletonAnnotations.atn;
@@ -1518,23 +1523,23 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   return true;
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (x) {
-  return x;
+SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (z, y, x) {
+  return this.stack.projectToStackX(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (y) {
-  return y;
+SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (z, y, x) {
+  return this.stack.projectToStackY(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (z) {
-  return z;
+SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (z, y, x) {
+  return this.stack.projectToStackZ(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.pix2physX = function (x) {
-  return x;
+SkeletonAnnotations.SVGOverlay.prototype.pix2physX = function (z, y, x) {
+  return this.stack.stackToProjectX(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.pix2physY = function (y) {
-  return y;
+SkeletonAnnotations.SVGOverlay.prototype.pix2physY = function (z, y, x) {
+  return this.stack.stackToProjectY(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.pix2physZ = function (z) {
-  return z;
+SkeletonAnnotations.SVGOverlay.prototype.pix2physZ = function (z, y, x) {
+  return this.stack.stackToProjectZ(z, y, x);
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.show = function () {
@@ -1570,20 +1575,43 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     self.old_x = stack.x;
     self.old_y = stack.y;
 
-    var pz = stack.z * stack.resolution.z + stack.translation.z;
+    // (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y
+
+    var halfWidth =  (stack.viewWidth  / 2) / stack.scale,
+        halfHeight = (stack.viewHeight / 2) / stack.scale;
+
+    var x0 = stack.x - halfWidth,
+        y0 = stack.y - halfHeight,
+        z0 = stack.z;
+
+    var x1 = stack.x + halfWidth,
+        y1 = stack.y + halfHeight,
+        z1 = stack.z + 1; // stack.z is always in discreet units
+
+    var wx0 = stack.stackToProjectX(z0, y0, x0),
+        wy0 = stack.stackToProjectY(z0, y0, x0),
+        wz0 = stack.stackToProjectZ(z0, y0, x0);
+
+    var wx1 = stack.stackToProjectX(z1, y1, x1),
+        wy1 = stack.stackToProjectY(z1, y1, x1),
+        wz1 = stack.stackToProjectZ(z1, y1, x1);
+
+    var params = {
+      pid: stack.getProject().id,
+      sid: stack.getId(),
+      left: wx0,
+      top: wy0,
+      z1: wz0,
+      right: wx1,
+      bottom: wy1,
+      z2: wz1,
+      atnid: atnid,
+      labels: self.getLabelStatus()
+    };
 
     self.submit(
       django_url + project.id + '/node/list',
-      {pid: stack.getProject().id,
-       sid: stack.getId(),
-       z: pz,
-       top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
-       left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
-       width: (stack.viewWidth / stack.scale) * stack.resolution.x,
-       height: (stack.viewHeight / stack.scale) * stack.resolution.y,
-       zres: stack.resolution.z,
-       atnid: atnid,
-       labels: self.getLabelStatus()},
+      params,
       function(json) {
         if (json.needs_setup) {
             display_tracing_setup_dialog(project.id, json.has_needed_permissions,
@@ -1890,9 +1918,9 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
   var node = this.nodes[nodeID];
   if (node) {
     this.moveTo(
-      this.pix2physZ(node.z),
-      this.pix2physY(node.y),
-      this.pix2physX(node.x),
+      this.pix2physZ(node.z, node.y, node.x),
+      this.pix2physY(node.z, node.y, node.x),
+      this.pix2physX(node.z, node.y, node.x),
       fn);
   } else {
     var self = this;
@@ -2014,8 +2042,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
   var atn = SkeletonAnnotations.atn;
   if (this.coords.lastX !== null && this.coords.lastY !== null) {
     // Radius of 7 pixels, in physical coordinates
-    var phys_radius = (7.0 / this.stack.scale) * Math.max(this.stack.resolution.x, this.stack.resolution.y);
-    var nearestnode = this.findNodeWithinRadius(this.coords.lastX, this.coords.lastY, project.coordinates.z, phys_radius);
+    var nearestnode = this.findNodeWithinRadius(this.coords.lastX, this.coords.lastY, 7);
 
     if (nearestnode !== null) {
       if (e && e.shiftKey) {
@@ -2035,16 +2062,9 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
           self.executeIfSkeletonEditable(nearestnode_skid, function() {
             // The function used to instruct the backend to do the merge
             var merge = function(annotations) {
-              // Take into account current local offset coordinates and scale
-              var pos_x = self.phys2pixX(self.coords.offsetXPhysical);
-              var pos_y = self.phys2pixY(self.coords.offsetYPhysical);
-              // At this point of the execution
-              // project.coordinates.z is not on the new z index, thus simulate it here
-              var pos_z = self.phys2pixZ(project.coordinates.z);
-              var phys_z = self.pix2physZ(pos_z);
-              // Get physical coordinates for node position creation
-              var phys_x = self.pix2physX(pos_x);
-              var phys_y = self.pix2physY(pos_y);
+              var phys_z = self.pix2physZ(stack.z, self.coords.lastY, self.coords.lastX);
+              var phys_y = self.pix2physY(stack.z, self.coords.lastY, self.coords.lastX);
+              var phys_x = self.pix2physX(stack.z, self.coords.lastY, self.coords.lastX);
               // Ask to join the two skeletons with interpolated nodes
               self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
                   nearestnode_id, annotations);
@@ -2072,12 +2092,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
                 var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
                     c = self.nodes[nearestnode_id];
                 extension[from_model.id] = [
-                    new THREE.Vector3(self.pix2physX(p.x),
-                                      self.pix2physY(p.y),
-                                      self.pix2physZ(p.z)),
-                    new THREE.Vector3(self.pix2physX(c.x),
-                                      self.pix2physY(c.y),
-                                      self.pix2physZ(c.z))
+                    new THREE.Vector3(self.pix2physX(p.z, p.y, p.x),
+                                      self.pix2physY(p.z, p.y, p.x),
+                                      self.pix2physZ(p.z, p.y, p.x)),
+                    new THREE.Vector3(self.pix2physX(c.z, c.y, c.x),
+                                      self.pix2physY(c.z, c.y, c.x),
+                                      self.pix2physZ(c.z, c.y, c.x))
                 ];
                 dialog.show(extension);
               });
@@ -2124,20 +2144,11 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
     alert('Need to activate a treenode first!');
     return;
   }
-  // TODO this comment needs revision: (same above)
-  //  * the offsetXPhysical is converted to pixels and then back to physical coordinates
-  //  * the offsetXPhysical reads like the 'x' of the mouse, rather than the stack offset.
-  //
-  // Take into account current local offset coordinates and scale
-  var pos_x = this.phys2pixX(this.coords.offsetXPhysical);
-  var pos_y = this.phys2pixY(this.coords.offsetYPhysical);
-  // At this point of the execution
-  // project.coordinates.z is not on the new z index, thus simulate it here
-  var pos_z = this.phys2pixZ(project.coordinates.z);
-  var phys_z = this.pix2physZ(pos_z);
-  // Get physical coordinates for node position creation
-  var phys_x = this.pix2physX(pos_x);
-  var phys_y = this.pix2physY(pos_y);
+
+  var phys_x = this.pix2physX(this.stack.z, this.coords.lastY, this.coords.lastX);
+  var phys_y = this.pix2physY(this.stack.z, this.coords.lastY, this.coords.lastX);
+  var phys_z = this.pix2physZ(this.stack.z, this.coords.lastY, this.coords.lastX);
+
   this.createInterpolatedNode(phys_x, phys_y, phys_z, null, null);
 };
 

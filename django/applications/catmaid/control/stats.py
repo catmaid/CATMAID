@@ -16,7 +16,7 @@ def _process(query, minus1name):
     cursor = connection.cursor()
     cursor.execute(query)
 
-    # Get name dictonary separatly to avaoid joining the user table to the
+    # Get name dictonary separately to avoid joining the user table to the
     # treenode table, which in turn improves performance.
     names = dict(User.objects.values_list('id', 'username'))
 

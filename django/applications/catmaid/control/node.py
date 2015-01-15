@@ -23,7 +23,7 @@ except:
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def node_list_tuples(request, project_id=None):
+def node_list_tuples(request, project_id=None, provider=None):
     ''' Retrieve an JSON array with four entries:
     [0] an array of arrays, each array representing a treenode
     [1] an array of arrays, each array representing a connector and containing
@@ -51,7 +51,57 @@ def node_list_tuples(request, project_id=None):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
+    includeLabels = (request.POST.get('labels', None) == 'true')
 
+    provider = get_treenodes_classic
+
+    return node_list_tuples_query(request.user, params, project_id, atnid,
+                                  includeLabels, provider)
+
+
+def get_treenodes_classic(cursor, params):
+    # Fetch treenodes which are in the bounding box,
+    # which in z it includes the full thickess of the prior section
+    # and of the next section (therefore the '<' and not '<=' for zhigh)
+    cursor.execute('''
+    SELECT
+        t1.id,
+        t1.parent_id,
+        t1.location_x,
+        t1.location_y,
+        t1.location_z,
+        t1.confidence,
+        t1.radius,
+        t1.skeleton_id,
+        t1.user_id,
+        t2.id,
+        t2.parent_id,
+        t2.location_x,
+        t2.location_y,
+        t2.location_z,
+        t2.confidence,
+        t2.radius,
+        t2.skeleton_id,
+        t2.user_id
+    FROM treenode t1
+            INNER JOIN treenode t2 ON
+            (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
+            OR (t1.parent_id IS NULL AND t1.id = t2.id))
+    WHERE
+            t1.location_z >= %(z1)s
+        AND t1.location_z <  %(z2)s
+        AND t1.location_x >= %(left)s
+        AND t1.location_x <  %(right)s
+        AND t1.location_y >= %(top)s
+        AND t1.location_y <  %(bottom)s
+        AND t1.project_id = %(project_id)s
+    LIMIT %(limit)s
+    ''', params)
+
+    return cursor.fetchall()
+
+
+def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_provider):
     try:
         cursor = connection.cursor()
 
@@ -62,50 +112,12 @@ def node_list_tuples(request, project_id=None):
 
         response_on_error = 'Failed to query treenodes'
 
-        is_superuser = request.user.is_superuser
-        user_id = request.user.id
+        is_superuser = user.is_superuser
+        user_id = user.id
 
         # Set of other user_id for which the request user has editing rights on.
         # For a superuser, the domain is all users, and implicit.
         domain = None if is_superuser else user_domain(cursor, user_id)
-
-        # Fetch treenodes which are in the bounding box,
-        # which in z it includes the full thickess of the prior section
-        # and of the next section (therefore the '<' and not '<=' for zhigh)
-        cursor.execute('''
-        SELECT
-            t1.id,
-            t1.parent_id,
-            t1.location_x,
-            t1.location_y,
-            t1.location_z,
-            t1.confidence,
-            t1.radius,
-            t1.skeleton_id,
-            t1.user_id,
-            t2.id,
-            t2.parent_id,
-            t2.location_x,
-            t2.location_y,
-            t2.location_z,
-            t2.confidence,
-            t2.radius,
-            t2.skeleton_id,
-            t2.user_id
-        FROM treenode t1
-             INNER JOIN treenode t2 ON
-               (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
-                OR (t1.parent_id IS NULL AND t1.id = t2.id))
-        WHERE
-                t1.location_z >= %(z1)s
-            AND t1.location_z <  %(z2)s
-            AND t1.location_x >= %(left)s
-            AND t1.location_x <  %(right)s
-            AND t1.location_y >= %(top)s
-            AND t1.location_y <  %(bottom)s
-            AND t1.project_id = %(project_id)s
-        LIMIT %(limit)s
-        ''', params)
 
         # Above, notice that the join is done for:
         # 1. A parent-child or child-parent pair (where the first one is in section z)
@@ -120,7 +132,7 @@ def node_list_tuples(request, project_id=None):
         treenode_ids = set()
 
         n_retrieved_nodes = 0 # at one per row, only those within the section
-        for row in cursor.fetchall():
+        for row in tn_provider(cursor, params):
             n_retrieved_nodes += 1
             t1id = row[0]
             if t1id not in treenode_ids:
@@ -262,7 +274,7 @@ def node_list_tuples(request, project_id=None):
                 treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
 
         labels = defaultdict(list)
-        if 'true' == request.POST.get('labels', None):
+        if includeLabels:
             z1 = params['z1']
             z2 = params['z2']
             # Collect treenodes visible in the current section

@@ -224,8 +224,13 @@ var ProjectStatistics = new function()
     var x = 90, y = 100, radius = 80, height = 200;
     // Create basic pie chart without any labels
     var rpie = Raphael(chart_name, '100%', height);
+    var colorizer = d3.scale.category10();
+    // WARNING: Raphael will change the data.values array in place, shortening it
+    // and replacing the long tail of low values to a single entry that
+    // is annotated with the boolean flag "others".
+    // The parameter maxSlices should be accepted but it is ignored.
     var pie = rpie.piechart(x, y, radius, data.values, {
-        colors: ['red', 'blue', 'green', 'yellow', 'orange', 'black', 'gray'],
+        colors: data.values.map(function(v, i) { return colorizer(i);}),
     });
 
     /* Manually draw labels, because the legend can easily grow to large and

@@ -56,6 +56,7 @@ libraries_js = {
                  'helvetiker_regular.typeface.js',
                  'renderer/Projector.js', 'renderer/SVGRenderer.js'],
     'threex': ['*.js'],
+    'pixi.js': ['*.js'],
     'cytoscapejs': ['cytoscape.js'],
     'jsnetworkx': ['*.js'],
     'filesaver': ['*.js'],

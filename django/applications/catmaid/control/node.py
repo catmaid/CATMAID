@@ -53,7 +53,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['project_id'] = project_id
     includeLabels = (request.POST.get('labels', None) == 'true')
 
-    provider = get_treenodes_classic
+    provider = get_treenodes_postgis
 
     return node_list_tuples_query(request.user, params, project_id, atnid,
                                   includeLabels, provider)
@@ -95,6 +95,52 @@ def get_treenodes_classic(cursor, params):
         AND t1.location_y >= %(top)s
         AND t1.location_y <  %(bottom)s
         AND t1.project_id = %(project_id)s
+    LIMIT %(limit)s
+    ''', params)
+
+    return cursor.fetchall()
+
+
+def get_treenodes_postgis(cursor, params):
+    """ Selects all treenodes of which links to other treenodes intersect with
+    the request bounding box.
+    """
+
+    # Fetch treenodes which are in the bounding box, which in z it includes the
+    # full thickess of the prior section and of the next section (therefore the
+    # '<' and not '<=' for zhigh)
+    cursor.execute('''
+    SELECT
+        t1.id,
+        t1.parent_id,
+        t1.location_x,
+        t1.location_y,
+        t1.location_z,
+        t1.confidence,
+        t1.radius,
+        t1.skeleton_id,
+        t1.user_id,
+        t2.id,
+        t2.parent_id,
+        t2.location_x,
+        t2.location_y,
+        t2.location_z,
+        t2.confidence,
+        t2.radius,
+        t2.skeleton_id,
+        t2.user_id
+    FROM treenode t1 INNER JOIN treenode t2 ON (
+               (t1.id = t2.parent_id OR t1.parent_id = t2.id)
+            OR (t1.parent_id IS NULL AND t1.id = t2.id))
+    WHERE
+            t1.project_id = %(project_id)s
+        AND t1.id IN (
+            SELECT
+                te.id
+            FROM treenode_edge te
+            WHERE
+                te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
+                                         %(right)s %(top)s %(z1)s)')
     LIMIT %(limit)s
     ''', params)
 

@@ -34,8 +34,10 @@ d3.selection.prototype.show = function () {
 };
 
 /** Namespace where SVG element instances are created, cached and edited. */
-var SkeletonElements = function(paper)
+var SkeletonElements = function(paper, defSuffix)
 {
+  // Allow a suffix for SVG definition IDs
+  this.USE_HREF_SUFFIX = defSuffix || '';
   // Create definitions for reused elements and markers
   var defs = paper.append('defs');
 
@@ -48,7 +50,7 @@ var SkeletonElements = function(paper)
     SkeletonElements.prototype.ConnectorNode.prototype,
     SkeletonElements.prototype.ArrowLine.prototype,
   ];
-  concreteElements.forEach(function (klass) {klass.initDefs(defs);});
+  concreteElements.forEach(function (klass) {klass.initDefs(defs, defSuffix);});
 
   // Create element groups to enforce drawing order: lines, arrows, nodes, labels
   paper.append('g').classed('lines', true);
@@ -115,7 +117,7 @@ var SkeletonElements = function(paper)
     return function(connector, node, confidence, is_pre) {
       var arrow = arrowPool.next();
       if (!arrow) {
-        arrow = new ArrowLine(paper);
+        arrow = new ArrowLine(paper, defSuffix);
         arrowPool.push(arrow);
       }
       arrow.init(connector, node, confidence, is_pre);
@@ -142,7 +144,7 @@ var SkeletonElements = function(paper)
     if (node) {
       node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
     } else {
-      node = new this.Node(paper, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+      node = new this.Node(paper, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit, defSuffix);
       this.cache.nodePool.push(node);
     }
     return node;
@@ -163,7 +165,7 @@ var SkeletonElements = function(paper)
     if (connector) {
       connector.reInit(id, x, y, z, zdiff, confidence, can_edit);
     } else {
-      connector = new this.ConnectorNode(paper, id, x, y, z, zdiff, confidence, can_edit);
+      connector = new this.ConnectorNode(paper, id, x, y, z, zdiff, confidence, can_edit, defSuffix);
       connector.createArrow = this.createArrow;
       this.cache.connectorPool.push(connector);
     }
@@ -254,7 +256,7 @@ SkeletonElements.prototype.NodePrototype = new (function() {
     if (!this.c) {
       // create a circle object
       this.c = this.paper.select('.nodes').append('use')
-                          .attr('xlink:href', '#' + this.USE_HREF)
+                          .attr('xlink:href', '#' + this.USE_HREF + this.hrefSuffix)
                           .attr('x', this.x)
                           .attr('y', this.y)
                           .classed('overlay-node', true);
@@ -303,9 +305,9 @@ SkeletonElements.prototype.NodePrototype = new (function() {
     this.circleDef.attr('r', this.NODE_RADIUS*scale);
   };
 
-  this.initDefs = function(defs) {
+  this.initDefs = function(defs, hrefSuffix) {
     this.circleDef = defs.append('circle').attr({
-      id: this.USE_HREF,
+      id: this.USE_HREF + (hrefSuffix || ''),
       cx: 0,
       cy: 0,
       r: this.NODE_RADIUS
@@ -647,7 +649,8 @@ SkeletonElements.prototype.Node = function(
   zdiff,      // the difference in z from the current slice
   confidence, // confidence with the parent
   skeleton_id,// the id of the skeleton this node is an element of
-  can_edit)   // whether the user can edit (move, remove) this node
+  can_edit,   // whether the user can edit (move, remove) this node
+  hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
 {
   this.paper = paper;
   this.id = id;
@@ -667,6 +670,7 @@ SkeletonElements.prototype.Node = function(
   this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
   this.c = null; // The SVG circle for drawing
   this.line = null; // The SVG line element that represents an edge between nodes
+  this.hrefSuffix = hrefSuffix;
 };
 
 SkeletonElements.prototype.Node.prototype = new SkeletonElements.prototype.AbstractTreenode();
@@ -810,7 +814,8 @@ SkeletonElements.prototype.ConnectorNode = function(
   z,          // the z coordinate in oriented project coordinates
   zdiff,      // the difference in Z from the current slice in stack space
   confidence, // (TODO: UNUSED)
-  can_edit) // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
+  can_edit,   // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
+  hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
 {
   this.paper = paper;
   this.id = id;
@@ -827,6 +832,7 @@ SkeletonElements.prototype.ConnectorNode = function(
   this.c = null; // The SVG circle for drawing
   this.preLines = null; // Array of ArrowLine to the presynaptic nodes
   this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
+  this.hrefSuffix = hrefSuffix;
 };
 
 SkeletonElements.prototype.ConnectorNode.prototype = new SkeletonElements.prototype.AbstractConnectorNode();
@@ -1069,7 +1075,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
 })();
 
 
-SkeletonElements.prototype.ArrowLine = function(paper) {
+SkeletonElements.prototype.ArrowLine = function(paper, hrefSuffix) {
   this.line = paper.select('.arrows').append('line');
   // Because the transparent stroke trick will not work for lines, a separate,
   // larger stroked, transparent line is needed to catch mouse events. In SVG2
@@ -1077,6 +1083,7 @@ SkeletonElements.prototype.ArrowLine = function(paper) {
   this.catcher = paper.select('.arrows').append('line');
   this.catcher.on('mousedown', this.mousedown);
   this.confidence_text = null;
+  this.hrefSuffix = hrefSuffix;
 };
 
 SkeletonElements.prototype.ArrowLine.prototype = new (function() {
@@ -1144,7 +1151,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     // Adjust
     this.line.attr({stroke: stroke_color,
                     'stroke-width': this.EDGE_WIDTH,
-                    'marker-end': is_pre ? 'url(#markerArrowPre)' : 'url(#markerArrowPost)'});
+                    'marker-end': 'url(' + (is_pre ? '#markerArrowPre' : '#markerArrowPost') + this.hrefSuffix + ')'});
     this.catcher.attr({stroke: stroke_color, // Though invisible, must be set for mouse events to trigger
                        'stroke-opacity': 0,
                        'stroke-width': this.EDGE_WIDTH*this.CATCH_SCALE });
@@ -1205,7 +1212,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     });
   };
 
-  this.initDefs = function(defs) {
+  this.initDefs = function(defs, hrefSuffix) {
     // Note that in SVG2 the fill could be set to 'context-stroke' and would
     // work appropriately as an end marker for both pre- and post- connectors.
     // However, this SVG2 feature is not supported in current browsers, so two
@@ -1217,7 +1224,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     var colors = [this.POST_COLOR, this.PRE_COLOR];
     this.markerDefs.forEach(function (m, i) {
         m.attr({
-        id: ids[i],
+        id: ids[i] + (hrefSuffix || ''),
         viewBox: '0 0 10 10',
         markerWidth: markerSize[0],
         markerHeight: markerSize[1],

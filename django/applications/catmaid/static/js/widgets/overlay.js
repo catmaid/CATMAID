@@ -293,7 +293,7 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
 // If the equal ratio between stack, SVG viewBox and overlay DIV size is not
 // maintained, this additional attribute would be necessary:
 // this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
-  this.graphics = new SkeletonElements(this.paper);
+  this.graphics = new SkeletonElements(this.paper, stack.getId());
 
   // Listen to change and delete events of skeletons
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,

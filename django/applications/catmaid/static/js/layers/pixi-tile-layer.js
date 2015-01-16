@@ -78,8 +78,6 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
   this.batchContainer.scale.x = tileInfo.mag;
   this.batchContainer.scale.y = tileInfo.mag;
 
-  var self = this;
-
   // Update tiles.
   for (var i = this._tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows) {
     var r = tileInfo.first_row + ti;
@@ -98,24 +96,19 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
           tile.visible = false;
           var loader = new PIXI.ImageLoader(source);
           this._tilesBuffer[i][j] = loader;
-          loader.on('loaded', (function (i, j) {
-            // Only update texture if the loaded texture is still the one set
-            // in _tilesBuffer. The intended texture may have changed while this
-            // one was still loading.
-            if (self._tilesBuffer[i][j] == this) {
-              self._tiles[i][j].setTexture(this.texture);
-              self._tiles[i][j].visible = true;
-              self.renderer.render(self.stage);
-              self._tilesBuffer[i][j] = false;
-            }
-          }).bind(loader, i, j));
+          loader.on('loaded', this.checkBuffer.bind(this));
           loader.load();
         } else tile.visible = true;
       } else tile.visible = false;
     }
   }
 
-  this.renderer.render(this.stage);
+  if (this.stack.z === this.stack.old_z &&
+      tileInfo.zoom === Math.max(0, Math.ceil(this.stack.old_s)))
+    this.renderer.render(this.stage);
+
+  if (this.isBuffering())
+    this._swapBuffersTimeout = window.setTimeout(this.swapBuffer.bind(this), 3000);
 
   if (typeof completionCallback !== 'undefined') {
     completionCallback();
@@ -126,4 +119,29 @@ PixiTileLayer.prototype.resize = function (width, height) {
   if (width === this.renderer.width && height === this.renderer.height) return;
   this.renderer.resize(width, height);
   TileLayer.prototype.resize.call(this, width, height);
+};
+
+PixiTileLayer.prototype.checkBuffer = function () {
+  if (!this.isBuffering()) this.swapBuffer();
+};
+
+PixiTileLayer.prototype.isBuffering = function () {
+  return this._tilesBuffer.some(function (r) { return r.some( function (c) {
+      return c && !c.texture.valid; }); });
+};
+
+PixiTileLayer.prototype.swapBuffer = function () {
+  window.clearTimeout(this._swapBuffersTimeout);
+
+  for (var i = 0; i < this._tiles.length; ++i) {
+    for (var j = 0; j < this._tiles[0].length; ++j) {
+      if (this._tilesBuffer[i][j]) {
+        this._tiles[i][j].setTexture(this._tilesBuffer[i][j].texture);
+        this._tiles[i][j].visible = true;
+        this._tilesBuffer[i][j] = false;
+      }
+    }
+  }
+
+  this.renderer.render(this.stage);
 };

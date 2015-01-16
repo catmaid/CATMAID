@@ -39,3 +39,8 @@ div.sliceView div.sliceSVGOverlay
 svg.screen-scale line, svg.screen-scale marker, svg.screen-scale circle {
   vector-effect: non-scaling-stroke;
 }
+
+svg .label:hover {
+  /* display and visibility are cheaper than opacity, but cause flicker. */
+  opacity: 0;
+}

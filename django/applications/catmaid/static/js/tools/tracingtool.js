@@ -121,7 +121,7 @@ function TracingTool()
     if (tracingLayer && stack) {
       if (stack !== parentStack) {
         // If the tracing layer exists and it belongs to a different stack, replace it
-        stack.removeLayer( tracingLayer );
+        stack.removeLayer( "TracingLayer" );
         createTracingLayer( parentStack );
       } else {
         reactivateBindings();

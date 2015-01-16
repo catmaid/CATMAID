@@ -37,11 +37,14 @@ PixiTileLayer.prototype._initTiles = function (rows, cols) {
 
   for (var i = 0; i < rows; ++i) {
     this._tiles[i] = [];
+    this._tilesBuffer[i] = [];
     for (var j = 0; j < cols; ++j) {
       this._tiles[i][j] = new PIXI.Sprite(emptyTex);
       this.batchContainer.addChild(this._tiles[i][j]);
       this._tiles[i][j].position.x = j * this.tileWidth;
       this._tiles[i][j].position.y = i * this.tileHeight;
+
+      this._tilesBuffer[i][j] = false;
     }
   }
 };
@@ -75,6 +78,8 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
   this.batchContainer.scale.x = tileInfo.mag;
   this.batchContainer.scale.y = tileInfo.mag;
 
+  var self = this;
+
   // Update tiles.
   for (var i = this._tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows) {
     var r = tileInfo.first_row + ti;
@@ -89,13 +94,24 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
             tileBaseName, this.tileWidth, this.tileHeight,
             c, r, tileInfo.zoom);
 
-        if (source != tile.texture.baseTexture.imageUrl)
-          tile.setTexture(PIXI.Texture.fromImage(source));
-
-        tile.visible = true;
-      } else {
-        tile.visible = false;
-      }
+        if (source != tile.texture.baseTexture.imageUrl) {
+          tile.visible = false;
+          var loader = new PIXI.ImageLoader(source);
+          this._tilesBuffer[i][j] = loader;
+          loader.on('loaded', (function (i, j) {
+            // Only update texture if the loaded texture is still the one set
+            // in _tilesBuffer. The intended texture may have changed while this
+            // one was still loading.
+            if (self._tilesBuffer[i][j] == this) {
+              self._tiles[i][j].setTexture(this.texture);
+              self._tiles[i][j].visible = true;
+              self.renderer.render(self.stage);
+              self._tilesBuffer[i][j] = false;
+            }
+          }).bind(loader, i, j));
+          loader.load();
+        } else tile.visible = true;
+      } else tile.visible = false;
     }
   }
 

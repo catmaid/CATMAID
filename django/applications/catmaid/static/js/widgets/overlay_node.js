@@ -51,6 +51,12 @@ var SkeletonElements = function(paper)
   ];
   concreteElements.forEach(function (klass) {klass.initDefs(defs);});
 
+  // Create element groups to enforce drawing order: lines, arrows, nodes, labels
+  paper.append('g').classed('lines', true);
+  paper.append('g').classed('arrows', true);
+  paper.append('g').classed('nodes', true);
+  paper.append('g').classed('labels', true);
+
   this.cache = {
     nodePool : new this.ElementPool(100),
     connectorPool : new this.ElementPool(20),
@@ -248,7 +254,7 @@ SkeletonElements.prototype.NodePrototype = new (function() {
     // c may already exist if the node is being reused
     if (!this.c) {
       // create a circle object
-      this.c = this.paper.append('use')
+      this.c = this.paper.select('.nodes').append('use')
                           .attr('xlink:href', '#' + this.USE_HREF)
                           .attr('x', this.x)
                           .attr('y', this.y)
@@ -378,7 +384,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     var lineColor = this.colorFromZDiff();
 
     if (!this.line) {
-      this.line = this.paper.append('line');
+      this.line = this.paper.select('.lines').append('line');
       this.line.toBack();
     }
 
@@ -529,7 +535,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     var self = this;
     // Create a raphael circle object that represents the surrounding circle
     var color = "rgb(255,255,0)";
-    var c = this.paper.append('circle')
+    var c = this.paper.select('.nodes').append('circle')
       .attr({
         cx: this.x,
         cy: this.y,
@@ -539,7 +545,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
         'stroke-width': 1.5,
       });
     // Create an adhoc mouse catcher
-    var mc = this.paper.append('circle')
+    var mc = this.paper.select('.nodes').append('circle')
       .attr({
         cx: this.x,
         cy: this.y,
@@ -1018,11 +1024,11 @@ SkeletonElements.prototype.mouseEventManager = new (function()
 
 
 SkeletonElements.prototype.ArrowLine = function(paper) {
-  this.line = paper.append('line');
+  this.line = paper.select('.arrows').append('line');
   // Because the transparent stroke trick will not work for lines, a separate,
   // larger stroked, transparent line is needed to catch mouse events. In SVG2
   // this can be achieved on the original line with a marker-segment.
-  this.catcher = paper.append('line');
+  this.catcher = paper.select('arrows').append('line');
   this.catcher.on('mousedown', this.mousedown);
   this.confidence_text = null;
 };

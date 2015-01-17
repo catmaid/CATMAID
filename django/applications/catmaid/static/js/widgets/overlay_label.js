@@ -24,7 +24,7 @@ text) {
       textBaseline = 0.2;
 
   // Create an SVG group for each label.
-  var c = paper.append('g').classed('label', true);
+  var c = paper.select('.labels').append('g').classed('label', true);
   var t = c.append('text').attr({
           x: xg,
           y: yg,

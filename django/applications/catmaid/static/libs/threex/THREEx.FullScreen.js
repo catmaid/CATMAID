@@ -49,7 +49,10 @@ THREEx.FullScreen.request	= function(element)
 {
 	element	= element	|| document.body;
 	if( this._hasWebkitFullScreen ){
-		element.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);
+		// Do not request keyboard input for Safari, because it causes
+		// fullscreen to silently fail. See:
+		// http://stackoverflow.com/questions/8427413
+		element.webkitRequestFullScreen(/Safari/.test(navigator.userAgent) ? undefined : Element.ALLOW_KEYBOARD_INPUT);
 	}else if( this._hasMozFullScreen ){
 		element.mozRequestFullScreen();
 	}else{

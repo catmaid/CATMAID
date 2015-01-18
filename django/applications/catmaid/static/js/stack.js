@@ -810,7 +810,8 @@ function Stack(
 
 	// Ask for confirmation before closing the stack via the close button
 	$(view).find('.stackClose').get(0).onmousedown = function (e) {
-		if (confirm('Closing this window will exit the project. Proceed?')) stackWindow.close(e);
+		if (project.getStacks().length > 1 || confirm('Closing this window will exit the project. Proceed?'))
+			stackWindow.close(e);
 		else e.stopPropagation();
 	};
 

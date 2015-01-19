@@ -1534,7 +1534,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
             delete SkeletonAnnotations.init_active_node_id;
           }
 
-          stack.redraw();
+          self.redraw();
           if (typeof callback !== "undefined") {
             callback();
           }

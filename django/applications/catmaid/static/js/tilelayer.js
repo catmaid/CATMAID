@@ -27,24 +27,6 @@ function getTileBaseName( pixelPos )
 	return dir;
 }
 
-function getTileBaseName3D( stack, pixelPos, adjacent )
-{
-  if(!adjacent) {
-    adjacent = 0;
-  }
-  var z = pixelPos[ 2 ] + adjacent;
-  if( z < 0 ) {
-    z = 0;
-  }
-  if( z > stack.slices[stack.slices.length-1] ) {
-    z = stack.slices[stack.slices.length-1];
-  }
-  if( $.inArray(z, stack.slices) === -1 ) {
-    return null;
-  }
-  return z + "/";
-}
-
 /**
  * 
  */

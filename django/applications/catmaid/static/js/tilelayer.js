@@ -368,7 +368,8 @@ function TileLayer(
 	{
 		var rows = Math.floor( height / tileHeight ) + 2;
 		var cols = Math.floor( width / tileWidth ) + 2;
-		initTiles( rows, cols );
+		if (tiles.length === 0 || tiles.length !== rows || tiles[0].length !== cols)
+			initTiles( rows, cols );
 		self.redraw();
 		return;
 	};

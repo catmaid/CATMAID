@@ -1752,8 +1752,9 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
           var choice = dialog.appendChoice("Apply: ", "treenode-edit-radius-scope",
             ['Only this node', 'From this node to the next branch or end node (included)',
              'From this node to the previous branch node or root (excluded)',
+             'From this node to the previous node with a defined radius (excluded)',
              'From this node to root (included)', 'All nodes'],
-            [0, 1, 2, 3, 4],
+            [0, 1, 2, 3, 4, 5],
             self.editRadius_defaultValue);
           dialog.onOK = function() {
             var radius = parseFloat(input.value);

@@ -315,7 +315,7 @@ def update_radius(request, project_id=None, treenode_id=None):
         return HttpResponse(json.dumps({'success': True}))
 
     cursor.execute('''
-    SELECT id, parent_id
+    SELECT id, parent_id, radius
     FROM treenode
     WHERE skeleton_id = (SELECT t.skeleton_id FROM treenode t WHERE id = %s)
     ''' % treenode_id)
@@ -356,6 +356,23 @@ def update_radius(request, project_id=None, treenode_id=None):
         return HttpResponse(json.dumps({'success': True}))
 
     if 3 == option:
+        # Update radius from treenode_id to prev node with radius (excluded)
+        parents = {}
+        for row in cursor.fetchall():
+            if row[2] < 0: # DB default radius is 0 but is initialized to -1 elsewhere
+                parents[row[0]] = row[1]
+
+        include = [treenode_id]
+        parent = parents[treenode_id]
+        while parent in parents:
+            include.append(parent)
+            parent = parents[parent]
+
+        Treenode.objects.filter(pk__in=include).update(editor=request.user,
+                                                       radius=radius)
+        return HttpResponse(json.dumps({'success': True}))
+
+    if 4 == option:
         # Update radius from treenode_id to root (included)
         parents = {row[0]: row[1] for row in cursor.fetchall()}
 
@@ -369,7 +386,7 @@ def update_radius(request, project_id=None, treenode_id=None):
                                                        radius=radius)
         return HttpResponse(json.dumps({'success': True}))
 
-    if 4 == option:
+    if 5 == option:
         # Update radius of all nodes (in a single query)
         Treenode.objects \
             .filter(skeleton_id=Treenode.objects \

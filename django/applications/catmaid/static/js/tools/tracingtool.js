@@ -52,19 +52,21 @@ function TracingTool()
     }
   };
 
+  /**
+   * Return a unique name for the tracing layer of a given stack.
+   */
+  var getTracingLayerName = function(stack)
+  {
+    return "TracingLayer" + stack.id;
+  };
+
   var createTracingLayer = function( parentStack )
   {
-    stack = parentStack;
-    tracingLayer = new TracingLayer( parentStack );
-    self.prototype.setMouseCatcher( tracingLayer.svgOverlay.view );
-    parentStack.addLayer( "TracingLayer", tracingLayer );
+    var layer = new TracingLayer( parentStack );
 
-    // Call register AFTER changing the mouseCatcher
-    self.prototype.register( parentStack, "edit_button_trace" );
+    parentStack.addLayer( getTracingLayerName(parentStack), layer );
 
-    // NOW set the mode TODO cleanup this initialization problem
-    SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
-    tracingLayer.svgOverlay.updateNodes();
+    activateStack( parentStack, layer );
 
     // view is the mouseCatcher now
     var view = tracingLayer.svgOverlay.view;
@@ -96,13 +98,29 @@ function TracingTool()
 
     // Insert a text div for the neuron name in the canvas window title bar
     var neuronnameDisplay = document.createElement( "p" );
+    neuronnameDisplay.id = "neuronName" + stack.getId();
     neuronnameDisplay.className = "neuronname";
     var spanName = document.createElement( "span" );
-    spanName.id = "neuronName" + stack.getId();
     spanName.appendChild( document.createTextNode( "" ) );
     neuronnameDisplay.appendChild( spanName );
     stack.getWindow().getFrame().appendChild( neuronnameDisplay );
     SkeletonAnnotations.setNeuronNameInTopbar(stack.getId(), SkeletonAnnotations.getActiveSkeletonId());
+
+    return layer;
+  };
+
+  function activateStack(newStack, layer)
+  {
+    stack = newStack;
+    tracingLayer = layer;
+    self.prototype.setMouseCatcher( tracingLayer.svgOverlay.view );
+
+    // Call register AFTER changing the mouseCatcher
+    self.prototype.register( stack, "edit_button_trace" );
+
+    // NOW set the mode TODO cleanup this initialization problem
+    SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
+    tracingLayer.svgOverlay.updateNodes();
   };
 
   /**
@@ -120,9 +138,15 @@ function TracingTool()
 
     if (tracingLayer && stack) {
       if (stack !== parentStack) {
-        // If the tracing layer exists and it belongs to a different stack, replace it
-        stack.removeLayer( "TracingLayer" );
-        createTracingLayer( parentStack );
+        // If the tracing layer exists and it belongs to a different stack,
+        // replace it.
+        var existingLayer = parentStack.getLayer(getTracingLayerName(parentStack));
+        if (existingLayer) {
+          activateStack(parentStack, existingLayer);
+        } else {
+          //stack.removeLayer( "TracingLayer" );
+          createTracingLayer(parentStack);
+        }
       } else {
         reactivateBindings();
       }
@@ -176,19 +200,30 @@ function TracingTool()
    */
   this.destroy = function()
   {
-    // Remove div with the neuron's name
-    $("#neuronname" + stack.getId()).remove();
+    project.getStacks().forEach(function(stack) {
+      // Remove div with the neuron's name
+      $("#neuronName" + stack.id).remove();
 
-    // Synchronize data with database
-    tracingLayer.svgOverlay.updateNodeCoordinatesinDB();
 
-    // the prototype destroy calls the prototype's unregister, not self.unregister
-    // do it before calling the prototype destroy that sets stack to null
-    self.prototype.stack.removeLayer( "TracingLayer" );
+      var layerName = getTracingLayerName(stack);
+      var layer = stack.getLayer(layerName);
+      if (layer) {
+        // Synchronize data with database
+        layer.svgOverlay.updateNodeCoordinatesinDB();
+        // Remove layer from stack
+        stack.removeLayer(layerName);
+
+        // the prototype destroy calls the prototype's unregister, not self.unregister
+        // do it before calling the prototype destroy that sets stack to null
+        // TODO: remove all skeletons from staging area
+        layer.svgOverlay.destroy();
+
+      }
+    });
+
     self.prototype.destroy( "edit_button_trace" );
     $( "#tracingbuttons" ).remove();
-    // TODO: remove all skeletons from staging area
-    tracingLayer.svgOverlay.destroy();
+
     //
     for (var b in bindings) {
       if (bindings.hasOwnProperty(b)) {

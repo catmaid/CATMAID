@@ -371,7 +371,7 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
 SkeletonAnnotations.SVGOverlay.prototype._instances = {};
 
 SkeletonAnnotations.SVGOverlay.prototype.register = function (stack) {
-  this._instances[stack] = this;
+  this._instances[stack.id] = this;
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.unregister = function () {

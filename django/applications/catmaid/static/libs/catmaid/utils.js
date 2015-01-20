@@ -652,6 +652,18 @@ ArborParser.prototype.synapses = function(rows) {
   return this;
 };
 
+/** Depends on having called this.synapses before to populate the maps. */
+ArborParser.prototype.createSynapseMap = function() {
+  var outputs = this.outputs;
+  return Object.keys(this.outputs).reduce(function(m, node) {
+    var no = outputs[node],
+        ni = m[node];
+    if (ni) m[node] = ni + no;
+      else m[node] = no;
+      return m;
+  }, $.extend({}, this.inputs));
+};
+
 /** Replace in this.arbor the functions defined in the fnNames array by a function
  * that returns a cached version of their corresponding return values.
  * Order matters: later functions in the fnNames array will already be using

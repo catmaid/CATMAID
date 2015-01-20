@@ -1967,6 +1967,140 @@ class ViewPageTests(TestCase):
         expected_result = {'skeleton_id': 235, 'neuron_id': 233, 'skeleton_name': 'skeleton 235', 'neuron_name': 'branched neuron'}
         self.assertEqual(expected_result, parsed_response)
 
+    def assertTreenodeHasRadius(self, treenode_id, radius):
+        """Helper function for radius update tests."""
+        treenode = Treenode.objects.get(id=treenode_id)
+        self.assertEqual(radius, treenode.radius,
+                'Treenode %d has radius %s not %s' % (treenode_id, treenode.radius, radius))
+
+    def test_update_treenode_radius_single_node(self):
+        self.fake_authentication()
+
+        treenode_id = 257
+        new_r = 5
+        old_r = -1
+        response = self.client.post(
+                '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
+                {'radius': new_r, 'option': 0})
+        self.assertEqual(response.status_code, 200)
+
+        expected = [(259, old_r), (257, new_r), (255, old_r)]
+        for x in expected:
+            self.assertTreenodeHasRadius(*x)
+
+    def test_update_treenode_radius_next_branch(self):
+        self.fake_authentication()
+
+        # Test to end node
+        treenode_id = 257
+        new_r = 5
+        old_r = -1
+        response = self.client.post(
+                '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
+                {'radius': new_r, 'option': 1})
+        self.assertEqual(response.status_code, 200)
+
+        expected = [(261, new_r), (259, new_r), (257, new_r),
+                    (255, old_r), (253, old_r)]
+        for x in expected:
+            self.assertTreenodeHasRadius(*x)
+
+        # Test to branch node
+        treenode_id = 263
+        response = self.client.post(
+                '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
+                {'radius': new_r, 'option': 1})
+        self.assertEqual(response.status_code, 200)
+
+        expected = [(253, old_r), (263, new_r), (265, new_r),
+                    (269, old_r), (267, old_r)]
+        for x in expected:
+            self.assertTreenodeHasRadius(*x)
+
+    def test_update_treenode_radius_prev_branch(self):
+        self.fake_authentication()
+
+        # Test to branch node
+        treenode_id = 257
+        new_r = 5
+        old_r = -1
+        response = self.client.post(
+                '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
+                {'radius': new_r, 'option': 2})
+        self.assertEqual(response.status_code, 200)
+
+        expected = [(261, old_r), (259, old_r), (257, new_r),
+                    (255, new_r), (253, old_r)]
+        for x in expected:
+            self.assertTreenodeHasRadius(*x)
+
+        # Test to root node
+        treenode_id = 253
+        response = self.client.post(
+                '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
+                {'radius': new_r, 'option': 2})
+        self.assertEqual(response.status_code, 200)
+
+        expected = [(255, new_r), (263, old_r), (253, new_r),
+                    (251, new_r), (249, new_r), (247, new_r),
+                    (247, new_r), (245, new_r), (243, new_r),
+                    (241, new_r), (239, new_r), (237, old_r)]
+        for x in expected:
+            self.assertTreenodeHasRadius(*x)
+
+    def test_update_treenode_radius_prev_defined_node(self):
+        self.fake_authentication()
+
+        # Set radius at ancestor node
+        ancestor = Treenode.objects.get(id=251)
+        ancestor.radius = 7
+        ancestor.save()
+
+        treenode_id = 257
+        new_r = 5
+        old_r = -1
+        response = self.client.post(
+                '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
+                {'radius': new_r, 'option': 3})
+        self.assertEqual(response.status_code, 200)
+
+        expected = [(261, old_r), (259, old_r), (257, new_r),
+                    (255, new_r), (253, new_r), (251, 7)]
+
+    def test_update_treenode_radius_to_root(self):
+        self.fake_authentication()
+
+        treenode_id = 257
+        new_r = 5
+        old_r = -1
+        response = self.client.post(
+                '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
+                {'radius': new_r, 'option': 4})
+        self.assertEqual(response.status_code, 200)
+
+        expected = [(261, old_r), (259, old_r), (257, new_r),
+                    (255, new_r), (253, new_r), (263, old_r),
+                    (251, new_r), (249, new_r), (247, new_r),
+                    (247, new_r), (245, new_r), (243, new_r),
+                    (241, new_r), (239, new_r), (237, new_r)]
+        for x in expected:
+            self.assertTreenodeHasRadius(*x)
+
+    def test_update_treenode_radius_all_nodes(self):
+        self.fake_authentication()
+
+        treenode_id = 2417
+        new_r = 5
+        old_r = -1
+        response = self.client.post(
+                '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
+                {'radius': new_r, 'option': 5})
+        self.assertEqual(response.status_code, 200)
+
+        expected = [(2419, new_r), (2417, new_r), (2415, new_r), (2423, new_r)]
+        for x in expected:
+            self.assertTreenodeHasRadius(*x)
+
     def test_read_message_error(self):
         self.fake_authentication()
         message_id = 5050

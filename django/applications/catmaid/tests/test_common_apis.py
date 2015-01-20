@@ -2056,6 +2056,7 @@ class ViewPageTests(TestCase):
         ancestor.radius = 7
         ancestor.save()
 
+        # Test to previous defined node
         treenode_id = 257
         new_r = 5
         old_r = -1
@@ -2066,6 +2067,20 @@ class ViewPageTests(TestCase):
 
         expected = [(261, old_r), (259, old_r), (257, new_r),
                     (255, new_r), (253, new_r), (251, 7)]
+
+        # Test on node with defined radius (and propagation to root)
+        treenode_id = ancestor.id
+        response = self.client.post(
+                '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
+                {'radius': new_r, 'option': 3})
+        self.assertEqual(response.status_code, 200)
+
+        expected = [(253, new_r), (251, new_r), (249, new_r),
+                    (247, new_r), (247, new_r), (245, new_r),
+                    (243, new_r), (241, new_r), (239, new_r),
+                    (237, new_r)]
+        for x in expected:
+            self.assertTreenodeHasRadius(*x)
 
     def test_update_treenode_radius_to_root(self):
         self.fake_authentication()

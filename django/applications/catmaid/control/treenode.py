@@ -359,7 +359,7 @@ def update_radius(request, project_id=None, treenode_id=None):
         # Update radius from treenode_id to prev node with radius (excluded)
         parents = {}
         for row in cursor.fetchall():
-            if row[2] < 0: # DB default radius is 0 but is initialized to -1 elsewhere
+            if row[2] < 0 or row[0] == treenode_id: # DB default radius is 0 but is initialized to -1 elsewhere
                 parents[row[0]] = row[1]
 
         include = [treenode_id]

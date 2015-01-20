@@ -740,8 +740,6 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       }, $.extend({}, ap.inputs));
       var sc = new SynapseClustering(ap.arbor, ap.positions, synapse_map, mode),
           clusters = sc.clusterMaps(sc.densityHillMap());
-      // TODO the nodes in between clusters get assigned to undefined in SynapseClustering
-      delete clusters[undefined]; // quick fix
       var clusterIDs = Object.keys(clusters);
       // Remove clusters of treenodes that lack synapses
       var synapse_treenodes = Object.keys(synapse_map);

@@ -270,7 +270,7 @@ SynapseClustering.prototype.densityHillMap = function() {
           var distance_to_current = this.distancesToRoot[treenode_id],
               steepest_id;
 
-          for (var k=0, l=neighbors.length, max=Number.MIN_VALUE; k<0; ++k) {
+          for (var k=0, l=neighbors.length, max=Number.MIN_VALUE; k<l; ++k) {
             var id = neighbors[k],
                 m = delta_density[id] / Math.abs(this.distancesToRoot[id] - distance_to_current);
             if (m > max) {
@@ -351,8 +351,6 @@ SynapseClustering.prototype.segregationIndex = function(clusters, outputs, input
   // Count the number of inputs and outputs of each cluster
   var synapses = this.synapses,
       cs = Object.keys(clusters).reduce(function(a, clusterID) {
-    // TODO workaround issue with density_hill_map, which may contain a tiny cluster with 'undefined' as the ID
-    if (undefined === clusterID) return a;
 
     var m = clusters[clusterID].reduce(function(c, nodeID) {
       var n_pre = outputs[nodeID],

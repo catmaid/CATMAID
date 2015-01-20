@@ -3045,8 +3045,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
         clusters = sc.clusterMaps(density_hill_map),
         colorizer = d3.scale.category10(),
         synapse_treenodes = Object.keys(sc.synapses);
-    // Remove bogus cluster - TODO fix this bogus cluster in SynapseClustering
-    delete clusters[undefined];
     // Filter out clusters without synapses
     var clusterIDs = Object.keys(clusters).filter(function(id) {
       var treenodes = clusters[id];

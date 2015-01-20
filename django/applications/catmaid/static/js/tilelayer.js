@@ -196,8 +196,10 @@ function TileLayer(
 			// Adjust last tile index to display to the one intersecting the bottom right
 			// of the field of view. The purpose: to hide images beyond the stack edges.
 			// Notice that we add the panning xd, yd as well (which is already in tile units).
-			LAST_XT = Math.floor((stack.x * stack.scale + stack.viewWidth) / effectiveTileWidth) + xd;
-			LAST_YT = Math.floor((stack.y * stack.scale + stack.viewHeight) / effectiveTileHeight) + yd;
+			LAST_XT = Math.floor((stack.x * stack.scale + stack.viewWidth / 2) / effectiveTileWidth) +
+					(xd > 0 ? xd : 0);
+			LAST_YT = Math.floor((stack.y * stack.scale + stack.viewHeight / 2) / effectiveTileHeight) +
+					(yd > 0 ? yd : 0);
 
 			// Clamp last tile coordinates within the slice edges.
 			LAST_XT = Math.min(LAST_XT, Math.floor((stack.dimension.x * Math.pow(2, -zoom) - 1) / tileWidth));

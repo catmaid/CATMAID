@@ -2958,31 +2958,17 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
           }
           $.unblockUI();
         }).bind(this));
-  } else if ('synapse-clustering' === options.connector_color) {
-
-    if (skeletons.length > 1) $.blockUI();
-
-    try {
-
-      skeletons.forEach(function(skeleton) {
-        skeleton.completeUpdateConnectorColor(options);
-      });
-
-      if (callback) callback();
-    } catch (e) {
-      console.log(e, e.stack);
-      alert(e);
-    }
-
-    $.unblockUI();
-  } else if ('axon-and-dendrite' === options.connector_color) {
+  } else if ('axon-and-dendrite' === options.connector_color || 'synapse-clustering' === options.connector_color) {
     fetchSkeletons(
         skeletons.map(function(skeleton) { return skeleton.id; }),
         function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
         function(skid) { return {}; },
         (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(this),
         function(skid) { growlAlert("Error", "Failed to load synapses for: " + skid); },
-        (function() { this.render(); }).bind(this));
+        (function() {
+          if (callback) callback();
+          this.render();
+        }).bind(this));
   }
 };
 
@@ -3040,7 +3026,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
     }, this);
 
   } else if ('synapse-clustering' === options.connector_color) {
-    var sc = this.createSynapseClustering(options.synapse_clustering_bandwidth),
+    var synapse_map = new ArborParser().synapses(json[1]).createSynapseMap(),
+        sc = new SynapseClustering(this.createArbor(), this.getPositions(), synapse_map, options.synapse_clustering_bandwidth),
         density_hill_map = sc.densityHillMap(),
         clusters = sc.clusterMaps(density_hill_map),
         colorizer = d3.scale.category10(),
@@ -3563,6 +3550,7 @@ WebGLApplication.prototype.updateSynapseClusteringBandwidth = function(value) {
     var skeletons = this.space.content.skeletons;
     this.space.updateConnectorColors(this.options, Object.keys(skeletons).map(function(skid) { return skeletons[skid]; }, this));
   }
+  this.space.render();
 };
 
 WebGLApplication.prototype.updateSkeletonLineWidth = function(value) {

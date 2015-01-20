@@ -347,7 +347,7 @@ def update_radius(request, project_id=None, treenode_id=None):
 
         include = [treenode_id]
         parent = parents[treenode_id]
-        while parent and 1 == len(children[parent]):
+        while parent and parents[parent] and 1 == len(children[parent]):
             include.append(parent)
             parent = parents[parent]
 

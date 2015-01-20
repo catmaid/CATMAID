@@ -731,14 +731,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       }
     } else if (mode > 0) {
       // Synapse clustering: mode is the bandwidth
-      var synapse_map = Object.keys(ap.outputs).reduce(function(m, node) {
-        var no = ap.outputs[node],
-            ni = m[node];
-        if (ni) m[node] = ni + no;
-        else m[node] = no;
-        return m;
-      }, $.extend({}, ap.inputs));
-      var sc = new SynapseClustering(ap.arbor, ap.positions, synapse_map, mode),
+      var synapse_map = ap.createSynapseMap(),
+          sc = new SynapseClustering(ap.arbor, ap.positions, synapse_map, mode),
           clusters = sc.clusterMaps(sc.densityHillMap());
       var clusterIDs = Object.keys(clusters);
       // Remove clusters of treenodes that lack synapses

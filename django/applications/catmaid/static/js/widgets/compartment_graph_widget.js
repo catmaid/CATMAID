@@ -764,23 +764,20 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
       clusterIDs = Object.keys(clusters);
       // Else, create subgraph
       var orders = ap.arbor.nodesOrderFrom(ap.arbor.root),
-          roots = clusterIDs.reduce(function(o, clusterID) {
-            var nodes = Object.keys(clusters[clusterID]),
-                root = null,
-                min = Number.MAX_VALUE;
-            for (var i=0; i<nodes.length; ++i) {
-              var node = nodes[i],
-                  ord = orders[node];
-              if (ord < min) {
-                root = node;
-                min = ord;
-              }
-            }
-            o[root] = clusterID;
-            return o;
-          }, {}),
-          keepers = Object.keys(roots).reduce(function(o, root) { o[root] = true; return o; }, {}),
-          simple = ap.arbor.simplify(keepers);
+          roots = {},
+          keepers = {};
+      clusterIDs.forEach(function(clusterID) {
+        var cluster_nodes_with_synapses = {};
+        Object.keys(clusters[clusterID]).forEach(function(node) {
+          if (synapse_map[node]) {
+            cluster_nodes_with_synapses[node] = true;
+          }
+        });
+        var common = ap.arbor.nearestCommonAncestor(cluster_nodes_with_synapses);
+        roots[common] = clusterID;
+        keepers[common] = true;
+      });
+      var simple = ap.arbor.simplify(keepers);
 
       simple.nodesArray().forEach(function(node) {
         // Create a node and a part

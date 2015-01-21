@@ -372,7 +372,47 @@ GroupGraph.prototype.init = function() {
     var edge = this,
         props = edge.data();
     if (props.directed && evt.originalEvent.altKey) {
-      ConnectorSelection.show_shared_connectors( props.source, [props.target], "presynaptic_to" );
+      var source = '' + props.source,
+          target = '' + props.target,
+          isGroup = function(s) { return 0 === s.indexOf('g'); },
+          isSplit = function(s) { return -1 !== s.indexOf('_'); },
+          isSingle = function(s) { return !isGroup(s) && !isSplit(s); },
+          getData = function(s) { return edge.cy().nodes('[id="' + s + '"]').data(); },
+          getSkids = function(s) {
+            return getData(s).skeletons.map(function(model) { return model.id; });
+          };
+      // If both source and target are not split and are not groups:
+      if (isSingle(source) && isSingle(target)) {
+        ConnectorSelection.show_shared_connectors( source, [target], "presynaptic_to" );
+      } else {
+        var source_skids,
+            target_skids,
+            connector_ids;
+        if (isSplit(source)) {
+          // Target can be a group or a split
+          var source_data = getData(source);
+          source_skids = [source_data.skeletons[0].id];
+          target_skids = getSkids(target);
+          connector_ids = target_skids.reduce(function(a, skid) { return a.concat(source_data.downstream_skids[skid]); }, []);
+        } else if (isGroup(source)) {
+          source_skids = getSkids(source);
+          target_skids = getSkids(target);
+          if (isSplit(target)) {
+            connector_ids = getData(target).upstream_skids[target_skids[0]];
+          }
+        }
+      }
+
+      requestQueue.register(django_url + project.id + '/connector/pre-post-info', "POST",
+        {cids: connector_ids,
+         pre: source_skids,
+         post: target_skids},
+        function(status, text) {
+          if (200 !== status) return;
+          var json = $.parseJSON(text);
+          if (json.error) return new ErrorDialog("Cound not fetch edge data.", json.error);
+          ConnectorSelection.show_connectors(json);
+        });
     }
   });
 
@@ -816,8 +856,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
     m[1].forEach(function(row) {
       // Accumulate connection into the subnode for later use in e.g. grow command
       var treenodeID = row[0],
-          node_id = findPartID(treenodeID),
           other_skid = row[5],
+          node_id = findPartID(treenodeID),
           presynaptic = 0 === row[6],
           ob = presynaptic ? downstream : upstream,
           map = ob[node_id];
@@ -829,12 +869,18 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         map = {};
         ob[node_id] = map;
       }
-      var n_synapses = map[other_skid];
-      map[other_skid] = n_synapses ? n_synapses + 1 : 1;
-      // Accumulate synapses for an edge with another node in the graph
-      if (!models[other_skid]) return; // other skeleton is not in the graph
+
       var connectorID = row[2],
-          sourceSkid = presynaptic ? skid : other_skid,
+          connector_ids = map[other_skid];
+      if (connector_ids) connector_ids.push(connectorID);
+      else map[other_skid] = [connectorID]; // OK to have some connectors repeated if they connect to it more than once.
+
+      // Stop here if the other skeleton is not in the graph
+      // (The accumulated partners will be used for the grow and find path operations.)
+      if (!models[other_skid]) return;
+
+      // Accumulate synapses for an edge with another node in the graph
+      var sourceSkid = presynaptic ? skid : other_skid,
           targetSkid = presynaptic ? other_skid : skid,
           node_id = findPartID(treenodeID),
           connector = subedges[connectorID];
@@ -1382,7 +1428,7 @@ GroupGraph.prototype._findSkeletonsToGrow = function() {
         if (map) {
           var partners = {};
           Object.keys(map).forEach(function(skid) {
-            if (map[skid] >= min) {
+            if (map[skid].length >= min) {
               partners[skid] = true;
               split_partners[skid] = true;
             }

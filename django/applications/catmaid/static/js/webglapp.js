@@ -2218,7 +2218,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
       if (camera.inPerspectiveMode) {
         raycaster.ray.origin.copy(camera.position);
         return function(x,y) {
-          raycaster.ray.direction.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize()
+          raycaster.ray.direction.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize();
         };
       } else {
         raycaster.ray.direction.set(0, 0, -1).transformDirection(camera.matrixWorld);

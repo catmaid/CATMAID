@@ -2207,10 +2207,17 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
     // Setup ray caster
     var raycaster = new THREE.Raycaster();
     var setupRay = (function(raycaster, camera) {
-      raycaster.ray.origin.copy(camera.position);
-      return function(x,y) {
-        raycaster.ray.direction.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize()
-      };
+      if (camera.inPerspectiveMode) {
+        raycaster.ray.origin.copy(camera.position);
+        return function(x,y) {
+          raycaster.ray.direction.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize()
+        };
+      } else {
+        raycaster.ray.direction.set(0, 0, -1).transformDirection(camera.matrixWorld);
+        return function(x, y) {
+          raycaster.ray.origin.set(x, y, -1 ).unproject(camera);
+        };
+      }
     })(raycaster, camera);
 
     // Attempt to intersect visible skeleton spheres, stopping at the first found

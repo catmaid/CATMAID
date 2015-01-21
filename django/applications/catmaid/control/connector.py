@@ -537,3 +537,62 @@ def _list_completed(project_id, completed_by=None, from_date=None, to_date=None)
                   (row[8], row[9], row[10]),
                   row[11], row[12], row[13], row[14],
                   (row[15], row[16], row[17])) for row in cursor.fetchall())
+
+
+@requires_user_role(UserRole.Browse)
+def connectors_info(request, project_id):
+    """
+    Given a list of connectors, a list of presynaptic skeletons and a list of postsynatic skeletons,
+    return a list of rows, one per synaptic connection, in the same format as one_to_many_synapses.
+    The list of connectors is optional.
+    """
+
+    cids = tuple(str(int(v)) for k,v in request.POST.iteritems() if k.startswith('cids['))
+    skids_pre = tuple(str(int(v)) for k,v in request.POST.iteritems() if k.startswith('pre['))
+    skids_post = tuple(str(int(v)) for k,v in request.POST.iteritems() if k.startswith('post['))
+
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT relation_name, id FROM relation WHERE project_id=%s" % project_id)
+    relations = dict(cursor.fetchall())
+
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
+
+    cursor.execute('''
+    SELECT DISTINCT
+           tc1.connector_id, c.location_x, c.location_y, c.location_z,
+           tc1.treenode_id, tc1.skeleton_id, tc1.confidence, tc1.user_id,
+           t1.location_x, t1.location_y, t1.location_z,
+           tc2.treenode_id, tc2.skeleton_id, tc2.confidence, tc2.user_id,
+           t2.location_x, t2.location_y, t2.location_z
+    FROM treenode_connector tc1,
+         treenode_connector tc2,
+         treenode t1,
+         treenode t2,
+         connector c
+    WHERE %s
+          tc1.connector_id = c.id
+      AND tc1.connector_id = tc2.connector_id
+      AND tc1.skeleton_id IN (%s)
+      AND tc2.skeleton_id IN (%s)
+      AND tc1.relation_id = %s
+      AND tc2.relation_id = %s
+      AND tc1.id != tc2.id
+      AND tc1.treenode_id = t1.id
+      AND tc2.treenode_id = t2.id
+    ORDER BY tc2.skeleton_id
+    ''' % ("c.id IN (%s) AND" % ",".join(cids) if cids else "",
+           ",".join(skids_pre),
+           ",".join(skids_post),
+           pre,
+           post))
+
+    rows = tuple((row[0], (row[1], row[2], row[3]),
+                  row[4], row[5], row[6], row[7],
+                  (row[8], row[9], row[10]),
+                  row[11], row[12], row[13], row[14],
+                  (row[15], row[16], row[17])) for row in cursor.fetchall())
+
+    return HttpResponse(json.dumps(rows))
+

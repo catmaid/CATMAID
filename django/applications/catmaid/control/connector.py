@@ -96,9 +96,6 @@ def one_to_many_synapses(request, project_id=None):
       AND tc2.treenode_id = t2.id
     ''' % (skid, ','.join(map(str, skids)), relation_name))
 
-    def parse(loc):
-        return tuple(imap(float, loc[1:-1].split(',')))
-
     rows = tuple((row[0], (row[1], row[2], row[3]),
                   row[4], row[5], row[6], row[7],
                   (row[8], row[9], row[10]),

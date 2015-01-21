@@ -112,7 +112,7 @@ var ReviewSystem = new function()
                 // growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
                 var cell = $('#rev-status-cell-' + self.current_segment['id']);
                 cell.text('100.00%');
-                cell.css('background-color', '#6fff5c');
+                cell.css('background-color', ReviewSystem.STATUS_COLOR_FULL);
                 self.current_segment['status'] = '100.00';
                 self.selectNextSegment();
                 return;
@@ -156,7 +156,7 @@ var ReviewSystem = new function()
                 growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
                 var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-' + session.userid);
                 cell.text('100.00%');
-                cell.css('background-color', '#6fff5c');
+                cell.css('background-color', ReviewSystem.STATUS_COLOR_FULL);
                 self.current_segment['status'] = '100.00';
                 // Don't startSkeletonToReview, because self.current_segment_index
                 // would be lost, losing state for q/w navigation.
@@ -164,7 +164,7 @@ var ReviewSystem = new function()
             if (i_union === len) {
                 var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-union');
                 cell.text('100.00%');
-                cell.css('background-color', '#6fff5c');
+                cell.css('background-color', ReviewSystem.STATUS_COLOR_FULL);
                 self.current_segment['status'] = '100.00';
                 // Don't startSkeletonToReview, because self.current_segment_index
                 // would be lost, losing state for q/w navigation.
@@ -508,15 +508,19 @@ var ReviewSystem = new function()
     };
 }();
 
+ReviewSystem.STATUS_COLOR_FULL    = '#6fff5c';
+ReviewSystem.STATUS_COLOR_PARTIAL = '#ffc71d';
+ReviewSystem.STATUS_COLOR_NONE    = '#ff8c8c';
+
 /**
  * Support function for selecting a background color based on review state.
  */
 ReviewSystem.getBackgroundColor = function(reviewed) {
   if (100 === reviewed) {
-    return '#6fff5c';
+    return ReviewSystem.STATUS_COLOR_FULL;
   } else if (0 === reviewed) {
-    return '#ff8c8c';
+    return ReviewSystem.STATUS_COLOR_NONE;
   } else {
-    return '#ffc71d';
+    return ReviewSystem.STATUS_COLOR_PARTIAL;
   }
 };

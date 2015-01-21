@@ -7,6 +7,7 @@
   NeuronNameService,
   project,
   requestQueue,
+  ReviewSystem,
   SelectionTable,
   SkeletonSource,
   SVGUtil,
@@ -429,19 +430,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   var onmouseout = function() { this.style.textDecoration = 'none'; };
 
   /**
-   * Support function for selecting a background color based on review state.
-   */
-  var getBackgroundColor = function(reviewed) {
-    if (100 === reviewed) {
-      return '#6fff5c';
-    } else if (0 === reviewed) {
-      return '#ff8c8c';
-    } else {
-      return '#ffc71d';
-    }
-  };
-
-  /**
    * Support function for creating a partner table.
    */
   var create_table = function(skids, skeletons, thresholds, partners, title, relation,
@@ -546,7 +534,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     }
     var average = Math.floor(100 * total_reviewed / total_node_count) | 0;
     row.append( $('<td />').text(average + "%")
-        .css('background-color', getBackgroundColor(average)));
+        .css('background-color', ReviewSystem.getBackgroundColor(average)));
     row.append( $('<td />').text(total_node_count));
     thead.append(row);
 
@@ -674,7 +662,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
           getNrReviews([partner], reviewFilter) / partner.num_nodes)));
       var td = document.createElement('td');
       td.appendChild(document.createTextNode(pReviewed + "%"));
-      td.style.backgroundColor = getBackgroundColor(pReviewed);
+      td.style.backgroundColor = ReviewSystem.getBackgroundColor(pReviewed);
       tr.appendChild(td);
 
       // Cell with number of nodes of partner neuron

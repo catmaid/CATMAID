@@ -14,6 +14,7 @@
   parseColorWheel,
   project,
   requestQueue,
+  ReviewSystem,
   SelectionTable,
   session,
   SkeletonListSources,
@@ -1730,10 +1731,7 @@ GroupGraph.prototype.colorBy = function(mode, select) {
     this.removeState('colors');
 
   } else if (-1 !== mode.indexOf("review")) {
-    // Color by review status like in the connectivity widget:
-    // greenish '#6fff5c': fully reviewed
-    // orange '#ffc71d': review started
-    // redish '#ff8c8c': not reviewed at all
+    // Color by review status
     var cy = this.cy,
         postData = {skeleton_ids: this.getSkeletons()};
     // if user_ids is not specified, returns the union
@@ -1748,11 +1746,8 @@ GroupGraph.prototype.colorBy = function(mode, select) {
             // Compute average
             var percent_reviewed = skeletons.reduce(function(sum, model) {
               return sum + json[model.id];
-            }, 0) / skeletons.length,
-                hex = '#ff8c8c';
-            if (100 === percent_reviewed) hex = '#6fff5c';
-            else if (percent_reviewed > 0) hex = '#ffc71d';
-            node.data('color', hex);
+            }, 0) / skeletons.length;
+            node.data('color', ReviewSystem.getBackgroundColor(percent_reviewed));
           });
         });
 

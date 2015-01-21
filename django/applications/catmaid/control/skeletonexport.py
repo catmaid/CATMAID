@@ -149,12 +149,14 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, w
     The difference between this function and the compact_skeleton function is that
     the connectors contain the whole chain from the skeleton of interest to the
     partner skeleton:
-    [treenode_id, confidence, relation_id
+    [treenode_id, confidence,
      connector_id,
-     relation_id, confidence, treenode_id, skeleton_id]
-    where the last 4 values correspond to the partner skeleton.
-    Notice that the index in the array correponds to the position in the chain:
-    (skeleton ->) treenode -> confidence -> relation -> connector -> relation -> confidence -> treenode -> skeleton.
+     confidence, treenode_id, skeleton_id,
+     relation_id, relation_id]
+    where the first 2 values are from the given skeleton_id,
+    then the connector_id,
+    then the next 3 values are from the partner skeleton,
+    and finally the two relations: first for the given skeleton_id and then for the other skeleton.
     The relation_id is 0 for pre and 1 for post.
     """
 

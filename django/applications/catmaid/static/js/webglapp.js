@@ -2143,15 +2143,18 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
    */
   this.MouseWheel = function(ev) {
     var camera = this.CATMAID_view.camera;
-    if (ev.ctrlKey && !camera.inOrthographicMode) {
+    if ((ev.ctrlKey || ev.altKey) && !camera.inOrthographicMode) {
       // Move the camera and the target in target direction
       var distance = 3500 * (ev.wheelDelta > 0 ? -1 : 1);
       var controls = this.CATMAID_view.controls;
       var change = new THREE.Vector3().copy(camera.position)
         .sub(controls.target).normalize().multiplyScalar(distance);
 
-      controls.target.add(change);
       camera.position.add(change);
+      // Move the target only if Alt was pressed
+      if (ev.altKey) {
+        controls.target.add(change);
+      }
     } else {
       // The distance to the target does not make any difference for an
       // orthographic projection, the depth is fixed.

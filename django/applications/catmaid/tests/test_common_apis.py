@@ -14,7 +14,7 @@ import datetime
 
 from catmaid.models import Project, Stack, ProjectStack
 from catmaid.models import ClassInstance, Log, Message, TextlabelLocation
-from catmaid.models import Treenode, Connector, TreenodeConnector, User
+from catmaid.models import Treenode, Connector, TreenodeConnector, User, Review
 from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from catmaid.fields import Double3D, Integer3D
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
@@ -2671,6 +2671,31 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(aq), 2)
         self.assertEqual(aq[0].name, 'myannotation')
         self.assertEqual(aq[1].name, 'pattern 10 test-2-annotation')
+
+    def test_export_skeleton_reviews(self):
+        self.fake_authentication()
+
+        skeleton_id = 235
+
+        # No reviews
+        url = '/%d/skeleton/%d/reviewed-nodes' % (self.test_project_id, skeleton_id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {}
+        self.assertEqual(expected_result, parsed_response)
+
+        review_time = "2014-03-17T18:14:34.851"
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=253)
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=253)
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=263)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        expected_result = {'253': [3, 2], '263': [3]}
+        self.assertJSONEqual(response.content, expected_result)
 
 
 class TreenodeTests(TestCase):

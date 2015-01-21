@@ -1267,8 +1267,8 @@ WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, 
 	this.missing_sections = [];
 
 	// Shared across skeletons
-  this.labelspheregeometry = new THREE.OctahedronGeometry( 130, 3);
-  this.radiusSphere = new THREE.OctahedronGeometry( 40, 3);
+  this.labelspheregeometry = new THREE.OctahedronGeometry( 260, 3);
+  this.radiusSphere = new THREE.OctahedronGeometry( 80, 3);
   this.icoSphere = new THREE.IcosahedronGeometry(1, 2);
   this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
   this.textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
@@ -2237,7 +2237,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function() {
   this.skeleton_id = null;
   this.mesh = new THREE.Mesh( new THREE.IcosahedronGeometry(1, 2), new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
-  this.mesh.scale.x = this.mesh.scale.y = this.mesh.scale.z = 160;
+  this.mesh.scale.x = this.mesh.scale.y = this.mesh.scale.z = 320;
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototype = {};

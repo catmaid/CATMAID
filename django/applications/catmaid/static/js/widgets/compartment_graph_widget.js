@@ -5,6 +5,7 @@
   CircuitGraphPlot,
   ConnectorSelection,
   cytoscape,
+  ErrorDialog,
   fetchSkeletons,
   growlAlert,
   InstanceRegistry,

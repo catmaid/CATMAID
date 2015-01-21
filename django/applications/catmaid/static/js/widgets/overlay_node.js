@@ -822,7 +822,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   /** Here 'this' is c's SVG node. */
   var mc_dblclick = function(d) {
     d3.event.stopPropagation();
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
     catmaidSVGOverlay.ensureFocused();
   };
 
@@ -832,7 +832,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   this.mc_click = function(d) {
     var e = d3.event;
     e.stopPropagation();
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
     if (catmaidSVGOverlay.ensureFocused()) {
       return;
     }
@@ -879,7 +879,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   /** Here 'this' is c's SVG node, and node is the Node instance. */
   var mc_move = function(d) {
     var e = d3.event.sourceEvent;
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
     var node = catmaidSVGOverlay.nodes[d];
 
     if (is_middle_click(e)) return; // Allow middle-click panning
@@ -922,7 +922,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   var checkNodeID = function(svgNode) {
     if (!o || o.id !== svgNode.__data__) {
       console.log("WARNING: detected ID mismatch in mouse event system.");
-      SkeletonAnnotations.getSVGOverlayByPaper(svgNode.parentNode).updateNodes();
+      SkeletonAnnotations.getSVGOverlayByPaper(svgNode.parentNode.parentNode).updateNodes();
       return false;
     }
     return true;
@@ -931,7 +931,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   /** Here 'this' is c's SVG node. */
   var mc_start = function(d) {
     var e = d3.event.sourceEvent;
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
     var node = catmaidSVGOverlay.nodes[d];
     if (is_middle_click(e)) {
       // Allow middle-click panning
@@ -963,7 +963,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   var connector_mc_click = function(d) {
     var e = d3.event;
     e.stopPropagation();
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
     if (catmaidSVGOverlay.ensureFocused()) {
       return;
     }
@@ -1049,7 +1049,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
       return;
     }
     // 'this' will be the the connector's mouse catcher line
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode);
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
     requestQueue.register(django_url + project.id + '/link/delete', "POST", {
       pid: project.id,
       connector_id: d.connector_id,

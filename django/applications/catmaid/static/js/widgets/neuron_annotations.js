@@ -145,8 +145,8 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
   var td_cb = document.createElement('td');
   td_cb.setAttribute('colspan', '2');
   var div_cb = document.createElement('div');
-  // Make sure the line isn't wrapped
-  div_cb.style.whiteSpace = 'nowrap';
+  // Make sure the line will not become shorter than 300px
+  div_cb.style.minWidth = '300px';
   // Add indentation
   div_cb.style.marginLeft = indent * 1.5 + 'em';
   var cb = document.createElement('input');

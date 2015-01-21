@@ -2506,15 +2506,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.translate = functi
 };
 */
 
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseClustering = function(bandwidth) {
-  var locations = this.geometry['neurite'].vertices.reduce(function(vs, v) {
-    vs[v.node_id] = v.clone();
-    return vs;
-  }, {});
-  
-  return new SynapseClustering(this.createArbor(), locations, this.createSynapseCounts(), bandwidth);
-};
-
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapseCounts = function() {
   return this.synapticTypes.reduce((function(o, type, k) {
     var vs = this.geometry[type].vertices;

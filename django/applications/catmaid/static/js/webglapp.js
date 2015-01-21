@@ -2178,7 +2178,12 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
       space.render();
     }
 
-    space.container.style.cursor = 'pointer';
+    // Use a cross hair cursor if shift is pressed
+    if (ev.shiftKey) {
+      space.container.style.cursor = "url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
+    } else {
+      space.container.style.cursor = 'pointer';
+    }
   };
 
   this.MouseUp = function(ev) {

@@ -123,4 +123,3 @@ def projects(request):
             'note': '',
             'action': stacks_dict} )
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")
-

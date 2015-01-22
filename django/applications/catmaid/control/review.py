@@ -1,8 +1,13 @@
+import json
+
 from collections import defaultdict
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
+from django.http import HttpResponse
 
-from catmaid.models import Review
+from catmaid.models import UserRole, Review, ReviewerWhitelist
+from catmaid.control.authentication import requires_user_role
 
 
 def get_treenodes_to_reviews(treenode_ids=None, skeleton_ids=None,
@@ -133,3 +138,37 @@ def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
         status[skid] = ratio
 
     return status
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def reviewer_whitelist(request, project_id=None):
+    """ Allows users to retrieve (GET) or update (POST) the set of users whose
+    reviews they trust for a given project.
+    """
+    # Ignore anonymous user
+    if not request.user.is_authenticated() or request.user.is_anonymous():
+        return HttpResponse(json.dumps({'success': "The reviewer whitelist " +
+                "of  the anonymous user won't be updated"}),
+                content_type='text/json')
+
+    if request.method == 'GET':
+        # Retrieve whitelist
+        whitelist = ReviewerWhitelist.objects.filter(project_id=project_id,
+                user_id=request.user.id).values('reviewer_id', 'accept_after')
+        # DjangoJSONEncoder is required to properly encode datetime to ECMA-262
+        return HttpResponse(json.dumps(list(whitelist), cls=DjangoJSONEncoder),
+                content_type='text/json')
+
+    # Since this is a collections resource replacing all objects, PUT would be
+    # correct, but POST is used for consistency with the rest of the API.
+    if request.method == 'POST':
+        # Update whitelist
+        ReviewerWhitelist.objects.filter(
+                project_id=project_id, user_id=request.user.id).delete()
+        whitelist = [ReviewerWhitelist(
+            project_id=project_id, user_id=request.user.id, reviewer_id=int(r),
+            accept_after=t) for r,t in request.POST.iteritems()]
+        ReviewerWhitelist.objects.bulk_create(whitelist)
+
+        return HttpResponse(
+                json.dumps({'success': 'Updated review whitelist'}),
+                content_type='text/json')

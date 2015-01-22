@@ -2697,6 +2697,30 @@ class ViewPageTests(TestCase):
         expected_result = {'253': [3, 2], '263': [3]}
         self.assertJSONEqual(response.content, expected_result)
 
+    def test_user_reviewer_whitelist(self):
+        self.fake_authentication()
+
+        # Test that whitelist is empty by default.
+        url = '/%d/user/reviewer-whitelist' % (self.test_project_id,)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(expected_result, parsed_response)
+
+        # Test replacing whitelist.
+        whitelist = {
+                '1': "2014-03-17T00:00:00",
+                '2': "2014-03-18T00:00:00"}
+        response = self.client.post(url, whitelist)
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        expected_result = [{'reviewer_id': int(r), 'accept_after': t}
+                for r,t in whitelist.iteritems()]
+        self.assertJSONEqual(response.content, expected_result)
+
 
 class TreenodeTests(TestCase):
     fixtures = ['catmaid_testdata']

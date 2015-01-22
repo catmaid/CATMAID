@@ -493,6 +493,18 @@ class Review(models.Model):
     skeleton = models.ForeignKey(ClassInstance)
     treenode = models.ForeignKey(Treenode)
 
+class ReviewerWhitelist(models.Model):
+    """ This model represents that a user trusts the reviews of a partciular
+    reviewer for a specific project created after a specified time.
+    """
+    class Meta:
+        db_table = "reviewer_whitelist"
+        unique_together = ('user', 'reviewer')
+    project = models.ForeignKey(Project)
+    user = models.ForeignKey(User)
+    reviewer = models.ForeignKey(User, related_name='+')
+    accept_after = models.DateTimeField(default=datetime.min)
+
 class RegionOfInterest(UserFocusedModel):
     class Meta:
         db_table = "region_of_interest"

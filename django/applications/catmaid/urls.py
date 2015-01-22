@@ -408,6 +408,9 @@ urlpatterns += patterns('catmaid.control',
     # Analytics
     (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),
 
+    # Review
+    (r'^(?P<project_id>\d+)/user/reviewer-whitelist$', 'review.reviewer_whitelist'),
+
     # Search
     (r'^(?P<project_id>\d+)/search$', 'search.search'),
 

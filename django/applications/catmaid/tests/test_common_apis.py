@@ -2672,6 +2672,52 @@ class ViewPageTests(TestCase):
         self.assertEqual(aq[0].name, 'myannotation')
         self.assertEqual(aq[1].name, 'pattern 10 test-2-annotation')
 
+    def test_export_review_skeleton(self):
+        self.fake_authentication()
+
+        skeleton_id = 2388
+
+        # No reviews, single segment
+        url = '/%d/skeleton/%d/review' % (self.test_project_id, skeleton_id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        expected_result = [{'status': '0.00', 'id': 0, 'nr_nodes': 3, 'sequence': [
+                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [], 'id': 2396},
+                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [], 'id': 2394},
+                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'id': 2392}]}]
+        self.assertJSONEqual(response.content, expected_result)
+
+        # Add reviews
+        review_time = "2014-03-17T00:00:00"
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=2394)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        expected_result = [{'status': '66.67', 'id': 0, 'nr_nodes': 3, 'sequence': [
+                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [3, 2], 'id': 2396},
+                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [3], 'id': 2394},
+                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'id': 2392}]}]
+        self.assertJSONEqual(response.content, expected_result)
+
+        # Newer reviews of same nodes should duplicate reviewer ID
+        # NOTE: this duplication does not happen in practice because
+        # update_location_reviewer updates the timestamp of the existing
+        # review. This is just to demonstrate what edge case behavior is.
+        review_time = "2014-03-18T00:00:00"
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=2394)
+        response = self.client.get(url)
+        expected_result[0]['sequence'][0]['rids'].append(2)
+        expected_result[0]['sequence'][1]['rids'].append(3)
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(response.content, expected_result)
+
     def test_export_skeleton_reviews(self):
         self.fake_authentication()
 

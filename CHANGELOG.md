@@ -1,0 +1,157 @@
+## 2015-01-22
+
+Key shortcuts / mouse operations:
+
+- A new shortcut key to navigate to a node's child has been added: ]. It
+  behaves like V by navigating to the largest descendant branch. With
+Shift+] one cycles through sibling branches in order of descending
+size.
+
+- For consistency, the P shortcut to navigate to the parent has been
+replaced with [.
+
+- Navigation to the next branch has changed a bit: The V key now moves
+to the next branch node or end of the largest descendant branch of the
+active node, and subsequent presses of shift+V cycle through other
+possible descending branches in order of decreasing size.
+
+- While editing the radius of a node with the help of the surrounding
+circle, a click will confirm the current radius (not only pressing 'o'
+again). The radius editing can now also be canceled with the Esc key.
+
+- With Ctrl+Alt+click one can now insert a node into the active
+skeleton between two existing nodes.
+
+
+Zoom:
+
+- Zooming is now also possible in smaller steps. The plus and minus
+buttons zoom in steps of 1 and with having the Shift key pressed
+additionally, steps of 0.1 are used.
+
+
+3D viewer:
+
+- New export options (Export tab):
+  * CVS representation of the rendered skeletons;
+  * PNG and SVG image of the current view;
+  * SVG catalogue of the current view. The catalogue contains each
+neuron a separate panel on the same SVG document--very useful to
+generate figures for a paper. Options are provided to sort and arrange
+panels, and to define pinned neurons that appear in each panel (e.g. a
+somatosensory axon that acts as reference for each neuron connected to
+it).
+
+- New "Spatial select" button (Main tab) that allows to select
+skeletons near the active node or connected to the active skeleton,
+within a specified distance. Matching skeletons will be shown in a new
+selection table. This is useful to e.g. select all single-node
+skeletons connected to the dorsal lobe part of a Kenyon cell.
+
+- Supports orthographic projection (see checkbox in View tab) so that
+no perspective distortion is applied and distances become comparable
+between different parts of the view.
+
+- The 3D viewer now has the option to follow the active node (View
+tab). This acts like clicking "Center active" after each active node
+change.
+
+- One can bookmark views in the 3D viewer, by pressing "Save view" in
+the Main tab. Views can be loaded by selecting them from the drop down
+list next to the button. These bookmarks are currently discarded once
+CATMAID is reloaded.
+
+- When Ctrl is pressed while zooming in the 3D viewer with the scroll
+wheel, the camera is actually moved towards its target. This is useful
+to overcome zooming limits and strong perspective distortion due to a
+high focal length when zooming.
+
+
+Selection table:
+
+- "Randomize colors" in the selection table was replaced by a drop
+down list with different color schemes and the button "Colorize" to
+apply the selected one. The default is the coloring scheme that
+existed before. Some of the new color schemes are from Cynthia Brewer
+(see http://colorbrewer2.org/ ).
+
+- Neurons are activated by clicking on the name, like in all other
+widgets. The green tick icon has been removed.
+
+- New check box for each neuron called "meta" to toggle the display of
+extra information like the orange spheres for specially tagged nodes
+(TODO, uncertain end, etc.) or low confidence nodes.
+
+
+Dendrogram:
+
+- Can now collapse nodes belonging to a branch that ends in a node
+tagged "not a branch".
+
+- One can now highlight multiple tags in the dendrogram by separating
+them with commas.
+
+
+Graph widget:
+
+- Subgraphs (like axon & dendrite) can now be reset in the graph widget.
+
+
+Annotations:
+
+- When adding an annotation, the pattern "{nX}" can be used to add an
+automatically incrementing number to each neuron annotated, starting
+at X. So if e.g. three neurons are annotated at once with the
+annotation "test-{n5}", the first one is annotated with "test-5", the
+second one with "test-6" and the last one with "test-7". Omitting X
+will be interpreted to start from 1.
+
+- When skeletons are joined, the name of the "losing" skeleton can now
+be added as an annotation to the "winning" skeleton right in the
+dialog. Its checkbox is unchecked by default, if the name follows the
+auto-generated name pattern "neuron 12345".
+
+
+Searching:
+
+- The neuron name input boxes in both search widgets will now remember
+entries that have been used before.
+
+
+Handling the unexpected:
+
+- A general error handler has been added so that CATMAID should
+hopefully not crash anymore, even if an error occurs. In such
+situations an error dialog is shown and the error is logged on the
+server so that we can investigate better what went wrong.
+
+
+General neuron tracing:
+
+- A robust synapse clustering method was added: centrifugal synapse flow
+centrality. Many widgets now support a new method for finding axons based on it
+(e.g. in the 3D viewer as a shading method.
+
+- The connector table now displays the confidence of each link
+
+- Basic import/export support was added. There are two new management commands
+  that can be used by admins to import and export tracing data.
+
+
+Users and groups:
+
+- Support user registration (disabled by default). Default user groups for new
+  users can be set.
+
+
+Miscellaneous:
+
+- A new ROI tool was added, which can be activated for each user through the
+user settings. It currently supports only the creation of new ROIs. Additional
+sub-tools will be added for more functionality.
+
+
+Contributors:
+
+This update brought to you by Tom Kazimiers, Andrew Champion, Stephan
+Gerhard and Albert Cardona.

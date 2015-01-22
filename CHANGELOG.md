@@ -1,3 +1,90 @@
+## Under development
+
+### Features and changes
+
+Key shortcuts / mouse operations:
+
+- Shift+T removes all tags from the currently active node.
+
+
+General neuron tracing:
+
+- A new radius editing option has been added that propagates from the current
+  node root-ward to the previous node with an undefined radius (exclusive).
+  Here undefined is taken to be a negative radius, since though the column
+  default is 0 Django initializes it to -1.
+
+
+3D viewer:
+
+- With Ctrl + mouse wheel, only the camera is moved in target direction, the
+  target stays fixed. If Alt + mouse wheel is used, the target moves as well.
+
+
+Miscellaneous:
+
+- Users need now to confirm the closing of the last stack.
+
+
+### Bug fixes
+
+Tracing overlay:
+
+- A label is now hidden when the mouse hovers over it. Note that this only works
+  for one label at a time, so it is not effective for overlapping labels. A
+  robust solution would require more expensive event propagation over label
+  elements.
+
+- Fullscreen on OS X Safari should now work, too.
+
+- Nodes and arrows are now drawn in order: lines, arrows, nodes, labels
+
+- Fix bug that could occur during radius propagation when the previous node
+  already had a radius defined.
+
+- Fix mouse handlers of node and error drawing, which were broken by adding
+  ordered drawing.
+
+- Trying to remove a non-existent tag from a node now doesn't show an error
+  dialog anymore, but only a notification.
+
+
+Neuron search:
+
+- Make neuron names wrap and use the next line, if there is not enough space for
+  it. This makes the table not expand in width until the name fits anymore.
+
+
+Synapse clustering:
+
+- A long-standing error has been fixed where a few nodes where added to an
+  undefined cluster.
+
+
+Group graph:
+
+- The root node computation has been fixed.
+
+- Listing edge synapses now also works with split grouped neurons.
+
+
+3D viewer:
+
+- Make synapse clustering fetch synapses properly (like it is done in the Group
+  Graph).
+
+- Picking a synapse or other selectable elements is now more robust and now
+  works also in orthographic mode.
+
+- The projection mode (orthographic or perspective) is now also stored in a
+  saved view.
+
+
+Contributors:
+
+Albert Cardona, Andrew Champion, Tom Kazimiers
+
+
 ## 2015-01-22
 
 Key shortcuts / mouse operations:

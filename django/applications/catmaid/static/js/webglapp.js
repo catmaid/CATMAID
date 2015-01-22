@@ -2290,7 +2290,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
       }
 
       return found;
-    };
+    }
   };
 };
 

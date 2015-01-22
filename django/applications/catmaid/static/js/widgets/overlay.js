@@ -2279,7 +2279,18 @@ SkeletonAnnotations.Tag = new (function() {
       function(json) {
         growlAlert('Information', 'Tag "' + label + '" removed.');
         svgOverlay.updateNodes();
-    });
+      },
+      undefined,
+      undefined,
+      function(err) {
+        if ("ValueError" === err.type) {
+          growlAlert('Error', err.error ? err.error : "Unspecified");
+        } else {
+          error(err.error, err.detail);
+        }
+      },
+      true
+    );
   };
 
   this.handleATNChange = function(activeNode) {

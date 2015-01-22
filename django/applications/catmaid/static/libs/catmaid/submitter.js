@@ -67,7 +67,7 @@ var submitterFn = function() {
 
     // Call all callbacks
     callbacks.forEach(function(errCallback) {
-      errCallback();
+      errCallback(error);
     });
   };
 

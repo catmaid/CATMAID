@@ -313,6 +313,9 @@ function handle_profile_update(e) {
     'toolbox_edit', '');
   $('#toolbox_edit').replaceWith(new_edit_actions);
   $('#toolbox_edit').hide();
+
+  // TODO: There should be a user change event for this to subscribe
+  ReviewSystem.Whitelist.refresh();
 }
 
 /**
@@ -588,6 +591,8 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 				project = new Project( e.pid );
 				project_view = project.getView();
 				project.register();
+				// TODO: There should be a project change event for this to subscribe
+				ReviewSystem.Whitelist.refresh();
 			}
 
 			var labelupload = '';

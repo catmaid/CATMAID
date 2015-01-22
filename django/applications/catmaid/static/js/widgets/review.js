@@ -524,3 +524,96 @@ ReviewSystem.getBackgroundColor = function(reviewed) {
     return ReviewSystem.STATUS_COLOR_PARTIAL;
   }
 };
+
+ReviewSystem.Whitelist = (function () {
+    var whitelist = {};
+
+    return {
+      /**
+       * Returns a copy of the internal whitelist.
+       */
+      getWhitelist: function () {
+        return $.extend(true, {}, whitelist);
+      },
+
+      /**
+       * Adds a reviewer to the whitelist, optionally specifying a time after
+       * which their reviews are accepted. Adding a user already in the
+       * whitelist will overwrite this time.
+       */
+      addReviewer: function (userId, acceptAfter) {
+        // Default acceptAfter to effectively accept all reviews by setting to
+        // the UNIX time epoch.
+        if (typeof acceptAfter === 'undefined') acceptAfter = new Date(+0);
+        // Coerce other date representations into Date objects
+        else if (!(acceptAfter instanceof Date)) {
+            acceptAfter = new Date(acceptAfter);
+            if (isNaN(acceptAfter.getTime())) {
+                growlAlert('ERROR', 'Accept after date is invalid');
+                return this;
+            }
+        }
+
+        if (!(userId in User.all())) {
+            growlAlert('ERROR', 'Reviewer does not have a valid user ID');
+            return this;
+        }
+
+        // Add new reviewer to whitelist
+        whitelist[userId] = acceptAfter;
+
+        return this;
+      },
+
+      /**
+       * Removes a reviewer from the whitelist.
+       */
+      removeReviewer: function (userId) {
+        delete whitelist[userId];
+
+        return this;
+      },
+
+      /**
+       * Retrieves the whitelist from the server.
+       */
+      refresh: function (callback) {
+        // If no project is open or no user is logged in, clear the whitelist.
+        if (typeof project === 'undefined' || typeof session === 'undefined') {
+            whitelist = {};
+            return;
+        }
+
+        requestQueue.register(
+                django_url + project.id + '/user/reviewer-whitelist',
+                'GET',
+                undefined,
+                jsonResponseHandler(function (json) {
+                    whitelist = json.reduce(function (wl, entry) {
+                        wl[entry.reviewer_id] = new Date(entry.accept_after);
+                        return wl;
+                    }, {});
+                    if (typeof callback === 'function') callback();
+                }));
+      },
+
+      /**
+       * Saves the current state of the whitelist to the server.
+       */
+      save: function (callback) {
+        // If no user is logged in, do not attempt to save the whitelist.
+        if (typeof session === 'undefined') return;
+
+        var encodedWhitelist = Object.keys(whitelist).reduce(function (ewl, userId) {
+            ewl[userId] = whitelist[userId].toISOString();
+            return ewl;
+        }, {});
+        requestQueue.replace(
+                django_url + project.id + '/user/reviewer-whitelist',
+                'POST',
+                encodedWhitelist,
+                callback,
+                'reviewerwhitelist' + project.id);
+      }
+    };
+})();

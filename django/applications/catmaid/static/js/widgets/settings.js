@@ -10,7 +10,9 @@
   OptionsDialog,
   project,
   requestQueue,
+  ReviewSystem,
   SelectionTable,
+  User,
   userprofile,
   WindowMaker
 */
@@ -305,6 +307,74 @@ SettingsWidget.prototype.init = function(space)
         growlAlert('Success', 'User profile updated successfully.');
       });
     }).addClass('setting'));
+
+
+    // Reviewer whitelist settings
+    ds = addSettingsContainer(container, "Reviewer Whitelist");
+    // Add explanatory text
+    ds.append($('<div/>').addClass('setting').append("Choose which users' " +
+        "reviews to include when calculating review statistics. You may also " +
+        "specify a time after which to trust each user's reviews. Reviews " +
+        "by that user prior to this time are ignored. Your whitelist is " +
+        "private; reviewers do not know who has and who has not whitelisted " +
+        "them."));
+
+    // Get all available users
+    var reviewers = User.all();
+    // Add reviewer options to select box
+    select = $('<select/>');
+    Object.keys(reviewers).forEach(function(userId) {
+      this.append(new Option(reviewers[userId].fullName, userId));
+    }, select);
+
+    var acceptAfterInput = $('<input type="text" />').datepicker({
+      changeMonth: true,
+      changeYear: true,
+      maxDate: 0 // Do not allow future dates
+    });
+
+    // Create 'Add' button and whitelist
+    var whitelist = $('<select/>').addClass('multiline').attr('size', '4')[0];
+
+    var addReviewerButton = $('<button/>').text('Add to whitelist').click(function() {
+      var newReviewer = select.val();
+      // Let ReviewSystem.Whitelist choose a default date if none was entered
+      var acceptAfter = acceptAfterInput.val() ? acceptAfterInput.val() : undefined;
+      ReviewSystem.Whitelist
+          .addReviewer(newReviewer, acceptAfter)
+          .save(refreshWhitelist);
+    });
+
+    var removeReviewerButton = $('<button/>').text('Remove from whitelist').click(function() {
+      var removedReviewer = $(whitelist).val();
+      ReviewSystem.Whitelist
+          .removeReviewer(removedReviewer)
+          .save(refreshWhitelist);
+    });
+
+    ds.append(createLabeledControl('Reviewer', select));
+    ds.append(createLabeledControl('Accept after', acceptAfterInput));
+    ds.append(createLabeledControl('', addReviewerButton));
+    ds.append(createLabeledControl('', whitelist));
+    ds.append(createLabeledControl('', removeReviewerButton));
+
+    var refreshWhitelist = function () {
+      $(whitelist).empty();
+      var wlEntries = ReviewSystem.Whitelist.getWhitelist();
+      var options = Object.keys(wlEntries).map(function(userId) {
+        var user = User.safe_get(userId);
+        var optionElement = $('<option/>')
+            .attr('value', userId)
+            .data('accept_after', wlEntries[userId])
+            .text(user.fullName + ' (' + wlEntries[userId].toDateString() + ')');
+        return optionElement[0];
+      });
+
+      options.forEach(whitelist.appendChild.bind(whitelist));
+    };
+
+    // Initialize whitelist
+    refreshWhitelist();
   };
 
 

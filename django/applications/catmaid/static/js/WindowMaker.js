@@ -824,6 +824,8 @@ var WindowMaker = new function()
       }
       var name = this.options[this.selectedIndex].value;
       WA.activateView(name);
+      // Update orthographic view checkbox
+      orthographicCbElems[0].checked = ('orthographic' === WA.options.camera_view);
     };
     storedViewsSelect.onclick = storedViewsSelect.onchange;
     // Update the list when the element is focused

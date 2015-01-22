@@ -761,8 +761,12 @@ WebGLApplication.prototype.activateView = function(name) {
   }
   // Activate view by executing the stored function
   var view = this.availableViews[name];
-  this.space.view.setView(view.target, view.position, view.up, view.zoom);
-	this.space.render();
+  this.space.view.setView(view.target, view.position, view.up, view.zoom,
+      view.orthographic);
+  // Update options
+  this.options.camera_view = view.orthographic ? 'orthographic' : 'perspective';
+  // Render scene
+  this.space.render();
 };
 
 WebGLApplication.prototype._skeletonVizFn = function(field) {
@@ -2094,6 +2098,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getView = function() {
     position: this.camera.position.clone(),
     up: this.camera.up.clone(),
     zoom: this.camera.zoom,
+    orthographic: this.camera.inOrthographicMode,
   };
 };
 
@@ -2104,12 +2109,16 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getView = function() {
  * @param {THREE.Vector3} position - the position of the camera
  * @param {THREE.Vector3} up - up direction
  */
-WebGLApplication.prototype.Space.prototype.View.prototype.setView = function(target, position, up, zoom) {
+WebGLApplication.prototype.Space.prototype.View.prototype.setView = function(target, position, up, zoom, orthographic) {
 	this.controls.target.copy(target);
 	this.camera.position.copy(position);
 	this.camera.up.copy(up);
 	this.camera.zoom = zoom;
-	this.camera.updateProjectionMatrix();
+	if(orthographic) {
+		this.camera.toOrthographic();
+	} else {
+		this.camera.toPerspective();
+	}
 };
 
 /** Construct mouse controls as objects, so that no context is retained. */

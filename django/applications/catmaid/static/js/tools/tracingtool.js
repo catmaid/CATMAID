@@ -506,7 +506,11 @@ function TracingTool()
     run: function (e) {
       if (!mayEdit())
         return false;
-      if (!(e.ctrlKey || e.metaKey)) {
+      if (e.shiftKey) {
+        // Delete all tags
+        SkeletonAnnotations.Tag.tagATNwithLabel('', tracingLayer.svgOverlay, true);
+        return true;
+      } else if (! (e.ctrlKey || e.metaKey)) {
         SkeletonAnnotations.Tag.tagATN(tracingLayer.svgOverlay);
         return true;
       } else {

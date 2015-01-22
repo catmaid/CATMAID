@@ -6,6 +6,7 @@ from collections import defaultdict
 from math import sqrt
 from datetime import datetime
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
 from django.http import HttpResponse
 
@@ -716,7 +717,7 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None,
     treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list(
         'id', 'parent_id', 'location_x', 'location_y', 'location_z')
     # Get all reviews for the requested skeleton
-    reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
+    reviews = get_treenodes_to_reviews_with_time(skeleton_ids=[skeleton_id])
 
     # Add each treenode to a networkx graph and attach reviewer information to
     # it.
@@ -798,7 +799,8 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, format=No
 
     segments = _export_review_skeleton( project_id, skeleton_id, format,
             subarbor_node_id )
-    return HttpResponse(json.dumps(segments))
+    return HttpResponse(json.dumps(segments, cls=DjangoJSONEncoder),
+            content_type='text/json')
 
 @requires_user_role(UserRole.Browse)
 def skeleton_connectors_by_partner(request, project_id):

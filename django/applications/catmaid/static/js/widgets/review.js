@@ -282,12 +282,29 @@ var ReviewSystem = new function()
             return map;
         }, {});
 
+        // Make a pseudo-user that aggregates reviews from the whitelist.
+        whitelistUser = {name: 'Whitelist', count: 0,
+                segment_count: skeleton_data.reduce(function(o, s) {
+                    o[s.id] = 0;
+                    return o;
+                }, {})};
+        var whitelist = ReviewSystem.Whitelist.getWhitelist();
+
         // Fill in the users count:
         skeleton_data.forEach(function(segment) {
             segment['sequence'].forEach(function(node) {
-               node['rids'].forEach(function(rid) {
-                    users[rid].count += 1;
-                    users[rid].segment_count[segment.id] += 1;
+                var whitelisted = false;
+
+                node['rids'].forEach(function(rid) {
+                    var userId = rid[0], reviewTime = new Date(rid[1]);
+                    users[userId].count += 1;
+                    users[userId].segment_count[segment.id] += 1;
+
+                    if (!whitelisted && userId in whitelist && reviewTime > whitelist[userId]) {
+                        whitelistUser.count += 1;
+                        whitelistUser.segment_count[segment.id] += 1;
+                        whitelisted = true; // Whitelist each node only once.
+                    }
                 });
             });
         });
@@ -301,6 +318,12 @@ var ReviewSystem = new function()
         reviewers = [session.userid].concat(reviewers);
         // Make sure all IDs are actual numbers
         reviewers = reviewers.map(function(u){ return parseInt(u); });
+
+        // Append whitelist to users and reviewers
+        if (reviewers.length > 1) {
+            users.whitelist = whitelistUser;
+            reviewers.push('whitelist');
+        }
 
         // Create string with user's reviewed counts:
         var user_revisions = reviewers.reduce(function(s, u) {
@@ -339,7 +362,7 @@ var ReviewSystem = new function()
               .append(cb).append(users[reviewers[i]].name)));
         }
         // Union column last
-        if (reviewers.length > 1) {
+        if (reviewers.length > 2) {
             row.append( $('<th />').text('Union') );
         }
         table.append( row );
@@ -355,7 +378,7 @@ var ReviewSystem = new function()
             // Index
             row.append( $('<td />').text(skeleton_data[e]['id'] ) );
             // Single user status
-            if (reviewers.length > 1) {
+            if (reviewers.length > 2) {
               // The reviewers array contains oneself as first element
               reviewers.forEach(function(r) {
                   var seg_status = (100 * users[r].segment_count[sd.id] /

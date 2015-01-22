@@ -1,18 +1,12 @@
 ## Under development
 
-### Features and changes
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+### Features and enhancements
 
 Key shortcuts / mouse operations:
 
 - Shift+T removes all tags from the currently active node.
-
-
-General neuron tracing:
-
-- A new radius editing option has been added that propagates from the current
-  node root-ward to the previous node with an undefined radius (exclusive).
-  Here undefined is taken to be a negative radius, since though the column
-  default is 0 Django initializes it to -1.
 
 
 3D viewer:
@@ -20,6 +14,42 @@ General neuron tracing:
 - With Ctrl + mouse wheel, only the camera is moved in target direction, the
   target stays fixed. If Alt + mouse wheel is used, the target moves as well.
 
+
+### Bug fixes
+
+Tracing overlay:
+
+- Trying to remove a non-existent tag from a node now doesn't show an error
+  dialog anymore, but only a notification.
+
+
+Neuron search:
+
+- Make neuron names wrap and use the next line, if there is not enough space for
+  it. This makes the table not expand in width until the name fits anymore.
+
+
+3D viewer:
+
+- Picking a synapse or other selectable elements is now more robust and now
+  works also in orthographic mode.
+
+- The projection mode (orthographic or perspective) is now also stored in a
+  saved view.
+
+
+## 2015.1.21
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+### Features and enhancements
+
+General neuron tracing:
+
+- A new radius editing option has been added that propagates from the current
+  node root-ward to the previous node with an undefined radius (exclusive).
+  Here undefined is taken to be a negative radius, since though the column
+  default is 0 Django initializes it to -1.
 
 Miscellaneous:
 
@@ -45,15 +75,6 @@ Tracing overlay:
 - Fix mouse handlers of node and error drawing, which were broken by adding
   ordered drawing.
 
-- Trying to remove a non-existent tag from a node now doesn't show an error
-  dialog anymore, but only a notification.
-
-
-Neuron search:
-
-- Make neuron names wrap and use the next line, if there is not enough space for
-  it. This makes the table not expand in width until the name fits anymore.
-
 
 Synapse clustering:
 
@@ -72,17 +93,6 @@ Group graph:
 
 - Make synapse clustering fetch synapses properly (like it is done in the Group
   Graph).
-
-- Picking a synapse or other selectable elements is now more robust and now
-  works also in orthographic mode.
-
-- The projection mode (orthographic or perspective) is now also stored in a
-  saved view.
-
-
-Contributors:
-
-Albert Cardona, Andrew Champion, Tom Kazimiers
 
 
 ## 2015.1.15

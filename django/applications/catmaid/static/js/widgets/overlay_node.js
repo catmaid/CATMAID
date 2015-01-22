@@ -1028,7 +1028,7 @@ SkeletonElements.prototype.ArrowLine = function(paper) {
   // Because the transparent stroke trick will not work for lines, a separate,
   // larger stroked, transparent line is needed to catch mouse events. In SVG2
   // this can be achieved on the original line with a marker-segment.
-  this.catcher = paper.select('arrows').append('line');
+  this.catcher = paper.select('.arrows').append('line');
   this.catcher.on('mousedown', this.mousedown);
   this.confidence_text = null;
 };

@@ -85,7 +85,7 @@ Contributors:
 Albert Cardona, Andrew Champion, Tom Kazimiers
 
 
-## 2015-01-22
+## 2015.1.15
 
 Key shortcuts / mouse operations:
 

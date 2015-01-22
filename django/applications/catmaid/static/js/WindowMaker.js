@@ -789,6 +789,9 @@ var WindowMaker = new function()
 
     var storedViewsSelect = document.createElement('select');
 
+    var orthographicCbElems = createCheckbox('Orthographic mode', false,
+        function() { WA.updateCameraView(this.checked); });
+
     appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
@@ -802,7 +805,8 @@ var WindowMaker = new function()
           ['Restrict connectors', WA.toggleConnectors.bind(WA)],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
           ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
-          ['Orthographic mode', false, function() { WA.updateCameraView(this.checked); }, false],
+          [orthographicCbElems[0]],
+          [orthographicCbElems[1]],
         ]);
 
     // Wait for the 3D viewer to have initialized to get existing views
@@ -1815,15 +1819,19 @@ var WindowMaker = new function()
     return b;
   };
 
-  var appendCheckbox = function(div, title, value, onclickFn, left) {
+  var createCheckbox = function(title, value, onclickFn) {
     var cb = document.createElement('input');
     cb.setAttribute('type', 'checkbox');
     cb.checked = value ? true : false;
     cb.onclick = onclickFn;
-    var elems = [cb, document.createTextNode(title)];
+    return [cb, document.createTextNode(title)];
+  };
+
+  var appendCheckbox = function(div, title, value, onclickFn, left) {
+    var elems = createCheckbox(title, value, onclickFn);
     if (left) elems.reverse();
     elems.forEach(function(elem) { div.appendChild(elem); });
-    return cb;
+    return left ? elems[elems.length - 1] : elems[0];
   };
 
   var appendNumericField = function(div, label, value, postlabel, onchangeFn, length) {

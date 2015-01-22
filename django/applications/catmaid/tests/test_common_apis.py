@@ -2672,6 +2672,31 @@ class ViewPageTests(TestCase):
         self.assertEqual(aq[0].name, 'myannotation')
         self.assertEqual(aq[1].name, 'pattern 10 test-2-annotation')
 
+    def test_review_status(self):
+        self.fake_authentication()
+
+        skeleton_id = 2388
+
+        # No reviews, single segment
+        url = '/%d/skeleton/review-status' % (self.test_project_id)
+        response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
+        self.assertEqual(response.status_code, 200)
+        expected_result = {'2388': 0}
+        self.assertJSONEqual(response.content, expected_result)
+
+        # Add reviews
+        review_time = "2014-03-17T00:00:00"
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
+        Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
+            review_time=review_time, skeleton_id=skeleton_id, treenode_id=2394)
+        response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
+        self.assertEqual(response.status_code, 200)
+        expected_result = {'2388': 66}
+        self.assertJSONEqual(response.content, expected_result)
+
     def test_export_review_skeleton(self):
         self.fake_authentication()
 

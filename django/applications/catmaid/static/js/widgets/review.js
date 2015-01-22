@@ -42,7 +42,7 @@ var ReviewSystem = new function()
         self.current_segment_index = 0;
         self.goToNodeIndexOfSegmentSequence(0, true);
         end_puffer_count = 0;
-        // Highlight current segement in table
+        // Highlight current segment in table
         var $rows = $('table#review_segment_table tr.review-segment');
         $rows.removeClass('highlight');
         var $cur_row = $rows.filter('tr[data-sgid=' + id + ']');
@@ -223,7 +223,7 @@ var ReviewSystem = new function()
                     });
                 };
                 /**
-                 * Support function to test whether a sgement has't been reviewed by
+                 * Support function to test whether a segment hasn't been reviewed by
                  * any of the followed reviewers. If it has not been reviewed, a new
                  * review for it is started as a side effect.
                  */
@@ -257,8 +257,8 @@ var ReviewSystem = new function()
     /**
      * Clears the table with ID 'review_segment_table' prior to adding rows to
      * it. If a subarborNodeId is given, not the whole skeleton will be
-     * reviewed, but onlt the sub-arbor starting at the given node ID. If
-     * ommitted or null it will default to the root node.
+     * reviewed, but only the sub-arbor starting at the given node ID. If
+     * omitted or null it will default to the root node.
      * */
     this.createReviewSkeletonTable = function( skeleton_data, users, subarborNodeId ) {
         self.skeleton_segments = skeleton_data;
@@ -292,7 +292,7 @@ var ReviewSystem = new function()
             });
         });
         // Create a list of all users who have reviewed this neuron. Add the
-        // current useser as first element, regardless of his/her review status.
+        // current user as first element, regardless of his/her review status.
         var reviewers = Object.keys(users).filter(function(u) {
             // u is a string, so rely on != for comparing to (integer) user ID.
             return this[u].count > 0 && u != session.userid;

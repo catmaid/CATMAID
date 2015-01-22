@@ -725,7 +725,7 @@ WebGLApplication.prototype.storeCurrentView = function(name, callback) {
     dialog.onOK = (function() {
       this.storeCurrentView(nameField.value, callback);
     }).bind(this);
-    dialog.show(200, 200, true);
+    dialog.show(300, 200, true);
   } else {
     // Abort if a view with this name exists already
     if (name in this.availableViews) {

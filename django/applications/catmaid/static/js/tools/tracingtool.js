@@ -334,7 +334,12 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
+      if (e.shiftKey) {
+        var skid = SkeletonAnnotations.getActiveSkeletonId();
+        if (Number.isInteger(skid)) WebGLApplication.prototype.staticReloadSkeletons([skid]);
+      } else {
+        tracingLayer.svgOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
+      }
       return true;
     }
   } ) );

@@ -18,13 +18,13 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'catmaid', ['ReviewerWhitelist'])
 
-        # Adding unique constraint on 'ReviewerWhitelist', fields ['user', 'reviewer']
-        db.create_unique('reviewer_whitelist', ['user_id', 'reviewer_id'])
+        # Adding unique constraint on 'ReviewerWhitelist', fields ['project', 'user', 'reviewer']
+        db.create_unique('reviewer_whitelist', ['project_id', 'user_id', 'reviewer_id'])
 
 
     def backwards(self, orm):
-        # Removing unique constraint on 'ReviewerWhitelist', fields ['user', 'reviewer']
-        db.delete_unique('reviewer_whitelist', ['user_id', 'reviewer_id'])
+        # Removing unique constraint on 'ReviewerWhitelist', fields ['project', 'user', 'reviewer']
+        db.delete_unique('reviewer_whitelist', ['project_id', 'user_id', 'reviewer_id'])
 
         # Deleting model 'ReviewerWhitelist'
         db.delete_table('reviewer_whitelist')
@@ -334,7 +334,7 @@ class Migration(SchemaMigration):
             'treenode': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['catmaid.Treenode']"})
         },
         u'catmaid.reviewerwhitelist': {
-            'Meta': {'unique_together': "(('user', 'reviewer'),)", 'object_name': 'ReviewerWhitelist', 'db_table': "'reviewer_whitelist'"},
+            'Meta': {'unique_together': "(('project', 'user', 'reviewer'),)", 'object_name': 'ReviewerWhitelist', 'db_table': "'reviewer_whitelist'"},
             'accept_after': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(1, 1, 1, 0, 0)'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['catmaid.Project']"}),
@@ -426,7 +426,7 @@ class Migration(SchemaMigration):
         },
         u'catmaid.userprofile': {
             'Meta': {'object_name': 'UserProfile'},
-            'color': ('catmaid.fields.RGBAField', [], {'default': '(0.9313371395876754, 0.9288943639075391, 1.0, 1)'}),
+            'color': ('catmaid.fields.RGBAField', [], {'default': '(0.8122197914467499, 1.0, 0.9295521795841548, 1)'}),
             'display_stack_reference_lines': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'independent_ontology_workspace_is_default': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),

@@ -499,7 +499,7 @@ class ReviewerWhitelist(models.Model):
     """
     class Meta:
         db_table = "reviewer_whitelist"
-        unique_together = ('user', 'reviewer')
+        unique_together = ('project', 'user', 'reviewer')
     project = models.ForeignKey(Project)
     user = models.ForeignKey(User)
     reviewer = models.ForeignKey(User, related_name='+')

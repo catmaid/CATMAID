@@ -610,7 +610,7 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createTextNode(' Review filter'));
     var reviewFilter = appendSelect(buttons, 'ST-review-filter' + ST.widgetID,
-        ['Union', 'Whitelist']);
+        ['Union', 'Team']);
     reviewFilter.onchange = function () {
       ST.review_filter = reviewFilter.options[reviewFilter.selectedIndex].text;
       ST.update();
@@ -900,7 +900,7 @@ var WindowMaker = new function()
     [['none', 'Source'],
      ['creator', 'By Creator'],
      ['all-reviewed', 'All Reviewed'],
-     ['whitelist-reviewed', 'Whitelist Reviewed'],
+     ['whitelist-reviewed', 'Team Reviewed'],
      ['own-reviewed', 'Own Reviewed'],
      ['axon-and-dendrite', 'Axon and dendrite'],
      ['downstream-of-tag', 'Downstream of tag']
@@ -1178,7 +1178,7 @@ var WindowMaker = new function()
     color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
     color.options.add(new Option('source', 'source'));
     color.options.add(new Option('review status (union)', 'union-review'));
-    color.options.add(new Option('review status (whitelist)', 'whitelist-review'));
+    color.options.add(new Option('review status (team)', 'whitelist-review'));
     color.options.add(new Option('review status (own)', 'own-review'));
     color.options.add(new Option('input/output', 'I/O'));
     color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));

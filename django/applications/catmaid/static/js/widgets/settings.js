@@ -310,14 +310,13 @@ SettingsWidget.prototype.init = function(space)
 
 
     // Reviewer whitelist settings
-    ds = addSettingsContainer(container, "Reviewer Whitelist");
+    ds = addSettingsContainer(container, "Reviewer Team");
     // Add explanatory text
     ds.append($('<div/>').addClass('setting').append("Choose which users' " +
         "reviews to include when calculating review statistics. You may also " +
-        "specify a time after which to trust each user's reviews. Reviews " +
-        "by that user prior to this time are ignored. Your whitelist is " +
-        "private; reviewers do not know who has and who has not whitelisted " +
-        "them."));
+        "specify a time after which to include each user's reviews. Reviews " +
+        "by that user prior to this time are ignored. Your team is private; " +
+        "reviewers are not informed whether you have added them to your team."));
 
     // Get all available users
     var reviewers = User.all();
@@ -336,7 +335,7 @@ SettingsWidget.prototype.init = function(space)
     // Create 'Add' button and whitelist
     var whitelist = $('<select/>').addClass('multiline').attr('size', '4')[0];
 
-    var addReviewerButton = $('<button/>').text('Add to whitelist').click(function() {
+    var addReviewerButton = $('<button/>').text('Add to team').click(function() {
       var newReviewer = select.val();
       // Let ReviewSystem.Whitelist choose a default date if none was entered
       var acceptAfter = acceptAfterInput.val() ? acceptAfterInput.val() : undefined;
@@ -345,7 +344,7 @@ SettingsWidget.prototype.init = function(space)
           .save(refreshWhitelist);
     });
 
-    var removeReviewerButton = $('<button/>').text('Remove from whitelist').click(function() {
+    var removeReviewerButton = $('<button/>').text('Remove from team').click(function() {
       var removedReviewer = $(whitelist).val();
       ReviewSystem.Whitelist
           .removeReviewer(removedReviewer)

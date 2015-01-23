@@ -27,7 +27,7 @@ var SelectionTable = function() {
   this.skeletons = [];
   this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
   this.reviews = {};  // skeleton_id vs review percentage
-  this.review_filter = 'Union'; // filter for review percentage: 'Union' or 'Whitelist'
+  this.review_filter = 'Union'; // filter for review percentage: 'Union' or 'Team'
   this.all_visible = true;
   this.all_items_visible = {pre: true, post: true, text: false, meta: true};
   this.selected_skeleton_id = null;
@@ -384,7 +384,7 @@ SelectionTable.prototype.append = function(models) {
 
   // Retrieve review status before doing anything else
   requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
-    {skeleton_ids: skeleton_ids, whitelist: this.review_filter === 'Whitelist'},
+    {skeleton_ids: skeleton_ids, whitelist: this.review_filter === 'Team'},
     (function(status, text) {
       if (200 !== status) return;
       var json = $.parseJSON(text);
@@ -566,7 +566,7 @@ SelectionTable.prototype.update = function() {
       // Retrieve review status
       skeleton_ids = skeleton_ids.concat(Object.keys(new_models));
       requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
-        {skeleton_ids: skeleton_ids, whitelist: self.review_filter === 'Whitelist'},
+        {skeleton_ids: skeleton_ids, whitelist: self.review_filter === 'Team'},
         jsonResponseHandler(function(json) {
           // Update review information
           skeleton_ids.forEach(function(skeleton_id) {

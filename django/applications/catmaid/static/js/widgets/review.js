@@ -283,7 +283,7 @@ var ReviewSystem = new function()
         }, {});
 
         // Make a pseudo-user that aggregates reviews from the whitelist.
-        whitelistUser = {name: 'Whitelist', count: 0,
+        whitelistUser = {name: 'Team', count: 0,
                 segment_count: skeleton_data.reduce(function(o, s) {
                     o[s.id] = 0;
                     return o;

@@ -1734,8 +1734,9 @@ GroupGraph.prototype.colorBy = function(mode, select) {
     // Color by review status
     var cy = this.cy,
         postData = {skeleton_ids: this.getSkeletons()};
-    // if user_ids is not specified, returns the union
+    // if neither user_ids nor whitelist is specified, returns the union
     if ('own-review' === mode) postData['user_ids'] = [session.userid];
+    else if ('whitelist-review' === mode) postData['whitelist'] = true;
     requestQueue.register(django_url + project.id + "/skeleton/review-status", "POST",
         postData,
         function(status, text) {

@@ -1178,6 +1178,7 @@ var WindowMaker = new function()
     color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
     color.options.add(new Option('source', 'source'));
     color.options.add(new Option('review status (union)', 'union-review'));
+    color.options.add(new Option('review status (whitelist)', 'whitelist-review'));
     color.options.add(new Option('review status (own)', 'own-review'));
     color.options.add(new Option('input/output', 'I/O'));
     color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));

@@ -26,6 +26,13 @@ function User(userID, login, fullName, firstName, lastName, color)
   return this;
 }
 
+User.prototype.getDisplayName = function () {
+  return this.fullName ? this.fullName : this.login;
+}
+
+User.displayNameCompare = function (a, b) {
+  return a.getDisplayName().localeCompare(b.getDisplayName());
+}
 
 User.prototype.users = {};
 

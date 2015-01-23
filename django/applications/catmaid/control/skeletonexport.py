@@ -839,10 +839,10 @@ def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
     """ Return a map of treenode ID vs list of reviewer IDs,
     without including any unreviewed treenode. """
     m = defaultdict(list)
-    for row in Review.objects.filter(skeleton_id=int(skeleton_id)).values_list('treenode_id', 'reviewer_id').iterator():
-        m[row[0]].append(row[1])
+    for row in Review.objects.filter(skeleton_id=int(skeleton_id)).values_list('treenode_id', 'reviewer_id', 'review_time').iterator():
+        m[row[0]].append(row[1:3])
 
-    return HttpResponse(json.dumps(m, separators=(',', ':')))
+    return HttpResponse(json.dumps(m, separators=(',', ':'), cls=DjangoJSONEncoder))
 
 @requires_user_role(UserRole.Browse)
 def within_spatial_distance(request, project_id=None):

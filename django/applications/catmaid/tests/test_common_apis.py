@@ -2781,7 +2781,9 @@ class ViewPageTests(TestCase):
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=263)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        expected_result = {'253': [3, 2], '263': [3]}
+        expected_result = {
+                '253': [[3, review_time], [2, review_time]],
+                '263': [[3, review_time]]}
         self.assertJSONEqual(response.content, expected_result)
 
     def test_user_reviewer_whitelist(self):

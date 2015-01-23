@@ -900,6 +900,7 @@ var WindowMaker = new function()
     [['none', 'Source'],
      ['creator', 'By Creator'],
      ['all-reviewed', 'All Reviewed'],
+     ['whitelist-reviewed', 'Whitelist Reviewed'],
      ['own-reviewed', 'Own Reviewed'],
      ['axon-and-dendrite', 'Axon and dendrite'],
      ['downstream-of-tag', 'Downstream of tag']

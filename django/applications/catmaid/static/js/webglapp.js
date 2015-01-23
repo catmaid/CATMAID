@@ -14,6 +14,7 @@
   OptionsDialog,
   project,
   requestQueue,
+  ReviewSystem,
   SelectionTable,
   session,
   SkeletonAnnotations,
@@ -2365,8 +2366,8 @@ WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmo
   this.synapticColors = space.staticContent.synapticColors;
   this.skeletonmodel = skeletonmodel;
   this.opacity = skeletonmodel.opacity;
-  // This is an index mapping treenode IDs to lists of reviewers. Attaching them
-  // directly to the nodes is too much of a performance hit.
+  // This is an index mapping treenode IDs to lists of [reviewer_id, review_time].
+  // Attaching them directly to the nodes is too much of a performance hit.
   // Gets loaded dynamically, and erased when refreshing (because a new Skeleton is instantiated with the same model).
   this.reviews = null;
   // A map of nodeID vs true for nodes that belong to the axon, as computed by splitByFlowCentrality. Loaded dynamically, and erased when refreshing like this.reviews.
@@ -2853,11 +2854,21 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
             reviewedColor : unreviewedColor;
         }).bind(this)
         : function() { return notComputable; };
+    } else if ('whitelist-reviewed' === options.color_method) {
+      pickColor = this.reviews ?
+        (function(vertex) {
+          var wl = ReviewSystem.Whitelist.getWhitelist();
+          var reviewers = this.reviews[vertex.node_id];
+        return reviewers && reviewers.some(function (r) {
+            return r[0] in wl && (new Date(r[1])) > wl[r[0]];}) ?
+          reviewedColor : unreviewedColor;
+      }).bind(this)
+        : function() { return notComputable; };
     } else if ('own-reviewed' === options.color_method) {
       pickColor = this.reviews ?
         (function(vertex) {
           var reviewers = this.reviews[vertex.node_id];
-        return reviewers && -1 !== reviewers.indexOf(session.userid) ?
+        return reviewers && reviewers.some(function (r) { return r[0] == session.userid;}) ?
           reviewedColor : unreviewedColor;
       }).bind(this)
         : function() { return notComputable; };

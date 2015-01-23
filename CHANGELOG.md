@@ -9,6 +9,20 @@ Key shortcuts / mouse operations:
 - Shift+T removes all tags from the currently active node.
 
 
+Review system:
+
+- New "Reviewer Team" system allows filtering reviews in visualizations and
+  statistics to include only those by particular reviewers. Each user can
+  control which reviewers to include in her team. A date can be configured for
+  each reviewer in the team, so that only reviews from that reviewer after this
+  date are included.
+  * A user's reviewer team is configured through the Settings widget.
+  * The review widget includes a team column between the user and union columns.
+  * The percent reviewed column in the selection widget can be set to team or
+    union.
+  * Team review coloring is available in the 3D viewer and group graph.
+
+
 3D viewer:
 
 - With Ctrl + mouse wheel, only the camera is moved in target direction, the

@@ -670,8 +670,16 @@ def review_status(request, project_id=None):
     """ Return the review status for each skeleton in the request
     as a value between 0 and 100 (integers). """
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
-    user_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('user_ids['))
-    status = get_review_status(skeleton_ids, user_ids)
+    whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
+    whitelist_id = None
+    user_ids = None
+    if whitelist:
+        whitelist_id = request.user.id
+    else:
+        user_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('user_ids['))
+
+    status = get_review_status(skeleton_ids, project_id=project_id,
+            whitelist_id=whitelist_id, user_ids=user_ids)
 
     return HttpResponse(json.dumps(status))
 

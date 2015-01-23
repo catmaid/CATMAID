@@ -14,7 +14,7 @@ import datetime
 
 from catmaid.models import Project, Stack, ProjectStack
 from catmaid.models import ClassInstance, Log, Message, TextlabelLocation
-from catmaid.models import Treenode, Connector, TreenodeConnector, User, Review
+from catmaid.models import Treenode, Connector, TreenodeConnector, User, Review, ReviewerWhitelist
 from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from catmaid.fields import Double3D, Integer3D
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
@@ -2695,6 +2695,22 @@ class ViewPageTests(TestCase):
         response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
         self.assertEqual(response.status_code, 200)
         expected_result = {'2388': 66}
+        self.assertJSONEqual(response.content, expected_result)
+
+        # Use empty whitelist
+        response = self.client.post(url,
+                {'skeleton_ids[0]': skeleton_id, 'whitelist': 'true'})
+        self.assertEqual(response.status_code, 200)
+        expected_result = {'2388': 0}
+        self.assertJSONEqual(response.content, expected_result)
+
+        # Add a user to whitelist
+        ReviewerWhitelist.objects.create(project_id=self.test_project_id,
+                user_id=self.test_user_id, reviewer_id=2, accept_after=review_time)
+        response = self.client.post(url,
+                {'skeleton_ids[0]': skeleton_id, 'whitelist': 'true'})
+        self.assertEqual(response.status_code, 200)
+        expected_result = {'2388': 33}
         self.assertJSONEqual(response.content, expected_result)
 
     def test_export_review_skeleton(self):

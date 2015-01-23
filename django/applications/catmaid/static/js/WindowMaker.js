@@ -608,6 +608,14 @@ var WindowMaker = new function()
     filter.onkeyup = function(ev) { if (13 === ev.keyCode) ST.filterBy(filter.value); };
     buttons.appendChild(filter);
 
+    buttons.appendChild(document.createTextNode(' Review filter'));
+    var reviewFilter = appendSelect(buttons, 'ST-review-filter' + ST.widgetID,
+        ['Union', 'Whitelist']);
+    reviewFilter.onchange = function () {
+      ST.review_filter = reviewFilter.options[reviewFilter.selectedIndex].text;
+      ST.update();
+    };
+
     buttons.appendChild(document.createTextNode(' Batch color:'));
     var batch = document.createElement('input');
     batch.setAttribute('type', 'button');

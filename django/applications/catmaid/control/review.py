@@ -76,12 +76,14 @@ def get_review_count(skeleton_ids):
 
     return reviews
 
-def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
+def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
+        user_ids=None, excluding_user_ids=None):
     """ Returns a dictionary that maps skeleton IDs to their review
-    status as a value between 0 and 100 (integers). If <user_ids>
-    evaluates to false a union review is returned. Otherwise a list
-    of user IDs is expected to create a review status for a sub-union
-    or a single user.
+    status as a value between 0 and 100 (integers). If <whitelist_id> is
+    not false, reviews are filtered according to the user's whitelist.
+    Otherwise, if <user_ids> evaluates to false a union review is returned.
+    Otherwise a list of user IDs is expected to create a review status for a
+    sub-union or a single user.
     """
     if user_ids and excluding_user_ids:
         raise ValueError("user_ids and excluding_user_ids can't be used at the same time")
@@ -105,16 +107,25 @@ def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
     for row in cursor.fetchall():
         skeletons[row[0]].num_nodes = row[1]
 
-    # Optionally, add a user filter
-    if user_ids:
+    query_joins = ""
+    # Optionally, add a filter
+    if whitelist_id:
+        query_joins = """
+                JOIN reviewer_whitelist wl
+                  ON (wl.user_id = %s AND wl.project_id = %s
+                      AND r.reviewer_id = wl.reviewer_id
+                      AND r.review_time >= wl.accept_after)
+                  """ % (whitelist_id, project_id)
+        user_filter = ""
+    elif user_ids:
         # Count number of nodes reviewed by a certain set of users,
         # per skeleton.
-        user_filter = " AND reviewer_id IN (%s)" % \
+        user_filter = " AND r.reviewer_id IN (%s)" % \
             ",".join(map(str, user_ids))
     elif excluding_user_ids:
         # Count number of nodes reviewed by all users excluding the
         # specified ones, per skeleton.
-        user_filter = " AND reviewer_id NOT IN (%s)" % \
+        user_filter = " AND r.reviewer_id NOT IN (%s)" % \
             ",".join(map(str, excluding_user_ids))
     else:
         # Count total number of reviewed nodes per skeleton, regardless
@@ -124,11 +135,11 @@ def get_review_status(skeleton_ids, user_ids=None, excluding_user_ids=None):
     cursor.execute('''
     SELECT skeleton_id, count(*)
     FROM (SELECT skeleton_id, treenode_id
-          FROM review
+          FROM review r %s
           WHERE skeleton_id IN (%s)%s
           GROUP BY skeleton_id, treenode_id) AS sub
     GROUP BY skeleton_id
-    ''' % (",".join(map(str, skeleton_ids)), user_filter))
+    ''' % (query_joins, ",".join(map(str, skeleton_ids)), user_filter))
     for row in cursor.fetchall():
         skeletons[row[0]].num_reviewed = row[1]
 

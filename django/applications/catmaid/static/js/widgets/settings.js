@@ -365,7 +365,6 @@ SettingsWidget.prototype.init = function(space)
         var user = User.safe_get(userId);
         var optionElement = $('<option/>')
             .attr('value', userId)
-            .data('accept_after', wlEntries[userId])
             .text(user.getDisplayName() + ' (' + wlEntries[userId].toDateString() + ')');
         return optionElement[0];
       });

@@ -319,11 +319,12 @@ SettingsWidget.prototype.init = function(space)
         "reviewers are not informed whether you have added them to your team."));
 
     // Get all available users
-    var reviewers = User.all();
+    var users = User.all();
+    var reviewers = Object.keys(users).map(function (userId) { return users[userId]; });
     // Add reviewer options to select box
     select = $('<select/>');
-    Object.keys(reviewers).forEach(function(userId) {
-      this.append(new Option(reviewers[userId].fullName, userId));
+    reviewers.sort(User.displayNameCompare).forEach(function (user) {
+      this.append(new Option(user.getDisplayName(), user.id));
     }, select);
 
     var acceptAfterInput = $('<input type="text" />').datepicker({
@@ -365,9 +366,12 @@ SettingsWidget.prototype.init = function(space)
         var optionElement = $('<option/>')
             .attr('value', userId)
             .data('accept_after', wlEntries[userId])
-            .text(user.fullName + ' (' + wlEntries[userId].toDateString() + ')');
+            .text(user.getDisplayName() + ' (' + wlEntries[userId].toDateString() + ')');
         return optionElement[0];
       });
+
+      options.sort(function (a, b) {
+          return User.displayNameCompare(users[a.value], users[b.value]); });
 
       options.forEach(whitelist.appendChild.bind(whitelist));
     };

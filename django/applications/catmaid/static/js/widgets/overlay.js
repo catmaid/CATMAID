@@ -2258,8 +2258,7 @@ SkeletonAnnotations.Tag = new (function() {
     var atn = SkeletonAnnotations.atn;
     svgOverlay.submit(
       django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
-      {pid: project.id,
-       tags: label,
+      {tags: label,
        delete_existing: deleteExisting ? true : false},
       function(json) {
         if ('' === label) {

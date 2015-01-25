@@ -554,9 +554,29 @@ SkeletonElements.prototype.AbstractTreenode = function() {
         stroke: "none",
         opacity: 0
       });
+    // Create a label to measure current radius of the circle.
+    var label = this.paper.append('g').classed('radiuslabel', true).attr({
+        'pointer-events': 'none'});
+    var fontSize = parseFloat(SkeletonElements.prototype.ArrowLine.prototype.confidenceFontSize) * 0.75;
+    var pad = fontSize * 0.5;
+    var labelShadow = label.append('rect').attr({
+        x: this.x,
+        y: this.y,
+        rx: pad,
+        ry: pad,
+        stroke: '#000',
+        fill: '#000',
+        opacity: 0.75,
+        'pointer-events': 'none'});
+    var labelText = label.append('text').attr({
+        x: this.x,
+        y: this.y,
+        'font-size': fontSize + 'pt',
+        fill: '#FFF',
+        'pointer-events': 'none'});
 
     // Mark this node as currently edited
-    this.surroundingCircleElements = [c, mc];
+    this.surroundingCircleElements = [c, mc, label];
 
     // Update radius on mouse move
     mc.on('mousemove', function() {
@@ -568,6 +588,15 @@ SkeletonElements.prototype.AbstractTreenode = function() {
       c.attr('r', newR);
       // Strore also x and y components
       c.datum(r);
+      // Update radius measurement label.
+      labelText.attr({x: self.x + r.x + 3 * pad, y: self.y + r.y + 2 * pad});
+      labelText.text(Math.round(newR) + 'nm');
+      var bbox = labelText.node().getBBox();
+      labelShadow.attr({
+          x: self.x + r.x + 2 * pad,
+          y: self.y + r.y + 2 * pad - bbox.height,
+          width: bbox.width + 2 * pad,
+          height: bbox.height + pad});
     });
 
     // Don't let mouse down events bubble up
@@ -592,8 +621,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     // Get last radius components
     var r = this.surroundingCircleElements[0].datum();
     // Clean up
-    this.surroundingCircleElements[0].remove();
-    this.surroundingCircleElements[1].remove();
+    this.surroundingCircleElements.forEach(function (e) { e.remove() ;});
     delete this.surroundingCircleElements;
     // Execute callback, if any, with radius in nm as argument
     if (callback) {

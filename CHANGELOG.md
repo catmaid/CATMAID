@@ -33,6 +33,9 @@ Review system:
 - With Ctrl + mouse wheel, only the camera is moved in target direction, the
   target stays fixed. If Alt + mouse wheel is used, the target moves as well.
 
+- The CSV export not also includes the parent ID for each node, which can be
+  used to reconstruct the toplogical tree.
+
 
 ### Bug fixes
 

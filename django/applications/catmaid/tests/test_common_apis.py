@@ -2193,6 +2193,38 @@ class ViewPageTests(TestCase):
         for mi in ('0','1','2','3'):
             self.assertEqual(expected_result[mi], parsed_response[mi])
 
+    def test_skeleton_openleaf(self):
+        skeleton_id = 235
+
+        self.fake_authentication()
+        url = '/%d/skeleton/%d/openleaf' % (self.test_project_id, skeleton_id,)
+
+        # Return untagged root
+        response = self.client.post(url, {'tnid': 243})
+        self.assertEqual(response.status_code, 200)
+        expected_result = [237, [1065.0, 3035.0, 0.0]]
+        self.assertJSONEqual(response.content, expected_result)
+
+        # Tag soma and try again
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, 237),
+                {'tags': 'soma', 'delete_existing': 'false'})
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(url, {'tnid': 243})
+        self.assertEqual(response.status_code, 200)
+        expected_result = [261, [2820.000, 1345.000, 0.000]]
+        self.assertJSONEqual(response.content, expected_result)
+
+        # Tag branch and try again, should be shortest path (277) not nearest (417)
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, 261),
+                {'tags': 'end', 'delete_existing': 'false'})
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(url, {'tnid': 243})
+        self.assertEqual(response.status_code, 200)
+        expected_result = [277, [6090.0, 1550.0, 0.0]]
+        self.assertJSONEqual(response.content, expected_result)
+
     def test_skeleton_ancestry(self):
         skeleton_id = 361
 

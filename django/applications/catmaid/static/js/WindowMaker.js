@@ -982,10 +982,6 @@ var WindowMaker = new function()
 
     $(bar).tabs();
 
-    var buttons = document.createElement( "div" );
-    buttons.id = "buttons_in_3d_webgl_widget";
-    content.appendChild(buttons);
-
     var container = createContainer("view_in_3d_webgl_widget" + WA.widgetID);
     content.appendChild(container);
 
@@ -1027,7 +1023,7 @@ var WindowMaker = new function()
           case CMWWindow.RESIZE:
             var frame = win.getFrame();
             var w = win.getAvailableWidth();
-            var h = win.getContentHeight() - buttons.offsetHeight;
+            var h = win.getContentHeight() - bar.offsetHeight;
             container.style.width = w + "px";
             container.style.height = h + "px";
             WA.resizeView( w, h );

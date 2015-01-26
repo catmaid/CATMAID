@@ -62,6 +62,10 @@ Neuron search:
 - The projection mode (orthographic or perspective) is now also stored in a
   saved view.
 
+- The 3D viewer's drawing canvas is now correctly sized again. Since the tab
+  panel has been introduced, the 3D viewer has been too high. Now the
+  pre-defined views (XY, XZ, ZY, ZX) are display correctly again, i.e. the whole
+  bounding box is now seen again.
 
 ## 2015.1.21
 

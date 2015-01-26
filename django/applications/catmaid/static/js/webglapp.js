@@ -377,13 +377,16 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
 WebGLApplication.prototype.exportSkeletonsAsCSV = function() {
   var sks = this.space.content.skeletons,
       yD = this.space.yDimension,
-      rows = ["skeleton_id, treenode_id, x, y, z"];
+      rows = ["skeleton_id, treenode_id, parent_treenode_id, x, y, z"];
   Object.keys(sks).forEach(function(skid) {
-    var vs = sks[skid].getPositions();
+    var vs = sks[skid].getPositions(),
+        arbor = sks[skid].createArbor(),
+        edges = arbor.edges;
+    edges[arbor.root] = '';
     Object.keys(vs).forEach(function(tnid) {
       var v = vs[tnid];
       // Transform back to Stack coords
-      rows.push(skid + "," + tnid + "," + v.x + "," + (yD - v.y) + "," + (-v.z));
+      rows.push(skid + "," + tnid + "," + edges[tnid]  + "," + v.x + "," + (yD - v.y) + "," + (-v.z));
     });
   });
   saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "skeleton_coordinates.csv");

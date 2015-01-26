@@ -1837,10 +1837,10 @@ SkeletonAnnotations.SVGOverlay.prototype.goToLastEditedNode = function(skeletonI
     });
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, cycle) {
+SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, cycle, byTime) {
   if (this.isIDNull(nodeID)) return;
   if (cycle) {
-    this.cycleThroughOpenEnds(nodeID);
+    this.cycleThroughOpenEnds(nodeID, byTime);
   } else {
     var self = this;
     // TODO could be done by inspecting the graph locally if it is loaded in the
@@ -1853,20 +1853,28 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
           // [0]: open end node ID
           // [1]: location array as [x, y, z]
           // [2]: distance (path length)
+          // [3]: creation_time
           if (0 === json.length) {
             growlAlert("Information", "No more open ends!");
           } else {
-            self.nextOpenEnds = {
-                tnid: nodeID,
-                ends: json.sort(function (a, b) { return a[2] - b[2]; })};
-            self.cycleThroughOpenEnds(null);
+            self.nextOpenEnds = { tnid: nodeID, ends: json, byTime: null };
+            self.cycleThroughOpenEnds(null, byTime);
           }
         });
   }
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treenode_id) {
+SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treenode_id, byTime) {
   if (typeof this.nextOpenEnds === 'undefined') return;
+
+  if (byTime !== this.nextOpenEnds.byTime) {
+    this.nextOpenEnds.ends.sort(byTime ?
+        // Sort creation date strings by descending time
+        function (a, b) { return b[3].localeCompare(a[3]); } :
+        // Sort by ascending path distance
+        function (a, b) { return a[2] - b[2]; });
+    this.nextOpenEnds.byTime = byTime;
+  }
 
   var currentEnd = this.nextOpenEnds.ends.map(function (end) {
     return end[0] === treenode_id;

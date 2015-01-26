@@ -5,6 +5,7 @@ from operator import itemgetter
 from datetime import datetime, timedelta
 from collections import defaultdict
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
@@ -51,7 +52,7 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
 
     # Select all nodes and their tags
     cursor.execute('''
-    SELECT t.id, t.parent_id, t.location_x, t.location_y, t.location_z, ci.name
+    SELECT t.id, t.parent_id, t.location_x, t.location_y, t.location_z, t.creation_time, ci.name
     FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id AND tci.relation_id = %s) ON t.id = tci.treenode_id
     WHERE t.skeleton_id = %s
     ''' % (labeled_as, int(skeleton_id)))
@@ -67,13 +68,14 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
         else:
             tree.add_node(nodeID)
         tree.node[nodeID]['loc'] = (row[2], row[3], row[4])
-        if row[5]:
+        tree.node[nodeID]['ct'] = row[5]
+        if row[6]:
             props = tree.node[nodeID]
             tags = props.get('tags')
             if tags:
-                tags.append(row[5])
+                tags.append(row[6])
             else:
-                props['tags'] = [row[5]]
+                props['tags'] = [row[6]]
 
     if tnid not in tree:
         raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
@@ -93,9 +95,9 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
             if not 'tags' in props or not [s for s in props['tags'] if 'end' in s or s in other_tags]:
                 # Found an open end
                 d = distances[nodeID]
-                nearest.append([nodeID, props['loc'], d])
+                nearest.append([nodeID, props['loc'], d, props['ct']])
 
-    return HttpResponse(json.dumps(nearest))
+    return HttpResponse(json.dumps(nearest, cls=DjangoJSONEncoder))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

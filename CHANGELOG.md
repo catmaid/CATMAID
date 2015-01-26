@@ -8,6 +8,11 @@ Key shortcuts / mouse operations:
 
 - Shift+T removes all tags from the currently active node.
 
+- After using R to go the nearest open leaf, shift+R cycles through other open
+  leaves in the skeleton in order of ascending distance from the starting
+  location. Combining alt with these operations orders open leaves by most
+  recent creation instead of distance.
+
 
 Review system:
 
@@ -35,6 +40,12 @@ Tracing overlay:
 
 - Trying to remove a non-existent tag from a node now doesn't show an error
   dialog anymore, but only a notification.
+
+
+Key shortcuts / mouse operations:
+
+- Fix bug where tagged nodes were not considered open by R regardless of tag
+  content.
 
 
 Neuron search:

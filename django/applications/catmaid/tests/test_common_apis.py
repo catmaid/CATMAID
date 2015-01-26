@@ -2205,10 +2205,11 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         distsort = lambda end: end[2]
         parsed_response.sort(key=distsort)
-        expected_result = [[237, [1065.0, 3035.0, 0.0],  4],
-                           [261, [2820.0, 1345.0, 0.0], 10],
-                           [277, [6090.0, 1550.0, 0.0], 13],
-                           [417, [4990.0, 4200.0, 0.0], 16]]
+        expected_result = \
+                [[237, [1065.0, 3035.0, 0.0],  4, u'2011-09-27T07:49:15.802'],
+                 [261, [2820.0, 1345.0, 0.0], 10, u'2011-09-27T07:49:25.549'],
+                 [277, [6090.0, 1550.0, 0.0], 13, u'2011-09-27T07:49:33.770'],
+                 [417, [4990.0, 4200.0, 0.0], 16, u'2011-10-07T07:02:15.176']]
         self.assertEqual(parsed_response, expected_result)
 
         # Tag soma and try again

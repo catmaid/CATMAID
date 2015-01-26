@@ -92,7 +92,7 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
             # Found an end node
             props = tree.node[nodeID]
             # Check if not tagged with a tag containing 'end'
-            if not 'tags' in props and not [s for s in props if 'end' in s or s in other_tags]:
+            if not 'tags' in props or not [s for s in props['tags'] if 'end' in s or s in other_tags]:
                 # Found an open end
                 d = distances[nodeID]
                 if d < distance:

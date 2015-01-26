@@ -1837,28 +1837,48 @@ SkeletonAnnotations.SVGOverlay.prototype.goToLastEditedNode = function(skeletonI
     });
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.goToNearestOpenEndNode = function(nodeID) {
+SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, cycle) {
   if (this.isIDNull(nodeID)) return;
-  var self = this;
-  // TODO could be done by inspecting the graph locally if it is loaded in the 3d Viewer
-  // of from the treenode table (but neither source may not be up to date)
-  this.submit(
-      django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf',
-      {tnid: nodeID},
-      function(jso) {
-        // [0]: open end node ID
-        // [1]: location array as in [12.3, 45.6, 78.9]
-        if (!jso[0]) {
-          growlAlert("Information", "No more open ends!");
-        } else if (jso[0] === nodeID) {
-          growlAlert("Information", "You are at an open end node.");
-        } else {
-          // Parse location string
-          var loc = jso[1].map(parseFloat);
-          self.moveTo(loc[2], loc[1], loc[0],
-            function() { self.selectNode(jso[0]); });
-        }
-      });
+  if (cycle) {
+    this.cycleThroughOpenEnds(nodeID);
+  } else {
+    var self = this;
+    // TODO could be done by inspecting the graph locally if it is loaded in the
+    // 3D viewer or treenode table (but either source may not be up to date)
+    this.submit(
+        django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf',
+        {tnid: nodeID},
+        function (json) {
+          // json is an array of nodes. Each node is an array:
+          // [0]: open end node ID
+          // [1]: location array as [x, y, z]
+          // [2]: distance (path length)
+          if (0 === json.length) {
+            growlAlert("Information", "No more open ends!");
+          } else {
+            self.nextOpenEnds = {
+                tnid: nodeID,
+                ends: json.sort(function (a, b) { return a[2] - b[2]; })};
+            self.cycleThroughOpenEnds(null);
+          }
+        });
+  }
+};
+
+SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treenode_id) {
+  if (typeof this.nextOpenEnds === 'undefined') return;
+
+  var currentEnd = this.nextOpenEnds.ends.map(function (end) {
+    return end[0] === treenode_id;
+  }).indexOf(true);
+
+  // Cycle through ends. If treenode_id was not in the end (such as when first
+  // selecting an end), currentEnd will be -1, so the following line will make
+  // it 0 and still produce the desired behavior.
+  currentEnd = (currentEnd + 1) % this.nextOpenEnds.ends.length;
+
+  var node = this.nextOpenEnds.ends[currentEnd];
+  this.moveTo(node[1][2], node[1][1], node[1][0], this.selectNode.bind(this, node[0]));
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, prefixMessage) {

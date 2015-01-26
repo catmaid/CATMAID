@@ -41,8 +41,8 @@ def get_skeleton_permissions(request, project_id, skeleton_id):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def last_openleaf(request, project_id=None, skeleton_id=None):
-    """ Return the ID of the nearest node (or itself), and its location string;
-    or two nulls if none found. """
+    """ Return a list of the ID and location of open leaf nodes in the skeleton
+    and their path length distance to the specified treenode. """
     tnid = int(request.POST['tnid'])
     cursor = connection.cursor()
 
@@ -81,10 +81,8 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
     reroot(tree, tnid)
     distances = edge_count_to_root(tree, root_node=tnid)
 
-    # Iterate end nodes, find closest
-    nearest = None
-    distance = tree.number_of_nodes() + 1
-    loc = None
+    # Iterate end nodes to find which are open.
+    nearest = []
     other_tags = set(('uncertain continuation', 'not a branch', 'soma'))
 
     for nodeID, out_degree in tree.out_degree_iter():
@@ -95,12 +93,9 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
             if not 'tags' in props or not [s for s in props['tags'] if 'end' in s or s in other_tags]:
                 # Found an open end
                 d = distances[nodeID]
-                if d < distance:
-                    nearest = nodeID
-                    distance = d
-                    loc = props['loc']
+                nearest.append([nodeID, props['loc'], d])
 
-    return HttpResponse(json.dumps((nearest, loc)))
+    return HttpResponse(json.dumps(nearest))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

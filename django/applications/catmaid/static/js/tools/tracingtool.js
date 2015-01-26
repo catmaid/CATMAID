@@ -345,12 +345,12 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
-    helpText: "Next open leaf node",
+    helpText: "Go to nearest open leaf node (subsequent shift+R: cycle through other open leaves)",
     keyShortcuts: { "R": [ 82 ] },
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.goToNearestOpenEndNode(SkeletonAnnotations.getActiveNodeId());
+      tracingLayer.svgOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey);
       return true;
     }
   } ) );

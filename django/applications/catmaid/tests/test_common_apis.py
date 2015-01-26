@@ -2202,8 +2202,14 @@ class ViewPageTests(TestCase):
         # Return untagged root
         response = self.client.post(url, {'tnid': 243})
         self.assertEqual(response.status_code, 200)
-        expected_result = [237, [1065.0, 3035.0, 0.0]]
-        self.assertJSONEqual(response.content, expected_result)
+        parsed_response = json.loads(response.content)
+        distsort = lambda end: end[2]
+        parsed_response.sort(key=distsort)
+        expected_result = [[237, [1065.0, 3035.0, 0.0],  4],
+                           [261, [2820.0, 1345.0, 0.0], 10],
+                           [277, [6090.0, 1550.0, 0.0], 13],
+                           [417, [4990.0, 4200.0, 0.0], 16]]
+        self.assertEqual(parsed_response, expected_result)
 
         # Tag soma and try again
         response = self.client.post(
@@ -2212,8 +2218,10 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         response = self.client.post(url, {'tnid': 243})
         self.assertEqual(response.status_code, 200)
-        expected_result = [261, [2820.000, 1345.000, 0.000]]
-        self.assertJSONEqual(response.content, expected_result)
+        parsed_response = json.loads(response.content)
+        parsed_response.sort(key=distsort)
+        expected_result.pop(0)
+        self.assertEqual(parsed_response, expected_result)
 
         # Tag branch and try again, should be shortest path (277) not nearest (417)
         response = self.client.post(
@@ -2222,8 +2230,10 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         response = self.client.post(url, {'tnid': 243})
         self.assertEqual(response.status_code, 200)
-        expected_result = [277, [6090.0, 1550.0, 0.0]]
-        self.assertJSONEqual(response.content, expected_result)
+        parsed_response = json.loads(response.content)
+        parsed_response.sort(key=distsort)
+        expected_result.pop(0)
+        self.assertEqual(parsed_response, expected_result)
 
     def test_skeleton_ancestry(self):
         skeleton_id = 361

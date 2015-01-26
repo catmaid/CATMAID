@@ -170,15 +170,20 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
 
         # Create change requests for labels associated to the treenode by other users
         for label in other_labels:
-            ChangeRequest(**{'type': 'Remove Tag',
-                        'project': p,
-                        'user': request.user,
-                        'recipient': node.user,
-                        'location': Double3D(node.location_x, node.location_y, node.location_z),
-                        ntype: node,
-                        'description': 'Remove tag \'' + label.class_instance.name + '\'',
-                        'validate_action': 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(label.id) + ', "' + ntype + '")',
-                        'approve_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(label.id) + ', "' + ntype + '")'}).save()
+            change_request_params = {
+                'type': 'Remove Tag',
+                'project': p,
+                'user': request.user,
+                'recipient': node.user,
+                'location': Double3D(node.location_x, node.location_y, node.location_z),
+                ntype: node,
+                'description': "Remove tag '%s'" % label.class_instance.name,
+                'validate_action': 'from catmaid.control.label import label_exists\n' +
+                                   'is_valid = label_exists(%s, "%s")' % (str(label.id), ntype),
+                'approve_action': 'from catmaid.control.label import remove_label\n' +
+                                  'remove_label(%s, "%s")' % (str(label.id), ntype)
+            }
+            ChangeRequest(**change_request_params).save()
 
     # Add any new labels.
     label_class = Class.objects.get(project=project_id, class_name='label')
@@ -211,15 +216,20 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
 
             if node.user != request.user:
                 # Inform the owner of the node that the tag was added and give them the option of removing it.
-                ChangeRequest(**{'type': 'Add Tag',
-                               'description': 'Added tag \'' + tag_name + '\'',
-                               'project': p,
-                               'user': request.user,
-                               'recipient': node.user,
-                               'location': Double3D(node.location_x, node.location_y, node.location_z),
-                               ntype: node,
-                               'validate_action': 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(tci.id) + ', "' + ntype + '")',
-                               'reject_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "' + ntype + '")'}).save()
+                change_request_params = {
+                    'type': 'Add Tag',
+                    'description': 'Added tag \'' + tag_name + '\'',
+                    'project': p,
+                    'user': request.user,
+                    'recipient': node.user,
+                    'location': Double3D(node.location_x, node.location_y, node.location_z),
+                    ntype: node,
+                    'validate_action': 'from catmaid.control.label import label_exists\n' +
+                                       'is_valid = label_exists(%s, "%s")' % (str(tci.id), ntype),
+                    'reject_action': 'from catmaid.control.label import remove_label\n' +
+                                     'remove_label(%s, "%s")' % (str(tci.id), ntype)
+                }
+                ChangeRequest(**change_request_params).save()
 
 
     return HttpResponse(json.dumps({'message': 'success'}), content_type='text/json')

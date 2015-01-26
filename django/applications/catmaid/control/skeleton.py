@@ -1,6 +1,7 @@
 import decimal
 import json
 import networkx as nx
+import re
 from operator import itemgetter
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -85,14 +86,16 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
 
     # Iterate end nodes to find which are open.
     nearest = []
-    other_tags = set(('uncertain continuation', 'not a branch', 'soma'))
+    end_tags = ['uncertain continuation', 'not a branch', 'soma',
+            '^(?i)(really|uncertain|anterior|posterior)?\s?ends?$']
+    end_regex = re.compile('(?:' + ')|(?:'.join(end_tags) + ')')
 
     for nodeID, out_degree in tree.out_degree_iter():
         if 0 == out_degree:
             # Found an end node
             props = tree.node[nodeID]
             # Check if not tagged with a tag containing 'end'
-            if not 'tags' in props or not [s for s in props['tags'] if 'end' in s or s in other_tags]:
+            if not 'tags' in props or not any(end_regex.match(s) for s in props['tags']):
                 # Found an open end
                 d = distances[nodeID]
                 nearest.append([nodeID, props['loc'], d, props['ct']])

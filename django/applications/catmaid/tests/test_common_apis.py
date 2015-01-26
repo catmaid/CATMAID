@@ -2225,15 +2225,27 @@ class ViewPageTests(TestCase):
         self.assertEqual(parsed_response, expected_result)
 
         # Tag branch and try again, should be shortest path (277) not nearest (417)
+        # Also check tag case insensitivity.
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 261),
-                {'tags': 'end', 'delete_existing': 'false'})
+                {'tags': 'End', 'delete_existing': 'false'})
         self.assertEqual(response.status_code, 200)
         response = self.client.post(url, {'tnid': 243})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         parsed_response.sort(key=distsort)
         expected_result.pop(0)
+        self.assertEqual(parsed_response, expected_result)
+
+        # Check that an arbitrary tag containing 'end' is still considered open.
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, 277),
+                {'tags': 'mitochondria ends', 'delete_existing': 'false'})
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(url, {'tnid': 243})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        parsed_response.sort(key=distsort)
         self.assertEqual(parsed_response, expected_result)
 
     def test_skeleton_ancestry(self):

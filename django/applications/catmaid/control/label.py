@@ -217,7 +217,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                                'user': request.user,
                                'recipient': node.user,
                                'location': Double3D(node.location_x, node.location_y, node.location_z),
-                               'treenode': node,
+                               ntype: node,
                                'validate_action': 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(tci.id) + ', "' + ntype + '")',
                                'reject_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "' + ntype + '")'}).save()
 

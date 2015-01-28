@@ -435,12 +435,18 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Append the active skeleton to the last used selection widget",
+    helpText: "Append the active skeleton to the last used selection widget (Ctrl: remove from selection)",
     keyShortcuts: {
       "Y": [ 89 ]
     },
     run: function (e) {
-      SelectionTable.getLastFocused().append(SkeletonAnnotations.sourceView.getSelectedSkeletonModels());
+      if (e.ctrlKey || e.metaKey) {
+        SelectionTable.getLastFocused().removeSkeletons([
+            SkeletonAnnotations.getActiveSkeletonId()]);
+      } else {
+        SelectionTable.getLastFocused().append(
+            SkeletonAnnotations.sourceView.getSelectedSkeletonModels());
+      }
     }
   }) );
 

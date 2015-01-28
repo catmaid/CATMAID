@@ -13,6 +13,8 @@ Key shortcuts / mouse operations:
   location. Combining alt with these operations orders open leaves by most
   recent creation instead of distance.
 
+- Ctrl+Y removes the active skeleton from the last used selection widget.
+
 
 Review system:
 

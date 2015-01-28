@@ -70,6 +70,11 @@ Neuron search:
   pre-defined views (XY, XZ, ZY, ZX) are display correctly again, i.e. the whole
   bounding box is now seen again.
 
+Miscellaneous:
+
+- Vertical resizing of widgets now doesn't lead to strange size changes anymore.
+
+
 ## 2015.1.21
 
 Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers

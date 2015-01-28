@@ -1687,29 +1687,26 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
 };
 
 /**
- * Shows a dialog to edit the radius property of a node. By default, it also
- * lets the user estimate the radius with the help of a small measurement tool,
- * which can be disabled by setting the no_measurement_tool parameter to true.
+ * Lets the user select a radius around a node with the help of a small
+ * measurement tool, passing the selected radius to a callback when finished.
  */
-SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool) {
+SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, completionCallback) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
   this.goToNode(treenode_id,
       function() {
-        // If there was a measurement tool based radius change was started
+        // If there was a measurement tool based radius selection started
         // before, stop this.
         if (self.nodes[treenode_id].surroundingCircleElements) {
-          hideCircleAndShowDialog();
-        } else if (no_measurement_tool) {
-          show_dialog(self.nodes[treenode_id].radius);
+          hideCircleAndCallback();
         } else {
           self.nodes[treenode_id].drawSurroundingCircle(transform,
-              hideCircleAndShowDialog);
-          // Attach a handler for the ESC key to cancel input
-          $('body').on('keydown.catmaidRadiusEdit', function(event) {
+              hideCircleAndCallback);
+          // Attach a handler for the ESC key to cancel selection
+          $('body').on('keydown.catmaidRadiusSelect', function(event) {
             if (27 === event.keyCode) {
               // Unbind key handler and remove circle
-              $('body').off('keydown.catmaidRadiusEdit');
+              $('body').off('keydown.catmaidRadiusSelect');
               self.nodes[treenode_id].removeSurroundingCircle();
               return true;
             }
@@ -1717,20 +1714,20 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
           });
         }
 
-        function hideCircleAndShowDialog()
+        function hideCircleAndCallback()
         {
           // Unbind key handler
-          $('body').off('keydown.catmaidRadiusEdit');
-          // Remove circle and show dialog
+          $('body').off('keydown.catmaidRadiusSelect');
+          // Remove circle and call callback
           self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
             if (typeof rx === 'undefined' || typeof ry === 'undefined') {
-              show_dialog(self.nodes[treenode_id].radius);
+              completionCallback(undefined);
               return;
             }
             // Convert pixel radius components to nanometers
             var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
-            // Show dialog with the new radius
-            show_dialog(r);
+            // Callback with the selected radius
+            completionCallback(r);
           });
         }
 
@@ -1744,40 +1741,57 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
               x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
               y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
         }
-
-        function show_dialog(defaultRadius)
-        {
-          var dialog = new OptionsDialog("Edit radius");
-          var input = dialog.appendField("Radius: ", "treenode-edit-radius", defaultRadius);
-          var choice = dialog.appendChoice("Apply: ", "treenode-edit-radius-scope",
-            ['Only this node', 'From this node to the next branch or end node (included)',
-             'From this node to the previous branch node or root (excluded)',
-             'From this node to the previous node with a defined radius (excluded)',
-             'From this node to root (included)', 'All nodes'],
-            [0, 1, 2, 3, 4, 5],
-            self.editRadius_defaultValue);
-          dialog.onOK = function() {
-            var radius = parseFloat(input.value);
-            if (isNaN(radius)) {
-              alert("Invalid number: '" + input.value + "'");
-              return;
-            }
-            self.editRadius_defaultValue = choice.selectedIndex;
-            self.submit(
-              django_url + project.id + '/treenode/' + treenode_id + '/radius',
-              {radius: radius,
-               option: choice.selectedIndex},
-              function(json) {
-                // Refresh 3d views if any
-                WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
-                // Reinit SVGOverlay to read in the radius of each altered treenode
-                self.updateNodes();
-              });
-          };
-          dialog.show();
-        }
-
       });
+};
+
+/**
+ * Shows a dialog to edit the radius property of a node. By default, it also
+ * lets the user estimate the radius with the help of a small measurement tool,
+ * which can be disabled by setting the no_measurement_tool parameter to true.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool) {
+  if (this.isIDNull(treenode_id)) return;
+  var self = this;
+
+  function show_dialog(defaultRadius) {
+    if (typeof defaultRadius === 'undefined')
+      defaultRadius = self.nodes[treenode_id].radius;
+
+    var dialog = new OptionsDialog("Edit radius");
+    var input = dialog.appendField("Radius: ", "treenode-edit-radius", defaultRadius);
+    var choice = dialog.appendChoice("Apply: ", "treenode-edit-radius-scope",
+      ['Only this node', 'From this node to the next branch or end node (included)',
+       'From this node to the previous branch node or root (excluded)',
+       'From this node to the previous node with a defined radius (excluded)',
+       'From this node to root (included)', 'All nodes'],
+      [0, 1, 2, 3, 4, 5],
+      self.editRadius_defaultValue);
+    dialog.onOK = function() {
+      var radius = parseFloat(input.value);
+      if (isNaN(radius)) {
+        alert("Invalid number: '" + input.value + "'");
+        return;
+      }
+      self.editRadius_defaultValue = choice.selectedIndex;
+      self.submit(
+        django_url + project.id + '/treenode/' + treenode_id + '/radius',
+        {radius: radius,
+         option: choice.selectedIndex},
+        function(json) {
+          // Refresh 3d views if any
+          WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
+          // Reinit SVGOverlay to read in the radius of each altered treenode
+          self.updateNodes();
+        });
+    };
+    dialog.show();
+  }
+
+  if (no_measurement_tool) {
+    this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
+  } else {
+    this.selectRadius(treenode_id, show_dialog);
+  }
 };
 
 /** All moving functions must perform moves via the updateNodeCoordinatesinDB

@@ -557,6 +557,24 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, 
   return nearestnode;
 };
 
+/** Return all node IDs in the overlay within a radius of the given point. */
+SkeletonAnnotations.SVGOverlay.prototype.findAllNodesWithinRadius = function (x, y, z, radius) {
+  var xdiff, ydiff, zdiff, distsq, radiussq = radius * radius, node, nodeid;
+  return Object.keys(this.nodes).filter((function (nodeid) {
+    if (this.nodes.hasOwnProperty(nodeid)) {
+      node = this.nodes[nodeid];
+      xdiff = x - this.pix2physX(node.x);
+      ydiff = y - this.pix2physY(node.y);
+      zdiff = z - this.pix2physZ(node.z);
+      distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
+      if (distsq < radiussq)
+        return true;
+    }
+
+    return false;
+  }).bind(this));
+};
+
 /** Find the point along the edge from node to node.parent nearest (x, y, z),
  *  optionally exluding a radius around the nodes. */
 SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z, node, exclusion) {

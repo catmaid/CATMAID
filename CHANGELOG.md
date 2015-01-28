@@ -15,6 +15,10 @@ Key shortcuts / mouse operations:
 
 - Ctrl+Y removes the active skeleton from the last used selection widget.
 
+- Shift+Y selects skeletons within a radius of the active node in the tracing
+  layer and adds them to the last used selection widget. Ctrl+shift+Y works in
+  the same way to remove skeletons from the last used selection widget.
+
 
 Review system:
 

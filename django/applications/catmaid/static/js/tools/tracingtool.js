@@ -435,17 +435,39 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Append the active skeleton to the last used selection widget (Ctrl: remove from selection)",
+    helpText: "Append the active skeleton to the last used selection widget (Ctrl: remove from selection; Shift: select by radius)",
     keyShortcuts: {
       "Y": [ 89 ]
     },
     run: function (e) {
-      if (e.ctrlKey || e.metaKey) {
-        SelectionTable.getLastFocused().removeSkeletons([
-            SkeletonAnnotations.getActiveSkeletonId()]);
-      } else {
-        SelectionTable.getLastFocused().append(
-            SkeletonAnnotations.sourceView.getSelectedSkeletonModels());
+      if (e.shiftKey) { // Select skeletons by radius.
+        var selectionCallback = (e.ctrlKey || e.metaKey) ?
+            function (skids) { SelectionTable.getLastFocused().removeSkeletons(skids); } :
+            function (skids) { SelectionTable.getLastFocused().addSkeletons(skids); };
+        var atnID = SkeletonAnnotations.getActiveNodeId();
+
+        tracingLayer.svgOverlay.selectRadius(
+            atnID,
+            function (radius) {
+              if (typeof radius === 'undefined') return;
+
+              var node = tracingLayer.svgOverlay.nodes[atnID];
+              var selectedIDs = tracingLayer.svgOverlay.findAllNodesWithinRadius(
+                  node.x, node.y, node.z, radius);
+              selectedIDs = selectedIDs.map(function (nodeID) {
+                  return tracingLayer.svgOverlay.nodes[nodeID].skeleton_id;
+              }).filter(function (s) { return !isNaN(s); });
+
+              selectionCallback(selectedIDs);
+            });
+      } else { // Select active skeleton.
+        if (e.ctrlKey || e.metaKey) {
+          SelectionTable.getLastFocused().removeSkeletons([
+              SkeletonAnnotations.getActiveSkeletonId()]);
+        } else {
+          SelectionTable.getLastFocused().append(
+              SkeletonAnnotations.sourceView.getSelectedSkeletonModels());
+        }
       }
     }
   }) );

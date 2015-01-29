@@ -42,6 +42,9 @@ Review system:
 - The CSV export not also includes the parent ID for each node, which can be
   used to reconstruct the toplogical tree.
 
+- The auto-created selection widget is now 50% smaller, gving more vertical
+  space to the 3D viewer.
+
 
 ### Bug fixes
 

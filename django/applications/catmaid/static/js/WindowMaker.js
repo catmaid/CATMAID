@@ -1037,6 +1037,10 @@ var WindowMaker = new function()
     // Resize WebGLView after staging list has been added
     win.callListeners( CMWWindow.RESIZE );
 
+    // Make slection table smaller so that it only occupies about 25% of the
+    // available vertical space (instead of 50%).
+    win.getParent().changeHeight(Math.abs(win.getHeight() * 0.5));
+
     SkeletonListSources.updateGUI();
 
     // Now that a Selection Table exists, set it as the default pull source

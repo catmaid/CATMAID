@@ -176,5 +176,3 @@ class PerformanceTest(object):
         finally:
             if gc_old:
                 gc.enable()
-
-

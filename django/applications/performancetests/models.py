@@ -23,7 +23,7 @@ class TestResult(models.Model):
     result.
     """
     view = models.ForeignKey(TestView)
-    time = models.IntegerField()
+    time = models.FloatField()
     result_code = models.IntegerField()
     result = models.TextField()
     creation_time = models.DateTimeField(default=datetime.now)

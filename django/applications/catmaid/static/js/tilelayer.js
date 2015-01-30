@@ -68,7 +68,9 @@ function TileLayer(
 
 		tiles_buf = [];
 
-		
+		tileOrigR = 0;
+		tileOrigC = 0;
+
 		for ( var i = 0; i < rows; ++i )
 		{
 			tiles[ i ] = [];
@@ -88,7 +90,17 @@ function TileLayer(
 			}
 		}
 	};
-	
+
+	var rowTransform = function (r) {
+		var rows = tiles.length;
+		return ((r % rows) + rows + tileOrigR) % rows;
+	};
+
+	var colTransform = function (c) {
+		var cols = tiles[0].length;
+		return ((c % cols) + cols + tileOrigC) % cols;
+	};
+
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
@@ -101,10 +113,7 @@ function TileLayer(
 
 		var effectiveTileWidth = tileWidth * tileInfo.mag;
 		var effectiveTileHeight = tileHeight * tileInfo.mag;
-		
-		var xd = 0;
-		var yd = 0;
-		
+
 		// If panning only (no scaling, no browsing through z)
 		if ( stack.z == stack.old_z && stack.s == stack.old_s )
 		{
@@ -112,55 +121,47 @@ function TileLayer(
 			var old_fc = Math.floor( stack.old_xc / effectiveTileWidth );
 			
 			// Compute panning in X and Y
-			xd = tileInfo.first_col - old_fc;
-			yd = tileInfo.first_row - old_fr;
+			var xd = tileInfo.first_col - old_fc;
+			var yd = tileInfo.first_row - old_fr;
 
-			// re-order the tiles array on demand
+			// Hide wrapped tiles
 			if ( xd < 0 )
 			{
 				// Panning to the left:
-				// Move the last column of tiles to the first column
+				// Hide the former last column of tiles
+				var lastCol = colTransform(-1);
 				for ( var i = tiles.length - 1; i >= 0; --i )
-				{
-					var img = tiles[ i ].pop();
-					img.style.visibility = "hidden";
-					tiles[ i ].unshift( img );
-				}
+					tiles[i][lastCol].style.visibility = "hidden";
 			}
 			else if ( xd > 0 )
 			{
 				// Panning to the right:
-				// Move the first column of tiles to the last column
+				// Hide the former first column of tiles
+				var firstCol = colTransform(0);
 				for ( var i = tiles.length - 1; i >= 0; --i )
-				{
-					var img = tiles[ i ].shift();
-					img.style.visibility = "hidden";
-					tiles[ i ].push( img );
-				}
+					tiles[i][firstCol].style.visibility = "hidden";
 			}
 
 			if ( yd < 0 )
 			{
 				// Panning to the top:
-				// Move the last row of tiles to the first row
-				var old_row = tiles.pop();
-				for ( var i = old_row.length - 1; i >= 0; --i )
-				{
-					old_row[ i ].style.visibility = "hidden";
-				}
-				tiles.unshift( old_row );
+				// Hide the former last row of tiles
+				var lastRow = rowTransform(-1);
+				for ( var j = tiles[lastRow].length - 1; j >= 0; --j )
+					tiles[lastRow][j].style.visibility = "hidden";
 			}
 			else if ( yd > 0 )
 			{
 				// Panning to the bottom:
-				// Move the first row of tiles to the last row
-				var old_row = tiles.shift();
-				for ( var i = old_row.length - 1; i >= 0; --i )
-				{
-					old_row[ i ].style.visibility = "hidden";
-				}
-				tiles.push( old_row );
+				// Hide the former first row of tiles
+				var firstRow = rowTransform(0);
+				for ( var j = tiles[firstRow].length - 1; j >= 0; --j )
+					tiles[firstRow][j].style.visibility = "hidden";
 			}
+
+			// Update the toroidal origin in the tiles array
+			tileOrigR = rowTransform(yd); //(tileOrigR + yd + tiles.length) % tiles.length;
+			tileOrigC = colTransform(xd); //(tileOrigC + xd + tiles[0].length) % tiles[0].length;
 		}
 
 		var top;
@@ -213,14 +214,14 @@ function TileLayer(
 		var nextL, nextT, seamRow;
 
 		// update the images sources
-		for ( var i = 0; i < tiles.length; ++i )
+		for ( var i = tileOrigR, ti = 0; ti < tiles.length; ++ti, i = (i+1)%tiles.length )
 		{
-			var r = tileInfo.first_row + i;
+			var r = tileInfo.first_row + ti;
 			nextT = t + effectiveTileHeight;
 			seamRow = Math.round(nextT) - nextT > 0;
-			for ( var j = 0; j < tiles[ 0 ].length; ++j )
+			for ( var j = tileOrigC, tj = 0; tj < tiles[i].length; ++tj, j = (j+1)%tiles[0].length )
 			{
-				var c = tileInfo.first_col + j;
+				var c = tileInfo.first_col + tj;
 				var tile = tiles[ i ][ j ];
 
 				nextL = l + effectiveTileWidth;
@@ -286,6 +287,7 @@ function TileLayer(
 
 				l = nextL;
 			}
+
 			l = left;
 			t = nextT;
 		}
@@ -509,6 +511,8 @@ function TileLayer(
 
 	/* Contains all tiles in a 2d-array */
 	var tiles = [];
+	var tileOrigR = 0;
+	var tileOrigC = 0;
 	var tiles_buf = [];
 	var buffering = false;
 	var swapBuffersTimeout;

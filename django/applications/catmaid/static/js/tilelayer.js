@@ -127,39 +127,24 @@ function TileLayer(
 			var xd = tileInfo.first_col - old_fc;
 			var yd = tileInfo.first_row - old_fr;
 
-			// Hide wrapped tiles
-			if ( xd < 0 )
+			// Hide wrapped tiles. Here it is assumed abs({xd|yd}) <= 1, i.e.,
+			// it is impossible to pan more than one tile in a single redraw.
+			if ( xd !== 0 )
 			{
-				// Panning to the left:
-				// Hide the former last column of tiles
-				var lastCol = colTransform(-1);
+				// Panning to the left or right:
+				// hide the former last or first column of tiles, respectively.
+				var col = colTransform(xd < 0 ? -1 : 0);
 				for ( var i = tiles.length - 1; i >= 0; --i )
-					tiles[i][lastCol].style.visibility = "hidden";
-			}
-			else if ( xd > 0 )
-			{
-				// Panning to the right:
-				// Hide the former first column of tiles
-				var firstCol = colTransform(0);
-				for ( var i = tiles.length - 1; i >= 0; --i )
-					tiles[i][firstCol].style.visibility = "hidden";
+					tiles[i][col].style.visibility = "hidden";
 			}
 
-			if ( yd < 0 )
+			if ( yd !== 0 )
 			{
-				// Panning to the top:
-				// Hide the former last row of tiles
-				var lastRow = rowTransform(-1);
-				for ( var j = tiles[lastRow].length - 1; j >= 0; --j )
-					tiles[lastRow][j].style.visibility = "hidden";
-			}
-			else if ( yd > 0 )
-			{
-				// Panning to the bottom:
-				// Hide the former first row of tiles
-				var firstRow = rowTransform(0);
-				for ( var j = tiles[firstRow].length - 1; j >= 0; --j )
-					tiles[firstRow][j].style.visibility = "hidden";
+				// Panning to the top or bottom:
+				// hide the former last or first row of tiles, respectively.
+				var row = rowTransform(yd < 0 ? -1 : 0);
+				for ( var j = tiles[row].length - 1; j >= 0; --j )
+					tiles[row][j].style.visibility = "hidden";
 			}
 
 			// Update the toroidal origin in the tiles array

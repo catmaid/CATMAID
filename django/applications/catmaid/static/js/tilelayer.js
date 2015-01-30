@@ -78,6 +78,9 @@ function TileLayer(
 			for ( var j = 0; j < cols; ++j )
 			{
 				tiles[ i ][ j ] = document.createElement( "img" );
+				// The alt attribute of these and the buffer's images is abused
+				// to indicate states for buffering resilience: empty for
+				// loading an image, "l" for a loaded image, and "h" for hidden.
 				tiles[ i ][ j ].alt = "";
 				tiles[ i ][ j ].style.visibility = "hidden";
 				tiles[ i ][ j ].onload = tileOnload;
@@ -179,18 +182,18 @@ function TileLayer(
 		var t = top;
 		var l = left;
 
-		// Detect if moving to a new Z. If so, attempt to preload images to
-		// paint at once (but let regular code run for new stacks.)
-		var z_loading = stack.z !== stack.old_z && stack.s === stack.old_s;
+		// If zooming or changing z sections (not panning), attempt to preload
+		// images to paint at once (but let regular code run for new stacks.)
+		buffering = stack.z !== stack.old_z ||
+				tileInfo.zoom !== Math.max(0, Math.ceil(stack.old_s));
 
 		var to_buffer =
 				(tileInfo.last_col - Math.max(0, tileInfo.first_col) + 1) *
 				(tileInfo.last_row - Math.max(0, tileInfo.first_row) + 1);
 		var buffered = 0;
-		buffering = z_loading;
 
-		// Set a timeout for slow connections to swap in images for the zslice
-		// whether or not they have buffered.
+		// Set a timeout for slow connections to swap in the buffer whether or
+		// not it has loaded.
 		if (buffering) {
 			window.clearTimeout(swapBuffersTimeout);
 			swapBuffersTimeout = window.setTimeout(swapBuffers, 3000);
@@ -201,8 +204,9 @@ function TileLayer(
 		function bufferLoadDeferred()
 		{
 			return function() {
-				if (!this.alt || !buffering) return;
+				if (!buffering || this.alt === 'h') return;
 				buffered = buffered + 1;
+				this.alt = 'l';
 				if (buffered === to_buffer)
 				{
 					window.clearTimeout(swapBuffersTimeout);
@@ -222,7 +226,7 @@ function TileLayer(
 			for ( var j = tileOrigC, tj = 0; tj < tiles[i].length; ++tj, j = (j+1)%tiles[0].length )
 			{
 				var c = tileInfo.first_col + tj;
-				var tile = tiles[ i ][ j ];
+				var tile = buffering ? tiles_buf[ i ][ j ] : tiles[ i ][ j ];
 
 				nextL = l + effectiveTileWidth;
 
@@ -252,31 +256,25 @@ function TileLayer(
 
 					if (tile.src === source)
 					{
-						tiles_buf[i][j].alt = "";
+						if (tile.alt === 'h') tile.alt = 'l';
+						if (buffering) {
+							bufferLoadDeferred().call(tile);
+						}
 						// If a tile was hidden earlier, but we now wish to
 						// show it again and it happens to have the same src,
 						// Chrome will not fire the onload event if we set src.
 						// Instead check the flag we set in alt when loaded.
-						if (tile.alt)
+						else if (tile.alt)
 						{
-							tile.style.visibility = "visible";
+							tile.style.visibility = 'visible';
 						}
 					}
 					else
 					{
 						tile.alt = ""; // Mark that the correct image for this
 									   // tile has not yet loaded.
-						if (z_loading)
-						{
-							tiles_buf[ i ][ j ].onload = bufferLoadDeferred();
-							tiles_buf[ i ][ j ].alt = "t";
-							tiles_buf[ i ][ j ].src = source;
-						}
-						else
-						{
-							tiles_buf[i][j].alt = "";
-							tile.src = source;
-						}
+						if (buffering) tile.onload = bufferLoadDeferred();
+						tile.src = source;
 					}
 				}
 				else
@@ -307,10 +305,16 @@ function TileLayer(
 		{
 			for ( var j = 0; j < tiles[ 0 ].length; ++j )
 			{
-				if (tiles_buf[ i ][ j ].alt && !tiles[ i ][ j ].alt)
-				{
-					tiles[i][j].src = tiles_buf[i][j].src;
-				}
+				var tile = tiles[i][j];
+				var buf = tiles_buf[i][j];
+
+				tile.alt = buf.alt;
+				tile.style.visibility = (buf.alt === 'h') ? 'hidden' : 'visible';
+				tile.style.width = buf.style.width;
+				tile.style.height = buf.style.height;
+				tile.style.top = buf.style.top;
+				tile.style.left = buf.style.left;
+				tile.src = buf.src;
 			}
 		}
 	};

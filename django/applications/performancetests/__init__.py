@@ -61,7 +61,7 @@ class PerformanceTest(object):
             r.save()
     """
 
-    def __init__(self, connection, user, password, template_db_name):
+    def __init__(self, connection, username, password, template_db_name):
         """
         Create a new performance test instance. It expects a database connection
         as parameter. The easiest way to get one is to use django.db.connection.
@@ -69,8 +69,9 @@ class PerformanceTest(object):
         """
         from django.test.client import Client
         self.connection = connection
+        self.username = username
+        self.password = password
         self.client = Client()
-        self.client.login(username=user, password=password)
         self.template_db_name = template_db_name
 
     def log(self, msg):
@@ -129,8 +130,9 @@ class PerformanceTest(object):
         self.connection.settings_dict["NAME"] = db_name
 
         # Ensure a connection for the side effect of initializing the test
-        # database.
+        # database and login.
         self.connection.ensure_connection()
+        self.client.login(username=self.username, password=self.password)
 
         # Test all views
         self.log("Testing all %s views" % len(views))

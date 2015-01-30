@@ -117,6 +117,8 @@ function TileLayer(
 		var effectiveTileWidth = tileWidth * tileInfo.mag;
 		var effectiveTileHeight = tileHeight * tileInfo.mag;
 
+		var rows = tiles.length, cols = tiles[0].length;
+
 		// If panning only (no scaling, no browsing through z)
 		if ( stack.z == stack.old_z && stack.s == stack.old_s )
 		{
@@ -134,7 +136,7 @@ function TileLayer(
 				// Panning to the left or right:
 				// hide the former last or first column of tiles, respectively.
 				var col = colTransform(xd < 0 ? -1 : 0);
-				for ( var i = tiles.length - 1; i >= 0; --i )
+				for ( var i = rows - 1; i >= 0; --i )
 					tiles[i][col].style.visibility = "hidden";
 			}
 
@@ -143,7 +145,7 @@ function TileLayer(
 				// Panning to the top or bottom:
 				// hide the former last or first row of tiles, respectively.
 				var row = rowTransform(yd < 0 ? -1 : 0);
-				for ( var j = tiles[row].length - 1; j >= 0; --j )
+				for ( var j = cols - 1; j >= 0; --j )
 					tiles[row][j].style.visibility = "hidden";
 			}
 
@@ -203,12 +205,12 @@ function TileLayer(
 		var nextL, nextT, seamRow;
 
 		// update the images sources
-		for ( var i = tileOrigR, ti = 0; ti < tiles.length; ++ti, i = (i+1)%tiles.length )
+		for ( var i = tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows )
 		{
 			var r = tileInfo.first_row + ti;
 			nextT = t + effectiveTileHeight;
 			seamRow = Math.round(nextT) - nextT > 0;
-			for ( var j = tileOrigC, tj = 0; tj < tiles[i].length; ++tj, j = (j+1)%tiles[0].length )
+			for ( var j = tileOrigC, tj = 0; tj < cols; ++tj, j = (j+1) % cols )
 			{
 				var c = tileInfo.first_col + tj;
 				var tile = buffering ? tiles_buf[ i ][ j ] : tiles[ i ][ j ];

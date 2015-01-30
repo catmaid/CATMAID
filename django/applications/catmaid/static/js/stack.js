@@ -75,7 +75,6 @@ function Stack(
 		scaleBar.firstChild.firstChild.replaceChild(
 			document.createTextNode( text + " " + Stack.SCALE_BAR_UNITS[ ui ] ),
 			scaleBar.firstChild.firstChild.firstChild );
-		return;
 	};
 
 
@@ -95,8 +94,6 @@ function Stack(
 		if( tool ) {
 			tool.redraw();
 		}
-
-		return;
 	};
 	this.update = update;
 
@@ -423,8 +420,6 @@ function Stack(
 		self.old_scale = self.scale;
 		self.old_yc = self.yc;
 		self.old_xc = self.xc;
-
-		return 2;
 	};
 
 	/**
@@ -610,8 +605,6 @@ function Stack(
 		}
 
 		self.overview.redraw();
-
-		return;
 	};
 	this.resize = resize;
 
@@ -646,7 +639,6 @@ function Stack(
 	{
 		if ( layers[ key ] )
 			return layers[key];
-        return;
 	};
 
 	/**
@@ -662,7 +654,6 @@ function Stack(
 			layers[ key ].unregister();
 		layers[ key ] = layer;
 		self.tilelayercontrol.refresh();
-		return;
 	};
 
 	/**

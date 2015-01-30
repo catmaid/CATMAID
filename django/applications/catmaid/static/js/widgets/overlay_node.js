@@ -1201,8 +1201,10 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     xdiff = parentx - x,
     ydiff = parenty - y,
     length = Math.sqrt(xdiff*xdiff + ydiff*ydiff),
-    nx = -ydiff / length,
-    ny = xdiff / length,
+    // Compute direction to offset label from edge. If node and parent are at
+    // the same location, hardwire to offset vertically to prevent NaN x, y.
+    nx = length === 0 ? 0 : -ydiff / length,
+    ny = length === 0 ? 1 : xdiff / length,
     newConfidenceX = (x + parentx) / 2 + nx * numberOffset,
     newConfidenceY = (y + parenty) / 2 + ny * numberOffset;
 

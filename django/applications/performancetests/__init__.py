@@ -1,6 +1,7 @@
 import sys
 import gc
 import timeit
+import subprocess
 
 from django.conf import settings
 from .models import TestResult
@@ -173,8 +174,11 @@ class PerformanceTest(object):
             end = timeit.default_timer()
             # Return result in milliseconds
             time_ms = (end - start) * 1000
+            # Try to get version information
+            version = subprocess.check_output(['git', 'describe'])
+
             return TestResult(view=view, time=time_ms, result=response,
-                              result_code=response.status_code)
+                              result_code=response.status_code, version=version)
         finally:
             if gc_old:
                 gc.enable()

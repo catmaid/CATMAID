@@ -16,10 +16,18 @@ class TestView(models.Model):
     def __unicode__(self):
         return "%s %s" % (self.method, self.url)
 
+    def as_json(self):
+        return dict(
+            view_id = self.id,
+            view_method = self.method,
+            view_data = self.data,
+            view_creation_time = self.creation_time,
+        )
+
 
 class TestResult(models.Model):
     """
-    Respresents the result of test of the given view. It expects a time and a
+    Represents the result of test of the given view. It expects a time and a
     result.
     """
     view = models.ForeignKey(TestView)
@@ -31,3 +39,14 @@ class TestResult(models.Model):
 
     def __unicode__(self):
         return "%s (Time: %sms Status: %s)" % (self.view, self.time, self.result_code)
+
+    def as_json(self):
+        return dict(
+            result_id = self.id,
+            view_id = self.view_id,
+            time = self.time,
+            result_code = self.result_code,
+            result = self.result,
+            creation_time = self.creation_time,
+            version = self.version,
+        )

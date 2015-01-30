@@ -87,8 +87,6 @@ function TileLayer(
 				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
 		}
-
-		return;
 	};
 	
 	/**
@@ -296,8 +294,6 @@ function TileLayer(
 		if (typeof completionCallback !== "undefined") {
 			completionCallback();
 		}
-
-		return 2;
 	};
 
 	// Helper function to swap source images from tiles_buf into tiles
@@ -324,7 +320,6 @@ function TileLayer(
 		if (tiles.length === 0 || tiles.length !== rows || tiles[0].length !== cols)
 			initTiles( rows, cols );
 		self.redraw();
-		return;
 	};
 
 	/**

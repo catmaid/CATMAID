@@ -3,12 +3,13 @@ import gc
 import timeit
 
 from django.conf import settings
+from .models import TestResult
 
 
 class PerformanceTest(object):
     """
     Test query performance for a set of views. It will create a new database
-    that has the some content as a template databse, test views against it and
+    that has the some content as a template database, test views against it and
     eventually will destroy the database again. This is done to generate timing
     information that is comparable (without database caching). This class is
     probably best used from a custom script and is not part of Django's test
@@ -22,23 +23,42 @@ class PerformanceTest(object):
     # can be found.
     import settings
 
-    from catmaid.tests.performance_test import View, PerformanceTest
+    from performancetests import PerformanceTest
+    from performancetests.models import TestView
     from django.db import connection
 
     if __name__ == "__main__":
+        pid = 1
+        sid = 2
+
         views = [
-            View('GET', '/permissions'),
-            View('GET', '/dataviews/default'),
-            View('GET', '/projects'),
+            TestView(method='GET', url='/permissions'),
+            TestView(method='POST', url='/%s/annotations/list' % pid),
+            TestView(method='POST', url='/%s/node/list' % pid, data={
+                'pid': pid,
+                'sid': sid,
+                'z': 62350,
+                'top': 4781.168,
+                'left': 17382.772,
+                'width': 69501.549,
+                'height': 32037.332,
+                'zres': 50,
+                'atnid': 18130840,
+                'labels': 'false',
+            }),
         ]
+
         template_db_name = 'catmaid_performance_test'
         test = PerformanceTest(connection, 'user', 'pass', template_db_name)
         results = test.run_tests(views)
 
         # Print all results
         for r in results:
-            print("URL: %s Time: %sms" % (r.view.url, r.time * 1000))
+            print("URL: %s Time: %sms" % (r.view.url, r.time))
             print('\t' + str(r.result).replace('\n', '\n\t'))
+
+            # Optionally, make results persistent
+            r.save()
     """
 
     def __init__(self, connection, user, password, template_db_name):
@@ -97,7 +117,7 @@ class PerformanceTest(object):
         # We need a cursor to talk to the database
         cursor = self.connection.cursor()
 
-        # Create test database, based on an existing template databse
+        # Create test database, based on an existing template database
         db_name = "test_%s" % self.template_db_name
 
         self.create_db(cursor, db_name, self.template_db_name)
@@ -149,29 +169,10 @@ class PerformanceTest(object):
                 raise ValueError('Unknown view method: %s' % view.method)
 
             end = timeit.default_timer()
-            return TestResult(view, end - start, response)
+            # Return result in milliseconds
+            time_ms = (end - start) * 1000
+            return TestResult(view=view, time=time_ms, result=response,
+                              result_code=response.status_code)
         finally:
             if gc_old:
                 gc.enable()
-
-
-class View():
-    """
-    Represents a views that should be tested. It expects 'GET' or 'POST'
-    as method, a URL and optionally a data dictionary.
-    """
-    def __init__(self, method, url, data={}):
-        self.method = method
-        self.url = url
-        self.data = data
-
-
-class TestResult(object):
-    """
-    Respresents the result of test of the given view. It expects a time and a
-    result.
-    """
-    def __init__(self, view, time, result):
-        self.view = view
-        self.time = time
-        self.result = result

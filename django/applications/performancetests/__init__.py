@@ -110,7 +110,16 @@ class PerformanceTest(object):
 
     def run_tests(self, views):
         """
-        Run the CATMAID performance tests.
+        Run the CATMAID performance tests and return a list of results for
+        every run.
+        """
+        results, _ = self.run_tests_and_repeat(views, repeats=0)
+        return results
+
+    def run_tests_and_repeat(self, views, repeats=3):
+        """
+        Run the CATMAID performance tests and return a list of results and a
+        list of repeats for every run.
         """
         from django.test.utils import setup_test_environment, \
             teardown_test_environment
@@ -138,11 +147,14 @@ class PerformanceTest(object):
         # Test all views
         self.log("Testing all %s views" % len(views))
         results = []
+        repeats = []
         for v in views:
             # Ideally the DB cluster would be stopped here, OS caches would be
             # dropped (http://linux-mm.org/Drop_Caches) and then the DB cluster
             # would be restarted.
             results.append(self.test(v))
+            for r in range(repeats):
+                repeats.append(self.test(v))
 
         teardown_test_environment()
 
@@ -153,7 +165,7 @@ class PerformanceTest(object):
         self.connection.ensure_connection()
         self.drop_db(self.connection.cursor(), db_name)
 
-        return results
+        return results, repeats
 
     def test(self, view):
         """

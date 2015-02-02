@@ -489,7 +489,7 @@ Arbor.prototype.spanningTree = function(keepers) {
       if (-1 == last) {
         // Add the rest
         end = partition.length;
-      } else if (n_seen < partition.length) {
+      } else if (n_seen == keepers.length) {
         // Add up to the last seen
         end = last + 1;
       } else {

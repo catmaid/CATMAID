@@ -489,7 +489,7 @@ Arbor.prototype.spanningTree = function(keepers) {
   });
 
   return spanning;
-}
+};
 
 /** Compute betweenness centrality of a tree in O(5n) time.
  * Note that edges are considered non-directional, that is,

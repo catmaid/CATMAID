@@ -22,6 +22,9 @@ Key shortcuts / mouse operations:
 - If the next (or previous) branch/end point is already selected when V (or B)
   is pressed, the view will center on it nevertheless.
 
+- If the mouse is over the stack when zooming, the view will recenter so that
+  the same stack location remains under the mouse at the new scale.
+
 
 Review system:
 

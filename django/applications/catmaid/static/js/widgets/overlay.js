@@ -409,6 +409,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack,
       coords.offsetXPhysical = worldX;
       coords.offsetYPhysical = worldY;
     }
+    return true; // Bubble mousemove events.
   };
 };
 

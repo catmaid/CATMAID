@@ -448,4 +448,23 @@
             target = target.parentNode;
         return target;
     };
+
+    /**
+     * Global mouse position tracker.
+     * @return {{x: number, y: number}} Mouse coordinates of the last bubbled event.
+     */
+    CATMAID.UI.getLastMouse = function () {
+        var x = 0, y = 0;
+
+        $(document).mousemove(function (e) {
+            e = e || window.event;
+            x = e.pageX || e.clientX;
+            y = e.pageY || e.clientY;
+        });
+
+        return function () {
+            // Return a copy to prevent mutation.
+            return {x: x, y: y};
+        };
+    }();
 })(CATMAID);

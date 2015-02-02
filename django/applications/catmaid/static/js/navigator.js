@@ -25,9 +25,6 @@ function Navigator()
 	this.input_y = document.getElementById( "y" );		//!< y_input
 	this.checkbox_reflines = document.getElementById( "displayreflines" );
 
-	// Last mouse position for proper zoom with + and -
-	var lastX = 0, lastY = 0;
-	
 	/* remove all existing dimension sliders */
 	while ( sliders_box.firstChild )
 		sliders_box.removeChild( sliders_box.firstChild );
@@ -111,8 +108,6 @@ function Navigator()
 	
 	var onmousemove = function( e )
 	{
-		self.lastX = self.stack.x + CATMAID.ui.diffX; // TODO - or + ?
-		self.lastY = self.stack.y + CATMAID.ui.diffY;
 		self.stack.moveToPixel(
 			self.stack.z,
 			self.stack.y - CATMAID.ui.diffY / self.stack.scale,
@@ -284,8 +279,22 @@ function Navigator()
 	
 	this.changeScale = function( val )
 	{
-		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
-		return;
+		// Determine if the mouse is over the stack view.
+		var offset = $(self.stack.getView()).offset();
+		var m = CATMAID.UI.getLastMouse();
+		var x = m.x - offset.left,
+			y = m.y - offset.top;
+		if (x >= 0 && x <= self.stack.viewWidth &&
+			y >= 0 && y <= self.stack.viewHeight) {
+			x /= self.stack.scale;
+			y /= self.stack.scale;
+			x += (self.stack.x - self.stack.viewWidth / self.stack.scale / 2);
+			y += (self.stack.y - self.stack.viewHeight / self.stack.scale / 2);
+			self.scalePreservingLastPosition(x, y, val);
+		} else {
+			// If the mouse is not over the stack view, zoom towards the center.
+			self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
+		}
 	};
 
 	/**
@@ -295,19 +304,19 @@ function Navigator()
 	this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
 		var old_s = self.stack.s;
 		var old_scale = self.stack.scale;
-		var new_s = Math.max(0, Math.min(self.stack.MAX_S, Math.round(sp)));
+		var new_s = Math.max(self.stack.MIN_S, Math.min(self.stack.MAX_S, sp));
 		var new_scale = 1 / Math.pow(2, new_s);
 
 		if (old_s == new_s)
 			return;
 
-		var dx = keep_x - self.stack.getProject().coordinates.x;
-		var dy = keep_y - self.stack.getProject().coordinates.y;
+		var dx = keep_x - self.stack.x;
+		var dy = keep_y - self.stack.y;
 
 		var new_centre_x = keep_x - dx * (old_scale / new_scale);
 		var new_centre_y = keep_y - dy * (old_scale / new_scale);
 
-		self.stack.moveTo(self.stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
+		self.stack.moveToPixel(self.stack.z, new_centre_y, new_centre_x, sp);
 	};
 
 	//--------------------------------------------------------------------------

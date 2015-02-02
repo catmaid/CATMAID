@@ -290,7 +290,7 @@ Arbor.prototype.nodesDistanceTo = function(root, distanceFn) {
 	if (!root) return r;
 
 	var successors = this.allSuccessors(),
-			open = [[root, 0]],
+			open = [[root, 0]], // likely faster and more memory efficient with a linked list approach using object literals {node: root, distance: 0, next: null}
 			max = 0.000001;
 
 	var next, paren, child, dist, succ;

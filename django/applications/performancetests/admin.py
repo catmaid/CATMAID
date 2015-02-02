@@ -12,8 +12,10 @@ class TestViewAdmin(admin.ModelAdmin):
 
 
 class TestResultAdmin(admin.ModelAdmin):
-    list_display = ('view', 'time', 'result_code', trimmed_result)
+    list_display = ('view', 'creation_time', 'time', 'result_code',
+                    trimmed_result)
     search_fields = ('view', 'result_code', 'result')
+    order_by = ('creation_time',)
 
 # Register models with admin site
 admin.site.register(TestView, TestViewAdmin)

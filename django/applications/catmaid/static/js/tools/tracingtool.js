@@ -202,18 +202,10 @@ function TracingTool()
     return;
   };
 
-  this.prototype.changeScale = function( val )
-  {
-    SkeletonAnnotations.Tag.changeScale();
-    stack.moveToPixel( stack.z, stack.y, stack.x, val );
-    return;
-  };
-
   this.prototype.changeSlice = function( val )
   {
     WebGLApplication.prototype.staticUpdateZPlane();
 
-    SkeletonAnnotations.Tag.changeSlice();
     stack.moveToPixel( val, stack.y, stack.x, stack.s );
   };
 

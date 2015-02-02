@@ -1333,6 +1333,8 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
       dynamicScale);
 
   if ( !doNotUpdate ) {
+    // If changing scale or slice, remove tagbox.
+    SkeletonAnnotations.Tag.removeTagbox();
     this.updateNodes(completionCallback);
   }
 
@@ -2470,16 +2472,6 @@ SkeletonAnnotations.Tag = new (function() {
       this.handle_tagbox(atn, svgOverlay);
     }
   };
-
-  /** Upon changing stack scale, remove the tag box. */
-  this.changeScale = function(val) {
-    if (this.hasTagbox()) {
-      this.removeTagbox();
-    }
-  };
-
-  /** Upon changing stack slice, remove the tag box. */
-  this.changeSlice = this.changeScale;
 })();
 
 window.OptionsDialog = function(title) {

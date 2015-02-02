@@ -459,34 +459,49 @@ Arbor.prototype.spanningTree = function(keepers) {
       return spanning;
   }
 
-  var n_seen = 0,
+  var partitions = this.partitionSorted(),
+      n_seen = 0,
       preserve = {};
-  keepers.forEach(function(node) { preserve[node] = true; });
+  keepers.forEach(function(node) { preserve[node] = 1; });
 
-  this.partitionSorted().forEach(function(partition) {
-    var path = [],
-        tmp = [];
+  for (var k=0; k<partitions.length; ++k) {
+    var partition = partitions[k],
+        first = -1,
+        last = -1;
     for (var i=0; i<partition.length; ++i) {
-      var node = partition[i];
-      tmp.push(node);
-      if (preserve[node]) {
-        if (0 == path.length) {
-          // Starting out
-          path.push(node);
-        } else {
-          path = path.concat(tmp);
+      var node = partition[i],
+          v = preserve[node];
+      if (v) {
+        if (1 == v) {
+          // First time seen
+          n_seen += 1;
+          preserve[node] = 2; // mark as seen before
         }
-        tmp = [];
+        if (-1 == first) {
+          first = i;
+        } else {
+          last = i;
+        }
       }
     }
-    if (path.length > 0) {
-      if (keepers.length < n_seen) {
-        path = path.concat(tmp);
+    if (first > -1) {
+      var end;
+      if (-1 == last) {
+        // Add the rest
+        end = partition.length;
+      } else if (n_seen < partition.length) {
+        // Add up to the last seen
+        end = last + 1;
+      } else {
+        // Add the rest
+        end = partition.length;
       }
-      spanning.addPathReversed(path);
-      spanning.root = path[path.length -1];
+      for (var i=first + 1; i<end; ++i) {
+        spanning.edges[partition[i-1]] = partition[i];
+      }
+      spanning.root = partition[end -1];
     }
-  });
+  }
 
   return spanning;
 };

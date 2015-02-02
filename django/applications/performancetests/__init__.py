@@ -147,14 +147,14 @@ class PerformanceTest(object):
         # Test all views
         self.log("Testing all %s views" % len(views))
         results = []
-        repeats = []
+        repeat_results = []
         for v in views:
             # Ideally the DB cluster would be stopped here, OS caches would be
             # dropped (http://linux-mm.org/Drop_Caches) and then the DB cluster
             # would be restarted.
             results.append(self.test(v))
             for r in range(repeats):
-                repeats.append(self.test(v))
+                repeat_results.append(self.test(v))
 
         teardown_test_environment()
 
@@ -165,7 +165,7 @@ class PerformanceTest(object):
         self.connection.ensure_connection()
         self.drop_db(self.connection.cursor(), db_name)
 
-        return results, repeats
+        return results, repeat_results
 
     def test(self, view):
         """

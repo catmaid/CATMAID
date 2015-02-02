@@ -180,7 +180,7 @@ Arbor.prototype.nextBranchNode = function(node) {
     node = succ[0];
     succ = all_succ[node];
   }
-  if (all_succ[node].length > 1) return node;
+  if (succ.length > 1) return node;
   return null;
 };
 

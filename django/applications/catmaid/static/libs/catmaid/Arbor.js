@@ -450,52 +450,46 @@ Arbor.prototype.neighbors = function(node) {
  * rerooted at the node in keepers that has the lowest distance to this arbor's
  * root node. */
 Arbor.prototype.spanningTree = function(keepers) {
-	var spanning = new Arbor();
+  var spanning = new Arbor();
+  switch (keepers.length) {
+    case 0:
+      return spanning;
+    case 1:
+      spanning.root = keepers[0];
+      return spanning;
+  }
 
-	if (1 === keepers.length) {
-		spanning.root = keepers[0];
-		return spanning;
-	}
+  var n_seen = 0,
+      preserve = {};
+  keepers.forEach(function(node) { preserve[node] = true; });
 
-	var arbor = this;
-	if (this.successors(this.root).length > 1) {
-		// Root has two children. Reroot a copy at the first end node found
-		arbor = this.clone().reroot(this.findEndNodes()[0]);
-	}
+  this.partitionSorted().forEach(function(partition) {
+    var path = [],
+        tmp = [];
+    for (var i=0; i<partition.length; ++i) {
+      var node = partition[i];
+      tmp.push(node);
+      if (preserve[node]) {
+        if (0 == path.length) {
+          // Starting out
+          path.push(node);
+        } else {
+          path = path.concat(tmp);
+        }
+        tmp = [];
+      }
+    }
+    if (path.length > 0) {
+      if (keepers.length < n_seen) {
+        path = path.concat(tmp);
+      }
+      spanning.addPathReversed(path);
+      spanning.root = path[path.length -1];
+    }
+  });
 
-	var n_seen = 0,
-			preserve = keepers.reduce(function(o, node) {
-				o[node] = true;
-				return o;
-			}, {}),
-			n_preserve = keepers.length;
-
-	// Start from the shortest sequence
-	arbor.partitionSorted().some(function(seq) {
-		var path = [];
-		seq.some(function(node) {
-			if (node in preserve) {
-				path.push(node);
-				if (!spanning.contains(node)) ++n_seen;
-				if (n_preserve === n_seen) return true; // terminate 'some node'
-			} else if (path.length > 0) path.push(node);
-			return false;
-		});
-		if (path.length > 0) {
-			// Add path in reverse: the same orientation as in this arbor,
-			// to ensure any one node will only have one parent.
-			spanning.addPathReversed(path);
-			var last = path[path.length -1];
-			if (seq[0] == last) { // == and not ===, in case nodes are numbers, which are turned into strings when used as Object keys. Same performance as === for same type.
-				preserve[last] = true;
-				++n_preserve;
-			}
-		}
-		return n_preserve === n_seen; // if true, terminate 'some seq'
-	});
-
-	return spanning;
-};
+  return spanning;
+}
 
 /** Compute betweenness centrality of a tree in O(5n) time.
  * Note that edges are considered non-directional, that is,

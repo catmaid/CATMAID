@@ -19,3 +19,4 @@ libjpeg-dev
 libtiff-dev
 libblas-dev
 liblapack-dev
+pkg-config

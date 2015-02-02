@@ -1033,6 +1033,7 @@ function ResizeHandle(type, node) {
       ui.registerEvent("onmousemove", onmousemove.v);
       ui.registerEvent("onmouseup", onmouseup.v);
       ui.catchEvents("s-resize");
+      ui.onmousedown(e);
       ui.catchFocus();
 
       return false;

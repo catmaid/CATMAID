@@ -1,0 +1,179 @@
+{% extends "admin/base_site.html" %}
+{% load compressed %}
+{% load i18n %}
+{% load performancetests_common %}
+
+{% block extrahead %}
+
+{% compressed_css 'libraries' %}
+{% compressed_js 'jquery-lib' %}
+{% compressed_js 'd3-lib' %}
+
+<style>
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+</style>
+
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+
+<h2>Test Result Display</h2>
+
+{% if test_results %}
+  <h3>Results over time</h3>
+
+  <div id="result_plot"></div>
+
+  <script type="text/javascript">
+    var views = {{ view_index.values | jsonify | safe }};
+    var view_ids = views.map(function(v) { return v.view_id; });
+    var results = {{ test_results | jsonify | safe }};
+
+    var margin = {top: 20, right: 80, bottom: 30, left: 50},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var parseDate = d3.time.format("%Y-%m-%dT%H:%M:%S.%L").parse;
+
+    var x = d3.time.scale()
+        .range([0, width]);
+
+    var y = d3.scale.linear()
+        .range([height, 0]);
+
+    var color = d3.scale.category10();
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
+
+    var line = d3.svg.line()
+        .interpolate("linear")
+        .x(function(d) { return x(d.creation_time); })
+        .y(function(d) { return y(d.time); });
+
+    var svg = d3.select("div#result_plot").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    color.domain(view_ids);
+
+    results.forEach(function(r) {
+      r.creation_time = parseDate(r.creation_time);
+    });
+
+    var views = color.domain().map(function(v_id) {
+      return {
+        view_id: v_id,
+        values: results.filter(function(r) {
+          return r.view_id === v_id;
+        }).map(function(r) {
+          return {creation_time: r.creation_time, time: r.time};
+        })
+      };
+    });
+
+    x.domain(d3.extent(results, function(r) { return r.creation_time; }));
+
+    y.domain(d3.extent(results, function(r) { return r.time; }));
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+      .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("Timing");
+
+     var testView = svg.selectAll(".testview")
+        .data(views)
+      .enter().append("g")
+        .attr("class", "testview");
+
+     testView.append("path")
+        .attr("class", "line")
+        .attr("d", function(d) {
+          return line(d.values);
+        })
+        .attr("data-legend",function(d) { return d.name})
+        .style("stroke", function(d) {
+          return color(d.view_id);
+        });
+
+      var legend = svg.selectAll(".legend")
+          .data(color.domain().slice().reverse())
+          .enter().append("g")
+          .attr("class", "legend")
+          .attr("transform", function (d, i) {
+              return "translate(0," + i * 20 + ")";
+          });
+
+      legend.append("rect")
+          .attr("x", width - 18)
+          .attr("width", 18)
+          .attr("height", 18)
+          .style("fill", color);
+
+      legend.append("text")
+          .attr("x", width - 24)
+          .attr("y", 9)
+          .attr("dy", ".35em")
+          .style("text-anchor", "end")
+          .text(function (d) {
+          return d;
+      });
+
+  </script>
+
+  <h3>Views</h3>
+  <p>
+    <ul>
+      {% for v_id, v in view_index.items %}
+      <li>{{ v.method }} {{v.url }} ({{ v_id }})</li>
+      {% endfor %}
+    </ul>
+  </p>
+
+{% else %}
+
+  <p>There is no test result available for display.</p>
+
+{% endif %}
+
+{% endblock %}

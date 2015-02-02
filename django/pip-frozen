@@ -15,6 +15,7 @@ python-dateutil==2.1
 django-guardian==1.1.1
 django-taggit==0.11.2
 django-adminplus==0.2.1
+jsonfield==1.0.0
 python-libuuid==0.9.0
 pillow==2.3.0
 south==1.0.1

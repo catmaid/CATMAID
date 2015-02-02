@@ -13,6 +13,12 @@ Key shortcuts / mouse operations:
   location. Combining alt with these operations orders open leaves by most
   recent creation instead of distance.
 
+- Ctrl+Y removes the active skeleton from the last used selection widget.
+
+- Shift+Y selects skeletons within a radius of the active node in the tracing
+  layer and adds them to the last used selection widget. Ctrl+shift+Y works in
+  the same way to remove skeletons from the last used selection widget.
+
 
 Review system:
 
@@ -35,6 +41,9 @@ Review system:
 
 - The CSV export not also includes the parent ID for each node, which can be
   used to reconstruct the toplogical tree.
+
+- The auto-created selection widget is now 50% smaller, gving more vertical
+  space to the 3D viewer.
 
 
 ### Bug fixes
@@ -69,6 +78,11 @@ Neuron search:
   panel has been introduced, the 3D viewer has been too high. Now the
   pre-defined views (XY, XZ, ZY, ZX) are display correctly again, i.e. the whole
   bounding box is now seen again.
+
+Miscellaneous:
+
+- Vertical resizing of widgets now doesn't lead to strange size changes anymore.
+
 
 ## 2015.1.21
 

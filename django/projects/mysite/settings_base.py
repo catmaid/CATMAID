@@ -47,6 +47,7 @@ INSTALLED_APPS = (
     'adminplus',
     'catmaid',
     'vncbrowser',
+    'performancetests',
     'guardian',
     'south',
     'pipeline',

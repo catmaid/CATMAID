@@ -59,6 +59,7 @@ function TileLayer(
 
 		var tileOnload = function ()
 		{
+			if (this.alt === "h") return;
 			this.style.visibility = "visible";
 			this.alt = "l"; // Set a flag to indicate this image has loaded
 		};
@@ -183,54 +184,30 @@ function TileLayer(
 		// paint at once (but let regular code run for new stacks.)
 		var z_loading = stack.z !== stack.old_z && stack.s === stack.old_s;
 
-		var to_buffer = 0;
+		var to_buffer =
+				(tileInfo.last_col - Math.max(0, tileInfo.first_col) + 1) *
+				(tileInfo.last_row - Math.max(0, tileInfo.first_row) + 1);
 		var buffered = 0;
-		for ( var i = 0; i < tiles.length; ++i )
-		{
-			var r = fr + i;
-			for ( var j = 0; j < tiles[ 0 ].length; ++j )
-			{
-				var c = fc + j;
-				if ( r >= 0 && c >= 0 && r <= LAST_YT && c <= LAST_XT )
-				{
-					to_buffer = to_buffer + 1;
-				}
-			}
-		}
-
-		// Helper function to swap source images from tiles_buf into tiles
-		var swapLayers = function ()
-		{
-			to_buffer = NaN; // If timeout, prevent load callbacks from calling
-			for ( var i = 0; i < tiles.length; ++i )
-			{
-				var r = fr + i;
-				for ( var j = 0; j < tiles[ 0 ].length; ++j )
-				{
-					var c = fc + j;
-					if ( r >= 0 && c >= 0 && r <= LAST_YT && c <= LAST_XT &&
-						tiles_buf[ i ][ j ].src && !tiles[ i ][ j ].alt)
-					{
-						tiles[i][j].src = tiles_buf[i][j].src;
-					}
-				}
-			}
-		};
+		buffering = z_loading;
 
 		// Set a timeout for slow connections to swap in images for the zslice
 		// whether or not they have buffered.
-		if (z_loading) var swapLayersTimeout = window.setTimeout(swapLayers, 3000);
+		if (buffering) {
+			window.clearTimeout(swapBuffersTimeout);
+			swapBuffersTimeout = window.setTimeout(swapBuffers, 3000);
+		}
 
 		// Callback to deal with buffered image loading. Calls swapLayers once
 		// all requested images have been loaded in the tile buffer.
 		function bufferLoadDeferred()
 		{
 			return function() {
+				if (!this.alt || !buffering) return;
 				buffered = buffered + 1;
 				if (buffered === to_buffer)
 				{
-					window.clearTimeout(swapLayersTimeout);
-					swapLayers();
+					window.clearTimeout(swapBuffersTimeout);
+					swapBuffers();
 				}
 			};
 		}
@@ -276,6 +253,7 @@ function TileLayer(
 
 					if (tile.src === source)
 					{
+						tiles_buf[i][j].alt = "";
 						// If a tile was hidden earlier, but we now wish to
 						// show it again and it happens to have the same src,
 						// Chrome will not fire the onload event if we set src.
@@ -292,16 +270,19 @@ function TileLayer(
 						if (z_loading)
 						{
 							tiles_buf[ i ][ j ].onload = bufferLoadDeferred();
+							tiles_buf[ i ][ j ].alt = "t";
 							tiles_buf[ i ][ j ].src = source;
 						}
 						else
 						{
+							tiles_buf[i][j].alt = "";
 							tile.src = source;
 						}
 					}
 				}
 				else
 				{
+					tile.alt = "h";
 					tile.style.visibility = "hidden";
 				}
 
@@ -318,7 +299,24 @@ function TileLayer(
 
 		return 2;
 	};
-	
+
+	// Helper function to swap source images from tiles_buf into tiles
+	var swapBuffers = function ()
+	{
+		if (!buffering) return;
+		buffering = false; // If timeout, prevent load callbacks from calling
+		for ( var i = 0; i < tiles.length; ++i )
+		{
+			for ( var j = 0; j < tiles[ 0 ].length; ++j )
+			{
+				if (tiles_buf[ i ][ j ].alt && !tiles[ i ][ j ].alt)
+				{
+					tiles[i][j].src = tiles_buf[i][j].src;
+				}
+			}
+		}
+	};
+
 	this.resize = function( width, height )
 	{
 		var rows = Math.ceil( height / tileHeight ) + 1;
@@ -517,6 +515,8 @@ function TileLayer(
 	/* Contains all tiles in a 2d-array */
 	var tiles = [];
 	var tiles_buf = [];
+	var buffering = false;
+	var swapBuffersTimeout;
 
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";

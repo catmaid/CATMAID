@@ -321,8 +321,8 @@ function TileLayer(
 	
 	this.resize = function( width, height )
 	{
-		var rows = Math.floor( height / tileHeight ) + 2;
-		var cols = Math.floor( width / tileWidth ) + 2;
+		var rows = Math.ceil( height / tileHeight ) + 1;
+		var cols = Math.ceil( width / tileWidth ) + 1;
 		if (tiles.length === 0 || tiles.length !== rows || tiles[0].length !== cols)
 			initTiles( rows, cols );
 		self.redraw();

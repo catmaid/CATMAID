@@ -98,34 +98,10 @@ function TileLayer(
 		var pixelPos = [ stack.x, stack.y, stack.z ];
 		var tileBaseName = getTileBaseName( pixelPos );
 
-		var zoom = stack.s;
-		var mag = 1.0;
-		var artificialZoom = false;
-		/* If the zoom is negative we zoom in digitally. For this
-		 * we take the zero zoom level and adjust the tile properties.
-		 * This way we let the browser do the zooming work.
-		 */
-		if (zoom < 0 || zoom % 1 !== 0) {
-			artificialZoom = true;
-			/* For nonintegral zoom levels the ceiling is used to select
-			 * source image zoom level. While using the floor would allow
-			 * better image quality, it would requiring dynamically
-			 * increasing the number of tiles to fill the viewport since
-			 * in that case effectiveTileWidth < tileWidth.
-			 */
-			zoom = Math.max(0, Math.ceil(zoom));
-			/* Magnification is positive for digital zoom beyond image
-			 * resolution and negative for non-integral zooms within
-			 * image resolution.
-			 */
-			mag = Math.pow(2, zoom - stack.s);
-		}
+		var tileInfo = this.tilesForLocation(stack.xc, stack.yc, stack.z, stack.s);
 
-		var effectiveTileWidth = tileWidth * mag;
-		var effectiveTileHeight = tileHeight * mag;
-
-		var fr = Math.floor( stack.yc / effectiveTileHeight );
-		var fc = Math.floor( stack.xc / effectiveTileWidth );
+		var effectiveTileWidth = tileWidth * tileInfo.mag;
+		var effectiveTileHeight = tileHeight * tileInfo.mag;
 		
 		var xd = 0;
 		var yd = 0;
@@ -137,8 +113,8 @@ function TileLayer(
 			var old_fc = Math.floor( stack.old_xc / effectiveTileWidth );
 			
 			// Compute panning in X and Y
-			xd = fc - old_fc;
-			yd = fr - old_fr;
+			xd = tileInfo.first_col - old_fc;
+			yd = tileInfo.first_row - old_fr;
 
 			// re-order the tiles array on demand
 			if ( xd < 0 )
@@ -186,29 +162,6 @@ function TileLayer(
 				}
 				tiles.push( old_row );
 			}
-		}
-
-		// Adjust the last tile in a row or column to be visible rather than hidden.
-		// Must run when changing scale, or when changing the size of the canvas window.
-		// Considering how inexpensive it is, it is made to run always.
-		if (artificialZoom)
-		{
-			// Adjust last tile index to display to the one intersecting the bottom right
-			// of the field of view. The purpose: to hide images beyond the stack edges.
-			// Notice that we add the panning xd, yd as well (which is already in tile units).
-			LAST_XT = Math.floor((stack.x * stack.scale + stack.viewWidth / 2) / effectiveTileWidth) +
-					(xd > 0 ? xd : 0);
-			LAST_YT = Math.floor((stack.y * stack.scale + stack.viewHeight / 2) / effectiveTileHeight) +
-					(yd > 0 ? yd : 0);
-
-			// Clamp last tile coordinates within the slice edges.
-			LAST_XT = Math.min(LAST_XT, Math.floor((stack.dimension.x * Math.pow(2, -zoom) - 1) / tileWidth));
-			LAST_YT = Math.min(LAST_YT, Math.floor((stack.dimension.y * Math.pow(2, -zoom) - 1) / tileHeight));
-		}
-		else
-		{
-			LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
-			LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 		}
 
 		var top;
@@ -287,20 +240,20 @@ function TileLayer(
 		// update the images sources
 		for ( var i = 0; i < tiles.length; ++i )
 		{
-			var r = fr + i;
+			var r = tileInfo.first_row + i;
 			nextT = t + effectiveTileHeight;
 			seamRow = Math.round(nextT) - nextT > 0;
 			for ( var j = 0; j < tiles[ 0 ].length; ++j )
 			{
-				var c = fc + j;
+				var c = tileInfo.first_col + j;
 				var tile = tiles[ i ][ j ];
 
 				nextL = l + effectiveTileWidth;
 
-				if ( r >= 0 && c >= 0 && r <= LAST_YT && c <= LAST_XT )
+				if ( c >= 0 && r >= 0 && c <= tileInfo.last_col && r <= tileInfo.last_row )
 				{
 					var source = self.tileSource.getTileURL( project, stack,
-						tileBaseName, tileWidth, tileHeight, c, r, zoom);
+						tileBaseName, tileWidth, tileHeight, c, r, tileInfo.zoom);
 
 					if (tile.src === source)
 					{
@@ -446,10 +399,61 @@ function TileLayer(
 		this.cacheTiles(tileIndices, progressCallback);
 	};
 
-	this.cacheLocations = function(locations, s, progressCallback) {
-		if (typeof s === 'undefined') s = stack.s;
+	this.tilesForLocation = function (xc, yc, z, s) {
+		var zoom = s;
+		var mag = 1.0;
+		var artificialZoom = false;
+		/* If the zoom is negative we zoom in digitally. For this
+		 * we take the zero zoom level and adjust the tile properties.
+		 * This way we let the browser do the zooming work.
+		 */
+		if (zoom < 0 || zoom % 1 !== 0) {
+			artificialZoom = true;
+			/* For nonintegral zoom levels the ceiling is used to select
+			 * source image zoom level. While using the floor would allow
+			 * better image quality, it would requiring dynamically
+			 * increasing the number of tiles to fill the viewport since
+			 * in that case effectiveTileWidth < tileWidth.
+			 */
+			zoom = Math.max(0, Math.ceil(zoom));
+			/* Magnification is positive for digital zoom beyond image
+			 * resolution and negative for non-integral zooms within
+			 * image resolution.
+			 */
+			mag = Math.pow(2, zoom - s);
+		}
 
+		var effectiveTileWidth = tileWidth * mag;
+		var effectiveTileHeight = tileHeight * mag;
 
+		var fr = Math.floor( yc / effectiveTileHeight );
+		var fc = Math.floor( xc / effectiveTileWidth );
+
+		var lr, lc;
+
+		// Adjust the last tile in a row or column to be visible rather than hidden.
+		// Must run when changing scale, or when changing the size of the canvas window.
+		// Considering how inexpensive it is, it is made to run always.
+
+		// Adjust last tile index to display to the one intersecting the bottom right
+		// of the field of view. The purpose: to hide images beyond the stack edges.
+		// Notice that we add the panning xd, yd as well (which is already in tile units).
+		lc = Math.floor((stack.x * stack.scale + stack.viewWidth / 2) / effectiveTileWidth);
+		lr = Math.floor((stack.y * stack.scale + stack.viewHeight / 2) / effectiveTileHeight);
+
+		// Clamp last tile coordinates within the slice edges.
+		lc = Math.min(lc, Math.floor((stack.dimension.x * Math.pow(2, -zoom) - 1) / tileWidth));
+		lr = Math.min(lr, Math.floor((stack.dimension.y * Math.pow(2, -zoom) - 1) / tileHeight));
+
+		return {
+			first_row: fr,
+			first_col: fc,
+			last_row:  lr,
+			last_col:  lc,
+			z:         z,
+			zoom:      zoom,
+			mag: mag
+		};
 	};
 
 	/**

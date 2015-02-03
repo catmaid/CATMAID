@@ -107,6 +107,7 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
 };
 
 PixiTileLayer.prototype.resize = function (width, height) {
+  if (width === this.renderer.width && height === this.renderer.height) return;
   this.renderer.resize(width, height);
   TileLayer.prototype.resize.call(this, width, height);
 };

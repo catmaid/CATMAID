@@ -8,9 +8,7 @@ var ReviewSystem = new function()
     self.skeleton_segments = null;
     self.current_segment = null;
     self.current_segment_index = 0;
-    var tile_image_counter = 0,
-        total_count = 0,
-        end_puffer_count = 0,
+    var end_puffer_count = 0,
         autoCentering = true,
         followedUsers = [];
 
@@ -495,17 +493,8 @@ var ReviewSystem = new function()
         resetFn("reset-own");
     };
 
-    var loadImageCallback = function( imageArray ) {
-        if(0 === imageArray.length) {
-            return;
-        }
-        var src = imageArray.pop();
-        var image = new Image();
-        image.src = src;
-        image.onload = image.onerror = function(e) {
-            $('#counting-cache').text( total_count - imageArray.length + '/' + total_count );
-            loadImageCallback( imageArray );
-        };
+    var loadImageCallback = function (queuedTiles, cachedTiles) {
+        $('#counting-cache').text(cachedTiles + '/' + (cachedTiles + queuedTiles));
     };
 
     this.cacheImages = function() {
@@ -513,13 +502,8 @@ var ReviewSystem = new function()
             return;
         }
         var tilelayer = project.focusedStack.getLayers()['TileLayer'],
-            stack = project.focusedStack,
-            tileWidth = tilelayer.getTileWidth(),
-            tileHeight = tilelayer.getTileHeight(),
-            max_column = parseInt( stack.dimension.x / tileWidth ),
-            max_row = parseInt( stack.dimension.y / tileHeight ),
-            startsegment = -1, endsegment = 0, tile_counter = 0;
-        var s = [];
+            startsegment = -1, endsegment = 0, locations = [];
+
         for(var idx in self.skeleton_segments) {
             if( self.skeleton_segments[idx]['status'] !== "100.00" ) {
                 if( startsegment == -1)
@@ -527,27 +511,17 @@ var ReviewSystem = new function()
                 var seq = self.skeleton_segments[idx]['sequence'];
                 for(var i = 0; i < self.skeleton_segments[idx]['nr_nodes']; i++ ) {
                     if(!seq[i]['rids'].some(reviewedByUser)) {
-                        var c = parseInt( seq[i].x / stack.resolution.x / tileWidth),
-                            r = parseInt( seq[i].y / stack.resolution.y / tileHeight );
-                        for( var rowidx = r-1; rowidx <= r+1; rowidx++ ) {
-                            for( var colidx = c-1; colidx <= c+1; colidx++ ) {
-                                if( colidx < 0 || colidx > max_column || rowidx < 0 || rowidx > max_row )
-                                    continue;
-                                var tileBaseName = getTileBaseName( [ seq[i].x, seq[i].y, parseInt( seq[i].z / stack.resolution.z ) ] );
-                                s.push( tilelayer.tileSource.getTileURL( project, stack, tileBaseName, tileWidth, tileHeight, colidx, rowidx, 0) );                                
-                                tile_counter++;
-                            }
-                        }
+                        locations.push([seq[i].x, seq[i].y, seq[i].z]);
                     }
                 }
                 endsegment = idx;
             }
-            if(tile_counter > 3000)
+            if (locations.length > 500)
                 break;
         }
-        total_count = s.length;
+
         $('#counting-cache-info').text( 'From segment: ' + startsegment + ' to ' + endsegment );
-        loadImageCallback( s );
+        tilelayer.cacheLocations(locations, loadImageCallback);
     };
 }();
 

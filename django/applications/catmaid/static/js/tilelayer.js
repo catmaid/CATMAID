@@ -375,7 +375,83 @@ function TileLayer(
 		self.redraw();
 		return;
 	};
-	
+
+	/**
+	 * Loads tiles at specified indices, but does not display them, so that
+	 * they are cached for future vieweing.
+	 * @param  {[[]]}                     tileIndices      an array of tile
+	 *                                                     indices like:
+	 *                                                     [c, r, z, s]
+	 * @param  {function(number, number)} progressCallback
+	 */
+	this.cacheTiles = function(tileIndices, progressCallback, cachedCounter, loaders) {
+		if (typeof cachedCounter === 'undefined') cachedCounter = 0;
+
+		// Truncate request to no more than 3000 tiles.
+		if (tileIndices.length > 3000) tileIndices.splice(3000);
+
+		progressCallback(tileIndices.length, cachedCounter);
+		// Check if the queue is empty
+		if (0 === tileIndices.length) return;
+
+		var BATCH_SIZE = 16;
+		var numLoaders = Math.min(BATCH_SIZE, tileIndices.length);
+		var loaded = 0;
+
+		if (typeof loaders === 'undefined') {
+			loaders = [];
+			for (var i = 0; i < numLoaders; ++i)
+				loaders[i] = new Image();
+		}
+
+		tileIndices.splice(0, numLoaders).forEach(function (tileInd, i) {
+			var img = loaders[i];
+			img.onload = img.onerror = function () {
+				loaded += 1;
+				if (loaded >= numLoaders)
+					self.cacheTiles(tileIndices, progressCallback, cachedCounter + numLoaders, loaders);
+			};
+			img.src = self.tileSource.getTileURL(
+					project, stack,
+					getTileBaseName(tileInd.slice(0, 3)),
+					tileWidth, tileHeight, tileInd[0], tileInd[1], tileInd[3]);
+		});
+	};
+
+	/**
+	 * Loads tiles for views centered at specified project locations, but does
+	 * not display them, so that they are cached for future vieweing.
+	 * @param  {[[]]}                     locations        an array of project
+	 *                                                     coords like:
+	 *                                                     [x, y, z]
+	 * @param  {function(number, number)} progressCallback
+	 */
+	this.cacheLocations = function(locations, progressCallback) {
+		var s = stack.s;
+
+		var tileIndices = locations.reduce(function (tileInds, loc) {
+			var tileInfo = self.tilesForLocation(
+					// Convert project coords to scaled stack coords of a view corner.
+					loc[0] * stack.scale / stack.resolution.x - stack.viewWidth / 2,
+					loc[1] * stack.scale / stack.resolution.y - stack.viewHeight / 2,
+					Math.floor(loc[2] / stack.resolution.z),
+					s);
+			for (var i = tileInfo.first_col; i <= tileInfo.last_col; ++i)
+				for (var j = tileInfo.first_row; j <= tileInfo.last_row; ++j)
+					tileInds.push([i, j, tileInfo.z, tileInfo.zoom]);
+
+			return tileInds;
+		}, []);
+
+		this.cacheTiles(tileIndices, progressCallback);
+	};
+
+	this.cacheLocations = function(locations, s, progressCallback) {
+		if (typeof s === 'undefined') s = stack.s;
+
+
+	};
+
 	/**
 	 * Get the width of an image tile.
 	 */

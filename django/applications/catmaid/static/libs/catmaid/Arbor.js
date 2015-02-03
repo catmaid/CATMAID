@@ -370,7 +370,7 @@ Arbor.prototype.partition = function() {
         paren,
         n_successors;
     do {
-        var paren = this.edges[node];
+        paren = this.edges[node];
         if (undefined === paren) break; // reached root
         seq.push(paren);
         n_successors = branches[paren];

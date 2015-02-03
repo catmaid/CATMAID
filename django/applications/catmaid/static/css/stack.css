@@ -19,7 +19,7 @@ div.sliceView
 	overflow:hidden;
 }
 
-div.sliceView div.sliceTiles
+div.sliceView .sliceTiles
 {
 	position:absolute;
 	top:0px;

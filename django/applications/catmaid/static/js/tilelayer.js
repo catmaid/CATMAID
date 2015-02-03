@@ -255,6 +255,25 @@ function TileLayer(
 					var source = self.tileSource.getTileURL( project, stack,
 						tileBaseName, tileWidth, tileHeight, c, r, tileInfo.zoom);
 
+					tile.style.top = t + "px";
+					tile.style.left = l + "px";
+
+					// To prevent tile seams when the browser is going to round the
+					// edge of the next column up a pixel, grow the width of this
+					// column slightly to fill the gap
+					if (Math.round(nextL) - nextL > 0) {
+						tile.style.width = Math.ceil(effectiveTileWidth) + "px";
+					} else {
+						tile.style.width = effectiveTileWidth + "px";
+					}
+
+					// As above, prevent tile seams when the next row will round up
+					if (seamRow) {
+						tile.style.height = Math.ceil(effectiveTileHeight) + "px";
+					} else {
+						tile.style.height = effectiveTileHeight + "px";
+					}
+
 					if (tile.src === source)
 					{
 						// If a tile was hidden earlier, but we now wish to
@@ -279,25 +298,6 @@ function TileLayer(
 						{
 							tile.src = source;
 						}
-					}
-
-					tile.style.top = t + "px";
-					tile.style.left = l + "px";
-
-					// To prevent tile seams when the browser is going to round the
-					// edge of the next column up a pixel, grow the width of this
-					// column slightly to fill the gap
-					if (Math.round(nextL) - nextL > 0) {
-						tile.style.width = Math.ceil(effectiveTileWidth) + "px";
-					} else {
-						tile.style.width = effectiveTileWidth + "px";
-					}
-
-					// As above, prevent tile seams when the next row will round up
-					if (seamRow) {
-						tile.style.height = Math.ceil(effectiveTileHeight) + "px";
-					} else {
-						tile.style.height = effectiveTileHeight + "px";
 					}
 				}
 				else

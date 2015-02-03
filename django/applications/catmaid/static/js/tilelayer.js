@@ -61,9 +61,6 @@ function TileLayer(
   if (this.visible)
     stack.getView().appendChild(this.tilesContainer);
 
-  this.LAST_XT = Math.floor((stack.dimension.x * stack.scale - 1) / tileWidth);
-  this.LAST_YT = Math.floor((stack.dimension.y * stack.scale - 1) / tileHeight);
-
   if (showOverview) {
     // Initialize the OverviewLayer on the bottom-right with the correct
     // path to the small thumbnail images depending on the tile source type
@@ -453,10 +450,6 @@ TileLayer.prototype.tilesForLocation = function (xc, yc, z, s) {
 
   var lr, lc;
 
-  // Adjust the last tile in a row or column to be visible rather than hidden.
-  // Must run when changing scale, or when changing the size of the canvas window.
-  // Considering how inexpensive it is, it is made to run always.
-
   // Adjust last tile index to display to the one intersecting the bottom right
   // of the field of view. The purpose: to hide images beyond the stack edges.
   // Notice that we add the panning xd, yd as well (which is already in tile units).
@@ -479,16 +472,6 @@ TileLayer.prototype.tilesForLocation = function (xc, yc, z, s) {
 };
 
 /**
- * Get the width of an image tile.
- */
-TileLayer.prototype.getTileWidth = function () { return this.tileWidth; };
-
-/**
- * Get the height of an image tile.
- */
-TileLayer.prototype.getTileHeight = function () { return this.tileHeight; };
-
-/**
  * Get the stack.
  */
 TileLayer.prototype.getStack = function () { return this.stack; };
@@ -507,10 +490,6 @@ TileLayer.prototype.setOpacity = function (val) {
     if (!this.visible)
       this.reattachTileLayer();
   }
-};
-
-TileLayer.prototype.updateOpacity = function () {
-  this.setOpacity(opacity);
 };
 
 /**

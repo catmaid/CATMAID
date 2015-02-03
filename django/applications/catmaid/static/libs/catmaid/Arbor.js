@@ -461,8 +461,15 @@ Arbor.prototype.spanningTree = function(keepers) {
 
   var partitions = this.partitionSorted(),
       n_seen = 0,
-      preserve = {};
-  keepers.forEach(function(node) { preserve[node] = 1; });
+      preserve = {},
+      n_keepers = 0;
+
+  for (var i=0; i<keepers.length; ++i) {
+    var node = keepers[i];
+    if (preserve[node]) continue; // skip repeated entry in keepers
+    preserve[keepers[i]] = 1;
+    n_keepers += 1;
+  }
 
   for (var k=0; k<partitions.length; ++k) {
     var partition = partitions[k],
@@ -484,17 +491,20 @@ Arbor.prototype.spanningTree = function(keepers) {
         }
       }
     }
-    if (first > -1) {
+    if (-1 != first) {
       var end;
-      if (-1 == last) {
-        // Add the rest
-        end = partition.length;
-      } else if (n_seen == keepers.length) {
+      if (-1 != last && n_seen == n_keepers) {
         // Add up to the last seen
         end = last + 1;
       } else {
         // Add the rest
         end = partition.length;
+        // Add branch node to keepers if not there already
+        node = partition[end -1];
+        if (!preserve[node]) {
+          preserve[node] = 1;
+          n_keepers += 1;
+        }
       }
       for (var i=first + 1; i<end; ++i) {
         spanning.edges[partition[i-1]] = partition[i];

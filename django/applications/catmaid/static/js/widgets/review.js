@@ -126,7 +126,7 @@ var ReviewSystem = new function()
 
         if (advanceToNextUnfollowed) {
             // Advance current_segment_index to the first node that is not reviewed
-            // which is a node with no reviewer of the current user.
+            // by the current user.
             var i = self.current_segment_index;
             var seq = self.current_segment['sequence'];
             var len = seq.length;

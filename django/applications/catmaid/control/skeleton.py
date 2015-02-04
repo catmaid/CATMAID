@@ -16,7 +16,7 @@ from catmaid.models import Project, UserRole, Class, ClassInstance, Review, \
 from catmaid.objects import Skeleton
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
-from catmaid.control.common import insert_into_log, get_relation_to_id_map 
+from catmaid.control.common import insert_into_log, get_relation_to_id_map
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query, \
         _annotate_entities, _update_neuron_annotations

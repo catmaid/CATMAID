@@ -192,8 +192,18 @@ var ReviewSystem = new function()
                     if (json.reviewer_id) {
                         // Append the new review to the list of reviewers of
                         // this node, if not already present.
-                        if (node_ob['rids'].indexOf(json.reviewer_id) === -1) {
-                            node_ob['rids'].push(json.reviewer_id);
+                        var lastIndex;
+                        var known = node_ob['rids'].some(function(r, i) {
+                            lastIndex = i;
+                            return r[0] === json.reviewer_id;
+                        })
+
+                        // Either update an existing entry or create a new one
+                        var reviewInfo = [json.reviewer_id, json.review_time];
+                        if (known) {
+                            node_ob['rids'][lastIndex] = reviewInfo;
+                        } else {
+                            node_ob['rids'].push(reviewInfo);
                         }
                     }
                 });

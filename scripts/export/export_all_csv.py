@@ -1,8 +1,8 @@
 # Albert Cardona 2014-11-21
 # This file is meant to be run from within ./manage.py shell in the environment, like:
-# [1] load export_all_graphml.py
+# [1] load export_all_csv.py
 # [2] project_id = 12
-# [2] export(project_id, "all.graphml")
+# [2] export(project_id, "all")
 
 from __future__ import with_statement
 from django.db import connection

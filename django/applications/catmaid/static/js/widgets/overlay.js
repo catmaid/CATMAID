@@ -1610,6 +1610,8 @@ SkeletonAnnotations.SVGOverlay.prototype.goToPreviousBranchOrRootNode = function
         if (treenode_id === json[0]) {
           // Already at the root node
           growlAlert('Already there', 'You are already at the root node');
+          // Center already selected node
+          self.moveTo(json[3], json[2], json[1]);
         } else {
           self.moveTo(json[3], json[2], json[1],
             function() {
@@ -1638,6 +1640,11 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
           if (json.length === 0) {
             // Already at a branch or end node
             growlAlert('Already there', 'You are at an end node');
+            // Center already selected node
+            var atn = SkeletonAnnotations.atn;
+            if (atn) {
+              self.moveTo(atn.z, atn.y, atn.x);
+            }
           } else {
             self.nextBranches = {tnid: treenode_id, branches: json};
             self.cycleThroughBranches(null, e.altKey ? 1 : 2);

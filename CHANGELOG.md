@@ -19,6 +19,9 @@ Key shortcuts / mouse operations:
   layer and adds them to the last used selection widget. Ctrl+shift+Y works in
   the same way to remove skeletons from the last used selection widget.
 
+- If the next (or previous) branch/end point is already selected when V (or B)
+  is pressed, the view will center on it nevertheless.
+
 
 Review system:
 

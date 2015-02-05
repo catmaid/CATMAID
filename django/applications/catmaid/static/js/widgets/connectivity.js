@@ -1087,7 +1087,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     e.setAttribute('title', 'Hide partner');
     e.setAttribute('skid', skeleton_id);
     return e;
-  };
+  }
 };
 
 /**

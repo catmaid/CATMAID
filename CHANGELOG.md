@@ -43,9 +43,9 @@ Review system:
   target stays fixed. If Alt + mouse wheel is used, the target moves as well.
 
 - The CSV export not also includes the parent ID for each node, which can be
-  used to reconstruct the toplogical tree.
+  used to reconstruct the topological tree.
 
-- The auto-created selection widget is now 50% smaller, gving more vertical
+- The auto-created selection widget is now 50% smaller, giving more vertical
   space to the 3D viewer.
 
 

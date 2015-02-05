@@ -49,6 +49,12 @@ Review system:
   space to the 3D viewer.
 
 
+Connectivity widget:
+
+- Individual partner neurons can now be hidden: a little 'x' icon is displayed
+  to the right of each partner's name. Clicking it will hide it, similar to the
+  thresholding and 'Hide single node partners' functionality.
+
 ### Bug fixes
 
 Tracing overlay:

@@ -55,6 +55,9 @@ Connectivity widget:
   to the right of each partner's name. Clicking it will hide it, similar to the
   thresholding and 'Hide single node partners' functionality.
 
+- It is now possible to remove added neurons again. Each row of the table of
+  target neurons now contains a small 'x' icon in the first column to remove it.
+
 ### Bug fixes
 
 Tracing overlay:

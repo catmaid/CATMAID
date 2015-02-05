@@ -844,9 +844,19 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     if (this.skeletonSelection[skid]) {
         selectionCb.attr('checked', 'checked');
     }
+
+    // Create small icon to remove this neuron from list
+    var removeSkeleton = $('<span />')
+      .attr('class', 'ui-icon ui-icon-close remove-skeleton')
+      .attr('title', 'Remove this neuron from list')
+      .attr('skid', skid)
+      .click(this, function(e) {
+        e.data.removeSkeletons([$(this).attr('skid')]);
+      });
+
     // Create and append row for current skeleton
     var row = $('<tr />')
-        .append($('<td />').append((i + 1) + '.'))
+        .append($('<td />').append((i + 1) + '.').append(removeSkeleton))
         .append($('<td />').attr('class', 'input-container')
             .append(selectionCb))
         .append($('<td />').append(

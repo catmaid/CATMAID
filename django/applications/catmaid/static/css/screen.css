@@ -528,6 +528,12 @@ div#classification_graph_object img.roiimage {
   clear: both;
 }
 
+.connectivity_widget .remove-skeleton {
+  float: right;
+  position: relative;
+  top: -0.2em;
+}
+
 .connectivity_widget .connectivity_table_actions {
   position: relative;
   clear: both;

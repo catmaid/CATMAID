@@ -1074,7 +1074,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   function createHideButton(skeleton_id) {
     var e = document.createElement('span');
     e.setAttribute('class', 'ui-icon ui-icon-close hide-skeleton');
-    e.setAttribute('alt', 'Remove partner from list');
+    e.setAttribute('title', 'Hide partner');
     e.setAttribute('skid', skeleton_id);
     return e;
   };

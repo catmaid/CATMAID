@@ -181,7 +181,7 @@ var ReviewSystem = new function()
     function reviewedByUser(review)
     {
         return session.userid === review[0];
-    };
+    }
 
     this.warnIfNodeSkipsSections = function () {
         var zdiff = (self.current_segment.sequence[self.current_segment_index].z -
@@ -204,7 +204,7 @@ var ReviewSystem = new function()
                         var known = node_ob['rids'].some(function(r, i) {
                             lastIndex = i;
                             return r[0] === json.reviewer_id;
-                        })
+                        });
 
                         // Either update an existing entry or create a new one
                         var reviewInfo = [json.reviewer_id, json.review_time];

@@ -322,10 +322,10 @@ SettingsWidget.prototype.init = function(space)
     var users = User.all();
     var reviewers = Object.keys(users).map(function (userId) { return users[userId]; });
     // Add reviewer options to select box
-    select = $('<select/>');
+    var reviewerSelect = $('<select/>');
     reviewers.sort(User.displayNameCompare).forEach(function (user) {
       this.append(new Option(user.getDisplayName(), user.id));
-    }, select);
+    }, reviewerSelect);
 
     var acceptAfterInput = $('<input type="text" />').datepicker({
       changeMonth: true,
@@ -337,7 +337,7 @@ SettingsWidget.prototype.init = function(space)
     var whitelist = $('<select/>').addClass('multiline').attr('size', '4')[0];
 
     var addReviewerButton = $('<button/>').text('Add to team').click(function() {
-      var newReviewer = select.val();
+      var newReviewer = reviewerSelect.val();
       // Let ReviewSystem.Whitelist choose a default date if none was entered
       var acceptAfter = acceptAfterInput.val() ? acceptAfterInput.val() : undefined;
       ReviewSystem.Whitelist
@@ -352,7 +352,7 @@ SettingsWidget.prototype.init = function(space)
           .save(refreshWhitelist);
     });
 
-    ds.append(createLabeledControl('Reviewer', select));
+    ds.append(createLabeledControl('Reviewer', reviewerSelect));
     ds.append(createLabeledControl('Accept after', acceptAfterInput));
     ds.append(createLabeledControl('', addReviewerButton));
     ds.append(createLabeledControl('', whitelist));

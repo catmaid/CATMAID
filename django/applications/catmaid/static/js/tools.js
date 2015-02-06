@@ -1,6 +1,10 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+// Namespace declaration
+var CATMAID = CATMAID || {};
+CATMAID.tools = CATMAID.tools || {};
+
 var UNIQUE_ID;
 
 function parseIndex(str) {
@@ -322,3 +326,12 @@ window.getOS = function()
     return 'UNKNOWN';
   }
 };
+
+/**
+ * Definition of methods in CATMAID.tools namespace.
+ */
+(function(tools) {
+
+  // Add things here
+
+})(CATMAID.tools);

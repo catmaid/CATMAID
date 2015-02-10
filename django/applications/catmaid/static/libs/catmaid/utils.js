@@ -1035,7 +1035,7 @@ SVGUtil.insertXYScatterPlot = function(
     series,
     with_names, with_tooltip_text) {
 
-  var margin = {top: 20, right: 100, bottom: 50, left: 50},
+  var margin = {top: 20, right: 200, bottom: 50, left: 50},
       width = width - margin.left - margin.right,
       height = height - margin.top - margin.bottom;
 

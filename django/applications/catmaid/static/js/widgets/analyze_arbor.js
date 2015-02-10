@@ -392,7 +392,6 @@ AnalyzeArbor.prototype.updateCharts = function() {
       pie_outputs = makePie(2, "# Outputs"),
       pie_mitochondria = makePie(4, "# mitochondria");
 
-
   // Create histograms of terminal subarbors:
   var skids = Object.keys(this.arbor_stats);
 
@@ -532,12 +531,14 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
   (function() {
     // Add XY scatterplots of:
-    // * cable vs depth
-    // * cable vs inputs
+    // * twig cable vs depth
+    // * twig cable vs inputs
+    // * total cable vs number of twigs
     var colors = d3.scale.category10();
     var cable_vs_depth = [],
         cable_vs_inputs = [],
-        series = [];
+        series = [],
+        neuron_colors = {};
     skids.forEach(function(skid, k) {
       var stats = this.arbor_stats[skid],
           Entry = function(x, y, root) { this.x = x; this.y = y; this.root = root; },
@@ -555,10 +556,21 @@ AnalyzeArbor.prototype.updateCharts = function() {
           });
         }
       });
+      neuron_colors[skid] = neuron.color;
+    }, this);
+
+    var total_cable_vs_n_twigs = rows.map(function(row, i) {
+      var skid = this.skeleton_ids[i],
+          stats = this.arbor_stats[skid];
+      return {x: row[1] / 1000,
+              y: stats.dendritic.n_subs + (stats.axonal ? stats.axonal.n_subs : 0),
+              color: neuron_colors[skid],
+              name: NeuronNameService.getInstance().getName(skid),
+              skid: skid};
     }, this);
 
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_depth',
-        550, 470,
+        650, 470,
         'cable (µm)', 'depth (µm)',
         cable_vs_depth,
         function(d) {
@@ -568,7 +580,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         false, true);
 
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_inputs',
-        550, 470,
+        650, 470,
         'cable (µm)', 'inputs',
         cable_vs_inputs,
         function(d) {
@@ -576,6 +588,19 @@ AnalyzeArbor.prototype.updateCharts = function() {
         },
         series,
         false, true);
+
+    // Create plot of total cable length vs number of twigs
+    SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_length_vs_n_twigs',
+      650, 470,
+      'arbor cable (µm)', '# twigs',
+      total_cable_vs_n_twigs,
+      function(d) {
+        TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.skid);
+      },
+      rows.map((function(row, i) { return {name: row[0] + ' (' + total_cable_vs_n_twigs[i].y  + ' twigs)', color: this(i)}; }).bind(d3.scale.category10())),
+      true, true
+    );
+
   }).bind(this)();
 
   (function() {

@@ -126,12 +126,12 @@ var ReviewSystem = new function()
 
         if (advanceToNextUnfollowed) {
             // Advance current_segment_index to the first node that is not reviewed
-            // which is a node with no reviewer of the current user.
+            // by the current user.
             var i = self.current_segment_index;
             var seq = self.current_segment['sequence'];
             var len = seq.length;
             while (i < len) {
-                if (-1 === seq[i].rids.indexOf(session.userid)) {
+                if (!seq[i].rids.some(reviewedByUser)) {
                     self.current_segment_index = i;
                     break;
                 }
@@ -146,7 +146,7 @@ var ReviewSystem = new function()
             var i_union = self.current_segment_index;
             var seq = self.current_segment['sequence'];
             var len = seq.length;
-            while (i_user < len && -1 !== seq[i_user].rids.indexOf(session.userid)) {
+            while (i_user < len && seq[i_user].rids.some(reviewedByUser)) {
                 i_user += 1;
             }
             while (i_union < len && 0 !== seq[i_union].rids.length) {
@@ -175,6 +175,14 @@ var ReviewSystem = new function()
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
+    /**
+     * Tests if a review was reviewd by the current user
+     */
+    function reviewedByUser(review)
+    {
+        return session.userid === review[0];
+    }
+
     this.warnIfNodeSkipsSections = function () {
         var zdiff = (self.current_segment.sequence[self.current_segment_index].z -
                     self.current_segment.sequence[self.current_segment_index-1].z) /
@@ -192,8 +200,18 @@ var ReviewSystem = new function()
                     if (json.reviewer_id) {
                         // Append the new review to the list of reviewers of
                         // this node, if not already present.
-                        if (node_ob['rids'].indexOf(json.reviewer_id) === -1) {
-                            node_ob['rids'].push(json.reviewer_id);
+                        var lastIndex;
+                        var known = node_ob['rids'].some(function(r, i) {
+                            lastIndex = i;
+                            return r[0] === json.reviewer_id;
+                        });
+
+                        // Either update an existing entry or create a new one
+                        var reviewInfo = [json.reviewer_id, json.review_time];
+                        if (known) {
+                            node_ob['rids'][lastIndex] = reviewInfo;
+                        } else {
+                            node_ob['rids'].push(reviewInfo);
                         }
                     }
                 });
@@ -219,7 +237,9 @@ var ReviewSystem = new function()
                  */
                 var unreviewed_nodes = function(node) {
                     return 0 === node['rids'].length || followedUsers.every(function(rid) {
-                        return -1 === node['rids'].indexOf(rid);
+                        return !node['rids'].some(function(r) {
+                            return rid === r[0];
+                        });
                     });
                 };
                 /**
@@ -506,7 +526,7 @@ var ReviewSystem = new function()
                     startsegment = idx;
                 var seq = self.skeleton_segments[idx]['sequence'];
                 for(var i = 0; i < self.skeleton_segments[idx]['nr_nodes']; i++ ) {
-                    if(-1 === seq[i]['rids'].indexOf(session.userid)) {
+                    if(!seq[i]['rids'].some(reviewedByUser)) {
                         var c = parseInt( seq[i].x / stack.resolution.x / tileWidth),
                             r = parseInt( seq[i].y / stack.resolution.y / tileHeight );
                         for( var rowidx = r-1; rowidx <= r+1; rowidx++ ) {

@@ -312,7 +312,6 @@ window.LoginDialog.prototype.show = function() {
 window.getOS = function()
 {
   var ua = navigator.userAgent.toUpperCase();
-  console.log(ua);
   if (-1 !== ua.indexOf('MAC')) {
     return 'MAC';
   } else if (-1 !== ua.indexOf('WIN')) {

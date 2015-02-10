@@ -19,6 +19,9 @@ Key shortcuts / mouse operations:
   layer and adds them to the last used selection widget. Ctrl+shift+Y works in
   the same way to remove skeletons from the last used selection widget.
 
+- If the next (or previous) branch/end point is already selected when V (or B)
+  is pressed, the view will center on it nevertheless.
+
 
 Review system:
 
@@ -40,11 +43,20 @@ Review system:
   target stays fixed. If Alt + mouse wheel is used, the target moves as well.
 
 - The CSV export not also includes the parent ID for each node, which can be
-  used to reconstruct the toplogical tree.
+  used to reconstruct the topological tree.
 
-- The auto-created selection widget is now 50% smaller, gving more vertical
+- The auto-created selection widget is now 50% smaller, giving more vertical
   space to the 3D viewer.
 
+
+Connectivity widget:
+
+- Individual partner neurons can now be hidden: a little 'x' icon is displayed
+  to the right of each partner's name. Clicking it will hide it, similar to the
+  thresholding and 'Hide single node partners' functionality.
+
+- It is now possible to remove added neurons again. Each row of the table of
+  target neurons now contains a small 'x' icon in the first column to remove it.
 
 ### Bug fixes
 

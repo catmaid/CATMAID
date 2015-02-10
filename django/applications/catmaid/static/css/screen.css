@@ -528,6 +528,12 @@ div#classification_graph_object img.roiimage {
   clear: both;
 }
 
+.connectivity_widget .remove-skeleton {
+  float: right;
+  position: relative;
+  top: -0.2em;
+}
+
 .connectivity_widget .connectivity_table_actions {
   position: relative;
   clear: both;
@@ -573,6 +579,10 @@ div#classification_graph_object img.roiimage {
 
 .connectivity_widget .partner_table .syncount {
   text-align: center;
+}
+
+.connectivity_widget .partner_table .hide-skeleton {
+  float: right;
 }
 
 .connectivity_widget .partner_table tfoot {

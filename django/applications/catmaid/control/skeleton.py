@@ -1098,7 +1098,7 @@ def annotation_list(request, project_id=None):
     return HttpResponse(json.dumps(response), content_type="text/json")
 
 @requires_user_role(UserRole.Browse)
-def list(request, project_id):
+def list_skeletons(request, project_id):
     created_by = request.GET.get('created_by', None)
     reviewed_by = request.GET.get('reviewed_by', None)
     from_date = request.GET.get('from', None)
@@ -1115,10 +1115,10 @@ def list(request, project_id):
     if to_date:
         to_date = datetime.strptime(to_date, '%Y%m%d')
 
-    response = _list(project_id, created_by, reviewed_by, from_date, to_date, nodecount_gt)
+    response = _list_skeletons(project_id, created_by, reviewed_by, from_date, to_date, nodecount_gt)
     return HttpResponse(json.dumps(response), content_type="text/json")
 
-def _list(project_id, created_by=None, reviewed_by=None, from_date=None,
+def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=None,
           to_date=None, nodecount_gt=0):
     """ Returns a list of skeleton IDs of which nodes exist that fulfill the
     given constraints (if any). It can be constrained who created nodes in this

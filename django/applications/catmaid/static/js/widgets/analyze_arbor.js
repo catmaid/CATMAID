@@ -12,7 +12,8 @@
   SkeletonAnnotations,
   SkeletonSource,
   SVGUtil,
-  SynapseClustering
+  SynapseClustering,
+  TracingTool
 */
 
 "use strict";

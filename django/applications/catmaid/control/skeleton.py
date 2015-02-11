@@ -5,6 +5,7 @@ import re
 from operator import itemgetter
 from datetime import datetime, timedelta
 from collections import defaultdict
+from itertools import chain
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse
@@ -16,13 +17,14 @@ from catmaid.models import Project, UserRole, Class, ClassInstance, Review, \
 from catmaid.objects import Skeleton
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
-from catmaid.control.common import insert_into_log, get_relation_to_id_map
+from catmaid.control.common import insert_into_log, get_class_to_id_map, \
+        get_relation_to_id_map, _create_relation
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query, \
         _annotate_entities, _update_neuron_annotations
 from catmaid.control.review import get_treenodes_to_reviews, get_review_status
 from catmaid.control.treenode import _create_interpolated_treenode
-from catmaid.control.tree_util import reroot, edge_count_to_root
+from catmaid.control.tree_util import find_root, reroot, edge_count_to_root
 
 
 def get_skeleton_permissions(request, project_id, skeleton_id):
@@ -950,6 +952,113 @@ def join_skeletons_interpolated(request, project_id=None):
             annotation_map)
 
     return HttpResponse(json.dumps({'treenode_id': params['to_id']}))
+
+
+def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=None):
+    """Create a skeleton from a networkx directed tree.
+
+    Associate the skeleton to the specified neuron, or a new one if none is
+    provided. Returns a dictionary of the neuron and skeleton IDs, and the
+    original arborescence with attributes added for treenode IDs.
+    """
+    # TODO: There is significant reuse here of code from create_treenode that
+    # could be DRYed up.
+    relation_map = get_relation_to_id_map(project_id)
+    class_map = get_class_to_id_map(project_id)
+
+    new_skeleton = ClassInstance()
+    new_skeleton.user = request.user
+    new_skeleton.project_id = project_id
+    new_skeleton.class_column_id = class_map['skeleton']
+    if name is not None:
+        new_skeleton.name = name
+    else:
+        new_skeleton.name = 'skeleton'
+        new_skeleton.save()
+        new_skeleton.name = 'skeleton %d' % new_skeleton.id
+    new_skeleton.save()
+
+    def relate_neuron_to_skeleton(neuron, skeleton):
+        return _create_relation(request.user, project_id,
+                relation_map['model_of'], skeleton, neuron)
+
+    if neuron_id is not None:
+        # Check that the neuron to use exists
+        if 0 == ClassInstance.objects.filter(pk=neuron_id).count():
+            neuron_id = None
+
+    if neuron_id is not None:
+        # Raise an Exception if the user doesn't have permission to
+        # edit the existing neuron.
+        can_edit_class_instance_or_fail(request.user, neuron_id, 'neuron')
+
+    else:
+        # A neuron does not exist, therefore we put the new skeleton
+        # into a new neuron.
+        new_neuron = ClassInstance()
+        new_neuron.user = request.user
+        new_neuron.project_id = project_id
+        new_neuron.class_column_id = class_map['neuron']
+        if name is not None:
+            new_neuron.name = 'neuron ' + name
+        else:
+            new_neuron.name = 'neuron'
+            new_neuron.save()
+            new_neuron.name = 'neuron %d' % new_neuron.id
+        new_neuron.save()
+
+        neuron_id = new_neuron.id
+
+    relate_neuron_to_skeleton(neuron_id, new_skeleton.id)
+
+    # Bulk create the required number of treenodes. This must be done in two
+    # steps because treenode IDs are not known.
+    cursor = connection.cursor()
+    cursor.execute("""
+        INSERT INTO treenode (project_id, location_x, location_y, location_z,
+            editor_id, user_id, skeleton_id)
+        SELECT t.project_id, t.x, t.x, t.x, t.user_id, t.user_id, t.skeleton_id
+        FROM (VALUES (%(project_id)s, 0, %(user_id)s, %(skeleton_id)s))
+            AS t (project_id, x, user_id, skeleton_id),
+            generate_series(1, %(num_treenodes)s)
+        RETURNING treenode.id;
+        """ % {
+            'project_id': project_id,
+            'user_id': request.user.id,
+            'skeleton_id': new_skeleton.id,
+            'num_treenodes': arborescence.number_of_nodes()})
+    treenode_ids = cursor.fetchall()
+    # Flatten IDs
+    treenode_ids = list(chain.from_iterable(treenode_ids))
+    nx.set_node_attributes(arborescence, 'id', dict(zip(arborescence.nodes(), treenode_ids)))
+    root = find_root(arborescence)
+
+    # Set parent node ID
+    for n, nbrs in arborescence.adjacency_iter():
+        for nbr in nbrs:
+            arborescence.node[nbr]['parent_id'] = arborescence.node[n]['id']
+    arborescence.node[root]['parent_id'] = 'NULL'
+    new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])
+
+    treenode_values = \
+            '),('.join([','.join(map(str, [n[1][k] for k in ('id', 'x', 'y', 'z', 'parent_id')])) \
+            for n in arborescence.nodes_iter(data=True)])
+    cursor.execute("""
+        UPDATE treenode SET
+            location_x = v.x,
+            location_y = v.y,
+            location_z = v.z,
+            parent_id = v.parent_id
+        FROM (VALUES (%s)) AS v(id, x, y, z, parent_id)
+        WHERE treenode.id = v.id AND treenode.skeleton_id = %s
+        """ % (treenode_values, new_skeleton.id)) # Include skeleton ID for index performance.
+
+    # Log import.
+    insert_into_log(project_id, request.user.id, 'create_neuron',
+                    new_location, 'Create neuron %d and skeleton '
+                    '%d via import' % (new_neuron.id, new_skeleton.id))
+
+    return {'neuron_id': neuron_id, 'skeleton_id': new_skeleton.id, 'graph': arborescence}
 
 
 @requires_user_role(UserRole.Annotate)

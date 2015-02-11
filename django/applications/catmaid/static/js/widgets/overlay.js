@@ -348,6 +348,16 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
 SkeletonAnnotations.SVGOverlay.prototype = {};
 
 /**
+ * Return if the given node ID is the ID of a real treenode.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.isRealNode = function(node_id)
+{
+  // For now it is enough to test if the given ID *could* be one of a real node,
+  // i.e. if it is a number.
+  return !isNaN(parseInt(node_id));
+};
+
+/**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,
  * it is resolved immediately.
  */
@@ -421,6 +431,22 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
         reject(err);
       }));
   });
+};
+
+/**
+ * Execute function fn_real, if the node identified by node_id is a real node
+ * (i.e not a virtual node).
+ */
+SkeletonAnnotations.SVGOverlay.prototype.executeDependentOnExistence =
+    function(node_id, fn_real, fn_notreal)
+{
+  if (this.isRealNode(node_id) && fn_real) {
+    fn_real();
+    return true;
+  } else if (fn_notreal) {
+    fn_notreal();
+  }
+  return false;
 };
 
 /**

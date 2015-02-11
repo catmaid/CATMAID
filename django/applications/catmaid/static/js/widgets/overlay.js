@@ -105,6 +105,38 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
   }
 };
 
+/**
+ * Creates and returns a new node promise for the active node. If the node had
+ * to be created, the active node is updated, before the success function is
+ * called.
+ */
+SkeletonAnnotations.atn.promise = function()
+{
+  var overlay = SkeletonAnnotations.getSVGOverlay(this.stack_id);
+  var nodePromise = overlay.promiseNode(overlay.nodes[this.id]);
+  function AtnPromise(atn) {
+    // Override prototype's
+    this.then = function(fn) {
+      nodePromise.then(function(result) {
+        // Set ID of active node, expect ID as result
+        if (atn.id !== result) {
+          atn.id = result;
+          SkeletonAnnotations.trigger(
+              SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, atn);
+        }
+        // Call the orginal callback
+        if (fn) {
+          fn(result);
+        }
+      });
+    };
+  }
+  AtnPromise.prototype = nodePromise;
+
+  return new AtnPromise(this);
+};
+
+
 SkeletonAnnotations.getSVGOverlay = function(stack) {
   return this.SVGOverlay.prototype._instances[stack];
 };
@@ -2547,41 +2579,45 @@ SkeletonAnnotations.Tag = new (function() {
 
   this.tagATNwithLabel = function(label, svgOverlay, deleteExisting) {
     var atn = SkeletonAnnotations.atn;
-    svgOverlay.submit(
-      django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
-      {tags: label,
-       delete_existing: deleteExisting ? true : false},
-      function(json) {
-        if ('' === label) {
-          growlAlert('Information', 'Tags removed.');
-        } else {
-          growlAlert('Information', 'Tag ' + label + ' added.');
-        }
-        svgOverlay.updateNodes();
+    atn.promise().then(function(treenode_id) {
+      svgOverlay.submit(
+        django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
+        {tags: label,
+         delete_existing: deleteExisting ? true : false},
+        function(json) {
+          if ('' === label) {
+            growlAlert('Information', 'Tags removed.');
+          } else {
+            growlAlert('Information', 'Tag ' + label + ' added.');
+          }
+          svgOverlay.updateNodes();
+      });
     });
   };
 
   this.removeATNLabel = function(label, svgOverlay) {
     var atn = SkeletonAnnotations.atn;
-    svgOverlay.submit(
-      django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/remove',
-      {tag: label},
-      function(json) {
-        growlAlert('Information', 'Tag "' + label + '" removed.');
-        svgOverlay.updateNodes();
-      },
-      undefined,
-      undefined,
-      function(err) {
-        if ("ValueError" === err.type) {
-          CATMAID.msg('Error', err.error ? err.error : "Unspecified");
-        } else {
-          CATMAID.error(err.error, err.detail);
-        }
-        return true;
-      },
-      true
-    );
+    atn.promise().then(function(treenode_id) {
+      svgOverlay.submit(
+        django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/remove',
+        {tag: label},
+        function(json) {
+          growlAlert('Information', 'Tag "' + label + '" removed.');
+          svgOverlay.updateNodes();
+        },
+        undefined,
+        undefined,
+        function(err) {
+          if ("ValueError" === err.type) {
+            CATMAID.msg('Error', err.error ? err.error : "Unspecified");
+          } else {
+            CATMAID.error(err.error, err.detail);
+          }
+          return true;
+        },
+        true
+      );
+    });
   };
 
   this.handleATNChange = function(activeNode) {
@@ -2592,77 +2628,79 @@ SkeletonAnnotations.Tag = new (function() {
   };
 
   this.handle_tagbox = function(atn, svgOverlay) {
-    var atnID = SkeletonAnnotations.getActiveNodeId();
-    var stack = project.getStack(atn.stack_id);
-    var screenOrigin = stack.screenPosition();
-    var screenPos = [
-      stack.scale * (atn.x - screenOrigin.left),
-      stack.scale * (atn.y - screenOrigin.top),
-    ];
-    this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID +
-        "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " +
-        screenPos[0] + "px; top: " + screenPos[1] + "px;' />");
-    this.tagbox.append("Tag: ");
-    var input = $("<input id='Tags" + atnID + "' name='Tags' type='text' value='' />");
-    this.tagbox.append(input).append("<div style='color:#949494'>(Save&Close: Enter)</div>");
+    SkeletonAnnotations.atn.promise().then((function() {
+      var atnID = SkeletonAnnotations.getActiveNodeId();
+      var stack = project.getStack(atn.stack_id);
+      var screenOrigin = stack.screenPosition();
+      var screenPos = [
+        stack.scale * (atn.x - screenOrigin.left),
+        stack.scale * (atn.y - screenOrigin.top),
+      ];
+      this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID +
+          "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " +
+          screenPos[0] + "px; top: " + screenPos[1] + "px;' />");
+      this.tagbox.append("Tag: ");
+      var input = $("<input id='Tags" + atnID + "' name='Tags' type='text' value='' />");
+      this.tagbox.append(input).append("<div style='color:#949494'>(Save&Close: Enter)</div>");
 
-    this.tagbox
-      .css('background-color', 'white')
-      .css('position', 'absolute')
-      .appendTo("#" + svgOverlay.view.id)
+      this.tagbox
+        .css('background-color', 'white')
+        .css('position', 'absolute')
+        .appendTo("#" + svgOverlay.view.id)
 
-      .mousedown(function (event) {
-        if ("" === input.tagEditorGetTags()) {
-          SkeletonAnnotations.Tag.updateTags(svgOverlay);
-          SkeletonAnnotations.Tag.removeTagbox();
-          svgOverlay.updateNodes();
-        }
-        event.stopPropagation();
-      })
-
-      .keydown(function (event) {
-        if (13 === event.keyCode) { // ENTER
-          event.stopPropagation();
-          if ("" === input.val()) {
+        .mousedown(function (event) {
+          if ("" === input.tagEditorGetTags()) {
             SkeletonAnnotations.Tag.updateTags(svgOverlay);
             SkeletonAnnotations.Tag.removeTagbox();
-            growlAlert('Information', 'Tags saved!');
             svgOverlay.updateNodes();
           }
-        }
-      })
-
-      .keyup(function (event) {
-        if (27 === event.keyCode) { // ESC
           event.stopPropagation();
-          SkeletonAnnotations.Tag.removeTagbox();
-        }
-      });
+        })
 
-    // Register to change events of active treenode
-    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-        this.handleATNChange, this);
+        .keydown(function (event) {
+          if (13 === event.keyCode) { // ENTER
+            event.stopPropagation();
+            if ("" === input.val()) {
+              SkeletonAnnotations.Tag.updateTags(svgOverlay);
+              SkeletonAnnotations.Tag.removeTagbox();
+              growlAlert('Information', 'Tags saved!');
+              svgOverlay.updateNodes();
+            }
+          }
+        })
 
-    svgOverlay.submit(
-        django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atnID,
-        {pid: project.id},
-        function(json) {
-          input.tagEditor({
-            items: json,
-            confirmRemoval: false,
-            completeOnSeparator: true
-          });
-          input.focus();
-
-          // TODO autocompletion should only be invoked after typing at least one character
-          // add autocompletion, only request after tagbox creation
-          svgOverlay.submit(
-            django_url + project.id + '/labels-all',
-            {pid: project.id},
-            function(json) {
-              input.autocomplete({source: json});
-            });
+        .keyup(function (event) {
+          if (27 === event.keyCode) { // ESC
+            event.stopPropagation();
+            SkeletonAnnotations.Tag.removeTagbox();
+          }
         });
+
+      // Register to change events of active treenode
+      SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+          this.handleATNChange, this);
+
+      svgOverlay.submit(
+          django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atnID,
+          {pid: project.id},
+          function(json) {
+            input.tagEditor({
+              items: json,
+              confirmRemoval: false,
+              completeOnSeparator: true
+            });
+            input.focus();
+
+            // TODO autocompletion should only be invoked after typing at least one character
+            // add autocompletion, only request after tagbox creation
+            svgOverlay.submit(
+              django_url + project.id + '/labels-all',
+              {pid: project.id},
+              function(json) {
+                input.autocomplete({source: json});
+              });
+          });
+    }).bind(this));
   };
 
   this.updateTags = function(svgOverlay) {
@@ -2671,11 +2709,13 @@ SkeletonAnnotations.Tag = new (function() {
       CATMAID.error("Can't update tags, because there is no active node selected.");
       return;
     }
-    svgOverlay.submit(
-        django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
-        {pid: project.id,
-         tags: $("#Tags" + atn.id).tagEditorGetTags()},
-        function(json) {});
+    atn.promise().then(function() {
+      svgOverlay.submit(
+          django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
+          {pid: project.id,
+           tags: $("#Tags" + atn.id).tagEditorGetTags()},
+          function(json) {});
+    });
   };
 
   this.tagATN = function(svgOverlay) {

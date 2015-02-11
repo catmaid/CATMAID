@@ -316,6 +316,82 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
 SkeletonAnnotations.SVGOverlay.prototype = {};
 
 /**
+ * Creates the node with the given ID, if it is only a virtual node. Otherwise,
+ * it is resolved immediately.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
+{
+  var self = this;
+
+  return new Promise(function(resolve, reject) {
+    // Raise error, if no ID was given
+    if (!node || !node.id) {
+      reject(Error("Please specify a node ID"));
+      return
+    }
+
+    // If the node can be parsed as a number, it is assumed to be already there.
+    if (!isNaN(parseInt(node.id))) {
+      resolve(node.id);
+      return;
+    }
+
+    // If the node ID is a string matching the pattern vn-<number>, it is
+    // considered a virtual node with its child ID encoded.
+    var matches  = (node.id + '').match(/vn-(\d+)/);
+    if (!matches || matches.length < 2) {
+      // Raise an error, if this pattern was not matched
+      reject(Error("Could not handle node ID: " + node.id));
+      return;
+    }
+
+    var childId = matches[1];
+    console.log("VN's child: " + childId)
+
+    // Create new node and update parent relation of child
+    requestQueue.register(
+      django_url + project.id + '/treenode/create',
+      'POST',
+      {
+        pid: project.id,
+        parent_id: node.parent_id,
+        x: self.stack.stackToProjectX(node.z, node.y, node.x),
+        y: self.stack.stackToProjectY(node.z, node.y, node.x),
+        z: self.stack.stackToProjectZ(node.z, node.y, node.x),
+        radius: node.radius,
+        confidence: node.confidence,
+        useneuron: node.useneuron
+      },
+      CATMAID.jsonResponseHandler(function(result) {
+        var nid = result.treenode_id;
+        console.log("Created new node: " + nid);
+        // Update nodes
+        self.nodes[nid] = self.nodes[node.id];
+        delete self.nodes[node.id];
+
+        // Update child node to refer to new node as parent
+        requestQueue.register(
+          django_url + project.id + '/treenode/' + childId + '/parent',
+          'POST',
+          {
+            parent_id: nid
+          },
+          CATMAID.jsonResponseHandler(function (json) {
+            self.updateNodes();
+            // Resolve promise
+            resolve(nid);
+          }, function(err) {
+            // Reject promise in case of error
+            reject(err);
+          }));
+      }, function(err) {
+        // Reject promise in case of error
+        reject(err);
+      }));
+  });
+};
+
+/**
 * Execute the function fn if the skeleton has more than one node and the dialog
 * is confirmed, or has a single node (no dialog pops up).  The verb is the
 * action to perform, as written as a question in a dialog to confirm the action
@@ -1401,7 +1477,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso)
     var r = -1;
     var c = 5;
 
-    var vn = graphics.newNode(id, null, null, r, pos[0], pos[1], z, 0, c,
+    var vn = graphics.newNode(id, parent, parent.id, r, pos[0], pos[1], z, 0, c,
         child.skeleton_id, true);
 
     // Update child information of virtual node and parent as if the virtual

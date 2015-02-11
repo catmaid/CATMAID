@@ -2520,8 +2520,8 @@ SkeletonAnnotations.Tag = new (function() {
     var stack = project.getStack(atn.stack_id);
     var screenOrigin = stack.screenPosition();
     var screenPos = [
-      stack.scale * (stack.projectToStackX(atn.z * stack.resolution.z, atn.y, atn.x) - screenOrigin.left),
-      stack.scale * (stack.projectToStackY(atn.z * stack.resolution.z, atn.y, atn.x) - screenOrigin.top),
+      stack.scale * (atn.x - screenOrigin.left),
+      stack.scale * (atn.y - screenOrigin.top),
     ];
     this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID +
         "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " +

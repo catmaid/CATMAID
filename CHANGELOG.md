@@ -58,6 +58,16 @@ Connectivity widget:
 - It is now possible to remove added neurons again. Each row of the table of
   target neurons now contains a small 'x' icon in the first column to remove it.
 
+
+Admin:
+
+- For projects, stacks, overlays and data views there is now the option to
+  duplicate objects from within the admin view. To copy objects without their
+  relations, there is now a new action in the list view's action menu. To
+  duplicate an entity with its relations, select the object and use the "save as
+  new" button.
+
+
 ### Bug fixes
 
 Tracing overlay:

@@ -1011,6 +1011,12 @@ def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=Non
 
     relate_neuron_to_skeleton(neuron_id, new_skeleton.id)
 
+    # For pathological networks this can error, so do it before inserting
+    # treenodes.
+    root = find_root(arborescence)
+    if root is None:
+        raise Exception('No root, provided graph is malformed!')
+
     # Bulk create the required number of treenodes. This must be done in two
     # steps because treenode IDs are not known.
     cursor = connection.cursor()
@@ -1031,7 +1037,6 @@ def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=Non
     # Flatten IDs
     treenode_ids = list(chain.from_iterable(treenode_ids))
     nx.set_node_attributes(arborescence, 'id', dict(zip(arborescence.nodes(), treenode_ids)))
-    root = find_root(arborescence)
 
     # Set parent node ID
     for n, nbrs in arborescence.adjacency_iter():

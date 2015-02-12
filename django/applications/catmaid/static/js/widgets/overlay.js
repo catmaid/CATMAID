@@ -1781,6 +1781,10 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
         atnid = SkeletonAnnotations.getActiveNodeId();
       }
     }
+    // Include ID only in qery, if it is real
+    if (!self.isRealNode(atnid)) {
+      atnid = -1;
+    }
 
     var stack = self.stack;
     self.old_x = stack.x;

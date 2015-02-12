@@ -1000,7 +1000,7 @@ def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=Non
         new_neuron.project_id = project_id
         new_neuron.class_column_id = class_map['neuron']
         if name is not None:
-            new_neuron.name = 'neuron ' + name
+            new_neuron.name = name
         else:
             new_neuron.name = 'neuron'
             new_neuron.save()

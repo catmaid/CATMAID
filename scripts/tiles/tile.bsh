@@ -1073,7 +1073,7 @@ void setup( options ) {
 	if ( options.containsKey( "-metadata-file" ) ) {
 		metadataFileName = options.get( "-metadata-file" );
 	} else {
-		metadataFileName = null;
+		metadataFileName = "";
 	}
 }
 

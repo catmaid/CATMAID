@@ -499,12 +499,14 @@ ImagePlus openImage( pathName )
 {
 	ImageProcessorReader r = new ImageProcessorReader( new ChannelSeparator( LociPrefs.makeImageReader() ) );
 	MetadataStore store = MetadataTools.createOMEXMLMetadata();
+	OMEXMLService omexmlService = new ServiceFactory().getInstance(
+		OMEXMLService.class);
 	r.setMetadataStore( store );
 	CompositeImage openedImage = null;
 	try
 	{
 		r.setId( pathName );
-		MetadataRetrieve retrieve = MetadataTools.asRetrieve( r.getMetadataStore() );
+		MetadataRetrieve retrieve = omexmlService.asRetrieve( r.getMetadataStore() );
 
 		PositiveFloat pw = retrieve.getPixelsPhysicalSizeX( 0 );
 		pw = pw == null ? new PositiveFloat( 1.0 ) : pw;

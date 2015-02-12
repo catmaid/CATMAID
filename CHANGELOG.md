@@ -48,6 +48,9 @@ Review system:
 - The auto-created selection widget is now 50% smaller, giving more vertical
   space to the 3D viewer.
 
+- With the help of controls of the Animation tab, simple animations can be
+  created. Currently, only rotation around the Y axis is supported.
+
 
 Connectivity widget:
 

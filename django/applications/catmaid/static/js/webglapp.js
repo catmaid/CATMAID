@@ -38,6 +38,8 @@ var WebGLApplication = function() {
   this.registerSource();
   // Indicates whether init has been called
   this.initialized = false;
+  // Indicates if there is an animation running
+  this.animationRequestId;
 
   // Listen to changes of the active node
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -580,6 +582,7 @@ WebGLApplication.prototype.Options = function() {
   this.invert_shading = false;
   this.follow_active = false;
   this.distance_to_active_node = 5000; // nm
+  this.animation_rotation_speed = 0.01;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -3716,5 +3719,121 @@ WebGLApplication.prototype.updateActiveNodeNeighborhoodRadius = function(value) 
         this.space.render();
       }
     }
+  }
+};
+
+/**
+ * Start the given animation.
+ */
+WebGLApplication.prototype.startAnimation = function(animation)
+{
+  if (this.animationRequestId) {
+    growlAlert('Information', 'There is already an animation running');
+    return;
+  }
+
+  if (!animation) {
+    error("Please provide an animation to play.");
+    return;
+  }
+
+  // Start time point
+  var t = 0;
+
+  // Start animation
+  renderAnimation.call(this);
+
+  /**
+   * The actual animation function.
+   */
+  function renderAnimation() {
+    this.animationRequestId = requestAnimationFrame(renderAnimation.bind(this));
+    t += 1;
+
+    animation.update(t);
+
+    this.space.render();
+  }
+};
+
+/**
+ * Stop the current animation.
+ */
+WebGLApplication.prototype.stopAnimation = function()
+{
+  if (this.animationRequestId) {
+    window.cancelAnimationFrame(this.animationRequestId);
+    this.animationRequestId = undefined;
+  }
+};
+
+/**
+ * Create a new animation, based on the 3D viewers current state.
+ */
+WebGLApplication.prototype.createAnimation = function()
+{
+  // For now it is always the Y axis rotation
+  return AnimationFactory.createAnimation({
+    type: 'yrotation',
+    camera: this.space.view.camera,
+    target: this.space.view.controls.target,
+    speed: this.options.animation_rotation_speed,
+  });
+};
+
+/**
+ * Create new animations.
+ */
+var AnimationFactory = (function()
+{
+  function getOption(options, key) {
+    if (options[key]) {
+      return options[key];
+    } else {
+      throw Error("Option not found: " + key);
+    }
+  };
+
+  return {
+
+    /**
+     * Create a new animation instance.
+     */
+    createAnimation: function(options) {
+      options = options || {};
+
+      var animation = {};
+
+      if (options.type == "yrotation") {
+        var camera = getOption(options, "camera");
+        var target = getOption(options, "target");
+        var speed = getOption(options, "speed");
+        animation.update = AnimationFactory.YAxisRotation(camera, target, speed);
+      } else {
+        throw Error("Could not create animation, don't know type: " +
+            options.type);
+      }
+
+      return animation;
+    },
+
+  };
+})();
+
+/**
+ * Rotate the camera around the Y axis of the target position, while keeping
+ * the same distance to it. Optionally, a rotation speed can be passed.
+ */
+AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed)
+{
+  var camera = camera;
+  var targetDistance = camera.position.distanceTo(targetPosition);
+  var r = rSpeed || 0.01;
+
+  // Return update function
+  return function(t) {
+    // Assume rotation around Y
+    camera.position.x = targetPosition.x + targetDistance * Math.cos(r * t);
+    camera.position.z = targetPosition.z + targetDistance * Math.sin(r * t);
   }
 };

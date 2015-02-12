@@ -760,7 +760,7 @@ var WindowMaker = new function()
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
-    var tabs = ['Main', 'View', 'Shading', 'Skeleton filters', 'View settings', 'Shading parameters', 'Export'].reduce(function(o, name) {
+    var tabs = ['Main', 'View', 'Shading', 'Skeleton filters', 'View settings', 'Shading parameters', 'Animation', 'Export'].reduce(function(o, name) {
           var id = name.replace(/ /, '') + WA.widgetID;
           titles.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
@@ -968,6 +968,15 @@ var WindowMaker = new function()
           ['Synapse clustering bandwidth ', o.synapse_clustering_bandwidth, ' nm - ', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 8],
           ['Near active node ', o.distance_to_active_node, ' nm', function() {
             WA.updateActiveNodeNeighborhoodRadius(this.value); }, 8]
+        ]);
+
+    appendToTab(tabs['Animation'],
+        [
+          ['Play', function() { WA.startAnimation(WA.createAnimation()); }],
+          ['Stop', WA.stopAnimation.bind(WA)],
+          ['Rotation speed', o.animation_rotation_speed, '', function() {
+            WA.options.animation_rotation_speed = parseFloat(this.value);
+           }, 5]
         ]);
 
     appendToTab(tabs['Export'],

@@ -59,6 +59,7 @@ libraries_js = {
     'cytoscapejs': ['cytoscape.js'],
     'jsnetworkx': ['*.js'],
     'filesaver': ['*.js'],
+    'whammy': ['whammy.js'],
     'catmaid': ['*.js'],
 }
 

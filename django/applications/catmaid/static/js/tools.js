@@ -332,6 +332,14 @@ window.getOS = function()
  */
 (function(tools) {
 
-  // Add things here
+  /**
+   * Compare two strings while respecting locales and numbers. This is
+   * essentially a wrapper around String.localeCompare() to have one
+   * place where it is parameterized.
+   */
+  tools.compareStrings = function(str1, str2)
+  {
+    return str1.localeCompare(str2, undefined, {numeric: true});
+  };
 
 })(CATMAID.tools);

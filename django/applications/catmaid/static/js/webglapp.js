@@ -586,6 +586,7 @@ WebGLApplication.prototype.Options = function() {
   this.distance_to_active_node = 5000; // nm
   this.animation_rotation_speed = 0.01;
   this.animation_back_forth = false;
+  this.animation_stepwise_visibility = false;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -3795,15 +3796,69 @@ WebGLApplication.prototype.stopAnimation = function()
 WebGLApplication.prototype.createAnimation = function()
 {
   // For now it is always the Y axis rotation
-  return AnimationFactory.createAnimation({
+  var options = {
     type: 'yrotation',
     camera: this.space.view.camera,
     target: this.space.view.controls.target,
     speed: this.options.animation_rotation_speed,
     backandforth: this.options.animation_back_forth,
-  });
+  };
+
+  // Add a notification handler for stepwise visibility, if enabled and at least
+  // one skeleton is loaded.
+  if (this.options.animation_stepwise_visibility) {
+    // Get current visibility map and create notify handler
+    var visMap = this.space.getVisibilityMap();
+    options['notify'] = this.createStepwiseVisibilityHandler(visMap);
+    // Create a stop handler that resets visibility to the state we found before
+    // the animation.
+    options['stop'] = this.createVisibibilityResetHandler(visMap);
+  }
+
+  return AnimationFactory.createAnimation(options);
 };
 
+/**
+ * Create a notification handler to be used with animations that will make
+ * an additional neuron visibile with every call.
+ */
+WebGLApplication.prototype.createStepwiseVisibilityHandler = function(visMap)
+{
+  var skeletonIds = Object.keys(this.space.content.skeletons);
+
+  // Return no-op handler if there are no skeletons
+  if (skeletonIds.length === 0) {
+    return function() {};
+  }
+
+  // Only make first skeleton visible
+  var visibleSkeletons = [skeletonIds[0]];
+  this.space.setSkeletonVisibility(visMap, visibleSkeletons);
+
+  var widget = this;
+
+  // Create function to make one skeleton visible per rotation
+  return function (r) {
+    // Expect r to be the numnber of rotations done
+    var skeletonIndex = parseInt(r);
+    // Make next skeleton visible, if available
+    if (skeletonIndex < skeletonIds.length) {
+      visibleSkeletons.push(skeletonIds[skeletonIndex]);
+      widget.space.setSkeletonVisibility(visMap, visibleSkeletons);
+    }
+  };
+};
+
+/**
+ * Create a handler function that resets visibility of all loaded skeletons.
+ */
+WebGLApplication.prototype.createVisibibilityResetHandler = function(visMap)
+{
+  return (function() {
+    this.space.setSkeletonVisibility(visMap);
+    this.space.render();
+  }).bind(this);
+};
 
 /**
  * Export an animation as WebM video (if the browser supports it). First, a
@@ -3825,6 +3880,8 @@ WebGLApplication.prototype.exportAnimation = function()
       "animation-export-frame-rate", '25');
   var backforthField = dialog.appendCheckbox('Back and forth',
       'animation-export-backforth', false);
+  var stepVisibilityField = dialog.appendCheckbox('Stepwise neuron visibility',
+      'animation-export-backforth', false);
   var camera = this.space.view.camera;
   var target = this.space.view.controls.target;
 
@@ -3835,6 +3892,10 @@ WebGLApplication.prototype.exportAnimation = function()
   function handleOK() {
     /* jshint validthis: true */ // `this` is bound to this WebGLApplication
     $.blockUI();
+
+    // Get current visibility
+    var visMap = this.space.getVisibilityMap();
+
     createAnimation.call(this);
 
     function createAnimation() {
@@ -3847,7 +3908,7 @@ WebGLApplication.prototype.exportAnimation = function()
         var speed = 2 * Math.PI / (rotationtime * framerate);
 
         // Collect options
-        var animationOptions = {
+        var options = {
           type: 'yrotation',
           speed: speed,
           camera: camera,
@@ -3855,8 +3916,19 @@ WebGLApplication.prototype.exportAnimation = function()
           backandforth: backforthField.checked,
         };
 
+        // Add a notification handler for stepwise visibility, if enabled and at least
+        // one skeleton is loaded.
+        if (stepVisibilityField.checked) {
+          // Get current visibility map and create notify handler
+          var visMap = this.space.getVisibilityMap();
+          options['notify'] = this.createStepwiseVisibilityHandler(visMap);
+          // Create a stop handler that resets visibility to the state we found before
+          // the animation.
+          options['stop'] = this.createVisibibilityResetHandler(visMap);
+        }
+
         // Get frame images
-        var animation = AnimationFactory.createAnimation(animationOptions);
+        var animation = AnimationFactory.createAnimation(options);
         var images = this.getAnimationFrames(animation, nframes);
 
         // Export movie
@@ -3867,6 +3939,8 @@ WebGLApplication.prototype.exportAnimation = function()
         $.unblockUI();
         throw e;
       }
+      // Reset visibility and unblock UI
+      this.space.setSkeletonVisibility(visMap);
       $.unblockUI();
     }
   }
@@ -3946,22 +4020,40 @@ var AnimationFactory = (function()
 
 /**
  * Rotate the camera around the Y axis of the target position, while keeping
- * the same distance to it. Optionally, a rotation speed can be passed.
+ * the same distance to it. Optionally, a rotation speed can be passed. If
+ * back-and-forth mode is turned on, the rotation won't continue after a full
+ * circle, but reverse direction. A notification function can be passed in. It
+ * is called every full circle.
  */
 AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed,
-    backAndForth)
+    backAndForth, notify)
 {
+  // Counts the number of rotations done
+  var numRotations = 0;
+
   var targetDistance = camera.position.distanceTo(targetPosition);
   rSpeed = rSpeed || 0.01;
   backAndForth = backAndForth || false;
 
   // Return update function
   return function(t) {
+    // Angle to rotate
     var rad = rSpeed * t;
+
+    // Get current number of rotations
+    var currentRotation = Math.floor(rad / (2 * Math.PI));
+    if (currentRotation !== numRotations) {
+      numRotations = currentRotation;
+      // Call notification function, if any
+      if (notify) {
+        notify(currentRotation);
+      }
+    }
+
     // In back and forth mode, movement direction is reversed once a full circle
     // is reached.
     if (backAndForth) {
-      rad = Math.floor(rad / (2 * Math.PI)) % 2 === 0 ? rad : -rad;
+      rad = (currentRotation % 2) === 0 ? rad : -rad;
     }
 
     // Assume rotation around Y

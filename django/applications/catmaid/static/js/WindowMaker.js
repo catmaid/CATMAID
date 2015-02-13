@@ -980,6 +980,9 @@ var WindowMaker = new function()
           ['Back and forth ', o.animation_back_forth, function() {
             WA.options.animation_back_forth = this.checked;
           }, false],
+          ['Stepwise neuron visibility ', o.animation_stepwise_visibility, function() {
+            WA.options.animation_stepwise_visibility = this.checked;
+          }, false],
         ]);
 
     appendToTab(tabs['Export'],

@@ -48,6 +48,14 @@ Review system:
 - The auto-created selection widget is now 50% smaller, giving more vertical
   space to the 3D viewer.
 
+- With the help of controls of the Animation tab, simple animations can be
+  played. Currently, only rotation around the Y axis is supported.
+
+- Animations can also be exported as WebM movie file. The "Export animation"
+  button in the Export tab, will show a dialog with basic export settings. Like
+  with the other view export options, the current 3D view setup is used.
+  Creating the file can take some seconds and currently only works for the
+  Chrome browser (due to the lack of WebP support in others).
 
 Connectivity widget:
 

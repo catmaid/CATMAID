@@ -38,6 +38,8 @@ var WebGLApplication = function() {
   this.registerSource();
   // Indicates whether init has been called
   this.initialized = false;
+  // Indicates if there is an animation running
+  this.animationRequestId;
 
   // Listen to changes of the active node
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -580,6 +582,7 @@ WebGLApplication.prototype.Options = function() {
   this.invert_shading = false;
   this.follow_active = false;
   this.distance_to_active_node = 5000; // nm
+  this.animation_rotation_speed = 0.01;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -1705,8 +1708,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.render = function() {
 /**
  * Get the toDataURL() image data of the renderer in PNG format.
  */
-WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function() {
-  return this.renderer.domElement.toDataURL("image/png");
+WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function(type) {
+  type = type || "image/png";
+  return this.renderer.domElement.toDataURL(type);
 };
 
 /**
@@ -3716,5 +3720,205 @@ WebGLApplication.prototype.updateActiveNodeNeighborhoodRadius = function(value) 
         this.space.render();
       }
     }
+  }
+};
+
+/**
+ * Start the given animation.
+ */
+WebGLApplication.prototype.startAnimation = function(animation)
+{
+  if (this.animationRequestId) {
+    growlAlert('Information', 'There is already an animation running');
+    return;
+  }
+
+  if (!animation) {
+    error("Please provide an animation to play.");
+    return;
+  }
+
+  // Start time point
+  var t = 0;
+
+  // Start animation
+  renderAnimation.call(this);
+
+  /**
+   * The actual animation function.
+   */
+  function renderAnimation() {
+    this.animationRequestId = requestAnimationFrame(renderAnimation.bind(this));
+    t += 1;
+
+    animation.update(t);
+
+    this.space.render();
+  }
+};
+
+/**
+ * Stop the current animation.
+ */
+WebGLApplication.prototype.stopAnimation = function()
+{
+  if (this.animationRequestId) {
+    window.cancelAnimationFrame(this.animationRequestId);
+    this.animationRequestId = undefined;
+  }
+};
+
+/**
+ * Create a new animation, based on the 3D viewers current state.
+ */
+WebGLApplication.prototype.createAnimation = function()
+{
+  // For now it is always the Y axis rotation
+  return AnimationFactory.createAnimation({
+    type: 'yrotation',
+    camera: this.space.view.camera,
+    target: this.space.view.controls.target,
+    speed: this.options.animation_rotation_speed,
+  });
+};
+
+
+/**
+ * Export an animation as WebM video (if the browser supports it). First, a
+ * dialog is shown to adjust export preferences.
+ */
+WebGLApplication.prototype.exportAnimation = function()
+{
+  var dialog = new OptionsDialog("Animation export options");
+  dialog.appendMessage('Adjust the animation export settings to your liking. ' +
+     'The resulting file will have the WebM format with a framerate of 25.');
+
+  // Add options to dialog
+  var rotationsField = dialog.appendField("# Rotations: ",
+      "animation-export-num-rotations", '1');
+  var rotationtimeField = dialog.appendField("Rotation time (s): ",
+      "animation-export-rotation-time", '5');
+  var framerateField = dialog.appendField("Frame rate: ",
+      "animation-export-frame-rate", '25');
+  var camera = this.space.view.camera;
+  var target = this.space.view.controls.target;
+
+  dialog.onOK = handleOK.bind(this);
+
+  dialog.show(400, 280, true);
+
+  function handleOK() {
+    /* jshint validthis: true */ // `this` is bound to this WebGLApplication
+    $.blockUI();
+    createAnimation.call(this);
+
+    function createAnimation() {
+      try {
+        var rotations = parseInt(rotationsField.value);
+        var rotationtime = parseFloat(rotationtimeField.value);
+        var framerate = parseInt(framerateField.value);
+
+        var nframes = Math.ceil(rotations * rotationtime * framerate);
+        var speed = 2 * Math.PI / (rotationtime * framerate)
+
+        // Collect options
+        var animationOptions = {
+          type: 'yrotation',
+          speed: speed,
+          camera: camera,
+          target: target,
+        };
+
+        // Get frame images
+        var animation = AnimationFactory.createAnimation(animationOptions);
+        var images = this.getAnimationFrames(animation, nframes);
+
+        // Export movie
+        var output = Whammy.fromImageArray(images, framerate);
+        saveAs(output, "catmaid_3d_view.webm");
+      } catch (e) {
+        // Unblock UI and re-throw exception
+        $.unblockUI();
+        throw e;
+      }
+      $.unblockUI();
+    }
+  }
+};
+
+/**
+ * Create a list of images for a given animation and the corresponding options.
+ * By default, 100 frames are generated, starting from timepoint zero.
+ */
+WebGLApplication.prototype.getAnimationFrames = function(animation, nframes, startTime)
+{
+  nframes = nframes || 100;
+  startTime = startTime || 0;
+  var frames = new Array(nframes);
+  for (var i=0; i<nframes; ++i) {
+    animation.update(startTime + i);
+    this.space.render();
+
+    // Store image
+    frames[i] = this.space.view.getImageData('image/webp');
+  }
+
+  return frames;
+};
+
+/**
+ * Create new animations.
+ */
+var AnimationFactory = (function()
+{
+  function getOption(options, key) {
+    if (options[key]) {
+      return options[key];
+    } else {
+      throw Error("Option not found: " + key);
+    }
+  };
+
+  return {
+
+    /**
+     * Create a new animation instance.
+     */
+    createAnimation: function(options) {
+      options = options || {};
+
+      var animation = {};
+
+      if (options.type == "yrotation") {
+        var camera = getOption(options, "camera");
+        var target = getOption(options, "target");
+        var speed = getOption(options, "speed");
+        animation.update = AnimationFactory.YAxisRotation(camera, target, speed);
+      } else {
+        throw Error("Could not create animation, don't know type: " +
+            options.type);
+      }
+
+      return animation;
+    },
+
+  };
+})();
+
+/**
+ * Rotate the camera around the Y axis of the target position, while keeping
+ * the same distance to it. Optionally, a rotation speed can be passed.
+ */
+AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed)
+{
+  var camera = camera;
+  var targetDistance = camera.position.distanceTo(targetPosition);
+  var r = rSpeed || 0.01;
+
+  // Return update function
+  return function(t) {
+    // Assume rotation around Y
+    camera.position.x = targetPosition.x + targetDistance * Math.cos(r * t);
+    camera.position.z = targetPosition.z + targetDistance * Math.sin(r * t);
   }
 };

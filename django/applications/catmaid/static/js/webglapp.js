@@ -3725,6 +3725,20 @@ WebGLApplication.prototype.updateActiveNodeNeighborhoodRadius = function(value) 
 };
 
 /**
+ * Render loop for the given animation.
+ */
+WebGLApplication.prototype.renderAnimation = function(animation, t)
+{
+  // Quere next frame for next time point
+  this.animationRequestId = window.requestAnimationFrame(
+      this.renderAnimation.bind(this, animation, t + 1));
+
+  // Update animation and then render
+  animation.update(t);
+  this.space.render();
+};
+
+/**
  * Start the given animation.
  */
 WebGLApplication.prototype.startAnimation = function(animation)
@@ -3739,23 +3753,8 @@ WebGLApplication.prototype.startAnimation = function(animation)
     return;
   }
 
-  // Start time point
-  var t = 0;
-
-  // Start animation
-  renderAnimation.call(this);
-
-  /**
-   * The actual animation function.
-   */
-  function renderAnimation() {
-    this.animationRequestId = requestAnimationFrame(renderAnimation.bind(this));
-    t += 1;
-
-    animation.update(t);
-
-    this.space.render();
-  }
+  // Start animation at time point 0
+  this.renderAnimation(animation, 0);
 };
 
 /**
@@ -3933,5 +3932,5 @@ AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed,
     // Assume rotation around Y
     camera.position.x = targetPosition.x + targetDistance * Math.cos(rad);
     camera.position.z = targetPosition.z + targetDistance * Math.sin(rad);
-  }
+  };
 };

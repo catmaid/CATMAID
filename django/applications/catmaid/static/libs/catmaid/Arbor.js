@@ -1808,10 +1808,11 @@ Arbor.prototype.findNodesWithin = function(source, distanceFn, max_distance) {
   return within;
 };
 
-/** Return a list of Arbor instances of size nodes.length + 1
- * (unless root is include in which case the size will only be of nodes.length)
- * representing the fragments after cutting at the given nodes set
- * 'cuts' (a map of unique nodes vs truthy values). */
+/** Split the arbor into a list of Arbor instances,
+ * by cutting at each node in the cuts map (which contains node keys and truthy values).
+ * The cut is done by severing the edge between an node and its parent,
+ * so a cut at the root node has no effect, but cuts at end nodes result
+ * in single-node Arbor instances (just root, no edges). */
 Arbor.prototype.split = function(cuts) {
   var be = this.findBranchAndEndNodes(),
       ends = be.ends,
@@ -1819,10 +1820,26 @@ Arbor.prototype.split = function(cuts) {
       junctions = {},
       fragments = [];
 
+  var CountingArbor = function() {
+    this.root = null;
+    this.edges = {};
+    this._n_nodes = 0;
+  };
+
+  CountingArbor.prototype = Arbor.prototype;
+
+  var asArbor = function(carbor) {
+    var arbor = new Arbor();
+    arbor.root = carbor.root;
+    arbor.edges = carbor.edges;
+    return arbor;
+  };
+
   var open = new Array(ends.length);
   for (var k=0; k<ends.length; ++k) {
-    var arbor = new Arbor();
+    var arbor = new CountingArbor();
     arbor.root = ends[k];
+    arbor._n_nodes = 1;
     open[k] = arbor;
   }
 
@@ -1837,11 +1854,13 @@ Arbor.prototype.split = function(cuts) {
 
       if (cuts[node]) {
         arbor.root = node;
-        fragments.push(arbor);
-        arbor = new Arbor();
+        fragments.push(asArbor(arbor));
+        arbor = new CountingArbor();
         arbor.root = paren;
+        arbor._n_nodes = 1;
       } else {
         arbor.edges[node] = paren;
+        arbor._n_nodes += 1;
         // Note arbor.root is now obsolete
       }
       n_successors = branches[paren];
@@ -1852,7 +1871,7 @@ Arbor.prototype.split = function(cuts) {
 
     if (undefined === paren && undefined === branches[node]) {
       // Reached root and root is not a branch
-      fragments.push(arbor);
+      fragments.push(asArbor(arbor));
     } else {
       var junction = junctions[node];
       if (undefined === junction) {
@@ -1860,23 +1879,37 @@ Arbor.prototype.split = function(cuts) {
         junctions[node] = [arbor];
       } else {
         if (junction.length === n_successors -1) {
+          // Find largest
+          var max_nodes = arbor._n_nodes;
+          for (var k=0; k<junction.length; ++k) {
+            var a = junction[k];
+            if (a._n_nodes > max_nodes) {
+              junction[k] = arbor;
+              max_nodes = a._n_nodes;
+              arbor = a;
+            }
+          }
           // Merge arbors
           var ae = arbor.edges;
           for (var k=0; k<junction.length; ++k) {
-            var edges = junction[k].edges;
+            var a = junction[k];
+            var edges = a.edges;
             var children = Object.keys(edges);
             for (var i=0; i<children.length; ++i) {
               var child = children[i];
               ae[child] = edges[child];
             }
+            arbor._n_nodes += a._n_nodes -1;
           }
+          // Prepare next round of growth if appropriate
           if (node === this.root) {
             // root is branched
-            fragments.push(arbor);
+            fragments.push(asArbor(arbor));
           } else if (cuts[node]) {
-            fragments.push(arbor);
-            arbor = new Arbor();
+            fragments.push(asArbor(arbor));
+            arbor = new CountingArbor();
             arbor.root = this.edges[node];
+            arbor._n_nodes = 1;
             open.push(arbor);
           } else {
             open.push(arbor);

@@ -1708,8 +1708,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.render = function() {
 /**
  * Get the toDataURL() image data of the renderer in PNG format.
  */
-WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function() {
-  return this.renderer.domElement.toDataURL("image/png");
+WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function(type) {
+  type = type || "image/png";
+  return this.renderer.domElement.toDataURL(type);
 };
 
 /**

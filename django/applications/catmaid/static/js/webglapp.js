@@ -40,6 +40,8 @@ var WebGLApplication = function() {
   this.initialized = false;
   // Indicates if there is an animation running
   this.animationRequestId = undefined;
+  // The current animation, if any
+  this.animation = undefined;
 
   // Listen to changes of the active node
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -3739,6 +3741,8 @@ WebGLApplication.prototype.updateActiveNodeNeighborhoodRadius = function(value) 
  */
 WebGLApplication.prototype.renderAnimation = function(animation, t)
 {
+  // Make sure we know this animation
+  this.animation = animation;
   // Quere next frame for next time point
   this.animationRequestId = window.requestAnimationFrame(
       this.renderAnimation.bind(this, animation, t + 1));
@@ -3775,6 +3779,13 @@ WebGLApplication.prototype.stopAnimation = function()
   if (this.animationRequestId) {
     window.cancelAnimationFrame(this.animationRequestId);
     this.animationRequestId = undefined;
+  }
+
+  if (this.animation) {
+    if (this.animation.stop) {
+      this.animation.stop();
+    }
+    this.animation = undefined;
   }
 };
 
@@ -3901,17 +3912,28 @@ var AnimationFactory = (function()
 
       var animation = {};
 
+      var notify = options.notify || false;
+
       if (options.type == "yrotation") {
         var camera = getOption(options, "camera");
         var target = getOption(options, "target");
         var speed = getOption(options, "speed");
         var backAndForth = options.backandforth || false;
+
         animation.update = AnimationFactory.YAxisRotation(camera, target,
-           speed, backAndForth);
+           speed, backAndForth, notify);
       } else {
         throw Error("Could not create animation, don't know type: " +
             options.type);
       }
+
+      // Add stop handler
+      var stop = options.stop || false;
+      animation.stop = function() {
+        if (stop) {
+          stop();
+        }
+      };
 
       return animation;
     },

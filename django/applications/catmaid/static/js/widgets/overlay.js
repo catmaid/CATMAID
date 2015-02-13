@@ -181,6 +181,17 @@ SkeletonAnnotations.getActiveNodePosition = function() {
   }
 };
 
+/**
+ * Returns the positon of the active node in world coordinates. If there is no
+ * active node, null is returned.
+ */
+SkeletonAnnotations.getActiveNodePositionW = function() {
+  var stack = project.getStack(this.atn.stack_id);
+  return {'x': stack.stackToProjectX(this.atn.z, this.atn.y, this.atn.x),
+          'y': stack.stackToProjectY(this.atn.z, this.atn.y, this.atn.x),
+          'z': stack.stackToProjectZ(this.atn.z, this.atn.y, this.atn.x)};
+};
+
 SkeletonAnnotations.getActiveNodeVector3 = function() {
   return new THREE.Vector3(this.atn.x, this.atn.y, this.atn.z);
 };

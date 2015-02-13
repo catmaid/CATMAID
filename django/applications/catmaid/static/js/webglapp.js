@@ -426,7 +426,7 @@ WebGLApplication.prototype.spatialSelect = function() {
         skeleton_mode = Number(choice3.value),
         loaded_only = checkbox.checked,
         active_node = SkeletonAnnotations.getActiveNodeId(),
-        p = SkeletonAnnotations.getActiveNodePosition(),
+        p = SkeletonAnnotations.getActiveNodePositionW(),
         va = new THREE.Vector3(p.x, p.y, p.z),
         synapticTypes = WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes,
         near = null,
@@ -2487,7 +2487,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototype.updatePosition = function(space, options) {
-  var pos = SkeletonAnnotations.getActiveNodePosition();
+  var pos = SkeletonAnnotations.getActiveNodePositionW();
   if (!pos) {
     space.updateSplitShading(this.skeleton_id, null, options);
     this.skeleton_id = null;

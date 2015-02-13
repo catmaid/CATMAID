@@ -901,32 +901,32 @@ Arbor.prototype.flowCentrality = function(outputs, inputs, totalOutputs, totalIn
         cs = {},
         centrality = {};
     for (var i=0; i<partitions.length; ++i) {
-      var partition = partitions[i];
-        var seenI = 0,
-            seenO = 0;
-        for (var k=0, l=partition.length; k<l; ++k) {
-          var node = partition[k],
-              counts = cs[node];
-          if (undefined === counts) {
-            var n_inputs = inputs[node],
-                n_outputs = outputs[node];
-            if (n_inputs) seenI += n_inputs;
-            if (n_outputs) seenO += n_outputs;
-            // Last node of the partition is a branch or root
-            if (k === l -1) cs[node] = {seenInputs: seenI,
-                                        seenOutputs: seenO};
-          } else {
-            seenI += counts.seenInputs;
-            seenO += counts.seenOutputs;
-            counts.seenInputs = seenI;
-            counts.seenOutputs = seenO;
-          }
-          var centripetal = seenI * (totalOutputs - seenO),
-              centrifugal = seenO * (totalInputs  - seenI);
-          centrality[node] = {centrifugal: centrifugal,
-                              centripetal: centripetal,
-                              sum: centrifugal + centripetal};
+      var partition = partitions[i],
+          seenI = 0,
+          seenO = 0;
+      for (var k=0, l=partition.length; k<l; ++k) {
+        var node = partition[k],
+            counts = cs[node];
+        if (undefined === counts) {
+          var n_inputs = inputs[node],
+              n_outputs = outputs[node];
+          if (n_inputs) seenI += n_inputs;
+          if (n_outputs) seenO += n_outputs;
+          // Last node of the partition is a branch or root
+          if (k === l -1) cs[node] = {seenInputs: seenI,
+                                      seenOutputs: seenO};
+        } else {
+          seenI += counts.seenInputs;
+          seenO += counts.seenOutputs;
+          counts.seenInputs = seenI;
+          counts.seenOutputs = seenO;
         }
+        var centripetal = seenI * (totalOutputs - seenO),
+            centrifugal = seenO * (totalInputs  - seenI);
+        centrality[node] = {centrifugal: centrifugal,
+                            centripetal: centripetal,
+                            sum: centrifugal + centripetal};
+      }
     }
 
     return centrality;

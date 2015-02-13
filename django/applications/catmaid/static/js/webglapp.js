@@ -39,7 +39,7 @@ var WebGLApplication = function() {
   // Indicates whether init has been called
   this.initialized = false;
   // Indicates if there is an animation running
-  this.animationRequestId;
+  this.animationRequestId = undefined;
 
   // Listen to changes of the active node
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -3822,7 +3822,7 @@ WebGLApplication.prototype.exportAnimation = function()
         var framerate = parseInt(framerateField.value);
 
         var nframes = Math.ceil(rotations * rotationtime * framerate);
-        var speed = 2 * Math.PI / (rotationtime * framerate)
+        var speed = 2 * Math.PI / (rotationtime * framerate);
 
         // Collect options
         var animationOptions = {
@@ -3880,7 +3880,7 @@ var AnimationFactory = (function()
     } else {
       throw Error("Option not found: " + key);
     }
-  };
+  }
 
   return {
 
@@ -3918,13 +3918,13 @@ AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed,
     backAndForth)
 {
   var targetDistance = camera.position.distanceTo(targetPosition);
-  var r = rSpeed || 0.01;
+  rSpeed = rSpeed || 0.01;
   backAndForth = backAndForth || false;
 
   // Return update function
   return function(t) {
-    var rad = r * t;
-    // In back and forth mode, movent direction is reversed once a full circle
+    var rad = rSpeed * t;
+    // In back and forth mode, movement direction is reversed once a full circle
     // is reached.
     if (backAndForth) {
       rad = Math.floor(rad / (2 * Math.PI)) % 2 === 0 ? rad : -rad;

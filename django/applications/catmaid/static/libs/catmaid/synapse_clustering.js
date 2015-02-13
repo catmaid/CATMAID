@@ -418,17 +418,26 @@ SynapseClustering.prototype.findAxon = function(ap, fraction, positions) {
     if (0 === max) return null;
 
     var above = [],
+        plateau = {},
+        zeros = {},
         threshold =  fraction * max;
     for (var i=0; i<nodes.length; ++i) {
-      var node = nodes[i];
-      if (fc[node].centrifugal > threshold) {
+      var node = nodes[i],
+          c = fc[node].centrifugal;
+      if (c > threshold) {
         above.push(node);
-      }
+        if (c === max) plateau[node] = true;
+      } else if (0 === c) zeros[node] = true;
     }
     
     var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, above, positions);
 
-    return cut ? ap.arbor.subArbor(cut) : null;
+    if (null === cut) return null;
+
+    var axon = ap.arbor.subArbor(cut);
+    axon.fc_max_plateau = plateau;
+    axon.fc_zeros = zeros;
+    return axon;
 };
 
 /** Find a node ID at which is its optimal to cut an arbor so that the downstream

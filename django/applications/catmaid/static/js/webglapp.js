@@ -3912,7 +3912,6 @@ var AnimationFactory = (function()
  */
 AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed)
 {
-  var camera = camera;
   var targetDistance = camera.position.distanceTo(targetPosition);
   var r = rSpeed || 0.01;
 

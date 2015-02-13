@@ -591,8 +591,8 @@ def _fetch_locations(location_ids):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_location(request, project_id=None):
+    tnid = int(request.POST['tnid'])
     try:
-        tnid = int(request.POST['tnid'])
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain the location of node with id #%s' % tnid)

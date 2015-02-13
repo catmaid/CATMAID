@@ -301,7 +301,7 @@ SelectionTable.prototype.sortByName = function() {
   this.sort(function(sk1, sk2) {
     var name1 = NeuronNameService.getInstance().getName(sk1.id).toLowerCase(),
         name2 = NeuronNameService.getInstance().getName(sk2.id).toLowerCase();
-    return name1 == name2 ? 0 : (name1 < name2 ? -1 : 1);
+    return CATMAID.tools.compareStrings(name1, name2);
   });
 
 };

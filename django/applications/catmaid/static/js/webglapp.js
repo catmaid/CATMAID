@@ -3782,6 +3782,90 @@ WebGLApplication.prototype.createAnimation = function()
   });
 };
 
+
+/**
+ * Export an animation as WebM video (if the browser supports it). First, a
+ * dialog is shown to adjust export preferences.
+ */
+WebGLApplication.prototype.exportAnimation = function()
+{
+  var dialog = new OptionsDialog("Animation export options");
+  dialog.appendMessage('Adjust the animation export settings to your liking. ' +
+     'The resulting file will have the WebM format with a framerate of 25.');
+
+  // Add options to dialog
+  var rotationsField = dialog.appendField("# Rotations: ",
+      "animation-export-num-rotations", '1');
+  var rotationtimeField = dialog.appendField("Rotation time (s): ",
+      "animation-export-rotation-time", '5');
+  var framerateField = dialog.appendField("Frame rate: ",
+      "animation-export-frame-rate", '25');
+  var camera = this.space.view.camera;
+  var target = this.space.view.controls.target;
+
+  dialog.onOK = handleOK.bind(this);
+
+  dialog.show(400, 280, true);
+
+  function handleOK() {
+    /* jshint validthis: true */ // `this` is bound to this WebGLApplication
+    $.blockUI();
+    createAnimation.call(this);
+
+    function createAnimation() {
+      try {
+        var rotations = parseInt(rotationsField.value);
+        var rotationtime = parseFloat(rotationtimeField.value);
+        var framerate = parseInt(framerateField.value);
+
+        var nframes = Math.ceil(rotations * rotationtime * framerate);
+        var speed = 2 * Math.PI / (rotationtime * framerate)
+
+        // Collect options
+        var animationOptions = {
+          type: 'yrotation',
+          speed: speed,
+          camera: camera,
+          target: target,
+        };
+
+        // Get frame images
+        var animation = AnimationFactory.createAnimation(animationOptions);
+        var images = this.getAnimationFrames(animation, nframes);
+
+        // Export movie
+        var output = Whammy.fromImageArray(images, framerate);
+        saveAs(output, "catmaid_3d_view.webm");
+      } catch (e) {
+        // Unblock UI and re-throw exception
+        $.unblockUI();
+        throw e;
+      }
+      $.unblockUI();
+    }
+  }
+};
+
+/**
+ * Create a list of images for a given animation and the corresponding options.
+ * By default, 100 frames are generated, starting from timepoint zero.
+ */
+WebGLApplication.prototype.getAnimationFrames = function(animation, nframes, startTime)
+{
+  nframes = nframes || 100;
+  startTime = startTime || 0;
+  var frames = new Array(nframes);
+  for (var i=0; i<nframes; ++i) {
+    animation.update(startTime + i);
+    this.space.render();
+
+    // Store image
+    frames[i] = this.space.view.getImageData('image/webp');
+  }
+
+  return frames;
+};
+
 /**
  * Create new animations.
  */

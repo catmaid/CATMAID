@@ -3927,7 +3927,7 @@ AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed,
     // In back and forth mode, movent direction is reversed once a full circle
     // is reached.
     if (backAndForth) {
-      rad = Math.round(rad / (2 * Math.PI)) % 2 === 0 ? rad : -rad;
+      rad = Math.floor(rad / (2 * Math.PI)) % 2 === 0 ? rad : -rad;
     }
 
     // Assume rotation around Y

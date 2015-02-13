@@ -3153,7 +3153,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
     }, this);
 
   } else if ('axon-and-dendrite' === options.connector_color) {
-    var axon = this.splitByFlowCentrality(json),
+    var axon = this.axon,
         fnMakeColor,
         fnConnectorValue;
 

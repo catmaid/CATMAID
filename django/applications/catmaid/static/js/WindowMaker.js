@@ -976,7 +976,10 @@ var WindowMaker = new function()
           ['Stop', WA.stopAnimation.bind(WA)],
           ['Rotation speed', o.animation_rotation_speed, '', function() {
             WA.options.animation_rotation_speed = parseFloat(this.value);
-           }, 5]
+           }, 5],
+          ['Back and forth ', o.animation_back_forth, function() {
+            WA.options.animation_back_forth = this.checked;
+          }, false],
         ]);
 
     appendToTab(tabs['Export'],

@@ -583,6 +583,7 @@ WebGLApplication.prototype.Options = function() {
   this.follow_active = false;
   this.distance_to_active_node = 5000; // nm
   this.animation_rotation_speed = 0.01;
+  this.animation_back_forth = false;
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -3779,6 +3780,7 @@ WebGLApplication.prototype.createAnimation = function()
     camera: this.space.view.camera,
     target: this.space.view.controls.target,
     speed: this.options.animation_rotation_speed,
+    backandforth: this.options.animation_back_forth,
   });
 };
 
@@ -3894,7 +3896,9 @@ var AnimationFactory = (function()
         var camera = getOption(options, "camera");
         var target = getOption(options, "target");
         var speed = getOption(options, "speed");
-        animation.update = AnimationFactory.YAxisRotation(camera, target, speed);
+        var backAndForth = options.backandforth || false;
+        animation.update = AnimationFactory.YAxisRotation(camera, target,
+           speed, backAndForth);
       } else {
         throw Error("Could not create animation, don't know type: " +
             options.type);
@@ -3910,15 +3914,24 @@ var AnimationFactory = (function()
  * Rotate the camera around the Y axis of the target position, while keeping
  * the same distance to it. Optionally, a rotation speed can be passed.
  */
-AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed)
+AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed,
+    backAndForth)
 {
   var targetDistance = camera.position.distanceTo(targetPosition);
   var r = rSpeed || 0.01;
+  backAndForth = backAndForth || false;
 
   // Return update function
   return function(t) {
+    var rad = r * t;
+    // In back and forth mode, movent direction is reversed once a full circle
+    // is reached.
+    if (backAndForth) {
+      rad = Math.round(rad / (2 * Math.PI)) % 2 === 0 ? rad : -rad;
+    }
+
     // Assume rotation around Y
-    camera.position.x = targetPosition.x + targetDistance * Math.cos(r * t);
-    camera.position.z = targetPosition.z + targetDistance * Math.sin(r * t);
+    camera.position.x = targetPosition.x + targetDistance * Math.cos(rad);
+    camera.position.z = targetPosition.z + targetDistance * Math.sin(rad);
   }
 };

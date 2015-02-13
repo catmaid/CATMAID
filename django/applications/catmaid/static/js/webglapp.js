@@ -1221,6 +1221,44 @@ WebGLApplication.prototype.Space.prototype.updateSplitShading = function(old_ske
   }
 };
 
+/**
+ * Return an object containing visibility information on all loaded skeleton.
+ */
+WebGLApplication.prototype.Space.prototype.getVisibilityMap = function()
+{
+  var visibilityMap = {};
+  for (var skid in this.content.skeletons) {
+    var s = this.content.skeletons[skid];
+    visibilityMap[skid] = {
+      actor: s.visible,
+      pre: s.skeletonmodel.pre_visible,
+      post: s.skeletonmodel.post_visible,
+      text: s.skeletonmodel.text_visible,
+      meta: s.skeletonmodel.meta_visible
+    };
+  }
+
+  return visibilityMap;
+};
+
+/**
+ * Updates the visibility of all skeletons. If a skeleton ID is given as a
+ * second argument, only this skeleton will be set visible (if it was visible
+ * before), otherwise all skeletons are set to the state in the given map.
+ */
+WebGLApplication.prototype.Space.prototype.setSkeletonVisibility = function(
+    visMap, visibleSkids)
+{
+  for (var skid in this.content.skeletons) {
+    var s = this.content.skeletons[skid];
+    var visible = visibleSkids ? (-1 !== visibleSkids.indexOf(skid)) : true;
+    s.setActorVisibility(visMap[skid].actor ? visible : false);
+    s.setPreVisibility(visMap[skid].pre ? visible : false);
+    s.setPostVisibility(visMap[skid].post ? visible : false);
+    s.setTextVisibility(visMap[skid].text ? visible : false);
+    s.setMetaVisibility(visMap[skid].meta ? visible : false);
+  }
+};
 
 WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
 	this.geometryCache = {};
@@ -1847,24 +1885,6 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
   }
 
   /**
-   * Updates the visibility of all skeletons. If a skeleton ID is given as a
-   * second argument, only this skeleton will be set visible (if it was visible
-   * before), otherwise all skeletons are set to the state in the given map.
-   */
-  function setSkeletonVisibility(visMap, visibleSkids)
-  {
-    for (var skid in self.space.content.skeletons) {
-      var s = self.space.content.skeletons[skid];
-      var visible = visibleSkids ? (-1 !== visibleSkids.indexOf(skid)) : true;
-      s.setActorVisibility(visMap[skid].actor ? visible : false);
-      s.setPreVisibility(visMap[skid].pre ? visible : false);
-      s.setPostVisibility(visMap[skid].post ? visible : false);
-      s.setTextVisibility(visMap[skid].text ? visible : false);
-      s.setMetaVisibility(visMap[skid].meta ? visible : false);
-    }
-  }
-
-  /**
    * Create an SVG catalog of the current view.
    */
   function createCatalogData(sphereMeshes, options)
@@ -1902,17 +1922,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     var numRows = Math.ceil(skeletons.length / numColumns);
 
     // Crate a map of current visibility
-    var visibilityMap = {};
-    for (var skid in self.space.content.skeletons) {
-      var s = self.space.content.skeletons[skid];
-      visibilityMap[skid] = {
-        actor: s.visible,
-        pre: s.skeletonmodel.pre_visible,
-        post: s.skeletonmodel.post_visible,
-        text: s.skeletonmodel.text_visible,
-        meta: s.skeletonmodel.meta_visible
-      };
-    }
+    var visibilityMap = self.space.getVisibilityMap();
 
     // Append missing pinned skeletons
     var visibleSkids = options['pinnedSkeletons'] || [];
@@ -1923,7 +1933,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       var skid = skeletons[i];
       // Display only current skeleton along with pinned ones
       visibleSkids.push(skid);
-      setSkeletonVisibility(visibilityMap, visibleSkids);
+      self.space.setSkeletonVisibility(visibilityMap, visibleSkids);
 
       // Render view and replace sphere meshes of current skeleton
       var spheres = visibleSkids.reduce(function(o, s) {
@@ -1951,7 +1961,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     }
 
     // Restore visibility
-    setSkeletonVisibility(visibilityMap);
+    self.space.setSkeletonVisibility(visibilityMap);
 
     // Create result svg
     var svg = document.createElement('svg');

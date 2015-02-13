@@ -1807,3 +1807,86 @@ Arbor.prototype.findNodesWithin = function(source, distanceFn, max_distance) {
   }
   return within;
 };
+
+/** Return a list of Arbor instances of size nodes.length + 1
+ * (unless root is include in which case the size will only be of nodes.length)
+ * representing the fragments after cutting at the given nodes set
+ * 'cuts' (a map of unique nodes vs truthy values). */
+Arbor.prototype.split = function(cuts) {
+  var be = this.findBranchAndEndNodes(),
+      ends = be.ends,
+      branches = be.branches,
+      junctions = {},
+      fragments = [];
+
+  var open = new Array(ends.length);
+  for (var k=0; k<ends.length; ++k) {
+    var arbor = new Arbor();
+    arbor.root = ends[k];
+    open[k] = arbor;
+  }
+
+  while (open.length > 0) {
+    var arbor = open.shift(),
+        node = arbor.root,
+        paren,
+        n_successors;
+    do {
+      var paren = this.edges[node];
+      if (undefined === paren) break; // reached root: cannot cut even if in cuts
+
+      if (cuts[node]) {
+        arbor.root = node;
+        fragments.push(arbor);
+        arbor = new Arbor();
+        arbor.root = paren;
+      } else {
+        arbor.edges[node] = paren;
+        // Note arbor.root is now obsolete
+      }
+      n_successors = branches[paren];
+      node = paren;
+    } while (undefined === n_successors);
+
+    arbor.root = node;
+
+    if (undefined === paren && undefined === branches[node]) {
+      // Reached root and root is not a branch
+      fragments.push(arbor);
+    } else {
+      var junction = junctions[node];
+      if (undefined === junction) {
+        // First time this branch node has been reached
+        junctions[node] = [arbor];
+      } else {
+        if (junction.length === n_successors -1) {
+          // Merge arbors
+          var ae = arbor.edges;
+          for (var k=0; k<junction.length; ++k) {
+            var edges = junction[k].edges;
+            var children = Object.keys(edges);
+            for (var i=0; i<children.length; ++i) {
+              var child = children[i];
+              ae[child] = edges[child];
+            }
+          }
+          if (node === this.root) {
+            // root is branched
+            fragments.push(arbor);
+          } else if (cuts[node]) {
+            fragments.push(arbor);
+            arbor = new Arbor();
+            arbor.root = this.edges[node];
+            open.push(arbor);
+          } else {
+            open.push(arbor);
+          }
+        } else {
+          junction.push(arbor);
+        }
+      }
+    }
+  }
+
+  return fragments;
+};

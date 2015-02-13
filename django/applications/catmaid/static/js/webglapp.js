@@ -580,6 +580,7 @@ WebGLApplication.prototype.Options = function() {
   this.invert_shading = false;
   this.follow_active = false;
   this.distance_to_active_node = 5000; // nm
+  this.min_synapse_free_cable = 5000; // nm
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -2825,6 +2826,18 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           node_weights[node] = undefined === within[node] ? 0 : 1;
         });
       }
+    } else if ('synapse-free' === options.shading_method) {
+      var locations = this.getPositions(),
+          node_weights = {};
+      arbor.split(this.createSynapseCounts()).forEach(function(fragment) {
+        var weight = 0;
+        if (fragment.cableLength(locations) >= options.min_synapse_free_cable) {
+          weight = 1;
+        }
+        fragment.nodesArray().forEach(function(node) {
+          this[node] = weight;
+        }, node_weights);
+      });
     }
   }
 
@@ -3716,5 +3729,18 @@ WebGLApplication.prototype.updateActiveNodeNeighborhoodRadius = function(value) 
         this.space.render();
       }
     }
+  }
+};
+
+WebGLApplication.prototype.updateShadingParameter = function(param, value, shading_method) {
+  if (!this.options.hasOwnProperty(param)) {
+    console.log("Invalid options parameter: ", param);
+    return;
+  }
+  value = this._validate(value, "Invalid value");
+  if (!value || value === this.options[param]) return;
+  this.options[param] = value;
+  if (shading_method === this.options.shading_method) {
+    this.updateSkeletonColors();
   }
 };

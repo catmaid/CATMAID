@@ -880,6 +880,7 @@ var WindowMaker = new function()
     [['none', 'None'],
      ['active_node_split', 'Active node split'],
      ['near_active_node', 'Near active node'],
+     ['synapse-free', 'Synapse-free chunks'],
      ['downstream_amount', 'Downstream cable'],
      ['betweenness_centrality', 'Betweenness centrality'],
      ['slab_centrality', 'Slab centrality'],
@@ -966,8 +967,10 @@ var WindowMaker = new function()
     appendToTab(tabs['Shading parameters'],
         [
           ['Synapse clustering bandwidth ', o.synapse_clustering_bandwidth, ' nm - ', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 8],
-          ['Near active node ', o.distance_to_active_node, ' nm', function() {
-            WA.updateActiveNodeNeighborhoodRadius(this.value); }, 8]
+          ['Near active node ', o.distance_to_active_node, ' nm - ', function() {
+            WA.updateActiveNodeNeighborhoodRadius(this.value); }, 8],
+          ['Minimum synapse-free cable ', o.min_synapse_free_cable, 'nm', function() {
+            WA.updateShadingParameter('min_synapse_free_cable', this.value, 'synapse-free'); }, 8]
         ]);
 
     appendToTab(tabs['Export'],

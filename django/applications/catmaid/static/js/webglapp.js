@@ -3823,12 +3823,14 @@ WebGLApplication.prototype.exportAnimation = function()
       "animation-export-rotation-time", '5');
   var framerateField = dialog.appendField("Frame rate: ",
       "animation-export-frame-rate", '25');
+  var backforthField = dialog.appendCheckbox('Back and forth',
+      'animation-export-backforth', false);
   var camera = this.space.view.camera;
   var target = this.space.view.controls.target;
 
   dialog.onOK = handleOK.bind(this);
 
-  dialog.show(400, 280, true);
+  dialog.show(400, 310, true);
 
   function handleOK() {
     /* jshint validthis: true */ // `this` is bound to this WebGLApplication
@@ -3850,6 +3852,7 @@ WebGLApplication.prototype.exportAnimation = function()
           speed: speed,
           camera: camera,
           target: target,
+          backandforth: backforthField.checked,
         };
 
         // Get frame images

@@ -3791,7 +3791,8 @@ WebGLApplication.prototype.exportAnimation = function()
 {
   var dialog = new OptionsDialog("Animation export options");
   dialog.appendMessage('Adjust the animation export settings to your liking. ' +
-     'The resulting file will have the WebM format with a framerate of 25.');
+     'The resulting file will be in WebM format and might take some seconds ' +
+     'to be generated.');
 
   // Add options to dialog
   var rotationsField = dialog.appendField("# Rotations: ",

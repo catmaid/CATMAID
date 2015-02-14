@@ -78,7 +78,7 @@ PIPELINE_JS['arbor'] = {
 
 PIPELINE_JS['catmaid'] = {
     'source_filenames': (
-        'js/catmaid.js',
+        'js/CATMAID.js',
         'js/action.js',
         'js/init.js',
         'js/navigator.js',

@@ -511,7 +511,7 @@ Slider = function(
   
   if ( input )
   {
-    var name = uniqueId();
+    var name = CATMAID.tools.uniqueId();
     
     inputView = document.createElement( "p" );
     inputView.style.paddingLeft = "0.5em";

@@ -332,6 +332,8 @@ window.getOS = function()
  */
 (function(tools) {
 
+  "use strict";
+
   /**
    * Compare two strings while respecting locales and numbers. This is
    * essentially a wrapper around String.localeCompare() to have one

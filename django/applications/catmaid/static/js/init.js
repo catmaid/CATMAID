@@ -301,9 +301,9 @@ function handle_profile_update(e) {
     /* A valid user profile is needed to start CATMAID. This is a severe error
      * and a message box will tell the user to report this problem.
      */
-    new ErrorDialog("The user profile couldn't be loaded. This, however, is " +
-        "required to start CATMAID. Please report this problem to your " +
-        "administrator and try again later.", error).show();
+    new CATMAID.ErrorDialog("The user profile couldn't be loaded. This " +
+        "however, is required to start CATMAID. Please report this problem " +
+        "to your administrator and try again later.", error).show();
     return;
   }
 
@@ -580,7 +580,7 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 			if (e.permission_error) {
 				new LoginDialog(e.error, realInit).show();
 			} else {
-				new ErrorDialog(e.error, e.detail).show();
+				new CATMAID.ErrorDialog(e.error, e.detail).show();
 			}
 		}
 		else

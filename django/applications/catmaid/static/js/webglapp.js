@@ -6,7 +6,6 @@
   Arbor,
   ArborParser,
   error,
-  ErrorDialog,
   fetchSkeletons,
   growlAlert,
   InstanceRegistry,
@@ -541,7 +540,8 @@ WebGLApplication.prototype.spatialSelect = function() {
         function(status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);
-          if (json.error) return new ErrorDialog("Could not fetch skeletons.", json.error);
+          if (json.error) return new CATMAID.ErrorDialog(
+              "Could not fetch skeletons.", json.error);
           if (json.skeletons) {
             if (json.reached_limit) growlAlert("Warning", "Too many: loaded only a subset");
             newSelection(json.skeletons);

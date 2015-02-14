@@ -100,8 +100,8 @@ User.getUsers = function(completionCallback)
         }
         else
         {
-          new ErrorDialog("The list of users could not be retrieved.",
-            text + "\n\n(Status: " + status + ")").show();
+          new CATMAID.ErrorDialog("The list of users could not be " +
+              "retrieved.", text + "\n\n(Status: " + status + ")").show();
         }
         if (completionCallback !== undefined) {
           completionCallback();
@@ -167,7 +167,8 @@ Userprofile.prototype.saveAll = function(success, error) {
         if (status == 200 && text) {
             var e = $.parseJSON(text);
             if (e.error) {
-              new ErrorDialog("Couldn't update user settings!", e.error).show();
+              new CATMAID.ErrorDialog("Couldn't update user settings!",
+                  e.error).show();
               if (error) {
                   error();
               }
@@ -175,8 +176,9 @@ Userprofile.prototype.saveAll = function(success, error) {
                 success();
             }
         } else {
-            new ErrorDialog("Couldn't update user settings!", "Updating the " +
-                "user profile returned an unexpected status: " + status).show();
+            new CATMAID.ErrorDialog("Couldn't update user settings!",
+                "Updating the user profile returned an unexpected status: " +
+                status).show();
             if (error) {
                 error();
             }

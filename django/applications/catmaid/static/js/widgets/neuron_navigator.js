@@ -7,7 +7,6 @@
   Arbor,
   checkPermission,
   ConnectorTable,
-  ErrorDialog,
   growlAlert,
   InstanceRegistry,
   NeuronAnnotations,
@@ -1640,7 +1639,8 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
     requestQueue.register(django_url + project.id + '/skeleton/' + this.skeleton_ids[0] + '/get-root', "POST", { pid: project.id }, function (status, text) {
       if (200 !== status) return;
       var json = $.parseJSON(text);
-      if (json.error) return new ErrorDialog(json.error, json.detail).show();
+      if (json.error) return new CATMAID.ErrorDialog(json.error,
+          json.detail).show();
       SkeletonAnnotations.staticMoveTo(json.z, json.y, json.x, function() {
         SkeletonAnnotations.staticSelectNode(json.root_id);
       });
@@ -1659,11 +1659,11 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
       requestQueue.register(django_url + project.id + '/neuron/' +
           this.neuron_id + '/delete', 'GET', {}, (function(status, text) {
             if (200 !== status) {
-              return new ErrorDialog("Unexpected status: " + 400).show();
+              return new CATMAID.ErrorDialog("Unexpected status: " + 400).show();
             }
             var json = $.parseJSON(text);
             if (json.error) {
-              return new ErrorDialog(json.error, json.detail).show();
+              return new CATMAID.ErrorDialog(json.error, json.detail).show();
             }
             growlAlert("Delete successful", "The neuron with ID " +
                 this.neuron_id + " has been succesfully deleted.") ;
@@ -1763,7 +1763,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
           if (200 !== status) return;
           var json = $.parseJSON(text);
           if (json.error) {
-            new ErrorDialog(json.error, json.detail).show();
+            new CATMAID.ErrorDialog(json.error, json.detail).show();
             return;
           }
           var nodes = json[0],
@@ -1927,7 +1927,7 @@ NeuronNavigator.ActiveNeuronMixin.prototype.add_activeneuron_content =
           } else {
             var json = $.parseJSON(text);
             if (json.error) {
-              new ErrorDialog(json.error, json.detail).show();
+              new CATMAID.ErrorDialog(json.error, json.detail).show();
             } else {
               this.skeleton_ids = [this.current_skid];
               this.neuron_id = json.neuronid;

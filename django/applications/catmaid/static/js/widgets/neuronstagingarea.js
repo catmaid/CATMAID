@@ -3,7 +3,6 @@
 /* global
   CATMAID
   Colorizer,
-  ErrorDialog,
   growlAlert,
   jsonResponseHandler,
   InstanceRegistry,
@@ -390,7 +389,7 @@ SelectionTable.prototype.append = function(models) {
       if (200 !== status) return;
       var json = $.parseJSON(text);
       if (json.error) {
-        new ErrorDialog(json.error, json.detail).show();
+        new CATMAID.ErrorDialog(json.error, json.detail).show();
         return;
       }
 

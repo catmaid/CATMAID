@@ -3,7 +3,6 @@
 /* global
   annotations,
   checkPermission,
-  ErrorDialog,
   growlAlert,
   InstanceRegistry,
   NeuronNameService,
@@ -271,7 +270,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
               if (status === 200) {
                 var e = $.parseJSON(text);
                 if (e.error) {
-                  new ErrorDialog(e.error, e.detail).show();
+                  new CATMAID.ErrorDialog(e.error, e.detail).show();
                 } else {
                   // Append new content right after the current node and save a
                   // reference for potential removal.
@@ -431,7 +430,7 @@ NeuronAnnotations.prototype.query = function(initialize)
         if (status === 200) {
           var e = $.parseJSON(text);
           if (e.error) {
-            new ErrorDialog(e.error, e.detail).show();
+            new CATMAID.ErrorDialog(e.error, e.detail).show();
           } else {
             var $tableBody = $('#neuron_annotations_query_results' +
                 this.widgetID).find('tbody');
@@ -718,7 +717,7 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
           if (status === 200) {
             var e = $.parseJSON(text);
             if (e.error) {
-              new ErrorDialog(e.error, e.detail).show();
+              new CATMAID.ErrorDialog(e.error, e.detail).show();
             } else {
               var ann_names = e.annotations.map(function(a) { return a.name; });
               var used_annotations = e.annotations.reduce(function(o, a) {
@@ -746,8 +745,9 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
               try {
                 window.annotations.push(e.annotations);
               } catch(err) {
-                new ErrorDialog("There was a problem updating the annotation " +
-                    "cache, please close and re-open the tool", err).show();
+                new CATMAID.ErrorDialog("There was a problem updating the " +
+                    "annotation cache, please close and re-open the tool",
+                    err).show();
               }
 
               // Let the neuron name service update itself and execute the
@@ -801,7 +801,7 @@ NeuronAnnotations.remove_annotation_from_entities = function(entity_ids,
         if (status === 200) {
           var e = $.parseJSON(text);
           if (e.error) {
-            new ErrorDialog(e.error, e.detail).show();
+            new CATMAID.ErrorDialog(e.error, e.detail).show();
           } else {
             // Let the neuron name service update itself
             NeuronNameService.getInstance().refresh();
@@ -827,7 +827,7 @@ NeuronAnnotations.retrieve_annotations_for_skeleton = function(skid, handler) {
       if (text && text !== " ") {
         var json = $.parseJSON(text);
         if (json.error) {
-          new ErrorDialog(json.error, json.detail).show();
+          new CATMAID.ErrorDialog(json.error, json.detail).show();
         } else if (handler) {
           handler(json.annotations);
         }

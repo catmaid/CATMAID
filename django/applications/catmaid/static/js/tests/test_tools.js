@@ -59,6 +59,9 @@ QUnit.test('Utilities test', function( assert ) {
   assert.strictEqual(CATMAID.tools.getOS(), "UNKNOWN",
       "CATMAID.tools.getOS handles unknown user agent");
 
+  // Reset user agent
+  setUserAgent(window, originalUserAgent);
+
 
   // Test CATMAID.tools.compareStrings
   var stringList = ['Test', 'Value', '4', 'test-90', 'test-87', '5010'];

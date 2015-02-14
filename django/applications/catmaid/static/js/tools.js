@@ -296,8 +296,8 @@ window.LoginDialog.prototype.show = function() {
     if (location.search) {
       var r, query;
       query = /\?(.*?)$/i;
-      /* jshint boss:true */ // Allow assignment in conditional
-      if (r = query.exec(location.search)) {
+      var r = query.exec(location.search);
+      if (r) {
         var o, p, value;
         o = {};
         value = /([^&=]+)=([^&=]+)/gi;

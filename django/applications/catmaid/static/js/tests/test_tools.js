@@ -82,6 +82,22 @@ QUnit.test('Utilities test', function( assert ) {
       "CATMAID.tools.parseIndex can't parse \"abc\"");
 
 
+  // Test CATMAID.tools.parseQuery
+  var url = "?pid=2&zp=5115&yp=3835&xp=0&tool=tracingtool&sid0=5&s0=1";
+  var o = {
+    pid: "2",
+    xp: "0",
+    zp: "5115",
+    yp: "3835",
+    tool: "tracingtool",
+    sid0: "5",
+    s0: "1"
+  };
+  var urlObject = CATMAID.tools.parseQuery(url);
+  assert.deepEqual(urlObject, o,
+      "CATMAID.tools.parseQuery() correctly extracts parameters from URL");
+
+
   // Test CATMAID.tools.uniqueId
   var uniqueId1 = CATMAID.tools.uniqueId();
   var uniqueId2 = CATMAID.tools.uniqueId();

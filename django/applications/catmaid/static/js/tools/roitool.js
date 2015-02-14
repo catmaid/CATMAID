@@ -480,5 +480,5 @@ RoiTool.prototype.createRoi = function(callback)
     var roi_url = django_url + project.id + "/roi/add";
     // Make Ajax call and handle response in callback
     requestQueue.register(roi_url, 'POST', data,
-        jsonResponseHandler(callback));
+        CATMAID.jsonResponseHandler(callback));
 };

@@ -14,35 +14,6 @@ window.error = function(msg, detail)
 };
 
 /**
- * Creates a generic JSON response handler that complains when the response
- * status is different from 200 or a JSON error is set.
- */
-window.jsonResponseHandler = function(success, error)
-{
-  return function(status, text, xml) {
-    if (status === 200 && text) {
-      var json = $.parseJSON(text);
-      if (json.error) {
-        new CATMAID.ErrorDialog(json.error, json.detail).show();
-        if (typeof(error) == 'function') {
-          error();
-        }
-      } else {
-        if (typeof(success) == 'function') {
-          success(json);
-        }
-      }
-    } else {
-      new CATMAID.ErrorDialog("An error occured",
-          "The server returned an unexpected status: " + status).show();
-      if (typeof(error) == 'function') {
-        error();
-      }
-    }
-  };
-};
-
-/**
  * Definition of methods in CATMAID.tools namespace.
  */
 (function(tools) {

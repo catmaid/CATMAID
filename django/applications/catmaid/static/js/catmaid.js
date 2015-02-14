@@ -1,5 +1,10 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+/* global
+  OptionsDialog,
+  login
+*/
+
 
 "use strict";
 
@@ -88,4 +93,33 @@ CATMAID.LoginDialog.prototype = {};
  */
 CATMAID.LoginDialog.prototype.show = function() {
   this.dialog.show('400', 'auto', true);
+};
+
+/**
+ * Creates a generic JSON response handler that complains when the response
+ * status is different from 200 or a JSON error is set.
+ */
+CATMAID.jsonResponseHandler = function(success, error)
+{
+  return function(status, text, xml) {
+    if (status === 200 && text) {
+      var json = $.parseJSON(text);
+      if (json.error) {
+        new CATMAID.ErrorDialog(json.error, json.detail).show();
+        if (typeof(error) == 'function') {
+          error();
+        }
+      } else {
+        if (typeof(success) == 'function') {
+          success(json);
+        }
+      }
+    } else {
+      new CATMAID.ErrorDialog("An error occured",
+          "The server returned an unexpected status: " + status).show();
+      if (typeof(error) == 'function') {
+        error();
+      }
+    }
+  };
 };

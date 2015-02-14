@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-
 /* It's very easy to accidentally leave in a console.log if you're
  * working with Firebug, but this will break CATMAID for the majority
  * of browsers.  If window.console isn't defined, create a noop
@@ -744,7 +743,7 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 
 function check_messages() {
   requestQueue.register(django_url + 'messages/latestunreaddate', 'GET',
-      undefined, jsonResponseHandler(function(data) {
+      undefined, CATMAID.jsonResponseHandler(function(data) {
         // If there is a newer latest message than we know of, get all
         // messages to display them in the message menu and widget.
         if (data.latest_unread_date) {

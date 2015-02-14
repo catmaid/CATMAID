@@ -3,7 +3,6 @@
 /* global
   ConnectorSelection,
   growlAlert,
-  jsonResponseHandler,
   project,
   requestQueue,
   SelectionTable,
@@ -179,7 +178,7 @@ var ProjectStatistics = new function()
 
           // Query all neurons reviewed by the given user in the given timeframe
           requestQueue.register(django_url + project.id + '/skeleton/list',
-              'GET', params, jsonResponseHandler(function(skeleton_ids) {
+              'GET', params, CATMAID.jsonResponseHandler(function(skeleton_ids) {
                 // Open a new selection table with the returned set of
                 // skeleton IDs, if any.
                 if (0 === skeleton_ids.length) {
@@ -204,7 +203,7 @@ var ProjectStatistics = new function()
                 completed_by: user_id,
                 from: from,
                 to: to,
-              }, jsonResponseHandler(function(connectors) {
+              }, CATMAID.jsonResponseHandler(function(connectors) {
                 if (0 === connectors.length) {
                   growlAlert('Information', 'No connectors found for your selection');
                   return;

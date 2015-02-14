@@ -1,10 +1,10 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
+  CATMAID,
   ArborParser,
   Events,
   growlAlert,
-  jsonResponseHandler,
   InstanceRegistry,
   project,
   requestQueue,
@@ -257,7 +257,7 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
 
   // Retrieve skeleton data
   var url = django_url + project.id + '/' + skid + '/0/1/compact-skeleton';
-  requestQueue.register(url, "GET", {}, jsonResponseHandler(
+  requestQueue.register(url, "GET", {}, CATMAID.jsonResponseHandler(
         (function(data) {
           this.reset();
           this.currentSkeletonId = skid;

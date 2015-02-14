@@ -6,29 +6,6 @@ var CATMAID = CATMAID || {};
 CATMAID.tools = CATMAID.tools || {};
 
 /**
- * parse the fragment part of the current URL
- */
-
-function parseFragment() {
-  if (location.hash) {
-    var r, fragment;
-    fragment = /#(.*?)$/i;
-    /* jshint boss:true */ // Allow assignment in conditional
-    if (r = fragment.exec(location.hash)) {
-      var o, p, value;
-      o = {};
-      value = /([^&=]+)=([^&=]+)/gi;
-      while (p = value.exec(r[1])) {
-        o[p[1]] = p[2];
-      }
-      return o;
-    } else
-    return undefined;
-  } else
-  return undefined;
-}
-
-/**
  * parse the query part of the current URL
  */
 

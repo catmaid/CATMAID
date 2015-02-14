@@ -5,8 +5,6 @@
 var CATMAID = CATMAID || {};
 CATMAID.tools = CATMAID.tools || {};
 
-var UNIQUE_ID;
-
 function setAlpha(element, alpha) {
   try {
     if (element.filters) {
@@ -80,15 +78,6 @@ function ieCSSWidth(o) {
     w += c.offsetWidth;
   }
   return w;
-}
-
-/**
- * get a "unique" id for a new element in the DOM
- */
-
-function uniqueId() {
-  if (!UNIQUE_ID) UNIQUE_ID = Math.floor(1073741824 * Math.random());
-  return ++UNIQUE_ID;
 }
 
 /**
@@ -346,6 +335,17 @@ window.LoginDialog.prototype.show = function() {
     if (pattern.test(str)) return parseInt(RegExp.$1);
     else
     return false;
+  };
+
+  /**
+   * Get a "unique" id for a new element in the DOM.
+   */
+  var UNIQUE_ID;
+  tools.uniqueId = function() {
+    if (!UNIQUE_ID) {
+      UNIQUE_ID = Math.floor(1073741824 * Math.random());
+    }
+    return ++UNIQUE_ID;
   };
 
 })(CATMAID.tools);

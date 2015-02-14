@@ -77,4 +77,11 @@ QUnit.test('Utilities test', function( assert ) {
       "CATMAID.tools.parseIndex can't parse \"null\");
   assert.strictEqual(CATMAID.tools.parseIndex("abc"), false,
       "CATMAID.tools.parseIndex can't parse \"abc\");
+
+
+  // Test CATMAID.tools.uniqueId
+  var uniqueId1 = CATMAID.tools.uniqueId();
+  var uniqueId2 = CATMAID.tools.uniqueId();
+  assert.ok(uniqueId1 != uniqueId2,
+      "CATMAID.tools.uniqueId retuens different IDs with two calls");
 });

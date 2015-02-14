@@ -6,19 +6,6 @@ var CATMAID = CATMAID || {};
 CATMAID.tools = CATMAID.tools || {};
 
 /**
- * Simplify more robust prototype inheritance. From:
- * http://michaux.ca/articles/class-based-inheritance-in-javascript
- */
-function extend(subclass, superclass) {
-   function Dummy() {}
-   Dummy.prototype = superclass.prototype;
-   subclass.prototype = new Dummy();
-   subclass.prototype.constructor = subclass;
-   subclass.superclass = superclass;
-   subclass.superproto = superclass.prototype;
-}
-
-/**
  * Makes a synchronous jQuery AJAX call and return the result.
  */
 function sync_request(url, type, data) {
@@ -294,6 +281,19 @@ window.LoginDialog.prototype.show = function() {
       return undefined;
     } else
     return undefined;
+  };
+
+  /**
+   * Simplify more robust prototype inheritance. From:
+   * http://michaux.ca/articles/class-based-inheritance-in-javascript
+   */
+  tools.extend = function(subclass, superclass) {
+     function Dummy() {}
+     Dummy.prototype = superclass.prototype;
+     subclass.prototype = new Dummy();
+     subclass.prototype.constructor = subclass;
+     subclass.superclass = superclass;
+     subclass.superproto = superclass.prototype;
   };
 
 })(CATMAID.tools);

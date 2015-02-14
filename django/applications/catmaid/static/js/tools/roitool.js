@@ -50,7 +50,7 @@ function RoiTool()
 }
 
 // Let the RoiTool inherit from the BoxSelectionTool
-extend( RoiTool, BoxSelectionTool );
+CATMAID.tools.extend( RoiTool, BoxSelectionTool );
 
 /**
  * Updates UI elements like the the crop box input boxes.

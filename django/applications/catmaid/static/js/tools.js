@@ -75,8 +75,7 @@ CATMAID.tools = CATMAID.tools || {};
         var o, p, value;
         o = {};
         value = /([^&=]+)=([^&=]+)/gi;
-        var p = value.exec(r[1]);
-        while (p ) {
+        while ((p = value.exec(r[1])) !== null) {
           o[p[1]] = p[2];
         }
         return o;

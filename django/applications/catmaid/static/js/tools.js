@@ -63,14 +63,14 @@ CATMAID.tools = CATMAID.tools || {};
   };
 
   /**
-   * Parse the query part of the current URL
+   * Parse the query part of a URL and return an object containing all the GET
+   * properties.
    */
-
-  tools.parseQuery = function() {
-    if (location.search) {
+  tools.parseQuery = function(url) {
+    if (url) {
       var r, query;
       query = /\?(.*?)$/i;
-      var r = query.exec(location.search);
+      var r = query.exec(url);
       if (r) {
         var o, p, value;
         o = {};

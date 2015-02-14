@@ -1,10 +1,10 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
+  CATMAID
   annotations,
   Arbor,
   ArborParser,
-  dataURItoBlob,
   error,
   ErrorDialog,
   fetchSkeletons,
@@ -172,7 +172,7 @@ WebGLApplication.prototype.exportPNG = function() {
   this.space.render();
   try {
     var imageData = this.space.view.getImageData();
-    var blob = dataURItoBlob(imageData);
+    var blob = CATMAID.tools.dataURItoBlob(imageData);
     growlAlert("Information", "The exported PNG will have a transparent background");
     saveAs(blob, "catmaid_3d_view.png");
   } catch (e) {

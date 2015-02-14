@@ -286,7 +286,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
     // Detect and measure the axon
     var axon_terminals = ap.arbor.subArbor(cut),
         at_backbone = axon_terminals.upstreamArbor(microtubules_end_nodes),
-        at_backbone_cable = at_backbone.cableLength(smooth_positions),
+        at_backbone_cable = at_backbone.cableLength(smooth_positions) + smooth_positions[axon_terminals.root].distanceTo(smooth_positions[ap.arbor.edges[axon_terminals.root]]), // plus the edge to the parent node
         at_cable = axon_terminals.cableLength(smooth_positions) - at_backbone_cable,
         at_f = function(nodeID) { return axon_terminals.contains(nodeID) && !at_backbone.contains(nodeID); },
         at_n_outputs = outputs.filter(at_f).reduce(countOutputs, 0),

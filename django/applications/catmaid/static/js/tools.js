@@ -6,29 +6,6 @@ var CATMAID = CATMAID || {};
 CATMAID.tools = CATMAID.tools || {};
 
 /**
- * parse the query part of the current URL
- */
-
-function parseQuery() {
-  if (location.search) {
-    var r, query;
-    query = /\?(.*?)$/i;
-    /* jshint boss:true */ // Allow assignment in conditional
-    if (r = query.exec(location.search)) {
-      var o, p, value;
-      o = {};
-      value = /([^&=]+)=([^&=]+)/gi;
-      while (p = value.exec(r[1])) {
-        o[p[1]] = p[2];
-      }
-      return o;
-    } else
-    return undefined;
-  } else
-  return undefined;
-}
-
-/**
  * get the width of an element from the offsetWidth of all of its children
  * use this as width-expression for boxes to be floated completely
  */
@@ -309,6 +286,29 @@ window.LoginDialog.prototype.show = function() {
       UNIQUE_ID = Math.floor(1073741824 * Math.random());
     }
     return ++UNIQUE_ID;
+  };
+
+  /**
+   * Parse the query part of the current URL
+   */
+
+  tools.parseQuery = function() {
+    if (location.search) {
+      var r, query;
+      query = /\?(.*?)$/i;
+      /* jshint boss:true */ // Allow assignment in conditional
+      if (r = query.exec(location.search)) {
+        var o, p, value;
+        o = {};
+        value = /([^&=]+)=([^&=]+)/gi;
+        while (p = value.exec(r[1])) {
+          o[p[1]] = p[2];
+        }
+        return o;
+      } else
+      return undefined;
+    } else
+    return undefined;
   };
 
 })(CATMAID.tools);

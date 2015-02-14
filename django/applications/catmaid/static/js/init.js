@@ -1052,7 +1052,7 @@ var realInit = function()
 	var account;
 	var password;
 	
-	var values = parseQuery();
+	var values = CATMAID.tools.parseQuery();
 	if ( values )
 	{
 		// simply parse the fragment values

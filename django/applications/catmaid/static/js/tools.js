@@ -341,11 +341,11 @@ window.LoginDialog.prototype.show = function() {
    * Parse a string as integer or return false if this is not possible or the
    * integer is negative.
    */
-  function parseIndex(str) {
+  tools.parseIndex = function(str) {
     var pattern = /(\d+)$/;
     if (pattern.test(str)) return parseInt(RegExp.$1);
     else
     return false;
-  }
+  };
 
 })(CATMAID.tools);

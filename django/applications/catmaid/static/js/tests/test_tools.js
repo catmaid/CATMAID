@@ -59,10 +59,22 @@ QUnit.test('Utilities test', function( assert ) {
   assert.strictEqual(CATMAID.tools.getOS(), "UNKNOWN",
       "CATMAID.tools.getOS handles unknown user agent");
 
+
   // Test CATMAID.tools.compareStrings
   var stringList = ['Test', 'Value', '4', 'test-90', 'test-87', '5010'];
   stringList.sort(CATMAID.tools.compareStrings);
   assert.deepEqual(stringList,
       ['4', '5010', 'Test', 'test-87', 'test-90', 'Value'],
       "CATMAID.tools.compareStrings sorts a list as expected");
+
+
+  // Test CATMAID.tools.getIndex
+  assert.strictEqual(CATMAID.tools.parseIndex("123"), 123,
+      "CATMAID.tools.parseIndex parses \"123\" to 123");
+  assert.strictEqual(CATMAID.tools.parseIndex("-123"), false,
+      "CATMAID.tools.parseIndex can't parse \"-123\");
+  assert.strictEqual(CATMAID.tools.parseIndex(null), false,
+      "CATMAID.tools.parseIndex can't parse \"null\");
+  assert.strictEqual(CATMAID.tools.parseIndex("abc"), false,
+      "CATMAID.tools.parseIndex can't parse \"abc\");
 });

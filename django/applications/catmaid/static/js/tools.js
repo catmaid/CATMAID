@@ -7,13 +7,6 @@ CATMAID.tools = CATMAID.tools || {};
 
 var UNIQUE_ID;
 
-function parseIndex(str) {
-  var pattern = /(\d+)$/;
-  if (pattern.test(str)) return parseInt(RegExp.$1);
-  else
-  return false;
-}
-
 function setAlpha(element, alpha) {
   try {
     if (element.filters) {
@@ -343,5 +336,16 @@ window.LoginDialog.prototype.show = function() {
   {
     return str1.localeCompare(str2, undefined, {numeric: true});
   };
+
+  /**
+   * Parse a string as integer or return false if this is not possible or the
+   * integer is negative.
+   */
+  function parseIndex(str) {
+    var pattern = /(\d+)$/;
+    if (pattern.test(str)) return parseInt(RegExp.$1);
+    else
+    return false;
+  }
 
 })(CATMAID.tools);

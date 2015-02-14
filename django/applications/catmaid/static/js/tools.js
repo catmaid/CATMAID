@@ -5,20 +5,6 @@
 var CATMAID = CATMAID || {};
 CATMAID.tools = CATMAID.tools || {};
 
-function setAlpha(element, alpha) {
-  try {
-    if (element.filters) {
-      element.style.filter = "Alpha(opacity=" + Math.max(0, Math.min(100, alpha)) + ")";
-    } else {
-      //statusBar.println("setting Alpha to " + alpha);
-      element.style.MozOpacity = Math.max(0, Math.min(1, alpha / 100));
-    }
-  } catch (exception) {}
-  if (alpha > 0) element.style.visibility = "visible";
-  else element.style.visibility = "hidden";
-  return;
-}
-
 /**
  * parse the fragment part of the current URL
  */

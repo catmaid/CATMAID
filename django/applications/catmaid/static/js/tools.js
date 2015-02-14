@@ -6,21 +6,6 @@ var CATMAID = CATMAID || {};
 CATMAID.tools = CATMAID.tools || {};
 
 /**
- * get the width of an element from the offsetWidth of all of its children
- * use this as width-expression for boxes to be floated completely
- */
-
-function ieCSSWidth(o) {
-  var c = o.firstChild;
-  var w = c.offsetWidth;
-  /* jshint boss:true */ // Allow assignment in conditional
-  while (c = c.nextSibling) {
-    w += c.offsetWidth;
-  }
-  return w;
-}
-
-/**
  * Simplify more robust prototype inheritance. From:
  * http://michaux.ca/articles/class-based-inheritance-in-javascript
  */

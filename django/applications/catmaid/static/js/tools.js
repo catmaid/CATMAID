@@ -6,29 +6,6 @@ var CATMAID = CATMAID || {};
 CATMAID.tools = CATMAID.tools || {};
 
 /**
- * Makes a synchronous jQuery AJAX call and return the result.
- */
-function sync_request(url, type, data) {
-  // check parameters
-  if (!type)
-    type = "GET";
-  // init return variable
-  var result = "";
-  // make the call
-  jQuery.ajax({
-    type: type,
-    url: url,
-    data: data,
-    success: function(response) {
-      result = response;
-    },
-    async:false
-  });
-
-  return result;
-}
-
-/**
  * Stops default behaviour of an event. Found here:
  * http://stackoverflow.com/questions/891581
  */

@@ -398,6 +398,36 @@ SynapseClustering.prototype.segregationIndex = function(clusters, outputs, input
   return 1 - S / S_norm;
 };
 
+SynapseClustering.prototype.findArborRegions = function(arbor, fc, fraction) {
+  var max = 0,
+      nodes = arbor.nodesArray();
+  for (var i=0; i<nodes.length; ++i) {
+    var c = fc[nodes[i]].centrifugal;
+    if (c > max) max = c;
+  }
+
+  // Corner case: strangely rooted arbors
+  if (0 === max) return null;
+
+  var above = [],
+      plateau = [],
+      zeros = [],
+      threshold =  fraction * max;
+  for (var i=0; i<nodes.length; ++i) {
+    var node = nodes[i],
+        ce = fc[node],
+        c = ce.centrifugal;
+    if (c > threshold) {
+      above.push(node);
+      if (c === max) plateau.push(node);
+    } else if (0 === ce.sum) zeros.push(node);
+  }
+
+  return {above: above,
+          plateau: plateau,
+          zeros: zeros};
+};
+
 /** ap: ArborParser instance
  *  fraction: value between 0 and 1, generally 0.9 works well.
  *  Returns a new Arbor representing the axon. The root of the new Arbor is where the cut was made.
@@ -407,37 +437,17 @@ SynapseClustering.prototype.findAxon = function(ap, fraction, positions) {
 
     if (!fc) return null;
 
-    var max = 0,
-        nodes = ap.arbor.nodesArray();
-    for (var i=0; i<nodes.length; ++i) {
-      var c = fc[nodes[i]].centrifugal;
-      if (c > max) max = c;
-    }
+    var regions = SynapseClustering.prototype.findArborRegions(ap.arbor, fc, fraction);
 
-    // Corner case: strangely rooted arbors
-    if (0 === max) return null;
-
-    var above = [],
-        plateau = [],
-        zeros = [],
-        threshold =  fraction * max;
-    for (var i=0; i<nodes.length; ++i) {
-      var node = nodes[i],
-          ce = fc[node],
-          c = ce.centrifugal;
-      if (c > threshold) {
-        above.push(node);
-        if (c === max) plateau.push(node);
-      } else if (0 === ce.sum) zeros.push(node);
-    }
+    if (null === regions) return null;
     
-    var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, above, positions);
+    var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, regions.above, positions);
 
     if (null === cut) return null;
 
     var axon = ap.arbor.subArbor(cut);
-    axon.fc_max_plateau = plateau;
-    axon.fc_zeros = zeros;
+    axon.fc_max_plateau = regions.plateau;
+    axon.fc_zeros = regions.zeros;
     return axon;
 };
 

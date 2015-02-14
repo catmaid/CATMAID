@@ -2,6 +2,63 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 QUnit.test('Utilities test', function( assert ) {
+
+  /**
+   * Fake user agent. From:
+   * http://stackoverflow.com/questions/1307013
+   */
+  function setUserAgent(window, userAgent) {
+    if (window.navigator.userAgent != userAgent) {
+      var userAgentProp = { get: function () { return userAgent; } };
+      try {
+        Object.defineProperty(window.navigator, 'userAgent', userAgentProp);
+      } catch (e) {
+        window.navigator = Object.create(navigator, {
+          userAgent: userAgentProp
+        });
+      }
+    }
+  }
+
+
+  // Test CATMAID.tools.getOS for Linux
+  var originalUserAgent = navigator.userAgent;
+  setUserAgent(window, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36");
+  assert.strictEqual(CATMAID.tools.getOS(), "LINUX",
+      "CATMAID.tools.getOS recognizes a Linux Chrome user agent");
+  setUserAgent(window, "Mozilla/5.0 (X11; Linux i586; rv:31.0) Gecko/20100101 Firefox/31.0");
+  assert.strictEqual(CATMAID.tools.getOS(), "LINUX",
+      "CATMAID.tools.getOS recognizes a Linux Firefox user agent");
+  setUserAgent(window, "Mozilla/5.0 (X11; U; Linux x86_64; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/531.2+");
+  assert.strictEqual(CATMAID.tools.getOS(), "LINUX",
+      "CATMAID.tools.getOS recognizes a Linux Safari user agent");
+
+  // Test CATMAID.tools.getOS for Mac
+  setUserAgent(window, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.1 Safari/537.36");
+  assert.strictEqual(CATMAID.tools.getOS(), "MAC",
+      "CATMAID.tools.getOS recognizes a MacOS Chrome user agent");
+  setUserAgent(window, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10; rv:33.0) Gecko/20100101 Firefox/33.0");
+  assert.strictEqual(CATMAID.tools.getOS(), "MAC",
+      "CATMAID.tools.getOS recognizes a MacOS Firefox user agent");
+  setUserAgent(window, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A");
+  assert.strictEqual(CATMAID.tools.getOS(), "MAC",
+      "CATMAID.tools.getOS recognizes a MacOS Safari user agent");
+
+  // Test CATMAID.tools.getOS for Windows
+  setUserAgent(window, "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36");
+  assert.strictEqual(CATMAID.tools.getOS(), "WIN",
+      "CATMAID.tools.getOS recognizes a Windows Chrome user agent");
+  setUserAgent(window, "Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0");
+  assert.strictEqual(CATMAID.tools.getOS(), "WIN",
+      "CATMAID.tools.getOS recognizes a Windows Firefox user agent");
+  setUserAgent(window, "Mozilla/5.0 (Windows; U; Windows NT 6.1; tr-TR) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27");
+  assert.strictEqual(CATMAID.tools.getOS(), "WIN",
+      "CATMAID.tools.getOS recognizes a Windows Safari user agent");
+
+  setUserAgent(window, "No real user agent");
+  assert.strictEqual(CATMAID.tools.getOS(), "UNKNOWN",
+      "CATMAID.tools.getOS handles unknown user agent");
+
   // Test CATMAID.tools.compareStrings
   var stringList = ['Test', 'Value', '4', 'test-90', 'test-87', '5010'];
   stringList.sort(CATMAID.tools.compareStrings);

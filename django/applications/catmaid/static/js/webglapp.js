@@ -670,7 +670,8 @@ WebGLApplication.prototype.updateSkeletonColors = function(callback) {
           console.log('ERROR: failed to load reviews for skeleton ' + skeleton_id);
         },
         fnRecolor);
-  } else if ('axon-and-dendrite' === this.options.color_method) {
+  } else if ('axon-and-dendrite' === this.options.color_method
+          || 'dendritic-backbone' === this.options.shading_method) {
     var skeletons = this.space.content.skeletons;
     // Find the subset of skeletons that don't have their axon loaded
     var skeleton_ids = Object.keys(skeletons).filter(function(skid) {
@@ -687,7 +688,7 @@ WebGLApplication.prototype.updateSkeletonColors = function(callback) {
         },
         function(skid) {
           // Failed loading
-          skeletons[skid].axon = {}; // dummy
+          skeletons[skid].axon = null;
           console.log('ERROR: failed to load axon-and-dendrite for skeleton ' + skid);
         },
         fnRecolor);
@@ -862,19 +863,7 @@ WebGLApplication.prototype.set_shading_method = function() {
   // Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
   this.options.shading_method = $('#skeletons_shading' + this.widgetID + ' :selected').attr("value");
 
-  var skeletons = this.space.content.skeletons;
-  try {
-    $.blockUI();
-    Object.keys(skeletons).forEach(function(skid) {
-      skeletons[skid].updateSkeletonColor(this.options);
-    }, this);
-  } catch (e) {
-    console.log(e, e.stack);
-    alert(e);
-  }
-  $.unblockUI();
-
-  this.space.render();
+  this.updateSkeletonColors();
 };
 
 WebGLApplication.prototype.look_at_active_node = function() {
@@ -2374,7 +2363,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmo
   // Attaching them directly to the nodes is too much of a performance hit.
   // Gets loaded dynamically, and erased when refreshing (because a new Skeleton is instantiated with the same model).
   this.reviews = null;
-  // A map of nodeID vs true for nodes that belong to the axon, as computed by splitByFlowCentrality. Loaded dynamically, and erased when refreshing like this.reviews.
+  // The arbor of the axon, as computed by splitByFlowCentrality. Loaded dynamically, and erased when refreshing like this.reviews.
   this.axon = null;
 };
 
@@ -2659,6 +2648,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = func
                               function(v) { return v.node_id; });
 };
 
+/** Second argument 'arbor' is optional. */
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createUpstreamArbor = function(tag_regex, arbor) {
+  var tags = this.tags,
+      regex = new RegExp(tag_regex),
+      cuts = Object.keys(tags).filter(function(tag) {
+    return tag.match(regex);
+  }).reduce(function(o, tag) {
+    return tags[tag].reduce(function(o, nodeID) { o[nodeID] = true; return o;}, o);
+  }, {});
+  arbor = arbor ? arbor : this.createArbor();
+  return arbor.upstreamArbor(cuts);
+};
+
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getPositions = function() {
   var vs = this.geometry['neurite'].vertices,
       p = {};
@@ -2693,8 +2695,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.splitByFlowCentral
     ap.arbor = arbor;
     ap.synapses(json[1]);
 
-    var axon = SynapseClustering.prototype.findAxon(ap, 0.9, this.getPositions());
-    return axon ? axon.nodes() : null;
+    return SynapseClustering.prototype.findAxon(ap, 0.9, this.getPositions());
 };
 
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
@@ -2838,6 +2839,36 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           this[node] = weight;
         }, node_weights);
       });
+    } else if ('dendritic-backbone' === options.shading_method) {
+      if (!this.axon || !this.tags['microtubules end']) {
+        // Not computable
+        console.log("Shading '" + options.shading_method + "' not computable for skeleton ID #" + this.id + ", neuron named: " + NeuronNameService.getInstance().getName(this.id));
+        node_weights = {};
+      } else {
+        // Prune artifactual branches
+        if (this.tags['not a branch']) {
+          var ap = new ArborParser(); ap.inputs = {}; ap.outputs = {};
+          ap.arbor = arbor.clone();
+          ap.collapseArtifactualBranches(this.tags);
+          arbor = ap.arbor;
+        }
+        // Create backbone arbor
+        var upstream = this.createUpstreamArbor('microtubules end', arbor);
+        // Collect nodes that don't belong to the dendritic backbone
+        var outside = {},
+            add = (function(node) { this[node] = true; }).bind(outside);
+        // Nodes from the axon terminals
+        this.axon.nodesArray().forEach(add);
+        // Nodes from the linker between dendritic tree and axon terminals
+        this.axon.fc_max_plateau.forEach(add);
+        // Nodes primarily from the linker between arbor and soma
+        this.axon.fc_zeros.forEach(add);
+        // Set weights
+        node_weights = {};
+        arbor.nodesArray().forEach(function(node) {
+          this[node] = (upstream.contains(node) && !outside[node]) ? 1 : 0;
+        }, node_weights);
+      }
     }
   }
 
@@ -2891,19 +2922,11 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     } else if ('axon-and-dendrite' === options.color_method) {
       pickColor = this.axon ?
         (function(vertex) {
-        return this.axon[vertex.node_id] ? axonColor : dendriteColor;
-      }).bind(this)
+        return this.contains(vertex.node_id) ? axonColor : dendriteColor;
+      }).bind(this.axon)
         : function() { return notComputable; };
     } else if ('downstream-of-tag' === options.color_method) {
-      var tags = this.tags,
-          regex = new RegExp(options.tag_regex),
-          cuts = Object.keys(tags).filter(function(tag) {
-        return tag.match(regex);
-      }).reduce(function(o, tag) {
-        return tags[tag].reduce(function(o, nodeID) { o[nodeID] = true; return o;}, o);
-      }, {});
-      if (!arbor) arbor = this.createArbor();
-      var upstream = arbor.upstreamArbor(cuts);
+      var upstream = this.createUpstreamArbor(options.tag_regex, arbor);
       pickColor = function(vertex) {
         return upstream.contains(vertex.node_id) ? unreviewedColor : actorColor;
       };
@@ -3153,14 +3176,14 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
     }, this);
 
   } else if ('axon-and-dendrite' === options.connector_color) {
-    var axon = this.axon,
+    var axon = this.axon ? this.axon : null,
         fnMakeColor,
         fnConnectorValue;
 
     if (axon) {
       var colors = [new THREE.Color().setRGB(0, 1, 0),  // axon: green
                     new THREE.Color().setRGB(0, 0, 1)]; // dendrite: blue
-      fnConnectorValue = function(node_id, connector_id) { return axon[node_id] ? 0 : 1; };
+      fnConnectorValue = function(node_id, connector_id) { return axon.contains(node_id) ? 0 : 1; };
       fnMakeColor = function(value) { return colors[value]; };
     } else {
       // Not computable

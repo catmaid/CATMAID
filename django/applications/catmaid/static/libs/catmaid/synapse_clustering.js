@@ -418,16 +418,17 @@ SynapseClustering.prototype.findAxon = function(ap, fraction, positions) {
     if (0 === max) return null;
 
     var above = [],
-        plateau = {},
-        zeros = {},
+        plateau = [],
+        zeros = [],
         threshold =  fraction * max;
     for (var i=0; i<nodes.length; ++i) {
       var node = nodes[i],
-          c = fc[node].centrifugal;
+          ce = fc[node],
+          c = ce.centrifugal;
       if (c > threshold) {
         above.push(node);
-        if (c === max) plateau[node] = true;
-      } else if (0 === c) zeros[node] = true;
+        if (c === max) plateau.push(node);
+      } else if (0 === ce.sum) zeros.push(node);
     }
     
     var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, above, positions);

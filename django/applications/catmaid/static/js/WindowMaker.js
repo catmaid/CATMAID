@@ -887,6 +887,7 @@ var WindowMaker = new function()
      ['flow_centrality', 'Flow centrality'],
      ['centrifugal flow_centrality', 'Centrifugal flow centrality'],
      ['centripetal flow_centrality', 'Centripetal flow centrality'],
+     ['dendritic-backbone', 'Dendritic backbone'],
      ['distance_to_root', 'Distance to root'],
      ['partitions', 'Principal branch length'],
      ['strahler', 'Strahler analysis']

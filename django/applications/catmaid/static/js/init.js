@@ -42,8 +42,8 @@ window.onerror = function(msg, url, lineno, colno, err)
 
   // Use alert() to inform the user, if the error function isn't available for
   // some reason
-  if (error) {
-    error(info, detail);
+  if (CATMAID && CATMAID.error) {
+    CATMAID.error(info, detail);
   } else {
     alert(info + ' Detail: ' + detail);
   }

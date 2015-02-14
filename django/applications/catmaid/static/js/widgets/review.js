@@ -454,7 +454,7 @@ var ReviewSystem = new function()
 
     this.startSkeletonToReview = function( skid, nodeId ) {
         if (!skid) {
-            error('No skeleton ID provided for review.');
+            CATMAID.error('No skeleton ID provided for review.');
             return;
         } else {
             skeletonID = skid;

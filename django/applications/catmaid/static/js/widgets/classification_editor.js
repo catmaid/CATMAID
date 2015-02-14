@@ -482,7 +482,7 @@ var ClassificationEditor = new function()
                         if (json.status) {
                             self.show_status("Success", json.status);
                         } else {
-                            error("The server returned an unexpected response.");
+                            CATMAID.error("The server returned an unexpected response.");
                         }
                         $(tree_id).jstree("refresh", -1);
                     }));

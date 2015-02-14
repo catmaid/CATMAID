@@ -168,7 +168,7 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
 
   // Make sure the requested node is part of the current skeleton
   if (!(node_id in nodesToChildren)) {
-    error("The requested node (" + node_id + ") was not found in the " +
+    CATMAID.error("The requested node (" + node_id + ") was not found in the " +
         "internal skeleton representation. Try updating it.");
     return;
   }
@@ -197,7 +197,7 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
   }
 
   if (!nodeToHighlight) {
-    error("Couldn't find node to highlight in dendrogram");
+    CATMAID.error("Couldn't find node to highlight in dendrogram");
     return;
   } else if (nodeToHighlight !== node_id && this.warnCollapsed) {
     var getDepth = function(node, depth) {
@@ -270,7 +270,7 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
         }).bind(this),
         (function(data) {
           this.updating = false;
-          error("Neuron dendrogram: couldn't update skeleton data");
+          CATMAID.error("Neuron dendrogram: couldn't update skeleton data");
         }).bind(this)));
 };
 
@@ -484,7 +484,7 @@ NeuronDendrogram.prototype.highlightNode = function(node_id)
   // Get the actual node
   var node = d3.select("#node" + node_id).data();
   if (node.length !== 1) {
-    error("Couldn't find node " + node_id + " in dendrogram");
+    CATMAID.error("Couldn't find node " + node_id + " in dendrogram");
     return;
   } else {
     node = node[0];

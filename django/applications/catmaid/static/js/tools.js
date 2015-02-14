@@ -6,14 +6,6 @@ var CATMAID = CATMAID || {};
 CATMAID.tools = CATMAID.tools || {};
 
 /**
- * Convenience function to show an error dialog.
- */
-window.error = function(msg, detail)
-{
-  new CATMAID.ErrorDialog(msg, detail).show();
-};
-
-/**
  * Definition of methods in CATMAID.tools namespace.
  */
 (function(tools) {

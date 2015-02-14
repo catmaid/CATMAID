@@ -123,3 +123,11 @@ CATMAID.jsonResponseHandler = function(success, error)
     }
   };
 };
+
+/**
+ * Convenience function to show an error dialog.
+ */
+CATMAID.error= function(msg, detail)
+{
+  new CATMAID.ErrorDialog(msg, detail).show();
+};

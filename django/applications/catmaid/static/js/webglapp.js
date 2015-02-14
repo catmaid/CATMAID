@@ -175,7 +175,7 @@ WebGLApplication.prototype.exportPNG = function() {
     growlAlert("Information", "The exported PNG will have a transparent background");
     saveAs(blob, "catmaid_3d_view.png");
   } catch (e) {
-    error("Could not export current 3D view, there was an error.", e);
+    CATMAID.error("Could not export current 3D view, there was an error.", e);
   }
 };
 
@@ -209,7 +209,7 @@ WebGLApplication.prototype.exportSVG = function() {
     var blob = new Blob([data], {type: 'text/svg'});
     saveAs(blob, "catmaid-3d-view.svg");
   } catch (e) {
-    error("Could not export current 3D view, there was an error.", e);
+    CATMAID.error("Could not export current 3D view, there was an error.", e);
   }
   $.unblockUI();
 };
@@ -370,7 +370,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
         var blob = new Blob([data], {type: 'text/svg'});
         saveAs(blob, "catmaid-neuron-catalog.svg");
       } catch (e) {
-        error("Could not export neuron catalog. There was an error.", e);
+        CATMAID.error("Could not export neuron catalog. There was an error.", e);
       }
       $.unblockUI();
     }
@@ -740,7 +740,7 @@ WebGLApplication.prototype.storeCurrentView = function(name, callback) {
   } else {
     // Abort if a view with this name exists already
     if (name in this.availableViews) {
-      error("A view with the name \"" + name + "\" already exists.");
+      CATMAID.error("A view with the name \"" + name + "\" already exists.");
       return;
     }
     // Store view
@@ -767,7 +767,7 @@ WebGLApplication.prototype.getStoredViews = function() {
  */
 WebGLApplication.prototype.activateView = function(name) {
   if (!(name in this.availableViews)) {
-    error("There is no view named \"" + name + "\"!");
+    CATMAID.error("There is no view named \"" + name + "\"!");
     return;
   }
   // Activate view by executing the stored function
@@ -1687,9 +1687,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
   this.renderer.context.canvas.addEventListener('webglcontextlost', function(e) {
     e.preventDefault();
     // Notify user about reload
-    error("Due to limited system resources the 3D display can't be shown " +
-          "right now. Please try and restart the widget containing the 3D " +
-          "viewer.");
+    CATMAID.error("Due to limited system resources the 3D display can't be " +
+          "shown right now. Please try and restart the widget containing the " +
+          "3D viewer.");
   }, false);
   this.renderer.context.canvas.addEventListener('webglcontextrestored', (function(e) {
     // TODO: Calling init() isn't enough, but one can manually restart
@@ -1708,7 +1708,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.createRenderer = funct
   } else if ('svg' === type) {
     renderer = new THREE.SVGRenderer();
   } else {
-    error("Unknon renderer type: " + type);
+    CATMAID.error("Unknon renderer type: " + type);
     return null;
   }
 
@@ -3764,7 +3764,7 @@ WebGLApplication.prototype.startAnimation = function(animation)
   }
 
   if (!animation) {
-    error("Please provide an animation to play.");
+    CATMAID.error("Please provide an animation to play.");
     return;
   }
 

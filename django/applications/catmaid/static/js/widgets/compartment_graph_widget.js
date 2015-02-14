@@ -2029,7 +2029,7 @@ GroupGraph.prototype.loadSVGLibraries = function(callback) {
       last.parentNode.appendChild(s);
     } catch (e) {
       cleanup();
-      error(e);
+      CATMAID.error(e);
     }
   };
 

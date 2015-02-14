@@ -71,12 +71,12 @@ QUnit.test('Utilities test', function( assert ) {
   // Test CATMAID.tools.getIndex
   assert.strictEqual(CATMAID.tools.parseIndex("123"), 123,
       "CATMAID.tools.parseIndex parses \"123\" to 123");
-  assert.strictEqual(CATMAID.tools.parseIndex("-123"), false,
-      "CATMAID.tools.parseIndex can't parse \"-123\");
+  assert.strictEqual(CATMAID.tools.parseIndex("-123"), 123,
+      "CATMAID.tools.parseIndex parses \"-123\" as 123");
   assert.strictEqual(CATMAID.tools.parseIndex(null), false,
-      "CATMAID.tools.parseIndex can't parse \"null\");
+      "CATMAID.tools.parseIndex can't parse \"null\"");
   assert.strictEqual(CATMAID.tools.parseIndex("abc"), false,
-      "CATMAID.tools.parseIndex can't parse \"abc\");
+      "CATMAID.tools.parseIndex can't parse \"abc\"");
 
 
   // Test CATMAID.tools.uniqueId

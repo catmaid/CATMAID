@@ -310,29 +310,29 @@ window.LoginDialog.prototype.show = function() {
 };
 
 /**
- * Does a simple user agent test and returns one of 'MAC', 'WIN', 'LINUX' or
- * 'UNKNOWN'.
- */
-window.getOS = function()
-{
-  var ua = navigator.userAgent.toUpperCase();
-  if (-1 !== ua.indexOf('MAC')) {
-    return 'MAC';
-  } else if (-1 !== ua.indexOf('WIN')) {
-    return 'WIN';
-  } else if (-1 !== ua.indexOf('LINUX')) {
-    return 'LINUX';
-  } else {
-    return 'UNKNOWN';
-  }
-};
-
-/**
  * Definition of methods in CATMAID.tools namespace.
  */
 (function(tools) {
 
   "use strict";
+
+  /**
+   * Does a simple user agent test and returns one of 'MAC', 'WIN', 'LINUX' or
+   * 'UNKNOWN'.
+   */
+  tools.getOS = function()
+  {
+    var ua = navigator.userAgent.toUpperCase();
+    if (-1 !== ua.indexOf('MAC')) {
+      return 'MAC';
+    } else if (-1 !== ua.indexOf('WIN')) {
+      return 'WIN';
+    } else if (-1 !== ua.indexOf('LINUX')) {
+      return 'LINUX';
+    } else {
+      return 'UNKNOWN';
+    }
+  };
 
   /**
    * Compare two strings while respecting locales and numbers. This is

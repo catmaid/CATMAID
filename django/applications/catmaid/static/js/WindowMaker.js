@@ -2496,7 +2496,7 @@ var WindowMaker = new function()
     keysHTML += '</p>';
 
     // If on Mac OS, replace all occurences of 'Ctrl' with '⌘'
-    if ('MAC' === window.getOS()) {
+    if ('MAC' === CATMAID.tools.getOS()) {
       keysHTML = keysHTML.replace(/Ctrl/gi, '⌘');
     }
 

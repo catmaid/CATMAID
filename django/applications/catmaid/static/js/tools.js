@@ -6,22 +6,6 @@ var CATMAID = CATMAID || {};
 CATMAID.tools = CATMAID.tools || {};
 
 /**
- * Creates a deep copy of an object. Based on:
- * http://stackoverflow.com/questions/122102
- */
-function deepCopy(obj) {
-    if(obj === null || typeof(obj) !== 'object'){
-        return obj;
-    }
-    //make sure the returned object has the same prototype as the original
-    var ret = Object.create(Object.getPrototypeOf(obj));
-    for(var key in obj){
-        ret[key] = deepCopy(obj[key]);
-    }
-    return ret;
-}
-
-/**
  * Convert a (usually base64 encorded) dataURI image to a binary blob.
  * From: http://stackoverflow.com/questions/4998908
  */
@@ -257,6 +241,22 @@ window.LoginDialog.prototype.show = function() {
      subclass.prototype.constructor = subclass;
      subclass.superclass = superclass;
      subclass.superproto = superclass.prototype;
+  };
+
+  /**
+   * Creates a deep copy of an object. Based on:
+   * http://stackoverflow.com/questions/122102
+   */
+  tools.deepCopy = function(obj) {
+      if(obj === null || typeof(obj) !== 'object'){
+          return obj;
+      }
+      //make sure the returned object has the same prototype as the original
+      var ret = Object.create(Object.getPrototypeOf(obj));
+      for(var key in obj){
+          ret[key] = tools.deepCopy(obj[key]);
+      }
+      return ret;
   };
 
 })(CATMAID.tools);

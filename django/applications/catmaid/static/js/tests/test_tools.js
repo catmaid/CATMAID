@@ -84,4 +84,16 @@ QUnit.test('Utilities test', function( assert ) {
   var uniqueId2 = CATMAID.tools.uniqueId();
   assert.ok(uniqueId1 != uniqueId2,
       "CATMAID.tools.uniqueId retuens different IDs with two calls");
+
+
+  // Test CATMAID.tools.deepCopy
+  var o1 = {
+    o2: {
+      f3: null,
+    },
+    f1: 1,
+    f2: "test",
+  };
+  assert.deepEqual(CATMAID.tools.deepCopy(o1), o1,
+      "CATMAID.tools.deepEqual can copy nested objects");
 });

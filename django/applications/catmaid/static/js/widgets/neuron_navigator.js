@@ -1,12 +1,12 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
+  CATMAID
   AnalyzeArbor,
   annotations,
   Arbor,
   checkPermission,
   ConnectorTable,
-  deepCopy,
   ErrorDialog,
   growlAlert,
   InstanceRegistry,
@@ -199,7 +199,7 @@ NeuronNavigator.prototype.duplicate = function()
   // Create a new window, based on the newly created navigator
   WindowMaker.create('neuron-navigator', NN);
   // Register the new navigator with the neuron name service
-  NN.registered_neurons = deepCopy(this.registered_neurons);
+  NN.registered_neurons = CATMAID.tools.deepCopy(this.registered_neurons);
   NeuronNameService.getInstance().registerAll(NN,
       Object.keys(NN.registered_neurons).reduce(function(m, n) {
         m[n] = {};
@@ -362,7 +362,7 @@ NeuronNavigator.Node.prototype.clone = function(new_navigator)
       // Ignore navigator and parent node fields for cloning as they
       // are set later anyway.
       if (key !== 'navigator' && key !== 'parent_node') {
-        clone[key] = deepCopy(this[key]);
+        clone[key] = CATMAID.tools.deepCopy(this[key]);
       }
     }
   }

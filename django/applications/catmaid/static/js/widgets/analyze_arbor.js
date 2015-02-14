@@ -216,7 +216,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         // Check if any overlap due to mistakenly placing a tag in an already existing subarbor
         if (nodes.some(function(node) { return seen[node]; })) {
           // Error: subarbor has nodes that have already been seen
-          var msg = "Subarbor rooted at node #" + sub.root + " shares nodes with other subarbors. Check the dendrogram.";
+          var msg = "Twig rooted at node #" + sub.root + " of skeleton #" + skid + " shares nodes with other subarbors. Check the dendrogram.";
           growlAlert("WARNING", msg);
           console.log("WARNING", msg);
         }
@@ -225,6 +225,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         subs.push(sub);
       }
     });
+
     var stats = {cables: [], depths: [], inputs: [], outputs: [], branches: [], ends: [], roots: [], n_subs: subs.length, input_depths: [], output_depths: []},
         edgeLength = function(child, paren) {
           return smooth_positions[child].distanceTo(smooth_positions[paren]);

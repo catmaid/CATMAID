@@ -147,7 +147,8 @@ window.LoginDialog.prototype.show = function() {
         var o, p, value;
         o = {};
         value = /([^&=]+)=([^&=]+)/gi;
-        while (p = value.exec(r[1])) {
+        var p = value.exec(r[1]);
+        while (p ) {
           o[p[1]] = p[2];
         }
         return o;

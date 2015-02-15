@@ -1,12 +1,11 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
+  CATMAID
   annotations,
   Arbor,
   ArborParser,
-  dataURItoBlob,
   error,
-  ErrorDialog,
   fetchSkeletons,
   growlAlert,
   InstanceRegistry,
@@ -38,6 +37,10 @@ var WebGLApplication = function() {
   this.registerSource();
   // Indicates whether init has been called
   this.initialized = false;
+  // Indicates if there is an animation running
+  this.animationRequestId = undefined;
+  // The current animation, if any
+  this.animation = undefined;
 
   // Listen to changes of the active node
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -168,11 +171,11 @@ WebGLApplication.prototype.exportPNG = function() {
   this.space.render();
   try {
     var imageData = this.space.view.getImageData();
-    var blob = dataURItoBlob(imageData);
+    var blob = CATMAID.tools.dataURItoBlob(imageData);
     growlAlert("Information", "The exported PNG will have a transparent background");
     saveAs(blob, "catmaid_3d_view.png");
   } catch (e) {
-    error("Could not export current 3D view, there was an error.", e);
+    CATMAID.error("Could not export current 3D view, there was an error.", e);
   }
 };
 
@@ -206,7 +209,7 @@ WebGLApplication.prototype.exportSVG = function() {
     var blob = new Blob([data], {type: 'text/svg'});
     saveAs(blob, "catmaid-3d-view.svg");
   } catch (e) {
-    error("Could not export current 3D view, there was an error.", e);
+    CATMAID.error("Could not export current 3D view, there was an error.", e);
   }
   $.unblockUI();
 };
@@ -367,7 +370,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
         var blob = new Blob([data], {type: 'text/svg'});
         saveAs(blob, "catmaid-neuron-catalog.svg");
       } catch (e) {
-        error("Could not export neuron catalog. There was an error.", e);
+        CATMAID.error("Could not export neuron catalog. There was an error.", e);
       }
       $.unblockUI();
     }
@@ -537,7 +540,8 @@ WebGLApplication.prototype.spatialSelect = function() {
         function(status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);
-          if (json.error) return new ErrorDialog("Could not fetch skeletons.", json.error);
+          if (json.error) return new CATMAID.ErrorDialog(
+              "Could not fetch skeletons.", json.error);
           if (json.skeletons) {
             if (json.reached_limit) growlAlert("Warning", "Too many: loaded only a subset");
             newSelection(json.skeletons);
@@ -580,7 +584,13 @@ WebGLApplication.prototype.Options = function() {
   this.invert_shading = false;
   this.follow_active = false;
   this.distance_to_active_node = 5000; // nm
+<<<<<<< HEAD
   this.min_synapse_free_cable = 5000; // nm
+=======
+  this.animation_rotation_speed = 0.01;
+  this.animation_back_forth = false;
+  this.animation_stepwise_visibility = false;
+>>>>>>> origin/master
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -735,7 +745,7 @@ WebGLApplication.prototype.storeCurrentView = function(name, callback) {
   } else {
     // Abort if a view with this name exists already
     if (name in this.availableViews) {
-      error("A view with the name \"" + name + "\" already exists.");
+      CATMAID.error("A view with the name \"" + name + "\" already exists.");
       return;
     }
     // Store view
@@ -762,7 +772,7 @@ WebGLApplication.prototype.getStoredViews = function() {
  */
 WebGLApplication.prototype.activateView = function(name) {
   if (!(name in this.availableViews)) {
-    error("There is no view named \"" + name + "\"!");
+    CATMAID.error("There is no view named \"" + name + "\"!");
     return;
   }
   // Activate view by executing the stored function
@@ -1207,6 +1217,44 @@ WebGLApplication.prototype.Space.prototype.updateSplitShading = function(old_ske
   }
 };
 
+/**
+ * Return an object containing visibility information on all loaded skeleton.
+ */
+WebGLApplication.prototype.Space.prototype.getVisibilityMap = function()
+{
+  var visibilityMap = {};
+  for (var skid in this.content.skeletons) {
+    var s = this.content.skeletons[skid];
+    visibilityMap[skid] = {
+      actor: s.visible,
+      pre: s.skeletonmodel.pre_visible,
+      post: s.skeletonmodel.post_visible,
+      text: s.skeletonmodel.text_visible,
+      meta: s.skeletonmodel.meta_visible
+    };
+  }
+
+  return visibilityMap;
+};
+
+/**
+ * Updates the visibility of all skeletons. If a skeleton ID is given as a
+ * second argument, only this skeleton will be set visible (if it was visible
+ * before), otherwise all skeletons are set to the state in the given map.
+ */
+WebGLApplication.prototype.Space.prototype.setSkeletonVisibility = function(
+    visMap, visibleSkids)
+{
+  for (var skid in this.content.skeletons) {
+    var s = this.content.skeletons[skid];
+    var visible = visibleSkids ? (-1 !== visibleSkids.indexOf(skid)) : true;
+    s.setActorVisibility(visMap[skid].actor ? visible : false);
+    s.setPreVisibility(visMap[skid].pre ? visible : false);
+    s.setPostVisibility(visMap[skid].post ? visible : false);
+    s.setTextVisibility(visMap[skid].text ? visible : false);
+    s.setMetaVisibility(visMap[skid].meta ? visible : false);
+  }
+};
 
 WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
 	this.geometryCache = {};
@@ -1632,9 +1680,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
   this.renderer.context.canvas.addEventListener('webglcontextlost', function(e) {
     e.preventDefault();
     // Notify user about reload
-    error("Due to limited system resources the 3D display can't be shown " +
-          "right now. Please try and restart the widget containing the 3D " +
-          "viewer.");
+    CATMAID.error("Due to limited system resources the 3D display can't be " +
+          "shown right now. Please try and restart the widget containing the " +
+          "3D viewer.");
   }, false);
   this.renderer.context.canvas.addEventListener('webglcontextrestored', (function(e) {
     // TODO: Calling init() isn't enough, but one can manually restart
@@ -1653,7 +1701,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.createRenderer = funct
   } else if ('svg' === type) {
     renderer = new THREE.SVGRenderer();
   } else {
-    error("Unknon renderer type: " + type);
+    CATMAID.error("Unknon renderer type: " + type);
     return null;
   }
 
@@ -1695,8 +1743,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.render = function() {
 /**
  * Get the toDataURL() image data of the renderer in PNG format.
  */
-WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function() {
-  return this.renderer.domElement.toDataURL("image/png");
+WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function(type) {
+  type = type || "image/png";
+  return this.renderer.domElement.toDataURL(type);
 };
 
 /**
@@ -1832,24 +1881,6 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
   }
 
   /**
-   * Updates the visibility of all skeletons. If a skeleton ID is given as a
-   * second argument, only this skeleton will be set visible (if it was visible
-   * before), otherwise all skeletons are set to the state in the given map.
-   */
-  function setSkeletonVisibility(visMap, visibleSkids)
-  {
-    for (var skid in self.space.content.skeletons) {
-      var s = self.space.content.skeletons[skid];
-      var visible = visibleSkids ? (-1 !== visibleSkids.indexOf(skid)) : true;
-      s.setActorVisibility(visMap[skid].actor ? visible : false);
-      s.setPreVisibility(visMap[skid].pre ? visible : false);
-      s.setPostVisibility(visMap[skid].post ? visible : false);
-      s.setTextVisibility(visMap[skid].text ? visible : false);
-      s.setMetaVisibility(visMap[skid].meta ? visible : false);
-    }
-  }
-
-  /**
    * Create an SVG catalog of the current view.
    */
   function createCatalogData(sphereMeshes, options)
@@ -1887,17 +1918,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     var numRows = Math.ceil(skeletons.length / numColumns);
 
     // Crate a map of current visibility
-    var visibilityMap = {};
-    for (var skid in self.space.content.skeletons) {
-      var s = self.space.content.skeletons[skid];
-      visibilityMap[skid] = {
-        actor: s.visible,
-        pre: s.skeletonmodel.pre_visible,
-        post: s.skeletonmodel.post_visible,
-        text: s.skeletonmodel.text_visible,
-        meta: s.skeletonmodel.meta_visible
-      };
-    }
+    var visibilityMap = self.space.getVisibilityMap();
 
     // Append missing pinned skeletons
     var visibleSkids = options['pinnedSkeletons'] || [];
@@ -1908,7 +1929,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
       var skid = skeletons[i];
       // Display only current skeleton along with pinned ones
       visibleSkids.push(skid);
-      setSkeletonVisibility(visibilityMap, visibleSkids);
+      self.space.setSkeletonVisibility(visibilityMap, visibleSkids);
 
       // Render view and replace sphere meshes of current skeleton
       var spheres = visibleSkids.reduce(function(o, s) {
@@ -1936,7 +1957,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.getSVGData = function(
     }
 
     // Restore visibility
-    setSkeletonVisibility(visibilityMap);
+    self.space.setSkeletonVisibility(visibilityMap);
 
     // Create result svg
     var svg = document.createElement('svg');
@@ -3766,4 +3787,329 @@ WebGLApplication.prototype.updateShadingParameter = function(param, value, shadi
   if (shading_method === this.options.shading_method) {
     this.updateSkeletonColors();
   }
+};
+
+/**
+ * Render loop for the given animation.
+ */
+WebGLApplication.prototype.renderAnimation = function(animation, t)
+{
+  // Make sure we know this animation
+  this.animation = animation;
+  // Quere next frame for next time point
+  this.animationRequestId = window.requestAnimationFrame(
+      this.renderAnimation.bind(this, animation, t + 1));
+
+  // Update animation and then render
+  animation.update(t);
+  this.space.render();
+};
+
+/**
+ * Start the given animation.
+ */
+WebGLApplication.prototype.startAnimation = function(animation)
+{
+  if (this.animationRequestId) {
+    growlAlert('Information', 'There is already an animation running');
+    return;
+  }
+
+  if (!animation) {
+    CATMAID.error("Please provide an animation to play.");
+    return;
+  }
+
+  // Start animation at time point 0
+  this.renderAnimation(animation, 0);
+};
+
+/**
+ * Stop the current animation.
+ */
+WebGLApplication.prototype.stopAnimation = function()
+{
+  if (this.animationRequestId) {
+    window.cancelAnimationFrame(this.animationRequestId);
+    this.animationRequestId = undefined;
+  }
+
+  if (this.animation) {
+    if (this.animation.stop) {
+      this.animation.stop();
+    }
+    this.animation = undefined;
+  }
+};
+
+/**
+ * Create a new animation, based on the 3D viewers current state.
+ */
+WebGLApplication.prototype.createAnimation = function()
+{
+  // For now it is always the Y axis rotation
+  var options = {
+    type: 'yrotation',
+    camera: this.space.view.camera,
+    target: this.space.view.controls.target,
+    speed: this.options.animation_rotation_speed,
+    backandforth: this.options.animation_back_forth,
+  };
+
+  // Add a notification handler for stepwise visibility, if enabled and at least
+  // one skeleton is loaded.
+  if (this.options.animation_stepwise_visibility) {
+    // Get current visibility map and create notify handler
+    var visMap = this.space.getVisibilityMap();
+    options['notify'] = this.createStepwiseVisibilityHandler(visMap);
+    // Create a stop handler that resets visibility to the state we found before
+    // the animation.
+    options['stop'] = this.createVisibibilityResetHandler(visMap);
+  }
+
+  return AnimationFactory.createAnimation(options);
+};
+
+/**
+ * Create a notification handler to be used with animations that will make
+ * an additional neuron visibile with every call.
+ */
+WebGLApplication.prototype.createStepwiseVisibilityHandler = function(visMap)
+{
+  var skeletonIds = Object.keys(this.space.content.skeletons);
+
+  // Return no-op handler if there are no skeletons
+  if (skeletonIds.length === 0) {
+    return function() {};
+  }
+
+  // Only make first skeleton visible
+  var visibleSkeletons = [skeletonIds[0]];
+  this.space.setSkeletonVisibility(visMap, visibleSkeletons);
+
+  var widget = this;
+
+  // Create function to make one skeleton visible per rotation
+  return function (r) {
+    // Expect r to be the numnber of rotations done
+    var skeletonIndex = parseInt(r);
+    // Make next skeleton visible, if available
+    if (skeletonIndex < skeletonIds.length) {
+      visibleSkeletons.push(skeletonIds[skeletonIndex]);
+      widget.space.setSkeletonVisibility(visMap, visibleSkeletons);
+    }
+  };
+};
+
+/**
+ * Create a handler function that resets visibility of all loaded skeletons.
+ */
+WebGLApplication.prototype.createVisibibilityResetHandler = function(visMap)
+{
+  return (function() {
+    this.space.setSkeletonVisibility(visMap);
+    this.space.render();
+  }).bind(this);
+};
+
+/**
+ * Export an animation as WebM video (if the browser supports it). First, a
+ * dialog is shown to adjust export preferences.
+ */
+WebGLApplication.prototype.exportAnimation = function()
+{
+  var dialog = new OptionsDialog("Animation export options");
+  dialog.appendMessage('Adjust the animation export settings to your liking. ' +
+     'The resulting file will be in WebM format and might take some seconds ' +
+     'to be generated.');
+
+  // Add options to dialog
+  var rotationsField = dialog.appendField("# Rotations: ",
+      "animation-export-num-rotations", '1');
+  var rotationtimeField = dialog.appendField("Rotation time (s): ",
+      "animation-export-rotation-time", '5');
+  var framerateField = dialog.appendField("Frame rate: ",
+      "animation-export-frame-rate", '25');
+  var backforthField = dialog.appendCheckbox('Back and forth',
+      'animation-export-backforth', false);
+  var stepVisibilityField = dialog.appendCheckbox('Stepwise neuron visibility',
+      'animation-export-backforth', false);
+  var camera = this.space.view.camera;
+  var target = this.space.view.controls.target;
+
+  dialog.onOK = handleOK.bind(this);
+
+  dialog.show(400, 310, true);
+
+  function handleOK() {
+    /* jshint validthis: true */ // `this` is bound to this WebGLApplication
+    $.blockUI();
+
+    // Get current visibility
+    var visMap = this.space.getVisibilityMap();
+
+    createAnimation.call(this);
+
+    function createAnimation() {
+      try {
+        var rotations = parseInt(rotationsField.value);
+        var rotationtime = parseFloat(rotationtimeField.value);
+        var framerate = parseInt(framerateField.value);
+
+        var nframes = Math.ceil(rotations * rotationtime * framerate);
+        var speed = 2 * Math.PI / (rotationtime * framerate);
+
+        // Collect options
+        var options = {
+          type: 'yrotation',
+          speed: speed,
+          camera: camera,
+          target: target,
+          backandforth: backforthField.checked,
+        };
+
+        // Add a notification handler for stepwise visibility, if enabled and at least
+        // one skeleton is loaded.
+        if (stepVisibilityField.checked) {
+          // Get current visibility map and create notify handler
+          var visMap = this.space.getVisibilityMap();
+          options['notify'] = this.createStepwiseVisibilityHandler(visMap);
+          // Create a stop handler that resets visibility to the state we found before
+          // the animation.
+          options['stop'] = this.createVisibibilityResetHandler(visMap);
+        }
+
+        // Get frame images
+        var animation = AnimationFactory.createAnimation(options);
+        var images = this.getAnimationFrames(animation, nframes);
+
+        // Export movie
+        var output = Whammy.fromImageArray(images, framerate);
+        saveAs(output, "catmaid_3d_view.webm");
+      } catch (e) {
+        // Unblock UI and re-throw exception
+        $.unblockUI();
+        throw e;
+      }
+      // Reset visibility and unblock UI
+      this.space.setSkeletonVisibility(visMap);
+      $.unblockUI();
+    }
+  }
+};
+
+/**
+ * Create a list of images for a given animation and the corresponding options.
+ * By default, 100 frames are generated, starting from timepoint zero.
+ */
+WebGLApplication.prototype.getAnimationFrames = function(animation, nframes, startTime)
+{
+  nframes = nframes || 100;
+  startTime = startTime || 0;
+  var frames = new Array(nframes);
+  for (var i=0; i<nframes; ++i) {
+    animation.update(startTime + i);
+    this.space.render();
+
+    // Store image
+    frames[i] = this.space.view.getImageData('image/webp');
+  }
+
+  return frames;
+};
+
+/**
+ * Create new animations.
+ */
+var AnimationFactory = (function()
+{
+  function getOption(options, key) {
+    if (options[key]) {
+      return options[key];
+    } else {
+      throw Error("Option not found: " + key);
+    }
+  }
+
+  return {
+
+    /**
+     * Create a new animation instance.
+     */
+    createAnimation: function(options) {
+      options = options || {};
+
+      var animation = {};
+
+      var notify = options.notify || false;
+
+      if (options.type == "yrotation") {
+        var camera = getOption(options, "camera");
+        var target = getOption(options, "target");
+        var speed = getOption(options, "speed");
+        var backAndForth = options.backandforth || false;
+
+        animation.update = AnimationFactory.YAxisRotation(camera, target,
+           speed, backAndForth, notify);
+      } else {
+        throw Error("Could not create animation, don't know type: " +
+            options.type);
+      }
+
+      // Add stop handler
+      var stop = options.stop || false;
+      animation.stop = function() {
+        if (stop) {
+          stop();
+        }
+      };
+
+      return animation;
+    },
+
+  };
+})();
+
+/**
+ * Rotate the camera around the Y axis of the target position, while keeping
+ * the same distance to it. Optionally, a rotation speed can be passed. If
+ * back-and-forth mode is turned on, the rotation won't continue after a full
+ * circle, but reverse direction. A notification function can be passed in. It
+ * is called every full circle.
+ */
+AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed,
+    backAndForth, notify)
+{
+  // Counts the number of rotations done
+  var numRotations = 0;
+
+  var targetDistance = camera.position.distanceTo(targetPosition);
+  rSpeed = rSpeed || 0.01;
+  backAndForth = backAndForth || false;
+
+  // Return update function
+  return function(t) {
+    // Angle to rotate
+    var rad = rSpeed * t;
+
+    // Get current number of rotations
+    var currentRotation = Math.floor(rad / (2 * Math.PI));
+    if (currentRotation !== numRotations) {
+      numRotations = currentRotation;
+      // Call notification function, if any
+      if (notify) {
+        notify(currentRotation);
+      }
+    }
+
+    // In back and forth mode, movement direction is reversed once a full circle
+    // is reached.
+    if (backAndForth) {
+      rad = (currentRotation % 2) === 0 ? rad : -rad;
+    }
+
+    // Assume rotation around Y
+    camera.position.x = targetPosition.x + targetDistance * Math.cos(rad);
+    camera.position.z = targetPosition.z + targetDistance * Math.sin(rad);
+  };
 };

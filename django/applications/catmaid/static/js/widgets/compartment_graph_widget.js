@@ -5,7 +5,6 @@
   CircuitGraphPlot,
   ConnectorSelection,
   cytoscape,
-  ErrorDialog,
   fetchSkeletons,
   growlAlert,
   InstanceRegistry,
@@ -412,7 +411,8 @@ GroupGraph.prototype.init = function() {
         function(status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);
-          if (json.error) return new ErrorDialog("Cound not fetch edge data.", json.error);
+          if (json.error) return new CATMAID.ErrorDialog(
+              "Cound not fetch edge data.", json.error);
           ConnectorSelection.show_connectors(json);
         });
     }
@@ -2029,7 +2029,7 @@ GroupGraph.prototype.loadSVGLibraries = function(callback) {
       last.parentNode.appendChild(s);
     } catch (e) {
       cleanup();
-      error(e);
+      CATMAID.error(e);
     }
   };
 

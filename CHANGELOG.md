@@ -48,6 +48,18 @@ Review system:
 - The auto-created selection widget is now 50% smaller, giving more vertical
   space to the 3D viewer.
 
+- With the help of controls of the Animation tab, simple animations can be
+  played. Currently, only rotation around the Y axis is supported. The
+  back-and-forth mode will reverse rotation direction once a full circle is
+  reached. With the help of the stepwise visibility option, individual neurons
+  can be made visible after a certain amount of time the animation is running.
+  For the Y rotation one additional neuron is made visible after each rotation.
+
+- Animations can also be exported as WebM movie file. The "Export animation"
+  button in the Export tab, will show a dialog with basic export settings. Like
+  with the other view export options, the current 3D view setup is used.
+  Creating the file can take some seconds and currently only works for the
+  Chrome browser (due to the lack of WebP support in others).
 
 Connectivity widget:
 

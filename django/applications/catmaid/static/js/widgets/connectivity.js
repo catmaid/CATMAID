@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   ConnectorSelection,
-  ErrorDialog,
   InstanceRegistry,
   NeuronNameService,
   project,
@@ -250,7 +249,7 @@ SkeletonConnectivity.prototype.update = function() {
           if (200 !== status) {
             self.incoming = {};
             self.outgoing = {};
-            new ErrorDialog("Couldn't load connectivity information",
+            new CATMAID.ErrorDialog("Couldn't load connectivity information",
                 "The server returned an unexpected status code: " +
                     status).show();
             return;
@@ -259,7 +258,7 @@ SkeletonConnectivity.prototype.update = function() {
           if (json.error) {
             self.incoming = {};
             self.outgoing = {};
-            new ErrorDialog("Couldn't load connectivity information",
+            new CATMAID.ErrorDialog("Couldn't load connectivity information",
                 json.error).show();
             return;
           }

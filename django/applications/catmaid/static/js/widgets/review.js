@@ -454,7 +454,7 @@ var ReviewSystem = new function()
 
     this.startSkeletonToReview = function( skid, nodeId ) {
         if (!skid) {
-            error('No skeleton ID provided for review.');
+            CATMAID.error('No skeleton ID provided for review.');
             return;
         } else {
             skeletonID = skid;
@@ -631,7 +631,7 @@ ReviewSystem.Whitelist = (function () {
                 django_url + project.id + '/user/reviewer-whitelist',
                 'GET',
                 undefined,
-                jsonResponseHandler(function (json) {
+                CATMAID.jsonResponseHandler(function (json) {
                     whitelist = json.reduce(function (wl, entry) {
                         wl[entry.reviewer_id] = new Date(entry.accept_after);
                         return wl;

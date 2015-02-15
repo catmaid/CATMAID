@@ -396,7 +396,7 @@ var NeuronNameService = (function()
               metaannotations: needsMetaAnnotations ? 1 : 0,
               neuronnames: needsNeueonNames ? 1 : 0,
             },
-            jsonResponseHandler(function(json) {
+            CATMAID.jsonResponseHandler(function(json) {
               update(json);
             }));
         }
@@ -430,7 +430,7 @@ var NeuronNameService = (function()
            classname: "neuron",
            pid: project.id
           },
-          jsonResponseHandler((function(data) {
+          CATMAID.jsonResponseHandler((function(data) {
             // Update all skeletons of the current neuron that are managed
             var updatedSkeletons = skeletonIds.filter(function(skid) {
               if (skid in managedSkeletons) {

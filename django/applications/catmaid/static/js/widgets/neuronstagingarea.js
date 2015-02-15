@@ -1,10 +1,9 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
+  CATMAID
   Colorizer,
-  ErrorDialog,
   growlAlert,
-  jsonResponseHandler,
   InstanceRegistry,
   NeuronNameService,
   project,
@@ -301,7 +300,7 @@ SelectionTable.prototype.sortByName = function() {
   this.sort(function(sk1, sk2) {
     var name1 = NeuronNameService.getInstance().getName(sk1.id).toLowerCase(),
         name2 = NeuronNameService.getInstance().getName(sk2.id).toLowerCase();
-    return name1 == name2 ? 0 : (name1 < name2 ? -1 : 1);
+    return CATMAID.tools.compareStrings(name1, name2);
   });
 
 };
@@ -389,7 +388,7 @@ SelectionTable.prototype.append = function(models) {
       if (200 !== status) return;
       var json = $.parseJSON(text);
       if (json.error) {
-        new ErrorDialog(json.error, json.detail).show();
+        new CATMAID.ErrorDialog(json.error, json.detail).show();
         return;
       }
 
@@ -567,7 +566,7 @@ SelectionTable.prototype.update = function() {
       skeleton_ids = skeleton_ids.concat(Object.keys(new_models));
       requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
         {skeleton_ids: skeleton_ids, whitelist: self.review_filter === 'Team'},
-        jsonResponseHandler(function(json) {
+        CATMAID.jsonResponseHandler(function(json) {
           // Update review information
           skeleton_ids.forEach(function(skeleton_id) {
             self.reviews[skeleton_id] = parseInt(json[skeleton_id]);

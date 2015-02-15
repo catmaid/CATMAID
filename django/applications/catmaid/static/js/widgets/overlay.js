@@ -4,7 +4,6 @@
   ActiveSkeleton,
   countProperties,
   display_tracing_setup_dialog,
-  ErrorDialog,
   Events,
   growlAlert,
   mayEdit,
@@ -342,9 +341,9 @@ SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
         } else {
           // Check permissions
           if (!permissions.can_edit) {
-            new ErrorDialog("This skeleton is locked by another user and you " +
-                "are not part of the other user's group. You don't have " +
-                "permission to modify it.").show();
+            new CATMAID.ErrorDialog("This skeleton is locked by another user " +
+                "and you are not part of the other user's group. You don't " +
+                "have permission to modify it.").show();
             return;
           }
           // Execute continuation
@@ -1010,8 +1009,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
               if (retries > 0) {
                 handleLastRequest(q, retries - 1);
               } else {
-                new ErrorDialog("A required update of the node failed. " +
-                    "Please reload CATMAID.").show();
+                new CATMAID.ErrorDialog("A required update of the node " +
+                    "failed. Please reload CATMAID.").show();
               }
             };
             // Start a new continuation to update the nodes,
@@ -2164,15 +2163,15 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
   var self = this;
 
   if (!node) {
-    error("Could not find a node with id " + nodeId);
+    CATMAID.error("Could not find a node with id " + nodeId);
     return false;
   }
 
   if (!mayEdit() || !node.can_edit) {
     if (node.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
-      error("You don't have permission to delete connector #" + node.id);
+      CATMAID.error("You don't have permission to delete connector #" + node.id);
     } else {
-      error("You don't have permission to delete node #" + node.id);
+      CATMAID.error("You don't have permission to delete node #" + node.id);
     }
     return false;
   }
@@ -2352,7 +2351,7 @@ SkeletonAnnotations.Tag = new (function() {
         if ("ValueError" === err.type) {
           growlAlert('Error', err.error ? err.error : "Unspecified");
         } else {
-          error(err.error, err.detail);
+          CATMAID.error(err.error, err.detail);
         }
       },
       true
@@ -2443,7 +2442,7 @@ SkeletonAnnotations.Tag = new (function() {
   this.updateTags = function(svgOverlay) {
     var atn = SkeletonAnnotations.atn;
     if (null === atn.id) {
-      error("Can't update tags, because there is no active node selected.");
+      CATMAID.error("Can't update tags, because there is no active node selected.");
       return;
     }
     svgOverlay.submit(

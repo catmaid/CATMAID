@@ -103,7 +103,7 @@ SkeletonAnalytics.prototype.loadData = function () {
 		{skeleton_ids: skids,
 		 extra: $('#skeleton_analytics_extra' + this.widgetID).val(),
 		 adjacents: $('#skeleton_analytics_adjacents' + this.widgetID).val()},
-		 jsonResponseHandler(function(json) {
+		 CATMAID.jsonResponseHandler(function(json) {
 			var rows = [];
 			json.issues.forEach(function (sk) {
 				// sk[0]: skeleton ID

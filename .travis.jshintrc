@@ -40,8 +40,14 @@
         "THREE": false,
         "THREEx": false,
         "venn": false,
+        "Whammy": false,
 
         "django_url": false,
-        "STATIC_URL_JS": false
+        "STATIC_URL_JS": false,
+
+        "CATMAID": true,
+        "annotations": true,
+        "AnalyzeArbor": true,
+        "Colorizer": true
     }
 }

@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-
 /* It's very easy to accidentally leave in a console.log if you're
  * working with Firebug, but this will break CATMAID for the majority
  * of browsers.  If window.console isn't defined, create a noop
@@ -43,8 +42,8 @@ window.onerror = function(msg, url, lineno, colno, err)
 
   // Use alert() to inform the user, if the error function isn't available for
   // some reason
-  if (error) {
-    error(info, detail);
+  if (CATMAID && CATMAID.error) {
+    CATMAID.error(info, detail);
   } else {
     alert(info + ' Detail: ' + detail);
   }
@@ -301,9 +300,9 @@ function handle_profile_update(e) {
     /* A valid user profile is needed to start CATMAID. This is a severe error
      * and a message box will tell the user to report this problem.
      */
-    new ErrorDialog("The user profile couldn't be loaded. This, however, is " +
-        "required to start CATMAID. Please report this problem to your " +
-        "administrator and try again later.", error).show();
+    new CATMAID.ErrorDialog("The user profile couldn't be loaded. This " +
+        "however, is required to start CATMAID. Please report this problem " +
+        "to your administrator and try again later.", error).show();
     return;
   }
 
@@ -578,9 +577,9 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 		if ( e.error )
 		{
 			if (e.permission_error) {
-				new LoginDialog(e.error, realInit).show();
+				new CATMAID.LoginDialog(e.error, realInit).show();
 			} else {
-				new ErrorDialog(e.error, e.detail).show();
+				new CATMAID.ErrorDialog(e.error, e.detail).show();
 			}
 		}
 		else
@@ -744,7 +743,7 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 
 function check_messages() {
   requestQueue.register(django_url + 'messages/latestunreaddate', 'GET',
-      undefined, jsonResponseHandler(function(data) {
+      undefined, CATMAID.jsonResponseHandler(function(data) {
         // If there is a newer latest message than we know of, get all
         // messages to display them in the message menu and widget.
         if (data.latest_unread_date) {
@@ -1052,7 +1051,7 @@ var realInit = function()
 	var account;
 	var password;
 	
-	var values = parseQuery();
+	var values = CATMAID.tools.parseQuery(window.location.search);
 	if ( values )
 	{
 		// simply parse the fragment values

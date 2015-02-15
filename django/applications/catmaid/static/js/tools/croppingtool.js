@@ -493,5 +493,5 @@ function CroppingTool() {
 		return;
 	};
 }
-extend( CroppingTool, RoiTool );
+CATMAID.tools.extend( CroppingTool, RoiTool );
 

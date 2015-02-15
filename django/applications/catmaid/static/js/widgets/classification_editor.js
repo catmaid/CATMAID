@@ -36,7 +36,7 @@ var ClassificationEditor = new function()
      */
     this.load_classification = function(pid, completionCallback) {
         requestQueue.register(self.get_cls_url(pid, '/show'),
-            'GET', undefined, jsonResponseHandler(
+            'GET', undefined, CATMAID.jsonResponseHandler(
                 function(e) {
                     if (e.error) {
                         alert(e.error);
@@ -477,12 +477,12 @@ var ClassificationEditor = new function()
                 "/stack/" + tool.stack.getId() + "/linkroi/" + node_id + "/");
             // Make Ajax call and handle response in callback
             requestQueue.register(roi_url, 'POST', data,
-                jsonResponseHandler(
+                CATMAID.jsonResponseHandler(
                     function(json) {
                         if (json.status) {
                             self.show_status("Success", json.status);
                         } else {
-                            error("The server returned an unexpected response.");
+                            CATMAID.error("The server returned an unexpected response.");
                         }
                         $(tree_id).jstree("refresh", -1);
                     }));

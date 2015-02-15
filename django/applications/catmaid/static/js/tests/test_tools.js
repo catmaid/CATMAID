@@ -68,13 +68,13 @@ QUnit.test('Utilities test', function( assert ) {
   stringList.sort(CATMAID.tools.compareStrings);
   // Unfortunately, localeCompare() is implemented differently in PhantomJS <
   // 2.0 from  how all major browsers do it.
-  if (navigator.userAgent.toUpperCase().indexOf('PHANTOMJS')) {
+  if (-1 === navigator.userAgent.toUpperCase().indexOf('PHANTOMJS')) {
     assert.deepEqual(stringList,
-        ['4', '5010', 'Test', 'Value', 'test-87', 'test-90'],
+        ['4', '5010', 'Test', 'test-87', 'test-90', 'Value'],
         "CATMAID.tools.compareStrings sorts a list as expected");
   } else {
     assert.deepEqual(stringList,
-        ['4', '5010', 'Test', 'test-87', 'test-90', 'Value'],
+        ['4', '5010', 'Test', 'Value', 'test-87', 'test-90'],
         "CATMAID.tools.compareStrings sorts a list as expected");
   }
 

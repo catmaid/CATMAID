@@ -5,9 +5,6 @@
   login
 */
 
-
-"use strict";
-
 // Declare the CATMAID namespace
 var CATMAID = {};
 

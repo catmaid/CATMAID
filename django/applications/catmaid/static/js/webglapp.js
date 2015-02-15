@@ -584,13 +584,10 @@ WebGLApplication.prototype.Options = function() {
   this.invert_shading = false;
   this.follow_active = false;
   this.distance_to_active_node = 5000; // nm
-<<<<<<< HEAD
   this.min_synapse_free_cable = 5000; // nm
-=======
   this.animation_rotation_speed = 0.01;
   this.animation_back_forth = false;
   this.animation_stepwise_visibility = false;
->>>>>>> origin/master
 };
 
 WebGLApplication.prototype.Options.prototype = {};

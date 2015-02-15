@@ -51,7 +51,7 @@ var submitterFn = function() {
     if (q.blockUI) $.unblockUI();
     console.log(error, q);
     if (!q.quiet) {
-      if (error.error) new ErrorDialog(error.error, error.detail).show();
+      if (error.error) new CATMAID.ErrorDialog(error.error, error.detail).show();
     }
     // Collect all error callbacks from all queued items. The current item is
     // expected to be still the first element.

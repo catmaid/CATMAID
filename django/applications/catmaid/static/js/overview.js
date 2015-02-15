@@ -15,7 +15,7 @@ function Overview( stack )
 	{
 		jump : function( e )
 		{
-			var m = ui.getMouse( e, self.getView() );
+			var m = CATMAID.ui.getMouse( e, self.getView() );
 			if ( m )
 			{
 				//statusBar.replaceLast( m.offsetX + ", " + m.offsetY );
@@ -25,12 +25,12 @@ function Overview( stack )
 		},
 		drag : function( e )
 		{
-			ui.registerEvent( "onmousemove", onmousemove );
-			ui.registerEvent( "onmouseup", onmouseup );
-			ui.catchEvents( "move" );
-			ui.onmousedown( e );
+			CATMAID.ui.registerEvent( "onmousemove", onmousemove );
+			CATMAID.ui.registerEvent( "onmouseup", onmouseup );
+			CATMAID.ui.catchEvents( "move" );
+			CATMAID.ui.onmousedown( e );
 		
-			ui.catchFocus();
+			CATMAID.ui.catchFocus();
 		
 			return false;
 		}
@@ -38,15 +38,18 @@ function Overview( stack )
 	
 	var onmousemove = function( e )
 	{
-		stack.moveToPixel( stack.z, stack.y + ui.diffY / scale, stack.x + ui.diffX / scale, stack.s );
+		stack.moveToPixel( stack.z,
+                           stack.y + CATMAID.ui.diffY / scale,
+                           stack.x + CATMAID.ui.diffX / scale,
+                           stack.s );
 		return false;
 	};
 	
 	var onmouseup = function( e )
 	{
-		ui.releaseEvents();
-		ui.removeEvent( "onmousemove", onmousemove );
-		ui.removeEvent( "onmouseup", onmouseup );
+		CATMAID.ui.releaseEvents();
+		CATMAID.ui.removeEvent( "onmousemove", onmousemove );
+		CATMAID.ui.removeEvent( "onmouseup", onmouseup );
 		return false;
 	};	
 	
@@ -114,8 +117,6 @@ function Overview( stack )
 	var layers = {};
 	
 	// initialize
-	if ( !ui ) ui = new UI();
-	
 	var maxX = stack.dimension.x - 1;
 	var maxY = stack.dimension.y - 1;
 	var scale;

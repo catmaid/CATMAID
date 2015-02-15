@@ -8,6 +8,21 @@
 // Declare the CATMAID namespace
 var CATMAID = {};
 
+(function(CATMAID)
+ {
+  // The UI singleton
+  var ui = undefined;
+  Object.defineProperty(CATMAID, 'ui', {
+    get: function() {
+      // Initialize the singleton if it doesn't exist, yet
+      if (!ui) {
+        ui = new CATMAID.UI();
+      }
+      return ui;
+    },
+  });
+})(CATMAID);
+
 /**
  * Creates a jQuery UI based error dialog. If detail is passed, it is hidden by
  * default. The dialog allows to expand it, however.

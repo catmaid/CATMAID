@@ -63,7 +63,6 @@ var input_fontsize; //!< fontsize input
 var input_fontcolourred; //!< fontcolour red input
 var input_fontcolourgreen; //!< fontcolour green input
 var input_fontcolourblue; //!< fontcolour blue input
-var ui;
 var requestQueue;
 var project;
 var project_view;
@@ -133,7 +132,7 @@ function countProperties(obj) {
  */
 
 function login_oninputreturn(e) {
-  if (ui.getKey(e) == 13) {
+  if (CATMAID.ui.getKey(e) == 13) {
     login(document.getElementById("account").value, document.getElementById("password").value);
     return false;
   } else
@@ -159,7 +158,7 @@ function login(
 	};
 	if ( msg_timeout ) window.clearTimeout( msg_timeout );
 	
-	ui.catchEvents( "wait" );
+	CATMAID.ui.catchEvents( "wait" );
 	if ( account || password ) {
 		// Attempt to login.
 		requestQueue.register(
@@ -253,7 +252,7 @@ function handle_login(status, text, xml, completionCallback) {
 function logout() {
   if (msg_timeout) window.clearTimeout(msg_timeout);
 
-  ui.catchEvents("wait");
+  CATMAID.ui.catchEvents("wait");
   requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
 
   return;
@@ -393,7 +392,7 @@ function handle_updateProjects(status, text, xml) {
 			project = undefined;
 		}
 	}
-	ui.releaseEvents();
+	CATMAID.ui.releaseEvents();
 	return;
 }
 
@@ -543,7 +542,7 @@ function openProjectStack( pid, sid, completionCallback, stackConstructor )
 		project.destroy();
 	}
 
-	ui.catchEvents( "wait" );
+	CATMAID.ui.catchEvents( "wait" );
 	requestQueue.register(
 		django_url + pid + '/stack/' + sid + '/info',
 		'GET',
@@ -733,7 +732,7 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 			});
 		}
 	}
-	ui.releaseEvents();
+	CATMAID.ui.releaseEvents();
 	return stack;
 }
 
@@ -1017,8 +1016,8 @@ function handle_load_dataview(status, text, xml) {
 function global_resize( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
-	var height = Math.max( 0, ui.getFrameHeight() - top - global_bottom );
-	var width = ui.getFrameWidth();
+	var height = Math.max( 0, CATMAID.ui.getFrameHeight() - top - global_bottom );
+	var width = CATMAID.ui.getFrameWidth();
 	
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
@@ -1126,8 +1125,6 @@ var realInit = function()
 	statusBar = new Console();
 	document.body.appendChild( statusBar.getView() );
 	
-	ui = new UI();
-	
 	input_fontsize = document.getElementById( "fontsize" );
 	
 	a_url = document.getElementById( "a_url" );
@@ -1204,10 +1201,10 @@ var realInit = function()
 	input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
 	document.getElementById( "input_fontcolourblue" ).appendChild( input_fontcolourblue.getView() );
 	
-	ui.registerEvent( "onresize", global_resize );
+	CATMAID.ui.registerEvent( "onresize", global_resize );
 	
 	rootWindow = new CMWRootNode();
-	ui.registerEvent( "onresize", resize );
+	CATMAID.ui.registerEvent( "onresize", resize );
 
   // change global bottom bar height, hide the copyright notice
   // and move the statusBar
@@ -1224,8 +1221,8 @@ var realInit = function()
 var resize = function( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
-	var height = Math.max( 0, ui.getFrameHeight() - top - global_bottom );
-	var width = ui.getFrameWidth();
+	var height = Math.max( 0, CATMAID.ui.getFrameHeight() - top - global_bottom );
+	var width = CATMAID.ui.getFrameWidth();
 	
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
@@ -1234,7 +1231,7 @@ var resize = function( e )
 	
 	rootFrame = rootWindow.getFrame();
 	rootFrame.style.top = top + "px";
-	rootFrame.style.width = UI.getFrameWidth() + "px";
+	rootFrame.style.width = CATMAID.UI.getFrameWidth() + "px";
 	rootFrame.style.height = height + "px";
 	
 	rootWindow.redraw();

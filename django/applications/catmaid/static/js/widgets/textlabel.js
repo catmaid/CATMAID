@@ -91,13 +91,13 @@ function TextlabelTool()
     // view is the mouseCatcher now
     var proto_onmousedown = self.prototype.mouseCatcher.onmousedown;
     self.prototype.mouseCatcher.onmousedown = function( e ) {
-      switch ( ui.getMouseButton( e ) )
+      switch ( CATMAID.ui.getMouseButton( e ) )
       {
         case 1:
           // tracingLayer.svgOverlay.whenclicked( e );
             // needs shift in addition
             if( e.shiftKey ) {
-                var m = ui.getMouse(e, self.prototype.mouseCatcher);
+                var m = CATMAID.ui.getMouse(e, self.prototype.mouseCatcher);
                 var tlx = (stack.x + (m.offsetX - stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x;
                 var tly = (stack.y + (m.offsetY - stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y;
                 var tlz = stack.z * stack.resolution.z + stack.translation.z;
@@ -672,8 +672,8 @@ Textlabel = function(
 	
 	var movemousemove = function( e )
 	{
-		self.location.x += ui.diffX  / scale * resolution.x;
-		self.location.y += ui.diffY  / scale * resolution.y;
+		self.location.x += CATMAID.ui.diffX  / scale * resolution.x;
+		self.location.y += CATMAID.ui.diffY  / scale * resolution.y;
 		self.redraw(
 			parentLeft,
 			parentTop,
@@ -684,9 +684,9 @@ Textlabel = function(
 	var movemouseup = function( e )
 	{
 		apply();
-		ui.releaseEvents();
-		ui.removeEvent( "onmousemove", movemousemove );
-		ui.removeEvent( "onmouseup", movemouseup );
+		CATMAID.ui.releaseEvents();
+		CATMAID.ui.removeEvent( "onmousemove", movemousemove );
+		CATMAID.ui.removeEvent( "onmouseup", movemouseup );
 		return false;
 	};
 	
@@ -694,10 +694,10 @@ Textlabel = function(
 	{
 		self.register( e );
 		
-		ui.registerEvent( "onmousemove", movemousemove );
-		ui.registerEvent( "onmouseup", movemouseup );
-		ui.catchEvents( "move" );
-		ui.onmousedown( e );
+		CATMAID.ui.registerEvent( "onmousemove", movemousemove );
+		CATMAID.ui.registerEvent( "onmouseup", movemouseup );
+		CATMAID.ui.catchEvents( "move" );
+		CATMAID.ui.onmousedown( e );
 		
 		//! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
 		document.body.firstChild.focus();
@@ -728,7 +728,6 @@ Textlabel = function(
 	
 	// initialise
 	var self = this;
-	if ( !ui ) ui = new UI();
 	
 	var view = document.createElement( "div" );
 	view.className = "textlabelView";	

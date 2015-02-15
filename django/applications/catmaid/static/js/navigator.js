@@ -4,7 +4,6 @@
  *
  * requirements:
  *	 tools.js
- *	 ui.js
  *	 slider.js
  *   stack.js
  */
@@ -20,8 +19,6 @@ function Navigator()
 	var self = this;
 	this.stack = null;
 	this.toolname = "navigator";
-
-	if ( !ui ) ui = new UI();
 
 	var sliders_box = document.getElementById( "sliders_box" );
 	this.input_x = document.getElementById( "x" );		//!< x_input
@@ -114,39 +111,39 @@ function Navigator()
 	
 	var onmousemove = function( e )
 	{
-		self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
-		self.lastY = self.stack.y + ui.diffY;
+		self.lastX = self.stack.x + CATMAID.ui.diffX; // TODO - or + ?
+		self.lastY = self.stack.y + CATMAID.ui.diffY;
 		self.stack.moveToPixel(
 			self.stack.z,
-			self.stack.y - ui.diffY / self.stack.scale,
-			self.stack.x - ui.diffX / self.stack.scale,
+			self.stack.y - CATMAID.ui.diffY / self.stack.scale,
+			self.stack.x - CATMAID.ui.diffX / self.stack.scale,
 			self.stack.s );
 		return true;
 	};
 	
 	var onmouseup = function( e )
 	{
-		ui.releaseEvents(); 
-		ui.removeEvent( "onmousemove", onmousemove );
-		ui.removeEvent( "onmouseup", onmouseup );
+		CATMAID.ui.releaseEvents();
+		CATMAID.ui.removeEvent( "onmousemove", onmousemove );
+		CATMAID.ui.removeEvent( "onmouseup", onmouseup );
 		return false;
 	};
 	
 	var onmousedown = function( e )
 	{
-		ui.registerEvent( "onmousemove", onmousemove );
-		ui.registerEvent( "onmouseup", onmouseup );
-		ui.catchEvents( "move" );
-		ui.onmousedown( e );
+		CATMAID.ui.registerEvent( "onmousemove", onmousemove );
+		CATMAID.ui.registerEvent( "onmouseup", onmouseup );
+		CATMAID.ui.catchEvents( "move" );
+		CATMAID.ui.onmousedown( e );
 		
-		ui.catchFocus();
+		CATMAID.ui.catchFocus();
 		
 		return false;
 	};
 	
 	var onmousewheel = function( e )
 	{
-		var w = ui.getMouseWheel( e );
+		var w = CATMAID.ui.getMouseWheel( e );
 		if ( w )
 		{
 			if ( w > 0 )
@@ -165,7 +162,7 @@ function Navigator()
 	{
 		zoom : function( e )
 		{
-			var w = ui.getMouseWheel( e );
+			var w = CATMAID.ui.getMouseWheel( e );
 			if ( w )
 			{
         		w = self.stack.inverse_mouse_wheel * w;
@@ -193,8 +190,8 @@ function Navigator()
 		{
 			var xp = self.stack.x;
 			var yp = self.stack.y;
-			var m = ui.getMouse( e, self.stack.getView() );
-			var w = ui.getMouseWheel( e );
+			var m = CATMAID.ui.getMouse( e, self.stack.getView() );
+			var w = CATMAID.ui.getMouseWheel( e );
 			if ( m )
 			{
 				xp = m.offsetX - self.stack.viewWidth / 2;
@@ -333,7 +330,7 @@ function Navigator()
 	
 	var YXMouseWheel = function( e )
 	{
-		var w = ui.getMouseWheel( e );
+		var w = CATMAID.ui.getMouseWheel( e );
 		if ( w )
 		{
 			this.value = parseInt( this.value ) - w;

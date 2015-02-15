@@ -1,6 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
+  CATMAID,
   ActiveSkeleton,
   countProperties,
   display_tracing_setup_dialog,
@@ -19,8 +20,6 @@
   SkeletonListSources,
   statusBar,
   submitterFn,
-  UI,
-  ui,
   user_groups,
   userprofile,
   WebGLApplication
@@ -399,7 +398,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack,
   return function(e) {
     var wc;
     var worldX, worldY;
-    var m = ui.getMouse(e, stack.getView(), true);
+    var m = CATMAID.ui.getMouse(e, stack.getView(), true);
     if (m) {
       wc = stack.getWorldTopLeft();
       worldX = wc.worldLeft + ((m.offsetX / stack.scale) * stack.resolution.x);
@@ -1374,7 +1373,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     return;
   }
 
-  var m = ui.getMouse(e, this.view);
+  var m = CATMAID.ui.getMouse(e, this.view);
 
   if (!mayEdit()) {
     statusBar.replaceLast("You don't have permission.");
@@ -2603,8 +2602,8 @@ var SplitMergeDialog = function(model1, model2) {
     this.dialog.setAttribute("title", "Split skeleton");
   }
   // Dialog dimensions
-  this.width = parseInt(UI.getFrameWidth() * 0.8);
-  this.height = parseInt(UI.getFrameHeight() * 0.8);
+  this.width = parseInt(CATMAID.UI.getFrameWidth() * 0.8);
+  this.height = parseInt(CATMAID.UI.getFrameHeight() * 0.8);
 };
 
 SplitMergeDialog.prototype = {};

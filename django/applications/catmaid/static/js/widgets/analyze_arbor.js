@@ -267,19 +267,19 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
     return {pre: {}, post: {}};
   };
 
-  var can_split = false,
-      axon_terminals = null;
+  var axon_terminals = null,
+      regions = null;
 
   // Split by synapse flow centrality
   if (0 !== ap.n_outputs && 0 !== ap.n_inputs) {
-    var fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
-        fc_max = Object.keys(fc).reduce(function(max, nodeID) {
-          var c = fc[nodeID].centrifugal;
-          return c > max ? c : max;
-        }, 0),
-        fc_plateau = Object.keys(fc).filter(function(nodeID) { return fc[nodeID].centrifugal === fc_max; }),
-        cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, fc_plateau, smooth_positions);
-    if (cut) axon_terminals = ap.arbor.subArbor(cut);
+    regions = SynapseClustering.prototype.findArborRegions(
+        ap.arbor,
+        ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs),
+        0.9);
+    if (regions) {
+      var cut = SynapseClustering.prototype.findAxonCut(ap.arbor, ap.outputs, regions.above, smooth_positions);
+      if (cut) axon_terminals = ap.arbor.subArbor(cut);
+    }
   }
 
   if (axon_terminals) {
@@ -300,18 +300,55 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
       delete dendrites.edges[nodeID];
     });
     var d_backbone = dendrites.upstreamArbor(microtubules_end_nodes),
-        d_backbone_cable = d_backbone.cableLength(smooth_positions),
-        d_cable = dendrites.cableLength(smooth_positions) - d_backbone_cable,
+        d_broad_backbone_cable = d_backbone.cableLength(smooth_positions),
+        d_cable = dendrites.cableLength(smooth_positions) - d_broad_backbone_cable,
         d_f = function(nodeID) { return dendrites.contains(nodeID) && !d_backbone.contains(nodeID); },
         d_n_outputs = outputs.filter(d_f).reduce(countOutputs, 0),
         d_n_inputs = inputs.filter(d_f).reduce(countInputs, 0),
         d_minutes = countMinutes(Object.keys(subtract(dendrites.nodes(), d_backbone.nodes()))),
         d_n_mitochondria = mitochondrium.filter(d_f).length;
 
-
     this.arbor_stats[skid] = {axonal: analyze_subs(axon_terminals),
                               dendritic: analyze_subs(dendrites),
                               syn_mit: analyze_synapse_mitochondrium()};
+
+    if (regions) {
+      // Measure the true dendritic backbone length, which is the d_backbone minus the flow centrality plateau and zeros (aka the linker between dendrite and axon and the linker to the soma)
+      var d_backbone_cable = 0,
+          nodes = d_backbone.nodesArray(),
+          outside = {},
+          add = (function(node) { this[node] = true; }).bind(outside);
+      regions.plateau.forEach(add);
+      regions.zeros.forEach(add);
+      for (var i=0; i<nodes.length; ++i) {
+        var node = nodes[i];
+        if (!outside[node]) {
+          var paren = ap.arbor.edges[node];
+          if (paren) d_backbone_cable += smooth_positions[node].distanceTo(smooth_positions[paren]);
+        }
+      }
+      this.arbor_stats[skid].dendritic.backbone_cable = d_backbone_cable;
+      console.log("true dendritic backbone cable", d_backbone_cable);
+    } else {
+      // Strangely rooted arbors may result in regions not being computable
+      this.arbor_stats[skid].dendritic.backbone_cable = 0;
+    }
+
+    /* Tests
+    console.log("arbor cable: ", cable);
+    console.log("backbone cable + axonic twigs cable + dendritic twigs cable: ", bb_cable + at_cable + d_cable);
+    console.log("backbone cable: ", bb_cable);
+    console.log("axon backbone + broad dendrite backbone: ", at_backbone_cable + d_broad_backbone_cable);
+    console.log("broad axon + broad dendrite: ", axon_terminals.cableLength(smooth_positions) + dendrites.cableLength(smooth_positions));
+    console.log("broad dendrite backbone: ", d_broad_backbone_cable);
+    var sumCable = function(sum, node) {
+      var paren = ap.arbor.edges[node];
+      if (paren) return sum + smooth_positions[node].distanceTo(smooth_positions[paren]);
+      return sum;
+    };
+    console.log("true dendrite backbone + dendritic backbone zeros + plateau", this.arbor_stats[skid].dendritic.backbone_cable + regions.zeros.filter(function(node) { return d_backbone.contains(node); }).reduce(sumCable, 0) + regions.plateau.reduce(sumCable, 0));
+    */
+
 
     ad = [Math.round(d_cable) | 0,
           d_n_inputs,
@@ -339,6 +376,18 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
     this.arbor_stats[skid] = {axonal: null,
                               dendritic: analyze_subs(ap.arbor),
                               syn_mit: analyze_synapse_mitochondrium()};
+
+    // Approximate with total backbone cable minus regions without synapses
+    var pruned = backbone.clone();
+    var root_succ = pruned.successors(pruned.root);
+    if (1 === root_succ.length) pruned.reroot(pruned.nextBranchNode(root_succ[0]));
+    // Preserve backbone parts with synapses or twig roots
+    var pins = {};
+    [].concat(inputs, outputs, this.arbor_stats[skid].dendritic.roots).forEach(function(node) {
+      this[node] = true;
+    }, pins);
+    pruned.pruneBareTerminalSegments(pins);
+    this.arbor_stats[skid].dendritic.backbone_cable = pruned.cableLength(smooth_positions);
   }
 
   var row = [NeuronNameService.getInstance().getName(skid),
@@ -561,14 +610,25 @@ AnalyzeArbor.prototype.updateCharts = function() {
       neuron_colors[skid] = neuron.color;
     }, this);
 
-    var total_cable_vs_n_twigs = rows.map(function(row, i) {
+    var total_cable_vs_n_twigs = [],
+        total_dendritic_backbone_cable_vs_dendritic_twigs = [];
+    rows.forEach(function(row, i) {
       var skid = this.skeleton_ids[i],
           stats = this.arbor_stats[skid];
-      return {x: row[1] / 1000,
-              y: stats.dendritic.n_subs + (stats.axonal ? stats.axonal.n_subs : 0),
-              color: neuron_colors[skid],
-              name: NeuronNameService.getInstance().getName(skid),
-              skid: skid};
+      total_cable_vs_n_twigs.push(
+        {x: row[1] / 1000,
+         y: stats.dendritic.n_subs + (stats.axonal ? stats.axonal.n_subs : 0),
+         color: neuron_colors[skid],
+         name: NeuronNameService.getInstance().getName(skid),
+         skid: skid
+        });
+      total_dendritic_backbone_cable_vs_dendritic_twigs.push(
+        {x: stats.dendritic.backbone_cable / 1000,
+         y: stats.dendritic.n_subs,
+         color: neuron_colors[skid],
+         name: NeuronNameService.getInstance().getName(skid),
+         skid: skid
+        });
     }, this);
 
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_depth',
@@ -600,6 +660,18 @@ AnalyzeArbor.prototype.updateCharts = function() {
         TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.skid);
       },
       rows.map((function(row, i) { return {name: row[0] + ' (' + total_cable_vs_n_twigs[i].y  + ' twigs)', color: this(i)}; }).bind(d3.scale.category10())),
+      true, true
+    );
+
+    // Create plot of total dendritic cable length vs number of dendritic twigs
+    SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-dendritic_cable_length_vs_n_dendritic_twigs',
+      650, 460,
+      'dendritic backbone cable (µm)', '# dendritic twigs',
+      total_dendritic_backbone_cable_vs_dendritic_twigs,
+      function(d) {
+        TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.skid);
+      },
+      rows.map((function(row, i) { return {name: row[0] + ' (' + total_dendritic_backbone_cable_vs_dendritic_twigs[i].y  + ' twigs)', color: this(i)}; }).bind(d3.scale.category10())),
       true, true
     );
 

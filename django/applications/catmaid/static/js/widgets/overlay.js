@@ -519,28 +519,18 @@ SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
     skeleton_id, fn) {
   var url = django_url + project.id + '/skeleton/' + skeleton_id +
       '/permissions';
-  requestQueue.register(url, 'POST', null, function(status, text) {
-      if (status !== 200) {
-        alert("Unexpected status code: " + status);
-        return false;
-      }
-      if (text && text !== " ") {
-        var permissions = $.parseJSON(text);
-        if (permissions.error) {
-          alert(permissions.error);
-        } else {
-          // Check permissions
-          if (!permissions.can_edit) {
-            new CATMAID.ErrorDialog("This skeleton is locked by another user " +
-                "and you are not part of the other user's group. You don't " +
-                "have permission to modify it.").show();
-            return;
-          }
-          // Execute continuation
-          fn();
+  requestQueue.register(url, 'POST', null,
+     CATMAID.jsonResponseHandler(function(permissions) {
+        // Check permissions
+        if (!permissions.can_edit) {
+          new CATMAID.ErrorDialog("This skeleton is locked by another user " +
+              "and you are not part of the other user's group. You don't " +
+              "have permission to modify it.").show();
+          return;
         }
-      }
-  });
+        // Execute continuation
+        fn();
+     }));
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {

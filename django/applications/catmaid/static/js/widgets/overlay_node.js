@@ -433,12 +433,14 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     }
   };
 
-  /** Return a color depending upon some conditions,
-   * such as whether the zdiff with the current section is positive, negative, or zero,
-   * and whether the node belongs to the active skeleton.
+  /**
+   * Return a color depending upon some conditions, such as whether the zdiff
+   * with the current section is positive, negative, or zero, and whether the
+   * node belongs to the active skeleton.
    */
   this.colorFromZDiff = function() {
-    // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
+    // zdiff is in sections, therefore the current section is at [0, 1) --
+    // notice 0 is inclusive and 1 is exclusive.
     if (this.zdiff >= 1) {
       return this.inactive_skeleton_color_above;
     } else if (this.zdiff < 0) {

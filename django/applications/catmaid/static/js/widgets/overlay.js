@@ -2296,9 +2296,11 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
       },
       false,
       true),
-    function() {
-      statusBar.replaceLast("Virtual node, modify to instantiate");
-    }
+    (function() {
+      var node = this.nodes[nodeID];
+      statusBar.replaceLast("Virtual node, modify to instantiate (parent: " +
+          node.parent_id + " skeleton: " + node.skeleton_id + ")");
+    }).bind(this)
   );
 };
 

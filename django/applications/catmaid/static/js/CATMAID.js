@@ -12,7 +12,7 @@ var CATMAID = {};
 (function(CATMAID)
  {
   // The UI singleton
-  var ui = undefined;
+  var ui;
   Object.defineProperty(CATMAID, 'ui', {
     get: function() {
       // Initialize the singleton if it doesn't exist, yet

@@ -285,6 +285,17 @@ SkeletonAnnotations.clearTopbar = function(stackID) {
   label.text("");
 };
 
+/**
+ * Return if the given node ID is the ID of a real treenode.
+ */
+SkeletonAnnotations.isRealNode = function(node_id)
+{
+  // For now it is enough to test if the given ID *could* be one of a real node,
+  // i.e. if it is a number.
+  return !isNaN(parseInt(node_id));
+};
+
+
 /** The constructor for SVGOverlay. */
 SkeletonAnnotations.SVGOverlay = function(stack) {
   this.stack = stack;
@@ -346,16 +357,6 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
 };
 
 SkeletonAnnotations.SVGOverlay.prototype = {};
-
-/**
- * Return if the given node ID is the ID of a real treenode.
- */
-SkeletonAnnotations.SVGOverlay.prototype.isRealNode = function(node_id)
-{
-  // For now it is enough to test if the given ID *could* be one of a real node,
-  // i.e. if it is a number.
-  return !isNaN(parseInt(node_id));
-};
 
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,
@@ -484,7 +485,7 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodes = function()
 SkeletonAnnotations.SVGOverlay.prototype.executeDependentOnExistence =
     function(node_id, fn_real, fn_notreal)
 {
-  if (this.isRealNode(node_id) && fn_real) {
+  if (SkeletonAnnotations.isRealNode(node_id) && fn_real) {
     fn_real();
     return true;
   } else if (fn_notreal) {
@@ -1375,7 +1376,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (c
       for (var i = 0; i < nodeIDs.length; ++i) {
         var node = this.nodes[nodeIDs[i]];
         // only updated nodes that need sync, e.g.  when they changed position
-        if (node.needsync) {
+        if (node.needsync && SkeletonAnnotations.isRealNode(node.id)) {
           node.needsync = false;
           update[node.type].push([node.id,
                                   this.pix2physX(node.z, node.y, node.x),
@@ -1829,7 +1830,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
       }
     }
     // Include ID only in qery, if it is real
-    if (!self.isRealNode(atnid)) {
+    if (!SkeletonAnnotations.isRealNode(atnid)) {
       atnid = -1;
     }
 

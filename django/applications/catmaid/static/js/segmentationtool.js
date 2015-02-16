@@ -13,8 +13,6 @@ function SegmentationTool()
     this.toolname = "segmentationtool";
 
     var canvasLayer = null;
-    
-    if (!ui) ui = new UI();
 
     /**
      * unregister all stack related mouse and keyboard controls
@@ -104,19 +102,19 @@ function SegmentationTool()
     var onmouseup = function( e )
     {
         //console.log('onmouseup');
-        ui.releaseEvents();
-        ui.removeEvent( "onmousemove", onmousemove );
-        ui.removeEvent( "onmouseup", onmouseup );
+        CATMAID.ui.releaseEvents();
+        CATMAID.ui.removeEvent( "onmousemove", onmousemove );
+        CATMAID.ui.removeEvent( "onmouseup", onmouseup );
         return false;
     };
 
     var onmousedown = function( e )
     {
         //console.log('onmousedown');
-        ui.registerEvent( "onmousemove", onmousemove );
-        ui.registerEvent( "onmouseup", onmouseup );
-        ui.catchEvents( "move" );
-        ui.onmousedown( e );
+        CATMAID.ui.registerEvent( "onmousemove", onmousemove );
+        CATMAID.ui.registerEvent( "onmouseup", onmouseup );
+        CATMAID.ui.catchEvents( "move" );
+        CATMAID.ui.onmousedown( e );
 
         //ui.catchFocus();
 

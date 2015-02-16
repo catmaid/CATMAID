@@ -23,8 +23,6 @@ function TaggingTool()
     // an object to save update states of objects
     this.update_states = {};
 
-    if (!ui) ui = new UI();
-
     // get references for the input controls
     this.input_project_tags = document.getElementById( "project_tags" );
     this.input_stack_tags = document.getElementById( "stack_tags" );

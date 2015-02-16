@@ -6,10 +6,76 @@
 */
 
 
-"use strict";
-
 // Declare the CATMAID namespace
 var CATMAID = {};
+
+(function(CATMAID)
+ {
+  // The UI singleton
+  var ui;
+  Object.defineProperty(CATMAID, 'ui', {
+    get: function() {
+      // Initialize the singleton if it doesn't exist, yet
+      if (!ui) {
+        ui = new CATMAID.UI();
+      }
+      return ui;
+    },
+  });
+})(CATMAID);
+
+
+/* It's very easy to accidentally leave in a console.log if you're working with
+ * Firebug, but this will break CATMAID for some browsers.  If window.console
+ * isn't defined, create a noop version of console.log: */
+if (!window.console) {
+  window.console = {};
+  window.console.log = function() {};
+}
+
+
+// Attach a general error handler
+window.onerror = function(msg, url, lineno, colno, err)
+{
+  var info = 'An error occured in CATMAID and the current action can\'t be ' +
+      'completed. You can try to reload the widget or tool you just used.';
+  var detail = 'Error: ' + msg + ' URL: ' + url + ' Line: ' + lineno +
+      ' Column: ' + colno + ' Stacktrace: ' + (err ? err.stack : 'N/A');
+
+  // Log the error detail to the console
+  console.log(detail);
+
+  // Log the error in the backend, bypass the request queue and make a direct
+  // AJAX call through jQuery.
+  $.ajax({
+    'url': django_url + 'log/error',
+    'type': 'POST',
+    'data': {
+      'msg': detail,
+    }
+  });
+
+  // Log the error object, if available
+  if (err) {
+    console.log('Error object:');
+    console.log(err);
+  } else {
+    console.log('No error object was provided');
+  }
+
+  // Use alert() to inform the user, if the error function isn't available for
+  // some reason
+  if (CATMAID && CATMAID.error) {
+    CATMAID.error(info, detail);
+  } else {
+    alert(info + ' Detail: ' + detail);
+  }
+
+  // Return true to indicate the exception is handled and doesn't need to be
+  // shown to the user.
+  return true;
+};
+
 
 /**
  * Creates a jQuery UI based error dialog. If detail is passed, it is hidden by

@@ -20,8 +20,6 @@ function RoiTool()
     var self = this;
     this.toolname = "roitool";
 
-	if ( !ui ) ui = new UI();
-
 	// inputs for x, y, width and height of the crop box
 	this.box_roi_x = document.getElementById( "box_roi_x" );
 	this.box_roi_y = document.getElementById( "box_roi_y" );
@@ -212,7 +210,7 @@ RoiTool.prototype.changeCropBoxRByInput = function( e )
  */
 RoiTool.prototype.cropBoxMouseWheel = function( e )
 {
-    var w = ui.getMouseWheel( e );
+    var w = CATMAID.ui.getMouseWheel( e );
     if ( w )
     {
         this.value = parseInt( this.value ) - w;
@@ -226,22 +224,22 @@ RoiTool.prototype.cropBoxMouseWheel = function( e )
  */
 RoiTool.prototype.onmousedown = function( e )
 {
-    var b = ui.getMouseButton( e );
+    var b = CATMAID.ui.getMouseButton( e );
     switch ( b )
     {
     case 2:
-        ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
-        ui.removeEvent( "onmouseup", this.onmouseup_bound );
+        CATMAID.ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
+        CATMAID.ui.removeEvent( "onmouseup", this.onmouseup_bound );
         break;
     default:
-        var m = ui.getMouse( e, this.stack.getView() );
+        var m = CATMAID.ui.getMouse( e, this.stack.getView() );
         this.createCropBox( m.offsetX, m.offsetY );
 
-        ui.registerEvent( "onmousemove", this.onmousemove_crop_bound );
-        ui.registerEvent( "onmouseup", this.onmouseup_bound );
-        ui.catchEvents( "crosshair" );
+        CATMAID.ui.registerEvent( "onmousemove", this.onmousemove_crop_bound );
+        CATMAID.ui.registerEvent( "onmouseup", this.onmouseup_bound );
+        CATMAID.ui.catchEvents( "crosshair" );
     }
-    ui.onmousedown( e );
+    CATMAID.ui.onmousedown( e );
 
     //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
     document.body.firstChild.focus();
@@ -259,7 +257,7 @@ RoiTool.prototype.onmousemove = {
     {
         var xp;
         var yp;
-        var m = ui.getMouse( e, this.stack.getView() );
+        var m = CATMAID.ui.getMouse( e, this.stack.getView() );
         if ( m )
         {
             var s = this.stack;
@@ -276,7 +274,7 @@ RoiTool.prototype.onmousemove = {
         if ( cropBox )
         {
             // adjust left and rigt component
-            cropBox.xdist += ui.diffX;
+            cropBox.xdist += CATMAID.ui.diffX;
             var xdist_world = this.toWorld( cropBox.xdist, this.stack.resolution.x );
             if ( cropBox.xdist > 0 )
             {
@@ -290,7 +288,7 @@ RoiTool.prototype.onmousemove = {
             }
 
             // adjust top and bottom component
-            cropBox.ydist += ui.diffY;
+            cropBox.ydist += CATMAID.ui.diffY;
             var ydist_world = this.toWorld( cropBox.ydist, this.stack.resolution.y );
             if ( cropBox.ydist > 0 )
             {
@@ -311,9 +309,9 @@ RoiTool.prototype.onmousemove = {
 
 RoiTool.prototype.onmouseup = function ( e )
 {
-    ui.releaseEvents();
-    ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
-    ui.removeEvent( "onmouseup", this.onmouseup_bound );
+    CATMAID.ui.releaseEvents();
+    CATMAID.ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
+    CATMAID.ui.removeEvent( "onmouseup", this.onmouseup_bound );
     this.updateControls();
 };
 

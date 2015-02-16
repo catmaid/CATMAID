@@ -6,7 +6,6 @@
  *
  * requirements:
  *	 tools.js
- *	 ui.js
  *	 slider.js
  *   stack.js
  */
@@ -72,19 +71,19 @@ function TracingTool()
 
     var proto_onmousedown = view.onmousedown;
     view.onmousedown = function( e ) {
-      switch ( ui.getMouseButton( e ) )
+      switch ( CATMAID.ui.getMouseButton( e ) )
       {
         case 1:
           tracingLayer.svgOverlay.whenclicked( e );
           break;
         case 2:
           proto_onmousedown( e );
-          ui.registerEvent( "onmousemove", updateStatusBar );
-          ui.registerEvent( "onmouseup",
+          CATMAID.ui.registerEvent( "onmousemove", updateStatusBar );
+          CATMAID.ui.registerEvent( "onmouseup",
             function onmouseup (e) {
-              ui.releaseEvents();
-              ui.removeEvent( "onmousemove", updateStatusBar );
-              ui.removeEvent( "onmouseup", onmouseup );
+              CATMAID.ui.releaseEvents();
+              CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
+              CATMAID.ui.removeEvent( "onmouseup", onmouseup );
               // Recreate nodes by feching them from the database for the new field of view
               tracingLayer.svgOverlay.updateNodes();
             });
@@ -220,7 +219,7 @@ function TracingTool()
 
 
   var updateStatusBar = function( e ) {
-    var m = ui.getMouse(e, tracingLayer.svgOverlay.view, true);
+    var m = CATMAID.ui.getMouse(e, tracingLayer.svgOverlay.view, true);
     var offX, offY, pos_x, pos_y;
     if (m) {
       offX = m.offsetX;

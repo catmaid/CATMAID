@@ -1,58 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-/* It's very easy to accidentally leave in a console.log if you're
- * working with Firebug, but this will break CATMAID for the majority
- * of browsers.  If window.console isn't defined, create a noop
- * version of console.log: */
-
-if (!window.console) {
-  window.console = {};
-  window.console.log = function() {};
-}
-
-// Attach a general error handler
-window.onerror = function(msg, url, lineno, colno, err)
-{
-  var info = 'An error occured in CATMAID and the current action can\'t be ' +
-      'completed. You can try to reload the widget or tool you just used.';
-  var detail = 'Error: ' + msg + ' URL: ' + url + ' Line: ' + lineno +
-      ' Column: ' + colno + ' Stacktrace: ' + (err ? err.stack : 'N/A');
-
-  // Log the error detail to the console
-  console.log(detail);
-
-  // Log the error in the backend, bypass the request queue and make a direct
-  // AJAX call through jQuery.
-  $.ajax({
-    'url': django_url + 'log/error',
-    'type': 'POST',
-    'data': {
-      'msg': detail,
-    }
-  });
-
-  // Log the error object, if available
-  if (err) {
-    console.log('Error object:');
-    console.log(err);
-  } else {
-    console.log('No error object was provided');
-  }
-
-  // Use alert() to inform the user, if the error function isn't available for
-  // some reason
-  if (CATMAID && CATMAID.error) {
-    CATMAID.error(info, detail);
-  } else {
-    alert(info + ' Detail: ' + detail);
-  }
-
-  // Return true to indicate the exception is handled and doesn't need to be
-  // shown to the user.
-  return true;
-};
-
 var global_bottom = 29;
 var statusBar; //!< global statusBar
 var slider_trace_z;
@@ -63,7 +11,6 @@ var input_fontsize; //!< fontsize input
 var input_fontcolourred; //!< fontcolour red input
 var input_fontcolourgreen; //!< fontcolour green input
 var input_fontcolourblue; //!< fontcolour blue input
-var ui;
 var requestQueue;
 var project;
 var project_view;
@@ -133,7 +80,7 @@ function countProperties(obj) {
  */
 
 function login_oninputreturn(e) {
-  if (ui.getKey(e) == 13) {
+  if (CATMAID.ui.getKey(e) == 13) {
     login(document.getElementById("account").value, document.getElementById("password").value);
     return false;
   } else
@@ -159,7 +106,7 @@ function login(
 	};
 	if ( msg_timeout ) window.clearTimeout( msg_timeout );
 	
-	ui.catchEvents( "wait" );
+	CATMAID.ui.catchEvents( "wait" );
 	if ( account || password ) {
 		// Attempt to login.
 		requestQueue.register(
@@ -253,7 +200,7 @@ function handle_login(status, text, xml, completionCallback) {
 function logout() {
   if (msg_timeout) window.clearTimeout(msg_timeout);
 
-  ui.catchEvents("wait");
+  CATMAID.ui.catchEvents("wait");
   requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
 
   return;
@@ -393,7 +340,7 @@ function handle_updateProjects(status, text, xml) {
 			project = undefined;
 		}
 	}
-	ui.releaseEvents();
+	CATMAID.ui.releaseEvents();
 	return;
 }
 
@@ -543,7 +490,7 @@ function openProjectStack( pid, sid, completionCallback, stackConstructor )
 		project.destroy();
 	}
 
-	ui.catchEvents( "wait" );
+	CATMAID.ui.catchEvents( "wait" );
 	requestQueue.register(
 		django_url + pid + '/stack/' + sid + '/info',
 		'GET',
@@ -733,7 +680,7 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 			});
 		}
 	}
-	ui.releaseEvents();
+	CATMAID.ui.releaseEvents();
 	return stack;
 }
 
@@ -1017,8 +964,8 @@ function handle_load_dataview(status, text, xml) {
 function global_resize( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
-	var height = Math.max( 0, ui.getFrameHeight() - top - global_bottom );
-	var width = ui.getFrameWidth();
+	var height = Math.max( 0, CATMAID.ui.getFrameHeight() - top - global_bottom );
+	var width = CATMAID.ui.getFrameWidth();
 	
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
@@ -1126,8 +1073,6 @@ var realInit = function()
 	statusBar = new Console();
 	document.body.appendChild( statusBar.getView() );
 	
-	ui = new UI();
-	
 	input_fontsize = document.getElementById( "fontsize" );
 	
 	a_url = document.getElementById( "a_url" );
@@ -1204,10 +1149,10 @@ var realInit = function()
 	input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
 	document.getElementById( "input_fontcolourblue" ).appendChild( input_fontcolourblue.getView() );
 	
-	ui.registerEvent( "onresize", global_resize );
+	CATMAID.ui.registerEvent( "onresize", global_resize );
 	
 	rootWindow = new CMWRootNode();
-	ui.registerEvent( "onresize", resize );
+	CATMAID.ui.registerEvent( "onresize", resize );
 
   // change global bottom bar height, hide the copyright notice
   // and move the statusBar
@@ -1224,8 +1169,8 @@ var realInit = function()
 var resize = function( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
-	var height = Math.max( 0, ui.getFrameHeight() - top - global_bottom );
-	var width = ui.getFrameWidth();
+	var height = Math.max( 0, CATMAID.ui.getFrameHeight() - top - global_bottom );
+	var width = CATMAID.ui.getFrameWidth();
 	
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
@@ -1234,7 +1179,7 @@ var resize = function( e )
 	
 	rootFrame = rootWindow.getFrame();
 	rootFrame.style.top = top + "px";
-	rootFrame.style.width = UI.getFrameWidth() + "px";
+	rootFrame.style.width = CATMAID.UI.getFrameWidth() + "px";
 	rootFrame.style.height = height + "px";
 	
 	rootWindow.redraw();

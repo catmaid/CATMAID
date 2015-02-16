@@ -4,7 +4,6 @@
  *
  * requirements:
  *	 tools.js
- *	 ui.js
  *	 slider.js
  */
 
@@ -716,7 +715,6 @@ function Stack(
 
 	// initialize
 	var self = this;
-	if ( typeof ui == "undefined" ) ui = new UI();
 
 	self.id = id;
 

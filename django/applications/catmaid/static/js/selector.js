@@ -3,7 +3,6 @@
  *
  * requirements:
  *	 tools.js
- *	 ui.js
  *	 slider.js
  *   stack.js
  */
@@ -24,8 +23,6 @@ function Selector()
 	var img_path = STATIC_URL_JS + "images/svg-cursor-light-30px.png";
 	var img_width = 30;
 	var img_height = 30;
-
-	if ( !ui ) ui = new UI();
 
 	//! mouse catcher
 	var mouseCatcher = document.createElement( "div" );
@@ -50,7 +47,7 @@ function Selector()
 		{
 			var xp;
 			var yp;
-			var m = ui.getMouse( e, stack.getView() );
+			var m = CATMAID.ui.getMouse( e, stack.getView() );
 			if ( m )
 			{
 				var mouseStackX = stack.x + ( m.offsetX - stack.viewWidth / 2 ) / stack.scale;
@@ -85,21 +82,24 @@ function Selector()
 		},
 		move : function( e )
 		{
-			stack.moveToPixel( stack.z, stack.y - ui.diffY / stack.scale, stack.x - ui.diffX / stack.scale, stack.s );
+			stack.moveToPixel( stack.z,
+                               stack.y - CATMAID.ui.diffY / stack.scale,
+                               stack.x - CATMAID.ui.diffX / stack.scale,
+                               stack.s );
 			return false;
 		}
 	};
 	
 	var onmouseup = function( e )
 	{
-		switch ( ui.getMouseButton( e ) )
+		switch ( CATMAID.ui.getMouseButton( e ) )
 		{
 		case 1:
 			break;
 		case 2:
-			ui.releaseEvents();
-			ui.removeEvent( "onmousemove", onmousemove.move );
-			ui.removeEvent( "onmouseup", onmouseup );
+			CATMAID.ui.releaseEvents();
+			CATMAID.ui.removeEvent( "onmousemove", onmousemove.move );
+			CATMAID.ui.removeEvent( "onmouseup", onmouseup );
 			break;
 		case 3:
 			break;
@@ -109,17 +109,17 @@ function Selector()
 	
 	var onmousedown = function( e )
 	{
-		switch ( ui.getMouseButton( e ) )
+		switch ( CATMAID.ui.getMouseButton( e ) )
 		{
 		case 1:
 			// select something ...
 			break;
 		case 2:			
-			ui.registerEvent( "onmousemove", onmousemove.move );
-			ui.registerEvent( "onmouseup", onmouseup );
-			ui.catchEvents( "move" );
-			ui.onmousedown( e );
-			ui.catchFocus();
+			CATMAID.ui.registerEvent( "onmousemove", onmousemove.move );
+			CATMAID.ui.registerEvent( "onmouseup", onmouseup );
+			CATMAID.ui.catchEvents( "move" );
+			CATMAID.ui.onmousedown( e );
+			CATMAID.ui.catchFocus();
 			break;
 		case 3:
 			break;
@@ -131,8 +131,8 @@ function Selector()
 	{
 		var xp = stack.x;
 		var yp = stack.y;
-		var m = ui.getMouse( e, stack.getView() );
-		var w = ui.getMouseWheel( e );
+		var m = CATMAID.ui.getMouse( e, stack.getView() );
+		var w = CATMAID.ui.getMouseWheel( e );
 		if ( m )
 		{
 			xp = m.offsetX - stack.viewWidth / 2;

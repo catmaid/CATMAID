@@ -1007,92 +1007,95 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
   if (!this.nodes.hasOwnProperty(toid)) return;
   var self = this;
   // Get neuron name and id of the to-skeleton
-  self.submit(
-    django_url + project.id + '/treenode/info',
-    {treenode_id: toid},
-    function(json) {
-      var from_model = SkeletonAnnotations.sourceView.createModel();
-      var to_skid = json['skeleton_id'];
-      // Make sure the user has permissions to edit both the from and the to
-      // skeleton.
-      self.executeIfSkeletonEditable(from_model.id, function() {
-        self.executeIfSkeletonEditable(to_skid, function() {
-          // The function used to instruct the backend to do the merge
-          var merge = function(annotation_set) {
-            // The call to join will reroot the target skeleton at the shift-clicked treenode
-            self.submit(
-              django_url + project.id + '/skeleton/join',
-              {
-                from_id: fromid,
-                to_id: toid,
-                annotation_set: JSON.stringify(annotation_set),
-              },
-              function (json) {
-                self.updateNodes(function() {
-                  self.selectNode(toid);
-                });
-                // Trigger join, delete and change events
-                CATMAID.neuronController.trigger(
-                    CATMAID.neuronController.EVENT_SKELETONS_JOINED, to_skid, from_model.id);
-                CATMAID.neuronController.trigger(
-                    CATMAID.neuronController.EVENT_SKELETON_DELETED, to_skid);
-                CATMAID.neuronController.trigger(
-                    CATMAID.neuronController.EVENT_SKELETON_CHANGED, from_model.id);
-              },
-              true); // block UI
-          };
-
-          // A method to use when the to-skeleton has multiple nodes
-          var merge_multiple_nodes = function() {
-            var to_color = new THREE.Color().setRGB(1, 0, 1);
-            var to_model = new SelectionTable.prototype.SkeletonModel(
-                to_skid, json['neuron_name'], to_color);
-            var dialog = new SplitMergeDialog(from_model, to_model);
-            dialog.onOK = function() {
-              merge(dialog.get_combined_annotation_set());
+  this.promiseNodes(this.nodes[fromid], this.nodes[toid]).then(function(nids) {
+    var fromid = nids[0], toid=nids[1];
+    self.submit(
+      django_url + project.id + '/treenode/info',
+      {treenode_id: toid},
+      function(json) {
+        var from_model = SkeletonAnnotations.sourceView.createModel();
+        var to_skid = json['skeleton_id'];
+        // Make sure the user has permissions to edit both the from and the to
+        // skeleton.
+        self.executeIfSkeletonEditable(from_model.id, function() {
+          self.executeIfSkeletonEditable(to_skid, function() {
+            // The function used to instruct the backend to do the merge
+            var merge = function(annotation_set) {
+              // The call to join will reroot the target skeleton at the shift-clicked treenode
+              self.submit(
+                django_url + project.id + '/skeleton/join',
+                {
+                  from_id: fromid,
+                  to_id: toid,
+                  annotation_set: JSON.stringify(annotation_set),
+                },
+                function (json) {
+                  self.updateNodes(function() {
+                    self.selectNode(toid);
+                  });
+                  // Trigger join, delete and change events
+                  CATMAID.neuronController.trigger(
+                      CATMAID.neuronController.EVENT_SKELETONS_JOINED, to_skid, from_model.id);
+                  CATMAID.neuronController.trigger(
+                      CATMAID.neuronController.EVENT_SKELETON_DELETED, to_skid);
+                  CATMAID.neuronController.trigger(
+                      CATMAID.neuronController.EVENT_SKELETON_CHANGED, from_model.id);
+                },
+                true); // block UI
             };
-            // Extend the display with the newly created line
-            var extension = {};
-            var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
-                c = self.nodes[toid];
-            extension[from_model.id] = [
-                new THREE.Vector3(self.pix2physX(p.z, p.y, p.x),
-                                  self.pix2physY(p.z, p.y, p.x),
-                                  self.pix2physZ(p.z, p.y, p.x)),
-                new THREE.Vector3(self.pix2physX(c.z, c.y, c.x),
-                                  self.pix2physY(c.z, c.y, c.x),
-                                  self.pix2physZ(c.z, c.y, c.x))
-            ];
-            dialog.show(extension);
-          };
 
-          // A method to use when the to-skeleton has only a single node
-          var merge_single_node = function() {
-            /* Retrieve annotations for the to-skeleton and show th dialog if
-             * there are some. Otherwise merge the single not without showing
-             * the dialog.
+            // A method to use when the to-skeleton has multiple nodes
+            var merge_multiple_nodes = function() {
+              var to_color = new THREE.Color().setRGB(1, 0, 1);
+              var to_model = new SelectionTable.prototype.SkeletonModel(
+                  to_skid, json['neuron_name'], to_color);
+              var dialog = new SplitMergeDialog(from_model, to_model);
+              dialog.onOK = function() {
+                merge(dialog.get_combined_annotation_set());
+              };
+              // Extend the display with the newly created line
+              var extension = {};
+              var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
+                  c = self.nodes[toid];
+              extension[from_model.id] = [
+                  new THREE.Vector3(self.pix2physX(p.z, p.y, p.x),
+                                    self.pix2physY(p.z, p.y, p.x),
+                                    self.pix2physZ(p.z, p.y, p.x)),
+                  new THREE.Vector3(self.pix2physX(c.z, c.y, c.x),
+                                    self.pix2physY(c.z, c.y, c.x),
+                                    self.pix2physZ(c.z, c.y, c.x))
+              ];
+              dialog.show(extension);
+            };
+
+            // A method to use when the to-skeleton has only a single node
+            var merge_single_node = function() {
+              /* Retrieve annotations for the to-skeleton and show th dialog if
+               * there are some. Otherwise merge the single not without showing
+               * the dialog.
+               */
+              NeuronAnnotations.retrieve_annotations_for_skeleton(to_skid,
+                  function(annotations) {
+                    if (annotations.length > 0) {
+                      merge_multiple_nodes();
+                    } else {
+                      NeuronAnnotations.retrieve_annotations_for_skeleton(
+                          from_model.id, function(annotations) {
+                              merge(annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
+                          });
+                    }
+                  });
+            };
+
+            /* If the to-node contains more than one node, show the dialog.
+             * Otherwise, check if the to-node contains annotations. If so, show
+             * the dialog. Otherwise, merge it right away and keep the
+             * from-annotations.
              */
-            NeuronAnnotations.retrieve_annotations_for_skeleton(to_skid,
-                function(annotations) {
-                  if (annotations.length > 0) {
-                    merge_multiple_nodes();
-                  } else {
-                    NeuronAnnotations.retrieve_annotations_for_skeleton(
-                        from_model.id, function(annotations) {
-                            merge(annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
-                        });
-                  }
-                });
-          };
-
-          /* If the to-node contains more than one node, show the dialog.
-           * Otherwise, check if the to-node contains annotations. If so, show
-           * the dialog. Otherwise, merge it right away and keep the
-           * from-annotations.
-           */
-          self.executeDependentOnNodeCount(toid, merge_single_node,
-              merge_multiple_nodes);
-        });
+            self.executeDependentOnNodeCount(toid, merge_single_node,
+                merge_multiple_nodes);
+          });
+      });
     });
   });
 };

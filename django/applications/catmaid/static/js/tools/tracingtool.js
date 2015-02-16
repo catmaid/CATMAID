@@ -477,9 +477,10 @@ function TracingTool()
             function (radius) {
               if (typeof radius === 'undefined') return;
 
+              var respectVirtualNodes = true;
               var node = tracingLayer.svgOverlay.nodes[atnID];
               var selectedIDs = tracingLayer.svgOverlay.findAllNodesWithinRadius(
-                  node.x, node.y, node.z, radius);
+                  node.x, node.y, node.z, radius, respectVirtualNodes);
               selectedIDs = selectedIDs.map(function (nodeID) {
                   return tracingLayer.svgOverlay.nodes[nodeID].skeleton_id;
               }).filter(function (s) { return !isNaN(s); });
@@ -599,7 +600,8 @@ function TracingTool()
       if (!mayView())
         return false;
       if (!(e.ctrlKey || e.metaKey)) {
-        tracingLayer.svgOverlay.activateNearestNode();
+        var respectVirtualNodes = true;
+        tracingLayer.svgOverlay.activateNearestNode(respectVirtualNodes);
         return true;
       } else {
         return false;

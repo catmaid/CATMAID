@@ -711,10 +711,14 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
   }
 };
 
-/** Activate the node nearest to the mouse. */
-SkeletonAnnotations.SVGOverlay.prototype.activateNearestNode = function () {
+/**
+ * Activate the node nearest to the mouse. Optionally, virtual nodes can be
+ * respected.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.activateNearestNode = function (respectVirtualNodes) {
+
   var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
-      this.coords.lastY, Number.MAX_VALUE);
+      this.coords.lastY, Number.MAX_VALUE, respectVirtualNodes);
   if (nearestnode) {
     if (Math.abs(nearestnode.z - this.stack.z) < 0.5) {
       this.activateNode(nearestnode);
@@ -726,9 +730,33 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNearestNode = function () {
 };
 
 /**
- * Expects x and y in scaled (!) stack coordinates.
+ * Return a method with the signature function(nodes, nodeId) which returns true
+ * if @nodes contains a field named @nodeId and is a real node. Optionally,
+ * virtual nodes can be respected in this lookup. If this is not requested, the
+ * test is not part of the returned function. Otherwise, the returned function
+ * returns false.
  */
-SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, radius) {
+SkeletonAnnotations.validNodeTest = function(respectVirtualNodes)
+{
+  if (respectVirtualNodes) {
+   return function(nodes, nodeId) {
+      return nodes.hasOwnProperty(nodeId);
+    };
+  } else {
+    return function(nodes, nodeId) {
+      return nodes.hasOwnProperty(nodeId) &&
+        SkeletonAnnotations.isRealNode(nodeId);
+    };
+  }
+};
+
+/**
+ * Expects x and y in scaled (!) stack coordinates. Can be asked to respect
+ * virtual nodes.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (
+    x, y, radius, respectVirtualNodes)
+{
   var xdiff,
       ydiff,
       distsq,
@@ -737,8 +765,11 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, 
       node,
       nodeid;
 
+  // Add an virual node check, if wanted
+  var nodeIsValid = SkeletonAnnotations.validNodeTest(respectVirtualNodes);
+
   for (nodeid in this.nodes) {
-    if (this.nodes.hasOwnProperty(nodeid)) {
+    if (nodeIsValid(this.nodes, nodeid)) {
       node = this.nodes[nodeid];
       xdiff = x - node.x;
       ydiff = y - node.y;
@@ -754,11 +785,20 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (x, y, 
   return nearestnode;
 };
 
-/** Return all node IDs in the overlay within a radius of the given point. */
-SkeletonAnnotations.SVGOverlay.prototype.findAllNodesWithinRadius = function (x, y, z, radius) {
+/**
+ * Return all node IDs in the overlay within a radius of the given point.
+ * Optionally, virtual nodes can be respceted.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.findAllNodesWithinRadius = function (
+    x, y, z, radius, respectVirtualNodes)
+{
   var xdiff, ydiff, zdiff, distsq, radiussq = radius * radius, node, nodeid;
+
+  // respect virual nodes, if wanted
+  var nodeIsValid = SkeletonAnnotations.validNodeTest(respectVirtualNodes);
+
   return Object.keys(this.nodes).filter((function (nodeid) {
-    if (this.nodes.hasOwnProperty(nodeid)) {
+    if (nodeIsValid(this.nodes, nodeid)) {
       node = this.nodes[nodeid];
       xdiff = x - this.pix2physX(node.x);
       ydiff = y - this.pix2physY(node.y);
@@ -772,9 +812,13 @@ SkeletonAnnotations.SVGOverlay.prototype.findAllNodesWithinRadius = function (x,
   }).bind(this));
 };
 
-/** Find the point along the edge from node to node.parent nearest (x, y, z),
- *  optionally exluding a radius around the nodes. */
-SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z, node, exclusion) {
+/**
+ * Find the point along the edge from node to node.parent nearest (x, y, z),
+ * optionally exluding a radius around the nodes.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (
+    x, y, z, node, exclusion)
+{
   var a, b, p, ab, ap, r, ablen;
 
   exclusion = exclusion || 0;
@@ -803,17 +847,28 @@ SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (x, y, z
   return  {point: a, distsq: p.distanceToSquared(a)};
 };
 
-/** Find the point nearest physical coordinates (x, y, z) nearest the
- *  specified skeleton, including any nodes in additionalNodes. */
-SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (x, y, z, skeleton_id, additionalNodes) {
+/**
+ * Find the point nearest physical coordinates (x, y, z) nearest the specified
+ * skeleton, including any nodes in additionalNodes. Virtual nodes can
+ * optionally be enabled so that these are respected as well.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (
+    x, y, z, skeleton_id, additionalNodes, respectVirtualNodes)
+{
   var nearest = { distsq: Infinity, node: null, point: null };
   var phys_radius = (30.0 / this.stack.scale) * Math.max(this.stack.resolution.x, this.stack.resolution.y);
 
   var self = this;
+  // Allow virtual nodes, if wanted
+  var nodeIsValid = SkeletonAnnotations.validNodeTest(respectVirtualNodes);
+
   var nearestReduction = function (nodes, nearest) {
     return Object.keys(nodes).reduce(function (nearest, nodeId) {
       var node = nodes[nodeId];
-      if (node.skeleton_id === skeleton_id && node.parent !== null) {
+      if (nodeIsValid(nodes, node.id) &&
+          node.skeleton_id === skeleton_id &&
+          node.parent !== null)
+        {
         var tmp = self.pointEdgeDistanceSq(x, y, z, node, phys_radius);
         if (tmp.distsq < nearest.distsq) return {
           distsq: tmp.distsq,
@@ -830,69 +885,91 @@ SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (x,
   return nearest;
 };
 
-/** Insert a node along the edge in the active skeleton nearest the specified
- *  point. Includes the active node (atn), its children, and its parent, even if
- *  they are beyond one section away. */
-SkeletonAnnotations.SVGOverlay.prototype.insertNodeInActiveSkeleton = function (phys_x, phys_y, phys_z, atn) {
+/**
+ * Insert a node along the edge in the active skeleton nearest the specified
+ * point. Includes the active node (atn), its children, and its parent, even if
+ * they are beyond one section away. Can optionally respect virtual nodes.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.insertNodeInActiveSkeleton = function (
+    phys_x, phys_y, phys_z, atn, respectVirtualNodes)
+{
+  var self = this;
+
   var insertNode = (function (additionalNodes) {
-    var insertion = this.findNearestSkeletonPoint(phys_x, phys_y, phys_z, atn.skeleton_id, additionalNodes);
-    if (insertion.node) this.createNode(insertion.node.parent.id, phys_x, phys_y, phys_z,
-      -1, 5, this.phys2pixX(phys_x), this.phys2pixY(phys_y), this.phys2pixZ(phys_z),
-      // Callback after creating the new node to make it the parent of the node it was inserted before
-      function (self, nn) {
-        self.submit(
-          django_url + project.id + '/treenode/' + insertion.node.id + '/parent',
-          {parent_id: nn.id},
-          function(json) {
-            self.updateNodes();
-          });
-      });
+    var insertion = this.findNearestSkeletonPoint(phys_x, phys_y, phys_z,
+        atn.skeleton_id, additionalNodes, respectVirtualNodes);
+    if (insertion.node) {
+
+      // Make sure both the insertion node and its parent exist
+      this.promiseNodes(insertion.node, insertion.node.parent)
+        .then((function(nids) {
+          var isection = nids[0];
+          var isectionParent = nids[1];
+          this.createNode(isectionParent, phys_x, phys_y, phys_z,
+            -1, 5, this.phys2pixX(phys_x), this.phys2pixY(phys_y),
+            this.phys2pixZ(phys_z), function (self, nn) {
+              // Callback after creating the new node to make it the parent of the node
+              // it was inserted before
+              self.submit(
+                django_url + project.id + '/treenode/' + isection + '/parent',
+                {parent_id: nn.id},
+                function(json) {
+                  self.updateNodes();
+                });
+            });
+          }).bind(this));
+    }
   }).bind(this);
 
-  var self = this;
-  this.submit(
-      django_url + project.id + "/node/next_branch_or_end",
-      {tnid: atn.id},
-      function(json) {
-        // See goToNextBranchOrEndNode for JSON schema description.
-        // Construct a list of child nodes of the active node in case they are
-        // not loaded in the overlay nodes.
-        var additionalNodes = json.reduce(function (nodes, branch) {
-          var child = branch[0];
-          nodes[child[0]] = {
-            id: child[0],
-            x: child[1],
-            y: child[2],
-            z: child[3],
-            skeleton_id: atn.skeleton_id,
-            parent: atn
-          };
-          return nodes;
-        }, {});
-        if (atn.parent_id && !self.nodes.hasOwnProperty(atn.parent_id)) {
-          // Need to fetch the parent node first.
-          self.submit(
-              django_url + project.id + "/node/get_location",
-              {tnid: atn.parent_id},
-              function(json) {
-                additionalNodes[atn.id] = {
-                  id: atn.id,
-                  x: atn.x,
-                  y: atn.y,
-                  z: atn.z,
-                  skeleton_id: atn.skeleton_id,
-                  parent: {
-                    id: atn.parent_id,
-                    x: json[1],
-                    y: json[2],
-                    z: json[3],
-                    skeleton_id: atn.skeleton_id,
-                  }
-                };
-                insertNode(additionalNodes);
-              });
-        } else insertNode(additionalNodes); // No need to fetch the parent.
-      });
+  atn.promise().then(function(atnId) {
+    self.submit(
+        django_url + project.id + "/node/next_branch_or_end",
+        {tnid: atnId},
+        function(json) {
+          // See goToNextBranchOrEndNode for JSON schema description.
+          // Construct a list of child nodes of the active node in case they are
+          // not loaded in the overlay nodes.
+          var additionalNodes = json.reduce(function (nodes, branch) {
+            var child = branch[0];
+            nodes[child[0]] = {
+              id: child[0],
+              x: child[1],
+              y: child[2],
+              z: child[3],
+              skeleton_id: atn.skeleton_id,
+              parent: atn
+            };
+            return nodes;
+          }, {});
+          if (atn.parent_id && (SkeletonAnnotations.isRealNode(atn.parent_id) ||
+                                !self.nodes.hasOwnProperty(atn.parent_id)))
+          {
+            self.promiseNode(self.nodes[atn.parent_id]).then(function(parentId) {
+              // Need to fetch the parent node first.
+              self.submit(
+                  django_url + project.id + "/node/get_location",
+                  {tnid: parentId},
+                  function(json) {
+                    additionalNodes[atn.id] = {
+                      id: atn.id,
+                      x: atn.x,
+                      y: atn.y,
+                      z: atn.z,
+                      skeleton_id: atn.skeleton_id,
+                      parent: {
+                        id: atn.parent_id,
+                        x: json[1],
+                        y: json[2],
+                        z: json[3],
+                        skeleton_id: atn.skeleton_id,
+                      }
+                    };
+                    insertNode(additionalNodes);
+                  });
+            });
+          } else insertNode(additionalNodes); // No need to fetch the parent.
+        });
+  });
 };
 
 /** Remove and hide all node labels. */
@@ -1700,7 +1777,8 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   if (e.ctrlKey || e.metaKey) {
     if (e.altKey && null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
       // Insert a treenode along an edge on the active skeleton
-      this.insertNodeInActiveSkeleton(phys_x, phys_y, phys_z, atn);
+      var respectVirtualNodes = true;
+      this.insertNodeInActiveSkeleton(phys_x, phys_y, phys_z, atn, respectVirtualNodes);
       e.stopPropagation();
     } else {
       // ctrl-click deselects the current active node

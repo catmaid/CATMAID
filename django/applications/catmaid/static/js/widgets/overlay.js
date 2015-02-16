@@ -23,7 +23,9 @@
 
 "use strict";
 
-/** Contains the current state of skeleton annotations. */
+/**
+ * Contains the current state of skeleton annotations.
+ */
 var SkeletonAnnotations = {
   atn_fillcolor : "rgb(0, 255, 0)",
 
@@ -136,11 +138,16 @@ SkeletonAnnotations.atn.promise = function()
   return new AtnPromise(this);
 };
 
-
+/**
+ * Map a stack to a displayed overlay.
+ */
 SkeletonAnnotations.getSVGOverlay = function(stack) {
   return this.SVGOverlay.prototype._instances[stack];
 };
 
+/**
+ * Map a D3 paper instance to an overlay.
+ */
 SkeletonAnnotations.getSVGOverlayByPaper = function(paper) {
   var instances = this.SVGOverlay.prototype._instances;
   for (var stackID in instances) {
@@ -154,8 +161,11 @@ SkeletonAnnotations.getSVGOverlayByPaper = function(paper) {
   return null;
 };
 
-/** Select a node in any of the existing SVGOverlay instances, by its ID and its skeletonID. If it is a connector node, it expects a null skeletonID.
- * WARNING Will only select the node in the first SVGOverlay found to contain it. */
+/**
+ * Select a node in any of the existing SVGOverlay instances, by its ID and its
+ * skeletonID. If it is a connector node, it expects a null skeletonID. WARNING:
+ * Will only select the node in the first SVGOverlay found to contain it.
+ */
 SkeletonAnnotations.staticSelectNode = function(nodeID) {
   var instances = this.SVGOverlay.prototype._instances;
   for (var stack in instances) {
@@ -166,7 +176,10 @@ SkeletonAnnotations.staticSelectNode = function(nodeID) {
   CATMAID.statusBar.replaceLast("Could not find node #" + nodeID);
 };
 
-/** Move to a location, ensuring that any edits to node coordinates are pushed to the database. After the move, the fn is invoked. */
+/**
+ * Move to a location, ensuring that any edits to node coordinates are pushed
+ * to the database. After the move, the fn is invoked.
+ */
 SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
   var instances = SkeletonAnnotations.SVGOverlay.prototype._instances;
   for (var stack in instances) {
@@ -176,6 +189,10 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
   }
 };
 
+/**
+ * Move to a location, ensuring that any edits to node coordinates are pushed to
+ * the database. After the move, the given node is selected and fn is invoked.
+ */
 SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
   var instances = SkeletonAnnotations.SVGOverlay.prototype._instances;
   for (var stack in instances) {
@@ -185,18 +202,31 @@ SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
   }
 };
 
+/**
+ * Get the ID of the active node or null if there is no active node.
+ */
 SkeletonAnnotations.getActiveNodeId = function() {
   return this.atn.id;
 };
 
+/**
+ * Get the ID of the active skeleton or null if there is no active skeleton.
+ */
 SkeletonAnnotations.getActiveSkeletonId = function() {
   return this.atn.skeleton_id;
 };
 
+/**
+ * Get the type of the active node or null if there is no active node.
+ */
 SkeletonAnnotations.getActiveNodeType = function() {
   return this.atn.type;
 };
 
+
+/**
+ * Get the fill color for an active node.
+ */
 SkeletonAnnotations.getActiveNodeColor = function() {
   return this.atn_fillcolor;
 };
@@ -224,14 +254,25 @@ SkeletonAnnotations.getActiveNodePositionW = function() {
           'z': stack.stackToProjectZ(this.atn.z, this.atn.y, this.atn.x)};
 };
 
+/**
+ * Get A THREE.Vector3 representation of the active treenode's location.
+ */
 SkeletonAnnotations.getActiveNodeVector3 = function() {
   return new THREE.Vector3(this.atn.x, this.atn.y, this.atn.z);
 };
 
+/**
+ * Get the ID of the stack the active node was selected from or null if there is
+ * no active node.
+ */
 SkeletonAnnotations.getActiveStackId = function() {
   return this.atn.stack_id;
 };
 
+/**
+ * Export the active skeleton as SWC. The data is generated on the server and
+ * the client is asked to download it.
+ */
 SkeletonAnnotations.exportSWC = function() {
   if (!this.atn.id || !this.atn.skeleton_id) {
     alert('Need to activate a treenode before exporting to SWC!');
@@ -239,14 +280,22 @@ SkeletonAnnotations.exportSWC = function() {
   }
   var skeleton_id = this.atn.skeleton_id;
 
-  requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/swc', "POST", {}, function (status, text, xml) {
-    if (status === 200) {
-      var blob = new Blob([text], {type: "text/plain"});
-      saveAs(blob, skeleton_id + ".swc");
-    }
-  });
+  requestQueue.register(
+    django_url + project.id + '/skeleton/' + skeleton_id + '/swc',
+    "POST",
+    {},
+    function (status, text, xml) {
+      if (status === 200) {
+        var blob = new Blob([text], {type: "text/plain"});
+        saveAs(blob, skeleton_id + ".swc");
+      }
+    });
 };
 
+/**
+ * Set tracing mode to node or synapse mode. This determines what is created if
+ * the user clicks on the canvas.
+ */
 SkeletonAnnotations.setTracingMode = function (mode) {
   // toggles the button correctly
   // might update the mouse pointer
@@ -265,6 +314,10 @@ SkeletonAnnotations.setTracingMode = function (mode) {
   }
 };
 
+/**
+ * Set the text in the small bar next to the close button of a stack to the
+ * name of the skeleton as it is given by the nameservice.
+ */
 SkeletonAnnotations.setNeuronNameInTopbar = function(stackID, skeletonID) {
   if (!skeletonID) return;
   var label = $('#neuronName' + stackID);
@@ -279,6 +332,9 @@ SkeletonAnnotations.setNeuronNameInTopbar = function(stackID, skeletonID) {
     function () { label.text(NeuronNameService.getInstance().getName(skeletonID)); });
 };
 
+/**
+ * Clear the small bar next to the close button of the stack window.
+ */
 SkeletonAnnotations.clearTopbar = function(stackID) {
   var label = $('#neuronName' + stackID);
   NeuronNameService.getInstance().unregister(label.data());
@@ -296,7 +352,9 @@ SkeletonAnnotations.isRealNode = function(node_id)
 };
 
 
-/** The constructor for SVGOverlay. */
+/**
+ * The constructor for SVGOverlay.
+ */
 SkeletonAnnotations.SVGOverlay = function(stack) {
   this.stack = stack;
 
@@ -515,6 +573,9 @@ SkeletonAnnotations.SVGOverlay.prototype.executeDependentOnNodeCount =
       });
 };
 
+/**
+ * Execute the function fn if the current user has permissions to edit it.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
     skeleton_id, fn) {
   var url = django_url + project.id + '/skeleton/' + skeleton_id +
@@ -533,6 +594,10 @@ SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
      }));
 };
 
+/**
+ * Ask the user for a new neuron name for the given skeleton and let the name
+ * service write it to the skeleton.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
   if (!skeletonID) return;
   var self = this;
@@ -542,18 +607,26 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
       function(json) {
           var new_name = prompt("Change neuron name", json['neuronname']);
           if (!new_name) return;
-          NeuronNameService.getInstance().renameNeuron(json['neuronid'], [skeletonID],
-              new_name);
+          NeuronNameService.getInstance().renameNeuron(
+              json['neuronid'], [skeletonID], new_name);
       });
 };
 
-/** Register of stackID vs instances. */
+/**
+ * Register of stackID vs instances.
+ */
 SkeletonAnnotations.SVGOverlay.prototype._instances = {};
 
+/**
+ * Register a new stack with this instance.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.register = function (stack) {
   this._instances[stack.id] = this;
 };
 
+/**
+ * Unregister this overlay from all stacks.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.unregister = function () {
   for (var stack in this._instances) {
     if (this._instances.hasOwnProperty(stack)) {
@@ -564,13 +637,18 @@ SkeletonAnnotations.SVGOverlay.prototype.unregister = function () {
   }
 };
 
-/** The original list of nodes; beware the instance of the list will change,
- * the contents of any one instance may change,
- * and the data of the nodes will change as they are recycled. */
+/**
+ * The original list of nodes; beware the instance of the list will change, the
+ * contents of any one instance may change, and the data of the nodes will
+ * change as they are recycled.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.getNodes = function() {
   return this.nodes;
 };
 
+/**
+ * The stack this overlay is registered with.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.getStack = function() {
   return this.stack;
 };
@@ -595,9 +673,11 @@ SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack,
   };
 };
 
-/** This returns true if focus had to be switched; typically if
-    the focus had to be switched, you should return from any event
-    handling, otherwise all kinds of surprising bugs happen...  */
+/**
+ * This returns true if focus had to be switched; typically if the focus had to
+ * be switched, you should return from any event handling, otherwise all kinds
+ * of surprising bugs happen...
+ */
 SkeletonAnnotations.SVGOverlay.prototype.ensureFocused = function() {
   var win = this.stack.getWindow();
   if (win.hasFocus()) {
@@ -608,6 +688,9 @@ SkeletonAnnotations.SVGOverlay.prototype.ensureFocused = function() {
   }
 };
 
+/**
+ * Unregister this layer and destroy all UI elements and event handlers.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
   this.unregister();
   // Show warning in case of pending request
@@ -632,8 +715,8 @@ SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
 };
 
 /**
- * Activates the given node id if it exists
-  in the current retrieved set of nodes.
+ * Activates the given node id if it exists in the current retrieved set of
+ * nodes.
  */
 SkeletonAnnotations.SVGOverlay.prototype.selectNode = function(id) {
   var node = this.nodes[id];
@@ -664,6 +747,9 @@ SkeletonAnnotations.SVGOverlay.prototype.findConnectors = function(node_id) {
   return [pre, post];
 };
 
+/**
+ * Make sure all currently visible nodes have the correct color.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.recolorAllNodes = function () {
   // Assumes that atn and active_skeleton_id are correct:
   for (var nodeID in this.nodes) {
@@ -673,6 +759,11 @@ SkeletonAnnotations.SVGOverlay.prototype.recolorAllNodes = function () {
   }
 };
 
+/**
+ * Select or deselect (if node is falsy) a node. This involves setting the top
+ * bar and the status bar as well as updating SkeletonAnnotations.atn. Can
+ * handle virtual nodes.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
   var atn = SkeletonAnnotations.atn,
       last_skeleton_id = atn.skeleton_id;
@@ -704,7 +795,8 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     SkeletonAnnotations.clearTopbar(this.stack.getId());
   }
 
-  // (de)highlight in SkeletonSource instances if any if different from the last activated skeleton
+  // (de)highlight in SkeletonSource instances if any if different from the last
+  // activated skeleton
   if (last_skeleton_id !== SkeletonAnnotations.getActiveSkeletonId()) {
     CATMAID.skeletonListSources.highlight(SkeletonAnnotations.sourceView,
         SkeletonAnnotations.getActiveSkeletonId());
@@ -723,7 +815,8 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNearestNode = function (respect
     if (Math.abs(nearestnode.z - this.stack.z) < 0.5) {
       this.activateNode(nearestnode);
     } else {
-      CATMAID.statusBar.replaceLast("No nodes were visible in the current section - can't activate the nearest");
+      CATMAID.statusBar.replaceLast("No nodes were visible in the current " +
+          "section - can't activate the nearest");
     }
   }
   return nearestnode;
@@ -856,7 +949,8 @@ SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (
     x, y, z, skeleton_id, additionalNodes, respectVirtualNodes)
 {
   var nearest = { distsq: Infinity, node: null, point: null };
-  var phys_radius = (30.0 / this.stack.scale) * Math.max(this.stack.resolution.x, this.stack.resolution.y);
+  var phys_radius = (30.0 / this.stack.scale) *
+    Math.max(this.stack.resolution.x, this.stack.resolution.y);
 
   var self = this;
   // Allow virtual nodes, if wanted
@@ -972,15 +1066,18 @@ SkeletonAnnotations.SVGOverlay.prototype.insertNodeInActiveSkeleton = function (
   });
 };
 
-/** Remove and hide all node labels. */
+/**
+ * Remove and hide all node labels.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.hideLabels = function() {
   document.getElementById( "trace_button_togglelabels" ).className = "button";
   this.removeLabels();
   this.show_labels = false;
 };
 
-/** Remove all node labels in the view.
- *  Empty the node labels array. */
+/**
+ * Remove all node labels in the view.  Empty the node labels array.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.removeLabels = function() {
   for (var labid in this.labels) {
     if (this.labels.hasOwnProperty(labid)) {
@@ -990,10 +1087,16 @@ SkeletonAnnotations.SVGOverlay.prototype.removeLabels = function() {
   this.labels = {};
 };
 
+/**
+ * Return if labels are displayed.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.getLabelStatus = function() {
   return this.show_labels;
 };
 
+/**
+ * Show all labels.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.showLabels = function() {
   this.show_labels = true;
   this.updateNodes(function() {
@@ -1001,6 +1104,9 @@ SkeletonAnnotations.SVGOverlay.prototype.showLabels = function() {
   });
 };
 
+/**
+ * Hide labels if they are shown and show them if they are hidden.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.toggleLabels = function() {
   if (this.getLabelStatus()) {
     this.hideLabels();
@@ -1009,6 +1115,11 @@ SkeletonAnnotations.SVGOverlay.prototype.toggleLabels = function() {
   }
 };
 
+/**
+ * Test if the node with the given ID is loaded and display a warning if not.
+ * Test also if the node is root and display a message if so. In both cases,
+ * false is returned. False, otherwise.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.checkLoadedAndIsNotRoot = function(nodeID) {
   if (null === nodeID || !this.nodes.hasOwnProperty(nodeID)) {
     growlAlert("Warning", "Cannot find node with ID " + nodeID);
@@ -1021,6 +1132,11 @@ SkeletonAnnotations.SVGOverlay.prototype.checkLoadedAndIsNotRoot = function(node
   return true;
 };
 
+/**
+ * Reroots the skeleton to the node with the given ID. If the user confirms that
+ * the rerooting should be done, a promise is used to ensure that even virtual
+ * nodes are there.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   if (!confirm("Do you really want to to reroot the skeleton?")) return;

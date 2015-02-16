@@ -434,6 +434,50 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
 };
 
 /**
+ * Creates all given nodes, if they are virtual nodes. Otherwise, it is resolved
+ * immediately.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.promiseNodes = function()
+{
+  var self = this;
+  var args = arguments;
+  return new Promise(function(resolve, reject) {
+    // Resolve immediately, if there are no nodes passed as argument
+    if (0 === args.length) {
+      resolve();
+    }
+
+    // Build a promise chain to resolve one node after the other
+    var nodeIds = [];
+    var promiseChain = self.promiseNode(args[0]);
+
+    // Queue a promise for every
+    for (var i=1; i<args.length; ++i) {
+        var node = args[i];
+        promiseChain = promiseChain.then(
+          function(promisedNid) {
+            // Store result of this promise
+            nodeIds.push(promisedNid);
+            // Create a new promise for the next node
+            return self.promiseNode(node);
+          },
+          function() {
+              // In case of rejection, reject also the multi-node promise
+              reject(Error("Could not fullfil promise of node " + node.id));
+          });
+    }
+
+    // Resolve only if promises for individual nodes resolve
+    promiseChain.then(function(promisedNid) {
+      // Store result of this promise
+      nodeIds.push(promisedNid);
+      // Resolve the multi node promise
+      resolve(nodeIds);
+    });
+  });
+};
+
+/**
  * Execute function fn_real, if the node identified by node_id is a real node
  * (i.e not a virtual node).
  */

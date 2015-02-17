@@ -1198,8 +1198,10 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   });
 };
 
-/** Used to join two skeletons together.
-* Permissions are checked at the server side, returning an error if not allowed. */
+/**
+ * Used to join two skeletons together. Permissions are checked at the server
+ * side, returning an error if not allowed.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, toid) {
   if (fromid === toid) return;
   if (!this.nodes.hasOwnProperty(toid)) return;
@@ -1301,7 +1303,14 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
   });
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, link_type) {
+/**
+ * Asynchronuously, create a link between the nodes @fromid and @toid of type
+ * @link_type. It is expected, that both nodes are existant. All nodes are
+ * updated after this.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid,
+    link_type)
+{
   var self = this;
   this.submit(
       django_url + project.id + '/link/create',
@@ -1314,9 +1323,14 @@ SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, li
        });
 };
 
-/** Create a single connector not linked to any treenode.
-  *  If given a completionCallback function, it is invoked with one argument: the ID of the newly created connector. */
-SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, completionCallback) {
+/**
+ * Create a single connector not linked to any treenode. If given a
+ * completionCallback function, it is invoked with one argument: the ID of the
+ * newly created connector.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (
+    phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, completionCallback)
+{
   var self = this;
   this.submit(
       django_url + project.id + '/connector/create',
@@ -1341,26 +1355,45 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (phys_
  * Create a new postsynaptic treenode from a connector. We create the treenode
  * first, then we create the link from the connector.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
-  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "postsynaptic_to");
+SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (
+    connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+{
+  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
+      confidence, pos_x, pos_y, pos_z, "postsynaptic_to");
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
-  // Check that connectorID doesn't have a presynaptic treenode already
-  // (It is also checked in the server on attempting to create a link. Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
+/**
+ * Create a new treenode that is postsynaptic to the given @connectorID.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (
+    connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+{
+  // Check that connectorID doesn't have a presynaptic treenode already (It is
+  // also checked in the server on attempting to create a link. Here, it is
+  // checked for convenience to avoid creating an isolated treenode for no
+  // reason.)
   var connectorNode = this.nodes[connectorID];
   if (!connectorNode) {
-    alert("Connector #" + connectorID + " is not loaded. Browse to its section and make sure it is selected.");
+    CATMAID.error("Connector #" + connectorID + " is not loaded. Browse to " +
+        "its section and make sure it is selected.");
     return;
   }
   if (Object.keys(connectorNode.pregroup).length > 0) {
     growlAlert("WARNING", "The connector already has a presynaptic node!");
     return;
   }
-  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "presynaptic_to");
+  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
+      confidence, pos_x, pos_y, pos_z, "presynaptic_to");
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, link_type) {
+/**
+ * Create a new treenode and link it immediately to the given connector with the
+ * specified link_type.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (
+    connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y,
+    pos_z, link_type)
+{
   var self = this;
   this.submit(
       django_url + project.id + '/treenode/create',
@@ -1374,11 +1407,13 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (conn
       function (jso) {
         var nid = parseInt(jso.treenode_id);
         // always create a new treenode which is the root of a new skeleton
-        var nn = self.graphics.newNode(nid, null, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
+        var nn = self.graphics.newNode(nid, null, null, radius, pos_x, pos_y,
+            pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
         // add node to nodes list
         self.nodes[nid] = nn;
         nn.createGraphics();
-        // create link : new treenode postsynaptic_to or presynaptic_to deactivated connectorID
+        // create link : new treenode postsynaptic_to or presynaptic_to
+        // deactivated connectorID
         self.createLink(nid, connectorID, link_type);
         // Trigger skeleton change event
         SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
@@ -1386,10 +1421,15 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (conn
       });
 };
 
-/** Caters both to the createInterpolatedNode and createTreenodeLinkInterpolated functions, which are almost identical. */
+/**
+ * Caters both to the createInterpolatedNode and createTreenodeLinkInterpolated
+ * functions, which are almost identical.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () {
-  // Javascript is not multithreaded.
-  // The only pseudo-threadedness occurs in the code execution between the AJAX request and the execution of the callback; that is, no concurrency, but continuations. Therefore altering the queue array is always safe.
+  // Javascript is not multithreaded. The only pseudo-threadedness occurs in
+  // the code execution between the AJAX request and the execution of the
+  // callback; that is, no concurrency, but continuations. Therefore altering
+  // the queue array is always safe.
 
   // Accumulate invocations of the createInterpolatedNode function
   var queue = [];

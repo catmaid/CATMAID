@@ -1822,7 +1822,10 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso)
     var pos = CATMAID.tools.intersectLineWithZPlane(child.x, child.y, child.z,
         parent.x, parent.y, parent.z, z)
 
-    var id = 'vn-' + child.id + '-' + parent.id;
+    // The ID should be different for the the same child and parent in
+    // different Z sections to distinguish virtual nodes on different sections.
+    // Therefore, Z is also part of the ID.
+    var id = 'vn-' + child.id + '-' + parent.id + '-' + z;
     var r = -1;
     var c = 5;
 

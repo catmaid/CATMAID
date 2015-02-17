@@ -1540,8 +1540,13 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
   };
 };
 
-/** Create a node and activate it. */
-SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate) {
+/**
+ * Create a node and activate it. Expectes the parent node to be real or falsy,
+ * i.e. not virtual.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
+   phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate)
+{
   if (!parentID) { parentID = -1; }
 
   // Check if we want the newly create node to be a model of an existing empty neuron
@@ -2005,12 +2010,18 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     // depending on what mode we are in do something else when clicking
     if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
       if (SkeletonAnnotations.TYPE_NODE === atn.type || null === atn.id) {
-        // Create a new treenode,
-        // either root node if atn is null, or child if it is not null
+        // Create a new treenode, either root node if atn is null, or child if
+        // it is not null
         if (null !== atn.id) {
-          CATMAID.statusBar.replaceLast("Created new node as child of node #" + atn.id);
+          // Make sure the parent exists
+          atn.promise().then((function(atnId) {
+            CATMAID.statusBar.replaceLast("Created new node as child of node #" + atn.id);
+            this.createNode(atnId, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+          }).bind(this));
+        } else {
+            // Create root node
+            this.createNode(null, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         }
-        this.createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         e.stopPropagation();
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         // create new treenode (and skeleton) presynaptic to activated connector

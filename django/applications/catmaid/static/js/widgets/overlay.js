@@ -1324,8 +1324,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
              * the dialog. Otherwise, merge it right away and keep the
              * from-annotations.
              */
-            self.executeDependentOnNodeCount(toid, merge_single_node,
-                merge_multiple_nodes);
+            self.executeDependentOnExistence(toid,
+              self.executeDependentOnNodeCount.bind(self, toid, merge_single_node,
+                merge_multiple_nodes),
+              merge_multiple_nodes);
           });
       });
     });
@@ -1525,28 +1527,31 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
 
   // Function to request interpolated nodes
   var requester = function(parent_id, q) {
-    var stack = q.self.getStack();
-    // Creates treenodes from atn to new node in each z section
-    var post = {
-        pid: project.id,
-        x: q.phys_x,
-        y: q.phys_y,
-        z: q.phys_z,
-        resz: stack.resolution.z,
-        stack_translation_z: stack.translation.z,
-        stack_id: project.focusedStack.id
-    };
-    var url;
-    if (q.nearestnode_id) {
-      url = '/skeleton/join_interpolated';
-      post.from_id = parent_id;
-      post.to_id = q.nearestnode_id;
-      post.annotation_set = q.annotation_set;
-    } else {
-      url = '/treenode/create/interpolated';
-      post.parent_id = parent_id;
-    }
-    requestQueue.register(django_url + project.id + url, "POST", post, handler);
+    // Make sure the parent node is not virtual anymore, when called
+    q.self.promiseNode(q.self.nodes[parent_id]).then(function(parent_id) {
+      var stack = q.self.getStack();
+      // Creates treenodes from atn to new node in each z section
+      var post = {
+          pid: project.id,
+          x: q.phys_x,
+          y: q.phys_y,
+          z: q.phys_z,
+          resz: stack.resolution.z,
+          stack_translation_z: stack.translation.z,
+          stack_id: project.focusedStack.id
+      };
+      var url;
+      if (q.nearestnode_id) {
+        url = '/skeleton/join_interpolated';
+        post.from_id = parent_id;
+        post.to_id = q.nearestnode_id;
+        post.annotation_set = q.annotation_set;
+      } else {
+        url = '/treenode/create/interpolated';
+        post.parent_id = parent_id;
+      }
+      requestQueue.register(django_url + project.id + url, "POST", post, handler);
+    });
   };
 
   return function (phys_x, phys_y, phys_z, nearestnode_id, annotation_set) {
@@ -2642,7 +2647,9 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
   var atn = SkeletonAnnotations.atn;
   if (this.coords.lastX !== null && this.coords.lastY !== null) {
     // Radius of 7 pixels, in physical coordinates
-    var nearestnode = this.findNodeWithinRadius(this.coords.lastX, this.coords.lastY, 7);
+    var respectVirtualNodes = true;
+    var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
+       this.coords.lastY, 7, respectVirtualNodes);
 
     if (nearestnode !== null) {
       if (e && e.shiftKey) {
@@ -2662,12 +2669,15 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
           self.executeIfSkeletonEditable(nearestnode_skid, function() {
             // The function used to instruct the backend to do the merge
             var merge = function(annotations) {
-              var phys_z = self.pix2physZ(stack.z, self.coords.lastY, self.coords.lastX);
-              var phys_y = self.pix2physY(stack.z, self.coords.lastY, self.coords.lastX);
-              var phys_x = self.pix2physX(stack.z, self.coords.lastY, self.coords.lastX);
-              // Ask to join the two skeletons with interpolated nodes
-              self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
-                  nearestnode_id, annotations);
+              var phys_z = self.pix2physZ(self.stack.z, self.coords.lastY, self.coords.lastX);
+              var phys_y = self.pix2physY(self.stack.z, self.coords.lastY, self.coords.lastX);
+              var phys_x = self.pix2physX(self.stack.z, self.coords.lastY, self.coords.lastX);
+              // Ask to join the two skeletons with interpolated nodes. Make
+              // sure the nearest node is not virtual.
+              self.promiseNode(nearestnode).then(function(toId) {
+                self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
+                  toId, annotations);
+              });
             };
 
             // A method to use when the to-skeleton has multiple nodes
@@ -2675,13 +2685,13 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
             // Ask for merging
             // Get neuron name and id of the to-skeleton
             self.submit(
-              django_url + project.id + '/treenode/info',
-              {treenode_id: nearestnode_id},
+              django_url + project.id + '/skeleton/neuronnames',
+              {skids: [nearestnode_skid]},
               function(json) {
                 var from_model = SkeletonAnnotations.sourceView.createModel();
                 var to_color = new THREE.Color().setRGB(1, 0, 1);
                 var to_model = new SelectionTable.prototype.SkeletonModel(
-                    json['skeleton_id'], json['neuron_name'], to_color);
+                    nearestnode_skid, json[nearestnode_skid], to_color);
                 var dialog = new SplitMergeDialog({
                   model1: from_model,
                   model2: to_model
@@ -2725,13 +2735,16 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
                   });
             };
 
-            /* If the to-node contains more than one node, show the dialog.
-             * Otherwise, check if the to-node contains annotations. If so, show
-             * the dialog. Otherwise, merge it right away and keep the
-             * from-annotations.
+            /* If the to-node contains more than one node (or is virtual), show
+             * the dialog.  Otherwise, check if the to-node contains
+             * annotations. If so, show the dialog. Otherwise, merge it right
+             * away and keep the from-annotations. Anyway, it has to be made
+             * sure that the nearest node exists.
              */
-            self.executeDependentOnNodeCount(nearestnode.id, merge_single_node,
-                merge_multiple_nodes);
+            self.executeDependentOnExistence(nearestnode_id,
+              self.executeDependentOnNodeCount.bind(self, nearestnode_id,
+                merge_single_node, merge_multiple_nodes),
+              merge_multiple_nodes);
           });
         });
         return;

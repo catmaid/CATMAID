@@ -393,9 +393,17 @@ SkeletonElements.prototype.AbstractTreenode = function() {
       this.line.on('click', SkeletonElements.prototype.mouseEventManager.edge_mc_click);
     }
 
+    // If the parent or this itself is more than one slice away from the current
+    // Z, draw the line only until it meets with the next slice, in direction of
+    // the child or the parent, respectively.
+    var childLocation = getIntersection(this, this.parent,
+        Math.max(-1, Math.min(1, this.zdiff)));
+    var parentLocation = getIntersection(this.parent, this,
+        Math.max(-1, Math.min(1, this.parent.zdiff)));
+
     this.line.attr({
-        x1: this.x, y1: this.y,
-        x2: this.parent.x, y2: this.parent.y,
+        x1: childLocation[0], y1: childLocation[1],
+        x2: parentLocation[0], y2: parentLocation[1],
         stroke: lineColor,
         'stroke-width': this.EDGE_WIDTH
     });
@@ -406,13 +414,28 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     if (this.confidence < 5) {
       // Create new or update
       this.number_text = this.updateConfidenceText(
-          this.x, this.y, this.parent.x, this.parent.y,
+          childLocation[0], childLocation[1],
+          parentLocation[0], parentLocation[1],
           lineColor,
           this.confidence,
           this.number_text);
     } else if (this.number_text) {
       this.number_text.remove();
       this.number_text = null;
+    }
+
+    /**
+     * Get the intersection X and Y coordinate between node and and two with the
+     * plane that is @zDiff units above node two. If it happens that there is no
+     * difference in Z, node one's X and Y coordinate are returned.
+     */
+    function getIntersection(node1, node2, zDiff) {
+      if (0 === zDiff) {
+        return [node1.x, node1.y];
+      } else {
+        return CATMAID.tools.intersectLineWithZPlane(node1.x, node1.y, node1.z,
+          node2.x, node2.y, node2.z, node2.z + zDiff);
+      }
     }
   };
 

@@ -1235,7 +1235,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
               var to_color = new THREE.Color().setRGB(1, 0, 1);
               var to_model = new SelectionTable.prototype.SkeletonModel(
                   to_skid, json['neuron_name'], to_color);
-              var dialog = new SplitMergeDialog(from_model, to_model);
+              var dialog = new SplitMergeDialog({
+                model1: from_model,
+                model2: to_model
+              });
               dialog.onOK = function() {
                 merge(dialog.get_combined_annotation_set());
               };
@@ -2538,7 +2541,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
                 var to_color = new THREE.Color().setRGB(1, 0, 1);
                 var to_model = new SelectionTable.prototype.SkeletonModel(
                     json['skeleton_id'], json['neuron_name'], to_color);
-                var dialog = new SplitMergeDialog(from_model, to_model);
+                var dialog = new SplitMergeDialog({
+                  model1: from_model,
+                  model2: to_model
+                });
                 dialog.onOK = function() {
                   // Get annotation set for the joined skeletons and merge both
                   merge(dialog.get_combined_annotation_set());
@@ -3109,7 +3115,10 @@ window.OptionsDialog.prototype.appendCheckbox = function(title, checkboxID, sele
 };
 
 
-var SplitMergeDialog = function(model1, model2) {
+var SplitMergeDialog = function(options) {
+  var model1 = options.model1;
+  var model2 = options.model2;
+
   // Models object
   this.models = {};
   this.models[model1.id] = model1;
@@ -3120,6 +3129,11 @@ var SplitMergeDialog = function(model1, model2) {
     this.in_merge_mode = true;
   } else {
     this.in_merge_mode = false;
+    this.splitNodeId = options.splitNodeId;
+    if (!this.splitNodeId) {
+      CATMAID.error("Could not inititialize splitting dialog",
+         "Please provide a split node ID!");
+    }
   }
   // Basic dialog setup
   this.dialog = document.createElement('div');
@@ -3322,7 +3336,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
     } else {
       var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
           arbor = skeleton.createArbor(),
-          count1 = arbor.subArbor(SkeletonAnnotations.getActiveNodeId()).countNodes(),
+          count1 = arbor.subArbor(this.splitNodeId).countNodes(),
           count2 = arbor.countNodes() - count1,
           over_count, under_count,
           model_name = this.models[this.model1_id].baseName;

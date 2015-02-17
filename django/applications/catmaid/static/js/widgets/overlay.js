@@ -447,7 +447,6 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
     }
 
     var childId = matches[1];
-    console.log("VN's child: " + childId)
 
     // Create new node and update parent relation of child
     requestQueue.register(
@@ -465,7 +464,8 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
       },
       CATMAID.jsonResponseHandler(function(result) {
         var nid = result.treenode_id;
-        console.log("Created new node: " + nid);
+        statusBar.replaceLast("Created new node node #" + nid +
+            " as child of node #" + childId);
         // Update nodes
         self.nodes[nid] = self.nodes[node.id];
         delete self.nodes[node.id];

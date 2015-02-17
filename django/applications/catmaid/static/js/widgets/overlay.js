@@ -1149,41 +1149,53 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
   });
 };
 
+/**
+ * Split the skeleton of the given node (ID). If this node happens to be
+ * virtual and the skeleton is editable, the node is created before the split
+ * dialog is shown. For now, the user is responsible of removing this node
+ * again.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
-  var node = this.nodes[nodeID];
-  var name = NeuronNameService.getInstance().getName(node.skeleton_id);
-  var model = new SelectionTable.prototype.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
   var self = this;
   // Make sure we have permissions to edit the neuron
-  this.executeIfSkeletonEditable(model.id, (function() {
-    /* Create the dialog */
-    var dialog = new SplitMergeDialog(model);
-    dialog.onOK = function() {
-      // Get upstream and downstream annotation set
-      var upstream_set, downstream_set;
-      if (this.upstream_is_small) {
-        upstream_set = dialog.get_under_annotation_set();
-        downstream_set = dialog.get_over_annotation_set();
-      } else {
-        upstream_set = dialog.get_over_annotation_set();
-        downstream_set = dialog.get_under_annotation_set();
-      }
-      // Call backend
-      self.submit(
-          django_url + project.id + '/skeleton/split',
-          {
-            treenode_id: nodeID,
-            upstream_annotation_map: JSON.stringify(upstream_set),
-            downstream_annotation_map: JSON.stringify(downstream_set),
-          },
-          function () {
-            self.updateNodes(function () { self.selectNode(nodeID); });
-          },
-          true); // block UI
-    };
-    dialog.show();
-  }).bind(this));
+  this.executeIfSkeletonEditable(node.skeleton_id, function() {
+    // Make sure the load is not virtual
+    self.promiseNode(node).then(function(nodeId) {
+      var node = self.nodes[nodeId];
+      var name = NeuronNameService.getInstance().getName(node.skeleton_id);
+      var model = new SelectionTable.prototype.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
+      /* Create the dialog */
+      var dialog = new SplitMergeDialog({
+        model1: model,
+        splitNodeId: nodeId
+      });
+      dialog.onOK = function() {
+        // Get upstream and downstream annotation set
+        var upstream_set, downstream_set;
+        if (self.upstream_is_small) {
+          upstream_set = dialog.get_under_annotation_set();
+          downstream_set = dialog.get_over_annotation_set();
+        } else {
+          upstream_set = dialog.get_over_annotation_set();
+          downstream_set = dialog.get_under_annotation_set();
+        }
+        // Call backend
+        self.submit(
+            django_url + project.id + '/skeleton/split',
+            {
+              treenode_id: nodeId,
+              upstream_annotation_map: JSON.stringify(upstream_set),
+              downstream_annotation_map: JSON.stringify(downstream_set),
+            },
+            function () {
+              self.updateNodes(function () { self.selectNode(nodeId); });
+            },
+            true); // block UI
+      };
+      dialog.show();
+    });
+  });
 };
 
 /** Used to join two skeletons together.

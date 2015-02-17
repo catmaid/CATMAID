@@ -1025,10 +1025,12 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   if (!confirm("Do you really want to to reroot the skeleton?")) return;
   var self = this;
-  this.submit(
-      django_url + project.id + '/skeleton/reroot',
-      {treenode_id: nodeID},
-      function() { self.updateNodes(); } );
+  this.promiseNode(this.nodes[nodeID]).then(function(nodeID) {
+    self.submit(
+        django_url + project.id + '/skeleton/reroot',
+        {treenode_id: nodeID},
+        function() { self.updateNodes(); } );
+  });
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {

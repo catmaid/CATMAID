@@ -14,3 +14,4 @@ Developer Documentation
    ami
    data_view_types
    alternative_install
+   contributing

@@ -1607,8 +1607,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
 };
 
 /**
- * Invoke the callback function after having pushed updated node coordinates to
- * the database.
+ * Invoke the callback function after having pushed updated node coordinates
+ * to the database. Virtual nodes are ignored.
  */
 SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (callback) {
   /**
@@ -1658,9 +1658,11 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (c
 };
 
 
-/** Recreate all nodes (or reuse existing ones if possible).
+/**
+ * Recreate all nodes (or reuse existing ones if possible).
  *
- * @param jso is an array of JSON objects, where each object may specify a Node or a ConnectorNode
+ * @param jso is an array of JSON objects, where each object may specify a Node
+ *            or a ConnectorNode
  */
 SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso) {
   // Reset nodes and labels
@@ -1803,7 +1805,8 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso)
 
   // Warn about nodes not retrieved because of limit
   if (true === jso[3]) {
-    var msg = "Did not retrieve all visible nodes--too many! Zoom in to constrain the field of view.";
+    var msg = "Did not retrieve all visible nodes--too many! Zoom in to " +
+      "constrain the field of view.";
     CATMAID.statusBar.replaceLast("*WARNING*: " + msg);
     growlAlert('WARNING', msg);
   }
@@ -1852,12 +1855,13 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso)
   };
 };
 
-/* When we pass a completedCallback to redraw, it's essentially
-   always because we want to know that, if any fetching of nodes
-   was required for the redraw, those nodes have now been fetched.
-   So, if we *do* need to call updateNodes, we should pass it the
-   completionCallback.  Otherwise, just fire the
-   completionCallback at the end of this method. */
+/**
+ * When we pass a completedCallback to redraw, it's essentially always because
+ * we want to know that, if any fetching of nodes was required for the redraw,
+ * those nodes have now been fetched.  So, if we *do* need to call updateNodes,
+ * we should pass it the completionCallback.  Otherwise, just fire the
+ * completionCallback at the end of this method.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCallback ) {
   // TODO: this should also check for the size of the containing
   // div having changed.  You can see this problem if you have
@@ -1916,12 +1920,13 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
   }
 };
 
-// TODO This doc below is obsolete
-// This isn't called "onclick" to avoid confusion - click events
-// aren't generated when clicking in the overlay since the mousedown
-// and mouseup events happen in different divs.  This is actually
-// called from mousedown (or mouseup if we ever need to make
-// click-and-drag work with the left hand button too...)
+/**
+ * TODO This doc below is obsolete
+ * This isn't called "onclick" to avoid confusion - click events aren't
+ * generated when clicking in the overlay since the mousedown and mouseup events
+ * happen in different divs.  This is actually called from mousedown (or mouseup
+ * if we ever need to make click-and-drag work with the left hand button too...)
+ */
 SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   if (this.ensureFocused()) {
     e.stopPropagation();
@@ -1988,7 +1993,8 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         if (e.shiftKey) {
           // Create a new connector and a new link
           var synapse_type = e.altKey ? 'post' : 'pre';
-          CATMAID.statusBar.replaceLast("Created connector with " + synapse_type + "synaptic treenode #" + atn.id);
+          CATMAID.statusBar.replaceLast("Created connector with " + synapse_type +
+              "synaptic treenode #" + atn.id);
           var self = this;
           this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
               function (connectorID) {

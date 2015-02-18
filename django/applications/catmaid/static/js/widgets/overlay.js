@@ -248,10 +248,14 @@ SkeletonAnnotations.getActiveNodePosition = function() {
  * active node, null is returned.
  */
 SkeletonAnnotations.getActiveNodePositionW = function() {
-  var stack = project.getStack(this.atn.stack_id);
-  return {'x': stack.stackToProjectX(this.atn.z, this.atn.y, this.atn.x),
-          'y': stack.stackToProjectY(this.atn.z, this.atn.y, this.atn.x),
-          'z': stack.stackToProjectZ(this.atn.z, this.atn.y, this.atn.x)};
+  if (null === this.atn.id) {
+    return null;
+  } else {
+    var stack = project.getStack(this.atn.stack_id);
+    return {'x': stack.stackToProjectX(this.atn.z, this.atn.y, this.atn.x),
+            'y': stack.stackToProjectY(this.atn.z, this.atn.y, this.atn.x),
+            'z': stack.stackToProjectZ(this.atn.z, this.atn.y, this.atn.x)};
+  }
 };
 
 /**

@@ -55,21 +55,6 @@ function TaggingTool()
     };
 
     /**
-     * Creates a string containing the comma separated
-     * elements of a list.
-     */
-    this.list_to_string = function( tag_list )
-    {
-        var tags = "";
-        for (var i=0; i<tag_list.length; ++i)
-        {
-            var new_tag = (tags.length === 0) ? tag_list[i] : (", " + tag_list[i]);
-            tags += new_tag;
-        }
-        return tags;
-    };
-
-    /**
      * This method takes a string that represents a list (e.g. "a, b, c")
      * andd will produce a string with all the spaces before and after
      * each element removed (e.g. "a,b,c").
@@ -91,7 +76,7 @@ function TaggingTool()
         if ( 200 === status && text )
         {
             var e = eval( "(" + text + ")" );
-            var tags = self.list_to_string( e.tags );
+            var tags = e.tags.join(', ');
             self.input_project_tags.value = tags;
             self.input_project_tags.disabled = false;
             self.project_tags_ready = true;
@@ -113,7 +98,7 @@ function TaggingTool()
         if ( 200 === status && text )
         {
             var e = eval( "(" + text + ")" );
-            var tags = self.list_to_string( e.tags );
+            var tags = e.tags.join(', ');
             self.input_stack_tags.value = tags;
             self.input_stack_tags.disabled = false;
             self.stack_tags_ready = true;

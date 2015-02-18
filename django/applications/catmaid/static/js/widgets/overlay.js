@@ -1988,8 +1988,8 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         return true;
       }
     } else {
-      targetTreenodeID = atn.id;
       if (SkeletonAnnotations.TYPE_NODE === atn.type) {
+        var targetTreenode = this.nodes[atn.id];
         if (e.shiftKey) {
           // Create a new connector and a new link
           var synapse_type = e.altKey ? 'post' : 'pre';
@@ -1998,7 +1998,9 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
           var self = this;
           this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
               function (connectorID) {
-                self.createLink(targetTreenodeID, connectorID, synapse_type + "synaptic_to");
+                self.promiseNode(targetTreenode).then(function(nid) {
+                  self.createLink(nid, connectorID, synapse_type + "synaptic_to");
+                });
               });
           e.stopPropagation();
         }
@@ -2006,8 +2008,10 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         return true;
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         // create new treenode (and skeleton) postsynaptic to activated connector
-        CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
-        this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z,
+            -1, 5, pos_x, pos_y, pos_z);
+        CATMAID.statusBar.replaceLast("Created treenode #" + atn.id +
+            " postsynaptic to active connector");
         e.stopPropagation();
         return true;
       }

@@ -2163,8 +2163,9 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
       labels: self.getLabelStatus()
     };
 
+    var url = django_url + project.id + '/node/list';
     self.submit(
-      django_url + project.id + '/node/list',
+      url,
       params,
       function(json) {
         if (json.needs_setup) {
@@ -2188,7 +2189,9 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
       },
       false,
       true,
-      errCallback);
+      errCallback,
+      false,
+      'stack-' + self.stack.id + '-url-' + url);
   });
 };
 

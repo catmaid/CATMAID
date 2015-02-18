@@ -52,6 +52,26 @@ function TracingTool()
     }
   };
 
+  var setAllLayersSuspended = function(value)
+  {
+    project.getStacks().forEach(function(stack) {
+      var existingLayer = stack.getLayer(getTracingLayerName(stack));
+      if (existingLayer) {
+        existingLayer.svgOverlay.setAllSuspended(value)
+      }
+    });
+  };
+
+  var updateNodesinAllLayers = function()
+  {
+    project.getStacks().forEach(function(stack) {
+      var existingLayer = stack.getLayer(getTracingLayerName(stack));
+      if (existingLayer) {
+        existingLayer.svgOverlay.updateNodes()
+      }
+    });
+  };
+
   /**
    * Return a unique name for the tracing layer of a given stack.
    */
@@ -79,6 +99,9 @@ function TracingTool()
           tracingLayer.svgOverlay.whenclicked( e );
           break;
         case 2:
+          // Put tracing layer in "don't update" model
+          setAllLayersSuspended(true);
+          // Handle mouse event
           proto_onmousedown( e );
           CATMAID.ui.registerEvent( "onmousemove", updateStatusBar );
           CATMAID.ui.registerEvent( "onmouseup",
@@ -86,8 +109,10 @@ function TracingTool()
               CATMAID.ui.releaseEvents();
               CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
               CATMAID.ui.removeEvent( "onmouseup", onmouseup );
+              // Wake tracing overlays up again
+              setAllLayersSuspended(false);
               // Recreate nodes by feching them from the database for the new field of view
-              tracingLayer.svgOverlay.updateNodes();
+              updateNodesinAllLayers();
             });
           break;
         default:

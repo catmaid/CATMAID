@@ -373,6 +373,8 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
   this.show_labels = false;
+  /** Indicate if this overlay is suspended and won't update. */
+  this.suspended = false;
 
   /* Variables keeping state for toggling between a terminal and its connector. */
   this.switchingConnectorID = null;
@@ -419,6 +421,19 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
 };
 
 SkeletonAnnotations.SVGOverlay.prototype = {};
+
+/**
+ * Suspend or wake up all tracing overlay instances.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.setAllSuspended = function(value)
+{
+  var instances = this._instances;
+  for (var stack in instances) {
+    if (instances.hasOwnProperty(stack)) {
+      instances[stack].suspended = value;
+    }
+  }
+};
 
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,
@@ -2087,6 +2102,10 @@ SkeletonAnnotations.SVGOverlay.prototype.hide = function () {
 SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     future_active_node_id, errCallback) {
   var self = this;
+
+  if (this.suspended) {
+    return;
+  }
 
   this.updateNodeCoordinatesinDB(function () {
     // stack.viewWidth and .viewHeight are in screen pixels

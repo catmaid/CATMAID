@@ -5,10 +5,6 @@
   login
 */
 
-
-// Declare the CATMAID namespace
-var CATMAID = {};
-
 (function(CATMAID)
  {
   // The UI singleton

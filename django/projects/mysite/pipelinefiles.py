@@ -60,7 +60,7 @@ libraries_js = {
     'jsnetworkx': ['*.js'],
     'filesaver': ['*.js'],
     'whammy': ['whammy.js'],
-    'catmaid': ['*.js'],
+    'catmaid': ['CATMAID.js', '*.js'],
 }
 
 PIPELINE_JS = OrderedDict()

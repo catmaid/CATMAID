@@ -171,8 +171,8 @@ function DVIDTileSource( baseURL, fileExtension )
     this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
-        return baseURL + "/" + tileWidth + "," + tileHeight + "/" + col * tileWidth + "," + 
-            row * tileHeight + "," + stack.z + "/" + fileExtension;
+        return baseURL + "/" + tileWidth + "_" + tileHeight + "/" + col * tileWidth + "_" + 
+            row * tileHeight + "_" + stack.z + "/" + fileExtension;
     };
 
     this.getOverviewLayer = function( layer )

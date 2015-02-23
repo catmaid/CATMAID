@@ -28,9 +28,16 @@ def label_remove(request, project_id=None):
     # check if superuser, then delete label and all associated instances
     class_instance_for_label = int(request.POST['class_instance_id'])
     if request.user.is_superuser:
-        ClassInstance.objects.filter(id=class_instance_for_label).delete()
-        return HttpResponse(json.dumps({'message': 'success'}), content_type="text/plain")
-    return HttpResponse(json.dumps({}), content_type="text/plain")
+        is_referenced = TreenodeClassInstance.objects.filter(
+            class_instance_id=class_instance_for_label).exists()
+
+        if is_referenced:
+            raise ValueError("Only unreferenced labels are allowed to be removed")
+        else:
+            ClassInstance.objects.filter(id=class_instance_for_label).delete()
+            return HttpResponse(json.dumps({'message': 'success'}), content_type="text/plain")
+    return HttpResponse(json.dumps({'error': 'Only super users can delete labels'}),
+                        content_type="text/plain")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_all(request, project_id=None):

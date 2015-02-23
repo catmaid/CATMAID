@@ -1835,6 +1835,41 @@ class ViewPageTests(TestCase):
                 {"id":362, "name":"downstream-B", "class_name":"neuron"}]
         self.assertEqual(expected_result, parsed_response)
 
+    def test_search_with_nodes_and_duplicate_label(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'uncertain end'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+
+        # Expect only one result that has a node linked
+        expected_result = [
+            {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
+                {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
+        ]
+        self.assertItemsEqual(expected_result, parsed_response)
+
+        # Add a duplicate record of the label, without any node links
+        label = ClassInstance.objects.get(id=2342)
+        label.id = None
+        label.save()
+
+        response2 = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'uncertain end'})
+        self.assertEqual(response2.status_code, 200)
+        parsed_response2 = json.loads(response2.content)
+
+        # Expect the nodes to be not linked to the duplicate record
+        expected_result2 = [
+            {"id":label.id, "name":"uncertain end", "class_name":"label"},
+            {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
+                {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]}
+        ]
+        self.assertItemsEqual(expected_result2, parsed_response2)
+
     def test_search_with_nodes(self):
         self.fake_authentication()
 

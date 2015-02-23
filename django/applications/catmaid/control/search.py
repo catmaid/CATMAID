@@ -53,29 +53,32 @@ def search(request, project_id=None):
     # 3. Query labels in treenodes. First get a list of matching labels,
     # and then find a list of treenodes for each label.
     relation_map = get_relation_to_id_map(project_id)
+    matching_labels = set()
     label_rows = {}
     for row in rows:
         # Change key-name of class_column__class_name for json output
         row['class_name'] = row.pop('class_column__class_name')
         # Prepare for retrieving nodes holding text labels
         if row['class_name'] == 'label':
-            label_rows[row['name']] = row
+            matching_labels.add(row['name'])
+            label_rows[row['id']] = row
 
     node_query = TreenodeClassInstance.objects.filter(
         project=project_id,
         treenode__project=project_id,
         relation=relation_map['labeled_as'],
-        class_instance__name__in=label_rows.keys())\
+        class_instance__name__in=matching_labels)\
     .order_by('-treenode__id')\
     .values('treenode',
         'treenode__location_x',
         'treenode__location_y',
         'treenode__location_z',
         'treenode__skeleton',
-        'class_instance__name')
+        'class_instance__name',
+        'class_instance__id')
 
     for node in node_query:
-        row_with_node = label_rows[node['class_instance__name']]
+        row_with_node = label_rows[node['class_instance__id']]
         nodes = row_with_node.get('nodes', None)
         if not nodes:
             nodes = []

@@ -61,11 +61,8 @@ Review system:
   Creating the file can take some seconds and currently only works for the
   Chrome browser (due to the lack of WebP support in others).
 
-Connectivity widget:
 
-- Individual partner neurons can now be hidden: a little 'x' icon is displayed
-  to the right of each partner's name. Clicking it will hide it, similar to the
-  thresholding and 'Hide single node partners' functionality.
+Connectivity widget:
 
 - It is now possible to remove added neurons again. Each row of the table of
   target neurons now contains a small 'x' icon in the first column to remove it.

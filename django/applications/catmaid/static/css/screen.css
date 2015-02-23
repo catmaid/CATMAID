@@ -581,10 +581,6 @@ div#classification_graph_object img.roiimage {
   text-align: center;
 }
 
-.connectivity_widget .partner_table .hide-skeleton {
-  float: right;
-}
-
 .connectivity_widget .partner_table tfoot {
   color: grey;
 }

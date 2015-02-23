@@ -153,6 +153,18 @@ Database management system
   also possible (and advisable) to automate this with by setting ``autovacuum =
   on`` in ``postgresql.conf``.
 
+* According to the `Django manual
+  <https://docs.djangoproject.com/en/1.6/ref/databases/#optimizing-postgresql-s-configuration>`_,
+  Django expects the following parameters for its database connections:
+  ``client_encoding: 'UTF8'``,  ``default_transaction_isolation: 'read committed'``
+  and ``timezone: 'UTC'`` when ``USE_TZ`` is True, value of ``TIME_ZONE``
+  otherwise (use of ``TIME_ZONE`` is CATMAID's default). All of these settings
+  can be configured in ``postgresql.conf`` or more conveniently per database
+  user with `ALTER ROLE <http://www.postgresql.org/docs/current/interactive/sql-alterrole.html>`_.
+  If these parameters are not the default, Django will do some additional
+  queries to set these parameters for each new connection.  Having those
+  defaults set will improve the database performance slightly.
+
 CATMAID
 ^^^^^^^
 

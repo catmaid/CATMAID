@@ -1139,18 +1139,17 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
 SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (callback) {
   var update = {treenode: [],
                 connector: []};
-  for (var nodeID in this.nodes) {
-    if (this.nodes.hasOwnProperty(nodeID)) {
-      var node = this.nodes[nodeID];
-      // only updated nodes that need sync, e.g.
-      // when they changed position
-      if (node.needsync) {
-        node.needsync = false;
-        update[node.type].push([node.id,
-                                this.pix2physX(node.x),
-                                this.pix2physY(node.y),
-                                this.pix2physZ(node.z)]);
-      }
+  var nodeIDs = Object.keys(this.nodes);
+  for (var i = 0; i < nodeIDs.length; ++i) {
+    var node = this.nodes[nodeIDs[i]];
+    // only updated nodes that need sync, e.g.
+    // when they changed position
+    if (node.needsync) {
+      node.needsync = false;
+      update[node.type].push([node.id,
+                              this.pix2physX(node.x),
+                              this.pix2physY(node.y),
+                              this.pix2physZ(node.z)]);
     }
   }
   if (update.treenode.length > 0 || update.connector.length > 0) {

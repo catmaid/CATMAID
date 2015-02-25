@@ -1208,7 +1208,7 @@ function showMessages()
 					if ( messageContext.parentNode )
 						messageContext.parentNode.removeChild( messageContext );
 					document.getElementById( "dump" ).appendChild( messageContext );
-					if ( typeof project === undefined || project === null )
+					if ( typeof project === "undefined" || project === null )
 					{
 						rootWindow.close();
 						document.getElementById( "content" ).style.display = "block";

@@ -57,9 +57,11 @@ Review system:
 
 - Animations can also be exported as WebM movie file. The "Export animation"
   button in the Export tab, will show a dialog with basic export settings. Like
-  with the other view export options, the current 3D view setup is used.
-  Creating the file can take some seconds and currently only works for the
-  Chrome browser (due to the lack of WebP support in others).
+  with the other view export options, the current 3D view setup is used. The
+  frame size can be adjusted in the export dialog. Creating the file can take
+  some seconds and currently only works for the Chrome browser (due to the lack
+  of WebP support in others). The resulting WebM video file can be converted to
+  any other format using e.g. VLC player, if needed.
 
 
 Connectivity widget:

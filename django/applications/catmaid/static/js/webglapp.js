@@ -3918,13 +3918,18 @@ WebGLApplication.prototype.exportAnimation = function()
   var dialog = new OptionsDialog("Animation export options");
   dialog.appendMessage('Adjust the animation export settings to your liking. ' +
      'The resulting file will be in WebM format and might take some seconds ' +
-     'to be generated.');
+     'to be generated. The default frame size matches the current size of ' +
+     'the 3D viewer.');
 
   // Add options to dialog
   var rotationsField = dialog.appendField("# Rotations: ",
       "animation-export-num-rotations", '1');
   var rotationtimeField = dialog.appendField("Rotation time (s): ",
       "animation-export-rotation-time", '5');
+  var frameWidthField = dialog.appendField("Frame width (px): ",
+      "animation-export-frame-width", this.space.canvasWidth);
+  var frameHeightField = dialog.appendField("Frame height (px): ",
+      "animation-export-frame-height", this.space.canvasHeight);
   var framerateField = dialog.appendField("Frame rate: ",
       "animation-export-frame-rate", '25');
   var backforthField = dialog.appendCheckbox('Back and forth',
@@ -3936,7 +3941,7 @@ WebGLApplication.prototype.exportAnimation = function()
 
   dialog.onOK = handleOK.bind(this);
 
-  dialog.show(400, 310, true);
+  dialog.show(400, 450, true);
 
   function handleOK() {
     /* jshint validthis: true */ // `this` is bound to this WebGLApplication
@@ -3955,6 +3960,8 @@ WebGLApplication.prototype.exportAnimation = function()
 
         var nframes = Math.ceil(rotations * rotationtime * framerate);
         var speed = 2 * Math.PI / (rotationtime * framerate);
+        var width = parseInt(frameWidthField.value);
+        var height = parseInt(frameHeightField.value);
 
         // Collect options
         var options = {
@@ -3978,7 +3985,7 @@ WebGLApplication.prototype.exportAnimation = function()
 
         // Get frame images
         var animation = AnimationFactory.createAnimation(options);
-        var images = this.getAnimationFrames(animation, nframes);
+        var images = this.getAnimationFrames(animation, nframes, undefined, width, height);
 
         // Export movie
         var output = Whammy.fromImageArray(images, framerate);
@@ -3999,8 +4006,19 @@ WebGLApplication.prototype.exportAnimation = function()
  * Create a list of images for a given animation and the corresponding options.
  * By default, 100 frames are generated, starting from timepoint zero.
  */
-WebGLApplication.prototype.getAnimationFrames = function(animation, nframes, startTime)
+WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
+    startTime, width, height)
 {
+  // Save current dimensions and set new ones, if available
+  var originalWidth, originalHeight;
+  if (width && height) {
+    if (width !== this.space.canvasWidth || height !== this.space.canvasHeight) {
+      originalWidth = this.space.canvasWidth;
+      originalHeight = this.space.canvasHeight;
+      this.resizeView(width, height);
+    }
+  }
+
   nframes = nframes || 100;
   startTime = startTime || 0;
   var frames = new Array(nframes);
@@ -4010,6 +4028,11 @@ WebGLApplication.prototype.getAnimationFrames = function(animation, nframes, sta
 
     // Store image
     frames[i] = this.space.view.getImageData('image/webp');
+  }
+
+  // Restore original dimensions
+  if (originalWidth && originalHeight) {
+    this.resizeView(originalWidth, originalHeight);
   }
 
   return frames;

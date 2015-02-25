@@ -3953,6 +3953,9 @@ WebGLApplication.prototype.exportAnimation = function()
     createAnimation.call(this);
 
     function createAnimation() {
+      // Get current visibility map and create notify handler
+      var visMap = this.space.getVisibilityMap();
+
       try {
         var rotations = parseInt(rotationsField.value);
         var rotationtime = parseFloat(rotationtimeField.value);
@@ -3975,8 +3978,6 @@ WebGLApplication.prototype.exportAnimation = function()
         // Add a notification handler for stepwise visibility, if enabled and at least
         // one skeleton is loaded.
         if (stepVisibilityField.checked) {
-          // Get current visibility map and create notify handler
-          var visMap = this.space.getVisibilityMap();
           options['notify'] = this.createStepwiseVisibilityHandler(visMap);
           // Create a stop handler that resets visibility to the state we found before
           // the animation.

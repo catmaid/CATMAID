@@ -61,6 +61,21 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
 
   var rows = this._tiles.length, cols = this._tiles[0].length;
 
+  // If panning only (no scaling, no browsing through z)
+  if (this.stack.z == this.stack.old_z && this.stack.s == this.stack.old_s)
+  {
+    var old_fr = Math.floor(this.stack.old_yc / effectiveTileHeight);
+    var old_fc = Math.floor(this.stack.old_xc / effectiveTileWidth);
+
+    // Compute panning in X and Y
+    var xd = tileInfo.first_col - old_fc;
+    var yd = tileInfo.first_row - old_fr;
+
+    // Update the toroidal origin in the tiles array
+    this._tileOrigR = this.rowTransform(yd);
+    this._tileOrigC = this.colTransform(xd);
+  }
+
   var top;
   var left;
 
@@ -73,18 +88,26 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
   else
     left = -((this.stack.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
 
+  // Set tile grid offset and magnification on the whole container, rather than
+  // individual tiles.
   this.batchContainer.position.x = left;
   this.batchContainer.position.y = top;
   this.batchContainer.scale.x = tileInfo.mag;
   this.batchContainer.scale.y = tileInfo.mag;
+  var toLoad = [];
+  var y = 0;
 
   // Update tiles.
   for (var i = this._tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows) {
     var r = tileInfo.first_row + ti;
+    var x = 0;
 
     for (var j = this._tileOrigC, tj = 0; tj < cols; ++tj, j = (j+1) % cols) {
       var c = tileInfo.first_col + tj;
       var tile = this._tiles[i][j];
+      // Set tile positions to handle toroidal wrapping.
+      tile.position.x = x;
+      tile.position.y = y;
 
       if (c >= 0 && c <= tileInfo.last_col &&
           r >= 0 && r <= tileInfo.last_row) {
@@ -92,23 +115,33 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
             tileBaseName, this.tileWidth, this.tileHeight,
             c, r, tileInfo.zoom);
 
-        if (source != tile.texture.baseTexture.imageUrl) {
+        if (source !== tile.texture.baseTexture.imageUrl &&
+            source !== this._tilesBuffer[i][j]) {
           tile.visible = false;
-          var loader = new PIXI.ImageLoader(source);
-          this._tilesBuffer[i][j] = loader;
-          loader.on('loaded', this.checkBuffer.bind(this));
-          loader.load();
+          toLoad.push(source);
+          this._tilesBuffer[i][j] = source;
         } else tile.visible = true;
       } else tile.visible = false;
+      x += this.tileWidth;
     }
+    y += this.tileHeight;
   }
 
   if (this.stack.z === this.stack.old_z &&
       tileInfo.zoom === Math.max(0, Math.ceil(this.stack.old_s)))
     this.renderer.render(this.stage);
 
-  if (this.isBuffering())
-    this._swapBuffersTimeout = window.setTimeout(this.swapBuffer.bind(this), 3000);
+  // If any tiles need to be buffered (that are not already being buffered):
+  if (toLoad.length > 0) {
+    var loader = new PIXI.AssetLoader(toLoad);
+    loader.on('onComplete', this.swapBuffer.bind(this, false));
+    // Set a timeout for slow connections to swap in the buffer whether or
+    // not it has loaded. Do this before loading tiles in case they load
+    // immediately, so that the buffer will be cleared.
+    window.clearTimeout(this._swapBuffersTimeout);
+    this._swapBuffersTimeout = window.setTimeout(this.swapBuffer.bind(this, true), 3000);
+    loader.load();
+  }
 
   if (typeof completionCallback !== 'undefined') {
     completionCallback();
@@ -121,24 +154,20 @@ PixiTileLayer.prototype.resize = function (width, height) {
   TileLayer.prototype.resize.call(this, width, height);
 };
 
-PixiTileLayer.prototype.checkBuffer = function () {
-  if (!this.isBuffering()) this.swapBuffer();
-};
-
-PixiTileLayer.prototype.isBuffering = function () {
-  return this._tilesBuffer.some(function (r) { return r.some( function (c) {
-      return c && !c.texture.valid; }); });
-};
-
-PixiTileLayer.prototype.swapBuffer = function () {
+PixiTileLayer.prototype.swapBuffer = function (force) {
   window.clearTimeout(this._swapBuffersTimeout);
 
   for (var i = 0; i < this._tiles.length; ++i) {
     for (var j = 0; j < this._tiles[0].length; ++j) {
-      if (this._tilesBuffer[i][j]) {
-        this._tiles[i][j].setTexture(this._tilesBuffer[i][j].texture);
-        this._tiles[i][j].visible = true;
-        this._tilesBuffer[i][j] = false;
+      var source = this._tilesBuffer[i][j];
+      if (source) {
+        var texture = PIXI.TextureCache[source];
+        // Check whether the tile is loaded.
+        if (force || texture && texture.valid) {
+          this._tilesBuffer[i][j] = false;
+          this._tiles[i][j].setTexture(texture ? texture : PIXI.Texture.fromImage(source));
+          this._tiles[i][j].visible = true;
+        }
       }
     }
   }

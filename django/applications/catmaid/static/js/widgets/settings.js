@@ -4,7 +4,6 @@
   CATMAID,
   annotations,
   ConnectorSelection,
-  GridLayer,
   growlAlert,
   NeuronNameService,
   OptionsDialog,
@@ -130,7 +129,7 @@ SettingsWidget.prototype.init = function(space)
           if (this.checked) {
             // Get current settings
             project.getStacks().forEach(function(s) {
-              s.addLayer("grid", new GridLayer(s, getGridOptions()));
+              s.addLayer("grid", new CATMAID.GridLayer(s, getGridOptions()));
               s.redraw();
             });
           } else {

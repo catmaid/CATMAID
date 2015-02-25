@@ -134,12 +134,12 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
   // If any tiles need to be buffered (that are not already being buffered):
   if (toLoad.length > 0) {
     var loader = new PIXI.AssetLoader(toLoad);
-    loader.on('onComplete', this.swapBuffer.bind(this, false));
+    loader.on('onComplete', this._swapBuffers.bind(this, false));
     // Set a timeout for slow connections to swap in the buffer whether or
     // not it has loaded. Do this before loading tiles in case they load
     // immediately, so that the buffer will be cleared.
     window.clearTimeout(this._swapBuffersTimeout);
-    this._swapBuffersTimeout = window.setTimeout(this.swapBuffer.bind(this, true), 3000);
+    this._swapBuffersTimeout = window.setTimeout(this._swapBuffers.bind(this, true), 3000);
     loader.load();
   }
 
@@ -154,7 +154,7 @@ PixiTileLayer.prototype.resize = function (width, height) {
   TileLayer.prototype.resize.call(this, width, height);
 };
 
-PixiTileLayer.prototype.swapBuffer = function (force) {
+PixiTileLayer.prototype._swapBuffers = function (force) {
   window.clearTimeout(this._swapBuffersTimeout);
 
   for (var i = 0; i < this._tiles.length; ++i) {

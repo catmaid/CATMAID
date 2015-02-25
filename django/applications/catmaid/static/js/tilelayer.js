@@ -205,8 +205,8 @@ TileLayer.prototype.redraw = function (completionCallback) {
   // Set a timeout for slow connections to swap in the buffer whether or
   // not it has loaded.
   if (this._buffering) {
-    window.clearTimeout(this.swapBuffersTimeout);
-    this.swapBuffersTimeout = window.setTimeout(this._swapBuffers.bind(this), 3000);
+    window.clearTimeout(this._swapBuffersTimeout);
+    this._swapBuffersTimeout = window.setTimeout(this._swapBuffers.bind(this), 3000);
   }
 
   // Callback to deal with buffered image loading. Calls swapBuffers once
@@ -218,7 +218,7 @@ TileLayer.prototype.redraw = function (completionCallback) {
       buffered = buffered + 1;
       this.alt = 'l';
       if (buffered === to_buffer) {
-        window.clearTimeout(self.swapBuffersTimeout);
+        window.clearTimeout(self._swapBuffersTimeout);
         self._swapBuffers();
       }
     };

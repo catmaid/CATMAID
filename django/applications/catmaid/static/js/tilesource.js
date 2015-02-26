@@ -5,7 +5,7 @@ function getTileSource( tileSourceType, baseURL, fileExtension )
 {
     var tileSources = [DefaultTileSource, RequestTileSource,
         HDF5TileSource, BackslashTileSource, LargeDataTileSource,
-        DVIDTileSource, RenderServTileSource];
+        DVIDTileSource, RenderServTileSource, DVIDMultiScaleTileSource];
 
     if (tileSourceType > 0 && tileSourceType <= tileSources.length)
     {
@@ -159,11 +159,12 @@ function LargeDataTileSource( baseURL, fileExtension )
 }
 
 /*
-* Simple tile source type for DVID.
+* Simple tile source type for DVID grayscale8 datatype
 * see https://github.com/janelia-flyem/dvid
-* (only for xy plane, no multi-scale, no overview thubnail image)
-* use as image base: http://<HOST>/api/node/<UUID>/<DATASETNAME>/0,1/
 *
+* GET  <api URL>/node/<UUID>/<data name>/raw/<dims>/<size>/<offset>[/<format>][?throttle=true][?queryopts]
+* e.g. GET <api URL>/node/3f8c/grayscale/raw/0_1/512_256/0_0_100/jpg:80
+
 * Source type: 6
 */
 function DVIDTileSource( baseURL, fileExtension )
@@ -216,6 +217,28 @@ function RenderServTileSource( baseURL, fileExtension )
 	};
 }
 
+/*
+* Simple tile source type for DVID multiscale2d datatype
+* see https://github.com/janelia-flyem/dvid
+*
+* GET  <api URL>/node/<UUID>/<data name>/tile/<dims>/<scaling>/<tile coord>[?noblanks=true]
+* e.g. GET <api URL>/node/3f8c/mymultiscale2d/tile/xy/0/10_10_20
+* 
+* Source type: 8
+*/
+function DVIDMultiScaleTileSource( baseURL, fileExtension )
+{
+    this.getTileURL = function( project, stack, baseName,
+        tileWidth, tileHeight, col, row, zoom_level )
+    {
+       return baseURL + "/" + zoom_level + "/" + col + "_" + row + "_" + stack.z;
+    };
+
+    this.getOverviewLayer = function( layer )
+    {
+        return new DummyOverviewLayer();
+    };
+}
 
 
 /**

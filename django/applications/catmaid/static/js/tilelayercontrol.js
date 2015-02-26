@@ -5,94 +5,98 @@
   SLIDER_HORIZONTAL
 */
 
-"use strict";
+(function(CATMAID) {
 
-/**
- * The tilelayer control element on the top-left of the stack window
- */
-function TilelayerControl( stack )
-{
-  var self = this;
+  "use strict";
 
   /**
-   * get the view object
+   * The tilelayer control element on the top-left of the stack window
    */
-  self.getView = function()
+  CATMAID.TilelayerControl = function ( stack )
   {
-    return view;
-  };
+    var self = this;
 
-  /**
-   * set opacity for a layer
-   */
-  self.setOpacity = function ( key, val )
-  {
-    // Get current set of layers
-    var layers = stack.getLayers();
-
-    if(layers.hasOwnProperty(key))
-      layers[key].setOpacity( val / 100 );
-  };
-
-  /**
-   * removes existing layer controls and re-creates them.
-   */
-  self.refresh = function()
-  {
-    // Get current set of layers
-    var layers = stack.getLayers();
-
-    // Empty container
-    $(view).empty();
-
-    // Add slider for each layer
-    for(var key in layers)
+    /**
+     * get the view object
+     */
+    self.getView = function()
     {
+      return view;
+    };
 
-      var container = document.createElement("div");
+    /**
+     * set opacity for a layer
+     */
+    self.setOpacity = function ( key, val )
+    {
+      // Get current set of layers
+      var layers = stack.getLayers();
 
-      var setOpac = function ( val )
+      if(layers.hasOwnProperty(key))
+        layers[key].setOpacity( val / 100 );
+    };
+
+    /**
+     * removes existing layer controls and re-creates them.
+     */
+    self.refresh = function()
+    {
+      // Get current set of layers
+      var layers = stack.getLayers();
+
+      // Empty container
+      $(view).empty();
+
+      // Add slider for each layer
+      for(var key in layers)
       {
-        self.setOpacity( this.idd, val );
-        stack.redraw();
-        return;
-      };
 
-      // Make layer re-evaluate it's opacity
-      layers[key].setOpacity(layers[key].getOpacity());
+        var container = document.createElement("div");
 
-      var slider = new Slider(
-          SLIDER_HORIZONTAL,
-          false,
-          0,
-          100,
-          101,
-          layers[key].getOpacity() * 100,
-          setOpac );
+        var setOpac = function ( val )
+        {
+          self.setOpacity( this.idd, val );
+          stack.redraw();
+          return;
+        };
 
-      slider.idd = key;
-      container.setAttribute("id", key + "-container");
-      container.setAttribute("class", "layerControl");
+        // Make layer re-evaluate it's opacity
+        layers[key].setOpacity(layers[key].getOpacity());
 
-      var layer_name = layers[key].getLayerName ? layers[key].getLayerName() : key;
-      container.appendChild(document.createElement("strong").appendChild(
-          document.createTextNode(layer_name)));
-      container.appendChild( slider.getView() );
+        var slider = new Slider(
+            SLIDER_HORIZONTAL,
+            false,
+            0,
+            100,
+            101,
+            layers[key].getOpacity() * 100,
+            setOpac );
 
-      // A clearing div is needed, because sliders are usually floating.
-      // See i.e. http://stackoverflow.com/questions/14758932
-      var clearing = document.createElement('div');
-      clearing.setAttribute('class', 'clear');
-      container.appendChild(clearing);
+        slider.idd = key;
+        container.setAttribute("id", key + "-container");
+        container.setAttribute("class", "layerControl");
 
-      view.appendChild(container);
-    }
+        var layer_name = layers[key].getLayerName ? layers[key].getLayerName() : key;
+        container.appendChild(document.createElement("strong").appendChild(
+            document.createTextNode(layer_name)));
+        container.appendChild( slider.getView() );
+
+        // A clearing div is needed, because sliders are usually floating.
+        // See i.e. http://stackoverflow.com/questions/14758932
+        var clearing = document.createElement('div');
+        clearing.setAttribute('class', 'clear');
+        container.appendChild(clearing);
+
+        view.appendChild(container);
+      }
+    };
+
+    var view = document.createElement( "div" );
+    view.className = "TilelayerControl";
+    view.id = "TilelayerControl";
+    view.style.zIndex = 8;
+
+    stack.getView().appendChild( view );
   };
 
-  var view = document.createElement( "div" );
-  view.className = "TilelayerControl";
-  view.id = "TilelayerControl";
-  view.style.zIndex = 8;
-
-  stack.getView().appendChild( view );
-}
+})(CATMAID);

@@ -793,7 +793,7 @@ function Stack(
 	self.overview = new Overview( self );
 	view.appendChild( self.overview.getView() );
 
-	self.tilelayercontrol = new TilelayerControl( self );
+	self.tilelayercontrol = new CATMAID.TilelayerControl( self );
 	view.appendChild( self.tilelayercontrol.getView() );
 
 	// Ask for confirmation before closing the stack via the close button

@@ -231,7 +231,12 @@ function DVIDMultiScaleTileSource( baseURL, fileExtension )
     this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
-       return baseURL + "/" + zoom_level + "/" + col + "_" + row + "_" + stack.z;
+        if (stack.orientation === Stack.ORIENTATION_XY)
+            return baseURL + "xy/" + zoom_level + "/" + col + "_" + row + "_" + stack.z;
+        else if (stack.orientation === Stack.ORIENTATION_XZ)
+            return baseURL + "xz/" + zoom_level + "/" + col + "_" + stack.z + "_" + row;
+        else if (stack.orientation === Stack.ORIENTATION_ZY)
+            return baseURL + "yz/" + zoom_level + "/" + stack.z + "_" + col + "_" + row;
     };
 
     this.getOverviewLayer = function( layer )

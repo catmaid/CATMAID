@@ -28,12 +28,12 @@
 					saveAs(blob, "networkx_graph.json");
         }
       });
-    }
+    };
     dialog.show();
-  };
+  }
 
   function graphexport_nxjson() {
-    new_window_with_return( "/graphexport/json" );    
+    new_window_with_return( "/graphexport/json" );
   }
 
 	function graphexport_NeuroML181() {
@@ -96,15 +96,15 @@
 				}});
 		};
 		dialog.show();
-	};
+	}
 
   function export_treenodes() {
     create_node_export_dialog(false);
-  };
+  }
 
   function export_connectors() {
     create_node_export_dialog(true);
-  };
+  }
 
   function create_node_export_dialog(connector_export) {
     // General term used for the exported elements
@@ -257,7 +257,7 @@
       var source = SkeletonListSources.getSource($(select).val());
       var skeletons = source.getSelectedSkeletons();
       // Cancel if there are no skeletons
-      if (skeletons.length == 0) {
+      if (skeletons.length === 0) {
         alert("Please select at least one skelton in the selection widget.");
         return;
       }
@@ -298,9 +298,7 @@
 
     dialog.show(500, connector_export ? 370 : 330, true);
     update_info();
-
-    return;
-  };
+  }
 
   function export_tree_geometry() {
     // Add skeleton source message and controls

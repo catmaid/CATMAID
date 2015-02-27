@@ -48,7 +48,6 @@ function Stack(
 		orientation					//!< {Integer} orientation (0: xy, 1: xz, 2: yz)
 )
 {
-	this.orientation = orientation;
 	var n = dimension.length;
 
 	/**

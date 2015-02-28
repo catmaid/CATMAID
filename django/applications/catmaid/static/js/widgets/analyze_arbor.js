@@ -32,6 +32,7 @@ var AnalyzeArbor = function() {
   this.strahler_cut = 2; // to approximate twigs
   this.scatterplot_width = 650;
   this.scatterplot_height = 470;
+  this.override_microtubules_end = false;
 };
 
 AnalyzeArbor.prototype = {};
@@ -61,6 +62,8 @@ AnalyzeArbor.prototype.adjustOptions = function() {
     od.appendField(titles[i], "AA-" + param + "-" + this.widgetID, this[param]);
   }, this);
 
+  od.appendCheckbox("Override 'microtubules end' and use Strahler number", "AA-override-" + this.widgetID, this.override_microtubules_end);
+
   od.onOK = (function() {
     var natural = (function(param) {
       var field = $("#AA-" + param + "-" + this.widgetID);
@@ -81,8 +84,18 @@ AnalyzeArbor.prototype.adjustOptions = function() {
     if (msgs.length > 0) return alert("Errors:\n" + msgs.join('\n'));
 
     // Set new values
+    var prev_strahler_cut = this.strahler_cut;
     params.forEach((function(param, i) { this[param] = values[i]; }), this);
-    this.updateCharts();
+
+    // Refresh or redraw
+    var override = $('#AA-override-' + this.widgetID).is(':checked');
+    if (override !== this.override_microtubules_end) {
+      this.override_microtubules_end = override;
+      this.update();
+    } else {
+      if (prev_strahler_cut !== this.strahler_cut) this.update();
+      else this.updateCharts();
+    }
 
   }).bind(this);
 
@@ -201,17 +214,48 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
       microtubules_end = tags['microtubules end'],
       mitochondrium = tags['mitochondrium'];
 
-  if (!microtubules_end || 0 === microtubules_end.length) {
-    return alert("Skeleton #" + skid + " does not have any node tagged 'microtubules end'.");
-  }
-
   if (!mitochondrium) mitochondrium = [];
 
   var ap = new ArborParser(json).init('compact-arbor', json);
   // Collapse "not a branch"
   ap.collapseArtifactualBranches(tags);
   // Cache functions that are called many times
-  ap.cache(["childrenArray", "allSuccessors"]);
+  ap.cache(["childrenArray", "allSuccessors", "findBranchAndEndNodes"]);
+
+  var twigs_approx_by_strahler = false;
+
+  if (!microtubules_end || 0 === microtubules_end.length || this.override_microtubules_end) {
+    twigs_approx_by_strahler = true;
+    microtubules_end = (function(strahler_cut, arbor) {
+      // Approximate by using Strahler number:
+      // the twig root will be at the first parent
+      // with a Strahler number larger than strahler_cut
+      var strahler = arbor.strahlerAnalysis(),
+          ends = arbor.findBranchAndEndNodes().ends, // cached
+          edges = arbor.edges,
+          roots = [],
+          seen = {};
+      for (var i=0, l=ends.length; i<l; ++i) {
+        var child = ends[i],
+            paren = edges[child];
+        do {
+          if (seen[paren]) break;
+          if (strahler[paren] > strahler_cut) {
+            roots.push(child);
+            break;
+          }
+          seen[paren] = true;
+          child = paren;
+          paren = edges[paren];
+        } while (paren);
+      }
+      return roots;
+    })(this.strahler_cut, ap.arbor);
+  }
+
+  if (!microtubules_end || 0 === microtubules_end.length) {
+    return alert("Skeleton #" + skid + " does not have any node tagged 'microtubules end', nor can twigs be approximated by a Strahler number of " + this.strahler_cut);
+  }
 
   var minutes = json[3],
       inv_minutes = {};
@@ -440,7 +484,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
     this.arbor_stats[skid].dendritic.backbone_cable = pruned.cableLength(smooth_positions);
   }
 
-  var row = [NeuronNameService.getInstance().getName(skid),
+  var row = [NeuronNameService.getInstance().getName(skid) + (twigs_approx_by_strahler ? " (twigs as Strahler<=" + this.strahler_cut + ")" : ""),
              Math.round(cable) | 0,
              ap.n_inputs,
              ap.n_outputs,

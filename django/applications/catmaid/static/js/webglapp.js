@@ -3434,7 +3434,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 		// If node has a parent
     var v1;
 		if (node[1]) {
-			var p = nodeProps[node[1]];
       v1 = vs[node[0]];
       if (!v1) {
 			  v1 = this.space.toSpace(new THREE.Vector3(node[3], node[4], node[5]));
@@ -3442,6 +3441,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
         v1.user_id = node[2];
         vs[node[0]] = v1;
       }
+      var p = nodeProps[node[1]];
       var v2 = vs[p[0]];
       if (!v2) {
 			  v2 = this.space.toSpace(new THREE.Vector3(p[3], p[4], p[5]));

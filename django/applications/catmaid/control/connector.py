@@ -359,7 +359,7 @@ def _connector_skeletons(connector_ids, project_id):
     POST = relations['postsynaptic_to']
 
     cursor.execute('''
-    SELECT connector_id, relation_id, skeleton_id
+    SELECT connector_id, relation_id, skeleton_id, treenode_id
     FROM treenode_connector
     WHERE connector_id IN (%s)
     ''' % ",".join(map(str, connector_ids)))
@@ -369,12 +369,15 @@ def _connector_skeletons(connector_ids, project_id):
         c = cs.get(row[0])
         if not c:
             # Ensure each connector has the two entries at their minimum
-            c = {'presynaptic_to': None, 'postsynaptic_to': []}
+            c = {'presynaptic_to': None, 'postsynaptic_to': [], 
+                 'presynaptic_to_node': None, 'postsynaptic_to_node': []}
             cs[row[0]] = c
         if POST == row[1]:
             c['postsynaptic_to'].append(row[2])
+            c['postsynaptic_to_node'].append(row[3])
         elif PRE == row[1]:
             c['presynaptic_to'] = row[2]
+            c['presynaptic_to_node'] = row[3]
 
     return cs
 

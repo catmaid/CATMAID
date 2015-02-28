@@ -3535,6 +3535,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 	}
 
   if (options.resample_skeletons) {
+    if (options.smooth_skeletons) {
+      // Can't both smooth and resample
+      return;
+    }
     // WARNING: node IDs no longer resemble actual skeleton IDs.
     // All node IDs will now have negative values to avoid accidental similarities.
     var arbor = this.createArbor();

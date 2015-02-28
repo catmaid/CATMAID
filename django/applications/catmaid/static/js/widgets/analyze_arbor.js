@@ -29,6 +29,9 @@ var AnalyzeArbor = function() {
   this.pie_radius = 100;
   this.plot_width = 300;
   this.plot_height = 300;
+  this.strahler_cut = 2; // to approximate twigs
+  this.scatterplot_width = 650;
+  this.scatterplot_height = 470;
 };
 
 AnalyzeArbor.prototype = {};
@@ -37,6 +40,53 @@ $.extend(AnalyzeArbor.prototype, new SkeletonSource());
 
 AnalyzeArbor.prototype.getName = function() {
   return "Analyze Arbor " + this.widgetID;
+};
+
+AnalyzeArbor.prototype.adjustOptions = function() {
+  var params = ["strahler_cut",
+                "pie_radius",
+                "plot_width",
+                "plot_height",
+                "scatterplot_width",
+                "scatterplot_height"],
+      titles = ["Approximate twigs by Strahler number: ",
+                "Pie radius: ",
+                "Histogram width: ",
+                "Histogram height: ",
+                "Scatterplot width: ",
+                "Scatterplot height: "];
+
+  var od = new OptionsDialog("Parameters");
+  params.forEach(function(param, i) {
+    od.appendField(titles[i], "AA-" + param + "-" + this.widgetID, this[param]);
+  }, this);
+
+  od.onOK = (function() {
+    var natural = (function(param) {
+      var field = $("#AA-" + param + "-" + this.widgetID);
+      try {
+        var v = parseInt(field.val()) | 0;
+        if (v < 0) return param.replace(/_/, " ") + " must be larger than zero.";
+        return v;
+      } catch (e) {
+        return "Invalid value for " + param.replace(/_/, " ") + ": " + field.val();
+      }
+    }).bind(this);
+
+    // Read values
+    var values = params.map(natural);
+
+    // Cancel if any was invalid
+    var msgs = values.filter(function(v) { return !Number.isInteger(v); });
+    if (msgs.length > 0) return alert("Errors:\n" + msgs.join('\n'));
+
+    // Set new values
+    params.forEach((function(param, i) { this[param] = values[i]; }), this);
+    this.updateCharts();
+
+  }).bind(this);
+
+  od.show(300, 400, true);
 };
 
 AnalyzeArbor.prototype.destroy = function() {
@@ -632,7 +682,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
     }, this);
 
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_depth',
-        650, 470,
+        this.scatterplot_width, this.scatterplot_height,
         'cable (µm)', 'depth (µm)',
         cable_vs_depth,
         function(d) {
@@ -642,7 +692,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         false, true);
 
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_inputs',
-        650, 470,
+        this.scatterplot_width, this.scatterplot_height,
         'cable (µm)', 'inputs',
         cable_vs_inputs,
         function(d) {
@@ -653,7 +703,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
     // Create plot of total cable length vs number of twigs
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_length_vs_n_twigs',
-      650, 470,
+      this.scatterplot_width, this.scatterplot_height,
       'arbor cable (µm)', '# twigs',
       total_cable_vs_n_twigs,
       function(d) {
@@ -665,7 +715,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
     // Create plot of total dendritic cable length vs number of dendritic twigs
     SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-dendritic_cable_length_vs_n_dendritic_twigs',
-      650, 460,
+      this.scatterplot_width, this.scatterplot_height,
       'dendritic backbone cable (µm)', '# dendritic twigs',
       total_dendritic_backbone_cable_vs_dendritic_twigs,
       function(d) {

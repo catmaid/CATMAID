@@ -260,6 +260,12 @@ var WindowMaker = new function()
     update.onclick = AA.update.bind(AA);
     buttons.appendChild(update);
 
+    var options = document.createElement('input');
+    options.setAttribute("type", "button");
+    options.setAttribute("value", "Options");
+    options.onclick = AA.adjustOptions.bind(AA);
+    buttons.appendChild(options);
+
     var pies = document.createElement('input');
     pies.setAttribute("type", "button");
     pies.setAttribute("value", "Export charts as SVG");

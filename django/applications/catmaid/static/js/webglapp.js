@@ -3491,10 +3491,15 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
   if (options.smooth_skeletons) {
     var arbor = this.createArbor();
     if (arbor.root) {
-      Object.keys(vs).forEach(function(node_id) {
-        // Copy coords and not replace, given that the same instances are reused
-        vs[node_id].copy(this[node_id]);
-      }, arbor.smoothPositions(vs, options.smooth_skeletons_sigma));
+      var smoothed = arbor.smoothPositions(vs, options.smooth_skeletons_sigma),
+          vertices = this.geometry['neurite'].vertices;
+      // Iterate only unique vertices: the children
+      for (var i=0; i<vertices.length; i+=2) {
+        var v = vertices[i]; // i: child, i+1: parent
+        v.copy(smoothed[v.node_id]);
+      }
+      // Root should not change position, but for completeness and future-proofing:
+      vs[arbor.root].copy(smoothed[arbor.root]);
     }
   }
 

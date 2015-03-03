@@ -2329,14 +2329,14 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap = function(x, y,
   // If wanted, the picking map can be exported
   if (savePickingMap) {
     var img = CATMAID.tools.createImageFromGlContext(gl,
-        this.pickingTexture.width, this.pickingTexture.height)
+        this.pickingTexture.width, this.pickingTexture.height);
     var blob = CATMAID.tools.dataURItoBlob(img.src);
     saveAs(blob, "pickingmap.png");
   }
 
   if (0 === colorId || !idMap[colorId]) {
     return null;
-  };
+  }
 
   return idMap[colorId];
 
@@ -2401,7 +2401,7 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = functio
                               }, a);
                             }, []);
     nodeId = intersect(all_spheres, x, y, step, increments, raycaster, setupRay);
-    return nodeId != false;
+    return nodeId !== null;
   });
 
   return nodeId;
@@ -2447,7 +2447,7 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = functio
 
     return nodeId;
   }
-}
+};
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function() {
   this.skeleton_id = null;

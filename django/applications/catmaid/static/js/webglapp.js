@@ -2233,90 +2233,19 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
     mouse.is_mouse_down = true;
 		if (!ev.shiftKey) return;
 
-    // Step, which is normalized screen coordinates, is choosen so that it will
-    // span half a pixel width in screen space.
-    var adjPxNSC = ((ev.offsetX + 1) / space.canvasWidth) * 2 - 1;
-    var step = 0.5 * Math.abs(mouse.position.x - adjPxNSC);
-    var increments = 10;
-
-    // Setup ray caster
-    var raycaster = new THREE.Raycaster();
-    var setupRay = (function(raycaster, camera) {
-      if (camera.inPerspectiveMode) {
-        raycaster.ray.origin.copy(camera.position);
-        return function(x,y) {
-          raycaster.ray.direction.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize();
-        };
-      } else {
-        raycaster.ray.direction.set(0, 0, -1).transformDirection(camera.matrixWorld);
-        return function(x, y) {
-          raycaster.ray.origin.set(x, y, -1 ).unproject(camera);
-        };
-      }
-    })(raycaster, camera);
-
-    // Attempt to intersect visible skeleton spheres, stopping at the first found
-    var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
-    var skeletons = space.content.skeletons;
-
-    // Iterate over all skeletons and find the ones that are intersected
-    var intersectedSkeletons = Object.keys(skeletons).some(function(skeleton_id) {
-      var skeleton = skeletons[skeleton_id];
-      if (!skeleton.visible) return false;
-      var all_spheres = fields.map(function(field) { return skeleton[field]; })
-                              .reduce(function(a, spheres) {
-                                return Object.keys(spheres).reduce(function(a, id) {
-                                  a.push(spheres[id]);
-                                  return a;
-                                }, a);
-                              }, []);
-      return intersect(all_spheres, mouse.position.x, mouse.position.y, step, increments,
-          raycaster, setupRay);
-    });
-
-    if (!intersectedSkeletons) {
-      growlAlert("Oops", "Couldn't find any intersectable object under the mouse.");
+    // Try to pick the node by casting a ray
+    var nodeId = space.pickNodeWithIntersectionRay(mouse.position.x, mouse.position.y,
+        ev.offsetX, camera);
+    if (!nodeId) {
+      // If no node was found through ray casting, try to pick a node using a
+      // color map. This option is more precise, but also slower. It is
+      // therefore used as a second option.
+      nodeId = space.pickNodeWithColorMap(ev.offsetX, ev.offsetY, camera);
     }
-
-    /**
-     * Returns if a ray shot through X/Y (in normalized screen coordinates
-     * [-1,1]) inersects at least one of the intersectable spheres. If no
-     * intersection is found for the click position, concentric circles are
-     * created and rays are shoot along it. These circles are enlarged in every
-     * iteration by <step> until a maximum of <increment> circles was tested or
-     * an intersection was found. Every two circles, the radius is enlarged by
-     * one screen space pixel.
-     */
-    function intersect(objects, x, y, step, increments, raycaster, setupRay)
-    {
-      var found = false;
-      for (var i=0; i<=increments; ++i) {
-        var numRays = i ? 4 * i : 1;
-        var a = 2 * Math.PI / numRays;
-        for (var j=0; j<numRays; ++j) {
-          setupRay(x + i * step * Math.cos(j * a),
-                   y + i * step * Math.sin(j * a));
-
-          // Test intersection
-          var intersects = raycaster.intersectObjects(objects);
-          if (intersects.length > 0) {
-            found = objects.some(function(sphere) {
-              if (sphere.id !== intersects[0].object.id) return false;
-              SkeletonAnnotations.staticMoveToAndSelectNode(sphere.node_id);
-              return true;
-            });
-          }
-
-          if (found) {
-            break;
-          }
-        }
-        if (found) {
-          break;
-        }
-      }
-
-      return found;
+    if (!nodeId) {
+      growlAlert("Oops", "Couldn't find any intersectable object under the mouse.");
+    } else {
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
     }
   };
 };
@@ -2431,6 +2360,94 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap = function(x, y,
   }
 };
 
+WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = function(x, y, xOffset, camera) {
+  // Attempt to intersect visible skeleton spheres, stopping at the first found
+  var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
+  var skeletons = this.content.skeletons;
+
+  // Step, which is normalized screen coordinates, is choosen so that it will
+  // span half a pixel width in screen space.
+  var adjPxNSC = ((xOffset + 1) / this.canvasWidth) * 2 - 1;
+  var step = 0.5 * Math.abs(x - adjPxNSC);
+  var increments = 1;
+
+  // Setup ray caster
+  var raycaster = new THREE.Raycaster();
+  var setupRay = (function(raycaster, camera) {
+    if (camera.inPerspectiveMode) {
+      raycaster.ray.origin.copy(camera.position);
+      //raycaster.ray.origin.set(0, 0, 0).unproject(camera);
+      return function(x,y) {
+        raycaster.ray.direction.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize();
+      };
+    } else {
+      raycaster.ray.direction.set(0, 0, -1).transformDirection(camera.matrixWorld);
+      return function(x, y) {
+        raycaster.ray.origin.set(x, y, -1 ).unproject(camera);
+      };
+    }
+  })(raycaster, camera);
+
+  // Iterate over all skeletons and find the ones that are intersected
+  var nodeId = null;
+  var intersectionFound = Object.keys(skeletons).some(function(skeleton_id) {
+    var skeleton = skeletons[skeleton_id];
+    if (!skeleton.visible) return false;
+    var all_spheres = fields.map(function(field) { return skeleton[field]; })
+                            .reduce(function(a, spheres) {
+                              return Object.keys(spheres).reduce(function(a, id) {
+                                a.push(spheres[id]);
+                                return a;
+                              }, a);
+                            }, []);
+    nodeId = intersect(all_spheres, x, y, step, increments, raycaster, setupRay);
+    return nodeId != false;
+  });
+
+  return nodeId;
+
+  /**
+   * Returns if a ray shot through X/Y (in normalized screen coordinates
+   * [-1,1]) inersects at least one of the intersectable spheres. If no
+   * intersection is found for the click position, concentric circles are
+   * created and rays are shoot along it. These circles are enlarged in every
+   * iteration by <step> until a maximum of <increment> circles was tested or
+   * an intersection was found. Every two circles, the radius is enlarged by
+   * one screen space pixel.
+   */
+  function intersect(objects, x, y, step, increments, raycaster, setupRay)
+  {
+    var found = false;
+    var nodeId = null;
+    for (var i=0; i<=increments; ++i) {
+      var numRays = i ? 4 * i : 1;
+      var a = 2 * Math.PI / numRays;
+      for (var j=0; j<numRays; ++j) {
+        setupRay(x + i * step * Math.cos(j * a),
+                 y + i * step * Math.sin(j * a));
+
+        // Test intersection
+        var intersects = raycaster.intersectObjects(objects);
+        if (intersects.length > 0) {
+          found = objects.some(function(sphere) {
+            if (sphere.id !== intersects[0].object.id) return false;
+            nodeId = sphere.node_id;
+            return true;
+          });
+        }
+
+        if (found) {
+          break;
+        }
+      }
+      if (found) {
+        break;
+      }
+    }
+
+    return nodeId;
+  }
+}
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function() {
   this.skeleton_id = null;

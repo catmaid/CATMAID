@@ -60,7 +60,7 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.stack = project.focusedStack;
   this.submit = new submitterFn();
 	this.options = new WebGLApplication.prototype.OPTIONS.clone();
-	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack);
+	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.options);
   this.updateActiveNodePosition();
 	this.initialized = true;
 };
@@ -1051,9 +1051,10 @@ WebGLApplication.prototype.showActiveNode = function() {
 
 
 /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
-WebGLApplication.prototype.Space = function( w, h, container, stack ) {
+WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
 	this.stack = stack;
   this.container = container; // used by MouseControls
+  this.options = options;
 
 	this.canvasWidth = w;
 	this.canvasHeight = h;

@@ -60,7 +60,7 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.stack = project.focusedStack;
   this.submit = new submitterFn();
 	this.options = new WebGLApplication.prototype.OPTIONS.clone();
-	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack);
+	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.options);
   this.updateActiveNodePosition();
 	this.initialized = true;
 };
@@ -1051,9 +1051,10 @@ WebGLApplication.prototype.showActiveNode = function() {
 
 
 /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
-WebGLApplication.prototype.Space = function( w, h, container, stack ) {
+WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
 	this.stack = stack;
   this.container = container; // used by MouseControls
+  this.options = options;
 
 	this.canvasWidth = w;
 	this.canvasHeight = h;
@@ -1067,6 +1068,10 @@ WebGLApplication.prototype.Space = function( w, h, container, stack ) {
 
 	// WebGL space
 	this.scene = new THREE.Scene();
+	// A render target used for picking objects
+	this.pickingTexture = new THREE.WebGLRenderTarget(w, h);
+	this.pickingTexture.generateMipmaps = false;
+
 	this.view = new this.View(this);
 	this.lights = this.createLights(stack.dimension, stack.resolution, this.view.camera);
 	this.lights.forEach(function(l) {
@@ -1089,6 +1094,7 @@ WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canva
 	this.canvasHeight = canvasHeight;
 	this.view.camera.setSize(canvasWidth, canvasHeight);
 	this.view.camera.updateProjectionMatrix();
+	this.pickingTexture.setSize(canvasWidth, canvasHeight);
 	this.view.renderer.setSize(canvasWidth, canvasHeight);
 	if (this.view.controls) {
 		this.view.controls.handleResize();
@@ -2227,94 +2233,221 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
     mouse.is_mouse_down = true;
 		if (!ev.shiftKey) return;
 
-    // Step, which is normalized screen coordinates, is choosen so that it will
-    // span half a pixel width in screen space.
-    var adjPxNSC = ((ev.offsetX + 1) / space.canvasWidth) * 2 - 1;
-    var step = 0.5 * Math.abs(mouse.position.x - adjPxNSC);
-    var increments = 10;
-
-    // Setup ray caster
-    var raycaster = new THREE.Raycaster();
-    var setupRay = (function(raycaster, camera) {
-      if (camera.inPerspectiveMode) {
-        raycaster.ray.origin.copy(camera.position);
-        return function(x,y) {
-          raycaster.ray.direction.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize();
-        };
-      } else {
-        raycaster.ray.direction.set(0, 0, -1).transformDirection(camera.matrixWorld);
-        return function(x, y) {
-          raycaster.ray.origin.set(x, y, -1 ).unproject(camera);
-        };
-      }
-    })(raycaster, camera);
-
-    // Attempt to intersect visible skeleton spheres, stopping at the first found
-    var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
-    var skeletons = space.content.skeletons;
-
-    // Iterate over all skeletons and find the ones that are intersected
-    var intersectedSkeletons = Object.keys(skeletons).some(function(skeleton_id) {
-      var skeleton = skeletons[skeleton_id];
-      if (!skeleton.visible) return false;
-      var all_spheres = fields.map(function(field) { return skeleton[field]; })
-                              .reduce(function(a, spheres) {
-                                return Object.keys(spheres).reduce(function(a, id) {
-                                  a.push(spheres[id]);
-                                  return a;
-                                }, a);
-                              }, []);
-      return intersect(all_spheres, mouse.position.x, mouse.position.y, step, increments,
-          raycaster, setupRay);
-    });
-
-    if (!intersectedSkeletons) {
-      growlAlert("Oops", "Couldn't find any intersectable object under the mouse.");
+    // Try to pick the node by casting a ray
+    var nodeId = space.pickNodeWithIntersectionRay(mouse.position.x, mouse.position.y,
+        ev.offsetX, camera);
+    if (!nodeId) {
+      // If no node was found through ray casting, try to pick a node using a
+      // color map. This option is more precise, but also slower. It is
+      // therefore used as a second option.
+      nodeId = space.pickNodeWithColorMap(ev.offsetX, ev.offsetY, camera);
     }
-
-    /**
-     * Returns if a ray shot through X/Y (in normalized screen coordinates
-     * [-1,1]) inersects at least one of the intersectable spheres. If no
-     * intersection is found for the click position, concentric circles are
-     * created and rays are shoot along it. These circles are enlarged in every
-     * iteration by <step> until a maximum of <increment> circles was tested or
-     * an intersection was found. Every two circles, the radius is enlarged by
-     * one screen space pixel.
-     */
-    function intersect(objects, x, y, step, increments, raycaster, setupRay)
-    {
-      var found = false;
-      for (var i=0; i<=increments; ++i) {
-        var numRays = i ? 4 * i : 1;
-        var a = 2 * Math.PI / numRays;
-        for (var j=0; j<numRays; ++j) {
-          setupRay(x + i * step * Math.cos(j * a),
-                   y + i * step * Math.sin(j * a));
-
-          // Test intersection
-          var intersects = raycaster.intersectObjects(objects);
-          if (intersects.length > 0) {
-            found = objects.some(function(sphere) {
-              if (sphere.id !== intersects[0].object.id) return false;
-              SkeletonAnnotations.staticMoveToAndSelectNode(sphere.node_id);
-              return true;
-            });
-          }
-
-          if (found) {
-            break;
-          }
-        }
-        if (found) {
-          break;
-        }
-      }
-
-      return found;
+    if (!nodeId) {
+      growlAlert("Oops", "Couldn't find any intersectable object under the mouse.");
+    } else {
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
     }
   };
 };
 
+/**
+ * Tries to pick an element by creating a color map.
+ *
+ * @param x First mouse position component, relativ to WebGL canvas
+ * @param y First mouse position component, relativ to WebGL canvas
+ * @param camera The camera the picking map should be created with
+ * @param savePickingMap Export the picking color map as PNG image
+ * @return the picked node's ID or null if no node was found
+ */
+WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap = function(x, y, camera, savePickingMap) {
+  // Attempt to intersect visible skeleton spheres, stopping at the first found
+  var color = 0;
+  var idMap = {};
+  var originalMaterials = {};
+  var originalVisibility = {};
+  var originalConnectorPreVisibility =
+    this.staticContent.connectorLineColors.presynaptic_to.visible;
+  var originalConnectorPostVisibility =
+    this.staticContent.connectorLineColors.postsynaptic_to.visible;
+
+  // Hide everthing unpickable
+  var o = CATMAID.tools.deepCopy(this.options);
+  o.show_meshes = false;
+  o.show_missing_sections = false;
+  o.show_active_node = false;
+  o.show_floor = false;
+  o.show_background = false;
+  o.show_box = false;
+  o.show_zplane = false;
+  this.staticContent.adjust(o, this);
+  this.content.adjust(o, this);
+  // Hide pre and post synaptic flags
+  this.staticContent.connectorLineColors.presynaptic_to.visible = false;
+  this.staticContent.connectorLineColors.postsynaptic_to.visible = false;
+
+  // Prepare all spheres for picking by coloring them with an ID.
+  mapToPickables(this.content.skeletons, function(skeleton) {
+    originalVisibility[skeleton.id] = skeleton.actor.neurite.visible;
+    skeleton.actor.neurite.visible = false;
+  }, function(id, obj) {
+    // IDs are expected to be 64 (bigint in Postgres) and can't be mapped to
+    // colors directly. Since the space we are looking here at is likely to be
+    // smaller, we can map colors to IDs ourself.
+    color++;
+    idMap[color] = id;
+    originalMaterials[id] = obj.material;
+    obj.material = new THREE.MeshBasicMaterial({color: color});
+  });
+
+  // Render scene to picking texture
+  var gl = this.view.renderer.getContext();
+  this.view.renderer.render(this.scene, camera, this.pickingTexture);
+  var pixelBuffer = new Uint8Array(4);
+
+  // Read pixel under cursor
+  gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
+      gl.UNSIGNED_BYTE, pixelBuffer);
+
+  // Reset materials
+  mapToPickables(this.content.skeletons, function(skeleton) {
+    skeleton.actor.neurite.visible = originalVisibility[skeleton.id];
+  }, function(id, obj) {
+    obj.material = originalMaterials[id];
+  });
+
+  // Reset visibility of unpickable things
+  this.staticContent.adjust(this.options, this);
+  this.content.adjust(this.options, this);
+  // Restore original pre and post synaptic visibility
+  this.staticContent.connectorLineColors.presynaptic_to.visible =
+    originalConnectorPreVisibility;
+  this.staticContent.connectorLineColors.postsynaptic_to.visible =
+    originalConnectorPostVisibility;
+
+  var colorId = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
+
+  // If wanted, the picking map can be exported
+  if (savePickingMap) {
+    var img = CATMAID.tools.createImageFromGlContext(gl,
+        this.pickingTexture.width, this.pickingTexture.height)
+    var blob = CATMAID.tools.dataURItoBlob(img.src);
+    saveAs(blob, "pickingmap.png");
+  }
+
+  if (0 === colorId || !idMap[colorId]) {
+    return null;
+  };
+
+  return idMap[colorId];
+
+  /**
+   * Execute a function for every skeleton and one for each of its pickable
+   * elements (defined in fields.
+   */
+  function mapToPickables(skeletons, fnSkeleton, fnPickable) {
+    var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
+    Object.keys(skeletons).forEach(function(skeleton_id) {
+      var skeleton = skeletons[skeleton_id];
+      fnSkeleton(skeleton);
+      fields.map(function(field) {
+        return skeleton[field];
+      }).forEach(function(spheres) {
+        Object.keys(spheres).forEach(function(id) {
+          fnPickable(id, spheres[id]);
+        });
+      });
+    });
+  }
+};
+
+WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = function(x, y, xOffset, camera) {
+  // Attempt to intersect visible skeleton spheres, stopping at the first found
+  var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
+  var skeletons = this.content.skeletons;
+
+  // Step, which is normalized screen coordinates, is choosen so that it will
+  // span half a pixel width in screen space.
+  var adjPxNSC = ((xOffset + 1) / this.canvasWidth) * 2 - 1;
+  var step = 0.5 * Math.abs(x - adjPxNSC);
+  var increments = 1;
+
+  // Setup ray caster
+  var raycaster = new THREE.Raycaster();
+  var setupRay = (function(raycaster, camera) {
+    if (camera.inPerspectiveMode) {
+      raycaster.ray.origin.copy(camera.position);
+      //raycaster.ray.origin.set(0, 0, 0).unproject(camera);
+      return function(x,y) {
+        raycaster.ray.direction.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize();
+      };
+    } else {
+      raycaster.ray.direction.set(0, 0, -1).transformDirection(camera.matrixWorld);
+      return function(x, y) {
+        raycaster.ray.origin.set(x, y, -1 ).unproject(camera);
+      };
+    }
+  })(raycaster, camera);
+
+  // Iterate over all skeletons and find the ones that are intersected
+  var nodeId = null;
+  var intersectionFound = Object.keys(skeletons).some(function(skeleton_id) {
+    var skeleton = skeletons[skeleton_id];
+    if (!skeleton.visible) return false;
+    var all_spheres = fields.map(function(field) { return skeleton[field]; })
+                            .reduce(function(a, spheres) {
+                              return Object.keys(spheres).reduce(function(a, id) {
+                                a.push(spheres[id]);
+                                return a;
+                              }, a);
+                            }, []);
+    nodeId = intersect(all_spheres, x, y, step, increments, raycaster, setupRay);
+    return nodeId != false;
+  });
+
+  return nodeId;
+
+  /**
+   * Returns if a ray shot through X/Y (in normalized screen coordinates
+   * [-1,1]) inersects at least one of the intersectable spheres. If no
+   * intersection is found for the click position, concentric circles are
+   * created and rays are shoot along it. These circles are enlarged in every
+   * iteration by <step> until a maximum of <increment> circles was tested or
+   * an intersection was found. Every two circles, the radius is enlarged by
+   * one screen space pixel.
+   */
+  function intersect(objects, x, y, step, increments, raycaster, setupRay)
+  {
+    var found = false;
+    var nodeId = null;
+    for (var i=0; i<=increments; ++i) {
+      var numRays = i ? 4 * i : 1;
+      var a = 2 * Math.PI / numRays;
+      for (var j=0; j<numRays; ++j) {
+        setupRay(x + i * step * Math.cos(j * a),
+                 y + i * step * Math.sin(j * a));
+
+        // Test intersection
+        var intersects = raycaster.intersectObjects(objects);
+        if (intersects.length > 0) {
+          found = objects.some(function(sphere) {
+            if (sphere.id !== intersects[0].object.id) return false;
+            nodeId = sphere.node_id;
+            return true;
+          });
+        }
+
+        if (found) {
+          break;
+        }
+      }
+      if (found) {
+        break;
+      }
+    }
+
+    return nodeId;
+  }
+}
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function() {
   this.skeleton_id = null;

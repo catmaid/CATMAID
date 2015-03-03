@@ -137,4 +137,48 @@ CATMAID.tools = CATMAID.tools || {};
       return new Blob([ia], {type:mimeString});
   };
 
+  /**
+   * Read the pixels of the given size from the given GL context and return them
+   * as an image. If a texture is passed in, the returned image will contain the
+   * texture data.
+   *
+   * @param gl The WebGL context to use.
+   * @param width The width of the image to read out.
+   * @param height The height of the image to read out.
+   * @param texture An optional texture object that will be read out if passed.
+   * @return An image object of either the context or the texture (if passed).
+   */
+  tools.createImageFromGlContext = function(gl, width, height, texture) {
+      var framebuffer;
+      if (texture) {
+        // Create a framebuffer backed by the texture
+        var framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      }
+
+      // Read the contents of the framebuffer
+      var data = new Uint8Array(width * height * 4);
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+
+      if (framebuffer) {
+        gl.deleteFramebuffer(framebuffer);
+      }
+
+      // Create a 2D canvas to store the result
+      var canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      var context = canvas.getContext('2d');
+
+      // Copy the pixels to a 2D canvas
+      var imageData = context.createImageData(width, height);
+      imageData.data.set(data);
+      context.putImageData(imageData, 0, 0);
+
+      var img = new Image();
+      img.src = canvas.toDataURL();
+      return img;
+  };
+
 })(CATMAID.tools);

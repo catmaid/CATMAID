@@ -1068,6 +1068,10 @@ WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
 
 	// WebGL space
 	this.scene = new THREE.Scene();
+	// A render target used for picking objects
+	this.pickingTexture = new THREE.WebGLRenderTarget(w, h);
+	this.pickingTexture.generateMipmaps = false;
+
 	this.view = new this.View(this);
 	this.lights = this.createLights(stack.dimension, stack.resolution, this.view.camera);
 	this.lights.forEach(function(l) {
@@ -1090,6 +1094,7 @@ WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canva
 	this.canvasHeight = canvasHeight;
 	this.view.camera.setSize(canvasWidth, canvasHeight);
 	this.view.camera.updateProjectionMatrix();
+	this.pickingTexture.setSize(canvasWidth, canvasHeight);
 	this.view.renderer.setSize(canvasWidth, canvasHeight);
 	if (this.view.controls) {
 		this.view.controls.handleResize();
@@ -2314,6 +2319,116 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
       return found;
     }
   };
+};
+
+/**
+ * Tries to pick an element by creating a color map.
+ *
+ * @param x First mouse position component, relativ to WebGL canvas
+ * @param y First mouse position component, relativ to WebGL canvas
+ * @param camera The camera the picking map should be created with
+ * @param savePickingMap Export the picking color map as PNG image
+ * @return the picked node's ID or null if no node was found
+ */
+WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap = function(x, y, camera, savePickingMap) {
+  // Attempt to intersect visible skeleton spheres, stopping at the first found
+  var color = 0;
+  var idMap = {};
+  var originalMaterials = {};
+  var originalVisibility = {};
+  var originalConnectorPreVisibility =
+    this.staticContent.connectorLineColors.presynaptic_to.visible;
+  var originalConnectorPostVisibility =
+    this.staticContent.connectorLineColors.postsynaptic_to.visible;
+
+  // Hide everthing unpickable
+  var o = CATMAID.tools.deepCopy(this.options);
+  o.show_meshes = false;
+  o.show_missing_sections = false;
+  o.show_active_node = false;
+  o.show_floor = false;
+  o.show_background = false;
+  o.show_box = false;
+  o.show_zplane = false;
+  this.staticContent.adjust(o, this);
+  this.content.adjust(o, this);
+  // Hide pre and post synaptic flags
+  this.staticContent.connectorLineColors.presynaptic_to.visible = false;
+  this.staticContent.connectorLineColors.postsynaptic_to.visible = false;
+
+  // Prepare all spheres for picking by coloring them with an ID.
+  mapToPickables(this.content.skeletons, function(skeleton) {
+    originalVisibility[skeleton.id] = skeleton.actor.neurite.visible;
+    skeleton.actor.neurite.visible = false;
+  }, function(id, obj) {
+    // IDs are expected to be 64 (bigint in Postgres) and can't be mapped to
+    // colors directly. Since the space we are looking here at is likely to be
+    // smaller, we can map colors to IDs ourself.
+    color++;
+    idMap[color] = id;
+    originalMaterials[id] = obj.material;
+    obj.material = new THREE.MeshBasicMaterial({color: color});
+  });
+
+  // Render scene to picking texture
+  var gl = this.view.renderer.getContext();
+  this.view.renderer.render(this.scene, camera, this.pickingTexture);
+  var pixelBuffer = new Uint8Array(4);
+
+  // Read pixel under cursor
+  gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
+      gl.UNSIGNED_BYTE, pixelBuffer);
+
+  // Reset materials
+  mapToPickables(this.content.skeletons, function(skeleton) {
+    skeleton.actor.neurite.visible = originalVisibility[skeleton.id];
+  }, function(id, obj) {
+    obj.material = originalMaterials[id];
+  });
+
+  // Reset visibility of unpickable things
+  this.staticContent.adjust(this.options, this);
+  this.content.adjust(this.options, this);
+  // Restore original pre and post synaptic visibility
+  this.staticContent.connectorLineColors.presynaptic_to.visible =
+    originalConnectorPreVisibility;
+  this.staticContent.connectorLineColors.postsynaptic_to.visible =
+    originalConnectorPostVisibility;
+
+  var colorId = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
+
+  // If wanted, the picking map can be exported
+  if (savePickingMap) {
+    var img = CATMAID.tools.createImageFromGlContext(gl,
+        this.pickingTexture.width, this.pickingTexture.height)
+    var blob = CATMAID.tools.dataURItoBlob(img.src);
+    saveAs(blob, "pickingmap.png");
+  }
+
+  if (0 === colorId || !idMap[colorId]) {
+    return null;
+  };
+
+  return idMap[colorId];
+
+  /**
+   * Execute a function for every skeleton and one for each of its pickable
+   * elements (defined in fields.
+   */
+  function mapToPickables(skeletons, fnSkeleton, fnPickable) {
+    var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
+    Object.keys(skeletons).forEach(function(skeleton_id) {
+      var skeleton = skeletons[skeleton_id];
+      fnSkeleton(skeleton);
+      fields.map(function(field) {
+        return skeleton[field];
+      }).forEach(function(spheres) {
+        Object.keys(spheres).forEach(function(id) {
+          fnPickable(id, spheres[id]);
+        });
+      });
+    });
+  }
 };
 
 

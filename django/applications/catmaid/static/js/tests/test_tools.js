@@ -123,4 +123,12 @@ QUnit.test('Utilities test', function( assert ) {
   };
   assert.deepEqual(CATMAID.tools.deepCopy(o1), o1,
       "CATMAID.tools.deepEqual can copy nested objects");
+
+
+  // Test CATMAID.tools.setXYZ
+  var o_setXYZ = {x: 2, y: 2, z: 2};
+  assert.deepEqual(CATMAID.tools.setXYZ({x: 1, y: 1, z: 1}, 2), o_setXYZ,
+      "CATMAID.tools.setXYZ sets all fields as expexted");
+  assert.deepEqual(CATMAID.tools.setXYZ({}, 2), o_setXYZ,
+      "CATMAID.tools.setXYZ sets all fields of an empty object as expexted");
 });

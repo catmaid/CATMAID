@@ -181,4 +181,16 @@ CATMAID.tools = CATMAID.tools || {};
       return img;
   };
 
+  /**
+   * Set the x, y and z propery of the given object to the given value.
+   *
+   * @param obj The object to set the x, y and z property of.
+   * @param value The value x, y and z should be set to.
+   * @return The passed in object obj.
+   */
+  tools.setXYZ = function(obj, value) {
+      obj.x = obj.y = obj.z = value;
+      return obj;
+  };
+
 })(CATMAID.tools);

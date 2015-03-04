@@ -66,11 +66,29 @@ Review system:
   of WebP support in others). The resulting WebM video file can be converted to
   any other format using e.g. VLC player, if needed.
 
+- New shading mode "synapse-free chunks". Has one parameter, the minimum amount
+of synapse-free cable to consider between two consecutive synapses, adjustable
+from tge "Shading Parameters" tab.
+
+- New shading mode "dendritic backbone". Depends on 'microtubules end' tags, or
+will approximate twigs by using the Strahler number entered in the "Shading
+Parameters" tab.
+
+
 
 Connectivity widget:
 
 - It is now possible to remove added neurons again. Each row of the table of
   target neurons now contains a small 'x' icon in the first column to remove it.
+
+
+Analyze Arbor:
+
+- Options are provided to approximate twigs by using a branch Strahler number
+defined in the "Options".
+
+- Dimensions of the pie charts and XY plots is now configurable from the
+"Options" dialog.
 
 
 Admin:
@@ -114,6 +132,10 @@ Neuron search:
   panel has been introduced, the 3D viewer has been too high. Now the
   pre-defined views (XY, XZ, ZY, ZX) are display correctly again, i.e. the whole
   bounding box is now seen again.
+
+- Performance enhancement when smoothing skeletons with a Gaussian by avoiding
+to update the same Vector3 instances twice.
+
 
 Miscellaneous:
 

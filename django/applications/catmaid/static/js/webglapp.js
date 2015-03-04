@@ -1068,6 +1068,13 @@ WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
                                       stack.dimension.y * stack.resolution.y,
                                       stack.dimension.z * stack.resolution.z);
 
+	// Set the node scaling for skeletons so that it makes nodes not too big for
+	// higher resolutions and not too small for lower ones.
+	options.skeleton_node_scaling = 2 * Math.min(stack.resolution.x,
+	    stack.resolution.y, stack.resolution.z);
+	// Make the scaling factor look a bit prettier by rounding to two decimals
+	options.skeleton_node_scaling = Number(options.skeleton_node_scaling.toFixed(2));
+
 	// WebGL space
 	this.scene = new THREE.Scene();
 	// A render target used for picking objects
@@ -1081,11 +1088,11 @@ WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
 	}, this.scene);
 
 	// Content
-	this.staticContent = new this.StaticContent(this.dimensions, stack, this.center);
+	this.staticContent = new this.StaticContent(this.dimensions, stack, this.center, options);
 	this.scene.add(this.staticContent.box);
 	this.scene.add(this.staticContent.floor);
 
-	this.content = new this.Content();
+	this.content = new this.Content(options);
 	this.scene.add(this.content.active_node.mesh);
 };
 
@@ -1318,8 +1325,8 @@ WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, 
 	this.missing_sections = [];
 
 	// Shared across skeletons
-  this.labelspheregeometry = new THREE.OctahedronGeometry( 260, 3);
-  this.radiusSphere = new THREE.OctahedronGeometry( 80, 3);
+  this.labelspheregeometry = new THREE.OctahedronGeometry(32, 3);
+  this.radiusSphere = new THREE.OctahedronGeometry(10, 3);
   this.icoSphere = new THREE.IcosahedronGeometry(1, 2);
   this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
   this.textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
@@ -1576,9 +1583,9 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissing
 	}, []);
 };
 
-WebGLApplication.prototype.Space.prototype.Content = function() {
+WebGLApplication.prototype.Space.prototype.Content = function(options) {
 	// Scene content
-	this.active_node = new this.ActiveNode();
+	this.active_node = new this.ActiveNode(options);
 	this.meshes = [];
 	this.skeletons = {};
 };
@@ -2452,9 +2459,10 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = functio
   }
 };
 
-WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function() {
+WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function(options) {
   this.skeleton_id = null;
-  this.mesh = new THREE.Mesh( new THREE.IcosahedronGeometry(320, 2), new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
+  this.mesh = new THREE.Mesh( new THREE.IcosahedronGeometry(40, 2), new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
+  CATMAID.tools.setXYZ(this.mesh.scale, options.skeleton_node_scaling);
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototype = {};
@@ -3482,7 +3490,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_s
 };
 
 /** Place a colored sphere at the node. Used for highlighting special tags like 'uncertain end' and 'todo'. */
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, material) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, material, scaling) {
   if (this.specialTagSpheres.hasOwnProperty(v.node_id)) {
     // There already is a tag sphere at the node
     return;
@@ -3490,6 +3498,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere 
 	var mesh = new THREE.Mesh( this.space.staticContent.labelspheregeometry, material );
 	mesh.position.set( v.x, v.y, v.z );
 	mesh.node_id = v.node_id;
+	CATMAID.tools.setXYZ(mesh.scale, scaling);
 	this.specialTagSpheres[v.node_id] = mesh;
 	this.space.add( mesh );
 };
@@ -3543,7 +3552,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = f
 };
 
 /* The itype is 0 (pre) or 1 (post), and chooses from the two arrays: synapticTypes and synapticColors. */
-WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphere = function(v, itype) {
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphere = function(v, itype, scaling) {
   if (this.synapticSpheres.hasOwnProperty(v.node_id)) {
     // There already is a synaptic sphere at the node
     return;
@@ -3552,6 +3561,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphe
 	mesh.position.set( v.x, v.y, v.z );
 	mesh.node_id = v.node_id;
 	mesh.type = this.synapticTypes[itype];
+	CATMAID.tools.setXYZ(mesh.scale, scaling);
 	this.synapticSpheres[v.node_id] = mesh;
 	this.space.add( mesh );
 };
@@ -3650,7 +3660,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 		}
 		if (!lean && node[7] < 5) {
 			// Edge with confidence lower than 5
-			this.createLabelSphere(v1, this.space.staticContent.labelColors.uncertain);
+			this.createLabelSphere(v1, this.space.staticContent.labelColors.uncertain, options.skeleton_node_scaling);
 		}
 	}, this);
 
@@ -3682,7 +3692,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
     v1.node_id = con[1];
 		var v2 = vs[con[0]];
 		this.createEdge(v1, v2, this.synapticTypes[con[2]]);
-		this.createSynapticSphere(v2, con[2]);
+		this.createSynapticSphere(v2, con[2], options.skeleton_node_scaling);
 	}, this);
 
 	// Place spheres on nodes with special labels, if they don't have a sphere there already
@@ -3692,13 +3702,15 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			if (-1 !== tagLC.indexOf('todo')) {
 				this.tags[tag].forEach(function(nodeID) {
 					if (!this.specialTagSpheres[nodeID]) {
-						this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.todo);
+						this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.todo,
+							options.skeleton_node_scaling);
 					}
 				}, this);
 			} else if (-1 !== tagLC.indexOf('uncertain')) {
 				this.tags[tag].forEach(function(nodeID) {
 					if (!this.specialTagSpheres[nodeID]) {
-						this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.uncertain);
+						this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.uncertain,
+							options.skeleton_node_scaling);
 					}
 				}, this);
 			}

@@ -1030,6 +1030,12 @@ var WindowMaker = new function()
     // initialized.
     addLogic(win);
     WA.init( 800, 600, canvas.getAttribute("id") );
+
+    // Since the initialization can potentially change the node scaling, the is
+    // updated here explicitly. At some point we might want to have some sort of
+    // observer for this.
+    nodeScalingInput.value = WA.options.skeleton_node_scaling;
+
     // Create a Selection Table, preset as the sync target
     createStagingListWindow( null, win, WA.getName() );
 

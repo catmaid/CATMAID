@@ -100,6 +100,12 @@ Admin:
   new" button.
 
 
+Export:
+
+- A basic JSON export of all treenodes and connectors of the selected neurons is
+  now possible.
+
+
 ### Bug fixes
 
 Tracing overlay:
@@ -140,6 +146,8 @@ to update the same Vector3 instances twice.
 Miscellaneous:
 
 - Vertical resizing of widgets now doesn't lead to strange size changes anymore.
+
+- An alternative DVID tile source was added to support its multiscale API.
 
 
 ## 2015.1.21

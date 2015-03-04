@@ -226,31 +226,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
 
   if (!microtubules_end || 0 === microtubules_end.length || this.override_microtubules_end) {
     twigs_approx_by_strahler = true;
-    microtubules_end = (function(strahler_cut, arbor) {
-      // Approximate by using Strahler number:
-      // the twig root will be at the first parent
-      // with a Strahler number larger than strahler_cut
-      var strahler = arbor.strahlerAnalysis(),
-          ends = arbor.findBranchAndEndNodes().ends, // cached
-          edges = arbor.edges,
-          roots = [],
-          seen = {};
-      for (var i=0, l=ends.length; i<l; ++i) {
-        var child = ends[i],
-            paren = edges[child];
-        do {
-          if (seen[paren]) break;
-          if (strahler[paren] > strahler_cut) {
-            roots.push(child);
-            break;
-          }
-          seen[paren] = true;
-          child = paren;
-          paren = edges[paren];
-        } while (paren);
-      }
-      return roots;
-    })(this.strahler_cut, ap.arbor);
+    microtubules_end = ap.arbor.approximateTwigRoots(this.strahler_cut);
   }
 
   if (!microtubules_end || 0 === microtubules_end.length) {

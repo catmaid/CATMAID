@@ -1923,3 +1923,30 @@ Arbor.prototype.split = function(cuts) {
 
   return fragments;
 };
+
+/** Return an array of treenode IDs corresponding each to the first node of a twig that is not part of the backbone, approximating the roots by using the strahler number. */
+Arbor.prototype.approximateTwigRoots = function(strahler_cut) {
+  // Approximate by using Strahler number:
+  // the twig root will be at the first parent
+  // with a Strahler number larger than strahler_cut
+  var strahler = this.strahlerAnalysis(),
+      ends = this.findBranchAndEndNodes().ends,
+      edges = this.edges,
+      roots = [],
+      seen = {};
+  for (var i=0, l=ends.length; i<l; ++i) {
+    var child = ends[i],
+        paren = edges[child];
+    do {
+      if (seen[paren]) break;
+      if (strahler[paren] > strahler_cut) {
+        roots.push(child);
+        break;
+      }
+      seen[paren] = true;
+      child = paren;
+      paren = edges[paren];
+    } while (paren);
+  }
+  return roots;
+};

@@ -588,6 +588,7 @@ WebGLApplication.prototype.Options = function() {
   this.animation_rotation_speed = 0.01;
   this.animation_back_forth = false;
   this.animation_stepwise_visibility = false;
+  this.strahler_cut = 2; // to approximate twigs
 };
 
 WebGLApplication.prototype.Options.prototype = {};
@@ -2991,10 +2992,10 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         }, node_weights);
       });
     } else if ('dendritic-backbone' === options.shading_method) {
-      if (!this.axon || !this.tags['microtubules end']) {
+      node_weights = {};
+      if (!this.axon) {
         // Not computable
-        console.log("Shading '" + options.shading_method + "' not computable for skeleton ID #" + this.id + ", neuron named: " + NeuronNameService.getInstance().getName(this.id));
-        node_weights = {};
+        console.log("Shading '" + options.shading_method + "' not computable for skeleton ID #" + this.id + ", neuron named: " + NeuronNameService.getInstance().getName(this.id) + ". The axon is missing.");
       } else {
         // Prune artifactual branches
         if (this.tags['not a branch']) {
@@ -3004,21 +3005,32 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           arbor = ap.arbor;
         }
         // Create backbone arbor
-        var upstream = this.createUpstreamArbor('microtubules end', arbor);
-        // Collect nodes that don't belong to the dendritic backbone
-        var outside = {},
-            add = (function(node) { this[node] = true; }).bind(outside);
-        // Nodes from the axon terminals
-        this.axon.nodesArray().forEach(add);
-        // Nodes from the linker between dendritic tree and axon terminals
-        this.axon.fc_max_plateau.forEach(add);
-        // Nodes primarily from the linker between arbor and soma
-        this.axon.fc_zeros.forEach(add);
-        // Set weights
+        var upstream;
+        if (this.tags['microtubules end'] && this.tags['microtubules_end'].length > 0) {
+          upstream = this.createUpstreamArbor('microtubules end', arbor);
+        } else {
+          var cuts = arbor.approximateTwigRoots(options.strahler_cut);
+          if (cuts && cuts.length > 0) {
+            upstream = arbor.upstreamArbor(cuts);
+            growlAlert("Approximating dendritic backbone", "By strahler number " + options.strahler_cut + ", neuron: " + NeuronNameService.getInstance().getName(this.id));
+          }
+        }
         node_weights = {};
-        arbor.nodesArray().forEach(function(node) {
-          this[node] = (upstream.contains(node) && !outside[node]) ? 1 : 0;
-        }, node_weights);
+        if (upstream) {
+          // Collect nodes that don't belong to the dendritic backbone
+          var outside = {},
+              add = (function(node) { this[node] = true; }).bind(outside);
+          // Nodes from the axon terminals
+          this.axon.nodesArray().forEach(add);
+          // Nodes from the linker between dendritic tree and axon terminals
+          this.axon.fc_max_plateau.forEach(add);
+          // Nodes primarily from the linker between arbor and soma
+          this.axon.fc_zeros.forEach(add);
+          // Set weights
+          arbor.nodesArray().forEach(function(node) {
+            this[node] = (upstream.contains(node) && !outside[node]) ? 1 : 0;
+          }, node_weights);
+        }
       }
     }
   }

@@ -962,6 +962,13 @@ var WindowMaker = new function()
           ['Line width ', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 10],
         ]);
 
+    var nodeScalingInput = appendNumericField(tabs['View settings'],
+        'Node handle scaling ', o.skeleton_node_scaling, null, function() {
+              WA.options.skeleton_node_scaling = Math.max(0, this.value) || 1.0;
+              WA.adjustContent();
+              WA.updateSkeletonNodeHandleScaling(this.value);
+        }, 5);
+
     appendToTab(tabs['Skeleton filters'],
         [
           ['Smooth ', o.smooth_skeletons, function() { WA.options.smooth_skeletons = this.checked; WA.updateSkeletons(); }, false],

@@ -74,6 +74,8 @@ from tge "Shading Parameters" tab.
 will approximate twigs by using the Strahler number entered in the "Shading
 Parameters" tab.
 
+- The view settings tab now contains a control to scale the size of the node
+  handles (e.g. active node, special tags).
 
 
 Connectivity widget:

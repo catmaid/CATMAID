@@ -581,6 +581,7 @@ WebGLApplication.prototype.Options = function() {
   this.resample_skeletons = false;
   this.resampling_delta = 3000; // nm
   this.skeleton_line_width = 3;
+  this.skeleton_node_scaling = 1.0;
   this.invert_shading = false;
   this.follow_active = false;
   this.distance_to_active_node = 5000; // nm
@@ -1637,6 +1638,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
 	}
 
 	this.active_node.setVisible(options.show_active_node);
+	CATMAID.tools.setXYZ(this.active_node.mesh.scale, options.skeleton_node_scaling);
 };
 
 WebGLApplication.prototype.Space.prototype.View = function(space) {
@@ -2452,8 +2454,7 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = functio
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function() {
   this.skeleton_id = null;
-  this.mesh = new THREE.Mesh( new THREE.IcosahedronGeometry(1, 2), new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
-  this.mesh.scale.x = this.mesh.scale.y = this.mesh.scale.z = 320;
+  this.mesh = new THREE.Mesh( new THREE.IcosahedronGeometry(320, 2), new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototype = {};
@@ -3159,6 +3160,26 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeSkeletonLine
     this.actor['neurite'].material.needsUpdate = true;
 };
 
+/**
+ * Scale node handles of a skeletons. These are the special tag spheres and the
+ * synaptic spheres.
+ */
+WebGLApplication.prototype.Space.prototype.Skeleton.prototype.scaleNodeHandles = function(value) {
+    // Scale special tag spheres
+    for (var k in this.specialTagSpheres) {
+      if (this.specialTagSpheres.hasOwnProperty(k)) {
+        CATMAID.tools.setXYZ(this.specialTagSpheres[k].scale, value);
+      }
+    }
+
+    // Scale synaptic spheres
+    for (var k in this.synapticSpheres) {
+      if (this.synapticSpheres.hasOwnProperty(k)) {
+        CATMAID.tools.setXYZ(this.synapticSpheres[k].scale, value);
+      }
+    }
+};
+
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeColor = function(color, options) {
 	this.actorColor = color;
 	if (options.color_method === 'manual') {
@@ -3818,10 +3839,11 @@ WebGLApplication.prototype.adjustContent = function() {
 };
 
 
-WebGLApplication.prototype._validate = function(number, error_msg) {
+WebGLApplication.prototype._validate = function(number, error_msg, min) {
   if (!number) return null;
+  var min = typeof(min) === "number" ? min : 1.0;
   var value = +number; // cast
-  if (Number.isNaN(value) || value < 1) return growlAlert("WARNING", error_msg);
+  if (Number.isNaN(value) || value < min) return growlAlert("WARNING", error_msg);
   return value;
 };
 
@@ -3842,6 +3864,15 @@ WebGLApplication.prototype.updateSkeletonLineWidth = function(value) {
   this.options.skeleton_line_width = value;
   var sks = this.space.content.skeletons;
   Object.keys(sks).forEach(function(skid) { sks[skid].changeSkeletonLineWidth(value); });
+  this.space.render();
+};
+
+WebGLApplication.prototype.updateSkeletonNodeHandleScaling = function(value) {
+  value = this._validate(value, "Invalid skeleton node scaling value", 0);
+  if (!value) return;
+  this.options.skeleton_node_scaling = value;
+  var sks = this.space.content.skeletons;
+  Object.keys(sks).forEach(function(skid) { sks[skid].scaleNodeHandles(value); });
   this.space.render();
 };
 

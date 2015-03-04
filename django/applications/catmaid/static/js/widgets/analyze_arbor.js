@@ -8,6 +8,7 @@
   InstanceRegistry,
   NeuronNameService,
   project,
+  OptionsDialog,
   SelectionTable,
   SkeletonAnnotations,
   SkeletonSource,

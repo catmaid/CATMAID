@@ -2657,10 +2657,24 @@ GroupGraph.prototype.unsplit = function() {
   this.split(); // without argument
 };
 
+/** Copies all except the selection state. */
 GroupGraph.prototype.cloneWidget = function() {
   WindowMaker.create('graph-widget');
   var copy = GroupGraph.prototype.getLastInstance();
-  // Copy plain variables
+  if (this.state) copy.state = $.extend(true, {}, this.state);
+  copy.setContent(this.copyContent());
+};
+
+GroupGraph.prototype.setContent = function(p) {
+  $.extend(this, p.properties);
+  this.groups = p.groups;
+  this.subgraphs = p.subgraphs;
+  this.cy.add(p.elements);
+  this.cy.layout(p.layout);
+};
+
+GroupGraph.prototype.copyContent = function() {
+  var properties = {};
   ['synaptic_count_edge_filter',
    'label_valign',
    'label_halign',
@@ -2676,23 +2690,87 @@ GroupGraph.prototype.cloneWidget = function() {
    'grid_snap',
    'grid_side'
   ].forEach(function(key) {
-    copy[key] = this[key];
+    properties[key] = this[key];
   }, this);
-  // Deep copy objects
-  $.extend(true, copy.selection, this.selection);
-  $.extend(true, copy.groups, this.groups);
-  $.extend(true, copy.subgraphs, this.subgraphs);
-  if (this.state) copy.state = $.extend(true, {}, this.state);
-  // Copy nodes and edges
-  var copier = function(elem) { return {data: $.extend(true, {}, elem.data())}; };
-  copy.cy.add({nodes: this.cy.nodes().toArray().map(copier),
-               edges: this.cy.edges().toArray().map(copier)});
-  // Reposition nodes
-  var options = {
+
+  var layout = {
     name: 'preset',
     positions: this.cy.nodes().toArray().reduce(function(p, node) { p[node.id()] = node.position(); return p; }, {}),
     fit: false,
     zoom: this.cy.zoom()
   };
-  copy.cy.layout(options);
+
+  var copier = function(elem) { return {data: $.extend(true, {}, elem.data())}; };
+
+  return {
+    properties: properties,
+    elements: {nodes: this.cy.nodes().toArray().map(copier),
+               edges: this.cy.edges().toArray().map(copier)},
+    groups: this.groups,
+    subgraphs: this.subgraphs,
+    layout: layout
+  };
+};
+
+GroupGraph.prototype.saveJSON = function() {
+  var filename = prompt("File name", "graph" + this.widgetID + ".json");
+  if (!filename) return;
+  saveAs(new Blob([JSON.stringify(this.copyContent())], {type: 'text/plain'}), filename);
+};
+
+GroupGraph.prototype.loadFromJSON = function(files) {
+  try {
+    if (0 === files.length) return alert("Choose at least one file!");
+    if (files.length > 1) return alert("Choose only one file!");
+    var name = files[0].name;
+    if (name.lastIndexOf('.json') !== name.length - 5) return alert("File extension must be '.json'");
+    var reader = new FileReader();
+    reader.onload = (function(e) {
+      try {
+        var json = $.parseJSON(e.target.result);
+        var skids = {};
+        var asModel = function(ob) {
+          skids[ob.id] = true;
+          var color = new THREE.Color(ob.color.r, ob.color.g, ob.color.b);
+          return $.extend(new SelectionTable.prototype.SkeletonModel(ob.id, ob.baseName, color), ob, {color: color});
+        };
+        // Replace JSON of models with proper SkeletonModel instances
+        json.elements.nodes.forEach(function(node) {
+          node.data.skeletons = node.data.skeletons.map(asModel);
+        });
+        // Replace group colors with proper THREE.Color instances
+        // and group models with proper SkeletonModel instances
+        Object.keys(json.groups).forEach(function(gid) {
+          var g = json.groups[gid];
+          g.color = new THREE.Color(g.color.r, g.color.g, g.color.b);
+          Object.keys(g.models).forEach(function(skid) {
+            g.models[skid] = asModel(g.models[skid]);
+          });
+        });
+        this.clear();
+        this.setContent(json);
+        // Find out which ones exist
+        requestQueue.register(django_url + project.id + '/skeleton/neuronnames', "POST",
+            {skids: Object.keys(skids)},
+            (function(status, text) {
+              if (200 !== status) return;
+              var json = $.parseJSON(text);
+              if (json.error) return alert(json.error);
+              var missing = Object.keys(skids).filter(function(skid) {
+                return undefined === json[skid];
+              });
+              if (missing.length > 0) {
+                this.removeSkeletons(missing);
+                growlAlert("WARNING", "Did NOT load " + missing.length + " missing skeleton" + (1 === missing.length ? "" : "s"));
+              }
+              this.update(); // removes missing ones (but doesn't) and regenerate the data for subgraph nodes
+            }).bind(this));
+      } catch (e) {
+        alert("Failed to parse file: " + e);
+      }
+    }).bind(this);
+    reader.readAsText(files[0]);
+  } catch (e) {
+    alert("Oops: " + e);
+  }
 };

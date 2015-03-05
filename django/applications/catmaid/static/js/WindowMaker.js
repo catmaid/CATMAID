@@ -1224,7 +1224,13 @@ var WindowMaker = new function()
          ['Clear', GG.clear.bind(GG)],
          ['Refresh', GG.update.bind(GG)],
          ['Properties', GG.graph_properties.bind(GG)],
-         ['Clone', GG.cloneWidget.bind(GG)]]);
+         ['Clone', GG.cloneWidget.bind(GG)],
+         ['Save', GG.saveJSON.bind(GG)],
+         ['Open...', function() { document.querySelector('#gg-file-dialog-' + GG.widgetID).click(); }]]);
+
+    appendHiddenFileButton(tabs['Export'], 'gg-file-dialog-' + GG.widgetID,
+        function(evt) { GG.loadFromJSON(evt.target.files); }
+    );
 
     var color = document.createElement('select');
     color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
@@ -1881,6 +1887,17 @@ var WindowMaker = new function()
     b.onclick = onclickFn;
     div.appendChild(b);
     return b;
+  };
+
+  var appendHiddenFileButton = function(div, id, onchangeFn) {
+    var fb = document.createElement('input');
+    fb.setAttribute('type', 'file');
+    fb.setAttribute('id', id);
+    fb.setAttribute('name', 'files[]');
+    fb.style.display = 'none';
+    fb.onchange = onchangeFn;
+    div.appendChild(fb);
+    return fb;
   };
 
   var createCheckbox = function(title, value, onclickFn) {

@@ -2765,8 +2765,8 @@ GroupGraph.prototype.loadFromJSON = function(files) {
               }
               this.update(); // removes missing ones (but doesn't) and regenerate the data for subgraph nodes
             }).bind(this));
-      } catch (e) {
-        alert("Failed to parse file: " + e);
+      } catch (error) {
+        CATMAID.error("Failed to parse file", error);
       }
     }).bind(this);
     reader.readAsText(files[0]);

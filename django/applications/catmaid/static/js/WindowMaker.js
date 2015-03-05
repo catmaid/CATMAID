@@ -1212,7 +1212,8 @@ var WindowMaker = new function()
          ['Append as group', GG.appendAsGroup.bind(GG)],
          ['Clear', GG.clear.bind(GG)],
          ['Refresh', GG.update.bind(GG)],
-         ['Properties', GG.graph_properties.bind(GG)]]);
+         ['Properties', GG.graph_properties.bind(GG)],
+         ['Clone', GG.cloneWidget.bind(GG)]]);
 
     var color = document.createElement('select');
     color.setAttribute('id', 'graph_color_choice' + GG.widgetID);

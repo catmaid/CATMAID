@@ -2656,3 +2656,43 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
 GroupGraph.prototype.unsplit = function() {
   this.split(); // without argument
 };
+
+GroupGraph.prototype.cloneWidget = function() {
+  WindowMaker.create('graph-widget');
+  var copy = GroupGraph.prototype.getLastInstance();
+  // Copy plain variables
+  ['synaptic_count_edge_filter',
+   'label_valign',
+   'label_halign',
+   'show_node_labels',
+   'trim_node_labels',
+   'node_width',
+   'node_height',
+   'edge_color',
+   'edge_opacity',
+   'edge_text_opacity',
+   'edge_min_width',
+   'edge_width_function',
+   'grid_snap',
+   'grid_side'
+  ].forEach(function(key) {
+    copy[key] = this[key];
+  }, this);
+  // Deep copy objects
+  $.extend(true, copy.selection, this.selection);
+  $.extend(true, copy.groups, this.groups);
+  $.extend(true, copy.subgraphs, this.subgraphs);
+  if (this.state) copy.state = $.extend(true, {}, this.state);
+  // Copy nodes and edges
+  var copier = function(elem) { return {data: $.extend(true, {}, elem.data())}; };
+  copy.cy.add({nodes: this.cy.nodes().toArray().map(copier),
+               edges: this.cy.edges().toArray().map(copier)});
+  // Reposition nodes
+  var options = {
+    name: 'preset',
+    positions: this.cy.nodes().toArray().reduce(function(p, node) { p[node.id()] = node.position(); return p; }, {}),
+    fit: false,
+    zoom: this.cy.zoom()
+  };
+  copy.cy.layout(options);
+};

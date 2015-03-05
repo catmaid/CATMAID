@@ -1673,7 +1673,6 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
 	this.camera = new THREE.CombinedCamera(-this.space.canvasWidth,
       -this.space.canvasHeight, fov, near, far, orthoNear, orthoFar);
   this.camera.frustumCulled = false;
-  this.camera.eulerOrder = "YXZ";
 
 	this.projector = new THREE.Projector();
 

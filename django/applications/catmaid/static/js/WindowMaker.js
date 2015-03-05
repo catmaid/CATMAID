@@ -988,11 +988,22 @@ var WindowMaker = new function()
           ['Strahler number ', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, 'dendritic-backbone'); }, 4]
         ]);
 
+    var axisOptions = document.createElement('select');
+    axisOptions.options.add(new Option("Camera Up", "up"));
+    axisOptions.options.add(new Option("X", "x"));
+    axisOptions.options.add(new Option("Y", "y"));
+    axisOptions.options.add(new Option("Z", "z"));
+    axisOptions.onchange = function() {
+      WA.options.animation_axis = this.value;
+    };
+
     appendToTab(tabs['Animation'],
         [
           ['Play', function() { WA.startAnimation(WA.createAnimation()); }],
           ['Stop', WA.stopAnimation.bind(WA)],
-          ['Rotation speed', o.animation_rotation_speed, '', function() {
+          [document.createTextNode(' Rotation axis:')],
+          [axisOptions],
+          [' Rotation speed', o.animation_rotation_speed, '', function() {
             WA.options.animation_rotation_speed = parseFloat(this.value);
            }, 5],
           ['Back and forth ', o.animation_back_forth, function() {
@@ -1000,7 +1011,7 @@ var WindowMaker = new function()
           }, false],
           ['Stepwise neuron visibility ', o.animation_stepwise_visibility, function() {
             WA.options.animation_stepwise_visibility = this.checked;
-          }, false],
+          }, false]
         ]);
 
     appendToTab(tabs['Export'],

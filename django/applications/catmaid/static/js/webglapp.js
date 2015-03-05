@@ -586,6 +586,7 @@ WebGLApplication.prototype.Options = function() {
   this.follow_active = false;
   this.distance_to_active_node = 5000; // nm
   this.min_synapse_free_cable = 5000; // nm
+  this.animation_rotation_axis = "up";
   this.animation_rotation_speed = 0.01;
   this.animation_back_forth = false;
   this.animation_stepwise_visibility = false;
@@ -1672,6 +1673,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
 	this.camera = new THREE.CombinedCamera(-this.space.canvasWidth,
       -this.space.canvasHeight, fov, near, far, orthoNear, orthoFar);
   this.camera.frustumCulled = false;
+  this.camera.eulerOrder = "YXZ";
 
 	this.projector = new THREE.Projector();
 
@@ -4043,7 +4045,8 @@ WebGLApplication.prototype.createAnimation = function()
 {
   // For now it is always the Y axis rotation
   var options = {
-    type: 'yrotation',
+    type: 'rotation',
+    axis: this.options.animation_axis,
     camera: this.space.view.camera,
     target: this.space.view.controls.target,
     speed: this.options.animation_rotation_speed,
@@ -4154,6 +4157,7 @@ WebGLApplication.prototype.exportAnimation = function()
       var visMap = this.space.getVisibilityMap();
 
       try {
+        var axis = "up";
         var rotations = parseInt(rotationsField.value);
         var rotationtime = parseFloat(rotationtimeField.value);
         var framerate = parseInt(framerateField.value);
@@ -4165,7 +4169,8 @@ WebGLApplication.prototype.exportAnimation = function()
 
         // Collect options
         var options = {
-          type: 'yrotation',
+          type: 'rotation',
+          axis: axis,
           speed: speed,
           camera: camera,
           target: target,
@@ -4261,13 +4266,26 @@ var AnimationFactory = (function()
 
       var notify = options.notify || false;
 
-      if (options.type == "yrotation") {
+      if (options.type == "rotation") {
+        var axis = options.axis || "up";
         var camera = getOption(options, "camera");
         var target = getOption(options, "target");
         var speed = getOption(options, "speed");
         var backAndForth = options.backandforth || false;
 
-        animation.update = AnimationFactory.YAxisRotation(camera, target,
+        if ("up" === axis) {
+          axis = camera.up.clone().normalize();
+        } else if ("x" === axis) {
+          axis = new THREE.Vector3(1, 0, 0);
+        } else if ("y" === axis) {
+          axis = new THREE.Vector3(0, 1, 0);
+        } else if ("z" === axis) {
+          axis = new THREE.Vector3(0, 0, 1);
+        } else {
+          throw Error("Could not create animation, unknown axis: " + axis);
+        }
+
+        animation.update = AnimationFactory.AxisRotation(camera, target, axis,
            speed, backAndForth, notify);
       } else {
         throw Error("Could not create animation, don't know type: " +
@@ -4289,13 +4307,13 @@ var AnimationFactory = (function()
 })();
 
 /**
- * Rotate the camera around the Y axis of the target position, while keeping
- * the same distance to it. Optionally, a rotation speed can be passed. If
- * back-and-forth mode is turned on, the rotation won't continue after a full
- * circle, but reverse direction. A notification function can be passed in. It
- * is called every full circle.
+ * Rotate the camera around a particula axis through the the target position,
+ * while keeping the same distance to it. Optionally, a rotation speed can be
+ * passed. If back-and-forth mode is turned on, the rotation won't continue
+ * after a full circle, but reverse direction. A notification function can be
+ * passed in. It is called every full circle.
  */
-AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed,
+AnimationFactory.AxisRotation = function(camera, targetPosition, axis, rSpeed,
     backAndForth, notify)
 {
   // Counts the number of rotations done
@@ -4304,6 +4322,11 @@ AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed,
   var targetDistance = camera.position.distanceTo(targetPosition);
   rSpeed = rSpeed || 0.01;
   backAndForth = backAndForth || false;
+
+  // Start position for the rotation, relative to the target
+  var startPosition = camera.position.clone().sub(targetPosition);;
+
+  var m = new THREE.Matrix4();
 
   // Return update function
   return function(t) {
@@ -4326,8 +4349,12 @@ AnimationFactory.YAxisRotation = function(camera, targetPosition, rSpeed,
       rad = (currentRotation % 2) === 0 ? rad : -rad;
     }
 
-    // Assume rotation around Y
-    camera.position.x = targetPosition.x + targetDistance * Math.cos(rad);
-    camera.position.z = targetPosition.z + targetDistance * Math.sin(rad);
+    // Set matrix to a rotation around a certain axis
+    m.makeRotationAxis(axis, rad);
+
+    // Rotate the camera around this axis by using a copy of the start position
+    // (relative to target), rotating it and make it a world position by adding
+    // it to the target.
+    camera.position.copy(startPosition).applyMatrix4(m).add(targetPosition);
   };
 };

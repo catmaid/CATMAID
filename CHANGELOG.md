@@ -94,6 +94,14 @@ defined in the "Options".
 "Options" dialog.
 
 
+Graph widget:
+
+- New button to "Clone" the graph widget: opens a new widget with identical content.
+
+- New buttons to "Save" and "Open..." to/from JSON, so that complex graphs can be
+reloaded later on. Skeletons not present in the database are not loaded.
+
+
 Admin:
 
 - For projects, stacks, overlays and data views there is now the option to

@@ -4327,7 +4327,7 @@ WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
     backAndForth = backAndForth || false;
 
     // Start position for the rotation, relative to the target
-    var startPosition = camera.position.clone().sub(targetPosition);;
+    var startPosition = camera.position.clone().sub(targetPosition);
 
     var m = new THREE.Matrix4();
 

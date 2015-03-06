@@ -193,3 +193,21 @@ CATMAID.error = function(msg, detail)
 {
   new CATMAID.ErrorDialog(msg, detail).show();
 };
+
+/**
+ * Convenience function to show a growl message
+ */
+CATMAID.msg = function(title, msg)
+{
+  growlAlert(title, msg);
+};
+
+/**
+ * Convenience function to show a growl info message.
+ */
+CATMAID.info = CATMAID.msg.bind(window, "Information");
+
+/**
+ * Convenience function to show a growl warning message.
+ */
+CATMAID.warn = CATMAID.msg.bind(window, "Warning");

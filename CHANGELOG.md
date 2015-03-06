@@ -102,6 +102,11 @@ Graph widget:
 reloaded later on. Skeletons not present in the database are not loaded.
 
 
+Miscellaneous:
+
+- Selecting tags for highlighting in the neuron dendrogram
+
+
 Admin:
 
 - For projects, stacks, overlays and data views there is now the option to

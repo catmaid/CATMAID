@@ -348,18 +348,11 @@ var WindowMaker = new function()
     exportSVG.onclick = ND.exportSVG.bind(ND);
     buttons.appendChild(exportSVG);
 
-    var tag = document.createElement('label');
-    tag.appendChild(document.createTextNode('Tag'));
-    var tagInput = document.createElement('input');
-    tagInput.setAttribute('type', 'text');
-    tagInput.setAttribute('id', 'dendrogram-tag-' + ND.widgetID);
-    tagInput.onkeypress = function(e) {
-      if (13 === e.keyCode) {
-        ND.update();
-      }
-    };
-    tag.appendChild(tagInput);
-    buttons.appendChild(tag);
+    var highlightTags = document.createElement('input');
+    highlightTags.setAttribute("type", "button");
+    highlightTags.setAttribute("value", "Highlight tags");
+    highlightTags.onclick = ND.chooseHighlightTags.bind(ND);
+    buttons.appendChild(highlightTags);
 
     var minStrahler = document.createElement('label');
     minStrahler.appendChild(document.createTextNode('Collapse Strahler <'));

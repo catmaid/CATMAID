@@ -1425,6 +1425,12 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundin
 
   mesh.position.set(center.x, center.y, center.z);
 
+  // The bounding box will not move and automatic matrix update can be disabled.
+  // However, we have to apply the initial position change by explicitely
+  // updating the matrix.
+  mesh.matrixAutoUpdate = false;
+  mesh.updateMatrix();
+
   return mesh;
 };
 
@@ -1497,6 +1503,12 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor =
     var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
 
     mesh.position.set(min_x, floor, min_z);
+
+    // The floor will not move and automatic matrix update can be disabled.
+    // However, we have to apply the initial position change by explicitely
+    // updating the matrix.
+    mesh.matrixAutoUpdate = false;
+    mesh.updateMatrix();
 
     return mesh;
 };

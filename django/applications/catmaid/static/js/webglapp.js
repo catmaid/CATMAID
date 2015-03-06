@@ -3028,7 +3028,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         }
         // Create backbone arbor
         var upstream;
-        if (this.tags['microtubules end'] && this.tags['microtubules_end'].length > 0) {
+        if (this.tags['microtubules end'] && this.tags['microtubules end'].length > 0) {
           upstream = this.createUpstreamArbor('microtubules end', arbor);
         } else {
           var cuts = arbor.approximateTwigRoots(options.strahler_cut);

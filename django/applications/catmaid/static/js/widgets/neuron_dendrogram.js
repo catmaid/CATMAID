@@ -4,7 +4,6 @@
   CATMAID,
   ArborParser,
   Events,
-  growlAlert,
   InstanceRegistry,
   project,
   requestQueue,
@@ -186,9 +185,8 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
       toExplore.push.apply(toExplore, nodesToChildren[nodeToHighlight]);
 
       if (0 === toExplore.length) {
-        growlAlert("Information", "Couldn highlight the currently selected " +
-            "node, because it is collapsed and no visible node downstream " +
-            "was found");
+        CATMAID.info("Couldn highlight the currently selected node, because " +
+            "it is collapsed and no visible node downstream was found");
         return;
       }
       // test next node in queue
@@ -214,9 +212,9 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
     };
     var numDownstreamSteps = getDepth(node_id, 0);
 
-    growlAlert("Information", "The active node is currently not visible in " +
-        "the dendrogram. Therefore, the next visible node downstream has " +
-        "been selected, which is " + numDownstreamSteps + " hop(s) away.");
+    CATMAID.info("The active node is currently not visible in the dendrogram. " +
+       "Therefore, the next visible node downstream has been selected, which " +
+       "is " + numDownstreamSteps + " hop(s) away.");
   }
 
   this.highlightNode(nodeToHighlight);

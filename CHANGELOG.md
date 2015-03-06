@@ -1,6 +1,6 @@
 ## Under development
 
-Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers, Stephan Gerhard
 
 ### Features and enhancements
 

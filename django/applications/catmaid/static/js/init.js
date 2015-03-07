@@ -137,7 +137,7 @@ function login(
 
 function handle_login(status, text, xml, completionCallback) {
   if (status == 200 && text) {
-    var e = eval("(" + text + ")");
+    var e = JSON.parse(text);
 
     if (e.id) {
       session = e;
@@ -520,7 +520,7 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 	var stack = null;
 	if ( status == 200 && text )
 	{
-		var e = eval( "(" + text + ")" );
+		var e = JSON.parse(text);
 		if ( e.error )
 		{
 			if (e.permission_error) {
@@ -730,7 +730,7 @@ function handle_message( status, text, xml )
 	
 	if ( status == 200 && text )
 	{
-		var e = eval( "(" + text + ")" );
+		var e = JSON.parse(text);
 		if ( e.error )
 		{
 			alert( e.error );
@@ -812,7 +812,7 @@ function dataviews() {
 function handle_dataviews(status, text, xml) {
 	if ( status == 200 && text )
 	{
-		var e = eval( "(" + text + ")" );
+		var e = JSON.parse(text);
 		if ( e.error )
 		{
 			alert( e.error );
@@ -903,7 +903,7 @@ function load_default_dataview() {
 function handle_load_default_dataview(status, text, xml) {
 	if ( status == 200 && text )
 	{
-		var e = eval( "(" + text + ")" );
+		var e = JSON.parse(text);
 		if ( e.error )
 		{
 			alert( e.error );

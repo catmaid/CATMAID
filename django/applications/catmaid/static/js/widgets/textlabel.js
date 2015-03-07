@@ -67,7 +67,7 @@ function TextlabelTool()
         // icon_text_apply.style.display = "none";
         self.updateTextlabels();
         if (text && text != " ") {
-          var e = eval("(" + text + ")");
+          var e = JSON.parse(text);
           if (e.error) {
             alert(e.error);
           } else {}
@@ -490,7 +490,7 @@ Textlabel = function(
 					icon_apply.style.display = "none";
 					if ( text && text != " " )
 					{
-						var e = eval( "(" + text + ")" );
+						var e = JSON.parse(text);
 						if ( e.error )
 						{
 							alert( e.error );
@@ -931,7 +931,7 @@ TextlabelLayer = function(
 		if ( 200 === status )
 		{
 			//alert( "data: " + text );
-			var e = eval( "(" + text + ")" );
+			var e = JSON.parse(text);
 			if ( e.error )
 				alert( e.error );
 			else

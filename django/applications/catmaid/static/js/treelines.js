@@ -761,7 +761,7 @@ var Treelines = new function()
       treenode_id: atn_id
     }, function (status, text, xml) {
       if (status == 200) {
-        var e = eval("(" + text + ")");
+        var e = JSON.parse(text);
         if (e.error) {
           alert(e.error);
         } else {

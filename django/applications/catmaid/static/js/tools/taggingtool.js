@@ -75,7 +75,7 @@ function TaggingTool()
     {
         if ( 200 === status && text )
         {
-            var e = eval( "(" + text + ")" );
+            var e = JSON.parse(text);
             var tags = e.tags.join(', ');
             self.input_project_tags.value = tags;
             self.input_project_tags.disabled = false;
@@ -97,7 +97,7 @@ function TaggingTool()
     {
         if ( 200 === status && text )
         {
-            var e = eval( "(" + text + ")" );
+            var e = JSON.parse(text);
             var tags = e.tags.join(', ');
             self.input_stack_tags.value = tags;
             self.input_stack_tags.disabled = false;

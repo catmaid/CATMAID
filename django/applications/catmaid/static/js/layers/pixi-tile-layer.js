@@ -115,13 +115,17 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
             tileBaseName, this.tileWidth, this.tileHeight,
             c, r, tileInfo.zoom);
 
-        if (source !== tile.texture.baseTexture.imageUrl &&
-            source !== this._tilesBuffer[i][j]) {
+        if (source !== tile.texture.baseTexture.imageUrl) {
           tile.visible = false;
-          toLoad.push(source);
-          this._tilesBuffer[i][j] = source;
+          if (source !== this._tilesBuffer[i][j]) {
+            toLoad.push(source);
+            this._tilesBuffer[i][j] = source;
+          }
         } else tile.visible = true;
-      } else tile.visible = false;
+      } else {
+        tile.visible = false;
+        this._tilesBuffer[i][j] = false;
+      }
       x += this.tileWidth;
     }
     y += this.tileHeight;
@@ -148,12 +152,14 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
   }
 };
 
+/** @inheritdoc */
 PixiTileLayer.prototype.resize = function (width, height) {
   if (width === this.renderer.width && height === this.renderer.height) return;
   this.renderer.resize(width, height);
   TileLayer.prototype.resize.call(this, width, height);
 };
 
+/** @inheritdoc */
 PixiTileLayer.prototype._swapBuffers = function (force) {
   window.clearTimeout(this._swapBuffersTimeout);
 

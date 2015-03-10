@@ -84,11 +84,11 @@ var NotificationsTable = new function()
       }
       else if (action == 'Approve') {
         NotificationsTable.approve(row_data[0]);
-        message();  // Refresh the notifications icon badge
+        get_messages();  // Refresh the notifications icon badge
       }
       else if (action == 'Reject') {
         NotificationsTable.reject(row_data[0]);
-        message();  // Refresh the notifications icon badge
+        get_messages();  // Refresh the notifications icon badge
       }
       node.selectedIndex = 0;
     }

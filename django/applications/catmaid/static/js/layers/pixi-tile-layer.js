@@ -1,15 +1,22 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 
+PixiTileLayer.contexts = {};
+
 function PixiTileLayer() {
   TileLayer.apply(this, arguments);
   this.batchContainer = null;
-  this.renderer = new PIXI.autoDetectRenderer(
-      this.stack.getView().clientWidth,
-      this.stack.getView().clientHeight);
-  this.stage = new PIXI.Stage(0x000000);
+  if (!PixiTileLayer.contexts.hasOwnProperty(this.stack.id)) {
+    PixiTileLayer.contexts[this.stack.id] = {
+        renderer: new PIXI.autoDetectRenderer(
+            this.stack.getView().clientWidth,
+            this.stack.getView().clientHeight),
+        stage: new PIXI.Stage(0x000000)};
+  }
+  this.renderer = PixiTileLayer.contexts[this.stack.id].renderer;
+  this.stage = PixiTileLayer.contexts[this.stack.id].stage;
 
   // Replace tiles container.
-  this.stack.getView().removeChild(this.tilesContainer);
+  if (this.visible) this.stack.getView().removeChild(this.tilesContainer);
   this.tilesContainer = this.renderer.view;
   this.tilesContainer.className = 'sliceTiles';
   this.stack.getView().appendChild(this.tilesContainer);
@@ -154,8 +161,8 @@ PixiTileLayer.prototype.redraw = function (completionCallback) {
 
 /** @inheritdoc */
 PixiTileLayer.prototype.resize = function (width, height) {
-  if (width === this.renderer.width && height === this.renderer.height) return;
-  this.renderer.resize(width, height);
+  if (width !== this.renderer.width || height !== this.renderer.height)
+    this.renderer.resize(width, height);
   TileLayer.prototype.resize.call(this, width, height);
 };
 
@@ -179,4 +186,14 @@ PixiTileLayer.prototype._swapBuffers = function (force) {
   }
 
   this.renderer.render(this.stage);
+};
+
+/** @inheritdoc */
+PixiTileLayer.prototype.setOpacity = function (val) {
+  this.opacity = val;
+  this.visible = val >= 0.02;
+  if (this.batchContainer) {
+    this.batchContainer.alpha = val;
+    this.batchContainer.visible = this.visible;
+  }
 };

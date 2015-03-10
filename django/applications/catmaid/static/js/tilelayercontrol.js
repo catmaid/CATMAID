@@ -53,6 +53,7 @@
     // Get current set of layers
     var stack = this.stack;
     var layers = stack.getLayers();
+    var self = this;
 
     // Empty container
     $(this.view).empty();
@@ -65,7 +66,7 @@
 
       var setOpac = function ( val )
       {
-        this.setOpacity( this.idd, val );
+        self.setOpacity( this.idd, val );
         stack.redraw();
         return;
       };

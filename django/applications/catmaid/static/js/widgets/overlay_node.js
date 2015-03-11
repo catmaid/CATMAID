@@ -386,6 +386,8 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     if (!this.line) {
       this.line = this.paper.select('.lines').append('line');
       this.line.toBack();
+      this.line.datum(this.id);
+      this.line.on('click', SkeletonElements.prototype.mouseEventManager.edge_mc_click);
     }
 
     this.line.attr({
@@ -519,6 +521,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
       }
     }
     if (this.line) {
+      this.line.datum(id);
       this.line.hide();
     }
     if (this.number_text) {
@@ -1023,6 +1026,20 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     } else {
       // activate this node
       catmaidSVGOverlay.activateNode(connectornode);
+    }
+  };
+
+  this.edge_mc_click = function (d) {
+    var e = d3.event;
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
+    if (catmaidSVGOverlay.ensureFocused()) {
+      return;
+    }
+    var node = catmaidSVGOverlay.nodes[d];
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+      e.stopPropagation();
+      catmaidSVGOverlay.activateNode(node);
+      catmaidSVGOverlay.splitSkeleton(d);
     }
   };
 

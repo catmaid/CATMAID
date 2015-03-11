@@ -772,7 +772,7 @@ function TracingTool()
     result += '</p>';
     return result;
   };
-  
+
   this.redraw = function()
   {
     self.prototype.redraw();
@@ -792,7 +792,6 @@ TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
     z: projectCoordinates.z
   }, nodeIDToSelect, skeletonIDToSelect;
   parameters[type + '_id'] = objectID;
-  //requestQueue.register("model/node.nearest.php", "GET",
   requestQueue.register(django_url + project.id + "/node/nearest", "POST",
                         parameters, function (status, text) {
     var data;
@@ -805,7 +804,6 @@ TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
       } else {
         nodeIDToSelect = data.treenode_id;
         skeletonIDToSelect = data.skeleton_id;
-        //console.log('goToNearestInNeuronOrSkeleton', type, objectID )
         SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x,
           function () {
             SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);

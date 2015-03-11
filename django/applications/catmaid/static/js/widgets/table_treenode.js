@@ -59,11 +59,9 @@ var TreenodeTable = function(skid)
       // http://www.datatables.net/usage/options
       "bDestroy": true,
       "sDom": '<"H"lr>t<"F"ip>',
-      // default: <"H"lfr>t<"F"ip>
       "bProcessing": true,
       "bServerSide": true,
       "bAutoWidth": false,
-      // "sAjaxSource": 'model/treenode.table.list.php',
       "sAjaxSource": django_url + project.id + '/treenode/table/list',
       "fnServerData": function (sSource, aoData, fnCallback) {
 
@@ -113,7 +111,6 @@ var TreenodeTable = function(skid)
       ],
       "bJQueryUI": true,
       "fnDrawCallback": function () {
-        //$('td:eq(7)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php',
         $('td:eq(7)', ns.oTable.fnGetNodes()).editable(django_url + project.id + '/treenode/table/update', {
           "submitdata": function (value, settings) {
             var aPos = ns.oTable.fnGetPosition(this);

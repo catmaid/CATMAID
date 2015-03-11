@@ -758,8 +758,9 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
 
 SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
-  // Get ID of the first model available
-  var model = SkeletonAnnotations.sourceView.createModel();
+  var node = this.nodes[nodeID];
+  var name = NeuronNameService.getInstance().getName(node.skeleton_id);
+  var model = new SelectionTable.prototype.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
   var self = this;
   // Make sure we have permissions to edit the neuron
   this.executeIfSkeletonEditable(model.id, (function() {

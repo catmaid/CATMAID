@@ -910,8 +910,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   /** Here 'this' is c's SVG node, and node is the Node instance. */
   var mc_move = function(d) {
     var e = d3.event.sourceEvent;
-    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-    var node = catmaidSVGOverlay.nodes[d];
+    if (this === null || this.parentNode === null) return; // Not from a valid SVG source.
 
     if (is_middle_click(e)) return; // Allow middle-click panning
 
@@ -919,6 +918,9 @@ SkeletonElements.prototype.mouseEventManager = new (function()
 
     if (!o) return; // Not properly initialized with mc_start
     if (e.shiftKey) return;
+
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
+    var node = catmaidSVGOverlay.nodes[d];
 
     if (!mayEdit() || !node.can_edit) {
       statusBar.replaceLast("You don't have permission to move node #" + d);

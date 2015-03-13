@@ -1190,7 +1190,7 @@ var WindowMaker = new function()
 
     var titles = document.createElement('ul');
     bar.appendChild(titles);
-    var tabs = ['Main', 'Grow', 'Layout', 'Selection', 'Subgraphs', 'Align', 'Export'].reduce(function(o, name) {
+    var tabs = ['Main', 'Grow', 'Graph', 'Selection', 'Subgraphs', 'Align', 'Export'].reduce(function(o, name) {
           titles.appendChild($('<li><a href="#' + name + GG.widgetID + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
           div.setAttribute('id', name + GG.widgetID);
@@ -1227,16 +1227,16 @@ var WindowMaker = new function()
     color.options.add(new Option('circles of hell (downstream)', 'circles_of_hell_downstream'));
     color.onchange = GG._colorize.bind(GG, color);
 
-    var layout = appendSelect(tabs['Layout'], "compartment_layout",
+    var layout = appendSelect(tabs['Graph'], "compartment_layout",
         ["Force-directed", "Hierarchical", "Grid", "Circle",
          "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
          "Random", "Compound Spring Embedder", "Manual"]);
 
-    appendToTab(tabs['Layout'],
     var edges = document.createElement('select');
     for (var i=1; i<101; ++i) edges.appendChild(new Option(i, i));
     edges.onchange = function() { GG.hideEdges(this.value); };
 
+    appendToTab(tabs['Graph'],
         [['Re-layout', GG.updateLayout.bind(GG, layout)],
          [document.createTextNode(' - Color: ')],
          [color],

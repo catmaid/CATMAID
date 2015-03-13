@@ -21,6 +21,7 @@
   SVGCanvas,
   SynapseClustering,
   TracingTool,
+  WebGLApplication,
   WindowMaker
 */
 

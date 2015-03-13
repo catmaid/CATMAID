@@ -28,16 +28,6 @@ var message_menu;
 // A menu for user related links
 var user_menu;
 
-var pid;
-var sids = [];
-var ss = [];
-var zp;
-var yp;
-var xp;
-var inittool;
-var init_active_skeleton;
-var init_active_node_id;
-
 var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
@@ -606,55 +596,6 @@ function handle_openProjectStack( status, text, xml, stackConstructor )
 			// refresh the overview handler to also register the mouse events on the buttons
 			stack.tilelayercontrol.refresh();
 
-			var tools = {
-				navigator: Navigator,
-				tracingtool: TracingTool,
-				segmentationtool: SegmentationTool,
-				classification_editor: null
-			};
-
-			//! if the stack was initialized by an URL query, move it to a given position
-			if ( pid == e.pid && sids.length > 0 )
-			{
-				for ( var i = 0; i < sids.length; ++i )
-				{
-					if ( sids[ i ] == e.sid )
-					{
-						if (
-							typeof ss[ i ] == "number" &&
-							typeof zp == "number" &&
-							typeof yp == "number" &&
-							typeof xp == "number" )
-						{
-							project.moveTo( zp, yp, xp, ss[i],
-									function() {
-										// Set the tool only after the move;
-										// otherwise, thousands of skeleton nodes may be fetched and painted
-										// unnecessarily.
-										var tool = tools[inittool];
-										if (tool) {
-											project.setTool(new tool());
-										}
-										if (init_active_node_id) {
-											// initialization hack
-											SkeletonAnnotations.init_active_node_id = init_active_node_id;
-										}
-									});
-
-							sids.splice( i, 1 );
-							ss.splice( i, 1 );
-							break;
-						}
-					}
-				}
-			}
-			else if ( inittool )
-			{
-				var tool = tools[ inittool ];
-				if ( tool )
-					project.setTool( new tool() );
-			}
-
 			/* Update the projects stack menu. If there is more
 			than one stack linked to the current project, a submenu for easy
 			access is generated. */
@@ -990,11 +931,20 @@ var realInit = function()
 	}
 
 	//! analyze the URL
+	var pid;
+	var sids = [];
+	var ss = [];
+	var inittool;
 	var z;
 	var y;
 	var x;
 	var s;
-  
+	var zp;
+	var yp;
+	var xp;
+	var init_active_node_id;
+	var init_active_skeleton;
+
 	var account;
 	var password;
 	
@@ -1129,11 +1079,46 @@ var realInit = function()
 
 	// login and thereafter load stacks if requested
 	login(undefined, undefined, function() {
-		if ( pid && sids.length > 0 )
-		{
-			for ( var i = 0; i < sids.length; ++i )
-			{
-				openProjectStack( pid, sids[ i ] );
+		var tools = {
+			navigator: Navigator,
+			tracingtool: TracingTool,
+			segmentationtool: SegmentationTool,
+			classification_editor: null
+		};
+
+		loadStacksFromURL();
+
+		// Open stacks one after another and move to the requested location. Load
+		// the requested tool after everything has been loaded.
+		function loadStacksFromURL() {
+			if (pid) {
+				if (sids.length > 0) {
+					// Open stack and queue test/loading for next one
+					var sid = sids.shift();
+					var s = ss.shift();
+					openProjectStack(pid, sid, function() {
+						// Moving every stack is not really necessary, but for now a
+						// convenient way to apply the requested scale to each stack.
+						if (typeof zp == "number" && typeof yp == "number" &&
+								typeof xp == "number" && typeof s == "number" ) {
+							project.moveTo(zp, yp, xp, s, function() {
+								// Load next stack
+								loadStacksFromURL();
+							});
+						}
+					});
+				} else {
+					// Set the tool only after the move; otherwise, thousands of skeleton
+					// nodes may be fetched and painted unnecessarily.
+					var tool = tools[inittool];
+					if (tool) {
+						project.setTool(new tool());
+					}
+					if (init_active_node_id) {
+						// initialization hack
+						SkeletonAnnotations.init_active_node_id = init_active_node_id;
+					}
+				}
 			}
 		}
 	});

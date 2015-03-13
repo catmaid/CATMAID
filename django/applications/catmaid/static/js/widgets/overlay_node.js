@@ -253,6 +253,8 @@
     ptype.NodePrototype = new (function() {
       this.CONFIDENCE_FONT_PT = 15;
       this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
+      // Store current node scaling factor
+      this.scaling = 1.0;
 
       /** Update the local x,y coordinates of the node
        * and for its SVG object c well. */
@@ -315,14 +317,14 @@
       };
 
       this.scale = function(baseScale, resScale, dynamicScale) {
-        var scale = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
         // To account for SVG non-scaling-stroke in screen scale mode the resolution
         // scaling must not be applied to edge. While all three scales could be
         // combined to avoid this without the non-scaling-stroke, this is necessary
         // to avoid the line size be inconcistent on zoom until a redraw.
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * baseScale * (dynamicScale ? 1 : resScale);
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT*scale + 'pt';
-        this.circleDef.attr('r', this.NODE_RADIUS*scale);
+        this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.scaling + 'pt';
+        this.circleDef.attr('r', this.NODE_RADIUS*this.scaling);
       };
 
       this.initDefs = function(defs, hrefSuffix) {
@@ -1244,9 +1246,9 @@
       this.init = function(connector, node, confidence, is_pre) {
         this.catcher.datum({connector_id: connector.id, treenode_id: node.id});
         if (is_pre) {
-          this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS);
+          this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*node.scaling);
         } else {
-          this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS);
+          this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS*node.scaling);
         }
       };
 

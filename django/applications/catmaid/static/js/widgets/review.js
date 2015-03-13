@@ -226,43 +226,57 @@ var ReviewSystem = new function()
     this.selectNextSegment = function() {
         if (self.skeleton_segments) {
             var fn = function() {
-                // Find out the index of the current segment
-                var index = self.current_segment ? self.skeleton_segments.indexOf(self.current_segment) : -1;
+                var nSegments = self.skeleton_segments.length;
+
+                // Find out the start index to search for the next one from.
+                // This either the index of the current element or zero if the
+                // element is not found (or not available.
+                var fromIndex = 0;
+                if (self.current_segment) {
+                    fromIndex = self.skeleton_segments.indexOf(self.current_segment) + 1;
+                    if (fromIndex === nSegments) {
+                        fromIndex = 0;
+                    }
+                }
+
+                // Find a segment with unreviewed nodes, starting after current segment
+                var nextSegmentIndex = -1;
+                for (var i=0; i<nSegments; i++)
+                {
+                    // Get index of next segment, starting from current segment
+                    var segmentIndex = (fromIndex + i) % nSegments;
+                    var nodes = self.skeleton_segments[segmentIndex].sequence;
+                    // Check if the next segment has unreveviewed nodes
+                    if (nodes.some(isUnreviewed)) {
+                      nextSegmentIndex = segmentIndex;
+                      break;
+                    }
+                }
+
+                // Select next segment, if any. Otherwise show finishing
+                // message.
+                if (nextSegmentIndex >= 0) {
+                  self.initReviewSegment(nextSegmentIndex);
+                } else {
+                  CATMAID.msg("Done", "Done reviewing.");
+                }
+
                 /**
                  * Support function to test whether a node hasn't been reviewed by
                  * any of the followed reviewers. This is the case if the list of
                  * reviewers is empty or no followed reviewer appears in it.
                  */
-                var unreviewed_nodes = function(node) {
+                function isUnreviewed(node) {
                     return 0 === node['rids'].length || followedUsers.every(function(rid) {
                         return !node['rids'].some(function(r) {
                             return rid === r[0];
                         });
                     });
                 };
-                /**
-                 * Support function to test whether a segment hasn't been reviewed by
-                 * any of the followed reviewers. If it has not been reviewed, a new
-                 * review for it is started as a side effect.
-                 */
-                var unreviewed_segments = function(segment, i) {
-                    if (segment['sequence'].some(unreviewed_nodes)) {
-                        // Side effect which actually triggers the selection of the
-                        // next segment.
-                        self.initReviewSegment(i);
-                        return true;
-                    }
-                    return false;
-                };
-                // Find a segment with unreviewed nodes, starting after current segment
-                if (self.skeleton_segments.some(unreviewed_segments)) {
-                    return;
-                }
-                growlAlert("Done", "Done reviewing.");
             };
 
             var errFn = function() {
-                growlAlert("Error", "Couldn't select next segment for " +
+                CATMAID.msg("Error", "Couldn't select next segment for " +
                     "review, please try again!");
             };
 

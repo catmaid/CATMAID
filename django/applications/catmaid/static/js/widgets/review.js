@@ -272,7 +272,7 @@ var ReviewSystem = new function()
                             return rid === r[0];
                         });
                     });
-                };
+                }
             };
 
             var errFn = function() {

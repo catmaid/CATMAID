@@ -78,9 +78,17 @@ window.onerror = function(msg, url, lineno, colno, err)
  * default. The dialog allows to expand it, however.
  */
 CATMAID.ErrorDialog = function(text, detail) {
-  this.dialog = document.createElement('div');
-  this.dialog.setAttribute("id", "dialog-confirm");
-  this.dialog.setAttribute("title", "An error occured");
+  this.dialog = document.getElementById("error-dialog-confirm");
+  if (null === this.dialog) {
+    this.dialog = document.createElement('div');
+    this.dialog.setAttribute("id", "error-dialog-confirm");
+    this.dialog.setAttribute("title", "An error occured");
+  } else {
+    var metaMsg = "Several errors have occured:";
+    if (this.dialog.firstChild.textContent !== metaMsg) {
+      this.dialog.insertAdjacentHTML("afterbegin", "<h3>" + metaMsg + "</h3>");
+    }
+  }
   // Create error message tags
   var msg = document.createElement('p');
   msg.appendChild(document.createTextNode(text));
@@ -113,11 +121,15 @@ CATMAID.ErrorDialog.prototype.show = function() {
   $(this.dialog).dialog({
     width: '400px',
     height: 'auto',
+    maxHeight: 600,
     modal: true,
     buttons: {
       "OK": function() {
-        $(this).dialog("close");
+        $(this).dialog("destroy");
       }
+    },
+    close: function() {
+      $( this ).dialog( "destroy" );
     }
   });
 };

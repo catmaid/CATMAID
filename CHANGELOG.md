@@ -159,6 +159,13 @@ Neuron search:
 to update the same Vector3 instances twice.
 
 
+Reviews:
+
+- Pressing 'E' during review will now go to the next unreviewed segment as seen
+  from the currently reviewed one. Before, the first unreviewed segment as seen
+  from the top of the table was selected.
+
+
 Miscellaneous:
 
 - Vertical resizing of widgets now doesn't lead to strange size changes anymore.

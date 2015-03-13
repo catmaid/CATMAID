@@ -30,7 +30,6 @@ var GroupGraph = function() {
   this.widgetID = this.registerInstance();
   this.registerSource();
 
-  this.synaptic_count_edge_filter = 0; // value equal or higher than this number or kept
   this.label_valign = 'top';
   this.label_halign = 'center';
   this.show_node_labels = true;
@@ -47,6 +46,8 @@ var GroupGraph = function() {
   // Edge width is computed as edge_min_width + edge_width_function(weight)
   this.edge_min_width = 0;
   this.edge_width_function = "sqrt"; // choices: identity, log, log10, sqrt
+
+  this.edge_threshold = 1;
 
   this.setState('color_mode', 'source');
 
@@ -989,12 +990,16 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
     }
   });
 
+  var edge_threshold = this.edge_threshold;
+
   this.cy.edges().each(function(i, edge) {
     var id = edge.id();
     // Restore selection state
     if (id in selected) edge.select();
     // Restore visibility state
     if (id in hidden) edge.hide();
+    // Hide edge if under threshold
+    if (edge.data('weight') < edge_threshold) edge.hide();
   });
 
   // If hide labels, hide them
@@ -2675,8 +2680,7 @@ GroupGraph.prototype.setContent = function(p) {
 
 GroupGraph.prototype.copyContent = function() {
   var properties = {};
-  ['synaptic_count_edge_filter',
-   'label_valign',
+  ['label_valign',
    'label_halign',
    'show_node_labels',
    'trim_node_labels',
@@ -2773,4 +2777,20 @@ GroupGraph.prototype.loadFromJSON = function(files) {
   } catch (e) {
     alert("Oops: " + e);
   }
+};
+
+GroupGraph.prototype.hideEdges = function(v) {
+  // TODO refactor _validate into a Util or CATMAID namespace
+  v = WebGLApplication.prototype._validate(v, 'Invalid synaptic count', 1);
+  if (!v) return;
+  v = v | 0; // cast to int
+  this.edge_threshold = v;
+  var edge_threshold = this.edge_threshold;
+  this.cy.edges().each(function(i, edge) {
+    var props = edge.data();
+    if (props.directed) {
+      if (props.weight < edge_threshold) edge.hide();
+      else edge.show();
+    }
+  });
 };

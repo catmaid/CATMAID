@@ -1233,9 +1233,17 @@ var WindowMaker = new function()
          "Random", "Compound Spring Embedder", "Manual"]);
 
     appendToTab(tabs['Layout'],
+    var edges = document.createElement('select');
+    for (var i=1; i<101; ++i) edges.appendChild(new Option(i, i));
+    edges.onchange = function() { GG.hideEdges(this.value); };
+
         [['Re-layout', GG.updateLayout.bind(GG, layout)],
          [document.createTextNode(' - Color: ')],
-         [color]]);
+         [color],
+         [document.createTextNode(' - Hide edges with less than ')],
+         [edges],
+         [document.createTextNode(' synapses ')]
+        ]);
 
     appendToTab(tabs['Selection'],
         [['Annotate', GG.annotate_skeleton_list.bind(GG)],

@@ -180,20 +180,14 @@ CATMAID.jsonResponseHandler = function(success, error)
       var json = $.parseJSON(text);
       if (json.error) {
         CATMAID.error(json.error, json.detail);
-        if (typeof(error) == 'function') {
-          error();
-        }
+        CATMAID.tools.callIfFn(error);
       } else {
-        if (typeof(success) == 'function') {
-          success(json);
-        }
+        CATMAID.tools.callIfFn(success, json);
       }
     } else {
       CATMAID.error("An error occured", "The server returned an unexpected " +
          "status: " + status);
-      if (typeof(error) == 'function') {
-        error();
-      }
+      CATMAID.tools.callIfFn(error);
     }
   };
 };

@@ -172,22 +172,36 @@ CATMAID.LoginDialog.prototype.show = function() {
 /**
  * Creates a generic JSON response handler that complains when the response
  * status is different from 200 or a JSON error is set.
+ *
+ * @param success Called on success
+ * @param error Called on error
+ * @param silent No error dialogs are shown, if true
  */
-CATMAID.jsonResponseHandler = function(success, error)
+CATMAID.jsonResponseHandler = function(success, error, silent)
 {
   return function(status, text, xml) {
     if (status === 200 && text) {
       var json = $.parseJSON(text);
       if (json.error) {
-        CATMAID.error(json.error, json.detail);
-        CATMAID.tools.callIfFn(error);
+        // Call error handler, if any, and force silence if it returned true.
+        if (CATMAID.tools.isFn(error)) {
+          silent = silent || error()
+        }
+        if (!silent) {
+          CATMAID.error(json.error, json.detail);
+        }
       } else {
         CATMAID.tools.callIfFn(success, json);
       }
     } else {
-      CATMAID.error("An error occured", "The server returned an unexpected " +
-         "status: " + status);
-      CATMAID.tools.callIfFn(error);
+      // Call error handler, if any, and force silence if it returned true.
+      if (CATMAID.tools.isFn(error)) {
+        silent = silent || error();
+      }
+      if (!silent) {
+        CATMAID.error("An error occured", "The server returned an unexpected " +
+            "status: " + status);
+      }
     }
   };
 };

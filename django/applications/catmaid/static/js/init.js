@@ -486,18 +486,22 @@ function openProjectStack( pid, sid, successFn, stackConstructor )
 		django_url + pid + '/stack/' + sid + '/info',
 		'GET',
 		{ },
-		function(args)
-		{
-			// Convert arguments to array and append stackConstructor
-			var stack = handle_openProjectStack.apply(
-					this,
-					Array.prototype.slice.call(arguments).concat(stackConstructor));
-			// Call success function, if it is available
-			if (stack)
-			{
-				CATMAID.tools.callIfFn(successFn);
-			}
-		});
+		CATMAID.jsonResponseHandler(
+			function(json) {
+				var stack = handle_openProjectStack(json, stackConstructor);
+				// Call success function, if any, if a stack was added
+				if (stack) {
+					CATMAID.tools.callIfFn(successFn);
+				}
+			}, function(e) {
+				// Handle login errors
+				if (e.permission_error) {
+					new CATMAID.LoginDialog(e.error, realInit).show();
+					return true;
+				}
+				return false;
+			}));
+
 	return;
 }
 
@@ -507,124 +511,110 @@ function openProjectStack( pid, sid, successFn, stackConstructor )
  *
  * free the window
  */
-function handle_openProjectStack( status, text, xml, stackConstructor )
+function handle_openProjectStack( e, stackConstructor )
 {
-	var stack = null;
-	if ( status == 200 && text )
-	{
-		var e = JSON.parse(text);
-		if ( e.error )
-		{
-			if (e.permission_error) {
-				new CATMAID.LoginDialog(e.error, realInit).show();
-			} else {
-				new CATMAID.ErrorDialog(e.error, e.detail).show();
-			}
-		}
-		else
-		{
-			//! look if the project is already opened, otherwise open a new one
-			if ( !( project && project.id == e.pid ) )
-			{
-				project = new Project( e.pid );
-				project_view = project.getView();
-				project.register();
-				// TODO: There should be a project change event for this to subscribe
-				ReviewSystem.Whitelist.refresh();
-			}
+  var stack = null;
+  //! look if the project is already opened, otherwise open a new one
+  if ( !( project && project.id == e.pid ) )
+  {
+    project = new Project( e.pid );
+    project_view = project.getView();
+    project.register();
+    // TODO: There should be a project change event for this to subscribe
+    ReviewSystem.Whitelist.refresh();
+  }
 
-			var labelupload = '';
+  var labelupload = '';
 
-			if( e.hasOwnProperty('labelupload_url') && e.tile_source_type === 2 ) {
-				labelupload = e.labelupload_url;
-			}
+  if( e.hasOwnProperty('labelupload_url') && e.tile_source_type === 2 ) {
+    labelupload = e.labelupload_url;
+  }
 
-			if (typeof stackConstructor === 'undefined') stackConstructor = Stack;
-			stack = new stackConstructor(
-					project,
-					e.sid,
-					e.stitle,
-					e.dimension,
-					e.resolution,
-					e.translation,		//!< @todo replace by an affine transform
-					e.broken_slices,
-					e.trakem2_project,
-					e.num_zoom_levels,
-					-2,
-					e.tile_source_type,
-					labelupload, // TODO: if there is any
-					e.metadata,
-					userprofile.inverse_mouse_wheel,
-					e.orientation );
+  if (typeof stackConstructor === 'undefined') stackConstructor = Stack;
+  stack = new stackConstructor(
+      project,
+      e.sid,
+      e.stitle,
+      e.dimension,
+      e.resolution,
+      e.translation,		//!< @todo replace by an affine transform
+      e.broken_slices,
+      e.trakem2_project,
+      e.num_zoom_levels,
+      -2,
+      e.tile_source_type,
+      labelupload, // TODO: if there is any
+      e.metadata,
+      userprofile.inverse_mouse_wheel,
+      e.orientation );
 
-			document.getElementById( "toolbox_project" ).style.display = "block";
+  document.getElementById( "toolbox_project" ).style.display = "block";
 
-			var tilesource = getTileSource( e.tile_source_type, e.image_base,
-					e.file_extension );
-			var tilelayer = new TileLayer(
-					"Image data",
-					stack,
-					e.tile_width,
-					e.tile_height,
-					tilesource,
-					true,
-					1,
-					true);
+  var tilesource = getTileSource( e.tile_source_type, e.image_base,
+      e.file_extension );
+  var tilelayer = new TileLayer(
+      "Image data",
+      stack,
+      e.tile_width,
+      e.tile_height,
+      tilesource,
+      true,
+      1,
+      true);
 
-			stack.addLayer( "TileLayer", tilelayer );
+  stack.addLayer( "TileLayer", tilelayer );
 
-			$.each(e.overlay, function(key, value) {
-				var tilesource = getTileSource( value.tile_source_type,
-					value.image_base, value.file_extension );
-				var layer_visibility = false;
-				if( parseInt(value.default_opacity) > 0) 
-					layer_visibility = true;
-				var tilelayer2 = new TileLayer(
-								value.title,
-								stack,
-								value.tile_width,
-								value.tile_height,
-								tilesource,
-								layer_visibility,
-								value.default_opacity / 100,
-								false);
-				stack.addLayer( value.title, tilelayer2 );
-			});
+  $.each(e.overlay, function(key, value) {
+    var tilesource = getTileSource( value.tile_source_type,
+      value.image_base, value.file_extension );
+    var layer_visibility = false;
+    if( parseInt(value.default_opacity) > 0)
+      layer_visibility = true;
+    var tilelayer2 = new TileLayer(
+            value.title,
+            stack,
+            value.tile_width,
+            value.tile_height,
+            tilesource,
+            layer_visibility,
+            value.default_opacity / 100,
+            false);
+    stack.addLayer( value.title, tilelayer2 );
+  });
 
-			// If the requested stack is already loaded, the existing
-			// stack is returned. Continue work with the existing stack.
-			stack = project.addStack( stack );
+  // If the requested stack is already loaded, the existing
+  // stack is returned. Continue work with the existing stack.
+  stack = project.addStack( stack );
 
-			// refresh the overview handler to also register the mouse events on the buttons
-			stack.tilelayercontrol.refresh();
+  // refresh the overview handler to also register the mouse events on the buttons
+  stack.tilelayercontrol.refresh();
 
-			/* Update the projects stack menu. If there is more
-			than one stack linked to the current project, a submenu for easy
-			access is generated. */
-			stack_menu.update();
-			getStackMenuInfo(project.id, function(stacks) {
-				if (stacks.length > 1)
-				{
-					var stack_menu_content = [];
-					$.each(stacks, function(i, s) {
-						stack_menu_content.push(
-							{
-								id : s.id,
-								title : s.title,
-								note : s.note,
-								action : s.action
-							}
-						);
-					});
+  /* Update the projects stack menu. If there is more
+  than one stack linked to the current project, a submenu for easy
+  access is generated. */
+  stack_menu.update();
+  getStackMenuInfo(project.id, function(stacks) {
+    if (stacks.length > 1)
+    {
+      var stack_menu_content = [];
+      $.each(stacks, function(i, s) {
+        stack_menu_content.push(
+          {
+            id : s.id,
+            title : s.title,
+            note : s.note,
+            action : s.action
+          }
+        );
+      });
 
-					stack_menu.update( stack_menu_content );
-					document.getElementById( "stackmenu_box" ).style.display = "block";
-				}
-			});
-		}
-	}
-	CATMAID.ui.releaseEvents();
-	return stack;
+      stack_menu.update( stack_menu_content );
+      document.getElementById( "stackmenu_box" ).style.display = "block";
+    }
+  });
+
+  CATMAID.ui.releaseEvents();
+  return stack;
 }
 
 /**

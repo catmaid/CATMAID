@@ -471,9 +471,10 @@ function updateProjectListFromCache() {
 
 /**
  * queue an open-project-stack-request to the request queue
- * freeze the window to wait for an answer
+ * freeze the window to wait for an answer. The successFn callback is called
+ * only if the loading was successful.
  */
-function openProjectStack( pid, sid, completionCallback, stackConstructor )
+function openProjectStack( pid, sid, successFn, stackConstructor )
 {
 	if ( project && project.id != pid )
 	{
@@ -491,9 +492,10 @@ function openProjectStack( pid, sid, completionCallback, stackConstructor )
 			var stack = handle_openProjectStack.apply(
 					this,
 					Array.prototype.slice.call(arguments).concat(stackConstructor));
-			if (completionCallback)
+			// Call success function, if it is available
+			if (stack)
 			{
-				completionCallback(stack);
+				CATMAID.tools.callIfFn(successFn);
 			}
 		});
 	return;

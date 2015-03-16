@@ -131,4 +131,28 @@ QUnit.test('Utilities test', function( assert ) {
       "CATMAID.tools.setXYZ sets all fields as expexted");
   assert.deepEqual(CATMAID.tools.setXYZ({}, 2), o_setXYZ,
       "CATMAID.tools.setXYZ sets all fields of an empty object as expexted");
+
+
+  // Test CATMAID.tools.isFn
+  (function() {
+    assert.ok(!CATMAID.tools.isFn(null),
+        "CATMAID.tools.isFn says 'null' is no function.");
+    assert.ok(!CATMAID.tools.isFn(undefined),
+        "CATMAID.tools.isFn says 'undefined' is no function.");
+    assert.ok(!CATMAID.tools.isFn({}),
+        "CATMAID.tools.isFn says an empty object is no function.");
+    assert.ok(CATMAID.tools.isFn(function() {}),
+        "CATMAID.tools.isFn says a function is a function.");
+  })();
+
+
+  // Test CATMAID.tools.callIfFn
+  (function() {
+    var called = false;
+    CATMAID.tools.callIfFn(function() { called = true; });
+    assert.ok(called, "CATMAID.tools.callIfFn properly calls a function.");
+    var o = { called: false };
+    CATMAID.tools.callIfFn(function(obj) { obj.called = true; }, o);
+    assert.ok(o.called, "CATMAID.tools.callIfFn properly passes arguments to called function.");
+  })();
 });

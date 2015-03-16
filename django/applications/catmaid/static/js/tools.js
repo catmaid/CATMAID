@@ -193,4 +193,30 @@ CATMAID.tools = CATMAID.tools || {};
       return obj;
   };
 
+  /**
+   * Check if an entity is a function.
+   *
+   * @param fn The entitiy to test.
+   * @return True if fn is a function, false otherwise.
+   */
+  tools.isFn = function(fn) {
+    return typeof(fn) === 'function';
+  };
+
+  /**
+   * Call the given entity if it is a function. If extra arguments are passed
+   * in, they are passed along to fn, when called.
+   *
+   * @param fn the entity to call
+   */
+  tools.callIfFn = function(fn) {
+    if (CATMAID.tools.isFn(fn)) {
+      if (arguments.length > 1) {
+        fn.apply(window, Array.prototype.slice.call(arguments, 1));
+      } else {
+        fn();
+      }
+    };
+  };
+
 })(CATMAID.tools);

@@ -216,7 +216,7 @@ CATMAID.tools = CATMAID.tools || {};
       } else {
         fn();
       }
-    };
+    }
   };
 
 })(CATMAID.tools);

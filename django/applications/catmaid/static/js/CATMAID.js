@@ -179,7 +179,7 @@ CATMAID.jsonResponseHandler = function(success, error)
     if (status === 200 && text) {
       var json = $.parseJSON(text);
       if (json.error) {
-        new CATMAID.ErrorDialog(json.error, json.detail).show();
+        CATMAID.error(json.error, json.detail);
         if (typeof(error) == 'function') {
           error();
         }
@@ -189,8 +189,8 @@ CATMAID.jsonResponseHandler = function(success, error)
         }
       }
     } else {
-      new CATMAID.ErrorDialog("An error occured",
-          "The server returned an unexpected status: " + status).show();
+      CATMAID.error("An error occured", "The server returned an unexpected " +
+         "status: " + status);
       if (typeof(error) == 'function') {
         error();
       }

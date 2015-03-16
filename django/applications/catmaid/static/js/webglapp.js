@@ -2286,6 +2286,7 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap = function(x, y,
   // Attempt to intersect visible skeleton spheres, stopping at the first found
   var color = 0;
   var idMap = {};
+  var submit = new submitterFn();
   var originalMaterials = {};
   var originalVisibility = {};
   var originalConnectorPreVisibility =
@@ -2303,7 +2304,7 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap = function(x, y,
   o.show_box = false;
   o.show_zplane = false;
   this.staticContent.adjust(o, this);
-  this.content.adjust(o, this);
+  this.content.adjust(o, this, submit);
   // Hide pre and post synaptic flags
   this.staticContent.connectorLineColors.presynaptic_to.visible = false;
   this.staticContent.connectorLineColors.postsynaptic_to.visible = false;
@@ -2340,7 +2341,7 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap = function(x, y,
 
   // Reset visibility of unpickable things
   this.staticContent.adjust(this.options, this);
-  this.content.adjust(this.options, this);
+  this.content.adjust(this.options, this, submit);
   // Restore original pre and post synaptic visibility
   this.staticContent.connectorLineColors.presynaptic_to.visible =
     originalConnectorPreVisibility;

@@ -486,8 +486,16 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
         statusBar.replaceLast("Created new node node #" + nid +
             " as child of node #" + childId);
         // Update nodes
-        self.nodes[nid] = self.nodes[node.id];
-        delete self.nodes[node.id];
+        var vnid = node.id;
+        self.nodes[nid] = self.nodes[vnid];
+        delete self.nodes[vnid];
+        // Update node reference, passed in
+        node.id = nid;
+        // If the virtual node was the active node before, update the active
+        // node as well.
+        if (SkeletonAnnotations.getActiveNodeId() == vnid) {
+          self.activateNode(node);
+        }
 
         // Update child node to refer to new node as parent
         requestQueue.register(

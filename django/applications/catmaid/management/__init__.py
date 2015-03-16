@@ -5,10 +5,10 @@ from catmaid.models import Project
 from catmaid import models as catmaid_app
 from catmaid.conf import settings as catmaid_settings
 
-def init_classification(app, created_models, **kwargs):
+def init_classification(sender, app, created_models, **kwargs):
     """ Creates a dummy project to store classification graphs in.
     """
-    if app == catmaid.models:
+    if sender == catmaid.models:
         try:
             Project.objects.get(pk=catmaid_settings.ONTOLOGY_DUMMY_PROJECT_ID)
         except Project.DoesNotExist:

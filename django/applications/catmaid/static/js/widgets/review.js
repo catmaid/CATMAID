@@ -75,12 +75,14 @@ var ReviewSystem = new function()
                 }
                 if (i === segment.length) {
                     // corner case
-                    growlAlert("Can't move", "Can't decide whether to move forward or backward one section!");
+                    CATMAID.msg("Can't move", "Can't decide whether to move " +
+                            "forward or backward one section!");
                     return; 
                 }
                 var inc = segment[i-1].z - segment[i].z;
                 // Will check stack boundaries at Stack.moveTo
                 project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
+
             }
             return;
         }
@@ -101,12 +103,13 @@ var ReviewSystem = new function()
                 end_puffer_count += 1;
                 // do not directly jump to the next segment to review
                 if( end_puffer_count < 3) {
-                    growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
+                    CATMAID.msg('DONE', 'Segment fully reviewed: ' +
+                            self.current_segment['nr_nodes'] + ' nodes');
                     return;
                 }
                 // Segment fully reviewed, go to next without refreshing table
                 // much faster for smaller fragments
-                // growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
+                // CATMAID.msg('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
                 var cell = $('#rev-status-cell-' + self.current_segment['id']);
                 cell.text('100.00%');
                 cell.css('background-color', ReviewSystem.STATUS_COLOR_FULL);
@@ -150,7 +153,8 @@ var ReviewSystem = new function()
                 i_union += 1;
             }
             if (i_user === len) {
-                growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
+                CATMAID.msg('DONE', 'Segment fully reviewed: ' +
+                        self.current_segment['nr_nodes'] + ' nodes');
                 var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-' + session.userid);
                 cell.text('100.00%');
                 cell.css('background-color', ReviewSystem.STATUS_COLOR_FULL);
@@ -184,7 +188,7 @@ var ReviewSystem = new function()
         var zdiff = (self.current_segment.sequence[self.current_segment_index].z -
                     self.current_segment.sequence[self.current_segment_index-1].z) /
                     project.focusedStack.resolution.z;
-        if (Math.abs(zdiff) > 1) growlAlert("Skipped sections",
+        if (Math.abs(zdiff) > 1) CATMAID.msg("Skipped sections",
             "This node is " + Math.abs(zdiff) + " sections away from the previous node.",
             {style: 'warning'});
     };
@@ -448,7 +452,7 @@ var ReviewSystem = new function()
 
     var checkSkeletonID = function() {
         if (!skeletonID) {
-            growlAlert('BEWARE', 'You need to activate a skeleton to review.');
+            CATMAID.msg('BEWARE', 'You need to activate a skeleton to review.');
             return false;
         }
         return true;
@@ -579,13 +583,13 @@ ReviewSystem.Whitelist = (function () {
         else if (!(acceptAfter instanceof Date)) {
             acceptAfter = new Date(acceptAfter);
             if (isNaN(acceptAfter.getTime())) {
-                growlAlert('ERROR', 'Accept after date is invalid');
+                CATMAID.msg('ERROR', 'Accept after date is invalid');
                 return this;
             }
         }
 
         if (!(userId in User.all())) {
-            growlAlert('ERROR', 'Reviewer does not have a valid user ID');
+            CATMAID.msg('ERROR', 'Reviewer does not have a valid user ID');
             return this;
         }
 

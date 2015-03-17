@@ -191,6 +191,9 @@
     }
 
     this.warnIfNodeSkipsSections = function () {
+      if (0 === self.current_segment_index) {
+        return
+      }
       var zdiff = (self.current_segment.sequence[self.current_segment_index].z -
             self.current_segment.sequence[self.current_segment_index-1].z) /
             project.focusedStack.resolution.z;

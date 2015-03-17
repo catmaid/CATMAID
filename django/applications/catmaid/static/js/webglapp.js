@@ -13,7 +13,6 @@
   OptionsDialog,
   project,
   requestQueue,
-  ReviewSystem,
   SelectionTable,
   session,
   SkeletonAnnotations,
@@ -3090,7 +3089,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
     } else if ('whitelist-reviewed' === options.color_method) {
       pickColor = this.reviews ?
         (function(vertex) {
-          var wl = ReviewSystem.Whitelist.getWhitelist();
+          var wl = CATMAID.ReviewSystem.Whitelist.getWhitelist();
           var reviewers = this.reviews[vertex.node_id];
         return reviewers && reviewers.some(function (r) {
             return r[0] in wl && (new Date(r[1])) > wl[r[0]];}) ?

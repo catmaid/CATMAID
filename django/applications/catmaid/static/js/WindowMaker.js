@@ -2110,21 +2110,23 @@ var WindowMaker = new function()
         start.setAttribute("type", "button");
         start.setAttribute("id", "start_review_whole skeleton");
         start.setAttribute("value", "Start to review skeleton");
-        start.onclick = ReviewSystem.startReviewActiveSkeleton.bind(ReviewSystem, false);
+        start.onclick = CATMAID.ReviewSystem.startReviewActiveSkeleton.bind(
+            CATMAID.ReviewSystem, false);
         contentbutton.appendChild(start);
 
         var start = document.createElement('input');
         start.setAttribute("type", "button");
         start.setAttribute("id", "start_review_subarbor");
         start.setAttribute("value", "Start to review current sub-arbor");
-        start.onclick = ReviewSystem.startReviewActiveSkeleton.bind(ReviewSystem, true);
+        start.onclick = CATMAID.ReviewSystem.startReviewActiveSkeleton.bind(
+            CATMAID.ReviewSystem, true);
         contentbutton.appendChild(start);
 
         var end = document.createElement('input');
         end.setAttribute("type", "button");
         end.setAttribute("id", "end_review_skeleton");
         end.setAttribute("value", "End review");
-        end.onclick = ReviewSystem.endReview;
+        end.onclick = CATMAID.ReviewSystem.endReview;
         contentbutton.appendChild(end);
 
         content.appendChild( contentbutton );
@@ -2146,14 +2148,14 @@ var WindowMaker = new function()
         resetOwns.setAttribute("type", "button");
         resetOwns.setAttribute("id", "reset_skeleton_review_owns");
         resetOwns.setAttribute("value", "Reset own revisions");
-        resetOwns.onclick = ReviewSystem.resetOwnRevisions;
+        resetOwns.onclick = CATMAID.ReviewSystem.resetOwnRevisions;
         contentbutton.appendChild(resetOwns);
 
         var cacheImages = document.createElement('input');
         cacheImages.setAttribute("type", "button");
         cacheImages.setAttribute("id", "cache_images_of_skeleton");
         cacheImages.setAttribute("value", "Cache tiles");
-        cacheImages.onclick = ReviewSystem.cacheImages;
+        cacheImages.onclick = CATMAID.ReviewSystem.cacheImages;
         contentbutton.appendChild(cacheImages);
 
         var autoCenter = document.createElement('input');
@@ -2161,7 +2163,7 @@ var WindowMaker = new function()
         autoCenter.setAttribute('id', 'review_auto_center');
         autoCenter.setAttribute('checked', 'checked');
         autoCenter.onchange = function() {
-          ReviewSystem.setAutoCentering(this.checked);
+          CATMAID.ReviewSystem.setAutoCentering(this.checked);
         };
         var autoCenterLabel = document.createElement('label');
         autoCenterLabel.appendChild(autoCenter);
@@ -2187,7 +2189,7 @@ var WindowMaker = new function()
 
         addLogic(win);
 
-        ReviewSystem.init();
+        CATMAID.ReviewSystem.init();
 
         return win;
     };

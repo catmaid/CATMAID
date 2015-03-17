@@ -251,7 +251,7 @@ function handle_profile_update(e) {
   $('#toolbox_edit').hide();
 
   // TODO: There should be a user change event for this to subscribe
-  ReviewSystem.Whitelist.refresh();
+  CATMAID.ReviewSystem.Whitelist.refresh();
 }
 
 /**
@@ -521,7 +521,7 @@ function handle_openProjectStack( e, stackConstructor )
     project_view = project.getView();
     project.register();
     // TODO: There should be a project change event for this to subscribe
-    ReviewSystem.Whitelist.refresh();
+    CATMAID.ReviewSystem.Whitelist.refresh();
   }
 
   var labelupload = '';

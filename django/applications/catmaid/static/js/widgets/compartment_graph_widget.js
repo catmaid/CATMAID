@@ -13,7 +13,6 @@
   parseColorWheel,
   project,
   requestQueue,
-  ReviewSystem,
   SelectionTable,
   session,
   SkeletonListSources,
@@ -1754,7 +1753,7 @@ GroupGraph.prototype.colorBy = function(mode, select) {
             var percent_reviewed = skeletons.reduce(function(sum, model) {
               return sum + json[model.id];
             }, 0) / skeletons.length;
-            node.data('color', ReviewSystem.getBackgroundColor(percent_reviewed));
+            node.data('color', CATMAID.ReviewSystem.getBackgroundColor(percent_reviewed));
           });
         });
 

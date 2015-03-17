@@ -666,8 +666,8 @@ function TracingTool()
       run: function (e) {
           if (!mayEdit())
               return false;
-          if (ReviewSystem.validSegment())
-              ReviewSystem.moveNodeInSegmentBackward();
+          if (CATMAID.ReviewSystem.validSegment())
+              CATMAID.ReviewSystem.moveNodeInSegmentBackward();
           return true;
       }
   }) );
@@ -678,8 +678,8 @@ function TracingTool()
       run: function (e) {
           if (!mayEdit())
               return false;
-          if (ReviewSystem.validSegment())
-              ReviewSystem.moveNodeInSegmentForward(e.shiftKey);
+          if (CATMAID.ReviewSystem.validSegment())
+              CATMAID.ReviewSystem.moveNodeInSegmentForward(e.shiftKey);
           return true;
       }
   }) );
@@ -690,8 +690,8 @@ function TracingTool()
       run: function (e) {
           if (!mayEdit())
               return false;
-          if (ReviewSystem.validSegment())
-              ReviewSystem.selectNextSegment();
+          if (CATMAID.ReviewSystem.validSegment())
+              CATMAID.ReviewSystem.selectNextSegment();
           return true;
       }
   }) );

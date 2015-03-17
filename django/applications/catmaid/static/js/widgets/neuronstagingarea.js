@@ -8,7 +8,6 @@
   NeuronNameService,
   project,
   requestQueue,
-  ReviewSystem,
   SkeletonAnnotations,
   SkeletonMeasurementsTable,
   SkeletonSource,
@@ -718,7 +717,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   rowElement.append($('<td/>')
       .text(this.table.reviews[skeleton.id] + "%")
       .css('background-color',
-          ReviewSystem.getBackgroundColor(this.table.reviews[skeleton.id])));
+          CATMAID.ReviewSystem.getBackgroundColor(this.table.reviews[skeleton.id])));
 
   ['selected',
    'pre_visible',

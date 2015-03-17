@@ -16,6 +16,8 @@
     var end_puffer_count = 0,
       autoCentering = true,
       followedUsers = [];
+    // Set to true, if one moves out of the current segment
+    self.segmentUnfocused = false;
 
     this.init = function() {
       projectID = project.id;
@@ -90,6 +92,7 @@
                 "forward or backward one section!");
             return;
           }
+          self.segmentUnfocused = true;
           var inc = segment[i-1].z - segment[i].z;
           // Will check stack boundaries at Stack.moveTo
           project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
@@ -128,57 +131,61 @@
         }
       }
 
-      self.current_segment_index++;
+      if (self.segmentUnfocused) {
+        self.segmentUnfocused = false;
+      } else {
+        self.current_segment_index++;
 
-      if (advanceToNextUnfollowed) {
-        // Advance current_segment_index to the first node that is not reviewed
-        // by the current user.
-        var i = self.current_segment_index;
-        var seq = self.current_segment['sequence'];
-        var len = seq.length;
-        while (i < len) {
-          if (!seq[i].rids.some(reviewedByUser)) {
-            self.current_segment_index = i;
-            break;
+        if (advanceToNextUnfollowed) {
+          // Advance current_segment_index to the first node that is not reviewed
+          // by the current user.
+          var i = self.current_segment_index;
+          var seq = self.current_segment['sequence'];
+          var len = seq.length;
+          while (i < len) {
+            if (!seq[i].rids.some(reviewedByUser)) {
+              self.current_segment_index = i;
+              break;
+            }
+            i += 1;
           }
-          i += 1;
         }
-      }
 
-      if (self.current_segment_index < self.current_segment['sequence'].length -1) {
-        // Check if the remainder of the segment was complete at an earlier time
-        // and perhaps now the whole segment is done:
-        var i_user = self.current_segment_index;
-        var i_union = self.current_segment_index;
-        var seq = self.current_segment['sequence'];
-        var len = seq.length;
-        while (i_user < len && seq[i_user].rids.some(reviewedByUser)) {
-          i_user += 1;
+        if (self.current_segment_index < self.current_segment['sequence'].length -1) {
+          // Check if the remainder of the segment was complete at an earlier time
+          // and perhaps now the whole segment is done:
+          var i_user = self.current_segment_index;
+          var i_union = self.current_segment_index;
+          var seq = self.current_segment['sequence'];
+          var len = seq.length;
+          while (i_user < len && seq[i_user].rids.some(reviewedByUser)) {
+            i_user += 1;
+          }
+          while (i_union < len && 0 !== seq[i_union].rids.length) {
+            i_union += 1;
+          }
+          if (i_user === len) {
+            CATMAID.msg('DONE', 'Segment fully reviewed: ' +
+                self.current_segment['nr_nodes'] + ' nodes');
+            var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-' + session.userid);
+            cell.text('100.00%');
+            cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
+            self.current_segment['status'] = '100.00';
+            // Don't startSkeletonToReview, because self.current_segment_index
+            // would be lost, losing state for q/w navigation.
+          }
+          if (i_union === len) {
+            var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-union');
+            cell.text('100.00%');
+            cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
+            self.current_segment['status'] = '100.00';
+            // Don't startSkeletonToReview, because self.current_segment_index
+            // would be lost, losing state for q/w navigation.
+          }
         }
-        while (i_union < len && 0 !== seq[i_union].rids.length) {
-          i_union += 1;
-        }
-        if (i_user === len) {
-          CATMAID.msg('DONE', 'Segment fully reviewed: ' +
-              self.current_segment['nr_nodes'] + ' nodes');
-          var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-' + session.userid);
-          cell.text('100.00%');
-          cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
-          self.current_segment['status'] = '100.00';
-          // Don't startSkeletonToReview, because self.current_segment_index
-          // would be lost, losing state for q/w navigation.
-        }
-        if (i_union === len) {
-          var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-union');
-          cell.text('100.00%');
-          cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
-          self.current_segment['status'] = '100.00';
-          // Don't startSkeletonToReview, because self.current_segment_index
-          // would be lost, losing state for q/w navigation.
-        }
-      }
 
-      self.warnIfNodeSkipsSections();
+        self.warnIfNodeSkipsSections();
+      }
       self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 

@@ -165,6 +165,9 @@ Reviews:
   from the currently reviewed one. Before, the first unreviewed segment as seen
   from the top of the table was selected.
 
+- Pressing 'Q' on the first node (leaf) brings one back one section to check if
+  the segment really ends. Pressing 'W' afterwards now brings one back to the
+  first node, not the second like it has been before.
 
 Miscellaneous:
 

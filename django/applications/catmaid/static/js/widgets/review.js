@@ -64,8 +64,8 @@ var ReviewSystem = new function()
         if (null === self.skeleton_segments) {
             return;
         }
+        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
         if(0 === self.current_segment_index) {
-            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
             // Go to 'previous' section, to check whether an end really ends
             var segment = self.current_segment['sequence'];
             if (segment.length > 1) {
@@ -84,7 +84,6 @@ var ReviewSystem = new function()
             }
             return;
         }
-        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
         self.warnIfNodeSkipsSections();
         self.current_segment_index--;
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );

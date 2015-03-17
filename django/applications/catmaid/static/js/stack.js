@@ -83,9 +83,8 @@ function Stack(
 	 */
 	var update = function( completionCallback )
 	{
-		
 		self.overview.redraw();
-		updateScaleBar();
+		if (self.s !== self.old_s) updateScaleBar();
 
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
 
@@ -609,6 +608,8 @@ function Stack(
 				layers[ key ].resize( self.viewWidth, self.viewHeight );
 			}
 		}
+
+		updateScaleBar();
 
 		self.overview.redraw();
 	};

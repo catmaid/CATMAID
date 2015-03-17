@@ -392,16 +392,14 @@ function Stack(
 
 
 		// Semaphore pattern from: http://stackoverflow.com/a/3709809/223092
-		for ( var key in layers ) {
-			if (layers.hasOwnProperty(key)) {
-				layer = layers[key];
-				// If a layer is invisble, continue with the next one.
-				if (layer.hasOwnProperty('visible') && !layer.visible) {
-					continue;
-				}
-				++ semaphore;
-				layer.redraw(onAnyCompletion);
+		for (var i = 0; i < layerOrder.length; i++) {
+			layer = layers[layerOrder[i]];
+			// If a layer is invisble, continue with the next one.
+			if (layer.hasOwnProperty('visible') && !layer.visible) {
+				continue;
 			}
+			++ semaphore;
+			layer.redraw(onAnyCompletion);
 		}
 
 		allQueued = true;
@@ -428,6 +426,14 @@ function Stack(
 	this.getView = function()
 	{
 		return view;
+	};
+
+	/**
+	 * Get the view element containing layer views.
+	 * @return {Element} An element whose children are layer views.
+	 */
+	this.getLayersView = function () {
+		return layersView;
 	};
 
     /**
@@ -642,6 +648,14 @@ function Stack(
 	};
 
 	/**
+	 * Get an array of layer keys in their rendering order (back to front).
+	 * @return {[]} An array of layer keys.
+	 */
+	this.getLayerOrder = function () {
+		return layerOrder;
+	};
+
+	/**
 	 * Add a layer.  Layers are associated by a unique key.
 	 * If a layer with the passed key exists, then this layer will be replaced.
 	 *
@@ -653,6 +667,7 @@ function Stack(
 		if ( layers[ key ] )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
+		if (layerOrder.indexOf(key) === -1) layerOrder.push(key);
 		self.tilelayercontrol.refresh();
 	};
 
@@ -664,10 +679,11 @@ function Stack(
 	this.removeLayer = function( key )
 	{
 		var layer = layers[ key ];
-		if ( typeof layer != "undefined" && layer )
+		if ( typeof layer !== "undefined" && layer )
 		{
 			layer.unregister();
 			delete layers[ key ];
+			layerOrder.splice(layerOrder.indexOf(key), 1);
 			self.tilelayercontrol.refresh();
 			return layer;
 		}
@@ -675,6 +691,34 @@ function Stack(
 			return null;
 	};
 
+	/**
+	 * Move a layer to a new position in the layer order.
+	 * @param {*} key       Key of the layer to move.
+	 * @param {*} beforeKey Key of the layer to move the layer before or null to
+	 *                      move to the end.
+	 */
+	this.moveLayer = function (key, beforeKey) {
+		var currIndex = layerOrder.indexOf(key);
+		var newIndex = beforeKey === null ? layerOrder.length - 1 : layerOrder.indexOf(beforeKey);
+
+		if (currIndex === -1 || newIndex === -1) return; // Invalid arguments.
+
+		var layerA = layers[key],
+			layerB = beforeKey === null ? null : layers[beforeKey];
+
+		if (layerB !== null && layerB.getView) {
+			var viewA = layerA.getView(),
+				viewB = layerB.getView();
+			if (!layersView.contains(viewA) || !layersView.contains(viewB)) return;
+			layersView.insertBefore(viewA, viewB);
+		} else layersView.appendChild(layerA.getView());
+
+		if (typeof layerA.notifyReorder !== 'undefined')
+			layerA.notifyReorder(layerB);
+
+		layerOrder.splice(newIndex, 0, layerOrder.splice(currIndex, 1)[0]);
+		self.tilelayercontrol.refresh();
+	};
 
 	/**
 	 * Register a tool at this stack.  Unregisters the current tool and then
@@ -720,6 +764,7 @@ function Stack(
 
 	var tool = null;
 	var layers = {};
+	var layerOrder = [];
 
 	var MAX_X = dimension.x - 1;   //!< the last possible x-coordinate
 	var MAX_Y = dimension.y - 1;   //!< the last possible y-coordinate
@@ -753,6 +798,8 @@ function Stack(
 
 	var stackWindow = new CMWWindow( title );
 	var view = stackWindow.getFrame();
+	var layersView = document.createElement("div");
+	view.appendChild(layersView);
 
 	var viewWidth = stackWindow.getFrame().offsetWidth;
 	var viewHeight = stackWindow.getFrame().offsetHeight;

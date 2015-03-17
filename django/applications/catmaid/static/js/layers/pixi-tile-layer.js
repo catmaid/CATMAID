@@ -16,10 +16,10 @@ function PixiTileLayer() {
   this.stage = PixiTileLayer.contexts[this.stack.id].stage;
 
   // Replace tiles container.
-  if (this.visible) this.stack.getView().removeChild(this.tilesContainer);
+  if (this.visible) this.stack.getLayersView().removeChild(this.tilesContainer);
   this.tilesContainer = this.renderer.view;
   this.tilesContainer.className = 'sliceTiles';
-  this.stack.getView().appendChild(this.tilesContainer);
+  this.stack.getLayersView().appendChild(this.tilesContainer);
 }
 
 PixiTileLayer.prototype = Object.create(TileLayer.prototype);
@@ -196,4 +196,20 @@ PixiTileLayer.prototype.setOpacity = function (val) {
     this.batchContainer.alpha = val;
     this.batchContainer.visible = this.visible;
   }
+};
+
+/**
+ * Notify this layer that it has been reordered to be before another layer.
+ * While the stack orders DOM elements, layers are responsible for any internal
+ * order representation, such as in a scene graph.
+ * @param  {Layer} beforeLayer The layer which this layer was inserted before,
+ *                             or null if this layer was moved to the end (top).
+ */
+PixiTileLayer.prototype.notifyReorder = function (beforeLayer) {
+  if (!(beforeLayer === null || beforeLayer instanceof PixiTileLayer)) return;
+
+  var newIndex = beforeLayer === null ?
+      this.stage.children.length - 1 :
+      this.stage.getChildIndex(beforeLayer.batchContainer);
+  this.stage.setChildIndex(this.batchContainer, newIndex);
 };

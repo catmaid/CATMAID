@@ -53,14 +53,15 @@
     // Get current set of layers
     var stack = this.stack;
     var layers = stack.getLayers();
+    var layerOrder = stack.getLayerOrder();
     var self = this;
 
     // Empty container
     $(this.view).empty();
 
     // Add slider for each layer
-    for(var key in layers)
-    {
+    for (var i = 0; i < layerOrder.length; i++) {
+      var key = layerOrder[i];
 
       var container = document.createElement("div");
 

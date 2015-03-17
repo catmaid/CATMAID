@@ -59,7 +59,7 @@ function TileLayer(
   this.tilesContainer.className = 'sliceTiles';
 
   if (this.visible)
-    stack.getView().appendChild(this.tilesContainer);
+    stack.getLayersView().appendChild(this.tilesContainer);
 
   if (showOverview) {
     // Initialize the OverviewLayer on the bottom-right with the correct
@@ -477,6 +477,12 @@ TileLayer.prototype.tilesForLocation = function (xc, yc, z, s) {
 TileLayer.prototype.getStack = function () { return this.stack; };
 
 /**
+ * Get the DOM element view for this layer.
+ * @return {Element} View for this layer.
+ */
+TileLayer.prototype.getView = function () { return this.tilesContainer; };
+
+/**
  * Set opacity in the range from 0 to 1.
  * @param {number} val New opacity.
  */
@@ -503,7 +509,7 @@ TileLayer.prototype.getOpacity = function () {
  * Remove tile elements from DOM.
  */
 TileLayer.prototype.isolateTileLayer = function () {
-  this.stack.getView().removeChild(this.tilesContainer);
+  this.stack.getLayersView().removeChild(this.tilesContainer);
   this.visible = false;
 };
 
@@ -512,6 +518,6 @@ TileLayer.prototype.isolateTileLayer = function () {
  */
 TileLayer.prototype.reattachTileLayer = function ()
 {
-  this.stack.getView().appendChild(this.tilesContainer);
+  this.stack.getLayersView().appendChild(this.tilesContainer);
   this.visible = true;
 };

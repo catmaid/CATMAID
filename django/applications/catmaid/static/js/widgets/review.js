@@ -69,8 +69,14 @@
       if (null === self.skeleton_segments) {
         return;
       }
+
       self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
-      if(0 === self.current_segment_index) {
+
+      if(self.current_segment_index > 0) {
+        self.warnIfNodeSkipsSections();
+        self.current_segment_index--;
+        self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
+      } else {
         // Go to 'previous' section, to check whether an end really ends
         var segment = self.current_segment['sequence'];
         if (segment.length > 1) {
@@ -88,11 +94,7 @@
           // Will check stack boundaries at Stack.moveTo
           project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
         }
-        return;
       }
-      self.warnIfNodeSkipsSections();
-      self.current_segment_index--;
-      self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
     this.moveNodeInSegmentForward = function(advanceToNextUnfollowed) {

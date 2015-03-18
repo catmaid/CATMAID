@@ -75,6 +75,16 @@
       var layer = layers[key];
 
       var container = $('<li/>');
+      container.data('key', key);
+      container.addClass('layerControl');
+      if (layer.isOrderable) container.addClass('orderable');
+
+      var layer_name = layer.getLayerName ? layer.getLayerName() : key;
+      container.append($('<h4/>').append(layer_name));
+
+      // Opacity slider
+      var opacitySelect = $('<div class="setting"/>');
+      opacitySelect.append('<span>Opacity</span>');
 
       // Make layer re-evaluate its opacity
       layer.setOpacity(layer.getOpacity());
@@ -89,15 +99,33 @@
           setOpac);
 
       slider.idd = key;
-      container.attr('id', key + '-container');
-      container.data('key', key);
-      container.addClass('layerControl');
-      if (layer.isOrderable) container.addClass('orderable');
+      opacitySelect.append(slider.getView());
+      container.append(opacitySelect);
 
-      var layer_name = layer.getLayerName ? layer.getLayerName() : key;
-      container.append($('<h4/>').append(layer_name));
-      container.append($('<span>Opacity</span>'));
-      container.append(slider.getView());
+      // Blend mode
+      if (layer.getAvailableBlendModes) {
+        var blendModes = layer.getAvailableBlendModes();
+        var activeMode = layer.getBlendMode();
+
+        var blendLabel = $('<label/>')
+            .append('Blend mode');
+        var blendSelect = $('<select/>');
+        blendModes.forEach(function (key) {
+          var option = document.createElement("option");
+          option.text = key;
+          option.value = key;
+          if (activeMode === key) option.selected = 'selected';
+          blendSelect.append(option);
+        });
+        blendSelect.change(function () {
+          var key = $(this).parents('.layerControl').data('key');
+          stack.getLayers()[key].setBlendMode(this.value);
+          stack.redraw();
+        });
+
+        blendLabel.append(blendSelect);
+        container.append($('<div class="setting"/>').append(blendLabel));
+      }
 
       layerList.append(container);
     }

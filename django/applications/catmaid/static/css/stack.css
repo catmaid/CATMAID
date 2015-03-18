@@ -183,6 +183,12 @@ div.TilelayerControl h4
 	margin: 0.5em 0;
 }
 
+.layerControl .setting
+{
+	float: none;
+	margin: 0.5em 0;
+}
+
 div.TilelayerControl .hSliderView
 {
 	float: none;

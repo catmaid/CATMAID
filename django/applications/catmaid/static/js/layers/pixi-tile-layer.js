@@ -14,6 +14,7 @@ function PixiTileLayer() {
   }
   this.renderer = PixiTileLayer.contexts[this.stack.id].renderer;
   this.stage = PixiTileLayer.contexts[this.stack.id].stage;
+  this.blendMode = 'normal';
 
   // Replace tiles container.
   this.stack.getLayersView().removeChild(this.tilesContainer);
@@ -54,6 +55,8 @@ PixiTileLayer.prototype._initTiles = function (rows, cols) {
       this._tilesBuffer[i][j] = false;
     }
   }
+
+  this.setBlendMode(this.blendMode);
 };
 
 /** @inheritdoc */
@@ -212,4 +215,22 @@ PixiTileLayer.prototype.notifyReorder = function (beforeLayer) {
       this.stage.children.length - 1 :
       this.stage.getChildIndex(beforeLayer.batchContainer);
   this.stage.setChildIndex(this.batchContainer, newIndex);
+};
+
+PixiTileLayer.prototype.getAvailableBlendModes = function () {
+  return Object.keys(PIXI.blendModes).map(function (modeKey) {
+    return modeKey.toLowerCase().replace(/_/, ' ');
+  });
+};
+
+PixiTileLayer.prototype.getBlendMode = function () {
+  return this.blendMode;
+};
+
+PixiTileLayer.prototype.setBlendMode = function (modeKey) {
+  this.blendMode = modeKey;
+  modeKey = modeKey.replace(/ /, '_').toUpperCase();
+  this.batchContainer.children.forEach(function (tile) {
+    tile.blendMode = PIXI.blendModes[modeKey];
+  });
 };

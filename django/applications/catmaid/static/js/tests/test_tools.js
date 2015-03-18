@@ -169,4 +169,17 @@ QUnit.test('Utilities test', function( assert ) {
         "CATMAID.tools.intersectLineWithZPlane fails to find intersection " +
         "if all values are the same");
   })();
+
+
+  // Test same sign test
+  (function() {
+    assert.ok(CATMAID.tools.sameSign(1,0),
+        "CATMAID.tools.sameSign correctly says 1 and 0 have same sign");
+    assert.ok(CATMAID.tools.sameSign(-100,-42),
+        "CATMAID.tools.sameSign correctly says -100 and -42 have same sign");
+    assert.ok(!CATMAID.tools.sameSign(0,-1),
+        "CATMAID.tools.sameSign correctly says 0 and -1 don't have same sign");
+    assert.ok(!CATMAID.tools.sameSign(100,-42),
+        "CATMAID.tools.sameSign correctly says 100 and -42 don't have same sign");
+  })();
 });

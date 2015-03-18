@@ -272,4 +272,16 @@ CATMAID.tools = CATMAID.tools || {};
     return [x1 + t * dx, y1 + t * dy];
   };
 
+  /**
+   * Test if two number have the same sign.
+   *
+   * @param a First number to compare
+   * @param b Second number to compare
+   * @return true if a and b have the same sign, false otherwise.
+   */
+  tools.sameSign = function(a, b)
+  {
+    return (a < 0) === (b < 0);
+  };
+
 })(CATMAID.tools);

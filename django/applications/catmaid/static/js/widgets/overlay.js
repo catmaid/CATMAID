@@ -2248,15 +2248,17 @@ SkeletonAnnotations.SVGOverlay.prototype.setConfidence = function(newConfidence,
   }
   if (node.parent_id || toConnector) {
     var self = this;
-    this.submit(
-        django_url + project.id + '/node/' + nodeID + '/confidence/update',
-        {pid: project.id,
-         to_connector: toConnector,
-         tnid: nodeID,
-         new_confidence: newConfidence},
-        function(json) {
-          self.updateNodes();
-        });
+    this.promiseNode(node).then(function(nid) {
+      self.submit(
+          django_url + project.id + '/node/' + nid + '/confidence/update',
+          {pid: project.id,
+          to_connector: toConnector,
+          tnid: nid,
+          new_confidence: newConfidence},
+          function(json) {
+            self.updateNodes();
+          });
+    });
   }
 };
 

@@ -2319,8 +2319,17 @@ SkeletonAnnotations.SVGOverlay.prototype.isIDNull = function(nodeID) {
   return false;
 };
 
+/**
+ * Move to the previous branch point or the root node, if former is not
+ * available. If the treenode is virtual, it's real child is used instead.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.goToPreviousBranchOrRootNode = function(treenode_id, e) {
   if (this.isIDNull(treenode_id)) return;
+  if (!SkeletonAnnotations.isRealNode(treenode_id)) {
+    // Use child of virtual node, to make sure a branch before the virtual node
+    // is seen.
+    treenode_id = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
+  }
   var self = this;
   this.submit(
       django_url + project.id + "/node/previous_branch_or_root",
@@ -2344,8 +2353,18 @@ SkeletonAnnotations.SVGOverlay.prototype.goToPreviousBranchOrRootNode = function
       });
 };
 
+/**
+ * Move to the next branch point or end node, if former is not available. If the
+ * treenode is virtual, it's real parent is used instead. Pressing shift will
+ * cause cylcing though all branches.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(treenode_id, e) {
   if (this.isIDNull(treenode_id)) return;
+  if (!SkeletonAnnotations.isRealNode(treenode_id)) {
+    // Use parent of virtual node, to make sure a branch after the virtual node
+    // is seen.
+    treenode_id = SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
+  }
   if (e.shiftKey) {
     this.cycleThroughBranches(treenode_id, e.altKey ? 1 : 2);
   } else {
@@ -2376,8 +2395,14 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
   }
 };
 
+/**
+ * Select alternative branches to the currently selected one
+ */
 SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (treenode_id, node_index) {
   if (typeof this.nextBranches === 'undefined') return;
+  if (!this.isIDNull(treenode_id) && !SkeletonAnnotations.isRealNode(treenode_id)) {
+    treenode_id = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
+  }
 
   var currentBranch = this.nextBranches.branches.map(function (branch) {
     return branch.some(function (node) { return node[0] === treenode_id; });

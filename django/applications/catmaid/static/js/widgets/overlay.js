@@ -2596,7 +2596,11 @@ SkeletonAnnotations.SVGOverlay.prototype.moveToAndSelectNode = function(nodeID, 
       });
 };
 
-/** Move to the node and then invoke the function. */
+/**
+ * Move to the node and then invoke the function. If the node happens to be
+ * virtual and not available in the front-end already, it tries to get both
+ * real parent and real child of it and determine the correct position.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
   if (this.isIDNull(nodeID)) return;
   var node = this.nodes[nodeID];
@@ -2606,7 +2610,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
       this.pix2physY(node.z, node.y, node.x),
       this.pix2physX(node.z, node.y, node.x),
       fn);
-  } else {
+  } else if (SkeletonAnnotations.isRealNode(nodeID)) {
     var self = this;
     this.submit(
         django_url + project.id + "/node/get_location",
@@ -2617,6 +2621,39 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
         },
         false,
         true);
+  } else {
+    // Get parent and child ID locations
+    var vnComponents = SkeletonAnnotations.getVirtualNodeComponents(nodeID);
+    var parentID = SkeletonAnnotations.getParentOfVirtualNode(nodeID, vnComponents);
+    var childID = SkeletonAnnotations.getChildVirtualNode(nodeID, vnComponents);
+    var vnZ = SkeletonAnnotations.getZOfVirtualNode(nodeID, vnComponents);
+    if (parentID && childID && vnZ) {
+      // Query parent location
+      this.submit(
+          django_url + project.id + "/node/get_location",
+          {tnid: parentID},
+          function(json) {
+            var p = {x: json[1], y: json[2], z: json[3]};
+            // Query child location
+            this.submit(
+                django_url + project.id + "/node/get_location",
+                {tnid: childID},
+                function(json) {
+                  var c = {x: json[1], y: json[2], z: json[3]};
+                  // Find intersection at virtual node
+                  var pos = CATMAID.tools.intersectLineWithZPlane(c.x, c.y, c.z,
+                      p.x, p.y, p.z, vnZ)
+                  // Move there
+                  self.moveTo(vnZ, pos[1], pos[0], fn);
+                },
+                false,
+                true);
+          },
+          false,
+          true);
+    } else {
+      CATMAID.warn("Could not find location for node " + nodeID);
+    }
   }
 };
 

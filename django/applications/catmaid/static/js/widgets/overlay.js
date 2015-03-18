@@ -355,6 +355,55 @@ SkeletonAnnotations.isRealNode = function(node_id)
   return !isNaN(parseInt(node_id));
 };
 
+/**
+ * Return RegEx match object for a node ID tested against the virtual node
+ * naming scheme.
+ */
+SkeletonAnnotations.getVirtualNodeComponents = function(nodeID)
+{
+  // Add an empty string to also be able to work with numbers.
+  return (nodeID + '').match(/vn-(\d+)-(\d+)-(\d+)/);
+};
+
+/**
+ * Return the child component of a virtual node ID. If the node passed in, is
+ * real, null is returned.
+ */
+SkeletonAnnotations.getChildOfVirtualNode = function(nodeID, matches)
+{
+  matches = matches || SkeletonAnnotations.getVirtualNodeComponents(nodeID);
+  if (!matches || matches.length < 3) {
+    return null;
+  }
+  return matches[1];
+};
+
+/**
+ * Return the child component of a virtual node ID. If the node passed in, is
+ * real, null is returned.
+ */
+SkeletonAnnotations.getParentOfVirtualNode = function(nodeID, matches)
+{
+  var matches = matches || SkeletonAnnotations.getVirtualNodeComponents(nodeID);
+  if (!matches || matches.length < 3) {
+    return null;
+  }
+  return matches[2];
+};
+
+/**
+ * Return the Z component of a virtual node ID. If the node passed in, is
+ * real, null is returned.
+ */
+SkeletonAnnotations.getZOfVirtualNode = function(nodeID, matches)
+{
+  var matches = matches || SkeletonAnnotations.getVirtualNodeComponents(nodeID);
+  if (!matches || matches.length < 3) {
+    return null;
+  }
+  return matches[3];
+};
+
 
 /**
  * The constructor for SVGOverlay.

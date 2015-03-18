@@ -25,6 +25,11 @@ Key shortcuts / mouse operations:
 - If the mouse is over the stack when zooming, the view will recenter so that
   the same stack location remains under the mouse at the new scale.
 
+- During review, Q and W during will refocus on the last reviewed neuron if
+  review is interrupted (another node is selected), regardless of the auto
+  centering setting. If one looks beyond the current segment, the last reviewed
+  node will be selected by Q and W as well, but auto centering is respected.
+
 
 Review system:
 

@@ -16,7 +16,9 @@
     var end_puffer_count = 0,
       autoCentering = true,
       followedUsers = [];
-    // Set to true, if one moves out of the current segment
+    // Set to true, if one moves beyond the current segment
+    self.movedBeyondSegment = false;
+    // Set to true, if one deselects the current skeleton
     self.segmentUnfocused = false;
 
     this.init = function() {
@@ -32,6 +34,21 @@
       return self.current_segment !== null;
     };
 
+    /**
+     * If the active skeleton changes, the review system will register it. The
+     * widget will make sure the view is centered at the last active node, when
+     * review is continued.
+     */
+    this.handleActiveNodeChange = function(node) {
+      var segment = this.current_segment ? this.current_segment['sequence'] : null;
+      var index = this.current_segment_index;
+      // If there is an active segment and no node is selected anymore or the
+      // node change, mark the current segment as unfocused.
+      if (segment && (!node || segment[index].id !== node.id)) {
+        this.segmentUnfocused = true;
+      }
+    };
+
     this.endReview = function() {
       self.skeleton_segments = null;
       self.current_segment = null;
@@ -43,6 +60,10 @@
 
     /** @param id The index of the segment, 0-based. */
     this.initReviewSegment = function( id ) {
+      // Reset movement flags
+      this.segmentUnfocused = false;
+      this.movedBeyondSegment = false;
+      // Select and move to start of segment
       self.current_segment = self.skeleton_segments[id];
       self.current_segment_index = 0;
       self.goToNodeIndexOfSegmentSequence(0, true);
@@ -74,10 +95,29 @@
 
       self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
 
+      // By default, the selected node is changed and centering not enforced.
+      var changeSelectedNode = true;
+      var forceCentering = false;
+
+      // Don't change the selected node, if moved out of the segment
+      if (self.movedBeyondSegment) {
+        self.movedBeyondSegment = false;
+        changeSelectedNode = false;
+      }
+      // Don't change the selected node, but force centering, if the current
+      // segment became unfocused.
+      if (self.segmentUnfocused) {
+        self.segmentUnfocused = false;
+        changeSelectedNode = false;
+        forceCentering = true;
+      }
+
       if(self.current_segment_index > 0) {
-        self.warnIfNodeSkipsSections();
-        self.current_segment_index--;
-        self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
+        if (changeSelectedNode) {
+          self.warnIfNodeSkipsSections();
+          self.current_segment_index--;
+        }
+        self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
       } else {
         // Go to 'previous' section, to check whether an end really ends
         var segment = self.current_segment['sequence'];
@@ -92,7 +132,7 @@
                 "forward or backward one section!");
             return;
           }
-          self.segmentUnfocused = true;
+          self.movedBeyondSegment = true;
           var inc = segment[i-1].z - segment[i].z;
           // Will check stack boundaries at Stack.moveTo
           project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
@@ -131,9 +171,22 @@
         }
       }
 
+      var changeSelectedNode = true;
+      var forceCentering = false;
+      // Don't change the selected node, if moved out of the segment before
+      if (self.movedBeyondSegment) {
+        self.movedBeyondSegment = false;
+        changeSelectedNode = false;
+      }
+      // Don't change the selected node, but force centering, if the current
+      // segment became unfocused.
       if (self.segmentUnfocused) {
         self.segmentUnfocused = false;
-      } else {
+        changeSelectedNode = false;
+        forceCentering = true;
+      }
+
+      if (changeSelectedNode) {
         self.current_segment_index++;
 
         if (advanceToNextUnfollowed) {
@@ -186,7 +239,9 @@
 
         self.warnIfNodeSkipsSections();
       }
-      self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
+
+      // Select the (potentially new) current node
+      self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
     };
 
     /**
@@ -557,6 +612,10 @@
       tilelayer.cacheLocations(locations, loadImageCallback);
     };
   }();
+
+  // Register to the active node change event
+  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+    CATMAID.ReviewSystem.handleActiveNodeChange, CATMAID.ReviewSystem);
 
   CATMAID.ReviewSystem.STATUS_COLOR_FULL    = '#6fff5c';
   CATMAID.ReviewSystem.STATUS_COLOR_PARTIAL = '#ffc71d';

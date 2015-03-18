@@ -1185,11 +1185,13 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
 SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   var self = this;
+  var node = self.nodes[nodeID];
   // Make sure we have permissions to edit the neuron
   this.executeIfSkeletonEditable(node.skeleton_id, function() {
     // Make sure the load is not virtual
     self.promiseNode(node).then(function(nodeId) {
-      var node = self.nodes[nodeId];
+      // Make sure we reference the correct node and create a model
+      node = self.nodes[nodeId];
       var name = NeuronNameService.getInstance().getName(node.skeleton_id);
       var model = new SelectionTable.prototype.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
       /* Create the dialog */

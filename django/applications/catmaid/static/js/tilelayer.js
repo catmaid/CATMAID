@@ -58,8 +58,7 @@ function TileLayer(
   this.tilesContainer = document.createElement('div');
   this.tilesContainer.className = 'sliceTiles';
 
-  if (this.visible)
-    stack.getLayersView().appendChild(this.tilesContainer);
+  stack.getLayersView().appendChild(this.tilesContainer);
 
   if (showOverview) {
     // Initialize the OverviewLayer on the bottom-right with the correct
@@ -491,10 +490,12 @@ TileLayer.prototype.setOpacity = function (val) {
   this.opacity = val;
   if (val < 0.02) {
     if (this.visible)
-      this.isolateTileLayer();
+      $(this.tilesContainer).css('visibility', 'hidden');
+    this.visible = false;
   } else {
     if (!this.visible)
-      this.reattachTileLayer();
+      $(this.tilesContainer).css('visibility', 'visible');
+    this.visible = true;
   }
 };
 
@@ -503,21 +504,4 @@ TileLayer.prototype.setOpacity = function (val) {
  */
 TileLayer.prototype.getOpacity = function () {
   return this.opacity;
-};
-
-/**
- * Remove tile elements from DOM.
- */
-TileLayer.prototype.isolateTileLayer = function () {
-  this.stack.getLayersView().removeChild(this.tilesContainer);
-  this.visible = false;
-};
-
-/**
- * Attach tile elements to the DOM.
- */
-TileLayer.prototype.reattachTileLayer = function ()
-{
-  this.stack.getLayersView().appendChild(this.tilesContainer);
-  this.visible = true;
 };

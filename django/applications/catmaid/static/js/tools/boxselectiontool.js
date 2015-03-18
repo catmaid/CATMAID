@@ -352,18 +352,6 @@ function BoxSelectionLayer( stack, tool, crop_box)
             view.className = "cropBoxNonActive";
     };
 
-    this.isolateTileLayer = function()
-    {
-        stack.getView().removeChild( view );
-        self.visible = false;
-    };
-
-    this.reattachTileLayer = function()
-    {
-        stack.getView().appendChild( view );
-        self.visible = true;
-    };
-
     var self = this;
 
     // indicates if this the currently active crop box

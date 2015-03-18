@@ -69,16 +69,4 @@ function TracingLayer( stack )
     this.svgOverlay.destroy();
     // TODO Remove the SVG raphael object from the DOM
   };
-
-  this.isolateTileLayer = function()
-  {
-    // TODO: implement removal
-    // see tilelayer.js
-  };
-
-  this.reattachTileLayer = function()
-  {
-    // TODO: implement readding of the layer
-    // see tilelayer.js
-  };
 }

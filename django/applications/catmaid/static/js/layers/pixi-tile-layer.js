@@ -16,7 +16,7 @@ function PixiTileLayer() {
   this.stage = PixiTileLayer.contexts[this.stack.id].stage;
 
   // Replace tiles container.
-  if (this.visible) this.stack.getLayersView().removeChild(this.tilesContainer);
+  this.stack.getLayersView().removeChild(this.tilesContainer);
   this.tilesContainer = this.renderer.view;
   this.tilesContainer.className = 'sliceTiles';
   this.stack.getLayersView().appendChild(this.tilesContainer);

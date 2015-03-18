@@ -157,11 +157,25 @@ div.TilelayerControl .layerControl
 {
 	margin: 0 4px 6px 4px;
 	padding: 0.4em;
+	counter-increment: order-counter;
 }
 
 .layerControl.orderable
 {
 	background: #111;
+}
+
+li.layerControl::before
+{
+  content: counter(order-counter);
+  margin-right: 5px;
+  margin-top: 0.25em;
+  background-color: #ccc;
+  color: #000;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 3px;
+  float: left;
 }
 
 div.TilelayerControl h4

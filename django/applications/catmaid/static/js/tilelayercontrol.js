@@ -17,7 +17,7 @@
     this.stack = stack;
     this.view = document.createElement( "div" );
     this.view.className = "TilelayerControl";
-    this.view.id = "TilelayerControl";
+    this.view.id = "TilelayerControl" + stack.id;
     this.view.style.zIndex = 8;
 
     stack.getView().appendChild( this.view );
@@ -57,13 +57,28 @@
     var self = this;
 
     // Empty container
-    $(this.view).empty();
+    var $view = $(this.view);
+    $view.empty();
+
+    var benchmark = $view.siblings('.sliceBenchmark');
+    var cb = $('<input/>')
+        .attr('type', 'checkbox')
+        .prop('checked', benchmark.is(':visible'))
+        .change(function () {
+          $view.siblings('.sliceBenchmark').toggle();
+        });
+    var label = $('<div/>')
+        .addClass('setting')
+        .append($('<label/>').append(cb).append('Show Benchmark'));
+    $view.append(label);
+    var layerList = $('<ol/>');
 
     // Add slider for each layer
     for (var i = 0; i < layerOrder.length; i++) {
       var key = layerOrder[i];
+      var layer = layers[key];
 
-      var container = document.createElement("div");
+      var container = $('<li/>');
 
       var setOpac = function ( val )
       {
@@ -73,7 +88,7 @@
       };
 
       // Make layer re-evaluate it's opacity
-      layers[key].setOpacity(layers[key].getOpacity());
+      layer.setOpacity(layer.getOpacity());
 
       var slider = new Slider(
           SLIDER_HORIZONTAL,
@@ -81,26 +96,34 @@
           0,
           100,
           101,
-          layers[key].getOpacity() * 100,
+          layer.getOpacity() * 100,
           setOpac );
 
       slider.idd = key;
-      container.setAttribute("id", key + "-container");
-      container.setAttribute("class", "layerControl");
+      container.attr('id', key + '-container');
+      container.data('key', key);
+      container.addClass('layerControl');
+      if (layer.isOrderable) container.addClass('orderable');
 
-      var layer_name = layers[key].getLayerName ? layers[key].getLayerName() : key;
-      container.appendChild(document.createElement("strong").appendChild(
-          document.createTextNode(layer_name)));
-      container.appendChild( slider.getView() );
+      var layer_name = layer.getLayerName ? layer.getLayerName() : key;
+      container.append($('<h4/>').append(layer_name));
+      container.append($('<span>Opacity</span>'));
+      container.append(slider.getView());
 
-      // A clearing div is needed, because sliders are usually floating.
-      // See i.e. http://stackoverflow.com/questions/14758932
-      var clearing = document.createElement('div');
-      clearing.setAttribute('class', 'clear');
-      container.appendChild(clearing);
-
-      this.view.appendChild(container);
+      layerList.append(container);
     }
+
+    $view.append(layerList);
+
+    // Make layer list reorderable by dragging layers.
+    layerList.sortable({
+      items: 'li.orderable',
+      update: function (event, ui) {
+        var beforeKey = ui.item.next().data('key') || null;
+        stack.moveLayer(ui.item.data('key'), beforeKey);
+        stack.redraw();
+      }
+    });
   };
 
   CATMAID.TilelayerControl = TilelayerControl;

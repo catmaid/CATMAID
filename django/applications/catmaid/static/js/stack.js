@@ -842,6 +842,7 @@ function Stack(
 	view.appendChild( self.overview.getView() );
 
 	self.tilelayercontrol = new CATMAID.TilelayerControl( self );
+	$(self.tilelayercontrol.getView()).hide();
 	view.appendChild( self.tilelayercontrol.getView() );
 
 	// Ask for confirmation before closing the stack via the close button
@@ -859,14 +860,14 @@ function Stack(
 	view.appendChild( scaleBar );
 
 	var controlToggle = document.createElement( "div" );
-	controlToggle.className = "stackControlToggle";
-	controlToggle.title = "show/hide slice controls";
+	controlToggle.className = "stackControlToggle_hidden";
+	controlToggle.title = "show/hide layer controls";
 	controlToggle.onmousedown = function(e) {
 		if ( typeof event != "undefined" && event )
 			event.cancelBubble = true;
 		if ( e && e.stopPropagation )
 			e.stopPropagation();
-		var state = $(this).siblings('.TilelayerControl, .sliceBenchmark').toggle().is(':visible');
+		var state = $(this).siblings('.TilelayerControl').toggle().is(':visible');
 		$(this).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
 	};
 	view.appendChild( controlToggle );

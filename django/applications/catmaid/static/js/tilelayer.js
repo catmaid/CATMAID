@@ -44,6 +44,7 @@ function TileLayer(
   this.tileSource = tileSource;
   this.opacity = opacity; // in the range [0,1]
   this.visible = visibility;
+  this.isOrderable = true;
 
   /** @type {[[Element]]} Contains all tiles in a 2D toroidal array */
   this._tiles = [];

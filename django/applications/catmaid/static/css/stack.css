@@ -130,20 +130,50 @@ div.smallMapView_hidden div.smallMapRect div
 
 div.TilelayerControl
 {
-	/*border:solid 2px #0000FF;*/
-	margin:0px;
-	padding:0px;
+	border: solid 1px #00F;
+	margin: 0;
+	padding: 8px;
 	position:relative;
     top:10px;
     left:10px;
-    width:130px;
+    width: 40%;
+    height: 65%;
+    overflow-x: hidden;
+    overflow-y: auto;
     color:#FFFFFF;
+    background: #000;
+    opacity: 0.8;
+}
+
+div.TilelayerControl ol
+{
+	list-style-type: none;
+	margin: 0;
+	padding: 1em 0;
+	clear: both;
 }
 
 div.TilelayerControl .layerControl
 {
-	/*border:solid 2px #0000FF;*/
-	margin:0 0 10px 0;
+	margin: 0 4px 6px 4px;
+	padding: 0.4em;
+}
+
+.layerControl.orderable
+{
+	background: #111;
+}
+
+div.TilelayerControl h4
+{
+	margin: 0.5em 0;
+}
+
+div.TilelayerControl .hSliderView
+{
+	float: none;
+	display: inline-block;
+	vertical-align: middle;
 }
 
 div.stackControlToggle,

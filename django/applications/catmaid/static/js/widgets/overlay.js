@@ -1841,7 +1841,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   // child and a parent node that are not part of this section either.
   jso[0].forEach(function(a, index, array) {
     var n = this.nodes[a[0]];
-    // Check if the node is below this section
+    // Check if the node is above or below this section
     if (n.zdiff !== 0) {
       // Check if parent is also not in this section
       var p = n.parent;
@@ -2169,9 +2169,11 @@ SkeletonAnnotations.SVGOverlay.prototype.hide = function () {
   this.view.style.display = "none";
 };
 
-/** Update treeline nodes by querying them from the server
- * with the bounding volume of the current view.
- * Will also push editions (if any) to nodes to the database. */
+/**
+ * Update treeline nodes by querying them from the server with the bounding
+ * volume of the current view. Will also push editions (if any) to nodes to the
+ * database.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     future_active_node_id, errCallback) {
   var self = this;
@@ -2285,9 +2287,11 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
   });
 };
 
-/** Set the confidence of the edge partig from the active node towards
- * either the parent or a connector.
- * If there is more than one connector, the confidence is set to all connectors. */
+/**
+ * Set the confidence of the edge partig from the active node towards either the
+ * parent or a connector. If there is more than one connector, the confidence is
+ * set to all connectors.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.setConfidence = function(newConfidence, toConnector) {
   var nodeID = SkeletonAnnotations.getActiveNodeId();
   if (!nodeID) return;
@@ -2311,6 +2315,12 @@ SkeletonAnnotations.SVGOverlay.prototype.setConfidence = function(newConfidence,
   }
 };
 
+/**
+ * Test if a node ID properly defined.
+ *
+ * @nodeID The ID to test
+ * @return false if the nodeID is falsy, true otherwise
+ */
 SkeletonAnnotations.SVGOverlay.prototype.isIDNull = function(nodeID) {
   if (!nodeID) {
     growlAlert("Information", "Select a node first!");

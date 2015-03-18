@@ -34,18 +34,6 @@
   };
 
   /**
-   * set opacity for a layer
-   */
-  TilelayerControl.prototype.setOpacity = function ( key, val )
-  {
-    // Get current set of layers
-    var layers = this.stack.getLayers();
-
-    if(layers.hasOwnProperty(key))
-      layers[key].setOpacity( val / 100 );
-  };
-
-  /**
    * removes existing layer controls and re-creates them.
    */
   TilelayerControl.prototype.refresh = function()
@@ -54,7 +42,6 @@
     var stack = this.stack;
     var layers = stack.getLayers();
     var layerOrder = stack.getLayerOrder();
-    var self = this;
 
     // Empty container
     var $view = $(this.view);
@@ -73,6 +60,15 @@
     $view.append(label);
     var layerList = $('<ol/>');
 
+    var setOpac = function (val) {
+      var layers = stack.getLayers();
+
+      if (!layers.hasOwnProperty(this.idd)) return;
+
+      layers[this.idd].setOpacity(val);
+      stack.redraw();
+    };
+
     // Add slider for each layer
     for (var i = 0; i < layerOrder.length; i++) {
       var key = layerOrder[i];
@@ -80,24 +76,17 @@
 
       var container = $('<li/>');
 
-      var setOpac = function ( val )
-      {
-        self.setOpacity( this.idd, val );
-        stack.redraw();
-        return;
-      };
-
-      // Make layer re-evaluate it's opacity
+      // Make layer re-evaluate its opacity
       layer.setOpacity(layer.getOpacity());
 
       var slider = new Slider(
           SLIDER_HORIZONTAL,
           false,
           0,
-          100,
+          1,
           101,
-          layer.getOpacity() * 100,
-          setOpac );
+          layer.getOpacity(),
+          setOpac);
 
       slider.idd = key;
       container.attr('id', key + '-container');

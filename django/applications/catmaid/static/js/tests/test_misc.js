@@ -34,4 +34,36 @@ QUnit.test('Miscellaneous tests', function( assert ) {
     assert.strictEqual(CATMAID.staticURL, "d/",
         "CATMAID.staticURL cannot be overridden.");
   })();
+
+  // Test CATMAID.makeURL
+  (function() {
+    CATMAID.configure("a", "b");
+    assert.throws(CATMAID.makeURL.bind(CATMAID, ""),
+        "CATMAID.makeURL throws error when path is empty.");
+    assert.throws(CATMAID.makeURL.bind(CATMAID, null),
+        "CATMAID.makeURL throws error when path is null.");
+    assert.throws(CATMAID.makeURL.bind(CATMAID, {}),
+        "CATMAID.makeURL throws error when path is empty object.");
+
+    assert.strictEqual(CATMAID.makeURL("c"), "a/c",
+        "CATMAID.makeURL creates correct path if input has no leading slash");
+    assert.strictEqual(CATMAID.makeURL("/c"), "a/c",
+        "CATMAID.makeURL creates correct path if input has leading slash");
+  })();
+
+  // Test CATMAID.makeStaticURL
+  (function() {
+    CATMAID.configure("a", "b");
+    assert.throws(CATMAID.makeStaticURL.bind(CATMAID, ""),
+        "CATMAID.makeStaticURL throws error when path is empty.");
+    assert.throws(CATMAID.makeStaticURL.bind(CATMAID, null),
+        "CATMAID.makeStaticURL throws error when path is null.");
+    assert.throws(CATMAID.makeStaticURL.bind(CATMAID, {}),
+        "CATMAID.makeStaticURL throws error when path is empty object.");
+
+    assert.strictEqual(CATMAID.makeStaticURL("c"), "b/c",
+        "CATMAID.makeStaticURL creates correct path if input has no leading slash");
+    assert.strictEqual(CATMAID.makeStaticURL("/c"), "b/c",
+        "CATMAID.makeStaticURL creates correct path if input has leading slash");
+  })();
 });

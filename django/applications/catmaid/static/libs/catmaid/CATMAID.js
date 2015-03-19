@@ -44,4 +44,28 @@ var CATMAID = {};
     });
   };
 
+  /**
+   * Build a CATMAID back-end URL.
+   *
+   * @param {string} path - The relative path, without backend URL. A leading
+   *                        slash is not required.
+   * @returns {string} The complete CATMAID URL.
+   */
+  CATMAID.makeURL = function(path) {
+    validateString(path, "relative path for URL creation");
+    return CATMAID.backendURL + (path.startsWith("/") ? path.substr(1) : path);
+  };
+
+  /**
+   * Build a CATMAID static URL.
+   *
+   * @param {string} path - The relative path, without backend URL. A leading
+   *                        slash is not required.
+   * @returns {string} The complete CATMAID URL.
+   */
+  CATMAID.makeStaticURL = function(path) {
+    validateString(path, "relative path for URL creation");
+    return CATMAID.staticURL + (path.startsWith("/") ? path.substr(1) : path);
+  };
+
 })(CATMAID);

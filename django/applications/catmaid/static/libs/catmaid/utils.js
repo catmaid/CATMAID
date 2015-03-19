@@ -132,6 +132,10 @@ SkeletonSource.prototype.annotate_skeleton_list = function() {
 // A prototype for a manager of existing skeleton sources
 var SkeletonSourceManager = function() {
 	this.sources = {};
+
+  // Register with neuron manager to get updates about deleted neurons
+  CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+    function(skeletonID) { this.removeSkeletons([skeletonID]); }, this);
 };
 
 SkeletonSourceManager.prototype = {};

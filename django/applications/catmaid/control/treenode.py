@@ -413,6 +413,7 @@ def delete_treenode(request, project_id=None):
     parent_id = treenode.parent_id
 
     response_on_error = ''
+    deleted_neuron = False
     try:
         if not parent_id:
             # This treenode is root.
@@ -450,7 +451,7 @@ def delete_treenode(request, project_id=None):
             # If the neuron modeled by the skeleton of the treenode is empty,
             # delete it.
             response_on_error = 'Could not delete neuron #%s' % neuron.id
-            _delete_if_empty(neuron.id)
+            deleted_neuron = _delete_if_empty(neuron.id)
 
         else:
             # Treenode is not root, it has a parent and perhaps children.
@@ -463,7 +464,9 @@ def delete_treenode(request, project_id=None):
         response_on_error = 'Could not delete treenode.'
         Treenode.objects.filter(pk=treenode_id).delete()
         return HttpResponse(json.dumps({
+            'deleted_neuron': deleted_neuron,
             'parent_id': parent_id,
+            'skeleton_id': treenode.skeleton_id,
             'success': "Removed treenode successfully."
         }))
 

@@ -2230,10 +2230,8 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
    * local objects.
    */
   function deleteTreenode(node, wasActiveNode) {
-    self.submit(
-        django_url + project.id + '/treenode/delete',
-        {pid: project.id,
-        treenode_id: node.id},
+    // Make sure all other pending tasks are done before the node is deleted.
+    self.submit(CATMAID.neuronController.deleteTreenode(project.id, node.id), null,
         function(json) {
           // nodes not refreshed yet: node still contains the properties of the deleted node
           // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore

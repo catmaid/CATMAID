@@ -112,10 +112,21 @@ var submitterFn = function() {
     }
 
     if (q.url) {
-      if (q.replace) {
-        requestQueue.replace(q.url, "POST", q.post, handlerFn(q), q.url);
+      // If the function is a promise, wait for its fulfillment, otherwise,
+      // queue a request manually.
+      if (CATMAID.tools.isFn(q.url.then)) {
+        q.url.then(
+          function() {
+            invoke(q, arguments);
+          }, function() {
+            reset(q, arguments);
+          });
       } else {
-        requestQueue.register(q.url, "POST", q.post, handlerFn(q));
+        if (q.replace) {
+          requestQueue.replace(q.url, "POST", q.post, handlerFn(q), q.url);
+        } else {
+          requestQueue.register(q.url, "POST", q.post, handlerFn(q));
+        }
       }
     } else {
       // No url: direct execution with null json

@@ -1658,16 +1658,12 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
         "' and its skeleton should get deleted?")) {
       CATMAID.neuronController.deleteNeuron(project.id, this.neuron_id)
         .then((function() {
+          // Other widgets like the tracing layer are automatically refreshed
+          // due to the change event of the neuron controller.
           CATMAID.msg("Delete successful", "The neuron with ID " +
                 this.neuron_id + " has been succesfully deleted.");
           // Expect a parent node
           this.navigator.select_node(this.parent_node);
-          // Refresh tracing layer to reflect the removed neuron
-          var tool = project.getTool();
-          if (tool) {
-            if (tool.deselectActiveNode) tool.deselectActiveNode();
-            if (tool.updateLayer) tool.updateLayer();
-          }
         }).bind(this));
     }
   }).bind(this);

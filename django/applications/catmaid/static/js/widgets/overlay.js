@@ -299,6 +299,12 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
 // maintained, this additional attribute would be necessary:
 // this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
   this.graphics = new SkeletonElements(this.paper);
+
+  // Listen to change and delete events of skeletons
+  CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+    this.handleChangedSkeleton, this);
+  CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+    this.handleChangedSkeleton, this);
 };
 
 SkeletonAnnotations.SVGOverlay.prototype = {};
@@ -441,6 +447,12 @@ SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
     this.view.onmousedown = null;
     this.view = null;
   }
+
+  // Unregister from neuron controller
+  CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+      this.handleChangedSkeleton);
+  CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+      this.handleChangedSkeleton);
 };
 
 /**
@@ -2255,16 +2267,29 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
               }
             }
           }
-          // capture ID prior to refreshing nodes and connectors
-          var nodeID = node.id;
-          // Refresh all nodes in any case, to reflect the new state of the database
-          self.updateNodes();
-
-          statusBar.replaceLast("Deleted node #" + nodeID);
+          // Nodes are refreshed due to the change event the neuron controller emits
+          statusBar.replaceLast("Deleted node #" + node.id);
         });
   }
 
   return true;
+};
+
+/**
+ * Checks if the given skeleton is part of the current display and reloads all
+ * nodes if this is the case.
+ *
+ * @param {number} skeletonID - The ID of the skelton changed.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.handleChangedSkeleton = function(skeletonID) {
+  function partOfChangedSkeleton(nodeID) {
+    /*jshint validthis:true */
+    return this.nodes[nodeID].skeleton_id === skeletonID;
+  }
+
+  if (Object.keys(this.nodes).some(partOfChangedSkeleton, this)) {
+    this.updateNodes();
+  }
 };
 
 // Now that functions exist:

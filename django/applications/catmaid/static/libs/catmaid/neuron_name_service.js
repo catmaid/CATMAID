@@ -224,6 +224,25 @@ var NeuronNameService = (function()
       },
 
       /**
+       * Unregister a list of skeletons from all clients that reference it. This
+       * is used for instance to unregister deleted neurons.
+       */
+      unregisterFromAllClients: function(skids)
+      {
+        clients.forEach(function(c) {
+          this.unregister(c, skids);
+        }, this);
+      },
+
+      /**
+       * Unregisters a single neuron from all clients that reference it.
+       */
+      unregisterSingleFromAllClients: function(skid)
+      {
+        this.unregisterFromAllClients([skid]);
+      },
+
+      /**
        * Tries to let every registered client know that there was an update in the
        * name representation.
        */

@@ -106,6 +106,9 @@ Miscellaneous:
 
 - Selecting tags for highlighting in the neuron dendrogram
 
+- Synchronization between widgets was improved. Deleting a neuron in one widget,
+  will remove it from other widgets as well.
+
 
 Admin:
 

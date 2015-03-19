@@ -23,6 +23,10 @@
     {% for f in JS_FILES %}
 		  {% compressed_js f %}
     {% endfor %}
+
+		<script type="text/javascript">
+			CATMAID.configure("{{ CATMAID_URL }}", "{{ STATIC_URL|escapejs }}");
+		</script>
 	</head>
 	<body onload="realInit();"><a></a>
 		<!-- Toolbars

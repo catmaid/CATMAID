@@ -495,7 +495,7 @@ function openProjectStack( pid, sid, successFn, stackConstructor )
 				}
 			}, function(e) {
 				// Handle login errors
-				if (e.permission_error) {
+				if (e && e.permission_error) {
 					new CATMAID.LoginDialog(e.error, realInit).show();
 					return true;
 				}

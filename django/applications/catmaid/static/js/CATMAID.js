@@ -185,7 +185,7 @@ CATMAID.jsonResponseHandler = function(success, error, silent)
       if (json.error) {
         // Call error handler, if any, and force silence if it returned true.
         if (CATMAID.tools.isFn(error)) {
-          silent = silent || error();
+          silent = silent || error(json);
         }
         if (!silent) {
           CATMAID.error(json.error, json.detail);

@@ -1722,7 +1722,9 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         expected_result = {
             'success': 'Removed treenode successfully.',
-            'parent_id': None
+            'parent_id': None,
+            'deleted_neuron': True,
+            'skeleton_id': 2433
         }
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())

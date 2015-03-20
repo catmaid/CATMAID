@@ -19,6 +19,20 @@ var CATMAID = {};
   };
 
   /**
+   * Test if a string ends with a certain suffix.
+   */
+  var startsWith = function(str, prefix) {
+    return str.indexOf(prefix) === 0;
+  };
+
+  /**
+   * Test if a string ends with a certain suffix.
+   */
+  var endsWith = function(str, suffix) {
+    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+  };
+
+  /**
    * Set up the front-end environment. Both URLs are stored so that they contain
    * a trailing slash.
    *
@@ -33,14 +47,14 @@ var CATMAID = {};
       enumerable: false,
       configurable: true,
       writable: false,
-      value: backendURL.endsWith("/") ? backendURL : backendURL + "/"
+      value: endsWith(backendURL, "/") ? backendURL : backendURL + "/"
     });
 
     Object.defineProperty(CATMAID, "staticURL", {
       enumerable: false,
       configurable: true,
       writable: false,
-      value: staticURL.endsWith("/") ? staticURL : staticURL + "/"
+      value: endsWith(staticURL, "/") ? staticURL : staticURL + "/"
     });
   };
 
@@ -53,7 +67,7 @@ var CATMAID = {};
    */
   CATMAID.makeURL = function(path) {
     validateString(path, "relative path for URL creation");
-    return CATMAID.backendURL + (path.startsWith("/") ? path.substr(1) : path);
+    return CATMAID.backendURL + (startsWith(path, "/") ? path.substr(1) : path);
   };
 
   /**
@@ -65,7 +79,7 @@ var CATMAID = {};
    */
   CATMAID.makeStaticURL = function(path) {
     validateString(path, "relative path for URL creation");
-    return CATMAID.staticURL + (path.startsWith("/") ? path.substr(1) : path);
+    return CATMAID.staticURL + (startsWith(path, "/") ? path.substr(1) : path);
   };
 
 })(CATMAID);

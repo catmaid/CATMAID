@@ -65,7 +65,10 @@ class TransactionTests(TransactionTestCase):
                 '/%d/neuron/%s/delete' % (self.test_project_id, neuron_id), {})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'success': 'Deleted neuron #2 as well as its skeletons and annotations.'}
+        expected_result = {
+            'skeleton_ids': [skeleton_id],
+            'success': 'Deleted neuron #2 as well as its skeletons and annotations.'
+        }
         self.assertEqual(expected_result, parsed_response)
 
         self.assertEqual(0, Treenode.objects.filter(skeleton_id=skeleton_id).count())

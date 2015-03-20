@@ -135,7 +135,12 @@
           self.movedBeyondSegment = true;
           var inc = segment[i-1].z - segment[i].z;
           // Will check stack boundaries at Stack.moveTo
-          project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
+          if (this.autoCentering || forceCentering) {
+            project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
+          } else {
+            project.moveTo(segment[0].z + inc, project.coordinates.y,
+               project.coordinates.x);
+          }
         }
       }
     };

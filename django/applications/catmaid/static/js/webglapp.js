@@ -425,6 +425,7 @@ WebGLApplication.prototype.spatialSelect = function() {
     var distance = this._validate(field.value, "Invalid distance value");
     if (!distance) return;
     var mode = Number(choice.value),
+        distanceSq = distance * distance,
         synapse_mode = Number(choice2.value),
         skeleton_mode = Number(choice3.value),
         loaded_only = checkbox.checked,
@@ -466,7 +467,7 @@ WebGLApplication.prototype.spatialSelect = function() {
           if (active_skid == skid) return; // == to enable string vs int comparison
           var s = skeletons[skid];
           if (s.visible && filter(s) && s.geometry['neurite'].vertices.some(function(v) {
-            return va.distanceTo(v) < distance;
+            return va.distanceToSquared(v) < distanceSq;
           })) {
             near.push(skid);
           }
@@ -491,7 +492,11 @@ WebGLApplication.prototype.spatialSelect = function() {
             delete arbor.edges[node];
           });
       }
-      var within = arbor.findNodesWithin(active_node, sk.createNodeDistanceFn(), distance);
+      var within = arbor.findNodesWithin(active_node,
+          (function(child, paren) {
+            return this[child].distanceToSquared(this[paren]);
+          }).bind(sk.getPositions()),
+          distanceSq);
       // Find connectors within the part to look at
       var connectors = {};
       synapticTypes.forEach(function(type) {

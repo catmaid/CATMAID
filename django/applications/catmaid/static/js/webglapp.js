@@ -437,8 +437,8 @@ WebGLApplication.prototype.spatialSelect = function() {
         post = null,
         filter = function(sk) {
           if (2 == skeleton_mode) return true;
-          else if (0 === skeleton_mode) return sk.geometry['neurite'].length > 1;
-          else if (1 == skeleton_mode) return 1 === sk.geometry['neurite'].length;
+          else if (0 === skeleton_mode) return sk.geometry['neurite'].vertices.length > 1;
+          else if (1 == skeleton_mode) return 1 === sk.geometry['neurite'].vertices.length;
         };
     // Restrict by synaptic relation
     switch (synapse_mode) {
@@ -465,10 +465,10 @@ WebGLApplication.prototype.spatialSelect = function() {
         Object.keys(skeletons).forEach(function(skid) {
           if (active_skid == skid) return; // == to enable string vs int comparison
           var s = skeletons[skid];
-          if (s.visible && s.geometry['neurite'].some(function(v) {
+          if (s.visible && filter(s) && s.geometry['neurite'].vertices.some(function(v) {
             return va.distanceTo(v) < distance;
           })) {
-            if (filter(s)) near.push(skid);
+            near.push(skid);
           }
         });
       } else {
@@ -507,12 +507,13 @@ WebGLApplication.prototype.spatialSelect = function() {
         Object.keys(skeletons).forEach(function(skid) {
           if (skid === active_skid) return;
           var partner = skeletons[skid];
+          if (!filter(partner)) return;
           synapticTypes.forEach(function(type) {
             var vs = partner.geometry[type].vertices;
             for (var i=0; i<vs.length; i+=2) {
               var connector_id = vs[i].node_id;
               if (connectors[connector_id]) {
-                if (filter(partner)) near.push(skid);
+                near.push(skid);
                 break;
               }
             }

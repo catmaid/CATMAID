@@ -3,9 +3,6 @@
 
 var global_bottom = 29;
 var statusBar; //!< global statusBar
-var slider_trace_z;
-var slider_trace_s;
-var a_url; //!< URL to this page
 
 var input_fontsize; //!< fontsize input
 var input_fontcolourred; //!< fontcolour red input
@@ -13,14 +10,11 @@ var input_fontcolourgreen; //!< fontcolour green input
 var input_fontcolourblue; //!< fontcolour blue input
 var requestQueue;
 var project;
-var project_view;
 
 var current_dataview;
 var dataview_menu;
 
 var project_menu;
-//var project_menu_open;
-//var project_menu_current;
 
 var stack_menu;
 
@@ -518,7 +512,6 @@ function handle_openProjectStack( e, stackConstructor )
   if ( !( project && project.id == e.pid ) )
   {
     project = new Project( e.pid );
-    project_view = project.getView();
     project.register();
     // TODO: There should be a project change event for this to subscribe
     CATMAID.ReviewSystem.Whitelist.refresh();
@@ -1017,7 +1010,7 @@ var realInit = function()
 	
 	input_fontsize = document.getElementById( "fontsize" );
 	
-	a_url = document.getElementById( "a_url" );
+	var a_url = document.getElementById( "a_url" );
 	a_url.onmouseover = function( e )
 	{
 		this.href = project.createURL();

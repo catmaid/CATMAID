@@ -2248,7 +2248,7 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
   function deleteTreenode(node, wasActiveNode) {
     // Make sure all other pending tasks are done before the node is deleted.
     var delFn = CATMAID.neuronController.deleteTreenode.bind(
-        CATMAID.neuronController, project.id, node.id)
+        CATMAID.neuronController, project.id, node.id);
     self.submit.then(delFn).then(function(json) {
       // nodes not refreshed yet: node still contains the properties of the deleted node
       // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore

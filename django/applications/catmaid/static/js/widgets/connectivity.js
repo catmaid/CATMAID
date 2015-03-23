@@ -299,10 +299,12 @@ SkeletonConnectivity.prototype.update = function() {
           }
           var json = $.parseJSON(text);
           if (json.error) {
-            self.incoming = {};
-            self.outgoing = {};
-            new CATMAID.ErrorDialog("Couldn't load connectivity information",
-                json.error).show();
+            if ('REPLACED' !== json.error) {
+              self.incoming = {};
+              self.outgoing = {};
+              new CATMAID.ErrorDialog("Couldn't load connectivity information",
+                  json.error).show();
+            }
             return;
           }
 

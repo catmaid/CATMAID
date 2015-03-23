@@ -545,7 +545,8 @@ function handle_openProjectStack( e, stackConstructor )
 
   var tilesource = getTileSource( e.tile_source_type, e.image_base,
       e.file_extension );
-  var tilelayer = new TileLayer(
+  var tilelayerConstructor = userprofile.prefer_webgl_layers ? PixiTileLayer : TileLayer;
+  var tilelayer = new tilelayerConstructor(
       "Image data",
       stack,
       e.tile_width,
@@ -563,7 +564,7 @@ function handle_openProjectStack( e, stackConstructor )
     var layer_visibility = false;
     if( parseInt(value.default_opacity) > 0)
       layer_visibility = true;
-    var tilelayer2 = new TileLayer(
+    var tilelayer2 = new tilelayerConstructor(
             value.title,
             stack,
             value.tile_width,

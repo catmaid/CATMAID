@@ -63,9 +63,12 @@ SettingsWidget.prototype.init = function(space)
   /**
    * Helper function to create a checkbox with label.
    */
-  var createCheckboxSetting = function(name, handler)
+  var createCheckboxSetting = function(name, handler, checked)
   {
     var cb = $('<input/>').attr('type', 'checkbox');
+    if (checked) {
+      cb.prop('checked', checked);
+    }
     if (handler) {
       cb.change(handler);
     }
@@ -99,6 +102,28 @@ SettingsWidget.prototype.init = function(space)
           checked: val.checked
       }).change(handler)));
     }, $('<div />'));
+  };
+
+  /**
+   * Adds TileLayer settings to the given container.
+   */
+  var addTileLayerSettings = function(container)
+  {
+    var ds = addSettingsContainer(container, "Tile Layer");
+    // Add explanatory text
+    ds.append($('<div/>').addClass('setting').append('Choose whether to use ' +
+        'WebGL or Canvas tile layer rendering when supported by your tile ' +
+        'source and browser. Note that your tile source server may need to ' +
+        'be <a href="http://enable-cors.org/">configured to enable use in ' +
+        'WebGL</a>. (Note: you must reload the page for this setting to take ' +
+        'effect.)'));
+
+    ds.append(createCheckboxSetting("Prefer WebGL Layers", function() {
+      userprofile.prefer_webgl_layers = this.checked;
+      userprofile.saveAll(function () {
+        growlAlert('Success', 'User profile updated successfully.');
+      });
+    }, userprofile.prefer_webgl_layers));
   };
 
   /*
@@ -379,6 +404,7 @@ SettingsWidget.prototype.init = function(space)
 
 
   // Add all settings
+  addTileLayerSettings(space);
   addGridSettings(space);
   addTracingSettings(space);
 

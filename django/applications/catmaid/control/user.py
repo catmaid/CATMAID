@@ -151,7 +151,8 @@ def update_user_profile(request):
 
     for var in [{'name': 'display_stack_reference_lines', 'parse': json.loads},
                 {'name': 'tracing_overlay_screen_scaling', 'parse': json.loads},
-                {'name': 'tracing_overlay_scale', 'parse': float}]:
+                {'name': 'tracing_overlay_scale', 'parse': float},
+                {'name': 'prefer_webgl_layers', 'parse': json.loads}]:
         request_var = request.POST.get(var['name'], None)
         if request_var:
             request_var = var['parse'](request_var)

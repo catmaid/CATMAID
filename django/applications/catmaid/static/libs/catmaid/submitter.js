@@ -27,6 +27,8 @@
 var submitterFn = function() {
   // Accumulate invocations
   var queue = [];
+  // Store last result
+  var lastResult;
 
   var complete = function(q) {
     // Remove this call
@@ -39,11 +41,23 @@ var submitterFn = function() {
 
   var invoke = function(q, json) {
     try {
-      q.fn(json);
+      lastResult = q.fn(json);
     } catch (e) {
       alert(e);
     } finally {
-      complete(q);
+      // If the result of the invocation is a promise (i.e. has a then()
+      // method), wait with completion for its fulfillment.
+      if (lastResult && typeof(lastResult.then) === "function") {
+        lastResult.then(function(result) {
+          // Make the result of the promise the new result
+          lastResult = result;
+          complete(q);
+        }, function(error) {
+          reset(q, error);
+        });
+      } else {
+        complete(q);
+      }
     }
   };
 
@@ -64,6 +78,8 @@ var submitterFn = function() {
 
     // Reset queue
     queue.length = 0;
+    // Reset result cache
+    lastResult = undefined;
 
     // Call all callbacks
     callbacks.forEach(function(errCallback) {
@@ -118,12 +134,12 @@ var submitterFn = function() {
         requestQueue.register(q.url, "POST", q.post, handlerFn(q));
       }
     } else {
-      // No url: direct execution with null json
-      invoke(q, null);
+      // No url: direct execution with last result
+      invoke(q, lastResult);
     }
   };
 
-  return function(url, post, fn, blockUI, replace, errCallback, quiet) {
+  var submit = function(url, post, fn, blockUI, replace, errCallback, quiet) {
     queue.push({url: url,
           post: post,
           fn: fn,
@@ -136,4 +152,14 @@ var submitterFn = function() {
       next();
     }
   };
+
+  /**
+   * Allow submitter to be used as a Promise.
+   */
+  submit.then = function(onResolve, onReject, blockUI) {
+    submit(null, null, onResolve, blockUI, false, onReject, false);
+    return submit;
+  };
+
+  return submit;
 };

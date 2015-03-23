@@ -517,6 +517,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
       statusBar.replaceLast("Activated connector node #" + node.id);
       atn.set(node, this.getStack().getId());
+      SkeletonAnnotations.clearTopbar(this.stack.getId());
       this.recolorAllNodes();
     }
   } else {

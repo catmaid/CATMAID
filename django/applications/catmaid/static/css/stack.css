@@ -203,7 +203,7 @@ li.layerControl ol
 	list-style-type: decimal;
 }
 
-.layerControl li.highlight
+div.TilelayerControl li.highlight
 {
 	min-height: 1em;
 	border: solid 1px #00F;

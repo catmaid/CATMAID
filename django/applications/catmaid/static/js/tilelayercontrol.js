@@ -197,6 +197,7 @@
     // Make layer list reorderable by dragging layers.
     layerList.sortable({
       items: 'li.orderable',
+      placeholder: 'highlight',
       update: function (event, ui) {
         var beforeKey = ui.item.next().data('key') || null;
         stack.moveLayer(ui.item.data('key'), beforeKey);

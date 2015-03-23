@@ -123,15 +123,21 @@ SkeletonConnectivity.prototype.clear = function(source_chain) {
 };
 
 SkeletonConnectivity.prototype.removeSkeletons = function(skeleton_ids) {
-  skeleton_ids.forEach(function(skid) {
+  var deletedSkeletons = skeleton_ids.filter(function(skid) {
     delete this.skeletons[skid];
     var index = this.ordered_skeleton_ids.indexOf(skid);
     if (index > -1) {
       this.ordered_skeleton_ids.splice(index, 1);
+      return true;
     }
+    return false;
   }, this);
-  this.update();
-  this.updateLink(this.getSelectedSkeletonModels());
+
+  // Only update if skeletons where actually removed
+  if (deletedSkeletons.length > 0) {
+    this.update();
+    this.updateLink(this.getSelectedSkeletonModels());
+  }
 };
 
 SkeletonConnectivity.prototype.hasSkeleton = function(skeleton_id) {

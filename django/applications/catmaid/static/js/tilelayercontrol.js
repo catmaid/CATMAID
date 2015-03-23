@@ -56,7 +56,7 @@
         });
     var label = $('<div/>')
         .addClass('setting')
-        .append($('<label/>').append(cb).append('Show Benchmark'));
+        .append($('<label/>').append(cb).append('Show Scale Bar'));
     $view.append(label);
     var layerList = $('<ol/>');
 

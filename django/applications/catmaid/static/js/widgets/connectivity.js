@@ -252,7 +252,7 @@ SkeletonConnectivity.prototype.isPartner = function(skeletonID) {
 SkeletonConnectivity.prototype.handleChangedSkeleton = function(skeletonID) {
   if (this.hasSkeleton(skeletonID) || this.isPartner(skeletonID)) {
     this.update();
-  };
+  }
 };
 
 /**
@@ -262,7 +262,7 @@ SkeletonConnectivity.prototype.handleChangedSkeleton = function(skeletonID) {
 SkeletonConnectivity.prototype.handleDeletedSkeleton = function(skeletonID) {
   if (this.isPartner(skeletonID)) {
     this.update();
-  };
+  }
 };
 
 /**

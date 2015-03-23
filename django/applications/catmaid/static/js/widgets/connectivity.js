@@ -23,6 +23,12 @@ var SkeletonConnectivity = function() {
   // Default table layout to be side by side. Have it seperate from init() as
   // long as it is part of the top button row.
   this.tablesSideBySide = true;
+
+  // Register for changed and removed skeletons
+  CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+    this.handleChangedSkeleton, this);
+  CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+    this.handleDeletedSkeleton, this);
 };
 
 SkeletonConnectivity.prototype = {};
@@ -114,6 +120,12 @@ SkeletonConnectivity.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
   NeuronNameService.getInstance().unregister(this);
+
+  // Unregister from neuron controller
+  CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+      this.handleChangedSkeleton);
+  CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+      this.handleDeletedSkeleton);
 };
 
 SkeletonConnectivity.prototype.clear = function(source_chain) {
@@ -223,6 +235,34 @@ SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
   });
 
   return models;
+};
+
+/**
+ * Return true if the given skeleton is a partner.
+ */
+SkeletonConnectivity.prototype.isPartner = function(skeletonID) {
+  return this.incoming.hasOwnProperty(skeletonID) ||
+    this.outgoing.hasOwnProperty(skeletonID);
+};
+
+/**
+ * Refresh the widget if the changed skeleton was displayed as an
+ * input skeleton or as a partner.
+ */
+SkeletonConnectivity.prototype.handleChangedSkeleton = function(skeletonID) {
+  if (this.hasSkeleton(skeletonID) || this.isPartner(skeletonID)) {
+    this.update();
+  };
+};
+
+/**
+ * Refresh the widget if the changed skeleton was displayed as a partner.
+ * Removal of input skeletons is dealt with separately.
+ */
+SkeletonConnectivity.prototype.handleDeletedSkeleton = function(skeletonID) {
+  if (this.isPartner(skeletonID)) {
+    this.update();
+  };
 };
 
 /**

@@ -2243,33 +2243,34 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
    */
   function deleteTreenode(node, wasActiveNode) {
     // Make sure all other pending tasks are done before the node is deleted.
-    self.submit(CATMAID.neuronController.deleteTreenode(project.id, node.id), null,
-        function(json) {
-          // nodes not refreshed yet: node still contains the properties of the deleted node
-          // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
-          node.needsync = false;
-          // activate parent node when deleted
-          if (wasActiveNode) {
-            if (json.parent_id) {
-              self.selectNode(json.parent_id);
-            } else {
-              // No parent. But if this node was postsynaptic or presynaptic
-              // to a connector, the connector must be selected:
-              var pp = self.findConnectors(node.id);
-              // Try first connectors for which node is postsynaptic:
-              if (pp[1].length > 0) {
-                self.selectNode(pp[1][0]);
-              // Then try connectors for which node is presynaptic
-              } else if (pp[0].length > 0) {
-                self.selectNode(pp[0][0]);
-              } else {
-                self.activateNode(null);
-              }
-            }
+    var delFn = CATMAID.neuronController.deleteTreenode.bind(
+        CATMAID.neuronController, project.id, node.id)
+    self.submit.then(delFn).then(function(json) {
+      // nodes not refreshed yet: node still contains the properties of the deleted node
+      // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
+      node.needsync = false;
+      // activate parent node when deleted
+      if (wasActiveNode) {
+        if (json.parent_id) {
+          self.selectNode(json.parent_id);
+        } else {
+          // No parent. But if this node was postsynaptic or presynaptic
+          // to a connector, the connector must be selected:
+          var pp = self.findConnectors(node.id);
+          // Try first connectors for which node is postsynaptic:
+          if (pp[1].length > 0) {
+            self.selectNode(pp[1][0]);
+          // Then try connectors for which node is presynaptic
+          } else if (pp[0].length > 0) {
+            self.selectNode(pp[0][0]);
+          } else {
+            self.activateNode(null);
           }
-          // Nodes are refreshed due to the change event the neuron controller emits
-          statusBar.replaceLast("Deleted node #" + node.id);
-        });
+        }
+      }
+      // Nodes are refreshed due to the change event the neuron controller emits
+      statusBar.replaceLast("Deleted node #" + node.id);
+    });
   }
 
   return true;

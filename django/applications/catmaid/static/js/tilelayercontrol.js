@@ -58,6 +58,7 @@
         .addClass('setting')
         .append($('<label/>').append(cb).append('Show Scale Bar'));
     $view.append(label);
+    $view.append('<h3>Layers by render order (drag to reorder)</h3>');
     var layerList = $('<ol/>');
 
     var setOpac = function (val) {

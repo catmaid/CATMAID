@@ -145,6 +145,11 @@ div.TilelayerControl
     opacity: 0.8;
 }
 
+div.TilelayerControl .setting
+{
+	float: none;
+}
+
 div.TilelayerControl ol
 {
 	list-style-type: none;

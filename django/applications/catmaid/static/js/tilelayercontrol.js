@@ -73,6 +73,7 @@
     for (var i = 0; i < layerOrder.length; i++) {
       var key = layerOrder[i];
       var layer = layers[key];
+      var self = this;
 
       var container = $('<li/>');
       container.data('key', key);
@@ -125,6 +126,67 @@
 
         blendLabel.append(blendSelect);
         container.append($('<div class="setting"/>').append(blendLabel));
+      }
+
+      // Filters
+      if (layer.getAvailableFilters) {
+        var availFilters = layer.getAvailableFilters();
+
+        var filterLabel = $('<label/>')
+            .append('Filters');
+        var filterSelect = $('<select/>');
+        Object.keys(availFilters).forEach(function (key) {
+          var option = document.createElement("option");
+          option.text = key;
+          option.value = key;
+          filterSelect.append(option);
+        });
+
+        var filtersContainer = $('<ol/>');
+
+        var filterAdd = $('<input type="button" value="Add"/>');
+        filterAdd.click(function () {
+          var key = $(this).parents('.layerControl').data('key');
+          var layer = stack.getLayers()[key];
+          var filterName = $(this).siblings('select')[0].value;
+          var filter = new (layer.getAvailableFilters()[filterName])();
+          layer.addFilter(filter);
+          layer.redraw();
+          self.refresh();
+        });
+
+        filterLabel.append(filterSelect).append(filterAdd);
+        container.append($('<div class="setting"/>').append(filterLabel));
+
+        var filters = layer.getFilters();
+        filters.forEach(function (filter) {
+          var filterContainer = $('<li class="layerFilterControl"/>');
+          var removeBtn = $('<input type="button" value="x" class="remove"/>')
+              .click(function () {
+                var key = $(this).parents('.layerControl').data('key');
+                var layer = stack.getLayers()[key];
+                layer.removeFilter(filter);
+                layer.redraw();
+                self.refresh();
+              });
+          filterContainer.append(removeBtn);
+          filter.redrawControl(filterContainer);
+          filtersContainer.append(filterContainer);
+        });
+
+        container.append(filtersContainer);
+        filtersContainer.sortable({
+          placeholder: 'highlight',
+          start: function (event, ui) {
+            ui.item.startIndex = ui.item.index();
+          },
+          stop: function (event, ui) {
+            var key = $(this).parents('.layerControl').data('key');
+            var layer = stack.getLayers()[key];
+            layer.moveFilter(ui.item.startIndex, ui.item.index());
+            layer.redraw();
+          }
+        });
       }
 
       layerList.append(container);

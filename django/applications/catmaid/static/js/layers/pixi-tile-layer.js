@@ -15,6 +15,7 @@ function PixiTileLayer() {
   this.renderer = PixiTileLayer.contexts[this.stack.id].renderer;
   this.stage = PixiTileLayer.contexts[this.stack.id].stage;
   this.blendMode = 'normal';
+  this.filters = [];
 
   // Replace tiles container.
   this.stack.getLayersView().removeChild(this.tilesContainer);
@@ -32,6 +33,7 @@ PixiTileLayer.prototype.constructor = PixiTileLayer;
 PixiTileLayer.prototype._initTiles = function (rows, cols) {
   if (!this.batchContainer) {
     this.batchContainer = new PIXI.DisplayObjectContainer();
+    this.syncFilters();
     this.stage.addChild(this.batchContainer);
   } else this.batchContainer.removeChildren();
 
@@ -233,4 +235,91 @@ PixiTileLayer.prototype.setBlendMode = function (modeKey) {
   this.batchContainer.children.forEach(function (tile) {
     tile.blendMode = PIXI.blendModes[modeKey];
   });
+};
+
+PixiTileLayer.prototype.getAvailableFilters = function () {
+  // PIXI Canvas renderer does not currently support filters.
+  if (this.renderer instanceof PIXI.CanvasRenderer) return {};
+
+  return {
+    'Gaussian Blur': PixiTileLayer.FilterWrapper.bind(null, 'Gaussian Blur', PIXI.BlurFilter, [
+      {displayName: 'Width (px)', name: 'blurX', type: 'slider', range: [0, 32]},
+      {displayName: 'Height (px)', name: 'blurY', type: 'slider', range: [0, 32]}
+    ], this),
+    'Invert': PixiTileLayer.FilterWrapper.bind(null, 'Invert', PIXI.InvertFilter, [
+      {displayName: 'Strength', name: 'invert', type: 'slider', range: [0, 1]}
+    ], this)
+  };
+};
+
+PixiTileLayer.prototype.getFilters = function () {
+  return this.filters;
+};
+
+PixiTileLayer.prototype.syncFilters = function () {
+  if (this.filters.length > 0)
+    this.batchContainer.filters = this.filters.map(function (f) { return f.pixiFilter; });
+  else
+    this.batchContainer.filters = null;
+};
+
+PixiTileLayer.prototype.addFilter = function (filter) {
+  this.filters.push(filter);
+  this.syncFilters();
+};
+
+PixiTileLayer.prototype.removeFilter = function (filter) {
+  var index = this.filters.indexOf(filter);
+  if (index === -1) return;
+  this.filters.splice(index, 1);
+  this.syncFilters();
+};
+
+PixiTileLayer.prototype.moveFilter = function (currIndex, newIndex) {
+  this.filters.splice(newIndex, 0, this.filters.splice(currIndex, 1)[0]);
+  this.syncFilters();
+};
+
+PixiTileLayer.FilterWrapper = function (displayName, pixiConstructor, params, layer) {
+  this.displayName = displayName;
+  this.pixiFilter = new pixiConstructor();
+  this.params = params;
+  this.layer = layer;
+};
+
+PixiTileLayer.FilterWrapper.prototype = {};
+PixiTileLayer.FilterWrapper.constructor = PixiTileLayer.FilterWrapper;
+
+PixiTileLayer.FilterWrapper.prototype.setParam = function (key, value) {
+  this.pixiFilter[key] = value;
+  if (this.layer) this.layer.redraw();
+};
+
+PixiTileLayer.FilterWrapper.prototype.redrawControl = function (container, callback) {
+  container.append('<h5>' + this.displayName + '</h5>');
+  for (var i = 0; i < this.params.length; i++) {
+    var param = this.params[i];
+
+    switch (param.type) {
+      case 'slider':
+        var slider = new Slider(
+            SLIDER_HORIZONTAL,
+            true,
+            param.range[0],
+            param.range[1],
+            101,
+            this.pixiFilter[param.name],
+            this.setParam.bind(this, param.name));
+        var paramSelect = $('<div class="setting"/>');
+        paramSelect.append('<span>' + param.displayName + '</span>');
+        paramSelect.append(slider.getView());
+        // TODO: fix element style. Slider should use CSS.
+        var inputView = $(slider.getInputView());
+        inputView.css('display', 'inline-block').css('margin', '0 0.5em');
+        inputView.children('img').css('vertical-align', 'middle');
+        paramSelect.append(inputView);
+        container.append(paramSelect);
+        break;
+    }
+  }
 };

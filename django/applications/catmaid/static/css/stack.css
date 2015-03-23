@@ -196,6 +196,30 @@ div.TilelayerControl .hSliderView
 	vertical-align: middle;
 }
 
+li.layerControl ol
+{
+	margin-left: 3em;
+	padding: 0 1em;
+	list-style-type: decimal;
+}
+
+.layerControl li.highlight
+{
+	min-height: 1em;
+	border: solid 1px #00F;
+}
+
+.layerControl .layerFilterControl input.remove
+{
+	position: absolute;
+	left: 0.5em;
+}
+
+.layerControl .layerFilterControl h5
+{
+	margin: 0;
+}
+
 div.stackControlToggle,
 div.stackControlToggle_hidden
 {

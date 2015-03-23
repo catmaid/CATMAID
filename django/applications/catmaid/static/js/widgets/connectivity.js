@@ -96,7 +96,7 @@ SkeletonConnectivity.prototype.append = function(models) {
   // Update existing ones and add new ones
   $.extend(this.skeletons, new_skeletons);
   for (var skid in new_skeletons) {
-    this.ordered_skeleton_ids.push(skid);
+    this.ordered_skeleton_ids.push(parseInt(skid));
   }
 
   // Add skeletons

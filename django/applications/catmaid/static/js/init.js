@@ -545,7 +545,7 @@ function handle_openProjectStack( e, stackConstructor )
 
   var tilesource = getTileSource( e.tile_source_type, e.image_base,
       e.file_extension );
-  var tilelayerConstructor = userprofile.prefer_webgl_layers ? PixiTileLayer : TileLayer;
+  var tilelayerConstructor = userprofile.prefer_webgl_layers ? CATMAID.PixiTileLayer : CATMAID.TileLayer;
   var tilelayer = new tilelayerConstructor(
       "Image data",
       stack,

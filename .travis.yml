@@ -41,6 +41,7 @@ script:
   - python manage.py runserver &
   - sleep 5
   - cd ../../..
+  - phantomjs --version
   - phantomjs node_modules/qunit-phantomjs-runner/runner.js "http://localhost:8000/tests"
 after_success:
   - cd django/projects/mysite && coveralls

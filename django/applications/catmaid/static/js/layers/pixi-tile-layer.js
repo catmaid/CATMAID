@@ -268,6 +268,11 @@
       ], this),
       'Invert': PixiTileLayer.FilterWrapper.bind(null, 'Invert', PIXI.InvertFilter, [
         {displayName: 'Strength', name: 'invert', type: 'slider', range: [0, 1]}
+      ], this),
+      'Brightness, Contrast & Saturation': PixiTileLayer.FilterWrapper.bind(null, 'Brightness, Contrast & Saturation', PixiTileLayer.Filters.BrightnessContrastSaturationFilter, [
+        {displayName: 'Brightness', name: 'brightness', type: 'slider', range: [0, 3]},
+        {displayName: 'Contrast', name: 'contrast', type: 'slider', range: [0, 3]},
+        {displayName: 'Saturation', name: 'saturation', type: 'slider', range: [0, 3]}
       ], this)
     };
   };
@@ -368,7 +373,7 @@
               true,
               param.range[0],
               param.range[1],
-              101,
+              201,
               this.pixiFilter[param.name],
               this.setParam.bind(this, param.name));
           var paramSelect = $('<div class="setting"/>');
@@ -384,6 +389,69 @@
       }
     }
   };
+
+  /**
+   * Custom Pixi/WebGL filters.
+   */
+  PixiTileLayer.Filters = {};
+
+  /**
+   * This filter allows basic linear brightness, contrast and saturation
+   * adjustments in RGB space.
+   * @constructor
+   */
+  PixiTileLayer.Filters.BrightnessContrastSaturationFilter = function () {
+    PIXI.AbstractFilter.call(this);
+
+    this.passes = [this];
+
+    this.uniforms = {
+      brightness: {type: '1f', value: 1},
+      contrast: {type: '1f', value: 1},
+      saturation: {type: '1f', value: 1}
+    };
+
+    this.fragmentSrc = [
+        'precision mediump float;',
+        'uniform float brightness;',
+        'uniform float contrast;',
+        'uniform float saturation;',
+
+        'varying vec2 vTextureCoord;',
+        'uniform sampler2D uSampler;',
+
+        'const vec3 luminanceCoeff = vec3(0.2125, 0.7154, 0.0721);',
+        'const vec3 noContrast = vec3(0.5, 0.5, 0.5);',
+
+        'void main(void) {',
+        '  vec4 frag = texture2D(uSampler, vTextureCoord);',
+        '  vec3 color = frag.rgb;',
+
+        '  color = color * brightness;',
+        '  float intensityMag = dot(color, luminanceCoeff);',
+        '  vec3 intensity = vec3(intensityMag, intensityMag, intensityMag);',
+        '  color = mix(intensity, color, saturation);',
+        '  color = mix(noContrast, color, contrast);',
+
+        '  frag.rgb = color;',
+        '  gl_FragColor = frag;',
+        '}'
+    ];
+  };
+
+  PixiTileLayer.Filters.BrightnessContrastSaturationFilter.prototype = Object.create(PIXI.AbstractFilter.prototype);
+  PixiTileLayer.Filters.BrightnessContrastSaturationFilter.prototype.constructor = PixiTileLayer.Filters.BrightnessContrastSaturationFilter;
+
+  ['brightness', 'contrast', 'saturation'].forEach(function (prop) {
+    Object.defineProperty(PixiTileLayer.Filters.BrightnessContrastSaturationFilter.prototype, prop, {
+      get: function () {
+        return this.uniforms[prop].value;
+      },
+      set: function (value) {
+        this.uniforms[prop].value = value;
+      }
+    });
+  });
 
   CATMAID.PixiTileLayer = PixiTileLayer;
 

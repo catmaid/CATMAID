@@ -219,16 +219,28 @@ PixiTileLayer.prototype.notifyReorder = function (beforeLayer) {
   this.stage.setChildIndex(this.batchContainer, newIndex);
 };
 
+/**
+ * Retrieve blend modes supported by this layer.
+ * @return {string[]} Names of supported blend modes.
+ */
 PixiTileLayer.prototype.getAvailableBlendModes = function () {
   return Object.keys(PIXI.blendModes).map(function (modeKey) {
     return modeKey.toLowerCase().replace(/_/, ' ');
   });
 };
 
+/**
+ * Return the current blend mode for this layer.
+ * @return {string} Name of the current blend mode.
+ */
 PixiTileLayer.prototype.getBlendMode = function () {
   return this.blendMode;
 };
 
+/**
+ * Set the current blend mode for this layer.
+ * @param {string} modeKey Name of the blend mode to use.
+ */
 PixiTileLayer.prototype.setBlendMode = function (modeKey) {
   this.blendMode = modeKey;
   modeKey = modeKey.replace(/ /, '_').toUpperCase();
@@ -237,6 +249,10 @@ PixiTileLayer.prototype.setBlendMode = function (modeKey) {
   });
 };
 
+/**
+ * Retrieve filters supported by this layer.
+ * @return {Object.<string,function>} A map of filter names to constructors.
+ */
 PixiTileLayer.prototype.getAvailableFilters = function () {
   // PIXI Canvas renderer does not currently support filters.
   if (this.renderer instanceof PIXI.CanvasRenderer) return {};
@@ -252,10 +268,17 @@ PixiTileLayer.prototype.getAvailableFilters = function () {
   };
 };
 
+/**
+ * Retrieve the set of active filters for this layer.
+ * @return {[]} The collection of active filter objects.
+ */
 PixiTileLayer.prototype.getFilters = function () {
   return this.filters;
 };
 
+/**
+ * Update filters in the renderer to match filters set for the layer.
+ */
 PixiTileLayer.prototype.syncFilters = function () {
   if (this.filters.length > 0)
     this.batchContainer.filters = this.filters.map(function (f) { return f.pixiFilter; });
@@ -263,11 +286,19 @@ PixiTileLayer.prototype.syncFilters = function () {
     this.batchContainer.filters = null;
 };
 
+/**
+ * Add a filter to the set of active filters for this layer.
+ * @param {Object} filter The filter object to add.
+ */
 PixiTileLayer.prototype.addFilter = function (filter) {
   this.filters.push(filter);
   this.syncFilters();
 };
 
+/**
+ * Remove a filter from the set of active filters for this layer.
+ * @param  {Object} filter The filter object to remove.
+ */
 PixiTileLayer.prototype.removeFilter = function (filter) {
   var index = this.filters.indexOf(filter);
   if (index === -1) return;
@@ -275,11 +306,27 @@ PixiTileLayer.prototype.removeFilter = function (filter) {
   this.syncFilters();
 };
 
+/**
+ * Change the rendering order for a filter of this layer.
+ * @param  {number} currIndex Current index of the filter to move.
+ * @param  {number} newIndex  New insertion index of the filter to move.
+ */
 PixiTileLayer.prototype.moveFilter = function (currIndex, newIndex) {
   this.filters.splice(newIndex, 0, this.filters.splice(currIndex, 1)[0]);
   this.syncFilters();
 };
 
+/**
+ * A wrapper for PixiJS WebGL filters to provide the control and UI for use as
+ * a layer filter.
+ * @constructor
+ * @param {string} displayName      Display name of this filter in interfaces.
+ * @param {function(new:PIXI.AbstractFilter)} pixiConstructor
+ *                                  Constructor for the underlying Pixi filter.
+ * @param {[]} params               Parameters to display in control UI and
+ *                                  their mapping to Pixi properties.
+ * @param {TileLayer} layer         The layer to which this filter belongs.
+ */
 PixiTileLayer.FilterWrapper = function (displayName, pixiConstructor, params, layer) {
   this.displayName = displayName;
   this.pixiFilter = new pixiConstructor();
@@ -290,11 +337,21 @@ PixiTileLayer.FilterWrapper = function (displayName, pixiConstructor, params, la
 PixiTileLayer.FilterWrapper.prototype = {};
 PixiTileLayer.FilterWrapper.constructor = PixiTileLayer.FilterWrapper;
 
+/**
+ * Set a filter parameter.
+ * @param {[type]} key   Name of the parameter to set.
+ * @param {[type]} value New value for the parameter.
+ */
 PixiTileLayer.FilterWrapper.prototype.setParam = function (key, value) {
   this.pixiFilter[key] = value;
   if (this.layer) this.layer.redraw();
 };
 
+/**
+ * Draw control UI for the filter and its parameters.
+ * @param  {JQuery}   container Element where the UI will be inserted.
+ * @param  {Function} callback  Callback when parameters are changed.
+ */
 PixiTileLayer.FilterWrapper.prototype.redrawControl = function (container, callback) {
   container.append('<h5>' + this.displayName + '</h5>');
   for (var i = 0; i < this.params.length; i++) {

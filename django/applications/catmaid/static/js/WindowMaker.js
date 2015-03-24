@@ -1449,6 +1449,7 @@ var WindowMaker = new function()
     content.appendChild(buttons);
 
     var container = createContainer('circuit_graph_plot_div' + GP.widgetID);
+    container.style.overflow = 'hidden';
     content.appendChild(container);
 
     var plot = document.createElement('div');

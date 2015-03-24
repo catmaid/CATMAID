@@ -886,7 +886,7 @@ CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
   };
 
   // Variables exist throughout the scope of the function, so zoom is reachable from zoomed
-  var zoom = d3.behavior.zoom().x(xR).y(yR).scaleExtent([1, 100]).on("zoom", zoomed);
+  var zoom = d3.behavior.zoom().x(xR).y(yR).on("zoom", zoomed);
 
   // Assign the zooming behavior to the encapsulating root group
   svg.call(zoom);

@@ -88,6 +88,9 @@ server {{
         proxy_set_header Host $http_host;
         # This is required to tell Django it is behind a proxy
         proxy_set_header X-Forwarded-For $host;
+        # This lets Django know which protocol was used to connect and also
+        # overrides the header a client who fakes it.
+        proxy_set_header X-Forwarded-Protocol $scheme;
     }}
 }}
 """.format(cmpath=abs_catmaid_path, subdir=catmaid_subdirectory)

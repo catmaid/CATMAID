@@ -927,10 +927,11 @@ CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
   var xg = svg.append("g")
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
-      .attr("fill", "none")
-      .attr("stroke", "black")
       .style("shape-rendering", "crispEdges")
       .call(xAxis);
+  xg.selectAll("path")
+      .attr("fill", "none")
+      .attr("stroke", "black");
   xg.selectAll("text")
       .attr("fill", "black")
       .attr("stroke", "none");
@@ -946,10 +947,11 @@ CircuitGraphPlot.prototype.draw = function(xVector, xTitle, yVector, yTitle) {
 
   var yg = svg.append("g")
       .attr("class", "y axis")
-      .attr("fill", "none")
-      .attr("stroke", "black")
       .style("shape-rendering", "crispEdges")
       .call(yAxis);
+  yg.selectAll("path")
+      .attr("fill", "none")
+      .attr("stroke", "black");
   yg.selectAll("text")
       .attr("fill", "black")
       .attr("stroke", "none");

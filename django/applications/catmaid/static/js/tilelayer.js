@@ -139,7 +139,7 @@
    */
   TileLayer.prototype.redraw = function (completionCallback) {
     var pixelPos = [this.stack.x, this.stack.y, this.stack.z];
-    var tileBaseName = getTileBaseName(pixelPos);
+    var tileBaseName = CATMAID.getTileBaseName(pixelPos);
 
     var tileInfo = this.tilesForLocation(this.stack.xc, this.stack.yc, this.stack.z, this.stack.s);
 
@@ -377,7 +377,7 @@
       };
       img.src = self.tileSource.getTileURL(
           project, self.stack,
-          getTileBaseName(tileInd.slice(0, 3)),
+          CATMAID.getTileBaseName(tileInd.slice(0, 3)),
           self.tileWidth, self.tileHeight,
           tileInd[0], tileInd[1], tileInd[3]);
     });

@@ -12,7 +12,7 @@ from catmaid.models import UserRole, Treenode, BrokenSlice, ClassInstance, \
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
 from catmaid.control.common import get_relation_to_id_map, \
-        get_class_to_id_map, insert_into_log
+        get_class_to_id_map, insert_into_log, _create_relation
 from catmaid.control.neuron import _delete_if_empty
 
 
@@ -21,17 +21,6 @@ def can_edit_treenode_or_fail(user, project_id, treenode_id):
     the treenode models."""
     info = _treenode_info(project_id, treenode_id)
     return can_edit_class_instance_or_fail(user, info['neuron_id'], 'neuron')
-
-
-def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
-    relation = ClassInstanceClassInstance()
-    relation.user = user
-    relation.project_id = project_id
-    relation.relation_id = relation_id
-    relation.class_instance_a_id = instance_a_id
-    relation.class_instance_b_id = instance_b_id
-    relation.save()
-    return relation
 
 
 @requires_user_role(UserRole.Annotate)

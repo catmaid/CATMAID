@@ -177,6 +177,12 @@ Reviews:
   the segment really ends. Pressing 'W' afterwards now brings one back to the
   first node, not the second like it has been before.
 
+
+Connectivity widget:
+
+- CSV export works again.
+
+
 Miscellaneous:
 
 - Vertical resizing of widgets now doesn't lead to strange size changes anymore.

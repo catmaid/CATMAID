@@ -1097,10 +1097,10 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       $('<div class="dataTables_export"></div>').append(
         $('<input type="button" value="Export CSV" />').click(function () {
           var text = self.fnSettings().aoHeader.map(function (r) {
-            return r.map(function (c) { return $(c.cell).text(); }).join(',');
+            return r.map(cellToText.bind(this, true)).join(',');
           }).join('\n');
           text += '\n' + self.fnGetData().map(function (r) {
-            return r.map(function (c) { return '"'+($(c).text() || c)+'"'; }).join(',');
+            return r.map(cellToText.bind(this, false)).join(',');
           }).join('\n');
           saveAs(new Blob([text], {type: 'text/plain'}), 'connectivity.csv');
         })
@@ -1112,6 +1112,18 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   var nSkeletons = Object.keys(this.skeletons).length;
   add_select_all_fn(this, 'up', table_incoming, nSkeletons);
   add_select_all_fn(this, 'down', table_outgoing, nSkeletons);
+
+  /**
+   * Return a quoted string representation of table cell content.
+   */
+  function cellToText(useCell, c) {
+    try {
+      c = useCell ? c.cell : c;
+      return '"' + ($(c).text() || c) + '"';
+    } catch (e) {
+      return '"' + c + '"';
+    }
+  }
 };
 
 SkeletonConnectivity.prototype.openPlot = function() {

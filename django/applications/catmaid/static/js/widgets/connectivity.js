@@ -1098,11 +1098,11 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         $('<input type="button" value="Export CSV" />').click(function () {
           var text = self.fnSettings().aoHeader.map(function (r) {
             return r.map(cellToText.bind(this, true))
-              .filter(function(c, i) { return i > 0}).join(',');
+              .filter(function(c, i) { return i > 0; }).join(',');
           }).join('\n');
           text += '\n' + self.fnGetData().map(function (r) {
             return r.map(cellToText.bind(this, false))
-              .filter(function(c, i) { return i > 0}).join(',');
+              .filter(function(c, i) { return i > 0; }).join(',');
           }).join('\n');
           saveAs(new Blob([text], {type: 'text/plain'}), 'connectivity.csv');
         })

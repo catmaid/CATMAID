@@ -79,11 +79,16 @@ var submitterFn = function() {
 
     // Call all callbacks
     var handled = false
-    callbacks.forEach(function(errCallback, i) {
-      var result =  errCallback(error);
-      // The andler of the failed request, can mark this error as handled.
-      handled = (errCallback === q.errCallback) ? result : handled;
-    });
+    var callbackError;
+    try {
+      callbacks.forEach(function(errCallback, i) {
+        var result =  errCallback(error);
+        // The andler of the failed request, can mark this error as handled.
+        handled = (errCallback === q.errCallback) ? result : handled;
+      });
+    } catch (e) {
+     callbackError = e;
+    }
 
     // If the error was handled, don't print console message or show a dialog.
     if (!handled) {
@@ -91,6 +96,11 @@ var submitterFn = function() {
       if (!q.quiet && error.error) {
         CATMAID.error(error.error, error.detail);
       }
+    }
+
+    // If there was an error in one of the callbacks, report this as well.
+    if (callbackError) {
+      CATMAID.error(callbackError);
     }
   };
 

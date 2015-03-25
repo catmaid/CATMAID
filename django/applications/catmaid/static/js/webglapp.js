@@ -4090,7 +4090,11 @@ WebGLApplication.prototype.createAnimation = function()
  */
 WebGLApplication.prototype.createStepwiseVisibilityHandler = function(visMap)
 {
-  var skeletonIds = Object.keys(this.space.content.skeletons);
+  // Get all visible skeletons
+  var skeletonIds = Object.keys(this.space.content.skeletons)
+      .filter(function(skid) {
+         return this[skid].visible;
+      }, this.space.content.skeletons);
 
   // Return no-op handler if there are no skeletons
   if (skeletonIds.length === 0) {

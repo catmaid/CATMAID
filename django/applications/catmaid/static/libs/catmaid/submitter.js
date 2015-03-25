@@ -63,10 +63,6 @@ var submitterFn = function() {
 
   var reset = function(q, error) {
     if (q.blockUI) $.unblockUI();
-    console.log(error, q);
-    if (!q.quiet) {
-      if (error.error) new CATMAID.ErrorDialog(error.error, error.detail).show();
-    }
     // Collect all error callbacks from all queued items. The current item is
     // expected to be still the first element.
     var callbacks = queue.reduce(function(o, e) {
@@ -82,9 +78,20 @@ var submitterFn = function() {
     lastResult = undefined;
 
     // Call all callbacks
-    callbacks.forEach(function(errCallback) {
-      errCallback(error);
+    var handled = false
+    callbacks.forEach(function(errCallback, i) {
+      var result =  errCallback(error);
+      // The andler of the failed request, can mark this error as handled.
+      handled = (errCallback === q.errCallback) ? result : handled;
     });
+
+    // If the error was handled, don't print console message or show a dialog.
+    if (!handled) {
+      console.log(error, q);
+      if (!q.quiet && error.error) {
+        CATMAID.error(error.error, error.detail);
+      }
+    }
   };
 
   var handlerFn = function(q) {

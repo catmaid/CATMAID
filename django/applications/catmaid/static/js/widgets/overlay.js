@@ -2380,7 +2380,7 @@ SkeletonAnnotations.Tag = new (function() {
       undefined,
       function(err) {
         if ("ValueError" === err.type) {
-          growlAlert('Error', err.error ? err.error : "Unspecified");
+          CATMAID.msg('Error', err.error ? err.error : "Unspecified");
         } else {
           CATMAID.error(err.error, err.detail);
         }

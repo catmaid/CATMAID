@@ -1047,6 +1047,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
   // Extend tables with DataTables for sorting, reordering and filtering
   var dataTableOptions = {
+    aaSorting: [[2, 'desc']],
     bDestroy: true,
     sDom: 'Rl<"connectivity_table_actions"f>rti',
     bFilter: true,

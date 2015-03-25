@@ -89,6 +89,8 @@ Connectivity widget:
 - It is now possible to remove added neurons again. Each row of the table of
   target neurons now contains a small 'x' icon in the first column to remove it.
 
+- The selection column is not included anymore in the CSV export.
+
 
 Analyze Arbor:
 

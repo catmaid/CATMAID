@@ -1097,10 +1097,12 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       $('<div class="dataTables_export"></div>').append(
         $('<input type="button" value="Export CSV" />').click(function () {
           var text = self.fnSettings().aoHeader.map(function (r) {
-            return r.map(cellToText.bind(this, true)).join(',');
+            return r.map(cellToText.bind(this, true))
+              .filter(function(c, i) { return i > 0}).join(',');
           }).join('\n');
           text += '\n' + self.fnGetData().map(function (r) {
-            return r.map(cellToText.bind(this, false)).join(',');
+            return r.map(cellToText.bind(this, false))
+              .filter(function(c, i) { return i > 0}).join(',');
           }).join('\n');
           saveAs(new Blob([text], {type: 'text/plain'}), 'connectivity.csv');
         })

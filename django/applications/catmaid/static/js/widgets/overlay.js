@@ -2384,6 +2384,7 @@ SkeletonAnnotations.Tag = new (function() {
         } else {
           CATMAID.error(err.error, err.detail);
         }
+        return true;
       },
       true
     );

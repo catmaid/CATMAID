@@ -614,8 +614,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         td.appendChild(a);
         a.appendChild(document.createTextNode(count));
         a.setAttribute('href', '#');
-        a.style.color = 'black';
-        a.style.textDecoration = 'none';
         //showSharedConnectorsFn(partner.id, Object.keys(partner.skids), relation);
         a.onclick = ConnectorSelection.show_shared_connectors.bind(
             ConnectorSelection, partner.id, skids, relation);

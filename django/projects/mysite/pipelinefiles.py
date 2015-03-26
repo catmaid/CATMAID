@@ -44,7 +44,7 @@ PIPELINE_CSS = {
 libraries_js = {
     'modernizr': ['*.js'],
     'jquery': ['jquery.js', 'jquery-ui-1.10.1.custom.min.js',
-               'jquery.dataTables.js', '*.js'],
+               'jquery.dataTables.min.js', '*.js'],
     'fabric.js': ['all.modified.js'],
     'raphael': ['raphael.js', 'g.raphael.js', 'g.pie-min.js', 'g.line.altered.js',
                 'raphael-custom.js', 'colorwheel.js', 'raphael.export.js'],

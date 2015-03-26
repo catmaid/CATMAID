@@ -465,7 +465,7 @@ function Project( pid )
 		var fromATextField = false;
 		if (n == "input") {
 			var inputType = fakeEvent.target.type.toLowerCase();
-			if (inputType == "text" || inputType == "password") {
+			if (inputType == "text" || inputType == "password" || inputType == "search") {
 				fromATextField = true;
 			}
 		}

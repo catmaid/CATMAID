@@ -4297,6 +4297,7 @@ WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
           var speed = getOption(options, "speed");
           var backAndForth = options.backandforth || false;
 
+          // Create rotation axis
           if ("up" === axis) {
             axis = camera.up.clone().normalize();
           } else if ("x" === axis) {
@@ -4307,6 +4308,16 @@ WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
             axis = new THREE.Vector3(0, 0, 1);
           } else {
             throw Error("Could not create animation, unknown axis: " + axis);
+          }
+
+          // Make sure rotation axis, camera and target are not collinear. Throw
+          // an error if they are. This is the case when the cross product
+          // between the axis and the vector from target to camera produces a
+          // null vector.
+          var tc = camera.position.clone().sub(target);
+          if (tc.cross(axis).length() < 0.0001) {
+            throw new CATMAID.ValueError("Could not create animation, both " +
+                "camera and target are positioned on the rotation axis.");
           }
 
           animation.update = CATMAID.AnimationFactory.AxisRotation(camera,

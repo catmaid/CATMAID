@@ -992,7 +992,17 @@ var WindowMaker = new function()
 
     appendToTab(tabs['Animation'],
         [
-          ['Play', function() { WA.startAnimation(WA.createAnimation()); }],
+          ['Play', function() {
+            try {
+              WA.startAnimation(WA.createAnimation());
+            } catch(e) {
+              if (e instanceof CATMAID.ValueError) {
+                CATMAID.msg("Error", e.message);
+              } else {
+                throw e;
+              }
+            }
+          }],
           ['Stop', WA.stopAnimation.bind(WA)],
           [document.createTextNode(' Rotation axis:')],
           [axisOptions],

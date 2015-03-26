@@ -459,8 +459,10 @@ function Navigator()
 				"SPACE": [ 32 ]
 			},
 			run: function (e) {
-				// Avoid repeated onkeydown events in some browsers.
-				if (self.hideLayersHeld) return;
+				// Avoid repeated onkeydown events in some browsers, but still
+				// handle event to prevent browser default behavior (scrolling
+				// or input selection).
+				if (self.hideLayersHeld) return true;
 				self.hideLayersHeld = true;
 
 				// Hide any visible layers (besides the tile layer).

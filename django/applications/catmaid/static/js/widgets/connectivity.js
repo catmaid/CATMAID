@@ -431,10 +431,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
       return false;
     };
-    a.onmouseover = onmouseover;
-    a.onmouseout = onmouseout;
-    a.style.color = 'black';
-    a.style.textDecoration = 'none';
     return a;
   };
 
@@ -471,9 +467,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       return b.synaptic_count - a.synaptic_count;
     });
   };
-
-  var onmouseover = function() { this.style.textDecoration = 'underline'; };
-  var onmouseout = function() { this.style.textDecoration = 'none'; };
 
   /**
    * Support function for creating a partner table.
@@ -626,11 +619,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         //showSharedConnectorsFn(partner.id, Object.keys(partner.skids), relation);
         a.onclick = ConnectorSelection.show_shared_connectors.bind(
             ConnectorSelection, partner.id, skids, relation);
-        a.onmouseover = function() {
-            a.style.textDecoration = 'underline';
-            // TODO should show a div with the list of partners, with their names etc.
-        };
-        a.onmouseout = onmouseout;
         // Create tool-tip
         a.setAttribute('title', title);
       } else { // Make a hidden span including the zero for semantic clarity and table exports.

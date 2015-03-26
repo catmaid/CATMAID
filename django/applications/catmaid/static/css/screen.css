@@ -585,6 +585,15 @@ div#classification_graph_object img.roiimage {
   color: grey;
 }
 
+.connectivity_widget a {
+  color: black;
+  text-decoration: none;
+}
+
+.connectivity_widget a:hover {
+  text-decoration: underline;
+}
+
 .clear {
   clear: both;
 }

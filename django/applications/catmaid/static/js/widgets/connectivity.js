@@ -604,19 +604,19 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
      * Support function to add a table cell that links to a connector selection,
      * displaying a connector count.
      */
-    function createSynapseCountCell(count, partner, skids, title) {
+    function createSynapseCountCell(count, partner, title) {
       var td = document.createElement('td');
       td.setAttribute('class', 'syncount');
       // Only add the count as displayed text if it is greater zero. This
       // reduces visual noise for larger tables.
       if (count > 0) {
+        // Create a links that will open a connector selection when clicked. The
+        // handler to do this is created separate to only require one handler.
         var a = document.createElement('a');
         td.appendChild(a);
         a.appendChild(document.createTextNode(count));
         a.setAttribute('href', '#');
-        //showSharedConnectorsFn(partner.id, Object.keys(partner.skids), relation);
-        a.onclick = ConnectorSelection.show_shared_connectors.bind(
-            ConnectorSelection, partner.id, skids, relation);
+        a.setAttribute('partnerID', partner.id);
         // Create tool-tip
         a.setAttribute('title', title);
       } else { // Make a hidden span including the zero for semantic clarity and table exports.
@@ -676,14 +676,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       tr.appendChild(td);
 
       // Cell with synapses with partner neuron
-      tr.appendChild(createSynapseCountCell(partner.synaptic_count,
-          partner, Object.keys(partner.skids), partner.synaptic_count +
-          " synapses for all selected neurons."));
+      tr.appendChild(createSynapseCountCell(partner.synaptic_count, partner,
+          partner.synaptic_count + " synapses for all selected neurons."));
       // Extra columns for individual neurons
       if (extraCols) {
         skids.forEach(function(skid, i) {
           var count = partner.skids[skid] || 0;
-          this.appendChild(createSynapseCountCell(count, partner, [skid],
+          this.appendChild(createSynapseCountCell(count, partner,
               count + " synapse(s) for neuron '" +
               NeuronNameService.getInstance().getName(skid) + "'."));
         }, tr);
@@ -1096,6 +1095,27 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       )
     );
   });
+
+  // Add a handler for openening connector selections for individual partners
+  $('a[partnerID]', incoming).click(createPartnerClickHandler(
+        this.incoming, 'presynaptic_to'));
+  $('a[partnerID]', outgoing).click(createPartnerClickHandler(
+        this.outgoing, 'postsynaptic_to'));
+  function createPartnerClickHandler(partners, relation) {
+    return function() {
+      var partnerID = $(this).attr('partnerID');
+      var partner = partners[partnerID];
+      if (!partner) {
+        CATMAID.error("Could not find partner with ID " + partnerID +
+            " and relation " + relation);
+      } else {
+        var skids = Object.keys(partner.skids);
+        ConnectorSelection.show_shared_connectors(partner.id, skids, relation);
+      }
+
+      return true;
+    };
+  }
 
   // Add 'select all' checkboxes
   var nSkeletons = Object.keys(this.skeletons).length;

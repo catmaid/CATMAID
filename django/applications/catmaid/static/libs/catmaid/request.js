@@ -13,9 +13,9 @@
  */
 
 /**
- * Implements a cross browser HTTPrequest-FIFO-queue as `singleton module'
+ * Implements a cross browser HTTPrequest-FIFO-queue.
  */
-var requestQueue = function()
+RequestQueue = function()
 {
   var self = this;
   var queue = new Array();		//!< queue of waiting requests
@@ -178,11 +178,11 @@ var requestQueue = function()
         );
         break;
       default:
-	var request = "";
-	var encoded = encodeObject( d );
-	if (encoded != "") {
-		request = "?" + encoded;
-	}
+  var request = "";
+  var encoded = encodeObject( d );
+  if (encoded != "") {
+    request = "?" + encoded;
+  }
         queue.push(
           {
             request : r + request,
@@ -230,5 +230,4 @@ var requestQueue = function()
       return;
     }
   };
-
-}();
+};

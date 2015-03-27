@@ -4,6 +4,10 @@
 // Declare the CATMAID namespace
 var CATMAID = {};
 
+// Global request queue
+// TODO: Move into CATMAID namespace
+var requestQueue = new RequestQueue();
+
 // Add some basic functionality
 (function(CATMAID) {
 

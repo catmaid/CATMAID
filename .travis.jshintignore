@@ -5,3 +5,4 @@ django/applications/vncbrowser/**
 **/libs/**
 !**/libs/catmaid/**
 **/static/apps/**
+**/static/tests/libs/**

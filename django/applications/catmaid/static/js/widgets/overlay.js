@@ -1153,38 +1153,54 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID, phys_x
       });
 };
 
-/** Invoke the callback function after having pushed updated node coordinates
- * to the database. */
+/**
+ * Invoke the callback function after having pushed updated node coordinates to
+ * the database.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (callback) {
-  var update = {treenode: [],
-                connector: []};
-  var nodeIDs = Object.keys(this.nodes);
-  for (var i = 0; i < nodeIDs.length; ++i) {
-    var node = this.nodes[nodeIDs[i]];
-    // only updated nodes that need sync, e.g.
-    // when they changed position
-    if (node.needsync) {
-      node.needsync = false;
-      update[node.type].push([node.id,
-                              this.pix2physX(node.x),
-                              this.pix2physY(node.y),
-                              this.pix2physZ(node.z)]);
-    }
+  /**
+   * Create a promise that will update all nodes in the back-end that need to be
+   * synced.
+   */
+  function promiseUpdate() {
+    return new Promise((function(resolve, reject) {
+      var update = {treenode: [],
+                    connector: []};
+      var nodeIDs = Object.keys(this.nodes);
+      for (var i = 0; i < nodeIDs.length; ++i) {
+        var node = this.nodes[nodeIDs[i]];
+        // only updated nodes that need sync, e.g.  when they changed position
+        if (node.needsync) {
+          node.needsync = false;
+          update[node.type].push([node.id,
+                                  this.pix2physX(node.x),
+                                  this.pix2physY(node.y),
+                                  this.pix2physZ(node.z)]);
+        }
+      }
+      if (update.treenode.length > 0 || update.connector.length > 0) {
+        requestQueue.register(
+            django_url + project.id + '/node/update', 'POST',
+            {
+              t: update.treenode,
+              c: update.connector
+            },
+            CATMAID.jsonResponseHandler(resolve, reject));
+      } else {
+        resolve(0);
+      }
+    }).bind(this));
   }
-  if (update.treenode.length > 0 || update.connector.length > 0) {
-    this.submit(
-        django_url + project.id + '/node/update',
-        {t: update.treenode,
-         c: update.connector},
-        function(json) {
-          if (typeof callback !== "undefined") {
-            // Invoke the callback with the number of nodes that were updated
-            callback(json);
-          }
-        });
-  } else if (callback) {
-    callback(0);
+
+  // Queue node update as a promise
+  var promise = this.submit.then(promiseUpdate.bind(this));
+  // Queue callback, if there is any (it will get the results of the node update
+  // as arguments automatically).
+  if (CATMAID.tools.isFn(callback)) {
+    promise.then(callback);
   }
+
+  return promise;
 };
 
 

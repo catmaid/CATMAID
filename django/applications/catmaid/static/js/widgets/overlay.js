@@ -1197,7 +1197,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (c
   // Queue callback, if there is any (it will get the results of the node update
   // as arguments automatically).
   if (CATMAID.tools.isFn(callback)) {
-    promise.then(callback);
+    promise = promise.then(callback);
   }
 
   return promise;

@@ -7,8 +7,6 @@ QUnit.test('SVG overlay test', function( assert ) {
   // queue with a new instance that makes automatically use of the fake XHR
   // requests.
   var server = this.sandbox.useFakeServer();
-  // Don't use Sinon's fake timer
-  this.clock.restore();
 
   // Test queuing of node deleting and update operation
   (function() {

@@ -154,7 +154,7 @@
     // If any tiles need to be buffered (that are not already being buffered):
     if (toLoad.length > 0) {
       var loader = new PIXI.AssetLoader(toLoad);
-      loader.on('onComplete', this._swapBuffers.bind(this, false));
+      loader.once('onComplete', this._swapBuffers.bind(this, false));
       // Set a timeout for slow connections to swap in the buffer whether or
       // not it has loaded. Do this before loading tiles in case they load
       // immediately, so that the buffer will be cleared.

@@ -23,6 +23,8 @@ var SkeletonConnectivity = function() {
   // Default table layout to be side by side. Have it seperate from init() as
   // long as it is part of the top button row.
   this.tablesSideBySide = true;
+  // Do not update automatically by default
+  this.autoUpdate = false;
 
   // Register for changed and removed skeletons
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -250,8 +252,10 @@ SkeletonConnectivity.prototype.isPartner = function(skeletonID) {
  * input skeleton or as a partner.
  */
 SkeletonConnectivity.prototype.handleChangedSkeleton = function(skeletonID) {
-  if (this.hasSkeleton(skeletonID) || this.isPartner(skeletonID)) {
-    this.update();
+  if (this.autoUpdate) {
+    if (this.hasSkeleton(skeletonID) || this.isPartner(skeletonID)) {
+      this.update();
+    }
   }
 };
 
@@ -260,8 +264,10 @@ SkeletonConnectivity.prototype.handleChangedSkeleton = function(skeletonID) {
  * Removal of input skeletons is dealt with separately.
  */
 SkeletonConnectivity.prototype.handleDeletedSkeleton = function(skeletonID) {
-  if (this.isPartner(skeletonID)) {
-    this.update();
+  if (this.autoUpdate) {
+    if (this.isPartner(skeletonID)) {
+      this.update();
+    }
   }
 };
 

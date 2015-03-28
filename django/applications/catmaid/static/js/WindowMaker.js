@@ -2271,6 +2271,20 @@ var WindowMaker = new function()
         layoutLabel.appendChild(layoutToggle);
         contentbutton.appendChild(layoutLabel);
 
+        var autoUpdate = document.createElement('input');
+        autoUpdate.setAttribute('id', 'connectivity-auto-update-' + widgetID);
+        autoUpdate.setAttribute('type', 'checkbox');
+        if (SC.autoUpdate) {
+          autoUpdate.setAttribute('checked', 'checked');
+        }
+        autoUpdate.onchange = function(e) {
+          SC.autoUpdate = this.checked;
+        };
+        var autoUpdateLabel = document.createElement('label');
+        autoUpdateLabel.appendChild(document.createTextNode('Auto update'));
+        autoUpdateLabel.appendChild(autoUpdate);
+        contentbutton.appendChild(autoUpdateLabel);
+
         content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" + widgetID );

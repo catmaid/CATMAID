@@ -1163,6 +1163,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (c
    * synced.
    */
   function promiseUpdate() {
+    /* jshint validthis: true */ // "this" will be bound to the SVG overlay
     return new Promise((function(resolve, reject) {
       var update = {treenode: [],
                     connector: []};

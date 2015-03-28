@@ -176,8 +176,8 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
       this.selectNode(node_id, skeleton_id);
       this.autoUpdate = true;
     } else {
-      CATMAID.error("The requested node (" + node_id + ") was not found in the " +
-          "internal skeleton representation. Try updating it.");
+      CATMAID.msg("Error", "The requested node (" + node_id + ") was not " +
+          "found in the internal skeleton representation. Try updating it.");
     }
     return;
   }

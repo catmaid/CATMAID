@@ -979,6 +979,9 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (conn
         nn.createGraphics();
         // create link : new treenode postsynaptic_to or presynaptic_to deactivated connectorID
         self.createLink(nid, connectorID, link_type);
+        // Trigger skeleton change event
+        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+            nn.skeleton_id);
       });
 };
 
@@ -1012,6 +1015,9 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
           var handleLastRequest = function(q, retries) {
             // If the node update was successful, handle the last queue element.
             var success = function () {
+              // Trigger change event of skeleton and update node
+              SkeletonAnnotations.trigger(
+                  SkeletonAnnotations.EVENT_SKELETON_CHANGED, json.skeleton_id);
               q.self.selectNode(json.treenode_id);
               // Remove this call now that the active node is set properly
               queue.shift();

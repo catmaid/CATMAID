@@ -51,13 +51,7 @@ var NeuronDendrogram = function() {
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.selectActiveNode, this);
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
-      function(skid) {
-        // Update the current skeleton representation, if the current skeleton
-        // was changed.
-        if (this.currentSkeletonId === skid) {
-          this.loadSkeleton(skid);
-        }
-      }, this);
+      this.handleSkeletonChange, this);
 };
 
 NeuronDendrogram.prototype = {};
@@ -75,6 +69,8 @@ NeuronDendrogram.prototype.getName = function()
 NeuronDendrogram.prototype.destroy = function() {
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.selectActiveNode, this);
+  SkeletonAnnotations.off(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+      this.handleSkeletonChange, this);
   this.unregisterInstance();
   this.unregisterSource();
 };
@@ -232,6 +228,16 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
   }
 
   this.highlightNode(nodeToHighlight);
+};
+
+/**
+ * Reacts to the change in the given skeleton
+ */
+NeuronDendrogram.prototype.handleSkeletonChange = function(skeletonID)
+{
+  if (skeletonID === this.currentSkeletonId) {
+    this.loadSkeleton(skeletonID);
+  }
 };
 
 /**

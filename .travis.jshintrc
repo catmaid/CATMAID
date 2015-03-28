@@ -48,6 +48,7 @@
         "CATMAID": true,
         "annotations": true,
         "AnalyzeArbor": true,
-        "Colorizer": true
+        "Colorizer": true,
+        "Promise": true
     }
 }

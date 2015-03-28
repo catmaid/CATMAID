@@ -43,6 +43,9 @@ var NeuronDendrogram = function() {
 
   // Indicates if an update is currently in progress
   this.updating = false;
+  // Indicates whether the widget should update automatically if the skeleton
+  // changes.
+  this.autoUpdate = true;
 
   // Listen to change events of the active node and skeletons
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -169,8 +172,17 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
 
   // Make sure the requested node is part of the current skeleton
   if (!(node_id in nodesToChildren)) {
-    CATMAID.error("The requested node (" + node_id + ") was not found in the " +
-        "internal skeleton representation. Try updating it.");
+    if (this.autoUpdate) {
+      // Reload the skeleton and disable auto update during this time to not end
+      // in an infinite loop by accident (if the nodes cannot be retrieved).
+      this.autoUpdate = false;
+      this.loadSkeleton(this.currentSkeletonId);
+      this.selectNode(node_id, skeleton_id);
+      this.autoUpdate = true;
+    } else {
+      CATMAID.error("The requested node (" + node_id + ") was not found in the " +
+          "internal skeleton representation. Try updating it.");
+    }
     return;
   }
 

@@ -116,6 +116,9 @@ Miscellaneous:
 - Synchronization between widgets was improved. Deleting a neuron in one widget,
   will remove it from other widgets as well.
 
+- Hovering over the CATMAID text on the front page will display CATMAID's
+  version.
+
 
 Admin:
 

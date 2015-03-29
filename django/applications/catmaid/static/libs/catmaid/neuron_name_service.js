@@ -411,7 +411,7 @@ var NeuronNameService = (function()
           requestQueue.register(django_url + project.id + '/skeleton/annotationlist',
             'POST',
             {
-              skeleton_ids: skids,
+              skeleton_ids: Object.keys(managedSkeletons),
               metaannotations: needsMetaAnnotations ? 1 : 0,
               neuronnames: needsNeueonNames ? 1 : 0,
             },

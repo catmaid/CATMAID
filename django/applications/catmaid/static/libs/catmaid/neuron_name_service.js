@@ -370,6 +370,10 @@ var NeuronNameService = (function()
 
           if (skids) {
             skids.forEach(function(skid) {
+              // Ignore unknown skeletons
+              if (!managedSkeletons[skid]) {
+                return;
+              }
               var n = name(skid)
               if (appendSkeletonId) { n += " #" + skid; };
               managedSkeletons[skid].name = n;

@@ -419,9 +419,7 @@ var NeuronNameService = (function()
               metaannotations: needsMetaAnnotations ? 1 : 0,
               neuronnames: needsNeueonNames ? 1 : 0,
             },
-            CATMAID.jsonResponseHandler(function(json) {
-              update(json);
-            }));
+            CATMAID.jsonResponseHandler(update));
         }
       },
 

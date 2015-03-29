@@ -1,6 +1,10 @@
 from django import template
 from django.utils.safestring import SafeUnicode
 
+import commands
+import subprocess
+import os
+import sys
 import re
 
 register = template.Library()
@@ -57,3 +61,15 @@ def natural_sort(l,field):
 @register.filter
 def intersect(set1, set2):
     return set1.intersection(set2)
+
+@register.simple_tag
+def catmaid_version():
+    """
+    Return output of "git describe" executed in the directory of this file. If
+    this results in an error, "unknown" is returned.
+    """
+    dir = os.path.dirname(os.path.realpath(__file__))
+    p = subprocess.Popen("/usr/bin/git describe", cwd=os.path.dirname(dir),
+            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (out, error) = p.communicate()
+    return "unknown" if error else out

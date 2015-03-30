@@ -410,9 +410,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack,
       worldY = wc.worldTop + ((m.offsetY / stack.scale) * stack.resolution.y);
       coords.lastX = worldX;
       coords.lastY = worldY;
-      CATMAID.statusBar.printCoords('['+[worldX, worldY, project.coordinates.z].map(Math.round).join(', ')+']');
       coords.offsetXPhysical = worldX;
       coords.offsetYPhysical = worldY;
+      // This function is called often, so the least memory consuming way should
+      // be used to create the status bar update.
+      CATMAID.statusBar.printCoords('['+ Math.round(worldX) + ", " +
+          Math.round(worldY) + ", " + Math.round(project.coordinates.z) +']');
     }
     return true; // Bubble mousemove events.
   };

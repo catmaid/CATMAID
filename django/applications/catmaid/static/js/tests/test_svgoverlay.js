@@ -3,6 +3,13 @@
 
 QUnit.test('SVG overlay test', function( assert ) {
 
+  // Don't run this test in PhantomJS, because ES6 Promises are not yet
+  // supported, it seems.
+  if (CATMAID.tests.runByPhantomJS()) {
+    assert.expect(0);
+    return;
+  }
+
   // Create a mock server to fake XHR requests and replace CATMAID's request
   // queue with a new instance that makes automatically use of the fake XHR
   // requests.

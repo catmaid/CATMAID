@@ -18,7 +18,6 @@ function Overview( stack )
 			var m = CATMAID.ui.getMouse( e, self.getView() );
 			if ( m )
 			{
-				//statusBar.replaceLast( m.offsetX + ", " + m.offsetY );
 				stack.moveToPixel( stack.z, Math.round( m.offsetY / scale ), Math.round( m.offsetX / scale ), stack.s );
 			}
 			return false;

@@ -191,7 +191,6 @@ function Navigator()
 			{
 				xp = m.offsetX - self.stack.viewWidth / 2;
 				yp = m.offsetY - self.stack.viewHeight / 2;
-				//statusBar.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
 			}
 			if ( w )
 			{

@@ -226,7 +226,6 @@ RequestQueue = function()
         }
       }
       this.register( r, m, d, c, id );
-      // statusBar.replaceLast( "queue.length = " + queue.length );
       return;
     }
   };

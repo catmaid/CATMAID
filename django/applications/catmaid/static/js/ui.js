@@ -254,7 +254,6 @@
             var m = self.getMouse( e );
             if ( m )
             {
-                //statusBar.replaceLast( m.x + ", " + m.y );
                 self.diffX = m.x - lastX;
                 self.diffY = m.y - lastY;
                 lastX = m.x;
@@ -274,7 +273,6 @@
             var m = self.getMouse( e );
             if ( m )
             {
-                //statusBar.replaceLast( m.x + ", " + m.y );
                 lastX = m.x;
                 lastY = m.y;
                 self.diffX = 0;
@@ -284,7 +282,6 @@
 
                 if ( which )
                 {
-                    //statusBar.replaceLast( "mouse button " + which + " pressed" );
                     switch ( which )
                     {
                     case 1:
@@ -310,7 +307,6 @@
             var m = self.getMouse( e );
             if ( m )
             {
-                //statusBar.replaceLast( m.x + ", " + m.y );
                 lastX = m.x;
                 lastY = m.y;
                 self.diffX = 0;
@@ -320,7 +316,6 @@
 
                 if ( which )
                 {
-                    //statusBar.replaceLast( "mouse button " + which + " released" );
                     switch ( which )
                     {
                     case 1:

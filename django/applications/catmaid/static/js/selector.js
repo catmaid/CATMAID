@@ -137,7 +137,6 @@ function Selector()
 		{
 			xp = m.offsetX - stack.viewWidth / 2;
 			yp = m.offsetY - stack.viewHeight / 2;
-			//statusBar.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
 		}
 		if ( w )
 		{

@@ -86,8 +86,6 @@ function Stack(
 		self.overview.redraw();
 		if (self.s !== self.old_s) updateScaleBar();
 
-		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
-
 		self.redraw(completionCallback);
 
 		if( tool ) {

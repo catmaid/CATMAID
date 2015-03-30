@@ -31,7 +31,7 @@ QUnit.test('Miscellaneous tests', function( assert ) {
     /* As long as this PhantomJS bug is not fixed, this test will fail on our CI
      * setup: https://github.com/ariya/phantomjs/issues/11856.
      * */
-    if (-1 === navigator.userAgent.toUpperCase().indexOf('PHANTOMJS')) {
+    if (!CATMAID.tests.runByPhantomJS()) {
       CATMAID.configure("c/", "d/");
       assert.strictEqual(CATMAID.backendURL, "c/",
           "CATMAID.configure sets the back-end URL if trailing slash is provided.");

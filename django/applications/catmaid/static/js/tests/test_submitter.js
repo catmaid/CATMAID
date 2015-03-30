@@ -4,7 +4,7 @@
 QUnit.test('Submitter test', function( assert ) {
   // Don't run this test in PhantomJS, because ES6 Promises are not yet
   // supported, it seems.
-  if (-1 !== navigator.userAgent.toUpperCase().indexOf('PHANTOMJS')) {
+  if (CATMAID.tests.runByPhantomJS()) {
     assert.expect(0);
     return;
   }

@@ -195,8 +195,11 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
       toExplore.push.apply(toExplore, nodesToChildren[nodeToHighlight]);
 
       if (0 === toExplore.length) {
-        CATMAID.info("Couldn highlight the currently selected node, because " +
-            "it is collapsed and no visible node downstream was found");
+        if (this.warnCollapsed) {
+          CATMAID.info("Couldn highlight the currently selected node, because " +
+              "it is collapsed and no visible node downstream was found");
+        }
+        // Return, because the closest visible parent has been found
         return;
       }
       // test next node in queue

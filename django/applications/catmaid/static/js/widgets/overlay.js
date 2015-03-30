@@ -838,9 +838,9 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                   self.selectNode(toid);
                 });
                 CATMAID.neuronController.trigger(
-                    CATMAID.neuronController.EVENT_SKELETON_DELETED, from_model.id);
+                    CATMAID.neuronController.EVENT_SKELETON_DELETED, to_skid);
                 CATMAID.neuronController.trigger(
-                    CATMAID.neuronController.EVENT_SKELETON_CHANGED, to_skid);
+                    CATMAID.neuronController.EVENT_SKELETON_CHANGED, from_model.id);
               },
               true); // block UI
           };

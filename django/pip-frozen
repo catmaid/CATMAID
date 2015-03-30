@@ -1,4 +1,4 @@
-Django==1.6.10
+Django==1.6.11
 distribute==0.7.3
 django-devserver==0.8.0
 h5py==2.3.1

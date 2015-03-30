@@ -26,7 +26,7 @@ function CroppingTool() {
 			1,
 			1,
 			1,
-			function( val ){ statusBar.replaceLast( "crop top z: " + val ); return; } );
+			function( val ){ CATMAID.statusBar.replaceLast( "crop top z: " + val ); return; } );
 
 	this.slider_crop_bottom_z = new Slider(
 			SLIDER_HORIZONTAL,
@@ -35,7 +35,7 @@ function CroppingTool() {
 			1,
 			1,
 			1,
-			function( val ){ statusBar.replaceLast( "crop bottom z: " + val ); return; } );
+			function( val ){ CATMAID.statusBar.replaceLast( "crop bottom z: " + val ); return; } );
 
 	this.slider_crop_s = new Slider(
 			SLIDER_HORIZONTAL,
@@ -44,7 +44,7 @@ function CroppingTool() {
 			0,
 			6,
 			5,
-			function( val ){ statusBar.replaceLast( "crop s: " + val ); } );
+			function( val ){ CATMAID.statusBar.replaceLast( "crop s: " + val ); } );
 
 	// Obtain a reference to the RoiTool toolbar button
 	var toolbar = document.getElementById("toolbar_roi");
@@ -209,7 +209,7 @@ function CroppingTool() {
 			}
 			else
 			{
-				statusBar.replaceLast( text );
+				CATMAID.statusBar.replaceLast( text );
 				alert( "Cropping the microstack...\nThis operation may take some time, you will be notified as soon as the cropped stack is ready." );
 			}
 		} else {
@@ -335,7 +335,7 @@ function CroppingTool() {
 		//self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
 		if ( self.getCropBox() )
 			self.updateCropBox();
-		statusBar.replaceLast( "crop s: " + val );
+		CATMAID.statusBar.replaceLast( "crop s: " + val );
 		self.zoomlevel = val;
 		return;
 	};

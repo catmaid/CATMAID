@@ -302,7 +302,7 @@ function BoxSelectionLayer( stack, tool, crop_box)
 
         // let active crop box show status info
         if (is_active) {
-            statusBar.replaceLast(
+            CATMAID.statusBar.replaceLast(
                 tool.convertWorld(cropBoxBB.left_world).toFixed( 3 ) + ", " +
                 tool.convertWorld( cropBoxBB.top_world ).toFixed( 3 ) + " -> " +
                 tool.convertWorld( cropBoxBB.right_world ).toFixed( 3 ) + "," +

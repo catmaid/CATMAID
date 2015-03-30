@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 var global_bottom = 29;
-var statusBar; //!< global statusBar
 
 var input_fontsize; //!< fontsize input
 var input_fontcolourred; //!< fontcolour red input
@@ -1006,8 +1005,8 @@ var realInit = function()
 		if ( isNaN( current_dataview ) ) current_dataview = undefined;
 	}
 	
-	statusBar = new CATMAID.Console();
-	document.body.appendChild( statusBar.getView() );
+	CATMAID.statusBar = new CATMAID.Console();
+	document.body.appendChild( CATMAID.statusBar.getView() );
 	
 	input_fontsize = document.getElementById( "fontsize" );
 	
@@ -1127,7 +1126,7 @@ var realInit = function()
 
   // change global bottom bar height, hide the copyright notice
   // and move the statusBar
-  statusBar.setBottom();
+  CATMAID.statusBar.setBottom();
 
 	window.onresize();
 

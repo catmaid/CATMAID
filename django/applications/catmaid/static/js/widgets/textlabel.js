@@ -62,7 +62,7 @@ function TextlabelTool()
       font_size: (document.getElementById("fontscaling").checked ? Math.max(16 / scale, parseInt(document.getElementById("fontsize").value)) : parseInt(document.getElementById("fontsize").value)) * tlr,
       font_style: (document.getElementById("fontstylebold").checked ? "bold" : "")
     }, function (status, text, xml) {
-      statusBar.replaceLast(text);
+      CATMAID.statusBar.replaceLast(text);
       if (status == 200) {
         // icon_text_apply.style.display = "none";
         self.updateTextlabels();

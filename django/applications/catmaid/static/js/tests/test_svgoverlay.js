@@ -20,13 +20,16 @@ QUnit.test('SVG overlay test', function( assert ) {
     // Create an async test assertion
     var done = assert.async();
     // Store original values of things we want to mock
-    var orignialGlobals = ["requestQueue", "project", "user_permissions",
-        "django_url", "statusBar"].reduce(function(o, g)
-    {
+    var mapFields = function(object, keys) {
       // Store each requested global in target object
-      o[g] = window[g];
-      return o;
-    }, {});
+      return keys.reduce(function(o, g) {
+        o[g] = object[g];
+        return o;
+      }, {});
+    };
+    var orignialGlobalFields = mapFields(window, ["requestQueue",
+        "project", "user_permissions", "django_url"]);
+    var orignalCATMAIDFields = mapFields(CATMAID, ["statusBar"]);
 
     // Override requestQueue that uses fake XHR requests
     requestQueue = new RequestQueue();
@@ -48,7 +51,7 @@ QUnit.test('SVG overlay test', function( assert ) {
     CATMAID.configure(django_url, django_url);
 
     // Set global status bar mocking object
-    statusBar = {
+    CATMAID.statusBar = {
       replaceLast: function() {}
     };
 
@@ -171,12 +174,16 @@ QUnit.test('SVG overlay test', function( assert ) {
      * Leave the environment as we found it.
      */
     function reset() {
-      // Restore original globals
-      for (var g in orignialGlobals) {
-        if (orignialGlobals.hasOwnProperty(g)) {
-          window[g] = orignialGlobals[g]; 
+      function resetMapping(object, mapping) {
+        for (var g in mapping) {
+          if (object.hasOwnProperty(g)) {
+            object[g] = mapping[g];
+          }
         }
       }
+      // Restore original globals and CATMAID fields
+      resetMapping(window, orignialGlobalFields);
+      resetMapping(CATMAID, orignalCATMAIDFields);
     }
   })();
 });

@@ -220,7 +220,7 @@ RequestQueue = function()
         if ( queue[ i ].id == id )
         {
           removedRequest = queue.splice( i, 1 );
-          statusBar.replaceLast( "replacing request ", + r );
+          CATMAID.statusBar.replaceLast( "replacing request ", + r );
           // Send a distinguishable error reponse with the callback:
           removedRequest[0].callback(200, JSON.stringify({'error': 'REPLACED'}), null);
         }

@@ -6,7 +6,6 @@
   project,
   requestQueue,
   SkeletonAnnotations,
-  statusBar
 */
 
 "use strict";
@@ -885,7 +884,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
           // careful, atnID is a connector
           catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
           // TODO check for error
-          statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
+          CATMAID.statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
         } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
           // Joining two skeletons: only possible if one owns both nodes involved
           // or is a superuser
@@ -895,7 +894,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
           }
           catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
           // TODO check for error
-          statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
+          CATMAID.statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
         }
 
       } else {
@@ -923,7 +922,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     var node = catmaidSVGOverlay.nodes[d];
 
     if (!mayEdit() || !node.can_edit) {
-      statusBar.replaceLast("You don't have permission to move node #" + d);
+      CATMAID.statusBar.replaceLast("You don't have permission to move node #" + d);
       return;
     }
 
@@ -937,7 +936,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
       y: node.y
     });
     node.drawEdges(true); // TODO for connector this is overkill
-    statusBar.replaceLast("Moving node #" + node.id);
+    CATMAID.statusBar.replaceLast("Moving node #" + node.id);
 
     node.needsync = true;
   };
@@ -1020,7 +1019,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
         } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
           var synapse_type = e.altKey ? 'post' : 'pre';
           catmaidSVGOverlay.createLink(atnID, connectornode.id, synapse_type + "synaptic_to");
-          statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
+          CATMAID.statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
         }
       } else {
         growlAlert('BEWARE', 'You need to activate a node before joining it to a connector node!');

@@ -18,7 +18,6 @@
   session,
   SkeletonElements,
   SkeletonListSources,
-  statusBar,
   submitterFn,
   user_groups,
   userprofile,
@@ -135,7 +134,7 @@ SkeletonAnnotations.staticSelectNode = function(nodeID) {
       return instances[stack].selectNode(nodeID);
     }
   }
-  statusBar.replaceLast("Could not find node #" + nodeID);
+  CATMAID.statusBar.replaceLast("Could not find node #" + nodeID);
 };
 
 /** Move to a location, ensuring that any edits to node coordinates are pushed to the database. After the move, the fn is invoked. */
@@ -411,7 +410,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack,
       worldY = wc.worldTop + ((m.offsetY / stack.scale) * stack.resolution.y);
       coords.lastX = worldX;
       coords.lastY = worldY;
-      statusBar.printCoords('['+[worldX, worldY, project.coordinates.z].map(Math.round).join(', ')+']');
+      CATMAID.statusBar.printCoords('['+[worldX, worldY, project.coordinates.z].map(Math.round).join(', ')+']');
       coords.offsetXPhysical = worldX;
       coords.offsetYPhysical = worldY;
     }
@@ -509,13 +508,13 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     }
     // Else, select the node
     if (SkeletonAnnotations.TYPE_NODE === node.type) {
-      // Update statusBar
+      // Update CATMAID.statusBar
       this.printTreenodeInfo(node.id, "Node " + node.id + ", skeleton " + node.skeleton_id);
       SkeletonAnnotations.setNeuronNameInTopbar(this.stack.getId(), node.skeleton_id);
       atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-      statusBar.replaceLast("Activated connector node #" + node.id);
+      CATMAID.statusBar.replaceLast("Activated connector node #" + node.id);
       atn.set(node, this.getStack().getId());
       SkeletonAnnotations.clearTopbar(this.stack.getId());
       this.recolorAllNodes();
@@ -545,7 +544,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNearestNode = function () {
     if (physZ >= z && physZ < z + this.stack.resolution.z) {
       this.activateNode(nearestnode);
     } else {
-      statusBar.replaceLast("No nodes were visible in the current section - can't activate the nearest");
+      CATMAID.statusBar.replaceLast("No nodes were visible in the current section - can't activate the nearest");
     }
   }
   return nearestnode;
@@ -1325,7 +1324,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   // Warn about nodes not retrieved because of limit
   if (true === jso[3]) {
     var msg = "Did not retrieve all visible nodes--too many! Zoom in to constrain the field of view.";
-    statusBar.replaceLast("*WARNING*: " + msg);
+    CATMAID.statusBar.replaceLast("*WARNING*: " + msg);
     growlAlert('WARNING', msg);
   }
 };
@@ -1419,7 +1418,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   var m = CATMAID.ui.getMouse(e, this.view);
 
   if (!mayEdit()) {
-    statusBar.replaceLast("You don't have permission.");
+    CATMAID.statusBar.replaceLast("You don't have permission.");
     e.stopPropagation();
     return;
   }
@@ -1446,7 +1445,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     } else {
       // ctrl-click deselects the current active node
       if (null !== atn.id) {
-        statusBar.replaceLast("Deactivated node #" + atn.id);
+        CATMAID.statusBar.replaceLast("Deactivated node #" + atn.id);
       }
       SkeletonAnnotations.clearTopbar(this.stack.getId());
       this.activateNode(null);
@@ -1467,7 +1466,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         if (e.shiftKey) {
           // Create a new connector and a new link
           var synapse_type = e.altKey ? 'post' : 'pre';
-          statusBar.replaceLast("Created connector with " + synapse_type + "synaptic treenode #" + atn.id);
+          CATMAID.statusBar.replaceLast("Created connector with " + synapse_type + "synaptic treenode #" + atn.id);
           var self = this;
           this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
               function (connectorID) {
@@ -1479,7 +1478,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         return true;
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         // create new treenode (and skeleton) postsynaptic to activated connector
-        statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
+        CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
         this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         e.stopPropagation();
         return true;
@@ -1492,7 +1491,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         // Create a new treenode,
         // either root node if atn is null, or child if it is not null
         if (null !== atn.id) {
-          statusBar.replaceLast("Created new node as child of node #" + atn.id);
+          CATMAID.statusBar.replaceLast("Created new node as child of node #" + atn.id);
         }
         this.createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         e.stopPropagation();
@@ -1974,7 +1973,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
   if (typeof prefixMessage === "undefined") {
     prefixMessage = "Node " + nodeID;
   }
-  statusBar.replaceLast(prefixMessage + " (loading authorship information)");
+  CATMAID.statusBar.replaceLast(prefixMessage + " (loading authorship information)");
   this.submit(
       django_url + project.id + '/node/user-info',
       {treenode_id: nodeID},
@@ -1996,7 +1995,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
         } else {
           msg += "no one";
         }
-        statusBar.replaceLast(msg);
+        CATMAID.statusBar.replaceLast(msg);
       },
       false,
       true);
@@ -2261,7 +2260,7 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
           // Refresh all nodes in any case, to reflect the new state of the database
           self.updateNodes();
 
-          statusBar.replaceLast("Deleted connector #" + cID);
+          CATMAID.statusBar.replaceLast("Deleted connector #" + cID);
         });
   }
 
@@ -2297,7 +2296,7 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
         }
       }
       // Nodes are refreshed due to the change event the neuron controller emits
-      statusBar.replaceLast("Deleted node #" + node.id);
+      CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
     });
   }
 

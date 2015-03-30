@@ -36,7 +36,7 @@ function Navigator()
 			388,
 			388,
 			1,
-			function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
+			function( val ){ CATMAID.statusBar.replaceLast( "z: " + val ); return; } );
 	
 	this.slider_s = new Slider(
 			SLIDER_HORIZONTAL,
@@ -50,7 +50,7 @@ function Navigator()
 				4,
 				8 ),
 			8,
-			function( val ){ statusBar.replaceLast( "s: " + val ); },
+			function( val ){ CATMAID.statusBar.replaceLast( "s: " + val ); },
 			undefined,
 			false );
 	

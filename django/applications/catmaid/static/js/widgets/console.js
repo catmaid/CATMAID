@@ -3,6 +3,10 @@
 
 (function(CATMAID) {
 
+  /**
+   * Create a container to which one can push messages and coordinates. Both are
+   * displayed separately from each other.
+   */
   CATMAID.Console = function() {
     var view = document.createElement("div");
     view.className = "console";

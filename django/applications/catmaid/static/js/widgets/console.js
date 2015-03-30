@@ -13,12 +13,13 @@
 
     var coords = document.createElement("div");
     coords.id = "coordinates";
-    coords.appendChild(document.createTextNode(""));
+    var coordsText = document.createTextNode("");
+    coords.appendChild(coordsText);
     view.appendChild(coords);
     view.appendChild(document.createElement("pre"));
 
     this.printCoords = function (obj) {
-      coords.replaceChild(document.createTextNode(obj), coords.firstChild);
+      coordsText.textContent = obj;
     };
 
     var toStr = function (obj, ins) {

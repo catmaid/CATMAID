@@ -1006,7 +1006,7 @@ var realInit = function()
 		if ( isNaN( current_dataview ) ) current_dataview = undefined;
 	}
 	
-	statusBar = new Console();
+	statusBar = new CATMAID.Console();
 	document.body.appendChild( statusBar.getView() );
 	
 	input_fontsize = document.getElementById( "fontsize" );

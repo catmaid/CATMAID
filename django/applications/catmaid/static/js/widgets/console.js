@@ -1,82 +1,86 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-function Console() {
-  var view = document.createElement("div");
-  view.className = "console";
+(function(CATMAID) {
 
-  var coords = document.createElement("div");
-  coords.id = "coordinates";
-  coords.appendChild(document.createTextNode(""));
-  view.appendChild(coords);
-  view.appendChild(document.createElement("pre"));
+  CATMAID.Console = function() {
+    var view = document.createElement("div");
+    view.className = "console";
 
-  this.printCoords = function (obj) {
-    coords.replaceChild(document.createTextNode(obj), coords.firstChild);
-  };
+    var coords = document.createElement("div");
+    coords.id = "coordinates";
+    coords.appendChild(document.createTextNode(""));
+    view.appendChild(coords);
+    view.appendChild(document.createElement("pre"));
 
-  var toStr = function (obj, ins) {
-    if (typeof ins == "undefined") ins = "";
+    this.printCoords = function (obj) {
+      coords.replaceChild(document.createTextNode(obj), coords.firstChild);
+    };
 
-    var type = typeof(obj);
-    var str = "[" + type + "] ";
+    var toStr = function (obj, ins) {
+      if (typeof ins == "undefined") ins = "";
 
-    switch (type) {
-    case "function":
-    case "object":
-      if (ins.length <= 6) {
-        str += "\r\n";
-        for (var key in obj) {
-          str += ins + "\"" + key + "\" => " + toStr(obj[key], ins + "  ") + "\r\n";
-        }
-      } else str += "...";
-      break;
-    case "undefined":
-      break;
-    default:
-      str += obj;
-      break;
-    }
-    return str;
-  };
+      var type = typeof(obj);
+      var str = "[" + type + "] ";
 
-  this.setBottom = function() {
-    view.style.bottom = "0px";
-  };
+      switch (type) {
+      case "function":
+      case "object":
+        if (ins.length <= 6) {
+          str += "\r\n";
+          for (var key in obj) {
+            str += ins + "\"" + key + "\" => " + toStr(obj[key], ins + "  ") + "\r\n";
+          }
+        } else str += "...";
+        break;
+      case "undefined":
+        break;
+      default:
+        str += obj;
+        break;
+      }
+      return str;
+    };
 
-  this.print = function (obj) {
-    if (typeof obj == "string") view.lastChild.appendChild(document.createTextNode(obj));
-    else
-    view.lastChild.appendChild(document.createTextNode(toStr(obj)));
-    return;
-  };
+    this.setBottom = function() {
+      view.style.bottom = "0px";
+    };
 
-  this.println = function (obj) {
-    var sp = document.createElement("pre");
-    if (typeof obj == "string") sp.appendChild(document.createTextNode(obj));
-    else
-    sp.appendChild(document.createTextNode(toStr(obj)));
-    view.appendChild(sp);
-    return;
-  };
+    this.print = function (obj) {
+      if (typeof obj == "string") view.lastChild.appendChild(document.createTextNode(obj));
+      else
+      view.lastChild.appendChild(document.createTextNode(toStr(obj)));
+      return;
+    };
 
-  this.replaceLast = function (obj) {
-    var sp = document.createElement("pre");
-    if (typeof obj == "string")
-      sp.appendChild(document.createTextNode(obj));
-    else
+    this.println = function (obj) {
+      var sp = document.createElement("pre");
+      if (typeof obj == "string") sp.appendChild(document.createTextNode(obj));
+      else
       sp.appendChild(document.createTextNode(toStr(obj)));
-    view.replaceChild(sp, view.lastChild);
-    return;
+      view.appendChild(sp);
+      return;
+    };
+
+    this.replaceLast = function (obj) {
+      var sp = document.createElement("pre");
+      if (typeof obj == "string")
+        sp.appendChild(document.createTextNode(obj));
+      else
+        sp.appendChild(document.createTextNode(toStr(obj)));
+      view.replaceChild(sp, view.lastChild);
+      return;
+    };
+
+    this.replaceLastHTML = function (html) {
+      var e = document.createElement("pre");
+      e.innerHTML = html;
+      view.replaceChild(e, view.lastChild);
+    };
+
+    this.getView = function () {
+      return view;
+    };
   };
 
-  this.replaceLastHTML = function (html) {
-    var e = document.createElement("pre");
-    e.innerHTML = html;
-    view.replaceChild(e, view.lastChild);
-  };
-
-  this.getView = function () {
-    return view;
-  };
-}
+})(CATMAID);

@@ -3,6 +3,8 @@
 
 (function(CATMAID) {
 
+  "use strict";
+
   // A Skeleton source based on the active node in the tracing layer
   var ActiveSkeleton = function() {
     this.registerSource();

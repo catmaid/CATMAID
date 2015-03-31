@@ -7,6 +7,9 @@
  */
 
 (function(CATMAID) {
+
+    "use strict";
+
     /**
      * container for generic user interface actions
      */

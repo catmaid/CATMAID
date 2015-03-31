@@ -7,6 +7,10 @@
   var SkeletonSourceManager = function() {
     this.sources = {};
 
+    // Register with neuron manager to get updates two skeletons are joined
+    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETONS_JOINED,
+        this.replaceSkeleton, this);
+
     // Register with neuron manager to get updates about deleted neurons
     CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
       function(skeletonID) { this.removeSkeletons([skeletonID]); }, this);
@@ -144,6 +148,31 @@
       var source = this.sources[name];
       if (typeof(source['setVisible']) === 'function') {
         source.setVisible(skeleton_ids, visible);
+      }
+    }, this);
+  };
+
+  /**
+   * Replace a skeleton in all widgets containing it with another one. This is
+   * usefult to e.g. handle the join of two skeletons.
+   */
+  SkeletonSourceManager.prototype.replaceSkeleton = function(oldSkeletonID, newSkeletonID) {
+    // Get a list sources that refer to the deleted skeletons
+    Object.keys(this.sources).forEach(function(name) {
+      var source = this.sources[name];
+      // If a source contains the old skeleton, it is removed and the new
+      // skeleton is added.
+      if (source.hasSkeleton(oldSkeletonID)) {
+        // Clone the existing model as a base for the new one and update its
+        // sekelton ID.
+        var model = source.getSkeletonModel(oldSkeletonID).clone();
+        model.id = newSkeletonID;
+        // Append this modified model to the source
+        var models = {};
+        models[newSkeletonID] = model;
+        source.append(models);
+        // Remove old skeleton
+        source.removeSkeletons([oldSkeletonID]);
       }
     }, this);
   };

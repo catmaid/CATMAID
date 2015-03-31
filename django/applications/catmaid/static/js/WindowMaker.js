@@ -377,14 +377,16 @@ var WindowMaker = new function()
     };
     minStrahlerInput.onwheel = function(e) {
         if ((e.deltaX + e.deltaY) > 0) {
-          if (this.value > 0) {
-            ND.setMinStrahler(parseInt(this.value) - 1);
-            ND.update();
+          if (this.value > 1) {
+            this.value = parseInt(this.value) - 1;
+            this.onchange();
           }
         } else {
-          ND.setMinStrahler(parseInt(this.value) + 1);
-          ND.update();
+          this.value = parseInt(this.value) + 1;
+          this.onchange();
         }
+
+        return false;
     };
     minStrahler.appendChild(minStrahlerInput);
     buttons.appendChild(minStrahler);

@@ -104,6 +104,7 @@ Tile layer:
   * Gaussian blur
   * Color inversion
   * Brightness, contrast and saturation adjustment
+  * Color matrix transform
 
 
 Connectivity widget:

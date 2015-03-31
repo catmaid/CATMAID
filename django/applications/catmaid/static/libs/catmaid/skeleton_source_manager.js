@@ -3,6 +3,8 @@
 
 (function(CATMAID) {
 
+  "use strict";
+
   // A prototype for a manager of existing skeleton sources
   var SkeletonSourceManager = function() {
     this.sources = {};

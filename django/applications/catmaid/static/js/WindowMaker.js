@@ -375,8 +375,8 @@ var WindowMaker = new function()
         ND.setMinStrahler(parseInt(this.value));
       }
     };
-    minStrahlerInput.onmousewheel = function(e) {
-        if (e.wheelDelta < 0) {
+    minStrahlerInput.onwheel = function(e) {
+        if ((e.deltaX + e.deltaY) > 0) {
           if (this.value > 0) {
             ND.setMinStrahler(parseInt(this.value) - 1);
             ND.update();

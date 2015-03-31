@@ -325,18 +325,7 @@ RoiTool.prototype.onmousewheel = function( e )
  */
 RoiTool.prototype.addMousewheelListener = function( component, handler )
 {
-    try
-    {
-        component.addEventListener( "DOMMouseScroll", handler, false );
-    }
-    catch ( error )
-    {
-        try
-        {
-            component.onmousewheel = handler;
-        }
-        catch ( error2 ) {}
-    }
+    component.addEventListener( "wheel", handler, false );
 };
 
 /**
@@ -344,18 +333,7 @@ RoiTool.prototype.addMousewheelListener = function( component, handler )
  */
 RoiTool.prototype.removeMousewheelListener = function( component, handler )
 {
-    try
-    {
-        component.removeEventListener( "DOMMouseScroll", handler, false );
-    }
-    catch ( error )
-    {
-        try
-        {
-            component.onmousewheel = null;
-        }
-        catch ( error2 ) {}
-    }
+    component.removeEventListener( "wheel", handler, false );
 };
 
 /**
@@ -377,20 +355,7 @@ RoiTool.prototype.register = function( parentStack )
     this.mouseCatcher.onmousemove = this.onmousemove_pos_bound;
 
     var onmousewheel = this.onmousewheel.bind(this);
-    try
-    {
-        this.mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel, false );
-        /* Webkit takes the event but does not understand it ... */
-        this.mouseCatcher.addEventListener( "mousewheel", onmousewheel, false );
-    }
-    catch ( error )
-    {
-        try
-        {
-            this.mouseCatcher.onmousewheel = onmousewheel;
-        }
-        catch ( error2 ) {}
-    }
+    this.mouseCatcher.addEventListener( "wheel", onmousewheel, false );
 
     this.stack.getView().appendChild( this.mouseCatcher );
 

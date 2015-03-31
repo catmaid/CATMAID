@@ -241,21 +241,7 @@ function Selector()
 
 		mouseCatcher.onmousedown = onmousedown;
 		mouseCatcher.onmousemove = onmousemove.pos;
-
-		try
-		{
-			mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel, false );
-			/* Webkit takes the event but does not understand it ... */
-			mouseCatcher.addEventListener( "mousewheel", onmousewheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				mouseCatcher.onmousewheel = onmousewheel;
-			}
-			catch ( error2 ) {}
-		}
+		mouseCatcher.addEventListener( "wheel", onmousewheel, false );
 
 		mouseCatcher.style.cursor = "url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
 		stack.getView().appendChild( mouseCatcher );

@@ -149,12 +149,5 @@ name, size, onchange, defaultvalue) {
   view.appendChild(img);
 
   input.onchange = onchange;
-  try {
-    input.addEventListener("DOMMouseScroll", mouseWheel, false); /* Webkit takes the event but does not understand it ... */
-    input.addEventListener("mousewheel", mouseWheel, false);
-  } catch (error) {
-    try {
-      input.onmousewheel = mouseWheel;
-    } catch (error2) {}
-  }
+  input.addEventListener("wheel", mouseWheel, false);
 }

@@ -509,21 +509,8 @@ function Navigator()
 		self.stack = parentStack;
 
 		self.mouseCatcher.onmousedown = onmousedown;
-		try
-		{
-			self.mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
-			/* Webkit takes the event but does not understand it ... */
-			self.mouseCatcher.addEventListener( "mousewheel", onmousewheel.zoom, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				self.mouseCatcher.onmousewheel = onmousewheel.zoom;
-			}
-			catch ( error2 ) {}
-		}
-		
+		self.mouseCatcher.addEventListener( "wheel", onmousewheel.zoom, false );
+
 		self.stack.getView().appendChild( self.mouseCatcher );
 
 		self.slider_s.update(
@@ -550,34 +537,12 @@ function Navigator()
 			  minor: self.stack.slices },
 			self.stack.z,
 			self.changeSliceDelayed );
-		
+
 		self.input_x.onchange = changeXByInput;
-		try
-		{
-			self.input_x.addEventListener( "DOMMouseScroll", YXMouseWheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				self.input_x.onmousewheel = YXMouseWheel;
-			}
-			catch ( error2 ) {}
-		}
-		
+		self.input_x.addEventListener( "wheel", YXMouseWheel, false );
+
 		self.input_y.onchange = changeYByInput;
-		try
-		{
-			self.input_y.addEventListener( "DOMMouseScroll", YXMouseWheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				self.input_y.onmousewheel = YXMouseWheel;
-			}
-			catch ( error2 ) {}
-		}
+		self.input_y.addEventListener( "wheel", YXMouseWheel, false );
 
 		self.checkbox_reflines.checked = userprofile.display_stack_reference_lines;
 		self.checkbox_reflines.onchange = function( e )
@@ -640,33 +605,11 @@ function Navigator()
 			null );
 		
 		self.input_x.onchange = null;
-		try
-		{
-			self.input_x.removeEventListener( "DOMMouseScroll", YXMouseWheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				self.input_x.onmousewheel = null;
-			}
-			catch ( error2 ) {}
-		}
-		
+		self.input_x.removeEventListener( "wheel", YXMouseWheel, false );
+
 		self.input_y.onchange = null;
-		try
-		{
-			self.input_y.removeEventListener( "DOMMouseScroll", YXMouseWheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				self.input_y.onmousewheel = null;
-			}
-			catch ( error2 ) {}
-		}
-		
+		self.input_y.removeEventListener( "wheel", YXMouseWheel, false );
+
 		self.checkbox_reflines.onchange = null;
 
 		self.stack = null;

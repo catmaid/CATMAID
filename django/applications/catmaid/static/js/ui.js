@@ -34,7 +34,7 @@
         events[ "onmousemove" ] = [];	//!< bound to eventCatcher
         events[ "onmousedown" ] = [];
         events[ "onmouseup" ] = [];	//!< bound to eventCatcher
-        events[ "onmousewheel" ] = [];
+        events[ "onwheel" ] = [];
         events[ "onresize" ] = [];		//!< bound to the window itself
 
         var eventCatcher = document.createElement( "div" );
@@ -184,15 +184,8 @@
          */
         this.getMouseWheel = function( e )
         {
-            if ( e && e.detail )
-                return ( e.detail > 0 ? 1 : -1 );
-            else if ( event && event.wheelDelta )
-            {
-                if ( window.opera )
-                    return ( event.wheelDelta > 0 ? 1 : -1 );
-                else
-                    return ( event.wheelDelta < 0 ? 1 : -1 );
-            }
+            if ( e )
+                return ((e.deltaX + e.deltaY) > 0 ? 1 : -1);
             else
                 return undefined;
         };

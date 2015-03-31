@@ -561,36 +561,10 @@ Slider = function(
     inputView.style.display = "block";
     
     input.onchange = setByInput;
-    try
-    {
-      input.addEventListener( "DOMMouseScroll", mouseWheel, false );
-      /* Webkit takes the event but does not understand it ... */
-      input.addEventListener( "mousewheel", mouseWheel, false );
-    }
-    catch ( error )
-    {
-      try
-      {
-        input.onmousewheel = mouseWheel;
-      }
-      catch ( error2 ) {}
-    }
+    input.addEventListener( "wheel", mouseWheel, false );
   }
-  
-  try
-  {
-    view.addEventListener( "DOMMouseScroll", mouseWheel, false );
-    /* Webkit takes the event but does not understand it ... */
-    view.addEventListener( "mousewheel", mouseWheel, false );
-  }
-  catch ( error )
-  {
-    try
-    {
-      view.onmousewheel = mouseWheel;
-    }
-    catch ( error2 ) {}
-  }
-  
+
+  view.addEventListener( "wheel", mouseWheel, false );
+
   this.update( min, max, steps, def, onchange, split);
 };

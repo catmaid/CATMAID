@@ -10,6 +10,9 @@
     CATMAID.TileLayer.apply(this, arguments);
     this.batchContainer = null;
     if (!PixiTileLayer.contexts.hasOwnProperty(this.stack.id)) {
+      if (!PIXI.BaseTextureCacheManager || PIXI.BaseTextureCacheManager.constructor !== PIXI.LRUCacheManager) {
+        PIXI.BaseTextureCacheManager = new PIXI.LRUCacheManager(PIXI.BaseTextureCache, 512);
+      }
       PixiTileLayer.contexts[this.stack.id] = {
           renderer: new PIXI.autoDetectRenderer(
               this.stack.getView().clientWidth,

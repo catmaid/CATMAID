@@ -3,6 +3,8 @@
 
 (function(CATMAID) {
 
+  "use strict";
+
   /**
    * Create a container to which one can push messages and coordinates. Both are
    * displayed separately from each other.

@@ -7,7 +7,6 @@
   project,
   requestQueue,
   SelectionTable,
-  SkeletonSource,
   SVGUtil,
   TracingTool,
   User,
@@ -35,7 +34,7 @@ var SkeletonConnectivity = function() {
 
 SkeletonConnectivity.prototype = {};
 $.extend(SkeletonConnectivity.prototype, new InstanceRegistry());
-$.extend(SkeletonConnectivity.prototype, new SkeletonSource());
+$.extend(SkeletonConnectivity.prototype, new CATMAID.SkeletonSource());
 
 /**
  * Initializes the connectivity widget by setting all fields to their default

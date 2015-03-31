@@ -17,7 +17,6 @@
   session,
   SkeletonAnnotations,
   SkeletonRegistry,
-  SkeletonSource,
   submitterFn,
   SVGUtil,
   SynapseClustering,
@@ -47,7 +46,7 @@ var WebGLApplication = function() {
 
 WebGLApplication.prototype = {};
 $.extend(WebGLApplication.prototype, new InstanceRegistry());
-$.extend(WebGLApplication.prototype, new SkeletonSource());
+$.extend(WebGLApplication.prototype, new CATMAID.SkeletonSource());
 
 WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	if (this.initialized) {

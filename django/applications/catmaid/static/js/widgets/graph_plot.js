@@ -11,7 +11,6 @@
   project,
   requestQueue,
   saveDivSVG,
-  SkeletonSource,
   SynapseClustering
 */
 
@@ -102,7 +101,7 @@ var CircuitGraphPlot = function() {
 
 CircuitGraphPlot.prototype = {};
 $.extend(CircuitGraphPlot.prototype, new InstanceRegistry());
-$.extend(CircuitGraphPlot.prototype, new SkeletonSource());
+$.extend(CircuitGraphPlot.prototype, new CATMAID.SkeletonSource());
 
 CircuitGraphPlot.prototype.getName = function() {
 	return "Circuit Graph Plot " + this.widgetID;

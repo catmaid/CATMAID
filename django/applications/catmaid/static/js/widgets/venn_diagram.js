@@ -5,7 +5,6 @@
   OptionsDialog,
   parseColorWheel,
   saveDivSVG,
-  SkeletonSource
 */
 
 "use strict";
@@ -20,7 +19,7 @@ var VennDiagram = function() {
 
 VennDiagram.prototype = {};
 $.extend(VennDiagram.prototype, new InstanceRegistry());
-$.extend(VennDiagram.prototype, new SkeletonSource());
+$.extend(VennDiagram.prototype, new CATMAID.SkeletonSource());
 
 VennDiagram.prototype.getName = function() {
   return "Venn Diagram " + this.widgetID;

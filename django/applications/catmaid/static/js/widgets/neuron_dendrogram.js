@@ -10,7 +10,6 @@
   requestQueue,
   SelectionTable,
   SkeletonAnnotations,
-  SkeletonSource,
   SVGUtil
 */
 
@@ -56,7 +55,7 @@ var NeuronDendrogram = function() {
 
 NeuronDendrogram.prototype = {};
 $.extend(NeuronDendrogram.prototype, new InstanceRegistry());
-$.extend(NeuronDendrogram.prototype, new SkeletonSource());
+$.extend(NeuronDendrogram.prototype, new CATMAID.SkeletonSource());
 $.extend(NeuronDendrogram.prototype, Events.Event);
 
 /* Implement interfaces */

@@ -11,7 +11,6 @@
   OptionsDialog,
   SelectionTable,
   SkeletonAnnotations,
-  SkeletonSource,
   SVGUtil,
   SynapseClustering,
   TracingTool
@@ -38,7 +37,7 @@ var AnalyzeArbor = function() {
 
 AnalyzeArbor.prototype = {};
 $.extend(AnalyzeArbor.prototype, new InstanceRegistry());
-$.extend(AnalyzeArbor.prototype, new SkeletonSource());
+$.extend(AnalyzeArbor.prototype, new CATMAID.SkeletonSource());
 
 AnalyzeArbor.prototype.getName = function() {
   return "Analyze Arbor " + this.widgetID;

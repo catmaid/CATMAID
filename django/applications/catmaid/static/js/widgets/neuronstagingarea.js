@@ -10,7 +10,6 @@
   requestQueue,
   SkeletonAnnotations,
   SkeletonMeasurementsTable,
-  SkeletonSource,
   TracingTool,
   User,
   WindowMaker
@@ -37,7 +36,7 @@ SelectionTable._lastFocused = null; // Static reference to last focused instance
 
 SelectionTable.prototype = {};
 $.extend(SelectionTable.prototype, new InstanceRegistry());
-$.extend(SelectionTable.prototype, new SkeletonSource());
+$.extend(SelectionTable.prototype, new CATMAID.SkeletonSource());
 $.extend(SelectionTable.prototype, new Colorizer());
 
 SelectionTable.prototype.highlighting_color = "#d6ffb5";

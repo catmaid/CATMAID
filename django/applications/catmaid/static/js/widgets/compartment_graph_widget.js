@@ -15,7 +15,6 @@
   requestQueue,
   SelectionTable,
   session,
-  SkeletonSource,
   SVGCanvas,
   SynapseClustering,
   TracingTool,
@@ -73,7 +72,7 @@ var GroupGraph = function() {
 
 GroupGraph.prototype = {};
 $.extend(GroupGraph.prototype, new InstanceRegistry());
-$.extend(GroupGraph.prototype, new SkeletonSource());
+$.extend(GroupGraph.prototype, new CATMAID.SkeletonSource());
 
 GroupGraph.prototype.SUBGRAPH_AXON_DENDRITE =  -1;
 GroupGraph.prototype.SUBGRAPH_AXON_BACKBONE_TERMINALS = -2;

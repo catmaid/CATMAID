@@ -9,7 +9,6 @@
   project,
   saveDivSVG,
   SkeletonAnnotations,
-  SkeletonSource
 */
 
 "use strict";
@@ -24,7 +23,7 @@ var MorphologyPlot = function() {
 
 MorphologyPlot.prototype = {};
 $.extend(MorphologyPlot.prototype, new InstanceRegistry());
-$.extend(MorphologyPlot.prototype, new SkeletonSource());
+$.extend(MorphologyPlot.prototype, new CATMAID.SkeletonSource());
 
 MorphologyPlot.prototype.getName = function() {
   return "Morphology Plot " + this.widgetID;

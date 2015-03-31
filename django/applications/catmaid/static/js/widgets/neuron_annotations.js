@@ -11,7 +11,6 @@
   project,
   requestQueue,
   SelectionTable,
-  SkeletonSource,
   TracingTool,
   WindowMaker
 */
@@ -39,7 +38,7 @@ var NeuronAnnotations = function()
 
 NeuronAnnotations.prototype = {};
 $.extend(NeuronAnnotations.prototype, new InstanceRegistry());
-$.extend(NeuronAnnotations.prototype, new SkeletonSource());
+$.extend(NeuronAnnotations.prototype, new CATMAID.SkeletonSource());
 
 /* Implement interfaces */
 

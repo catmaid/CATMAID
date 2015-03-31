@@ -16,7 +16,6 @@
   requestQueue,
   SelectionTable,
   SkeletonAnnotations,
-  SkeletonSource,
   TracingTool,
   TreenodeTable,
   User,
@@ -36,7 +35,7 @@ var NeuronNavigator = function()
 
 NeuronNavigator.prototype = {};
 $.extend(NeuronNavigator.prototype, new InstanceRegistry());
-$.extend(NeuronNavigator.prototype, new SkeletonSource());
+$.extend(NeuronNavigator.prototype, new CATMAID.SkeletonSource());
 
 /* Implement interfaces */
 

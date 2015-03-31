@@ -63,7 +63,7 @@ var ActiveSkeleton = function() {
   this.registerSource();
 };
 
-ActiveSkeleton.prototype = new SkeletonSource();
+ActiveSkeleton.prototype = new CATMAID.SkeletonSource();
 
 ActiveSkeleton.prototype.getName = function(skeleton_id) {
 	return "Active skeleton";

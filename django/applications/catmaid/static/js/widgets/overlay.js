@@ -17,7 +17,6 @@
   SelectionTable,
   session,
   SkeletonElements,
-  SkeletonListSources,
   submitterFn,
   user_groups,
   userprofile,
@@ -532,7 +531,8 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
 
   // (de)highlight in SkeletonSource instances if any if different from the last activated skeleton
   if (last_skeleton_id !== SkeletonAnnotations.getActiveSkeletonId()) {
-    SkeletonListSources.highlight(SkeletonAnnotations.sourceView, SkeletonAnnotations.getActiveSkeletonId());
+    CATMAID.skeletonListSources.highlight(SkeletonAnnotations.sourceView,
+        SkeletonAnnotations.getActiveSkeletonId());
   }
 };
 

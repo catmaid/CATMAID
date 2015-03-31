@@ -173,7 +173,7 @@ var WindowMaker = new function()
     var buttons = document.createElement("div");
 
     buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(SkeletonListSources.createSelect(SMT));
+    buttons.appendChild(CATMAID.skeletonListSources.createSelect(SMT));
 
     var load = document.createElement('input');
     load.setAttribute("type", "button");
@@ -240,7 +240,7 @@ var WindowMaker = new function()
     var buttons = document.createElement("div");
 
     buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(SkeletonListSources.createSelect(AA));
+    buttons.appendChild(CATMAID.skeletonListSources.createSelect(AA));
 
     var load = document.createElement('input');
     load.setAttribute("type", "button");
@@ -319,7 +319,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
     AA.init();
 
     return win;
@@ -518,7 +518,7 @@ var WindowMaker = new function()
     buttons.setAttribute('id', 'ST_button_bar' + ST.widgetID);
 
     buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(SkeletonListSources.createSelect(ST));
+    buttons.appendChild(CATMAID.skeletonListSources.createSelect(ST));
 
     var load = document.createElement('input');
     load.setAttribute("type", "button");
@@ -560,7 +560,7 @@ var WindowMaker = new function()
     buttons.appendChild(next);
 
     buttons.appendChild(document.createTextNode(' Sync to:'));
-    var link = SkeletonListSources.createPushSelect(ST, 'link');
+    var link = CATMAID.skeletonListSources.createPushSelect(ST, 'link');
     link.onchange = ST.syncLink.bind(ST, link);
     buttons.appendChild(link);
 
@@ -731,7 +731,7 @@ var WindowMaker = new function()
         }
     }
 
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
     ST.init();
     win.focus();
 
@@ -781,7 +781,7 @@ var WindowMaker = new function()
           return o;
     }, {});
 
-    var select_source = SkeletonListSources.createSelect(WA);
+    var select_source = CATMAID.skeletonListSources.createSelect(WA);
 
     appendToTab(tabs['Main'],
         [
@@ -1095,7 +1095,7 @@ var WindowMaker = new function()
     // available vertical space (instead of 50%).
     win.getParent().changeHeight(Math.abs(win.getHeight() * 0.5));
 
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
 
     // Now that a Selection Table exists, set it as the default pull source
     for (var i=select_source.length; --i; ) {
@@ -1211,7 +1211,7 @@ var WindowMaker = new function()
 
     appendToTab(tabs['Main'],
         [[document.createTextNode('From')],
-         [SkeletonListSources.createSelect(GG)],
+         [CATMAID.skeletonListSources.createSelect(GG)],
          ['Append', GG.loadSource.bind(GG)],
          ['Append as group', GG.appendAsGroup.bind(GG)],
          ['Clear', GG.clear.bind(GG)],
@@ -1362,7 +1362,7 @@ var WindowMaker = new function()
 
     GG.init();
 
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
 
     return win;
   };
@@ -1380,7 +1380,7 @@ var WindowMaker = new function()
     buttons.setAttribute('class', 'buttonpanel');
 
     buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(SkeletonListSources.createSelect(GP));
+    buttons.appendChild(CATMAID.skeletonListSources.createSelect(GP));
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
@@ -1473,7 +1473,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
 
     return win;
   };
@@ -1491,7 +1491,7 @@ var WindowMaker = new function()
     buttons.setAttribute('id', 'morphology_plot_buttons' + MA.widgetID);
 
     buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(SkeletonListSources.createSelect(MA));
+    buttons.appendChild(CATMAID.skeletonListSources.createSelect(MA));
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
@@ -1574,7 +1574,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
 
     return win;
   };
@@ -1591,7 +1591,7 @@ var WindowMaker = new function()
     buttons.setAttribute('id', 'venn_diagram_buttons' + VD.widgetID);
 
     buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(SkeletonListSources.createSelect(VD));
+    buttons.appendChild(CATMAID.skeletonListSources.createSelect(VD));
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
@@ -1624,7 +1624,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
 
     return win;
   };
@@ -1943,7 +1943,7 @@ var WindowMaker = new function()
     div.setAttribute('id', 'skeleton_analytics');
     content.appendChild(div);
 
-    div.appendChild(SkeletonListSources.createSelect(SA));
+    div.appendChild(CATMAID.skeletonListSources.createSelect(SA));
 
     appendSelect(div, "extra" + SA.widgetID, ["No others", "Downstream skeletons", "Upstream skeletons", "Both upstream and downstream"]);
     var adjacents = [];
@@ -1987,7 +1987,7 @@ var WindowMaker = new function()
     addLogic(win);
 
     SA.init(); // must be called after the above placeholder table is created
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
 
     return win;
   };
@@ -2220,7 +2220,7 @@ var WindowMaker = new function()
         contentbutton.setAttribute("id", 'skeleton_connectivity_buttons' + widgetID);
 
         contentbutton.appendChild(document.createTextNode('From'));
-        contentbutton.appendChild(SkeletonListSources.createSelect(SC));
+        contentbutton.appendChild(CATMAID.skeletonListSources.createSelect(SC));
 
         var op = document.createElement('select');
         op.setAttribute('id', 'connectivity_operation' + widgetID);
@@ -2247,7 +2247,7 @@ var WindowMaker = new function()
         contentbutton.appendChild(update);
 
         contentbutton.appendChild(document.createTextNode(' Sync to:'));
-        var link = SkeletonListSources.createPushSelect(SC, 'link');
+        var link = CATMAID.skeletonListSources.createPushSelect(SC, 'link');
         link.onchange = SC.syncLink.bind(SC, link);
         contentbutton.appendChild(link);
 
@@ -2294,7 +2294,7 @@ var WindowMaker = new function()
         addListener(win, container, 'skeleton_connectivity_buttons' + widgetID, SC.destroy.bind(SC));
 
         addLogic(win);
-        SkeletonListSources.updateGUI();
+        CATMAID.skeletonListSources.updateGUI();
 
         return win;
     };
@@ -2911,7 +2911,7 @@ var WindowMaker = new function()
 
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);
-    var select = SkeletonListSources.createPushSelect(NA, 'link');
+    var select = CATMAID.skeletonListSources.createPushSelect(NA, 'link');
     select.onchange = NA.syncLink.bind(NA, select);
     $('#neuron_annotations_add_to_selection' + NA.widgetID).append(select);
 
@@ -2957,7 +2957,7 @@ var WindowMaker = new function()
     // the filter select box doesn't work when it is hidden.
     $(container).hide();
 
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
 
     // Focus search box
     setTimeout(function() {
@@ -2989,7 +2989,7 @@ var WindowMaker = new function()
     // the created container.
     NN.init_ui(container);
 
-    SkeletonListSources.updateGUI();
+    CATMAID.skeletonListSources.updateGUI();
 
     return win;
   };

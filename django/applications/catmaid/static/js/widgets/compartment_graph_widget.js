@@ -15,7 +15,6 @@
   requestQueue,
   SelectionTable,
   session,
-  SkeletonListSources,
   SkeletonSource,
   SVGCanvas,
   SynapseClustering,
@@ -1185,7 +1184,7 @@ GroupGraph.prototype.append = function(models) {
 };
 
 GroupGraph.prototype.appendAsGroup = function() {
-  var models = SkeletonListSources.getSelectedSkeletonModels(this);
+  var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
   if (0 === models.length) {
     growlAlert('Info', 'Selected source is empty.');
     return;

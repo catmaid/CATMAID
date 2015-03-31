@@ -138,7 +138,7 @@
     dialog.appendMessage('Please select a source from where to get the ' +
         'skeletons of which the ' + entity + 's should be exported.');
     var select = document.createElement('select');
-    SkeletonListSources.createOptions().forEach(function(option, i) {
+    CATMAID.skeletonListSources.createOptions().forEach(function(option, i) {
       select.options.add(option);
       if (option.value === 'Active skeleton') select.selectedIndex = i;
     });
@@ -254,7 +254,7 @@
     // Add handler for initiating the export
     dialog.onOK = function() {
       // Get all selected skeletons from the selected source
-      var source = SkeletonListSources.getSource($(select).val());
+      var source = CATMAID.skeletonListSources.getSource($(select).val());
       var skeletons = source.getSelectedSkeletons();
       // Cancel if there are no skeletons
       if (skeletons.length === 0) {
@@ -308,7 +308,7 @@
     dialog.appendMessage('Please select a source from where to get the ' +
         'skeletons of which the geometry should be exported.');
     var select = document.createElement('select');
-    SkeletonListSources.createOptions().forEach(function(option, i) {
+    CATMAID.skeletonListSources.createOptions().forEach(function(option, i) {
       select.options.add(option);
       if (option.value === 'Active skeleton') select.selectedIndex = i;
     });
@@ -324,7 +324,7 @@
       // Collected objects for all skeletons
       var result = {skeletons: {}};
       // Get all selected skeletons from the selected source
-      var source = SkeletonListSources.getSource($(select).val());
+      var source = CATMAID.skeletonListSources.getSource($(select).val());
       var skids = source.getSelectedSkeletons();
       // Cancel if there are no skeletons
       if (skids.length === 0) {

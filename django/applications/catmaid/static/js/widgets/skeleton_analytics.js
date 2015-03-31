@@ -92,7 +92,7 @@ SkeletonAnalytics.prototype.init = function() {
 };
 
 SkeletonAnalytics.prototype.loadData = function () {
-	var skids = SkeletonListSources.getSelectedSource(this).getSelectedSkeletons();
+	var skids = CATMAID.skeletonListSources.getSelectedSource(this).getSelectedSkeletons();
 	if (!skids || !skids[0]) {
 		growlAlert("Oops", "Select skeleton(s) first!");
 		return;

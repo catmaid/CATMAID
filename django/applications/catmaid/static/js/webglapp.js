@@ -16,7 +16,6 @@
   SelectionTable,
   session,
   SkeletonAnnotations,
-  SkeletonListSources,
   SkeletonRegistry,
   SkeletonSource,
   submitterFn,
@@ -227,7 +226,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
   var namingOptionIds = namingOptions.map(function(o) { return o.id; });
 
   // Get available skeleton list sources
-	var pinSourceOptions = SkeletonListSources.createOptions();
+	var pinSourceOptions = CATMAID.skeletonListSources.createOptions();
   var pinSourceOptionNames = ["(None)"].concat(pinSourceOptions.map(function(o) { return o.text; }));
   var pinSourceOptionIds = ['null'].concat(pinSourceOptions.map(function(o) { return o.value; }));
 
@@ -287,7 +286,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
     var pinnedSkeletonModels = {};
     if (pinSources.selectedIndex > 0) {
       var srcId = pinSourceOptionIds[pinSources.selectedIndex];
-      var src = SkeletonListSources.getSource(srcId);
+      var src = CATMAID.skeletonListSources.getSource(srcId);
       pinnedSkeletonModels = src.getSelectedSkeletonModels();
     }
     var pinnedSkeletonIds = Object.keys(pinnedSkeletonModels);

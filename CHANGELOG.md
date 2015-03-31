@@ -84,6 +84,28 @@ Parameters" tab.
   handles (e.g. active node, special tags).
 
 
+Tile layer:
+
+- Tiles can now be rendered with WebGL, which enables new visualization features
+  and fixes some flickering issues. Enable via "Prefer WebGL Layers" in
+  Settings. The WebGL renderer is currently considered experimental and may have
+  stability issues on some clients. See
+  https://github.com/acardona/CATMAID/issues/186#issuecomment-86540706 for
+  details on using WebGL layers with your image stack host.
+
+- The blend mode used to combine stacks and overlays is now configurable when
+  using WebGL. This greatly improves visualization of confocal and other
+  multichannel data. Blend mode is selectable from the layers control, activated
+  via the toggle at the bottom left of the stack view.
+
+- Filters can be applied to layers when using WebGL. Filters can be added and
+  removed from layers through the layers control. Available filters currently
+  include:
+  * Gaussian blur
+  * Color inversion
+  * Brightness, contrast and saturation adjustment
+
+
 Connectivity widget:
 
 - It is now possible to remove added neurons again. Each row of the table of

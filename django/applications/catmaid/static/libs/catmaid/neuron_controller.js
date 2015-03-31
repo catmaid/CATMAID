@@ -13,6 +13,7 @@
   var NeuronController = function() {
     this.EVENT_SKELETON_DELETED = "neuron_manager_skeleton_deleted";
     this.EVENT_SKELETON_CHANGED = "neuron_manager_skeleton_changed";
+    this.EVENT_SKELETONS_JOINED = "neuron_manager_skeletons_joined";
   };
 
   NeuronController.prototype = {};

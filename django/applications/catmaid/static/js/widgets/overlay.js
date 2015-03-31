@@ -839,6 +839,9 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                 self.updateNodes(function() {
                   self.selectNode(toid);
                 });
+                // Trigger join, delete and change events
+                CATMAID.neuronController.trigger(
+                    CATMAID.neuronController.EVENT_SKELETONS_JOINED, to_skid, from_model.id);
                 CATMAID.neuronController.trigger(
                     CATMAID.neuronController.EVENT_SKELETON_DELETED, to_skid);
                 CATMAID.neuronController.trigger(

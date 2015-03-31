@@ -1,5 +1,7 @@
 # General Django settings for mysite project.
 
+import os
+import sys
 import django.conf.global_settings as DEFAULT_SETTINGS
 import utils
 from pipelinefiles import *
@@ -201,33 +203,9 @@ VERSION = utils.get_version()
 # FLYTEM_STACK_TILE_WIDTH = 512
 # FLYTEM_STACK_TILE_HEIGHT = 512
 
-# A couple of functions useful for generating default directories to
-# be used in the settings files:
-
-import os, errno
-
-def relative(*path_components):
-    '''Returns a path relative to the directory this file is in'''
-
-    base = os.path.abspath(os.path.dirname(__file__))
-    all_parts = [base] + list(path_components)
-    return os.path.realpath(os.path.join(*all_parts))
-
-# From: http://stackoverflow.com/q/600268/223092
-
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc:
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
-
-import sys
-from os.path import realpath
-
-PROJECT_ROOT = relative('..', '..')
+# Make Django root folder available
+PROJECT_ROOT = utils.relative('..', '..')
+# Add all subdirectories of project, applications and lib to sys.path
 for subdirectory in ('projects', 'applications', 'lib'):
     full_path = os.path.join(PROJECT_ROOT, subdirectory)
     sys.path.insert(0, full_path)

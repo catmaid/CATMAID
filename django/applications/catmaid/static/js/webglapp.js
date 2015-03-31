@@ -2171,7 +2171,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
   this.attach = function(view, domElement) {
     domElement.CATMAID_view = view;
   
-    domElement.addEventListener('mousewheel', this.MouseWheel, false);
+    domElement.addEventListener('wheel', this.MouseWheel, false);
     domElement.addEventListener('mousemove', this.MouseMove, false);
     domElement.addEventListener('mouseup', this.MouseUp, false);
     domElement.addEventListener('mousedown', this.MouseDown, false);
@@ -2181,7 +2181,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
     domElement.CATMAID_view = null;
     delete domElement.CATMAID_view;
 
-    domElement.removeEventListener('mousewheel', this.MouseWheel, false);
+    domElement.removeEventListener('wheel', this.MouseWheel, false);
     domElement.removeEventListener('mousemove', this.MouseMove, false);
     domElement.removeEventListener('mouseup', this.MouseUp, false);
     domElement.removeEventListener('mousedown', this.MouseDown, false);

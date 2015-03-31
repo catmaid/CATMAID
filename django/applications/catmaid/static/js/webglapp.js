@@ -2212,7 +2212,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
       // The distance to the target does not make any difference for an
       // orthographic projection, the depth is fixed.
       var new_zoom = camera.zoom;
-      if (ev.wheelDelta > 0) {
+      if ((ev.deltaX + ev.deltaY) < 0) {
         new_zoom += 0.25;
       } else {
         new_zoom -= 0.25;

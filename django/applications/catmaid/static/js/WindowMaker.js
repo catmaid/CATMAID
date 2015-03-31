@@ -544,7 +544,6 @@ var WindowMaker = new function()
 
     var prev = document.createElement('input');
     prev.setAttribute("type", "button");
-    prev.setAttribute("id", "selection_table_prev");
     prev.setAttribute("value", "<");
     prev.onclick = ST.showPrevious.bind(ST);
     buttons.appendChild(prev);
@@ -566,7 +565,6 @@ var WindowMaker = new function()
 
     var annotate = document.createElement('input');
     annotate.setAttribute("type", "button");
-    annotate.setAttribute("id", "annotate_skeleton_list");
     annotate.setAttribute("value", "Annotate");
     annotate.style.marginLeft = '1em';
     annotate.onclick = ST.annotate_skeleton_list.bind(ST);

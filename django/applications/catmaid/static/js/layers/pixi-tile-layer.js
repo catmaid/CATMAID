@@ -276,7 +276,10 @@
         {displayName: 'Brightness', name: 'brightness', type: 'slider', range: [0, 3]},
         {displayName: 'Contrast', name: 'contrast', type: 'slider', range: [0, 3]},
         {displayName: 'Saturation', name: 'saturation', type: 'slider', range: [0, 3]}
-      ], this)
+      ], this),
+      'Color Transform': PixiTileLayer.FilterWrapper.bind(null, 'Color Transform', PIXI.ColorMatrixFilter, [
+        {displayName: 'RGBA Matrix', name: 'matrix', type: 'matrix', size: [4, 4]}
+      ], this),
     };
   };
 
@@ -387,6 +390,37 @@
           inputView.css('display', 'inline-block').css('margin', '0 0.5em');
           inputView.children('img').css('vertical-align', 'middle');
           paramSelect.append(inputView);
+          container.append(paramSelect);
+          break;
+
+        case 'matrix':
+          var mat = this.pixiFilter[param.name];
+          var matTable = $('<table />');
+          var setParam = this.setParam.bind(this, param.name);
+          var setMatrix = function () {
+            var newMat = [];
+            var inputInd = 0;
+            matTable.find('input').each(function () {
+              newMat[inputInd++] = $(this).val();
+            });
+            setParam(newMat);
+          };
+
+          for (var i = 0; i < param.size[0]; ++i) {
+            var row = $('<tr/>');
+            for (var j = 0; j < param.size[1]; ++j) {
+              var ind = i*param.size[1] + j;
+              var cell = $('<input type="number" step="0.1" value="' + mat[ind] + '"/>');
+              cell.change(setMatrix);
+              cell.css('width', '4em');
+              row.append($('<td/>').append(cell));
+            }
+            matTable.append(row);
+          }
+
+          var paramSelect = $('<div class="setting"/>');
+          paramSelect.append('<span>' + param.displayName + '</span>');
+          paramSelect.append(matTable);
           container.append(paramSelect);
           break;
       }

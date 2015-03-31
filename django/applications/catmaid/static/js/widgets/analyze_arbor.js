@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  ActiveSkeleton,
   ArborParser,
   fetchSkeletons,
   growlAlert,
@@ -135,7 +134,7 @@ AnalyzeArbor.prototype.getSelectedSkeletons = function() {
 };
 
 AnalyzeArbor.prototype.getSkeletonColor = function() {
-  return ActiveSkeleton.prototype.getSkeletonColor();
+  return CATMAID.ActiveSkeleton.prototype.getSkeletonColor();
 };
 
 AnalyzeArbor.prototype.hasSkeleton = function(skeleton_id) {

@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  ActiveSkeleton,
   countProperties,
   display_tracing_setup_dialog,
   Events,
@@ -47,7 +46,7 @@ var SkeletonAnnotations = {
   TYPE_NODE : "treenode",
   TYPE_CONNECTORNODE : "connector",
 
-  sourceView : new ActiveSkeleton(),
+  sourceView : new CATMAID.ActiveSkeleton(),
 
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",

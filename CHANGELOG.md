@@ -74,7 +74,7 @@ Review system:
 
 - New shading mode "synapse-free chunks". Has one parameter, the minimum amount
 of synapse-free cable to consider between two consecutive synapses, adjustable
-from tge "Shading Parameters" tab.
+from the "Shading Parameters" tab.
 
 - New shading mode "dendritic backbone". Depends on 'microtubules end' tags, or
 will approximate twigs by using the Strahler number entered in the "Shading

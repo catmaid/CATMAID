@@ -15,7 +15,7 @@ def get_version():
         p = subprocess.Popen("/usr/bin/git describe", cwd=os.path.dirname(dir),
                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, error) = p.communicate()
-        return "unknown" if error else out
+        return "unknown" if error else out.rstrip()
     except:
         return "unknown"
 

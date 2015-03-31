@@ -1,6 +1,7 @@
 # General Django settings for mysite project.
 
 import django.conf.global_settings as DEFAULT_SETTINGS
+import utils
 from pipelinefiles import *
 
 # A list of people who get code error notifications. They will get an email
@@ -188,6 +189,9 @@ PIPELINE_JS_COMPRESSOR = None
 # Don't wrap JS files into anonymous functions. Our code isn't ready for this,
 # yet.
 PIPELINE_DISABLE_WRAPPER = True
+
+# Make Git based version of CATMAID available as a settings field
+VERSION = utils.get_version()
 
 # FlyTEM rendering service. To activate add the following lines to your
 # settings.py file:

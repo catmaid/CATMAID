@@ -1,11 +1,8 @@
-from django import template
-from django.utils.safestring import SafeUnicode
+import catmaid
 
-import commands
-import subprocess
-import os
-import sys
-import re
+from django import template
+from django.conf import settings
+from django.utils.safestring import SafeUnicode
 
 register = template.Library()
 
@@ -65,14 +62,7 @@ def intersect(set1, set2):
 @register.simple_tag
 def catmaid_version():
     """
-    Return output of "git describe" executed in the directory of this file. If
-    this results in an error, "unknown" is returned.
+    Print the current Git commit of this CATMAID instance or "unknown" if the
+    current Git commit is not available.
     """
-    try:
-        dir = os.path.dirname(os.path.realpath(__file__))
-        p = subprocess.Popen("/usr/bin/git describe", cwd=os.path.dirname(dir),
-                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, error) = p.communicate()
-        return "unknown" if error else out
-    except:
-        return "unknown"
+    return settings.VERSION

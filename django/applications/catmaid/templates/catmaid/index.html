@@ -9,13 +9,11 @@
 
 		<script type="text/javascript">
 			var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
-			var IE = false;
 			var django_url = "{{ CATMAID_URL }}";
 		</script>
 
 		<!--[if gte IE 5]>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/excanvas/excanvas.js"></script>
-		<script type="text/javascript">var IE = true;</script>
 		<![endif]-->
 
 		{% compressed_css 'libraries' %}

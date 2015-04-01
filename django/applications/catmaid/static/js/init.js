@@ -3,10 +3,6 @@
 
 var global_bottom = 29;
 
-var input_fontsize; //!< fontsize input
-var input_fontcolourred; //!< fontcolour red input
-var input_fontcolourgreen; //!< fontcolour green input
-var input_fontcolourblue; //!< fontcolour blue input
 var requestQueue;
 var project;
 
@@ -988,8 +984,6 @@ var realInit = function()
 	CATMAID.statusBar = new CATMAID.Console();
 	document.body.appendChild( CATMAID.statusBar.getView() );
 
-	input_fontsize = document.getElementById( "fontsize" );
-
 	var a_url = document.getElementById( "a_url" );
 	a_url.onmouseover = function( e )
 	{
@@ -1090,13 +1084,13 @@ var realInit = function()
 
 	// the text-label toolbar
 
-	input_fontsize = new Input( "fontsize", 3, function( e ){ return true; }, 32 );
+	var input_fontsize = new Input( "fontsize", 3, function( e ){ return true; }, 32 );
 	document.getElementById( "input_fontsize" ).appendChild( input_fontsize.getView() );
-	input_fontcolourred = new Input( "fontcolourred", 3, function( e ){ return true; }, 255 );
+	var input_fontcolourred = new Input( "fontcolourred", 3, function( e ){ return true; }, 255 );
 	document.getElementById( "input_fontcolourred" ).appendChild( input_fontcolourred.getView() );
-	input_fontcolourgreen = new Input( "fontcolourgreen", 3, function( e ){ return true; }, 127 );
+	var input_fontcolourgreen = new Input( "fontcolourgreen", 3, function( e ){ return true; }, 127 );
 	document.getElementById( "input_fontcolourgreen" ).appendChild( input_fontcolourgreen.getView() );
-	input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
+	var input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
 	document.getElementById( "input_fontcolourblue" ).appendChild( input_fontcolourblue.getView() );
 
 	CATMAID.ui.registerEvent( "onresize", global_resize );

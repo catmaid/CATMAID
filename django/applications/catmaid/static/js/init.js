@@ -460,7 +460,7 @@ function openProjectStack( pid, sid, successFn, stackConstructor )
 				var stack = handle_openProjectStack(json, stackConstructor);
 				// Call success function, if any, if a stack was added
 				if (stack) {
-					CATMAID.tools.callIfFn(successFn);
+					CATMAID.tools.callIfFn(successFn, stack);
 				}
 			}, function(e) {
 				// Handle login errors

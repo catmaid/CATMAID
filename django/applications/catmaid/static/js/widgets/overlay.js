@@ -2157,7 +2157,8 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
     return;
   }
   if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type) {
-    if (this.switchingConnectorID === ob.id) {
+    if (this.switchingConnectorID === ob.id &&
+        this.switchingTreenodeID in this.nodes) {
       // Switch back to the terminal
       this.moveToAndSelectNode(this.nodes[this.switchingTreenodeID].id);
     } else {
@@ -2173,7 +2174,8 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
       }
     }
   } else if (SkeletonAnnotations.TYPE_NODE === ob.type) {
-    if (this.switchingTreenodeID === ob.id) {
+    if (this.switchingTreenodeID === ob.id &&
+        this.switchingConnectorID in this.nodes) {
       // Switch back to the connector
       this.moveToAndSelectNode(this.nodes[this.switchingConnectorID].id);
     } else {

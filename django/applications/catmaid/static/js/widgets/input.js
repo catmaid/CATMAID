@@ -93,7 +93,7 @@ name, size, onchange, defaultvalue) {
 
     var w = CATMAID.ui.getMouseWheel(e);
     if (w) {
-      if (w == MOUSE_WHEEL_UP) {
+      if (w > 0) {
         input.value = val - 1;
       } else {
         input.value = val + 1;

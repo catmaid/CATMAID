@@ -199,7 +199,7 @@
     // If zooming or changing z sections (not panning), attempt to preload
     // images to paint at once (but let regular code run for new stacks.)
     this._buffering = this.stack.z !== this.stack.old_z ||
-        tileInfo.zoom !== Math.max(0, Math.ceil(this.stack.old_s));
+                      this.stack.s !== this.stack.old_s;
 
     var to_buffer =
         (tileInfo.last_col - Math.max(0, tileInfo.first_col) + 1) *

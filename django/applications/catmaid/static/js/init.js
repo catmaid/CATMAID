@@ -915,6 +915,21 @@ var realInit = function()
 		}));
 	}
 
+	// If promises are missing, load a polyfill then try to init again.
+	if (!Modernizr.promises)
+	{
+		var script = document.createElement('script');
+		script.type = 'text/javascript';
+		script.src = STATIC_URL_JS + 'libs/promise-polyfill/es6-promise-2.0.1.min.js';
+		script.onload = function () {
+			window.ES6Promise.polyfill();
+			Modernizr.promises = true;
+			realInit();
+		};
+		document.head.appendChild(script);
+		return;
+	}
+
 	//! analyze the URL
 	var pid;
 	var sids = [];

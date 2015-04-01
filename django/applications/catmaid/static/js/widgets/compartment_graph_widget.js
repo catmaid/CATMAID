@@ -2012,7 +2012,7 @@ GroupGraph.prototype.loadSVGLibraries = function(callback) {
       var s = document.createElement('script');
       s.type = 'text/javascript';
       s.async = false;
-      s.src = django_url + 'static/libs/' + libs[i];
+      s.src = STATIC_URL_JS + 'libs/' + libs[i];
       var exec = false;
       s.onreadystatechange = function() {
         if (!exec && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete")) {

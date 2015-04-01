@@ -83,6 +83,40 @@ var WindowMaker = new function()
   };
 
   /**
+   * Create a general widget window for a widget instance that provides a widget
+   * configuration.
+   */
+  var createWidget = function(instance) {
+    var config = instance.getWidgetConfiguration();
+    var win = new CMWWindow(instance.getName());
+    var container = win.getFrame();
+    container.style.backgroundColor = "#ffffff";
+
+    // Create controls, if requested
+    var controls;
+    if (config.controlsID && config.createControls) {
+      var buttons = document.createElement("div");
+      buttons.setAttribute("id", config.controlsID);
+      buttons.setAttribute("class", "buttonpanel");
+      config.createControls.call(instance, buttons);
+      container.appendChild(buttons);
+    }
+
+    // Create content
+    var content = createContainer(config.contentID);
+    config.createContent.call(instance, content);
+    container.appendChild(content);
+
+    // Register to events
+    var destroy = instance.destroy ? instance.destroy.bind(instance) : undefined;
+    var resize = instance.resize ? instance.resize.bind(instance) : undefined;
+    addListener(win, content, config.controlsID, destroy, resize);
+    addLogic(win);
+
+    return win;
+  };
+
+  /**
    * Clones the given form into a dynamically created iframe and submits it
    * there. This can be used to store autocompletion information of a form that
    * actually isn't submitted (where e.g. an AJAX request is done manually).  A

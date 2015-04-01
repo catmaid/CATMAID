@@ -106,7 +106,6 @@ function login(
 			undefined,
 			loginCompletion );
 	}
-	return;
 }
 
 /**
@@ -171,8 +170,6 @@ function handle_login(status, text, xml, completionCallback) {
       completionCallback();
     }
   }
-
-  return;
 }
 
 /**
@@ -185,8 +182,6 @@ function logout() {
 
   CATMAID.ui.catchEvents("wait");
   requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
-
-  return;
 }
 
 /**
@@ -211,8 +206,6 @@ function handle_logout(status, text, xml) {
 	}
 
 	updateProjects();
-
-	return;
 }
 
 /**
@@ -288,7 +281,6 @@ function updateProjects(completionCallback) {
 				completionCallback();
 			}
 		});
-	return;
 }
 
 var cachedProjectsInfo = null;
@@ -324,7 +316,6 @@ function handle_updateProjects(status, text, xml) {
 		}
 	}
 	CATMAID.ui.releaseEvents();
-	return;
 }
 
 function updateProjectListMessage(text) {
@@ -376,7 +367,6 @@ function getStackMenuInfo(project_id, callback) {
                 alert("Sorry, the stacks for the current project couldn't be retrieved.");
             }
         });
-    return;
 }
 
 /**
@@ -494,8 +484,6 @@ function openProjectStack( pid, sid, successFn, stackConstructor )
 				}
 				return false;
 			}));
-
-	return;
 }
 
 /**
@@ -633,8 +621,6 @@ function check_messages() {
           msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
         }
       }));
-
-  return;
 }
 
 /**
@@ -643,7 +629,6 @@ function check_messages() {
 
 function get_messages() {
   requestQueue.register(django_url + 'messages/list', 'GET', undefined, handle_message);
-  return;
 }
 
 /**
@@ -712,8 +697,6 @@ function handle_message( status, text, xml )
 	}
 	
 	msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
-	
-	return;
 }
 
 /**
@@ -724,7 +707,6 @@ function read_message(id) {
   requestQueue.register(django_url + 'messages/mark_read', 'POST', {
     id: id
   }, null);
-  return;
 }
 
 /**
@@ -732,7 +714,6 @@ function read_message(id) {
  */
 function dataviews() {
 	requestQueue.register(django_url + 'dataviews/list', 'GET', undefined, handle_dataviews);
-	return;
 }
 
 function handle_dataviews(status, text, xml) {
@@ -771,8 +752,6 @@ function handle_dataviews(status, text, xml) {
 			dataview_menu.update( e );
 		}
 	}
-
-	return;
 }
 
 function switch_dataview( view_id, view_type ) {
@@ -823,7 +802,6 @@ function switch_dataview( view_id, view_type ) {
 function load_default_dataview() {
 	requestQueue.register(django_url + 'dataviews/default',
 		'GET', undefined, handle_load_default_dataview);
-	return;
 }
 
 function handle_load_default_dataview(status, text, xml) {
@@ -847,7 +825,6 @@ function handle_load_default_dataview(status, text, xml) {
 function load_dataview( view_id ) {
 	requestQueue.register(django_url + 'dataviews/show/' + view_id,
 		'GET', undefined, handle_load_dataview);
-	return;
 }
 
 function handle_load_dataview(status, text, xml) {
@@ -880,8 +857,6 @@ function handle_load_dataview(status, text, xml) {
 			error_iframe.contentDocument.write( text );
 		}
 	}
-
-	return;
 }
 
 /*
@@ -1144,8 +1119,6 @@ var realInit = function()
   CATMAID.statusBar.setBottom();
 
 	window.onresize();
-
-	return;
 };
 
 /**

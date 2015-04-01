@@ -88,7 +88,7 @@ function login(
 		handle_login( status, text, xml, completionCallback );
 	};
 	if ( msg_timeout ) window.clearTimeout( msg_timeout );
-	
+
 	CATMAID.ui.catchEvents( "wait" );
 	if ( account || password ) {
 		// Attempt to login.
@@ -144,7 +144,7 @@ function handle_login(status, text, xml, completionCallback) {
           note: "",
         }
       });
-      
+
     } else if (e.error) {
       alert(e.error);
     }
@@ -195,9 +195,9 @@ function handle_logout(status, text, xml) {
 	document.getElementById( "login_box" ).style.display = "block";
 	document.getElementById( "logout_box" ).style.display = "none";
 	document.getElementById( "session_box" ).style.display = "none";
-	
+
 	document.getElementById( "message_box" ).style.display = "none";
-	
+
 	if ( project && project.id ) project.setTool( new Navigator() );
 
 	if (status == 200 && text) {
@@ -638,7 +638,7 @@ function handle_message( status, text, xml )
 {
 	if ( !session )
 		return;
-	
+
 	if ( status == 200 && text )
 	{
 		var e = JSON.parse(text);
@@ -651,9 +651,9 @@ function handle_message( status, text, xml )
 			var message_container = document.getElementById( "message_container" );
 			if ( !( typeof message_container === "undefined" || message_container === null ) )
 			{
-				//! remove old messages	
+				//! remove old messages
 				while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
-				
+
 				//! add new messages
 				var n = 0;
 				for ( var i in e )
@@ -667,7 +667,7 @@ function handle_message( status, text, xml )
 							else
 								notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications.png');
 						}
-						
+
 						delete e [ i ];
 					} else {
 						e[ i ].action = django_url + 'messages/mark_read?id=' + e[ i ].id;
@@ -695,7 +695,7 @@ function handle_message( status, text, xml )
 
 		}
 	}
-	
+
 	msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
 }
 
@@ -867,7 +867,7 @@ function global_resize( e )
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
 	var height = Math.max( 0, CATMAID.ui.getFrameHeight() - top - global_bottom );
 	var width = CATMAID.ui.getFrameWidth();
-	
+
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
 	content.style.width = width + "px";
@@ -922,7 +922,7 @@ var realInit = function()
 
 	var account;
 	var password;
-	
+
 	var values = CATMAID.tools.parseQuery(window.location.search);
 	if ( values )
 	{
@@ -962,7 +962,7 @@ var realInit = function()
 			if ( values[ "xp" ] ) xp = parseInt( values[ "xp" ] );
 			if ( isNaN( xp ) ) xp = undefined;
 			if ( values[ "tool" ] ) inittool = values[ "tool"];
-			
+
 			for ( var i = 0; values[ "sid" + i ]; ++i )
 			{
 				var sid = parseInt( values[ "sid" + i ] );
@@ -982,7 +982,7 @@ var realInit = function()
 				}
 			}
 		}
-		
+
 		if ( values[ "account" ] && values[ "password" ] )
 		{
 			account = values[ "account" ];
@@ -994,19 +994,19 @@ var realInit = function()
 			current_dataview = parseInt( values["dataview"] );
 		if ( isNaN( current_dataview ) ) current_dataview = undefined;
 	}
-	
+
 	CATMAID.statusBar = new CATMAID.Console();
 	document.body.appendChild( CATMAID.statusBar.getView() );
-	
+
 	input_fontsize = document.getElementById( "fontsize" );
-	
+
 	var a_url = document.getElementById( "a_url" );
 	a_url.onmouseover = function( e )
 	{
 		this.href = project.createURL();
 		return true;
 	};
-	
+
 	document.getElementById( "login_box" ).style.display = "block";
 	document.getElementById( "logout_box" ).style.display = "none";
 	document.getElementById( "session_box" ).style.display = "none";
@@ -1032,20 +1032,20 @@ var realInit = function()
 	document.getElementById( "toolbox_data" ).style.display = "none";
   document.getElementById( "toolbox_segmentation" ).style.display = "none";
 	document.getElementById( "toolbox_show" ).style.display = "none";
-	
+
 	document.getElementById( "account" ).onkeydown = login_oninputreturn;
 	document.getElementById( "password" ).onkeydown = login_oninputreturn;
 
 	dataview_menu = new Menu();
 	document.getElementById( "dataview_menu" ).appendChild( dataview_menu.getView() );
 	dataviews();
-	
+
 	project_menu = new Menu();
 	document.getElementById( "project_menu" ).appendChild( project_menu.getView() );
-	
+
 	stack_menu = new Menu();
 	document.getElementById( "stack_menu" ).appendChild( stack_menu.getView() );
-	
+
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 
@@ -1097,9 +1097,9 @@ var realInit = function()
 			}
 		}
 	});
-	
+
 	// the text-label toolbar
-	
+
 	input_fontsize = new Input( "fontsize", 3, function( e ){ return true; }, 32 );
 	document.getElementById( "input_fontsize" ).appendChild( input_fontsize.getView() );
 	input_fontcolourred = new Input( "fontcolourred", 3, function( e ){ return true; }, 255 );
@@ -1108,9 +1108,9 @@ var realInit = function()
 	document.getElementById( "input_fontcolourgreen" ).appendChild( input_fontcolourgreen.getView() );
 	input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
 	document.getElementById( "input_fontcolourblue" ).appendChild( input_fontcolourblue.getView() );
-	
+
 	CATMAID.ui.registerEvent( "onresize", global_resize );
-	
+
 	rootWindow = new CMWRootNode();
 	CATMAID.ui.registerEvent( "onresize", resize );
 
@@ -1129,19 +1129,19 @@ var resize = function( e )
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
 	var height = Math.max( 0, CATMAID.ui.getFrameHeight() - top - global_bottom );
 	var width = CATMAID.ui.getFrameWidth();
-	
+
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
 	content.style.width = width + "px";
 	content.style.height = height + "px";
-	
+
 	rootFrame = rootWindow.getFrame();
 	rootFrame.style.top = top + "px";
 	rootFrame.style.width = CATMAID.UI.getFrameWidth() + "px";
 	rootFrame.style.height = height + "px";
-	
+
 	rootWindow.redraw();
-	
+
 	return true;
 };
 
@@ -1156,7 +1156,7 @@ function showMessages()
 		if ( messageContext.parentNode )
 			messageContext.parentNode.removeChild( messageContext );
 		messageContent.appendChild( messageContext );
-		
+
 		messageWindow.addListener(
 			function( callingWindow, signal )
 			{
@@ -1179,19 +1179,19 @@ function showMessages()
 				}
 				return true;
 			} );
-	
+
 		/* be the first window */
 		if ( rootWindow.getFrame().parentNode != document.body )
 		{
 			document.body.appendChild( rootWindow.getFrame() );
 			document.getElementById( "content" ).style.display = "none";
 		}
-		
+
 		if ( rootWindow.getChild() === null )
 			rootWindow.replaceChild( messageWindow );
 		else
 			rootWindow.replaceChild( new CMWVSplitNode( messageWindow, rootWindow.getChild() ) );
 	}
-			
+
 	messageWindow.focus();
 }

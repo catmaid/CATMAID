@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  countProperties,
   display_tracing_setup_dialog,
   Events,
   growlAlert,
@@ -2163,10 +2162,10 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
       this.moveToAndSelectNode(this.nodes[this.switchingTreenodeID].id);
     } else {
       // Go to the postsynaptic terminal if there is only one
-      if (1 === countProperties(ob.postgroup)) {
+      if (1 === Object.keys(ob.postgroup).length) {
         this.moveToAndSelectNode(this.nodes[Object.keys(ob.postgroup)[0]].id);
       // Otherwise, go to the presynaptic terminal if there is only one
-      } else if (1 === countProperties(ob.pregroup)) {
+      } else if (1 === Object.keys(ob.pregroup).length) {
         this.moveToAndSelectNode(this.nodes[Object.keys(ob.pregroup)[0]].id);
       } else {
         growlAlert("Oops", "Don't know which terminal to switch to");

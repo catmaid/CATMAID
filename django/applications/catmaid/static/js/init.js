@@ -47,16 +47,6 @@ function mayView() {
   return checkPermission('can_annotate') || checkPermission('can_browse');
 }
 
-// From: http://stackoverflow.com/q/956719/223092
-function countProperties(obj) {
-  var count = 0;
-  for(var prop in obj) {
-    if(obj.hasOwnProperty(prop))
-      ++count;
-  }
-  return count;
-}
-
 /**
  * queue a login-request on pressing return
  * to be used as onkeydown-handler in the account and password input fields

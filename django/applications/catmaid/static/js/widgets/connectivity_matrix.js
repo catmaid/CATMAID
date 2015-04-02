@@ -153,10 +153,8 @@
         row.appendChild(th);
         for (var c=0; c<nCols; ++c) {
           var connections = m[r][c];
-          var tdIn = document.createElement('td');
-          var tdOut = document.createElement('td');
-          tdIn.appendChild(document.createTextNode(connections[0]));
-          tdOut.appendChild(document.createTextNode(connections[1]));
+          var tdIn = createSynapseCountCell(connections[0]);
+          var tdOut = createSynapseCountCell(connections[1]);
           row.appendChild(tdIn);
           row.appendChild(tdOut);
         }
@@ -165,5 +163,16 @@
       $content.append(table);
     }).bind(this));
   };
+
+  /**
+   * Create a synapse count table cell.
+   */
+  function createSynapseCountCell(count) {
+    var td = document.createElement('td');
+    if (count > 0) {
+      td.appendChild(document.createTextNode(count));
+    }
+    return td;
+  }
 
 })(CATMAID);

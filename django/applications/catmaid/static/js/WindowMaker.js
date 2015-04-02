@@ -539,6 +539,10 @@ var WindowMaker = new function()
     return win;
   };
 
+  var createConnectivityMatrixWindow = function(instance) {
+    var CM = instance ? instance : new CATMAID.ConnectivityMatrixWidget();
+    return createWidget(CM);
+  };
 
   var createStagingListWindow = function( instance, webglwin, webglwin_name ) {
 
@@ -3082,6 +3086,7 @@ var WindowMaker = new function()
     "settings": createSettingsWindow,
     "analyze-arbor": createAnalyzeArbor,
     "neuron-dendrogram": createNeuronDendrogram,
+    "connectivity-matrix": createConnectivityMatrixWindow,
   };
 
   /** If the window for the given name is already showing, just focus it.

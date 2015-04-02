@@ -1,5 +1,12 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+/* global
+  Arbor,
+  CATMAID,
+  growlAlert,
+  project,
+  requestQueue
+  */
 
 "use strict";
 
@@ -92,7 +99,7 @@ AnnotationCache.prototype.update = function(callback) {
               status + ") " + "with error message:\n" + text);
         } else {
           if (e.error) {
-            new ErrorDialog(e.error, e.detail).show();
+            new CATMAID.ErrorDialog(e.error, e.detail).show();
           } else {
             // Empty cache
             this.annotation_ids = {};
@@ -532,7 +539,7 @@ SVGUtil.insertMultipleBarChart = function(
 			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 	// Define the data domains/axes
-	var x0 = d3.scale.ordinal().rangeRoundBands([0, width], .1);
+	var x0 = d3.scale.ordinal().rangeRoundBands([0, width], 0.1);
 	var x1 = d3.scale.ordinal();
 	var y = d3.scale.linear().range([height, 0]);
 	var xAxis = d3.svg.axis().scale(x0)
@@ -662,7 +669,7 @@ SVGUtil.insertMultipleBarChart2 = function(
 
   var x = d3.scale.ordinal()
     .domain(d3.range(m))
-    .rangeRoundBands([0, width], .08);
+    .rangeRoundBands([0, width], 0.08);
 
   var y = d3.scale.linear()
     .domain([0, yGroupMax])
@@ -709,7 +716,7 @@ SVGUtil.insertMultipleBarChart2 = function(
         .style("text-anchor", "end")
         .attr("dx", "-.8em")
         .attr("dy", ".15em")
-        .attr("transform", function(d) { return "rotate(-65)" });
+        .attr("transform", function(d) { return "rotate(-65)"; });
   }
 
 	SVGUtil.setAxisProperties(callx);
@@ -966,7 +973,7 @@ SVGUtil.reduceStylePrecision = function(svg, precision)
     if (w.length > 0) {
       $(e).css(a, parseFloat(w).toFixed(d));
     }
-  };
+  }
 
   /**
    * Create a function to update the precision of the stroke-width style
@@ -1011,7 +1018,7 @@ SVGUtil.stripStyleProperties = function(svg, properties)
       if (val === undefined || $(e).css(p) == val) {
         $(e).css(p, "");
       }
-    }
+    };
 
     /**
      * Remove all unwanted styles from an element.
@@ -1096,7 +1103,7 @@ SVGUtil.map = function(root, fn)
     }
     node = next;
   }
-}
+};
 
 /**
  * Adds a CDATA section to the given XML document that contains the given

@@ -18,7 +18,7 @@
 RequestQueue = function()
 {
   var self = this;
-  var queue = new Array();		//!< queue of waiting requests
+  var queue = [];		//!< queue of waiting requests
   var xmlHttp;
   var spinner = null;
 
@@ -29,10 +29,10 @@ RequestQueue = function()
   else
   {
     try { xmlHttp = new ActiveXObject( "Msxml2.XMLHTTP" ); }
-    catch( e )
+    catch( error )
     {
       try { xmlHttp = new ActiveXObject( "Microsoft.XMLHTTP" ); }
-      catch( e ){ xmlHttp = null; }
+      catch( error2 ){ xmlHttp = null; }
     }
   }
 
@@ -180,7 +180,7 @@ RequestQueue = function()
       default:
   var request = "";
   var encoded = encodeObject( d );
-  if (encoded != "") {
+  if (encoded !== "") {
     request = "?" + encoded;
   }
         queue.push(

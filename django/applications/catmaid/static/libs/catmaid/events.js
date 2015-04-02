@@ -24,6 +24,7 @@ var Events = {
      * in the callback), otherwise the event object is used as context.
      */
     on: function(event, callback, context) {
+      /* jshint expr:true */
       this.hasOwnProperty('events') || (this.events = {});
       this.events.hasOwnProperty(event) || (this.events[event] = []);
       this.events[event].push([callback, context]);

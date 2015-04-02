@@ -1,5 +1,8 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+/* global
+  requestQueue
+  */
 
 /** The queue of submitted requests is reset if any returns an error.
  *  The returned function accepts null URL as argument, which signals
@@ -78,7 +81,7 @@ var submitterFn = function() {
     lastResult = undefined;
 
     // Call all callbacks
-    var handled = false
+    var handled = false;
     var callbackError;
     try {
       callbacks.forEach(function(errCallback, i) {

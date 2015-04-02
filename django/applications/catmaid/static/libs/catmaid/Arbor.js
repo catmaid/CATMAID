@@ -1588,7 +1588,7 @@ Arbor.prototype.nearestCommonAncestor = function(nodes) {
       n_nodes = open.length,
       seen = {};
 
-  if (0 == n_nodes) return null;
+  if (0 === n_nodes) return null;
   if (1 === n_nodes) return open[0];
 
   for (var i=0; i<n_nodes; ++i) {

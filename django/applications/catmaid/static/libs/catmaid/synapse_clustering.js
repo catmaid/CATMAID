@@ -223,7 +223,7 @@ SynapseClustering.prototype.densityHillMap = function() {
     // both already have a density hill index.
     // Note that partitions have at least a length of 2, by definition.
     var dhm = density_hill_map[partition[index -1]];
-    var density_hill_index = undefined === dhm ? density_hill_map[partition[index]] : dhm;
+    var density_hill_index = (undefined === dhm) ? density_hill_map[partition[index]] : dhm;
 
     for (; index > -1; --index) {
       var treenode_id = partition[index];

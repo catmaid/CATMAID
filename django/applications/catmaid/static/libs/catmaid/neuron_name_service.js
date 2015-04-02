@@ -1,3 +1,9 @@
+/* global
+  project,
+  requestQueue,
+  session
+  */
+
 "use strict";
 
 /**
@@ -374,14 +380,14 @@ var NeuronNameService = (function()
               if (!managedSkeletons[skid]) {
                 return;
               }
-              var n = name(skid)
-              if (appendSkeletonId) { n += " #" + skid; };
+              var n = name(skid);
+              if (appendSkeletonId) { n += " #" + skid; }
               managedSkeletons[skid].name = n;
             });
           } else {
             for (var skid in managedSkeletons) {
-              var n = name(skid)
-              if (appendSkeletonId) { n += " #" + skid; };
+              var n = name(skid);
+              if (appendSkeletonId) { n += " #" + skid; }
               managedSkeletons[skid].name = n;
             }
           }

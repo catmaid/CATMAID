@@ -8,9 +8,9 @@ libpq-dev
 libgraphicsmagick++1-dev
 graphicsmagick
 libhdf5-serial-dev
-libboost-dev
+libboost1.48-dev
 virtualenvwrapper
-libboost-python-dev
+libboost-python1.48-dev
 uuid-dev
 libxml2-dev
 libxslt1-dev

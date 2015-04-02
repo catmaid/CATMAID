@@ -379,6 +379,16 @@ var tracingWindowActions = [
         }
     }),
 
+  new Action({
+    helpText: "Connectivity Matrix",
+    buttonID: "data_button_connectivity",
+    buttonName: 'adj_matrix',
+    run: function (e) {
+        WindowMaker.create('connectivity-matrix');
+        return true;
+    }
+  }),
+
 
 /*    new Action({
         helpText: "Adjacency Matrix widget",

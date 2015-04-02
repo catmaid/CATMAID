@@ -10,7 +10,7 @@
     this.matrix = new CATMAID.ConnectivityMatrix();
     this.rowDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Rows");
     this.colDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Columns");
-  }
+  };
 
   ConnectivityMatrixWidget.prototype = {};
   $.extend(ConnectivityMatrixWidget.prototype, new InstanceRegistry());
@@ -93,7 +93,7 @@
         this.content = container;
         this.refresh();
       }
-    }
+    };
   };
 
   /**

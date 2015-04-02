@@ -140,6 +140,7 @@
         var th = document.createElement('th');
         th.appendChild(document.createTextNode(
               this.colDimension.orderedSkeletonIDs[c]));
+        th.setAttribute('colspan', 2);
         colHeader.appendChild(th);
       }
       // Add row headers and connectivity matrix rows
@@ -152,10 +153,12 @@
         row.appendChild(th);
         for (var c=0; c<nCols; ++c) {
           var connections = m[r][c];
-          var td = document.createElement('td');
-          td.appendChild(document.createTextNode(
-                connections[0] + '|' + connections[1]));
-          row.appendChild(td);
+          var tdIn = document.createElement('td');
+          var tdOut = document.createElement('td');
+          tdIn.appendChild(document.createTextNode(connections[0]));
+          tdOut.appendChild(document.createTextNode(connections[1]));
+          row.appendChild(tdIn);
+          row.appendChild(tdOut);
         }
       }
 

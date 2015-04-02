@@ -100,4 +100,8 @@ QUnit.test('Arbor.js test', function( assert ) {
 
   assert.propEqual(strahler2, expected_result2,
       "The returned Strahler indexes for the second neuron are correct.");
+
+  // Test neighbors
+  assert.deepEqual(arbor1.neighbors(node(1)).map(Number).sort(), [0, 2, 3],
+      "The neighbors of a branch node are correct.");
 });

@@ -438,12 +438,12 @@ Arbor.prototype.neighbors = function(node) {
   var edges = this.edges,
       children = this.childrenArray(),
       paren = this.edges[node],
-      neighbors = undefined === paren ? [] : [paren];
+      neighbors = (undefined === paren) ? [] : [paren];
   for (var i=0; i<children.length; ++i) {
     var child = children[i];
-    if (edges[child] === node) a.push(child);
+    if (edges[child] === node) neighbors.push(child);
   }
-  return a;
+  return neighbors;
 };
 
 /** Return a new Arbor that has all nodes in the array of nodes to preserve,

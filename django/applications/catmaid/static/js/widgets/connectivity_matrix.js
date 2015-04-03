@@ -44,6 +44,7 @@
    */
   ConnectivityMatrixWidget.prototype.getWidgetConfiguration = function() {
     return {
+      class: 'connectivity_matrix',
       controlsID: 'connectivity_matrix_controls' + this.widgetID,
       contentID: 'connectivity_matrix' + this.widgetID,
 

@@ -153,32 +153,54 @@
         }
         // Add row headers and connectivity matrix rows
         for (var r=0; r<nRows; ++r) {
+          var rowSkid = this.rowDimension.orderedSkeletonIDs[r];
           var row = document.createElement('tr');
           table.appendChild(row);
           var th = document.createElement('th');
-          th.appendChild(document.createTextNode(nns.getName(
-                  this.rowDimension.orderedSkeletonIDs[r])));
+          th.appendChild(document.createTextNode(nns.getName(rowSkid)));
           row.appendChild(th);
           for (var c=0; c<nCols; ++c) {
+            var colSkid = this.colDimension.orderedSkeletonIDs[c];
             var connections = m[r][c];
-            var tdIn = createSynapseCountCell(connections[0]);
-            var tdOut = createSynapseCountCell(connections[1]);
+            var tdIn = createSynapseCountCell(rowSkid, colSkid, connections[0]);
+            var tdOut = createSynapseCountCell(colSkid, rowSkid, connections[1]);
             row.appendChild(tdIn);
             row.appendChild(tdOut);
           }
         }
         $content.append(table);
+
+        // Add a handler for openening connector selections for individual partners
+        $('a[partnerID]', table).click(function () {
+          var sourceID = $(this).attr('sourceID');
+          var partnerID = $(this).attr('partnerID');
+          if (sourceID && partnerID) {
+            ConnectorSelection.show_shared_connectors(sourceID, [partnerID],
+               "postsynaptic_to");
+          } else {
+            CATMAID.error("Could not find partner or source ID!");
+          }
+
+          return true;
+        });
       }).bind(this));
   };
 
   /**
    * Create a synapse count table cell.
    */
-  function createSynapseCountCell(count) {
+  function createSynapseCountCell(sourceID, partnerID, count) {
     var td = document.createElement('td');
     td.setAttribute('class', 'syncount');
     if (count > 0) {
-      td.appendChild(document.createTextNode(count));
+      // Create a links that will open a connector selection when clicked. The
+      // handler to do this is created separate to only require one handler.
+      var a = document.createElement('a');
+      td.appendChild(a);
+      a.appendChild(document.createTextNode(count));
+      a.setAttribute('href', '#');
+      a.setAttribute('sourceID', sourceID);
+      a.setAttribute('partnerID', partnerID);
     } else {
       // Make a hidden span including the zero for semantic clarity and table exports.
       var s = document.createElement('span');

@@ -134,6 +134,7 @@
       var m = this.matrix.get();
       // Create table representation for connectivity matrix
       var table = document.createElement('table');
+      table.setAttribute('class', 'partner_table');
       // Add column header, prepend one blank cell for row headers
       var colHeader = table.appendChild(document.createElement('tr'));
       colHeader.appendChild(document.createElement('th'));
@@ -170,6 +171,7 @@
    */
   function createSynapseCountCell(count) {
     var td = document.createElement('td');
+    td.setAttribute('class', 'syncount');
     if (count > 0) {
       td.appendChild(document.createTextNode(count));
     }

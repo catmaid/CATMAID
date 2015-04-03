@@ -91,6 +91,9 @@ var WindowMaker = new function()
     var win = new CMWWindow(instance.getName());
     var container = win.getFrame();
     container.style.backgroundColor = "#ffffff";
+    if (config.class) {
+      container.setAttribute('class', config.class);
+    }
 
     // Create controls, if requested
     var controls;

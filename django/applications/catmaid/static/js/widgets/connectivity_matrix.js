@@ -179,6 +179,12 @@
     td.setAttribute('class', 'syncount');
     if (count > 0) {
       td.appendChild(document.createTextNode(count));
+    } else {
+      // Make a hidden span including the zero for semantic clarity and table exports.
+      var s = document.createElement('span');
+      td.appendChild(s);
+      s.appendChild(document.createTextNode(count));
+      s.style.display = 'none';
     }
     return td;
   }

@@ -467,6 +467,30 @@ div#classification_graph_object img.roiimage {
   padding: .2em 1em;
 }
 
+.partner_table {
+  padding: 3px;
+  border-collapse: collapse;
+  border: 1px solid black;
+}
+
+.partner_table td,
+.partner_table th {
+  border: 1px solid black;
+}
+
+.partner_table thead input {
+  width: auto;
+  margin-right: 12px;
+}
+
+.partner_table .syncount {
+  text-align: center;
+}
+
+.partner_table tfoot {
+  color: grey;
+}
+
 .connectivity_widget table {
   padding: 3px;
   border-collapse: collapse;
@@ -565,24 +589,6 @@ div#classification_graph_object img.roiimage {
   border: 1px solid black;
   width: 100%;
   margin-bottom: 1em;
-}
-
-.connectivity_widget .partner_table td,
-.connectivity_widget .partner_table th {
-  border: 1px solid black;
-}
-
-.connectivity_widget .partner_table thead input {
-  width: auto;
-  margin-right: 12px;
-}
-
-.connectivity_widget .partner_table .syncount {
-  text-align: center;
-}
-
-.connectivity_widget .partner_table tfoot {
-  color: grey;
 }
 
 .connectivity_widget a {

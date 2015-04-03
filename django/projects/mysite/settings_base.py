@@ -209,3 +209,9 @@ PROJECT_ROOT = utils.relative('..', '..')
 for subdirectory in ('projects', 'applications', 'lib'):
     full_path = os.path.join(PROJECT_ROOT, subdirectory)
     sys.path.insert(0, full_path)
+
+# In order to make Django work with the unmanaged models from djsopnet in tests,
+# we use a custom testing runner to detect when running in a testing
+# environment. The custom PostgreSQL database wrapper uses this flag to change
+# its behavior.
+TEST_RUNNER = 'custom_testrunner.TestSuiteRunner'

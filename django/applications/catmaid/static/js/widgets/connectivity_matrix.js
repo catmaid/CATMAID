@@ -29,6 +29,7 @@
    * Handle destruction of widget.
    */
   ConnectivityMatrixWidget.prototype.destroy = function() {
+    NeuronNameService.getInstance().unregister(this);
     this.content = null;
     this.rowDimension.destroy();
     this.colDimension.destroy();
@@ -127,43 +128,47 @@
       return;
     }
 
-    // Update connectivity matrix
+    // Update connectivity matrix and make sure all currently looked at
+    // skeletons are known to the neuron name service.
+    var nns = NeuronNameService.getInstance();
     this.matrix.setRowSkeletonIDs(this.rowDimension.orderedSkeletonIDs);
     this.matrix.setColumnSkeletonIDs(this.colDimension.orderedSkeletonIDs);
-    this.matrix.refresh().then((function() {
-      var m = this.matrix.get();
-      // Create table representation for connectivity matrix
-      var table = document.createElement('table');
-      table.setAttribute('class', 'partner_table');
-      // Add column header, prepend one blank cell for row headers
-      var colHeader = table.appendChild(document.createElement('tr'));
-      colHeader.appendChild(document.createElement('th'));
-      for (var c=0; c<nCols; ++c) {
-        var th = document.createElement('th');
-        th.appendChild(document.createTextNode(
-              this.colDimension.orderedSkeletonIDs[c]));
-        th.setAttribute('colspan', 2);
-        colHeader.appendChild(th);
-      }
-      // Add row headers and connectivity matrix rows
-      for (var r=0; r<nRows; ++r) {
-        var row = document.createElement('tr');
-        table.appendChild(row);
-        var th = document.createElement('th');
-        th.appendChild(document.createTextNode(
-              this.rowDimension.orderedSkeletonIDs[r]));
-        row.appendChild(th);
+    this.matrix.refresh()
+      .then(nns.registerAll.bind(nns, this, this.rowDimension.getSelectedSkeletonModels()))
+      .then(nns.registerAll.bind(nns, this, this.colDimension.getSelectedSkeletonModels()))
+      .then((function() {
+        var m = this.matrix.get();
+        // Create table representation for connectivity matrix
+        var table = document.createElement('table');
+        table.setAttribute('class', 'partner_table');
+        // Add column header, prepend one blank cell for row headers
+        var colHeader = table.appendChild(document.createElement('tr'));
+        colHeader.appendChild(document.createElement('th'));
         for (var c=0; c<nCols; ++c) {
-          var connections = m[r][c];
-          var tdIn = createSynapseCountCell(connections[0]);
-          var tdOut = createSynapseCountCell(connections[1]);
-          row.appendChild(tdIn);
-          row.appendChild(tdOut);
+          var th = document.createElement('th');
+          th.appendChild(document.createTextNode(nns.getName(
+                this.colDimension.orderedSkeletonIDs[c])));
+          th.setAttribute('colspan', 2);
+          colHeader.appendChild(th);
         }
-      }
-
-      $content.append(table);
-    }).bind(this));
+        // Add row headers and connectivity matrix rows
+        for (var r=0; r<nRows; ++r) {
+          var row = document.createElement('tr');
+          table.appendChild(row);
+          var th = document.createElement('th');
+          th.appendChild(document.createTextNode(nns.getName(
+                  this.rowDimension.orderedSkeletonIDs[r])));
+          row.appendChild(th);
+          for (var c=0; c<nCols; ++c) {
+            var connections = m[r][c];
+            var tdIn = createSynapseCountCell(connections[0]);
+            var tdOut = createSynapseCountCell(connections[1]);
+            row.appendChild(tdIn);
+            row.appendChild(tdOut);
+          }
+        }
+        $content.append(table);
+      }).bind(this));
   };
 
   /**

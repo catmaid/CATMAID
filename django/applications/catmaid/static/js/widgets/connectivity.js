@@ -432,10 +432,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     a.appendChild(document.createTextNode(NeuronNameService.getInstance().getName(skeleton_id)));
     a.setAttribute('href', '#');
     a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
-    a.onclick = function() {
-      TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
-      return false;
-    };
+    a.setAttribute('data-skeleton-id', skeleton_id);
     return a;
   };
 
@@ -1126,6 +1123,13 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   var nSkeletons = Object.keys(this.skeletons).length;
   add_select_all_fn(this, 'up', table_incoming, nSkeletons);
   add_select_all_fn(this, 'down', table_outgoing, nSkeletons);
+
+  // Add handler for neuron name clicks
+  content.on('click', 'a[data-skeleton-id]', function() {
+    var skeletonId = this.dataset.skeletonId;
+    TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+    return false;
+  });
 
   /**
    * Return a quoted string representation of table cell content.

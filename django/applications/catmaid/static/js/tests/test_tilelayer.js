@@ -11,7 +11,7 @@ QUnit.test('Tile layer test', function (assert) {
   }
 
   var stack = create_stack("Test Stack", Stack.ORIENTATION_XY);
-  var tileSource = getTileSource(1, 'fake', 'png');
+  var tileSource = CATMAID.getTileSource(1, 'fake', 'png');
   var tileWidth = 10;
   var tileHeight = 12;
   var tilelayer = new CATMAID.TileLayer("Test TileLayer", stack,

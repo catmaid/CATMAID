@@ -516,8 +516,8 @@ function handle_openProjectStack( e, stackConstructor )
 
   document.getElementById( "toolbox_project" ).style.display = "block";
 
-  var tilesource = getTileSource( e.tile_source_type, e.image_base,
-      e.file_extension );
+  var tilesource = CATMAID.getTileSource(e.tile_source_type,
+      e.image_base, e.file_extension);
   var tilelayerConstructor = userprofile.prefer_webgl_layers ? CATMAID.PixiTileLayer : CATMAID.TileLayer;
   var tilelayer = new tilelayerConstructor(
       "Image data",

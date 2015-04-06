@@ -3,6 +3,8 @@
 
 (function(CATMAID) {
 
+  "use strict";
+
   /**
    * Creates a new tile source, based on a source type.
    */

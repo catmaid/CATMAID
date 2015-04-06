@@ -192,7 +192,7 @@
       this.getTileURL = function( project, stack, baseName,
           tileWidth, tileHeight, col, row, zoom_level )
       {
-          return baseURL + "/" + tileWidth + "_" + tileHeight + "/" + col * tileWidth + "_" + 
+          return baseURL + tileWidth + "_" + tileHeight + "/" + col * tileWidth + "_" +
               row * tileHeight + "_" + stack.z + "/" + fileExtension;
       };
 

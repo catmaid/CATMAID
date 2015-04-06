@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8">
     <title>CATMAID front-end tests (using QUnit)---to be run with manage.py testerver</title>
-    <link rel="stylesheet" href="//code.jquery.com/qunit/qunit-1.17.1.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}js/tests/libs/qunit-1.17.1.css">
 
     {% for f in JS_FILES %}
       {% compressed_js f %}
@@ -14,7 +14,7 @@
   <body>
     <div id="qunit"></div>
     <div id="qunit-fixture"></div>
-    <script src="//code.jquery.com/qunit/qunit-1.17.1.js"></script>
+    <script src="{{ STATIC_URL }}js/tests/libs/qunit-1.17.1.js"></script>
     <script src="{{ STATIC_URL }}js/tests/libs/sinon-1.14.1.js"></script>
     <script src="{{ STATIC_URL }}js/tests/libs/sinon-qunit-1.0.0.js"></script>
     <script src="{{ STATIC_URL }}js/tests/setup.js"></script>

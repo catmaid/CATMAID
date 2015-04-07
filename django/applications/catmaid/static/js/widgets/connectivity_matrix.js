@@ -77,7 +77,7 @@
         var loadWith = function(withRows, withCols) {
           if (withRows) this.rowDimension.loadSource();
           if (withCols) this.colDimension.loadSource();
-          if (withRows || withCols) this.refresh();
+          if (withRows || withCols) this.update();
         };
 
         var loadRows = document.createElement('input');
@@ -111,7 +111,7 @@
         var update = document.createElement('input');
         update.setAttribute("type", "button");
         update.setAttribute("value", "Refresh");
-        update.onclick = this.refresh.bind(this);
+        update.onclick = this.update.bind(this);
         controls.appendChild(update);
       },
 
@@ -120,7 +120,7 @@
        */
       createContent: function(container) {
         this.content = container;
-        this.refresh();
+        this.update();
       }
     };
   };
@@ -131,7 +131,7 @@
   ConnectivityMatrixWidget.prototype.clear = function() {
     this.rowDimension.clear();
     this.colDimension.clear();
-    this.refresh();
+    this.update();
   };
 
   /**
@@ -142,9 +142,18 @@
   };
 
   /**
-   * Refresh the UI.
+   * Refresh the UI without recreating the connectivity matrix.
    */
   ConnectivityMatrixWidget.prototype.refresh = function(container) {
+    // Clrear container and add new table
+    $(this.content).empty();
+    this.addConnectivityMatrixTable(this.matrix, this.content);
+  };
+
+  /**
+   * Recreate the connectivity matrix and refresh the UI.
+   */
+  ConnectivityMatrixWidget.prototype.update = function(container) {
     if (!this.matrix) {
       return;
     }
@@ -183,54 +192,77 @@
       .then((function() {
         // Clear any message
         if (this.content.dataset.msg) delete this.content.dataset.msg;
-
-        var m = this.matrix.get();
-        // Create table representation for connectivity matrix
-        var table = document.createElement('table');
-        table.setAttribute('class', 'partner_table');
-        // Add column header, prepend one blank cell for row headers
-        var colHeader = table.appendChild(document.createElement('tr'));
-        colHeader.appendChild(document.createElement('th'));
-        for (var c=0; c<nCols; ++c) {
-          var th = document.createElement('th');
-          th.appendChild(document.createTextNode(nns.getName(
-                this.colDimension.orderedSkeletonIDs[c])));
-          th.setAttribute('colspan', 2);
-          colHeader.appendChild(th);
-        }
-        // Add row headers and connectivity matrix rows
-        for (var r=0; r<nRows; ++r) {
-          var rowSkid = this.rowDimension.orderedSkeletonIDs[r];
-          var row = document.createElement('tr');
-          table.appendChild(row);
-          var th = document.createElement('th');
-          th.appendChild(document.createTextNode(nns.getName(rowSkid)));
-          row.appendChild(th);
-          for (var c=0; c<nCols; ++c) {
-            var colSkid = this.colDimension.orderedSkeletonIDs[c];
-            var connections = m[r][c];
-            var tdIn = createSynapseCountCell(rowSkid, colSkid, connections[0]);
-            var tdOut = createSynapseCountCell(colSkid, rowSkid, connections[1]);
-            row.appendChild(tdIn);
-            row.appendChild(tdOut);
-          }
-        }
-        $content.append(table);
-
-        // Add a handler for openening connector selections for individual partners
-        $('a[partnerID]', table).click(function () {
-          var sourceID = $(this).attr('sourceID');
-          var partnerID = $(this).attr('partnerID');
-          if (sourceID && partnerID) {
-            ConnectorSelection.show_shared_connectors(sourceID, [partnerID],
-               "postsynaptic_to");
-          } else {
-            CATMAID.error("Could not find partner or source ID!");
-          }
-
-          return true;
-        });
+        // Create table
+        this.addConnectivityMatrixTable(this.matrix, this.content);
       }).bind(this));
+  };
+
+  /**
+   * Add a tabular representation of the connectivity matrix to the given DOM
+   * element.
+   *
+   * @param {ConnectivityMatrix} The connectivity matrix to add.
+   * @param {DOMElement} The element to add the table to.
+   * @returns the content element passed in.
+   */
+  ConnectivityMatrixWidget.prototype.addConnectivityMatrixTable = function(
+      matrix, content) {
+    var nRows = matrix.getNumberOfRows();
+    var nCols = matrix.getNumberOfColumns();
+    if (0 === nRows || 0 === nCols) {
+      return;
+    }
+
+    var m = matrix.get();
+    var nns = NeuronNameService.getInstance();
+
+    // Create table representation for connectivity matrix
+    var table = document.createElement('table');
+    table.setAttribute('class', 'partner_table');
+    // Add column header, prepend one blank cell for row headers
+    var colHeader = table.appendChild(document.createElement('tr'));
+    colHeader.appendChild(document.createElement('th'));
+    for (var c=0; c<nCols; ++c) {
+      var th = document.createElement('th');
+      th.appendChild(document.createTextNode(nns.getName(
+            this.colDimension.orderedSkeletonIDs[c])));
+      th.setAttribute('colspan', 2);
+      colHeader.appendChild(th);
+    }
+    // Add row headers and connectivity matrix rows
+    for (var r=0; r<nRows; ++r) {
+      var rowSkid = this.rowDimension.orderedSkeletonIDs[r];
+      var row = document.createElement('tr');
+      table.appendChild(row);
+      var th = document.createElement('th');
+      th.appendChild(document.createTextNode(nns.getName(rowSkid)));
+      row.appendChild(th);
+      for (var c=0; c<nCols; ++c) {
+        var colSkid = this.colDimension.orderedSkeletonIDs[c];
+        var connections = m[r][c];
+        var tdIn = createSynapseCountCell(rowSkid, colSkid, connections[0]);
+        var tdOut = createSynapseCountCell(colSkid, rowSkid, connections[1]);
+        row.appendChild(tdIn);
+        row.appendChild(tdOut);
+      }
+    }
+    content.appendChild(table);
+
+    // Add a handler for openening connector selections for individual partners
+    $('a[partnerID]', table).click(function () {
+      var sourceID = $(this).attr('sourceID');
+      var partnerID = $(this).attr('partnerID');
+      if (sourceID && partnerID) {
+        ConnectorSelection.show_shared_connectors(sourceID, [partnerID],
+           "postsynaptic_to");
+      } else {
+        CATMAID.error("Could not find partner or source ID!");
+      }
+
+      return true;
+    });
+
+    return content;
   };
 
   /**

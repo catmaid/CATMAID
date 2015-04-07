@@ -150,8 +150,16 @@
     var nCols = this.colDimension.orderedSkeletonIDs.length;
 
     // If there are now row or column skeletons, display a message and return
-    if (0 === nRows || 0 === nCols) {
+    if (0 === nRows && 0 === nCols) {
       $content.append("Please append row and column skeletons");
+      return;
+    } else if (0 === nRows) {
+      $content.append("Please append row skeletons, " + nCols +
+          " column skeletons are already available.");
+      return;
+    } else if (0 === nCols) {
+      $content.append("Please append column skeletons, " + nRows +
+          " row skeletons are already available.");
       return;
     }
 

@@ -135,6 +135,13 @@
   };
 
   /**
+   * Update names of neurons in connectivity widget.
+   */
+  ConnectivityMatrixWidget.prototype.updateNeuronNames = function() {
+    this.refresh();
+  };
+
+  /**
    * Refresh the UI.
    */
   ConnectivityMatrixWidget.prototype.refresh = function(container) {

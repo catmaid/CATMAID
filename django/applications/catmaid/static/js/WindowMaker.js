@@ -113,7 +113,7 @@ var WindowMaker = new function()
     // Register to events
     var destroy = instance.destroy ? instance.destroy.bind(instance) : undefined;
     var resize = instance.resize ? instance.resize.bind(instance) : undefined;
-    addListener(win, container, config.controlsID, destroy, resize);
+    addListener(win, content, config.controlsID, destroy, resize);
     addLogic(win);
 
     return win;

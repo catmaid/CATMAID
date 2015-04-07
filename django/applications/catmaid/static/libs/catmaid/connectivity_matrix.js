@@ -131,6 +131,20 @@
     return connectivityMatrix;
   };
 
+  /**
+   * Get the number of rows.
+   */
+  ConnectivityMatrix.prototype.getNumberOfRows = function() {
+    return rowSkeletonIDs === undefined ? 0 : rowSkeletonIDs.length;
+  };
+
+  /**
+   * Get the number of columns.
+   */
+  ConnectivityMatrix.prototype.getNumberOfColumns = function() {
+    return colSkeletonIDs === undefined ? 0 : colSkeletonIDs.length;
+  };
+
   // Make connectivity matrix available in CATMAID namespace
   CATMAID.ConnectivityMatrix = ConnectivityMatrix;
 })(CATMAID);

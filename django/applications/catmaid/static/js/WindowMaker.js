@@ -105,7 +105,7 @@ var WindowMaker = new function()
     // Create content
     var content = createContainer(config.contentID);
     if (config.class) {
-      content.setAttribute('class', config.class);
+      $(content).addClass(config.class);
     }
     config.createContent.call(instance, content);
     container.appendChild(content);

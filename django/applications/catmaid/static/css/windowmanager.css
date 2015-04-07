@@ -35,3 +35,16 @@ div.eventCatcherRight
 	background:url(../images/red50-20x20.png) repeat-y right;
 	display:block;
 }
+
+div.windowContent[data-msg]:before
+{
+  display: table-cell;
+  content: attr(data-msg);
+  width: 100%;
+  color: grey;
+  text-align: center;
+  font-size: large;
+  position: absolute;
+  top: 50%;
+  transform: translate(0, -50%);
+}

@@ -44,15 +44,22 @@
   SkeletonSourceManager.prototype.updateGUI = function() {
     var options = this.createOptions.bind(this);
     var sources = this.sources;
-    $("[id^='skeleton-source-select-']").each(function(index, select) {
-      var ipush = this.id.indexOf('-push-');
-      var name = (-1 === ipush ? this.id.substring(23) : this.id.substring(23, ipush)).replace(/-/g, ' ');
+    $('.skeleton-source-select').each(function(index, select) {
+      var name = $(this).data('name');
+      var extraFilters = $(this).data('filters');
+
       var selectedIndex = select.selectedIndex === -1 ? 0 : select.selectedIndex;
       var selected = select.options[selectedIndex].value;
       select.options.length = select.options[0].value === 'None' ? 1 : 0; // preserve manually added initial void entry when present in push selects
       select.selectedIndex = 0;
       options().forEach(function(option, i) {
-        if (option.value === name) return; // ignore self
+        // Ignore self
+        if (option.value === name) return;
+        // Ignore this option if it should be filtered.
+        if (extraFilters && extraFilters.some(equals.bind(this, option.value))) {
+          return;
+        }
+
         select.options.add(option);
         if (option.value === selected) select.selectedIndex = select.options.length -1;
       });
@@ -63,14 +70,46 @@
     return 'skeleton-source-select-' + source.getName().replace(/ /g, '-');
   };
 
-  SkeletonSourceManager.prototype.createSelect = function(source) {
-    var select = document.createElement('select');
+  SkeletonSourceManager.prototype.createSelectClass = function() {
+    return 'skeleton-source-select';
+  };
+
+  /**
+   * Create a select element that contains all managed skeleton sources, except
+   * the specified source and the ones listed in the passed in array.
+   *
+   * @param source {object} Associated skeleton source.
+   * @param extraFilters {String[]} Source names  that won't be shown in created select
+   */
+  SkeletonSourceManager.prototype.createSelect = function(source, extraFilters) {
+    var select = this.createUnboundSelect(source.getName(), extraFilters);
     select.setAttribute('id', this.createSelectID(source));
-    var name = source.getName();
+    return select;
+  };
+
+  /**
+   * Create a select element that contains all managed skeleton sources, except
+   * the ones listed in the passed in array.
+   *
+   * @param name {String} A name that is associated with this select.
+   * @param extraFilters {String[]} Source names that won't be shown in created select
+   */
+  SkeletonSourceManager.prototype.createUnboundSelect = function(name, extraFilters) {
+    var select = document.createElement('select');
+    select.setAttribute('class', this.createSelectClass());
+    // Store name and filter information with the select
+    $(select).data('name', name);
+    $(select).data('filters', extraFilters);
     this.createOptions().forEach(function(option, i) {
+      // Ignore this option if it should be filtered.
+      if (extraFilters && extraFilters.some(equals.bind(this, option.value))) {
+        return;
+      }
+
       if (option.value !== name) select.options.add(option);
       if (option.value === 'Active skeleton') select.selectedIndex = i;
     });
+
     return select;
   };
 
@@ -184,5 +223,12 @@
 
   // Create a default instance within the CATMAID namespace
   CATMAID.skeletonListSources = new SkeletonSourceManager();
+
+  /**
+   * Helper function to  test if to values are the same.
+   */
+  function equals(val1, val2) {
+    return val1 === val2;
+  }
 
 })(CATMAID);

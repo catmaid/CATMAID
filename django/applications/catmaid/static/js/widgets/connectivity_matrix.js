@@ -78,7 +78,7 @@
           if (withRows) this.rowDimension.loadSource();
           if (withCols) this.colDimension.loadSource();
           if (withRows || withCols) this.refresh();
-        }
+        };
 
         var loadRows = document.createElement('input');
         loadRows.setAttribute("type", "button");

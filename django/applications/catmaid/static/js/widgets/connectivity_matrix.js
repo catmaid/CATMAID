@@ -151,16 +151,18 @@
 
     // If there are now row or column skeletons, display a message and return
     if (0 === nRows && 0 === nCols) {
-      $content.append("Please append row and column skeletons");
+      this.content.dataset.msg = "Please append row and column skeletons";
       return;
     } else if (0 === nRows) {
-      $content.append("Please append row skeletons, " + nCols +
-          " column skeletons are already available.");
+      this.content.dataset.msg = "Please append row skeletons, " + nCols +
+          " column skeletons are already available.";
       return;
     } else if (0 === nCols) {
-      $content.append("Please append column skeletons, " + nRows +
-          " row skeletons are already available.");
+      this.content.dataset.msg = "Please append column skeletons, " + nRows +
+          " row skeletons are already available.";
       return;
+    } else {
+      if (this.content.dataset.msg) delete this.content.dataset.msg;
     }
 
     // Update connectivity matrix and make sure all currently looked at

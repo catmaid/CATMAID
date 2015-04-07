@@ -162,7 +162,7 @@
           " row skeletons are already available.";
       return;
     } else {
-      if (this.content.dataset.msg) delete this.content.dataset.msg;
+      this.content.dataset.msg = "Please wait, connectivity information is retrieved.";
     }
 
     // Update connectivity matrix and make sure all currently looked at
@@ -174,6 +174,9 @@
       .then(nns.registerAll.bind(nns, this, this.rowDimension.getSelectedSkeletonModels()))
       .then(nns.registerAll.bind(nns, this, this.colDimension.getSelectedSkeletonModels()))
       .then((function() {
+        // Clear any message
+        if (this.content.dataset.msg) delete this.content.dataset.msg;
+
         var m = this.matrix.get();
         // Create table representation for connectivity matrix
         var table = document.createElement('table');

@@ -53,23 +53,50 @@
        * Create widget controls.
        */
       createControls: function(controls) {
-        controls.appendChild(document.createTextNode('Vertical from'));
-        controls.appendChild(CATMAID.skeletonListSources.createSelect(
-              this.rowDimension));
+        // Create hidden select elements for row and column sources
+        var rowSelect = CATMAID.skeletonListSources.createSelect(this.rowDimension);
+        rowSelect.style.display = 'none';
+        controls.appendChild(rowSelect);
+        var colSelect = CATMAID.skeletonListSources.createSelect(this.colDimension);
+        colSelect.style.display = 'none';
+        controls.appendChild(colSelect);
 
-        controls.appendChild(document.createTextNode('Horizontal from'));
-        controls.appendChild(CATMAID.skeletonListSources.createSelect(
-              this.colDimension));
+        // This UI combines two skeleton source selects into one.
+        controls.appendChild(document.createTextNode('From'));
+        var sourceSelect = CATMAID.skeletonListSources.createSelect(this,
+           [this.rowDimension.getName(), this.colDimension.getName()]);
+        controls.appendChild(sourceSelect);
+        sourceSelect.onchange = function() {
+          rowSelect.value = this.value;
+          colSelect.value = this.value;
+        };
 
-        var load = document.createElement('input');
-        load.setAttribute("type", "button");
-        load.setAttribute("value", "Append");
-        load.onclick = (function() {
-          this.rowDimension.loadSource();
-          this.colDimension.loadSource();
-          this.refresh();
-        }).bind(this);
-        controls.appendChild(load);
+        /**
+         * Load rows and/or coulmns and refresh.
+         */
+        var loadWith = function(withRows, withCols) {
+          if (withRows) this.rowDimension.loadSource();
+          if (withCols) this.colDimension.loadSource();
+          if (withRows || withCols) this.refresh();
+        }
+
+        var loadRows = document.createElement('input');
+        loadRows.setAttribute("type", "button");
+        loadRows.setAttribute("value", "Append rows");
+        loadRows.onclick = loadWith.bind(this, true, false);
+        controls.appendChild(loadRows);
+
+        var loadColumns = document.createElement('input');
+        loadColumns.setAttribute("type", "button");
+        loadColumns.setAttribute("value", "Append columns");
+        loadColumns.onclick = loadWith.bind(this, false, true);
+        controls.appendChild(loadColumns);
+
+        var loadAll = document.createElement('input');
+        loadAll.setAttribute("type", "button");
+        loadAll.setAttribute("value", "Append to both");
+        loadAll.onclick = loadWith.bind(this, true, true);
+        controls.appendChild(loadAll);
 
         var clear = document.createElement('input');
         clear.setAttribute("type", "button");

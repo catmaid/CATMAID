@@ -91,9 +91,6 @@ var WindowMaker = new function()
     var win = new CMWWindow(instance.getName());
     var container = win.getFrame();
     container.style.backgroundColor = "#ffffff";
-    if (config.class) {
-      container.setAttribute('class', config.class);
-    }
 
     // Create controls, if requested
     var controls;
@@ -107,6 +104,9 @@ var WindowMaker = new function()
 
     // Create content
     var content = createContainer(config.contentID);
+    if (config.class) {
+      content.setAttribute('class', config.class);
+    }
     config.createContent.call(instance, content);
     container.appendChild(content);
 

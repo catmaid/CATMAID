@@ -2,7 +2,6 @@ import catmaid.models
 
 from django.db.models import signals
 from catmaid.models import Project
-from catmaid import models as catmaid_app
 from catmaid.conf import settings as catmaid_settings
 
 def init_classification(sender, app, created_models, **kwargs):

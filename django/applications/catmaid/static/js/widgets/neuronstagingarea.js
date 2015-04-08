@@ -690,15 +690,16 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   });
 
   var td = $(document.createElement("td"));
-  td.append( $(document.createElement("img")).attr({
-        value: 'Remove'
-        })
+  td.append( $(document.createElement("img"))
         .click( function( event )
         {
           table.removeSkeletons( [skeleton.id] );
         })
-        .attr('src', STATIC_URL_JS + 'images/delete.png')
-        .text('Remove!')
+        .attr({
+          src: STATIC_URL_JS + 'images/delete.png',
+          alt: 'Remove',
+          title: 'Remove'
+        })
   );
   rowElement.append( td );
 
@@ -729,9 +730,9 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
           .attr({
                   id:    'skeleton' + key + widgetID + '-' + skeleton.id,
                   value: skeleton.id,
-                  type:  'checkbox',
-                  checked: skeleton[key]
+                  type:  'checkbox'
           })
+          .prop('checked', skeleton[key])
           .click( function( event ) {
             var visible = $('#skeleton' + key + widgetID + '-' + skeleton.id).is(':checked');
             skeleton[key] = visible;
@@ -740,7 +741,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
               keys.slice(1).forEach(function(other, k) {
                 if (visible && 2 === k) return; // don't make text visible
                 skeleton[other] = visible;
-                $('#skeleton' + other + widgetID + '-' + skeleton.id).attr({checked: visible});
+                $('#skeleton' + other + widgetID + '-' + skeleton.id).prop('checked', visible);
               });
             }
             table.notifyLink(skeleton);

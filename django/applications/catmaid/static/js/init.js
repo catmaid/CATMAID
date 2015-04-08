@@ -532,7 +532,7 @@ function handle_openProjectStack( e, stackConstructor )
   stack.addLayer( "TileLayer", tilelayer );
 
   $.each(e.overlay, function(key, value) {
-    var tilesource = getTileSource( value.tile_source_type,
+    var tilesource = CATMAID.getTileSource( value.tile_source_type,
       value.image_base, value.file_extension );
     var layer_visibility = false;
     if( parseInt(value.default_opacity) > 0)

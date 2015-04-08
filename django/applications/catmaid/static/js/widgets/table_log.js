@@ -101,7 +101,7 @@ var LogTable = new function()
                 ]
             });
 
-        $(tableid + " tbody tr").live('dblclick', function () {
+        $(tableid + " tbody").on('dblclick', 'tr', function () {
             var aData = self.logTable.fnGetData(this);
             // retrieve coordinates and moveTo
             var x = parseFloat(aData[3]);

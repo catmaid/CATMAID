@@ -401,7 +401,7 @@ SkeletonConnectivity.prototype.redraw = function() {
     Object.keys(c).forEach((function(skeleton_id) {
       var sel = $('#' + relation + '-show-skeleton-' + this.widgetID + '-' + skeleton_id);
       if (sel.length > 0) {
-        sel.attr('checked', c[skeleton_id]);
+        sel.prop('checked', c[skeleton_id]);
       }
     }).bind(this));
   }).bind(this));
@@ -560,7 +560,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     row = $('<tr />');
     var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
     if (this.selectAllSelection[title.toLowerCase()]) {
-      el.attr('checked', 'checked');
+      el.prop('checked', true);
     }
     row.append( $('<td />').addClass('input-container').append( el ) );
     var titleClass = collapsed ? "extend-box-closed" : "extend-box-open";
@@ -801,7 +801,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     for (var i=1; i < max; ++i) {
       var option = $('<option />').val(i).text(i);
       if (selected === i) {
-        option.attr('selected', 'selected');
+        option.prop('selected', true);
       }
       select.append(option);
     }
@@ -872,7 +872,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
           };
         }(this, skid));
     if (this.skeletonSelection[skid]) {
-        selectionCb.attr('checked', 'checked');
+        selectionCb.prop('checked', true);
     }
 
     // Create small icon to remove this neuron from list
@@ -951,7 +951,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
         };
       })(this));
   if (this.hideSingleNodePartners) {
-    singleNeuronToggle.attr('checked', 'checked');
+    singleNeuronToggle.prop('checked', true);
   }
   var singleNeuronToggleContainer = $('<label />')
       .attr('class', 'left')
@@ -991,7 +991,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     var u = User.all()[r];
     var opt = $('<option />').attr('value', r).append(u ? u.fullName : r);
     if (this.reviewFilter == r) {
-      opt.attr('selected', 'selected');
+      opt.prop('selected', true);
     }
     reviewFilter.append(opt);
   }, this);

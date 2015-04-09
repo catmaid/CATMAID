@@ -2969,8 +2969,9 @@ var WindowMaker = new function()
           var opts = {value: user.id, text: user.fullName};
           $("<option />", opts).appendTo($select);
           // Add entry to filter select and select current user by default
-          if (userID == session.userid) { opts.selected = true; }
-          $("<option />", opts).appendTo($filter_select);
+          $("<option />", opts)
+              .prop('selected', userID == session.userid)
+              .appendTo($filter_select);
         }
       }
     }

@@ -1099,9 +1099,10 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   });
 
   // Add a handler for openening connector selections for individual partners
-  $('a[partnerID]', incoming).click(createPartnerClickHandler(
+
+  incoming.on('click', 'a[partnerID]', createPartnerClickHandler(
         this.incoming, 'presynaptic_to'));
-  $('a[partnerID]', outgoing).click(createPartnerClickHandler(
+  outgoing.on('click', 'a[partnerID]', createPartnerClickHandler(
         this.outgoing, 'postsynaptic_to'));
   function createPartnerClickHandler(partners, relation) {
     return function() {

@@ -153,7 +153,7 @@
       self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
 
       if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
-        if( $('#remote_review_skeleton').attr('checked') ) {
+        if( $('#remote_review_skeleton').prop('checked') ) {
           end_puffer_count += 1;
           // do not directly jump to the next segment to review
           if( end_puffer_count < 3) {
@@ -467,7 +467,7 @@
            }
           });
         if (-1 !== followedUsers.indexOf(reviewers[i])) {
-          cb.attr('checked', 'checked');
+          cb.prop('checked', true);
         }
         row.append( $('<th />').append($('<label />')
           .append(cb).append(users[reviewers[i]].name)));

@@ -196,6 +196,31 @@ All features must work correctly in recent versions of Chrome and Firefox, while
 core browsing features must work in IE11. Requiring polyfills for IE is
 acceptable.
 
+Git
+###
+
+Try to follow the `seven rules of great git commit messages
+<http://chris.beams.io/posts/git-commit/#seven-rules>`_:
+
+#. Separate subject from body with a blank line
+#. Limit the subject line to 50 characters
+#. Capitalize the subject line
+#. Do not end the subject line with a period
+#. Use the imperative mood in the subject line
+#. Wrap the body at 72 characters
+#. Use the body to explain what and why vs. how
+
+That said, always prefer clarity over dogma. The core CATMAID contributors break
+#2 frequently to keep messages descriptive (apologies to our VAX users). If a
+commit focuses on a particular component or widget, prefix the commit message
+with its name, such as "Selection table:" or "SVG overlay:".
+
+Granular commits are preferred. Squashes and rollups are avoided, and rebasing
+with fast-forwarding is preferred to merging except for in large feature
+branches.
+
+Never rewrite history of master or any other branch used by others.
+
 Linting and Testing
 -------------------
 

@@ -34,10 +34,10 @@ script:
   - jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications
   - cd django/projects/mysite
   - python manage.py syncdb --migrate --noinput
+  - python manage.py collectstatic --link --noinput
   - coverage run --source=catmaid --omit='*management*,*migrations*,*tests*' manage.py test catmaid.tests
   # Remove login requirement from QUnit test page
   - sed -i 's/login_required(\([^)]*\))/\1/g' ../../applications/catmaid/urls.py
-  - python manage.py collectstatic --link --noinput
   - python manage.py runserver &
   - sleep 5
   - cd ../../..

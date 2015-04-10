@@ -6,7 +6,6 @@ div.vSliderView
 	width:32px;
 	height:256px;
 	z-index:8;
-	background:url(../images/checker_grey32.gif) repeat-y center top;
 }
 
 div.vSliderHandle
@@ -20,8 +19,6 @@ div.vSliderHandle
 	width:100%;
 	height:24px;
 	cursor:pointer;
-	background:url(../images/handle.gif) no-repeat center;
-	background-image:url(../images/handle.svg), none;
 	/*
 	background:#0000FF;
 	*/
@@ -37,7 +34,6 @@ div.hSliderView
 	height:24px;
 	z-index:8;
 	float:left;
-	/*background:url(../images/hslider_bg.gif) repeat-x center;*/
 }
 
 div.hSliderHandle
@@ -68,8 +64,6 @@ div.vSliderBarTop_2
 	width:100%;
 	height:50%;
 	overflow:hidden;
-	background:url(../images/bar_top.gif) no-repeat center top;
-	background-image:url(../images/bar_top.svg), none;
 }
 
 div.vSliderBarBottom,
@@ -79,8 +73,6 @@ div.vSliderBarBottom_2
 	padding:0px;
 	width:100%;
 	height:50%;
-	background:url(../images/bar_bottom.gif) no-repeat center bottom;
-	background-image:url(../images/bar_bottom.svg), none;
 }
 
 div.hSliderBarTop,

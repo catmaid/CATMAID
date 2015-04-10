@@ -216,8 +216,8 @@ commit focuses on a particular component or widget, prefix the commit message
 with its name, such as "Selection table:" or "SVG overlay:".
 
 Granular commits are preferred. Squashes and rollups are avoided, and rebasing
-with fast-forwarding is preferred to merging except for in large feature
-branches.
+branches then fast-forwarding is preferred over merge commits when merging to
+master except for large feature branches.
 
 Never rewrite history of master or any other branch used by others.
 

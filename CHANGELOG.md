@@ -3,6 +3,11 @@
 
 ### Features and enhancements
 
+Connectivity widget:
+
+- Partner filtering now supports regular expressions when the first character
+  of the search input is "/".
+
 
 ### Bug fixes
 

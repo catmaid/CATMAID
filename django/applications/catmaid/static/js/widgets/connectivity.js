@@ -1039,7 +1039,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   var dataTableOptions = {
     aaSorting: [[2, 'desc']],
     bDestroy: true,
-    sDom: 'Rl<"connectivity_table_actions"f>rti',
+    sDom: 'Rl<"connectivity_table_actions">rti',
     bFilter: true,
     bPaginate: false,
     bProcessing: true,
@@ -1048,9 +1048,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     iDisplayLength: -1,
     oColReorder: {
       iFixedColumns: 1
-    },
-    oLanguage: {
-      sSearch: 'Filter partners:'
     },
     aoColumnDefs: [
       { aTargets: [0], sSortDataType: 'dom-checkbox' }, // Checkbox column
@@ -1084,8 +1081,35 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
 
   $.each([table_incoming, table_outgoing], function () {
     var self = this;
-    $(this).siblings('.connectivity_table_actions').append(
-      $('<div class="dataTables_export"></div>').append(
+    $(this).siblings('.connectivity_table_actions')
+      // Add custom filter/search input to support regular expressions.
+      .append($('<div class="dataTables_filter">')
+        .append($('<label />')
+          .text('Filter partners:')
+          .append($('<input type="search" />').on('keyup', function () {
+            var search = this.value;
+            if (search.length > 0 && search[0] === '/') {
+              // Treat the input as regex.
+              // Trim regex delimiters from search string.
+              search = search.slice(1, search[search.length - 1] === '/' ? search.length - 1 : undefined);
+              try {
+                var re = new RegExp(search);
+                // Regex is valid
+                $(this).removeClass('ui-state-error');
+                self.DataTable().search(search, true, false).draw();
+              } catch (error) {
+                $(this).addClass('ui-state-error');
+              }
+            } else {
+              // Treat the search as plain text input. Use DataTables' smart search.
+              $(this).removeClass('ui-state-error');
+              self.DataTable().search(search, false, true).draw();
+            }
+          }))
+        )
+      )
+      // Add table export buttons.
+      .append($('<div class="dataTables_export"></div>').append(
         $('<input type="button" value="Export CSV" />').click(function () {
           var text = self.fnSettings().aoHeader.map(function (r) {
             return r.map(cellToText.bind(this, true))

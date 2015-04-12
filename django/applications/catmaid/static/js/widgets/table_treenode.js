@@ -110,27 +110,6 @@ var TreenodeTable = function(skid)
         ["All", 10, 100, 200]
       ],
       "bJQueryUI": true,
-/*      "fnRowCallback": function (nRow, aData, iDisplayIndex) {
-
-        if (aData[1] === "R") {
-          $(nRow).addClass('root_node');
-        }
-        if (aData[1] === "L") {
-          $(nRow).addClass('leaf_node');
-        }
-
-        var atnID = SkeletonAnnotations.getActiveNodeId();
-        if (atnID) {
-          if (parseInt(aData[0], 10) === atnID) {
-            // just to be sure
-            $(nRow).removeClass('root_node');
-            $(nRow).removeClass('leaf_node');
-            // highlight row of active treenode
-            $(nRow).addClass('highlight_active');
-          }
-        }
-        return nRow;
-      },*/
       "aoColumns": [{
         "sClass": "center",
         "bSearchable": false,

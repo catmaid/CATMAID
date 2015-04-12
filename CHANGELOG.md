@@ -9,6 +9,12 @@ Connectivity widget:
   of the search input is "/".
 
 
+Treenode table:
+
+- *REMOVED*: Radii can no longer be edited by clicking on their cell in the
+  table.
+
+
 ### Bug fixes
 
 

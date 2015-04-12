@@ -110,20 +110,6 @@ var TreenodeTable = function(skid)
         ["All", 10, 100, 200]
       ],
       "bJQueryUI": true,
-      "fnDrawCallback": function () {
-        $('td:eq(7)', ns.oTable.fnGetNodes()).editable(django_url + project.id + '/treenode/table/update', {
-          "submitdata": function (value, settings) {
-            var aPos = ns.oTable.fnGetPosition(this);
-            var aData = ns.oTable.fnGetData(aPos[0]); // checks for valid numeric value
-            return {
-              "id": aData[0],
-              "type": "radius",
-              "pid": project.id
-            };
-          },
-          "height": "14px"
-        });
-      },
 /*      "fnRowCallback": function (nRow, aData, iDisplayIndex) {
 
         if (aData[1] === "R") {

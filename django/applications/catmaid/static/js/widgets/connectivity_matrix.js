@@ -71,14 +71,42 @@
           colSelect.value = this.value;
         };
 
+        // Indicates if loaded skeletons should be part of a group
+        var loadAsGroup = false;
+
         /**
          * Load rows and/or coulmns and refresh.
          */
         var loadWith = function(withRows, withCols) {
-          if (withRows) this.rowDimension.loadSource();
-          if (withCols) this.colDimension.loadSource();
-          if (withRows || withCols) this.update();
+          if (loadAsGroup) {
+            // Ask for group name
+            askForGroupName((function(name) {
+              return (!withRows || isValidGroupName(Object.keys(
+                                   this.rowDimension.groups), name)) &&
+                     (!withCols || isValidGroupName(Object.keys(
+                                   this.colDimension.groups), name));
+            }).bind(this), (function(groupName) {
+              if (withRows) this.rowDimension.loadAsGroup(groupName);
+              if (withCols) this.colDimension.loadAsGroup(groupName);
+              if (withRows || withCols) this.update();
+            }).bind(this));
+          } else {
+            if (withRows) this.rowDimension.loadSource();
+            if (withCols) this.colDimension.loadSource();
+            if (withRows || withCols) this.update();
+          }
         };
+
+        var asGroupCb = document.createElement('input');
+        asGroupCb.setAttribute('type', 'checkbox');
+        asGroupCb.checked = loadAsGroup;
+        asGroupCb.onclick = function() {
+          loadAsGroup = this.checked;
+        };
+        var asGroup = document.createElement('label');
+        asGroup.appendChild(asGroupCb);
+        asGroup.appendChild(document.createTextNode('As group'));
+        controls.appendChild(asGroup);
 
         var loadRows = document.createElement('input');
         loadRows.setAttribute("type", "button");
@@ -216,35 +244,74 @@
     var m = matrix.get();
     var nns = NeuronNameService.getInstance();
 
+    // Get group information
+    var nDisplayRows = this.rowDimension.orderedElements.length;
+    var nDisplayCols = this.colDimension.orderedElements.length;
+
     // Create table representation for connectivity matrix
     var table = document.createElement('table');
     table.setAttribute('class', 'partner_table');
     // Add column header, prepend one blank cell for row headers
     var colHeader = table.appendChild(document.createElement('tr'));
     colHeader.appendChild(document.createElement('th'));
-    for (var c=0; c<nCols; ++c) {
+    for (var c=0; c<nDisplayCols; ++c) {
+      // Get skeleton or group name
+      var id = this.colDimension.orderedElements[c];
+      var colGroup = this.colDimension.groups[id];
+      var name = colGroup ? id : nns.getName(id);
+      // Create column
       var th = document.createElement('th');
-      th.appendChild(document.createTextNode(nns.getName(
-            this.colDimension.orderedSkeletonIDs[c])));
+      th.appendChild(document.createTextNode(name));
       th.setAttribute('colspan', 2);
+      if (colGroup) {
+        th.setAttribute('title', 'This colGroup contains ' + colGroup.length +
+            ' skeleton(s): ' + colGroup.join(', '));
+      }
       colHeader.appendChild(th);
     }
     // Add row headers and connectivity matrix rows
-    for (var r=0; r<nRows; ++r) {
-      var rowSkid = this.rowDimension.orderedSkeletonIDs[r];
+    var r = 0, c = 0;
+    for (var dr=0; dr<nDisplayRows; ++dr) {
+      // Get skeleton or rowGroup name and increase row skeleton counter
+      var rowId = this.rowDimension.orderedElements[dr];
+      var rowGroup = this.rowDimension.groups[rowId];
+      var name, title;
+      if (rowGroup) {
+        name = rowId;
+        title = 'This rowGroup contains ' + rowGroup.length + ' skeleton(s): ' +
+            rowGroup.join(', ');
+      } else {
+        name = nns.getName(rowId);
+      }
+      // Create row
       var row = document.createElement('tr');
       table.appendChild(row);
       var th = document.createElement('th');
-      th.appendChild(document.createTextNode(nns.getName(rowSkid)));
+      th.appendChild(document.createTextNode(name));
+      if (title) th.setAttribute('title', title);
       row.appendChild(th);
-      for (var c=0; c<nCols; ++c) {
-        var colSkid = this.colDimension.orderedSkeletonIDs[c];
-        var connections = m[r][c];
+
+      // Crete cells for each column in this row
+      for (var dc=0; dc<nDisplayCols; ++dc) {
+        // Aggregate group counts (if any)
+        var colId = this.colDimension.orderedElements[dc];
+        var colGroup = this.colDimension.groups[colId];
+        var connections = aggregateMatrix(m, r, c,
+            rowGroup ? rowGroup.length : 1,
+            colGroup ? colGroup.length : 1);
+
+        var rowSkid = 42;
+        var colSkid = 42; //this.colDimension.orderedSkeletonIDs[c];
+
+        // Create and append in and out cells
         var tdIn = createSynapseCountCell(rowSkid, colSkid, connections[0]);
         var tdOut = createSynapseCountCell(colSkid, rowSkid, connections[1]);
         row.appendChild(tdIn);
         row.appendChild(tdOut);
       }
+
+      // Increase index for next iteration
+      r = rowGroup ? r + rowGroup.length : r + 1;
     }
     content.appendChild(table);
 
@@ -263,6 +330,23 @@
     });
 
     return content;
+  };
+
+  /**
+   * Aggregate the values of a connectivity matrix over the specified number of
+   * rows and columns, starting from the given position.
+   */
+  function aggregateMatrix(matrix, r, c, nRows, nCols) {
+    var nr = 0, nc = 0;
+
+    for (var i=0; i<nRows; ++i) {
+      for (var j=0; j<nCols; ++j) {
+        nr += matrix[r + i][c + j][0];
+        nc += matrix[r + i][c + j][1];
+      }
+    }
+
+    return [nr, nc];
   };
 
   /**
@@ -289,5 +373,37 @@
     }
     return td;
   }
+
+  /**
+   * Display a modal dialog to ask the user for a group name.
+   */
+  function askForGroupName(validGroupName, callback) {
+    var options = new OptionsDialog("Group properties");
+    options.appendMessage("Please choose a name for the new group.");
+    var nameField = options.appendField("Name: ", "groupname-typed", "", null);
+    var invalidMessage = options.appendMessage("Please choose a different name!");
+    invalidMessage.style.display = "none";
+    nameField.onkeyup = function(e) {
+      // Show a message if this name is already taken or invalid
+      var valid = validGroupName(this.value);
+      invalidMessage.style.display = valid ? "none" : "block";
+    };
+    options.onOK = function() {
+      if (!validGroupName(nameField.value)) {
+        CATMAID.error("Please choose a different group name!");
+        return false;
+      }
+      callback(nameField.value);
+    };
+
+    options.show("auto", "auto", true);
+  }
+
+  /**
+   * Test if a group name is valid, based on a list of existing group names.
+   */
+  function isValidGroupName(existingNames, name) {
+    return -1 === existingNames.indexOf(name);
+  };
 
 })(CATMAID);

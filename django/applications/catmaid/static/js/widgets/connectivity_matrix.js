@@ -347,7 +347,7 @@
     }
 
     return [nr, nc];
-  };
+  }
 
   /**
    * Create a synapse count table cell.
@@ -404,6 +404,6 @@
    */
   function isValidGroupName(existingNames, name) {
     return -1 === existingNames.indexOf(name);
-  };
+  }
 
 })(CATMAID);

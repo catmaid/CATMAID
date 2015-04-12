@@ -475,22 +475,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
    */
   var create_table = function(skids, skeletons, thresholds, partners, title, relation,
       hideSingles, reviewFilter, collapsed, collapsedCallback) {
-    /**
-     * Helper to handle selection of a neuron.
-     */
-    var set_as_selected = function(ev) {
-      var skelid = parseInt( ev.target.value );
-      var checked = $('#' + relation + '-show-skeleton-' + widgetID + '-' + skelid).is(':checked');
-      this.selectSkeleton(skelid, checked);
-
-      // Uncheck the select-all checkbox if it is checked and this checkbox is
-      // now unchecked
-      if (!this.checked) {
-        $('#' + title.toLowerCase() + 'stream-selectall' + widgetID + ':checked')
-            .prop('checked', false);
-      }
-    };
-
+    // Create table with unique ID and the class 'partner_table'
     var table = $('<table />').attr('id', relation + 'stream_connectivity_table' + widgetID)
             .attr('class', 'partner_table');
 
@@ -660,7 +645,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       input.setAttribute('id', relation + '-show-skeleton-' + widgetID + '-' + partner.id);
       input.setAttribute('type', 'checkbox');
       input.setAttribute('value', partner.id);
-      input.onclick = set_as_selected.bind(this);
+      input.setAttribute('data-skeleton-id', partner.id);
       if (partner.id in this.skeletonSelection) {
         if (this.skeletonSelection[partner.id]) {
           input.setAttribute('checked', 'checked');
@@ -1125,6 +1110,12 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   add_select_all_fn(this, 'up', table_incoming, nSkeletons);
   add_select_all_fn(this, 'down', table_outgoing, nSkeletons);
 
+  // Add handler for individual skeleton checkboxes
+  incoming.on('click', 'input[data-skeleton-id][type=checkbox]',
+     set_as_selected.bind(this, 'up', 'presynaptic_to'));
+  outgoing.on('click', 'input[data-skeleton-id][type=checkbox]',
+     set_as_selected.bind(this, 'down', 'postsynaptic_to'));
+
   // Add handler for neuron name clicks
   content.on('click', 'a[data-skeleton-id]', function() {
     var skeletonId = this.dataset.skeletonId;
@@ -1143,6 +1134,22 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       return '"' + c + '"';
     }
   }
+
+  /**
+   * Helper to handle selection of a neuron.
+   */
+  function set_as_selected(name, relation, ev) {
+    var skelid = parseInt( ev.target.value );
+    var checked = ev.target.checked;
+    this.selectSkeleton(skelid, checked);
+
+    // Uncheck the select-all checkbox if it is checked and this checkbox is
+    // now unchecked
+    if (!checked) {
+      $('#' + name + 'stream-selectall' + widgetID + ':checked')
+          .prop('checked', false);
+    }
+  };
 };
 
 SkeletonConnectivity.prototype.openPlot = function() {

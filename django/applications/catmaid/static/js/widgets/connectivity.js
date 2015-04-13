@@ -1138,7 +1138,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
             " and relation " + relation);
       } else {
         var skids = Object.keys(partner.skids);
-        CATMAID.ConnectorSelection.show_shared_connectors(partner.id, skids, relation);
+        CATMAID.ConnectorSelection.show_shared_connectors([partner.id], skids, relation);
       }
 
       return true;

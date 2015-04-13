@@ -8,10 +8,10 @@
   /** Represents a table listing the synapses between the active or the selected skeletons vs a specific partner skeleton. */
   var ConnectorSelection = function() {};
 
-  ConnectorSelection.prototype.show_shared_connectors = function(skid, skids, relation) {
-    requestQueue.register(django_url + project.id + '/connector/list/one_to_many', 'POST',
-        {skid: skid,
-        skids: skids,
+  ConnectorSelection.prototype.show_shared_connectors = function(skids1, skids2, relation) {
+    requestQueue.register(django_url + project.id + '/connector/list/many_to_many', 'POST',
+        {skids1: skids1,
+        skids2: skids2,
         relation: relation},
         function(status, text) {
           if (200 !== status) return;
@@ -20,7 +20,8 @@
             alert(json.error);
             return;
           }
-          var text = 'Synapses ' + ('presynaptic_to' === relation ? 'post' : 'pre') + 'synaptic to skeleton #' + skid;
+          var text = 'Synapses ' + ('presynaptic_to' === relation ? 'post' : 'pre') +
+              'synaptic to skeleton(s) #' + skids1.join(', ');
           show_table(text, json);
         });
   };

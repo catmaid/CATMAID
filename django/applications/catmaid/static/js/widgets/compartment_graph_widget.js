@@ -382,7 +382,7 @@ GroupGraph.prototype.init = function() {
           };
       // If both source and target are not split and are not groups:
       if (isSingle(source) && isSingle(target)) {
-        CATMAID.ConnectorSelection.show_shared_connectors( source, [target], "presynaptic_to" );
+        CATMAID.ConnectorSelection.show_shared_connectors( [source], [target], "presynaptic_to" );
       } else {
         var source_skids,
             target_skids,

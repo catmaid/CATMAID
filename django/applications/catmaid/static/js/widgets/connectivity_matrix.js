@@ -270,8 +270,9 @@
       colHeader.appendChild(th);
     }
     // Add row headers and connectivity matrix rows
-    var r = 0, c = 0;
+    var r = 0;;
     for (var dr=0; dr<nDisplayRows; ++dr) {
+      var c = 0;
       // Get skeleton or rowGroup name and increase row skeleton counter
       var rowId = this.rowDimension.orderedElements[dr];
       var rowGroup = this.rowDimension.groups[rowId];
@@ -307,6 +308,9 @@
         var tdOut = createSynapseCountCell(colSkids, rowSkids, connections[1]);
         row.appendChild(tdIn);
         row.appendChild(tdOut);
+
+        // Increase index for next iteration
+        c = colGroup ? c + colGroup.length : c + 1;
       }
 
       // Increase index for next iteration

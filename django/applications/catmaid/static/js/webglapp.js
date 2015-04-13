@@ -3155,8 +3155,15 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
 
     this.geometry['neurite'].colorsNeedUpdate = true;
     this.actor['neurite'].material.color = new THREE.Color().setHex(0xffffff);
-    this.actor['neurite'].material.opacity = 1;
-    this.actor['neurite'].material.transparent = false;
+
+    if ('none' === options.color_method) {
+      this.actor['neurite'].material.opacity = this.opacity;
+      this.actor['neurite'].material.transparent = this.opacity !== 1;
+    } else {
+      this.actor['neurite'].material.opacity = 1;
+      this.actor['neurite'].material.transparent = false;
+    }
+
     this.actor['neurite'].material.needsUpdate = true; // TODO repeated, it's the line_material
 
   } else {

@@ -3,6 +3,8 @@
 
 (function(CATMAID) {
 
+  "use strict";
+
   var table = null;
 
   /** Represents a table listing the synapses between the active or the selected skeletons vs a specific partner skeleton. */

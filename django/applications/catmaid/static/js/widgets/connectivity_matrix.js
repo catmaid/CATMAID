@@ -253,10 +253,86 @@
    */
   ConnectivityMatrixWidget.prototype.addConnectivityMatrixTable = function(
       matrix, content, synThreshold) {
+    // Create table representation for connectivity matrix
+    var table = document.createElement('table');
+    table.setAttribute('class', 'partner_table');
+
+    // Add column header, prepend one blank cell for row headers
+    var colHeader = table.appendChild(document.createElement('tr'));
+    colHeader.appendChild(document.createElement('th'));
+
+    var walked = this.walkMatrix(matrix, handleColumn.bind(window, colHeader),
+        handleRow.bind(window, table), handleCell);
+
+    if (walked) {
+      // Append matrix to content
+      content.appendChild(table);
+
+      // Add a handler for openening connector selections for individual partners
+      $('a[partnerIDs]', table).click(function () {
+        var sourceIDs = $(this).attr('sourceIDs');
+        var partnerIDs = $(this).attr('partnerIDs');
+        if (sourceIDs && partnerIDs) {
+          sourceIDs = JSON.parse(sourceIDs);
+          partnerIDs = JSON.parse(partnerIDs);
+          CATMAID.ConnectorSelection.show_shared_connectors(sourceIDs, partnerIDs,
+            "postsynaptic_to");
+        } else {
+          CATMAID.error("Could not find partner or source IDs!");
+        }
+
+        return true;
+      });
+    }
+
+    return content;
+
+    // Create column
+    function handleColumn(tableHeader, id, colGroup, name) {
+      var th = document.createElement('th');
+      th.appendChild(document.createTextNode(name));
+      th.setAttribute('colspan', 2);
+      if (colGroup) {
+        th.setAttribute('title', 'This colGroup contains ' + colGroup.length +
+            ' skeleton(s): ' + colGroup.join(', '));
+      }
+      tableHeader.appendChild(th);
+    }
+
+    // Create row
+    function handleRow(table, id, rowGroup, name) {
+      var row = document.createElement('tr');
+      table.appendChild(row);
+      var th = document.createElement('th');
+      th.appendChild(document.createTextNode(name));
+      if (rowGroup) {
+        th.setAttribute('title', 'This rowGroup contains ' + rowGroup.length +
+            ' skeleton(s): ' + rowGroup.join(', '));
+      }
+      row.appendChild(th);
+      return row;
+    }
+
+    // Create cell
+    function handleCell(row, rowSkids, colSkids, connections) {
+      var tdIn = createSynapseCountCell(rowSkids, colSkids, connections[0], synThreshold);
+      var tdOut = createSynapseCountCell(colSkids, rowSkids, connections[1], synThreshold);
+      row.appendChild(tdIn);
+      row.appendChild(tdOut);
+    }
+  };
+
+  /**
+   * Iterate over the current connectivity matrix and call the passed in
+   * functions when a column can be created, a row can be crated and a cell can
+   * be created.
+   */
+  ConnectivityMatrixWidget.prototype.walkMatrix = function(
+      matrix, handleCol, handleRow, handleCell) {
     var nRows = matrix.getNumberOfRows();
     var nCols = matrix.getNumberOfColumns();
     if (0 === nRows || 0 === nCols) {
-      return;
+      return false;
     }
 
     var m = matrix.get();
@@ -266,26 +342,12 @@
     var nDisplayRows = this.rowDimension.orderedElements.length;
     var nDisplayCols = this.colDimension.orderedElements.length;
 
-    // Create table representation for connectivity matrix
-    var table = document.createElement('table');
-    table.setAttribute('class', 'partner_table');
-    // Add column header, prepend one blank cell for row headers
-    var colHeader = table.appendChild(document.createElement('tr'));
-    colHeader.appendChild(document.createElement('th'));
     for (var c=0; c<nDisplayCols; ++c) {
       // Get skeleton or group name
       var id = this.colDimension.orderedElements[c];
       var colGroup = this.colDimension.groups[id];
       var name = colGroup ? id : nns.getName(id);
-      // Create column
-      var th = document.createElement('th');
-      th.appendChild(document.createTextNode(name));
-      th.setAttribute('colspan', 2);
-      if (colGroup) {
-        th.setAttribute('title', 'This colGroup contains ' + colGroup.length +
-            ' skeleton(s): ' + colGroup.join(', '));
-      }
-      colHeader.appendChild(th);
+      handleCol(id, colGroup, name);
     }
     // Add row headers and connectivity matrix rows
     var r = 0;
@@ -294,21 +356,8 @@
       // Get skeleton or rowGroup name and increase row skeleton counter
       var rowId = this.rowDimension.orderedElements[dr];
       var rowGroup = this.rowDimension.groups[rowId];
-      var name, title;
-      if (rowGroup) {
-        name = rowId;
-        title = 'This rowGroup contains ' + rowGroup.length + ' skeleton(s): ' +
-            rowGroup.join(', ');
-      } else {
-        name = nns.getName(rowId);
-      }
-      // Create row
-      var row = document.createElement('tr');
-      table.appendChild(row);
-      var th = document.createElement('th');
-      th.appendChild(document.createTextNode(name));
-      if (title) th.setAttribute('title', title);
-      row.appendChild(th);
+      var name = rowGroup ? rowId : nns.getName(rowId);
+      var row = handleRow(rowId, rowGroup, name);
 
       // Crete cells for each column in this row
       for (var dc=0; dc<nDisplayCols; ++dc) {
@@ -319,13 +368,10 @@
             rowGroup ? rowGroup.length : 1,
             colGroup ? colGroup.length : 1);
 
-        // Create and append in and out cells
+        // Create and handle in and out cells
         var rowSkids = rowGroup ? rowGroup : [rowId];
         var colSkids = colGroup ? colGroup : [colId];
-        var tdIn = createSynapseCountCell(rowSkids, colSkids, connections[0], synThreshold);
-        var tdOut = createSynapseCountCell(colSkids, rowSkids, connections[1], synThreshold);
-        row.appendChild(tdIn);
-        row.appendChild(tdOut);
+        handleCell(row, rowSkids, colSkids, connections);
 
         // Increase index for next iteration
         c = colGroup ? c + colGroup.length : c + 1;
@@ -334,25 +380,8 @@
       // Increase index for next iteration
       r = rowGroup ? r + rowGroup.length : r + 1;
     }
-    content.appendChild(table);
 
-    // Add a handler for openening connector selections for individual partners
-    $('a[partnerIDs]', table).click(function () {
-      var sourceIDs = $(this).attr('sourceIDs');
-      var partnerIDs = $(this).attr('partnerIDs');
-      if (sourceIDs && partnerIDs) {
-        sourceIDs = JSON.parse(sourceIDs);
-        partnerIDs = JSON.parse(partnerIDs);
-        CATMAID.ConnectorSelection.show_shared_connectors(sourceIDs, partnerIDs,
-           "postsynaptic_to");
-      } else {
-        CATMAID.error("Could not find partner or source IDs!");
-      }
-
-      return true;
-    });
-
-    return content;
+    return true;
   };
 
   /**

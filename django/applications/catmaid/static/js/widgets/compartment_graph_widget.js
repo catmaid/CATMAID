@@ -3,7 +3,6 @@
 /* global
   ArborParser,
   CircuitGraphPlot,
-  ConnectorSelection,
   cytoscape,
   fetchSkeletons,
   growlAlert,
@@ -383,7 +382,7 @@ GroupGraph.prototype.init = function() {
           };
       // If both source and target are not split and are not groups:
       if (isSingle(source) && isSingle(target)) {
-        ConnectorSelection.show_shared_connectors( source, [target], "presynaptic_to" );
+        CATMAID.ConnectorSelection.show_shared_connectors( source, [target], "presynaptic_to" );
       } else {
         var source_skids,
             target_skids,
@@ -412,7 +411,7 @@ GroupGraph.prototype.init = function() {
           var json = $.parseJSON(text);
           if (json.error) return new CATMAID.ErrorDialog(
               "Cound not fetch edge data.", json.error);
-          ConnectorSelection.show_connectors(json);
+          CATMAID.ConnectorSelection.show_connectors(json);
         });
     }
   });

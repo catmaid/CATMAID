@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  ConnectorSelection,
   InstanceRegistry,
   NeuronNameService,
   project,
@@ -1139,7 +1138,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
             " and relation " + relation);
       } else {
         var skids = Object.keys(partner.skids);
-        ConnectorSelection.show_shared_connectors(partner.id, skids, relation);
+        CATMAID.ConnectorSelection.show_shared_connectors(partner.id, skids, relation);
       }
 
       return true;

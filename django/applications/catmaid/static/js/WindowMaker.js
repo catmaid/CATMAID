@@ -195,7 +195,7 @@ var WindowMaker = new function()
 
     addListener(win, container);
     addLogic(win);
-    ConnectorSelection.init(); // MUST go after adding the container to the window, otherwise one gets "cannot read property 'aoData' of null" when trying to add data to the table
+    CATMAID.ConnectorSelection.init(); // MUST go after adding the container to the window, otherwise one gets "cannot read property 'aoData' of null" when trying to add data to the table
 
     return win;
   };

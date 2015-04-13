@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  ConnectorSelection,
   growlAlert,
   project,
   requestQueue,
@@ -209,7 +208,7 @@ var ProjectStatistics = new function()
                   return;
                 }
 
-                ConnectorSelection.show_connectors(connectors);
+                CATMAID.ConnectorSelection.show_connectors(connectors);
               }));
           break;
         default:

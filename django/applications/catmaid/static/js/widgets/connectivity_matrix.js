@@ -320,7 +320,7 @@
       var sourceID = $(this).attr('sourceID');
       var partnerID = $(this).attr('partnerID');
       if (sourceID && partnerID) {
-        ConnectorSelection.show_shared_connectors(sourceID, [partnerID],
+        CATMAID.ConnectorSelection.show_shared_connectors(sourceID, [partnerID],
            "postsynaptic_to");
       } else {
         CATMAID.error("Could not find partner or source ID!");

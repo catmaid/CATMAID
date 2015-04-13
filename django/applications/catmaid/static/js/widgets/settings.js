@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   annotations,
-  ConnectorSelection,
   growlAlert,
   NeuronNameService,
   OptionsDialog,

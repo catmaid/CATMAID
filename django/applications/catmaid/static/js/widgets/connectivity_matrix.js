@@ -300,12 +300,11 @@
             rowGroup ? rowGroup.length : 1,
             colGroup ? colGroup.length : 1);
 
-        var rowSkid = 42;
-        var colSkid = 42; //this.colDimension.orderedSkeletonIDs[c];
-
         // Create and append in and out cells
-        var tdIn = createSynapseCountCell(rowSkid, colSkid, connections[0]);
-        var tdOut = createSynapseCountCell(colSkid, rowSkid, connections[1]);
+        var rowSkids = rowGroup ? rowGroup : [rowId];
+        var colSkids = colGroup ? colGroup : [colId];
+        var tdIn = createSynapseCountCell(rowSkids, colSkids, connections[0]);
+        var tdOut = createSynapseCountCell(colSkids, rowSkids, connections[1]);
         row.appendChild(tdIn);
         row.appendChild(tdOut);
       }
@@ -316,14 +315,16 @@
     content.appendChild(table);
 
     // Add a handler for openening connector selections for individual partners
-    $('a[partnerID]', table).click(function () {
-      var sourceID = $(this).attr('sourceID');
-      var partnerID = $(this).attr('partnerID');
-      if (sourceID && partnerID) {
-        CATMAID.ConnectorSelection.show_shared_connectors(sourceID, [partnerID],
+    $('a[partnerIDs]', table).click(function () {
+      var sourceIDs = $(this).attr('sourceIDs');
+      var partnerIDs = $(this).attr('partnerIDs');
+      if (sourceIDs && partnerIDs) {
+        sourceIDs = JSON.parse(sourceIDs);
+        partnerIDs = JSON.parse(partnerIDs);
+        CATMAID.ConnectorSelection.show_shared_connectors(sourceIDs, partnerIDs,
            "postsynaptic_to");
       } else {
-        CATMAID.error("Could not find partner or source ID!");
+        CATMAID.error("Could not find partner or source IDs!");
       }
 
       return true;
@@ -352,7 +353,7 @@
   /**
    * Create a synapse count table cell.
    */
-  function createSynapseCountCell(sourceID, partnerID, count) {
+  function createSynapseCountCell(sourceIDs, partnerIDs, count) {
     var td = document.createElement('td');
     td.setAttribute('class', 'syncount');
     if (count > 0) {
@@ -362,8 +363,8 @@
       td.appendChild(a);
       a.appendChild(document.createTextNode(count));
       a.setAttribute('href', '#');
-      a.setAttribute('sourceID', sourceID);
-      a.setAttribute('partnerID', partnerID);
+      a.setAttribute('sourceIDs', JSON.stringify(sourceIDs));
+      a.setAttribute('partnerIDs', JSON.stringify(partnerIDs));
     } else {
       // Make a hidden span including the zero for semantic clarity and table exports.
       var s = document.createElement('span');

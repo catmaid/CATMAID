@@ -10,6 +10,8 @@
     this.matrix = new CATMAID.ConnectivityMatrix();
     this.rowDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Rows");
     this.colDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Columns");
+    // Synapse counts are only displayed if they are at least that big
+    this.synapseThreshold = 1;
   };
 
   ConnectivityMatrixWidget.prototype = {};
@@ -136,6 +138,21 @@
         }).bind(this);
         controls.appendChild(clear);
 
+        var max = 20;
+        var synapseThresholdSelect = document.createElement('select');
+        for (var i=1; i <= max; ++i) {
+          synapseThresholdSelect.options.add(
+                new Option(i, i, this.synapseThreshold === i));
+        }
+        synapseThresholdSelect.onchange = (function(e) {
+          this.synapseThreshold = e.target.value;
+          this.refresh();
+        }).bind(this);
+        var synapseThreshold = document.createElement('label');
+        synapseThreshold.appendChild(document.createTextNode('Syn. threshold'));
+        synapseThreshold.appendChild(synapseThresholdSelect);
+        controls.appendChild(synapseThreshold);
+
         var update = document.createElement('input');
         update.setAttribute("type", "button");
         update.setAttribute("value", "Refresh");
@@ -175,7 +192,7 @@
   ConnectivityMatrixWidget.prototype.refresh = function(container) {
     // Clrear container and add new table
     $(this.content).empty();
-    this.addConnectivityMatrixTable(this.matrix, this.content);
+    this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold);
   };
 
   /**
@@ -221,7 +238,7 @@
         // Clear any message
         if (this.content.dataset.msg) delete this.content.dataset.msg;
         // Create table
-        this.addConnectivityMatrixTable(this.matrix, this.content);
+        this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold);
       }).bind(this));
   };
 
@@ -229,12 +246,13 @@
    * Add a tabular representation of the connectivity matrix to the given DOM
    * element.
    *
-   * @param {ConnectivityMatrix} The connectivity matrix to add.
-   * @param {DOMElement} The element to add the table to.
+   * @param matrix {ConnectivityMatrix} The connectivity matrix to add.
+   * @param content {DOMElement} The element to add the table to.
+   * @param synThreshold {number} Maximum number of synapses not to display
    * @returns the content element passed in.
    */
   ConnectivityMatrixWidget.prototype.addConnectivityMatrixTable = function(
-      matrix, content) {
+      matrix, content, synThreshold) {
     var nRows = matrix.getNumberOfRows();
     var nCols = matrix.getNumberOfColumns();
     if (0 === nRows || 0 === nCols) {
@@ -304,8 +322,8 @@
         // Create and append in and out cells
         var rowSkids = rowGroup ? rowGroup : [rowId];
         var colSkids = colGroup ? colGroup : [colId];
-        var tdIn = createSynapseCountCell(rowSkids, colSkids, connections[0]);
-        var tdOut = createSynapseCountCell(colSkids, rowSkids, connections[1]);
+        var tdIn = createSynapseCountCell(rowSkids, colSkids, connections[0], synThreshold);
+        var tdOut = createSynapseCountCell(colSkids, rowSkids, connections[1], synThreshold);
         row.appendChild(tdIn);
         row.appendChild(tdOut);
 
@@ -357,10 +375,10 @@
   /**
    * Create a synapse count table cell.
    */
-  function createSynapseCountCell(sourceIDs, partnerIDs, count) {
+  function createSynapseCountCell(sourceIDs, partnerIDs, count, threshold) {
     var td = document.createElement('td');
     td.setAttribute('class', 'syncount');
-    if (count > 0) {
+    if (count >= threshold) {
       // Create a links that will open a connector selection when clicked. The
       // handler to do this is created separate to only require one handler.
       var a = document.createElement('a');

@@ -68,11 +68,20 @@ def one_to_many_synapses(request, project_id=None):
         raise ValueError("No skeleton IDs for 'many' provided")
 
     relation_name = request.POST.get('relation') # expecting presynaptic_to or postsynaptic_to
-    if 'postsynaptic_to' == relation_name or 'presynaptic_to' == relation_name:
-        pass
-    else:
+
+    rows = _many_to_many_synapses([skid], skids, relation_name)
+    return HttpResponse(json.dumps(rows))
+
+
+def _many_to_many_synapses(skids1, skids2, relation_name):
+    """
+    Return all rows that connect skeletons of one set with another set with a
+    specific relation.
+    """
+    if relation_name not in ('postsynaptic_to', 'presynaptic_to'):
         raise Exception("Cannot accept a relation named '%s'" % relation_name)
-    cursor = connection.cursor();
+
+    cursor = connection.cursor()
     cursor.execute('''
     SELECT tc1.connector_id, c.location_x, c.location_y, c.location_z,
            tc1.treenode_id, tc1.skeleton_id, tc1.confidence, tc1.user_id,
@@ -85,7 +94,7 @@ def one_to_many_synapses(request, project_id=None):
          treenode t2,
          relation r1,
          connector c
-    WHERE tc1.skeleton_id = %s
+    WHERE tc1.skeleton_id IN (%s)
       AND tc1.connector_id = c.id
       AND tc2.skeleton_id IN (%s)
       AND tc1.connector_id = tc2.connector_id
@@ -94,15 +103,15 @@ def one_to_many_synapses(request, project_id=None):
       AND tc1.relation_id != tc2.relation_id
       AND tc1.treenode_id = t1.id
       AND tc2.treenode_id = t2.id
-    ''' % (skid, ','.join(map(str, skids)), relation_name))
+    ''' % (','.join(map(str, skids1)),
+           ','.join(map(str, skids2)),
+           relation_name))
 
-    rows = tuple((row[0], (row[1], row[2], row[3]),
+    return tuple((row[0], (row[1], row[2], row[3]),
                   row[4], row[5], row[6], row[7],
                   (row[8], row[9], row[10]),
                   row[11], row[12], row[13], row[14],
                   (row[15], row[16], row[17])) for row in cursor.fetchall())
-
-    return HttpResponse(json.dumps(rows))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -369,7 +378,7 @@ def _connector_skeletons(connector_ids, project_id):
         c = cs.get(row[0])
         if not c:
             # Ensure each connector has the two entries at their minimum
-            c = {'presynaptic_to': None, 'postsynaptic_to': [], 
+            c = {'presynaptic_to': None, 'postsynaptic_to': [],
                  'presynaptic_to_node': None, 'postsynaptic_to_node': []}
             cs[row[0]] = c
         if POST == row[1]:

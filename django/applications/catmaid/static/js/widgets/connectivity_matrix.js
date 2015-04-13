@@ -271,6 +271,13 @@
         handleRow.bind(window, table), handleCell);
 
     if (walked) {
+      var infoBox = document.createElement('div');
+      infoBox.appendChild(document.createTextNode('The table below shows the number ' +
+            'of pre-synaptic and post-synaptic connections per row/column ' +
+            'combination. Therfore, two sub-cells are shown per table cell (first: ' +
+            'column to row, second: row to column). If there are no connections, no ' +
+            'number is shown.'));
+      content.appendChild(infoBox);
       // Append matrix to content
       content.appendChild(table);
 

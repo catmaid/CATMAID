@@ -158,6 +158,12 @@
         update.setAttribute("value", "Refresh");
         update.onclick = this.update.bind(this);
         controls.appendChild(update);
+
+        var exportCSV = document.createElement('input');
+        exportCSV.setAttribute("type", "button");
+        exportCSV.setAttribute("value", "Export CSV");
+        exportCSV.onclick = this.exportCSV.bind(this);
+        controls.appendChild(exportCSV);
       },
 
       /**
@@ -382,6 +388,48 @@
     }
 
     return true;
+  };
+
+  /**
+   * Export the currently displayed matrix as CSV file.
+   */
+  ConnectivityMatrixWidget.prototype.exportCSV = function() {
+    if (!this.matrix) {
+      CATMAIR.error("Please load some data first.");
+      return;
+    }
+
+    // Create a new array that contains entries for each line. Pre-pulate with
+    // first element (empty upper left cell).
+    var lines = [['""']];
+
+    var walked = this.walkMatrix(this.matrix, handleColumn.bind(window, lines[0]),
+        handleRow.bind(window, lines), handleCell);
+
+    // Export concatenation of all lines, delimited buy new-line characters
+    if (walked) {
+      var text = lines.map(function(l) { return l.join(', '); }).join('\n');
+      saveAs(new Blob([text], {type: 'text/plain'}), 'connectivity-matrix.csv');
+    }
+
+    // Create header
+    function handleColumn(line, id, colGroup, name) {
+      line.push('"from ' + name + '"');
+      line.push('"to ' + name + '"');
+    }
+
+    // Create row
+    function handleRow(lines, id, rowGroup, name) {
+      var line = ['"' + name + '"'];
+      lines.push(line);
+      return line;
+    }
+
+    // Create cell
+    function handleCell(line, rowSkids, colSkids, connections) {
+      line.push(connections[0]);
+      line.push(connections[1]);
+    }
   };
 
   /**

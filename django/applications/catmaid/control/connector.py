@@ -73,6 +73,25 @@ def one_to_many_synapses(request, project_id=None):
     return HttpResponse(json.dumps(rows))
 
 
+@requires_user_role(UserRole.Browse)
+def many_to_many_synapses(request, project_id=None):
+    """
+    Return the list of synapses of a specific kind between one list of
+    skeletons and a list of other skeletons.
+    """
+    skids1 = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids1['))
+    if not skids1:
+        raise ValueError("No skeleton IDs for first list of 'many' provided")
+    skids2 = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids2['))
+    if not skids2:
+        raise ValueError("No skeleton IDs for second list 'many' provided")
+
+    relation_name = request.POST.get('relation') # expecting presynaptic_to or postsynaptic_to
+
+    rows = _many_to_many_synapses(skids1, skids2, relation_name)
+    return HttpResponse(json.dumps(rows))
+
+
 def _many_to_many_synapses(skids1, skids2, relation_name):
     """
     Return all rows that connect skeletons of one set with another set with a

@@ -1188,6 +1188,36 @@ class ViewPageTests(TestCase):
                             415, 235, 5, 3, [5810.0, 3950.0, 0.0]]]
         self.assertEqual(expected_result, parsed_response)
 
+    def test_many_to_many_skeletons_connector_list(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/connector/list/many_to_many' % self.test_project_id, {
+                    'skids1[0]': 373,
+                    'skids2[0]': 235,
+                    'relation': 'presynaptic_to'
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = []
+
+        self.assertEqual(expected_result, parsed_response)
+
+        response = self.client.post(
+                '/%d/connector/list/many_to_many' % self.test_project_id, {
+                    'skids1[0]': 373,
+                    'skids2[0]': 235,
+                    'relation': 'postsynaptic_to'
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[356, [6730.0, 2700.0, 0.0],
+                            377, 373, 5, 3, [7620.0, 2890.0, 0.0],
+                            285, 235, 5, 3, [6100.0, 2980.0, 0.0]],
+                           [421, [6260.0, 3990.0, 0.0],
+                            409, 373, 5, 3, [6630.0, 4330.0, 0.0],
+                            415, 235, 5, 3, [5810.0, 3950.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
     def test_create_connector(self):
         self.fake_authentication()
         connector_count = Connector.objects.all().count()

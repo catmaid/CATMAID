@@ -273,9 +273,9 @@
     if (walked) {
       var infoBox = document.createElement('div');
       infoBox.appendChild(document.createTextNode('The table below shows the number ' +
-            'of pre-synaptic and post-synaptic connections per row/column ' +
+            'of post-synaptic and pre-synaptic connections per row/column ' +
             'combination. Therfore, two sub-cells are shown per table cell (first: ' +
-            'column to row, second: row to column). If there are no connections, no ' +
+            'row to column, second: column to row). If there are no connections, no ' +
             'number is shown.'));
       content.appendChild(infoBox);
       // Append matrix to content
@@ -329,12 +329,12 @@
 
     // Create cell
     function handleCell(row, rowName, rowSkids, colName, colSkids, connections) {
-      var tdIn = createSynapseCountCell("post", rowName, rowSkids, colName, colSkids,
-          connections[0], synThreshold);
       var tdOut = createSynapseCountCell("pre", rowName, rowSkids, colName, colSkids,
           connections[1], synThreshold);
-      row.appendChild(tdIn);
+      var tdIn = createSynapseCountCell("post", rowName, rowSkids, colName, colSkids,
+          connections[0], synThreshold);
       row.appendChild(tdOut);
+      row.appendChild(tdIn);
     }
   };
 

@@ -1598,7 +1598,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None):
             arborescence.node[nbr]['parent_id'] = arborescence.node[n]['id']
             if not 'radius' in arborescence.node[nbr]:
                 arborescence.node[nbr]['radius'] = -1
-    arborescence.node[root]['parent_id'] = 'NULL'
+    arborescence.node[root]['parent_id'] = 'NULL::bigint'
     if not 'radius' in arborescence.node[root]:
         arborescence.node[root]['radius'] = -1
     new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])

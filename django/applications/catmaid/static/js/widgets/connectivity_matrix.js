@@ -12,6 +12,9 @@
     this.colDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Columns");
     // Synapse counts are only displayed if they are at least that big
     this.synapseThreshold = 1;
+    // Color indices for post and pre cells, default light pre/post colors
+    this.postColor = 2;
+    this.preColor = 1;
   };
 
   ConnectivityMatrixWidget.prototype = {};
@@ -153,6 +156,36 @@
         synapseThreshold.appendChild(synapseThresholdSelect);
         controls.appendChild(synapseThreshold);
 
+        var postColorSelect = document.createElement('select');
+        for (var i=0; i < colorOptions.length; ++i) {
+          var selected = (this.postColor === i);
+          postColorSelect.options.add(
+                new Option(colorOptions[i], i, selected, selected));
+        }
+        postColorSelect.onchange = (function(e) {
+          this.postColor = parseInt(e.target.value, 10);
+          this.refresh();
+        }).bind(this);
+        var postColor = document.createElement('label');
+        postColor.appendChild(document.createTextNode('Post color'));
+        postColor.appendChild(postColorSelect);
+        controls.appendChild(postColor);
+
+        var preColorSelect = document.createElement('select');
+        for (var i=0; i < colorOptions.length; ++i) {
+          var selected = (this.preColor === i);
+          preColorSelect.options.add(
+                new Option(colorOptions[i], i, selected, selected));
+        }
+        preColorSelect.onchange = (function(e) {
+          this.preColor = parseInt(e.target.value, 10);
+          this.refresh();
+        }).bind(this);
+        var preColor = document.createElement('label');
+        preColor.appendChild(document.createTextNode('Pre color'));
+        preColor.appendChild(preColorSelect);
+        controls.appendChild(preColor);
+
         var update = document.createElement('input');
         update.setAttribute("type", "button");
         update.setAttribute("value", "Refresh");
@@ -267,8 +300,11 @@
     var colHeader = table.appendChild(document.createElement('tr'));
     colHeader.appendChild(document.createElement('th'));
 
+    // Find maximum connection number in matrix
+    var maxConnections = matrix.getMaxConnections();
+
     var walked = this.walkMatrix(matrix, handleColumn.bind(window, colHeader),
-        handleRow.bind(window, table), handleCell);
+        handleRow.bind(window, table), handleCell.bind(this));
 
     if (walked) {
       var infoBox = document.createElement('div');
@@ -333,6 +369,8 @@
           connections[1], synThreshold);
       var tdIn = createSynapseCountCell("post", rowName, rowSkids, colName, colSkids,
           connections[0], synThreshold);
+      colorize(tdOut, colorOptions[this.postColor], connections[1], 0, maxConnections);
+      colorize(tdIn, colorOptions[this.preColor], connections[0], 0, maxConnections);
       row.appendChild(tdOut);
       row.appendChild(tdIn);
     }
@@ -526,5 +564,36 @@
   function isValidGroupName(existingNames, name) {
     return -1 === existingNames.indexOf(name);
   }
+
+  // The available color options for
+  var colorOptions = ["None", "Light red", "Light cyan"].concat(Object.keys(colorbrewer));
+
+  /**
+   * Set background color of a DOM element according to the given color scheme.
+   */
+  var colorize = function(element, scheme, value, minValue, maxValue) {
+    if (!scheme || "None" === scheme) return;
+    if ("Light red" === scheme) {
+      element.style.backgroundColor = "mistyrose";
+    } else if ("Light cyan" === scheme) {
+      element.style.backgroundColor = "lightcyan";
+    } else if (colorbrewer.hasOwnProperty(scheme)) {
+      var sets = colorbrewer[scheme];
+      var range = maxValue - minValue + 1;
+      var relValue = value - minValue;
+      if (sets.hasOwnProperty(range)) {
+        // Perfect, one available scale fits our range
+        element.style.backgroundColor = sets[range][relValue];
+      } else {
+        // Scale range to fit value
+        var maxLength = Object.keys(sets).reduce(function(mv, v) {
+          v = parseInt(v, 10);
+          return v > mv ? v : mv;
+        }, 0);
+        var index = Math.min(maxLength - 1, Math.round(relValue * maxLength / range));
+        element.style.backgroundColor = sets[maxLength][index];
+      }
+    }
+  };
 
 })(CATMAID);

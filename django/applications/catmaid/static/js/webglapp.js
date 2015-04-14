@@ -1189,7 +1189,7 @@ WebGLApplication.prototype.Space.prototype.render = function() {
 WebGLApplication.prototype.Space.prototype.destroy = function() {
   // remove active_node and project-wise meshes
 	this.scene.remove(this.content.active_node.mesh);
-	this.content.meshes.forEach(this.scene.remove, this.scene);
+	this.content.meshes.forEach(function(m) { this.remove(m); }, this.scene);
 
   // dispose active_node and meshes
   this.content.dispose();
@@ -1197,7 +1197,7 @@ WebGLApplication.prototype.Space.prototype.destroy = function() {
   // dispose and remove skeletons
   this.removeSkeletons(Object.keys(this.content.skeletons));
 
-	this.lights.forEach(this.scene.remove, this.scene);
+	this.lights.forEach(function(l) { this.remove(l); }, this.scene);
 
   // dispose meshes and materials
   this.staticContent.dispose();
@@ -1206,7 +1206,7 @@ WebGLApplication.prototype.Space.prototype.destroy = function() {
 	this.scene.remove(this.staticContent.box);
 	this.scene.remove(this.staticContent.floor);
 	if (this.staticContent.zplane) this.scene.remove(this.staticContent.zplane);
-	this.staticContent.missing_sections.forEach(this.scene.remove, this.scene);
+	this.staticContent.missing_sections.forEach(function(m) { this.remove(m); }, this.scene);
 
 	this.view.destroy();
 
@@ -1656,7 +1656,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
 		  this.loadMeshes(space, submit, options.createMeshMaterial());
     }
 	} else {
-		this.meshes.forEach(space.scene.remove, space.scene);
+		this.meshes.forEach(function(m) { this.remove(m); }, space.scene);
 		this.meshes = [];
 	}
 

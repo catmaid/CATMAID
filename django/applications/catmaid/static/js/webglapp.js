@@ -1522,10 +1522,10 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.adjust = func
 	if (options.show_missing_sections) {
     if (0 === this.missing_sections.length) {
       this.missing_sections = this.createMissingSections(space, options.missing_section_height);
-      this.missing_sections.forEach(space.scene.add, space.scene);
+      this.missing_sections.forEach(function(m) { this.add(m); }, space.scene);
     }
 	} else {
-		this.missing_sections.forEach(space.scene.remove, space.scene);
+		this.missing_sections.forEach(function(m) { this.remove(m); }, space.scene);
 		this.missing_sections = [];
 	}
 

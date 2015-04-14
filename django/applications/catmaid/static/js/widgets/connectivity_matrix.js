@@ -285,11 +285,12 @@
       $('a[partnerIDs]', table).click(function () {
         var sourceIDs = $(this).attr('sourceIDs');
         var partnerIDs = $(this).attr('partnerIDs');
+        var type = $(this).attr('type');
         if (sourceIDs && partnerIDs) {
           sourceIDs = JSON.parse(sourceIDs);
           partnerIDs = JSON.parse(partnerIDs);
           CATMAID.ConnectorSelection.show_shared_connectors(sourceIDs, partnerIDs,
-            "postsynaptic_to");
+            type + "synaptic_to");
         } else {
           CATMAID.error("Could not find partner or source IDs!");
         }
@@ -328,9 +329,9 @@
 
     // Create cell
     function handleCell(row, rowName, rowSkids, colName, colSkids, connections) {
-      var tdIn = createSynapseCountCell(colName, rowSkids, rowName, colSkids,
+      var tdIn = createSynapseCountCell("post", rowName, rowSkids, colName, colSkids,
           connections[0], synThreshold);
-      var tdOut = createSynapseCountCell(rowName, colSkids, colName, rowSkids,
+      var tdOut = createSynapseCountCell("pre", rowName, rowSkids, colName, colSkids,
           connections[1], synThreshold);
       row.appendChild(tdIn);
       row.appendChild(tdOut);
@@ -462,12 +463,18 @@
   /**
    * Create a synapse count table cell.
    */
-  function createSynapseCountCell(sourceName, sourceIDs, targetName, partnerIDs,
+  function createSynapseCountCell(sourceType, sourceName, sourceIDs, targetName, partnerIDs,
       count, threshold) {
     var td = document.createElement('td');
     td.setAttribute('class', 'syncount');
-    td.setAttribute('title', 'From "' + sourceName + '" to "' + targetName +
-        '": ' + count + ' connection(s)');
+
+    if ("pre" === sourceType) {
+      td.setAttribute('title', 'From "' + sourceName + '" to "' + targetName +
+          '": ' + count + ' connection(s)');
+    } else {
+      td.setAttribute('title', 'From "' + targetName + '" to "' + sourceName +
+          '": ' + count + ' connection(s)');
+    }
     if (count >= threshold) {
       // Create a links that will open a connector selection when clicked. The
       // handler to do this is created separate to only require one handler.
@@ -477,6 +484,7 @@
       a.setAttribute('href', '#');
       a.setAttribute('sourceIDs', JSON.stringify(sourceIDs));
       a.setAttribute('partnerIDs', JSON.stringify(partnerIDs));
+      a.setAttribute('type', sourceType);
     } else {
       // Make a hidden span including the zero for semantic clarity and table exports.
       var s = document.createElement('span');

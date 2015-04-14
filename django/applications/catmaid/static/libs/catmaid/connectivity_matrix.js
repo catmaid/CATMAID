@@ -145,6 +145,21 @@
     return colSkeletonIDs === undefined ? 0 : colSkeletonIDs.length;
   };
 
+  /**
+   * Get maximum number of connections in matrix.
+   */
+  ConnectivityMatrix.prototype.getMaxConnections = function() {
+    var max = 0;
+    for (var i=0; i<rowSkeletonIDs.length; ++i) {
+      for (var j=0; j<colSkeletonIDs.length; ++j) {
+        var c = connectivityMatrix[i][j];
+        if (c[0] > max) max = c[0];
+        if (c[1] > max) max = c[1];
+      }
+    }
+    return max;
+  };
+
   // Make connectivity matrix available in CATMAID namespace
   CATMAID.ConnectivityMatrix = ConnectivityMatrix;
 })(CATMAID);

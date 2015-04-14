@@ -66,9 +66,6 @@ def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
 
     new_log.save()
 
-    # $q = $db->insertIntoId('log', $data );
-    # echo json_encode( array ( 'error' => "Failed to insert operation $op_type for user $uid in project %pid." ) );
-
 
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
 # Required because we need a RequestContext, not just a Context - the

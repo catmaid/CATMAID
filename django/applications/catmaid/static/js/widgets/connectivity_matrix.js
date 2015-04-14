@@ -327,9 +327,11 @@
     }
 
     // Create cell
-    function handleCell(row, rowSkids, colSkids, connections) {
-      var tdIn = createSynapseCountCell(rowSkids, colSkids, connections[0], synThreshold);
-      var tdOut = createSynapseCountCell(colSkids, rowSkids, connections[1], synThreshold);
+    function handleCell(row, rowName, rowSkids, colName, colSkids, connections) {
+      var tdIn = createSynapseCountCell(colName, rowSkids, rowName, colSkids,
+          connections[0], synThreshold);
+      var tdOut = createSynapseCountCell(rowName, colSkids, colName, rowSkids,
+          connections[1], synThreshold);
       row.appendChild(tdIn);
       row.appendChild(tdOut);
     }
@@ -369,14 +371,15 @@
       // Get skeleton or rowGroup name and increase row skeleton counter
       var rowId = this.rowDimension.orderedElements[dr];
       var rowGroup = this.rowDimension.groups[rowId];
-      var name = rowGroup ? rowId : nns.getName(rowId);
-      var row = handleRow(rowId, rowGroup, name);
+      var rowName = rowGroup ? rowId : nns.getName(rowId);
+      var row = handleRow(rowId, rowGroup, rowName);
 
       // Crete cells for each column in this row
       for (var dc=0; dc<nDisplayCols; ++dc) {
         // Aggregate group counts (if any)
         var colId = this.colDimension.orderedElements[dc];
         var colGroup = this.colDimension.groups[colId];
+        var colName = colGroup ? colId : nns.getName(colId);
         var connections = aggregateMatrix(m, r, c,
             rowGroup ? rowGroup.length : 1,
             colGroup ? colGroup.length : 1);
@@ -384,7 +387,7 @@
         // Create and handle in and out cells
         var rowSkids = rowGroup ? rowGroup : [rowId];
         var colSkids = colGroup ? colGroup : [colId];
-        handleCell(row, rowSkids, colSkids, connections);
+        handleCell(row, rowName, rowSkids, colName, colSkids, connections);
 
         // Increase index for next iteration
         c = colGroup ? c + colGroup.length : c + 1;
@@ -433,7 +436,7 @@
     }
 
     // Create cell
-    function handleCell(line, rowSkids, colSkids, connections) {
+    function handleCell(line, rowName, rowSkids, colName, colSkids, connections) {
       line.push(connections[0]);
       line.push(connections[1]);
     }
@@ -459,9 +462,12 @@
   /**
    * Create a synapse count table cell.
    */
-  function createSynapseCountCell(sourceIDs, partnerIDs, count, threshold) {
+  function createSynapseCountCell(sourceName, sourceIDs, targetName, partnerIDs,
+      count, threshold) {
     var td = document.createElement('td');
     td.setAttribute('class', 'syncount');
+    td.setAttribute('title', 'From "' + sourceName + '" to "' + targetName +
+        '": ' + count + ' connection(s)');
     if (count >= threshold) {
       // Create a links that will open a connector selection when clicked. The
       // handler to do this is created separate to only require one handler.

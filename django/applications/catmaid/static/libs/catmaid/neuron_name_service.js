@@ -66,6 +66,15 @@ var NeuronNameService = (function()
       },
 
       /**
+       * Return true if the skeleton ID is appended to every label, false
+       * otherwise.
+       */
+      getAppendSkeletonId: function()
+      {
+        return appendSkeletonId;
+      },
+
+      /**
        * Returns copy of all available naming options.
        */
       getOptions: function()

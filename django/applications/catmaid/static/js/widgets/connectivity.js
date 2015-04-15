@@ -1051,7 +1051,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     aoColumnDefs: [
       { aTargets: [0], sSortDataType: 'dom-checkbox' }, // Checkbox column
       { aTargets: [1], sType: 'html', bSearchable: true }, // Neuron name column
-      { aTargets: ['_all'], sType: 'wrapped-numeric', bSearchable: false } // All other columns
+      { aTargets: ['_all'], sType: 'html-num-fmt', bSearchable: false } // All other columns
     ]
   };
 
@@ -1061,17 +1061,6 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
     return this.api().column(col, {order:'index'}).nodes().map(function (td, i) {
       return $('input', td).prop('checked') ? '1' : '0';
     });
-  };
-
-  // Sorting functions for review columns (to parse out percent sign)
-  $.fn.dataTableExt.oSort['wrapped-numeric-asc'] = function(a, b) {
-    a = parseFloat($.type(a) === 'string' ? a.replace(/<.*?>/g, "") : a);
-    b = parseFloat($.type(b) === 'string' ? b.replace(/<.*?>/g, "") : b);
-    return (a < b ? -1 : (a === b ? 0 : 1));
-  };
-
-  $.fn.dataTableExt.oSort['wrapped-numeric-desc'] = function(a, b) {
-    return $.fn.dataTableExt.oSort['wrapped-numeric-asc'](b, a);
   };
 
   table_incoming.dataTable(dataTableOptions);

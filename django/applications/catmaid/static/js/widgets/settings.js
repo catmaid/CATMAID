@@ -207,7 +207,7 @@ SettingsWidget.prototype.init = function(space)
 
     ds.append(createCheckboxSetting("Append Skeleton ID", function() {
       NeuronNameService.getInstance().setAppendSkeletonId(this.checked);
-    }));
+    }, NeuronNameService.getInstance().getAppendSkeletonId()));
     // Get all available options
     var namingOptions = NeuronNameService.getInstance().getOptions();
     // Add naming option select box

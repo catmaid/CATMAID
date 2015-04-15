@@ -15,7 +15,29 @@ Treenode table:
   table.
 
 
+Connectivity matrix:
+
+- The tracing tool has got a new widget: a connectivity matrix. It can be opened
+  with the "M" frame icon next to the button for the connectivity widget. To use
+  it, one has to append skeletons for its rows and columns. Skeletons can also
+  be added as group. Each cell shows two sub-cells, the first one shows the
+  number of synapses from row to column and the second one the number synapses
+  from column to row. When a synapse count number is clicked, a connector
+  selection is opened, that contains the corresponding synapses. Both pre- and
+  post-synaptic count cells can be colored individually. By default a coloring
+  similar to the tracing layer's red and cyan is used. There are also color
+  gradients available to produce heat maps (i.e. color cells based on the
+  actual synapse count).
+
+
 ### Bug fixes
+
+3D viewer:
+
+- Adding and removing neurons and static data lead in some situations to many
+  errors that were displayed on the console (and therefore not visible to most
+  users) and caused minor performance problems. This has been fixed and all data
+  should now be added and removed correctly.
 
 
 ## 2015.3.31

@@ -532,7 +532,7 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
       },
       CATMAID.jsonResponseHandler(function(result) {
         var nid = result.treenode_id;
-        statusBar.replaceLast("Created new node node #" + nid +
+        CATMAID.statusBar.replaceLast("Created new node node #" + nid +
             " as child of node #" + childId);
         // Update nodes
         var vnid = node.id;

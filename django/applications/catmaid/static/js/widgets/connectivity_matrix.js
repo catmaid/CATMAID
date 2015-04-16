@@ -268,8 +268,8 @@
     // Update connectivity matrix and make sure all currently looked at
     // skeletons are known to the neuron name service.
     var nns = NeuronNameService.getInstance();
-    this.matrix.setRowSkeletonIDs(this.rowDimension.orderedSkeletonIDs);
-    this.matrix.setColumnSkeletonIDs(this.colDimension.orderedSkeletonIDs);
+    this.matrix.rowSkeletonIDs = this.rowDimension.orderedSkeletonIDs;
+    this.matrix.colSkeletonIDs = this.colDimension.orderedSkeletonIDs;
     this.matrix.refresh()
       .then(nns.registerAll.bind(nns, this, this.rowDimension.getSelectedSkeletonModels()))
       .then(nns.registerAll.bind(nns, this, this.colDimension.getSelectedSkeletonModels()))
@@ -390,7 +390,7 @@
       return false;
     }
 
-    var m = matrix.get();
+    var m = matrix.connectivityMatrix;
     var nns = NeuronNameService.getInstance();
 
     // Get group information

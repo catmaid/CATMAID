@@ -35,17 +35,6 @@
    * fulfilled once the conenctivity matrix is ready.
    */
   ConnectivityMatrix.prototype.refresh = function() {
-    // Create a combined list of source skeleton IDs and filter out duplicates
-    var skeletonIDs = this.rowSkeletonIDs.concat(this.colSkeletonIDs).sort()
-      .reduce(function(a, b) {
-        // Check if the current element is already contained in the result array.
-        // Add it to the result array, if not.
-        if (a.slice(-1)[0] !== b) {
-          a.push(b);
-        }
-        return a;
-      }, []);
-
     // Return a promise that is fullfilled, if the table is ready
     var self = this;
     return new Promise(function(resolve, reject) {

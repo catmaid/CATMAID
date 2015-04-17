@@ -12,7 +12,6 @@
     this.name = name;
     this.registerSource();
     this.skeletonModels = {};
-    this.orderedSkeletonIDs = [];
     // Elements can be groups or single skeletons. A group is represented with
     // its name in here. If it is present as a field in the groups object, it is
     // a real group otherwise, it is treated as a skeleton ID.
@@ -68,10 +67,8 @@
       if (skid in this.skeletonModels) {
         if (createGroup) {
           if (this.moveExistingToNewGroup) {
-            var skeletonIndex = this.orderedSkeletonIDs.indexOf(skid);
-            this.orderedSkeletonIDs.splice(skeletonIndex, 1);
-            var groupIndex = this.orderedElements.indexOf(skid);
-            this.orderedElements.splice(groupIndex, 1);
+            var index = this.orderedElements.indexOf(skid);
+            this.orderedElements.splice(index, 1);
           } else {
             skeleton_ids.splice(skeleton_ids.indexOf(skid), 1);
           }
@@ -82,8 +79,7 @@
         }
       }
 
-      // Store skeleton ID reference (as number) and model
-      this.orderedSkeletonIDs.push(skid);
+      // Store a reference to the skeleton model
       this.skeletonModels[skid] = models[skid];
 
       // If no group should be created, add the ID of every added skeleton to
@@ -103,13 +99,12 @@
   /**
    * Clear all references to skeletons.
    */
-  BasicSkeletonSource.prototype.clear = function(source_chain) {
-    this.orderedSkeletonIDs = [];
+  BasicSkeletonSource.prototype.clear = function(sourceChain) {
     this.skeletonModels = {};
     this.orderedElements = [];
     this.groups = {};
     // Clear link target, if any
-    this.clearLink(source_chain);
+    this.clearLink(sourceChain);
   };
 
   /**
@@ -118,11 +113,6 @@
    * @param skeletonIDs {Array<number>} The list of skeletons to remove
    */
   BasicSkeletonSource.prototype.removeSkeletons = function(skeletonIDs) {
-    // Remove skeleton IDs
-    this.orderedSkeletonIDs = this.orderedSkeletonIDs.filter(function(skid) {
-      return -1 === skeletonIDs.indexOf(skid);
-    });
-
     skeletonIDs.forEach(function(skid) {
       var nSkid = parseInt(skid, 10);
       // Remove models
@@ -197,7 +187,14 @@
    * selection behavior.
    */
   BasicSkeletonSource.prototype.getSelectedSkeletons = function() {
-    return this.orderedSkeletonIDs.slice(0);
+    return this.orderedElements.reduce((function(l, id) {
+      if (this.isGroup(id)) {
+        l.push.apply(l, this.groups[id]);
+      } else {
+        l.push(id);
+      }
+      return l;
+    }).bind(this), []);
   };
 
   /**
@@ -205,8 +202,14 @@
    * and actual selection behavior.
    */
   BasicSkeletonSource.prototype.getSelectedSkeletonModels = function() {
-    return this.orderedSkeletonIDs.reduce((function(m, skid) {
-      m[skid] = this.skeletonModels[skid].clone();
+    return this.orderedElements.reduce((function(m, id) {
+      if (this.isGroup(id)) {
+        this.groups[id].forEach(function(s) {
+          m[s] = this.skeletonModels[s];
+        }, this);
+      } else {
+        m[id] = this.skeletonModels[id].clone();
+      }
       return m;
     }).bind(this), {});
   };

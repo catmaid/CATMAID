@@ -35,6 +35,10 @@ QUnit.test('Basic skeleton source test', function( assert ) {
       src.append(models);
     }
 
+    // Test getNumberOfSkeletons()
+    assert.strictEqual(Object.keys(models).length, src.getNumberOfSkeletons(),
+        'CATMAID.BasicSkeletonSource returns the correct number of skeletons');
+
     // Test hasSkeleton()
     var hasAllSkeletons = skeletonIDs.reduce(function(b, s) {
       var hasSkeleton = src.hasSkeleton(s);

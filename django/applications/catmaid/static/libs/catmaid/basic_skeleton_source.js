@@ -220,6 +220,19 @@
 
   /* Non-interface methods */
 
+  /**
+   * Return the number of known skeletons, including skeletons in groups.
+   */
+  BasicSkeletonSource.prototype.getNumberOfSkeletons = function() {
+    return this.orderedElements.reduce((function(n, id) {
+      if (this.isGroup(id)) {
+        return n + this.groups[id].length;
+      } else {
+        return n + 1
+      }
+    }).bind(this), 0);
+  };
+
   BasicSkeletonSource.prototype.appendAsGroup = function(models, groupName) {
     checkGroupName(this.groups, groupName);
 

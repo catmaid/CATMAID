@@ -246,8 +246,8 @@
     var $content = $(this.content);
     $content.empty();
 
-    var nRows = this.rowDimension.orderedSkeletonIDs.length;
-    var nCols = this.colDimension.orderedSkeletonIDs.length;
+    var nRows = this.rowDimension.getNumberOfSkeletons();
+    var nCols = this.colDimension.getNumberOfSkeletons();
 
     // If there are now row or column skeletons, display a message and return
     if (0 === nRows && 0 === nCols) {

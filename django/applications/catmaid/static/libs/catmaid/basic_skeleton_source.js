@@ -55,10 +55,12 @@
   BasicSkeletonSource.prototype.append = function(models) {
     // Indicate if a new group should be created
     var createGroup = !!this.nextGroupName;
-
-    var skeleton_ids = Object.keys(models);
-    for (var strSkid in models) {
-      var skid = parseInt(strSkid, 10);
+    // Get a number representation of all skeleton IDs
+    var skeleton_ids = Object.keys(models).map(function(skid) {
+      return parseInt(skid, 10);
+    });
+    for (var i=0; i<skeleton_ids.length; ++i) {
+      var skid = skeleton_ids[i];
 
       // If a skeleton is known already, either continue or move it to the end
       // of the ordered list, if a group should be created and known skeletons
@@ -71,7 +73,7 @@
             var groupIndex = this.orderedElements.indexOf(skid);
             this.orderedElements.splice(groupIndex, 1);
           } else {
-            skeleton_ids.splice(skeleton_ids.indexOf(strSkid), 1);
+            skeleton_ids.splice(skeleton_ids.indexOf(skid), 1);
           }
         } else {
           // Update existing model and continue

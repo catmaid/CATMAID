@@ -162,7 +162,7 @@
       return;
     }
     // Add self to source chain
-    source_chain[this] = this;
+    sourceChain[this] = this;
 
     var newModels = {};
     Object.keys(models).forEach(function(skid) {
@@ -174,8 +174,8 @@
       }
     }, this);
 
-    if (Object.keys(new_models).length > 0) {
-      this.append(new_models);
+    if (Object.keys(newModels).length > 0) {
+      this.append(newModels);
     }
 
     this.updateLink(models, sourceChain);
@@ -188,7 +188,7 @@
    * @param skeletonID {number} The skeleton ID to test
    */
   BasicSkeletonSource.prototype.hasSkeleton = function(skeletonID) {
-    return skeleton_id in this.skeletonModels;
+    return skeletonID in this.skeletonModels;
   };
 
 

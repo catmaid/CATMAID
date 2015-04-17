@@ -50,11 +50,11 @@
     var self = this;
     return new Promise(function(resolve, reject) {
       requestQueue.register(
-          CATMAID.makeURL(project.id + '/skeleton/connectivity'),
+          CATMAID.makeURL(project.id + '/skeleton/connectivity_matrix'),
           'POST',
           {
-            'source': skeletonIDs,
-            'boolean_op': 'logic-OR'
+            'rows': self.rowSkeletonIDs,
+            'columns': self.colSkeletonIDs
           },
           CATMAID.jsonResponseHandler(function(json) {
             self.setConnectivityMatrixFromData(json);
@@ -73,7 +73,9 @@
 
   /**
    * Rebuild and return the connectivity matrix based on data returned from the
-   * back-end
+   * back-end. This data is expected to be a mapping from source skeleton IDs
+   * to a set of post synaptic partner skelton IDs. Each partner is mapped to
+   * the individual synapse count.
    */
   ConnectivityMatrix.prototype.createConnectivityMatrix = function(data) {
     // Initialize result matrix with zero connections
@@ -95,24 +97,22 @@
       return c;
     }, {});
 
-    // Add connectivity counts for connections from and to row skeletons. Since
-    // we asked for row and column skeletons combined as source, we only need to
-    // parse the incoming data set.
-    for (var partnerSkid in data.incoming) {
-      var i = data.incoming[partnerSkid];
-      for (var sourceSkid in i.skids) {
-        // Get incoming and outgoing information for current source and partner
-        var nIncoming = i.skids[sourceSkid];
-        var nOutgoing = data.outgoing[sourceSkid] ? data.outgoing[sourceSkid].skids[partnerSkid] : undefined;
+    // Add connectivity counts for connections from and to row skeletons. The
+    // result is organized by outgoing connections.
+    for (var sourceSkid in data) {
+      var partners = data[sourceSkid];
+      for (var partnerSkid in partners) {
+        // Get outgoing synapse count for current source and partner
+        var nOutgoing = partners[partnerSkid];
 
-        // Store incoming information for rows
+        // Store outgoing information for rows
         var rowSourceIndex = rowIndexCache[sourceSkid];
         var colPartnerIndex = colIndexCache[partnerSkid];
         if (rowSourceIndex !== undefined && colPartnerIndex !== undefined) {
-          m[rowSourceIndex][colPartnerIndex][0] = nIncoming;
+          m[rowSourceIndex][colPartnerIndex][0] = nOutgoing;
         }
 
-        // Store outgoing information for columns
+        // Store incoming information for columns
         var colSourceIndex = colIndexCache[sourceSkid];
         var rowPartnerIndex = rowIndexCache[partnerSkid];
         if (colSourceIndex !== undefined && rowPartnerIndex !== undefined) {

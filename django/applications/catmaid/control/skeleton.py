@@ -669,6 +669,65 @@ def skeleton_info(request, project_id=None, skeleton_id=None):
     json_return = json.dumps(result, sort_keys=True, indent=4)
     return HttpResponse(json_return, content_type='text/json')
 
+
+@requires_user_role(UserRole.Browse)
+def connectivity_matrix(request, project_id=None):
+    # sanitize arguments
+    project_id = int(project_id)
+    rows = tuple(int(v) for k, v in request.POST.iteritems() if k.startswith('rows['))
+    cols = tuple(int(v) for k, v in request.POST.iteritems() if k.startswith('columns['))
+
+    matrix = get_connectivity_matrix(project_id, rows, cols)
+    return HttpResponse(json.dumps(matrix), content_type='text/json')
+
+
+def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
+    """
+    Return a sparse connectivity matrix representation for the given skeleton
+    IDS. The returned dictionary has a key for each row skeleton having
+    outgoing connections to one or more column skeletons. It also has a key for
+    each column skeleton that has an outgoing connection to one or more row
+    skeletons. Each entry stores a dictionary that maps the connection partners
+    to the individual outgoing synapse counts.
+    """
+    cursor = connection.cursor()
+    relation_map = get_relation_to_id_map(project_id)
+    post_rel_id = relation_map['postsynaptic_to']
+    pre_rel_id = relation_map['presynaptic_to']
+
+    # Obtain all synapses made between row skeletons and column skeletons.
+    cursor.execute('''
+    SELECT t1.skeleton_id, t1.relation_id, t2.skeleton_id, t2.relation_id
+    FROM treenode_connector t1,
+         treenode_connector t2
+    WHERE t1.skeleton_id IN (%s)
+      AND t2.skeleton_id IN (%s)
+      AND t1.connector_id = t2.connector_id
+      AND ((t1.relation_id = %s AND t2.relation_id = %s)
+        OR (t1.relation_id = %s AND t2.relation_id = %s))
+    ''' % (','.join(map(str, row_skeleton_ids)),
+           ','.join(map(str, col_skeleton_ids)),
+           pre_rel_id, post_rel_id, post_rel_id, pre_rel_id))
+
+    # Build a sparse connectivity representation. For all skeletons requested
+    # map a dictionary of partner skeletons and the number of synapses incoming
+    # to each partner.
+    outgoing = defaultdict(dict)
+    for r in cursor.fetchall():
+        if r[1] == pre_rel_id:
+            source = r[0]
+            target = r[2]
+        else:
+            source = r[2]
+            target = r[0]
+
+        mapping = outgoing[source]
+        count = mapping.get(target, 0)
+        mapping[target] = count + 1
+
+    return outgoing
+
+
 @requires_user_role([UserRole.Browse, UserRole.Annotate])
 def review_status(request, project_id=None):
     """ Return the review status for each skeleton in the request

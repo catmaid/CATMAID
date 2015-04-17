@@ -271,8 +271,8 @@
     // Sort row dimensions
     var rowSortFn = sortOptions[this.rowSorting];
     if (rowSortFn) {
-      this.rowDimension.sort(rowSortFn.bind(this, this.matrix, true,
-            this.rowDimension));
+      this.rowDimension.sort(rowSortFn.bind(this, this.matrix,
+            this.rowDimension, true));
     } else {
       CATMAID.error('Could not find row sorting function with name ' +
           this.rowSorting);
@@ -281,8 +281,8 @@
     // Sort coumn dimensions
     var colSortFn = sortOptions[this.colSorting];
     if (colSortFn) {
-      this.colDimension.sort(colSortFn.bind(this, this.matrix, false,
-            this.colDimension));
+      this.colDimension.sort(colSortFn.bind(this, this.matrix,
+            this.colDimension, false));
     } else {
       CATMAID.error('Could not find column sorting function with name ' +
           this.colSorting);

@@ -263,6 +263,15 @@
   };
 
   /**
+   * Sort this skeleton source with the help of a compare function or by a
+   * default sort order.
+   */
+  BasicSkeletonSource.prototype.sort = function(compareFunction) {
+    // Sort only top-level elements on not the skeletons within the groups
+    this.orderedElements.sort(compareFunction);
+  };
+
+  /**
    * Private function to test if a group name is valid.
    */
   var checkGroupName = function(groups, name) {

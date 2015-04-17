@@ -15,6 +15,9 @@
     // Color indices for post and pre cells, default light pre/post colors
     this.postColor = 2;
     this.preColor = 1;
+    // Sorting indices for row and columns, default to name
+    this.rowSorting = 'Name';
+    this.colSorting = 'Name';
   };
 
   ConnectivityMatrixWidget.prototype = {};
@@ -156,6 +159,39 @@
         synapseThreshold.appendChild(synapseThresholdSelect);
         controls.appendChild(synapseThreshold);
 
+        var sortOptionNames = Object.keys(sortOptions);
+        var sortRowsSelect = document.createElement('select');
+        for (var i=0; i < sortOptionNames.length; ++i) {
+          var selected = (this.rowSorting === i);
+          var name = sortOptionNames[i];
+          sortRowsSelect.options.add(
+                new Option(name, name, selected, selected));
+        }
+        sortRowsSelect.onchange = (function(e) {
+          this.rowSorting = e.target.value;
+          this.refresh();
+        }).bind(this);
+        var postColor = document.createElement('label');
+        postColor.appendChild(document.createTextNode('Sort rows by'));
+        postColor.appendChild(sortRowsSelect);
+        controls.appendChild(postColor);
+
+        var sortColsSelect = document.createElement('select');
+        for (var i=0; i < sortOptionNames.length; ++i) {
+          var selected = (this.colSorting === i);
+          var name = sortOptionNames[i];
+          sortColsSelect.options.add(
+                new Option(name, name, selected, selected));
+        }
+        sortColsSelect.onchange = (function(e) {
+          this.colSorting = e.target.value;
+          this.refresh();
+        }).bind(this);
+        var postColor = document.createElement('label');
+        postColor.appendChild(document.createTextNode('Sort columns by'));
+        postColor.appendChild(sortColsSelect);
+        controls.appendChild(postColor);
+
         var postColorSelect = document.createElement('select');
         for (var i=0; i < colorOptions.length; ++i) {
           var selected = (this.postColor === i);
@@ -231,6 +267,28 @@
   ConnectivityMatrixWidget.prototype.refresh = function(container) {
     // Clrear container and add new table
     $(this.content).empty();
+
+    // Sort row dimensions
+    var rowSortFn = sortOptions[this.rowSorting];
+    if (rowSortFn) {
+      this.rowDimension.sort(rowSortFn.bind(this, this.matrix, true,
+            this.rowDimension));
+    } else {
+      CATMAID.error('Could not find row sorting function with name ' +
+          this.rowSorting);
+    }
+
+    // Sort coumn dimensions
+    var colSortFn = sortOptions[this.colSorting];
+    if (colSortFn) {
+      this.colDimension.sort(colSortFn.bind(this, this.matrix, false,
+            this.colDimension));
+    } else {
+      CATMAID.error('Could not find column sorting function with name ' +
+          this.colSorting);
+    }
+
+    // Create table
     this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold);
   };
 
@@ -277,7 +335,7 @@
         // Clear any message
         if (this.content.dataset.msg) delete this.content.dataset.msg;
         // Create table
-        this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold);
+        this.refresh();
       }).bind(this));
   };
 
@@ -568,6 +626,21 @@
 
   // The available color options for
   var colorOptions = ["None", "Light red", "Light cyan"].concat(Object.keys(colorbrewer));
+
+  // The available sort options for rows and columns
+  var sortOptions = {
+    'ID': function(matrix, src, isRow, a, b) {
+      return CATMAID.tools.compareStrings(a, b);
+    },
+    'Name': function(matrix, src, isRow, a, b) {
+      // Compare against the group name, if a or b is a group,
+      // otherwise use the name of the neuron name service.
+      var nns = NeuronNameService.getInstance();
+      a = src.isGroup(a) ? a : nns.getName(a);
+      b = src.isGroup(b) ? b : nns.getName(b);
+      return CATMAID.tools.compareStrings(a, b);
+    }
+  };
 
   /**
    * Set background color of a DOM element according to the given color scheme.

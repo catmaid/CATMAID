@@ -73,7 +73,7 @@
     for (var i=0; i<this.rowSkeletonIDs.length; ++i) {
       m[i] = new Array(this.colSkeletonIDs.length);
       for (var j=0; j<this.colSkeletonIDs.length; ++j) {
-        m[i][j] = 0
+        m[i][j] = 0;
       }
     }
 

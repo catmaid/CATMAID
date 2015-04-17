@@ -12,9 +12,8 @@
     this.colDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Columns");
     // Synapse counts are only displayed if they are at least that big
     this.synapseThreshold = 1;
-    // Color indices for post and pre cells, default light pre/post colors
-    this.postColor = 2;
-    this.preColor = 1;
+    // Color index for table cell coloring option
+    this.color = 0;
     // Sorting indices for row and columns, default to name
     this.rowSorting = 'Name';
     this.colSorting = 'Name';
@@ -192,35 +191,20 @@
         postColor.appendChild(sortColsSelect);
         controls.appendChild(postColor);
 
-        var postColorSelect = document.createElement('select');
+        var colorSelect = document.createElement('select');
         for (var i=0; i < colorOptions.length; ++i) {
-          var selected = (this.postColor === i);
-          postColorSelect.options.add(
+          var selected = (this.color === i);
+          colorSelect.options.add(
                 new Option(colorOptions[i], i, selected, selected));
         }
-        postColorSelect.onchange = (function(e) {
-          this.postColor = parseInt(e.target.value, 10);
+        colorSelect.onchange = (function(e) {
+          this.color = parseInt(e.target.value, 10);
           this.refresh();
         }).bind(this);
-        var postColor = document.createElement('label');
-        postColor.appendChild(document.createTextNode('Post color'));
-        postColor.appendChild(postColorSelect);
-        controls.appendChild(postColor);
-
-        var preColorSelect = document.createElement('select');
-        for (var i=0; i < colorOptions.length; ++i) {
-          var selected = (this.preColor === i);
-          preColorSelect.options.add(
-                new Option(colorOptions[i], i, selected, selected));
-        }
-        preColorSelect.onchange = (function(e) {
-          this.preColor = parseInt(e.target.value, 10);
-          this.refresh();
-        }).bind(this);
-        var preColor = document.createElement('label');
-        preColor.appendChild(document.createTextNode('Pre color'));
-        preColor.appendChild(preColorSelect);
-        controls.appendChild(preColor);
+        var color = document.createElement('label');
+        color.appendChild(document.createTextNode('Color'));
+        color.appendChild(colorSelect);
+        controls.appendChild(color);
 
         var update = document.createElement('input');
         update.setAttribute("type", "button");
@@ -366,11 +350,9 @@
 
     if (walked) {
       var infoBox = document.createElement('div');
-      infoBox.appendChild(document.createTextNode('The table below shows the number ' +
-            'of post-synaptic and pre-synaptic connections per row/column ' +
-            'combination. Therfore, two sub-cells are shown per table cell (first: ' +
-            'row to column, second: column to row). If there are no connections, no ' +
-            'number is shown.'));
+      infoBox.appendChild(document.createTextNode('The table below shows the ' +
+            'number of post-synaptic connections from row to column skeletons. ' +
+            'If there are no connections, no number is shown.'));
       content.appendChild(infoBox);
       // Append matrix to content
       content.appendChild(table);
@@ -399,7 +381,6 @@
     function handleColumn(tableHeader, id, colGroup, name) {
       var th = document.createElement('th');
       th.appendChild(document.createTextNode(name));
-      th.setAttribute('colspan', 2);
       if (colGroup) {
         th.setAttribute('title', 'This group contains ' + colGroup.length +
             ' skeleton(s): ' + colGroup.join(', '));
@@ -424,14 +405,10 @@
     // Create cell
     function handleCell(row, rowName, rowSkids, colName, colSkids, connections) {
       /* jshint validthis: true */ // `this` is bound to the connectivity matrix
-      var tdOut = createSynapseCountCell("pre", rowName, rowSkids, colName, colSkids,
-          connections[0], synThreshold);
-      var tdIn = createSynapseCountCell("post", rowName, rowSkids, colName, colSkids,
-          connections[1], synThreshold);
-      colorize(tdOut, colorOptions[this.postColor], connections[1], 0, maxConnections);
-      colorize(tdIn, colorOptions[this.preColor], connections[0], 0, maxConnections);
-      row.appendChild(tdOut);
-      row.appendChild(tdIn);
+      var td = createSynapseCountCell("pre", rowName, rowSkids, colName, colSkids,
+          connections, synThreshold);
+      colorize(td, colorOptions[this.color], connections, 0, maxConnections);
+      row.appendChild(td);
     }
   };
 
@@ -535,8 +512,7 @@
 
     // Create cell
     function handleCell(line, rowName, rowSkids, colName, colSkids, connections) {
-      line.push(connections[0]);
-      line.push(connections[1]);
+      line.push(connections);
     }
   };
 
@@ -545,16 +521,15 @@
    * rows and columns, starting from the given position.
    */
   function aggregateMatrix(matrix, r, c, nRows, nCols) {
-    var nr = 0, nc = 0;
+    var n = 0;
 
     for (var i=0; i<nRows; ++i) {
       for (var j=0; j<nCols; ++j) {
-        nr += matrix[r + i][c + j][0];
-        nc += matrix[r + i][c + j][1];
+        n += matrix[r + i][c + j];
       }
     }
 
-    return [nr, nc];
+    return n;
   }
 
   /**
@@ -625,7 +600,7 @@
   }
 
   // The available color options for
-  var colorOptions = ["None", "Light red", "Light cyan"].concat(Object.keys(colorbrewer));
+  var colorOptions = ["None"].concat(Object.keys(colorbrewer));
 
   // The available sort options for rows and columns
   var sortOptions = {
@@ -647,11 +622,7 @@
    */
   var colorize = function(element, scheme, value, minValue, maxValue) {
     if (!scheme || "None" === scheme) return;
-    if ("Light red" === scheme) {
-      element.style.backgroundColor = "mistyrose";
-    } else if ("Light cyan" === scheme) {
-      element.style.backgroundColor = "lightcyan";
-    } else if (colorbrewer.hasOwnProperty(scheme)) {
+    else if (colorbrewer.hasOwnProperty(scheme)) {
       var sets = colorbrewer[scheme];
       var range = maxValue - minValue + 1;
       var relValue = value - minValue;

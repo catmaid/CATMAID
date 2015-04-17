@@ -6,7 +6,8 @@
   "use strict";
 
   /**
-   * Constructor for a connectivity matrix.
+   * Constructor for a connectivity matrix that contains the number of synapses
+   * between each row skeleton and each column skeleton.
    */
   var ConnectivityMatrix = function() {
     // Define row skeleton field, not writable, enumerable or configurable
@@ -72,7 +73,7 @@
     for (var i=0; i<this.rowSkeletonIDs.length; ++i) {
       m[i] = new Array(this.colSkeletonIDs.length);
       for (var j=0; j<this.colSkeletonIDs.length; ++j) {
-        m[i][j] = [0, 0];
+        m[i][j] = 0
       }
     }
 
@@ -91,21 +92,12 @@
     for (var sourceSkid in data) {
       var partners = data[sourceSkid];
       for (var partnerSkid in partners) {
-        // Get outgoing synapse count for current source and partner
-        var nOutgoing = partners[partnerSkid];
-
-        // Store outgoing information for rows
+        // Store number of connections from current source to current target
+        // (i.e. row to column).
         var rowSourceIndex = rowIndexCache[sourceSkid];
         var colPartnerIndex = colIndexCache[partnerSkid];
         if (rowSourceIndex !== undefined && colPartnerIndex !== undefined) {
-          m[rowSourceIndex][colPartnerIndex][0] = nOutgoing;
-        }
-
-        // Store incoming information for columns
-        var colSourceIndex = colIndexCache[sourceSkid];
-        var rowPartnerIndex = rowIndexCache[partnerSkid];
-        if (colSourceIndex !== undefined && rowPartnerIndex !== undefined) {
-          m[rowPartnerIndex][colSourceIndex][1] = nOutgoing;
+          m[rowSourceIndex][colPartnerIndex] = partners[partnerSkid];
         }
       }
     }
@@ -135,8 +127,7 @@
     for (var i=0; i<this.rowSkeletonIDs.length; ++i) {
       for (var j=0; j<this.colSkeletonIDs.length; ++j) {
         var c = this.connectivityMatrix[i][j];
-        if (c[0] > max) max = c[0];
-        if (c[1] > max) max = c[1];
+        if (c > max) max = c;
       }
     }
     return max;

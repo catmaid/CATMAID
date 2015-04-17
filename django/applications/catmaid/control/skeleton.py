@@ -685,10 +685,9 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
     """
     Return a sparse connectivity matrix representation for the given skeleton
     IDS. The returned dictionary has a key for each row skeleton having
-    outgoing connections to one or more column skeletons. It also has a key for
-    each column skeleton that has an outgoing connection to one or more row
-    skeletons. Each entry stores a dictionary that maps the connection partners
-    to the individual outgoing synapse counts.
+    outgoing connections to one or more column skeletons. Each entry stores a
+    dictionary that maps the connection partners to the individual outgoing
+    synapse counts.
     """
     cursor = connection.cursor()
     relation_map = get_relation_to_id_map(project_id)
@@ -697,30 +696,24 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
 
     # Obtain all synapses made between row skeletons and column skeletons.
     cursor.execute('''
-    SELECT t1.skeleton_id, t1.relation_id, t2.skeleton_id, t2.relation_id
+    SELECT t1.skeleton_id, t2.skeleton_id
     FROM treenode_connector t1,
          treenode_connector t2
     WHERE t1.skeleton_id IN (%s)
       AND t2.skeleton_id IN (%s)
       AND t1.connector_id = t2.connector_id
-      AND ((t1.relation_id = %s AND t2.relation_id = %s)
-        OR (t1.relation_id = %s AND t2.relation_id = %s))
+      AND t1.relation_id = %s
+      AND t2.relation_id = %s
     ''' % (','.join(map(str, row_skeleton_ids)),
            ','.join(map(str, col_skeleton_ids)),
-           pre_rel_id, post_rel_id, post_rel_id, pre_rel_id))
+           pre_rel_id, post_rel_id))
 
     # Build a sparse connectivity representation. For all skeletons requested
-    # map a dictionary of partner skeletons and the number of synapses incoming
-    # to each partner.
+    # map a dictionary of partner skeletons and the number of synapses
+    # connecting to each partner.
     outgoing = defaultdict(dict)
     for r in cursor.fetchall():
-        if r[1] == pre_rel_id:
-            source = r[0]
-            target = r[2]
-        else:
-            source = r[2]
-            target = r[0]
-
+        source, target = r[0], r[1]
         mapping = outgoing[source]
         count = mapping.get(target, 0)
         mapping[target] = count + 1

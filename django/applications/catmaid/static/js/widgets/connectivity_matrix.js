@@ -367,9 +367,9 @@
     function handleCell(row, rowName, rowSkids, colName, colSkids, connections) {
       /* jshint validthis: true */ // `this` is bound to the connectivity matrix
       var tdOut = createSynapseCountCell("pre", rowName, rowSkids, colName, colSkids,
-          connections[1], synThreshold);
-      var tdIn = createSynapseCountCell("post", rowName, rowSkids, colName, colSkids,
           connections[0], synThreshold);
+      var tdIn = createSynapseCountCell("post", rowName, rowSkids, colName, colSkids,
+          connections[1], synThreshold);
       colorize(tdOut, colorOptions[this.postColor], connections[1], 0, maxConnections);
       colorize(tdIn, colorOptions[this.preColor], connections[0], 0, maxConnections);
       row.appendChild(tdOut);

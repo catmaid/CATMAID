@@ -401,7 +401,7 @@
       th.appendChild(document.createTextNode(name));
       th.setAttribute('colspan', 2);
       if (colGroup) {
-        th.setAttribute('title', 'This colGroup contains ' + colGroup.length +
+        th.setAttribute('title', 'This group contains ' + colGroup.length +
             ' skeleton(s): ' + colGroup.join(', '));
       }
       tableHeader.appendChild(th);
@@ -414,7 +414,7 @@
       var th = document.createElement('th');
       th.appendChild(document.createTextNode(name));
       if (rowGroup) {
-        th.setAttribute('title', 'This rowGroup contains ' + rowGroup.length +
+        th.setAttribute('title', 'This group contains ' + rowGroup.length +
             ' skeleton(s): ' + rowGroup.join(', '));
       }
       row.appendChild(th);

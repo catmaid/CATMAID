@@ -3,9 +3,6 @@
 
 (function(CATMAID) {
 
-  // If set, the next skeletons appended are added to this group.
-  var nextGroupName;
-
   /**
    * The basic skeleton source implements the skeleton source interface and
    * maintains an ordered list of skeletons. Additionally, grouping of the
@@ -25,6 +22,8 @@
     // Indicate if newly appended skeletons should be removed from existing
     // groups.
     this.moveExistingToNewGroup = true;
+    // If set, the next skeletons appended are added to this group.
+    this.nextGroupName;
   };
 
   BasicSkeletonSource.prototype = new CATMAID.SkeletonSource();
@@ -55,7 +54,7 @@
    */
   BasicSkeletonSource.prototype.append = function(models) {
     // Indicate if a new group should be created
-    var createGroup = !!nextGroupName;
+    var createGroup = !!this.nextGroupName;
 
     var skeleton_ids = Object.keys(models);
     for (var strSkid in models) {
@@ -92,8 +91,8 @@
 
     if (createGroup) {
       // Add group if a new group was requested
-      this.orderedElements.push(nextGroupName);
-      this.groups[nextGroupName] = skeleton_ids;
+      this.orderedElements.push(this.nextGroupName);
+      this.groups[this.nextGroupName] = skeleton_ids;
     }
 
     this.updateLink(models);
@@ -219,18 +218,22 @@
 
   /* Non-interface methods */
 
-  BasicSkeletonSource.prototype.loadAsGroup = function(groupName) {
-    if (!groupName) {
-      throw CATMAID.ValueError("Please give a valid group name");
-    }
-    if (this.groups[groupName]) {
-      throw CATMAID.ValueError("The group '" + groupName + "' exists already");
-    }
+  BasicSkeletonSource.prototype.appendAsGroup = function(models, groupName) {
+    checkGroupName(this.groups, groupName);
 
     // Add the skeletons loaded next to the new group
-    nextGroupName = groupName;
+    this.nextGroupName = groupName;
+    this.append(models);
+    this.nextGroupName = undefined;
+  };
+
+  BasicSkeletonSource.prototype.loadAsGroup = function(groupName) {
+    checkGroupName(this.groups, groupName);
+
+    // Add the skeletons loaded next to the new group
+    this.nextGroupName = groupName;
     this.loadSource();
-    nextGroupName = undefined;
+    this.nextGroupName = undefined;
   };
 
   /**
@@ -238,7 +241,19 @@
    * source. False otherwise.
    */
   BasicSkeletonSource.prototype.isGroup = function(groupName) {
-    return !!this.orderedElements[groupName];
+    return !!this.groups[groupName];
+  };
+
+  /**
+   * Private function to test if a group name is valid.
+   */
+  var checkGroupName = function(groups, name) {
+    if (!name) {
+      throw CATMAID.ValueError("Please give a valid group name");
+    }
+    if (groups[name]) {
+      throw CATMAID.ValueError("The group '" + name + "' exists already");
+    }
   };
 
   // Make basic skeleton source available in CATMAID namespace

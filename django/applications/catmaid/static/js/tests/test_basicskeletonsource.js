@@ -7,7 +7,7 @@ QUnit.test('Basic skeleton source test', function( assert ) {
   var testModels = skeletonIDs.reduce(function(o, skid) {
     o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "",
         new THREE.Color());
-    return o
+    return o;
   }, {});
 
   test(testModels);
@@ -64,7 +64,7 @@ QUnit.test('Basic skeleton source test', function( assert ) {
     var updatedModels = skeletonIDs.reduce(function(o, skid) {
       o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "updated " + skid,
           new THREE.Color());
-      return o
+      return o;
     }, {});
     src.updateModels(updatedModels, {});
     var selectedSkeletonModels2 = src.getSelectedSkeletonModels();

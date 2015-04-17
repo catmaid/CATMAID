@@ -22,7 +22,7 @@
     // groups.
     this.moveExistingToNewGroup = true;
     // If set, the next skeletons appended are added to this group.
-    this.nextGroupName;
+    this.nextGroupName = null;
   };
 
   BasicSkeletonSource.prototype = new CATMAID.SkeletonSource();
@@ -231,7 +231,7 @@
       if (this.isGroup(id)) {
         return n + this.groups[id].length;
       } else {
-        return n + 1
+        return n + 1;
       }
     }).bind(this), 0);
   };
@@ -242,7 +242,7 @@
     // Add the skeletons loaded next to the new group
     this.nextGroupName = groupName;
     this.append(models);
-    this.nextGroupName = undefined;
+    this.nextGroupName = null;
   };
 
   BasicSkeletonSource.prototype.loadAsGroup = function(groupName) {
@@ -251,7 +251,7 @@
     // Add the skeletons loaded next to the new group
     this.nextGroupName = groupName;
     this.loadSource();
-    this.nextGroupName = undefined;
+    this.nextGroupName = null;
   };
 
   /**

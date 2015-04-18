@@ -4,7 +4,6 @@
   CATMAID
   annotations,
   Arbor,
-  ArborParser,
   error,
   fetchSkeletons,
   growlAlert,
@@ -2868,7 +2867,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.splitByFlowCentral
       if (arbor.root != soma) arbor.reroot(soma);
     }
 
-    var ap = new ArborParser();
+    var ap = new CATMAID.ArborParser();
     ap.arbor = arbor;
     ap.synapses(json[1]);
 
@@ -3024,7 +3023,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       } else {
         // Prune artifactual branches
         if (this.tags['not a branch']) {
-          var ap = new ArborParser(); ap.inputs = {}; ap.outputs = {};
+          var ap = new CATMAID.ArborParser(); ap.inputs = {}; ap.outputs = {};
           ap.arbor = arbor.clone();
           ap.collapseArtifactualBranches(this.tags);
           arbor = ap.arbor;
@@ -3352,7 +3351,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConn
     }, this);
 
   } else if ('synapse-clustering' === options.connector_color) {
-    var synapse_map = new ArborParser().synapses(json[1]).createSynapseMap(),
+    var synapse_map = new CATMAID.ArborParser().synapses(json[1]).createSynapseMap(),
         sc = new SynapseClustering(this.createArbor(), this.getPositions(), synapse_map, options.synapse_clustering_bandwidth),
         density_hill_map = sc.densityHillMap(),
         clusters = sc.clusterMaps(density_hill_map),

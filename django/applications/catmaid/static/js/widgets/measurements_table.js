@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  ArborParser,
   fetchSkeletons,
   InstanceRegistry,
   NeuronNameService,
@@ -68,7 +67,7 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
       },
       function(skid) { return {}; },
       function(skid, json) {
-        var ap = new ArborParser().init('compact-arbor', json),
+        var ap = new CATMAID.ArborParser().init('compact-arbor', json),
             arbor = ap.arbor,
             positions = ap.positions,
             raw_cable = Math.round(arbor.cableLength(positions)) | 0,

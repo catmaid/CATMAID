@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  ArborParser,
   Events,
   InstanceRegistry,
   OptionsDialog,
@@ -282,7 +281,7 @@ NeuronDendrogram.prototype.loadSkeleton = function(skid)
           this.currentSkeletonId = skid;
           this.currentSkeletonTree = data[0];
           this.currentSkeletonTags = data[2];
-          var ap  = new ArborParser().init('compact-skeleton', data);
+          var ap  = new CATMAID.ArborParser().init('compact-skeleton', data);
           this.currentArbor = ap.arbor;
           this.update();
           this.updating = false;

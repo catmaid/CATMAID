@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  ArborParser,
   fetchSkeletons,
   growlAlert,
   InstanceRegistry,
@@ -214,7 +213,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
 
   if (!mitochondrium) mitochondrium = [];
 
-  var ap = new ArborParser(json).init('compact-arbor', json);
+  var ap = new CATMAID.ArborParser(json).init('compact-arbor', json);
   // Collapse "not a branch"
   ap.collapseArtifactualBranches(tags);
   // Cache functions that are called many times

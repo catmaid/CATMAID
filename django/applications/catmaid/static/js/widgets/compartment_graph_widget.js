@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  ArborParser,
   CircuitGraphPlot,
   cytoscape,
   fetchSkeletons,
@@ -683,7 +682,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
                      //                       post: {graph node ID: count}}}
   subgraph_skids.forEach((function(skid) {
     var m = morphology[skid],
-        ap = new ArborParser().init('compact-arbor', m),
+        ap = new CATMAID.ArborParser().init('compact-arbor', m),
         mode = this.subgraphs[skid],
         parts = {},
         name = NeuronNameService.getInstance().getName(skid),
@@ -2466,7 +2465,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
           return;
         }
 
-        var ap = new ArborParser().init('compact-arbor', json);
+        var ap = new CATMAID.ArborParser().init('compact-arbor', json);
 
         if (0 === ap.n_inputs) {
           // Database changed

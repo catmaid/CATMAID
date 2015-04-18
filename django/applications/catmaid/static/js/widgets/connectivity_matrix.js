@@ -688,6 +688,7 @@
    * Set background color of a DOM element according to the given color scheme.
    */
   var colorize = function(element, scheme, value, minValue, maxValue) {
+    var bg = null;
     if (!scheme || "None" === scheme) return;
     else if (colorbrewer.hasOwnProperty(scheme)) {
       var sets = colorbrewer[scheme];
@@ -695,7 +696,7 @@
       var relValue = value - minValue;
       if (sets.hasOwnProperty(range)) {
         // Perfect, one available scale fits our range
-        element.style.backgroundColor = sets[range][relValue];
+        bg = sets[range][relValue];
       } else {
         // Scale range to fit value
         var maxLength = Object.keys(sets).reduce(function(mv, v) {
@@ -703,8 +704,19 @@
           return v > mv ? v : mv;
         }, 0);
         var index = Math.min(maxLength - 1, Math.round(relValue * maxLength / range));
-        element.style.backgroundColor = sets[maxLength][index];
+        bg = sets[maxLength][index];
       }
+    }
+
+    // Set background
+    element.style.backgroundColor = bg;
+
+    // Heuristic to find foreground color for children
+    var bgRGB = CATMAID.tools.hexToRGB(bg);
+    var lum = 0.299 * bgRGB.r + 0.587 * bgRGB.g + 0.114 * bgRGB.b;
+    var fg = lum <= 128 ? "white" : "black";
+    for (var i=0; i<element.childNodes.length; ++i) {
+      element.childNodes[i].style.color = fg;
     }
   };
 

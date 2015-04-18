@@ -272,6 +272,11 @@
           this.colSorting);
     }
 
+    // Rebuild matrix with sorted skeletons (no back-end query)
+    this.matrix.rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
+    this.matrix.colSkeletonIDs = this.colDimension.getSelectedSkeletons();
+    this.matrix.rebuild();
+
     // Create table
     this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold);
   };

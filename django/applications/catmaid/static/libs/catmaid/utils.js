@@ -276,17 +276,6 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
   }
 };
 
-var saveDivSVG = function(divID, filename) {
-  var div = document.getElementById(divID);
-  if (!div) return; 
-  var svg = div.getElementsByTagName('svg');
-  if (svg && svg.length > 0) {
-    var xml = new XMLSerializer().serializeToString(svg[0]);
-    var blob = new Blob([xml], {type : 'text/xml'});
-    saveAs(blob, filename);
-  }
-};
-
 /** Parse JSON data from compact-skeleton and compact-arbor into an object
  * that contains an Arbor instance and a number of measurements related
  * to synapses and synaptic partners. */

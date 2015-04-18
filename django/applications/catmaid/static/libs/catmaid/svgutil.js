@@ -672,6 +672,20 @@
     return xml;
   };
 
+  /**
+   * Save a DIV element with the fiven ID to the fiven filename.
+   */
+  SVGUtil.saveDivSVG = function(divID, filename) {
+    var div = document.getElementById(divID);
+    if (!div) return;
+    var svg = div.getElementsByTagName('svg');
+    if (svg && svg.length > 0) {
+      var xml = new XMLSerializer().serializeToString(svg[0]);
+      var blob = new Blob([xml], {type : 'text/xml'});
+      saveAs(blob, filename);
+    }
+  };
+
   // Export SVG utility functions in CATMAID.svgutil sub-namespace
   CATMAID.svgutil = SVGUtil;
 

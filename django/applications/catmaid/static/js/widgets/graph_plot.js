@@ -10,7 +10,6 @@
   OptionsDialog,
   project,
   requestQueue,
-  saveDivSVG,
   SynapseClustering
 */
 
@@ -1003,7 +1002,8 @@ CircuitGraphPlot.prototype.highlight = function() {
 };
 
 CircuitGraphPlot.prototype.exportSVG = function() {
-  saveDivSVG('circuit_graph_plot_div' + this.widgetID, "circuit_plot.svg");
+  CATMAID.svgutil.saveDivSVG('circuit_graph_plot_div' + this.widgetID,
+      "circuit_plot.svg");
 };
 
 CircuitGraphPlot.prototype.exportCSV = function() {

@@ -7,7 +7,6 @@
   InstanceRegistry,
   NeuronNameService,
   project,
-  saveDivSVG,
   SkeletonAnnotations,
 */
 
@@ -483,7 +482,8 @@ MorphologyPlot.prototype.exportCSV = function() {
 };
 
 MorphologyPlot.prototype.exportSVG = function() {
-  saveDivSVG('morphology_plot_div' + this.widgetID, this.mode.replace(/ /g, '_') + ".svg");
+  CATMAID.svgutil.saveDivSVG('morphology_plot_div' + this.widgetID,
+      this.mode.replace(/ /g, '_') + ".svg");
 };
 
 /** Perform PCA on a vector for each neuron containing the concatenation of all the following measurements:

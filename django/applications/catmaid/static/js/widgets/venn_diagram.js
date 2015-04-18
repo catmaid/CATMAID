@@ -3,8 +3,7 @@
 /* global
   InstanceRegistry,
   OptionsDialog,
-  parseColorWheel,
-  saveDivSVG,
+  parseColorWheel
 */
 
 "use strict";
@@ -267,7 +266,8 @@ VennDiagram.prototype.draw = function() {
 
 VennDiagram.prototype.exportSVG = function() {
   if (0 === this.groups.length || !this.sets || !this.overlaps) return;
-  saveDivSVG('venn_diagram_div' + this.widgetID, "venn_diagram.svg");
+  CATMAID.svgutil.saveDivSVG('venn_diagram_div' + this.widgetID,
+      "venn_diagram.svg");
 };
 
 VennDiagram.prototype.resize = function() {

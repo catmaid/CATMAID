@@ -20,7 +20,6 @@ var user_menu;
 var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
-var latest_message_date = null;
 
 var rootWindow;
 
@@ -586,27 +585,32 @@ function handle_openProjectStack( e, stackConstructor )
 /**
  * Check, if there are new messages for the current user.
  */
+var check_messages = (function() {
 
-function check_messages() {
-  requestQueue.register(django_url + 'messages/latestunreaddate', 'GET',
-      undefined, CATMAID.jsonResponseHandler(function(data) {
-        // If there is a newer latest message than we know of, get all
-        // messages to display them in the message menu and widget.
-        if (data.latest_unread_date) {
-          if (!latest_message_date || latest_message_date < data.latest_unread_date) {
-            // Save the date and get all messages
-            latest_message_date = data.latest_unread_date;
-            get_messages();
+  // The date of the last unread message
+  var latest_message_date = null;
+
+  return function() {
+    requestQueue.register(django_url + 'messages/latestunreaddate', 'GET',
+        undefined, CATMAID.jsonResponseHandler(function(data) {
+          // If there is a newer latest message than we know of, get all
+          // messages to display them in the message menu and widget.
+          if (data.latest_unread_date) {
+            if (!latest_message_date || latest_message_date < data.latest_unread_date) {
+              // Save the date and get all messages
+              latest_message_date = data.latest_unread_date;
+              get_messages();
+            } else {
+              // Check again later
+              msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
+            }
           } else {
             // Check again later
             msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
           }
-        } else {
-          // Check again later
-          msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
-        }
-      }));
-}
+        }));
+  };
+})();
 
 /**
  * look for user messages

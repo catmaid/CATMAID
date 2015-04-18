@@ -10,7 +10,6 @@
   OptionsDialog,
   SelectionTable,
   SkeletonAnnotations,
-  SVGUtil,
   SynapseClustering,
   TracingTool
 */
@@ -503,7 +502,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
       if (sum > 0) entries.push({name: titles[i], value: sum, color: colors[i]});
     });
     if (entries.length > 0) {
-      SVGUtil.insertPieChart(divID, this.pie_radius, entries, title);
+      CATMAID.svgutil.insertPieChart(divID, this.pie_radius, entries, title);
     }
   }).bind(this);
 
@@ -523,7 +522,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
     }).bind(this), 0);
   }, this);
 
-  var pie_n_subarbors = SVGUtil.insertPieChart(
+  var pie_n_subarbors = CATMAID.svgutil.insertPieChart(
       divID,
       this.pie_radius,
       [{name: titles[1] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[1]}].concat(0 === n_subs[1] ? [] : [{name: titles[2] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[2]}]), // there could be no axonal terminals
@@ -531,7 +530,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
 
   if (skids.length > 1) {
     var colors = d3.scale.category10();
-    SVGUtil.insertPieChart(
+    CATMAID.svgutil.insertPieChart(
         divID,
         this.pie_radius,
         skids.map(function(skid, i) {
@@ -613,7 +612,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
       // Prettify label
       label = label.replace(/_/g, ' ');
 
-      SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
+      CATMAID.svgutil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
         this.plot_width, this.plot_height,
         label, "counts",
         data,
@@ -638,7 +637,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         return b;
       });
 
-      SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label + ' cummulative',
+      CATMAID.svgutil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label + ' cummulative',
         this.plot_width, this.plot_height,
         label, "cummulative counts (%)",
         cummulative,
@@ -700,7 +699,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         });
     }, this);
 
-    SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_depth',
+    CATMAID.svgutil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_depth',
         this.scatterplot_width, this.scatterplot_height,
         'cable (µm)', 'depth (µm)',
         cable_vs_depth,
@@ -710,7 +709,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         series,
         false, true);
 
-    SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_inputs',
+    CATMAID.svgutil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_vs_inputs',
         this.scatterplot_width, this.scatterplot_height,
         'cable (µm)', 'inputs',
         cable_vs_inputs,
@@ -721,7 +720,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         false, true);
 
     // Create plot of total cable length vs number of twigs
-    SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_length_vs_n_twigs',
+    CATMAID.svgutil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-cable_length_vs_n_twigs',
       this.scatterplot_width, this.scatterplot_height,
       'arbor cable (µm)', '# twigs',
       total_cable_vs_n_twigs,
@@ -733,7 +732,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
     );
 
     // Create plot of total dendritic cable length vs number of dendritic twigs
-    SVGUtil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-dendritic_cable_length_vs_n_dendritic_twigs',
+    CATMAID.svgutil.insertXYScatterPlot(divID, 'AA-' + this.widgetID + '-dendritic_cable_length_vs_n_dendritic_twigs',
       this.scatterplot_width, this.scatterplot_height,
       'dendritic backbone cable (µm)', '# dendritic twigs',
       total_dendritic_backbone_cable_vs_dendritic_twigs,
@@ -771,7 +770,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         max = b.max,
         label = "Distance to nearest mitochondrium (µm)";
 
-    SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
+    CATMAID.svgutil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label,
       this.plot_width, this.plot_height,
       label, "counts",
       data,
@@ -790,7 +789,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
       return b;
     });
 
-    SVGUtil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label + ' cummulative',
+    CATMAID.svgutil.insertMultipleBarChart2(divID, 'AA-' + this.widgetID + '-' + label + ' cummulative',
       this.plot_width, this.plot_height,
       label, "cummulative counts (%)",
       cummulative,

@@ -9,8 +9,7 @@
   project,
   requestQueue,
   SelectionTable,
-  SkeletonAnnotations,
-  SVGUtil
+  SkeletonAnnotations
 */
 
 "use strict";
@@ -758,7 +757,7 @@ NeuronDendrogram.prototype.exportSVG = function()
     }
     return o;
   }, "");
-  SVGUtil.addStyles(xml, css);
+  CATMAID.svgutil.addStyles(xml, css);
 
   // Serialize SVG including CSS and export it as blob
   var data = new XMLSerializer().serializeToString(xml);

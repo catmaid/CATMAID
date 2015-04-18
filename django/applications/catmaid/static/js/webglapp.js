@@ -18,7 +18,6 @@
   SkeletonAnnotations,
   SkeletonRegistry,
   submitterFn,
-  SVGUtil,
   SynapseClustering,
   User,
   WindowMaker
@@ -183,15 +182,15 @@ WebGLApplication.prototype.exportSVG = function() {
   $.blockUI();
   try {
     var svg = this.space.view.getSVGData();
-    SVGUtil.reduceCoordinatePrecision(svg, 1);
-    SVGUtil.stripStyleProperties(svg, {
+    CATMAID.svgutil.reduceCoordinatePrecision(svg, 1);
+    CATMAID.svgutil.stripStyleProperties(svg, {
       'fill': 'none',
       'stroke-opacity': 1,
       'stroke-linejoin': undefined
     });
-    SVGUtil.reduceStylePrecision(svg, 1);
+    CATMAID.svgutil.reduceStylePrecision(svg, 1);
 
-    var styleDict = SVGUtil.classifyStyles(svg);
+    var styleDict = CATMAID.svgutil.classifyStyles(svg);
 
     var styles = Object.keys(styleDict).reduce(function(o, s) {
       var cls = styleDict[s];
@@ -200,7 +199,7 @@ WebGLApplication.prototype.exportSVG = function() {
     }, "");
 
     var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
-    SVGUtil.addStyles(xml, styles);
+    CATMAID.svgutil.addStyles(xml, styles);
 
     var data = new XMLSerializer().serializeToString(xml);
     var blob = new Blob([data], {type: 'text/svg'});
@@ -344,15 +343,15 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
         // Export catalog
         var svg = this.space.view.getSVGData(options);
         var precision = parseInt(coordDigits.value);
-        SVGUtil.reduceCoordinatePrecision(svg, precision);
-        SVGUtil.stripStyleProperties(svg, {
+        CATMAID.svgutil.reduceCoordinatePrecision(svg, precision);
+        CATMAID.svgutil.stripStyleProperties(svg, {
           'fill': 'none',
           'stroke-opacity': 1,
           'stroke-linejoin': undefined
         });
-        SVGUtil.reduceStylePrecision(svg, precision);
+        CATMAID.svgutil.reduceStylePrecision(svg, precision);
 
-        var styleDict = SVGUtil.classifyStyles(svg);
+        var styleDict = CATMAID.svgutil.classifyStyles(svg);
 
         var styles = Object.keys(styleDict).reduce(function(o, s) {
           var cls = styleDict[s];
@@ -361,7 +360,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
         }, "");
 
         var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
-        SVGUtil.addStyles(xml, styles);
+        CATMAID.svgutil.addStyles(xml, styles);
 
         var data = new XMLSerializer().serializeToString(xml);
         var blob = new Blob([data], {type: 'text/svg'});

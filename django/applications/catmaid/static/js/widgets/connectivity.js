@@ -6,7 +6,6 @@
   project,
   requestQueue,
   SelectionTable,
-  SVGUtil,
   TracingTool,
   User,
   WindowMaker
@@ -1310,7 +1309,7 @@ ConnectivityGraphPlot.prototype.draw = function() {
         height = container_width / 2,
         id = "connectivity_plot_" + title + widgetID;
 
-    SVGUtil.insertMultipleBarChart(container, id, width, height,
+    CATMAID.svgutil.insertMultipleBarChart(container, id, width, height,
         "N synapses", "N " + title + " Partners",
         names, a, colors,
         a.map(function(block, i) { return i+1; }));

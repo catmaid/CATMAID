@@ -15,8 +15,8 @@
     // Color index for table cell coloring option
     this.color = 0;
     // Sorting indices for row and columns, default to name
-    this.rowSorting = 'Name';
-    this.colSorting = 'Name';
+    this.rowSorting = 1;
+    this.colSorting = 1;
   };
 
   ConnectivityMatrixWidget.prototype = {};
@@ -158,13 +158,14 @@
         synapseThreshold.appendChild(synapseThresholdSelect);
         controls.appendChild(synapseThreshold);
 
-        var sortOptionNames = Object.keys(sortOptions);
+        var sortOptionNames = sortOptions.map(function(o) {
+          return o.name;
+        });
         var sortRowsSelect = document.createElement('select');
         for (var i=0; i < sortOptionNames.length; ++i) {
           var selected = (this.rowSorting === i);
-          var name = sortOptionNames[i];
           sortRowsSelect.options.add(
-                new Option(name, name, selected, selected));
+                new Option(sortOptionNames[i], i, selected, selected));
         }
         sortRowsSelect.onchange = (function(e) {
           this.rowSorting = e.target.value;
@@ -178,9 +179,8 @@
         var sortColsSelect = document.createElement('select');
         for (var i=0; i < sortOptionNames.length; ++i) {
           var selected = (this.colSorting === i);
-          var name = sortOptionNames[i];
           sortColsSelect.options.add(
-                new Option(name, name, selected, selected));
+                new Option(sortOptionNames[i], i, selected, selected));
         }
         sortColsSelect.onchange = (function(e) {
           this.colSorting = e.target.value;
@@ -253,19 +253,20 @@
     $(this.content).empty();
 
     // Sort row dimensions
-    var rowSortFn = sortOptions[this.rowSorting];
-    if (rowSortFn) {
-      this.rowDimension.sort(rowSortFn.bind(this, this.matrix,
+    var rowSort = sortOptions[this.rowSorting];
+    if (rowSort && CATMAID.tools.isFn(rowSort.sort)) {
+      this.rowDimension.sort(rowSort.sort.bind(this, this.matrix,
             this.rowDimension, true));
+      this.matrix.refresh();
     } else {
       CATMAID.error('Could not find row sorting function with name ' +
           this.rowSorting);
     }
 
     // Sort coumn dimensions
-    var colSortFn = sortOptions[this.colSorting];
-    if (colSortFn) {
-      this.colDimension.sort(colSortFn.bind(this, this.matrix,
+    var colSort = sortOptions[this.colSorting];
+    if (colSort && CATMAID.tools.isFn(colSort.sort)) {
+      this.colDimension.sort(colSort.sort.bind(this, this.matrix,
             this.colDimension, false));
     } else {
       CATMAID.error('Could not find column sorting function with name ' +
@@ -608,18 +609,79 @@
   var colorOptions = ["None"].concat(Object.keys(colorbrewer));
 
   // The available sort options for rows and columns
-  var sortOptions = {
-    'ID': function(matrix, src, isRow, a, b) {
-      return CATMAID.tools.compareStrings(a, b);
+  var sortOptions = [
+    {
+      name: 'ID',
+      sort: function(matrix, src, isRow, a, b) {
+        return CATMAID.tools.compareStrings('' + a, '' + b);
+      }
     },
-    'Name': function(matrix, src, isRow, a, b) {
-      // Compare against the group name, if a or b is a group,
-      // otherwise use the name of the neuron name service.
-      var nns = NeuronNameService.getInstance();
-      a = src.isGroup(a) ? a : nns.getName(a);
-      b = src.isGroup(b) ? b : nns.getName(b);
-      return CATMAID.tools.compareStrings(a, b);
+    {
+      name: 'Name',
+      sort: function(matrix, src, isRow, a, b) {
+        // Compare against the group name, if a or b is a group,
+        // otherwise use the name of the neuron name service.
+        var nns = NeuronNameService.getInstance();
+        a = src.isGroup(a) ? a : nns.getName(a);
+        b = src.isGroup(b) ? b : nns.getName(b);
+        return CATMAID.tools.compareStrings('' + a, '' + b);
+      }
+    },
+    {
+      name: 'Max synapse count (desc.)',
+      sort: function(matrix, src, isRow, a, b) {
+        return compareDescendingSynapseCount(matrix, src, isRow, a, b);
+      }
+    },
+    {
+      name: 'Max synapse count (asc.)',
+      sort: function(matrix, src, isRow, a, b) {
+        return -1 * compareDescendingSynapseCount(matrix, src, isRow, a, b);
+      }
     }
+  ];
+
+  /**
+   * Compare by the maximum synapse count in rows or columns a and b.
+   */
+  var compareDescendingSynapseCount = function(matrix, src, isRow, a, b) {
+    var m = matrix.connectivityMatrix;
+    if (isRow) {
+      // Find maximum synapse counts in the given rows
+      var ia = matrix.rowSkeletonIDs.indexOf(a);
+      var ib = matrix.rowSkeletonIDs.indexOf(b);
+      var ca = m[ia];
+      var cb = m[ib];
+      if (!ca) throw new CATMAID.ValueError("Invalid column: " + ia);
+      if (!cb) throw new CATMAID.ValueError("Invalid column: " + ib);
+      return compareMaxInArray(ca, cb);
+    } else {
+      var ia = matrix.colSkeletonIDs.indexOf(a);
+      var ib = matrix.colSkeletonIDs.indexOf(b);
+      var maxa = 0, maxb = 0;
+      for (var i=0; i<matrix.getNumberOfRows(); ++i) {
+        if (m[i][ia] > maxa) maxa = m[i][ia];
+        if (m[i][ib] > maxb) maxb = m[i][ib];
+      }
+      return maxa === maxb ? 0 : (maxa > maxb ? -1 : 1);
+    }
+  };
+
+  /**
+   * Return 1 if array contains a higher value than any other value in array b.
+   * -1 if array b contains a higher value than array a. If their maximum value
+   *  is the same, return 0.
+   */
+  var compareMaxInArray = function(a, b) {
+    var maxa = 0;
+    for (var i=0; i<a.length; ++i) {
+      if (a[i] > maxa) maxa = a[i];
+    }
+    var maxb = 0;
+    for (var i=0; i<b.length; ++i) {
+      if (b[i] > maxb) maxb = b[i];
+    }
+    return maxa === maxb ? 0 : (maxa > maxb ? -1 : 1);
   };
 
   /**

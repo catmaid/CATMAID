@@ -58,7 +58,16 @@
    * from the back-end).
    */
   ConnectivityMatrix.prototype.setConnectivityMatrixFromData = function(data) {
+    this.rawData = data;
     this.connectivityMatrix = this.createConnectivityMatrix(data);
+  };
+
+  /**
+   * Rebuild the connectivity matrix based on data (which was e.g. returned
+   * from the back-end).
+   */
+  ConnectivityMatrix.prototype.rebuild = function() {
+    this.setConnectivityMatrixFromData(this.rawData);
   };
 
   /**

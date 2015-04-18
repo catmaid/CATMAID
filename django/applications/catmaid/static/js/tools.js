@@ -238,4 +238,15 @@ CATMAID.tools = CATMAID.tools || {};
     return 0.299 * r + 0.587 * g + 0.114 * b;
   };
 
+  /**
+   * Return either 'black' or 'white', whichever is better readable o a
+   * background of the given hex color. The heuristic is to use black if the
+   * approximate luminance is above 50%.
+   */
+  tools.getContrastColor = function(hex) {
+    var rgb = CATMAID.tools.hexToRGB(hex);
+    var lum = CATMAID.tools.rgbToLuminance(rgb.r, rgb.g, rgb.b);
+    return lum <= 128 ? "white" : "black";
+  };
+
 })(CATMAID.tools);

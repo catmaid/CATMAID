@@ -712,9 +712,7 @@
     element.style.backgroundColor = bg;
 
     // Heuristic to find foreground color for children
-    var bgRGB = CATMAID.tools.hexToRGB(bg);
-    var lum = CATMAID.tools.rgbToLuminance(bgRGB.r, bgRGB.g, bgRGB.b);
-    var fg = lum <= 128 ? "white" : "black";
+    var fg = CATMAID.tools.getContrastColor(bg);
     for (var i=0; i<element.childNodes.length; ++i) {
       element.childNodes[i].style.color = fg;
     }

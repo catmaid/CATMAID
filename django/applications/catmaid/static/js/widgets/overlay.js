@@ -2188,7 +2188,8 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
     var atnid = -1; // cannot send a null
     var atntype = "";
-    if (SkeletonAnnotations.getActiveNodeId() && SkeletonAnnotations.TYPE_NODE === SkeletonAnnotations.getActiveNodeType()) {
+    if (SkeletonAnnotations.getActiveNodeId() &&
+        SkeletonAnnotations.TYPE_NODE === SkeletonAnnotations.getActiveNodeType()) {
       if (future_active_node_id) {
         atnid = future_active_node_id;
       } else {
@@ -2428,8 +2429,10 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (treeno
   this.moveTo(node[3], node[2], node[1], this.selectNode.bind(this, node[0]));
 };
 
-/** Checks first if the parent is loaded,
- * otherwise fetches its location from the database. */
+/**
+ * Checks first if the parent is loaded, otherwise fetches its location from the
+ * database.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) {
   if (this.isIDNull(treenode_id)) return;
   var node = this.nodes[treenode_id];

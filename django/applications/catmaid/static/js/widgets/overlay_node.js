@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  growlAlert,
   mayEdit,
   project,
   requestQueue,
@@ -1084,7 +1083,8 @@
               CATMAID.statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
             }
           } else {
-            growlAlert('BEWARE', 'You need to activate a node before joining it to a connector node!');
+            CATMAID.msg('BEWARE', 'You need to activate a node before ' +
+                'joining it to a connector node!');
           }
         } else {
           // activate this node

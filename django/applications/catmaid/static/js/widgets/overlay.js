@@ -1853,7 +1853,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
           self.updateNodes();
         });
     };
-    dialog.show();
+    dialog.show('auto', 'auto');
   }
 
   if (no_measurement_tool) {

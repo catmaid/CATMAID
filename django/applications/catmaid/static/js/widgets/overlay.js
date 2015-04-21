@@ -486,18 +486,28 @@ SkeletonAnnotations.SVGOverlay.prototype.setAllSuspended = function(value)
 
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,
- * it is resolved immediately.
+ * it is resolved immediately. A node object as well as number (representing a
+ * node ID) can be passed in. If only a number is passed, it is expected that
+ * the node is available at the moment of the call in the nodes cache. An error
+ * is thrown if this is not the case.
  */
 SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
 {
   var self = this;
 
+  // If the node is a string or a number, try to find it in the nodes cache.
+  var type = typeof node;
+  if ("string" === type || "number" === type) {
+    node = this.nodes[node];
+  }
+
+  // Raise error, if no node or a node without ID was was given
+  if (!node || !node.id) {
+    reject(Error("Please specify a node object or valid node ID"));
+    return;
+  }
+
   return new Promise(function(resolve, reject) {
-    // Raise error, if no ID was given
-    if (!node || !node.id) {
-      reject(Error("Please specify a node ID"));
-      return
-    }
 
     // If the node can be parsed as a number, it is assumed to be already there.
     if (!isNaN(parseInt(node.id))) {

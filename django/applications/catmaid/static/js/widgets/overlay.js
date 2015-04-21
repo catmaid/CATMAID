@@ -2437,11 +2437,11 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
   if (this.isIDNull(treenode_id)) return;
   var node = this.nodes[treenode_id];
   if (!node) {
-    alert("ERROR", "Could not find node with id #" + treenode_id);
+    CATMAID.error("Could not find node with id #" + treenode_id);
     return;
   }
   if (node.isroot) {
-    growlAlert("Information", "This is the root node - can't move to its parent");
+    CATMAID.info("This is the root node, can't move to its parent");
     return;
   }
   this.moveToAndSelectNode(node.parent_id);

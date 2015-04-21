@@ -2774,7 +2774,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
       true),
     (function() {
       var node = this.nodes[nodeID];
-      statusBar.replaceLast("Virtual node, modify to instantiate (parent: " +
+      CATMAID.statusBar.replaceLast("Virtual node, modify to instantiate (parent: " +
           node.parent_id + " skeleton: " + node.skeleton_id + ")");
     }).bind(this)
   );

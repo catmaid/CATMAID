@@ -2467,7 +2467,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
           // See goToNextBranchOrEndNode for JSON schema description.
           if (json.length === 0) {
             // Already at a branch or end node
-            growlAlert('Already there', 'You are at an end node');
+            CATMAID.msg('Already there', 'You are at an end node');
           } else {
             self.nextBranches = {tnid: treenode_id, branches: json};
             self.cycleThroughBranches(null, 0);

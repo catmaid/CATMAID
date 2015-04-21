@@ -2447,6 +2447,10 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
   this.moveToAndSelectNode(node.parent_id);
 };
 
+/**
+ * Select either the node stored in nextBranches or, if this is not available,
+ * the next branch or end node is fetched from the back end.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, e) {
   if (this.isIDNull(treenode_id)) return;
   // If the existing nextBranches was fetched for this treenode, reuse it to

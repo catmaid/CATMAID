@@ -2948,7 +2948,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
   }
   // Else, check that there is a node activated
   if (atn.id === null) {
-    alert('Need to activate a treenode first!');
+    CATMAID.error('Need to activate a treenode first!');
     return;
   }
 
@@ -2967,12 +2967,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
 SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = function() {
   var atn = SkeletonAnnotations.atn;
   if (null === atn.id) {
-    growlAlert("Information", "A terminal must be selected in order to switch to its connector");
+    CATMAID.info("A terminal must be selected in order to switch to its connector");
     return;
   }
   var ob = this.nodes[atn.id];
   if (!ob) {
-    growlAlert("WARNING", "Cannot switch between terminal and connector: node not loaded.");
+    CATMAID.warn("Cannot switch between terminal and connector: node not loaded.");
     return;
   }
   if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type) {
@@ -2988,7 +2988,7 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
       } else if (1 === Object.keys(ob.pregroup).length) {
         this.moveToAndSelectNode(this.nodes[Object.keys(ob.pregroup)[0]].id);
       } else {
-        growlAlert("Oops", "Don't know which terminal to switch to");
+        CATMAID.msg("Oops", "Don't know which terminal to switch to");
         return;
       }
     }
@@ -3009,7 +3009,7 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
         this.switchingTreenodeID = ob.id;
         this.switchingConnectorID = preIDs[0];
       } else {
-        growlAlert("Oops", "Don't know which connector to switch to");
+        CATMAID.msg("Oops", "Don't know which connector to switch to");
         this.switchingTreenodeID = null;
         this.switchingConnectorID = null;
         return;
@@ -3017,7 +3017,7 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
       this.moveToAndSelectNode(this.nodes[this.switchingConnectorID].id);
     }
   } else {
-    alert("ERROR: unknown node type: " + ob.type);
+    CATMAID.error("Unknown node type: " + ob.type);
   }
 };
 
@@ -3215,9 +3215,9 @@ SkeletonAnnotations.Tag = new (function() {
          delete_existing: deleteExisting ? true : false},
         function(json) {
           if ('' === label) {
-            growlAlert('Information', 'Tags removed.');
+            CATMAID.info('Tags removed.');
           } else {
-            growlAlert('Information', 'Tag ' + label + ' added.');
+            CATMAID.info('Tag ' + label + ' added.');
           }
           svgOverlay.updateNodes();
       });
@@ -3231,7 +3231,7 @@ SkeletonAnnotations.Tag = new (function() {
         django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/remove',
         {tag: label},
         function(json) {
-          growlAlert('Information', 'Tag "' + label + '" removed.');
+          CATMAID.info('Tag "' + label + '" removed.');
           svgOverlay.updateNodes();
         },
         undefined,

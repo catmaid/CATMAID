@@ -2713,12 +2713,21 @@ SkeletonAnnotations.SVGOverlay.prototype.goToLastEditedNode = function(skeletonI
     });
 };
 
+/**
+ * Move to the next open end end relative to the active node, and select it. If
+ * cyling is requested, all buffered open ends will be selected one after each
+ * other. If a virtual node is passed in, the request is done for its real
+ * parent.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, cycle, byTime) {
   if (this.isIDNull(nodeID)) return;
   if (cycle) {
     this.cycleThroughOpenEnds(nodeID, byTime);
   } else {
     var self = this;
+    if (!this.isRealNode(nodeID)) {
+      nodeID = SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
+    }
     // TODO could be done by inspecting the graph locally if it is loaded in the
     // 3D viewer or treenode table (but either source may not be up to date)
     this.submit(

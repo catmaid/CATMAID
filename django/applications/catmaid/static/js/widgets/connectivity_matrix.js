@@ -117,13 +117,13 @@
 
         var loadRows = document.createElement('input');
         loadRows.setAttribute("type", "button");
-        loadRows.setAttribute("value", "Append rows");
+        loadRows.setAttribute("value", "Append presynaptic neurons");
         loadRows.onclick = loadWith.bind(this, true, false);
         controls.appendChild(loadRows);
 
         var loadColumns = document.createElement('input');
         loadColumns.setAttribute("type", "button");
-        loadColumns.setAttribute("value", "Append columns");
+        loadColumns.setAttribute("value", "Append postsynaptic neurons");
         loadColumns.onclick = loadWith.bind(this, false, true);
         controls.appendChild(loadColumns);
 

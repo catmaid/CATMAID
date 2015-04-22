@@ -231,3 +231,11 @@ CATMAID.info = CATMAID.msg.bind(window, "Information");
  * Convenience function to show a growl warning message.
  */
 CATMAID.warn = CATMAID.msg.bind(window, "Warning");
+
+/**
+ * Make status information available through the front-ends status bar.
+ */
+CATMAID.status = function(msg)
+{
+  CATMAID.statusBar.replaceLast(msg);
+};

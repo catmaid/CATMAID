@@ -9,7 +9,6 @@
   growlAlert,
   InstanceRegistry,
   NeuronNameService,
-  OptionsDialog,
   project,
   requestQueue,
   SelectionTable,
@@ -213,7 +212,7 @@ WebGLApplication.prototype.exportSVG = function() {
  * Create an store a neuron catalog SVG for the current view.
  */
 WebGLApplication.prototype.exportCatalogSVG = function() {
-  var dialog = new OptionsDialog("Catalog export options");
+  var dialog = new CATMAID.OptionsDialog("Catalog export options");
   dialog.appendMessage('Adjust the catalog export settings to your liking.');
 
   // Create a new empty neuron name service that takes care of the sorting names
@@ -246,7 +245,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
     var newLabel = namingOptionIds[sorting.selectedIndex];
     if (newLabel === 'all-meta' || newLabel === 'own-meta') {
       // Ask for meta annotation
-      var dialog = new OptionsDialog("Please enter meta annotation");
+      var dialog = new CATMAID.OptionsDialog("Please enter meta annotation");
       var field = dialog.appendField("Meta annotation", 'meta-annotation',
           '', true);
       dialog.onOK = function() {
@@ -397,7 +396,7 @@ WebGLApplication.prototype.spatialSelect = function() {
       skeletons = this.space.content.skeletons;
   if (!active_skid) return alert("No active skeleton!");
   if (!skeletons[active_skid]) return alert("Active skeleton is not present in the 3D view!");
-  var od = new OptionsDialog("Spatial select"),
+  var od = new CATMAID.OptionsDialog("Spatial select"),
       choice = od.appendChoice("Select neurons ", "spatial-mode",
           ["in nearby space",
            "synapting with active neuron",
@@ -628,7 +627,7 @@ WebGLApplication.prototype.staticUpdateZPlane = function() {
 /** Receives an extra argument (an event) which is ignored. */
 WebGLApplication.prototype.updateColorMethod = function(colorMenu) {
   if ('downstream-of-tag' === colorMenu.value) {
-    var dialog = new OptionsDialog("Type in tag");
+    var dialog = new CATMAID.OptionsDialog("Type in tag");
     dialog.appendMessage("Nodes downstream of tag: magenta.\nNodes upstream of tag: dark grey.");
     var input = dialog.appendField("Tag (regex): ", "tag_text", this.options.tag_regex);
     dialog.onOK = (function() {
@@ -733,7 +732,7 @@ WebGLApplication.prototype.ZXView = function() {
  */
 WebGLApplication.prototype.storeCurrentView = function(name, callback) {
   if (!name) {
-    var dialog = new OptionsDialog("Store current view");
+    var dialog = new CATMAID.OptionsDialog("Store current view");
     dialog.appendMessage('Please enter a name for the current view');
     var n = this.getStoredViews().length + 1;
     var nameField = dialog.appendField("Name: ", "new-view-name", 'View ' + n);
@@ -4139,7 +4138,7 @@ WebGLApplication.prototype.createVisibibilityResetHandler = function(visMap)
  */
 WebGLApplication.prototype.exportAnimation = function()
 {
-  var dialog = new OptionsDialog("Animation export options");
+  var dialog = new CATMAID.OptionsDialog("Animation export options");
   dialog.appendMessage('Adjust the animation export settings to your liking. ' +
      'The resulting file will be in WebM format and might take some seconds ' +
      'to be generated. The default frame size matches the current size of ' +

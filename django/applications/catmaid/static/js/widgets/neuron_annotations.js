@@ -7,7 +7,6 @@
   InstanceRegistry,
   NeuronNameService,
   NeuronNavigator,
-  OptionsDialog,
   project,
   requestQueue,
   SelectionTable,
@@ -600,7 +599,7 @@ NeuronAnnotations.prototype.get_unselected_neurons = function()
 
 NeuronAnnotations.prototype.prompt_for_annotations = function(success_fn)
 {
-  var dialog = new OptionsDialog("Add new annotation");
+  var dialog = new CATMAID.OptionsDialog("Add new annotation");
   dialog.appendMessage("Add a new annotation for the selected objects.");
 
   var helpMsg = dialog.appendMessage("Click here for details");

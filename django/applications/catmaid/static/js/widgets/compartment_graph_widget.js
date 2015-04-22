@@ -7,7 +7,6 @@
   growlAlert,
   InstanceRegistry,
   NeuronNameService,
-  OptionsDialog,
   parseColorWheel,
   project,
   requestQueue,
@@ -200,7 +199,7 @@ GroupGraph.prototype.toggle_show_node_labels = function() {
 
 GroupGraph.prototype.graph_properties = function() {
   
-  var dialog = new OptionsDialog("Graph properties");
+  var dialog = new CATMAID.OptionsDialog("Graph properties");
   var vpos = ["top", "center", "bottom"];
   var label_vpos = dialog.appendChoice("Node label vertical position", "valign", vpos, vpos, this.label_valign);
   var hpos = ["left", "center", "right"];
@@ -1226,7 +1225,7 @@ GroupGraph.prototype.appendGroup = function(models) {
     all.unshift("--");
     names.unshift("--");
 
-    var options = new OptionsDialog("Group properties");
+    var options = new CATMAID.OptionsDialog("Group properties");
     options.appendMessage("Creating new group with " + (names.length - 1) + " neurons.");
     options.appendMessage("Choose a group name from:");
     options.appendMessage("(Will pick first non-empty match.)");

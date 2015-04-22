@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  OptionsDialog,
   login
 */
 
@@ -162,7 +161,7 @@ CATMAID.ErrorDialog.prototype.show = function() {
  * Creates a simple login dialog.
  */
 CATMAID.LoginDialog = function(text, callback) {
-  this.dialog = new OptionsDialog("Permission required");
+  this.dialog = new CATMAID.OptionsDialog("Permission required");
   if (text) {
     this.dialog.appendMessage(text);
   }

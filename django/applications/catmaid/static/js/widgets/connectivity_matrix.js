@@ -605,7 +605,7 @@
    * Display a modal dialog to ask the user for a group name.
    */
   function askForGroupName(validGroupName, callback) {
-    var options = new OptionsDialog("Group properties");
+    var options = new CATMAID.OptionsDialog("Group properties");
     options.appendMessage("Please choose a name for the new group.");
     var nameField = options.appendField("Name: ", "groupname-typed", "", null);
     var invalidMessage = options.appendMessage("Please choose a different name!");

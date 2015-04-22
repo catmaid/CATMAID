@@ -4,7 +4,6 @@
   fetchSkeletons,
   InstanceRegistry,
   NeuronNameService,
-  OptionsDialog,
   project,
 */
 
@@ -194,7 +193,7 @@ SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {
 };
 
 SkeletonMeasurementsTable.prototype.adjustOptions = function() {
-  var od = new OptionsDialog("Parameters");
+  var od = new CATMAID.OptionsDialog("Parameters");
   od.appendField("Smooth skeletons by Gaussian convolution with sigma (nm): ", "SMT-sigma-" + this.widgetID, this.sigma);
   od.onOK = (function() {
     var field = $('#SMT-sigma-' + this.widgetID);

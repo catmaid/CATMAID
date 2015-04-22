@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   InstanceRegistry,
-  OptionsDialog,
   parseColorWheel
 */
 
@@ -67,7 +66,7 @@ VennDiagram.prototype.append = function(models) {
     if (0 === Object.keys(visible).length) return;
 
     // Add new group
-    var options = new OptionsDialog("Group properties");
+    var options = new CATMAID.OptionsDialog("Group properties");
     options.appendField("Name:", "vd-name", "", null);
     var display = document.createElement('input');
     display.setAttribute('type', 'button');

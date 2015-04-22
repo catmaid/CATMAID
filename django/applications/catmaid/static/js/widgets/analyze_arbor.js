@@ -6,7 +6,6 @@
   InstanceRegistry,
   NeuronNameService,
   project,
-  OptionsDialog,
   SelectionTable,
   SkeletonAnnotations,
   SynapseClustering,
@@ -54,7 +53,7 @@ AnalyzeArbor.prototype.adjustOptions = function() {
                 "Scatterplot width: ",
                 "Scatterplot height: "];
 
-  var od = new OptionsDialog("Parameters");
+  var od = new CATMAID.OptionsDialog("Parameters");
   params.forEach(function(param, i) {
     od.appendField(titles[i], "AA-" + param + "-" + this.widgetID, this[param]);
   }, this);

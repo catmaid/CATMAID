@@ -5,7 +5,6 @@
   annotations,
   growlAlert,
   NeuronNameService,
-  OptionsDialog,
   project,
   requestQueue,
   SelectionTable,
@@ -235,7 +234,7 @@ SettingsWidget.prototype.init = function(space)
       // required.
       if (newLabel === 'all-meta' || newLabel === 'own-meta') {
         // Ask for meta annotation
-        var dialog = new OptionsDialog("Please enter meta annotation");
+        var dialog = new CATMAID.OptionsDialog("Please enter meta annotation");
         var field = dialog.appendField("Meta annotation", 'meta-annotation',
             '', true);
         dialog.onOK = function() {

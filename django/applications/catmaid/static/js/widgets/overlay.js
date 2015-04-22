@@ -3166,31 +3166,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLinkInterpolated =
   SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNode;
 
 
-//////
-
-
-window.growlAlert = function(title, message, options) {
-  var settings = {
-    title: title,
-    message: message,
-    duration: 3000,
-    size: 'large',
-    style: undefined // Gray background by default, alternatives are:
-                     // 'error' = red, 'warning' = yellow, 'notice' = green
-  };
-
-  // If an alert style wasn't provided, guess from the alert title
-  if (!options || !options.style) {
-    if (title.match(/error/i)) settings.style = 'error';
-    else if (title.match(/warn|beware/i)) settings.style = 'warning';
-    else if (title.match(/done|success/i)) settings.style = 'notice';
-  }
-
-  $.extend(settings, options);
-  $.growl(settings);
-};
-
-
 /** Manages the creation and deletion of tags via a tag editor div.
   * tagbox from http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor */
 SkeletonAnnotations.Tag = new (function() {

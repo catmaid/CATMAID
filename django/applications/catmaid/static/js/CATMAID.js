@@ -72,6 +72,30 @@ window.onerror = function(msg, url, lineno, colno, err)
   return true;
 };
 
+/**
+ * Define a global growl alert function.
+ */
+window.growlAlert = function(title, message, options) {
+  var settings = {
+    title: title,
+    message: message,
+    duration: 3000,
+    size: 'large',
+    style: undefined // Gray background by default, alternatives are:
+                     // 'error' = red, 'warning' = yellow, 'notice' = green
+  };
+
+  // If an alert style wasn't provided, guess from the alert title
+  if (!options || !options.style) {
+    if (title.match(/error/i)) settings.style = 'error';
+    else if (title.match(/warn|beware/i)) settings.style = 'warning';
+    else if (title.match(/done|success/i)) settings.style = 'notice';
+  }
+
+  $.extend(settings, options);
+  $.growl(settings);
+};
+
 
 /**
  * Creates a jQuery UI based error dialog. If detail is passed, it is hidden by

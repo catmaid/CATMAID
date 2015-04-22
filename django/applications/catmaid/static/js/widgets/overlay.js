@@ -3166,8 +3166,11 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLinkInterpolated =
   SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNode;
 
 
-/** Manages the creation and deletion of tags via a tag editor div.
-  * tagbox from http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor */
+/**
+ * Manages the creation and deletion of tags via a tag editor DIV. If a tag
+ * should be created on a virtual node, the virtual node is realized fist. From
+ * http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor
+ */
 SkeletonAnnotations.Tag = new (function() {
   this.tagbox = null;
 

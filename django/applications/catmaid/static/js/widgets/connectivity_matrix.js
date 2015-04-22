@@ -379,14 +379,44 @@
 
         return true;
       });
+
+      // Add a handler for selecting skeletons when their names are clicked
+      $(table).on('click', 'a[data-skeleton-ids]', (function() {
+
+        // Store locally the last element clicked  ID and its index
+        var lastElement, lastIndex;
+
+       return  function(e) {
+          var skeletonIDs = JSON.parse(this.dataset.skeletonIds);
+          if (!skeletonIDs || !skeletonIDs.length) {
+            CATMAID.warn('Could not find expected list of skleton IDs');
+            return;
+          }
+          if (1 === skeletonIDs.length) {
+            TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
+          } else {
+            if (lastElement === this) {
+              lastIndex = (lastIndex + 1) % skeletonIDs.length;
+            } else {
+              lastElement = this;
+              lastIndex = 0;
+            }
+            TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[lastIndex]);
+          }
+       };
+      })());
     }
 
     return content;
 
     // Create column
-    function handleColumn(tableHeader, id, colGroup, name) {
+    function handleColumn(tableHeader, id, colGroup, name, skeletonIDs) {
+      var a = document.createElement('a');
+      a.href = '#';
+      a.setAttribute('data-skeleton-ids', JSON.stringify(skeletonIDs));
+      a.appendChild(document.createTextNode(name));
       var th = document.createElement('th');
-      th.appendChild(document.createTextNode(name));
+      th.appendChild(a);
       if (colGroup) {
         th.setAttribute('title', 'This group contains ' + colGroup.length +
             ' skeleton(s): ' + colGroup.join(', '));
@@ -395,11 +425,15 @@
     }
 
     // Create row
-    function handleRow(table, id, rowGroup, name) {
+    function handleRow(table, id, rowGroup, name, skeletonIDs) {
       var row = document.createElement('tr');
       table.appendChild(row);
+      var a = document.createElement('a');
+      a.href = '#';
+      a.setAttribute('data-skeleton-ids', JSON.stringify(skeletonIDs));
+      a.appendChild(document.createTextNode(name));
       var th = document.createElement('th');
-      th.appendChild(document.createTextNode(name));
+      th.appendChild(a);
       if (rowGroup) {
         th.setAttribute('title', 'This group contains ' + rowGroup.length +
             ' skeleton(s): ' + rowGroup.join(', '));
@@ -443,7 +477,8 @@
       var id = this.colDimension.orderedElements[c];
       var colGroup = this.colDimension.groups[id];
       var name = colGroup ? id : nns.getName(id);
-      handleCol(id, colGroup, name);
+      var skeletonIDs = colGroup ? colGroup : [id];
+      handleCol(id, colGroup, name, skeletonIDs);
     }
     // Add row headers and connectivity matrix rows
     var r = 0;
@@ -453,7 +488,8 @@
       var rowId = this.rowDimension.orderedElements[dr];
       var rowGroup = this.rowDimension.groups[rowId];
       var rowName = rowGroup ? rowId : nns.getName(rowId);
-      var row = handleRow(rowId, rowGroup, rowName);
+      var skeletonIDs = rowGroup ? rowGroup : [rowId];
+      var row = handleRow(rowId, rowGroup, rowName, skeletonIDs);
 
       // Crete cells for each column in this row
       for (var dc=0; dc<nDisplayCols; ++dc) {
@@ -504,13 +540,13 @@
     }
 
     // Create header
-    function handleColumn(line, id, colGroup, name) {
+    function handleColumn(line, id, colGroup, name, skeletonIDs) {
       line.push('"from ' + name + '"');
       line.push('"to ' + name + '"');
     }
 
     // Create row
-    function handleRow(lines, id, rowGroup, name) {
+    function handleRow(lines, id, rowGroup, name, skeletonIDs) {
       var line = ['"' + name + '"'];
       lines.push(line);
       return line;

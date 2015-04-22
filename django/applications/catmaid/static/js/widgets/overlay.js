@@ -3034,6 +3034,11 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
     return false;
   }
 
+  if (!SkeletonAnnotations.isRealNode(nodeId)) {
+    CATMAID.warn("Can't delete this node, because it is virtual");
+    return false;
+  }
+
   if (!mayEdit() || !node.can_edit) {
     if (node.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
       CATMAID.error("You don't have permission to delete connector #" + node.id);

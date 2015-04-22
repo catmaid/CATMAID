@@ -2586,16 +2586,18 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
         return;
       }
       self.editRadius_defaultValue = choice.selectedIndex;
-      self.submit(
-        django_url + project.id + '/treenode/' + treenode_id + '/radius',
-        {radius: radius,
-         option: choice.selectedIndex},
-        function(json) {
-          // Refresh 3d views if any
-          WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
-          // Reinit SVGOverlay to read in the radius of each altered treenode
-          self.updateNodes();
-        });
+      self.promiseNode(treenode_id).then(function(nodeID) {
+        self.submit(
+          django_url + project.id + '/treenode/' + nodeID + '/radius',
+          {radius: radius,
+           option: choice.selectedIndex},
+          function(json) {
+            // Refresh 3d views if any
+            WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
+            // Reinit SVGOverlay to read in the radius of each altered treenode
+            self.updateNodes();
+          });
+      });
     };
     dialog.show('auto', 'auto');
   }

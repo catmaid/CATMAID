@@ -590,7 +590,7 @@
        * Draws a circle around the treenode and control its radius with the help of
        * the mouse (and a mouse-to-stack transform function).
        */
-      this.drawSurroundingCircle = function(transform, onclickHandler) {
+      this.drawSurroundingCircle = function(toStack, toProject, onclickHandler) {
         var self = this;
         // Create a raphael circle object that represents the surrounding circle
         var color = "rgb(255,255,0)";
@@ -640,9 +640,11 @@
         // Update radius on mouse move
         mc.on('mousemove', function() {
           var e = d3.event;
-          var r = transform({x: e.layerX, y: e.layerY});
-          r.x -= self.x;
-          r.y -= self.y;
+          var r = {x: e.layerX, y: e.layerY};
+          var rS = toStack(r);
+          var rP = toProject(r);
+          r.x = rS.x - self.x;
+          r.y = rS.y - self.y;
           var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2));
           c.attr('r', newR);
           // Strore also x and y components

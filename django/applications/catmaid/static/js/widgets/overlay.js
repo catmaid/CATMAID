@@ -2500,7 +2500,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, co
         if (self.nodes[treenode_id].surroundingCircleElements) {
           hideCircleAndCallback();
         } else {
-          self.nodes[treenode_id].drawSurroundingCircle(transform,
+          self.nodes[treenode_id].drawSurroundingCircle(toStack, toProject,
               hideCircleAndCallback);
           // Attach a handler for the ESC key to cancel selection
           $('body').on('keydown.catmaidRadiusSelect', function(event) {
@@ -2531,15 +2531,29 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, co
           });
         }
 
-        function transform(r)
+        /**
+         * Transform a layer coordinate into stack space.
+         */
+        function toStack(r)
         {
-          r.x /= self.stack.scale;
-          r.y /= self.stack.scale;
-          r.x += ( self.stack.x - self.stack.viewWidth / self.stack.scale / 2 );
-          r.y += ( self.stack.y - self.stack.viewHeight / self.stack.scale / 2 );
+          var offsetX = self.stack.x - self.stack.viewWidth / self.stack.scale / 2;
+          var offsetY = self.stack.y - self.stack.viewHeight / self.stack.scale / 2;
           return {
-              x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
-              y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
+            x: (r.x / self.stack.scale) + offsetX,
+            y: (r.y / self.stack.scale) + offsetY
+          }
+        }
+
+        /**
+         * Transform a layer coordinate into world space.
+         */
+        function toProject(r)
+        {
+          var s = toStack(r);
+          return {
+            x: self.stack.stackToProjectX(self.stack.z, s.y, s.x),
+            y: self.stack.stackToProjectY(self.stack.z, s.y, s.x)
+          };
         }
       });
 };

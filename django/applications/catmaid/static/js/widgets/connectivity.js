@@ -1153,6 +1153,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   function set_as_selected(name, relation, ev) {
     var skelid = parseInt( ev.target.value );
     var checked = ev.target.checked;
+    /* jshint validthis: true */
     this.selectSkeleton(skelid, checked);
 
     // Uncheck the select-all checkbox if it is checked and this checkbox is
@@ -1161,7 +1162,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
       $('#' + name + 'stream-selectall' + widgetID + ':checked')
           .prop('checked', false);
     }
-  };
+  }
 };
 
 SkeletonConnectivity.prototype.openPlot = function() {

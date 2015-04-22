@@ -590,7 +590,7 @@
        * Draws a circle around the treenode and control its radius with the help of
        * the mouse (and a mouse-to-stack transform function).
        */
-      this.drawSurroundingCircle = function(toStack, toProject, onclickHandler) {
+      this.drawSurroundingCircle = function(toStack, stackToProject, onclickHandler) {
         var self = this;
         // Create a raphael circle object that represents the surrounding circle
         var color = "rgb(255,255,0)";
@@ -640,18 +640,20 @@
         // Update radius on mouse move
         mc.on('mousemove', function() {
           var e = d3.event;
-          var r = {x: e.layerX, y: e.layerY};
-          var rS = toStack(r);
-          var rP = toProject(r);
-          r.x = rS.x - self.x;
-          r.y = rS.y - self.y;
+          var rS = toStack({x: e.layerX, y: e.layerY});
+          var r = {
+            x: rS.x - self.x,
+            y: rS.y - self.y
+          }
           var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2));
           c.attr('r', newR);
           // Strore also x and y components
           c.datum(r);
           // Update radius measurement label.
+          var rP = stackToProject(r);
+          var newRP = Math.sqrt(Math.pow(rP.x, 2) + Math.pow(rP.y, 2));
           labelText.attr({x: self.x + r.x + 3 * pad, y: self.y + r.y + 2 * pad});
-          labelText.text(Math.round(newR) + 'nm');
+          labelText.text(Math.round(newRP) + 'nm');
           var bbox = labelText.node().getBBox();
           labelShadow.attr({
               x: self.x + r.x + 2 * pad,

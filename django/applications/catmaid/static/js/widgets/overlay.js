@@ -2500,8 +2500,8 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, co
         if (self.nodes[treenode_id].surroundingCircleElements) {
           hideCircleAndCallback();
         } else {
-          self.nodes[treenode_id].drawSurroundingCircle(toStack, toProject,
-              hideCircleAndCallback);
+          self.nodes[treenode_id].drawSurroundingCircle(toStack,
+              stackToProject, hideCircleAndCallback);
           // Attach a handler for the ESC key to cancel selection
           $('body').on('keydown.catmaidRadiusSelect', function(event) {
             if (27 === event.keyCode) {
@@ -2547,9 +2547,8 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, co
         /**
          * Transform a layer coordinate into world space.
          */
-        function toProject(r)
+        function stackToProject(s)
         {
-          var s = toStack(r);
           return {
             x: self.stack.stackToProjectX(self.stack.z, s.y, s.x),
             y: self.stack.stackToProjectY(self.stack.z, s.y, s.x)

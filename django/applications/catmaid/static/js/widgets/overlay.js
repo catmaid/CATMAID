@@ -2779,6 +2779,9 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treeno
   this.moveTo(node[1][2], node[1][1], node[1][0], this.selectNode.bind(this, node[0]));
 };
 
+/**
+ * Sets treenode information as status. Can handle virtual nodes.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, prefixMessage) {
   if (this.isIDNull(nodeID)) return;
   if (typeof prefixMessage === "undefined") {
@@ -2819,7 +2822,16 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
   );
 };
 
-/** @param e The mouse event, to read out whether shift is down. */
+/**
+ * Create interpolated treenodes between the active node and the target click
+ * site. If the shift key is pressed and a node from a different skeleton in
+ * under the cursor when the mouse is clicked, an interpolated join is
+ * performed. If the target node belongs to the same skeleton as the active
+ * node, the target is merely selected. This function can deal with a virtual
+ * active node and virtual target nodes.
+ *
+ * @param e The mouse event, to read out whether shift is down.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e) {
   // Check if there is already a node under the mouse
   // and if so, then activate it
@@ -2947,11 +2959,11 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e
   this.createInterpolatedNode(phys_x, phys_y, phys_z, null, null);
 };
 
-
-/** If you select a pre- or post-synaptic terminal, then run
-    this command, the active node will be switched to its
-    connector (if one uniquely exists).  If you then run the
-    command again, it will switch back to the terminal. */
+/**
+ * If you select a pre- or post-synaptic terminal, then run this command, the
+ * active node will be switched to its connector (if one uniquely exists). If
+ * you then run the command again, it will switch back to the terminal.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = function() {
   var atn = SkeletonAnnotations.atn;
   if (null === atn.id) {

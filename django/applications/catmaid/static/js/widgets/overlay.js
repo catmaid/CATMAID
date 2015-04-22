@@ -2784,7 +2784,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
   if (typeof prefixMessage === "undefined") {
     prefixMessage = "Node " + nodeID;
   }
-  CATMAID.statusBar.replaceLast(prefixMessage + " (loading authorship information)");
+  CATMAID.status(prefixMessage + " (loading authorship information)");
   this.executeDependentOnExistence(nodeID,
     this.submit.bind(this,
       django_url + project.id + '/node/user-info',
@@ -2807,7 +2807,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
         } else {
           msg += "no one";
         }
-        CATMAID.statusBar.replaceLast(msg);
+        CATMAID.status(msg);
       },
       false,
       true),

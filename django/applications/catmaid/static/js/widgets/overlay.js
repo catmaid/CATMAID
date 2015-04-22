@@ -2609,8 +2609,10 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
   }
 };
 
-/** All moving functions must perform moves via the updateNodeCoordinatesinDB
- * otherwise, coordinates for moved nodes would not be updated. */
+/**
+ * All moving functions must perform moves via the updateNodeCoordinatesinDB
+ * otherwise, coordinates for moved nodes would not be updated.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.moveTo = function(z, y, x, fn) {
   var stack = this.stack;
   this.updateNodeCoordinatesinDB(function() {
@@ -2618,6 +2620,10 @@ SkeletonAnnotations.SVGOverlay.prototype.moveTo = function(z, y, x, fn) {
   });
 };
 
+
+/**
+ * Move to a node and select it. Can handle virtual nodes.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.moveToAndSelectNode = function(nodeID, fn) {
   if (this.isIDNull(nodeID)) return;
   var self = this;
@@ -2689,6 +2695,10 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
   }
 };
 
+/**
+ * Move to the node that was edited last and select it. This will always be a
+ * real node.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.goToLastEditedNode = function(skeletonID) {
   if (this.isIDNull(skeletonID)) return;
   if (!skeletonID) return;
@@ -2730,6 +2740,11 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
   }
 };
 
+/**
+ * If there are open ends buffered, move to the next one after the current and
+ * (or the first) and select the node. If sorting by time is requested and no
+ * sorting took place so for, sort all open ends by time.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treenode_id, byTime) {
   if (typeof this.nextOpenEnds === 'undefined') return;
 

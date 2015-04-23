@@ -669,6 +669,18 @@
       sort: function(matrix, src, isRow, a, b) {
         return -1 * compareDescendingSynapseCount(matrix, src, isRow, a, b);
       }
+    },
+    {
+      name: 'Max total synapse count (desc.)',
+      sort: function(matrix, src, isRow, a, b) {
+        return compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
+      }
+    },
+    {
+      name: 'Max total synapse count (asc.)',
+      sort: function(matrix, src, isRow, a, b) {
+        return -1 * compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
+      }
     }
   ];
 
@@ -696,6 +708,34 @@
       }
       return maxa === maxb ? 0 : (maxa > maxb ? -1 : 1);
     }
+  };
+
+  /**
+   * Compare by the accumulated synapse count in rows or columns a and b.
+   */
+  var compareDescendingTotalSynapseCount = function(matrix, src, isRow, a, b) {
+    // Aggregate synapses over all rows respective columns
+    var aAll = 0, bAll = 0;
+    var m = matrix.connectivityMatrix;
+    if (isRow) {
+      var ia = matrix.rowSkeletonIDs.indexOf(a);
+      var ib = matrix.rowSkeletonIDs.indexOf(b);
+      var nCols = matrix.getNumberOfColumns();
+      for (var j=0; j<nCols; ++j) {
+        aAll += m[ia][j];
+        bAll += m[ib][j];
+      }
+    } else {
+      var ia = matrix.colSkeletonIDs.indexOf(a);
+      var ib = matrix.colSkeletonIDs.indexOf(b);
+      var nRows = matrix.getNumberOfRows();
+      for (var j=0; j<nRows; ++j) {
+        aAll += m[j][ia];
+        bAll += m[j][ib];
+      }
+    }
+    // Compare aggregated synapses
+    return aAll === bAll ? 0 : (aAll > bAll ? -1 : 1);
   };
 
   /**

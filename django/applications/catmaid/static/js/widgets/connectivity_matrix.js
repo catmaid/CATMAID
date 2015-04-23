@@ -381,30 +381,25 @@
       });
 
       // Add a handler for selecting skeletons when their names are clicked
-      $(table).on('click', 'a[data-skeleton-ids]', (function() {
-
-        // Store locally the last element clicked  ID and its index
-        var lastElement, lastIndex;
-
-       return  function(e) {
-          var skeletonIDs = JSON.parse(this.dataset.skeletonIds);
-          if (!skeletonIDs || !skeletonIDs.length) {
-            CATMAID.warn('Could not find expected list of skleton IDs');
-            return;
-          }
-          if (1 === skeletonIDs.length) {
-            TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
-          } else {
-            if (lastElement === this) {
-              lastIndex = (lastIndex + 1) % skeletonIDs.length;
-            } else {
-              lastElement = this;
-              lastIndex = 0;
-            }
-            TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[lastIndex]);
-          }
-       };
-      })());
+      $(table).on('click', 'a[data-skeleton-ids]', function(e) {
+        var skeletonIDs = JSON.parse(this.dataset.skeletonIds);
+        if (!skeletonIDs || !skeletonIDs.length) {
+          CATMAID.warn('Could not find expected list of skleton IDs');
+          return;
+        }
+        if (1 === skeletonIDs.length) {
+          TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
+        } else {
+          var ST = new SelectionTable();
+          var models = skeletonIDs.reduce(function(o, skid) {
+            o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "",
+                new THREE.Color().setRGB(1, 1, 0));
+            return o;
+          }, {});
+          WindowMaker.create('neuron-staging-area', ST);
+          ST.append(models);
+        }
+      });
     }
 
     return content;

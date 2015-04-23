@@ -406,16 +406,7 @@
 
     // Create column
     function handleColumn(tableHeader, id, colGroup, name, skeletonIDs) {
-      var a = document.createElement('a');
-      a.href = '#';
-      a.setAttribute('data-skeleton-ids', JSON.stringify(skeletonIDs));
-      a.appendChild(document.createTextNode(name));
-      var th = document.createElement('th');
-      th.appendChild(a);
-      if (colGroup) {
-        th.setAttribute('title', 'This group contains ' + colGroup.length +
-            ' skeleton(s): ' + colGroup.join(', '));
-      }
+      var th = createHeaderCell(name, colGroup, skeletonIDs);
       tableHeader.appendChild(th);
     }
 
@@ -423,19 +414,25 @@
     function handleRow(table, id, rowGroup, name, skeletonIDs) {
       var row = document.createElement('tr');
       table.appendChild(row);
+      var th = createHeaderCell(name, rowGroup, skeletonIDs);
+      row.appendChild(th);
+      return row;
+    }
+
+    // Chreate a cell with skeleton link
+    function createHeaderCell(name, group, skeletonIDs) {
       var a = document.createElement('a');
       a.href = '#';
       a.setAttribute('data-skeleton-ids', JSON.stringify(skeletonIDs));
       a.appendChild(document.createTextNode(name));
       var th = document.createElement('th');
       th.appendChild(a);
-      if (rowGroup) {
-        th.setAttribute('title', 'This group contains ' + rowGroup.length +
-            ' skeleton(s): ' + rowGroup.join(', '));
+      if (group) {
+        th.setAttribute('title', 'This group contains ' + group.length +
+            ' skeleton(s): ' + group.join(', '));
       }
-      row.appendChild(th);
-      return row;
-    }
+      return th;
+    };
 
     // Create cell
     function handleCell(row, rowName, rowSkids, colName, colSkids, connections) {

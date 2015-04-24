@@ -176,8 +176,9 @@ user with, for example::
 
     scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql
 
-You should now be able to access the database and see that it is
-currently empty, e.g.::
+Besides createing the database and the database user, it will also enable a
+required Postgres extension, called ``postgis``. You should now be able to
+access the database and see that it is currently empty, e.g.::
 
     psql -U catmaid_user catmaid
     Password:

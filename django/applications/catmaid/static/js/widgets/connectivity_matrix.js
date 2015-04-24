@@ -432,7 +432,7 @@
             ' skeleton(s): ' + group.join(', '));
       }
       return th;
-    };
+    }
 
     // Create cell
     function handleCell(row, rowName, rowSkids, colName, colSkids, connections) {

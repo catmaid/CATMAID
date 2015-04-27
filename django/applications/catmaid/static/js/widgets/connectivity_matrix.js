@@ -17,6 +17,8 @@
     // Sorting indices for row and columns, default to name
     this.rowSorting = 1;
     this.colSorting = 1;
+    // Rotate column headers by 90 degree
+    this.rotateColumnHeaders = false;
   };
 
   ConnectivityMatrixWidget.prototype = {};
@@ -206,6 +208,18 @@
         color.appendChild(colorSelect);
         controls.appendChild(color);
 
+        var rotateColsCb = document.createElement('input');
+        rotateColsCb.setAttribute('type', 'checkbox');
+        rotateColsCb.checked = this.rotateColumnHeaders;;
+        rotateColsCb.onclick = (function(e) {
+          this.rotateColumnHeaders = e.target.checked;
+          this.refresh();
+        }).bind(this);
+        var rotateCols = document.createElement('label');
+        rotateCols.appendChild(rotateColsCb);
+        rotateCols.appendChild(document.createTextNode('Column header 90°'));
+        controls.appendChild(rotateCols);
+
         var update = document.createElement('input');
         update.setAttribute("type", "button");
         update.setAttribute("value", "Refresh");
@@ -351,7 +365,7 @@
     // Find maximum connection number in matrix
     var maxConnections = matrix.getMaxConnections();
 
-    var walked = this.walkMatrix(matrix, handleColumn.bind(window, colHeader),
+    var walked = this.walkMatrix(matrix, handleColumn.bind(this, colHeader),
         handleRow.bind(window, table), handleCell.bind(this));
 
     if (walked) {
@@ -362,6 +376,15 @@
       content.appendChild(infoBox);
       // Append matrix to content
       content.appendChild(table);
+
+      // Fix table header height for rotated cells
+      var headerHeight = 0;
+      $('th.vertical-table-header div').each(function() {
+        var height = $(this).outerWidth();
+        if (height > headerHeight) headerHeight = height;
+      });
+
+      $('th.vertical-table-header').height(headerHeight + 'px');
 
       // Add a handler for openening connector selections for individual partners
       $('a[partnerIDs]', table).click(function () {
@@ -407,6 +430,9 @@
     // Create column
     function handleColumn(tableHeader, id, colGroup, name, skeletonIDs) {
       var th = createHeaderCell(name, colGroup, skeletonIDs);
+      if (this.rotateColumnHeaders) {
+        th.setAttribute('class', 'vertical-table-header');
+      }
       tableHeader.appendChild(th);
     }
 
@@ -425,8 +451,10 @@
       a.href = '#';
       a.setAttribute('data-skeleton-ids', JSON.stringify(skeletonIDs));
       a.appendChild(document.createTextNode(name));
+      var div = document.createElement('div');
+      div.appendChild(a);
       var th = document.createElement('th');
-      th.appendChild(a);
+      th.appendChild(div);
       if (group) {
         th.setAttribute('title', 'This group contains ' + group.length +
             ' skeleton(s): ' + group.join(', '));

@@ -162,6 +162,11 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
     return o;
   }, {});
 
+  // If a virtual node should be selected, use the real parent instead.
+  if (!SkeletonAnnotations.isRealNode(node_id)) {
+    node_id = SkeletonAnnotations.getChildOfVirtualNode(node_id);
+  }
+
   // Make sure the requested node is part of the current skeleton
   if (!(node_id in nodesToChildren)) {
     if (this.autoUpdate) {

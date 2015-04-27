@@ -165,7 +165,7 @@ slightly different version for you) and add this line as the
 
 After saving that file, you need to restart PostgreSQL with::
 
-    sudo /etc/init.d/postgresql restart
+    sudo service postgresql restart
 
 You can generate the commands for creating the database and
 database user with the ``scripts/createuser.sh`` helper script.

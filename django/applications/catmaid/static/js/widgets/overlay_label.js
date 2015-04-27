@@ -17,7 +17,7 @@ text) {
   this.text = text;
 
   // Scale labels relative to confidence text labels to account for overlay scaling.
-  var fontSize = parseFloat(SkeletonElements.prototype.ArrowLine.prototype.confidenceFontSize) * 0.75;
+  var fontSize = parseFloat(CATMAID.SkeletonElements.prototype.ArrowLine.prototype.confidenceFontSize) * 0.75;
   var pad = fontSize * 0.5,
       xg = this.x + pad*2,
       yg = this.y - pad*2,

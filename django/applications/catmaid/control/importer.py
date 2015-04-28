@@ -6,13 +6,14 @@ import urllib
 from django import forms
 from django.db.models import Count
 from django.conf import settings
+from django.contrib.auth.models import User, Group
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.shortcuts import render_to_response
 from django.utils.datastructures import SortedDict
 
-from guardian.models import Permission, User, Group
+from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign
 
 from catmaid.models import ClassInstance, Project, Stack, ProjectStack, Overlay

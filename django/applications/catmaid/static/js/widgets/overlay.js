@@ -1896,10 +1896,12 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   if (this.getLabelStatus()) {
     // For every node ID
     var m = jso[2];
+    // Scale labels relative to confidence text labels to account for overlay scaling.
+    var fontSize = parseFloat(this.graphics.ArrowLine.prototype.confidenceFontSize) * 0.75;
     for (var nid in m) {
       if (m.hasOwnProperty(nid)) {
         var node = this.nodes[nid];
-        this.labels[nid] = new OverlayLabel(nid, this.paper, node.x, node.y, m[nid]);
+        this.labels[nid] = new OverlayLabel(nid, this.paper, node.x, node.y, fontSize, m[nid]);
       }
     }
   }

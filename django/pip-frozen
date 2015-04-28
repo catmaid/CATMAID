@@ -12,7 +12,7 @@ django-celery==3.1.9
 kombu==3.0.12
 PyYAML==3.10
 python-dateutil==2.1
-django-guardian==1.1.1
+django-guardian==1.2.5
 django-taggit==0.11.2
 django-adminplus==0.2.1
 jsonfield==1.0.0

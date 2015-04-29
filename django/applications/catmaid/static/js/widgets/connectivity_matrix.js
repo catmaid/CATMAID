@@ -533,8 +533,7 @@
 
     // Create header
     function handleColumn(line, id, colGroup, name, skeletonIDs) {
-      line.push('"from ' + name + '"');
-      line.push('"to ' + name + '"');
+      line.push('"' + name + '"');
     }
 
     // Create row

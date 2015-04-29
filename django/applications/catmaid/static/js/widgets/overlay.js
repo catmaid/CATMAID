@@ -300,7 +300,7 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
     this.handleChangedSkeleton, this);
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
-    this.handleChangedSkeleton, this);
+    this.handleDeletedSkeleton, this);
 };
 
 SkeletonAnnotations.SVGOverlay.prototype = {};
@@ -451,7 +451,7 @@ SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton);
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
-      this.handleChangedSkeleton);
+      this.handleDeletedSkeleton);
 };
 
 /**
@@ -2310,19 +2310,49 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
 };
 
 /**
+ * Return true if the given node ID is part of the given skeleton. Expects the
+ * node to be displayed.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.nodeIsPartOfSkeleton = function(skeletonID, nodeID) {
+  if (!this.nodes[nodeID]) throw new CATMAID.ValueError("Node not loaded");
+  return this.nodes[nodeID].skeleton_id === skeletonID;
+};
+
+/**
  * Checks if the given skeleton is part of the current display and reloads all
  * nodes if this is the case.
  *
  * @param {number} skeletonID - The ID of the skelton changed.
  */
 SkeletonAnnotations.SVGOverlay.prototype.handleChangedSkeleton = function(skeletonID) {
-  function partOfChangedSkeleton(nodeID) {
-    /*jshint validthis:true */
-    return this.nodes[nodeID].skeleton_id === skeletonID;
-  }
+  this.updateIfKnown(skeletonID);
+};
 
-  if (Object.keys(this.nodes).some(partOfChangedSkeleton, this)) {
-    this.updateNodes();
+/**
+ * Handles skeleton deletion events. Checks if the given skeleton is part of the
+ * current display and reloads all nodes if this is the case.
+ *
+ * @param {number} skeletonID - The ID of the skelton changed.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.handleDeletedSkeleton = function(skeletonID) {
+  var activeSkeletonID = SkeletonAnnotations.getActiveSkeletonId();
+  this.updateIfKnown(skeletonID, (function() {
+    // Unselect active node, if it was part of the current display
+    if (activeSkeletonID == skeletonID) {
+      this.activateNode(null);
+    }
+  }).bind(this));
+};
+
+/**
+ * Update nodes if the given skeleton is part of the current display.
+ *
+ * @param skeletonID {number} The ID of the skelton changed.
+ * @param callback {function} An optional callback, executed after a node update
+ */
+SkeletonAnnotations.SVGOverlay.prototype.updateIfKnown = function(skeletonID, callback) {
+  if (Object.keys(this.nodes).some(this.nodeIsPartOfSkeleton.bind(this, skeletonID))) {
+    this.updateNodes(callback);
   }
 };
 

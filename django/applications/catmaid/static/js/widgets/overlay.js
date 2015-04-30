@@ -943,11 +943,13 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (phys_
  * Create a new postsynaptic treenode from a connector. We create the treenode
  * first, then we create the link from the connector.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
-  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "postsynaptic_to");
+SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (connectorID,
+    phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate) {
+  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "postsynaptic_to", afterCreate);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (connectorID,
+    phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate) {
   // Check that connectorID doesn't have a presynaptic treenode already
   // (It is also checked in the server on attempting to create a link. Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
   var connectorNode = this.nodes[connectorID];
@@ -959,10 +961,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (c
     growlAlert("WARNING", "The connector already has a presynaptic node!");
     return;
   }
-  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "presynaptic_to");
+  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "presynaptic_to", afterCreate);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, link_type) {
+SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, link_type, afterCreate) {
   var self = this;
   this.submit(
       django_url + project.id + '/treenode/create',
@@ -985,6 +987,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (conn
         // Trigger skeleton change event
         SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
             nn.skeleton_id);
+
+        if (afterCreate) afterCreate(self, nn);
       });
 };
 

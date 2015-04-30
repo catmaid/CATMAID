@@ -1822,6 +1822,21 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
   if (this.isIDNull(treenode_id)) return;
   var self = this;
 
+  function updateRadius(radius, updateMode) {
+    // Default update mode to this node only
+    updateMode = updateMode || 0;
+    self.submit(
+      django_url + project.id + '/treenode/' + treenode_id + '/radius',
+      {radius: radius,
+       option: updateMode},
+      function(json) {
+        // Refresh 3d views if any
+        WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
+        // Reinit SVGOverlay to read in the radius of each altered treenode
+        self.updateNodes();
+      });
+  }
+
   function show_dialog(defaultRadius) {
     if (typeof defaultRadius === 'undefined')
       defaultRadius = self.nodes[treenode_id].radius;
@@ -1842,16 +1857,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
         return;
       }
       self.editRadius_defaultValue = choice.selectedIndex;
-      self.submit(
-        django_url + project.id + '/treenode/' + treenode_id + '/radius',
-        {radius: radius,
-         option: choice.selectedIndex},
-        function(json) {
-          // Refresh 3d views if any
-          WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
-          // Reinit SVGOverlay to read in the radius of each altered treenode
-          self.updateNodes();
-        });
+      updateRadius(radius, choice.selectedIndex);
     };
     dialog.show('auto', 'auto');
   }

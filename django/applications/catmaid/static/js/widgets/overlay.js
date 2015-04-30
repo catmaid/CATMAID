@@ -1817,8 +1817,10 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, co
  * Shows a dialog to edit the radius property of a node. By default, it also
  * lets the user estimate the radius with the help of a small measurement tool,
  * which can be disabled by setting the no_measurement_tool parameter to true.
+ * If the measurement tool is used, the dialog display can optionally be
+ * disabled
  */
-SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool) {
+SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool, no_dialog) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
 
@@ -1865,7 +1867,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
   if (no_measurement_tool) {
     this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
   } else {
-    this.selectRadius(treenode_id, show_dialog);
+    this.selectRadius(treenode_id, no_dialog ? updateRadius : show_dialog);
   }
 };
 

@@ -40,6 +40,12 @@ Connectivity matrix:
   should now be added and removed correctly.
 
 
+Neuron Navigator:
+
+- Don't show an error if an invalid regular expression was entered for
+  searching. Instead, color the search box red and show a warning message.
+
+
 ## 2015.3.31
 
 Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers, Stephan Gerhard

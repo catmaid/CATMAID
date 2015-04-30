@@ -380,14 +380,17 @@
     var maxConnections = matrix.getMaxConnections();
 
     var walked = this.walkMatrix(matrix, handleColumn.bind(this, colHeader),
-        handleRow.bind(window, table), handleCell.bind(this));
+        handleRow.bind(window, table), handleCell.bind(this),
+        handleCompletion.bind(this, table));
 
     if (walked) {
+      // Add general information paragraph
       var infoBox = document.createElement('div');
       infoBox.appendChild(document.createTextNode('The table below shows the ' +
             'number of post-synaptic connections from row to column skeletons. ' +
             'If there are no connections, no number is shown.'));
       content.appendChild(infoBox);
+
       // Append matrix to content
       content.appendChild(table);
 
@@ -485,6 +488,42 @@
       colorize(td, colorOptions[this.color], connections, 0, maxConnections);
       row.appendChild(td);
     }
+
+    // Create aggretate rows and columns
+    function handleCompletion(table, rowSums, colSums) {
+      // Create aggretate row
+      var aggRow = document.createElement('tr');
+      var aggRowHead = document.createElement('th');
+      aggRowHead.appendChild(document.createTextNode('Sum'));
+      aggRow.appendChild(aggRowHead);
+      for (var c=0; c<colSums.length; ++c) {
+        var td = document.createElement('td');
+        td.appendChild(document.createTextNode(colSums[c]));
+        aggRow.appendChild(td);
+      }
+      $(table).find("tr:last").after(aggRow);
+
+      // Create aggregate column
+      $(table).find("tr").each(function(i, e) {
+        if (0 === i) {
+          var aggColHead = document.createElement('th');
+          aggColHead.appendChild(document.createTextNode('Sum'));
+          e.appendChild(aggColHead);
+        } else if (i <= rowSums.length) {
+          // Substract one for the header row to get the correct sum index
+          var td = document.createElement('td');
+          td.appendChild(document.createTextNode(rowSums[i - 1]));
+          e.appendChild(td);
+        } else {
+          // This has to be the lower right cell of the table
+          var sum = rowSums.reduce(function(s, r) { return s + r }, 0) +
+                    colSums.reduce(function(s, c) { return s + c }, 0);
+          var td = document.createElement('td');
+          td.appendChild(document.createTextNode(sum));
+          e.appendChild(td);
+        }
+      });
+    }
   };
 
   /**
@@ -493,7 +532,7 @@
    * be created.
    */
   ConnectivityMatrixWidget.prototype.walkMatrix = function(
-      matrix, handleCol, handleRow, handleCell) {
+      matrix, handleCol, handleRow, handleCell, handleCompletion) {
     var nRows = matrix.getNumberOfRows();
     var nCols = matrix.getNumberOfColumns();
     if (0 === nRows || 0 === nCols) {
@@ -502,6 +541,8 @@
 
     var m = matrix.connectivityMatrix;
     var nns = NeuronNameService.getInstance();
+    var rowSums = [];
+    var colSums = [];
 
     // Get group information
     var nDisplayRows = this.rowDimension.orderedElements.length;
@@ -541,6 +582,10 @@
         var colSkids = colGroup ? colGroup : [colId];
         handleCell(row, rowName, rowSkids, colName, colSkids, connections);
 
+        // Add to row and column sums
+        rowSums[dr] = (rowSums[dr] || 0) + connections;
+        colSums[dc] = (colSums[dc] || 0) + connections;
+
         // Increase index for next iteration
         c = colGroup ? c + colGroup.length : c + 1;
       }
@@ -548,6 +593,8 @@
       // Increase index for next iteration
       r = rowGroup ? r + rowGroup.length : r + 1;
     }
+
+    if (CATMAID.tools.isFn(handleCompletion)) handleCompletion(rowSums, colSums);
 
     return true;
   };

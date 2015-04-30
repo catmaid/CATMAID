@@ -1763,58 +1763,64 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
  * Lets the user select a radius around a node with the help of a small
  * measurement tool, passing the selected radius to a callback when finished.
  */
-SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, completionCallback) {
+SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no_centering, completionCallback) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
-  this.goToNode(treenode_id,
-      function() {
-        // If there was a measurement tool based radius selection started
-        // before, stop this.
-        if (self.nodes[treenode_id].surroundingCircleElements) {
-          hideCircleAndCallback();
-        } else {
-          self.nodes[treenode_id].drawSurroundingCircle(transform,
-              hideCircleAndCallback);
-          // Attach a handler for the ESC key to cancel selection
-          $('body').on('keydown.catmaidRadiusSelect', function(event) {
-            if (27 === event.keyCode) {
-              // Unbind key handler and remove circle
-              $('body').off('keydown.catmaidRadiusSelect');
-              self.nodes[treenode_id].removeSurroundingCircle();
-              return true;
-            }
-            return false;
-          });
-        }
 
-        function hideCircleAndCallback()
-        {
-          // Unbind key handler
+  if (no_centering) {
+    toggleMeasurementTool();
+  } else {
+    this.goToNode(treenode_id, toggleMeasurementTool);
+  }
+
+  function toggleMeasurementTool() {
+    // If there was a measurement tool based radius selection started
+    // before, stop this.
+    if (self.nodes[treenode_id].surroundingCircleElements) {
+      hideCircleAndCallback();
+    } else {
+      self.nodes[treenode_id].drawSurroundingCircle(transform,
+          hideCircleAndCallback);
+      // Attach a handler for the ESC key to cancel selection
+      $('body').on('keydown.catmaidRadiusSelect', function(event) {
+        if (27 === event.keyCode) {
+          // Unbind key handler and remove circle
           $('body').off('keydown.catmaidRadiusSelect');
-          // Remove circle and call callback
-          self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
-            if (typeof rx === 'undefined' || typeof ry === 'undefined') {
-              completionCallback(undefined);
-              return;
-            }
-            // Convert pixel radius components to nanometers
-            var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
-            // Callback with the selected radius
-            completionCallback(r);
-          });
+          self.nodes[treenode_id].removeSurroundingCircle();
+          return true;
         }
-
-        function transform(r)
-        {
-          r.x /= self.stack.scale;
-          r.y /= self.stack.scale;
-          r.x += ( self.stack.x - self.stack.viewWidth / self.stack.scale / 2 );
-          r.y += ( self.stack.y - self.stack.viewHeight / self.stack.scale / 2 );
-          return {
-              x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
-              y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
-        }
+        return false;
       });
+    }
+
+    function hideCircleAndCallback()
+    {
+      // Unbind key handler
+      $('body').off('keydown.catmaidRadiusSelect');
+      // Remove circle and call callback
+      self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
+        if (typeof rx === 'undefined' || typeof ry === 'undefined') {
+          completionCallback(undefined);
+          return;
+        }
+        // Convert pixel radius components to nanometers
+        var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
+        // Callback with the selected radius
+        completionCallback(r);
+      });
+    }
+
+    function transform(r)
+    {
+      r.x /= self.stack.scale;
+      r.y /= self.stack.scale;
+      r.x += ( self.stack.x - self.stack.viewWidth / self.stack.scale / 2 );
+      r.y += ( self.stack.y - self.stack.viewHeight / self.stack.scale / 2 );
+      return {
+          x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
+          y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
+    }
+  };
 };
 
 /**
@@ -1824,7 +1830,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, co
  * If the measurement tool is used, the dialog display can optionally be
  * disabled
  */
-SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool, no_dialog) {
+SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool, no_centering, no_dialog) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
 
@@ -1869,9 +1875,13 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
   }
 
   if (no_measurement_tool) {
-    this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
+    if (no_centering) {
+      show_dialog(this.nodes[treenode_id].radius)
+    } else {
+      this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
+    }
   } else {
-    this.selectRadius(treenode_id, no_dialog ? updateRadius : show_dialog);
+    this.selectRadius(treenode_id, no_centering, no_dialog ? updateRadius : show_dialog);
   }
 };
 

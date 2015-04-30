@@ -62,19 +62,31 @@
        * Create widget controls.
        */
       createControls: function(controls) {
+        var titles = document.createElement('ul');
+        controls.appendChild(titles);
+        var tabs = ['Main', 'Display'].reduce((function(o, name) {
+          var id = name.replace(/ /, '') + this.widgetID;
+          titles.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
+          var div = document.createElement('div');
+          div.setAttribute('id', id);
+          controls.appendChild(div);
+          o[name] = div;
+          return o;
+        }).bind(this), {});
+
         // Create hidden select elements for row and column sources
         var rowSelect = CATMAID.skeletonListSources.createSelect(this.rowDimension);
         rowSelect.style.display = 'none';
-        controls.appendChild(rowSelect);
+        tabs['Main'].appendChild(rowSelect);
         var colSelect = CATMAID.skeletonListSources.createSelect(this.colDimension);
         colSelect.style.display = 'none';
-        controls.appendChild(colSelect);
+        tabs['Main'].appendChild(colSelect);
 
         // This UI combines two skeleton source selects into one.
-        controls.appendChild(document.createTextNode('From'));
+        tabs['Main'].appendChild(document.createTextNode('From'));
         var sourceSelect = CATMAID.skeletonListSources.createSelect(this,
            [this.rowDimension.getName(), this.colDimension.getName()]);
-        controls.appendChild(sourceSelect);
+        tabs['Main'].appendChild(sourceSelect);
         sourceSelect.onchange = function() {
           rowSelect.value = this.value;
           colSelect.value = this.value;
@@ -115,25 +127,25 @@
         var asGroup = document.createElement('label');
         asGroup.appendChild(asGroupCb);
         asGroup.appendChild(document.createTextNode('As group'));
-        controls.appendChild(asGroup);
+        tabs['Main'].appendChild(asGroup);
 
         var loadRows = document.createElement('input');
         loadRows.setAttribute("type", "button");
         loadRows.setAttribute("value", "Append presynaptic neurons");
         loadRows.onclick = loadWith.bind(this, true, false);
-        controls.appendChild(loadRows);
+        tabs['Main'].appendChild(loadRows);
 
         var loadColumns = document.createElement('input');
         loadColumns.setAttribute("type", "button");
         loadColumns.setAttribute("value", "Append postsynaptic neurons");
         loadColumns.onclick = loadWith.bind(this, false, true);
-        controls.appendChild(loadColumns);
+        tabs['Main'].appendChild(loadColumns);
 
         var loadAll = document.createElement('input');
         loadAll.setAttribute("type", "button");
         loadAll.setAttribute("value", "Append to both");
         loadAll.onclick = loadWith.bind(this, true, true);
-        controls.appendChild(loadAll);
+        tabs['Main'].appendChild(loadAll);
 
         var clear = document.createElement('input');
         clear.setAttribute("type", "button");
@@ -143,7 +155,13 @@
             this.clear();
           }
         }).bind(this);
-        controls.appendChild(clear);
+        tabs['Main'].appendChild(clear);
+
+        var update = document.createElement('input');
+        update.setAttribute("type", "button");
+        update.setAttribute("value", "Refresh");
+        update.onclick = this.update.bind(this);
+        tabs['Main'].appendChild(update);
 
         var max = 20;
         var synapseThresholdSelect = document.createElement('select');
@@ -158,7 +176,13 @@
         var synapseThreshold = document.createElement('label');
         synapseThreshold.appendChild(document.createTextNode('Syn. threshold'));
         synapseThreshold.appendChild(synapseThresholdSelect);
-        controls.appendChild(synapseThreshold);
+        tabs['Main'].appendChild(synapseThreshold);
+
+        var exportCSV = document.createElement('input');
+        exportCSV.setAttribute("type", "button");
+        exportCSV.setAttribute("value", "Export CSV");
+        exportCSV.onclick = this.exportCSV.bind(this);
+        tabs['Main'].appendChild(exportCSV);
 
         var sortOptionNames = sortOptions.map(function(o) {
           return o.name;
@@ -176,7 +200,7 @@
         var postColor = document.createElement('label');
         postColor.appendChild(document.createTextNode('Sort rows by'));
         postColor.appendChild(sortRowsSelect);
-        controls.appendChild(postColor);
+        tabs['Display'].appendChild(postColor);
 
         var sortColsSelect = document.createElement('select');
         for (var i=0; i < sortOptionNames.length; ++i) {
@@ -191,7 +215,7 @@
         var postColor = document.createElement('label');
         postColor.appendChild(document.createTextNode('Sort columns by'));
         postColor.appendChild(sortColsSelect);
-        controls.appendChild(postColor);
+        tabs['Display'].appendChild(postColor);
 
         var colorSelect = document.createElement('select');
         for (var i=0; i < colorOptions.length; ++i) {
@@ -206,11 +230,11 @@
         var color = document.createElement('label');
         color.appendChild(document.createTextNode('Color'));
         color.appendChild(colorSelect);
-        controls.appendChild(color);
+        tabs['Display'].appendChild(color);
 
         var rotateColsCb = document.createElement('input');
         rotateColsCb.setAttribute('type', 'checkbox');
-        rotateColsCb.checked = this.rotateColumnHeaders;;
+        rotateColsCb.checked = this.rotateColumnHeaders;
         rotateColsCb.onclick = (function(e) {
           this.rotateColumnHeaders = e.target.checked;
           this.refresh();
@@ -218,19 +242,9 @@
         var rotateCols = document.createElement('label');
         rotateCols.appendChild(rotateColsCb);
         rotateCols.appendChild(document.createTextNode('Column header 90°'));
-        controls.appendChild(rotateCols);
+        tabs['Display'].appendChild(rotateCols);
 
-        var update = document.createElement('input');
-        update.setAttribute("type", "button");
-        update.setAttribute("value", "Refresh");
-        update.onclick = this.update.bind(this);
-        controls.appendChild(update);
-
-        var exportCSV = document.createElement('input');
-        exportCSV.setAttribute("type", "button");
-        exportCSV.setAttribute("value", "Export CSV");
-        exportCSV.onclick = this.exportCSV.bind(this);
-        controls.appendChild(exportCSV);
+        $(controls).tabs();
       },
 
       /**
@@ -430,6 +444,7 @@
     // Create column
     function handleColumn(tableHeader, id, colGroup, name, skeletonIDs) {
       var th = createHeaderCell(name, colGroup, skeletonIDs);
+      /* jshint validthis: true */
       if (this.rotateColumnHeaders) {
         th.setAttribute('class', 'vertical-table-header');
       }

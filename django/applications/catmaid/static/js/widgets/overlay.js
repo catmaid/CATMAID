@@ -54,6 +54,7 @@ var SkeletonAnnotations = {
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
+SkeletonAnnotations.setRadiusAfterNodeCreation = false;
 Events.extend(SkeletonAnnotations);
 
 /**
@@ -1448,6 +1449,14 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   var targetTreenodeID,
       atn = SkeletonAnnotations.atn;
 
+
+  // If activated, edit the node radius right after it was created.
+  var postCreateFn;
+  if (SkeletonAnnotations.setRadiusAfterNodeCreation) {
+    // Edit radius without showing the dialog and without centering.
+    postCreateFn = function(overlay, node) { overlay.editRadius(node.id, false, true, true); };
+  }
+
   // e.metaKey should correspond to the command key on Mac OS
   if (e.ctrlKey || e.metaKey) {
     if (e.altKey && null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
@@ -1491,7 +1500,8 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         // create new treenode (and skeleton) postsynaptic to activated connector
         CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
-        this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
+            pos_x, pos_y, pos_z, postCreateFn);
         e.stopPropagation();
         return true;
       }
@@ -1505,12 +1515,13 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         if (null !== atn.id) {
           CATMAID.statusBar.replaceLast("Created new node as child of node #" + atn.id);
         }
-        this.createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        this.createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z, postCreateFn);
         e.stopPropagation();
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         // create new treenode (and skeleton) presynaptic to activated connector
         // if the connector doesn't have a presynaptic node already
-        this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z,
+            postCreateFn);
         e.stopPropagation();
       }
       // Else don't stop propagation: a node may be moved

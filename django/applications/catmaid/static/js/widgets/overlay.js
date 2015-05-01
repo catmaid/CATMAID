@@ -903,7 +903,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
   });
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, link_type) {
+SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, link_type, afterCreate) {
   var self = this;
   this.submit(
       django_url + project.id + '/link/create',
@@ -912,7 +912,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, li
        link_type: link_type,
        to_id: toid},
        function(json) {
-         self.updateNodes();
+         self.updateNodes(afterCreate);
        });
 };
 
@@ -983,12 +983,16 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (conn
         self.nodes[nid] = nn;
         nn.createGraphics();
         // create link : new treenode postsynaptic_to or presynaptic_to deactivated connectorID
-        self.createLink(nid, connectorID, link_type);
-        // Trigger skeleton change event
-        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
-            nn.skeleton_id);
+        self.createLink(nid, connectorID, link_type, function() {
+          // Use a new node reference, because createLink() triggers an update,
+          // which potentially re-initializes node objects.
+          var node = self.nodes[nid];
+          // Trigger skeleton change event
+          SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+              node.skeleton_id);
 
-        if (afterCreate) afterCreate(self, nn);
+          if (afterCreate) afterCreate(self, node);
+        });
       });
 };
 

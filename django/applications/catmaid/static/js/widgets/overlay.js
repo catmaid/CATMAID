@@ -1858,7 +1858,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
           x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
           y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
     }
-  };
+  }
 };
 
 /**
@@ -1914,7 +1914,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
 
   if (no_measurement_tool) {
     if (no_centering) {
-      show_dialog(this.nodes[treenode_id].radius)
+      show_dialog(this.nodes[treenode_id].radius);
     } else {
       this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
     }

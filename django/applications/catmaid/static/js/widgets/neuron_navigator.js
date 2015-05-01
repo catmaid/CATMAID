@@ -728,7 +728,7 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
                   } else {
                     CATMAID.error(result.error, result.detail);
                   }
-                  return
+                  return;
                 }
                 // Filter all previously chosen co-annotations to not display
                 // them in the list for new co-annotations.
@@ -974,7 +974,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
                   } else {
                     CATMAID.error(result.error, result.detail);
                   }
-                  return
+                  return;
                 }
                 fnCallback(result);
                 if (callback) {

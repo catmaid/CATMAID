@@ -628,7 +628,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     // Get last radius components
     var r = this.surroundingCircleElements[0].datum();
     // Clean up
-    this.surroundingCircleElements.forEach(function (e) { e.remove() ;});
+    this.surroundingCircleElements.forEach(function (e) { e.remove(); });
     delete this.surroundingCircleElements;
     // Execute callback, if any, with radius in nm as argument
     if (callback) {

@@ -1770,11 +1770,25 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
 SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no_centering, completionCallback) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
+  // Keep a reference to the original node
+  var originalNode = this.nodes[treenode_id];
 
   if (no_centering) {
     toggleMeasurementTool();
   } else {
     this.goToNode(treenode_id, toggleMeasurementTool);
+  }
+
+  function verifyNode(treenode_id) {
+    var node = self.nodes[treenode_id];
+    if (!node || node !== originalNode) {
+      // This can happen if e.g. the section was changed and all nodes were
+      // updated.
+      CATMAID.warn('Canceling radius editing, because the edited node ' +
+          'cannot be found anymore or has changed.');
+      return false;
+    }
+    return node;
   }
 
   function toggleMeasurementTool() {
@@ -1790,7 +1804,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
         if (27 === event.keyCode) {
           // Unbind key handler and remove circle
           $('body').off('keydown.catmaidRadiusSelect');
-          self.nodes[treenode_id].removeSurroundingCircle();
+          originalNode.removeSurroundingCircle();
           return true;
         }
         return false;
@@ -1801,17 +1815,26 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
     {
       // Unbind key handler
       $('body').off('keydown.catmaidRadiusSelect');
-      // Remove circle and call callback
-      self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
-        if (typeof rx === 'undefined' || typeof ry === 'undefined') {
+      var node = verifyNode(treenode_id);
+      if (!node) {
+        // Remove circle from node we originally attached to and cancel, if no
+        // node for the given ID was found.
+        originalNode.removeSurroundingCircle(function() {
           completionCallback(undefined);
-          return;
-        }
-        // Convert pixel radius components to nanometers
-        var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
-        // Callback with the selected radius
-        completionCallback(r);
-      });
+        });
+      } else {
+        // Remove circle and call callback
+        node.removeSurroundingCircle(function(rx, ry) {
+          if (typeof rx === 'undefined' || typeof ry === 'undefined') {
+            completionCallback(undefined);
+            return;
+          }
+          // Convert pixel radius components to nanometers
+          var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
+          // Callback with the selected radius
+          completionCallback(r);
+        });
+      }
     }
 
     function transform(r)

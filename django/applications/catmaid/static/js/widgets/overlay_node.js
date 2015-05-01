@@ -534,7 +534,6 @@ SkeletonElements.prototype.AbstractTreenode = function() {
    * the mouse (and a mouse-to-stack transform function).
    */
   this.drawSurroundingCircle = function(transform, onclickHandler) {
-    var self = this;
     // Create a raphael circle object that represents the surrounding circle
     var color = "rgb(255,255,0)";
     var c = this.paper.select('.nodes').append('circle')
@@ -580,23 +579,29 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     // Mark this node as currently edited
     this.surroundingCircleElements = [c, mc, label];
 
+    // Store current position of this node, just in case this instance will be
+    // re-initialized due to an update. This also means that the circle cannot
+    // be drawn while the node is changing location.
+    var nodeX = this.x;
+    var nodeY = this.y;
+
     // Update radius on mouse move
     mc.on('mousemove', function() {
       var e = d3.event;
       var r = transform({x: e.layerX, y: e.layerY});
-      r.x -= self.x;
-      r.y -= self.y;
+      r.x -= nodeX;
+      r.y -= nodeY;
       var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2));
       c.attr('r', newR);
       // Strore also x and y components
       c.datum(r);
       // Update radius measurement label.
-      labelText.attr({x: self.x + r.x + 3 * pad, y: self.y + r.y + 2 * pad});
+      labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
       labelText.text(Math.round(newR) + 'nm');
       var bbox = labelText.node().getBBox();
       labelShadow.attr({
-          x: self.x + r.x + 2 * pad,
-          y: self.y + r.y + 2 * pad - bbox.height,
+          x: nodeX + r.x + 2 * pad,
+          y: nodeY + r.y + 2 * pad - bbox.height,
           width: bbox.width + 2 * pad,
           height: bbox.height + pad});
     });

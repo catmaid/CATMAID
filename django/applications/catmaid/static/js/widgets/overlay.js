@@ -54,6 +54,7 @@ var SkeletonAnnotations = {
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
+SkeletonAnnotations.setRadiusAfterNodeCreation = false;
 Events.extend(SkeletonAnnotations);
 
 /**
@@ -903,7 +904,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
   });
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, link_type) {
+SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, link_type, afterCreate) {
   var self = this;
   this.submit(
       django_url + project.id + '/link/create',
@@ -912,7 +913,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, li
        link_type: link_type,
        to_id: toid},
        function(json) {
-         self.updateNodes();
+         self.updateNodes(afterCreate);
        });
 };
 
@@ -943,11 +944,13 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (phys_
  * Create a new postsynaptic treenode from a connector. We create the treenode
  * first, then we create the link from the connector.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
-  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "postsynaptic_to");
+SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (connectorID,
+    phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate) {
+  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "postsynaptic_to", afterCreate);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (connectorID,
+    phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate) {
   // Check that connectorID doesn't have a presynaptic treenode already
   // (It is also checked in the server on attempting to create a link. Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
   var connectorNode = this.nodes[connectorID];
@@ -959,10 +962,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (c
     growlAlert("WARNING", "The connector already has a presynaptic node!");
     return;
   }
-  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "presynaptic_to");
+  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "presynaptic_to", afterCreate);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, link_type) {
+SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, link_type, afterCreate) {
   var self = this;
   this.submit(
       django_url + project.id + '/treenode/create',
@@ -981,10 +984,16 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (conn
         self.nodes[nid] = nn;
         nn.createGraphics();
         // create link : new treenode postsynaptic_to or presynaptic_to deactivated connectorID
-        self.createLink(nid, connectorID, link_type);
-        // Trigger skeleton change event
-        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
-            nn.skeleton_id);
+        self.createLink(nid, connectorID, link_type, function() {
+          // Use a new node reference, because createLink() triggers an update,
+          // which potentially re-initializes node objects.
+          var node = self.nodes[nid];
+          // Trigger skeleton change event
+          SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+              node.skeleton_id);
+
+          if (afterCreate) afterCreate(self, node);
+        });
       });
 };
 
@@ -1440,6 +1449,14 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   var targetTreenodeID,
       atn = SkeletonAnnotations.atn;
 
+
+  // If activated, edit the node radius right after it was created.
+  var postCreateFn;
+  if (SkeletonAnnotations.setRadiusAfterNodeCreation) {
+    // Edit radius without showing the dialog and without centering.
+    postCreateFn = function(overlay, node) { overlay.editRadius(node.id, false, true, true); };
+  }
+
   // e.metaKey should correspond to the command key on Mac OS
   if (e.ctrlKey || e.metaKey) {
     if (e.altKey && null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
@@ -1483,7 +1500,8 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         // create new treenode (and skeleton) postsynaptic to activated connector
         CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
-        this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
+            pos_x, pos_y, pos_z, postCreateFn);
         e.stopPropagation();
         return true;
       }
@@ -1497,12 +1515,13 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         if (null !== atn.id) {
           CATMAID.statusBar.replaceLast("Created new node as child of node #" + atn.id);
         }
-        this.createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        this.createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z, postCreateFn);
         e.stopPropagation();
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         // create new treenode (and skeleton) presynaptic to activated connector
         // if the connector doesn't have a presynaptic node already
-        this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z,
+            postCreateFn);
         e.stopPropagation();
       }
       // Else don't stop propagation: a node may be moved
@@ -1759,68 +1778,114 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
  * Lets the user select a radius around a node with the help of a small
  * measurement tool, passing the selected radius to a callback when finished.
  */
-SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, completionCallback) {
+SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no_centering, completionCallback) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
-  this.goToNode(treenode_id,
-      function() {
-        // If there was a measurement tool based radius selection started
-        // before, stop this.
-        if (self.nodes[treenode_id].surroundingCircleElements) {
-          hideCircleAndCallback();
-        } else {
-          self.nodes[treenode_id].drawSurroundingCircle(transform,
-              hideCircleAndCallback);
-          // Attach a handler for the ESC key to cancel selection
-          $('body').on('keydown.catmaidRadiusSelect', function(event) {
-            if (27 === event.keyCode) {
-              // Unbind key handler and remove circle
-              $('body').off('keydown.catmaidRadiusSelect');
-              self.nodes[treenode_id].removeSurroundingCircle();
-              return true;
-            }
-            return false;
-          });
-        }
+  // Keep a reference to the original node
+  var originalNode = this.nodes[treenode_id];
 
-        function hideCircleAndCallback()
-        {
-          // Unbind key handler
+  if (no_centering) {
+    toggleMeasurementTool();
+  } else {
+    this.goToNode(treenode_id, toggleMeasurementTool);
+  }
+
+  function verifyNode(treenode_id) {
+    var node = self.nodes[treenode_id];
+    if (!node || node !== originalNode) {
+      // This can happen if e.g. the section was changed and all nodes were
+      // updated.
+      CATMAID.warn('Canceling radius editing, because the edited node ' +
+          'cannot be found anymore or has changed.');
+      return false;
+    }
+    return node;
+  }
+
+  function toggleMeasurementTool() {
+    // If there was a measurement tool based radius selection started
+    // before, stop this.
+    if (self.nodes[treenode_id].surroundingCircleElements) {
+      hideCircleAndCallback();
+    } else {
+      self.nodes[treenode_id].drawSurroundingCircle(transform,
+          hideCircleAndCallback);
+      // Attach a handler for the ESC key to cancel selection
+      $('body').on('keydown.catmaidRadiusSelect', function(event) {
+        if (27 === event.keyCode) {
+          // Unbind key handler and remove circle
           $('body').off('keydown.catmaidRadiusSelect');
-          // Remove circle and call callback
-          self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
-            if (typeof rx === 'undefined' || typeof ry === 'undefined') {
-              completionCallback(undefined);
-              return;
-            }
-            // Convert pixel radius components to nanometers
-            var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
-            // Callback with the selected radius
-            completionCallback(r);
-          });
+          originalNode.removeSurroundingCircle();
+          return true;
         }
-
-        function transform(r)
-        {
-          r.x /= self.stack.scale;
-          r.y /= self.stack.scale;
-          r.x += ( self.stack.x - self.stack.viewWidth / self.stack.scale / 2 );
-          r.y += ( self.stack.y - self.stack.viewHeight / self.stack.scale / 2 );
-          return {
-              x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
-              y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
-        }
+        return false;
       });
+    }
+
+    function hideCircleAndCallback()
+    {
+      // Unbind key handler
+      $('body').off('keydown.catmaidRadiusSelect');
+      var node = verifyNode(treenode_id);
+      if (!node) {
+        // Remove circle from node we originally attached to and cancel, if no
+        // node for the given ID was found.
+        originalNode.removeSurroundingCircle(function() {
+          completionCallback(undefined);
+        });
+      } else {
+        // Remove circle and call callback
+        node.removeSurroundingCircle(function(rx, ry) {
+          if (typeof rx === 'undefined' || typeof ry === 'undefined') {
+            completionCallback(undefined);
+            return;
+          }
+          // Convert pixel radius components to nanometers
+          var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
+          // Callback with the selected radius
+          completionCallback(r);
+        });
+      }
+    }
+
+    function transform(r)
+    {
+      r.x /= self.stack.scale;
+      r.y /= self.stack.scale;
+      r.x += ( self.stack.x - self.stack.viewWidth / self.stack.scale / 2 );
+      r.y += ( self.stack.y - self.stack.viewHeight / self.stack.scale / 2 );
+      return {
+          x: self.stack.stackToProjectX(self.stack.z, r.y, r.x),
+          y: self.stack.stackToProjectY(self.stack.z, r.y, r.x)};
+    }
+  };
 };
 
 /**
  * Shows a dialog to edit the radius property of a node. By default, it also
  * lets the user estimate the radius with the help of a small measurement tool,
  * which can be disabled by setting the no_measurement_tool parameter to true.
+ * If the measurement tool is used, the dialog display can optionally be
+ * disabled
  */
-SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool) {
+SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool, no_centering, no_dialog) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
+
+  function updateRadius(radius, updateMode) {
+    // Default update mode to this node only
+    updateMode = updateMode || 0;
+    self.submit(
+      django_url + project.id + '/treenode/' + treenode_id + '/radius',
+      {radius: radius,
+       option: updateMode},
+      function(json) {
+        // Refresh 3d views if any
+        WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
+        // Reinit SVGOverlay to read in the radius of each altered treenode
+        self.updateNodes();
+      });
+  }
 
   function show_dialog(defaultRadius) {
     if (typeof defaultRadius === 'undefined')
@@ -1842,24 +1907,19 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
         return;
       }
       self.editRadius_defaultValue = choice.selectedIndex;
-      self.submit(
-        django_url + project.id + '/treenode/' + treenode_id + '/radius',
-        {radius: radius,
-         option: choice.selectedIndex},
-        function(json) {
-          // Refresh 3d views if any
-          WebGLApplication.prototype.staticReloadSkeletons([self.nodes[treenode_id].skeleton_id]);
-          // Reinit SVGOverlay to read in the radius of each altered treenode
-          self.updateNodes();
-        });
+      updateRadius(radius, choice.selectedIndex);
     };
-    dialog.show();
+    dialog.show('auto', 'auto');
   }
 
   if (no_measurement_tool) {
-    this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
+    if (no_centering) {
+      show_dialog(this.nodes[treenode_id].radius)
+    } else {
+      this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
+    }
   } else {
-    this.selectRadius(treenode_id, show_dialog);
+    this.selectRadius(treenode_id, no_centering, no_dialog ? updateRadius : show_dialog);
   }
 };
 

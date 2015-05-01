@@ -9,6 +9,7 @@
   project,
   requestQueue,
   SelectionTable,
+  SkeletonAnnotations,
   User,
   userprofile,
   WindowMaker
@@ -399,6 +400,12 @@ SettingsWidget.prototype.init = function(space)
 
     // Initialize whitelist
     refreshWhitelist();
+
+    // Tracing settings
+    ds = addSettingsContainer(container, "Tracing");
+    ds.append(createCheckboxSetting("Edit radius after node creation", function() {
+      SkeletonAnnotations.setRadiusAfterNodeCreation = this.checked;
+    }, SkeletonAnnotations.setRadiusAfterNodeCreation));
   };
 
 

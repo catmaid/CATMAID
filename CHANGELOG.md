@@ -30,6 +30,16 @@ Connectivity matrix:
   actual synapse count).
 
 
+Miscellaneous:
+
+- A node-placement-and-radius-edit mode has been added. If enabled through the
+  settings widget (Tracing > "Edit radius after node creation"), the radius for
+  a node will be edited immediately after it has been created. This allows for
+  easier volumetric reconstruction. In this mode, the radius circle editing tool
+  is used to specify the radius. No dialog is shown once a radius is selected for
+  a node and it will only be saved for the new node.
+
+
 ### Bug fixes
 
 3D viewer:

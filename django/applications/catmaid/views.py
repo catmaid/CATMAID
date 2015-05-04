@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.views.generic import TemplateView
+from django.contrib.auth.models import User, Group
 
 class CatmaidView(TemplateView):
     """ This view adds extra context to its template. This extra context is
@@ -35,4 +36,14 @@ class ExportWidgetView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(ExportWidgetView, self).get_context_data(**kwargs)
         context['catmaid_url'] = settings.CATMAID_URL
+        return context
+
+class GroupMembershipHelper(TemplateView):
+    template_name = "catmaid/groupmembershiphelper.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(GroupMembershipHelper, self).get_context_data(**kwargs)
+        context['catmaid_url'] = settings.CATMAID_URL
+        context['users'] = User.objects.all()
+        context['groups'] = Group.objects.all()
         return context

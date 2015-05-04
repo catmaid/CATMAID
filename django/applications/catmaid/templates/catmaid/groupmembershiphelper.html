@@ -1,0 +1,158 @@
+{# -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- #}
+{# vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: #}
+
+{% extends "admin/base_site.html" %}
+{% load admin_static %}
+{% load compressed %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+  <style>
+    div.container {
+      width: 50%;
+      float: left;
+    }
+    div.submit-row {
+      clear: both;
+    }
+  </style>
+{% endblock %}
+
+{% block extrahead %}
+	{% compressed_css 'libraries' %}
+	{% compressed_js 'jquery-lib' %}
+  <script>
+  $(function() {
+    $("#source-tabs").tabs();
+    $("#target-tabs").tabs();
+
+    $(".filterbox").keyup(function() {
+      var filter = $(this).val().toLowerCase();
+      // Get sibling list element
+      var list = $(this).next("ul");
+      list.find("li").each(function() {
+        var val = $(this).text().trim().toLowerCase();
+        if (0 === filter.length || 0 === val.indexOf(filter)) {
+          $(this).show();
+        } else {
+          $(this).hide();
+        }
+      });
+    });
+  });
+  </script>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; Group membership helper
+  </div>
+{% endblock %}
+
+{% block content %}
+
+<h3>Group Membership Helper</h3>
+
+<p>To give one user permission to edit data created by another users, groups can
+be used: If user A is member of a group named B, user A can edit data of user B.
+For now such data includes only skeleton reconstruction data.</p>
+
+<p>This tool provides an easy way to create such group memberships for multiple
+users at once. Below you will find two columns. On the left and right you can see all
+existing groups (or users, if you want). You can select groups and users on the
+left and give them permission to edit data of groups and users of the right.
+Press 'Save' if you want to apply the selected changes.</p>
+
+<form method="post" id="groupmembershiphelper" action="">
+  {% csrf_token %}
+  {% if users and groups %}
+    <div class="container">
+      <h4>Give permission to the following users...</h4>
+      <div id="source-tabs">
+        <ul>
+          <li><a href="#source-tabs-users">Users</a></li>
+          <li><a href="#source-tabs-groups">Groups</a></li>
+        </ul>
+        <div id="source-tabs-users">
+          <input placeholder="Filter users" class="filterbox" type="text" />
+          <ul id="source-users">
+          {% for user in users %}
+          <li>
+            <label>
+              <input type="checkbox" name="source-users" value="{{ user.id }}"
+                id="source-user-{{ user.id }}" />
+              {{ user.username }}
+            </label>
+          </li>
+          {% endfor %}
+          </ul>
+        </div>
+        <div id="source-tabs-groups">
+          <input placeholder="Filter groups" class="filterbox" type="text" />
+          <ul id="source-groups">
+          {% for group in groups %}
+          <li>
+            <label>
+              <input type="checkbox" name="source-groups" value="{{ group.id }}"
+                id="source-group-{{ group.id }}" />
+              {{ group.name }}
+            </label>
+          </li>
+          {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <h4>...to edit objects created by these users.</h4>
+      <div id="target-tabs">
+        <ul>
+          <li><a href="#target-tabs-users">Users</a></li>
+          <li><a href="#target-tabs-groups">Groups</a></li>
+        </ul>
+        <div id="target-tabs-users">
+          <input placeholder="Filter users" class="filterbox" type="text" />
+          <ul id="target-users">
+          {% for user in users %}
+          <li>
+            <label>
+              <input type="checkbox" name="target-users" value="{{ user.id }}"
+                id="target-user-{{ user.id }}" />
+              {{ user.username }}
+            </label>
+          </li>
+          {% endfor %}
+          </ul>
+        </div>
+        <div id="target-tabs-groups">
+          <input placeholder="Filter groups" class="filterbox" type="text" />
+          <ul id="target-groups">
+          {% for group in groups %}
+          <li>
+            <label>
+              <input type="checkbox" name="target-groups" value="{{ group.id }}"
+                id="target-group-{{ group.id }}" />
+              {{ group.name }}
+            </label>
+          </li>
+          {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  {% else %}
+      <em>Couldn't find any users or groups!</em>This tool requires at least two
+      users or two groups to give some meaningful options.
+  {% endif %}
+
+  <div class="submit-row">
+      <p>
+      <input type="submit" value="Apply"/>
+      </p>
+  </div>
+</form>
+
+{% endblock %}
+

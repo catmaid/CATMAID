@@ -1,3 +1,4 @@
+import re
 import catmaid
 
 from django import template

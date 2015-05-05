@@ -1,5 +1,8 @@
+from django.core import urlresolvers
 from django.conf import settings
+from django.http import HttpResponseRedirect
 from django.views.generic import TemplateView
+from django.contrib import messages
 from django.contrib.auth.models import User, Group
 
 class CatmaidView(TemplateView):
@@ -47,3 +50,46 @@ class GroupMembershipHelper(TemplateView):
         context['users'] = User.objects.all()
         context['groups'] = Group.objects.all()
         return context
+
+    def post(self, request, *args, **kwargs):
+        redirect_url = urlresolvers.reverse('admin:index')
+        # Make sure only superusers can update permissions
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can update permissions')
+            return HttpResponseRedirect(redirect_url)
+
+        # Collect user and group information
+        source_users = set(map(int, request.POST.getlist('source-users')))
+        source_groups = set(map(int, request.POST.getlist('source-groups')))
+        target_users = set(map(int, request.POST.getlist('target-users')))
+        target_groups = set(map(int, request.POST.getlist('target-groups')))
+
+        # Find all users in source groups
+        def explode_group_into_users(groups, users):
+            if groups:
+                group_users = User.objects.filter(groups__in=groups) \
+                    .values_list('id', flat=True)
+                users.add(group_users)
+
+        explode_group_into_users(source_groups, source_users)
+        if not source_users:
+            messages.error(request, 'Need at least one source user or '
+                           'non-empty source group')
+            return HttpResponseRedirect(redirect_url)
+
+        explode_group_into_users(target_groups, target_users)
+        if not target_users:
+            messages.error(request, 'Need at least one target user or '
+                           'non-empty target group')
+            return HttpResponseRedirect(redirect_url)
+
+        # We now have a set of source users and a set of target users. This
+        # allows us to create the requested group memberships. Each source
+        # user is added to each target user group.
+        for target_user in target_users:
+            user = User.objects.get(id=target_user)
+            group, _ = Group.objects.get_or_create(name=user.username)
+            group.user_set.add(*source_users)
+
+        messages.success(request, 'Successfully updated permissions')
+        return HttpResponseRedirect(redirect_url)

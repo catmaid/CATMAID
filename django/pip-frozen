@@ -14,7 +14,7 @@ PyYAML==3.10
 python-dateutil==2.1
 django-guardian==1.2.5
 django-taggit==0.11.2
-django-adminplus==0.2.1
+django-adminplus==0.3
 jsonfield==1.0.0
 python-libuuid==0.9.0
 pillow==2.3.0

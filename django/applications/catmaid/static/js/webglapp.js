@@ -69,7 +69,7 @@ WebGLApplication.prototype.getName = function() {
 
 WebGLApplication.prototype.destroy = function() {
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-      this.staticUpdateActiveNodePosition);
+      this.staticUpdateActiveNodePosition, this);
   this.unregisterInstance();
   this.unregisterSource();
   this.space.destroy();

@@ -49,6 +49,9 @@ Miscellaneous:
   users) and caused minor performance problems. This has been fixed and all data
   should now be added and removed correctly.
 
+- Following the active node should now work much more reliable. Before, it could
+  happen that this stopped working after a second 3D viewer was closed.
+
 
 Neuron Navigator:
 

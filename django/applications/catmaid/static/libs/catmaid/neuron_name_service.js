@@ -524,7 +524,7 @@ var NeuronNameService = (function()
        */
       unregisterEventHandlers: function() {
         CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
-            this.unregisterSingleFromAllClients);
+            this.unregisterSingleFromAllClients, instance);
       }
     };
   }

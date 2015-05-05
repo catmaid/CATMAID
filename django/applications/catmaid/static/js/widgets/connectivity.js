@@ -122,9 +122,9 @@ SkeletonConnectivity.prototype.destroy = function() {
 
   // Unregister from neuron controller
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
-      this.handleChangedSkeleton);
+      this.handleChangedSkeleton, this);
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
-      this.handleDeletedSkeleton);
+      this.handleDeletedSkeleton, this);
 };
 
 SkeletonConnectivity.prototype.clear = function(source_chain) {

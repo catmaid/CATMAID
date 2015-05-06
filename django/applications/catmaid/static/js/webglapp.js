@@ -627,23 +627,6 @@ WebGLApplication.prototype.staticUpdateZPlane = function() {
 
 /** Receives an extra argument (an event) which is ignored. */
 WebGLApplication.prototype.updateColorMethod = function(colorMenu) {
-  if ('downstream-of-tag' === colorMenu.value) {
-    var dialog = new OptionsDialog("Type in tag");
-    dialog.appendMessage("Nodes downstream of tag: magenta.\nNodes upstream of tag: dark grey.");
-    var input = dialog.appendField("Tag (regex): ", "tag_text", this.options.tag_regex);
-    dialog.onOK = (function() {
-      this.options.tag_regex = input.value;
-      this.options.color_method = colorMenu.value;
-      this.updateSkeletonColors();
-    }).bind(this);
-    dialog.onCancel = function() {
-      // Reset to default (can't know easily what was selected before).
-      colorMenu.selectedIndex = 0;
-    };
-    dialog.show();
-    return;
-  }
-
   this.options.color_method = colorMenu.value;
   this.updateSkeletonColors();
 };
@@ -3056,14 +3039,20 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           }, node_weights);
         }
       }
+    } else if ('downstream-of-tag' === options.shading_method) {
+      node_weights = {};
+      var upstream = this.createUpstreamArbor(options.tag_regex, arbor);
+      arbor.nodesArray().forEach(function(node) {
+        this[node] = upstream.contains(node) ? 0 : 1;
+      }, node_weights);
     }
   }
 
   if (options.invert_shading && node_weights) {
     // All weights are values between 0 and 1
     Object.keys(node_weights).forEach(function(node) {
-      node_weights[node] = 1 - node_weights[node];
-    });
+      this[node] = 1 - this[node];
+    }, node_weights);
   }
 
   if (node_weights || 'none' !== options.color_method) {
@@ -3112,11 +3101,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         return this.contains(vertex.node_id) ? axonColor : dendriteColor;
       }).bind(this.axon)
         : function() { return notComputable; };
-    } else if ('downstream-of-tag' === options.color_method) {
-      var upstream = this.createUpstreamArbor(options.tag_regex, arbor);
-      pickColor = function(vertex) {
-        return upstream.contains(vertex.node_id) ? unreviewedColor : actorColor;
-      };
     } else {
       pickColor = function() { return actorColor; };
     }
@@ -3294,6 +3278,15 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
           if (callback) callback();
           this.render();
         }).bind(this));
+  } else if ('skeleton' === options.connector_color) {
+    skeletons.forEach(function(skeleton) {
+      var fnConnectorValue = function() { return 0; },
+          fnMakeColor = function() { return skeleton.skeletonmodel.color; };
+      skeleton.synapticTypes.forEach(function(type) {
+        skeleton._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
+      });
+    });
+    if (callback) callback();
   }
 };
 
@@ -3997,9 +3990,14 @@ WebGLApplication.prototype.updateShadingParameter = function(param, value, shadi
     console.log("Invalid options parameter: ", param);
     return;
   }
-  value = this._validate(value, "Invalid value");
-  if (!value || value === this.options[param]) return;
-  this.options[param] = value;
+  if (shading_method === 'downstream-of-tag') {
+    this.options[param] = value;
+  } else {
+    // Numerical only
+    value = this._validate(value, "Invalid value");
+    if (!value || value === this.options[param]) return;
+    this.options[param] = value;
+  }
   if (shading_method === this.options.shading_method) {
     this.updateSkeletonColors();
   }

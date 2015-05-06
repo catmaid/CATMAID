@@ -60,10 +60,9 @@ be used: If user A is member of a group named B, user A can edit data of user B.
 For now such data includes only skeleton reconstruction data.</p>
 
 <p>This tool provides an easy way to create such group memberships for multiple
-users at once. Below you will find two columns. On the left and right you can see all
-existing groups (or users, if you want). You can select groups and users on the
-left and give them permission to edit data of groups and users of the right.
-Press 'Save' if you want to apply the selected changes.</p>
+users at once. Below you will find two columns. You can select groups and users
+on the left and give them permission to edit data of groups and users of the
+right.  Press 'Apply' if you want to save all selected changes.</p>
 
 <form method="post" id="groupmembershiphelper" action="">
   {% csrf_token %}

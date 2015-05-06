@@ -30,6 +30,13 @@ Connectivity matrix:
   actual synapse count).
 
 
+Administration:
+
+- A new tool 'Group membership helper' has been added to add multiple users to
+  multiple groups or to revoke their group membership. This can be used to
+  control access over the data created by individual users.
+
+
 Miscellaneous:
 
 - A node-placement-and-radius-edit mode has been added. If enabled through the

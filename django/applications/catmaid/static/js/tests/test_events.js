@@ -105,7 +105,7 @@ QUnit.test('Event system test', function( assert ) {
   (function() {
     var e = Events.Event;
     var wasExecuted = false;
-    var executionContext = undefined;
+    var executionContext;
     var handler = function() { wasExecuted = true; executionContext = this; };
     var o1 = {}, o2 = {};
     e.on('foo', handler, o1);

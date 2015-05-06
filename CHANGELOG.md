@@ -60,6 +60,13 @@ Miscellaneous:
   happen that this stopped working after a second 3D viewer was closed.
 
 
+Connectivity widget:
+
+- Fix one cause of sluggish behavior for widgets that have been modified many
+  times. Also fixes repeated alert dialogs when clicking a neuron in the
+  partner tables that no longer exists or does not have any treenodes.
+
+
 Neuron Navigator:
 
 - Don't show an error if an invalid regular expression was entered for

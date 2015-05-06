@@ -58,6 +58,11 @@ class GroupMembershipHelper(TemplateView):
             messages.error(request, 'Only superusers can update permissions')
             return HttpResponseRedirect(redirect_url)
 
+        action = request.POST.get('action')
+        if not action:
+            messages.error('No action provided')
+            return HttpResponseRedirect(redirect_url)
+
         # Collect user and group information
         source_users = set(map(int, request.POST.getlist('source-users')))
         source_groups = set(map(int, request.POST.getlist('source-groups')))
@@ -89,7 +94,10 @@ class GroupMembershipHelper(TemplateView):
         for target_user in target_users:
             user = User.objects.get(id=target_user)
             group, _ = Group.objects.get_or_create(name=user.username)
-            group.user_set.add(*source_users)
+            if 'add' == action:
+                group.user_set.add(*source_users)
+            elif 'revoke' == action:
+                group.user_set.remove(*source_users)
 
         messages.success(request, 'Successfully updated permissions')
         return HttpResponseRedirect(redirect_url)

@@ -14,8 +14,14 @@
       width: 50%;
       float: left;
     }
-    div.submit-row {
+    div.divider {
       clear: both;
+    }
+    span.header {
+      font-weight: bold;
+      margin: 2px 0;
+      padding: 2px 3px;
+      vertical-align: middle;
     }
   </style>
 {% endblock %}
@@ -59,16 +65,30 @@
 be used: If user A is member of a group named B, user A can edit data of user B.
 For now such data includes only skeleton reconstruction data.</p>
 
-<p>This tool provides an easy way to create such group memberships for multiple
-users at once. Below you will find two columns. You can select groups and users
-on the left and give them permission to edit data of groups and users of the
-right.  Press 'Apply' if you want to save all selected changes.</p>
+<p>This tool provides an easy way to create and revoke such group memberships
+for multiple users at once. Below you will find two columns. You can select
+groups and users on the left and give them permission to edit data of groups and
+users of the right.  Press 'Apply' if you want to save all selected changes.</p>
 
 <form method="post" id="groupmembershiphelper" action="">
   {% csrf_token %}
   {% if users and groups %}
     <div class="container">
-      <h4>Give permission to the following users...</h4>
+      <label>
+      <select name="action">
+        <option value="add">Give permission to</option>
+        <option value="revoke">Revoke permission from</option>
+      </select>
+      <span class="header">the following users...</span>
+      </label>
+    </div>
+    <div class="container">
+      <label>
+      <span class="header">...to edit objects created by these users.</span>
+      </label>
+    </div>
+    <div class="divider"></div>
+    <div class="container">
       <div id="source-tabs">
         <ul>
           <li><a href="#source-tabs-users">Users</a></li>
@@ -105,7 +125,6 @@ right.  Press 'Apply' if you want to save all selected changes.</p>
       </div>
     </div>
     <div class="container">
-      <h4>...to edit objects created by these users.</h4>
       <div id="target-tabs">
         <ul>
           <li><a href="#target-tabs-users">Users</a></li>
@@ -146,7 +165,7 @@ right.  Press 'Apply' if you want to save all selected changes.</p>
       users or two groups to give some meaningful options.
   {% endif %}
 
-  <div class="submit-row">
+  <div class="submit-row divider">
       <p>
       <input type="submit" value="Apply"/>
       </p>

@@ -930,7 +930,8 @@ var WindowMaker = new function()
      ['dendritic-backbone', 'Dendritic backbone'],
      ['distance_to_root', 'Distance to root'],
      ['partitions', 'Principal branch length'],
-     ['strahler', 'Strahler analysis']
+     ['strahler', 'Strahler analysis'],
+     ['downstream-of-tag', 'Downstream of tag']
     ].forEach(function(e) {
        shadingMenu.options.add(new Option(e[1], e[0]));
      });
@@ -945,7 +946,6 @@ var WindowMaker = new function()
      ['whitelist-reviewed', 'Team Reviewed'],
      ['own-reviewed', 'Own Reviewed'],
      ['axon-and-dendrite', 'Axon and dendrite'],
-     ['downstream-of-tag', 'Downstream of tag']
     ].forEach(function(e) {
        colorMenu.options.add(new Option(e[1], e[0]));
     });
@@ -1017,9 +1017,10 @@ var WindowMaker = new function()
           ['Synapse clustering bandwidth ', o.synapse_clustering_bandwidth, ' nm - ', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 6],
           ['Near active node ', o.distance_to_active_node, ' nm - ', function() {
             WA.updateActiveNodeNeighborhoodRadius(this.value); }, 6],
-          ['Min. synapse-free cable ', o.min_synapse_free_cable, 'nm - ', function() {
+          ['Min. synapse-free cable ', o.min_synapse_free_cable, ' nm - ', function() {
             WA.updateShadingParameter('min_synapse_free_cable', this.value, 'synapse-free'); }, 6],
-          ['Strahler number ', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, 'dendritic-backbone'); }, 4]
+          ['Strahler number ', o.strahler_cut, ' - ', function() { WA.updateShadingParameter('strahler_cut', this.value, 'dendritic-backbone'); }, 4],
+          ['Tag (regex): ', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4]
         ]);
 
     var axisOptions = document.createElement('select');

@@ -957,6 +957,7 @@ var WindowMaker = new function()
     synColors.options.add(new Option('N with partner: pre[red > blue], post[yellow > cyan]', 'by-amount'));
     synColors.options.add(new Option('Synapse clusters', 'synapse-clustering'));
     synColors.options.add(new Option('Max. flow cut: axon (green) and dendrite (blue)', 'axon-and-dendrite'));
+    synColors.options.add(new Option('Same as skeleton', 'skeleton'));
     synColors.onchange = WA.updateConnectorColors.bind(WA, synColors);
 
     appendToTab(tabs['Shading'],

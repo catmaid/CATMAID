@@ -3278,6 +3278,15 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
           if (callback) callback();
           this.render();
         }).bind(this));
+  } else if ('skeleton' === options.connector_color) {
+    skeletons.forEach(function(skeleton) {
+      var fnConnectorValue = function() { return 0; },
+          fnMakeColor = function() { return skeleton.skeletonmodel.color; };
+      skeleton.synapticTypes.forEach(function(type) {
+        skeleton._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
+      });
+    });
+    if (callback) callback();
   }
 };
 

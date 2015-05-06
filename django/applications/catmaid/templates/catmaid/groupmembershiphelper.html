@@ -34,10 +34,16 @@
     $("#source-tabs").tabs();
     $("#target-tabs").tabs();
 
+    $(".select-all").change(function() {
+      var selected = this.checked;
+      $(this).closest('div').find('input[type=checkbox]:visible')
+        .prop('checked', selected);
+    });
+
     $(".filterbox").keyup(function() {
       var filter = $(this).val().toLowerCase();
       // Get sibling list element
-      var list = $(this).next("ul");
+      var list = $(this).closest('div').next("ul");
       list.find("li").each(function() {
         var val = $(this).text().trim().toLowerCase();
         if (0 === filter.length || 0 === val.indexOf(filter)) {
@@ -95,7 +101,13 @@ users of the right.  Press 'Apply' if you want to save all selected changes.</p>
           <li><a href="#source-tabs-groups">Groups</a></li>
         </ul>
         <div id="source-tabs-users">
-          <input placeholder="Filter users" class="filterbox" type="text" />
+          <label>
+            <input type="checkbox" class="select-all" />
+            Select all
+          </label>
+          <div>
+           <input placeholder="Filter users" class="filterbox" type="text" />
+          </div>
           <ul id="source-users">
           {% for user in users %}
           <li>
@@ -109,7 +121,13 @@ users of the right.  Press 'Apply' if you want to save all selected changes.</p>
           </ul>
         </div>
         <div id="source-tabs-groups">
-          <input placeholder="Filter groups" class="filterbox" type="text" />
+          <label>
+            <input type="checkbox" class="select-all" />
+            Select all
+          </label>
+          <div>
+           <input placeholder="Filter groups" class="filterbox" type="text" />
+          </div>
           <ul id="source-groups">
           {% for group in groups %}
           <li>
@@ -131,7 +149,13 @@ users of the right.  Press 'Apply' if you want to save all selected changes.</p>
           <li><a href="#target-tabs-groups">Groups</a></li>
         </ul>
         <div id="target-tabs-users">
-          <input placeholder="Filter users" class="filterbox" type="text" />
+          <label>
+            <input type="checkbox" class="select-all" />
+            Select all
+          </label>
+          <div>
+           <input placeholder="Filter users" class="filterbox" type="text" />
+          </div>
           <ul id="target-users">
           {% for user in users %}
           <li>
@@ -145,7 +169,13 @@ users of the right.  Press 'Apply' if you want to save all selected changes.</p>
           </ul>
         </div>
         <div id="target-tabs-groups">
-          <input placeholder="Filter groups" class="filterbox" type="text" />
+          <label>
+            <input type="checkbox" class="select-all" />
+            Select all
+          </label>
+          <div>
+           <input placeholder="Filter groups" class="filterbox" type="text" />
+          </div>
           <ul id="target-groups">
           {% for group in groups %}
           <li>

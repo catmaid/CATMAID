@@ -390,7 +390,8 @@ def _connector_skeletons(connector_ids, project_id):
     SELECT connector_id, relation_id, skeleton_id, treenode_id
     FROM treenode_connector
     WHERE connector_id IN (%s)
-    ''' % ",".join(map(str, connector_ids)))
+      AND relation_id IN (%s, %S)
+    ''' % (",".join(map(str, connector_ids)), PRE, POST))
 
     cs = {}
     for row in cursor.fetchall():

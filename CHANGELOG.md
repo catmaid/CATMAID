@@ -29,6 +29,19 @@ Connectivity matrix:
   gradients available to produce heat maps (i.e. color cells based on the
   actual synapse count).
 
+* Graph widget: ability to split neurons by text tag on their skeletons. It's the
+"Tag" button under the "Subgraph" tab. Enables you to manually define regions on
+a neuronal arbor (like axon and dendrite, or multiple dendritic domains) and then
+have them be represented each as a node in the graph. The skeleton will be
+virtually cut at the nodes containing the tags, with the tagged node belonging to
+the downstream part (relative to the root node).
+
+* 3D Viewer: color mode "Downstream of tag" is now a shading mode.
+
+* 3D Viewer: new synapse coloring mode "Same as skeleton". If you then hide the
+skeletons and show only the synapses you will e.g. see spatial tiling of ORN
+axons, each defining a glomerulus in the larval olfactory lobe.
+
 
 Administration:
 

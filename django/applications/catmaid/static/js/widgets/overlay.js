@@ -929,6 +929,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, li
        link_type: link_type,
        to_id: toid},
        function(json) {
+         if (json.warning) CATMAID.warn(json.warning);
          self.updateNodes(afterCreate);
        });
 };

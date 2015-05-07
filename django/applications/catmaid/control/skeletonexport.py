@@ -108,6 +108,8 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
 
     if 0 != with_connectors:
         # Fetch all connectors with their partner treenode IDs
+        pre = relations['presynaptic_to']
+        post = relations['postsynaptic_to']
         cursor.execute('''
             SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
                    c.location_x, c.location_y, c.location_z
@@ -115,9 +117,9 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
                  connector c
             WHERE tc.skeleton_id = %s
               AND tc.connector_id = c.id
-        ''' % skeleton_id)
+              AND tc.relation_id IN (%s, %s)
+        ''' % (skeleton_id, pre, post))
 
-        post = relations['postsynaptic_to']
         connectors = tuple((row[0], row[1], 1 if row[2] == post else 0, row[3], row[4], row[5]) for row in cursor.fetchall())
 
     if 0 != with_tags:

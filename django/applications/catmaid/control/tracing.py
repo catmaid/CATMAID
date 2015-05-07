@@ -29,6 +29,7 @@ needed_relations = {
     'presynaptic_to': "Something is presynaptic to something else.",
     'postsynaptic_to': "Something is postsynaptic to something else.",
     'annotated_with': "Something is annotated by something else.",
+    'abutting': "Two things abut against each other",
 }
 
 def check_tracing_setup_view(request, project_id=None):

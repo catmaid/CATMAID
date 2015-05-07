@@ -59,6 +59,13 @@ Miscellaneous:
   is used to specify the radius. No dialog is shown once a radius is selected for
   a node and it will only be saved for the new node.
 
+- A new connector type ("abutting") can now be created. In contrast to the
+  regular synaptic connector, it can be used to represent the fact that two or
+  more neurons are in abutting processes. For now this mode can be activated
+  through the settings widget (Tracing > "Create abutting connectors"). For
+  abutting connectors the lines representing the links to nodes will appear in a
+  green color.
+
 
 ### Bug fixes
 

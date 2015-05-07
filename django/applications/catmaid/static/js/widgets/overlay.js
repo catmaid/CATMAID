@@ -34,6 +34,7 @@ var SkeletonAnnotations = {
   atn : {
     id: null,
     type: null,
+    subtype: null,
     skeleton_id: null,
     x: null,
     y: null,
@@ -45,6 +46,10 @@ var SkeletonAnnotations = {
   TYPE_NODE : "treenode",
   TYPE_CONNECTORNODE : "connector",
 
+  // Connector nodes can have different subtypes
+  SUBTYPE_SYNAPTIC_CONNECTOR : "synaptic-connector",
+  SUBTYPE_ABUTTING_CONNECTOR : "abutting-connector",
+
   sourceView : new CATMAID.ActiveSkeleton(),
 
   // Event name constants
@@ -54,6 +59,7 @@ var SkeletonAnnotations = {
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
+SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.setRadiusAfterNodeCreation = false;
 Events.extend(SkeletonAnnotations);
 
@@ -71,6 +77,7 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
     changed = (this.id !== node.id) ||
               (this.skeleton_id !== node.skeleton_id) ||
               (this.type !== node.type) ||
+              (this.subtype !== node.subtype) ||
               (this.z !== node.z) ||
               (this.y !== node.y)  ||
               (this.x !== node.x) ||
@@ -81,6 +88,7 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
     this.id = node.id;
     this.skeleton_id = node.skeleton_id;
     this.type = node.type;
+    this.subtype = node.subtype;
     this.x = node.x;
     this.y = node.y;
     this.z = node.z;
@@ -164,6 +172,10 @@ SkeletonAnnotations.getActiveSkeletonId = function() {
 
 SkeletonAnnotations.getActiveNodeType = function() {
   return this.atn.type;
+};
+
+SkeletonAnnotations.getActiveNodeSubType = function() {
+  return this.atn.subtype;
 };
 
 SkeletonAnnotations.getActiveNodeColor = function() {
@@ -476,7 +488,7 @@ SkeletonAnnotations.SVGOverlay.prototype.findConnectors = function(node_id) {
   for (var id in this.nodes) {
     if (this.nodes.hasOwnProperty(id)) {
       var node = this.nodes[id];
-      if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
+      if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
         if (node.pregroup.hasOwnProperty(node_id)) {
           pre.push(parseInt(id));
         } else if (node.postgroup.hasOwnProperty(node_id)) {
@@ -515,7 +527,11 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
       atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-      CATMAID.statusBar.replaceLast("Activated connector node #" + node.id);
+      if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === node.subtype) {
+        CATMAID.statusBar.replaceLast("Activated abutting connector node #" + node.id);
+      } else {
+        CATMAID.statusBar.replaceLast("Activated synaptic connector node #" + node.id);
+      }
       atn.set(node, this.getStack().getId());
       SkeletonAnnotations.clearTopbar(this.stack.getId());
       this.recolorAllNodes();
@@ -919,7 +935,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid, li
 
 /** Create a single connector not linked to any treenode.
   *  If given a completionCallback function, it is invoked with one argument: the ID of the newly created connector. */
-SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, completionCallback) {
+SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (
+    phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, subtype, completionCallback) {
   var self = this;
   this.submit(
       django_url + project.id + '/connector/create',
@@ -930,7 +947,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (phys_
        z: phys_z},
       function(jso) {
         // add treenode to the display and update it
-        var nn = self.graphics.newConnectorNode(jso.connector_id, pos_x, pos_y, pos_z, 0, 5 /* confidence */, true);
+        var nn = self.graphics.newConnectorNode(jso.connector_id, pos_x, pos_y,
+            pos_z, 0, 5 /* confidence */, subtype, true);
         self.nodes[jso.connector_id] = nn;
         nn.createGraphics();
         self.activateNode(nn);
@@ -1249,14 +1267,22 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
 
   // Populate ConnectorNodes
   jso[1].forEach(function(a, index, array) {
+    // Determine the connector node type. For now eveything with no or only
+    // pre or post treenodes is treated as a synapse. If there are only
+    // non-directional connectors, an abutting connector is assumed.
+    var subtype = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
+    if (0 === a[5].length && 0 === a[6].length && 0 !== a[7].length) {
+      subtype = SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR;
+    }
     // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
     // a[5]: presynaptic nodes as array of arrays with treenode id
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
-    // and confidence, a[7]: whether the user can edit the connector
+    // and confidence, a[7]: undirected nodes as array of arrays with treenode
+    // id, a[8]: whether the user can edit the connector
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0], this.phys2pixX(a[1]),
       this.phys2pixY(a[2]), this.phys2pixZ(a[3]),
-      (a[3] - pz) / this.stack.resolution.z, a[4], a[7]);
+      (a[3] - pz) / this.stack.resolution.z, a[4], subtype, a[8]);
   }, this);
 
   // Disable any unused instances
@@ -1300,6 +1326,17 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
         // link it to postgroup, to connect it to the connector
         connector.postgroup[tnid] = {'treenode': node,
                                      'confidence': r[1]};
+      }
+    }, this);
+    // a[7]: other relation which is an array of arrays of tnid and tc_confidence
+    a[7].forEach(function(r, i, ar) {
+      // r[0]: tnid, r[1]: tc_confidence
+      var tnid = r[0];
+      var node = this.nodes[tnid];
+      if (node) {
+        // link it to postgroup, to connect it to the connector
+        connector.undirgroup[tnid] = {'treenode': node,
+                                      'confidence': r[1]};
       }
     }, this);
   }, this);
@@ -1485,24 +1522,44 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
       targetTreenodeID = atn.id;
       if (SkeletonAnnotations.TYPE_NODE === atn.type) {
         if (e.shiftKey) {
-          // Create a new connector and a new link
-          var synapse_type = e.altKey ? 'post' : 'pre';
-          CATMAID.statusBar.replaceLast("Created connector with " + synapse_type + "synaptic treenode #" + atn.id);
-          var self = this;
+          var msg, linkType, self = this;
+          if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === SkeletonAnnotations.newConnectorType) {
+            // Create a new abutting connection
+            msg = "Created abutting connector with treenode #" + atn.id;
+            linkType = "abutting";
+          } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === SkeletonAnnotations.newConnectorType) {
+            // Create a new synaptic connector
+            var synapseType = e.altKey ? 'post' : 'pre';
+            msg = "Created connector with " + synapseType + "synaptic treenode #" + atn.id;
+            linkType = synapseType + "synaptic_to";
+          } else {
+            CATMAID.warn("Unknown connector type selected");
+            return true;
+          }
+          CATMAID.statusBar.replaceLast(msg);
           this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
-              function (connectorID) {
-                self.createLink(targetTreenodeID, connectorID, synapse_type + "synaptic_to");
-              });
+            SkeletonAnnotations.newConnectorType, function (connectorID) {
+              self.createLink(targetTreenodeID, connectorID, linkType);
+            });
           e.stopPropagation();
+          e.preventDefault();
         }
         // Else don't stop propagation: the mouse functions of the node will be triggered
         return true;
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
-        // create new treenode (and skeleton) postsynaptic to activated connector
-        CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
-        this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
-            pos_x, pos_y, pos_z, postCreateFn);
-        e.stopPropagation();
+        if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
+          // create new treenode (and skeleton) postsynaptic to activated connector
+          CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
+          this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
+              pos_x, pos_y, pos_z, postCreateFn);
+          e.stopPropagation();
+        } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === atn.subtype) {
+          // create new treenode (and skeleton) postsynaptic to activated connector
+          CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " abutting to active connector");
+          this.createTreenodeWithLink(atn.id, phys_x, phys_y, phys_z, -1, 5,
+              pos_x, pos_y, pos_z, "abutting", postCreateFn);
+          e.stopPropagation();
+        }
         return true;
       }
     }
@@ -1517,7 +1574,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
         }
         this.createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z, postCreateFn);
         e.stopPropagation();
-      } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
+      } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
         // create new treenode (and skeleton) presynaptic to activated connector
         // if the connector doesn't have a presynaptic node already
         this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z,
@@ -1528,7 +1585,8 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
       return true;
     } else if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SYNAPSE) {
       // only create single synapses/connectors
-      this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);
+      this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
+          SkeletonAnnotations.newConnectorType);
     }
   }
   e.stopPropagation();
@@ -2215,7 +2273,8 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
     growlAlert("WARNING", "Cannot switch between terminal and connector: node not loaded.");
     return;
   }
-  if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type) {
+  if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type &&
+      SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === ob.subtype) {
     if (this.switchingConnectorID === ob.id &&
         this.switchingTreenodeID in this.nodes) {
       // Switch back to the terminal

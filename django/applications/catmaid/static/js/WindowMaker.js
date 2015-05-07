@@ -1374,6 +1374,7 @@ var WindowMaker = new function()
          ['Axon & dendrite', GG.splitAxonAndDendrite.bind(GG)],
          ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)], 
          ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)],
+         ['Tag', GG.splitByTag.bind(GG)],
          ['Reset', GG.unsplit.bind(GG)]]);
 
     content.appendChild( bar );

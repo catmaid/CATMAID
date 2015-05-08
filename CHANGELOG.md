@@ -36,9 +36,12 @@ Connectivity matrix:
   will be virtually cut at the nodes containing the tags, with the tagged node
   belonging to the downstream part (relative to the root node).
 
-- 3D Viewer: color mode "Downstream of tag" is now a shading mode.
 
-- 3D Viewer: new synapse coloring mode "Same as skeleton". If you then hide the
+3D Viewer:
+
+- Color mode "Downstream of tag" is now a shading mode.
+
+- New synapse coloring mode "Same as skeleton". If you then hide the
   skeletons and show only the synapses you will e.g. see spatial tiling of ORN
   axons, each defining a glomerulus in the larval olfactory lobe.
 

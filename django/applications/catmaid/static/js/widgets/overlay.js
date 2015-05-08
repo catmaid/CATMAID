@@ -1840,8 +1840,8 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
 SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no_centering, completionCallback) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
-  // Keep a reference to the original node
-  var originalNode = this.nodes[treenode_id];
+  // References the original node the selector was created for
+  var originalNode;
 
   if (no_centering) {
     toggleMeasurementTool();
@@ -1862,12 +1862,14 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
   }
 
   function toggleMeasurementTool() {
+    // Keep a reference to the original node
+    originalNode = self.nodes[treenode_id];
     // If there was a measurement tool based radius selection started
     // before, stop this.
-    if (self.nodes[treenode_id].surroundingCircleElements) {
+    if (originalNode.surroundingCircleElements) {
       hideCircleAndCallback();
     } else {
-      self.nodes[treenode_id].drawSurroundingCircle(transform,
+      originalNode.drawSurroundingCircle(transform,
           hideCircleAndCallback);
       // Attach a handler for the ESC key to cancel selection
       $('body').on('keydown.catmaidRadiusSelect', function(event) {

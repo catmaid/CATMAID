@@ -157,8 +157,9 @@ def list_connector(request, project_id=None):
 
     response_on_error = ''
     try:
+        cursor = connection.cursor()
         response_on_error = 'Could not fetch relations.'
-        relation_map = get_relation_to_id_map(project_id)
+        relation_map = get_relation_to_id_map(project_id, cursor=cursor)
         for rel in ['presynaptic_to', 'postsynaptic_to', 'element_of', 'labeled_as']:
             if rel not in relation_map:
                 raise Exception('Failed to find the required relation %s' % rel)
@@ -171,7 +172,6 @@ def list_connector(request, project_id=None):
             inverse_relation_type_id = relation_map['presynaptic_to']
 
         response_on_error = 'Failed to select connectors.'
-        cursor = connection.cursor()
         cursor.execute(
             '''
             SELECT
@@ -375,14 +375,7 @@ def _connector_skeletons(connector_ids, project_id):
     and 'postsynaptic_to' with a list of skeleton IDs (maybe empty). """
     cursor = connection.cursor()
 
-    cursor.execute('''
-    SELECT relation_name, id
-    FROM relation
-    WHERE project_id = %s
-      AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')
-    ''' % int(project_id))
-
-    relations = dict(cursor.fetchall())
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     PRE = relations['presynaptic_to']
     POST = relations['postsynaptic_to']
 
@@ -425,14 +418,7 @@ def _connector_associated_edgetimes(connector_ids, project_id):
     the timestamp of the edge. """
     cursor = connection.cursor()
 
-    cursor.execute('''
-    SELECT relation_name, id
-    FROM relation
-    WHERE project_id = %s
-      AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')
-    ''' % int(project_id))
-
-    relations = dict(cursor.fetchall())
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     PRE = relations['presynaptic_to']
     POST = relations['postsynaptic_to']
 
@@ -585,9 +571,7 @@ def connectors_info(request, project_id):
 
     cursor = connection.cursor()
 
-    cursor.execute("SELECT relation_name, id FROM relation WHERE project_id=%s" % project_id)
-    relations = dict(cursor.fetchall())
-
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     pre = relations['presynaptic_to']
     post = relations['postsynaptic_to']
 

@@ -24,8 +24,8 @@ def _next_circle(skeleton_set, relations, cursor):
       AND tc1.connector_id = tc2.connector_id
       AND tc1.skeleton_id != tc2.skeleton_id
       AND tc1.relation_id != tc2.relation_id
-      AND tc1.relation_id IN (%s, %s)
-      AND tc2.relation_id IN (%s, %s)
+      AND (tc1.relation_id = %s OR tc1.relation_id = %s)
+      AND (tc2.relation_id = %s OR tc2.relation_id = %s)
     ''' % (','.join(map(str, skeleton_set)), pre, post, pre, post))
     connections = defaultdict(partial(defaultdict, partial(defaultdict, int)))
     for row in cursor.fetchall():

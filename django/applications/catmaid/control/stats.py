@@ -220,8 +220,8 @@ def stats_user_history(request, project_id=None):
         WHERE t1.project_id=%s
         AND t1.creation_time BETWEEN %s AND %s
         AND t1.relation_id <> t2.relation_id
-        AND t1.relation_id IN (%s,%s)
-        AND t2.relation_id IN (%s,%s)
+        AND (t1.relation_id = %s OR t1.relation_id = %s)
+        AND (t2.relation_id = %s OR t2.relation_id = %s)
         AND t1.creation_time > t2.creation_time
         GROUP BY t1.user_id, date
     ''', (project_id, start_date, end_date, preId, postId, preId, postId))

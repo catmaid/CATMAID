@@ -30,7 +30,7 @@ def basic_graph(project_id, skeleton_ids):
     FROM treenode_connector tc
     WHERE tc.project_id = %s
       AND tc.skeleton_id IN (%s)
-      AND tc.relation_id IN (%s,%s)
+      AND (tc.relation_id = %s OR tc.relation_id = %s)
     ''' % (int(project_id), ",".join(str(int(skid)) for skid in skeleton_ids),
            preID, postID))
 
@@ -89,7 +89,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
     FROM treenode_connector
     WHERE project_id = %s
       AND skeleton_id IN (%s)
-      AND relation_id IN (%s,%s)
+      AND (relation_id = %s OR relation_id = %s)
     ''' % (int(project_id), skids, preID, postID))
 
     stc = defaultdict(list)

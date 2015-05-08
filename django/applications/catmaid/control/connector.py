@@ -386,7 +386,7 @@ def _connector_skeletons(connector_ids, project_id):
     SELECT connector_id, relation_id, skeleton_id, treenode_id
     FROM treenode_connector
     WHERE connector_id IN (%s)
-      AND relation_id IN (%s, %S)
+      AND (relation_id = %s OR relation_id = %s)
     ''' % (",".join(map(str, connector_ids)), PRE, POST))
 
     cs = {}
@@ -429,7 +429,7 @@ def _connector_associated_edgetimes(connector_ids, project_id):
     SELECT connector_id, relation_id, skeleton_id, treenode_id, creation_time
     FROM treenode_connector
     WHERE connector_id IN (%s)
-      AND relation_id IN (%s,%s)
+      AND (relation_id = %s OR relation_id = %s)
     ''' % (",".join(map(str, connector_ids), PRE, POST)))
 
     cs = {}
@@ -545,8 +545,8 @@ def _list_completed(project_id, completed_by=None, from_date=None, to_date=None)
         WHERE t1.project_id=%s
         AND tc1.relation_id <> tc2.relation_id
         AND tc1.creation_time > tc2.creation_time
-        AND tc1.relation_id IN (%s,%s)
-        AND tc2.relation_id IN (%s,%s)'''
+        AND (tc1.relation_id = %s OR tc1.relation_id = %s)
+        AND (tc2.relation_id = %s OR tc2.relation_id = %s)'''
 
     if completed_by:
         params.append(completed_by)

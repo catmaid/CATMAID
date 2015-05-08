@@ -143,7 +143,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
     SELECT connector_id, relation_id, treenode_id, skeleton_id
     FROM treenode_connector
     WHERE skeleton_id IN (%s)
-      AND relation_id IN (%s,%s)
+      AND (relation_id = %s OR relation_id = %s)
     ''' % (skeletons_string, relations['presynaptic_to'], relations['postsynaptic_to']))
     connectors = defaultdict(partial(defaultdict, list))
     skeleton_synapses = defaultdict(partial(defaultdict, list))

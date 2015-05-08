@@ -118,7 +118,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
                  connector c
             WHERE tc.skeleton_id = %s
               AND tc.connector_id = c.id
-              AND tc.relation_id IN (%s, %s)
+              AND (tc.relation_id = %s OR tc.relation_id = %s)
         ''' % (skeleton_id, pre, post))
 
         connectors = tuple((row[0], row[1], 1 if row[2] == post else 0, row[3], row[4], row[5]) for row in cursor.fetchall())
@@ -631,7 +631,7 @@ def export_neuroml_level3_v181(request, project_id=None):
         SELECT treenode_id, connector_id, relation_id, skeleton_id
         FROM treenode_connector
         WHERE skeleton_id IN (%s)
-          AND relation_id IN (%s,%s)
+          AND (relation_id = %s OR relation_id = %s)
         ''' % (skeleton_strings, presynaptic_to, postsynaptic_to))
 
         # Dictionary of connector ID vs map of relation_id vs list of treenode IDs
@@ -813,8 +813,8 @@ def skeleton_connectors_by_partner(request, project_id):
       AND tc1.connector_id = tc2.connector_id
       AND tc1.skeleton_id != tc2.skeleton_id
       AND tc1.relation_id != tc2.relation_id
-      AND tc1.relation_id IN (%s,%s)
-      AND tc2.relation_id IN (%s,%s)
+      AND (tc1.relation_id = %s OR tc1.relation_id = %s)
+      AND (tc2.relation_id = %s OR tc2.relation_id = %s)
     ''' % (','.join(map(str, skeleton_ids)), pre, post, pre, post))
 
     # Dict of skeleton vs relation vs skeleton vs list of connectors

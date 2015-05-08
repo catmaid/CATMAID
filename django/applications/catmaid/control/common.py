@@ -212,7 +212,7 @@ def get_relation_to_id_map(project_id, name_constraints=None, cursor=None):
         query = "SELECT relation_name, id  FROM relation WHERE project_id = %s"
         params = [int(project_id)]
         if name_constraints:
-            query += " AND relation_name IN (%s)" % ','.join(('%s',) * len(name_constraints))
+            query += " AND (%s)" % ' OR '.join(('relation_name = %s',) * len(name_constraints))
             params += (name_constraints)
         cursor.execute(query, params)
         return dict(cursor.fetchall())
@@ -232,7 +232,7 @@ def get_class_to_id_map(project_id, name_constraints=None, cursor=None):
         query = "SELECT class_name, id  FROM class WHERE project_id = %s"
         params = [int(project_id)]
         if name_constraints:
-            query += " AND class_name IN (%s)" % ','.join(('%s',) * len(name_constraints))
+            query += " AND (%s)" % ' OR '.join(('class_name = %s',) * len(name_constraints))
             params += (name_constraints)
         cursor.execute(query, params)
         return dict(cursor.fetchall())

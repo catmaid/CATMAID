@@ -45,6 +45,9 @@ Connectivity matrix:
   skeletons and show only the synapses you will e.g. see spatial tiling of ORN
   axons, each defining a glomerulus in the larval olfactory lobe.
 
+- For PNG and SVG export one can now specify the dimensions of the result files.
+  A dialog shown before exporting asks for width and height.
+
 
 Administration:
 

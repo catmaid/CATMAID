@@ -4425,6 +4425,20 @@
     }
   }, 
   {
+    "pk": 2461, 
+    "model": "catmaid.relation", 
+    "fields": {
+      "description": null, 
+      "isreciprocal": false, 
+      "creation_time": "2011-10-29T04:33:34.263", 
+      "uri": null, 
+      "edition_time": "2011-10-29T04:33:34.263", 
+      "project": 3, 
+      "relation_name": "abutting", 
+      "user": 3
+    }
+  }, 
+  {
     "pk": 524, 
     "model": "catmaid.relation", 
     "fields": {
@@ -4523,6 +4537,20 @@
     }
   }, 
   {
+    "pk": 2460, 
+    "model": "catmaid.relation", 
+    "fields": {
+      "description": null, 
+      "isreciprocal": false, 
+      "creation_time": "2011-10-29T04:33:34.263", 
+      "uri": null, 
+      "edition_time": "2011-10-29T04:33:34.263", 
+      "project": 4, 
+      "relation_name": "abutting", 
+      "user": 3
+    }
+  }, 
+  {
     "pk": 2334, 
     "model": "catmaid.relation", 
     "fields": {
@@ -4617,6 +4645,20 @@
       "edition_time": "2011-10-29T04:33:34.263", 
       "project": 5, 
       "relation_name": "is_a", 
+      "user": 3
+    }
+  }, 
+  {
+    "pk": 2459, 
+    "model": "catmaid.relation", 
+    "fields": {
+      "description": null, 
+      "isreciprocal": false, 
+      "creation_time": "2011-10-29T04:33:34.263", 
+      "uri": null, 
+      "edition_time": "2011-10-29T04:33:34.263", 
+      "project": 5, 
+      "relation_name": "abutting", 
       "user": 3
     }
   }, 

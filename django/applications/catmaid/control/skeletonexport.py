@@ -884,7 +884,7 @@ GROUP BY skeleton_id
 LIMIT %s
 ''' % (project_id, x0, x1, y0, y1, z0, z1, having, limit))
 
- 
+
     skeletons = tuple(row[0] for row in cursor.fetchall())
 
     return HttpResponse(json.dumps({"skeletons": skeletons,

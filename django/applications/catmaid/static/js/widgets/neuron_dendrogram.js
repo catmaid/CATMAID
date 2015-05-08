@@ -44,6 +44,10 @@ var NeuronDendrogram = function() {
   // changes.
   this.autoUpdate = true;
 
+  // Multipliers for horizontal node spacing and vertical leaf spacing
+  this.hNodeSpaceFactor = 1.0;
+  this.vNodeSpaceFactor = 1.0;
+
   // Listen to change events of the active node and skeletons
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.selectActiveNode, this);
@@ -538,14 +542,19 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
     width = baseWidth * factor;
     height = baseHeight * factor;
   } else {
-    width = Math.max(baseWidth, nodeSize[0] * this.getMaxDepth(tree));
-    height = Math.max(baseHeight, nodeSize[1] * this.getNumLeafs(tree));
+    baseWidth = this.hNodeSpaceFactor * baseWidth;
+    baseHeight = this.vNodeSpaceFactor * baseHeight;
+    width = Math.max(baseWidth, this.hNodeSpaceFactor * nodeSize[0] * this.getMaxDepth(tree));
+    height = Math.max(baseHeight, this.vNodeSpaceFactor * nodeSize[1] * this.getNumLeafs(tree));
   }
 
   // Create clustering where each leaf node has the same distance to its
   // neighbors.
+  var dendrogramSize;
+  if (this.radialDisplay) dendrogramSize = [360 * this.vNodeSpaceFactor, 360 * this.hNodeSpaceFactor];
+  else dendrogramSize = [height, width];
   var dendrogram = d3.layout.cluster()
-    .size([this.radialDisplay ? 360 * factor : height, this.radialDisplay ? 360: width])
+    .size(dendrogramSize)
     .separation(function() { return 1; });
 
   // Find default scale so that everything can be seen, if no scale is cached.
@@ -837,4 +846,14 @@ NeuronDendrogram.prototype.setCollapseNotABranch = function(value)
 NeuronDendrogram.prototype.setWarnCollapsed = function(value)
 {
   this.warnCollapsed = Boolean(value);
+};
+
+NeuronDendrogram.prototype.setHSpaceFactor = function(value)
+{
+  this.hNodeSpaceFactor = value;
+};
+
+NeuronDendrogram.prototype.setVSpaceFactor = function(value)
+{
+  this.vNodeSpaceFactor = value;
 };

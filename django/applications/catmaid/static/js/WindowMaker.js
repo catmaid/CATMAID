@@ -428,6 +428,82 @@ var WindowMaker = new function()
     minStrahler.appendChild(minStrahlerInput);
     buttons.appendChild(minStrahler);
 
+    var hSpacingFactor = document.createElement('label');
+    hSpacingFactor.appendChild(document.createTextNode('H Space Factor'));
+    var hSpacingFactorInput = document.createElement('input');
+    hSpacingFactorInput.setAttribute('type', 'number');
+    hSpacingFactorInput.setAttribute('min', 0.01);
+    hSpacingFactorInput.setAttribute('max', 10);
+    hSpacingFactorInput.setAttribute('step', 0.01);
+    hSpacingFactorInput.setAttribute('id', 'dendrogram-hSpacingFactor-' + ND.widgetID);
+    if (ND.hNodeSpaceFactor) {
+      hSpacingFactorInput.value = ND.hNodeSpaceFactor.toFixed(2);
+    }
+    hSpacingFactorInput.onchange = function(e) {
+        ND.setHSpaceFactor(parseFloat(this.value));
+        ND.update();
+    };
+    hSpacingFactorInput.oninput = function(e) {
+      if (13 === e.keyCode) {
+        ND.update();
+      } else {
+        ND.setHSpaceFactor(parseFloat(this.value));
+      }
+    };
+    hSpacingFactorInput.onwheel = function(e) {
+        if ((e.deltaX + e.deltaY) > 0) {
+          if (this.value > 0.01) {
+            this.value = (parseFloat(this.value) - 0.01).toFixed(2);
+            this.onchange();
+          }
+        } else {
+          this.value = (parseFloat(this.value) + 0.01).toFixed(2);
+          this.onchange();
+        }
+
+        return false;
+    };
+    hSpacingFactor.appendChild(hSpacingFactorInput);
+    buttons.appendChild(hSpacingFactor);
+
+    var vSpacingFactor = document.createElement('label');
+    vSpacingFactor.appendChild(document.createTextNode('V Space Factor'));
+    var vSpacingFactorInput = document.createElement('input');
+    vSpacingFactorInput.setAttribute('type', 'number');
+    vSpacingFactorInput.setAttribute('min', 0.01);
+    vSpacingFactorInput.setAttribute('max', 10);
+    vSpacingFactorInput.setAttribute('step', 0.01);
+    vSpacingFactorInput.setAttribute('id', 'dendrogram-vSpacingFactor-' + ND.widgetID);
+    if (ND.hNodeSpaceFactor) {
+      vSpacingFactorInput.value = ND.vNodeSpaceFactor.toFixed(2);
+    }
+    vSpacingFactorInput.onchange = function(e) {
+        ND.setVSpaceFactor(parseFloat(this.value));
+        ND.update();
+    };
+    vSpacingFactorInput.oninput = function(e) {
+      if (13 === e.keyCode) {
+        ND.update();
+      } else {
+        ND.setVSpaceFactor(parseFloat(this.value));
+      }
+    };
+    vSpacingFactorInput.onwheel = function(e) {
+        if ((e.deltaX + e.deltaY) > 0) {
+          if (this.value > 0.01) {
+            this.value = (parseFloat(this.value) - 0.01).toFixed(2);
+            this.onchange();
+          }
+        } else {
+          this.value = (parseFloat(this.value) + 0.01).toFixed(2);
+          this.onchange();
+        }
+
+        return false;
+    };
+    vSpacingFactor.appendChild(vSpacingFactorInput);
+    buttons.appendChild(vSpacingFactor);
+
     var collapse = document.createElement('label');
     var collapseInput = document.createElement('input');
     collapseInput.setAttribute('type', 'checkbox');

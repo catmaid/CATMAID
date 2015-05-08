@@ -49,6 +49,12 @@ Connectivity matrix:
   A dialog shown before exporting asks for width and height.
 
 
+Neuron dendrogram:
+
+- The horizontal and vertical spacing between nodes in the neuron dendrogram can
+  now be fine tuned.
+
+
 Administration:
 
 - A new tool 'Group membership helper' has been added to add multiple users to

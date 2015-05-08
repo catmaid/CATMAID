@@ -160,53 +160,111 @@ WebGLApplication.prototype.fullscreenWebGL = function() {
 
 
 /**
+ * Show a dialog to ask the user for image dimensions, resize the view to the
+ * new dimensions,execute the given function and return to the original
+ * dimension afterwards.
+ */
+WebGLApplication.prototype.askForDimensions = function(title, fn) {
+  var dialog = new OptionsDialog(title);
+  dialog.appendMessage("Please adjust the dimensions to your liking. They " +
+      "default to the current size of the 3D viewer");
+  var imageWidthField = dialog.appendField("Image width (px): ",
+      "image-width", this.space.canvasWidth);
+  var imageHeightField = dialog.appendField("Image height (px): ",
+      "image-height", this.space.canvasHeight);
+
+  dialog.onOK = handleOK.bind(this);
+  dialog.show(350, "auto", true);
+
+  function handleOK() {
+    /* jshint validthis: true */ // `this` is bound to this WebGLApplication
+    $.blockUI();
+
+    var originalWidth, originalHeight;
+    try {
+      var width = parseInt(imageWidthField.value);
+      var height = parseInt(imageHeightField.value);
+
+      if (!width || !height) {
+        throw new CATMAID.ValueError("Please use valid width and height values");
+      }
+
+      // Save current dimensions and set new ones, if available
+      if (width !== this.space.canvasWidth || height !== this.space.canvasHeight) {
+        originalWidth = this.space.canvasWidth;
+        originalHeight = this.space.canvasHeight;
+        this.resizeView(width, height);
+      } else {
+        this.space.render();
+      }
+
+      // Call passed in function
+      if (CATMAID.tools.isFn(fn)) fn();
+    } catch (e) {
+      CATMAID.error("An error occurred", e);
+    }
+
+    // Restore original dimensions
+    if (originalWidth && originalHeight) {
+      this.resizeView(originalWidth, originalHeight);
+    }
+
+    $.unblockUI();
+  }
+};
+
+
+/**
  * Store the current view as PNG image.
  */
 WebGLApplication.prototype.exportPNG = function() {
-  this.space.render();
-  try {
-    var imageData = this.space.view.getImageData();
-    var blob = CATMAID.tools.dataURItoBlob(imageData);
-    growlAlert("Information", "The exported PNG will have a transparent background");
-    saveAs(blob, "catmaid_3d_view.png");
-  } catch (e) {
-    CATMAID.error("Could not export current 3D view, there was an error.", e);
-  }
+  this.askForDimensions("PNG export", (function() {
+    try {
+      /* jshint validthis: true */ // `this` is bound to this WebGLApplication
+      var imageData = this.space.view.getImageData();
+      var blob = CATMAID.tools.dataURItoBlob(imageData);
+      CATMAID.info("The exported PNG will have a transparent background");
+      saveAs(blob, "catmaid_3d_view.png");
+    } catch(e) {
+      CATMAID.error("Could not export current 3D view, there was an error.", e);
+    }
+  }).bind(this));
 };
 
 /**
  * Store the current view as SVG image.
  */
 WebGLApplication.prototype.exportSVG = function() {
-  $.blockUI();
-  try {
-    var svg = this.space.view.getSVGData();
-    CATMAID.svgutil.reduceCoordinatePrecision(svg, 1);
-    CATMAID.svgutil.stripStyleProperties(svg, {
-      'fill': 'none',
-      'stroke-opacity': 1,
-      'stroke-linejoin': undefined
-    });
-    CATMAID.svgutil.reduceStylePrecision(svg, 1);
+  this.askForDimensions("SVG export", (function() {
+    try {
+      /* jshint validthis: true */ // `this` is bound to this WebGLApplication
+      var svg = this.space.view.getSVGData();
+      CATMAID.svgutil.reduceCoordinatePrecision(svg, 1);
+      CATMAID.svgutil.stripStyleProperties(svg, {
+        'fill': 'none',
+        'stroke-opacity': 1,
+        'stroke-linejoin': undefined
+      });
+      CATMAID.svgutil.reduceStylePrecision(svg, 1);
 
-    var styleDict = CATMAID.svgutil.classifyStyles(svg);
+      var styleDict = CATMAID.svgutil.classifyStyles(svg);
 
-    var styles = Object.keys(styleDict).reduce(function(o, s) {
-      var cls = styleDict[s];
-      o = o + "." + cls + "{" + s + "}";
-      return o;
-    }, "");
+      var styles = Object.keys(styleDict).reduce(function(o, s) {
+        var cls = styleDict[s];
+        o = o + "." + cls + "{" + s + "}";
+        return o;
+      }, "");
 
-    var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
-    CATMAID.svgutil.addStyles(xml, styles);
+      var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+      CATMAID.svgutil.addStyles(xml, styles);
 
-    var data = new XMLSerializer().serializeToString(xml);
-    var blob = new Blob([data], {type: 'text/svg'});
-    saveAs(blob, "catmaid-3d-view.svg");
-  } catch (e) {
-    CATMAID.error("Could not export current 3D view, there was an error.", e);
-  }
-  $.unblockUI();
+      var data = new XMLSerializer().serializeToString(xml);
+      var blob = new Blob([data], {type: 'text/svg'});
+      saveAs(blob, "catmaid-3d-view.svg");
+    } catch (e) {
+      CATMAID.error("Could not export current 3D view, there was an error.", e);
+    }
+  }).bind(this));
 };
 
 /**

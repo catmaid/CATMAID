@@ -172,13 +172,11 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
     cursor.execute('''
     SELECT cici.class_instance_a, ci.name
     FROM class_instance ci,
-         class_instance_class_instance cici,
-         relation r
+         class_instance_class_instance cici
     WHERE cici.class_instance_a IN (%s)
       AND cici.class_instance_b = ci.id
-      AND cici.relation_id = r.id
-      AND r.relation_name = 'model_of'
-    ''' % skeletons_string)
+      AND cici.relation_id = %s
+    ''' % (skeletons_string, relations['model_of']))
     names = dict(cursor.fetchall())
 
     # A DiGraph representing the connections between the arbors (every node is an arbor)

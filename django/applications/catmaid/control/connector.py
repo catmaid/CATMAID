@@ -30,6 +30,9 @@ def graphedge_list(request, project_id=None):
         skeleton__in=skeletonlist ).select_related('relation__relation_name', 'connector__user', 'connector')
 
     for q in qs_tc:
+        # Only look at synapse connectors
+        if q.relation.relation_name not in ('presynaptic_to', 'postsynaptic_to'):
+            continue
         if not q.connector_id in edge:
             # has to be a list, not a set, because we need matching treenode id
             edge[ q.connector_id ] = {'pre': [], 'post': [], 'pretreenode': [], 'posttreenode': []}
@@ -426,7 +429,8 @@ def _connector_associated_edgetimes(connector_ids, project_id):
     SELECT connector_id, relation_id, skeleton_id, treenode_id, creation_time
     FROM treenode_connector
     WHERE connector_id IN (%s)
-    ''' % ",".join(map(str, connector_ids)))
+      AND relation_id IN (%s,%s)
+    ''' % (",".join(map(str, connector_ids), PRE, POST)))
 
     cs = {}
     for row in cursor.fetchall():
@@ -520,7 +524,13 @@ def _list_completed(project_id, completed_by=None, from_date=None, to_date=None)
     links are by default only constrained by both sides having different
     relations and the first link was created before the second one.
     """
-    params = [project_id]
+    cursor = connection.cursor()
+
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
+
+    params = [project_id, pre, post, pre, post]
     query = '''
         SELECT tc2.connector_id, c.location_x, c.location_y, c.location_z,
             tc2.treenode_id, tc2.skeleton_id, tc2.confidence, tc2.user_id,
@@ -534,7 +544,9 @@ def _list_completed(project_id, completed_by=None, from_date=None, to_date=None)
         JOIN treenode t2 ON t2.id = tc2.treenode_id
         WHERE t1.project_id=%s
         AND tc1.relation_id <> tc2.relation_id
-        AND tc1.creation_time > tc2.creation_time'''
+        AND tc1.creation_time > tc2.creation_time
+        AND tc1.relation_id IN (%s,%s)
+        AND tc2.relation_id IN (%s,%s)'''
 
     if completed_by:
         params.append(completed_by)
@@ -547,7 +559,6 @@ def _list_completed(project_id, completed_by=None, from_date=None, to_date=None)
         params.append(to_date.isoformat())
         query += " AND tc1.creation_time < %s"
 
-    cursor = connection.cursor()
     cursor.execute(query, params)
 
     return tuple((row[0], (row[1], row[2], row[3]),

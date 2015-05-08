@@ -548,8 +548,7 @@ def _find_first_interesting_node(sequence):
     """ Find the first node that:
     1. Has confidence lower than 5
     2. Has a tag
-    3. Receives a synapse
-    4. Makes a synapse
+    3. Has any connector (e.g. receives/makes synapse, markes as abutting, ...)
     Otherwise return the last node.
     """
     if not sequence:

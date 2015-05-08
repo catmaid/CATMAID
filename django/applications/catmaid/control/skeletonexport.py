@@ -14,6 +14,7 @@ from catmaid.models import UserRole, ClassInstance, Treenode, \
         TreenodeClassInstance, ConnectorClassInstance, Review
 from catmaid.control import export_NeuroML_Level3
 from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.review import get_treenodes_to_reviews, \
         get_treenodes_to_reviews_with_time
 
@@ -576,13 +577,7 @@ def skeletons_neuroml(request, project_id=None):
 
     cursor = connection.cursor()
 
-    cursor.execute('''
-    SELECT relation_name, id
-    FROM relation
-    WHERE project_id = %s
-      AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')
-    ''' % project_id)
-    relations = dict(cursor.fetchall())
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     preID = relations['presynaptic_to']
     postID = relations['postsynaptic_to']
 
@@ -606,15 +601,7 @@ def export_neuroml_level3_v181(request, project_id=None):
     skeleton_strings = ",".join(map(str, skeleton_ids))
     cursor = connection.cursor()
 
-    cursor.execute('''
-    SELECT relation_name, id
-    FROM relation
-    WHERE project_id = %s
-      AND (relation_name = 'presynaptic_to'
-           OR relation_name = 'postsynaptic_to')
-    ''' % int(project_id))
-
-    relations = dict(cursor.fetchall())
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     presynaptic_to = relations['presynaptic_to']
     postsynaptic_to = relations['postsynaptic_to']
 
@@ -644,7 +631,8 @@ def export_neuroml_level3_v181(request, project_id=None):
         SELECT treenode_id, connector_id, relation_id, skeleton_id
         FROM treenode_connector
         WHERE skeleton_id IN (%s)
-        ''' % skeleton_strings)
+          AND relation_id IN (%s,%s)
+        ''' % (skeleton_strings, presynaptic_to, postsynaptic_to))
 
         # Dictionary of connector ID vs map of relation_id vs list of treenode IDs
         connectors = defaultdict(partial(defaultdict, list))
@@ -812,10 +800,9 @@ def skeleton_connectors_by_partner(request, project_id):
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
     cursor = connection.cursor()
 
-    cursor.execute('''
-    SELECT id, relation_name FROM relation WHERE relation_name = 'postsynaptic_to' OR relation_name = 'presynaptic_to'
-    ''')
-    relations = dict(cursor.fetchall())
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
 
     cursor.execute('''
     SELECT tc1.skeleton_id, tc1.relation_id,
@@ -826,7 +813,9 @@ def skeleton_connectors_by_partner(request, project_id):
       AND tc1.connector_id = tc2.connector_id
       AND tc1.skeleton_id != tc2.skeleton_id
       AND tc1.relation_id != tc2.relation_id
-    ''' % ','.join(map(str, skeleton_ids)))
+      AND tc1.relation_id IN (%s,%s)
+      AND tc2.relation_id IN (%s,%s)
+    ''' % (','.join(map(str, skeleton_ids)), pre, post, pre, post))
 
     # Dict of skeleton vs relation vs skeleton vs list of connectors
     partners = defaultdict(partial(defaultdict, partial(defaultdict, list)))

@@ -4,6 +4,7 @@ from numpy.linalg import norm
 import networkx as nx
 from collections import namedtuple
 
+from catmaid.control.common import get_relation_to_id_map
 from catmaid.models import Treenode, TreenodeConnector, ClassInstance, Relation
 
 
@@ -129,10 +130,12 @@ def createSpatialGraphFromSkeletonID(sid):
 def synapseNodesFromSkeletonID(sid):
     sk = ClassInstance.objects.get(pk=sid)
     pid = sk.project_id
-    
+    relations = get_relation_to_id_map(pid, ('presynaptic_to', 'postsynaptic_to'))
+
     qs_tc = TreenodeConnector.objects.filter(
         project=pid,
-        skeleton=sid
+        skeleton=sid,
+        relation__in=(relations['presynaptic_to'], relations['postsynaptic_to'])
     ).select_related('connector')
 
     synapse_nodes = []

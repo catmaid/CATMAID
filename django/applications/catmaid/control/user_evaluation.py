@@ -58,7 +58,9 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
 
     # Synapses on the arbor: keyed by treenode_id
     all_synapses = defaultdict(list)
-    for s in TreenodeConnector.objects.filter(skeleton=skeleton_id):
+    for s in TreenodeConnector.objects.filter(skeleton=skeleton_id,
+                                              relation__in=(relations['presynaptic_to'],
+                                                            relations['postsynaptic_to'])):
         all_synapses[s.treenode_id].append(s)
 
     for epoch in epochs:

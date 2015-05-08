@@ -8,6 +8,7 @@ from django.db.models.aggregates import Count
 from django.db import connection
 
 from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map
 from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, \
         Review, Relation, TreenodeConnector
 
@@ -203,6 +204,9 @@ def stats_user_history(request, project_id=None):
             dict(project_id=project_id, start_date=start_date, end_date=end_date))
     treenode_stats = cursor.fetchall()
 
+    relations = get_relation_to_id_map(project_id, cursor=cursor)
+    preId, postId = relations['presynaptic_to'], relations['postsynaptic_to']
+
     # Retrieve a list of how many completed connector relations a user has
     # created in a given time frame. A completed connector relation is either
     # one were a user created both the presynaptic and the postsynaptic side
@@ -216,9 +220,11 @@ def stats_user_history(request, project_id=None):
         WHERE t1.project_id=%s
         AND t1.creation_time BETWEEN %s AND %s
         AND t1.relation_id <> t2.relation_id
+        AND t1.relation_id IN (%s,%s)
+        AND t2.relation_id IN (%s,%s)
         AND t1.creation_time > t2.creation_time
         GROUP BY t1.user_id, date
-    ''', (project_id, start_date, end_date))
+    ''', (project_id, start_date, end_date, preId, postId, preId, postId))
     connector_stats = cursor.fetchall()
 
     tree_reviewed_nodes = Review.objects \

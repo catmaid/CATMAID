@@ -402,24 +402,24 @@ var WindowMaker = new function()
       minStrahlerInput.value = ND.minStrahler;
     }
     minStrahlerInput.onchange = function(e) {
-        ND.setMinStrahler(parseInt(this.value));
+        ND.setMinStrahler(parseInt(this.value, 10));
         ND.update();
     };
     minStrahlerInput.oninput = function(e) {
       if (13 === e.keyCode) {
         ND.update();
       } else {
-        ND.setMinStrahler(parseInt(this.value));
+        ND.setMinStrahler(parseInt(this.value, 10));
       }
     };
     minStrahlerInput.onwheel = function(e) {
         if ((e.deltaX + e.deltaY) > 0) {
           if (this.value > 1) {
-            this.value = parseInt(this.value) - 1;
+            this.value = parseInt(this.value, 10) - 1;
             this.onchange();
           }
         } else {
-          this.value = parseInt(this.value) + 1;
+          this.value = parseInt(this.value, 10) + 1;
           this.onchange();
         }
 

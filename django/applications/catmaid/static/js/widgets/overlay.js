@@ -1891,9 +1891,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
       if (!node) {
         // Remove circle from node we originally attached to and cancel, if no
         // node for the given ID was found.
-        originalNode.removeSurroundingCircle(function() {
-          completionCallback(undefined);
-        });
+        originalNode.removeSurroundingCircle();
       } else {
         // Remove circle and call callback
         node.removeSurroundingCircle(function(rx, ry) {

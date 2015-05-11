@@ -1,0 +1,206 @@
+{# -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- #}
+{# vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: #}
+
+{% extends "admin/base_site.html" %}
+{% load admin_static %}
+{% load compressed %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+  <style>
+    div.container {
+      width: 50%;
+      float: left;
+    }
+    div.divider {
+      clear: both;
+    }
+    span.header {
+      font-weight: bold;
+      margin: 2px 0;
+      padding: 2px 3px;
+      vertical-align: middle;
+    }
+  </style>
+{% endblock %}
+
+{% block extrahead %}
+	{% compressed_css 'libraries' %}
+	{% compressed_js 'jquery-lib' %}
+  <script>
+  $(function() {
+    $("#source-tabs").tabs();
+    $("#target-tabs").tabs();
+
+    $(".select-all").change(function() {
+      var selected = this.checked;
+      $(this).closest('div').find('input[type=checkbox]:visible')
+        .prop('checked', selected);
+    });
+
+    $(".filterbox").keyup(function() {
+      var filter = $(this).val().toLowerCase();
+      // Get sibling list element
+      var list = $(this).closest('div').next("ul");
+      list.find("li").each(function() {
+        var val = $(this).text().trim().toLowerCase();
+        if (0 === filter.length || 0 === val.indexOf(filter)) {
+          $(this).show();
+        } else {
+          $(this).hide();
+        }
+      });
+    });
+  });
+  </script>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; Group membership helper
+  </div>
+{% endblock %}
+
+{% block content %}
+
+<h3>Group Membership Helper</h3>
+
+<p>To give one user permission to edit data created by another users, groups can
+be used: If user A is member of a group named B, user A can edit data of user B.
+For now such data includes only skeleton reconstruction data.</p>
+
+<p>This tool provides an easy way to create and revoke such group memberships
+for multiple users at once. Below you will find two columns. You can select
+groups and users on the left and give them permission to edit data of groups and
+users of the right.  Press 'Apply' if you want to save all selected changes.</p>
+
+<form method="post" id="groupmembershiphelper" action="">
+  {% csrf_token %}
+  {% if users and groups %}
+    <div class="container">
+      <label>
+      <select name="action">
+        <option value="add">Give permission to</option>
+        <option value="revoke">Revoke permission from</option>
+      </select>
+      <span class="header">the following users...</span>
+      </label>
+    </div>
+    <div class="container">
+      <label>
+      <span class="header">...to edit objects created by these users.</span>
+      </label>
+    </div>
+    <div class="divider"></div>
+    <div class="container">
+      <div id="source-tabs">
+        <ul>
+          <li><a href="#source-tabs-users">Users</a></li>
+          <li><a href="#source-tabs-groups">Groups</a></li>
+        </ul>
+        <div id="source-tabs-users">
+          <label>
+            <input type="checkbox" class="select-all" />
+            Select all
+          </label>
+          <div>
+           <input placeholder="Filter users" class="filterbox" type="text" />
+          </div>
+          <ul id="source-users">
+          {% for user in users %}
+          <li>
+            <label>
+              <input type="checkbox" name="source-users" value="{{ user.id }}"
+                id="source-user-{{ user.id }}" />
+              {{ user.username }}
+            </label>
+          </li>
+          {% endfor %}
+          </ul>
+        </div>
+        <div id="source-tabs-groups">
+          <label>
+            <input type="checkbox" class="select-all" />
+            Select all
+          </label>
+          <div>
+           <input placeholder="Filter groups" class="filterbox" type="text" />
+          </div>
+          <ul id="source-groups">
+          {% for group in groups %}
+          <li>
+            <label>
+              <input type="checkbox" name="source-groups" value="{{ group.id }}"
+                id="source-group-{{ group.id }}" />
+              {{ group.name }}
+            </label>
+          </li>
+          {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div id="target-tabs">
+        <ul>
+          <li><a href="#target-tabs-users">Users</a></li>
+          <li><a href="#target-tabs-groups">Groups</a></li>
+        </ul>
+        <div id="target-tabs-users">
+          <label>
+            <input type="checkbox" class="select-all" />
+            Select all
+          </label>
+          <div>
+           <input placeholder="Filter users" class="filterbox" type="text" />
+          </div>
+          <ul id="target-users">
+          {% for user in users %}
+          <li>
+            <label>
+              <input type="checkbox" name="target-users" value="{{ user.id }}"
+                id="target-user-{{ user.id }}" />
+              {{ user.username }}
+            </label>
+          </li>
+          {% endfor %}
+          </ul>
+        </div>
+        <div id="target-tabs-groups">
+          <label>
+            <input type="checkbox" class="select-all" />
+            Select all
+          </label>
+          <div>
+           <input placeholder="Filter groups" class="filterbox" type="text" />
+          </div>
+          <ul id="target-groups">
+          {% for group in groups %}
+          <li>
+            <label>
+              <input type="checkbox" name="target-groups" value="{{ group.id }}"
+                id="target-group-{{ group.id }}" />
+              {{ group.name }}
+            </label>
+          </li>
+          {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  {% else %}
+      <em>Couldn't find any users or groups!</em>This tool requires at least two
+      users or two groups to give some meaningful options.
+  {% endif %}
+
+  <div class="submit-row divider">
+      <p>
+      <input type="submit" value="Apply"/>
+      </p>
+  </div>
+</form>
+
+{% endblock %}
+

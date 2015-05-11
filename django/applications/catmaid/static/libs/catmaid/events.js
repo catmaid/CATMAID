@@ -30,14 +30,24 @@ var Events = {
       this.events[event].push([callback, context]);
     },
     /**
-     * Unregister a callback from an event.
+     * Unregister a callback from an event. If a context is given, the callback
+     * is only unregistered, if the context matches the context of the stored
+     * callback.
      */
-    off: function(event, callback) {
+    off: function(event, callback, context) {
       if (this.hasOwnProperty('events') && this.events.hasOwnProperty(event)) {
         var indexes = [];
         for (var i=0, l=this.events[event].length; i<l; i++) {
-          if (callback === this.events[event][i][0]) {
-            indexes.push(i);
+          var cbMatches = (callback === this.events[event][i][0]);
+          if (cbMatches) {
+            if (context) {
+              var ctxMatches = (context === this.events[event][i][1]);
+              if (cbMatches && ctxMatches) {
+                indexes.push(i);
+              }
+            } else {
+              indexes.push(i);
+            }
           }
         }
         for (var i=0, l=indexes.length; i<l; i++) {

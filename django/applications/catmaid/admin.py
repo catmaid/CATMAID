@@ -10,7 +10,8 @@ from catmaid.models import BrokenSlice, Overlay
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
-from catmaid.views import UseranalyticsView, UserProficiencyView
+from catmaid.views import UseranalyticsView, UserProficiencyView, \
+    GroupMembershipHelper
 
 
 def duplicate_action(modeladmin, request, queryset):
@@ -244,3 +245,6 @@ admin.site.register_view('userproficiency', 'User Proficiency',
 admin.site.register_view('classificationadmin',
                          'Tag Based Classification Graph Linker',
                          view=classification_admin_view)
+admin.site.register_view('groupmembershiphelper',
+                         'Group membership helper',
+                         view=GroupMembershipHelper.as_view())

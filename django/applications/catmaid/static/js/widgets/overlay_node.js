@@ -157,13 +157,14 @@ var SkeletonElements = function(paper)
     z,          // the z coordinate in oriented project coordinates
     zdiff,      // the difference in Z from the current slice in stack space
     confidence,
+    subtype,
     can_edit)   // a boolean combining (is_superuser or user owns the node)
   {
     var connector = this.cache.connectorPool.next();
     if (connector) {
-      connector.reInit(id, x, y, z, zdiff, confidence, can_edit);
+      connector.reInit(id, x, y, z, zdiff, confidence, subtype, can_edit);
     } else {
-      connector = new this.ConnectorNode(paper, id, x, y, z, zdiff, confidence, can_edit);
+      connector = new this.ConnectorNode(paper, id, x, y, z, zdiff, confidence, subtype, can_edit);
       connector.createArrow = this.createArrow;
       this.cache.connectorPool.push(connector);
     }
@@ -453,7 +454,6 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.id = null;
     this.parent = null;
     this.parent_id = null;
-    this.type = null;
     this.children = null;
     if (this.c) {
       SkeletonElements.prototype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
@@ -534,7 +534,6 @@ SkeletonElements.prototype.AbstractTreenode = function() {
    * the mouse (and a mouse-to-stack transform function).
    */
   this.drawSurroundingCircle = function(transform, onclickHandler) {
-    var self = this;
     // Create a raphael circle object that represents the surrounding circle
     var color = "rgb(255,255,0)";
     var c = this.paper.select('.nodes').append('circle')
@@ -580,23 +579,29 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     // Mark this node as currently edited
     this.surroundingCircleElements = [c, mc, label];
 
+    // Store current position of this node, just in case this instance will be
+    // re-initialized due to an update. This also means that the circle cannot
+    // be drawn while the node is changing location.
+    var nodeX = this.x;
+    var nodeY = this.y;
+
     // Update radius on mouse move
     mc.on('mousemove', function() {
       var e = d3.event;
       var r = transform({x: e.layerX, y: e.layerY});
-      r.x -= self.x;
-      r.y -= self.y;
+      r.x -= nodeX;
+      r.y -= nodeY;
       var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2));
       c.attr('r', newR);
       // Strore also x and y components
       c.datum(r);
       // Update radius measurement label.
-      labelText.attr({x: self.x + r.x + 3 * pad, y: self.y + r.y + 2 * pad});
+      labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
       labelText.text(Math.round(newR) + 'nm');
       var bbox = labelText.node().getBBox();
       labelShadow.attr({
-          x: self.x + r.x + 2 * pad,
-          y: self.y + r.y + 2 * pad - bbox.height,
+          x: nodeX + r.x + 2 * pad,
+          y: nodeY + r.y + 2 * pad - bbox.height,
           width: bbox.width + 2 * pad,
           height: bbox.height + pad});
     });
@@ -623,7 +628,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     // Get last radius components
     var r = this.surroundingCircleElements[0].datum();
     // Clean up
-    this.surroundingCircleElements.forEach(function (e) { e.remove() ;});
+    this.surroundingCircleElements.forEach(function (e) { e.remove(); });
     delete this.surroundingCircleElements;
     // Execute callback, if any, with radius in nm as argument
     if (callback) {
@@ -688,21 +693,28 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
       this.postLines.forEach(SkeletonElements.prototype.ElementPool.prototype.disableFn);
       this.postLines = null;
     }
+    if (this.undirLines) {
+      this.undirLines.forEach(SkeletonElements.prototype.ElementPool.prototype.disableFn);
+      this.undirLines = null;
+    }
   };
 
   this.obliterate = function() {
     this.paper = null;
     this.id = null;
     if (this.c) {
-      SkeletonElements.prototype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_CONNECTORNODE);
+      SkeletonElements.prototype.mouseEventManager.forget(this.c, this.type);
       this.c.remove();
     }
+    this.subtype = null;
     this.pregroup = null;
     this.postgroup = null;
+    this.undirgroup = null;
     // Note: mouse event handlers are removed by c.remove()
     this.removeConnectorArrows(); // also removes confidence text associated with edges
     this.preLines = null;
     this.postLines = null;
+    this.undirLines = null;
   };
 
   this.disable = function() {
@@ -711,9 +723,11 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
       this.c.datum(null);
       this.c.hide();
     }
+    this.subtype = null;
     this.removeConnectorArrows();
     this.pregroup = null;
     this.postgroup = null;
+    this.undirgroup = null;
   };
 
   this.colorFromZDiff = function()
@@ -772,18 +786,30 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
         }
       }
     }
+
+    for (i in this.undirgroup) {
+      if (this.undirgroup.hasOwnProperty(i)) {
+        node = this.undirgroup[i].treenode;
+        if (this.mustDrawLineWith(node)) {
+          if (!this.undirLines) this.undirLines = [];
+          this.undirLines.push(this.createArrow(this, node, this.undirgroup[i].confidence, undefined));
+        }
+      }
+    }
   };
 
-  this.reInit = function(id, x, y, z, zdiff, confidence, can_edit) {
+  this.reInit = function(id, x, y, z, zdiff, confidence, subtype, can_edit) {
     this.id = id;
     this.x = x;
     this.y = y;
     this.z = z;
     this.zdiff = zdiff;
     this.confidence = confidence;
+    this.subtype = subtype;
     this.can_edit = can_edit;
     this.pregroup = {};
     this.postgroup = {};
+    this.undirgroup = {};
     this.needsync = false;
 
     if (this.c) {
@@ -797,6 +823,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
 
     this.preLines = null;
     this.postLines = null;
+    this.undirLines = null;
   };
 };
 
@@ -810,11 +837,13 @@ SkeletonElements.prototype.ConnectorNode = function(
   z,          // the z coordinate in oriented project coordinates
   zdiff,      // the difference in Z from the current slice in stack space
   confidence, // (TODO: UNUSED)
+  subtype,    // the kind of connector node
   can_edit) // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
 {
   this.paper = paper;
   this.id = id;
   this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
+  this.subtype = subtype;
   this.needsync = false; // state variable; whether this node is already synchronized with the database
   this.x = x;
   this.y = y;
@@ -824,9 +853,11 @@ SkeletonElements.prototype.ConnectorNode = function(
   this.can_edit = can_edit;
   this.pregroup = {}; // set of presynaptic treenodes
   this.postgroup = {}; // set of postsynaptic treenodes
+  this.undirgroup = {}; // set of undirected treenodes
   this.c = null; // The SVG circle for drawing
   this.preLines = null; // Array of ArrowLine to the presynaptic nodes
   this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
+  this.undirLines = null; // Array of undirected ArraowLine
 };
 
 SkeletonElements.prototype.ConnectorNode.prototype = new SkeletonElements.prototype.AbstractConnectorNode();
@@ -877,12 +908,27 @@ SkeletonElements.prototype.mouseEventManager = new (function()
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
         if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
-          if (!mayEdit()) {
-            alert("You lack permissions to declare node #" + node.id + " as postsynaptic to connector #" + atnID);
+          var atnSubType = SkeletonAnnotations.getActiveNodeSubType();
+          if (atnSubType === SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR) {
+            if (!mayEdit()) {
+              CATMAID.error("You lack permissions to declare node #" + node.id +
+                  " as postsynaptic to connector #" + atnID);
+              return;
+            }
+            // careful, atnID is a connector
+            catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
+          } else if (atnSubType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR) {
+            if (!mayEdit()) {
+              CATMAID.error("You lack permissions to declare node #" + node.id +
+                  " as abutting against connector #" + atnID);
+              return;
+            }
+            // careful, atnID is a connector
+            catmaidSVGOverlay.createLink(node.id, atnID, "abutting");
+          } else {
+            CATMAID.error("Unknown connector subtype: " + atnSubType);
             return;
           }
-          // careful, atnID is a connector
-          catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
           // TODO check for error
           CATMAID.statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
         } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
@@ -1017,8 +1063,16 @@ SkeletonElements.prototype.mouseEventManager = new (function()
         if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
           alert("Can not join two connector nodes!");
         } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
-          var synapse_type = e.altKey ? 'post' : 'pre';
-          catmaidSVGOverlay.createLink(atnID, connectornode.id, synapse_type + "synaptic_to");
+          var linkType;
+          if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {
+            linkType = (e.altKey ? 'post' : 'pre') + "synaptic_to";
+          } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === connectornode.subtype) {
+            linkType = "abutting";
+          } else {
+            CATMAID.error("The selected connector is of unknown type: " + connectornode.subtype);
+            return;
+          }
+          catmaidSVGOverlay.createLink(atnID, connectornode.id, linkType);
           CATMAID.statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
         }
       } else {
@@ -1082,6 +1136,7 @@ SkeletonElements.prototype.ArrowLine = function(paper) {
 SkeletonElements.prototype.ArrowLine.prototype = new (function() {
   this.PRE_COLOR = "rgb(200,0,0)";
   this.POST_COLOR = "rgb(0,217,232)";
+  this.OTHER_COLOR = "rgb(0,200,0)";
   this.BASE_EDGE_WIDTH = 2;
   this.CATCH_SCALE = 3;
   this.CONFIDENCE_FONT_PT = 15;
@@ -1132,7 +1187,9 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     this.line.attr({x1: x1, y1: y1, x2: x2new, y2: y2new});
     this.catcher.attr({x1: x1, y1: y1, x2: x2new, y2: y2new});
 
-    var stroke_color = is_pre ? this.PRE_COLOR : this.POST_COLOR;
+    var stroke_color;
+    if (undefined === is_pre) stroke_color = this.OTHER_COLOR;
+    else stroke_color = is_pre ? this.PRE_COLOR : this.POST_COLOR;
 
     if (confidence < 5) {
       this.confidence_text = this.updateConfidenceText(x2, y2, x1, y1, stroke_color, confidence, this.confidence_text);
@@ -1142,9 +1199,11 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     }
 
     // Adjust
-    this.line.attr({stroke: stroke_color,
-                    'stroke-width': this.EDGE_WIDTH,
-                    'marker-end': is_pre ? 'url(#markerArrowPre)' : 'url(#markerArrowPost)'});
+    var opts = {stroke: stroke_color, 'stroke-width': this.EDGE_WIDTH };
+    if (undefined !== is_pre) {
+      opts['marker-end'] = is_pre ? 'url(#markerArrowPre)' : 'url(#markerArrowPost)';
+    }
+    this.line.attr(opts);
     this.catcher.attr({stroke: stroke_color, // Though invisible, must be set for mouse events to trigger
                        'stroke-opacity': 0,
                        'stroke-width': this.EDGE_WIDTH*this.CATCH_SCALE });

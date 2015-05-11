@@ -3,6 +3,16 @@
 
 ### Features and enhancements
 
+
+### Bug fixes
+
+
+## 2015.5.11
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+### Features and enhancements
+
 Connectivity widget:
 
 - Partner filtering now supports regular expressions when the first character
@@ -29,6 +39,55 @@ Connectivity matrix:
   gradients available to produce heat maps (i.e. color cells based on the
   actual synapse count).
 
+- Graph widget: ability to split neurons by text tag on their skeletons. It's the
+  "Tag" button under the "Subgraph" tab. Enables you to manually define regions
+  on a neuronal arbor (like axon and dendrite, or multiple dendritic domains)
+  and then have them be represented each as a node in the graph. The skeleton
+  will be virtually cut at the nodes containing the tags, with the tagged node
+  belonging to the downstream part (relative to the root node).
+
+
+3D Viewer:
+
+- Color mode "Downstream of tag" is now a shading mode.
+
+- New synapse coloring mode "Same as skeleton". If you then hide the
+  skeletons and show only the synapses you will e.g. see spatial tiling of ORN
+  axons, each defining a glomerulus in the larval olfactory lobe.
+
+- For PNG and SVG export one can now specify the dimensions of the result files.
+  A dialog shown before exporting asks for width and height.
+
+
+Neuron dendrogram:
+
+- The horizontal and vertical spacing between nodes in the neuron dendrogram can
+  now be fine tuned.
+
+
+Administration:
+
+- A new tool 'Group membership helper' has been added to add multiple users to
+  multiple groups or to revoke their group membership. This can be used to
+  control access over the data created by individual users.
+
+
+Miscellaneous:
+
+- A node-placement-and-radius-edit mode has been added. If enabled through the
+  settings widget (Tracing > "Edit radius after node creation"), the radius for
+  a node will be edited immediately after it has been created. This allows for
+  easier volumetric reconstruction. In this mode, the radius circle editing tool
+  is used to specify the radius. No dialog is shown once a radius is selected for
+  a node and it will only be saved for the new node.
+
+- A new connector type ("abutting") can now be created. In contrast to the
+  regular synaptic connector, it can be used to represent the fact that two or
+  more neurons are in abutting processes. For now this mode can be activated
+  through the settings widget (Tracing > "Create abutting connectors"). For
+  abutting connectors the lines representing the links to nodes will appear in a
+  green color.
+
 
 ### Bug fixes
 
@@ -38,6 +97,22 @@ Connectivity matrix:
   errors that were displayed on the console (and therefore not visible to most
   users) and caused minor performance problems. This has been fixed and all data
   should now be added and removed correctly.
+
+- Following the active node should now work much more reliable. Before, it could
+  happen that this stopped working after a second 3D viewer was closed.
+
+
+Connectivity widget:
+
+- Fix one cause of sluggish behavior for widgets that have been modified many
+  times. Also fixes repeated alert dialogs when clicking a neuron in the
+  partner tables that no longer exists or does not have any treenodes.
+
+
+Neuron Navigator:
+
+- Don't show an error if an invalid regular expression was entered for
+  searching. Instead, color the search box red and show a warning message.
 
 
 ## 2015.3.31

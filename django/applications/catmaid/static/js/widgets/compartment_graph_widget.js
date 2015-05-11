@@ -66,6 +66,11 @@ var GroupGraph = function() {
   // * SUBGRAPH_AXON_BACKBONE_TERMINALS
   // * a number larger than zero (bandwidth value for synapse clustering)
   this.subgraphs = {};
+
+  // Remember "Split at tag" dialog choices
+  this.tag_text = '';
+  this.tag_title_root = '';
+  this.tag_title_others = '';
 };
 
 GroupGraph.prototype = {};
@@ -74,6 +79,7 @@ $.extend(GroupGraph.prototype, new CATMAID.SkeletonSource());
 
 GroupGraph.prototype.SUBGRAPH_AXON_DENDRITE =  -1;
 GroupGraph.prototype.SUBGRAPH_AXON_BACKBONE_TERMINALS = -2;
+GroupGraph.prototype.SUBGRAPH_SPLIT_AT_TAG = -3;
 
 GroupGraph.prototype.getName = function() {
   return "Graph " + this.widgetID;
@@ -604,7 +610,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
     fetchSkeletons(
         subgraph_skids,
         (function(skid) {
-          var with_tags = (this.subgraphs[skid] === this.SUBGRAPH_AXON_BACKBONE_TERMINALS ? 1 : 0);
+          var mode = this.subgraphs[skid],
+              with_tags = (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS || mode === this.SUBGRAPH_SPLIT_AT_TAG ? 1 : 0);
           return django_url + project.id + '/' + skid + '/1/1/' + with_tags + '/compact-arbor';
         }).bind(this),
         function(skid) { return {}; },
@@ -767,6 +774,55 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
                                     source: graph[i-1].data.id,
                                     target: graph[i].data.id,
                                     weight: 10}});
+      }
+    } else if (mode === this.SUBGRAPH_SPLIT_AT_TAG) {
+      var cuts = m[2][this.tag_text];
+      if (cuts && cuts.length > 0) {
+        var arbors = ap.arbor.split(cuts.reduce(function(o, node) { o[node] = true; return o; }, {})),
+            keepers = {};
+        // Find the arbor containing the root node
+        var first;
+        for (var i=0; i<arbors.length; ++i) {
+          if (arbors[i].contains(ap.arbor.root)) {
+            first = arbors[i];
+            break;
+          }
+        }
+        // Create node for part of the arbor containing the root node
+        var first_node = createNode(skid + '_first', name + ' [' + this.tag_title_root + ']');
+        keepers[first.root] = first_node.data.id;
+        parts[first_node.data.id] = function(treenodeID) { return first.contains(treenodeID); };
+        subnodes[first_node.data.id] = first_node;
+        // Create a node for the rest of parts
+        var two = 2 === arbors.length;
+        for (var i=0, k=1; i<arbors.length; ++i, ++k) {
+          if (first === arbors[i]) continue;
+          var next = createNode(skid + '_other' + (two ? '' : k),
+                                name + ' [' + this.tag_title_others + (two ? '' : ' ' + k) + ']');
+          parts[next.data.id] = (function(treenodeID) { return this.contains(treenodeID); }).bind(arbors[i]);
+          subnodes[next.data.id] = next;
+          keepers[arbors[i].root] = next.data.id;
+        }
+
+        // Add undirected edges
+        var simple = ap.arbor.simplify(keepers);
+
+        simple.nodesArray().forEach(function(node) {
+          var paren = simple.edges[node];
+          if (!paren) return; // root
+          var source_id = keepers[paren],
+              target_id = keepers[node];
+          elements.edges.push({data: {directed: false,
+                                      arrow: 'none',
+                                      id: source_id + '_' + target_id,
+                                      color: common.color,
+                                      source: source_id,
+                                      target: target_id,
+                                      weight: 10}});
+        });
+
+      } else {
+        growlAlert("Information", "No subgraph possible for '" + name + "' and tag '" + this.tag.regex + "'");
       }
     } else if (mode > 0) {
       // Synapse clustering: mode is the bandwidth
@@ -2652,6 +2708,21 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
       console.log(e);
     }
   }
+};
+
+GroupGraph.prototype.splitByTag = function() {
+  if (0 === this.getSelectedSkeletons().length) return this.split(); // will show growlAlert
+  var dialog = new OptionsDialog("Split at tag"),
+      input = dialog.appendField("Tag (exact match): ", "tag_text", this.tag_text),
+      first = dialog.appendField("Part with root node: ", "root_text", this.tag_title_root),
+      rest = dialog.appendField("Other(s): ", "other_text", this.tag_title_others);
+  dialog.onOK = (function() {
+    this.tag_text = input.value;
+    this.tag_title_root = first.value;
+    this.tag_title_others = rest.value;
+    this.split(this.SUBGRAPH_SPLIT_AT_TAG);
+  }).bind(this);
+  dialog.show(300, 300, true);
 };
 
 GroupGraph.prototype.unsplit = function() {

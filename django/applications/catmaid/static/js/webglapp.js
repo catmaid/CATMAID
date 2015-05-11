@@ -69,7 +69,7 @@ WebGLApplication.prototype.getName = function() {
 
 WebGLApplication.prototype.destroy = function() {
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-      this.staticUpdateActiveNodePosition);
+      this.staticUpdateActiveNodePosition, this);
   this.unregisterInstance();
   this.unregisterSource();
   this.space.destroy();
@@ -160,53 +160,111 @@ WebGLApplication.prototype.fullscreenWebGL = function() {
 
 
 /**
+ * Show a dialog to ask the user for image dimensions, resize the view to the
+ * new dimensions,execute the given function and return to the original
+ * dimension afterwards.
+ */
+WebGLApplication.prototype.askForDimensions = function(title, fn) {
+  var dialog = new OptionsDialog(title);
+  dialog.appendMessage("Please adjust the dimensions to your liking. They " +
+      "default to the current size of the 3D viewer");
+  var imageWidthField = dialog.appendField("Image width (px): ",
+      "image-width", this.space.canvasWidth);
+  var imageHeightField = dialog.appendField("Image height (px): ",
+      "image-height", this.space.canvasHeight);
+
+  dialog.onOK = handleOK.bind(this);
+  dialog.show(350, "auto", true);
+
+  function handleOK() {
+    /* jshint validthis: true */ // `this` is bound to this WebGLApplication
+    $.blockUI();
+
+    var originalWidth, originalHeight;
+    try {
+      var width = parseInt(imageWidthField.value);
+      var height = parseInt(imageHeightField.value);
+
+      if (!width || !height) {
+        throw new CATMAID.ValueError("Please use valid width and height values");
+      }
+
+      // Save current dimensions and set new ones, if available
+      if (width !== this.space.canvasWidth || height !== this.space.canvasHeight) {
+        originalWidth = this.space.canvasWidth;
+        originalHeight = this.space.canvasHeight;
+        this.resizeView(width, height);
+      } else {
+        this.space.render();
+      }
+
+      // Call passed in function
+      if (CATMAID.tools.isFn(fn)) fn();
+    } catch (e) {
+      CATMAID.error("An error occurred", e);
+    }
+
+    // Restore original dimensions
+    if (originalWidth && originalHeight) {
+      this.resizeView(originalWidth, originalHeight);
+    }
+
+    $.unblockUI();
+  }
+};
+
+
+/**
  * Store the current view as PNG image.
  */
 WebGLApplication.prototype.exportPNG = function() {
-  this.space.render();
-  try {
-    var imageData = this.space.view.getImageData();
-    var blob = CATMAID.tools.dataURItoBlob(imageData);
-    growlAlert("Information", "The exported PNG will have a transparent background");
-    saveAs(blob, "catmaid_3d_view.png");
-  } catch (e) {
-    CATMAID.error("Could not export current 3D view, there was an error.", e);
-  }
+  this.askForDimensions("PNG export", (function() {
+    try {
+      /* jshint validthis: true */ // `this` is bound to this WebGLApplication
+      var imageData = this.space.view.getImageData();
+      var blob = CATMAID.tools.dataURItoBlob(imageData);
+      CATMAID.info("The exported PNG will have a transparent background");
+      saveAs(blob, "catmaid_3d_view.png");
+    } catch(e) {
+      CATMAID.error("Could not export current 3D view, there was an error.", e);
+    }
+  }).bind(this));
 };
 
 /**
  * Store the current view as SVG image.
  */
 WebGLApplication.prototype.exportSVG = function() {
-  $.blockUI();
-  try {
-    var svg = this.space.view.getSVGData();
-    CATMAID.svgutil.reduceCoordinatePrecision(svg, 1);
-    CATMAID.svgutil.stripStyleProperties(svg, {
-      'fill': 'none',
-      'stroke-opacity': 1,
-      'stroke-linejoin': undefined
-    });
-    CATMAID.svgutil.reduceStylePrecision(svg, 1);
+  this.askForDimensions("SVG export", (function() {
+    try {
+      /* jshint validthis: true */ // `this` is bound to this WebGLApplication
+      var svg = this.space.view.getSVGData();
+      CATMAID.svgutil.reduceCoordinatePrecision(svg, 1);
+      CATMAID.svgutil.stripStyleProperties(svg, {
+        'fill': 'none',
+        'stroke-opacity': 1,
+        'stroke-linejoin': undefined
+      });
+      CATMAID.svgutil.reduceStylePrecision(svg, 1);
 
-    var styleDict = CATMAID.svgutil.classifyStyles(svg);
+      var styleDict = CATMAID.svgutil.classifyStyles(svg);
 
-    var styles = Object.keys(styleDict).reduce(function(o, s) {
-      var cls = styleDict[s];
-      o = o + "." + cls + "{" + s + "}";
-      return o;
-    }, "");
+      var styles = Object.keys(styleDict).reduce(function(o, s) {
+        var cls = styleDict[s];
+        o = o + "." + cls + "{" + s + "}";
+        return o;
+      }, "");
 
-    var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
-    CATMAID.svgutil.addStyles(xml, styles);
+      var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+      CATMAID.svgutil.addStyles(xml, styles);
 
-    var data = new XMLSerializer().serializeToString(xml);
-    var blob = new Blob([data], {type: 'text/svg'});
-    saveAs(blob, "catmaid-3d-view.svg");
-  } catch (e) {
-    CATMAID.error("Could not export current 3D view, there was an error.", e);
-  }
-  $.unblockUI();
+      var data = new XMLSerializer().serializeToString(xml);
+      var blob = new Blob([data], {type: 'text/svg'});
+      saveAs(blob, "catmaid-3d-view.svg");
+    } catch (e) {
+      CATMAID.error("Could not export current 3D view, there was an error.", e);
+    }
+  }).bind(this));
 };
 
 /**
@@ -627,23 +685,6 @@ WebGLApplication.prototype.staticUpdateZPlane = function() {
 
 /** Receives an extra argument (an event) which is ignored. */
 WebGLApplication.prototype.updateColorMethod = function(colorMenu) {
-  if ('downstream-of-tag' === colorMenu.value) {
-    var dialog = new OptionsDialog("Type in tag");
-    dialog.appendMessage("Nodes downstream of tag: magenta.\nNodes upstream of tag: dark grey.");
-    var input = dialog.appendField("Tag (regex): ", "tag_text", this.options.tag_regex);
-    dialog.onOK = (function() {
-      this.options.tag_regex = input.value;
-      this.options.color_method = colorMenu.value;
-      this.updateSkeletonColors();
-    }).bind(this);
-    dialog.onCancel = function() {
-      // Reset to default (can't know easily what was selected before).
-      colorMenu.selectedIndex = 0;
-    };
-    dialog.show();
-    return;
-  }
-
   this.options.color_method = colorMenu.value;
   this.updateSkeletonColors();
 };
@@ -3056,14 +3097,20 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           }, node_weights);
         }
       }
+    } else if ('downstream-of-tag' === options.shading_method) {
+      node_weights = {};
+      var upstream = this.createUpstreamArbor(options.tag_regex, arbor);
+      arbor.nodesArray().forEach(function(node) {
+        this[node] = upstream.contains(node) ? 0 : 1;
+      }, node_weights);
     }
   }
 
   if (options.invert_shading && node_weights) {
     // All weights are values between 0 and 1
     Object.keys(node_weights).forEach(function(node) {
-      node_weights[node] = 1 - node_weights[node];
-    });
+      this[node] = 1 - this[node];
+    }, node_weights);
   }
 
   if (node_weights || 'none' !== options.color_method) {
@@ -3112,11 +3159,6 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         return this.contains(vertex.node_id) ? axonColor : dendriteColor;
       }).bind(this.axon)
         : function() { return notComputable; };
-    } else if ('downstream-of-tag' === options.color_method) {
-      var upstream = this.createUpstreamArbor(options.tag_regex, arbor);
-      pickColor = function(vertex) {
-        return upstream.contains(vertex.node_id) ? unreviewedColor : actorColor;
-      };
     } else {
       pickColor = function() { return actorColor; };
     }
@@ -3294,6 +3336,15 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
           if (callback) callback();
           this.render();
         }).bind(this));
+  } else if ('skeleton' === options.connector_color) {
+    skeletons.forEach(function(skeleton) {
+      var fnConnectorValue = function() { return 0; },
+          fnMakeColor = function() { return skeleton.skeletonmodel.color; };
+      skeleton.synapticTypes.forEach(function(type) {
+        skeleton._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
+      });
+    });
+    if (callback) callback();
   }
 };
 
@@ -3997,9 +4048,14 @@ WebGLApplication.prototype.updateShadingParameter = function(param, value, shadi
     console.log("Invalid options parameter: ", param);
     return;
   }
-  value = this._validate(value, "Invalid value");
-  if (!value || value === this.options[param]) return;
-  this.options[param] = value;
+  if (shading_method === 'downstream-of-tag') {
+    this.options[param] = value;
+  } else {
+    // Numerical only
+    value = this._validate(value, "Invalid value");
+    if (!value || value === this.options[param]) return;
+    this.options[param] = value;
+  }
   if (shading_method === this.options.shading_method) {
     this.updateSkeletonColors();
   }

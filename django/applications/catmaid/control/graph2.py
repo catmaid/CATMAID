@@ -13,6 +13,7 @@ from django.http import HttpResponse
 
 from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.tree_util import simplify
 
 def basic_graph(project_id, skeleton_ids):
@@ -21,13 +22,7 @@ def basic_graph(project_id, skeleton_ids):
 
     cursor = connection.cursor()
 
-    cursor.execute('''
-    SELECT relation_name, id
-    FROM relation
-    WHERE project_id = %s
-      AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')
-    ''' % int(project_id))
-    relations = dict(cursor.fetchall())
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     preID, postID = relations['presynaptic_to'], relations['postsynaptic_to']
 
     cursor.execute('''
@@ -35,7 +30,9 @@ def basic_graph(project_id, skeleton_ids):
     FROM treenode_connector tc
     WHERE tc.project_id = %s
       AND tc.skeleton_id IN (%s)
-    ''' % (int(project_id), ",".join(str(int(skid)) for skid in skeleton_ids)))
+      AND (tc.relation_id = %s OR tc.relation_id = %s)
+    ''' % (int(project_id), ",".join(str(int(skid)) for skid in skeleton_ids),
+           preID, postID))
 
     # stores entire query set in memory, linking pre and post
     connectors = defaultdict(partial(defaultdict, list))
@@ -83,13 +80,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
     cursor = connection.cursor()
     skids = ",".join(str(int(skid)) for skid in skeleton_ids)
 
-    cursor.execute('''
-    SELECT relation_name, id
-    FROM relation
-    WHERE project_id = %s
-      AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')
-    ''' % int(project_id))
-    relations = dict(cursor.fetchall())
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     preID, postID = relations['presynaptic_to'], relations['postsynaptic_to']
 
     # Fetch synapses of all skeletons
@@ -98,7 +89,8 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
     FROM treenode_connector
     WHERE project_id = %s
       AND skeleton_id IN (%s)
-    ''' % (int(project_id), skids))
+      AND (relation_id = %s OR relation_id = %s)
+    ''' % (int(project_id), skids, preID, postID))
 
     stc = defaultdict(list)
     for row in cursor.fetchall():
@@ -165,13 +157,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
     skids = ",".join(str(int(skid)) for skid in skeleton_ids)
 
-    cursor.execute('''
-    SELECT relation_name, id
-    FROM relation
-    WHERE project_id = %s
-      AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')
-    ''' % int(project_id))
-    relations = dict(cursor.fetchall())
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     preID, postID = relations['presynaptic_to'], relations['postsynaptic_to']
 
     # Fetch synapses of all skeletons
@@ -180,7 +166,9 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
     FROM treenode_connector
     WHERE project_id = %s
       AND skeleton_id IN (%s)
-    ''' % (int(project_id), ",".join(str(int(skid)) for skid in skeleton_ids)))
+      AND relation_id IN (%s,%s)
+    ''' % (int(project_id), ",".join(str(int(skid)) for skid in skeleton_ids),
+           preID, postID))
 
     stc = defaultdict(list)
     for row in cursor.fetchall():

@@ -44,6 +44,22 @@ def create_link(request, project_id=None):
         if (presyn_links.count() != 0):
             return HttpResponse(json.dumps({'error': 'Connector %s does not have zero presynaptic connections.' % to_id}))
 
+    # The object returned in case of success
+    result = {}
+
+    if link_type == 'postsynaptic_to':
+        # Warn if there is already a link from the source skeleton to the
+        # target skeleton. This can happen and is not necessarely wrong, but
+        # worth to double check, because it is likely a mistake.
+        post_links_to_skeleton = TreenodeConnector.objects.filter(project=project,
+            connector=to_connector, relation=relation, skeleton_id=from_treenode.skeleton_id).count()
+        if post_links_to_skeleton == 1:
+            result['warning'] = 'There is already one post-synaptic ' \
+                'connection to the target skeleton'
+        elif post_links_to_skeleton > 1:
+            result['warning'] = 'There are already %s post-synaptic ' \
+                'connections to the target skeleton' % post_links_to_skeleton
+
     TreenodeConnector(
         user=request.user,
         project=project,
@@ -53,7 +69,8 @@ def create_link(request, project_id=None):
         connector=to_connector  # connector_id = to_id
     ).save()
 
-    return HttpResponse(json.dumps({'message': 'success'}), content_type='text/json')
+    result['message'] = 'success'
+    return HttpResponse(json.dumps(result), content_type='text/json')
 
 
 @requires_user_role(UserRole.Annotate)

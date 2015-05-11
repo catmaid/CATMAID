@@ -16,6 +16,7 @@ from django.http import HttpResponse
 
 from catmaid.models import Relation, UserRole
 from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.review import get_treenodes_to_reviews
 from catmaid.control.tree_util import simplify, find_root, reroot, partition, \
         spanning_tree, cable_length
@@ -137,14 +138,13 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
     arbors = split_by_confidence_and_add_edges(confidence_threshold, arbors, rows)
 
     # Fetch all synapses
-    relations = {'presynaptic_to': -1, 'postsynaptic_to': -1}
-    for r in Relation.objects.filter(relation_name__in=('presynaptic_to', 'postsynaptic_to'), project_id=project_id).values_list('relation_name', 'id'):
-        relations[r[0]] = r[1]
+    relations = get_relation_to_id_map(project_id, cursor=cursor)
     cursor.execute('''
     SELECT connector_id, relation_id, treenode_id, skeleton_id
     FROM treenode_connector
     WHERE skeleton_id IN (%s)
-    ''' % skeletons_string)
+      AND (relation_id = %s OR relation_id = %s)
+    ''' % (skeletons_string, relations['presynaptic_to'], relations['postsynaptic_to']))
     connectors = defaultdict(partial(defaultdict, list))
     skeleton_synapses = defaultdict(partial(defaultdict, list))
     for row in cursor.fetchall():
@@ -172,13 +172,11 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
     cursor.execute('''
     SELECT cici.class_instance_a, ci.name
     FROM class_instance ci,
-         class_instance_class_instance cici,
-         relation r
+         class_instance_class_instance cici
     WHERE cici.class_instance_a IN (%s)
       AND cici.class_instance_b = ci.id
-      AND cici.relation_id = r.id
-      AND r.relation_name = 'model_of'
-    ''' % skeletons_string)
+      AND cici.relation_id = %s
+    ''' % (skeletons_string, relations['model_of']))
     names = dict(cursor.fetchall())
 
     # A DiGraph representing the connections between the arbors (every node is an arbor)

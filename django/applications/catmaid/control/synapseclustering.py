@@ -4,6 +4,7 @@ from numpy.linalg import norm
 import networkx as nx
 from collections import namedtuple
 
+from catmaid.control.common import get_relation_to_id_map
 from catmaid.models import Treenode, TreenodeConnector, ClassInstance, Relation
 
 
@@ -16,7 +17,7 @@ def synapse_clustering( skeleton_id, h_list ):
 
     Gwud = createSpatialGraphFromSkeletonID( skeleton_id )
     synNodes, connector_ids, relations = synapseNodesFromSkeletonID( skeleton_id )
-    
+
     return tree_max_density(Gwud, synNodes, connector_ids, relations, h_list)
 
 
@@ -29,45 +30,45 @@ def tree_max_density(Gwud, synNodes, connector_ids, relations, h_list):
     """
 
     D, id2index = distanceMatrix( Gwud, synNodes )
-    
+
     SynapseGroup = namedtuple("SynapseGroup", ['node_ids', 'connector_ids', 'relations', 'local_max'])
     synapseGroups = {}
 
     for h in h_list:
         expDh = np.exp(-1 * np.multiply(D, D) / (h * h) )
-    
+
         targLoc = {}            # targLocs hosts the final destination nodes of the hill climbing
         densityField = {}            # densityField stores the height of the hill to be climbed
         for startNode in synNodes:
-            if startNode not in targLoc:    
+            if startNode not in targLoc:
                 currNode = startNode
                 allOnPath = []
-                
+
                 if startNode not in densityField:
                     densityField[startNode] = 0
                     densityField[startNode] = np.sum(expDh[:,id2index[startNode]])
-    
+
                 while True:
                     allOnPath.append(currNode)
-    
+
                     #Make sure I have densityField of all neighbors for comparison
                     if currNode in targLoc:
                         currNode = targLoc[ currNode ] # Jump right to the end already.
                         break
-                    
-                    for nn in Gwud.neighbors( currNode ): 
+
+                    for nn in Gwud.neighbors( currNode ):
                         if nn not in densityField:
                             densityField[nn] = 0
                             densityField[nn] = np.sum(expDh[:,id2index[nn]])
-                    
+
                     prevNode = currNode
                     for nn in Gwud.neighbors( currNode ):
                         if densityField[nn] > densityField[currNode]:
                             currNode = nn
-                                                    
+
                     if currNode == prevNode:
                         break
-                            
+
                 for node in allOnPath:
                     targLoc[node] = currNode
 
@@ -79,7 +80,7 @@ def tree_max_density(Gwud, synNodes, connector_ids, relations, h_list):
         for ind, val in enumerate(uniqueTargs):
             loc2group[val] = ind
             synapseGroups[h][ind] = SynapseGroup([], [], [], val)
-        
+
         for ind, node in enumerate(synNodes):
             gi = loc2group[targLoc[node]]
             synapseGroups[h][ gi ].node_ids.append( node )
@@ -110,7 +111,7 @@ def countTargets( skeleton_id ):
         if relations[i] == PRE:
             nTargets[cid] = TreenodeConnector.objects.filter(connector_id=cid,relation_id=PRE).count()
     return nTargets
-    
+
 def createSpatialGraphFromSkeletonID(sid):
     # retrieve all nodes of the skeleton
     treenode_qs = Treenode.objects.filter(skeleton_id=sid).values_list(
@@ -129,10 +130,12 @@ def createSpatialGraphFromSkeletonID(sid):
 def synapseNodesFromSkeletonID(sid):
     sk = ClassInstance.objects.get(pk=sid)
     pid = sk.project_id
-    
+    relations = get_relation_to_id_map(pid, ('presynaptic_to', 'postsynaptic_to'))
+
     qs_tc = TreenodeConnector.objects.filter(
         project=pid,
-        skeleton=sid
+        skeleton=sid,
+        relation__in=(relations['presynaptic_to'], relations['postsynaptic_to'])
     ).select_related('connector')
 
     synapse_nodes = []
@@ -150,7 +153,7 @@ def segregationIndex( synapseGroups, skeleton_id, weightOutputs=True ):
     ngrp = np.zeros(len(synapseGroups))
 
     PRE = Relation.objects.get(project=pid, relation_name='presynaptic_to').value_list('id')[0]
-    
+
     if weightOutputs:
         nTargets = countTargets( skeleton_id )
         for group in synapseGroups.values():
@@ -168,12 +171,12 @@ def segregationIndex( synapseGroups, skeleton_id, weightOutputs=True ):
             ngrp[group] = len(group.relations)
 
     frac = np.divide(nout,ngrp)
-    
+
     np.seterr(all='ignore')
     h_partial = ngrp * (frac * np.log( frac ) + (1-frac) * np.log( 1 - frac ))
     h_partial[np.isnan(h_partial)] = 0
     frac_unseg = sum(nout)/sum(ngrp)
     h_unseg = sum( ngrp) * ( frac_unseg*np.log(frac_unseg) + (1-frac_unseg)*np.log(1-frac_unseg) )
     return 1 - sum(h_partial)/h_unseg
- 
+
 

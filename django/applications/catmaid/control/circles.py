@@ -12,8 +12,10 @@ from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.skeleton import _neuronnames
 
-def _next_circle(skeleton_set, cursor):
+def _next_circle(skeleton_set, relations, cursor):
     """ Return a dictionary of skeleton IDs in the skeleton_set vs a dictionary of connected skeletons vs how many connections."""
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
     cursor.execute('''
     SELECT tc1.skeleton_id, tc1.relation_id, tc2.skeleton_id
     FROM treenode_connector tc1,
@@ -22,7 +24,9 @@ def _next_circle(skeleton_set, cursor):
       AND tc1.connector_id = tc2.connector_id
       AND tc1.skeleton_id != tc2.skeleton_id
       AND tc1.relation_id != tc2.relation_id
-    ''' % ','.join(map(str, skeleton_set)))
+      AND (tc1.relation_id = %s OR tc1.relation_id = %s)
+      AND (tc2.relation_id = %s OR tc2.relation_id = %s)
+    ''' % (','.join(map(str, skeleton_set)), pre, post, pre, post))
     connections = defaultdict(partial(defaultdict, partial(defaultdict, int)))
     for row in cursor.fetchall():
         connections[row[0]][row[1]][row[2]] += 1
@@ -62,15 +66,17 @@ def circles_of_hell(request, project_id=None):
         raise Exception("No skeletons were provided.")
 
     cursor = connection.cursor()
-    mins, _ = _clean_mins(request, cursor, int(project_id))
+    mins, relations = _clean_mins(request, cursor, int(project_id))
 
     current_circle = first_circle
     all_circles = first_circle
 
     while n_circles > 0 and current_circle:
         n_circles -= 1
-        connections = _next_circle(current_circle, cursor)
-        next_circle = set(skID for c in connections.itervalues() for relationID, cs in c.iteritems() for skID, count in cs.iteritems() if count >= mins[relationID])
+        connections = _next_circle(current_circle, relations, cursor)
+        next_circle = set(skID for c in connections.itervalues() \
+                          for relationID, cs in c.iteritems() \
+                          for skID, count in cs.iteritems() if count >= mins[relationID])
         current_circle = next_circle - all_circles
         all_circles = all_circles.union(next_circle)
 
@@ -102,7 +108,7 @@ def find_directed_paths(request, project_id=None):
     # Create a graph by growing the sources
     while length > 0 and next_sources:
         length -= 1
-        next_circles = _next_circle(next_sources, cursor)
+        next_circles = _next_circle(next_sources, relations, cursor)
         next_sources = set()
         for skid1, c in next_circles.iteritems():
             for relationID, targets in c.iteritems():

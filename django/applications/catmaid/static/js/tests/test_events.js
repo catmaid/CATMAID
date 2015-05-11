@@ -86,5 +86,36 @@ QUnit.test('Event system test', function( assert ) {
   // Test if extension of an object returns the object
   var obj3 = {};
   assert.strictEqual(Events.extend(obj3), obj3);
+
+  // Test if context is ignored  on removal, if not passed
+  (function() {
+    var e = Events.Event;
+    var wasExecuted = false;
+    var handler = function() { wasExecuted = true; };
+    var o1 = {}, o2 = {};
+    e.on('foo', handler, o1);
+    e.on('foo', handler, o2);
+    e.off('foo', handler);
+    e.trigger('foo');
+    assert.strictEqual(wasExecuted, false, 'remove all listeners for callback, ' +
+        'if context is not passed');
+  })();
+
+  // Test if context is respected on removal, if passed
+  (function() {
+    var e = Events.Event;
+    var wasExecuted = false;
+    var executionContext;
+    var handler = function() { wasExecuted = true; executionContext = this; };
+    var o1 = {}, o2 = {};
+    e.on('foo', handler, o1);
+    e.on('foo', handler, o2);
+    e.off('foo', handler, o1);
+    e.trigger('foo');
+    assert.strictEqual(wasExecuted, true, 'remove only listeners for a given ' +
+        'if a context is passed for removal 1');
+    assert.strictEqual(executionContext, o2, 'remove only listeners for a given ' +
+        'if a context is passed for removal 2');
+  })();
 });
 

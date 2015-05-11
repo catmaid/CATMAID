@@ -17,6 +17,8 @@
     // Sorting indices for row and columns, default to name
     this.rowSorting = 1;
     this.colSorting = 1;
+    // Rotate column headers by 90 degree
+    this.rotateColumnHeaders = false;
   };
 
   ConnectivityMatrixWidget.prototype = {};
@@ -60,19 +62,31 @@
        * Create widget controls.
        */
       createControls: function(controls) {
+        var titles = document.createElement('ul');
+        controls.appendChild(titles);
+        var tabs = ['Main', 'Display'].reduce((function(o, name) {
+          var id = name.replace(/ /, '') + this.widgetID;
+          titles.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
+          var div = document.createElement('div');
+          div.setAttribute('id', id);
+          controls.appendChild(div);
+          o[name] = div;
+          return o;
+        }).bind(this), {});
+
         // Create hidden select elements for row and column sources
         var rowSelect = CATMAID.skeletonListSources.createSelect(this.rowDimension);
         rowSelect.style.display = 'none';
-        controls.appendChild(rowSelect);
+        tabs['Main'].appendChild(rowSelect);
         var colSelect = CATMAID.skeletonListSources.createSelect(this.colDimension);
         colSelect.style.display = 'none';
-        controls.appendChild(colSelect);
+        tabs['Main'].appendChild(colSelect);
 
         // This UI combines two skeleton source selects into one.
-        controls.appendChild(document.createTextNode('From'));
+        tabs['Main'].appendChild(document.createTextNode('From'));
         var sourceSelect = CATMAID.skeletonListSources.createSelect(this,
            [this.rowDimension.getName(), this.colDimension.getName()]);
-        controls.appendChild(sourceSelect);
+        tabs['Main'].appendChild(sourceSelect);
         sourceSelect.onchange = function() {
           rowSelect.value = this.value;
           colSelect.value = this.value;
@@ -113,25 +127,25 @@
         var asGroup = document.createElement('label');
         asGroup.appendChild(asGroupCb);
         asGroup.appendChild(document.createTextNode('As group'));
-        controls.appendChild(asGroup);
+        tabs['Main'].appendChild(asGroup);
 
         var loadRows = document.createElement('input');
         loadRows.setAttribute("type", "button");
         loadRows.setAttribute("value", "Append presynaptic neurons");
         loadRows.onclick = loadWith.bind(this, true, false);
-        controls.appendChild(loadRows);
+        tabs['Main'].appendChild(loadRows);
 
         var loadColumns = document.createElement('input');
         loadColumns.setAttribute("type", "button");
         loadColumns.setAttribute("value", "Append postsynaptic neurons");
         loadColumns.onclick = loadWith.bind(this, false, true);
-        controls.appendChild(loadColumns);
+        tabs['Main'].appendChild(loadColumns);
 
         var loadAll = document.createElement('input');
         loadAll.setAttribute("type", "button");
         loadAll.setAttribute("value", "Append to both");
         loadAll.onclick = loadWith.bind(this, true, true);
-        controls.appendChild(loadAll);
+        tabs['Main'].appendChild(loadAll);
 
         var clear = document.createElement('input');
         clear.setAttribute("type", "button");
@@ -141,7 +155,20 @@
             this.clear();
           }
         }).bind(this);
-        controls.appendChild(clear);
+        tabs['Main'].appendChild(clear);
+
+        var update = document.createElement('input');
+        update.setAttribute("type", "button");
+        update.setAttribute("value", "Refresh");
+        update.onclick = this.update.bind(this);
+        tabs['Main'].appendChild(update);
+
+        var openSwapped = document.createElement('input');
+        openSwapped.setAttribute("type", "button");
+        openSwapped.setAttribute("value", "Clone swapped");
+        openSwapped.setAttribute("title", "Open a copy of this matrix with rows and columns swapped");
+        openSwapped.onclick = this.cloneWidget.bind(this, true);
+        tabs['Main'].appendChild(openSwapped);
 
         var max = 20;
         var synapseThresholdSelect = document.createElement('select');
@@ -156,7 +183,13 @@
         var synapseThreshold = document.createElement('label');
         synapseThreshold.appendChild(document.createTextNode('Syn. threshold'));
         synapseThreshold.appendChild(synapseThresholdSelect);
-        controls.appendChild(synapseThreshold);
+        tabs['Main'].appendChild(synapseThreshold);
+
+        var exportCSV = document.createElement('input');
+        exportCSV.setAttribute("type", "button");
+        exportCSV.setAttribute("value", "Export CSV");
+        exportCSV.onclick = this.exportCSV.bind(this);
+        tabs['Main'].appendChild(exportCSV);
 
         var sortOptionNames = sortOptions.map(function(o) {
           return o.name;
@@ -174,7 +207,7 @@
         var postColor = document.createElement('label');
         postColor.appendChild(document.createTextNode('Sort rows by'));
         postColor.appendChild(sortRowsSelect);
-        controls.appendChild(postColor);
+        tabs['Display'].appendChild(postColor);
 
         var sortColsSelect = document.createElement('select');
         for (var i=0; i < sortOptionNames.length; ++i) {
@@ -189,7 +222,7 @@
         var postColor = document.createElement('label');
         postColor.appendChild(document.createTextNode('Sort columns by'));
         postColor.appendChild(sortColsSelect);
-        controls.appendChild(postColor);
+        tabs['Display'].appendChild(postColor);
 
         var colorSelect = document.createElement('select');
         for (var i=0; i < colorOptions.length; ++i) {
@@ -204,19 +237,21 @@
         var color = document.createElement('label');
         color.appendChild(document.createTextNode('Color'));
         color.appendChild(colorSelect);
-        controls.appendChild(color);
+        tabs['Display'].appendChild(color);
 
-        var update = document.createElement('input');
-        update.setAttribute("type", "button");
-        update.setAttribute("value", "Refresh");
-        update.onclick = this.update.bind(this);
-        controls.appendChild(update);
+        var rotateColsCb = document.createElement('input');
+        rotateColsCb.setAttribute('type', 'checkbox');
+        rotateColsCb.checked = this.rotateColumnHeaders;
+        rotateColsCb.onclick = (function(e) {
+          this.rotateColumnHeaders = e.target.checked;
+          this.refresh();
+        }).bind(this);
+        var rotateCols = document.createElement('label');
+        rotateCols.appendChild(rotateColsCb);
+        rotateCols.appendChild(document.createTextNode('Column header 90°'));
+        tabs['Display'].appendChild(rotateCols);
 
-        var exportCSV = document.createElement('input');
-        exportCSV.setAttribute("type", "button");
-        exportCSV.setAttribute("value", "Export CSV");
-        exportCSV.onclick = this.exportCSV.bind(this);
-        controls.appendChild(exportCSV);
+        $(controls).tabs();
       },
 
       /**
@@ -243,6 +278,26 @@
    */
   ConnectivityMatrixWidget.prototype.updateNeuronNames = function() {
     this.refresh();
+  };
+
+  /**
+   * Open a new connectivity matrix, optionally with rows and columns swapped.
+   */
+  ConnectivityMatrixWidget.prototype.cloneWidget = function(swap) {
+    var widget = new CATMAID.ConnectivityMatrixWidget();
+    // Set options
+    widget.synapseThreshold = this.synapseThreshold;
+    widget.color = this.color;
+    widget.rowSorting = this.rowSorting;
+    widget.colSorting = this.colSorting;
+    widget.rotateColumnHeaders = this.rotateColumnHeaders;
+    // Set data sources
+    var rowSource = swap ? this.colDimension : this.rowDimension;
+    var colSource = swap ? this.rowDimension : this.colDimension;
+    widget.rowDimension.append(rowSource.getSelectedSkeletonModels());
+    widget.colDimension.append(colSource.getSelectedSkeletonModels());
+
+    WindowMaker.create('connectivity-matrix', widget);
   };
 
   /**
@@ -279,7 +334,8 @@
     this.matrix.rebuild();
 
     // Create table
-    this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold);
+    this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold,
+        this.rotateColumnHeaders);
   };
 
   /**
@@ -339,7 +395,7 @@
    * @returns the content element passed in.
    */
   ConnectivityMatrixWidget.prototype.addConnectivityMatrixTable = function(
-      matrix, content, synThreshold) {
+      matrix, content, synThreshold, rotateColumns) {
     // Create table representation for connectivity matrix
     var table = document.createElement('table');
     table.setAttribute('class', 'partner_table');
@@ -351,17 +407,34 @@
     // Find maximum connection number in matrix
     var maxConnections = matrix.getMaxConnections();
 
-    var walked = this.walkMatrix(matrix, handleColumn.bind(window, colHeader),
-        handleRow.bind(window, table), handleCell.bind(this));
+    // Collect row as well as column names and skeleton IDs
+    var rowNames = [], rowSkids = [], colNames = [], colSkids = [];
+
+    var walked = this.walkMatrix(matrix,
+        handleColumn.bind(this, colHeader, colNames, colSkids),
+        handleRow.bind(window, table, rowNames, rowSkids),
+        handleCell.bind(this),
+        handleCompletion.bind(this, table, rowNames, rowSkids, colNames, colSkids));
 
     if (walked) {
+      // Add general information paragraph
       var infoBox = document.createElement('div');
       infoBox.appendChild(document.createTextNode('The table below shows the ' +
             'number of post-synaptic connections from row to column skeletons. ' +
             'If there are no connections, no number is shown.'));
       content.appendChild(infoBox);
+
       // Append matrix to content
       content.appendChild(table);
+
+      // Fix table header height for rotated cells
+      var headerHeight = 0;
+      $('th.vertical-table-header div').each(function() {
+        var height = $(this).outerWidth();
+        if (height > headerHeight) headerHeight = height;
+      });
+
+      $('th.vertical-table-header').height(headerHeight + 'px');
 
       // Add a handler for openening connector selections for individual partners
       $('a[partnerIDs]', table).click(function () {
@@ -400,33 +473,132 @@
           ST.append(models);
         }
       });
+
+      // Create a hidden removal button, that can be shown on demand
+      var removalButtonIcon = document.createElement('span');
+      removalButtonIcon.setAttribute('title', 'Remove this neuron vom list');
+      removalButtonIcon.setAttribute('class', 'ui-icon ui-icon-close');
+      var removalButton = document.createElement('div');
+      removalButton.setAttribute('class', 'remove-skeleton');
+      removalButton.style.display = 'none';
+      removalButton.appendChild(removalButtonIcon);
+      content.appendChild(removalButton);
+
+      // Add a handler for hovering over table headers
+      $(table).on('hover', 'th', content, function(e) {
+        var links = $(this).find('a[data-skeleton-ids]')
+        if (0 === links.length) return false;
+        var skeletonIds = links[0].dataset.skeletonIds;
+        if (0 === JSON.parse(skeletonIds).length) return false;
+        var isRow = ("true" === links[0].dataset.isRow);
+
+        // Assign skeleton IDs to remoal buttons
+        removalButton.dataset.skeletonIds = skeletonIds;
+        removalButton.dataset.isRow = isRow;
+
+        // Move removal button to current cell and toggle its visiblity
+        var pos = $(this).position();
+        removalButton.style.left = ($(content).scrollLeft() + pos.left) + "px";
+        if (rotateColumns && !isRow) {
+          // This is required, because the removal button div is not rotated
+          // with the table cell (it is no part of it).
+          removalButton.style.top = ($(content).scrollTop() + pos.top +
+            $(this).width() - $(this).height()) + "px";
+        } else {
+          removalButton.style.top = ($(content).scrollTop() + pos.top) + "px";
+        }
+
+        // Determine visibility by checkick if the mouse cursor is still in the
+        // table cell and is just hoving the remove button.
+        if ($(removalButton).is(':visible')) {
+          var offset = $(this).offset();
+          var hidden;
+          if (rotateColumns && !isRow) {
+            // This is required, because offset() is apparently not correct
+            // after rotating the cell.
+            var top = offset.top + $(this).width() - $(this).height();
+            hidden = (e.pageX < offset.left) ||
+                     (e.pageX > (offset.left + $(this).width())) ||
+                     (e.pageY < top) ||
+                     (e.pageY > top + $(this).height());
+          } else {
+            hidden = (e.pageX < offset.left) ||
+                     (e.pageX > (offset.left + $(this).width())) ||
+                     (e.pageY < offset.top) ||
+                     (e.pageY > (offset.top + $(this).height()));
+          }
+          if (hidden) $(removalButton).hide();
+        } else {
+          $(removalButton).toggle();
+        }
+      });
+
+      // Add a handler to hide the remove button if left on all sides but right
+      $(removalButton).on('mouseout', function(e) {
+        var offset = $(this).offset();
+        var visible = (e.pageX > (offset.left + $(this).width()));
+        if (!visible) $(removalButton).hide();
+      });
+
+      // Add a click handler to the remove button that triggers the removal
+      $(removalButton).on('click', this, function(e) {
+        if (!this.dataset.skeletonIds) return false;
+        var skeletonIds = JSON.parse(this.dataset.skeletonIds);
+        if (0 === skeletonIds.length) {
+          CATMAID.warn('Could not find expected skeleton ID');
+          return false;
+        };
+        if ('true' === this.dataset.isRow) {
+          e.data.rowDimension.removeSkeletons(skeletonIds);
+          e.data.refresh();
+        } else if ('false' === this.dataset.isRow) {
+          e.data.colDimension.removeSkeletons(skeletonIds);
+          e.data.refresh();
+        } else {
+          CATMAID.error("Could not find expected pre/post information");
+        }
+        return true;
+      });
     }
 
     return content;
 
     // Create column
-    function handleColumn(tableHeader, id, colGroup, name, skeletonIDs) {
-      var th = createHeaderCell(name, colGroup, skeletonIDs);
+    function handleColumn(tableHeader, colNames, colSkids, id, colGroup, name,
+        skeletonIDs) {
+      colNames.push(name);
+      colSkids.push(skeletonIDs);
+      var th = createHeaderCell(name, colGroup, skeletonIDs, false);
+      /* jshint validthis: true */
+      if (this.rotateColumnHeaders) {
+        th.setAttribute('class', 'vertical-table-header');
+      }
       tableHeader.appendChild(th);
     }
 
     // Create row
-    function handleRow(table, id, rowGroup, name, skeletonIDs) {
+    function handleRow(table, rowNames, rowSkids, id, rowGroup, name,
+        skeletonIDs) {
+      rowNames.push(name);
+      rowSkids.push(skeletonIDs);
       var row = document.createElement('tr');
       table.appendChild(row);
-      var th = createHeaderCell(name, rowGroup, skeletonIDs);
+      var th = createHeaderCell(name, rowGroup, skeletonIDs, true);
       row.appendChild(th);
       return row;
     }
 
     // Chreate a cell with skeleton link
-    function createHeaderCell(name, group, skeletonIDs) {
+    function createHeaderCell(name, group, skeletonIDs, isRow) {
       var a = document.createElement('a');
       a.href = '#';
       a.setAttribute('data-skeleton-ids', JSON.stringify(skeletonIDs));
+      a.setAttribute('data-is-row', isRow);
       a.appendChild(document.createTextNode(name));
+      var div = document.createElement('div');
+      div.appendChild(a);
       var th = document.createElement('th');
-      th.appendChild(a);
+      th.appendChild(div);
       if (group) {
         th.setAttribute('title', 'This group contains ' + group.length +
             ' skeleton(s): ' + group.join(', '));
@@ -439,8 +611,53 @@
       /* jshint validthis: true */ // `this` is bound to the connectivity matrix
       var td = createSynapseCountCell("pre", rowName, rowSkids, colName, colSkids,
           connections, synThreshold);
-      colorize(td, colorOptions[this.color], connections, 0, maxConnections);
+      colorize(td, colorOptions[this.color], connections, synThreshold, maxConnections);
       row.appendChild(td);
+    }
+
+    // Create aggretate rows and columns
+    function handleCompletion(table, rowNames, rowSkids, colNames, colSkids,
+        rowSums, colSums) {
+      var allRowSkids = this.rowDimension.getSelectedSkeletons();
+      var allColSkids = this.colDimension.getSelectedSkeletons();
+      // Create aggretate row
+      var aggRow = document.createElement('tr');
+      var aggRowHead = document.createElement('th');
+      aggRowHead.appendChild(document.createTextNode('Sum'));
+      aggRow.appendChild(aggRowHead);
+      for (var c=0; c<colSums.length; ++c) {
+        var td = createSynapseCountCell("pre", "All presynaptic neurons",
+            allRowSkids, colNames[c], colSkids[c], colSums[c], synThreshold);
+        aggRow.appendChild(td);
+      }
+      $(table).find("tr:last").after(aggRow);
+
+      // Create aggregate column
+      var rotate = this.rotateColumnHeaders;
+      $(table).find("tr").each(function(i, e) {
+        if (0 === i) {
+          var th = document.createElement('th');
+          th.appendChild(document.createTextNode('Sum'));
+          /* jshint validthis: true */
+          if (rotate) {
+            th.setAttribute('class', 'vertical-table-header');
+          }
+          e.appendChild(th);
+        } else if (i <= rowSums.length) {
+          // Substract one for the header row to get the correct sum index
+          var td = createSynapseCountCell("pre", rowNames[i - 1], rowSkids[i - 1],
+              "All postsynaptic neurons", allColSkids, rowSums[i - 1], synThreshold);
+          e.appendChild(td);
+        } else {
+          // This has to be the lower right cell of the table. It doesn't matter
+          // if we add up rows or columns, it yields the same number.
+          var sum = rowSums.reduce(function(s, r) { return s + r }, 0);
+          var td = createSynapseCountCell("pre", "All presynaptic neurons",
+              allRowSkids, "All postsynaptic neurons", allColSkids, sum,
+              synThreshold);
+          e.appendChild(td);
+        }
+      });
     }
   };
 
@@ -450,7 +667,7 @@
    * be created.
    */
   ConnectivityMatrixWidget.prototype.walkMatrix = function(
-      matrix, handleCol, handleRow, handleCell) {
+      matrix, handleCol, handleRow, handleCell, handleCompletion) {
     var nRows = matrix.getNumberOfRows();
     var nCols = matrix.getNumberOfColumns();
     if (0 === nRows || 0 === nCols) {
@@ -459,6 +676,8 @@
 
     var m = matrix.connectivityMatrix;
     var nns = NeuronNameService.getInstance();
+    var rowSums = [];
+    var colSums = [];
 
     // Get group information
     var nDisplayRows = this.rowDimension.orderedElements.length;
@@ -498,6 +717,10 @@
         var colSkids = colGroup ? colGroup : [colId];
         handleCell(row, rowName, rowSkids, colName, colSkids, connections);
 
+        // Add to row and column sums
+        rowSums[dr] = (rowSums[dr] || 0) + connections;
+        colSums[dc] = (colSums[dc] || 0) + connections;
+
         // Increase index for next iteration
         c = colGroup ? c + colGroup.length : c + 1;
       }
@@ -505,6 +728,8 @@
       // Increase index for next iteration
       r = rowGroup ? r + rowGroup.length : r + 1;
     }
+
+    if (CATMAID.tools.isFn(handleCompletion)) handleCompletion(rowSums, colSums);
 
     return true;
   };
@@ -757,6 +982,7 @@
   var colorize = function(element, scheme, value, minValue, maxValue) {
     var bg = null;
     if (!scheme || "None" === scheme) return;
+    else if (value < minValue) return;
     else if (colorbrewer.hasOwnProperty(scheme)) {
       var sets = colorbrewer[scheme];
       var range = maxValue - minValue + 1;

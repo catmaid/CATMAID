@@ -611,7 +611,7 @@
       /* jshint validthis: true */ // `this` is bound to the connectivity matrix
       var td = createSynapseCountCell("pre", rowName, rowSkids, colName, colSkids,
           connections, synThreshold);
-      colorize(td, colorOptions[this.color], connections, 0, maxConnections);
+      colorize(td, colorOptions[this.color], connections, synThreshold, maxConnections);
       row.appendChild(td);
     }
 
@@ -982,6 +982,7 @@
   var colorize = function(element, scheme, value, minValue, maxValue) {
     var bg = null;
     if (!scheme || "None" === scheme) return;
+    else if (value < minValue) return;
     else if (colorbrewer.hasOwnProperty(scheme)) {
       var sets = colorbrewer[scheme];
       var range = maxValue - minValue + 1;

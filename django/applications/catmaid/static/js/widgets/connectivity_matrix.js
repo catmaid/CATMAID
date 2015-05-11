@@ -307,7 +307,8 @@
     this.matrix.rebuild();
 
     // Create table
-    this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold);
+    this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold,
+        this.rotateColumnHeaders);
   };
 
   /**
@@ -367,7 +368,7 @@
    * @returns the content element passed in.
    */
   ConnectivityMatrixWidget.prototype.addConnectivityMatrixTable = function(
-      matrix, content, synThreshold) {
+      matrix, content, synThreshold, rotateColumns) {
     // Create table representation for connectivity matrix
     var table = document.createElement('table');
     table.setAttribute('class', 'partner_table');
@@ -445,6 +446,92 @@
           ST.append(models);
         }
       });
+
+      // Create a hidden removal button, that can be shown on demand
+      var removalButtonIcon = document.createElement('span');
+      removalButtonIcon.setAttribute('title', 'Remove this neuron vom list');
+      removalButtonIcon.setAttribute('class', 'ui-icon ui-icon-close');
+      var removalButton = document.createElement('div');
+      removalButton.setAttribute('class', 'remove-skeleton');
+      removalButton.style.display = 'none';
+      removalButton.appendChild(removalButtonIcon);
+      content.appendChild(removalButton);
+
+      // Add a handler for hovering over table headers
+      $(table).on('hover', 'th', content, function(e) {
+        var links = $(this).find('a[data-skeleton-ids]')
+        if (0 === links.length) return false;
+        var skeletonIds = links[0].dataset.skeletonIds;
+        if (0 === JSON.parse(skeletonIds).length) return false;
+        var isRow = ("true" === links[0].dataset.isRow);
+
+        // Assign skeleton IDs to remoal buttons
+        removalButton.dataset.skeletonIds = skeletonIds;
+        removalButton.dataset.isRow = isRow;
+
+        // Move removal button to current cell and toggle its visiblity
+        var pos = $(this).position();
+        removalButton.style.left = ($(content).scrollLeft() + pos.left) + "px";
+        if (rotateColumns && !isRow) {
+          // This is required, because the removal button div is not rotated
+          // with the table cell (it is no part of it).
+          removalButton.style.top = ($(content).scrollTop() + pos.top +
+            $(this).width() - $(this).height()) + "px";
+        } else {
+          removalButton.style.top = ($(content).scrollTop() + pos.top) + "px";
+        }
+
+        // Determine visibility by checkick if the mouse cursor is still in the
+        // table cell and is just hoving the remove button.
+        if ($(removalButton).is(':visible')) {
+          var offset = $(this).offset();
+          var hidden;
+          if (rotateColumns && !isRow) {
+            // This is required, because offset() is apparently not correct
+            // after rotating the cell.
+            var top = offset.top + $(this).width() - $(this).height();
+            hidden = (e.pageX < offset.left) ||
+                     (e.pageX > (offset.left + $(this).width())) ||
+                     (e.pageY < top) ||
+                     (e.pageY > top + $(this).height());
+          } else {
+            hidden = (e.pageX < offset.left) ||
+                     (e.pageX > (offset.left + $(this).width())) ||
+                     (e.pageY < offset.top) ||
+                     (e.pageY > (offset.top + $(this).height()));
+          }
+          if (hidden) $(removalButton).hide();
+        } else {
+          $(removalButton).toggle();
+        }
+      });
+
+      // Add a handler to hide the remove button if left on all sides but right
+      $(removalButton).on('mouseout', function(e) {
+        var offset = $(this).offset();
+        var visible = (e.pageX > (offset.left + $(this).width()));
+        if (!visible) $(removalButton).hide();
+      });
+
+      // Add a click handler to the remove button that triggers the removal
+      $(removalButton).on('click', this, function(e) {
+        if (!this.dataset.skeletonIds) return false;
+        var skeletonIds = JSON.parse(this.dataset.skeletonIds);
+        if (0 === skeletonIds.length) {
+          CATMAID.warn('Could not find expected skeleton ID');
+          return false;
+        };
+        if ('true' === this.dataset.isRow) {
+          e.data.rowDimension.removeSkeletons(skeletonIds);
+          e.data.refresh();
+        } else if ('false' === this.dataset.isRow) {
+          e.data.colDimension.removeSkeletons(skeletonIds);
+          e.data.refresh();
+        } else {
+          CATMAID.error("Could not find expected pre/post information");
+        }
+        return true;
+      });
     }
 
     return content;
@@ -454,7 +541,7 @@
         skeletonIDs) {
       colNames.push(name);
       colSkids.push(skeletonIDs);
-      var th = createHeaderCell(name, colGroup, skeletonIDs);
+      var th = createHeaderCell(name, colGroup, skeletonIDs, false);
       /* jshint validthis: true */
       if (this.rotateColumnHeaders) {
         th.setAttribute('class', 'vertical-table-header');
@@ -469,16 +556,17 @@
       rowSkids.push(skeletonIDs);
       var row = document.createElement('tr');
       table.appendChild(row);
-      var th = createHeaderCell(name, rowGroup, skeletonIDs);
+      var th = createHeaderCell(name, rowGroup, skeletonIDs, true);
       row.appendChild(th);
       return row;
     }
 
     // Chreate a cell with skeleton link
-    function createHeaderCell(name, group, skeletonIDs) {
+    function createHeaderCell(name, group, skeletonIDs, isRow) {
       var a = document.createElement('a');
       a.href = '#';
       a.setAttribute('data-skeleton-ids', JSON.stringify(skeletonIDs));
+      a.setAttribute('data-is-row', isRow);
       a.appendChild(document.createTextNode(name));
       var div = document.createElement('div');
       div.appendChild(a);

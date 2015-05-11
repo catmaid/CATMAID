@@ -500,6 +500,12 @@ div#classification_graph_object img.roiimage {
   min-width: 3em;
 }
 
+.connectivity_matrix .remove-skeleton {
+  position: absolute;
+  background-color: salmon;
+  cursor: pointer;
+}
+
 .connectivity_widget table {
   padding: 3px;
   border-collapse: collapse;

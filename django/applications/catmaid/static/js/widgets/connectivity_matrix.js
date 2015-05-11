@@ -379,9 +379,14 @@
     // Find maximum connection number in matrix
     var maxConnections = matrix.getMaxConnections();
 
-    var walked = this.walkMatrix(matrix, handleColumn.bind(this, colHeader),
-        handleRow.bind(window, table), handleCell.bind(this),
-        handleCompletion.bind(this, table));
+    // Collect row as well as column names and skeleton IDs
+    var rowNames = [], rowSkids = [], colNames = [], colSkids = [];
+
+    var walked = this.walkMatrix(matrix,
+        handleColumn.bind(this, colHeader, colNames, colSkids),
+        handleRow.bind(window, table, rowNames, rowSkids),
+        handleCell.bind(this),
+        handleCompletion.bind(this, table, rowNames, rowSkids, colNames, colSkids));
 
     if (walked) {
       // Add general information paragraph
@@ -445,7 +450,10 @@
     return content;
 
     // Create column
-    function handleColumn(tableHeader, id, colGroup, name, skeletonIDs) {
+    function handleColumn(tableHeader, colNames, colSkids, id, colGroup, name,
+        skeletonIDs) {
+      colNames.push(name);
+      colSkids.push(skeletonIDs);
       var th = createHeaderCell(name, colGroup, skeletonIDs);
       /* jshint validthis: true */
       if (this.rotateColumnHeaders) {
@@ -455,7 +463,10 @@
     }
 
     // Create row
-    function handleRow(table, id, rowGroup, name, skeletonIDs) {
+    function handleRow(table, rowNames, rowSkids, id, rowGroup, name,
+        skeletonIDs) {
+      rowNames.push(name);
+      rowSkids.push(skeletonIDs);
       var row = document.createElement('tr');
       table.appendChild(row);
       var th = createHeaderCell(name, rowGroup, skeletonIDs);
@@ -490,36 +501,45 @@
     }
 
     // Create aggretate rows and columns
-    function handleCompletion(table, rowSums, colSums) {
+    function handleCompletion(table, rowNames, rowSkids, colNames, colSkids,
+        rowSums, colSums) {
+      var allRowSkids = this.rowDimension.getSelectedSkeletons();
+      var allColSkids = this.colDimension.getSelectedSkeletons();
       // Create aggretate row
       var aggRow = document.createElement('tr');
       var aggRowHead = document.createElement('th');
       aggRowHead.appendChild(document.createTextNode('Sum'));
       aggRow.appendChild(aggRowHead);
       for (var c=0; c<colSums.length; ++c) {
-        var td = document.createElement('td');
-        td.appendChild(document.createTextNode(colSums[c]));
+        var td = createSynapseCountCell("pre", "All presynaptic neurons",
+            allRowSkids, colNames[c], colSkids[c], colSums[c], synThreshold);
         aggRow.appendChild(td);
       }
       $(table).find("tr:last").after(aggRow);
 
       // Create aggregate column
+      var rotate = this.rotateColumnHeaders;
       $(table).find("tr").each(function(i, e) {
         if (0 === i) {
-          var aggColHead = document.createElement('th');
-          aggColHead.appendChild(document.createTextNode('Sum'));
-          e.appendChild(aggColHead);
+          var th = document.createElement('th');
+          th.appendChild(document.createTextNode('Sum'));
+          /* jshint validthis: true */
+          if (rotate) {
+            th.setAttribute('class', 'vertical-table-header');
+          }
+          e.appendChild(th);
         } else if (i <= rowSums.length) {
           // Substract one for the header row to get the correct sum index
-          var td = document.createElement('td');
-          td.appendChild(document.createTextNode(rowSums[i - 1]));
+          var td = createSynapseCountCell("pre", rowNames[i - 1], rowSkids[i - 1],
+              "All postsynaptic neurons", allColSkids, rowSums[i - 1], synThreshold);
           e.appendChild(td);
         } else {
-          // This has to be the lower right cell of the table
-          var sum = rowSums.reduce(function(s, r) { return s + r }, 0) +
-                    colSums.reduce(function(s, c) { return s + c }, 0);
-          var td = document.createElement('td');
-          td.appendChild(document.createTextNode(sum));
+          // This has to be the lower right cell of the table. It doesn't matter
+          // if we add up rows or columns, it yields the same number.
+          var sum = rowSums.reduce(function(s, r) { return s + r }, 0);
+          var td = createSynapseCountCell("pre", "All presynaptic neurons",
+              allRowSkids, "All postsynaptic neurons", allColSkids, sum,
+              synThreshold);
           e.appendChild(td);
         }
       });

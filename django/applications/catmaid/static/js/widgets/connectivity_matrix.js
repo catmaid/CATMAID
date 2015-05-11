@@ -163,6 +163,13 @@
         update.onclick = this.update.bind(this);
         tabs['Main'].appendChild(update);
 
+        var openSwapped = document.createElement('input');
+        openSwapped.setAttribute("type", "button");
+        openSwapped.setAttribute("value", "Clone swapped");
+        openSwapped.setAttribute("title", "Open a copy of this matrix with rows and columns swapped");
+        openSwapped.onclick = this.cloneWidget.bind(this, true);
+        tabs['Main'].appendChild(openSwapped);
+
         var max = 20;
         var synapseThresholdSelect = document.createElement('select');
         for (var i=1; i <= max; ++i) {
@@ -271,6 +278,26 @@
    */
   ConnectivityMatrixWidget.prototype.updateNeuronNames = function() {
     this.refresh();
+  };
+
+  /**
+   * Open a new connectivity matrix, optionally with rows and columns swapped.
+   */
+  ConnectivityMatrixWidget.prototype.cloneWidget = function(swap) {
+    var widget = new CATMAID.ConnectivityMatrixWidget();
+    // Set options
+    widget.synapseThreshold = this.synapseThreshold;
+    widget.color = this.color;
+    widget.rowSorting = this.rowSorting;
+    widget.colSorting = this.colSorting;
+    widget.rotateColumnHeaders = this.rotateColumnHeaders;
+    // Set data sources
+    var rowSource = swap ? this.colDimension : this.rowDimension;
+    var colSource = swap ? this.rowDimension : this.colDimension;
+    widget.rowDimension.append(rowSource.getSelectedSkeletonModels());
+    widget.colDimension.append(colSource.getSelectedSkeletonModels());
+
+    WindowMaker.create('connectivity-matrix', widget);
   };
 
   /**

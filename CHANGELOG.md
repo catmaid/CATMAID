@@ -3,6 +3,16 @@
 
 ### Features and enhancements
 
+
+### Bug fixes
+
+
+## 2015.5.11
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+### Features and enhancements
+
 Connectivity widget:
 
 - Partner filtering now supports regular expressions when the first character

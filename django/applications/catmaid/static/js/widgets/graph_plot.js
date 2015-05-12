@@ -462,7 +462,7 @@ CircuitGraphPlot.prototype.getVectors = function() {
 
   var f = (function(select) {
     var index = select.selectedIndex;
-    if (index < this.vectors.length) {
+    if (this.vectors && index < this.vectors.length) {
       return this.vectors[index][1];
     } else if ('a' === select.value[0]) {
       if (!this.anatomy) {

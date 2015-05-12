@@ -1270,7 +1270,9 @@
         }
         // Adjust
         var opts = {stroke: stroke_color, 'stroke-width': this.EDGE_WIDTH };
-        if (undefined !== is_pre) {
+        if (undefined === is_pre) {
+          opts['marker-end'] = 'none';
+        } else {
           var def = is_pre ? 'markerArrowPre' : 'markerArrowPost';
           opts['marker-end'] = 'url(#' + def + this.hrefSuffix + ')';
         }

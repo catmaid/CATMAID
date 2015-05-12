@@ -454,6 +454,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.id = null;
     this.parent = null;
     this.parent_id = null;
+    this.type = null;
     this.children = null;
     if (this.c) {
       SkeletonElements.prototype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);

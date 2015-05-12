@@ -700,6 +700,20 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
               'value': filters.neuron_id
           });
         }
+
+        // Validate regular expression and only send if it is valid
+        var searchInput = this.parent().find('div.dataTables_filter input[type=search]');
+        var searchField = aoData.filter(function(e) { return 'sSearch' === e.name; })[0];
+        try {
+          new RegExp(searchField.value);
+          searchInput.css('background-color', '');
+        } catch (e) {
+          // If the search field does not contain a valid regular expression,
+          // cancel this update.
+          searchInput.css('background-color', 'salmon');
+          return;
+        }
+
         $.ajax({
             "dataType": 'json',
             "cache": false,
@@ -707,6 +721,15 @@ NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
             "url": sSource,
             "data": aoData,
             "success": function(result) {
+                if (result.error) {
+                  if (-1 !== result.error.indexOf('invalid regular expression')) {
+                    searchInput.css('background-color', 'salmon');
+                    CATMAID.warn(result.error);
+                  } else {
+                    CATMAID.error(result.error, result.detail);
+                  }
+                  return;
+                }
                 // Filter all previously chosen co-annotations to not display
                 // them in the list for new co-annotations.
                 if (!filters.is_meta) {
@@ -923,6 +946,20 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
               'value': filters.user_id
           });
         }
+
+        // Validate regular expression and only send if it is valid
+        var searchInput = this.parent().find('div.dataTables_filter input[type=search]');
+        var searchField = aoData.filter(function(e) { return 'sSearch' === e.name; })[0];
+        try {
+          new RegExp(searchField.value);
+          searchInput.css('background-color', '');
+        } catch (e) {
+          // If the search field does not contain a valid regular expression,
+          // cancel this update.
+          searchInput.css('background-color', 'salmon');
+          return;
+        }
+
         $.ajax({
             "dataType": 'json',
             "cache": false,
@@ -930,6 +967,15 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
             "url": sSource,
             "data": aoData,
             "success": function(result) {
+                if (result.error) {
+                  if (-1 !== result.error.indexOf('invalid regular expression')) {
+                    searchInput.css('background-color', 'salmon');
+                    CATMAID.warn(result.error);
+                  } else {
+                    CATMAID.error(result.error, result.detail);
+                  }
+                  return;
+                }
                 fnCallback(result);
                 if (callback) {
                   callback(result);

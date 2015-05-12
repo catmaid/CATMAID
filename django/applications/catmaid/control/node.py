@@ -257,10 +257,12 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         # so that repeated tnid entries are overwritten.
         pre = defaultdict(dict)
         post = defaultdict(dict)
+        other = defaultdict(dict)
 
         # Process crows (rows with connectors) which could have repeated connectors
         # given the join with treenode_connector
         presynaptic_to = relation_map['presynaptic_to']
+        postsynaptic_to = relation_map['postsynaptic_to']
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
@@ -275,8 +277,10 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 # row[7]: tc_confidence
                 if row[5] == presynaptic_to:
                     pre[cid][tnid] = row[7]
-                else:
+                elif row[5] == postsynaptic_to:
                     post[cid][tnid] = row[7]
+                else:
+                    other[cid][tnid] = row[7]
 
             # Collect unique connectors
             if cid not in connector_ids:
@@ -290,6 +294,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             connectors[i] = (cid, c[1], c[2], c[3], c[4],
                     [kv for kv in  pre[cid].iteritems()],
                     [kv for kv in post[cid].iteritems()],
+                    [kv for kv in other[cid].iteritems()],
                     is_superuser or c[8] == user_id or c[8] in domain)
 
 
@@ -602,8 +607,7 @@ def _find_first_interesting_node(sequence):
     """ Find the first node that:
     1. Has confidence lower than 5
     2. Has a tag
-    3. Receives a synapse
-    4. Makes a synapse
+    3. Has any connector (e.g. receives/makes synapse, markes as abutting, ...)
     Otherwise return the last node.
     """
     if not sequence:

@@ -2665,7 +2665,7 @@ class ViewPageTests(TestCase):
                 [2423, 2415, 4140, 6460, 0, 5, -1, 2411, True],
         ]
         expected_c_result = [
-                [2400, 3400, 5620, 0, 5, [[2394, 5], [2415, 5]], [[2374, 5]], True],
+                [2400, 3400, 5620, 0, 5, [[2394, 5], [2415, 5]], [[2374, 5]], [], True],
         ]
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {
             'sid': 3,
@@ -2708,8 +2708,8 @@ class ViewPageTests(TestCase):
                 [2417, 2415, 4400, 5730, 0, 5, -1, 2411, True]
         ]
         expected_c_result = [
-                [356, 6730.0, 2700.0, 0.0, 5, [[285, 5]], [[377, 5], [367, 5]], True],
-                [421, 6260.0, 3990.0, 0.0, 5, [[415, 5]], [[409, 5]], True]
+                [356, 6730.0, 2700.0, 0.0, 5, [[285, 5]], [[377, 5], [367, 5]], [], True],
+                [421, 6260.0, 3990.0, 0.0, 5, [[415, 5]], [[409, 5]], [], True]
         ]
 
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {

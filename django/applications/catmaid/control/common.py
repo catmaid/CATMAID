@@ -202,11 +202,45 @@ def cursor_fetch_dictionary(cursor):
             for row in cursor.fetchall()
             ]
 
-def get_relation_to_id_map(project_id):
-    return {rname: ID for rname, ID in Relation.objects.filter(project=project_id).values_list("relation_name", "id")}
+def get_relation_to_id_map(project_id, name_constraints=None, cursor=None):
+    """
+    Return a mapping of relation names to relation IDs. If a list of names is
+    provided, only relations with those names will be included. If a cursor is
+    provided, this cursor will be used.
+    """
+    if cursor:
+        query = "SELECT relation_name, id  FROM relation WHERE project_id = %s"
+        params = [int(project_id)]
+        if name_constraints:
+            query += " AND (%s)" % ' OR '.join(('relation_name = %s',) * len(name_constraints))
+            params += (name_constraints)
+        cursor.execute(query, params)
+        return dict(cursor.fetchall())
+    else:
+        query = Relation.objects.filter(project=project_id)
+        if name_constraints:
+            query = query.filter(relation_name__in=name_constraints)
+        return {rname: ID for rname, ID in query.values_list("relation_name", "id")}
 
-def get_class_to_id_map(project_id):
-    return {cname: ID for cname, ID in Class.objects.filter(project=project_id).values_list("class_name", "id")}
+def get_class_to_id_map(project_id, name_constraints=None, cursor=None):
+    """
+    Return a mapping of class names to relation IDs. If a list of names is
+    provided, only classes with those names will be included. If a cursor is
+    provided, this cursor will be used.
+    """
+    if cursor:
+        query = "SELECT class_name, id  FROM class WHERE project_id = %s"
+        params = [int(project_id)]
+        if name_constraints:
+            query += " AND (%s)" % ' OR '.join(('class_name = %s',) * len(name_constraints))
+            params += (name_constraints)
+        cursor.execute(query, params)
+        return dict(cursor.fetchall())
+    else:
+        query = Class.objects.filter(project=project_id)
+        if name_constraints:
+            query = query.filter(class_name__in=name_constraints)
+        return {cname: ID for cname, ID in query.values_list("class_name", "id")}
 
 def urljoin(a, b):
     """ Joins to URL parts a and b while making sure this

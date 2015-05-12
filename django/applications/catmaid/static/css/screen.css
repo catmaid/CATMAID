@@ -500,6 +500,12 @@ div#classification_graph_object img.roiimage {
   min-width: 3em;
 }
 
+.connectivity_matrix .remove-skeleton {
+  position: absolute;
+  background-color: salmon;
+  cursor: pointer;
+}
+
 .connectivity_widget table {
   padding: 3px;
   border-collapse: collapse;
@@ -718,4 +724,16 @@ a.neuron-selection-link {
 
 a.neuron-selection-link:hover {
   text-decoration: underline;
+}
+
+.vertical-table-header {
+  text-align: center;
+  vertical-align: top;
+  white-space: nowrap;
+  transform: rotate(-90deg) translate(0%, 100%);
+  transform-origin: bottom left;
+}
+
+.vertical-table-header div {
+  position: absolute;
 }

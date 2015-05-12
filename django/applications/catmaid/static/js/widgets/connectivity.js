@@ -122,9 +122,9 @@ SkeletonConnectivity.prototype.destroy = function() {
 
   // Unregister from neuron controller
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
-      this.handleChangedSkeleton);
+      this.handleChangedSkeleton, this);
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
-      this.handleDeletedSkeleton);
+      this.handleDeletedSkeleton, this);
 };
 
 SkeletonConnectivity.prototype.clear = function(source_chain) {
@@ -1129,6 +1129,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
      set_as_selected.bind(this, 'down', 'postsynaptic_to'));
 
   // Add handler for neuron name clicks
+  content.off('click', 'a[data-skeleton-id]');
   content.on('click', 'a[data-skeleton-id]', function() {
     var skeletonId = this.dataset.skeletonId;
     TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);

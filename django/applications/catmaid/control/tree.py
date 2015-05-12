@@ -29,7 +29,7 @@ def instance_operation(request, project_id=None):
     for k in str_keys:
         # TODO sanitize
         params[k] = request.POST.get(k, 0)
- 
+
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
@@ -315,7 +315,7 @@ def _collect_neuron_ids(node_id, node_type=None):
         row = cursor.fetchone()
         if row:
             node_type = row[0]
-    
+
     if 'neuron' == node_type:
         return [node_id]
 

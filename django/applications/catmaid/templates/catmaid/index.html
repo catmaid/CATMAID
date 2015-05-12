@@ -20,7 +20,11 @@
 		{% compressed_css 'catmaid' %}
 
     {% for f in JS_FILES %}
+		{% if f == 'arbor' %}
+			<script type="text/javascript" src="{{ STATIC_URL }}js/arbor.js"></script>
+		{% else %}
 		  {% compressed_js f %}
+		{% endif %}
     {% endfor %}
 
 		<script type="text/javascript">

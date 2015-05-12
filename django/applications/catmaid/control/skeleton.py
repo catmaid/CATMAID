@@ -164,7 +164,8 @@ def contributor_statistics(request, project_id=None, skeleton_id=None):
     synapses[relations['postsynaptic_to']] = defaultdict(int)
 
     for row in TreenodeConnector.objects.filter(skeleton_id=skeleton_id).values_list('user_id', 'relation_id'):
-        synapses[row[1]][row[0]] += 1
+        if row[1] in synapses:
+            synapses[row[1]][row[0]] += 1
 
     cq = ClassInstanceClassInstance.objects.filter(
             relation__relation_name='model_of',

@@ -402,24 +402,24 @@ var WindowMaker = new function()
       minStrahlerInput.value = ND.minStrahler;
     }
     minStrahlerInput.onchange = function(e) {
-        ND.setMinStrahler(parseInt(this.value));
+        ND.setMinStrahler(parseInt(this.value, 10));
         ND.update();
     };
     minStrahlerInput.oninput = function(e) {
       if (13 === e.keyCode) {
         ND.update();
       } else {
-        ND.setMinStrahler(parseInt(this.value));
+        ND.setMinStrahler(parseInt(this.value, 10));
       }
     };
     minStrahlerInput.onwheel = function(e) {
         if ((e.deltaX + e.deltaY) > 0) {
           if (this.value > 1) {
-            this.value = parseInt(this.value) - 1;
+            this.value = parseInt(this.value, 10) - 1;
             this.onchange();
           }
         } else {
-          this.value = parseInt(this.value) + 1;
+          this.value = parseInt(this.value, 10) + 1;
           this.onchange();
         }
 
@@ -427,6 +427,82 @@ var WindowMaker = new function()
     };
     minStrahler.appendChild(minStrahlerInput);
     buttons.appendChild(minStrahler);
+
+    var hSpacingFactor = document.createElement('label');
+    hSpacingFactor.appendChild(document.createTextNode('H Space Factor'));
+    var hSpacingFactorInput = document.createElement('input');
+    hSpacingFactorInput.setAttribute('type', 'number');
+    hSpacingFactorInput.setAttribute('min', 0.01);
+    hSpacingFactorInput.setAttribute('max', 10);
+    hSpacingFactorInput.setAttribute('step', 0.01);
+    hSpacingFactorInput.setAttribute('id', 'dendrogram-hSpacingFactor-' + ND.widgetID);
+    if (ND.hNodeSpaceFactor) {
+      hSpacingFactorInput.value = ND.hNodeSpaceFactor.toFixed(2);
+    }
+    hSpacingFactorInput.onchange = function(e) {
+        ND.setHSpaceFactor(parseFloat(this.value));
+        ND.update();
+    };
+    hSpacingFactorInput.oninput = function(e) {
+      if (13 === e.keyCode) {
+        ND.update();
+      } else {
+        ND.setHSpaceFactor(parseFloat(this.value));
+      }
+    };
+    hSpacingFactorInput.onwheel = function(e) {
+        if ((e.deltaX + e.deltaY) > 0) {
+          if (this.value > 0.01) {
+            this.value = (parseFloat(this.value) - 0.01).toFixed(2);
+            this.onchange();
+          }
+        } else {
+          this.value = (parseFloat(this.value) + 0.01).toFixed(2);
+          this.onchange();
+        }
+
+        return false;
+    };
+    hSpacingFactor.appendChild(hSpacingFactorInput);
+    buttons.appendChild(hSpacingFactor);
+
+    var vSpacingFactor = document.createElement('label');
+    vSpacingFactor.appendChild(document.createTextNode('V Space Factor'));
+    var vSpacingFactorInput = document.createElement('input');
+    vSpacingFactorInput.setAttribute('type', 'number');
+    vSpacingFactorInput.setAttribute('min', 0.01);
+    vSpacingFactorInput.setAttribute('max', 10);
+    vSpacingFactorInput.setAttribute('step', 0.01);
+    vSpacingFactorInput.setAttribute('id', 'dendrogram-vSpacingFactor-' + ND.widgetID);
+    if (ND.hNodeSpaceFactor) {
+      vSpacingFactorInput.value = ND.vNodeSpaceFactor.toFixed(2);
+    }
+    vSpacingFactorInput.onchange = function(e) {
+        ND.setVSpaceFactor(parseFloat(this.value));
+        ND.update();
+    };
+    vSpacingFactorInput.oninput = function(e) {
+      if (13 === e.keyCode) {
+        ND.update();
+      } else {
+        ND.setVSpaceFactor(parseFloat(this.value));
+      }
+    };
+    vSpacingFactorInput.onwheel = function(e) {
+        if ((e.deltaX + e.deltaY) > 0) {
+          if (this.value > 0.01) {
+            this.value = (parseFloat(this.value) - 0.01).toFixed(2);
+            this.onchange();
+          }
+        } else {
+          this.value = (parseFloat(this.value) + 0.01).toFixed(2);
+          this.onchange();
+        }
+
+        return false;
+    };
+    vSpacingFactor.appendChild(vSpacingFactorInput);
+    buttons.appendChild(vSpacingFactor);
 
     var collapse = document.createElement('label');
     var collapseInput = document.createElement('input');
@@ -930,7 +1006,8 @@ var WindowMaker = new function()
      ['dendritic-backbone', 'Dendritic backbone'],
      ['distance_to_root', 'Distance to root'],
      ['partitions', 'Principal branch length'],
-     ['strahler', 'Strahler analysis']
+     ['strahler', 'Strahler analysis'],
+     ['downstream-of-tag', 'Downstream of tag']
     ].forEach(function(e) {
        shadingMenu.options.add(new Option(e[1], e[0]));
      });
@@ -945,7 +1022,6 @@ var WindowMaker = new function()
      ['whitelist-reviewed', 'Team Reviewed'],
      ['own-reviewed', 'Own Reviewed'],
      ['axon-and-dendrite', 'Axon and dendrite'],
-     ['downstream-of-tag', 'Downstream of tag']
     ].forEach(function(e) {
        colorMenu.options.add(new Option(e[1], e[0]));
     });
@@ -957,6 +1033,7 @@ var WindowMaker = new function()
     synColors.options.add(new Option('N with partner: pre[red > blue], post[yellow > cyan]', 'by-amount'));
     synColors.options.add(new Option('Synapse clusters', 'synapse-clustering'));
     synColors.options.add(new Option('Max. flow cut: axon (green) and dendrite (blue)', 'axon-and-dendrite'));
+    synColors.options.add(new Option('Same as skeleton', 'skeleton'));
     synColors.onchange = WA.updateConnectorColors.bind(WA, synColors);
 
     appendToTab(tabs['Shading'],
@@ -1017,9 +1094,10 @@ var WindowMaker = new function()
           ['Synapse clustering bandwidth ', o.synapse_clustering_bandwidth, ' nm - ', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 6],
           ['Near active node ', o.distance_to_active_node, ' nm - ', function() {
             WA.updateActiveNodeNeighborhoodRadius(this.value); }, 6],
-          ['Min. synapse-free cable ', o.min_synapse_free_cable, 'nm - ', function() {
+          ['Min. synapse-free cable ', o.min_synapse_free_cable, ' nm - ', function() {
             WA.updateShadingParameter('min_synapse_free_cable', this.value, 'synapse-free'); }, 6],
-          ['Strahler number ', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, 'dendritic-backbone'); }, 4]
+          ['Strahler number ', o.strahler_cut, ' - ', function() { WA.updateShadingParameter('strahler_cut', this.value, 'dendritic-backbone'); }, 4],
+          ['Tag (regex): ', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4]
         ]);
 
     var axisOptions = document.createElement('select');
@@ -1372,6 +1450,7 @@ var WindowMaker = new function()
          ['Axon & dendrite', GG.splitAxonAndDendrite.bind(GG)],
          ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)], 
          ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)],
+         ['Tag', GG.splitByTag.bind(GG)],
          ['Reset', GG.unsplit.bind(GG)]]);
 
     content.appendChild( bar );

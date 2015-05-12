@@ -38,7 +38,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
     1. Detect merges done by the reviewer: one of the two nodes is edited by the reviewer within the review epoch (but not both: could be a reroot then), with a corresponding join_skeleton entry in the log table. Perhaps the latter is enough, if the x,y,z of the log corresponds to that of the node (plus/minus a tiny bit, may have moved).
     2. Detect additions by the reviewer (a kind of merge), where the reviewer's node is newer than the other node, and it was created within the review epoch. These nodes would have been created and reviewed by the reviewer within the review epoch.
     3. Detect splits by the reviewer: query the log table for split_skeleton events involving the skeleton, performed by the reviewer within the review epoch.
-    Returns a list with one entry per epoch, where each entry is an object with three fields: 
+    Returns a list with one entry per epoch, where each entry is an object with three fields:
     4. Detect synapses added by the reviewer within the epoch. Unfortunately, the removal of synapses has not been logged.
     """
 
@@ -58,7 +58,9 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
 
     # Synapses on the arbor: keyed by treenode_id
     all_synapses = defaultdict(list)
-    for s in TreenodeConnector.objects.filter(skeleton=skeleton_id):
+    for s in TreenodeConnector.objects.filter(skeleton=skeleton_id,
+                                              relation__in=(relations['presynaptic_to'],
+                                                            relations['postsynaptic_to'])):
         all_synapses[s.treenode_id].append(s)
 
     for epoch in epochs:

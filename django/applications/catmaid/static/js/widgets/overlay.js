@@ -35,6 +35,7 @@ var SkeletonAnnotations = {
   atn : {
     id: null,
     type: null,
+    subtype: null,
     skeleton_id: null,
     x: null,
     y: null,
@@ -46,6 +47,10 @@ var SkeletonAnnotations = {
   TYPE_NODE : "treenode",
   TYPE_CONNECTORNODE : "connector",
 
+  // Connector nodes can have different subtypes
+  SUBTYPE_SYNAPTIC_CONNECTOR : "synaptic-connector",
+  SUBTYPE_ABUTTING_CONNECTOR : "abutting-connector",
+
   sourceView : new CATMAID.ActiveSkeleton(),
 
   // Event name constants
@@ -55,6 +60,8 @@ var SkeletonAnnotations = {
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
+SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
+SkeletonAnnotations.setRadiusAfterNodeCreation = false;
 Events.extend(SkeletonAnnotations);
 
 /**
@@ -71,6 +78,7 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
     changed = (this.id !== node.id) ||
               (this.skeleton_id !== node.skeleton_id) ||
               (this.type !== node.type) ||
+              (this.subtype !== node.subtype) ||
               (this.z !== node.z) ||
               (this.y !== node.y)  ||
               (this.x !== node.x) ||
@@ -81,6 +89,7 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
     this.id = node.id;
     this.skeleton_id = node.skeleton_id;
     this.type = node.type;
+    this.subtype = node.subtype;
     this.x = node.x;
     this.y = node.y;
     this.z = node.z;
@@ -222,6 +231,9 @@ SkeletonAnnotations.getActiveNodeType = function() {
   return this.atn.type;
 };
 
+SkeletonAnnotations.getActiveNodeSubType = function() {
+  return this.atn.subtype;
+};
 
 /**
  * Get the fill color for an active node.
@@ -465,7 +477,7 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
     this.handleChangedSkeleton, this);
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
-    this.handleChangedSkeleton, this);
+    this.handleDeletedSkeleton, this);
 };
 
 SkeletonAnnotations.SVGOverlay.prototype = {};
@@ -794,9 +806,9 @@ SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
 
   // Unregister from neuron controller
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
-      this.handleChangedSkeleton);
+      this.handleChangedSkeleton, this);
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
-      this.handleChangedSkeleton);
+      this.handleDeletedSkeleton, this);
 };
 
 /**
@@ -820,7 +832,7 @@ SkeletonAnnotations.SVGOverlay.prototype.findConnectors = function(node_id) {
   for (var id in this.nodes) {
     if (this.nodes.hasOwnProperty(id)) {
       var node = this.nodes[id];
-      if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
+      if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
         if (node.pregroup.hasOwnProperty(node_id)) {
           pre.push(parseInt(id));
         } else if (node.postgroup.hasOwnProperty(node_id)) {
@@ -867,7 +879,11 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
       atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-      CATMAID.statusBar.replaceLast("Activated connector node #" + node.id);
+      if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === node.subtype) {
+        CATMAID.statusBar.replaceLast("Activated abutting connector node #" + node.id);
+      } else {
+        CATMAID.statusBar.replaceLast("Activated synaptic connector node #" + node.id);
+      }
       atn.set(node, this.getStack().getId());
       SkeletonAnnotations.clearTopbar(this.stack.getId());
       this.recolorAllNodes();
@@ -1398,7 +1414,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
  * updated after this.
  */
 SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid,
-    link_type)
+    link_type, afterCreate)
 {
   var self = this;
   this.submit(
@@ -1408,7 +1424,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid,
        link_type: link_type,
        to_id: toid},
        function(json) {
-         self.updateNodes();
+         if (json.warning) CATMAID.warn(json.warning);
+         self.updateNodes(afterCreate);
        });
 };
 
@@ -1418,7 +1435,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid,
  * newly created connector.
  */
 SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (
-    phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, completionCallback)
+    phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, subtype, completionCallback)
 {
   var self = this;
   this.submit(
@@ -1430,7 +1447,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (
        z: phys_z},
       function(jso) {
         // add treenode to the display and update it
-        var nn = self.graphics.newConnectorNode(jso.connector_id, pos_x, pos_y, pos_z, 0, 5 /* confidence */, true);
+        var nn = self.graphics.newConnectorNode(jso.connector_id, pos_x, pos_y,
+            pos_z, 0, 5 /* confidence */, subtype, true);
         self.nodes[jso.connector_id] = nn;
         nn.createGraphics();
         self.activateNode(nn);
@@ -1445,17 +1463,17 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (
  * first, then we create the link from the connector.
  */
 SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (
-    connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate)
 {
   this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
-      confidence, pos_x, pos_y, pos_z, "postsynaptic_to");
+      confidence, pos_x, pos_y, pos_z, "postsynaptic_to", afterCreate);
 };
 
 /**
  * Create a new treenode that is postsynaptic to the given @connectorID.
  */
 SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (
-    connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate)
 {
   // Check that connectorID doesn't have a presynaptic treenode already (It is
   // also checked in the server on attempting to create a link. Here, it is
@@ -1472,7 +1490,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (
     return;
   }
   this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
-      confidence, pos_x, pos_y, pos_z, "presynaptic_to");
+      confidence, pos_x, pos_y, pos_z, "presynaptic_to", afterCreate);
 };
 
 /**
@@ -1481,7 +1499,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (
  */
 SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y,
-    pos_z, link_type)
+    pos_z, link_type, afterCreate)
 {
   var self = this;
   this.submit(
@@ -1503,10 +1521,16 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (
         nn.createGraphics();
         // create link : new treenode postsynaptic_to or presynaptic_to
         // deactivated connectorID
-        self.createLink(nid, connectorID, link_type);
-        // Trigger skeleton change event
-        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
-            nn.skeleton_id);
+        self.createLink(nid, connectorID, link_type, function() {
+          // Use a new node reference, because createLink() triggers an update,
+          // which potentially re-initializes node objects.
+          var node = self.nodes[nid];
+          // Trigger skeleton change event
+          SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+              node.skeleton_id);
+
+          if (afterCreate) afterCreate(self, node);
+        });
       });
 };
 
@@ -1788,16 +1812,24 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
 
   // Populate ConnectorNodes
   jso[1].forEach(function(a, index, array) {
+    // Determine the connector node type. For now eveything with no or only
+    // pre or post treenodes is treated as a synapse. If there are only
+    // non-directional connectors, an abutting connector is assumed.
+    var subtype = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
+    if (0 === a[5].length && 0 === a[6].length && 0 !== a[7].length) {
+      subtype = SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR;
+    }
     // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
     // a[5]: presynaptic nodes as array of arrays with treenode id
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
-    // and confidence, a[7]: whether the user can edit the connector
+    // and confidence, a[7]: undirected nodes as array of arrays with treenode
+    // id, a[8]: whether the user can edit the connector
     var z = this.stack.projectToStackZ(a[3], a[2], a[1]);
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0],
       this.stack.projectToStackX(a[3], a[2], a[1]),
       this.stack.projectToStackY(a[3], a[2], a[1]),
-      z, z - this.stack.z, a[4], a[7]);
+      z, z - this.stack.z, a[4], subtype, a[8]);
   }, this);
 
   // Disable any unused instances
@@ -1841,6 +1873,17 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
         // link it to postgroup, to connect it to the connector
         connector.postgroup[tnid] = {'treenode': node,
                                      'confidence': r[1]};
+      }
+    }, this);
+    // a[7]: other relation which is an array of arrays of tnid and tc_confidence
+    a[7].forEach(function(r, i, ar) {
+      // r[0]: tnid, r[1]: tc_confidence
+      var tnid = r[0];
+      var node = this.nodes[tnid];
+      if (node) {
+        // link it to postgroup, to connect it to the connector
+        connector.undirgroup[tnid] = {'treenode': node,
+                                      'confidence': r[1]};
       }
     }, this);
   }, this);
@@ -2065,6 +2108,14 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   var targetTreenodeID,
       atn = SkeletonAnnotations.atn;
 
+
+  // If activated, edit the node radius right after it was created.
+  var postCreateFn;
+  if (SkeletonAnnotations.setRadiusAfterNodeCreation) {
+    // Edit radius without showing the dialog and without centering.
+    postCreateFn = function(overlay, node) { overlay.editRadius(node.id, false, true, true); };
+  }
+
   // e.metaKey should correspond to the command key on Mac OS
   if (e.ctrlKey || e.metaKey) {
     if (e.altKey && null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
@@ -2094,28 +2145,46 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
       if (SkeletonAnnotations.TYPE_NODE === atn.type) {
         var targetTreenode = this.nodes[atn.id];
         if (e.shiftKey) {
-          // Create a new connector and a new link
-          var synapse_type = e.altKey ? 'post' : 'pre';
-          CATMAID.statusBar.replaceLast("Created connector with " + synapse_type +
-              "synaptic treenode #" + atn.id);
-          var self = this;
+          var msg, linkType, self = this;
+          if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === SkeletonAnnotations.newConnectorType) {
+            // Create a new abutting connection
+            msg = "Created abutting connector with treenode #" + atn.id;
+            linkType = "abutting";
+          } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === SkeletonAnnotations.newConnectorType) {
+            // Create a new synaptic connector
+            var synapseType = e.altKey ? 'post' : 'pre';
+            msg = "Created connector with " + synapseType + "synaptic treenode #" + atn.id;
+            linkType = synapseType + "synaptic_to";
+          } else {
+            CATMAID.warn("Unknown connector type selected");
+            return true;
+          }
+          CATMAID.statusBar.replaceLast(msg);
           this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
-              function (connectorID) {
+            SkeletonAnnotations.newConnectorType, function (connectorID) {
                 self.promiseNode(targetTreenode).then(function(nid) {
-                  self.createLink(nid, connectorID, synapse_type + "synaptic_to");
+                  self.createLink(nid, connectorID, linkType);
                 });
-              });
+            });
           e.stopPropagation();
+          e.preventDefault();
         }
         // Else don't stop propagation: the mouse functions of the node will be triggered
         return true;
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
-        // create new treenode (and skeleton) postsynaptic to activated connector
-        this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z,
-            -1, 5, pos_x, pos_y, pos_z);
-        CATMAID.statusBar.replaceLast("Created treenode #" + atn.id +
-            " postsynaptic to active connector");
-        e.stopPropagation();
+        if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
+          // create new treenode (and skeleton) postsynaptic to activated connector
+          CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
+          this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
+              pos_x, pos_y, pos_z, postCreateFn);
+          e.stopPropagation();
+        } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === atn.subtype) {
+          // create new treenode (and skeleton) postsynaptic to activated connector
+          CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " abutting to active connector");
+          this.createTreenodeWithLink(atn.id, phys_x, phys_y, phys_z, -1, 5,
+              pos_x, pos_y, pos_z, "abutting", postCreateFn);
+          e.stopPropagation();
+        }
         return true;
       }
     }
@@ -2129,24 +2198,28 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
           // Make sure the parent exists
           atn.promise().then((function(atnId) {
             CATMAID.statusBar.replaceLast("Created new node as child of node #" + atn.id);
-            this.createNode(atnId, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            this.createNode(atnId, phys_x, phys_y, phys_z, -1, 5,
+                pos_x, pos_y, pos_z, postCreateFn);
           }).bind(this));
         } else {
             // Create root node
-            this.createNode(null, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            this.createNode(null, phys_x, phys_y, phys_z, -1, 5,
+                pos_x, pos_y, pos_z, postCreateFn);
         }
         e.stopPropagation();
-      } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
+      } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
         // create new treenode (and skeleton) presynaptic to activated connector
         // if the connector doesn't have a presynaptic node already
-        this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z,
+            postCreateFn);
         e.stopPropagation();
       }
       // Else don't stop propagation: a node may be moved
       return true;
     } else if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SYNAPSE) {
       // only create single synapses/connectors
-      this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);
+      this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
+          SkeletonAnnotations.newConnectorType);
     }
   }
   e.stopPropagation();
@@ -2491,81 +2564,129 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
  * Lets the user select a radius around a node with the help of a small
  * measurement tool, passing the selected radius to a callback when finished.
  */
-SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, completionCallback) {
+SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no_centering, completionCallback) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
-  this.goToNode(treenode_id,
-      function() {
-        // If there was a measurement tool based radius selection started
-        // before, stop this.
-        if (self.nodes[treenode_id].surroundingCircleElements) {
-          hideCircleAndCallback();
-        } else {
-          self.nodes[treenode_id].drawSurroundingCircle(toStack,
-              stackToProject, hideCircleAndCallback);
-          // Attach a handler for the ESC key to cancel selection
-          $('body').on('keydown.catmaidRadiusSelect', function(event) {
-            if (27 === event.keyCode) {
-              // Unbind key handler and remove circle
-              $('body').off('keydown.catmaidRadiusSelect');
-              self.nodes[treenode_id].removeSurroundingCircle();
-              return true;
-            }
-            return false;
-          });
-        }
+  // References the original node the selector was created for
+  var originalNode;
 
-        function hideCircleAndCallback()
-        {
-          // Unbind key handler
+  if (no_centering) {
+    toggleMeasurementTool();
+  } else {
+    this.goToNode(treenode_id, toggleMeasurementTool);
+  }
+
+  function verifyNode(treenode_id) {
+    var node = self.nodes[treenode_id];
+    if (!node || node !== originalNode) {
+      // This can happen if e.g. the section was changed and all nodes were
+      // updated.
+      CATMAID.warn('Canceling radius editing, because the edited node ' +
+          'cannot be found anymore or has changed.');
+      return false;
+    }
+    return node;
+  }
+
+  function toggleMeasurementTool() {
+    // Keep a reference to the original node
+    originalNode = self.nodes[treenode_id];
+    // If there was a measurement tool based radius selection started
+    // before, stop this.
+    if (originalNode.surroundingCircleElements) {
+      hideCircleAndCallback();
+    } else {
+      originalNode.drawSurroundingCircle(toStack, stackToProject,
+          hideCircleAndCallback);
+      // Attach a handler for the ESC key to cancel selection
+      $('body').on('keydown.catmaidRadiusSelect', function(event) {
+        if (27 === event.keyCode) {
+          // Unbind key handler and remove circle
           $('body').off('keydown.catmaidRadiusSelect');
-          // Remove circle and call callback
-          self.nodes[treenode_id].removeSurroundingCircle(function(rx, ry) {
-            if (typeof rx === 'undefined' || typeof ry === 'undefined') {
-              completionCallback(undefined);
-              return;
-            }
-            // Convert pixel radius components to nanometers
-            var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
-            // Callback with the selected radius
-            completionCallback(r);
-          });
+          originalNode.removeSurroundingCircle();
+          return true;
         }
-
-        /**
-         * Transform a layer coordinate into stack space.
-         */
-        function toStack(r)
-        {
-          var offsetX = self.stack.x - self.stack.viewWidth / self.stack.scale / 2;
-          var offsetY = self.stack.y - self.stack.viewHeight / self.stack.scale / 2;
-          return {
-            x: (r.x / self.stack.scale) + offsetX,
-            y: (r.y / self.stack.scale) + offsetY
-          }
-        }
-
-        /**
-         * Transform a layer coordinate into world space.
-         */
-        function stackToProject(s)
-        {
-          return {
-            x: self.stack.stackToProjectX(self.stack.z, s.y, s.x),
-            y: self.stack.stackToProjectY(self.stack.z, s.y, s.x)
-          };
-        }
+        return false;
       });
+    }
+
+    function hideCircleAndCallback()
+    {
+      // Unbind key handler
+      $('body').off('keydown.catmaidRadiusSelect');
+      var node = verifyNode(treenode_id);
+      if (!node) {
+        // Remove circle from node we originally attached to and cancel, if no
+        // node for the given ID was found.
+        originalNode.removeSurroundingCircle();
+      } else {
+        // Remove circle and call callback
+        node.removeSurroundingCircle(function(rx, ry) {
+          if (typeof rx === 'undefined' || typeof ry === 'undefined') {
+            completionCallback(undefined);
+            return;
+          }
+          // Convert pixel radius components to nanometers
+          var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
+          // Callback with the selected radius
+          completionCallback(r);
+        });
+      }
+    }
+
+    /**
+     * Transform a layer coordinate into stack space.
+     */
+    function toStack(r)
+    {
+      var offsetX = self.stack.x - self.stack.viewWidth / self.stack.scale / 2;
+      var offsetY = self.stack.y - self.stack.viewHeight / self.stack.scale / 2;
+      return {
+        x: (r.x / self.stack.scale) + offsetX,
+        y: (r.y / self.stack.scale) + offsetY
+      }
+    }
+
+    /**
+     * Transform a layer coordinate into world space.
+     */
+    function stackToProject(s)
+    {
+      return {
+        x: self.stack.stackToProjectX(self.stack.z, s.y, s.x),
+        y: self.stack.stackToProjectY(self.stack.z, s.y, s.x)
+      };
+    }
+  }
 };
 
 /**
  * Shows a dialog to edit the radius property of a node. By default, it also
  * lets the user estimate the radius with the help of a small measurement tool,
  * which can be disabled by setting the no_measurement_tool parameter to true.
+ * If the measurement tool is used, the dialog display can optionally be
+ * disabled
  */
-SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool) {
+SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool, no_centering, no_dialog) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
+
+  function updateRadius(radius, updateMode) {
+    // Default update mode to this node only
+    updateMode = updateMode || 0;
+    self.promiseNode(treenode_id).then(function(nodeID) {
+      self.submit(
+        django_url + project.id + '/treenode/' + nodeID + '/radius',
+        {radius: radius,
+         option: updateMode},
+        function(json) {
+          // Refresh 3d views if any
+          WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
+          // Reinit SVGOverlay to read in the radius of each altered treenode
+          self.updateNodes();
+        });
+    });
+  }
 
   function show_dialog(defaultRadius) {
     if (typeof defaultRadius === 'undefined')
@@ -2587,26 +2708,19 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
         return;
       }
       self.editRadius_defaultValue = choice.selectedIndex;
-      self.promiseNode(treenode_id).then(function(nodeID) {
-        self.submit(
-          django_url + project.id + '/treenode/' + nodeID + '/radius',
-          {radius: radius,
-           option: choice.selectedIndex},
-          function(json) {
-            // Refresh 3d views if any
-            WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
-            // Reinit SVGOverlay to read in the radius of each altered treenode
-            self.updateNodes();
-          });
-      });
+      updateRadius(radius, choice.selectedIndex);
     };
     dialog.show('auto', 'auto');
   }
 
   if (no_measurement_tool) {
-    this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
+    if (no_centering) {
+      show_dialog(this.nodes[treenode_id].radius);
+    } else {
+      this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
+    }
   } else {
-    this.selectRadius(treenode_id, show_dialog);
+    this.selectRadius(treenode_id, no_centering, no_dialog ? updateRadius : show_dialog);
   }
 };
 
@@ -2976,7 +3090,8 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
     CATMAID.warn("Cannot switch between terminal and connector: node not loaded.");
     return;
   }
-  if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type) {
+  if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type &&
+      SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === ob.subtype) {
     if (this.switchingConnectorID === ob.id &&
         this.switchingTreenodeID in this.nodes) {
       // Switch back to the terminal
@@ -3136,19 +3251,49 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
 };
 
 /**
+ * Return true if the given node ID is part of the given skeleton. Expects the
+ * node to be displayed.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.nodeIsPartOfSkeleton = function(skeletonID, nodeID) {
+  if (!this.nodes[nodeID]) throw new CATMAID.ValueError("Node not loaded");
+  return this.nodes[nodeID].skeleton_id === skeletonID;
+};
+
+/**
  * Checks if the given skeleton is part of the current display and reloads all
  * nodes if this is the case.
  *
  * @param {number} skeletonID - The ID of the skelton changed.
  */
 SkeletonAnnotations.SVGOverlay.prototype.handleChangedSkeleton = function(skeletonID) {
-  function partOfChangedSkeleton(nodeID) {
-    /*jshint validthis:true */
-    return this.nodes[nodeID].skeleton_id === skeletonID;
-  }
+  this.updateIfKnown(skeletonID);
+};
 
-  if (Object.keys(this.nodes).some(partOfChangedSkeleton, this)) {
-    this.updateNodes();
+/**
+ * Handles skeleton deletion events. Checks if the given skeleton is part of the
+ * current display and reloads all nodes if this is the case.
+ *
+ * @param {number} skeletonID - The ID of the skelton changed.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.handleDeletedSkeleton = function(skeletonID) {
+  var activeSkeletonID = SkeletonAnnotations.getActiveSkeletonId();
+  this.updateIfKnown(skeletonID, (function() {
+    // Unselect active node, if it was part of the current display
+    if (activeSkeletonID == skeletonID) {
+      this.activateNode(null);
+    }
+  }).bind(this));
+};
+
+/**
+ * Update nodes if the given skeleton is part of the current display.
+ *
+ * @param skeletonID {number} The ID of the skelton changed.
+ * @param callback {function} An optional callback, executed after a node update
+ */
+SkeletonAnnotations.SVGOverlay.prototype.updateIfKnown = function(skeletonID, callback) {
+  if (Object.keys(this.nodes).some(this.nodeIsPartOfSkeleton.bind(this, skeletonID))) {
+    this.updateNodes(callback);
   }
 };
 

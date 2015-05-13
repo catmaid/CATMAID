@@ -343,9 +343,9 @@
     ptype.AbstractTreenode = function() {
       // Colors that a node can take
       this.active_skeleton_color = "rgb(255,255,0)";
-      this.active_skeleton_color_virtual = "rgb(255,175,0)";
+      this.active_skeleton_color_virtual = "rgb(255,255,0)";
       this.inactive_skeleton_color = "rgb(255,0,255)";
-      this.inactive_skeleton_color_virtual = "rgb(255,0,175)";
+      this.inactive_skeleton_color_virtual = "rgb(255,0,255)";
       this.inactive_skeleton_color_above = "rgb(0,0,255)";
       this.inactive_skeleton_color_below = "rgb(255,0,0)";
       this.root_node_color = "rgb(255,0,0)";

@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  OptionsDialog,
   login
 */
 
@@ -72,6 +71,30 @@ window.onerror = function(msg, url, lineno, colno, err)
   return true;
 };
 
+/**
+ * Define a global growl alert function.
+ */
+window.growlAlert = function(title, message, options) {
+  var settings = {
+    title: title,
+    message: message,
+    duration: 3000,
+    size: 'large',
+    style: undefined // Gray background by default, alternatives are:
+                     // 'error' = red, 'warning' = yellow, 'notice' = green
+  };
+
+  // If an alert style wasn't provided, guess from the alert title
+  if (!options || !options.style) {
+    if (title.match(/error/i)) settings.style = 'error';
+    else if (title.match(/warn|beware/i)) settings.style = 'warning';
+    else if (title.match(/done|success/i)) settings.style = 'notice';
+  }
+
+  $.extend(settings, options);
+  $.growl(settings);
+};
+
 
 /**
  * Creates a jQuery UI based error dialog. If detail is passed, it is hidden by
@@ -138,7 +161,7 @@ CATMAID.ErrorDialog.prototype.show = function() {
  * Creates a simple login dialog.
  */
 CATMAID.LoginDialog = function(text, callback) {
-  this.dialog = new OptionsDialog("Permission required");
+  this.dialog = new CATMAID.OptionsDialog("Permission required");
   if (text) {
     this.dialog.appendMessage(text);
   }
@@ -231,3 +254,11 @@ CATMAID.info = CATMAID.msg.bind(window, "Information");
  * Convenience function to show a growl warning message.
  */
 CATMAID.warn = CATMAID.msg.bind(window, "Warning");
+
+/**
+ * Make status information available through the front-ends status bar.
+ */
+CATMAID.status = function(msg)
+{
+  CATMAID.statusBar.replaceLast(msg);
+};

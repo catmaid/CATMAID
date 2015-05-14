@@ -6,7 +6,6 @@
   growlAlert,
   InstanceRegistry,
   NeuronNameService,
-  OptionsDialog,
   project,
   requestQueue,
   SynapseClustering
@@ -1075,7 +1074,7 @@ CircuitGraphPlot.prototype.exportCSVAll = function() {
 };
 
 CircuitGraphPlot.prototype.adjustOptions = function() {
-  var od = new OptionsDialog("Parameters");
+  var od = new CATMAID.OptionsDialog("Parameters");
   od.appendField(
       "Smooth skeletons by Gaussian convolution with sigma (nm): ",
       "CGP-sigma" + this.widgetID,

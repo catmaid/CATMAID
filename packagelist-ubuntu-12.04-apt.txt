@@ -1,4 +1,5 @@
 postgresql-9.3
+postgresql-9.3-postgis
 imagemagick
 gcc
 gfortran

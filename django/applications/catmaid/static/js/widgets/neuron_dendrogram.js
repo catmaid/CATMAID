@@ -4,7 +4,6 @@
   CATMAID,
   Events,
   InstanceRegistry,
-  OptionsDialog,
   project,
   requestQueue,
   SelectionTable,
@@ -166,6 +165,11 @@ NeuronDendrogram.prototype.selectNode = function(node_id, skeleton_id)
 
     return o;
   }, {});
+
+  // If a virtual node should be selected, use the real parent instead.
+  if (!SkeletonAnnotations.isRealNode(node_id)) {
+    node_id = SkeletonAnnotations.getChildOfVirtualNode(node_id);
+  }
 
   // Make sure the requested node is part of the current skeleton
   if (!(node_id in nodesToChildren)) {
@@ -785,7 +789,7 @@ NeuronDendrogram.prototype.chooseHighlightTags = function()
   }
 
   // Get all the tags for the current skeleton
-  var dialog = new OptionsDialog("Select tags to highlight");
+  var dialog = new CATMAID.OptionsDialog("Select tags to highlight");
   dialog.appendMessage("The following tags are used in the selected " +
       "skeleton. Every node labeled with at least one of the selected tags, " +
       "will be highlighted and its sub-arbor will be highlighted as well.");

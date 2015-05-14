@@ -9,6 +9,7 @@ id, // unique id for the node from the database
 paper, // the D3 selector this node is drawn to
 x, // the x coordinate in project coordinates
 y, // y coordinates
+fontSize, // font size of label
 text) {
   // the database treenode id
   this.id = id;
@@ -16,8 +17,6 @@ text) {
   this.y = y;
   this.text = text;
 
-  // Scale labels relative to confidence text labels to account for overlay scaling.
-  var fontSize = parseFloat(SkeletonElements.prototype.ArrowLine.prototype.confidenceFontSize) * 0.75;
   var pad = fontSize * 0.5,
       xg = this.x + pad*2,
       yg = this.y - pad*2,

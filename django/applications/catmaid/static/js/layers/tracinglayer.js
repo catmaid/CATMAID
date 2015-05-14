@@ -66,7 +66,12 @@ function TracingLayer( stack )
 
   this.unregister = function()
   {
+    // Remove from DOM, if attached to it
+    var parentElement = this.svgOverlay.view.parentNode;
+    if (parentElement) {
+      parentElement.removeChild(this.svgOverlay.view);
+    }
+
     this.svgOverlay.destroy();
-    // TODO Remove the SVG raphael object from the DOM
   };
 }

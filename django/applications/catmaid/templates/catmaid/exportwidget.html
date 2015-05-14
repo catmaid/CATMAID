@@ -11,7 +11,7 @@
       alert("Open and populate a Selection Table first!");
       return;
     }
-    var dialog = new OptionsDialog("Export NetworkX");
+    var dialog = new CATMAID.OptionsDialog("Export NetworkX");
     var choiceST = dialog.appendChoice("Source: ", "neuroml-st",
         selectionTables.map(function(item) { return item.getName(); }),
         selectionTables.map(function(item, i) { return i; }),
@@ -37,7 +37,7 @@
   }
 
 	function graphexport_NeuroML181() {
-		var dialog = new OptionsDialog("Export NeuroML Level 3");
+		var dialog = new CATMAID.OptionsDialog("Export NeuroML Level 3");
 		var choice = dialog.appendChoice("Source: ", "neuroml-choice",
 				['Neurons in Selection Table and their mutual synapses',
 				 'Active neuron and all its input synapses',
@@ -125,7 +125,7 @@
     }
 
     // Add skeleton source message and controls
-    var dialog = new OptionsDialog(connector_export ? "Export connectors" :
+    var dialog = new CATMAID.OptionsDialog(connector_export ? "Export connectors" :
         "Export treenodes");
 
     // Add initial data
@@ -302,7 +302,7 @@
 
   function export_tree_geometry() {
     // Add skeleton source message and controls
-    var dialog = new OptionsDialog('Export tree geometry');
+    var dialog = new CATMAID.OptionsDialog('Export tree geometry');
 
     // Add user interface
     dialog.appendMessage('Please select a source from where to get the ' +

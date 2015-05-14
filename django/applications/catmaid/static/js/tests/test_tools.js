@@ -155,4 +155,31 @@ QUnit.test('Utilities test', function( assert ) {
     CATMAID.tools.callIfFn(function(obj) { obj.called = true; }, o);
     assert.ok(o.called, "CATMAID.tools.callIfFn properly passes arguments to called function.");
   })();
+
+
+  // Test Z plane intersection function
+  (function() {
+    var i1 = CATMAID.tools.intersectLineWithZPlane(-1, 1, 1, 1, 2, 3, 0);
+    assert.deepEqual(i1, [-2, 0.5],
+        "CATMAID.tools.intersectLineWithZPlane finds intersection with " +
+        "proper values");
+
+    var i2 = CATMAID.tools.intersectLineWithZPlane(0, 0, 0, 0, 0, 0, 0);
+    assert.deepEqual(i2, [NaN, NaN],
+        "CATMAID.tools.intersectLineWithZPlane fails to find intersection " +
+        "if all values are the same");
+  })();
+
+
+  // Test same sign test
+  (function() {
+    assert.ok(CATMAID.tools.sameSign(1,0),
+        "CATMAID.tools.sameSign correctly says 1 and 0 have same sign");
+    assert.ok(CATMAID.tools.sameSign(-100,-42),
+        "CATMAID.tools.sameSign correctly says -100 and -42 have same sign");
+    assert.ok(!CATMAID.tools.sameSign(0,-1),
+        "CATMAID.tools.sameSign correctly says 0 and -1 don't have same sign");
+    assert.ok(!CATMAID.tools.sameSign(100,-42),
+        "CATMAID.tools.sameSign correctly says 100 and -42 don't have same sign");
+  })();
 });

@@ -1654,11 +1654,16 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissing
 	}, []);
 };
 
+/**
+ * Constructor for an object that manages the content in a scene.
+ */
 WebGLApplication.prototype.Space.prototype.Content = function(options) {
-	// Scene content
-	this.active_node = new this.ActiveNode(options);
-	this.meshes = [];
-	this.skeletons = {};
+  // A representation of the active node
+  this.active_node = new this.ActiveNode(options);
+  // A list of extra meshes
+  this.meshes = [];
+  // Map of skeleton IDs to skeleton representations
+  this.skeletons = {};
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype = {};

@@ -3007,7 +3007,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       node_weights = arbor.downstreamAmount(this.createNodeDistanceFn(), true);
 
     } else if ('active_node_split' === options.shading_method) {
+      // The active node is not necessarily a real node and splitting the arbor
+      // will therefore not work in case of a virtual node. The split is
+      // therefore performed with the next real child node and the node weight
+      // of the child will be adjusted to get the same visual effect.
       var atn = SkeletonAnnotations.getActiveNodeId();
+      var virtualAtn = !SkeletonAnnotations.isRealNode(atn);
+      if (virtualAtn) atn = SkeletonAnnotations.getChildOfVirtualNode(atn);
       if (arbor.contains(atn)) {
         node_weights = {};
         var sub = arbor.subArbor(atn),
@@ -3020,6 +3026,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         arbor.nodesArray().forEach(function(node) {
           node_weights[node] = sub.contains(node) ? down : up;
         });
+        if (virtualAtn) {
+          // If the active node is virtual, the weight of its real child is
+          // adjusted so so that it matches the visual appearance of having an
+          // actual node at the ATNs location.
+          var vnPos = this.space.toSpace(SkeletonAnnotations.getActiveNodePositionW());
+          vnPos = new THREE.Vector3(vnPos.x, vnPos.y, vnPos.z);
+          var locations = this.getPositions();
+          var vn = SkeletonAnnotations.getActiveNodeId();
+          var parentPos = locations[SkeletonAnnotations.getParentOfVirtualNode(vn)];
+          var childPos = locations[SkeletonAnnotations.getChildOfVirtualNode(vn)];
+          var distRatio = parentPos.distanceToSquared(vnPos) / parentPos.distanceToSquared(childPos);
+          node_weights[atn] = up - distRatio * (up - down);
+        }
       } else {
         // Don't shade any
         node_weights = {};

@@ -486,7 +486,7 @@
 
       // Add a handler for hovering over table headers
       $(table).on('hover', 'th', content, function(e) {
-        var links = $(this).find('a[data-skeleton-ids]')
+        var links = $(this).find('a[data-skeleton-ids]');
         if (0 === links.length) return false;
         var skeletonIds = links[0].dataset.skeletonIds;
         if (0 === JSON.parse(skeletonIds).length) return false;
@@ -547,7 +547,7 @@
         if (0 === skeletonIds.length) {
           CATMAID.warn('Could not find expected skeleton ID');
           return false;
-        };
+        }
         if ('true' === this.dataset.isRow) {
           e.data.rowDimension.removeSkeletons(skeletonIds);
           e.data.refresh();
@@ -618,6 +618,7 @@
     // Create aggretate rows and columns
     function handleCompletion(table, rowNames, rowSkids, colNames, colSkids,
         rowSums, colSums) {
+      /* jshint validthis: true */ // `this` is bound to the connectivity matrix
       var allRowSkids = this.rowDimension.getSelectedSkeletons();
       var allColSkids = this.colDimension.getSelectedSkeletons();
       // Create aggretate row
@@ -651,7 +652,7 @@
         } else {
           // This has to be the lower right cell of the table. It doesn't matter
           // if we add up rows or columns, it yields the same number.
-          var sum = rowSums.reduce(function(s, r) { return s + r }, 0);
+          var sum = rowSums.reduce(function(s, r) { return s + r; }, 0);
           var td = createSynapseCountCell("pre", "All presynaptic neurons",
               allRowSkids, "All postsynaptic neurons", allColSkids, sum,
               synThreshold);

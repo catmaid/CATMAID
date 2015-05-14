@@ -336,7 +336,7 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
-    helpText: "Go to nearest open leaf or untagged root node (subsequent shift+R: cycle through other open leaves; with alt: most recent rather than nearest)",
+    helpText: "Go to nearest open leaf node (subsequent shift+R: cycle through other open leaves; with alt: most recent rather than nearest)",
     keyShortcuts: { "R": [ 82 ] },
     run: function (e) {
       if (!mayView())

@@ -18,11 +18,13 @@ class Migration(SchemaMigration):
         CREATE EXTENSION postgis
         """
 
-        # Add PostGIS edge table
+        # Add PostGIS edge table. Because this table is more like a
+        # materialized view and the data it is built from lives in another
+        # table, there is no real need to add foreign key constraints.
         db.execute('''
             CREATE TABLE treenode_edge (
                 id BIGINT PRIMARY KEY,
-                project_id integer NOT NULL REFERENCES project (id),
+                project_id integer NOT NULL,
                 edge GEOMETRY(LINESTRINGZ, 0)
             )''')
 

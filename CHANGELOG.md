@@ -1,12 +1,59 @@
 ## Under development
 
 
+### Notes
+
+This release includes database changes that require manual intervention if you
+are upgrading from an existing installation. A new dependency is now required:
+PostGIS, an extension to PostgreSQL. After its installation, it has to be
+activated for the CATMAID database. To do so, connect to the database using a
+Postgres system user. Assuming a Postgres system user named "postgres" and a
+CATMAID database named "catmaid", this could be done by calling
+
+  sudo -u postgres psql -d catmaid
+
+Being connected to the database, PostGIS can be enabled by executing
+
+  CREATE EXTENSION postgis;
+
+Now PostGIS is enabled and the connection can be closed again. Now a regular
+update can be performed. Please note that this update can take quite some time
+to complete. On bigger neuron tracing installations, multiple hours are
+realistic.
+
+
 ### Features and enhancements
 
 Key shortcuts / mouse operations:
 
 - Cycling through open end nodes will now only visit the root node if it is an
   actual leaf. That is, when it has only one child node and is untagged.
+
+
+Multi-view tracing and virtual nodes:
+
+- Orthogonal views on a regular XY stack can now be used for tracing as well. If
+  they are available as CATMAID stacks and opened while the tracing tool is
+  activated, tracing data will be shown in the respective orthogonal views as
+  well. Tracing can be done in these views just like in the regular XY view.
+
+- When tracing, it is not required anymore to place a node in every section. If
+  no node has been placed in a section, CATMAID will place a so called virtual node
+  where the skeleton and the section meet. If this virtual node is modified in
+  any way, e.g. tagging, joining, moving, etc. it will be created. This also
+  slightly changes the way reviews work. Review information is only stored on
+  real nodes.
+
+
+Administration:
+
+- Now that virtual nodes are available, existing database can (but don't have
+  to) be optimized. A new management command will look for straight skeleton
+  parts that are not referenced in any way and prunes them. In other words, if
+  there are three successive collinear nodes and the middle one is not
+  referenced, it will be removed.
+
+  manage.py catmaid_prune_skeletons
 
 
 ### Bug fixes

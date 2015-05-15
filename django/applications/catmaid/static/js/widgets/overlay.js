@@ -315,7 +315,10 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
     this.handleDeletedSkeleton, this);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype = {};
+SkeletonAnnotations.SVGOverlay.prototype = {
+  EVENT_HIT_NODE_DISPLAY_LIMIT: "tracing_hit_node_display_limit"
+};
+Events.extend(SkeletonAnnotations.SVGOverlay.prototype);
 
 /**
 * Execute the function fn if the skeleton has more than one node and the dialog
@@ -1376,6 +1379,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     var msg = "Did not retrieve all visible nodes--too many! Zoom in to constrain the field of view.";
     CATMAID.statusBar.replaceLast("*WARNING*: " + msg);
     CATMAID.warn(msg);
+    this.trigger(this.EVENT_HIT_NODE_DISPLAY_LIMIT);
   }
 };
 

@@ -80,9 +80,10 @@ in the backup name, might therefore be a good idea. A mismatch might
 cause some trouble when a database backup is used that includes
 migrations that are not present in the selected CATMAID version.
 
-To backup the database named "catmaid"::
+To backup the complete database (here named "catmaid"), except tables that can
+be restored automatically (to save space)::
 
-    pg_dump --clean -U <CATMAID-USER> catmaid -f catmaid_dump.sql
+    pg_dump --clean -T treenode_edge -U <CATMAID-USER> catmaid -f catmaid_dump.sql
 
 To restore the dumped database into a database named "catmaid" (which would have
 to be created like described in the basic install instructions)::
@@ -96,6 +97,12 @@ thing. Those, however, don't ask for a password, but require a
 ``.pgpass`` file (see `PostgreSQL documentation
 <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_).
 
+If ``-T treenode_edge`` in the first command above is omitted, all tables
+are exported and no additional steps are required. If it was used, though, the
+following command has to be executed additionally, to complete the import::
+
+    manage.py catmaid_rebuild_edge_table
+
 A cron job can be used to automate the backup process. Since this will be run as
 the ``root`` user, no password will be needed. The root user's crontab file can
 be edited with::
@@ -106,7 +113,7 @@ The actual crontab file is not meant to be edited directly, but only through the
 ``crontab`` tool. To run the above backup  command every night at 3am, the
 following line would have to be added::
 
-  0 3 * * * sudo -u postgres pg_dump --clean catmaid -f "/opt/backup/psql/catmaid_$(date +\%Y\%m\%d\%H\%M).sql"
+  0 3 * * * sudo -u postgres pg_dump --clean -T treenode_edge catmaid -f "/opt/backup/psql/catmaid_$(date +\%Y\%m\%d\%H\%M).sql"
 
 This would create a new file in the folder ``/opt/backup/psql`` at 3am every
 night. It will fail if the folder isn't available or writable. The file name
@@ -121,7 +128,6 @@ and the actual ``pg_dump`` call is executed as `postgres` user with the help of
 ``sudo``, no database password is required. If your actual backup command gets
 more complicated than this, it is recommended to create a script file and call
 this from cron.
-
 
 .. _performance-tuning:
 

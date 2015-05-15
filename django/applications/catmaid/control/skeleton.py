@@ -62,7 +62,6 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
 
     # Some entries repeated, when a node has more than one tag
     # Create a graph with edges from parent to child, and accumulate parents
-    real_root = None
     tree = nx.DiGraph()
     for row in cursor.fetchall():
         nodeID = row[0]
@@ -70,7 +69,6 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
             # It is ok to add edges that already exist: DiGraph doesn't keep duplicates
             tree.add_edge(row[1], nodeID)
         else:
-            real_root = nodeID
             tree.add_node(nodeID)
         tree.node[nodeID]['loc'] = (row[2], row[3], row[4])
         tree.node[nodeID]['ct'] = row[5]
@@ -95,7 +93,7 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
     end_regex = re.compile('(?:' + ')|(?:'.join(end_tags) + ')')
 
     for nodeID, out_degree in tree.out_degree_iter():
-        if 0 == out_degree or nodeID == real_root:
+        if 0 == out_degree:
             # Found an end node
             props = tree.node[nodeID]
             # Check if not tagged with a tag containing 'end'

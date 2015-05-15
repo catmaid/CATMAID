@@ -3,6 +3,11 @@
 
 ### Features and enhancements
 
+Key shortcuts / mouse operations:
+
+- Cycling through open end nodes will now only visit the root node if it is an
+  actual leaf. That is, when it has only one child node and is untagged.
+
 
 ### Bug fixes
 

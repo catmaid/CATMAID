@@ -9,6 +9,12 @@ Key shortcuts / mouse operations:
   actual leaf. That is, when it has only one child node and is untagged.
 
 
+Miscellaneous:
+
+- The location of messages and notifications can be configured in the settings
+  widget. The default location is still the upper right corner.
+
+
 ### Bug fixes
 
 

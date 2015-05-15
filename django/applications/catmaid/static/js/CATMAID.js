@@ -19,6 +19,20 @@
     },
   });
 
+  // Configuration of message position
+  var messagePosition = 'tr';
+  Object.defineProperty(CATMAID, 'messagePosition', {
+    get: function() { return messagePosition; },
+    set: function(newValue) {
+      var allowedValues = ['tl', 'tr', 'bl', 'br', 'tc', 'bc'];
+      if (-1 === allowedValues.indexOf(newValue)) {
+        throw new CATMAID.ValueError('Please use one of these values: ' +
+            allowedValues.join(','));
+      }
+      messagePosition = newValue;
+    }
+  });
+
   /**
    * Convenience function to show a growl message
    */
@@ -29,6 +43,7 @@
       message: message,
       duration: 3000,
       size: 'large',
+      location: messagePosition,
       style: undefined // Gray background by default, alternatives are:
                        // 'error' = red, 'warning' = yellow, 'notice' = green
     };

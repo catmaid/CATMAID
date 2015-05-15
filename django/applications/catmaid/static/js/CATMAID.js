@@ -18,6 +18,42 @@
       return ui;
     },
   });
+
+  /**
+   * Convenience function to show a growl message
+   */
+  CATMAID.msg = function(title, message, options)
+  {
+    var settings = {
+      title: title,
+      message: message,
+      duration: 3000,
+      size: 'large',
+      style: undefined // Gray background by default, alternatives are:
+                       // 'error' = red, 'warning' = yellow, 'notice' = green
+    };
+
+    // If an alert style wasn't provided, guess from the alert title
+    if (!options || !options.style) {
+      if (title.match(/error/i)) settings.style = 'error';
+      else if (title.match(/warn|beware/i)) settings.style = 'warning';
+      else if (title.match(/done|success/i)) settings.style = 'notice';
+    }
+
+    $.extend(settings, options);
+    $.growl(settings);
+  };
+
+  /**
+   * Convenience function to show a growl info message.
+   */
+  CATMAID.info = CATMAID.msg.bind(window, "Information");
+
+  /**
+   * Convenience function to show a growl warning message.
+   */
+  CATMAID.warn = CATMAID.msg.bind(window, "Warning");
+
 })(CATMAID);
 
 
@@ -213,38 +249,3 @@ CATMAID.error = function(msg, detail)
 {
   new CATMAID.ErrorDialog(msg, detail).show();
 };
-
-/**
- * Convenience function to show a growl message
- */
-CATMAID.msg = function(title, message, options)
-{
-  var settings = {
-    title: title,
-    message: message,
-    duration: 3000,
-    size: 'large',
-    style: undefined // Gray background by default, alternatives are:
-                     // 'error' = red, 'warning' = yellow, 'notice' = green
-  };
-
-  // If an alert style wasn't provided, guess from the alert title
-  if (!options || !options.style) {
-    if (title.match(/error/i)) settings.style = 'error';
-    else if (title.match(/warn|beware/i)) settings.style = 'warning';
-    else if (title.match(/done|success/i)) settings.style = 'notice';
-  }
-
-  $.extend(settings, options);
-  $.growl(settings);
-};
-
-/**
- * Convenience function to show a growl info message.
- */
-CATMAID.info = CATMAID.msg.bind(window, "Information");
-
-/**
- * Convenience function to show a growl warning message.
- */
-CATMAID.warn = CATMAID.msg.bind(window, "Warning");

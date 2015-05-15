@@ -7,7 +7,6 @@
   Arbor,
   checkPermission,
   ConnectorTable,
-  growlAlert,
   InstanceRegistry,
   NeuronAnnotations,
   NeuronNameService,
@@ -1048,7 +1047,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
       NeuronAnnotations.remove_annotation_from_entities(selected_neurons,
           annotation_id, function(message) {
               // Display message returned by the server
-              growlAlert('Information', message);
+              CATMAID.info(message);
           });
     } else {
       alert("Please select at least one neuron to remove the annotation from first!");
@@ -1861,7 +1860,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
           NeuronAnnotations.remove_annotation(self.neuron_id,
               annotation_id, function(message) {
                   // Display message returned by the server
-                  growlAlert('Information', message);
+                  CATMAID.info(message);
               });
       }, this.create_ann_post_process_fn(this, container));
 

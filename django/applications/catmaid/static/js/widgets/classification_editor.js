@@ -409,7 +409,7 @@ var ClassificationEditor = new function()
                 if(r['status']) {
                     $("#annotation_graph_object").jstree("refresh", -1);
                     project.updateTool();
-                    growlAlert('SUCCESS',
+                    CATMAID.msg('SUCCESS',
                         'Classification graph element "' + friendly_name + '" removed.');
                 }
             });
@@ -440,7 +440,7 @@ var ClassificationEditor = new function()
                 if(r['status']) {
                     $("#annotation_graph_object").jstree("refresh", -1);
                     project.updateTool();
-                    growlAlert('SUCCESS', 'Classification graph element renamed.');
+                    CATMAID.msg('SUCCESS', 'Classification graph element renamed.');
                 }
             });
         });
@@ -915,11 +915,11 @@ var ClassificationEditor = new function()
     };
 
     /**
-     * Shows a growl error message in the top right corner.
+     * Shows status information.
      */
     this.show_status = function( title, message, delaytime ) {
         if (!delaytime)
             delaytime = 2500;
-        growlAlert(title, message, {duration: delaytime});
+        CATMAID.msg(title, message, {duration: delaytime});
     };
 }();

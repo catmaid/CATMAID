@@ -3,7 +3,6 @@
 /* global
   CircuitGraphAnalysis,
   fetchSkeletons,
-  growlAlert,
   InstanceRegistry,
   NeuronNameService,
   OptionsDialog,
@@ -232,7 +231,7 @@ CircuitGraphPlot.prototype.append = function(models) {
 
   if (skids.length < 2) {
     this.clearGUI();
-    growlAlert('Need more than one', 'Need at least two neurons!');
+    CATMAID.msg('Need more than one', 'Need at least two neurons!');
     return;
   }
 
@@ -669,7 +668,7 @@ CircuitGraphPlot.prototype.loadAnatomy = function(callback) {
       },
       function(skid) {
         // Failed to load
-        growlAlert("ERROR", "Skeleton #" + skid + " failed to load.");
+        CATMAID.msg("ERROR", "Skeleton #" + skid + " failed to load.");
         measurements[skid] = null;
       },
       (function() {

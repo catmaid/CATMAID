@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   annotations,
-  growlAlert,
   NeuronNameService,
   OptionsDialog,
   project,
@@ -121,7 +120,7 @@ SettingsWidget.prototype.init = function(space)
     ds.append(createCheckboxSetting("Prefer WebGL Layers", function() {
       userprofile.prefer_webgl_layers = this.checked;
       userprofile.saveAll(function () {
-        growlAlert('Success', 'User profile updated successfully.');
+        CATMAID.msg('Success', 'User profile updated successfully.');
       });
     }, userprofile.prefer_webgl_layers));
   };
@@ -327,7 +326,7 @@ SettingsWidget.prototype.init = function(space)
 
     ds.append($('<button>Save to your profile</button>').click(function () {
       userprofile.saveAll(function () {
-        growlAlert('Success', 'User profile updated successfully.');
+        CATMAID.msg('Success', 'User profile updated successfully.');
       });
     }).addClass('setting'));
 

@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   fetchSkeletons,
-  growlAlert,
   InstanceRegistry,
   NeuronNameService,
   project,
@@ -200,7 +199,7 @@ AnalyzeArbor.prototype.appendOrdered = function(skids, models) {
         function(skid) { return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor-with-minutes'; },
         function(skid) { return {}; },
         this.appendOne.bind(this),
-        function(skid) { growlAlert("ERROR", "Failed to load skeleton #" + skid); },
+        function(skid) { CATMAID.msg("ERROR", "Failed to load skeleton #" + skid); },
         this.updateCharts.bind(this));
   }).bind(this));
 };
@@ -284,7 +283,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
         if (nodes.some(function(node) { return seen[node]; })) {
           // Error: subarbor has nodes that have already been seen
           var msg = "Twig rooted at node #" + sub.root + " of skeleton #" + skid + " shares nodes with other subarbors. Check the dendrogram.";
-          growlAlert("WARNING", msg);
+          CATMAID.msg("WARNING", msg);
           console.log("WARNING", msg);
         }
         // Add the subarbor in any case

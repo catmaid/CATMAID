@@ -6,7 +6,6 @@
   Arbor,
   error,
   fetchSkeletons,
-  growlAlert,
   InstanceRegistry,
   NeuronNameService,
   OptionsDialog,
@@ -502,7 +501,7 @@ WebGLApplication.prototype.spatialSelect = function() {
     }
 
     var newSelection = function(skids) {
-      if (0 === skids.length) return growlAlert("Information", "No skeletons found");
+      if (0 === skids.length) return CATMAID.info("No skeletons found");
       var models = {};
       skids.forEach(function(skid) {
         models[skid] = new SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setRGB(0.5, 0.5, 0.5));
@@ -602,7 +601,7 @@ WebGLApplication.prototype.spatialSelect = function() {
           if (json.error) return new CATMAID.ErrorDialog(
               "Could not fetch skeletons.", json.error);
           if (json.skeletons) {
-            if (json.reached_limit) growlAlert("Warning", "Too many: loaded only a subset");
+            if (json.reached_limit) CATMAID.warn("Too many: loaded only a subset");
             newSelection(json.skeletons);
           } else {
             newSelection(json);
@@ -1024,9 +1023,9 @@ WebGLApplication.prototype.updateSkeletons = function() {
 
 WebGLApplication.prototype.updateActiveSkeleton = function() {
   var skid = SkeletonAnnotations.getActiveSkeletonId();
-  if (undefined === skid) return growlAlert("Information", "No active skeleton");
+  if (undefined === skid) return CATMAID.info("No active skeleton");
   var sk = this.space.content.skeletons[skid];
-  if (!sk) return growlAlert("Information", "Active skeleton is not present in the 3D viewer");
+  if (!sk) return CATMAID.info("Active skeleton is not present in the 3D viewer");
   // Remove and re-add (without removing, only properties are updated upon append, not the geometry)
   this.space.removeSkeleton(sk.id);
   var models = {};
@@ -1036,7 +1035,7 @@ WebGLApplication.prototype.updateActiveSkeleton = function() {
 
 WebGLApplication.prototype.append = function(models) {
   if (0 === Object.keys(models).length) {
-    growlAlert("Info", "No skeletons selected!");
+    CATMAID.info("No skeletons selected!");
     return;
   }
   this.addSkeletons(models, false);
@@ -2308,7 +2307,7 @@ WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = functi
       nodeId = space.pickNodeWithColorMap(ev.offsetX, ev.offsetY, camera);
     }
     if (!nodeId) {
-      growlAlert("Oops", "Couldn't find any intersectable object under the mouse.");
+      CATMAID.msg("Oops", "Couldn't find any intersectable object under the mouse.");
     } else {
       SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
     }
@@ -2935,7 +2934,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         // Flow centrality
         var io = this.createPrePostCounts();
         if (0 === io.postsynaptic_to_count || 0 === io.presynaptic_to_count) {
-          growlAlert('WARNING', 'Neuron "' + this.skeletonmodel.baseName + '" lacks input or output synapses.');
+          CATMAID.warn('Neuron "' + this.skeletonmodel.baseName + '" lacks input or output synapses.');
           c = arbor.nodesArray().reduce(function(o, node) {
             // All the same
             o[node] = 1;
@@ -3077,7 +3076,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           var cuts = arbor.approximateTwigRoots(options.strahler_cut);
           if (cuts && cuts.length > 0) {
             upstream = arbor.upstreamArbor(cuts);
-            growlAlert("Approximating dendritic backbone", "By strahler number " + options.strahler_cut + ", neuron: " + NeuronNameService.getInstance().getName(this.id));
+            CATMAID.msg("Approximating dendritic backbone", "By strahler number " + options.strahler_cut + ", neuron: " + NeuronNameService.getInstance().getName(this.id));
           }
         }
         node_weights = {};
@@ -3331,7 +3330,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
         function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
         function(skid) { return {}; },
         (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(this),
-        function(skid) { growlAlert("Error", "Failed to load synapses for: " + skid); },
+        function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
         (function() {
           if (callback) callback();
           this.render();
@@ -3928,7 +3927,7 @@ WebGLApplication.prototype._validate = function(number, error_msg, min) {
   if (!number) return null;
   var min = typeof(min) === "number" ? min : 1.0;
   var value = +number; // cast
-  if (Number.isNaN(value) || value < min) return growlAlert("WARNING", error_msg);
+  if (Number.isNaN(value) || value < min) return CATMAID.warn(error_msg);
   return value;
 };
 
@@ -4083,7 +4082,7 @@ WebGLApplication.prototype.renderAnimation = function(animation, t)
 WebGLApplication.prototype.startAnimation = function(animation)
 {
   if (this.animationRequestId) {
-    growlAlert('Information', 'There is already an animation running');
+    CATMAID.info('There is already an animation running');
     return;
   }
 

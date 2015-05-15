@@ -3,7 +3,6 @@
 /* global
   CATMAID
   Colorizer,
-  growlAlert,
   InstanceRegistry,
   NeuronNameService,
   project,
@@ -375,7 +374,7 @@ SelectionTable.prototype.addSkeletons = function(ids, callback) {
 SelectionTable.prototype.append = function(models) {
   var skeleton_ids = Object.keys(models);
   if (0 === skeleton_ids.length) {
-    growlAlert("Info", "No skeletons selected!"); // at source
+    CATMAID.info("No skeletons selected!"); // at source
     return;
   }
 

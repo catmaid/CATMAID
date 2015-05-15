@@ -1236,12 +1236,12 @@ var OntologyEditor = new function()
     };
 
     /**
-     * Shows a growl error message in the top right corner.
+     * Show an error message.
      */
     this.show_error_status = function( title, message, delaytime ) {
             if (!delaytime)
                 delaytime = 2500;
-            growlAlert(title, message, {style: 'error', duratin: delaytime});
+            CATMAID.msg(title, message, {style: 'error', duratin: delaytime});
     };
 
     this.display_wait_message = function( message ) {

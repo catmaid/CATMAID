@@ -4,23 +4,25 @@
 
   "use strict";
 
-  PixiTileLayer.contexts = {};
+  PixiTileLayer.contexts = new Map();
 
   function PixiTileLayer() {
     CATMAID.TileLayer.apply(this, arguments);
     this.batchContainer = null;
-    if (!PixiTileLayer.contexts.hasOwnProperty(this.stack.id)) {
+    var context = PixiTileLayer.contexts.get(this.stack);
+    if (!context) {
       if (!PIXI.BaseTextureCacheManager || PIXI.BaseTextureCacheManager.constructor !== PIXI.LRUCacheManager) {
         PIXI.BaseTextureCacheManager = new PIXI.LRUCacheManager(PIXI.BaseTextureCache, 512);
       }
-      PixiTileLayer.contexts[this.stack.id] = {
+      context = {
           renderer: new PIXI.autoDetectRenderer(
               this.stack.getView().clientWidth,
               this.stack.getView().clientHeight),
           stage: new PIXI.Stage(0x000000)};
+      PixiTileLayer.contexts.set(this.stack, context);
     }
-    this.renderer = PixiTileLayer.contexts[this.stack.id].renderer;
-    this.stage = PixiTileLayer.contexts[this.stack.id].stage;
+    this.renderer = context.renderer;
+    this.stage = context.stage;
     this.blendMode = 'normal';
     this.filters = [];
 

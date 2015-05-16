@@ -103,6 +103,7 @@ PIPELINE_JS['catmaid'] = {
         'js/tools/boxselectiontool.js',
         'js/tools/roitool.js',
         'js/tools/*.js',
+        'js/layers/pixi-layer.js',
         'js/layers/*.js',
         'js/widgets/*.js',
     ),

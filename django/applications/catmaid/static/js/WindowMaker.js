@@ -1030,6 +1030,7 @@ var WindowMaker = new function()
 
     var synColors = document.createElement('select');
     synColors.options.add(new Option('Type: pre/red, post/cyan', 'cyan-red'));
+    synColors.options.add(new Option('Type: pre/red, post/cyan (light background)', 'cyan-red-dark'));
     synColors.options.add(new Option('N with partner: pre[red > blue], post[yellow > cyan]', 'by-amount'));
     synColors.options.add(new Option('Synapse clusters', 'synapse-clustering'));
     synColors.options.add(new Option('Max. flow cut: axon (green) and dendrite (blue)', 'axon-and-dendrite'));

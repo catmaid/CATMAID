@@ -3280,7 +3280,8 @@ WebGLApplication.prototype.updateConnectorColors = function(select) {
 };
 
 WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(options, skeletons, callback) {
-  if ('cyan-red' === options.connector_color) {
+  if ('cyan-red' === options.connector_color ||
+      'cyan-red-dark' === options.connector_color) {
     var pre = this.staticContent.synapticColors[0],
         post = this.staticContent.synapticColors[1];
 
@@ -3288,7 +3289,8 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
     pre.vertexColors = THREE.NoColors;
     pre.needsUpdate = true;
 
-    post.color.setRGB(0, 1, 1); // cyan
+    if ('cyan-red' === options.connector_color) post.color.setRGB(0, 1, 1); // cyan
+    else post.color.setHex(0x00b7eb); // dark cyan
     post.vertexColors = THREE.NoColors;
     post.needsUpdate = true;
 
@@ -3349,7 +3351,8 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
 
 /** Operates in conjunction with updateConnectorColors above. */
 WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConnectorColor = function(options, json) {
-  if ('cyan-red' === options.connector_color) {
+  if ('cyan-red' === options.connector_color ||
+      'cyan-red-dark' === options.connector_color) {
     this.CTYPES.slice(1).forEach(function(type, i) {
       this.geometry[type].colors = [];
       this.geometry[type].colorsNeedUpdate = true;

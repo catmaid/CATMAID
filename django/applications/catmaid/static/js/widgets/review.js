@@ -194,14 +194,17 @@
       if (changeSelectedNode) {
         self.current_segment_index++;
 
+        var whitelist = CATMAID.ReviewSystem.Whitelist.getWhitelist();
+        var reviewedByTeam = reviewedByUserOrTeam.bind(self, whitelist);
+
         if (advanceToNextUnfollowed) {
           // Advance current_segment_index to the first node that is not reviewed
-          // by the current user.
+          // by the current user or any review team member.
           var i = self.current_segment_index;
           var seq = self.current_segment['sequence'];
           var len = seq.length;
           while (i < len) {
-            if (!seq[i].rids.some(reviewedByUser)) {
+            if (!seq[i].rids.some(reviewedByTeam)) {
               self.current_segment_index = i;
               break;
             }
@@ -216,7 +219,7 @@
           var i_union = self.current_segment_index;
           var seq = self.current_segment['sequence'];
           var len = seq.length;
-          while (i_user < len && seq[i_user].rids.some(reviewedByUser)) {
+          while (i_user < len && seq[i_user].rids.some(reviewedByTeam)) {
             i_user += 1;
           }
           while (i_union < len && 0 !== seq[i_union].rids.length) {
@@ -255,6 +258,18 @@
     function reviewedByUser(review)
     {
       return session.userid === review[0];
+    }
+
+    /**
+     * Test if a review was done by the current user or a review team member.
+     */
+    function reviewedByUserOrTeam(team, review)
+    {
+      if (reviewedByUser(review)) return true;
+      if (review[0] in team) {
+        return !(new Date(review[1]) < team[review[0]]);
+      }
+      return false;
     }
 
     this.warnIfNodeSkipsSections = function () {

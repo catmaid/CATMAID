@@ -9,10 +9,27 @@ Key shortcuts / mouse operations:
   actual leaf. That is, when it has only one child node and is untagged.
 
 
+Review system:
+
+- Review teams are now respected when Shift + W is used to jump to the next
+  unreviewed node.
+
+
+3D Viewer:
+
+- A light background shading variant for connectors was added. It uses a darker
+  cyan color which provides more contrast if a white background is used.
+
+
 Miscellaneous:
 
 - The location of messages and notifications can be configured in the settings
   widget. The default location is still the upper right corner.
+
+- If the node display limit is hit while panning the field of view in tracing
+  mode, node refresh will be temporary disabled. Once the mouse button is
+  released again an no further panning happens within one second, node update is
+  reset to normal. This allows for smoother panning if many nodes are visible.
 
 
 ### Bug fixes

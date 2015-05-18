@@ -74,6 +74,9 @@ function TracingTool()
     // view is the mouseCatcher now
     var view = tracingLayer.svgOverlay.view;
 
+    // A handle to a delayed update
+    var updateTimeout;
+
     var proto_onmousedown = view.onmousedown;
     view.onmousedown = function( e ) {
       switch ( CATMAID.ui.getMouseButton( e ) )
@@ -87,6 +90,11 @@ function TracingTool()
           // when many nodes are visible.
           tracingLayer.svgOverlay.on(tracingLayer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
               disableLayerUpdate, tracingLayer);
+          // Cancel any existing update timeout, if there is one
+          if (updateTimeout) {
+            clearTimeout(updateTimeout);
+            updateTimeout = undefined;
+          }
 
           proto_onmousedown( e );
 
@@ -98,10 +106,21 @@ function TracingTool()
               CATMAID.ui.removeEvent( "onmouseup", onmouseup );
               tracingLayer.svgOverlay.off(tracingLayer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
                   disableLayerUpdate, tracingLayer);
-              // Make sure the next update is not stopped
-              tracingLayer.svgOverlay.noUpdate = false;
-              // Recreate nodes by feching them from the database for the new field of view
-              tracingLayer.svgOverlay.updateNodes();
+              if (tracingLayer.svgOverlay.noUpdate) {
+                // Wait a second before updating the view, just in case the user
+                // continues to pan to not hit the node limit again. Then make
+                // sure the next update is not stopped.
+                updateTimeout = setTimeout(function() {
+                  tracingLayer.svgOverlay.noUpdate = false;
+                  // Recreate nodes by feching them from the database for the
+                  // new field of view
+                  tracingLayer.svgOverlay.updateNodes();
+                }, 1000);
+              } else {
+                // Recreate nodes by feching them from the database for the new
+                // field of view
+                tracingLayer.svgOverlay.updateNodes();
+              }
             });
           break;
         default:

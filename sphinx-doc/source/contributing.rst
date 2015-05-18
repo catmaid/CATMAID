@@ -217,10 +217,16 @@ commit focuses on a particular component or widget, prefix the commit message
 with its name, such as "Selection table:" or "SVG overlay:".
 
 Granular commits are preferred. Squashes and rollups are avoided, and rebasing
-branches then fast-forwarding is preferred over merge commits when merging to
-master except for large feature branches.
+branches then fast-forwarding is preferred over merge commits when merging,
+except for large feature branches.
 
-Never rewrite history of master or any other branch used by others.
+Development occurs on the ``dev`` branch, which is merged to ``master`` when a
+release is made. It is usually best to develop new features by branching from
+``dev``, although critical fixes or extensions to particular releases can be
+based on ``master`` or the appropriate release tag.
+
+Never rewrite history of ``master``, ``dev``, or any other branch used by
+others.
 
 Linting and Testing
 -------------------

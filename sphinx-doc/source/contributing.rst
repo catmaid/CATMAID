@@ -191,6 +191,7 @@ CATMAID makes full use of ES5 language features and allows the following ES6
 features:
 
 * `Promises <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise>`_
+* `Maps <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map>`_ (IE11-supported ``get``, ``has`` and ``set`` only)
 
 All features must work correctly in recent versions of Chrome and Firefox, while
 core browsing features must work in IE11. Requiring polyfills for IE is

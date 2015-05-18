@@ -269,6 +269,8 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
   this.show_labels = false;
+  /** No new nodes will be fetched if set to true. **/
+  this.noUpdate = false;
 
   /* Variables keeping state for toggling between a terminal and its connector. */
   this.switchingConnectorID = null;
@@ -1418,6 +1420,8 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
       doNotUpdate = dy < sPAD && dy > -sPAD;
     }
   }
+
+  doNotUpdate = doNotUpdate || this.noUpdate;
 
   var screenScale = userprofile.tracing_overlay_screen_scaling;
   this.paper.classed('screen-scale', screenScale);

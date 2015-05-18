@@ -52,6 +52,11 @@ function TracingTool()
     }
   };
 
+  var disableLayerUpdate = function() {
+    CATMAID.warn("Temporary disabling node update until panning is over");
+    tracingLayer.svgOverlay.noUpdate = true;
+  };
+
   var createTracingLayer = function( parentStack )
   {
     stack = parentStack;
@@ -77,13 +82,24 @@ function TracingTool()
           tracingLayer.svgOverlay.whenclicked( e );
           break;
         case 2:
+          // Attach to the node limit hit event to disable node updates
+          // temporary if the limit was hit. This allows for smoother panning
+          // when many nodes are visible.
+          tracingLayer.svgOverlay.on(tracingLayer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+              disableLayerUpdate, tracingLayer);
+
           proto_onmousedown( e );
+
           CATMAID.ui.registerEvent( "onmousemove", updateStatusBar );
           CATMAID.ui.registerEvent( "onmouseup",
             function onmouseup (e) {
               CATMAID.ui.releaseEvents();
               CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
               CATMAID.ui.removeEvent( "onmouseup", onmouseup );
+              tracingLayer.svgOverlay.off(tracingLayer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                  disableLayerUpdate, tracingLayer);
+              // Make sure the next update is not stopped
+              tracingLayer.svgOverlay.noUpdate = false;
               // Recreate nodes by feching them from the database for the new field of view
               tracingLayer.svgOverlay.updateNodes();
             });

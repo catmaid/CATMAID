@@ -390,12 +390,19 @@ SelectionTable.prototype.append = function(models) {
       }
 
       skeleton_ids.forEach(function(skeleton_id) {
+        // Makre sure existing widget settings are respected
+        var model = models[skeleton_id];
+        model.meta_visible = this.all_items_visible['meta'];
+        model.text_visible = this.all_items_visible['text'];
+        model.pre_visible = this.all_items_visible['pre'];
+        model.post_visible = this.all_items_visible['post'];
+
         if (skeleton_id in this.skeleton_ids) {
           // Update skeleton
-          this.skeletons[this.skeleton_ids[skeleton_id]] = models[skeleton_id];
+          this.skeletons[this.skeleton_ids[skeleton_id]] = model;
           return;
         }
-        this.skeletons.push(models[skeleton_id]);
+        this.skeletons.push(model);
         this.reviews[skeleton_id] = parseInt(json[skeleton_id]);
         this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
       }, this);

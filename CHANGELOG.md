@@ -31,6 +31,9 @@ Miscellaneous:
   released again an no further panning happens within one second, node update is
   reset to normal. This allows for smoother panning if many nodes are visible.
 
+- Skeletons added to a selection table, will now honor the table's "global"
+  settings for pre, post, meta and text visibility.
+
 
 ### Bug fixes
 

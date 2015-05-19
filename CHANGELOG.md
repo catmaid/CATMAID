@@ -42,6 +42,9 @@ Miscellaneous:
 
 ### Bug fixes
 
+- Skeletons with other coloring than "Source", will now be visible when exported
+  as SVG in the 3D viewer.
+
 
 ## 2015.5.11
 

@@ -335,8 +335,10 @@ THREE.SVGRenderer = function () {
 		_svgNode.setAttribute( 'y2', v2.positionScreen.y );
 
 		if ( material instanceof THREE.LineBasicMaterial ) {
-
-			_svgNode.setAttribute( 'style', 'fill: none; stroke: ' + material.color.getStyle() + '; stroke-width: ' + material.linewidth + '; stroke-opacity: ' + material.opacity + '; stroke-linecap: ' + material.linecap + '; stroke-linejoin: ' + material.linejoin );
+			// If vertex colors are used, color edge by the color of first vertex
+			var style = (material.vertexColors === THREE.NoColors) ?
+				material.color.getStyle() : element.vertexColors[0].getStyle();
+			_svgNode.setAttribute( 'style', 'fill: none; stroke: ' + style + '; stroke-width: ' + material.linewidth + '; stroke-opacity: ' + material.opacity + '; stroke-linecap: ' + material.linecap + '; stroke-linejoin: ' + material.linejoin );
 
 			_svg.appendChild( _svgNode );
 

@@ -18,7 +18,8 @@ from catmaid.models import Treenode, Connector, TreenodeConnector, User, Review,
 from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from catmaid.fields import Double3D, Integer3D
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
-from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query
+from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query, \
+    delete_annotation_if_unused
 
 
 class TransactionTests(TransactionTestCase):

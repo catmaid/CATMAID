@@ -34,6 +34,11 @@ Miscellaneous:
 - Skeletons added to a selection table, will now honor the table's "global"
   settings for pre, post, meta and text visibility.
 
+- If an annotation is removed from a neuron, the annotation itself will be
+  deleted, too, if it is not used anywhere else. Now also meta annotations of
+  the deleted annotation will be removed (and their meta annotations...), if
+  they are not used anywhere else.
+
 
 ### Bug fixes
 

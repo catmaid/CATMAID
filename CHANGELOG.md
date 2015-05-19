@@ -9,12 +9,6 @@ Key shortcuts / mouse operations:
   actual leaf. That is, when it has only one child node and is untagged.
 
 
-Review system:
-
-- Review teams are now respected when Shift + W is used to jump to the next
-  unreviewed node.
-
-
 3D Viewer:
 
 - A light background shading variant for connectors was added. It uses a darker
@@ -31,6 +25,23 @@ Miscellaneous:
   released again an no further panning happens within one second, node update is
   reset to normal. This allows for smoother panning if many nodes are visible.
 
+
+### Bug fixes
+
+Review system:
+
+- Review teams are now respected when Shift + W is used to jump to the next
+  unreviewed node.
+
+
+3D viewer:
+
+- Skeletons with other coloring than "Source", will now be visible when exported
+  as SVG in the 3D viewer.
+
+
+Miscellaneous:
+
 - Skeletons added to a selection table, will now honor the table's "global"
   settings for pre, post, meta and text visibility.
 
@@ -38,12 +49,6 @@ Miscellaneous:
   deleted, too, if it is not used anywhere else. Now also meta annotations of
   the deleted annotation will be removed (and their meta annotations...), if
   they are not used anywhere else.
-
-
-### Bug fixes
-
-- Skeletons with other coloring than "Source", will now be visible when exported
-  as SVG in the 3D viewer.
 
 
 ## 2015.5.11

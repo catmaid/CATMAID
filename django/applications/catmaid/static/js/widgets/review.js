@@ -267,7 +267,8 @@
     {
       if (reviewedByUser(review)) return true;
       if (review[0] in team) {
-        return !(new Date(review[1]) < team[review[0]]);
+        var rDate = new Date(review[1]);
+        return rDate >= team[review[0]];
       }
       return false;
     }

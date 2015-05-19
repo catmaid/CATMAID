@@ -3,7 +3,6 @@
 /* global
   Arbor,
   CATMAID,
-  growlAlert,
   project,
   requestQueue
   */
@@ -262,7 +261,7 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
               } catch (e) {
                 finish();
                 console.log(e, e.stack);
-                growlAlert("ERROR", "Problem loading skeleton " + skeleton_id);
+                CATMAID.msg("ERROR", "Problem loading skeleton " + skeleton_id);
               }
             });
       };

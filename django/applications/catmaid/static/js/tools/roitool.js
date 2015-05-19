@@ -36,7 +36,7 @@ function RoiTool()
     this.button_roi_apply = document.getElementById( "button_roi_apply" );
     this.button_roi_apply.onclick = this.createRoi.bind(this, function(result) {
         if (result.status) {
-            growlAlert("Success", result.status);
+            CATMAID.msg("Success", result.status);
         }
     });
 

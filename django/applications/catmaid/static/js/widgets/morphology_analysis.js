@@ -3,7 +3,6 @@
 /* global
   Arbor,
   fetchSkeletons,
-  growlAlert,
   InstanceRegistry,
   NeuronNameService,
   project,
@@ -127,7 +126,7 @@ MorphologyPlot.prototype.append = function(models) {
       (function(skeleton_id) {
         // Failed loading
         var model = this.models[skeleton_id];
-        growlAlert("ERROR", "Failed to fetch " + model.baseName + ' #' + skeleton_id);
+        CATMAID.msg("ERROR", "Failed to fetch " + model.baseName + ' #' + skeleton_id);
       }).bind(this),
       (function() {
         // Done loading all
@@ -172,7 +171,7 @@ MorphologyPlot.prototype._populateLine = function(skeleton_id) {
   });
   var center = this._computeCenter(this.center_mode, arbor, positions, line.connectors);
   if (center.error) {
-    growlAlert('WARNING', center.error + " for " + NeuronNameService.getInstance().getName(skeleton_id));
+    CATMAID.warn(center.error + " for " + NeuronNameService.getInstance().getName(skeleton_id));
     center = this._computeCenter(center.alternative_mode, arbor, positions, line.connectors);
   }
 

@@ -18,7 +18,8 @@ from catmaid.models import Treenode, Connector, TreenodeConnector, User, Review,
 from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from catmaid.fields import Double3D, Integer3D
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
-from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query
+from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query, \
+    delete_annotation_if_unused
 
 
 class TransactionTests(TransactionTestCase):
@@ -2346,32 +2347,6 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         parsed_response.sort(key=distsort)
-        self.assertEqual(parsed_response, expected_result)
-
-        # Regression test for acardona/CATMAID#946
-        # Test that an untagged root with multiple children is considered open
-        skeleton_id = 361
-        url = '/%d/skeleton/%d/openleaf' % (self.test_project_id, skeleton_id,)
-        response = self.client.post(url, {'tnid': 367})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        parsed_response.sort(key=distsort)
-        expected_result = \
-                [[367, [7030.0, 1980.0, 0.0], 1, u'2011-09-27T07:57:17.808'],
-                 [387, [9030.0, 1480.0, 0.0], 4, u'2011-09-27T07:57:26.310'],
-                 [399, [5670.0,  640.0, 0.0], 6, u'2011-09-27T07:57:37.518']]
-        self.assertEqual(parsed_response, expected_result)
-
-        # Tag soma and try again
-        response = self.client.post(
-                '/%d/label/treenode/%d/update' % (self.test_project_id, 367),
-                {'tags': 'soma', 'delete_existing': 'false'})
-        self.assertEqual(response.status_code, 200)
-        response = self.client.post(url, {'tnid': 367})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        parsed_response.sort(key=distsort)
-        expected_result.pop(0)
         self.assertEqual(parsed_response, expected_result)
 
     def test_skeleton_ancestry(self):

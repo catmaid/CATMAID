@@ -50,7 +50,7 @@ var ConnectorTable = function(optionalSkid)
           }
 
           if (!skeletonID) {
-            growlAlert('BEWARE', 'You need to activate a treenode to display ' +
+            CATMAID.msg('BEWARE', 'You need to activate a treenode to display ' +
                 'the connector table of its skeleton.');
             skeletonID = 0;
           }

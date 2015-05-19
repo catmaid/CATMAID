@@ -20,7 +20,7 @@
   SkeletonSource.prototype.loadSource = function() {
     var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
     if (0 === models.length) {
-      growlAlert('Info', 'Selected source is empty.');
+      CATMAID.info('Selected source is empty.');
       return;
     }
     this.append(models);

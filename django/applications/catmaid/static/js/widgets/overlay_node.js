@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  growlAlert,
   mayEdit,
   project,
   requestQueue,
@@ -454,6 +453,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.id = null;
     this.parent = null;
     this.parent_id = null;
+    this.type = null;
     this.children = null;
     if (this.c) {
       SkeletonElements.prototype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
@@ -1076,7 +1076,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
           CATMAID.statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
         }
       } else {
-        growlAlert('BEWARE', 'You need to activate a node before joining it to a connector node!');
+        CATMAID.msg('BEWARE', 'You need to activate a node before joining it to a connector node!');
       }
     } else {
       // activate this node

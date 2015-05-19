@@ -52,6 +52,11 @@ function TracingTool()
     }
   };
 
+  var disableLayerUpdate = function() {
+    CATMAID.warn("Temporary disabling node update until panning is over");
+    tracingLayer.svgOverlay.noUpdate = true;
+  };
+
   var createTracingLayer = function( parentStack )
   {
     stack = parentStack;
@@ -69,6 +74,9 @@ function TracingTool()
     // view is the mouseCatcher now
     var view = tracingLayer.svgOverlay.view;
 
+    // A handle to a delayed update
+    var updateTimeout;
+
     var proto_onmousedown = view.onmousedown;
     view.onmousedown = function( e ) {
       switch ( CATMAID.ui.getMouseButton( e ) )
@@ -77,15 +85,42 @@ function TracingTool()
           tracingLayer.svgOverlay.whenclicked( e );
           break;
         case 2:
+          // Attach to the node limit hit event to disable node updates
+          // temporary if the limit was hit. This allows for smoother panning
+          // when many nodes are visible.
+          tracingLayer.svgOverlay.on(tracingLayer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+              disableLayerUpdate, tracingLayer);
+          // Cancel any existing update timeout, if there is one
+          if (updateTimeout) {
+            clearTimeout(updateTimeout);
+            updateTimeout = undefined;
+          }
+
           proto_onmousedown( e );
+
           CATMAID.ui.registerEvent( "onmousemove", updateStatusBar );
           CATMAID.ui.registerEvent( "onmouseup",
             function onmouseup (e) {
               CATMAID.ui.releaseEvents();
               CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
               CATMAID.ui.removeEvent( "onmouseup", onmouseup );
-              // Recreate nodes by feching them from the database for the new field of view
-              tracingLayer.svgOverlay.updateNodes();
+              tracingLayer.svgOverlay.off(tracingLayer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                  disableLayerUpdate, tracingLayer);
+              if (tracingLayer.svgOverlay.noUpdate) {
+                // Wait a second before updating the view, just in case the user
+                // continues to pan to not hit the node limit again. Then make
+                // sure the next update is not stopped.
+                updateTimeout = setTimeout(function() {
+                  tracingLayer.svgOverlay.noUpdate = false;
+                  // Recreate nodes by feching them from the database for the
+                  // new field of view
+                  tracingLayer.svgOverlay.updateNodes();
+                }, 1000);
+              } else {
+                // Recreate nodes by feching them from the database for the new
+                // field of view
+                tracingLayer.svgOverlay.updateNodes();
+              }
             });
           break;
         default:
@@ -336,7 +371,7 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
-    helpText: "Go to nearest open leaf or untagged root node (subsequent shift+R: cycle through other open leaves; with alt: most recent rather than nearest)",
+    helpText: "Go to nearest open leaf node (subsequent shift+R: cycle through other open leaves; with alt: most recent rather than nearest)",
     keyShortcuts: { "R": [ 82 ] },
     run: function (e) {
       if (!mayView())

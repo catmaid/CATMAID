@@ -1,10 +1,66 @@
 ## Under development
 
-
 ### Features and enhancements
 
 
+
 ### Bug fixes
+
+
+
+## 2015.5.19
+
+Contributors: Tom Kazimiers
+
+
+### Features and enhancements
+
+Key shortcuts / mouse operations:
+
+- Cycling through open end nodes will now only visit the root node if it is an
+  actual leaf. That is, when it has only one child node and is untagged.
+
+
+3D Viewer:
+
+- A light background shading variant for connectors was added. It uses a darker
+  cyan color which provides more contrast if a white background is used.
+
+
+Miscellaneous:
+
+- The location of messages and notifications can be configured in the settings
+  widget. The default location is still the upper right corner.
+
+- If the node display limit is hit while panning the field of view in tracing
+  mode, node refresh will be temporary disabled. Once the mouse button is
+  released again an no further panning happens within one second, node update is
+  reset to normal. This allows for smoother panning if many nodes are visible.
+
+
+### Bug fixes
+
+Review system:
+
+- Review teams are now respected when Shift + W is used to jump to the next
+  unreviewed node.
+
+
+3D viewer:
+
+- Skeletons with other coloring than "Source", will now be visible when exported
+  as SVG in the 3D viewer.
+
+
+Miscellaneous:
+
+- Skeletons added to a selection table, will now honor the table's "global"
+  settings for pre, post, meta and text visibility.
+
+- If an annotation is removed from a neuron, the annotation itself will be
+  deleted, too, if it is not used anywhere else. Now also meta annotations of
+  the deleted annotation will be removed (and their meta annotations...), if
+  they are not used anywhere else.
 
 
 ## 2015.5.11

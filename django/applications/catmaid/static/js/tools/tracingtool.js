@@ -57,7 +57,7 @@ function TracingTool()
     project.getStacks().forEach(function(stack) {
       var existingLayer = stack.getLayer(getTracingLayerName(stack));
       if (existingLayer) {
-        existingLayer.svgOverlay.setAllSuspended(value)
+        existingLayer.svgOverlay.setAllSuspended(value);
       }
     });
   };
@@ -67,7 +67,7 @@ function TracingTool()
     project.getStacks().forEach(function(stack) {
       var existingLayer = stack.getLayer(getTracingLayerName(stack));
       if (existingLayer) {
-        existingLayer.svgOverlay.updateNodes()
+        existingLayer.svgOverlay.updateNodes();
       }
     });
   };
@@ -184,7 +184,7 @@ function TracingTool()
     // NOW set the mode TODO cleanup this initialization problem
     SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
     tracingLayer.svgOverlay.updateNodes();
-  };
+  }
 
   /**
    * install this tool in a stack.

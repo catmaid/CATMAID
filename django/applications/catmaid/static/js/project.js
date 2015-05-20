@@ -395,7 +395,7 @@ function Project( pid )
 						    self.moveToProjectInStacks( zp, yp, xp, res, stacks, completionCallback );
 					    });
 		}
-	}
+	};
 
 	/**
 	 * move all stacks to the physical coordinates, at a given resolution

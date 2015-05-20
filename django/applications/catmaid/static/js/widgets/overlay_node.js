@@ -654,7 +654,7 @@
           var r = {
             x: rS.x - nodeX,
             y: rS.y - nodeY
-          }
+          };
           var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2));
           c.attr('r', newR);
           // Strore also x and y components

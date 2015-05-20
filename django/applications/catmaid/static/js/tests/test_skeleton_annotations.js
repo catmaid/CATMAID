@@ -22,20 +22,20 @@ QUnit.test('Skeleton annotations test', function( assert ) {
     var vnID = "vn-123-456-8";
     var components = SkeletonAnnotations.getVirtualNodeComponents(vnID);
     assert.strictEqual(components.length, 4,
-        "SkeletonAnnotations.getVirtualNodeComponents correctly identifies four matches in " + vnID)
+        "SkeletonAnnotations.getVirtualNodeComponents correctly identifies four matches in " + vnID);
     assert.strictEqual(components[1], "123",
-        "SkeletonAnnotations.getVirtualNodeComponents correctly finds 123 as second match in " + vnID)
+        "SkeletonAnnotations.getVirtualNodeComponents correctly finds 123 as second match in " + vnID);
     assert.strictEqual(components[2], "456",
-        "SkeletonAnnotations.getVirtualNodeComponents correctly finds 456 as third match in " + vnID)
+        "SkeletonAnnotations.getVirtualNodeComponents correctly finds 456 as third match in " + vnID);
     assert.strictEqual(components[3], "8",
-        "SkeletonAnnotations.getVirtualNodeComponents correctly finds 8 as fourth match in " + vnID)
+        "SkeletonAnnotations.getVirtualNodeComponents correctly finds 8 as fourth match in " + vnID);
   })();
 
   // Test SkeletonAnnotations.getChildOfVirtualNode
   (function() {
     var vnID = "vn-123-456-8";
     assert.strictEqual(SkeletonAnnotations.getChildOfVirtualNode(vnID), "123",
-        "SkeletonAnnotations.getChildOfVirtualNode correctly identifies 123 as child of " + vnID)
+        "SkeletonAnnotations.getChildOfVirtualNode correctly identifies 123 as child of " + vnID);
     assert.strictEqual(SkeletonAnnotations.getChildOfVirtualNode(123), null,
         "SkeletonAnnotations.getChildOfVirtualNode correctly returns null for ID 123");
   })();
@@ -44,7 +44,7 @@ QUnit.test('Skeleton annotations test', function( assert ) {
   (function() {
     var vnID = "vn-123-456-8";
     assert.strictEqual(SkeletonAnnotations.getParentOfVirtualNode(vnID), "456",
-        "SkeletonAnnotations.getParentOfVirtualNode correctly identifies 456 as parent of " + vnID)
+        "SkeletonAnnotations.getParentOfVirtualNode correctly identifies 456 as parent of " + vnID);
     assert.strictEqual(SkeletonAnnotations.getParentOfVirtualNode(123), null,
         "SkeletonAnnotations.getParentOfVirtualNode correctly returns null for ID 123");
   })();
@@ -53,7 +53,7 @@ QUnit.test('Skeleton annotations test', function( assert ) {
   (function() {
     var vnID = "vn-123-456-8";
     assert.strictEqual(SkeletonAnnotations.getZOfVirtualNode(vnID), "8",
-        "SkeletonAnnotations.getZOfVirtualNode correctly identifies 8 as Z of " + vnID)
+        "SkeletonAnnotations.getZOfVirtualNode correctly identifies 8 as Z of " + vnID);
     assert.strictEqual(SkeletonAnnotations.getZOfVirtualNode(123), null,
         "SkeletonAnnotations.getZOfVirtualNode correctly returns null for ID 123");
   })();

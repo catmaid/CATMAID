@@ -559,7 +559,7 @@ function Stack(
 			for ( sp = 0; l > 1; l >>= 1, --sp );
 		}
 		return sp;
-	}
+	};
 
 	/**
 	 * move to project-coordinates passing project coordinates and resolution
@@ -584,7 +584,7 @@ function Stack(
 		}
 
 		self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
-	}
+	};
 
 	/**
 	 * move to pixel coordinates

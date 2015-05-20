@@ -443,7 +443,7 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
 
   /* lastX, lastY: in unscaled stack coordinates, for the 'z' key to know where
    * the mouse was. */
-  this.coords = {lastX: null, lastY: null}
+  this.coords = {lastX: null, lastY: null};
 
   /* padding beyond screen borders for fetching data and updating nodes */
   this.PAD = 256;
@@ -1800,7 +1800,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
       this.nodes[n.id] = this.graphics.newNode(n.id, null, n.parent_id, n.radius,
           n.x, n.y, n.z, n.z - this.stack.z, n.confidence, n.skeleton_id, n.can_edit);
     }, this);
-  };
+  }
 
   // Populate Nodes
   jso[0].forEach(function(a, index, array) {
@@ -1979,7 +1979,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     // Define X and Y so that they are on the intersection of the line between
     // child and parent and the current section.
     var pos = CATMAID.tools.intersectLineWithZPlane(child.x, child.y, child.z,
-        parent.x, parent.y, parent.z, z)
+        parent.x, parent.y, parent.z, z);
 
     // The ID should be different for the the same child and parent in
     // different Z sections to distinguish virtual nodes on different sections.
@@ -2003,7 +2003,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     vn.addChildNode(child);
 
     return vn;
-  };
+  }
 };
 
 /**
@@ -2651,7 +2651,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
       return {
         x: (r.x / self.stack.scale) + offsetX,
         y: (r.y / self.stack.scale) + offsetY
-      }
+      };
     }
 
     /**
@@ -2802,7 +2802,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
                   var c = {x: json[1], y: json[2], z: json[3]};
                   // Find intersection at virtual node
                   var pos = CATMAID.tools.intersectLineWithZPlane(c.x, c.y, c.z,
-                      p.x, p.y, p.z, vnZ)
+                      p.x, p.y, p.z, vnZ);
                   // Move there
                   self.moveTo(vnZ, pos[1], pos[0], fn);
                 },

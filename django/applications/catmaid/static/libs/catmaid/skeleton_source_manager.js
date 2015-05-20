@@ -144,7 +144,7 @@
     }
     var skeletons = source.getSelectedSkeletons();
     if (0 === skeletons.length) {
-      growlAlert('Info', 'No skeletons available at ' + source.getName());
+      CATMAID.info('No skeletons available at ' + source.getName());
     }
     return skeletons;
   };
@@ -157,7 +157,7 @@
     }
     var models = source.getSelectedSkeletonModels();
     if (0 === models.length) {
-      growlAlert('Info', 'No skeletons selected at ' + source.getName());
+      CATMAID.info('No skeletons selected at ' + source.getName());
     }
     return models;
   };

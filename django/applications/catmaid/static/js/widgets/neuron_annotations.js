@@ -3,7 +3,6 @@
 /* global
   annotations,
   checkPermission,
-  growlAlert,
   InstanceRegistry,
   NeuronNameService,
   NeuronNavigator,
@@ -305,7 +304,7 @@ NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
       NeuronAnnotations.remove_annotation(neuron_id,
           annotation_id, (function(message) {
               // Display message returned by the server
-              growlAlert('Information', message);
+              CATMAID.info(message);
               // Remove current annotation from displayed list
               var result_tr = $('#neuron_annotations_query_results' +
                   this.widgetID).find('.show_annotation[neuron_id=' +
@@ -724,19 +723,17 @@ NeuronAnnotations.prototype.annotate = function(entity_ids, skeleton_ids,
               }, []);
               if (e.annotations.length == 1)
                 if (used_annotations.length > 0) {
-                  growlAlert('Information', 'Annotation ' + ann_names[0] +
-                      ' added to ' + e.annotations[0].entities.length +
-                       (e.annotations[0].entities.length > 1 ? ' entities.' : ' entity.'));
+                  CATMAID.info('Annotation ' + ann_names[0] + ' added to ' +
+                      e.annotations[0].entities.length +
+                      (e.annotations[0].entities.length > 1 ? ' entities.' : ' entity.'));
                 } else {
-                  growlAlert('Information', 'Couldn\'t add annotation ' +
-                      ann_names[0] + '.');
+                  CATMAID.info('Couldn\'t add annotation ' + ann_names[0] + '.');
                 }
               else
                 if (used_annotations.length > 0) {
-                  growlAlert('Information', 'Annotations ' +
-                      used_annotations.join(', ') + ' added.');
+                  CATMAID.info('Annotations ' + used_annotations.join(', ') + ' added.');
                 } else {
-                  growlAlert('Information', 'Couldn\'t add any of the annotations' +
+                  CATMAID.info('Couldn\'t add any of the annotations' +
                       ann_names.join(', ') + '.');
                 }
               // Update the annotation cache with new annotations, if any

@@ -4,7 +4,6 @@
   CircuitGraphPlot,
   cytoscape,
   fetchSkeletons,
-  growlAlert,
   InstanceRegistry,
   NeuronNameService,
   parseColorWheel,
@@ -242,12 +241,12 @@ GroupGraph.prototype.graph_properties = function() {
       try {
         var v = parseInt(new_value);
         if (v < 0) {
-          growlAlert("Warning", "Value for " + name + " must be positive!");
+          CATMAID.warn("Value for " + name + " must be positive!");
           return old_value;
         }
         return new_value;
       } catch (e) {
-        growlAlert("Warning", "Bad value: " + new_value);
+        CATMAID.warn("Bad value: " + new_value);
         return old_value;
       }
     };
@@ -821,7 +820,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         });
 
       } else {
-        growlAlert("Information", "No subgraph possible for '" + name + "' and tag '" + this.tag.regex + "'");
+        CATMAID.info("No subgraph possible for '" + name + "' and tag '" + this.tag.regex + "'");
       }
     } else if (mode > 0) {
       // Synapse clustering: mode is the bandwidth
@@ -1238,7 +1237,7 @@ GroupGraph.prototype.append = function(models) {
 GroupGraph.prototype.appendAsGroup = function() {
   var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
   if (0 === models.length) {
-    growlAlert('Info', 'Selected source is empty.');
+    CATMAID.info('Selected source is empty.');
     return;
   } else if (1 === models.length) {
     this.append(models);
@@ -1348,7 +1347,7 @@ GroupGraph.prototype.load = function(models) {
 /** Fetch data from the database and remake the graph. */
 GroupGraph.prototype._load = function(models) {
   var skeleton_ids = Object.keys(models);
-  if (0 === skeleton_ids.length) return growlAlert("Info", "Nothing to load!");
+  if (0 === skeleton_ids.length) return CATMAID.info("Nothing to load!");
 
   requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
       "POST",
@@ -1560,7 +1559,7 @@ GroupGraph.prototype.growGraph = function() {
     // Otherwise directly just grow the partners of the split nodes by n_circles -1
     rest(s.split_partners, s.n_circles -1);
   } else {
-    growlAlert("Information", "No partners found.");
+    CATMAID.info("No partners found.");
   }
 };
 
@@ -1595,9 +1594,9 @@ GroupGraph.prototype.growPaths = function() {
 
   var end = (function() {
     var skids = Object.keys(new_skids);
-    if (0 === skids.length) return growlAlert("Information", "No paths found.");
+    if (0 === skids.length) return CATMAID.info("No paths found.");
     skids = skids.filter(function(skid) { return !this.hasSkeleton(skid); }, this);
-    if (0 === skids.length) return growlAlert("Information", "No other paths found.");
+    if (0 === skids.length) return CATMAID.info("No other paths found.");
     this.append(skids.reduce(function(o, skid) {
       o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setHex(0xffae56));
       return o;
@@ -1861,7 +1860,7 @@ GroupGraph.prototype.colorBy = function(mode, select) {
       });
     } catch (e) {
       console.log(e, e.stack);
-      growlAlert('ERROR', 'Problem computing betweenness centrality');
+      CATMAID.msg('ERROR', 'Problem computing betweenness centrality');
     }
     $.unblockUI();
 
@@ -1878,7 +1877,7 @@ GroupGraph.prototype.colorCirclesOfHell = function(upstream) {
   // Make all nodes white when deselecting
   var selected = this.cy.nodes().toArray().filter(function(node) { return node.selected(); });
   if (1 !== selected.length) {
-    if (0 !== selected.length) growlAlert("Info", "Need 1 (and only 1) selected node!");
+    if (0 !== selected.length) CATMAID.info("Need 1 (and only 1) selected node!");
     this.cy.nodes().data('color', '#fff');
     return;
   }
@@ -2387,7 +2386,7 @@ GroupGraph.prototype.group = function() {
     }, o);
   }).bind(this), {});
   if (Object.keys(models).length > 1) this.appendGroup(models);
-  else growlAlert("Information", "Select at least 2 nodes!");
+  else CATMAID.info("Select at least 2 nodes!");
 };
 
 /** Split nodes representing groups into their constituent nodes, one per skeleton. */
@@ -2401,7 +2400,7 @@ GroupGraph.prototype.ungroup = function() {
     }
   });
   if (count > 0) this.update();
-  else growlAlert("Information", "Nothing to ungroup!");
+  else CATMAID.info("Nothing to ungroup!");
 };
 
 /** Iterate over all visible directed edges
@@ -2449,7 +2448,7 @@ GroupGraph.prototype.annotateEdgeRisk = function() {
   var targets = Object.keys(edges);
 
   if (0 === targets.length) {
-    if (!autapses) growlAlert("Information", "Select at least 2 connected nodes, that are not groups!");
+    if (!autapses) CATMAID.info("Select at least 2 connected nodes, that are not groups!");
     return;
   }
 
@@ -2516,7 +2515,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
 
         if (0 === connectors.length) {
           // edge(s) disappeared from database
-          growlAlert('Information', 'Could not find edges for skeleton #' + target);
+          CATMAID.info('Could not find edges for skeleton #' + target);
           return;
         }
 
@@ -2524,7 +2523,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
 
         if (0 === ap.n_inputs) {
           // Database changed
-          growlAlert('Information', 'Skeleton #' + target + ' no longer has any input synapses');
+          CATMAID.info('Skeleton #' + target + ' no longer has any input synapses');
           return;
         }
 
@@ -2568,7 +2567,7 @@ GroupGraph.prototype.computeRisk = function(edges, inputs, callback) {
 
           if (0 === Object.keys(edge_synapses)) {
             // Database changed
-            growlAlert('Information', 'Skeleton #' + target + ' no longer receives inputs from skeleton #' + source);
+            CATMAID.info('Skeleton #' + target + ' no longer receives inputs from skeleton #' + source);
             return;
           }
 
@@ -2670,7 +2669,7 @@ GroupGraph.prototype.quantificationDialog = function() {
 
 GroupGraph.prototype.split = function(mode) {
   var sel = this.getSelectedSkeletons();
-  if (0 === sel.length) return growlAlert("Information", "Select one or more nodes first!");
+  if (0 === sel.length) return CATMAID.info("Select one or more nodes first!");
   sel.forEach(function(skid) {
     if (undefined === mode) delete this.subgraphs[skid];
     else this.subgraphs[skid] = mode;
@@ -2710,7 +2709,7 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
 };
 
 GroupGraph.prototype.splitByTag = function() {
-  if (0 === this.getSelectedSkeletons().length) return this.split(); // will show growlAlert
+  if (0 === this.getSelectedSkeletons().length) return this.split(); // will show message
   var dialog = new OptionsDialog("Split at tag"),
       input = dialog.appendField("Tag (exact match): ", "tag_text", this.tag_text),
       first = dialog.appendField("Part with root node: ", "root_text", this.tag_title_root),
@@ -2831,7 +2830,7 @@ GroupGraph.prototype.loadFromJSON = function(files) {
               });
               if (missing.length > 0) {
                 this.removeSkeletons(missing);
-                growlAlert("WARNING", "Did NOT load " + missing.length + " missing skeleton" + (1 === missing.length ? "" : "s"));
+                CATMAID.warn("Did NOT load " + missing.length + " missing skeleton" + (1 === missing.length ? "" : "s"));
               }
               this.update(); // removes missing ones (but doesn't) and regenerate the data for subgraph nodes
             }).bind(this));

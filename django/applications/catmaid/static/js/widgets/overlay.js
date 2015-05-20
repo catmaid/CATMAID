@@ -4,7 +4,6 @@
   CATMAID,
   display_tracing_setup_dialog,
   Events,
-  growlAlert,
   mayEdit,
   NeuronAnnotations,
   NeuronNameService,
@@ -435,6 +434,8 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.show_labels = false;
   /** Indicate if this overlay is suspended and won't update. */
   this.suspended = false;
+  /** No new nodes will be fetched if set to true. **/
+  this.noUpdate = false;
 
   /* Variables keeping state for toggling between a terminal and its connector. */
   this.switchingConnectorID = null;
@@ -480,7 +481,10 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
     this.handleDeletedSkeleton, this);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype = {};
+SkeletonAnnotations.SVGOverlay.prototype = {
+  EVENT_HIT_NODE_DISPLAY_LIMIT: "tracing_hit_node_display_limit"
+};
+Events.extend(SkeletonAnnotations.SVGOverlay.prototype);
 
 /**
  * Suspend or wake up all tracing overlay instances.
@@ -1223,11 +1227,11 @@ SkeletonAnnotations.SVGOverlay.prototype.toggleLabels = function() {
  */
 SkeletonAnnotations.SVGOverlay.prototype.checkLoadedAndIsNotRoot = function(nodeID) {
   if (null === nodeID || !this.nodes.hasOwnProperty(nodeID)) {
-    growlAlert("Warning", "Cannot find node with ID " + nodeID);
+    CATMAID.warn("Cannot find node with ID " + nodeID);
     return false;
   }
   if (this.nodes[nodeID].isroot) {
-    growlAlert("Information", "Node is already root!");
+    CATMAID.info("Node is already root!");
     return false;
   }
   return true;
@@ -1486,7 +1490,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (
     return;
   }
   if (Object.keys(connectorNode.pregroup).length > 0) {
-    growlAlert("WARNING", "The connector already has a presynaptic node!");
+    CATMAID.warn("The connector already has a presynaptic node!");
     return;
   }
   this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
@@ -1649,7 +1653,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () 
     }
 
     if (!SkeletonAnnotations.getActiveNodeId()) {
-        growlAlert("WARNING", "No node selected!");
+        CATMAID.warn("No node selected!");
         return;
     }
     requester(SkeletonAnnotations.getActiveNodeId(), queue[0]);
@@ -1714,7 +1718,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
         // Check whether the Z coordinate of the new node is beyond one section away
         // from the Z coordinate of the parent node (which is the active by definition)
         if (active_node_z !== null && Math.abs(active_node_z - nn.z) > self.stack.resolution.z) {
-          growlAlert('BEWARE', 'Node added beyond one section from its parent node!');
+          CATMAID.msg('BEWARE', 'Node added beyond one section from its parent node!');
         }
 
         // Invoke callback if necessary
@@ -1954,7 +1958,8 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     var msg = "Did not retrieve all visible nodes--too many! Zoom in to " +
       "constrain the field of view.";
     CATMAID.statusBar.replaceLast("*WARNING*: " + msg);
-    growlAlert('WARNING', msg);
+    CATMAID.warn(msg);
+    this.trigger(this.EVENT_HIT_NODE_DISPLAY_LIMIT);
   }
 
   /**
@@ -2031,6 +2036,8 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
       doNotUpdate = dy < sPAD && dy > -sPAD;
     }
   }
+
+  doNotUpdate = doNotUpdate || this.noUpdate;
 
   var screenScale = userprofile.tracing_overlay_screen_scaling;
   this.paper.classed('screen-scale', screenScale);
@@ -2137,7 +2144,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   } else if (e.shiftKey) {
     if (null === atn.id) {
       if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
-        growlAlert('BEWARE', 'You need to activate a treenode first (skeleton tracing mode)!');
+        CATMAID.msg('BEWARE', 'You need to activate a treenode first (skeleton tracing mode)!');
         e.stopPropagation();
         return true;
       }
@@ -2408,7 +2415,7 @@ SkeletonAnnotations.SVGOverlay.prototype.setConfidence = function(newConfidence,
  */
 SkeletonAnnotations.SVGOverlay.prototype.isIDNull = function(nodeID) {
   if (!nodeID) {
-    growlAlert("Information", "Select a node first!");
+    CATMAID.info("Select a node first!");
     return true;
   }
   return false;
@@ -2436,7 +2443,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToPreviousBranchOrRootNode = function
         // json[1], [2], [3]: x, y, z in calibrated world units
         if (treenode_id === json[0]) {
           // Already at the root node
-          growlAlert('Already there', 'You are already at the root node');
+          CATMAID.msg('Already there', 'You are already at the root node');
           // Center already selected node
           self.moveTo(json[3], json[2], json[1]);
         } else {
@@ -2476,7 +2483,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
           // node[1], [2], [3]: x, y, z in calibrated world units
           if (json.length === 0) {
             // Already at a branch or end node
-            growlAlert('Already there', 'You are at an end node');
+            CATMAID.msg('Already there', 'You are at an end node');
             // Center already selected node
             var atn = SkeletonAnnotations.atn;
             if (atn) {
@@ -2855,7 +2862,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
           // [2]: distance (path length)
           // [3]: creation_time
           if (0 === json.length) {
-            growlAlert("Information", "No more open ends!");
+            CATMAID.info("No more open ends!");
           } else {
             self.nextOpenEnds = { tnid: nodeID, ends: json, byTime: null };
             self.cycleThroughOpenEnds(null, byTime);
@@ -3410,6 +3417,7 @@ SkeletonAnnotations.Tag = new (function() {
           if ("" === input.tagEditorGetTags()) {
             SkeletonAnnotations.Tag.updateTags(svgOverlay);
             SkeletonAnnotations.Tag.removeTagbox();
+            CATMAID.info('Tags saved!');
             svgOverlay.updateNodes();
           }
           event.stopPropagation();
@@ -3483,7 +3491,7 @@ SkeletonAnnotations.Tag = new (function() {
       return;
     }
     if (this.tagbox) {
-      growlAlert('BEWARE', 'Close tagbox first before you tag another node!');
+      CATMAID.msg('BEWARE', 'Close tagbox first before you tag another node!');
       return;
     }
     if (svgOverlay.stack.z !== atn.z) {

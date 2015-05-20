@@ -297,9 +297,11 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
     These annotations are expected to come as dictornary of annotation name
     versus annotator ID.
     """
+    annotated_with = Relation.objects.get(project_id=project_id,
+            relation_name='annotated_with')
+
     qs = ClassInstanceClassInstance.objects.filter(
-            class_instance_a__id=neuron_id,
-            relation__relation_name='annotated_with')
+            class_instance_a__id=neuron_id, relation=annotated_with)
     qs = qs.select_related('class_instance_b').values_list(
             'class_instance_b__name', 'class_instance_b__id')
 
@@ -315,11 +317,37 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
     to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \
         if name in to_delete)
 
-    ClassInstanceClassInstance.objects.filter(
-            class_instance_a_id=neuron_id,
-            relation__relation_name='annotated_with',
+    ClassInstanceClassInstance.objects.filter(project=project_id,
+            class_instance_a_id=neuron_id, relation=annotated_with,
             class_instance_b_id__in=to_delete_ids).delete()
 
+    for aid in to_delete_ids:
+        delete_annotation_if_unused(project_id, aid, annotated_with)
+
+
+def delete_annotation_if_unused(project, annotation, relation):
+    """ Delete the given annotation instance if it is not used anymore.
+    Returns a tuple where the first element states if
+    """
+    num_annotation_links = ClassInstanceClassInstance.objects.filter(
+        project=project, class_instance_b=annotation, relation=relation).count()
+
+    if num_annotation_links:
+        return False, num_annotation_links
+    else:
+        # See if the annotation is annotated itself
+        meta_annotation_links = ClassInstanceClassInstance.objects.filter(
+            project=project, class_instance_a=annotation, relation=relation)
+        meta_annotation_ids = [cici.class_instance_b_id for cici in meta_annotation_links]
+
+        # Delete annotation
+        ClassInstance.objects.filter(project=project, id=annotation).delete()
+
+        # Delete also meta annotation instances, if they exist
+        for ma in meta_annotation_ids:
+            delete_annotation_if_unused(project, ma, relation)
+
+        return True, 0
 
 def _annotate_entities(project_id, entity_ids, annotation_map):
     """ Annotate the entities with the given <entity_ids> with the given
@@ -479,16 +507,15 @@ def remove_annotation(request, project_id=None, annotation_id=None):
 
     # Remove the annotation class instance, regardless of the owner, if there
     # are no more links to it
-    annotation_links = ClassInstanceClassInstance.objects.filter(project=p,
-            class_instance_b__id=annotation_id)
-    num_annotation_links = annotation_links.count()
-    if num_annotation_links == 0:
-        ClassInstance.objects.get(pk=annotation_id).delete()
+    annotated_with = Relation.objects.get(project_id=project_id,
+            relation_name='annotated_with')
+    deleted, num_left = delete_annotation_if_unused(project_id, annotation_id,
+                                                    annotated_with)
+    if deleted:
         message += " Also removed annotation instance, because it isn't used " \
                 "anywhere else."
     else:
-        message += " There are %s links left to this annotation." \
-                % num_annotation_links
+        message += " There are %s links left to this annotation." % num_left
 
     return HttpResponse(json.dumps({'message': message}), content_type='text/json')
 

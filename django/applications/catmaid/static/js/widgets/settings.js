@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   annotations,
-  growlAlert,
   NeuronNameService,
   project,
   requestQueue,
@@ -104,6 +103,35 @@ SettingsWidget.prototype.init = function(space)
   };
 
   /**
+   * Adds general settings to the given container.
+   */
+  var addGeneralSettings = function(container)
+  {
+    var ds = addSettingsContainer(container, "General settings");
+
+    var msgPosition = $('<select/>');
+    var positionOptions = [
+      {name: 'Top left', id: 'tl'},
+      {name: 'Top right', id: 'tr'},
+      {name: 'Bottom left', id: 'bl'},
+      {name: 'Bottom right', id: 'br'},
+      {name: 'Top center', id: 'tc'},
+      {name: 'Bottom center', id: 'bc'}
+    ];
+    positionOptions.forEach(function(o) {
+      this.append(new Option(o.name, o.id));
+    }, msgPosition);
+
+    ds.append($('<div/>').addClass('setting').append('Choose where on the ' +
+          'screen messages should be displayed. By the default they are ' +
+          'displayed in the upper right corner'));
+    ds.append(createLabeledControl('Message position', msgPosition));
+    msgPosition.on('change', function(e) {
+      CATMAID.messagePosition = this.value;
+    });
+  };
+
+  /**
    * Adds TileLayer settings to the given container.
    */
   var addTileLayerSettings = function(container)
@@ -120,7 +148,7 @@ SettingsWidget.prototype.init = function(space)
     ds.append(createCheckboxSetting("Prefer WebGL Layers", function() {
       userprofile.prefer_webgl_layers = this.checked;
       userprofile.saveAll(function () {
-        growlAlert('Success', 'User profile updated successfully.');
+        CATMAID.msg('Success', 'User profile updated successfully.');
       });
     }, userprofile.prefer_webgl_layers));
   };
@@ -326,7 +354,7 @@ SettingsWidget.prototype.init = function(space)
 
     ds.append($('<button>Save to your profile</button>').click(function () {
       userprofile.saveAll(function () {
-        growlAlert('Success', 'User profile updated successfully.');
+        CATMAID.msg('Success', 'User profile updated successfully.');
       });
     }).addClass('setting'));
 
@@ -416,6 +444,7 @@ SettingsWidget.prototype.init = function(space)
 
 
   // Add all settings
+  addGeneralSettings(space);
   addTileLayerSettings(space);
   addGridSettings(space);
   addTracingSettings(space);

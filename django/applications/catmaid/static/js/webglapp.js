@@ -163,7 +163,7 @@ WebGLApplication.prototype.fullscreenWebGL = function() {
  * dimension afterwards.
  */
 WebGLApplication.prototype.askForDimensions = function(title, fn) {
-  var dialog = new OptionsDialog(title);
+  var dialog = new CATMAID.OptionsDialog(title);
   dialog.appendMessage("Please adjust the dimensions to your liking. They " +
       "default to the current size of the 3D viewer");
   var imageWidthField = dialog.appendField("Image width (px): ",

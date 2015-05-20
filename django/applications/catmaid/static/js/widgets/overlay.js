@@ -2848,7 +2848,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
   } else {
     var self = this;
     if (!this.isRealNode(nodeID)) {
-      nodeID = SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
+      nodeID = SkeletonAnnotations.getParentOfVirtualNode(nodeID);
     }
     // TODO could be done by inspecting the graph locally if it is loaded in the
     // 3D viewer or treenode table (but either source may not be up to date)

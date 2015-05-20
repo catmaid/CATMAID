@@ -433,6 +433,14 @@ class Migration(SchemaMigration):
             'skeleton': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['catmaid.ClassInstance']"}),
             'treenode': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['catmaid.Treenode']"})
         },
+        u'catmaid.reviewerwhitelist': {
+            'Meta': {'unique_together': "(('project', 'user', 'reviewer'),)", 'object_name': 'ReviewerWhitelist', 'db_table': "'reviewer_whitelist'"},
+            'accept_after': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(1, 1, 1, 0, 0)'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'project': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['catmaid.Project']"}),
+            'reviewer': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'to': u"orm['auth.User']"}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['auth.User']"})
+        },
         u'catmaid.settings': {
             'Meta': {'object_name': 'Settings', 'db_table': "'settings'"},
             'key': ('django.db.models.fields.TextField', [], {'primary_key': 'True'}),
@@ -523,6 +531,7 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'independent_ontology_workspace_is_default': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'inverse_mouse_wheel': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'prefer_webgl_layers': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'show_cropping_tool': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'show_ontology_tool': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'show_roi_tool': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),

@@ -283,7 +283,8 @@ function Navigator()
 		var m = CATMAID.UI.getLastMouse();
 		var x = m.x - offset.left,
 			y = m.y - offset.top;
-		if (x >= 0 && x <= self.stack.viewWidth &&
+		if (userprofile.use_cursor_following_zoom &&
+			x >= 0 && x <= self.stack.viewWidth &&
 			y >= 0 && y <= self.stack.viewHeight) {
 			x /= self.stack.scale;
 			y /= self.stack.scale;

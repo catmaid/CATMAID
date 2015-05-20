@@ -136,8 +136,21 @@ SettingsWidget.prototype.init = function(space)
    */
   var addTileLayerSettings = function(container)
   {
-    var ds = addSettingsContainer(container, "Tile Layer");
-    // Add explanatory text
+    var ds = addSettingsContainer(container, "Stack view");
+
+    // Cursor following zoom
+    ds.append($('<div/>').addClass('setting').append('Choose whether zooming ' +
+      'follows the position of the cursor (checked) or the center of the ' +
+      'stack view (unchecked).'));
+
+    ds.append(createCheckboxSetting("Use cursor following zoom", function () {
+      userprofile.use_cursor_following_zoom = this.checked;
+      userprofile.saveAll(function () {
+        CATMAID.msg('Success', 'User profile updated successfully.');
+      });
+    }, userprofile.use_cursor_following_zoom));
+
+    // WebGL layers
     ds.append($('<div/>').addClass('setting').append('Choose whether to use ' +
         'WebGL or Canvas tile layer rendering when supported by your tile ' +
         'source and browser. Note that your tile source server may need to ' +

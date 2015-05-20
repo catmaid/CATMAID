@@ -143,7 +143,8 @@ Userprofile.prototype.getOptions = function() {
     show_roi_tool: false,
     tracing_overlay_screen_scaling: true,
     tracing_overlay_scale: true,
-    prefer_webgl_layers: true
+    prefer_webgl_layers: true,
+    use_cursor_following_zoom: true
   };
 };
 

@@ -133,6 +133,7 @@ PROFILE_SHOW_ROI_TOOL = False
 PROFILE_TRACING_OVERLAY_SCREEN_SCALING = True
 PROFILE_TRACING_OVERLAY_SCALE = 1
 PROFILE_PREFER_WEBGL_LAYERS = False
+PROFILE_USE_CURSOR_FOLLOWING_ZOOM = True
 
 # Defines if a cropped image of a ROI should be created
 # automatically when the ROI is created. If set to False

@@ -510,19 +510,19 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
 {
   var self = this;
 
-  // If the node is a string or a number, try to find it in the nodes cache.
-  var type = typeof node;
-  if ("string" === type || "number" === type) {
-    node = this.nodes[node];
-  }
-
-  // Raise error, if no node or a node without ID was was given
-  if (!node || !node.id) {
-    reject(Error("Please specify a node object or valid node ID"));
-    return;
-  }
-
   return new Promise(function(resolve, reject) {
+
+    // If the node is a string or a number, try to find it in the nodes cache.
+    var type = typeof node;
+    if ("string" === type || "number" === type) {
+      node = this.nodes[node];
+    }
+
+    // Raise error, if no node or a node without ID was passed in
+    if (!node || !node.id) {
+      reject(Error("Please specify a node object or valid node ID"));
+      return;
+    }
 
     // If the node can be parsed as a number, it is assumed to be already there.
     if (!isNaN(parseInt(node.id))) {

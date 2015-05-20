@@ -1910,7 +1910,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
       // Check if children are not in section as well
       for (var cid in n.children) {
         var c = n.children[cid];
-        if (c.zdiff != 0 && !CATMAID.tools.sameSign(n.zdiff, c.zdiff)) {
+        if (c.zdiff !== 0 && !CATMAID.tools.sameSign(n.zdiff, c.zdiff)) {
           var vn = createVirtualNode(this.graphics, c, n, this.stack.z);
           if (vn) {
             this.nodes[vn.id] = vn;

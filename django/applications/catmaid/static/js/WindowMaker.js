@@ -3130,7 +3130,7 @@ var WindowMaker = new function()
     addLogic(win);
 
     // Initialize settings window with container added to the DOM
-    var SW = new SettingsWidget();
+    var SW = new CATMAID.SettingsWidget();
     SW.init(container);
 
     return win;

@@ -2710,7 +2710,7 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
 
 GroupGraph.prototype.splitByTag = function() {
   if (0 === this.getSelectedSkeletons().length) return this.split(); // will show message
-  var dialog = new OptionsDialog("Split at tag"),
+  var dialog = new CATMAID.OptionsDialog("Split at tag"),
       input = dialog.appendField("Tag (exact match): ", "tag_text", this.tag_text),
       first = dialog.appendField("Part with root node: ", "root_text", this.tag_title_root),
       rest = dialog.appendField("Other(s): ", "other_text", this.tag_title_others);

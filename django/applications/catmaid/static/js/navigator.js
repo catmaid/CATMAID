@@ -23,7 +23,6 @@ function Navigator()
 	var sliders_box = document.getElementById( "sliders_box" );
 	this.input_x = document.getElementById( "x" );		//!< x_input
 	this.input_y = document.getElementById( "y" );		//!< y_input
-	this.checkbox_reflines = document.getElementById( "displayreflines" );
 
 	/* remove all existing dimension sliders */
 	while ( sliders_box.firstChild )
@@ -545,24 +544,6 @@ function Navigator()
 		self.input_y.onchange = changeYByInput;
 		self.input_y.addEventListener( "wheel", YXMouseWheel, false );
 
-		self.checkbox_reflines.checked = userprofile.display_stack_reference_lines;
-		self.checkbox_reflines.onchange = function( e )
-		{
-			// Save current user profile state
-			userprofile.display_stack_reference_lines = this.checked;
-			userprofile.saveAll(
-					(function() {
-						// Success, toggle lines
-						self.stack.showReferenceLines( this.checked );
-					}).bind(this),
-					(function() {
-						// Error, reset checkbox
-						this.checked = !this.checked;
-					}).bind(this));
-
-			return true;
-		};
-		
 		self.updateControls();
 		
 		return;
@@ -610,8 +591,6 @@ function Navigator()
 
 		self.input_y.onchange = null;
 		self.input_y.removeEventListener( "wheel", YXMouseWheel, false );
-
-		self.checkbox_reflines.onchange = null;
 
 		self.stack = null;
 		

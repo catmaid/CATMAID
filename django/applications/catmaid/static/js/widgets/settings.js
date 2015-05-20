@@ -138,6 +138,16 @@ SettingsWidget.prototype.init = function(space)
   {
     var ds = addSettingsContainer(container, "Stack view");
 
+    ds.append(createCheckboxSetting("Display reference lines", function() {
+      userprofile.display_stack_reference_lines = this.checked;
+      userprofile.saveAll(function () {
+        project.getStacks().forEach(function(s) {
+          s.showReferenceLines(userprofile.display_stack_reference_lines);
+        });
+        CATMAID.msg('Success', 'User profile updated successfully.');
+      });
+    }, userprofile.display_stack_reference_lines));
+
     // Cursor following zoom
     ds.append($('<div/>').addClass('setting').append('Choose whether zooming ' +
       'follows the position of the cursor (checked) or the center of the ' +

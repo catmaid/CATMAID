@@ -98,9 +98,8 @@
             type: 'radio',
             name: name,
             id: val.id,
-            value: val.id,
-            checked: val.checked
-        }).change(handler)));
+            value: val.id
+        }).prop('checked', val.checked).change(handler)));
       }, $('<div />'));
     };
 

@@ -3429,7 +3429,7 @@ SkeletonAnnotations.Tag = new (function() {
             if ("" === input.val()) {
               SkeletonAnnotations.Tag.updateTags(svgOverlay);
               SkeletonAnnotations.Tag.removeTagbox();
-              growlAlert('Information', 'Tags saved!');
+              CATMAID.info('Tags saved!');
               svgOverlay.updateNodes();
             }
           }

@@ -17,6 +17,7 @@ install:
   - npm install jshint phantomjs qunit-phantomjs-runner
 before_script:
   - psql -c 'CREATE DATABASE catmaid;' -U postgres
+  - psql -c 'CREATE EXTENSION postgis;' -U postgres catmaid
   - cd django
   - cp configuration.py.example configuration.py
   - sed -i -e "s?^\(abs_catmaid_path = \).*?\1'$(pwd)'?g" configuration.py

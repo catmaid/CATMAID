@@ -721,7 +721,9 @@ function CMWWindow( title )
 		for ( var i = 0; i < windows.length; ++i )
 		{
 			var w = windows[ i ];
-			if( w.hasFocus() )
+			// Unfocus other window, if it has focus. Don't unfocus this window, if
+			// focus is called multiple times.
+			if( w !== self && w.hasFocus() )
 			{
 				w.getFrame().firstChild.className = "stackInfo";
 				w.callListeners( CMWWindow.BLUR );

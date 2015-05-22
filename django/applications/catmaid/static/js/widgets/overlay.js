@@ -432,10 +432,8 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
   this.show_labels = false;
-  /** Indicate if this overlay is suspended and won't update. */
+  /** Indicate if this overlay is suspended and won't update nodes on redraw. */
   this.suspended = false;
-  /** No new nodes will be fetched if set to true. **/
-  this.noUpdate = false;
 
   /* Variables keeping state for toggling between a terminal and its connector. */
   this.switchingConnectorID = null;
@@ -485,19 +483,6 @@ SkeletonAnnotations.SVGOverlay.prototype = {
   EVENT_HIT_NODE_DISPLAY_LIMIT: "tracing_hit_node_display_limit"
 };
 Events.extend(SkeletonAnnotations.SVGOverlay.prototype);
-
-/**
- * Suspend or wake up all tracing overlay instances.
- */
-SkeletonAnnotations.SVGOverlay.prototype.setAllSuspended = function(value)
-{
-  var instances = this._instances;
-  for (var stack in instances) {
-    if (instances.hasOwnProperty(stack)) {
-      instances[stack].suspended = value;
-    }
-  }
-};
 
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,
@@ -2037,7 +2022,7 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
     }
   }
 
-  doNotUpdate = doNotUpdate || this.noUpdate;
+  doNotUpdate = doNotUpdate || this.suspended;
 
   var screenScale = userprofile.tracing_overlay_screen_scaling;
   this.paper.classed('screen-scale', screenScale);

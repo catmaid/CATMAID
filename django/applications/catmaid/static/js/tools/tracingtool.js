@@ -52,23 +52,26 @@ function TracingTool()
     }
   };
 
-  var setAllLayersSuspended = function(value)
+  var setTracingLayersSuspended = function(value, excludeActive)
   {
-    project.getStacks().forEach(function(stack) {
-      var existingLayer = stack.getLayer(getTracingLayerName(stack));
-      if (existingLayer) {
-        existingLayer.svgOverlay.setAllSuspended(value);
-      }
+    value = Boolean(value);
+    project.getStacks().forEach(function(s) {
+      // Exclude stack that is currently bound to the tracing tool
+      if (excludeActive && stack === s) return;
+      // Set suspended state for each known tracing layer
+      var layer = s.getLayer(getTracingLayerName(s));
+      if (layer) layer.svgOverlay.suspended = value;
     });
   };
 
-  var updateNodesinAllLayers = function()
+  var updateNodesInTracingLayers = function(excludeActive)
   {
-    project.getStacks().forEach(function(stack) {
-      var existingLayer = stack.getLayer(getTracingLayerName(stack));
-      if (existingLayer) {
-        existingLayer.svgOverlay.updateNodes();
-      }
+    project.getStacks().forEach(function(s) {
+      // Exclude stack that is currently bound to the tracing tool
+      if (excludeActive && stack === s) return;
+      // Update nodes in each known tracing layer
+      var layer = s.getLayer(getTracingLayerName(s));
+      if (layer) layer.svgOverlay.updateNodes();
     });
   };
 
@@ -82,7 +85,7 @@ function TracingTool()
 
   var disableLayerUpdate = function() {
     CATMAID.warn("Temporary disabling node update until panning is over");
-    tracingLayer.svgOverlay.noUpdate = true;
+    tracingLayer.svgOverlay.suspended = true;
   };
 
   var createTracingLayer = function( parentStack )
@@ -107,8 +110,8 @@ function TracingTool()
           tracingLayer.svgOverlay.whenclicked( e );
           break;
         case 2:
-          // Put tracing layer in "don't update" model
-          setAllLayersSuspended(true);
+          // Put all tracing layers, except active, in "don't update" mode
+          setTracingLayersSuspended(true, true);
 
           // Attach to the node limit hit event to disable node updates
           // temporary if the limit was hit. This allows for smoother panning
@@ -132,24 +135,24 @@ function TracingTool()
               CATMAID.ui.removeEvent( "onmouseup", onmouseup );
               tracingLayer.svgOverlay.off(tracingLayer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
                   disableLayerUpdate, tracingLayer);
-              if (tracingLayer.svgOverlay.noUpdate) {
+              if (tracingLayer.svgOverlay.suspended) {
                 // Wait a second before updating the view, just in case the user
                 // continues to pan to not hit the node limit again. Then make
                 // sure the next update is not stopped.
                 updateTimeout = setTimeout(function() {
-                  tracingLayer.svgOverlay.noUpdate = false;
                   // Wake tracing overlays up again
-                  setAllLayersSuspended(false);
-                  // Recreate nodes by feching them from the database for the new
-                  // field of view
-                  updateNodesinAllLayers();
+                  setTracingLayersSuspended(false, false);
+                  // Recreate nodes by fetching them from the database for the new
+                  // field of view, don't exclude active layer.
+                  updateNodesInTracingLayers(false);
                 }, 1000);
               } else {
                 // Wake tracing overlays up again
-                setAllLayersSuspended(false);
-                // Recreate nodes by feching them from the database for the new
-                // field of view
-                updateNodesinAllLayers();
+                setTracingLayersSuspended(false, false);
+                // Recreate nodes by fetching them from the database for the new
+                // field of view. The active layer can be excluded, it should be
+                // updated through the move already.
+                updateNodesInTracingLayers(true);
               }
             });
           break;

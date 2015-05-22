@@ -210,7 +210,6 @@ function TracingTool()
           activateStack(parentStack, existingLayer);
           reactivateBindings(parentStack);
         } else {
-          //stack.removeLayer( "TracingLayer" );
           createTracingLayer(parentStack);
         }
       } else {

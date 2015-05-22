@@ -19,9 +19,8 @@ function TracingTool()
   var self = this;
   var tracingLayer = null;
   var stack = null;
-  var bindings = {};
+  var bindings = new Map();
   this.toolname = "tracingtool";
-
 
   this.resize = function( width, height )
   {
@@ -209,12 +208,13 @@ function TracingTool()
         var existingLayer = parentStack.getLayer(getTracingLayerName(parentStack));
         if (existingLayer) {
           activateStack(parentStack, existingLayer);
+          reactivateBindings(parentStack);
         } else {
           //stack.removeLayer( "TracingLayer" );
           createTracingLayer(parentStack);
         }
       } else {
-        reactivateBindings();
+        reactivateBindings(parentStack);
       }
     } else {
       createTracingLayer( parentStack );
@@ -223,24 +223,37 @@ function TracingTool()
     return;
   };
 
-  /** Inactivate only onmousedown, given that the others are injected when onmousedown is called.
-   * Leave alone onmousewheel: it is different in every browser, and it cannot do any harm to have it active. */
-  var inactivateBindings = function() {
+  /**
+   * Remove bindings for the given stack from the prototype mouse catcher. The
+   * bindings are stored in the bindings variable that is available in the
+   * closure. Inactivate only onmousedown, given that the others are injected
+   * when onmousedown is called.  Leave alone onmousewheel: it is different in
+   * every browser, and it cannot do any harm to have it active.
+   */
+  var inactivateBindings = function(stack) {
+    // Backup and delete handlers
+    var stackBindings = {};
     var c = self.prototype.mouseCatcher;
-    ['onmousedown'].map(
-      function ( fn ) {
-        if (c[fn]) {
-          bindings[fn] = c[fn];
-          delete c[fn];
-        }
-      });
+    ['onmousedown'].map(function(fn) {
+      if (c[fn]) {
+        stackBindings[fn] = c[fn];
+        delete c[fn];
+      }
+    });
+    // Save bindings for this stack
+    bindings.set(stack, stackBindings);
   };
 
-  var reactivateBindings = function() {
+  /**
+   * Replace bindings of the mouse catcher with the stored bindings for the
+   * given stack.
+   */
+  var reactivateBindings = function(stack) {
+    var stackBindings = bindings.get(stack);
     var c = self.prototype.mouseCatcher;
-    for (var b in bindings) {
-      if (bindings.hasOwnProperty(b)) {
-        c[b.name] = b;
+    for (var b in stackBindings) {
+      if (stackBindings.hasOwnProperty(b)) {
+        c[b] = stackBindings[b];
       }
     }
   };
@@ -252,7 +265,7 @@ function TracingTool()
   {
     // do it before calling the prototype destroy that sets stack to null
     if (self.prototype.stack) {
-      inactivateBindings();
+      inactivateBindings(self.prototype.stack);
     }
     // Do NOT unregister: would remove the mouseCatcher layer
     // and the annotations would disappear
@@ -290,11 +303,9 @@ function TracingTool()
     self.prototype.destroy( "edit_button_trace" );
     $( "#tracingbuttons" ).remove();
 
-    //
-    for (var b in bindings) {
-      if (bindings.hasOwnProperty(b)) {
-        delete bindings[b];
-      }
+    // Remove all stored bindings
+    for (var b of bindings) {
+      bindings.delete(b);
     }
 
     // Forget the current stack

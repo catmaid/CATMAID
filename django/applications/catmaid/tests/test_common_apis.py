@@ -2662,7 +2662,7 @@ class ViewPageTests(TestCase):
         for row in expected_c_result:
             self.assertTrue(row in parsed_response[1])
 
-    def test_node_list_with_active_skeleton(self):
+    def test_node_list_with_active_node(self):
         self.fake_authentication()
         expected_t_result = [
                 [267, 265, 5400, 2200, 0, 5, -1, 235, True],
@@ -2680,7 +2680,8 @@ class ViewPageTests(TestCase):
                 [415, 289, 5810, 3950, 0, 5, -1, 235, True],
                 [417, 415, 4990, 4200, 0, 5, -1, 235, True],
                 [2419, 2417, 5040, 5650, 0, 5, -1, 2411, True],
-                [2417, 2415, 4400, 5730, 0, 5, -1, 2411, True]
+                [2417, 2415, 4400, 5730, 0, 5, -1, 2411, True],
+                [2423, 2415, 4140, 6460, 0, 5, -1, 2411, 3]
         ]
         expected_c_result = [
                 [356, 6730.0, 2700.0, 0.0, 5, [[285, 5]], [[377, 5], [367, 5]], [], True],
@@ -2688,14 +2689,13 @@ class ViewPageTests(TestCase):
         ]
 
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {
-                'sid': 3,
-                'z': 0,
+                'z1': 0,
                 'top': 2280,
                 'left': 4430,
-                'width': 8000,
-                'height': 3450,
-                'zres': 9,
-                'as': 373,
+                'right': 12430,
+                'bottom': 5730,
+                'z2': 9,
+                'atnid': 2423,
                 'labels': False,})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)

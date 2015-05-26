@@ -26,9 +26,8 @@ ORM.
 """
 
 # CATMAID uses PostGIS, so we need to make sure we wrap the PostGIS backend
-from django.contrib.gis.db.backends.postgis.base import DatabaseWrapper as PG2DatabaseWrapper
-from django.contrib.gis.db.backends.postgis.base import DatabaseError as PG2DatabaseError
-from django.contrib.gis.db.backends.postgis.base import DatabaseOperations as PG2DatabaseOperations
+from django.contrib.gis.db.backends.postgis.base import DatabaseWrapper as PostGISDatabaseWrapper
+from django.contrib.gis.db.backends.postgis.operations import PostGISOperations
 
 import re
 import sys
@@ -36,7 +35,7 @@ import sys
 class DatabaseError(Exception):
     pass
 
-class DatabaseOperations(PG2DatabaseOperations):
+class DatabaseOperations(PostGISOperations):
     def last_insert_id(self, cursor, table_name, pk_name):
         # Get the default value for the column name:
         cursor.execute('''
@@ -63,7 +62,7 @@ SELECT adsrc
         cursor.execute("SELECT CURRVAL(%s)", (m.group(1),))
         return cursor.fetchone()[0]
 
-class DatabaseWrapper(PG2DatabaseWrapper):
+class DatabaseWrapper(PostGISDatabaseWrapper):
     def __init__(self, *args, **kwargs):
         super(DatabaseWrapper, self).__init__(*args, **kwargs)
         self.ops = DatabaseOperations(self)

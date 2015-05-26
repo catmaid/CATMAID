@@ -89,6 +89,13 @@ class Migration(DataMigration):
     ]
 
     def forwards(self, orm):
+        # Make sure sequences for data views and data view types are safe given
+        # that rows have been manually inserted by previous migrations.
+        db.execute('''
+            SELECT setval('data_view_id_seq', COALESCE((SELECT MAX(id)+1 FROM data_view), 1), false);
+            SELECT setval('data_view_type_id_seq', COALESCE((SELECT MAX(id)+1 FROM data_view_type), 1), false);
+            ''')
+
         # Create every data view type object that is not already present. Such
         # a type can be present due to the use of fixtures before.
         for dt in self.dataview_types:

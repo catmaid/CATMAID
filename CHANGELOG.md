@@ -7,6 +7,12 @@
 ### Bug fixes
 
 
+## 2015.5.27
+
+### Bug fixes
+
+- Fix radius based neuron selection in tracing window.
+
 
 ## 2015.5.19
 

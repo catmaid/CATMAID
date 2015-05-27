@@ -474,6 +474,7 @@ function TracingTool()
 
         tracingLayer.svgOverlay.selectRadius(
             atnID,
+            true,
             function (radius) {
               if (typeof radius === 'undefined') return;
 

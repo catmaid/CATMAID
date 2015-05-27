@@ -511,6 +511,14 @@ class ViewPageTests(TestCase):
         response = self.client.get('/user-list')
         expected_result = [
             {
+                u'first_name': u'Admin',
+                u'last_name': u'Superuser',
+                u'color': [0.0, 1.0, 1.0],
+                u'full_name': u'Admin Superuser',
+                u'login': u'admin',
+                u'id': 4
+            },
+            {
                 u'first_name': u'Anonymous',
                 u'last_name': u'User',
                 u'color': [1.0, 0.0, 0.0],

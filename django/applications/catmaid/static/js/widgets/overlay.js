@@ -2320,8 +2320,6 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
         wz1 = stack.stackToProjectZ(z1, y1, x1);
 
     var params = {
-      pid: stack.getProject().id,
-      sid: stack.getId(),
       left: wx0,
       top: wy0,
       z1: wz0,

@@ -303,9 +303,9 @@ function TracingTool()
     $( "#tracingbuttons" ).remove();
 
     // Remove all stored bindings
-    for (var b of bindings) {
-      bindings.delete(b);
-    }
+    bindings.forEach(function(value, key, map) {
+      map.delete(key);
+    });
 
     // Forget the current stack
     self.stack = null;

@@ -2523,12 +2523,15 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
 /**
  * Select either the node stored in nextBranches or, if this is not available,
  * the next branch or end node is fetched from the back end.
+ *
+ * @param {number} treenode_id - The node of which to select the child
+ * @param {boolean} cycle - If true, subsequent calls cycle through children
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, e) {
+SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, cycle) {
   if (this.isIDNull(treenode_id)) return;
   // If the existing nextBranches was fetched for this treenode, reuse it to
   // prevent repeated queries when quickly alternating between child and parent.
-  if (e.shiftKey ||
+  if (cycle ||
       typeof this.nextBranches !== 'undefined' && this.nextBranches.tnid === treenode_id) {
         this.cycleThroughBranches(treenode_id, 0);
   } else {

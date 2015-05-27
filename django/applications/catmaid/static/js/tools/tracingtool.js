@@ -508,7 +508,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e);
+      tracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey);
       return true;
     }
   }) );

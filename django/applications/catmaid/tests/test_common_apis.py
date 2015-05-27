@@ -2624,7 +2624,7 @@ class ViewPageTests(TestCase):
                            'unique objects from table treenode'}
         self.assertEqual(expected_result['error'], parsed_response['error'])
 
-    def test_node_list_without_active_skeleton(self):
+    def test_node_list_without_active_node(self):
         self.fake_authentication()
         expected_t_result = [
                 [2372, 2370, 2760, 4600, 0, 5, -1, 2364, False],
@@ -2643,14 +2643,13 @@ class ViewPageTests(TestCase):
                 [2400, 3400, 5620, 0, 5, [[2394, 5], [2415, 5]], [[2374, 5]], [], True],
         ]
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {
-            'sid': 3,
-            'z': 0,
+            'z1': 0,
             'top': 4625,
             'left': 2860,
-            'width': 8000,
-            'height': 3450,
-            'zres': 9,
-            'as': 0,
+            'right': 12625,
+            'bottom': 8075,
+            'z2': 9,
+            'atnid': -1,
             'labels': False,
         })
         self.assertEqual(response.status_code, 200)

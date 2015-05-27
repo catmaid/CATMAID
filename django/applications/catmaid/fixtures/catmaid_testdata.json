@@ -72,6 +72,24 @@
     }
   },
   {
+    "pk": 4,
+    "model": "auth.user",
+    "fields": {
+      "username": "admin",
+      "first_name": "Admin",
+      "last_name": "Superuser",
+      "is_active": true,
+      "is_superuser": true,
+      "is_staff": true,
+      "last_login": "2014-09-03T11:17:50.752",
+      "groups": [1],
+      "user_permissions": [],
+      "password": "pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=",
+      "email": "",
+      "date_joined": "2014-03-26T17:49:36"
+    }
+  },
+  {
     "pk": 1,
     "model": "auth.group",
     "fields": {

@@ -241,7 +241,7 @@ TreenodeTable.prototype.init = function() {
       [30, 50, 100, -1],
       [30, 50, 100, "All"]
     ],
-    //"bJQueryUI": true,
+    "bJQueryUI": true,
     "aoColumns": [{
       "sClass": "center",
       "bSearchable": true,

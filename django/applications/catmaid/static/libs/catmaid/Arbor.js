@@ -170,6 +170,31 @@ Arbor.prototype.allSuccessors = function() {
   return successors;
 };
 
+/** Return a map of node ID vs number of children. */
+Arbor.prototype.allSuccessorsCount = function() {
+  var edges = this.edges,
+      children = this.childrenArray();
+  // Handle corner cases
+  if (0 === children.length) {
+    if (this.root) {
+      var a = {};
+      a[this.root] = [];
+      return a;
+    }
+    return {};
+  }
+  var successors = {};
+  for (var k=0, l=children.length; k<l; ++k) {
+    var child = children[k],
+        paren = edges[child],
+        succ = successors[paren];
+    if (succ) successors[paren] = succ + 1;
+    else successors[paren] = 1;
+    if (undefined === successors[child]) successors[child] = 0;
+  }
+  return successors;
+};
+
 /** Finds the next branch node, starting at node (inclusive).
  *  Assumes the node belongs to the arbor.
  *  Returns null when no branches are found. */

@@ -38,7 +38,7 @@ TreenodeTable.prototype.append = function(models) {
     skids.push(skid);
   }, this);
 
-  this.appendSkeletons(skids);
+  this._appendSkeletons(skids);
 };
 
 TreenodeTable.prototype.clear = function() {
@@ -79,7 +79,7 @@ TreenodeTable.prototype.updateModels = function(models) {
   // Refresh table
   this.oTable.fnDraw();
   // Append newly fetched data at the end
-  this.appendSkeletons(skids);
+  this._appendSkeletons(skids);
 };
 
 TreenodeTable.prototype.getSelectedSkeletons = function() {
@@ -110,13 +110,13 @@ TreenodeTable.prototype.refresh = function() {
   var skeleton_ids = Object.keys(this.models);
   if (skeleton_ids.length > 0) {
     this.oTable.fnClearTable( 0 );
-    this.appendSkeletons(skeleton_ids);
+    this._appendSkeletons(skeleton_ids);
   } else {
     CATMAID.msg("Add a skeleton first!");
   }
 };
 
-TreenodeTable.prototype.appendSkeletons = function(skeleton_ids) {
+TreenodeTable.prototype._appendSkeletons = function(skeleton_ids) {
 
   if (!this.oTable || 0 === skeleton_ids.length) return;
 

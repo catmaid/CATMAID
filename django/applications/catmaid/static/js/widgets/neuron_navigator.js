@@ -1732,8 +1732,9 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
 
   treenodetable_button.onclick = (function() {
     if (this.skeleton_ids.length > 0) {
-      var TNT = new TreenodeTable(this.skeleton_ids[0]);
+      var TNT = new TreenodeTable();
       WindowMaker.create('node-table', TNT);
+      TNT.append(this.getSelectedSkeletonModels());
     }
   }).bind(this);
 

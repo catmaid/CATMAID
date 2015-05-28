@@ -230,7 +230,7 @@ TreenodeTable.prototype.init = function() {
   this.oTable = $(tableSelector).dataTable({
     // http://www.datatables.net/usage/options
     "bDestroy": true,
-    "sDom": "<Hlrp>t<Fip>",
+    "sDom": '<"H"lrp>t<"F"ip>',
     "bProcessing": true,
     "bServerSide": false,
     "bPaginate": true,

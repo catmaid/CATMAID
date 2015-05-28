@@ -169,9 +169,8 @@ SkeletonAnnotations.getSVGOverlayByPaper = function(paper) {
 };
 
 /**
- * Select a node in any of the existing SVGOverlay instances, by its ID and its
- * skeletonID. If it is a connector node, it expects a null skeletonID. WARNING:
- * Will only select the node in the first SVGOverlay found to contain it.
+ * Select a node in any of the existing SVGOverlay instances, by its ID.
+ * WARNING: Will only select the node in the first SVGOverlay found to contain it.
  */
 SkeletonAnnotations.staticSelectNode = function(nodeID) {
   var instances = this.SVGOverlay.prototype._instances;

@@ -1829,16 +1829,17 @@ var WindowMaker = new function()
     var contentbutton = document.createElement('div');
     contentbutton.setAttribute("id", 'table_of_skeleton_buttons' + TNT.widgetID);
 
+    contentbutton.appendChild(document.createTextNode('From'));
+    contentbutton.appendChild(CATMAID.skeletonListSources.createSelect(TNT));
+
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "update_treenodetable_current_skeleton" + TNT.widgetID);
-    add.setAttribute("value", "List active skeleton");
-    add.onclick = TNT.update.bind(TNT);
+    add.setAttribute("value", "Append");
+    add.onclick = TNT.loadSource.bind(TNT);
     contentbutton.appendChild(add);
 
     var refresh = document.createElement('input');
     refresh.setAttribute("type", "button");
-    refresh.setAttribute("id", "refresh_treenodetable" + TNT.widgetID);
     refresh.setAttribute("value", "Refresh");
     refresh.onclick = TNT.refresh.bind(TNT);
     contentbutton.appendChild(refresh);
@@ -1854,11 +1855,11 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>id</th>' +
             '<th>type' +
-        '' +
-        '<select name="search_type" id="search_type' + TNT.widgetID + '" class="search_init">' +
-        '<option value="">Any</option><option value="R">Root</option><option value="LR" selected="selected">Leaf</option>' +
-        '<option value="B">Branch</option><option value="S">Slab</option></select>' +
-        '</th>' +
+              '' +
+              '<select name="search_type" id="search_type' + TNT.widgetID + '" class="search_init">' +
+              '<option value="">Any</option><option value="R">Root</option><option value="L" selected="selected">Leaf</option>' +
+              '<option value="B">Branch</option><option value="S">Slab</option></select>' +
+            '</th>' +
         // <input type="text" name="search_type" value="Search" class="search_init" />
             '<th>tags<input type="text" name="search_labels" id="search_labels' + TNT.widgetID + '" value="Search" class="search_init" /></th>' +
             '<th>c</th>' +
@@ -1889,9 +1890,24 @@ var WindowMaker = new function()
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +
-          '<tr><td colspan="10"></td></tr>' +
+          '<tr>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+          '</tr>' +
         '</tbody>' +
       '</table>';
+    // Above notice that without an empty row the table will fail to initialize.
+    // This empty row gets removed when calling fnClearTable
 
     addListener(win, container, 'table_of_skeleton_buttons' + TNT.widgetID, TNT.destroy.bind(TNT));
 

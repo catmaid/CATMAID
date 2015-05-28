@@ -424,8 +424,7 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'object.convert_annotations_to_networkx'),
 
     # Treenode table
-    (r'^(?P<project_id>\d+)/treenode/table/list$', 'treenodetable.list_treenode_table'),
-    (r'^(?P<project_id>\d+)/treenode/table/update$', 'treenodetable.update_treenode_table'),
+    (r'^(?P<project_id>\d+)/treenode/table/(?P<skid>\d+)/content$', 'treenodetable.treenode_table_content'),
 )
 
 # Patterns for FlyTEM access

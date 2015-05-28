@@ -45,6 +45,7 @@ TreenodeTable.prototype.clear = function() {
   this.models = {};
   this.ranges = {};
   this.oTable.fnClearTable( 0 );
+  this.oTable.fnDraw();
 };
 
 TreenodeTable.prototype._removeRangeOfRows = function(start, length) {

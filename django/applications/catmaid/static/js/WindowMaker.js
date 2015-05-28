@@ -1838,6 +1838,12 @@ var WindowMaker = new function()
     add.onclick = TNT.loadSource.bind(TNT);
     contentbutton.appendChild(add);
 
+    var clear = document.createElement('input');
+    clear.setAttribute("type", "button");
+    clear.setAttribute("value", "Clear");
+    clear.onclick = TNT.clear.bind(TNT);
+    contentbutton.appendChild(clear);
+
     var refresh = document.createElement('input');
     refresh.setAttribute("type", "button");
     refresh.setAttribute("value", "Refresh");

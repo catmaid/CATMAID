@@ -38,6 +38,8 @@ Multi-view tracing and virtual nodes:
   slightly changes the way reviews work. Review information is only stored on
   real nodes.
 
+- Treenode Table refurbishing: far faster, supports multiple skeletons, can do
+  tag search with regular expressions and lists the skeleton treenode ID.
 
 Administration:
 

@@ -729,7 +729,7 @@ SkeletonConnectivity.prototype.createConnectivityTable = function() {
   };
 
   /**
-   * Support function to add a 'seclect all' checkbox.
+   * Support function to add a 'select all' checkbox.
    */
   var add_select_all_fn = function(widget, name, table, nSkeletons) {
     // Assign 'select all' checkbox handler

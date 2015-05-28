@@ -89,7 +89,7 @@ NeuronAnnotations.prototype.getSelectedSkeletonModels = function() {
 
 NeuronAnnotations.prototype.highlight = function(skeleton_id)
 {
-  // Don't try tp highlight when no skeleton ID is given
+  // Don't try to highlight when no skeleton ID is given
   if (!skeleton_id) return;
 
   // Find neuron containing this skeleton_id

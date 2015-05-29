@@ -141,8 +141,7 @@ def create_treenode(request, project_id=None):
 
                 return HttpResponse(json.dumps({
                     'treenode_id': new_treenode.id,
-                    'skeleton_id': new_skeleton.id,
-                    'neuron_id': params['useneuron']}))
+                    'skeleton_id': new_skeleton.id}))
             else:
                 # A neuron does not exist, therefore we put the new skeleton
                 # into a new neuron.

@@ -1700,7 +1700,6 @@ class ViewPageTests(TestCase):
 
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
-        self.assertEqual(neuron_id, int(parsed_response['neuron_id']))
 
         self.assertEqual(treenode_count + 1, count_treenodes())
         self.assertEqual(skeleton_count + 1, count_skeletons())

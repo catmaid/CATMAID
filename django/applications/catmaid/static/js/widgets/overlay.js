@@ -862,7 +862,10 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     // Else, select the node
     if (SkeletonAnnotations.TYPE_NODE === node.type) {
       // Update CATMAID.statusBar
-      this.printTreenodeInfo(node.id, "Node " + node.id + ", skeleton " + node.skeleton_id);
+      var prefix = SkeletonAnnotations.isRealNode(node.id) ?
+          "Node " + node.id + ", skeleton " + node.skeleton_id :
+          "Virtual node, skeleton " + node.skeleton_id;
+      this.printTreenodeInfo(node.id, prefix);
       SkeletonAnnotations.setNeuronNameInTopbar(this.stack.getId(), node.skeleton_id);
       atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
@@ -2900,42 +2903,40 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treeno
  */
 SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, prefixMessage) {
   if (this.isIDNull(nodeID)) return;
+  var isReal = SkeletonAnnotations.isRealNode(nodeID);
   if (typeof prefixMessage === "undefined") {
-    prefixMessage = "Node " + nodeID;
+    prefixMessage = isReal ? "Node " + nodeID : "Virtual node";
   }
   CATMAID.status(prefixMessage + " (loading authorship information)");
-  this.executeDependentOnExistence(nodeID,
-    this.submit.bind(this,
-      django_url + project.id + '/node/user-info',
-      {treenode_id: nodeID},
-      function(jso) {
-        var msg = prefixMessage + " created by " + jso.user.first_name + " " + jso.user.last_name + " (" + jso.user.username +
-                ") on " + jso.creation_time +
-                ", last edited by " + jso.editor.first_name + " " + jso.editor.last_name + " (" + jso.editor.username +
-                ") on " + jso.edition_time +
-                ", reviewed by ";
-        // Add review information
-        if (jso.reviewers.length > 0) {
-          var reviews = [];
-          for (var i=0; i<jso.reviewers.length; ++i) {
-            reviews.push(jso.reviewers[i].first_name + " " +
-                jso.reviewers[i].last_name + " (" +
-                jso.reviewers[i].username + ") on " + jso.review_times[i]);
-          }
-          msg += reviews.join(', ');
-        } else {
-          msg += "no one";
+
+  // For a virtual node, the child information is displayed.
+  if (!isReal) {
+    nodeID = SkeletonAnnotations.getChildOfVirtualNode(nodeID);
+  }
+
+  var url = django_url + project.id + '/node/user-info';
+  this.submit(url, {treenode_id: nodeID}, function(jso) {
+      var msg = prefixMessage + " created by " + jso.user.first_name + " " +
+          jso.user.last_name + " (" + jso.user.username + ") on " +
+          jso.creation_time + ", last edited by " + jso.editor.first_name +
+          " " + jso.editor.last_name + " (" + jso.editor.username + ") on " +
+          jso.edition_time + ", reviewed by ";
+      // Add review information
+      if (jso.reviewers.length > 0) {
+        var reviews = [];
+        for (var i=0; i<jso.reviewers.length; ++i) {
+          reviews.push(jso.reviewers[i].first_name + " " +
+              jso.reviewers[i].last_name + " (" +
+              jso.reviewers[i].username + ") on " + jso.review_times[i]);
         }
-        CATMAID.status(msg);
-      },
-      false,
-      true),
-    (function() {
-      var node = this.nodes[nodeID];
-      CATMAID.statusBar.replaceLast("Virtual node, modify to instantiate (parent: " +
-          node.parent_id + " skeleton: " + node.skeleton_id + ")");
-    }).bind(this)
-  );
+        msg += reviews.join(', ');
+      } else {
+        msg += "no one";
+      }
+      CATMAID.status(msg);
+    },
+    false,
+    true);
 };
 
 /**

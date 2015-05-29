@@ -14,6 +14,7 @@ from catmaid.control.authentication import requires_user_role, \
 from catmaid.control.common import get_relation_to_id_map, \
         get_class_to_id_map, insert_into_log, _create_relation
 from catmaid.control.neuron import _delete_if_empty
+from catmaid.util import Point3D, is_collinear
 
 
 def can_edit_treenode_or_fail(user, project_id, treenode_id):
@@ -64,6 +65,68 @@ def create_treenode(request, project_id=None):
     treenode_id, skeleton_id = _create_treenode(project_id, request.user, request.user,
             params['x'], params['y'], params['z'], params['radius'],
             params['confidence'], params['useneuron'], params['parent_id'])
+
+    return HttpResponse(json.dumps({
+        'treenode_id': treenode_id,
+        'skeleton_id': skeleton_id
+    }))
+
+@requires_user_role(UserRole.Annotate)
+def insert_treenode(request, project_id=None):
+    """
+    Create a new treenode between two existing nodes. Its creator and
+    creation_date information will be set to information of child node. No node
+    will be created, if the node on the edge between the given child and parent
+    node.
+    """
+    # Use creation time, if part of parameter set
+    params = {}
+    float_values = {
+        'x': 0,
+        'y': 0,
+        'z': 0,
+        'radius': 0
+    }
+    int_values = {
+        'confidence': 0,
+        'parent_id': -1,
+        'child_id': -1
+    }
+    for p in float_values.keys():
+        params[p] = float(request.POST.get(p, float_values[p]))
+    for p in int_values.keys():
+        params[p] = int(request.POST.get(p, int_values[p]))
+
+    # Find child and parent of new treenode
+    child = Treenode.objects.get(pk=params['child_id'])
+    parent = Treenode.objects.get(pk=params['parent_id'])
+
+    # Make sure both nodes are actually child and parent
+    if not child.parent == parent:
+        raise ValueError('The provided nodes need to be child and parent')
+
+    # Make sure the requested location for the new node is on the edge between
+    # both existing nodes.
+    child_loc = Point3D(child.location_x, child.location_y, child.location_z)
+    parent_loc = Point3D(parent.location_x, parent.location_y, parent.location_z)
+    new_node_loc = Point3D(params['x'], params['y'], params['z'])
+    if not is_collinear(child_loc, parent_loc, new_node_loc, True):
+        raise ValueError('New node location has to be between child and parent')
+
+    # Use creator and creation time for neighboring node that was created last.
+    if child.creation_time < parent.creation_time:
+        user, time = parent.user, parent.creation_time
+    else:
+        user, time = child.user, child.creation_time
+
+    # Create new treenode
+    treenode_id, skeleton_id = _create_treenode(project_id, user, request.user,
+            params['x'], params['y'], params['z'], params['radius'],
+            params['confidence'], -1 , params['parent_id'], time)
+
+    # Update parent of child to new treenode
+    child.parent_id = treenode_id
+    child.save()
 
     return HttpResponse(json.dumps({
         'treenode_id': treenode_id,

@@ -166,6 +166,7 @@ urlpatterns += patterns('catmaid.control.node',
 # Treenode access
 urlpatterns += patterns('catmaid.control.treenode',
     (r'^(?P<project_id>\d+)/treenode/create$', 'create_treenode'),
+    (r'^(?P<project_id>\d+)/treenode/insert$', 'insert_treenode'),
     (r'^(?P<project_id>\d+)/treenode/create/interpolated$', 'create_interpolated_treenode'),
     (r'^(?P<project_id>\d+)/treenode/delete$', 'delete_treenode'),
     (r'^(?P<project_id>\d+)/treenode/info$', 'treenode_info'),

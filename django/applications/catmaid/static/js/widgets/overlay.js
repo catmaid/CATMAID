@@ -542,11 +542,12 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
 
     // Create new node and update parent relation of child
     requestQueue.register(
-      django_url + project.id + '/treenode/create',
+      django_url + project.id + '/treenode/insert',
       'POST',
       {
         pid: project.id,
         parent_id: node.parent_id,
+        child_id: childId,
         x: self.stack.stackToProjectX(node.z, node.y, node.x),
         y: self.stack.stackToProjectY(node.z, node.y, node.x),
         z: self.stack.stackToProjectZ(node.z, node.y, node.x),
@@ -570,21 +571,9 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
           self.activateNode(node);
         }
 
-        // Update child node to refer to new node as parent
-        requestQueue.register(
-          django_url + project.id + '/treenode/' + childId + '/parent',
-          'POST',
-          {
-            parent_id: nid
-          },
-          CATMAID.jsonResponseHandler(function (json) {
-            self.updateNodes();
-            // Resolve promise
-            resolve(nid);
-          }, function(err) {
-            // Reject promise in case of error
-            reject(err);
-          }));
+        self.updateNodes();
+        // Resolve promise
+        resolve(nid);
       }, function(err) {
         // Reject promise in case of error
         reject(err);

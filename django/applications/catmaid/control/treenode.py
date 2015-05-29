@@ -61,6 +61,18 @@ def create_treenode(request, project_id=None):
     for p in string_values.keys():
         params[p] = request.POST.get(p, string_values[p])
 
+    treenode_id, skeleton_id = _create_treenode(project_id, request.user, request.user,
+            params['x'], params['y'], params['z'], params['radius'],
+            params['confidence'], params['useneuron'], params['parent_id'])
+
+    return HttpResponse(json.dumps({
+        'treenode_id': treenode_id,
+        'skeleton_id': skeleton_id
+    }))
+
+def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
+                     neuron_id, parent_id, creation_time=None):
+
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
@@ -71,48 +83,47 @@ def create_treenode(request, project_id=None):
         treenode table, will not meet the being-foreign requirement.
         """
         new_treenode = Treenode()
-        new_treenode.user = request.user
-        new_treenode.editor = request.user
+        new_treenode.user = creator
+        new_treenode.editor = editor
         new_treenode.project_id = project_id
-        new_treenode.location_x = float(params['x'])
-        new_treenode.location_y = float(params['y'])
-        new_treenode.location_z = float(params['z'])
-        new_treenode.radius = int(params['radius'])
+        if creation_time:
+            new_treenode.creation_time = creation_time
+        new_treenode.location_x = float(x)
+        new_treenode.location_y = float(y)
+        new_treenode.location_z = float(z)
+        new_treenode.radius = int(radius)
         new_treenode.skeleton = skeleton
-        new_treenode.confidence = int(params['confidence'])
+        new_treenode.confidence = int(confidence)
         if parent_id:
             new_treenode.parent_id = parent_id
         new_treenode.save()
         return new_treenode
 
     def relate_neuron_to_skeleton(neuron, skeleton):
-        return _create_relation(request.user, project_id,
+        return _create_relation(creator, project_id,
                                 relation_map['model_of'], skeleton, neuron)
 
     response_on_error = ''
     try:
-        if -1 != int(params['parent_id']):  # A root node and parent node exist
+        if -1 != int(parent_id):  # A root node and parent node exist
             # Raise an Exception if the user doesn't have permission to edit
             # the neuron the skeleton of the treenode is modeling.
-            can_edit_treenode_or_fail(request.user, project_id, params['parent_id'])
+            can_edit_treenode_or_fail(editor, project_id, parent_id)
 
-            parent_treenode = Treenode.objects.get(pk=params['parent_id'])
+            parent_treenode = Treenode.objects.get(pk=parent_id)
 
             response_on_error = 'Could not insert new treenode!'
             skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)
-            new_treenode = insert_new_treenode(params['parent_id'], skeleton)
+            new_treenode = insert_new_treenode(parent_id, skeleton)
 
-            return HttpResponse(json.dumps({
-                'treenode_id': new_treenode.id,
-                'skeleton_id': skeleton.id
-            }))
+            return (new_treenode.id, skeleton.id)
         else:
             # No parent node: We must create a new root node, which needs a
             # skeleton and a neuron to belong to.
             response_on_error = 'Could not insert new treenode instance!'
 
             new_skeleton = ClassInstance()
-            new_skeleton.user = request.user
+            new_skeleton.user = creator
             new_skeleton.project_id = project_id
             new_skeleton.class_column_id = class_map['skeleton']
             new_skeleton.name = 'skeleton'
@@ -120,34 +131,31 @@ def create_treenode(request, project_id=None):
             new_skeleton.name = 'skeleton %d' % new_skeleton.id
             new_skeleton.save()
 
-            if -1 == params['useneuron']:
+            if -1 == neuron_id:
                 # Check that the neuron to use exists
-                if 0 == ClassInstance.objects.filter(pk=params['useneuron']).count():
-                    params['useneuron'] = -1
+                if 0 == ClassInstance.objects.filter(pk=neuron_id).count():
+                    neuron_id = -1
 
-            if -1 != params['useneuron']:
+            if -1 != neuron_id:
                 # Raise an Exception if the user doesn't have permission to
                 # edit the existing neuron.
-                can_edit_class_instance_or_fail(request.user,
-                                                params['useneuron'], 'neuron')
+                can_edit_class_instance_or_fail(editor, neuron_id, 'neuron')
 
                 # A neuron already exists, so we use it
                 response_on_error = 'Could not relate the neuron model to ' \
                                     'the new skeleton!'
-                relate_neuron_to_skeleton(params['useneuron'], new_skeleton.id)
+                relate_neuron_to_skeleton(neuron_id, new_skeleton.id)
 
                 response_on_error = 'Could not insert new treenode!'
                 new_treenode = insert_new_treenode(None, new_skeleton)
 
-                return HttpResponse(json.dumps({
-                    'treenode_id': new_treenode.id,
-                    'skeleton_id': new_skeleton.id}))
+                return (new_treenode.id, new_skeleton.id)
             else:
                 # A neuron does not exist, therefore we put the new skeleton
                 # into a new neuron.
                 response_on_error = 'Failed to insert new instance of a neuron.'
                 new_neuron = ClassInstance()
-                new_neuron.user = request.user
+                new_neuron.user = creator
                 new_neuron.project_id = project_id
                 new_neuron.class_column_id = class_map['neuron']
                 new_neuron.name = 'neuron'
@@ -165,14 +173,11 @@ def create_treenode(request, project_id=None):
                 response_on_error = 'Failed to write to logs.'
                 new_location = (new_treenode.location_x, new_treenode.location_y,
                                 new_treenode.location_z)
-                insert_into_log(project_id, request.user.id, 'create_neuron',
+                insert_into_log(project_id, creator.id, 'create_neuron',
                                 new_location, 'Create neuron %d and skeleton '
                                 '%d' % (new_neuron.id, new_skeleton.id))
 
-                return HttpResponse(json.dumps({
-                    'treenode_id': new_treenode.id,
-                    'skeleton_id': new_skeleton.id,
-                    }))
+                return (new_treenode.id, new_skeleton.id)
 
     except Exception as e:
         import traceback

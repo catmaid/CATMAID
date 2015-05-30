@@ -1975,3 +1975,41 @@ Arbor.prototype.approximateTwigRoots = function(strahler_cut) {
   }
   return roots;
 };
+
+/** Return an array of arrays describing the structure of the arbor branches.
+ * The first row represents a Strahler number of 1, and the value at each column
+ * is the number of times that a branch with Strahler number 1 shoots off
+ * a branch that has Strahler number 2, 3, 4, etc.
+ * Rows (child branch) run from 1 to the highest Strahler number minus one,
+ * and columns (parent branch) from 2 to the highest Strahler number.
+ *
+ * Concept by Casey Schneider-Mizell, implementation by Albert Cardona. */
+Arbor.prototype.strahlerMatrix = function() {
+  var topo = this.topologicalCopy(),
+      strahler = topo.strahlerNumber(),
+      max = strahler[topo.root],
+      matrix = new Array(max -2);
+
+  // Fill matrix with zeros
+  for (var i=0, l=max-1; i<max; ++i) {
+    var row = new Array(l);
+    for (var k=0; k<l; ++k) {
+      row[k] = 0;
+    }
+    matrix[i] = row;
+  }
+
+  // Populate matrix by iterating leaf and branch nodes only (not root)
+  // Each node represents the root of a slab.
+  var nodes = Object.keys(topo.edges);
+  for (var i=0; i<nodes.length; ++i) {
+    var child = nodes[i],
+        sc = strahler[child],
+        sp = strahler[topo.edges[child]]; // of parent
+    // Skip "false" branches: same strahler number for parent and child slabs
+    if (sc === sp) continue;
+    matrix[sc - 1][sp - 2] += 1;
+  }
+
+  return matrix;
+};

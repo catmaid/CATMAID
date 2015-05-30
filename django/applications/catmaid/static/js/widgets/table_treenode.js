@@ -317,8 +317,11 @@ TreenodeTable.prototype.init = function() {
     this.oTable.fnFilter(this.filter_nodetype, 1);
   }).bind(this));
 
-  $(tableSelector).on("dblclick", "tbody tr", (function() {
-    var aData = this.oTable.fnGetData(this);
+  // TODO: remove the need for closing over oTable
+  var oTable = this.oTable;
+
+  $(tableSelector).on("dblclick", "tbody tr", function() {
+    var aData = oTable.fnGetData(this);
     // retrieve coordinates and moveTo
     var id = parseInt(aData[0], 10);
     var x = parseFloat(aData[4]);
@@ -328,5 +331,8 @@ TreenodeTable.prototype.init = function() {
       function () {
         SkeletonAnnotations.staticSelectNode(id);
       });
-  }).bind(this));
+  });
 };
+
+TreenodeTable.prototype.updateNeuronNames = function() {};
+

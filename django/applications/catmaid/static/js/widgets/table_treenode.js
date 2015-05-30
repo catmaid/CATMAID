@@ -333,3 +333,6 @@ TreenodeTable.prototype.init = function() {
       });
   });
 };
+
+TreenodeTable.prototype.updateNeuronNames = function() {};
+

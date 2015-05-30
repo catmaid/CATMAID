@@ -409,7 +409,7 @@ NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNode
   }
 
   // Create Strahler indexes
-  var strahler = this.currentArbor.strahlerAnalysis();
+  var strahler = this.currentArbor.strahlerNumber();
 
   // Create the tree, starting from the root node
   var root = parentToChildren[null][0];

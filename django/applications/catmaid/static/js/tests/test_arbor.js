@@ -29,7 +29,7 @@ QUnit.test('Arbor.js test', function( assert ) {
   arbor1.addEdges(nodes1);
 
   // Test Strahler analysis
-  var strahler1 = arbor1.strahlerAnalysis();
+  var strahler1 = arbor1.strahlerNumber();
 
   var expected_result1 = {
       0: 4,
@@ -78,7 +78,7 @@ QUnit.test('Arbor.js test', function( assert ) {
 
   var arbor2 = new Arbor();
   arbor2.addEdges(nodes2);
-  var strahler2 = arbor2.strahlerAnalysis();
+  var strahler2 = arbor2.strahlerNumber();
 
   var expected_result2 = {
       0: 3,

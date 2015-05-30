@@ -764,7 +764,7 @@ Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
 * index, etc., all the way to root. The maximum number is that of the root
 * node.
 */
-Arbor.prototype.strahlerAnalysis = function() {
+Arbor.prototype.strahlerNumber = function() {
   var strahler = {},
       be = this.findBranchAndEndNodes(),
       branch = be.branches,
@@ -1954,7 +1954,7 @@ Arbor.prototype.approximateTwigRoots = function(strahler_cut) {
   // Approximate by using Strahler number:
   // the twig root will be at the first parent
   // with a Strahler number larger than strahler_cut
-  var strahler = this.strahlerAnalysis(),
+  var strahler = this.strahlerNumber(),
       ends = this.findBranchAndEndNodes().ends,
       edges = this.edges,
       roots = [],

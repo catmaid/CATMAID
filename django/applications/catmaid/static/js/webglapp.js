@@ -3068,7 +3068,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       });
 
     } else if (-1 !== options.shading_method.indexOf('strahler')) {
-      node_weights = arbor.strahlerAnalysis();
+      node_weights = arbor.strahlerNumber();
       var max = node_weights[arbor.root];
       Object.keys(node_weights).forEach(function(node) {
         node_weights[node] /= max;

@@ -495,8 +495,8 @@ WebGLApplication.prototype.spatialSelect = function() {
         };
     // Restrict by synaptic relation
     switch (synapse_mode) {
-      case 1: synapticTypes = synapticTypes.slice(0, 1); break;
-      case 2: synapticTypes = synapticTypes.slice(1, 1); break;
+      case 0: synapticTypes = synapticTypes.slice(0, 1); break;
+      case 1: synapticTypes = synapticTypes.slice(1, 2); break;
     }
 
     var newSelection = function(skids) {

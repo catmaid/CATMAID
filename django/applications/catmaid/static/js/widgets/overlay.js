@@ -2829,7 +2829,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
     this.cycleThroughOpenEnds(nodeID, byTime);
   } else {
     var self = this;
-    if (!this.isRealNode(nodeID)) {
+    if (!SkeletonAnnotations.isRealNode(nodeID)) {
       nodeID = SkeletonAnnotations.getParentOfVirtualNode(nodeID);
     }
     // TODO could be done by inspecting the graph locally if it is loaded in the

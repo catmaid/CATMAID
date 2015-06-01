@@ -557,7 +557,10 @@ function TracingTool()
               var respectVirtualNodes = true;
               var node = tracingLayer.svgOverlay.nodes[atnID];
               var selectedIDs = tracingLayer.svgOverlay.findAllNodesWithinRadius(
-                  node.x, node.y, node.z, radius, respectVirtualNodes);
+                  stack.stackToProjectX(node.z, node.y, node.x),
+                  stack.stackToProjectY(node.z, node.y, node.x),
+                  stack.stackToProjectZ(node.z, node.y, node.x),
+                  radius, respectVirtualNodes);
               selectedIDs = selectedIDs.map(function (nodeID) {
                   return tracingLayer.svgOverlay.nodes[nodeID].skeleton_id;
               }).filter(function (s) { return !isNaN(s); });

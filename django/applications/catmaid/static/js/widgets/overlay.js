@@ -982,9 +982,9 @@ SkeletonAnnotations.SVGOverlay.prototype.findAllNodesWithinRadius = function (
   return Object.keys(this.nodes).filter((function (nodeid) {
     if (nodeIsValid(this.nodes, nodeid)) {
       node = this.nodes[nodeid];
-      xdiff = x - this.pix2physX(node.x);
-      ydiff = y - this.pix2physY(node.y);
-      zdiff = z - this.pix2physZ(node.z);
+      xdiff = x - this.pix2physX(node.z, node.y, node.x);
+      ydiff = y - this.pix2physY(node.z, node.y, node.x);
+      zdiff = z - this.pix2physZ(node.z, node.y, node.x);
       distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
       if (distsq < radiussq)
         return true;
@@ -2616,9 +2616,11 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
             return;
           }
           // Convert pixel radius components to nanometers
-          var r = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)));
+          var prx = self.stack.stackToProjectX(self.stack.z, ry, rx),
+              pry = self.stack.stackToProjectY(self.stack.z, ry, rx),
+              pr = Math.round(Math.sqrt(Math.pow(prx, 2) + Math.pow(pry, 2)));
           // Callback with the selected radius
-          completionCallback(r);
+          completionCallback(pr);
         });
       }
     }

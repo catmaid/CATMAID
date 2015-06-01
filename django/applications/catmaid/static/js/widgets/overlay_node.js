@@ -696,7 +696,7 @@
         // Clean up
         this.surroundingCircleElements.forEach(function (e) { e.remove() ;});
         delete this.surroundingCircleElements;
-        // Execute callback, if any, with radius in nm as argument
+        // Execute callback, if any, with radius in stack coordinates as argument
         if (callback) {
           if (r) callback(r.x, r.y);
           else callback();

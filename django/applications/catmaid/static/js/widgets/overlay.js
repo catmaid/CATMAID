@@ -2837,10 +2837,11 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
     if (!SkeletonAnnotations.isRealNode(nodeID)) {
       nodeID = SkeletonAnnotations.getParentOfVirtualNode(nodeID);
     }
+    var skid = SkeletonAnnotations.getActiveSkeletonId();
     // TODO could be done by inspecting the graph locally if it is loaded in the
     // 3D viewer or treenode table (but either source may not be up to date)
     this.submit(
-        django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf',
+        django_url + project.id + '/skeleton/' + skid + '/openleaf',
         {tnid: nodeID},
         function (json) {
           // json is an array of nodes. Each node is an array:
@@ -2850,8 +2851,9 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
           // [3]: creation_time
           if (0 === json.length) {
             CATMAID.info("No more open ends!");
+            self.nextOpenEnds = { tnid: nodeID, skid: skid, ends: [], byTime: null };
           } else {
-            self.nextOpenEnds = { tnid: nodeID, ends: json, byTime: null };
+            self.nextOpenEnds = { tnid: nodeID, skid: skid, ends: json, byTime: null };
             self.cycleThroughOpenEnds(nodeID, byTime);
           }
         });
@@ -2864,7 +2866,12 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
  * sorting took place so for, sort all open ends by time.
  */
 SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treenode_id, byTime) {
-  if (typeof this.nextOpenEnds === 'undefined') return;
+  if (typeof this.nextOpenEnds === 'undefined' ||
+      this.nextOpenEnds.ends.length === 0 ||
+      this.nextOpenEnds.skid !== SkeletonAnnotations.getActiveSkeletonId()) {
+    // Can not cycle because open ends data is missing or invalid. Fetch it.
+    return this.goToNextOpenEndNode(treenode_id, false, byTime);
+  }
 
   if (byTime !== this.nextOpenEnds.byTime) {
     this.nextOpenEnds.ends.sort(byTime ?

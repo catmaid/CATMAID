@@ -546,9 +546,9 @@ WebGLApplication.prototype.spatialSelect = function() {
       }
       var within = arbor.findNodesWithin(active_node,
           (function(child, paren) {
-            return this[child].distanceToSquared(this[paren]);
+            return this[child].distanceTo(this[paren]);
           }).bind(sk.getPositions()),
-          distanceSq);
+          distance);
       // Find connectors within the part to look at
       var connectors = {};
       synapticTypes.forEach(function(type) {

@@ -2787,8 +2787,8 @@ var WindowMaker = new function()
           'HHMI Janelia Farm, U.S..<br /><br />' +
           'Visit the <a href="http://www.catmaid.org/" target="_blank">' +
           'CATMAID homepage</a> for further information. You can find the ' +
-          'source code on <a href="https://github.com/acardona/CATMAID">' +
-          'GitHub</a>, where you can also <a href="https://github.com/acardona/CATMAID/issues">' +
+          'source code on <a href="https://github.com/catmaid/CATMAID">' +
+          'GitHub</a>, where you can also <a href="https://github.com/catmaid/CATMAID/issues">' +
           'report</a> bugs and problems.');
 
     addListener(win, container);

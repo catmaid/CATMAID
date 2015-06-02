@@ -154,7 +154,7 @@
 			<span class="k">print</span> <span class="n">each_package</span>
 			<span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo apt-get -y install </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">each_package</span><span class="p">,</span> <span class="n">pty</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
 
-		<span class="n">run</span><span class="p">(</span><span class="s">&#39;git clone https://github.com/acardona/CATMAID.git&#39;</span><span class="p">)</span>
+		<span class="n">run</span><span class="p">(</span><span class="s">&#39;git clone https://github.com/catmaid/CATMAID.git&#39;</span><span class="p">)</span>
 		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;rm -rvf /var/www/CATMAID&#39;</span><span class="p">)</span>
 		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;ln -s /home/ubuntu/CATMAID /var/www/CATMAID&#39;</span><span class="p">)</span>
 		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;mkdir -p /var/log/apache2/catmaid/&#39;</span><span class="p">)</span>

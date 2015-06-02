@@ -317,7 +317,7 @@ Tile layer:
   and fixes some flickering issues. Enable via "Prefer WebGL Layers" in
   Settings. The WebGL renderer is currently considered experimental and may have
   stability issues on some clients. See
-  https://github.com/acardona/CATMAID/issues/186#issuecomment-86540706 for
+  https://github.com/catmaid/CATMAID/issues/186#issuecomment-86540706 for
   details on using WebGL layers with your image stack host.
 
 - The blend mode used to combine stacks and overlays is now configurable when

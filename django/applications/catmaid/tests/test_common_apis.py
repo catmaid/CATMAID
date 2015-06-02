@@ -1603,7 +1603,7 @@ class ViewPageTests(TestCase):
                 operation_type='create_neuron')
 
         # FIXME: discussed in
-        # https://github.com/acardona/CATMAID/issues/754
+        # https://github.com/catmaid/CATMAID/issues/754
         #self.assertEqual(1, treenode_skeleton_relation.count())
         self.assertEqual(1, neuron_skeleton_relation.count())
         # FIXME: This test doesn't work like expected
@@ -1718,7 +1718,7 @@ class ViewPageTests(TestCase):
 
         # FIXME: treenode_skeleton_relation.count() should be 1, but we
         # currently don't store these relations.
-        # See: https://github.com/acardona/CATMAID/issues/754
+        # See: https://github.com/catmaid/CATMAID/issues/754
         self.assertEqual(0, treenode_skeleton_relation.count())
         self.assertEqual(1, neuron_skeleton_relation.count())
 

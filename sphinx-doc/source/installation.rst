@@ -39,12 +39,12 @@ up one of these web servers is described in later sections.
 1. Clone the repository
 #######################
 
-The git repository is hosted at `https://github.com/acardona/CATMAID
-<https://github.com/acardona/CATMAID>`_  - clone this repository
+The git repository is hosted at `https://github.com/catmaid/CATMAID
+<https://github.com/catmaid/CATMAID>`_  - clone this repository
 somewhere outside your web root, e.g. in ``/home/alice``, so that
 the source code is in ``/home/alice/catmaid``::
 
-   git clone https://github.com/acardona/CATMAID.git catmaid
+   git clone https://github.com/catmaid/CATMAID.git catmaid
 
 2. Install required Python packages
 ###################################

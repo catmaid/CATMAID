@@ -9,8 +9,8 @@ easy to extend.
 If you are considering contributing a feature to CATMAID, you can get guidance
 from other active developers through the `CATMAID mailing list
 <https://groups.google.com/forum/#!forum/catmaid>`_ and `GitHub repository
-<https://github.com/acardona/CATMAID>`_. Always check the `list of open issues
-<https://github.com/acardona/CATMAID/issues>`_ as there may be valuable
+<https://github.com/catmaid/CATMAID>`_. Always check the `list of open issues
+<https://github.com/catmaid/CATMAID/issues>`_ as there may be valuable
 discussion relevant to your plans.
 
 Before developing any features you should follow the
@@ -46,7 +46,7 @@ CATMAID is not an image host. Rather, the CATMAID backend provides resource,
 spatial, and semantic metadata about image stacks hosted elsewhere, while the
 CATMAID frontend is capable of rendering and navigating these image stacks. More
 information about the types of image hosts CATMAID supports is available `on the
-wiki <https://github.com/acardona/CATMAID/wiki/Convention-for-Stack-Image-
+wiki <https://github.com/catmaid/CATMAID/wiki/Convention-for-Stack-Image-
 Sources>`_ and `here <https://github.com/axtimwalde/catmaid-
 tools/blob/master/README.md>`_.
 
@@ -85,7 +85,7 @@ Frontend
 If developing frontend functionality, a good strategy is to start by running
 scripts in the browser console to quickly prototype and become familiar with
 client APIs. The `scripting wiki
-<https://github.com/acardona/CATMAID/wiki/Scripting>`_ provides an introduction
+<https://github.com/catmaid/CATMAID/wiki/Scripting>`_ provides an introduction
 to these APIs and snippets for common scripting tasks.
 
 Javascript source files should be placed in the
@@ -233,7 +233,7 @@ Linting and Testing
 -------------------
 
 As part of the `continuous integration build <https://travis-
-ci.org/acardona/CATMAID/branches>`_, several automated processes are performed
+ci.org/catmaid/CATMAID/branches>`_, several automated processes are performed
 to help verify the correctness and quality of CATMAID:
 
 * :doc:`Unit and integration tests for Django backend <djangounittest>`

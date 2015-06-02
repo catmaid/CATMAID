@@ -3,7 +3,6 @@ postgresql-9.3-postgis
 imagemagick
 gcc
 gfortran
-apt-file
 python2.7-dev
 postgresql-common
 libpq-dev

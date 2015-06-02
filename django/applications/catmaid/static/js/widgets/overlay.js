@@ -2852,7 +2852,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
             CATMAID.info("No more open ends!");
           } else {
             self.nextOpenEnds = { tnid: nodeID, ends: json, byTime: null };
-            self.cycleThroughOpenEnds(null, byTime);
+            self.cycleThroughOpenEnds(nodeID, byTime);
           }
         });
   }

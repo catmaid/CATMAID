@@ -93,7 +93,7 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
     end_regex = re.compile('(?:' + ')|(?:'.join(end_tags) + ')')
 
     for nodeID, out_degree in tree.out_degree_iter():
-        if 0 == out_degree:
+        if 0 == out_degree or nodeID == tnid and 1 == out_degree:
             # Found an end node
             props = tree.node[nodeID]
             # Check if not tagged with a tag containing 'end'

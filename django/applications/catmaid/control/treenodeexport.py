@@ -341,7 +341,7 @@ class ConnectorExporter(TreenodeExporter):
             # rounded to full integers.
             x = int(connector.location_x + 0.5)
             y = int(connector.location_y + 0.5)
-            z = int(z_min + i * crop_self.stacks[0].resolution_z  + 0.5)
+            z = int(z_min + i * crop_self.stacks[0].resolution.z  + 0.5)
             image_name = "%s_%s_%s.tiff" % (x, y, z)
             connector_image_path = os.path.join(connector_path, image_name)
             img.write(connector_image_path)

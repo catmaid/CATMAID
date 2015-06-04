@@ -79,7 +79,7 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
             be = arbor.findBranchAndEndNodes(),
             n_branching = be.n_branches,
             n_ends = be.ends.length;
-        rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(models[skid].baseName, skid), skid,
+        rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(NeuronNameService.getInstance().getName(models[skid]), skid), skid,
                    raw_cable, smooth_cable, lower_bound_cable,
                    n_inputs, n_outputs, n_presynaptic_sites,
                    n_nodes, n_branching, n_ends]);

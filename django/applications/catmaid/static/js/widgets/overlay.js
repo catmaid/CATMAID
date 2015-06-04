@@ -355,6 +355,13 @@ SkeletonAnnotations.clearTopbar = function(stackID) {
 };
 
 /**
+ * Get a valid virtual node ID for a node between child, parent at section Z.
+ */
+SkeletonAnnotations.getVirtualNodeID = function(childID, parentID, z) {
+  return 'vn-' + childID + '-' + parentID + '-' + z;
+};
+
+/**
  * Return if the given node ID is the ID of a real treenode.
  */
 SkeletonAnnotations.isRealNode = function(node_id)
@@ -1971,7 +1978,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     // The ID should be different for the the same child and parent in
     // different Z sections to distinguish virtual nodes on different sections.
     // Therefore, Z is also part of the ID.
-    var id = 'vn-' + child.id + '-' + parent.id + '-' + z;
+    var id = SkeletonAnnotations.getVirtualNodeID(child.id, parent.id, z);
     var r = -1;
     var c = 5;
 

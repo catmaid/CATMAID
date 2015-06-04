@@ -2782,7 +2782,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
     // Get parent and child ID locations
     var vnComponents = SkeletonAnnotations.getVirtualNodeComponents(nodeID);
     var parentID = SkeletonAnnotations.getParentOfVirtualNode(nodeID, vnComponents);
-    var childID = SkeletonAnnotations.getChildVirtualNode(nodeID, vnComponents);
+    var childID = SkeletonAnnotations.getChildOfVirtualNode(nodeID, vnComponents);
     var vnZ = SkeletonAnnotations.getZOfVirtualNode(nodeID, vnComponents);
     if (parentID && childID && vnZ) {
       // Query parent location

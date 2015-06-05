@@ -44,7 +44,7 @@ var submitterFn = function() {
 
   var invoke = function(q, json) {
     try {
-      lastResult = q.fn(json);
+      lastResult = q.fn ? q.fn(json) : json;
     } catch (e) {
       alert(e);
     } finally {

@@ -2093,7 +2093,27 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     return;
   }
 
-  if (this.createNodeOrLink(e)) {
+  var handled = false;
+  var atn = SkeletonAnnotations.atn;
+  var insert = e.altKey;
+  var link = e.shiftKey;
+  var postLink = e.altKey;
+  // e.metaKey should correspond to the command key on Mac OS
+  var deselect = e.ctrlKey || e.metaKey ||
+    (insert && (null === atn.id || SkeletonAnnotations.TYPE_NODE !== atn.type));
+
+  if (deselect) {
+    if (null !== atn.id) {
+      CATMAID.statusBar.replaceLast("Deactivated node #" + atn.id);
+    }
+    SkeletonAnnotations.clearTopbar(this.stack.getId());
+    this.activateNode(null);
+    handled = true;
+  } else {
+    handled = this.createNodeOrLink(insert, link, postLink);
+  }
+
+  if (handled) {
     e.stopPropagation();
     e.preventDefault();
     return true;
@@ -2101,7 +2121,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   return false;
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
+SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(insert, link, postLink) {
   // take into account current local offset coordinates and scale
   var pos_x = this.coords.lastX;
   var pos_y = this.coords.lastY;
@@ -2115,7 +2135,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
   var targetTreenodeID,
       atn = SkeletonAnnotations.atn;
 
-
   // If activated, edit the node radius right after it was created.
   var postCreateFn;
   if (SkeletonAnnotations.setRadiusAfterNodeCreation) {
@@ -2123,21 +2142,13 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
     postCreateFn = function(overlay, node) { overlay.editRadius(node.id, false, true, true); };
   }
 
-  // e.metaKey should correspond to the command key on Mac OS
-  if (e.ctrlKey || e.metaKey) {
-    if (e.altKey && null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
+  if (insert) {
+    if (null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
       // Insert a treenode along an edge on the active skeleton
       var respectVirtualNodes = true;
       this.insertNodeInActiveSkeleton(phys_x, phys_y, phys_z, atn, respectVirtualNodes);
-    } else {
-      // ctrl-click deselects the current active node
-      if (null !== atn.id) {
-        CATMAID.statusBar.replaceLast("Deactivated node #" + atn.id);
-      }
-      SkeletonAnnotations.clearTopbar(this.stack.getId());
-      this.activateNode(null);
     }
-  } else if (e.shiftKey) {
+  } else if (link) {
     if (null === atn.id) {
       if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
         CATMAID.msg('BEWARE', 'You need to activate a treenode first (skeleton tracing mode)!');
@@ -2153,7 +2164,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
           linkType = "abutting";
         } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === SkeletonAnnotations.newConnectorType) {
           // Create a new synaptic connector
-          var synapseType = e.altKey ? 'post' : 'pre';
+          var synapseType = postLink ? 'post' : 'pre';
           msg = "Created connector with " + synapseType + "synaptic treenode #" + atn.id;
           linkType = synapseType + "synaptic_to";
         } else {

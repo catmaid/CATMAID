@@ -355,9 +355,17 @@ SkeletonAnnotations.clearTopbar = function(stackID) {
 };
 
 /**
- * Get a valid virtual node ID for a node between child, parent at section Z.
+ * Get a valid virtual node ID for a node between child, parent at section Z. If
+ * the child is a virtual node, its real child will be used. If the parent is a
+ * vitual node, its real parent will be used.
  */
 SkeletonAnnotations.getVirtualNodeID = function(childID, parentID, z) {
+  if (!SkeletonAnnotations.isRealNode(childID)) {
+    childID = SkeletonAnnotations.getChildOfVirtualNode(childID);
+  }
+  if (!SkeletonAnnotations.isRealNode(parentID)) {
+    parentID = SkeletonAnnotations.getParentOfVirtualNode(parentID);
+  }
   return 'vn-' + childID + '-' + parentID + '-' + z;
 };
 

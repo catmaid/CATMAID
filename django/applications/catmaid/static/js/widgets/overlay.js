@@ -2093,6 +2093,10 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     return;
   }
 
+  return createNodeOrLink(e);
+};
+
+SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
   // take into account current local offset coordinates and scale
   var pos_x = this.coords.lastX;
   var pos_y = this.coords.lastY;

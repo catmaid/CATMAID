@@ -2815,6 +2815,86 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
 };
 
 /**
+ * Promise the location of a node. Either by using the client side copy, if
+ * available. Or by querying the backend. The location coordinates are returned
+ * in stack space. If a vitual node ID is provided, its location and ID is
+ * returned, too. Its parent and child will be querried and the location
+ * calculated.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
+    nodeID, ignoreVirtual) {
+  var isVirtual = !SkeletonAnnotations.isRealNode(nodeID);
+  if (ignoreVirtual && isVirtual) {
+    throw new CATMAID.ValueError("Node can't be virtual");
+  }
+
+  // Try to find
+  var node = this.nodes[nodeID];
+  if (node) {
+    return Promise.resolve({id: node.id, x: node.x, y: node.y, z: node.z});
+  }
+
+  // In case of a vitual node, both child and parent are retrieved and the
+  // virtual node position is calculated.
+  if (isVirtual) {
+    var childID = SkeletonAnnotations.getChildOfVirtualNode(nodeID);
+    var parentID = SkeletonAnnotations.getParentOfVirtualNode(nodeID);
+
+    // To request a location, nodeID can't be virtual. This should be dealt
+    // with already, but another sanity check is done to be sure.
+    if (!(SkeletonAnnotations.isRealNode(childID) &&
+          SkeletonAnnotations.isRealNode(parentID))) {
+      throw new CATMAID.ValueError("Both child and parent of virtual " +
+          "must be real.");
+    }
+
+    var childLocation = this.promiseNodeLocation(childID, true);
+    var parentLocation = this.promiseNodeLocation(parentID, true);
+    var z = SkeletonAnnotations.getZOfVirtualNode(nodeID);
+
+    return Promise.all([childLocation, parentLocation])
+      .then(function(locations) {
+        var loc1 = locations[0];
+        var loc2 = locations[1];
+
+        // Find intersection and return virtual node
+        var pos = CATMAID.tools.intersectLineWithZPlane(loc1.x, loc1.y, loc1.z,
+            loc2.x, loc2.y, loc2.z, z);
+        return {id: nodeID, x: pos[0], y: pos[1], z: z};
+      });
+  }
+
+  // Request location from backend
+  var self = this;
+  var url = django_url + project.id + "/node/get_location";
+  return this.submit(url, {tnid: nodeID}, false, true)
+    .then(function(json) {
+      return {
+        id: json[0],
+        x: self.stack.projectToStackX(json[3], json[2], json[1]),
+        y: self.stack.projectToStackY(json[3], json[2], json[1]),
+        z: self.stack.projectToStackZ(json[3], json[2], json[1])
+      };
+    }, function(error) {
+      return Promise.reject("Could not get node location: " + error);
+    });
+};
+
+/**
+ * Moves the view to the location where the skeleton between a child
+ * and a parent node intersects with the first section next to the child. Or,
+ * alternatively, the parent if reverse is trueish. Returns a promise.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.moveToNodeOnSectionAndEdge = function (
+    childID, parentID, select, reverse) {
+  return this.getNodeOnSectionAndEdge(childID, parentID, reverse)
+    .then((function(node) {
+      var callback = select ? this.selectNode.bind(this, node.id) : undefined;
+      this.moveTo(node.z, node.y, node.x, callback);
+    }).bind(this));
+};
+
+/**
  * Move to the node that was edited last and select it. This will always be a
  * real node.
  */

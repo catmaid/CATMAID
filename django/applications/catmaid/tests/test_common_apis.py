@@ -1633,6 +1633,142 @@ class ViewPageTests(TestCase):
         self.assertEqual(tn_count, Treenode.objects.all().count())
         self.assertEqual(child_count, Treenode.objects.filter(parent=treenode_id).count())
 
+    def test_insert_treenoded_on_edge(self):
+        self.fake_authentication()
+        class_map = get_class_to_id_map(self.test_project_id)
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_skeletons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['skeleton']).count()
+        count_neurons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['neuron']).count()
+
+        treenode_count = count_treenodes()
+        skeleton_count = count_skeletons()
+        neuron_count = count_neurons()
+
+        # Get two nodes and calculate point between them
+        child_id = 2374
+        parent_id = 2372
+        child = Treenode.objects.get(pk=child_id)
+        parent = Treenode.objects.get(pk=parent_id)
+
+        new_node_x = 0.5 * (child.location_x + parent.location_x)
+        new_node_y = 0.5 * (child.location_y + parent.location_y)
+        new_node_z = 0.5 * (child.location_z + parent.location_z)
+
+        response = self.client.post('/%d/treenode/insert' % self.test_project_id, {
+            'x': new_node_x,
+            'y': new_node_y,
+            'z': new_node_z,
+            'child_id': child_id,
+            'parent_id': parent_id})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+
+        self.assertTrue('treenode_id' in parsed_response)
+        self.assertTrue('skeleton_id' in parsed_response)
+
+        self.assertEqual(treenode_count + 1, count_treenodes())
+        self.assertEqual(skeleton_count, count_skeletons())
+        self.assertEqual(neuron_count, count_neurons())
+
+        new_node_id = parsed_response['treenode_id']
+        new_node = Treenode.objects.get(pk=new_node_id)
+        child = Treenode.objects.get(pk=child_id)
+        self.assertEqual(new_node.parent_id, parent_id)
+        self.assertEqual(child.parent_id, new_node_id)
+        self.assertEqual(new_node.user, child.user)
+        self.assertEqual(new_node.creation_time, child.creation_time)
+        self.assertEqual(new_node.skeleton_id, child.skeleton_id)
+        self.assertEqual(new_node.location_x, new_node_x)
+        self.assertEqual(new_node.location_y, new_node_y)
+        self.assertEqual(new_node.location_z, new_node_z)
+
+    def test_insert_treenoded_not_on_edge(self):
+        self.fake_authentication()
+        class_map = get_class_to_id_map(self.test_project_id)
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_skeletons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['skeleton']).count()
+        count_neurons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['neuron']).count()
+
+        treenode_count = count_treenodes()
+        skeleton_count = count_skeletons()
+        neuron_count = count_neurons()
+
+        # Get two nodes and calculate point between them
+        child_id = 2374
+        parent_id = 2372
+        child = Treenode.objects.get(pk=child_id)
+        parent = Treenode.objects.get(pk=parent_id)
+
+        new_node_x = 0.5 * (child.location_x + parent.location_x)
+        new_node_y = 0.5 * (child.location_y + parent.location_y)
+        new_node_z = 0.5 * (child.location_z + parent.location_z)
+
+        # Try to insert with a slight distorition in Y
+        response = self.client.post('/%d/treenode/insert' % self.test_project_id, {
+            'x': new_node_x,
+            'y': new_node_y + 10,
+            'z': new_node_z,
+            'child_id': child_id,
+            'parent_id': parent_id})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue('error' in parsed_response)
+
+        self.assertEqual(treenode_count, count_treenodes())
+        self.assertEqual(skeleton_count, count_skeletons())
+        self.assertEqual(neuron_count, count_neurons())
+
+    def test_insert_treenoded_no_child_parent(self):
+        self.fake_authentication()
+        class_map = get_class_to_id_map(self.test_project_id)
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_skeletons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['skeleton']).count()
+        count_neurons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['neuron']).count()
+
+        treenode_count = count_treenodes()
+        skeleton_count = count_skeletons()
+        neuron_count = count_neurons()
+
+        # Get two nodes and calculate point between them
+        child_id = 2376
+        parent_id = 2372
+        child = Treenode.objects.get(pk=child_id)
+        parent = Treenode.objects.get(pk=parent_id)
+
+        new_node_x = 0.5 * (child.location_x + parent.location_x)
+        new_node_y = 0.5 * (child.location_y + parent.location_y)
+        new_node_z = 0.5 * (child.location_z + parent.location_z)
+
+        # Try to insert with a slight distorition in Y
+        response = self.client.post('/%d/treenode/insert' % self.test_project_id, {
+            'x': new_node_x,
+            'y': new_node_y,
+            'z': new_node_z,
+            'child_id': child_id,
+            'parent_id': parent_id})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue('error' in parsed_response)
+
+        self.assertEqual(treenode_count, count_treenodes())
+        self.assertEqual(skeleton_count, count_skeletons())
+        self.assertEqual(neuron_count, count_neurons())
+
     def test_delete_non_root_non_parent_treenode(self):
         self.fake_authentication()
         treenode_id = 349

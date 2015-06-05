@@ -2093,7 +2093,12 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     return;
   }
 
-  return createNodeOrLink(e);
+  if (this.createNodeOrLink(e)) {
+    e.stopPropagation();
+    e.preventDefault();
+    return true;
+  }
+  return false;
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
@@ -2124,7 +2129,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
       // Insert a treenode along an edge on the active skeleton
       var respectVirtualNodes = true;
       this.insertNodeInActiveSkeleton(phys_x, phys_y, phys_z, atn, respectVirtualNodes);
-      e.stopPropagation();
     } else {
       // ctrl-click deselects the current active node
       if (null !== atn.id) {
@@ -2132,15 +2136,11 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
       }
       SkeletonAnnotations.clearTopbar(this.stack.getId());
       this.activateNode(null);
-      if (!e.shiftKey) {
-        e.stopPropagation();
-      } // else, a node under the mouse will be removed
     }
   } else if (e.shiftKey) {
     if (null === atn.id) {
       if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
         CATMAID.msg('BEWARE', 'You need to activate a treenode first (skeleton tracing mode)!');
-        e.stopPropagation();
         return true;
       }
     } else {
@@ -2168,26 +2168,21 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
                   self.createLink(nid, connectorID, linkType);
                 });
             });
-          e.stopPropagation();
-          e.preventDefault();
         }
-        // Else don't stop propagation: the mouse functions of the node will be triggered
-        return true;
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
           // create new treenode (and skeleton) postsynaptic to activated connector
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
           this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, postCreateFn);
-          e.stopPropagation();
         } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === atn.subtype) {
           // create new treenode (and skeleton) postsynaptic to activated connector
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " abutting to active connector");
           this.createTreenodeWithLink(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, "abutting", postCreateFn);
-          e.stopPropagation();
+        } else {
+          return false;
         }
-        return true;
       }
     }
   } else {
@@ -2208,23 +2203,20 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
             this.createNode(null, phys_x, phys_y, phys_z, -1, 5,
                 pos_x, pos_y, pos_z, postCreateFn);
         }
-        e.stopPropagation();
       } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
         // create new treenode (and skeleton) presynaptic to activated connector
         // if the connector doesn't have a presynaptic node already
         this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z,
             postCreateFn);
-        e.stopPropagation();
+      } else {
+        return false;
       }
-      // Else don't stop propagation: a node may be moved
-      return true;
     } else if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SYNAPSE) {
       // only create single synapses/connectors
       this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
           SkeletonAnnotations.newConnectorType);
     }
   }
-  e.stopPropagation();
   return true;
 };
 

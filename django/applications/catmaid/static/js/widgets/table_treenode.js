@@ -134,7 +134,8 @@ TreenodeTable.prototype._appendSkeletons = function(skeleton_ids) {
 
   var stack = project.focusedStack,
       users = User.all(),
-      n_rows = this.oTable.fnSettings().fnRecordsTotal();
+      n_rows = this.oTable.fnSettings().fnRecordsTotal(),
+      all_rows = [];
 
   fetchSkeletons(
       skeleton_ids,
@@ -206,8 +207,7 @@ TreenodeTable.prototype._appendSkeletons = function(skeleton_ids) {
                              length: rows.length};
 
         n_rows += rows.length;
-
-        this.oTable.fnAddData(rows);
+        all_rows = all_rows.concat(rows);
       }).bind(this),
       (function(skid) {
         // Failed loading
@@ -216,10 +216,10 @@ TreenodeTable.prototype._appendSkeletons = function(skeleton_ids) {
         delete this.ranges[skid];
       }).bind(this),
       (function() {
-        // Restore entries in search fields
-        $('#search_labels' + this.widgetID).val( this.filter_searchtag );
-
-        this.oTable.fnDraw();
+        this.oTable.fnAddData(all_rows);
+        this.filter_nodetype = $('select#search_type' + this.widgetID).val();
+        // fnFilter will call fnDraw
+        this.oTable.fnFilter(this.filter_nodetype, 1);
       }).bind(this));
 };
 

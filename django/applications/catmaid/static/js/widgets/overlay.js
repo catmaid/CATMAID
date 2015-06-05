@@ -2793,23 +2793,36 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
     var childID = SkeletonAnnotations.getChildOfVirtualNode(nodeID, vnComponents);
     var vnZ = SkeletonAnnotations.getZOfVirtualNode(nodeID, vnComponents);
     if (parentID && childID && vnZ) {
+      var self = this;
       // Query parent location
-      this.submit(
+      self.submit(
           django_url + project.id + "/node/get_location",
           {tnid: parentID},
           function(json) {
-            var p = {x: json[1], y: json[2], z: json[3]};
+            var p = {
+              x: self.stack.projectToStackX(json[3], json[2], json[1]),
+              y: self.stack.projectToStackY(json[3], json[2], json[1]),
+              z: self.stack.projectToStackZ(json[3], json[2], json[1])
+            };
+
             // Query child location
-            this.submit(
+            self.submit(
                 django_url + project.id + "/node/get_location",
                 {tnid: childID},
                 function(json) {
-                  var c = {x: json[1], y: json[2], z: json[3]};
+                  var c = {
+                    x: self.stack.projectToStackX(json[3], json[2], json[1]),
+                    y: self.stack.projectToStackY(json[3], json[2], json[1]),
+                    z: self.stack.projectToStackZ(json[3], json[2], json[1])
+                  };
                   // Find intersection at virtual node
                   var pos = CATMAID.tools.intersectLineWithZPlane(c.x, c.y, c.z,
                       p.x, p.y, p.z, vnZ);
-                  // Move there
-                  self.moveTo(vnZ, pos[1], pos[0], fn);
+                  // Move there in project space
+                  var x = self.stack.stackToProjectX(vnZ, pos[1], pos[0]);
+                  var y = self.stack.stackToProjectY(vnZ, pos[1], pos[0]);
+                  var z = self.stack.stackToProjectZ(vnZ, pos[1], pos[0]);
+                  self.moveTo(z, y, x, fn);
                 },
                 false,
                 true);

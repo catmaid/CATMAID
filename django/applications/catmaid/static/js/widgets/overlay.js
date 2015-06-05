@@ -2815,6 +2815,61 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
 };
 
 /**
+ * Get a node representing the location on a skeleton at the first section after
+ * the first of two adjacent nodes in direction of the second. If reverse is
+ * true, a node on the first section after the second node in direction of the
+ * first will be returned. More precisely, a promise is returned that is
+ * resolved once the node is available. The promise returns the node
+ * representing the location in question. Note that this node can be a virtual
+ * node if no real node is available at the given point in space. In this case,
+ * the nodes are child and parent of the virtual node. If one of the two nodes
+ * happens to be at the given Z, the respective node is returned.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.getNodeOnSectionAndEdge = function (
+    childID, parentID, reverse) {
+  if (childID === parentID) {
+    throw new CATMAID.ValueError("Node IDs must be different");
+  }
+
+  var self = this;
+  return new Promise(function(resolve, reject) {
+    // Promise location, either by using the existing node or getting location
+    // informmation from the backend.
+    var location1 = self.promiseNodeLocation(childID, false);
+    var location2 = self.promiseNodeLocation(parentID, false);
+
+    // If both locations are available, find intersection at requested Z
+    Promise.all([location1, location2]).then(function(locations) {
+      var from = reverse ? locations[1] : locations[0],
+            to = reverse ? locations[0] : locations[1],
+          toID = reverse ? childID : parentID;
+      // Calculate target section
+      var z = from.z + (from.z < to.z ? 1 : (from.z > to.z ? -1 : 0));
+
+      // If the target is in the section below, above or in the same section as
+      // the from node, return it instead of a virtual node
+      if (Math.abs(z - to.z) < 0.0001) {
+        return {id: toID, x: to.x, y: to.y, z: to.z};
+      }
+
+      // Find intersection and return virtual node
+      var pos = CATMAID.tools.intersectLineWithZPlane(from.x, from.y, from.z,
+          to.x, to.y, to.z, z);
+      var vnID = SkeletonAnnotations.getVirtualNodeID(childID, parentID, z);
+      return {id: vnID, x: pos[0], y: pos[1], z: z};
+    }).then(function(node) {
+      // Convert previous result to project cooridnates
+      return {
+        id: node.id,
+        x: self.stack.stackToProjectX(node.z, node.y, node.x),
+        y: self.stack.stackToProjectY(node.z, node.y, node.x),
+        z: self.stack.stackToProjectZ(node.z, node.y, node.x)
+      };
+    }).then(resolve).catch(reject);
+  });
+};
+
+/**
  * Promise the location of a node. Either by using the client side copy, if
  * available. Or by querying the backend. The location coordinates are returned
  * in stack space. If a vitual node ID is provided, its location and ID is

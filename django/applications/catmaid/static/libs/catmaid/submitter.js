@@ -44,7 +44,7 @@ var submitterFn = function() {
 
   var invoke = function(q, json) {
     try {
-      lastResult = q.fn(json);
+      lastResult = q.fn ? q.fn(json) : json;
     } catch (e) {
       alert(e);
     } finally {
@@ -172,6 +172,8 @@ var submitterFn = function() {
     if (1 === queue.length) {
       next();
     }
+    // Return self to allow chaining
+    return submit;
   };
 
   /**

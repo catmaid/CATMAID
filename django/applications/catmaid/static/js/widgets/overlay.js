@@ -355,9 +355,17 @@ SkeletonAnnotations.clearTopbar = function(stackID) {
 };
 
 /**
- * Get a valid virtual node ID for a node between child, parent at section Z.
+ * Get a valid virtual node ID for a node between child, parent at section Z. If
+ * the child is a virtual node, its real child will be used. If the parent is a
+ * vitual node, its real parent will be used.
  */
 SkeletonAnnotations.getVirtualNodeID = function(childID, parentID, z) {
+  if (!SkeletonAnnotations.isRealNode(childID)) {
+    childID = SkeletonAnnotations.getChildOfVirtualNode(childID);
+  }
+  if (!SkeletonAnnotations.isRealNode(parentID)) {
+    parentID = SkeletonAnnotations.getParentOfVirtualNode(parentID);
+  }
   return 'vn-' + childID + '-' + parentID + '-' + z;
 };
 
@@ -2460,7 +2468,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
     treenode_id = SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
   }
   if (e.shiftKey) {
-    this.cycleThroughBranches(treenode_id, e.altKey ? 1 : 2);
+    this.cycleThroughBranches(treenode_id, e.altKey ? 1 : 2, true);
   } else {
     var self = this;
     this.submit(
@@ -2483,7 +2491,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
             }
           } else {
             self.nextBranches = {tnid: treenode_id, branches: json};
-            self.cycleThroughBranches(null, e.altKey ? 1 : 2);
+            self.cycleThroughBranches(null, e.altKey ? 1 : 2, true);
           }
         });
   }
@@ -2492,14 +2500,19 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
 /**
  * Select alternative branches to the currently selected one
  */
-SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (treenode_id, node_index) {
+SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (
+    treenode_id, node_index, ignoreVirtual) {
   if (typeof this.nextBranches === 'undefined') return;
-  if (!this.isIDNull(treenode_id) && !SkeletonAnnotations.isRealNode(treenode_id)) {
-    treenode_id = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
-  }
 
+  // Find branch of which treenode_id is part
+  var referenceNodeID;
+  if (null !== treenode_id) {
+    referenceNodeID = SkeletonAnnotations.isRealNode(treenode_id) ?
+      treenode_id : SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
+    referenceNodeID = parseInt(referenceNodeID, 10);
+  }
   var currentBranch = this.nextBranches.branches.map(function (branch) {
-    return branch.some(function (node) { return node[0] === treenode_id; });
+    return branch.some(function (node) { return node[0] === referenceNodeID; });
   }).indexOf(true);
 
   // Cycle through branches. If treenode_id was not in the branch nodes (such as
@@ -2509,14 +2522,25 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (treeno
 
   var branch = this.nextBranches.branches[currentBranch];
   var node = branch[node_index];
-  this.moveTo(node[3], node[2], node[1], this.selectNode.bind(this, node[0]));
+
+  // If virtual nodes should be respected, jump to the next section. Otherwise,
+  // move to the child node (which might not be on the next section).
+  if (ignoreVirtual) {
+    this.moveTo(node[3], node[2], node[1], this.selectNode.bind(this, node[0]));
+  } else {
+    this.moveToNodeOnSectionAndEdge(node[0], this.nextBranches.tnid, true, true);
+  }
 };
 
 /**
- * Checks first if the parent is loaded, otherwise fetches its location from the
- * database.
+ * Move to the parent node of the given node. Usually, this is the node at the
+ * intersection between the the skeleton of the given node and the section
+ * towards its parent. If this happens to be a real node, the real node is
+ * loaded (if required) and selected, otherwise, a virtual node is selected.
+ * Optionally, the selection of virtual nodes can be disabled. This might cause
+ * a jump to a location that is farther away than one section.
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) {
+SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id, ignoreVirtual) {
   if (this.isIDNull(treenode_id)) return;
   var node = this.nodes[treenode_id];
   if (!node) {
@@ -2527,7 +2551,13 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
     CATMAID.info("This is the root node, can't move to its parent");
     return;
   }
-  this.moveToAndSelectNode(node.parent_id);
+  if (ignoreVirtual) {
+    this.moveToAndSelectNode(node.parent_id);
+  } else {
+    // Move to clostest node on section after the current node in direction of
+    // parent node (which may be the parent node or a virtual node).
+    this.moveToNodeOnSectionAndEdge(node.id, node.parent_id, true, false);
+  }
 };
 
 /**
@@ -2537,28 +2567,39 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
  * @param {number} treenode_id - The node of which to select the child
  * @param {boolean} cycle - If true, subsequent calls cycle through children
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, cycle) {
+SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, cycle, ignoreVirtual) {
   if (this.isIDNull(treenode_id)) return;
+
   // If the existing nextBranches was fetched for this treenode, reuse it to
   // prevent repeated queries when quickly alternating between child and parent.
   if (cycle ||
       typeof this.nextBranches !== 'undefined' && this.nextBranches.tnid === treenode_id) {
-        this.cycleThroughBranches(treenode_id, 0);
+        this.cycleThroughBranches(treenode_id, 0, false);
   } else {
     var self = this;
-    this.submit(
-        django_url + project.id + "/node/next_branch_or_end",
-        {tnid: treenode_id},
-        function(json) {
-          // See goToNextBranchOrEndNode for JSON schema description.
-          if (json.length === 0) {
-            // Already at a branch or end node
-            CATMAID.msg('Already there', 'You are at an end node');
-          } else {
-            self.nextBranches = {tnid: treenode_id, branches: json};
-            self.cycleThroughBranches(null, 0);
-          }
-        });
+    if (SkeletonAnnotations.isRealNode(treenode_id)) {
+      this.submit(
+          django_url + project.id + "/node/next_branch_or_end",
+          {tnid: treenode_id},
+          function(json) {
+            // See goToNextBranchOrEndNode for JSON schema description.
+            if (json.length === 0) {
+              // Already at a branch or end node
+              CATMAID.msg('Already there', 'You are at an end node');
+            } else {
+              self.nextBranches = {tnid: treenode_id, branches: json};
+              self.cycleThroughBranches(null, 0, false);
+            }
+          });
+    } else {
+      // There is no need to get branches or end nodes for virtual nodes, they
+      // are always inbetween two real nodes.
+      var childID = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
+      this.moveToNodeOnSectionAndEdge(childID, treenode_id, true, true)
+        .then((function(node) {
+          self.nextBranches = {tnid: treenode_id, branches: [[node]]};
+        }).bind(this));
+    }
   }
 };
 
@@ -2785,23 +2826,36 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
     var childID = SkeletonAnnotations.getChildOfVirtualNode(nodeID, vnComponents);
     var vnZ = SkeletonAnnotations.getZOfVirtualNode(nodeID, vnComponents);
     if (parentID && childID && vnZ) {
+      var self = this;
       // Query parent location
-      this.submit(
+      self.submit(
           django_url + project.id + "/node/get_location",
           {tnid: parentID},
           function(json) {
-            var p = {x: json[1], y: json[2], z: json[3]};
+            var p = {
+              x: self.stack.projectToStackX(json[3], json[2], json[1]),
+              y: self.stack.projectToStackY(json[3], json[2], json[1]),
+              z: self.stack.projectToStackZ(json[3], json[2], json[1])
+            };
+
             // Query child location
-            this.submit(
+            self.submit(
                 django_url + project.id + "/node/get_location",
                 {tnid: childID},
                 function(json) {
-                  var c = {x: json[1], y: json[2], z: json[3]};
+                  var c = {
+                    x: self.stack.projectToStackX(json[3], json[2], json[1]),
+                    y: self.stack.projectToStackY(json[3], json[2], json[1]),
+                    z: self.stack.projectToStackZ(json[3], json[2], json[1])
+                  };
                   // Find intersection at virtual node
                   var pos = CATMAID.tools.intersectLineWithZPlane(c.x, c.y, c.z,
                       p.x, p.y, p.z, vnZ);
-                  // Move there
-                  self.moveTo(vnZ, pos[1], pos[0], fn);
+                  // Move there in project space
+                  var x = self.stack.stackToProjectX(vnZ, pos[1], pos[0]);
+                  var y = self.stack.stackToProjectY(vnZ, pos[1], pos[0]);
+                  var z = self.stack.stackToProjectZ(vnZ, pos[1], pos[0]);
+                  self.moveTo(z, y, x, fn);
                 },
                 false,
                 true);
@@ -2812,6 +2866,141 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
       CATMAID.warn("Could not find location for node " + nodeID);
     }
   }
+};
+
+/**
+ * Get a node representing the location on a skeleton at the first section after
+ * the first of two adjacent nodes in direction of the second. If reverse is
+ * true, a node on the first section after the second node in direction of the
+ * first will be returned. More precisely, a promise is returned that is
+ * resolved once the node is available. The promise returns the node
+ * representing the location in question. Note that this node can be a virtual
+ * node if no real node is available at the given point in space. In this case,
+ * the nodes are child and parent of the virtual node. If one of the two nodes
+ * happens to be at the given Z, the respective node is returned.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.getNodeOnSectionAndEdge = function (
+    childID, parentID, reverse) {
+  if (childID === parentID) {
+    throw new CATMAID.ValueError("Node IDs must be different");
+  }
+
+  var self = this;
+  return new Promise(function(resolve, reject) {
+    // Promise location, either by using the existing node or getting location
+    // informmation from the backend.
+    var location1 = self.promiseNodeLocation(childID, false);
+    var location2 = self.promiseNodeLocation(parentID, false);
+
+    // If both locations are available, find intersection at requested Z
+    Promise.all([location1, location2]).then(function(locations) {
+      var from = reverse ? locations[1] : locations[0],
+            to = reverse ? locations[0] : locations[1],
+          toID = reverse ? childID : parentID;
+      // Calculate target section
+      var z = from.z + (from.z < to.z ? 1 : (from.z > to.z ? -1 : 0));
+
+      // If the target is in the section below, above or in the same section as
+      // the from node, return it instead of a virtual node
+      if (Math.abs(z - to.z) < 0.0001) {
+        return {id: toID, x: to.x, y: to.y, z: to.z};
+      }
+
+      // Find intersection and return virtual node
+      var pos = CATMAID.tools.intersectLineWithZPlane(from.x, from.y, from.z,
+          to.x, to.y, to.z, z);
+      var vnID = SkeletonAnnotations.getVirtualNodeID(childID, parentID, z);
+      return {id: vnID, x: pos[0], y: pos[1], z: z};
+    }).then(function(node) {
+      // Convert previous result to project cooridnates
+      return {
+        id: node.id,
+        x: self.stack.stackToProjectX(node.z, node.y, node.x),
+        y: self.stack.stackToProjectY(node.z, node.y, node.x),
+        z: self.stack.stackToProjectZ(node.z, node.y, node.x)
+      };
+    }).then(resolve).catch(reject);
+  });
+};
+
+/**
+ * Promise the location of a node. Either by using the client side copy, if
+ * available. Or by querying the backend. The location coordinates are returned
+ * in stack space. If a vitual node ID is provided, its location and ID is
+ * returned, too. Its parent and child will be querried and the location
+ * calculated.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
+    nodeID, ignoreVirtual) {
+  var isVirtual = !SkeletonAnnotations.isRealNode(nodeID);
+  if (ignoreVirtual && isVirtual) {
+    throw new CATMAID.ValueError("Node can't be virtual");
+  }
+
+  // Try to find
+  var node = this.nodes[nodeID];
+  if (node) {
+    return Promise.resolve({id: node.id, x: node.x, y: node.y, z: node.z});
+  }
+
+  // In case of a vitual node, both child and parent are retrieved and the
+  // virtual node position is calculated.
+  if (isVirtual) {
+    var childID = SkeletonAnnotations.getChildOfVirtualNode(nodeID);
+    var parentID = SkeletonAnnotations.getParentOfVirtualNode(nodeID);
+
+    // To request a location, nodeID can't be virtual. This should be dealt
+    // with already, but another sanity check is done to be sure.
+    if (!(SkeletonAnnotations.isRealNode(childID) &&
+          SkeletonAnnotations.isRealNode(parentID))) {
+      throw new CATMAID.ValueError("Both child and parent of virtual " +
+          "must be real.");
+    }
+
+    var childLocation = this.promiseNodeLocation(childID, true);
+    var parentLocation = this.promiseNodeLocation(parentID, true);
+    var z = SkeletonAnnotations.getZOfVirtualNode(nodeID);
+
+    return Promise.all([childLocation, parentLocation])
+      .then(function(locations) {
+        var loc1 = locations[0];
+        var loc2 = locations[1];
+
+        // Find intersection and return virtual node
+        var pos = CATMAID.tools.intersectLineWithZPlane(loc1.x, loc1.y, loc1.z,
+            loc2.x, loc2.y, loc2.z, z);
+        return {id: nodeID, x: pos[0], y: pos[1], z: z};
+      });
+  }
+
+  // Request location from backend
+  var self = this;
+  var url = django_url + project.id + "/node/get_location";
+  return this.submit(url, {tnid: nodeID}, false, true)
+    .then(function(json) {
+      return {
+        id: json[0],
+        x: self.stack.projectToStackX(json[3], json[2], json[1]),
+        y: self.stack.projectToStackY(json[3], json[2], json[1]),
+        z: self.stack.projectToStackZ(json[3], json[2], json[1])
+      };
+    }, function(error) {
+      return Promise.reject("Could not get node location: " + error);
+    });
+};
+
+/**
+ * Moves the view to the location where the skeleton between a child
+ * and a parent node intersects with the first section next to the child. Or,
+ * alternatively, the parent if reverse is trueish. Returns a promise.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.moveToNodeOnSectionAndEdge = function (
+    childID, parentID, select, reverse) {
+  return this.getNodeOnSectionAndEdge(childID, parentID, reverse)
+    .then((function(node) {
+      var callback = select ? this.selectNode.bind(this, node.id) : undefined;
+      this.moveTo(node.z, node.y, node.x, callback);
+    }).bind(this));
 };
 
 /**

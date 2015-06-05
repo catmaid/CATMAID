@@ -2146,29 +2146,27 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(e) {
     } else {
       if (SkeletonAnnotations.TYPE_NODE === atn.type) {
         var targetTreenode = this.nodes[atn.id];
-        if (e.shiftKey) {
-          var msg, linkType, self = this;
-          if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === SkeletonAnnotations.newConnectorType) {
-            // Create a new abutting connection
-            msg = "Created abutting connector with treenode #" + atn.id;
-            linkType = "abutting";
-          } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === SkeletonAnnotations.newConnectorType) {
-            // Create a new synaptic connector
-            var synapseType = e.altKey ? 'post' : 'pre';
-            msg = "Created connector with " + synapseType + "synaptic treenode #" + atn.id;
-            linkType = synapseType + "synaptic_to";
-          } else {
-            CATMAID.warn("Unknown connector type selected");
-            return true;
-          }
-          CATMAID.statusBar.replaceLast(msg);
-          this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
-            SkeletonAnnotations.newConnectorType, function (connectorID) {
-                self.promiseNode(targetTreenode).then(function(nid) {
-                  self.createLink(nid, connectorID, linkType);
-                });
-            });
+        var msg, linkType, self = this;
+        if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === SkeletonAnnotations.newConnectorType) {
+          // Create a new abutting connection
+          msg = "Created abutting connector with treenode #" + atn.id;
+          linkType = "abutting";
+        } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === SkeletonAnnotations.newConnectorType) {
+          // Create a new synaptic connector
+          var synapseType = e.altKey ? 'post' : 'pre';
+          msg = "Created connector with " + synapseType + "synaptic treenode #" + atn.id;
+          linkType = synapseType + "synaptic_to";
+        } else {
+          CATMAID.warn("Unknown connector type selected");
+          return true;
         }
+        CATMAID.statusBar.replaceLast(msg);
+        this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
+          SkeletonAnnotations.newConnectorType, function (connectorID) {
+              self.promiseNode(targetTreenode).then(function(nid) {
+                self.createLink(nid, connectorID, linkType);
+              });
+          });
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
           // create new treenode (and skeleton) postsynaptic to activated connector

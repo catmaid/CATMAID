@@ -75,6 +75,15 @@ NeuronAnnotations.prototype.hasSkeleton = function(skeleton_id) {
   });
 };
 
+NeuronAnnotations.prototype.getSkeletonModel = function(skeleton_id) {
+  if (this.hasSkeleton(skeleton_id)) {
+    return new SelectionTable.prototype.SkeletonModel(skeleton_id, "",
+        new THREE.Color().setRGB(1, 1, 0));
+  } else {
+    return null;
+  }
+};
+
 NeuronAnnotations.prototype.getSelectedSkeletonModels = function() {
   return this.get_selected_neurons().reduce(function(o, e) {
     if (e.type === 'neuron') {

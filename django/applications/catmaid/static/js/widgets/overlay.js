@@ -2468,7 +2468,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
     treenode_id = SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
   }
   if (e.shiftKey) {
-    this.cycleThroughBranches(treenode_id, e.altKey ? 1 : 2);
+    this.cycleThroughBranches(treenode_id, e.altKey ? 1 : 2, true);
   } else {
     var self = this;
     this.submit(
@@ -2491,7 +2491,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
             }
           } else {
             self.nextBranches = {tnid: treenode_id, branches: json};
-            self.cycleThroughBranches(null, e.altKey ? 1 : 2);
+            self.cycleThroughBranches(null, e.altKey ? 1 : 2, true);
           }
         });
   }
@@ -2500,14 +2500,19 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
 /**
  * Select alternative branches to the currently selected one
  */
-SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (treenode_id, node_index) {
+SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (
+    treenode_id, node_index, ignoreVirtual) {
   if (typeof this.nextBranches === 'undefined') return;
-  if (!this.isIDNull(treenode_id) && !SkeletonAnnotations.isRealNode(treenode_id)) {
-    treenode_id = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
-  }
 
+  // Find branch of which treenode_id is part
+  var referenceNodeID;
+  if (null !== treenode_id) {
+    referenceNodeID = SkeletonAnnotations.isRealNode(treenode_id) ?
+      treenode_id : SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
+    referenceNodeID = parseInt(referenceNodeID, 10);
+  }
   var currentBranch = this.nextBranches.branches.map(function (branch) {
-    return branch.some(function (node) { return node[0] === treenode_id; });
+    return branch.some(function (node) { return node[0] === referenceNodeID; });
   }).indexOf(true);
 
   // Cycle through branches. If treenode_id was not in the branch nodes (such as
@@ -2517,14 +2522,25 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (treeno
 
   var branch = this.nextBranches.branches[currentBranch];
   var node = branch[node_index];
-  this.moveTo(node[3], node[2], node[1], this.selectNode.bind(this, node[0]));
+
+  // If virtual nodes should be respected, jump to the next section. Otherwise,
+  // move to the child node (which might not be on the next section).
+  if (ignoreVirtual) {
+    this.moveTo(node[3], node[2], node[1], this.selectNode.bind(this, node[0]));
+  } else {
+    this.moveToNodeOnSectionAndEdge(node[0], this.nextBranches.tnid, true, true);
+  }
 };
 
 /**
- * Checks first if the parent is loaded, otherwise fetches its location from the
- * database.
+ * Move to the parent node of the given node. Usually, this is the node at the
+ * intersection between the the skeleton of the given node and the section
+ * towards its parent. If this happens to be a real node, the real node is
+ * loaded (if required) and selected, otherwise, a virtual node is selected.
+ * Optionally, the selection of virtual nodes can be disabled. This might cause
+ * a jump to a location that is farther away than one section.
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) {
+SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id, ignoreVirtual) {
   if (this.isIDNull(treenode_id)) return;
   var node = this.nodes[treenode_id];
   if (!node) {
@@ -2535,7 +2551,13 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
     CATMAID.info("This is the root node, can't move to its parent");
     return;
   }
-  this.moveToAndSelectNode(node.parent_id);
+  if (ignoreVirtual) {
+    this.moveToAndSelectNode(node.parent_id);
+  } else {
+    // Move to clostest node on section after the current node in direction of
+    // parent node (which may be the parent node or a virtual node).
+    this.moveToNodeOnSectionAndEdge(node.id, node.parent_id, true, false);
+  }
 };
 
 /**
@@ -2545,28 +2567,39 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id) 
  * @param {number} treenode_id - The node of which to select the child
  * @param {boolean} cycle - If true, subsequent calls cycle through children
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, cycle) {
+SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, cycle, ignoreVirtual) {
   if (this.isIDNull(treenode_id)) return;
+
   // If the existing nextBranches was fetched for this treenode, reuse it to
   // prevent repeated queries when quickly alternating between child and parent.
   if (cycle ||
       typeof this.nextBranches !== 'undefined' && this.nextBranches.tnid === treenode_id) {
-        this.cycleThroughBranches(treenode_id, 0);
+        this.cycleThroughBranches(treenode_id, 0, false);
   } else {
     var self = this;
-    this.submit(
-        django_url + project.id + "/node/next_branch_or_end",
-        {tnid: treenode_id},
-        function(json) {
-          // See goToNextBranchOrEndNode for JSON schema description.
-          if (json.length === 0) {
-            // Already at a branch or end node
-            CATMAID.msg('Already there', 'You are at an end node');
-          } else {
-            self.nextBranches = {tnid: treenode_id, branches: json};
-            self.cycleThroughBranches(null, 0);
-          }
-        });
+    if (SkeletonAnnotations.isRealNode(treenode_id)) {
+      this.submit(
+          django_url + project.id + "/node/next_branch_or_end",
+          {tnid: treenode_id},
+          function(json) {
+            // See goToNextBranchOrEndNode for JSON schema description.
+            if (json.length === 0) {
+              // Already at a branch or end node
+              CATMAID.msg('Already there', 'You are at an end node');
+            } else {
+              self.nextBranches = {tnid: treenode_id, branches: json};
+              self.cycleThroughBranches(null, 0, false);
+            }
+          });
+    } else {
+      // There is no need to get branches or end nodes for virtual nodes, they
+      // are always inbetween two real nodes.
+      var childID = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
+      this.moveToNodeOnSectionAndEdge(childID, treenode_id, true, true)
+        .then((function(node) {
+          self.nextBranches = {tnid: treenode_id, branches: [[node]]};
+        }).bind(this));
+    }
   }
 };
 

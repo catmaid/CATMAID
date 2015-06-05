@@ -172,6 +172,8 @@ var submitterFn = function() {
     if (1 === queue.length) {
       next();
     }
+    // Return self to allow chaining
+    return submit;
   };
 
   /**

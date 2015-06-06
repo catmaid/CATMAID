@@ -342,7 +342,3 @@ var createEditToolActions = function() {
  * logged in or not.
  */
 var editToolActions = [];
-
-var segmentationWindowActions = [
-
-];

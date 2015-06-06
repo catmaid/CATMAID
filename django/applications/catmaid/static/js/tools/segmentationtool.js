@@ -230,3 +230,7 @@ function SegmentationTool()
 
 }
 
+/**
+ * Actions available on segmentation tool.
+ */
+SegmentationTool.actions = [];

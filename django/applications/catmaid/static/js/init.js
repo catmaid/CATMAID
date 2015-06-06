@@ -1004,7 +1004,7 @@ var realInit = function()
 	$('#toolbox_edit').replaceWith(createButtonsFromActions(
 		editToolActions, 'toolbox_edit', ''));
   $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
-    segmentationWindowActions, 'toolbox_segmentation', ''));
+    SegmentationTool.actions, 'toolbox_segmentation', ''));
 	$('#toolbox_data').replaceWith(createButtonsFromActions(
 		TracingTool.actions, 'toolbox_data', ''));
 

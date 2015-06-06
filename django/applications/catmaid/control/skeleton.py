@@ -6,11 +6,13 @@ from operator import itemgetter
 from datetime import datetime, timedelta
 from collections import defaultdict
 from itertools import chain
+from functools import partial
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
+from django.db.models import Q
 
 from catmaid.models import Project, UserRole, Class, ClassInstance, Review, \
         ClassInstanceClassInstance, Relation, Treenode, TreenodeConnector
@@ -121,65 +123,106 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
         'measure_construction_time': construction_time,
         'percentage_reviewed': "%.2f" % skel.percentage_reviewed() }), content_type='text/json')
 
-# Will fail if skeleton_id does not exist
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def contributor_statistics(request, project_id=None, skeleton_id=None):
+    return contributor_statistics_multiple(request, project_id=project_id, skeleton_ids=[int(skeleton_id)])
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None):
     contributors = defaultdict(int)
     n_nodes = 0
     # Count the total number of 20-second intervals with at least one treenode in them
-    time_bins = set()
-    min_review_bins = set()
-    multi_review_bins = 0
+    n_time_bins = 0
+    n_review_bins = 0
+    n_multi_review_bins = 0
     epoch = datetime.utcfromtimestamp(0)
 
-    for row in Treenode.objects.filter(skeleton_id=skeleton_id).values_list('user_id', 'creation_time'):
-        n_nodes += 1
-        contributors[row[0]] += 1
-        time_bins.add(int((row[1] - epoch).total_seconds() / 20))
+    if not skeleton_ids:
+        skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
 
+    # Count time bins separately for each skeleton
+    time_bins = None
+    last_skeleton_id = None
+    for row in Treenode.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('skeleton_id', 'user_id', 'creation_time').iterator():
+        if last_skeleton_id != row[0]:
+            if time_bins:
+                n_time_bins += len(time_bins)
+            time_bins = set()
+            last_skeleton_id = row[0]
+        n_nodes += 1
+        contributors[row[1]] += 1
+        time_bins.add(int((row[2] - epoch).total_seconds() / 20))
+
+    # Process last one
+    if time_bins:
+        n_time_bins += len(time_bins)
+    
+    
     # Take into account that multiple people may have reviewed the same nodes
     # Therefore measure the time for the user that has the most nodes reviewed,
     # then add the nodes not reviewed by that user but reviewed by the rest
-    rev = defaultdict(dict)
-    for row in Review.objects.filter(skeleton_id=skeleton_id).values_list('reviewer', 'treenode', 'review_time'):
+    def process_reviews(rev):
+        seen = set()
+        min_review_bins = set()
+        multi_review_bins = 0
+        for reviewer, treenodes in sorted(rev.iteritems(), key=itemgetter(1), reverse=True):
+            reviewer_bins = set()
+            for treenode, timestamp in treenodes.iteritems():
+                time_bin = int((timestamp - epoch).total_seconds() / 20)
+                reviewer_bins.add(time_bin)
+                if not (treenode in seen):
+                    seen.add(treenode)
+                    min_review_bins.add(time_bin)
+            multi_review_bins += len(reviewer_bins)
+        #
+        return len(min_review_bins), multi_review_bins
+
+    rev = None
+    last_skeleton_id = None
+    for row in Review.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('reviewer', 'treenode', 'review_time', 'skeleton_id').iterator():
+        if last_skeleton_id != row[3]:
+            if rev:
+                a, b = process_reviews(rev)
+                n_review_bins += a
+                n_multi_review_bins += b
+            # Reset for next skeleton
+            rev = defaultdict(dict)
+            last_skeleton_id = row[3]
+        #
         rev[row[0]][row[1]] = row[2]
-    seen = set()
 
-    for reviewer, treenodes in sorted(rev.iteritems(), key=itemgetter(1), reverse=True):
-        reviewer_bins = set()
-        for treenode, timestamp in treenodes.iteritems():
-            time_bin = int((timestamp - epoch).total_seconds() / 20)
-            reviewer_bins.add(time_bin)
-            if not (treenode in seen):
-                seen.add(treenode)
-                min_review_bins.add(time_bin)
-        multi_review_bins += len(reviewer_bins)
+    # Process last one
+    if rev:
+        a, b = process_reviews(rev)
+        n_review_bins += a
+        n_multi_review_bins += b
 
-    relations = {row[0]: row[1] for row in Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id')}
+
+    relations = {row[0]: row[1] for row in Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id').iterator()}
+
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
 
     synapses = {}
-    synapses[relations['presynaptic_to']] = defaultdict(int)
-    synapses[relations['postsynaptic_to']] = defaultdict(int)
+    synapses[pre] = defaultdict(int)
+    synapses[post] = defaultdict(int)
 
-    for row in TreenodeConnector.objects.filter(skeleton_id=skeleton_id).values_list('user_id', 'relation_id'):
-        if row[1] in synapses:
-            synapses[row[1]][row[0]] += 1
-
-    cq = ClassInstanceClassInstance.objects.filter(
-            relation__relation_name='model_of',
-            project_id=project_id,
-            class_instance_a=int(skeleton_id)).select_related('class_instance_b')
-    neuron_name = cq[0].class_instance_b.name
+    # This may be succint but unless one knows SQL it makes no sense at all
+    for row in TreenodeConnector.objects.filter(
+            Q(relation_id=pre) | Q(relation_id=post),
+            skeleton_id__in=skeleton_ids
+    ).values_list('user_id', 'relation_id').iterator():
+        synapses[row[1]][row[0]] += 1
 
     return HttpResponse(json.dumps({
-        'name': neuron_name,
-        'construction_minutes': int(len(time_bins) / 3.0),
-        'min_review_minutes': int(len(min_review_bins) / 3.0),
-        'multiuser_review_minutes': int(multi_review_bins / 3.0),
+        'construction_minutes': int(n_time_bins / 3.0),
+        'min_review_minutes': int(n_review_bins / 3.0),
+        'multiuser_review_minutes': int(n_multi_review_bins / 3.0),
         'n_nodes': n_nodes,
         'node_contributors': contributors,
-        'n_pre': sum(synapses[relations['presynaptic_to']].values()),
-        'n_post': sum(synapses[relations['postsynaptic_to']].values()),
+        'n_pre': sum(synapses[relations['presynaptic_to']].itervalues()),
+        'n_post': sum(synapses[relations['postsynaptic_to']].itervalues()),
         'pre_contributors': synapses[relations['presynaptic_to']],
         'post_contributors': synapses[relations['postsynaptic_to']]}))
 

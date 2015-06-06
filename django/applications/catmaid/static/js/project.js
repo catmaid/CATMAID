@@ -593,7 +593,7 @@ function Project( pid )
 	    that should be run regardless of the current tool, such as
 	    actions that switch tools. */
 
-	var actions = toolActions.concat(CATMAID.EditTool.actions);
+	var actions = CATMAID.toolActions.concat(CATMAID.EditTool.actions);
 
 	this.getActions = function () {
 		return actions;

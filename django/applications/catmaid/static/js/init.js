@@ -999,7 +999,7 @@ var realInit = function()
 
 	// Create the toolboxes
 	$('#toolbox_project').replaceWith(createButtonsFromActions(
-		toolActions, 'toolbox_project', ''));
+		CATMAID.toolActions, 'toolbox_project', ''));
 	$('#toolbox_edit').replaceWith(createButtonsFromActions(
 		CATMAID.EditTool.actions, 'toolbox_edit', ''));
   $('#toolbox_segmentation').replaceWith(createButtonsFromActions(

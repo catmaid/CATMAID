@@ -170,7 +170,7 @@ function createButtonsFromActions(actions, boxID, iconPrefix) {
 /* These actions are kept in separate arrays, since they need to be
  * added to different DIVs in the toolbar. */
 
-var toolActions = [
+CATMAID.toolActions = [
 
 	new Action({
 		helpText: "Switch to the selector tool",

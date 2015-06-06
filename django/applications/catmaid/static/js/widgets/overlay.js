@@ -1530,128 +1530,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (
 };
 
 /**
- * Caters both to the createInterpolatedNode and createTreenodeLinkInterpolated
- * functions, which are almost identical.
- */
-SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn = function () {
-  // Javascript is not multithreaded. The only pseudo-threadedness occurs in
-  // the code execution between the AJAX request and the execution of the
-  // callback; that is, no concurrency, but continuations. Therefore altering
-  // the queue array is always safe.
-
-  // Accumulate invocations of the createInterpolatedNode function
-  var queue = [];
-
-  // Function to handle the callback
-  var handler = function (status, text, xml) {
-    if (status !== 200) {
-      queue.length = 0; // reset
-      return false;
-    }
-    if (text && text !== " ") {
-      var json = $.parseJSON(text);
-      if (json.error) {
-        CATMAID.error(json.error);
-        queue.length = 0; // reset
-      } else {
-        // Check if any calls have accumulated
-        if (queue.length > 1) {
-          // Remove this call
-          queue.shift();
-          // Invoke the oldest of any accumulated calls
-          requester(json.treenode_id, queue[0]);
-        } else {
-          var handleLastRequest = function(q, retries) {
-            // If the node update was successful, handle the last queue element.
-            var success = function () {
-              // Trigger change event of skeleton and update node
-              SkeletonAnnotations.trigger(
-                  SkeletonAnnotations.EVENT_SKELETON_CHANGED, json.skeleton_id);
-              q.self.selectNode(json.treenode_id);
-              // Remove this call now that the active node is set properly
-              queue.shift();
-              // Invoke the oldest of any accumulated calls
-              if (queue.length > 0) {
-                requester(json.treenode_id, queue[0]);
-              }
-            };
-            // This error call back makes sure there is no dead-lock when
-            // updateNodes() (or another request in the submitter queue it
-            // is in) fails.
-            var error = function() {
-              if (retries > 0) {
-                handleLastRequest(q, retries - 1);
-              } else {
-                CATMAID.error("A required update of the node failed. Please" +
-                    "reload CATMAID.");
-              }
-            };
-            // Start a new continuation to update the nodes,
-            // ensuring that the desired active node will be loaded
-            // (Could not be loaded if the user scrolled away between
-            // the creation of the node and its activation).
-            q.self.updateNodes(success, json.treenode_id, error);
-          };
-
-          // Try three times to update the node data and finish the queue
-          var q = queue[0];
-          handleLastRequest(q, 3);
-        }
-      }
-    }
-    return true;
-  };
-
-  // Function to request interpolated nodes
-  var requester = function(parent_id, q) {
-    // Make sure the parent node is not virtual anymore, when called
-    q.self.promiseNode(q.self.nodes[parent_id]).then(function(parent_id) {
-      var stack = q.self.getStack();
-      // Creates treenodes from atn to new node in each z section
-      var post = {
-          pid: project.id,
-          x: q.phys_x,
-          y: q.phys_y,
-          z: q.phys_z,
-          resz: stack.resolution.z,
-          stack_translation_z: stack.translation.z,
-          stack_id: project.focusedStack.id
-      };
-      var url;
-      if (q.nearestnode_id) {
-        url = '/skeleton/join_interpolated';
-        post.from_id = parent_id;
-        post.to_id = q.nearestnode_id;
-        post.annotation_set = q.annotation_set;
-      } else {
-        url = '/treenode/create/interpolated';
-        post.parent_id = parent_id;
-      }
-      requestQueue.register(django_url + project.id + url, "POST", post, handler);
-    });
-  };
-
-  return function (phys_x, phys_y, phys_z, nearestnode_id, annotation_set) {
-    queue.push({phys_x: phys_x,
-                phys_y: phys_y,
-                phys_z: phys_z,
-                nearestnode_id: nearestnode_id,
-                annotation_set: JSON.stringify(annotation_set),
-                self: this});
-
-    if (queue.length > 1) {
-      return; // will be handled by the callback
-    }
-
-    if (!SkeletonAnnotations.getActiveNodeId()) {
-        CATMAID.warn("No node selected!");
-        return;
-    }
-    requester(SkeletonAnnotations.getActiveNodeId(), queue[0]);
-  };
-};
-
-/**
  * Create a node and activate it. Expectes the parent node to be real or falsy,
  * i.e. not virtual.
  */
@@ -2121,6 +1999,18 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
   return false;
 };
 
+
+/**
+ * Three possible actions can happen: 1. if both insert and link are false, a
+ * new node will be appended as child to the active node. 2. if insert is true,
+ * a new node will be inserted between the active node and the closest neighbor
+ * in this skeleton 3. if link is true, a new connector node will be created, in
+ * this case postLink allows to select if if a pre or post synaptic node will be
+ * created.
+ *
+ * If no active node is available, a new node, or (if link is true) connector,
+ * is created.
+ */
 SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(insert, link, postLink) {
   // take into account current local offset coordinates and scale
   var pos_x = this.coords.lastX;
@@ -2227,6 +2117,53 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(insert, lin
     }
   }
   return true;
+};
+
+/**
+ * If there is an active node and the current location is above an existing node
+ * of another skeleton, both skeletons are joined at those nodes (if permissions
+ * allow) if link is true. If link is not true, the other node will be selected.
+ * Alternatively, if the current location is in free space, three possible
+ * actions can happen: 1. if both insert and link are false, a new node will be
+ * appended as child to the active node. 2. if insert is true, a new node will
+ * be inserted between the active node and the closest neighbor in this skeleton
+ * 3. if link is true, a new connector node will be created, in this case
+ * postLink allows to select if if a pre or post synaptic node will be created.
+ *
+ * If no active node is available, a new node, or (if link is true) connector,
+ * is created.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.createNewOrExtendActiveSkeleton =
+    function(insert, link, postLink) {
+  // Check if there is already a node under the mouse
+  // and if so, then activate it
+  var atn = SkeletonAnnotations.atn;
+  if (this.coords.lastX !== null && this.coords.lastY !== null) {
+    // Radius of 7 pixels, in physical coordinates
+    var respectVirtualNodes = true;
+    var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
+       this.coords.lastY, 7, respectVirtualNodes);
+
+    if (nearestnode === null) {
+      // Crate a new treenode, connector node and/or link
+      this.createNodeOrLink(insert, link, postLink);
+    } else if (link) {
+      if (null === atn.id) { return; }
+      if (nearestnode.skeleton_id === atn.skeleton_id) {
+        this.activateNode(nearestnode);
+        return;
+      }
+      var nearestnode_id = nearestnode.id;
+      var nearestnode_skid = nearestnode.skeleton_id;
+      var atn_skid = atn.skeleton_id;
+
+      // Join both skeletons
+      this.createTreenodeLink(atn.id, nearestnode.id);
+    } else {
+      // Activate node at current location if no link is requested
+      this.activateNode(nearestnode);
+    }
+  }
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (z, y, x) {
@@ -3130,143 +3067,6 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
 };
 
 /**
- * Create interpolated treenodes between the active node and the target click
- * site. If the shift key is pressed and a node from a different skeleton in
- * under the cursor when the mouse is clicked, an interpolated join is
- * performed. If the target node belongs to the same skeleton as the active
- * node, the target is merely selected. This function can deal with a virtual
- * active node and virtual target nodes.
- *
- * @param e The mouse event, to read out whether shift is down.
- */
-SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedTreenode = function(e) {
-  // Check if there is already a node under the mouse
-  // and if so, then activate it
-  var atn = SkeletonAnnotations.atn;
-  if (this.coords.lastX !== null && this.coords.lastY !== null) {
-    // Radius of 7 pixels, in physical coordinates
-    var respectVirtualNodes = true;
-    var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
-       this.coords.lastY, 7, respectVirtualNodes);
-
-    if (nearestnode !== null) {
-      if (e && e.shiftKey) {
-        // Shift down: interpolate and join
-        if (null === atn.id) { return; }
-        if (nearestnode.skeleton_id === atn.skeleton_id) {
-          this.activateNode(nearestnode);
-          return;
-        }
-        var nearestnode_id = nearestnode.id;
-        var nearestnode_skid = nearestnode.skeleton_id;
-        var atn_skid = atn.skeleton_id;
-        var self = this;
-        // Make sure the user has permissions to edit both the from and the to
-        // skeleton.
-        self.executeIfSkeletonEditable(atn_skid, function() {
-          self.executeIfSkeletonEditable(nearestnode_skid, function() {
-            // The function used to instruct the backend to do the merge
-            var merge = function(annotations) {
-              var phys_z = self.pix2physZ(self.stack.z, self.coords.lastY, self.coords.lastX);
-              var phys_y = self.pix2physY(self.stack.z, self.coords.lastY, self.coords.lastX);
-              var phys_x = self.pix2physX(self.stack.z, self.coords.lastY, self.coords.lastX);
-              // Ask to join the two skeletons with interpolated nodes. Make
-              // sure the nearest node is not virtual.
-              self.promiseNode(nearestnode).then(function(toId) {
-                self.createTreenodeLinkInterpolated(phys_x, phys_y, phys_z,
-                  toId, annotations);
-              });
-            };
-
-            // A method to use when the to-skeleton has multiple nodes
-            var merge_multiple_nodes = function() {
-            // Ask for merging
-            // Get neuron name and id of the to-skeleton
-            self.submit(
-              django_url + project.id + '/skeleton/neuronnames',
-              {skids: [nearestnode_skid]},
-              function(json) {
-                var from_model = SkeletonAnnotations.sourceView.createModel();
-                var to_color = new THREE.Color().setRGB(1, 0, 1);
-                var to_model = new SelectionTable.prototype.SkeletonModel(
-                    nearestnode_skid, json[nearestnode_skid], to_color);
-                var dialog = new SplitMergeDialog({
-                  model1: from_model,
-                  model2: to_model
-                });
-                dialog.onOK = function() {
-                  // Get annotation set for the joined skeletons and merge both
-                  merge(dialog.get_combined_annotation_set());
-                };
-                // Extend the display with the newly created line
-                var extension = {};
-                var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
-                    c = self.nodes[nearestnode_id];
-                extension[from_model.id] = [
-                    new THREE.Vector3(self.pix2physX(p.z, p.y, p.x),
-                                      self.pix2physY(p.z, p.y, p.x),
-                                      self.pix2physZ(p.z, p.y, p.x)),
-                    new THREE.Vector3(self.pix2physX(c.z, c.y, c.x),
-                                      self.pix2physY(c.z, c.y, c.x),
-                                      self.pix2physZ(c.z, c.y, c.x))
-                ];
-                dialog.show(extension);
-              });
-            };
-
-            // A method to use when the to-skeleton has only a single node
-            var merge_single_node = function() {
-              /* Retrieve annotations for the to-skeleton and show th dialog if
-               * there are some. Otherwise merge the single not without showing
-               * the dialog.
-               */
-              NeuronAnnotations.retrieve_annotations_for_skeleton(
-                  nearestnode_skid, function(to_annotations) {
-                    if (to_annotations.length > 0) {
-                      merge_multiple_nodes();
-                    } else {
-                      NeuronAnnotations.retrieve_annotations_for_skeleton(
-                          atn.skeleton_id, function(from_annotations) {
-                              merge(from_annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
-                          });
-                    }
-                  });
-            };
-
-            /* If the to-node contains more than one node (or is virtual), show
-             * the dialog.  Otherwise, check if the to-node contains
-             * annotations. If so, show the dialog. Otherwise, merge it right
-             * away and keep the from-annotations. Anyway, it has to be made
-             * sure that the nearest node exists.
-             */
-            self.executeDependentOnExistence(nearestnode_id,
-              self.executeDependentOnNodeCount.bind(self, nearestnode_id,
-                merge_single_node, merge_multiple_nodes),
-              merge_multiple_nodes);
-          });
-        });
-        return;
-      } else {
-        // If shift is not down, just select the node:
-        this.activateNode(nearestnode);
-        return;
-      }
-    }
-  }
-  // Else, check that there is a node activated
-  if (atn.id === null) {
-    CATMAID.error('Need to activate a treenode first!');
-    return;
-  }
-
-  var phys_x = this.pix2physX(this.stack.z, this.coords.lastY, this.coords.lastX);
-  var phys_y = this.pix2physY(this.stack.z, this.coords.lastY, this.coords.lastX);
-  var phys_z = this.pix2physZ(this.stack.z, this.coords.lastY, this.coords.lastX);
-
-  this.createInterpolatedNode(phys_x, phys_y, phys_z, null, null);
-};
-
-/**
  * If you select a pre- or post-synaptic terminal, then run this command, the
  * active node will be switched to its connector (if one uniquely exists). If
  * you then run the command again, it will switch back to the terminal.
@@ -3488,21 +3288,6 @@ SkeletonAnnotations.SVGOverlay.prototype.updateIfKnown = function(skeletonID, ca
     this.updateNodes(callback);
   }
 };
-
-/**
- * Interpolate and join, both: uses same function as createInterpolatedNode so
- * that requests are queued in the same queue.
- */
-SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNode =
-  SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNodeFn();
-
-/**
- * Interpolate and join, both: uses same function as createInterpolatedNode so
- * that requests are queued in the same queue.
- */
-SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLinkInterpolated =
-  SkeletonAnnotations.SVGOverlay.prototype.createInterpolatedNode;
-
 
 /**
  * Manages the creation and deletion of tags via a tag editor DIV. If a tag

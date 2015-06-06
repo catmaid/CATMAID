@@ -690,12 +690,15 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Create treenode with z axis interpolation (Shift on another node: interpolate and join)",
+    helpText: "Create treenode (Shift on another node: join), behavior like mouse click",
     keyShortcuts: { 'Z': [ 90 ] },
     run: function (e) {
       if (!mayEdit())
         return false;
-      tracingLayer.svgOverlay.createInterpolatedTreenode(e);
+      var insert = e.altKey;
+      var link = e.shiftKey;
+      var postLink = e.altKey;
+      tracingLayer.svgOverlay.createNewOrExtendActiveSkeleton(insert, link, postLink);
       return true;
     }
   }) );

@@ -133,10 +133,15 @@ SelectionTable.prototype.SkeletonModel.prototype.property_dialog = function() {
   });
 };
 
-SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
+SelectionTable.prototype.summary_info = function() {
+  var skids = this.getSelectedSkeletons();
+  if (0 === skids.length) return CATMAID.msg("Add or select skeletons first!");
+  this.skeleton_info(skids);
+};
+
+SelectionTable.prototype.skeleton_info = function(skeleton_ids) {
   // If the skeleton is loaded in the WebGLApp, then all of this information is already present in the client, but potentially not up to date: so reload.
-  // TODO the "Downstream skeletons" should be split into two: skeletons with more than one node, and skeletons with one single node (placeholder pre- or postsynaptic nodes).
-  requestQueue.register(django_url + project.id + '/skeleton/' + this.id + '/contributor_statistics', "POST", {},
+  requestQueue.register(django_url + project.id + '/skeleton/contributor_statistics_multiple', "POST", {skids: skeleton_ids},
       (function (status, text, xml) {
         if (200 !== status) return;
         if (!text || text === " ") return;
@@ -183,7 +188,8 @@ SelectionTable.prototype.SkeletonModel.prototype.skeleton_info = function() {
         var table = document.createElement('table');
         table.style.border = 1;
         table.innerHTML = [
-          ["Neuron name:", json.name],
+          [(1 === skeleton_ids.length) ? "Neuron name:" : "Number of skeletons:",
+           (1 === skeleton_ids.length) ? NeuronNameService.getInstance().getName(skeleton_ids[0]) : skeleton_ids.length],
           ["Node count: ", json.n_nodes],
           ["Nodes contributed by: ", format(json.node_contributors)],
           ["Number of presynaptic sites: ", json.n_pre],
@@ -339,6 +345,7 @@ SelectionTable.prototype.init = function() {
 
   $('#selection-table-sort-by-name' + this.widgetID).click(this.sortByName.bind(this));
   $('#selection-table-sort-by-color' + this.widgetID).click(this.sortByColor.bind(this));
+  $('#selection-table-info' + this.widgetID).click(this.summary_info.bind(this));
 };
 
 /** sks: object with skeleton_id as keys and neuron names as values. */
@@ -804,7 +811,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
     })
       .click( function( event )
       {
-        skeleton.skeleton_info();
+        SelectionTable.prototype.skeleton_info([skeleton.id]);
       })
       .text('Info')
   );

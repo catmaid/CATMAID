@@ -776,6 +776,7 @@ var WindowMaker = new function()
             '<td><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked /></td>' +
             '<td><input type="button" id="selection-table-sort-by-color' + ST.widgetID + '" value="Sort by color" /></td>' +
+            '<td><input type="button" id="selection-table-info' + ST.widgetID + '" value="Summary info" /></td>' +
           '</tr>' +
         '</tbody>';
     container.appendChild(tab);

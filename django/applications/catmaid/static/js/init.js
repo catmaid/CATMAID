@@ -1006,7 +1006,7 @@ var realInit = function()
   $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
     segmentationWindowActions, 'toolbox_segmentation', ''));
 	$('#toolbox_data').replaceWith(createButtonsFromActions(
-		tracingWindowActions, 'toolbox_data', ''));
+		TracingTool.actions, 'toolbox_data', ''));
 
 	// Add the toolbar buttons:
 	document.getElementById( "toolbar_nav" ).style.display = "none";

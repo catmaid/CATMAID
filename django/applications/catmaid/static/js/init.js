@@ -214,8 +214,7 @@ function handle_profile_update(e) {
   }
 
   // update the edit tool actions and its div container
-  createEditToolActions();
-  var new_edit_actions = createButtonsFromActions(editToolActions,
+  var new_edit_actions = createButtonsFromActions(CATMAID.EditTool.actions,
     'toolbox_edit', '');
   $('#toolbox_edit').replaceWith(new_edit_actions);
   $('#toolbox_edit').hide();
@@ -1002,7 +1001,7 @@ var realInit = function()
 	$('#toolbox_project').replaceWith(createButtonsFromActions(
 		toolActions, 'toolbox_project', ''));
 	$('#toolbox_edit').replaceWith(createButtonsFromActions(
-		editToolActions, 'toolbox_edit', ''));
+		CATMAID.EditTool.actions, 'toolbox_edit', ''));
   $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
     SegmentationTool.actions, 'toolbox_segmentation', ''));
 	$('#toolbox_data').replaceWith(createButtonsFromActions(

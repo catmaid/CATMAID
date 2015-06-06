@@ -73,7 +73,7 @@
            keyShortcuts: {
            },
            run: function (e) {
-              project.setTool( new SegmentationTool() );
+              project.setTool( new CATMAID.SegmentationTool() );
            }
         }));
     }

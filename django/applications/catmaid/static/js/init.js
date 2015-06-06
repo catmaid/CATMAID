@@ -1003,7 +1003,7 @@ var realInit = function()
 	$('#toolbox_edit').replaceWith(createButtonsFromActions(
 		CATMAID.EditTool.actions, 'toolbox_edit', ''));
   $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
-    SegmentationTool.actions, 'toolbox_segmentation', ''));
+    CATMAID.SegmentationTool.actions, 'toolbox_segmentation', ''));
 	$('#toolbox_data').replaceWith(createButtonsFromActions(
 		TracingTool.actions, 'toolbox_data', ''));
 
@@ -1043,7 +1043,7 @@ var realInit = function()
 		var tools = {
 			navigator: Navigator,
 			tracingtool: TracingTool,
-			segmentationtool: SegmentationTool,
+			segmentationtool: CATMAID.SegmentationTool,
 			classification_editor: null
 		};
 

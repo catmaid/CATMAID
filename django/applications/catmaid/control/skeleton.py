@@ -23,7 +23,6 @@ from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query, \
         _annotate_entities, _update_neuron_annotations
 from catmaid.control.review import get_treenodes_to_reviews, get_review_status
-from catmaid.control.treenode import _create_interpolated_treenode
 from catmaid.control.tree_util import find_root, reroot, edge_count_to_root
 
 
@@ -965,45 +964,6 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
-
-@requires_user_role(UserRole.Annotate)
-def join_skeletons_interpolated(request, project_id=None):
-    """ Join two skeletons, adding nodes in between the two nodes to join
-    if they are separated by more than one section in the Z axis."""
-    # Parse parameters
-    decimal_values = {
-            'x': 0,
-            'y': 0,
-            'z': 0,
-            'resz': 0,
-            'stack_translation_z': 0,
-            'radius': -1}
-    int_values = {
-            'from_id': 0,
-            'to_id': 0,
-            'stack_id': 0,
-            'confidence': 5}
-    params = {}
-    for p in decimal_values.keys():
-        params[p] = decimal.Decimal(request.POST.get(p, decimal_values[p]))
-    for p in int_values.keys():
-        params[p] = int(request.POST.get(p, int_values[p]))
-    # Copy of the id for _create_interpolated_treenode
-    params['parent_id'] = params['from_id']
-    params['skeleton_id'] = Treenode.objects.get(pk=params['from_id']).skeleton_id
-
-    # Create interpolate nodes skipping the last one
-    last_treenode_id, skeleton_id = _create_interpolated_treenode(request, params, project_id, True)
-
-    # Get set of annoations the combinet skeleton should have
-    annotation_map = json.loads(request.POST.get('annotation_set'))
-
-    # Link last_treenode_id to to_id
-    _join_skeleton(request.user, last_treenode_id, params['to_id'], project_id,
-            annotation_map)
-
-    return HttpResponse(json.dumps({'treenode_id': params['to_id']}))
-
 
 def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=None):
     """Create a skeleton from a networkx directed tree.

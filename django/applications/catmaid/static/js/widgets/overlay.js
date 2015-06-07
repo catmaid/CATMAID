@@ -2139,10 +2139,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createNewOrExtendActiveSkeleton =
   // and if so, then activate it
   var atn = SkeletonAnnotations.atn;
   if (this.coords.lastX !== null && this.coords.lastY !== null) {
-    // Radius of 7 pixels, in physical coordinates
+    // Choose a search radius that is the scaled selection radius for nodes
+    var searchRadius = this.graphics.Node.prototype.CATCH_RADIUS *
+       this.graphics.Node.prototype.scaling;
     var respectVirtualNodes = true;
     var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
-       this.coords.lastY, 7, respectVirtualNodes);
+       this.coords.lastY, searchRadius, respectVirtualNodes);
 
     if (nearestnode === null) {
       // Crate a new treenode, connector node and/or link

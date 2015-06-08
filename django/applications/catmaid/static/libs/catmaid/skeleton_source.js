@@ -71,7 +71,8 @@
   };
 
   SkeletonSource.prototype.annotate_skeleton_list = function() {
-    NeuronAnnotations.prototype.annotate_neurons_of_skeletons(this.getSelectedSkeletons());
+    CATMAID.NeuronAnnotations.prototype.annotate_neurons_of_skeletons(
+        this.getSelectedSkeletons());
   };
 
   // Make skeleton source available in CATMAID namespace

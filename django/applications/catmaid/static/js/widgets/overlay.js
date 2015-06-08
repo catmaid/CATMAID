@@ -5,7 +5,6 @@
   display_tracing_setup_dialog,
   Events,
   mayEdit,
-  NeuronAnnotations,
   NeuronNameService,
   OverlayLabel,
   project,
@@ -1375,12 +1374,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                * there are some. Otherwise merge the single not without showing
                * the dialog.
                */
-              NeuronAnnotations.retrieve_annotations_for_skeleton(to_skid,
+              CATMAID.NeuronAnnotations.retrieve_annotations_for_skeleton(to_skid,
                   function(annotations) {
                     if (annotations.length > 0) {
                       merge_multiple_nodes();
                     } else {
-                      NeuronAnnotations.retrieve_annotations_for_skeleton(
+                      CATMAID.NeuronAnnotations.retrieve_annotations_for_skeleton(
                           from_model.id, function(annotations) {
                               merge(annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
                           });
@@ -3596,7 +3595,7 @@ SplitMergeDialog.prototype.populate = function(extension) {
 
   // Get all annotations for a skeleton and fill the list boxes
   var add_annotations_fn = function(skid, listboxes, disable_unpermitted) {
-    NeuronAnnotations.retrieve_annotations_for_skeleton(skid,
+    CATMAID.NeuronAnnotations.retrieve_annotations_for_skeleton(skid,
         function(annotations) {
           // Create annotation check boxes
           annotations.forEach(function(aobj) {

@@ -8,7 +8,6 @@
   checkPermission,
   ConnectorTable,
   InstanceRegistry,
-  NeuronAnnotations,
   NeuronNameService,
   NeuronDendrogram,
   project,
@@ -1032,7 +1031,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
   $(annotate_button).click(function() {
     var selected_neurons = getSelectedNeurons();
     if (selected_neurons.length > 0) {
-      NeuronAnnotations.prototype.annotate_entities(selected_neurons);
+      CATMAID.NeuronAnnotations.prototype.annotate_entities(selected_neurons);
     } else {
       alert("Please select at least one neuron to annotate first!");
     }
@@ -1044,7 +1043,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
       // Get annotation ID
       var annotation_id = parseInt(this.getAttribute('data-annotationid'));
       // Unlink the annotation from the current neuron
-      NeuronAnnotations.remove_annotation_from_entities(selected_neurons,
+      CATMAID.NeuronAnnotations.remove_annotation_from_entities(selected_neurons,
           annotation_id, function(message) {
               // Display message returned by the server
               CATMAID.info(message);
@@ -1421,7 +1420,7 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
 
   // Handle annotation of annotations
   $(annotate_button).click((function() {
-    NeuronAnnotations.prototype.annotate_entities([this.annotation_id]);
+    CATMAID.NeuronAnnotations.prototype.annotate_entities([this.annotation_id]);
   }).bind(this));
 
   // Append double click handler
@@ -1636,7 +1635,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   // When clicked, the annotate button should prompt for a new annotation and
   // reload the node
   $(annotate_button).click((function() {
-    NeuronAnnotations.prototype.annotate_entities([this.neuron_id]);
+    CATMAID.NeuronAnnotations.prototype.annotate_entities([this.neuron_id]);
   }).bind(this));
 
   var rename_button = document.createElement('input');
@@ -1858,7 +1857,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   var annotation_datatable = this.add_annotation_list_table(container,
       annotation_table_id, filters, false, true, function(annotation_id) {
           // Unlink the annotation from the current neuron
-          NeuronAnnotations.remove_annotation(self.neuron_id,
+          CATMAID.NeuronAnnotations.remove_annotation(self.neuron_id,
               annotation_id, function(message) {
                   // Display message returned by the server
                   CATMAID.info(message);

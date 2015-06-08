@@ -1284,15 +1284,24 @@ TracingTool.actions = [
  * on failure and forces a tool reload on success.
  */
 function display_tracing_setup_dialog(pid, has_needed_permissions,
-    missing_classes, missing_relations, missing_classinstances)
+    missing_classes, missing_relations, missing_classinstances, initialize)
 {
   var dialog = document.createElement('div');
   dialog.setAttribute("id", "dialog-confirm");
-  dialog.setAttribute("title", "Tracing not set-up for project");
+  dialog.setAttribute("title", "Update required");
   var msg = document.createElement('p');
   dialog.appendChild(msg);
-  var msg_text = "The tracing system isn't set up to work with this project" +
-    ", yet. It needs certain classes and relations which haven't been found. ";
+  var msg_text;
+  // If no expected entity is available, let the user know that the project
+  // isn't set up for tracing. Otherwise, be more clear that an update is
+  // required.
+  if (initialize) {
+    msg_text = "The tracing system isn't set up to work with this project" +
+      ", yet. It needs certain classes and relations which haven't been found. ";
+  } else {
+    msg_text = "An update of this project's tracing configuration is required. " +
+      "No change will be made to the tracing data itself. ";
+  }
   if (missing_classes.length > 0) {
     msg_text = msg_text + "The missing classes are: " +
        missing_classes.join(", ") + ". ";
@@ -1308,9 +1317,13 @@ function display_tracing_setup_dialog(pid, has_needed_permissions,
 
   var buttons;
   if (has_needed_permissions) {
-    msg.innerHTML = msg_text + "Do you want CATMAID to create " +
-      "the missing bits and initialize tracing support for this " +
-      "project?";
+    if (initialize) {
+      msg_text = msg_text + "Do you want CATMAID to create the missing bits " +
+        "and initialize tracing support for this project?";
+    } else {
+      msg_text = msg_text + "Do you want to continue and update this project?";
+    }
+    msg.innerHTML = msg_text;
     buttons = {
       "Yes": function() {
           $(this).dialog("close");
@@ -1341,9 +1354,16 @@ function display_tracing_setup_dialog(pid, has_needed_permissions,
         }
       };
   } else {
-    msg.innerHTML = msg_text + "Unfortunately, you don't have " +
-      "needed permissions to add the missing bits and intitialize " +
-      "tracing for this project";
+      if (initialize) {
+        msg_text = msg_text + "Unfortunately, you don't have " +
+          "needed permissions to add the missing bits and intitialize " +
+          "tracing for this project. Please contact an administrator.";
+      } else {
+        msg_text = msg_text + "Unfortunately, you don't have the " +
+          "needed permissions to update this project. Please contact " +
+          "an administrator";
+      }
+      msg.innerHTML = msg_text;
       buttons = {
         "Ok": function() {
             project.setTool( new Navigator() );
@@ -1353,7 +1373,8 @@ function display_tracing_setup_dialog(pid, has_needed_permissions,
   }
   // The dialog is inserted into the document and shown by the following call:
   $(dialog).dialog({
-    height: 200,
+    width: 400,
+    height: 'auto',
     modal: true,
     buttons: buttons,
   });

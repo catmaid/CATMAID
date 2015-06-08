@@ -101,7 +101,8 @@
                     } else if (data.needs_setup) {
                       display_tracing_setup_dialog(project.id,
                         data.has_needed_permissions, data.missing_classes,
-                        data.missing_relations, data.missing_classinstances);
+                        data.missing_relations, data.missing_classinstances,
+                        data.initialize);
                     } else {
                       project.setTool( new TracingTool() );
                     }

@@ -440,49 +440,63 @@
             if (e.error) {
               new CATMAID.ErrorDialog(e.error, e.detail).show();
             } else {
-              var $tableBody = $('#neuron_annotations_query_results' +
-                  this.widgetID).find('tbody');
-              $tableBody.empty();
               // Empty selection map and store results
               this.entity_selection_map = {};
               this.queryResults = [];
               this.queryResults[0] = e.entities;
               this.total_n_results = e.total_n_records;
-              // create appender function which adds rows to table
-              var appender = function(tr) {
-                $tableBody.append(tr);
-              };
-              // Mark entities as unselected and create result table rows
+
+              // Mark entities as unselected
               this.queryResults[0].forEach((function(entity) {
                 this.entity_selection_map[entity.id] = false;
-                this.add_result_table_row(entity, appender, 0);
               }).bind(this));
 
-              // Update pagination information
-              var last_n_displayed = this.display_start + e.entities.length;
-              $('#neuron_annotations_paginattion' + this.widgetID).text(
-                  "[" + this.display_start + ", " + last_n_displayed + "] of " +
-                  this.total_n_results);
-              $('#neuron_annotation_prev_page' + this.widgetID).prop('disabled',
-                  this.display_start === 0);
-              $('#neuron_annotation_next_page' + this.widgetID).prop('disabled',
-                  this.total_n_results == last_n_displayed);
-
-              // If there are results, display the result table
-              if (this.queryResults[0].length > 0) {
-                $('#neuron_annotations_query_no_results' + this.widgetID).hide();
-                $('#neuron_annotations_query_results' + this.widgetID).show();
-                this.update_result_row_classes();
-                // Reset annotator constraints
-                $( "#neuron_annotations_user_filter" + this.widgetID).combobox(
-                    'set_value', 'show_all');
-              } else {
-                $('#neuron_annotations_query_results' + this.widgetID).hide();
-                $('#neuron_annotations_query_no_results' + this.widgetID).show();
-              }
+              this.refresh();
             }
           }
         }, this));
+  };
+
+  /**
+   * Rebuild the search result table.
+   */
+  NeuronAnnotations.prototype.refresh = function() {
+    var entities = this.queryResults[0];
+    // Clear table
+    var $tableBody = $('#neuron_annotations_query_results' +
+        this.widgetID).find('tbody');
+    $tableBody.empty();
+    // create appender function which adds rows to table
+    var appender = function(tr) {
+      $tableBody.append(tr);
+    };
+    // Mark entities as unselected and create result table rows
+    entities.forEach((function(entity) {
+      this.add_result_table_row(entity, appender, 0);
+    }).bind(this));
+
+    // Update pagination information
+    var last_n_displayed = this.display_start + entities.length;
+    $('#neuron_annotations_paginattion' + this.widgetID).text(
+        "[" + this.display_start + ", " + last_n_displayed + "] of " +
+        this.total_n_results);
+    $('#neuron_annotation_prev_page' + this.widgetID).prop('disabled',
+        this.display_start === 0);
+    $('#neuron_annotation_next_page' + this.widgetID).prop('disabled',
+        this.total_n_results == last_n_displayed);
+
+    // If there are results, display the result table
+    if (entities.length > 0) {
+      $('#neuron_annotations_query_no_results' + this.widgetID).hide();
+      $('#neuron_annotations_query_results' + this.widgetID).show();
+      this.update_result_row_classes();
+      // Reset annotator constraints
+      $( "#neuron_annotations_user_filter" + this.widgetID).combobox(
+          'set_value', 'show_all');
+    } else {
+      $('#neuron_annotations_query_results' + this.widgetID).hide();
+      $('#neuron_annotations_query_no_results' + this.widgetID).show();
+    }
   };
 
   NeuronAnnotations.prototype.update_result_row_classes = function()

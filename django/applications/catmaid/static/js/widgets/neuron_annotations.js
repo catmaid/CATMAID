@@ -51,6 +51,7 @@
   {
     this.unregisterInstance();
     this.unregisterSource();
+    NeuronNameService.getInstance().unregister(this);
   };
 
   NeuronAnnotations.prototype.append = function() {};
@@ -132,6 +133,14 @@
     }
   };
 
+  /**
+   * Will refresh the display to update neuron names.
+   */
+  NeuronAnnotations.prototype.updateNeuronNames = function()
+  {
+    this.refresh();
+  };
+
   /* Non-interface methods */
 
   /**
@@ -163,7 +172,10 @@
             entity.id);
     var a = document.createElement('a');
     a.setAttribute('href', '#');
-    a.appendChild(document.createTextNode(entity.name));
+    // For a neuron, ask the neuron name service about the name
+    var name = ('neuron' !== entity.type) ? entity.name :
+        NeuronNameService.getInstance().getName(entity.skeleton_ids[0]);
+    a.appendChild(document.createTextNode(name));
     var label = document.createElement('label');
     label.appendChild(cb);
     label.appendChild(a);
@@ -440,6 +452,8 @@
             if (e.error) {
               new CATMAID.ErrorDialog(e.error, e.detail).show();
             } else {
+              // Unregister last result set from neuron name service
+              NeuronNameService.getInstance().unregister(this);
               // Empty selection map and store results
               this.entity_selection_map = {};
               this.queryResults = [];
@@ -451,7 +465,18 @@
                 this.entity_selection_map[entity.id] = false;
               }).bind(this));
 
-              this.refresh();
+              // Register search results with neuron name service and rebuild
+              // result table.
+              var skeletonObject = e.entities.filter(function(e) {
+                return 'neuron' === e.type;
+              }).reduce(function(o, e) {
+                return e.skeleton_ids.reduce(function(o, skid) {
+                  o[skid] = {};
+                  return o;
+                }, o);
+              }, {});
+              NeuronNameService.getInstance().registerAll(this, skeletonObject,
+                  this.refresh.bind(this));
             }
           }
         }, this));

@@ -41,6 +41,14 @@ Multi-view tracing and virtual nodes:
 - Treenode Table refurbishing: far faster, supports multiple skeletons, can do
   tag search with regular expressions and lists the skeleton treenode ID.
 
+
+Neuron search:
+
+- The name displayed for neurons now follows the same naming mechanism used for
+  other widgets. It can be controlled through the settings widget and will
+  automatically update if a neuron name is changed.
+
+
 Administration:
 
 - Now that virtual nodes are available, existing database can (but don't have

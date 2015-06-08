@@ -1634,8 +1634,19 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (c
     }).bind(this));
   }
 
-  // Queue node update as a promise
+  // Queue update of real nodes as a promise
   var promise = this.submit.then(promiseUpdate.bind(this));
+
+  // Queue additional virtual node creation
+  for (var nid in this.nodes) {
+    var node = this.nodes[nid];
+    if (node.needsync && !SkeletonAnnotations.isRealNode(nid)) {
+      node.needsync = false;
+      // Queue another node existence promise.
+      promise = promise.then(this.promiseNode.bind(this, node));
+    }
+  }
+
   // Queue callback, if there is any (it will get the results of the node update
   // as arguments automatically).
   if (CATMAID.tools.isFn(callback)) {

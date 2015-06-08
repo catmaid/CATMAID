@@ -62,6 +62,9 @@ Administration:
 
 ### Bug fixes
 
+- The Neuron Search widget doesn't throw an error anymore when a neuron listed
+  in it is merged.
+
 
 ## 2015.5.27
 

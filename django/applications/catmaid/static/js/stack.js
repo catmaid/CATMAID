@@ -929,6 +929,7 @@ function Stack(
 
 	self.is_trackem2_stack = trakem2_project;
 	self.orientation = orientation;
+	self.title = title;
 }
 
 /** known scale bar sizes in nanometers */

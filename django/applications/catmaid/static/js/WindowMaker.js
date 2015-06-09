@@ -2352,7 +2352,7 @@ var WindowMaker = new function()
 
     var createConnectivityWindow = function()
     {
-        var SC = new SkeletonConnectivity();
+        var SC = new CATMAID.SkeletonConnectivity();
         var widgetID = SC.widgetID;
 
         var win = new CMWWindow(SC.getName());

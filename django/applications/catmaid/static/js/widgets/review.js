@@ -88,6 +88,9 @@
       }
     };
 
+    /**
+     * Remove all review state information and clear content.
+     */
     this.endReview = function() {
       self.skeleton_segments = null;
       self.current_segment = null;
@@ -98,7 +101,12 @@
       $('#counting-cache-info').text('');
     };
 
-    /** @param id The index of the segment, 0-based. */
+    /**
+     * Start review of a specific segment, regardless of whether it has already
+     * been reviewed.
+     *
+     * @param {number} id - The index of the segment, 0-based.
+     */
     this.initReviewSegment = function( id ) {
       // Reset movement flags
       this.segmentUnfocused = false;
@@ -115,6 +123,9 @@
       $cur_row.addClass('highlight');
     };
 
+    /**
+     * Move to the a specific node of the segment currently under review.
+     */
     this.goToNodeIndexOfSegmentSequence = function(idx, forceCentering) {
       if (self.skeleton_segments===null)
         return;
@@ -190,7 +201,7 @@
       if (self.skeleton_segments===null)
         return;
 
-      // Mark current node as reviewed
+      // Mark current node as reviewed, don't wait for the server to respond
       self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
 
       if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
@@ -328,6 +339,9 @@
 
     var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
 
+    /**
+     * Mark the given node as reviewed in the back-end.
+     */
     this.markAsReviewed = function( node_ob ) {
       submit(django_url+projectID+"/node/" + node_ob['id'] + "/reviewed", {},
           function(json) {

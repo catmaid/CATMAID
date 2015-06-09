@@ -25,10 +25,16 @@
     // Set to true, if no auto-refresh should happen after a segment has been
     // rully reviewed.
     self.noRefreshBetwenSegments = false;
+    // Default reference orientation to XY
+    self.referenceOrientation = Stack.ORIENTATION_XY;
 
     this.init = function() {
       projectID = project.id;
       followedUsers = [session.userid];
+      // Default reference orientation to currently focused stack
+      if (project.focusedStack) {
+        self.referenceOrientation = project.focusedStack.orientation;
+      }
     };
 
     this.setAutoCentering = function(centering) {
@@ -41,6 +47,30 @@
 
     this.validSegment = function() {
       return self.current_segment !== null;
+    };
+
+    /**
+     * Return true if the reference orientation implies looking parallel to X.
+     * False otherwise.
+     */
+    this.isXView = function() {
+      return this.referenceOrientation === Stack.ORIENTATION_ZY;
+    };
+
+    /**
+     * Return true if the reference orientation implies looking parallel to Y.
+     * False otherwise.
+     */
+    this.isYView = function() {
+      return this.referenceOrientation === Stack.ORIENTATION_XZ;
+    };
+
+    /**
+     * Return true if the reference orientation implies looking parallel to Z.
+     * False otherwise.
+     */
+    this.isZView = function() {
+      return this.referenceOrientation === Stack.ORIENTATION_XY;
     };
 
     /**

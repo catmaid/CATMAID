@@ -6,6 +6,8 @@
 
 (function(CATMAID) {
 
+  "use strict";
+
   CATMAID.ReviewSystem = new function()
   {
     var projectID, skeletonID, subarborNodeId;

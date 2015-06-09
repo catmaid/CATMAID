@@ -119,10 +119,11 @@
       if (self.skeleton_segments===null)
         return;
       var node = self.current_segment['sequence'][idx];
+      var center = autoCentering || forceCentering;
       SkeletonAnnotations.staticMoveTo(
-        node.z,
-        autoCentering || forceCentering ? node.y : project.coordinates.y,
-        autoCentering || forceCentering ? node.x : project.coordinates.x,
+        (self.isZView() || center) ? node.z : project.coordinates.z,
+        (self.isYView() || center) ? node.y : project.coordinates.y,
+        (self.isXView() || center) ? node.x : project.coordinates.x,
         function () {
            SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
         });

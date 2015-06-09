@@ -868,6 +868,24 @@ var WindowMaker = new function()
     });
   };
 
+  /**
+   * Create a tab group and add it to the given container. The widget ID is
+   * expected to be unique.
+   */
+  var appendTabs = function(container, widgetID, titles) {
+    var ul = document.createElement('ul');
+    container.appendChild(ul);
+    return titles.reduce(function(o, name) {
+      var id = name.replace(/ /, '') + widgetID;
+      ul.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
+      var div = document.createElement('div');
+      div.setAttribute('id', id);
+      container.appendChild(div);
+      o[name] = div;
+      return o;
+    }, {});
+  };
+
   /** Creates and returns a new 3d webgl window */
   var create3dWebGLWindow = function()
   {
@@ -887,17 +905,9 @@ var WindowMaker = new function()
     bar.id = "3d_viewer_buttons";
     bar.setAttribute('class', 'buttonpanel');
 
-    var titles = document.createElement('ul');
-    bar.appendChild(titles);
-    var tabs = ['Main', 'View', 'Shading', 'Skeleton filters', 'View settings', 'Shading parameters', 'Animation', 'Export'].reduce(function(o, name) {
-          var id = name.replace(/ /, '') + WA.widgetID;
-          titles.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
-          var div = document.createElement('div');
-          div.setAttribute('id', id);
-          bar.appendChild(div);
-          o[name] = div;
-          return o;
-    }, {});
+    var tabs = appendTabs(bar, WA.widgetID, ['Main', 'View', 'Shading',
+        'Skeleton filters', 'View settings', 'Shading parameters',
+        'Animation', 'Export']);
 
     var select_source = CATMAID.skeletonListSources.createSelect(WA);
 
@@ -1319,16 +1329,8 @@ var WindowMaker = new function()
     bar.setAttribute("id", 'compartment_graph_window_buttons' + GG.widgetID);
     bar.setAttribute('class', 'buttonpanel');
 
-    var titles = document.createElement('ul');
-    bar.appendChild(titles);
-    var tabs = ['Main', 'Grow', 'Graph', 'Selection', 'Subgraphs', 'Align', 'Export'].reduce(function(o, name) {
-          titles.appendChild($('<li><a href="#' + name + GG.widgetID + '">' + name + '</a></li>')[0]);
-          var div = document.createElement('div');
-          div.setAttribute('id', name + GG.widgetID);
-          bar.appendChild(div);
-          o[name] = div;
-          return o;
-    }, {});
+    var tabs = appendTabs(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
+        'Selection', 'Subgraphs', 'Align', 'Export']);
 
     appendToTab(tabs['Main'],
         [[document.createTextNode('From')],

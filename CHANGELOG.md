@@ -49,6 +49,13 @@ Neuron search:
   automatically update if a neuron name is changed.
 
 
+Miscellaneous:
+
+- In the connectivity widget, upstream and downstream thresholds can now be set
+  at once for all seed neurons. Two drop down controls used for this will be
+  displayed if there is more than one seed neuron.
+
+
 Administration:
 
 - Now that virtual nodes are available, existing database can (but don't have

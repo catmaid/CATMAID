@@ -54,6 +54,9 @@
     // Thresholds for current skeleton set
     this.upThresholds = {};
     this.downThresholds = {};
+    // Update all threshold selection states
+    this.upAllThresholds = 1;
+    this.downllThresholds = 1;
     // Indicates whether single nodes should be hidden
     this.hideSingleNodePartners = false;
     // ID of the user who is currently reviewing or null for 'union'
@@ -809,14 +812,47 @@
       };
     })(this));
 
+    // An update all thresholds for both upstream and downstream is added if
+    // there is more than one seed neuron.
+    var upThresholdHeader = $('<th />').text('Upstream Threshold');
+    var downThresholdHeader = $('<th />').text('Downstream Threshold');
+    if (this.ordered_skeleton_ids.length > 1) {
+      var upAllThresholdsSel = createThresholdSelector(
+          'all-neurons-up-threshold-' + id, this.upAllThresholds || 1, 21);
+      var downAllThresholdsSel = createThresholdSelector(
+          'all-neurons-down-threshold-' + id, this.downAllThresholds || 1, 21);
+      upThresholdHeader.append(upAllThresholdsSel);
+      downThresholdHeader.append(downAllThresholdsSel);
+
+      upAllThresholdsSel.change(this, function(e) {
+        var widget = e.data;
+        var threshold = parseInt(this.value, 10);
+        for (var i=0; i<widget.ordered_skeleton_ids.length; ++i) {
+          widget.upThresholds[widget.ordered_skeleton_ids[i]] = threshold;
+        }
+        widget.upAllThresholds = threshold;
+        widget.redraw();
+      });
+
+      downAllThresholdsSel.change(this, function(e) {
+        var widget = e.data;
+        var threshold = parseInt(this.value, 10);
+        for (var i=0; i<widget.ordered_skeleton_ids.length; ++i) {
+          widget.downThresholds[widget.ordered_skeleton_ids[i]] = threshold;
+        }
+        widget.downAllThresholds = threshold;
+        widget.redraw();
+      });
+    }
+
     // Create list of selected neurons
     var neuronTable = $('<table />').attr('class', 'header left')
           .append($('<thead />').append($('<tr />')
               .append($('<th />'))
               .append($('<th />').text('Selected').append(selectAllCb))
               .append($('<th />').text('Neuron'))
-              .append($('<th />').text('Upstream Threshold'))
-              .append($('<th />').text('Downstream Threshold'))));
+              .append(upThresholdHeader)
+              .append(downThresholdHeader)));
     // Add a row for each neuron looked at
     this.ordered_skeleton_ids.forEach(function(skid, i) {
       var id = this.widgetID + '-' + skid;

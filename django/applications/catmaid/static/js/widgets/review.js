@@ -410,7 +410,7 @@
       }, {});
 
       // Make a pseudo-user that aggregates reviews from the whitelist.
-      whitelistUser = {name: 'Team', count: 0,
+      var whitelistUser = {name: 'Team', count: 0,
           segment_count: skeleton_data.reduce(function(o, s) {
             o[s.id] = 0;
             return o;

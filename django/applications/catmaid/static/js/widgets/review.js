@@ -62,9 +62,10 @@
       self.skeleton_segments = null;
       self.current_segment = null;
       self.current_segment_index = 0;
-      if( $('#review_segment_table').length > 0 )
-        $('#review_segment_table').remove();
-        $('#reviewing_skeleton').text( '' );
+      if( $('#review_segment_table').length > 0 ) $('#review_segment_table').remove();
+      $('#reviewing_skeleton').text('');
+      $('#counting-cache').text('');
+      $('#counting-cache-info').text('');
     };
 
     /** @param id The index of the segment, 0-based. */

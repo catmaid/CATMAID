@@ -612,16 +612,15 @@
       resetFn("reset-own");
     };
 
-    var loadImageCallback = function (queuedTiles, cachedTiles) {
-      $('#counting-cache').text(cachedTiles + '/' + (cachedTiles + queuedTiles));
+    var loadImageCallback = function (container, name, queuedTiles, cachedTiles) {
+      $(container).text(name + ': ' + cachedTiles + '/' + (cachedTiles + queuedTiles));
     };
 
     this.cacheImages = function() {
       if (!checkSkeletonID()) {
         return;
       }
-      var tilelayer = project.focusedStack.getLayers()['TileLayer'],
-        startsegment = -1, endsegment = 0, locations = [];
+      var startsegment = -1, endsegment = 0, locations = [];
 
       for(var idx in self.skeleton_segments) {
         if( self.skeleton_segments[idx]['status'] !== "100.00" ) {
@@ -640,7 +639,18 @@
       }
 
       $('#counting-cache-info').text( 'From segment: ' + startsegment + ' to ' + endsegment );
-      tilelayer.cacheLocations(locations, loadImageCallback);
+      var counterContainer = $('#counting-cache');
+      counterContainer.empty();
+      project.getStacks().forEach(function(stack) {
+        var tilelayer = stack.getLayers()['TileLayer'];
+        // Create loading information text for each stack
+        var layerCounter = document.createElement('div');
+        counterContainer.append(layerCounter);
+        if (tilelayer) {
+          tilelayer.cacheLocations(locations,
+              loadImageCallback.bind(self, layerCounter, stack.title));
+        }
+      });
     };
   }();
 

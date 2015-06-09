@@ -2261,33 +2261,42 @@ var WindowMaker = new function()
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
 
-        var contentbutton = document.createElement('div');
-        contentbutton.setAttribute("id", 'review_window_buttons');
+        var bar = document.createElement( "div" );
+        bar.id = "review_buttons";
+        bar.setAttribute('class', 'buttonpanel');
 
-        var start = document.createElement('input');
-        start.setAttribute("type", "button");
-        start.setAttribute("id", "start_review_whole skeleton");
-        start.setAttribute("value", "Start to review skeleton");
-        start.onclick = CATMAID.ReviewSystem.startReviewActiveSkeleton.bind(
-            CATMAID.ReviewSystem, false);
-        contentbutton.appendChild(start);
+        var RS = CATMAID.ReviewSystem;
+        var tabs = appendTabs(bar, '-review', ['Main', 'Miscellaneous']);
 
-        var start = document.createElement('input');
-        start.setAttribute("type", "button");
-        start.setAttribute("id", "start_review_subarbor");
-        start.setAttribute("value", "Start to review current sub-arbor");
-        start.onclick = CATMAID.ReviewSystem.startReviewActiveSkeleton.bind(
-            CATMAID.ReviewSystem, true);
-        contentbutton.appendChild(start);
+        appendToTab(tabs['Main'],
+            [
+              ['Start to review skeleton',
+                  RS.startReviewActiveSkeleton.bind(RS, false)],
+              ['Start to review current sub-arbor',
+                  RS.startReviewActiveSkeleton.bind(RS, true)],
+              ['End review', RS.endReview.bind(RS)],
+              ['Reset own revisions', RS.resetOwnRevisions.bind(RS)],
+              ['Auto centering', RS.getAutoCentering(),
+                  function() { RS.setAutoCentering(this.checked); }, false]
+            ]);
 
-        var end = document.createElement('input');
-        end.setAttribute("type", "button");
-        end.setAttribute("id", "end_review_skeleton");
-        end.setAttribute("value", "End review");
-        end.onclick = CATMAID.ReviewSystem.endReview;
-        contentbutton.appendChild(end);
+        appendToTab(tabs['Miscellaneous'],
+            [
+              ['Cache tiles', false, RS.cacheImages.bind(this), false],
+              ['No refresh after segment done', RS.noRefreshBetwenSegments,
+                  function() { RS.noRefreshBetwenSegments = this.checked; }, false]
+            ]);
 
-        content.appendChild( contentbutton );
+        content.appendChild(bar);
+        $(bar).tabs();
+
+        var cacheCounter = document.createElement('div');
+        cacheCounter.setAttribute("id", "counting-cache");
+        content.appendChild(cacheCounter);
+
+        var cacheInfoCounter = document.createElement('div');
+        cacheInfoCounter.setAttribute("id", "counting-cache-info");
+        content.appendChild(cacheInfoCounter);
 
         var label = document.createElement('div');
         label.setAttribute("id", "reviewing_skeleton");
@@ -2301,47 +2310,6 @@ var WindowMaker = new function()
         container.style.overflow = "auto";
         container.style.backgroundColor = "#ffffff";
         content.appendChild(container);
-
-        var resetOwns = document.createElement('input');
-        resetOwns.setAttribute("type", "button");
-        resetOwns.setAttribute("id", "reset_skeleton_review_owns");
-        resetOwns.setAttribute("value", "Reset own revisions");
-        resetOwns.onclick = CATMAID.ReviewSystem.resetOwnRevisions;
-        contentbutton.appendChild(resetOwns);
-
-        var cacheImages = document.createElement('input');
-        cacheImages.setAttribute("type", "button");
-        cacheImages.setAttribute("id", "cache_images_of_skeleton");
-        cacheImages.setAttribute("value", "Cache tiles");
-        cacheImages.onclick = CATMAID.ReviewSystem.cacheImages;
-        contentbutton.appendChild(cacheImages);
-
-        var autoCenter = document.createElement('input');
-        autoCenter.setAttribute('type', 'checkbox');
-        autoCenter.setAttribute('id', 'review_auto_center');
-        autoCenter.setAttribute('checked', 'checked');
-        autoCenter.onchange = function() {
-          CATMAID.ReviewSystem.setAutoCentering(this.checked);
-        };
-        var autoCenterLabel = document.createElement('label');
-        autoCenterLabel.appendChild(autoCenter);
-        autoCenterLabel.appendChild(document.createTextNode('Auto centering'));
-        contentbutton.appendChild(autoCenterLabel);
-
-        var sync = document.createElement('input');
-        sync.setAttribute('type', 'checkbox');
-        sync.setAttribute('id', 'remote_review_skeleton');
-        sync.checked = false;
-        contentbutton.appendChild(sync);
-        contentbutton.appendChild(document.createTextNode(' Remote? '));
-
-        var cacheCounter = document.createElement('div');
-        cacheCounter.setAttribute("id", "counting-cache");
-        contentbutton.appendChild(cacheCounter);
-
-        var cacheInfoCounter = document.createElement('div');
-        cacheInfoCounter.setAttribute("id", "counting-cache-info");
-        contentbutton.appendChild(cacheInfoCounter);
 
         addListener(win, container, 'review_window_buttons');
 

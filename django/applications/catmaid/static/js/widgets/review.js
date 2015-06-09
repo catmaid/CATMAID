@@ -22,6 +22,9 @@
     self.movedBeyondSegment = false;
     // Set to true, if one deselects the current skeleton
     self.segmentUnfocused = false;
+    // Set to true, if no auto-refresh should happen after a segment has been
+    // rully reviewed.
+    self.noRefreshBetwenSegments = false;
 
     this.init = function() {
       projectID = project.id;
@@ -30,6 +33,10 @@
 
     this.setAutoCentering = function(centering) {
       autoCentering = centering ? true : false;
+    };
+
+    this.getAutoCentering = function() {
+      return autoCentering;
     };
 
     this.validSegment = function() {
@@ -155,7 +162,7 @@
       self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
 
       if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
-        if( $('#remote_review_skeleton').prop('checked') ) {
+        if (self.noRefreshBetwenSegments) {
           end_puffer_count += 1;
           // do not directly jump to the next segment to review
           if( end_puffer_count < 3) {

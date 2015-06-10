@@ -74,6 +74,16 @@
     };
 
     /**
+     * Return the depth component of the current reference orientation.
+     */
+    this.getDepthField = function() {
+      if (this.isZView()) return 'z';
+      else if (this.isYView()) return 'y';
+      else if (this.isXView()) return 'x';
+      else throw new CATMAID.ValueError('Unknown reference orientation');
+    };
+
+    /**
      * If the active skeleton changes, the review system will register it. The
      * widget will make sure the view is centered at the last active node, when
      * review is continued.
@@ -172,18 +182,19 @@
         self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
       } else {
         // Go to 'previous' section, to check whether an end really ends
-        self.lookBeyondSegment(self.current_segment['sequence']);
+        self.lookBeyondSegment(self.current_segment['sequence'], forceCentering);
       }
     };
 
     /**
-     * Move beyond a segment.
+     * Move one section beyond a segment's leaf.
      */
-    this.lookBeyondSegment = function(segment) {
+    this.lookBeyondSegment = function(segment, forceCentering) {
       if (0 === segment.length) return;
 
+      var depthField = this.getDepthField();
       var i = 1;
-      while (i < segment.length && segment[i-1].z === segment[i].z) {
+      while (i < segment.length && segment[i-1][depthField] === segment[i][depthField]) {
         i += 1;
       }
       if (i === segment.length) {
@@ -193,14 +204,17 @@
         return;
       }
       self.movedBeyondSegment = true;
-      var inc = segment[i-1].z - segment[i].z;
       // Will check stack boundaries at Stack.moveTo
+      var coords;
       if (this.autoCentering || forceCentering) {
-        project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
+        coords = {x: segment[0].x, y: segment[0].y, z: segment[0].z};
       } else {
-        project.moveTo(segment[0].z + inc, project.coordinates.y,
-           project.coordinates.x);
+        coords = {x: project.coordinates.x, y: project.coordinates.y,
+           z: project.coordinates.z};
       }
+      var inc = segment[i-1][depthField] - segment[i][depthField];
+      coords[depthField] = segment[0][depthField] + inc;
+      project.moveTo(coords.z, coords.y, coords.x);
     };
 
     this.moveNodeInSegmentForward = function(advanceToNextUnfollowed) {

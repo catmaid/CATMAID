@@ -2301,6 +2301,9 @@ var WindowMaker = new function()
 
         appendToTab(tabs['Miscellaneous'],
             [
+              ['In-between node step', RS.virtualNodeStep, null, function() {
+                  RS.virtualNodeStep = parseInt(this.value, 10);
+                }, 3],
               ['Cache tiles', false, RS.cacheImages.bind(this), false],
               ['No refresh after segment done', RS.noRefreshBetwenSegments,
                   function() { RS.noRefreshBetwenSegments = this.checked; }, false]

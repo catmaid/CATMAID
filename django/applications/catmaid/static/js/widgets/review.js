@@ -172,28 +172,34 @@
         self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
       } else {
         // Go to 'previous' section, to check whether an end really ends
-        var segment = self.current_segment['sequence'];
-        if (segment.length > 1) {
-          var i = 1;
-          while (i < segment.length && segment[i-1].z === segment[i].z) {
-            i += 1;
-          }
-          if (i === segment.length) {
-            // corner case
-            CATMAID.msg("Can't move", "Can't decide whether to move " +
-                "forward or backward one section!");
-            return;
-          }
-          self.movedBeyondSegment = true;
-          var inc = segment[i-1].z - segment[i].z;
-          // Will check stack boundaries at Stack.moveTo
-          if (this.autoCentering || forceCentering) {
-            project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
-          } else {
-            project.moveTo(segment[0].z + inc, project.coordinates.y,
-               project.coordinates.x);
-          }
-        }
+        self.lookBeyondSegment(self.current_segment['sequence']);
+      }
+    };
+
+    /**
+     * Move beyond a segment.
+     */
+    this.lookBeyondSegment = function(segment) {
+      if (0 === segment.length) return;
+
+      var i = 1;
+      while (i < segment.length && segment[i-1].z === segment[i].z) {
+        i += 1;
+      }
+      if (i === segment.length) {
+        // corner case
+        CATMAID.msg("Can't move", "Can't decide whether to move " +
+            "forward or backward one section!");
+        return;
+      }
+      self.movedBeyondSegment = true;
+      var inc = segment[i-1].z - segment[i].z;
+      // Will check stack boundaries at Stack.moveTo
+      if (this.autoCentering || forceCentering) {
+        project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
+      } else {
+        project.moveTo(segment[0].z + inc, project.coordinates.y,
+           project.coordinates.x);
       }
     };
 

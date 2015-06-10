@@ -215,11 +215,7 @@
           }
           // Segment fully reviewed, go to next without refreshing table
           // much faster for smaller fragments
-          // CATMAID.msg('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
-          var cell = $('#rev-status-cell-' + self.current_segment['id']);
-          cell.text('100.00%');
-          cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
-          self.current_segment['status'] = '100.00';
+          markSegmentDone(selg.current_segment, [session.userid])
           self.selectNextSegment();
           return;
         } else {
@@ -277,24 +273,16 @@
           while (i_union < len && 0 !== seq[i_union].rids.length) {
             i_union += 1;
           }
+          var cellIDs = [];
           if (i_user === len) {
+            cellIDs.push(session.userid);
             CATMAID.msg('DONE', 'Segment fully reviewed: ' +
                 self.current_segment['nr_nodes'] + ' nodes');
-            var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-' + session.userid);
-            cell.text('100.00%');
-            cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
-            self.current_segment['status'] = '100.00';
-            // Don't startSkeletonToReview, because self.current_segment_index
-            // would be lost, losing state for q/w navigation.
           }
-          if (i_union === len) {
-            var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-union');
-            cell.text('100.00%');
-            cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
-            self.current_segment['status'] = '100.00';
-            // Don't startSkeletonToReview, because self.current_segment_index
-            // would be lost, losing state for q/w navigation.
-          }
+          if (i_union === len) cellIDs.push('union');
+          markSegmentDone(self.current_segment, cellIDs);
+          // Don't startSkeletonToReview, because self.current_segment_index
+          // would be lost, losing state for q/w navigation.
         }
 
         self.warnIfNodeSkipsSections();
@@ -303,6 +291,20 @@
       // Select the (potentially new) current node
       self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
     };
+
+    /**
+     * Set the segment status to 100% and reflect this in the table cells
+     * identified with cellIDs.
+     */
+    function markSegmentDone(segment, cellIDs) {
+      cellIDs.forEach(function(s) {
+        var cell = $('#rev-status-cell-' + segment['id'] + '-' + s);
+        cell.text('100.00%');
+        cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
+      });
+
+      segment['status'] = '100.00';
+    }
 
     /**
      * Tests if a review was reviewd by the current user

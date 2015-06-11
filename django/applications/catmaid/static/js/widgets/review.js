@@ -221,10 +221,13 @@
       if (self.skeleton_segments===null)
         return;
 
-      // Mark current node as reviewed, don't wait for the server to respond
-      self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
+      var sequence = self.current_segment['sequence'];
+      var sequenceLength = sequence.length;
 
-      if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
+      // Mark current node as reviewed, don't wait for the server to respond
+      self.markAsReviewed( sequence[self.current_segment_index] );
+
+      if( self.current_segment_index === sequenceLength - 1  ) {
         if (self.noRefreshBetwenSegments) {
           end_puffer_count += 1;
           // do not directly jump to the next segment to review
@@ -269,9 +272,7 @@
           // Advance current_segment_index to the first node that is not reviewed
           // by the current user or any review team member.
           var i = self.current_segment_index;
-          var seq = self.current_segment['sequence'];
-          var len = seq.length;
-          while (i < len) {
+          while (i < sequenceLength) {
             if (!seq[i].rids.some(reviewedByTeam)) {
               self.current_segment_index = i;
               break;
@@ -280,27 +281,25 @@
           }
         }
 
-        if (self.current_segment_index < self.current_segment['sequence'].length -1) {
+        if (self.current_segment_index < sequenceLength -1) {
           // Check if the remainder of the segment was complete at an earlier time
           // and perhaps now the whole segment is done:
           var i_user = self.current_segment_index;
           var i_union = self.current_segment_index;
-          var seq = self.current_segment['sequence'];
-          var len = seq.length;
-          while (i_user < len && seq[i_user].rids.some(reviewedByTeam)) {
+          while (i_user < sequenceLength && sequence[i_user].rids.some(reviewedByTeam)) {
             i_user += 1;
           }
-          while (i_union < len && 0 !== seq[i_union].rids.length) {
+          while (i_union < sequenceLength && 0 !== sequence[i_union].rids.length) {
             i_union += 1;
           }
           var cellIDs = [];
-          if (i_user === len) {
+          if (i_user === sequenceLength) {
             cellIDs.push(session.userid);
             CATMAID.msg('DONE', 'Segment fully reviewed: ' +
                 self.current_segment['nr_nodes'] + ' nodes');
           }
-          if (i_union === len) cellIDs.push('union');
-          markSegmentDone(self.current_segment, cellIDs);
+          if (i_union === sequenceLength) cellIDs.push('union');
+          if (cellIDs.length > 0) markSegmentDone(self.current_segment, cellIDs);
           // Don't startSkeletonToReview, because self.current_segment_index
           // would be lost, losing state for q/w navigation.
         }

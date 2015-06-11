@@ -810,7 +810,6 @@ function Stack(
 	stackWindow.addListener(
 		function( callingWindow, signal )
 		{
-			//alert( signal );
 			switch ( signal )
 			{
 			case CMWWindow.CLOSE:
@@ -822,10 +821,6 @@ function Stack(
 				break;
 			case CMWWindow.FOCUS:
 				self.overview.getView().style.zIndex = "6";
-				// FIXME: explicitly defocus the search field in the
-				// treenode table. setting the focus to a dummy
-				// href element does not work
-				$('#search_labels').blur();
 				project.setFocusedStack( self );
 				break;
 			case CMWWindow.BLUR:
@@ -833,8 +828,6 @@ function Stack(
 				if ( tool )
 					tool.unregister();
 				tool = null;
-				// window.onresize();
-        // stackWindow.redraw();
 				break;
 			}
 			return true;

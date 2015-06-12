@@ -217,18 +217,7 @@ function Stack(
 	 */
 	this.createStackToProjectBox = function( stackBox )
 	{
-		return {
-			min : {
-				x : self.stackToProjectX( stackBox.min.z, stackBox.min.y, stackBox.min.x ),
-				y : self.stackToProjectY( stackBox.min.z, stackBox.min.y, stackBox.min.x ),
-				z : self.stackToProjectZ( stackBox.min.z, stackBox.min.y, stackBox.min.x )
-			},
-			max : {
-				x : self.stackToProjectX( stackBox.max.z, stackBox.max.y, stackBox.max.x ),
-				y : self.stackToProjectY( stackBox.max.z, stackBox.max.y, stackBox.max.x ),
-				z : self.stackToProjectZ( stackBox.max.z, stackBox.max.y, stackBox.max.x )
-			}
-		};
+		return this.stackToProjectBox(stackBox, {min: {}, max: {}});
 	};
 
 
@@ -260,21 +249,7 @@ function Stack(
 	 */
 	this.createStackViewBox = function()
 	{
-		var w2 = self.viewWidth / self.scale / 2;
-		var h2 = self.viewHeight / self.scale / 2;
-
-		return {
-			min : {
-				x : self.x - w2,
-				y : self.y - h2,
-				z : self.z - 0.5
-			},
-			max : {
-				x : self.x + w2,
-				y : self.y + h2,
-				z : self.z + 0.5
-			}
-		};
+		return this.stackViewBox({min: {}, max: {}});
 	};
 
 
@@ -314,22 +289,7 @@ function Stack(
 	 */
 	this.createPaddedStackViewBox = function( padScreenX, padScreenY, padScreenZ )
 	{
-		var w2 = ( self.viewWidth / 2 + padScreenX ) / self.scale;
-		var h2 = ( self.viewHeight / 2 + padScreenY ) / self.scale;
-		var d2 = 0.5 + padScreenZ;
-
-		return {
-			min : {
-				x : self.x - w2,
-				y : self.y - w2,
-				z : self.z - d2
-			},
-			max : {
-				x : self.x + w2,
-				y : self.y + w2,
-				z : self.z + d2
-			}
-		};
+		return this.paddedStackViewBox({min: {}, max: {}}, padScreenX, padScreenY, padScreenZ);
 	};
 
 	/**

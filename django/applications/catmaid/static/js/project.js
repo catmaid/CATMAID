@@ -7,7 +7,7 @@
  *	 request.js
  *
  */
- 
+
 /**
  */
 
@@ -53,8 +53,8 @@ function Project( pid )
 				rootWindow.replaceChild( stack.getWindow() );
 			else
 				rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), stack.getWindow() ) );
-			
-			stack.getWindow().focus();	
+
+			stack.getWindow().focus();
 			CATMAID.ui.onresize();
 		}
 		if ( stacks.length > 1 )
@@ -81,7 +81,7 @@ function Project( pid )
 		// return the (possibly updated) stack reference
 		return stack;
 	};
-	
+
 	/**
 	 * get one of the projects currently opened stacks
 	 */
@@ -120,7 +120,7 @@ function Project( pid )
 		}
 		CATMAID.ui.onresize();
 	};
-	
+
 	/**
 	 * focus a stack and blur the rest
 	 */
@@ -131,7 +131,7 @@ function Project( pid )
 			self.focusedStack.setTool( tool );
 		window.onresize();
 	};
-	
+
 	/**
 	 * focus the next or prior stack
 	 */
@@ -140,7 +140,7 @@ function Project( pid )
 		var i;
 		for ( i = 0; i < stacks.length; ++i )
 			if ( self.focusedStack == stacks[ i ] ) break;
-			
+
 		stacks[ ( i + stacks.length + s ) % stacks.length ].getWindow().focus();
 	};
 
@@ -180,13 +180,13 @@ function Project( pid )
 		document.getElementById( "toolbar_text" ).style.display = "none";
 		document.getElementById( "toolbar_trace" ).style.display = "none";
 	};
-	
+
     this.hideToolboxes = function()
 	{
 		document.getElementById( "toolbox_segmentation" ).style.display = "none";
 		document.getElementById( "toolbox_data" ).style.display = "none";
 	};
-	
+
 	this.setTool = function( newTool )
 	{
 		// Destroy the old project only, if it isn't the very same project that gets
@@ -194,12 +194,12 @@ function Project( pid )
 		if( tool && newTool !== tool )
 			tool.destroy();
 		tool = newTool;
-		
+
 		self.hideToolboxes();
 
 		if ( !self.focusedStack && stacks.length > 0 ) {
 			self.setFocusedStack( stacks[ 0 ] );
-		} 
+		}
 
 		self.focusedStack.setTool( tool );
 
@@ -215,7 +215,7 @@ function Project( pid )
 	{
 		return tool;
 	};
-	
+
 	this.toggleShow = function( m )
 	{
 		switch ( m )
@@ -237,7 +237,7 @@ function Project( pid )
 			}
 		}
 	};
-	
+
 	/**
 	 * register all GUI elements
 	 */
@@ -248,10 +248,10 @@ function Project( pid )
 		document.body.appendChild( view );
 		CATMAID.ui.registerEvent( "onresize", resize );
 		//window.onresize();
-		
+
 		document.onkeydown = onkeydown;
 	};
-	
+
 	/**
 	 * unregister and remove all stacks, free the event-handlers, hide the stack-toolbar
 	 *
@@ -260,11 +260,11 @@ function Project( pid )
 	this.destroy = function()
 	{
 		if ( tool ) tool.destroy();
-		
+
 		//! Close all windows. There is no need to explicitely call close()
 		//! on the root window as this done by the last child.
 		rootWindow.closeAllChildren();
-			
+
 		CATMAID.ui.removeEvent( "onresize", resize );
 		try
 		{
@@ -348,7 +348,7 @@ function Project( pid )
 		self.coordinates.y = yp;
 		self.coordinates.z = zp;
 
-		
+
 		for ( var i = 0; i < stacks.length; ++i )
 		{
 			stacksToMove.push( stacks[ i ] );
@@ -404,7 +404,7 @@ function Project( pid )
 		self.coordinates.y = yp;
 		self.coordinates.z = zp;
 
-		
+
 		for ( var i = 0; i < stacks.length; ++i )
 		{
 			stacksToMove.push( stacks[ i ] );
@@ -546,38 +546,38 @@ function Project( pid )
 			return true;
 		}
 	};
-	
+
 	/**
 	 * Get project ID.
 	 */
 	this.getId = function(){ return pid; };
-	
+
 	// initialise
 	var self = this;
 	this.id = pid;
 	if ( typeof requestQueue == "undefined" ) requestQueue = new RequestQueue();
-	
+
 	var tool = null;
-	
+
 	var view = rootWindow.getFrame();
 	view.className = "projectView";
-	
-	this.coordinates = 
+
+	this.coordinates =
 	{
 		x : 0,
 		y : 0,
 		z : 0
 	};
-	
+
 	var template;				//!< DTD like abstract object tree (classes)
 	var data;					//!< instances in a DOM representation
-	
+
 	var stacks = [];	//!< a list of stacks related to the project
 	this.focusedStack = undefined;
-	
+
 	var mode = "move";
 	var show_textlabels = true;
-	
+
 	var icon_text_apply = document.getElementById( "icon_text_apply" );
 
 	/** The only actions that should be added to Project are those

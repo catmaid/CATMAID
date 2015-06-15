@@ -25,10 +25,21 @@
     // Set to true, if no auto-refresh should happen after a segment has been
     // rully reviewed.
     self.noRefreshBetwenSegments = false;
+    // Default reference orientation to XY
+    self.referenceOrientation = Stack.ORIENTATION_XY;
+    // Specify step size for skipping consecutive virtual nodes
+    self.virtualNodeStep = 1;
+    // Keep track of last virtual node step, if any
+    var skipStep = null;
+
 
     this.init = function() {
       projectID = project.id;
       followedUsers = [session.userid];
+      // Default reference orientation to currently focused stack
+      if (project.focusedStack) {
+        self.referenceOrientation = project.focusedStack.orientation;
+      }
     };
 
     this.setAutoCentering = function(centering) {
@@ -44,6 +55,40 @@
     };
 
     /**
+     * Return true if the reference orientation implies looking parallel to X.
+     * False otherwise.
+     */
+    this.isXView = function() {
+      return this.referenceOrientation === Stack.ORIENTATION_ZY;
+    };
+
+    /**
+     * Return true if the reference orientation implies looking parallel to Y.
+     * False otherwise.
+     */
+    this.isYView = function() {
+      return this.referenceOrientation === Stack.ORIENTATION_XZ;
+    };
+
+    /**
+     * Return true if the reference orientation implies looking parallel to Z.
+     * False otherwise.
+     */
+    this.isZView = function() {
+      return this.referenceOrientation === Stack.ORIENTATION_XY;
+    };
+
+    /**
+     * Return the depth component of the current reference orientation.
+     */
+    this.getDepthField = function() {
+      if (this.isZView()) return 'z';
+      else if (this.isYView()) return 'y';
+      else if (this.isXView()) return 'x';
+      else throw new CATMAID.ValueError('Unknown reference orientation');
+    };
+
+    /**
      * If the active skeleton changes, the review system will register it. The
      * widget will make sure the view is centered at the last active node, when
      * review is continued.
@@ -53,12 +98,17 @@
       var index = this.current_segment_index;
       // If there is an active segment and no node is selected anymore or the
       // node change, mark the current segment as unfocused.
-      if (segment && (!node || segment[index].id !== node.id)) {
+      if (segment && (!node || segment[index].id !== node.id) &&
+          (!skipStep || skipStep.id !== node.id)) {
         this.segmentUnfocused = true;
       }
     };
 
+    /**
+     * Remove all review state information and clear content.
+     */
     this.endReview = function() {
+      skipStep = null;
       self.skeleton_segments = null;
       self.current_segment = null;
       self.current_segment_index = 0;
@@ -68,8 +118,14 @@
       $('#counting-cache-info').text('');
     };
 
-    /** @param id The index of the segment, 0-based. */
+    /**
+     * Start review of a specific segment, regardless of whether it has already
+     * been reviewed.
+     *
+     * @param {number} id - The index of the segment, 0-based.
+     */
     this.initReviewSegment = function( id ) {
+      skipStep = null;
       // Reset movement flags
       this.segmentUnfocused = false;
       this.movedBeyondSegment = false;
@@ -85,14 +141,27 @@
       $cur_row.addClass('highlight');
     };
 
+    /**
+     * Move to the a specific node of the segment currently under review.
+     */
     this.goToNodeIndexOfSegmentSequence = function(idx, forceCentering) {
       if (self.skeleton_segments===null)
         return;
       var node = self.current_segment['sequence'][idx];
+      this.goToNodeOfSegmentSequence(node, forceCentering);
+    };
+
+    /**
+     * Move to the a specific node of the segment currently under review.
+     */
+    this.goToNodeOfSegmentSequence = function(node, forceCentering) {
+      if (self.skeleton_segments===null)
+        return;
+      var center = autoCentering || forceCentering;
       SkeletonAnnotations.staticMoveTo(
-        node.z,
-        autoCentering || forceCentering ? node.y : project.coordinates.y,
-        autoCentering || forceCentering ? node.x : project.coordinates.x,
+        (self.isZView() || center) ? node.z : project.coordinates.z,
+        (self.isYView() || center) ? node.y : project.coordinates.y,
+        (self.isXView() || center) ? node.x : project.coordinates.x,
         function () {
            SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
         });
@@ -103,7 +172,9 @@
         return;
       }
 
-      self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
+      var sequence = self.current_segment['sequence'];
+
+      if (!skipStep) self.markAsReviewed(sequence[self.current_segment_index]);
 
       // By default, the selected node is changed and centering not enforced.
       var changeSelectedNode = true;
@@ -122,67 +193,146 @@
         forceCentering = true;
       }
 
-      if(self.current_segment_index > 0) {
+      if(self.current_segment_index > 0 || skipStep) {
         if (changeSelectedNode) {
+          var ln, refIndex;
+          var newIndex = Math.max(self.current_segment_index - 1, 0);
+          if (skipStep) {
+            ln = skipStep;
+            refIndex = skipStep.refIndex;
+            // If the existing skipping step was created with the current node
+            // as source, the current test node needs to be the virtual node.
+            if (skipStep.to !== sequence[newIndex]) {
+              newIndex = skipStep.refIndex - 1;
+            }
+          } else {
+            refIndex = self.current_segment_index;
+            ln = sequence[self.current_segment_index];
+          }
+
+          var nn = sequence[newIndex];
+
+          // Check if an intermediate step is required. If a sample step has
+          // already been taken before, this step is the reference point for the
+          // distance test.
+          skipStep = self.limitMove(ln, nn, refIndex, true);
+          if (skipStep) {
+            // Move to skipping step
+            this.goToNodeOfSegmentSequence(skipStep, forceCentering);
+            return;
+          } else {
+            self.current_segment_index = newIndex;
+          }
+
           self.warnIfNodeSkipsSections();
-          self.current_segment_index--;
         }
         self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
       } else {
         // Go to 'previous' section, to check whether an end really ends
-        var segment = self.current_segment['sequence'];
-        if (segment.length > 1) {
-          var i = 1;
-          while (i < segment.length && segment[i-1].z === segment[i].z) {
-            i += 1;
-          }
-          if (i === segment.length) {
-            // corner case
-            CATMAID.msg("Can't move", "Can't decide whether to move " +
-                "forward or backward one section!");
-            return;
-          }
-          self.movedBeyondSegment = true;
-          var inc = segment[i-1].z - segment[i].z;
-          // Will check stack boundaries at Stack.moveTo
-          if (this.autoCentering || forceCentering) {
-            project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
-          } else {
-            project.moveTo(segment[0].z + inc, project.coordinates.y,
-               project.coordinates.x);
-          }
-        }
+        self.lookBeyondSegment(sequence, forceCentering);
       }
+    };
+
+    /**
+     * Return a skipping step, if there is one required when moving from node 1
+     * to node 2. If no step is required, null is returned. A step is required
+     * if the distance between both  above the maximum step distance. Steps are
+     * sections in the currently focused stack.
+     */
+    this.limitMove = function(from, to, refIndex, backwards) {
+      var vP = [to.x - from.x, to.y - from.y, to.z - from.z];
+      // Get difference vector in stack space coordinates and check that not
+      // more sections are crossed than allowed.
+      var stack = project.focusedStack;
+      var vPAbs = [Math.abs(vP[0]), Math.abs(vP[1]), Math.abs(vP[2])];
+      var vSAbs = [stack.projectToStackX(vPAbs[2], vPAbs[1], vPAbs[0]),
+                   stack.projectToStackY(vPAbs[2], vPAbs[1], vPAbs[0]),
+                   stack.projectToStackZ(vPAbs[2], vPAbs[1], vPAbs[0])];
+      // If the stack space Z distance is larger than the virtual node step
+      // value, stop at the section that is reachable with this value.
+      if (vSAbs[2] > self.virtualNodeStep) {
+        // Get project space coordinate of intermediate point, move to it and
+        // select a virtual node there.
+        var zS = stack.z + self.virtualNodeStep * (vP[2] > 0 ? 1 : -1);
+        var vnID = backwards ?
+          SkeletonAnnotations.getVirtualNodeID(to.id, from.id, zS) :
+          SkeletonAnnotations.getVirtualNodeID(from.id, to.id, zS);
+        var zRatio = self.virtualNodeStep / vSAbs[2];
+        return {
+          id: vnID,
+          x: from.x + vP[0] * zRatio,
+          y: from.y + vP[1] * zRatio,
+          z: from.z + vP[2] * zRatio,
+          stack: stack,
+          to: to,
+          refIndex: refIndex
+        };
+      } else {
+        return null;
+      }
+    };
+
+    /**
+     * Move one section beyond a segment's leaf.
+     */
+    this.lookBeyondSegment = function(segment, forceCentering) {
+      if (0 === segment.length) return;
+
+      var depthField = this.getDepthField();
+      var i = 1;
+      while (i < segment.length && segment[i-1][depthField] === segment[i][depthField]) {
+        i += 1;
+      }
+      if (i === segment.length) {
+        // corner case
+        CATMAID.msg("Can't move", "Can't decide whether to move " +
+            "forward or backward one section!");
+        return;
+      }
+      self.movedBeyondSegment = true;
+      // Will check stack boundaries at Stack.moveTo
+      var coords;
+      if (this.autoCentering || forceCentering) {
+        coords = {x: segment[0].x, y: segment[0].y, z: segment[0].z};
+      } else {
+        coords = {x: project.coordinates.x, y: project.coordinates.y,
+           z: project.coordinates.z};
+      }
+      var inc = segment[i-1][depthField] - segment[i][depthField];
+      coords[depthField] = segment[0][depthField] + inc;
+      project.moveTo(coords.z, coords.y, coords.x);
     };
 
     this.moveNodeInSegmentForward = function(advanceToNextUnfollowed) {
       if (self.skeleton_segments===null)
         return;
 
-      // Mark current node as reviewed
-      self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
+      var sequence = self.current_segment['sequence'];
+      var sequenceLength = sequence.length;
 
-      if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
-        if (self.noRefreshBetwenSegments) {
-          end_puffer_count += 1;
-          // do not directly jump to the next segment to review
-          if( end_puffer_count < 3) {
-            CATMAID.msg('DONE', 'Segment fully reviewed: ' +
-                self.current_segment['nr_nodes'] + ' nodes');
+      // Mark current node as reviewed, if this is no intermediate step.
+      if (!skipStep) {
+        //  Don't wait for the server to respond
+        self.markAsReviewed( sequence[self.current_segment_index] );
+
+        if( self.current_segment_index === sequenceLength - 1  ) {
+          if (self.noRefreshBetwenSegments) {
+            end_puffer_count += 1;
+            // do not directly jump to the next segment to review
+            if( end_puffer_count < 3) {
+              CATMAID.msg('DONE', 'Segment fully reviewed: ' +
+                  self.current_segment['nr_nodes'] + ' nodes');
+              return;
+            }
+            // Segment fully reviewed, go to next without refreshing table
+            // much faster for smaller fragments
+            markSegmentDone(selg.current_segment, [session.userid])
+            self.selectNextSegment();
+            return;
+          } else {
+            self.startSkeletonToReview(skeletonID, subarborNodeId);
             return;
           }
-          // Segment fully reviewed, go to next without refreshing table
-          // much faster for smaller fragments
-          // CATMAID.msg('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
-          var cell = $('#rev-status-cell-' + self.current_segment['id']);
-          cell.text('100.00%');
-          cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
-          self.current_segment['status'] = '100.00';
-          self.selectNextSegment();
-          return;
-        } else {
-          self.startSkeletonToReview(skeletonID, subarborNodeId);
-          return;
         }
       }
 
@@ -202,57 +352,72 @@
       }
 
       if (changeSelectedNode) {
-        self.current_segment_index++;
 
         var whitelist = CATMAID.ReviewSystem.Whitelist.getWhitelist();
         var reviewedByTeam = reviewedByUserOrTeam.bind(self, whitelist);
 
+        // Find index of next real node that should be reviewed
+        var newIndex = Math.min(self.current_segment_index + 1, sequenceLength - 1);
         if (advanceToNextUnfollowed) {
-          // Advance current_segment_index to the first node that is not reviewed
-          // by the current user or any review team member.
-          var i = self.current_segment_index;
-          var seq = self.current_segment['sequence'];
-          var len = seq.length;
-          while (i < len) {
+          // Advance index to the first node that is not reviewed by the current
+          // user or any review team member.
+          var i = newIndex;
+          while (i < sequenceLength) {
             if (!seq[i].rids.some(reviewedByTeam)) {
-              self.current_segment_index = i;
+              newIndex = i;
               break;
             }
             i += 1;
           }
         }
 
-        if (self.current_segment_index < self.current_segment['sequence'].length -1) {
+        var ln, refIndex;
+        if (skipStep) {
+          ln = skipStep;
+          refIndex = skipStep.refIndex;
+          if (skipStep.to !== sequence[newIndex]) {
+            newIndex = skipStep.refIndex;
+          }
+        } else {
+          refIndex = newIndex;
+          ln = sequence[newIndex - 1];
+        }
+
+        var nn = sequence[newIndex];
+
+        // Check if an intermediate step is required. If a sample step has
+        // already been taken before, this step is the reference point for the
+        // distance test.
+        skipStep = self.limitMove(ln, nn, refIndex, false);
+        if (skipStep) {
+          // Move to skipping step
+          this.goToNodeOfSegmentSequence(skipStep, forceCentering);
+          return;
+        } else {
+          self.current_segment_index = newIndex;
+        }
+
+        if (self.current_segment_index < sequenceLength -1) {
           // Check if the remainder of the segment was complete at an earlier time
           // and perhaps now the whole segment is done:
           var i_user = self.current_segment_index;
           var i_union = self.current_segment_index;
-          var seq = self.current_segment['sequence'];
-          var len = seq.length;
-          while (i_user < len && seq[i_user].rids.some(reviewedByTeam)) {
+          while (i_user < sequenceLength && sequence[i_user].rids.some(reviewedByTeam)) {
             i_user += 1;
           }
-          while (i_union < len && 0 !== seq[i_union].rids.length) {
+          while (i_union < sequenceLength && 0 !== sequence[i_union].rids.length) {
             i_union += 1;
           }
-          if (i_user === len) {
+          var cellIDs = [];
+          if (i_user === sequenceLength) {
+            cellIDs.push(session.userid);
             CATMAID.msg('DONE', 'Segment fully reviewed: ' +
                 self.current_segment['nr_nodes'] + ' nodes');
-            var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-' + session.userid);
-            cell.text('100.00%');
-            cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
-            self.current_segment['status'] = '100.00';
-            // Don't startSkeletonToReview, because self.current_segment_index
-            // would be lost, losing state for q/w navigation.
           }
-          if (i_union === len) {
-            var cell = $('#rev-status-cell-' + self.current_segment['id'] + '-union');
-            cell.text('100.00%');
-            cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
-            self.current_segment['status'] = '100.00';
-            // Don't startSkeletonToReview, because self.current_segment_index
-            // would be lost, losing state for q/w navigation.
-          }
+          if (i_union === sequenceLength) cellIDs.push('union');
+          if (cellIDs.length > 0) markSegmentDone(self.current_segment, cellIDs);
+          // Don't startSkeletonToReview, because self.current_segment_index
+          // would be lost, losing state for q/w navigation.
         }
 
         self.warnIfNodeSkipsSections();
@@ -261,6 +426,20 @@
       // Select the (potentially new) current node
       self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
     };
+
+    /**
+     * Set the segment status to 100% and reflect this in the table cells
+     * identified with cellIDs.
+     */
+    function markSegmentDone(segment, cellIDs) {
+      cellIDs.forEach(function(s) {
+        var cell = $('#rev-status-cell-' + segment['id'] + '-' + s);
+        cell.text('100.00%');
+        cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
+      });
+
+      segment['status'] = '100.00';
+    }
 
     /**
      * Tests if a review was reviewd by the current user
@@ -283,20 +462,31 @@
       return false;
     }
 
+    /**
+     * Create a warning message if the distance between the current and the last
+     * node (or last skipping step) is larger than what is allowed to be
+     * skipped.
+     */
     this.warnIfNodeSkipsSections = function () {
       if (0 === self.current_segment_index) {
         return;
       }
-      var zdiff = (self.current_segment.sequence[self.current_segment_index].z -
-            self.current_segment.sequence[self.current_segment_index-1].z) /
-            project.focusedStack.resolution.z;
-      if (Math.abs(zdiff) > 1) CATMAID.msg("Skipped sections",
-        "This node is " + Math.abs(zdiff) + " sections away from the previous node.",
-        {style: 'warning'});
+      var cn = self.current_segment.sequence[self.current_segment_index];
+      var ln = skipStep ? skipStep :
+        self.current_segment.sequence[self.current_segment_index - 1];
+      var zdiff = project.focusedStack.projectToStackZ(
+          cn.z - ln.z, cn.y - ln.y, cn.x - ln.x);
+      if (Math.abs(zdiff) > self.virtualNodeStep) {
+        CATMAID.msg("Skipped sections", "This node is " + Math.abs(zdiff) +
+            " sections away from the previous node.", {style: 'warning'});
+      }
     };
 
     var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
 
+    /**
+     * Mark the given node as reviewed in the back-end.
+     */
     this.markAsReviewed = function( node_ob ) {
       submit(django_url+projectID+"/node/" + node_ob['id'] + "/reviewed", {},
           function(json) {
@@ -329,6 +519,9 @@
      * be executed after all pending requests.
      */
     this.selectNextSegment = function() {
+      // Reset skipping step, if any
+      skipStep = null;
+      // Find nexte segment
       if (self.skeleton_segments) {
         var fn = function() {
           var nSegments = self.skeleton_segments.length;
@@ -612,16 +805,15 @@
       resetFn("reset-own");
     };
 
-    var loadImageCallback = function (queuedTiles, cachedTiles) {
-      $('#counting-cache').text(cachedTiles + '/' + (cachedTiles + queuedTiles));
+    var loadImageCallback = function (container, name, queuedTiles, cachedTiles) {
+      $(container).text(name + ': ' + cachedTiles + '/' + (cachedTiles + queuedTiles));
     };
 
     this.cacheImages = function() {
       if (!checkSkeletonID()) {
         return;
       }
-      var tilelayer = project.focusedStack.getLayers()['TileLayer'],
-        startsegment = -1, endsegment = 0, locations = [];
+      var startsegment = -1, endsegment = 0, locations = [];
 
       for(var idx in self.skeleton_segments) {
         if( self.skeleton_segments[idx]['status'] !== "100.00" ) {
@@ -640,7 +832,18 @@
       }
 
       $('#counting-cache-info').text( 'From segment: ' + startsegment + ' to ' + endsegment );
-      tilelayer.cacheLocations(locations, loadImageCallback);
+      var counterContainer = $('#counting-cache');
+      counterContainer.empty();
+      project.getStacks().forEach(function(stack) {
+        var tilelayer = stack.getLayers()['TileLayer'];
+        // Create loading information text for each stack
+        var layerCounter = document.createElement('div');
+        counterContainer.append(layerCounter);
+        if (tilelayer) {
+          tilelayer.cacheLocations(locations,
+              loadImageCallback.bind(self, layerCounter, stack.title));
+        }
+      });
     };
   }();
 

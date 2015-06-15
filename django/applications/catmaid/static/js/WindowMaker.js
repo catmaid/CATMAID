@@ -2266,7 +2266,25 @@ var WindowMaker = new function()
         bar.setAttribute('class', 'buttonpanel');
 
         var RS = CATMAID.ReviewSystem;
+        RS.init();
+
         var tabs = appendTabs(bar, '-review', ['Main', 'Miscellaneous']);
+
+        var orientationsSel = [
+          ['XY', Stack.ORIENTATION_XY],
+          ['XZ', Stack.ORIENTATION_XZ],
+          ['ZY', Stack.ORIENTATION_ZY]
+        ].reduce(function(select, ro) {
+          var active = (ro[1] === RS.referenceOrientation);
+          select.options.add(new Option(ro[0], ro[1], active, active));
+          return select;
+         }, document.createElement('select'));
+        orientationsSel.onchange = function() {
+          RS.referenceOrientation = parseInt(this.value, 10);
+        };
+        var orientations = document.createElement('label');
+        orientations.appendChild(document.createTextNode('Ref. orientation'));
+        orientations.appendChild(orientationsSel);
 
         appendToTab(tabs['Main'],
             [
@@ -2276,12 +2294,16 @@ var WindowMaker = new function()
                   RS.startReviewActiveSkeleton.bind(RS, true)],
               ['End review', RS.endReview.bind(RS)],
               ['Reset own revisions', RS.resetOwnRevisions.bind(RS)],
+              [orientations],
               ['Auto centering', RS.getAutoCentering(),
                   function() { RS.setAutoCentering(this.checked); }, false]
             ]);
 
         appendToTab(tabs['Miscellaneous'],
             [
+              ['In-between node step', RS.virtualNodeStep, null, function() {
+                  RS.virtualNodeStep = parseInt(this.value, 10);
+                }, 3],
               ['Cache tiles', false, RS.cacheImages.bind(this), false],
               ['No refresh after segment done', RS.noRefreshBetwenSegments,
                   function() { RS.noRefreshBetwenSegments = this.checked; }, false]
@@ -2314,8 +2336,6 @@ var WindowMaker = new function()
         addListener(win, container, 'review_window_buttons');
 
         addLogic(win);
-
-        CATMAID.ReviewSystem.init();
 
         return win;
     };

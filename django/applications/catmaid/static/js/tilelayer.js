@@ -396,11 +396,15 @@
     var self = this;
 
     var tileIndices = locations.reduce(function (tileInds, loc) {
+      var px = self.stack.projectToStackX(loc[2], loc[1], loc[0]);
+      var py = self.stack.projectToStackY(loc[2], loc[1], loc[0]);
+      var pz = self.stack.projectToStackZ(loc[2], loc[1], loc[0]);
+
       var tileInfo = self.tilesForLocation(
           // Convert project coords to scaled stack coords of a view corner.
-          loc[0] * self.stack.scale / self.stack.resolution.x - self.stack.viewWidth / 2,
-          loc[1] * self.stack.scale / self.stack.resolution.y - self.stack.viewHeight / 2,
-          Math.floor(loc[2] / self.stack.resolution.z),
+          self.stack.scale * px - self.stack.viewWidth / 2,
+          self.stack.scale * py - self.stack.viewHeight / 2,
+          pz,
           s);
       for (var i = tileInfo.first_col; i <= tileInfo.last_col; ++i)
         for (var j = tileInfo.first_row; j <= tileInfo.last_row; ++j)

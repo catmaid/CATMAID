@@ -119,7 +119,6 @@ function Project( pid )
 			}
 		}
 		CATMAID.ui.onresize();
-		return;
 	};
 	
 	/**
@@ -131,7 +130,6 @@ function Project( pid )
 		if ( tool )
 			self.focusedStack.setTool( tool );
 		window.onresize();
-		return;
 	};
 	
 	/**
@@ -144,7 +142,6 @@ function Project( pid )
 			if ( self.focusedStack == stacks[ i ] ) break;
 			
 		stacks[ ( i + stacks.length + s ) % stacks.length ].getWindow().focus();
-		return;
 	};
 
 	//!< Associative array of selected objects
@@ -212,7 +209,6 @@ function Project( pid )
 		}
 		window.onresize();
 		WindowMaker.setKeyShortcuts();
-		return;
 	};
 
 	this.getTool = function( )
@@ -240,7 +236,6 @@ function Project( pid )
 				document.getElementById( "show_button_text" ).className = "button_active";
 			}
 		}
-		return;
 	};
 	
 	/**
@@ -255,8 +250,6 @@ function Project( pid )
 		//window.onresize();
 		
 		document.onkeydown = onkeydown;
-		
-		return;
 	};
 	
 	/**
@@ -291,8 +284,6 @@ function Project( pid )
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 
 		project = null;
-
-		return;
 	};
 
 	/**

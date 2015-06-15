@@ -1716,7 +1716,8 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   }, this);
 
   // Disable any unused instances
-  this.graphics.disableBeyond(jso[0].length, jso[1].length);
+  var nTreeNodes = jso[0].length + (extraNodes ? extraNodes.length : 0);
+  this.graphics.disableBeyond(nTreeNodes, jso[1].length);
 
   // Now that all Node instances are in place, loop nodes again
   // and set correct parent objects and parent's children update

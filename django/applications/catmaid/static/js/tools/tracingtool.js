@@ -22,9 +22,9 @@
 
     var self = this;
     // Currently focused tracing layer
-    var tracingLayer = null;
+    var activeTracingLayer = null;
     // Currently focused stack
-    var stack = null;
+    var activeStack = null;
     // Map stacks to its mouse handlers
     var bindings = new Map();
 
@@ -36,12 +36,12 @@
 
     this.updateLayer = function()
     {
-      tracingLayer.svgOverlay.updateNodes();
+      activeTracingLayer.svgOverlay.updateNodes();
     };
 
     this.deselectActiveNode = function()
     {
-      tracingLayer.svgOverlay.activateNode(null);
+      activeTracingLayer.svgOverlay.activateNode(null);
     };
 
     var setupSubTools = function()
@@ -62,7 +62,7 @@
       value = Boolean(value);
       project.getStacks().forEach(function(s) {
         // Exclude stack that is currently bound to the tracing tool
-        if (excludeActive && stack === s) return;
+        if (excludeActive && activeStack === s) return;
         // Set suspended state for each known tracing layer
         var layer = s.getLayer(getTracingLayerName(s));
         if (layer) layer.svgOverlay.suspended = value;
@@ -73,7 +73,7 @@
     {
       project.getStacks().forEach(function(s) {
         // Exclude stack that is currently bound to the tracing tool
-        if (excludeActive && stack === s) return;
+        if (excludeActive && activeStack === s) return;
         // Update nodes in each known tracing layer
         var layer = s.getLayer(getTracingLayerName(s));
         if (layer) layer.svgOverlay.updateNodes();
@@ -90,7 +90,7 @@
 
     var disableLayerUpdate = function() {
       CATMAID.warn("Temporary disabling node update until panning is over");
-      tracingLayer.svgOverlay.suspended = true;
+      activeTracingLayer.svgOverlay.suspended = true;
     };
 
     /**
@@ -189,16 +189,16 @@
 
     function activateStack(newStack, layer)
     {
-      stack = newStack;
-      tracingLayer = layer;
-      self.prototype.setMouseCatcher( tracingLayer.svgOverlay.view );
+      activeStack = newStack;
+      activeTracingLayer = layer;
+      self.prototype.setMouseCatcher( activeTracingLayer.svgOverlay.view );
 
       // Call register AFTER changing the mouseCatcher
-      self.prototype.register( stack, "edit_button_trace" );
+      self.prototype.register( activeStack, "edit_button_trace" );
 
       // NOW set the mode TODO cleanup this initialization problem
       SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
-      tracingLayer.svgOverlay.updateNodes();
+      activeTracingLayer.svgOverlay.updateNodes();
     }
 
     /**
@@ -214,8 +214,8 @@
       // Update annotation cache for the current project
       annotations.update();
 
-      if (tracingLayer && stack) {
-        if (stack !== parentStack) {
+      if (activeTracingLayer && activeStack) {
+        if (activeStack !== parentStack) {
           // If the tracing layer exists and it belongs to a different stack,
           // replace it.
           var existingLayer = parentStack.getLayer(getTracingLayerName(parentStack));
@@ -323,7 +323,7 @@
       });
 
       // Forget the current stack
-      self.stack = null;
+      self.activeStack = null;
 
       return;
     };
@@ -332,18 +332,19 @@
     {
       WebGLApplication.prototype.staticUpdateZPlane();
 
-      stack.moveToPixel( val, stack.y, stack.x, stack.s );
+      activeStack.moveToPixel( val, activeStack.y, activeStack.x, activeStack.s );
     };
 
 
     var updateStatusBar = function( e ) {
-      var m = CATMAID.ui.getMouse(e, tracingLayer.svgOverlay.view, true);
+      var m = CATMAID.ui.getMouse(e, activeTracingLayer.svgOverlay.view, true);
       var offX, offY, pos_x, pos_y;
       if (m) {
         offX = m.offsetX;
         offY = m.offsetY;
 
         // TODO pos_x and pos_y never change
+        var stack = activeStack;
         pos_x = stack.translation.x + (stack.x + (offX - stack.viewWidth / 2) / stack.scale) * stack.resolution.x;
         pos_y = stack.translation.x + (stack.y + (offY - stack.viewHeight / 2) / stack.scale) * stack.resolution.y;
         CATMAID.statusBar.replaceLast("[" + pos_x.toFixed(3) + ", " + pos_y.toFixed(3) + "]" + " stack.x,y: " + stack.x + ", " + stack.y);
@@ -405,9 +406,9 @@
           }
           // If any modifier key is pressed, remove the tag
           if (modifier) {
-            SkeletonAnnotations.Tag.removeATNLabel(tag, tracingLayer.svgOverlay);
+            SkeletonAnnotations.Tag.removeATNLabel(tag, activeTracingLayer.svgOverlay);
           } else {
-            SkeletonAnnotations.Tag.tagATNwithLabel(tag, tracingLayer.svgOverlay, false);
+            SkeletonAnnotations.Tag.tagATNwithLabel(tag, activeTracingLayer.svgOverlay, false);
           }
           return true;
         };
@@ -455,7 +456,7 @@
           var skid = SkeletonAnnotations.getActiveSkeletonId();
           if (Number.isInteger(skid)) WebGLApplication.prototype.staticReloadSkeletons([skid]);
         } else {
-          tracingLayer.svgOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
+          activeTracingLayer.svgOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
         }
         return true;
       }
@@ -467,7 +468,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, e.altKey);
+        activeTracingLayer.svgOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, e.altKey);
         return true;
       }
     } ) );
@@ -478,7 +479,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.goToNextBranchOrEndNode(SkeletonAnnotations.getActiveNodeId(), e);
+        activeTracingLayer.svgOverlay.goToNextBranchOrEndNode(SkeletonAnnotations.getActiveNodeId(), e);
         return true;
       }
     } ) );
@@ -489,7 +490,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.goToPreviousBranchOrRootNode(SkeletonAnnotations.getActiveNodeId(), e);
+        activeTracingLayer.svgOverlay.goToPreviousBranchOrRootNode(SkeletonAnnotations.getActiveNodeId(), e);
         return true;
       }
     } ) );
@@ -501,7 +502,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.activateNode(null);
+        activeTracingLayer.svgOverlay.activateNode(null);
         return true;
       }
     }) );
@@ -512,7 +513,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), false);
+        activeTracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), false);
         return true;
       }
     }) );
@@ -523,7 +524,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, false);
+        activeTracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, false);
         return true;
       }
     }) );
@@ -534,7 +535,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
+        activeTracingLayer.svgOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
             e.shiftKey);
         return true;
       }
@@ -546,7 +547,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.goToLastEditedNode(SkeletonAnnotations.getActiveSkeletonId());
+        activeTracingLayer.svgOverlay.goToLastEditedNode(SkeletonAnnotations.getActiveSkeletonId());
         return true;
       }
     }) );
@@ -563,21 +564,21 @@
               function (skids) { SelectionTable.getLastFocused().addSkeletons(skids); };
           var atnID = SkeletonAnnotations.getActiveNodeId();
 
-          tracingLayer.svgOverlay.selectRadius(
+          activeTracingLayer.svgOverlay.selectRadius(
               atnID,
               true,
               function (radius) {
                 if (typeof radius === 'undefined') return;
 
                 var respectVirtualNodes = true;
-                var node = tracingLayer.svgOverlay.nodes[atnID];
-                var selectedIDs = tracingLayer.svgOverlay.findAllNodesWithinRadius(
-                    stack.stackToProjectX(node.z, node.y, node.x),
-                    stack.stackToProjectY(node.z, node.y, node.x),
-                    stack.stackToProjectZ(node.z, node.y, node.x),
+                var node = activeTracingLayer.svgOverlay.nodes[atnID];
+                var selectedIDs = activeTracingLayer.svgOverlay.findAllNodesWithinRadius(
+                    activeStack.stackToProjectX(node.z, node.y, node.x),
+                    activeStack.stackToProjectY(node.z, node.y, node.x),
+                    activeStack.stackToProjectZ(node.z, node.y, node.x),
                     radius, respectVirtualNodes);
                 selectedIDs = selectedIDs.map(function (nodeID) {
-                    return tracingLayer.svgOverlay.nodes[nodeID].skeleton_id;
+                    return activeTracingLayer.svgOverlay.nodes[nodeID].skeleton_id;
                 }).filter(function (s) { return !isNaN(s); });
 
                 selectionCallback(selectedIDs);
@@ -601,7 +602,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        tracingLayer.svgOverlay.splitSkeleton(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.svgOverlay.splitSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
     }) );
@@ -614,7 +615,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        tracingLayer.svgOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.svgOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
     }) );
@@ -627,7 +628,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.toggleLabels();
+        activeTracingLayer.svgOverlay.toggleLabels();
         return true;
       }
     }) );
@@ -650,7 +651,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.switchBetweenTerminalAndConnector();
+        activeTracingLayer.svgOverlay.switchBetweenTerminalAndConnector();
         return true;
       }
     }) );
@@ -663,10 +664,10 @@
           return false;
         if (e.shiftKey) {
           // Delete all tags
-          SkeletonAnnotations.Tag.tagATNwithLabel('', tracingLayer.svgOverlay, true);
+          SkeletonAnnotations.Tag.tagATNwithLabel('', activeTracingLayer.svgOverlay, true);
           return true;
         } else if (! (e.ctrlKey || e.metaKey)) {
-          SkeletonAnnotations.Tag.tagATN(tracingLayer.svgOverlay);
+          SkeletonAnnotations.Tag.tagATN(activeTracingLayer.svgOverlay);
           return true;
         } else {
           return false;
@@ -696,7 +697,7 @@
           return false;
         if (!(e.ctrlKey || e.metaKey)) {
           var respectVirtualNodes = true;
-          tracingLayer.svgOverlay.activateNearestNode(respectVirtualNodes);
+          activeTracingLayer.svgOverlay.activateNearestNode(respectVirtualNodes);
           return true;
         } else {
           return false;
@@ -713,7 +714,7 @@
         var insert = e.altKey;
         var link = e.shiftKey;
         var postLink = e.altKey;
-        tracingLayer.svgOverlay.createNewOrExtendActiveSkeleton(insert, link, postLink);
+        activeTracingLayer.svgOverlay.createNewOrExtendActiveSkeleton(insert, link, postLink);
         return true;
       }
     }) );
@@ -724,7 +725,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        tracingLayer.svgOverlay.deleteNode(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.svgOverlay.deleteNode(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
     }) );
@@ -735,7 +736,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        tracingLayer.svgOverlay.printTreenodeInfo(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.svgOverlay.printTreenodeInfo(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
     }) );
@@ -746,7 +747,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        tracingLayer.svgOverlay.setConfidence(1, e.altKey);
+        activeTracingLayer.svgOverlay.setConfidence(1, e.altKey);
         return true;
       }
     }) );
@@ -757,7 +758,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        tracingLayer.svgOverlay.setConfidence(2, e.altKey);
+        activeTracingLayer.svgOverlay.setConfidence(2, e.altKey);
         return true;
       }
     }) );
@@ -768,7 +769,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        tracingLayer.svgOverlay.setConfidence(3, e.altKey);
+        activeTracingLayer.svgOverlay.setConfidence(3, e.altKey);
         return true;
       }
     }) );
@@ -779,7 +780,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        tracingLayer.svgOverlay.setConfidence(4, e.altKey);
+        activeTracingLayer.svgOverlay.setConfidence(4, e.altKey);
         return true;
       }
     }) );
@@ -790,7 +791,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        tracingLayer.svgOverlay.setConfidence(5, e.altKey);
+        activeTracingLayer.svgOverlay.setConfidence(5, e.altKey);
         return true;
       }
     }) );
@@ -838,7 +839,7 @@
             if (!mayEdit()) {
                 return false;
             }
-            tracingLayer.svgOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
+            activeTracingLayer.svgOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
             return true;
         }
     }) );
@@ -886,7 +887,7 @@
     this.handleKeyPress = function( e ) {
       var keyAction = keyCodeToAction[e.keyCode];
       if (keyAction) {
-        tracingLayer.svgOverlay.ensureFocused();
+        activeTracingLayer.svgOverlay.ensureFocused();
         return keyAction.run(e);
       } else {
         return false;

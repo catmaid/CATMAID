@@ -39,13 +39,10 @@ Multi-view tracing and virtual nodes:
   slightly changes the way reviews work. Review information is only stored on
   real nodes.
 
-- The review widget has two new settings: reference orientation and in-between
-  node step. By default the reference orientation is the orientation of the
-  stack it was opened from (usually XY), bat can be changed. It is used to find
-  the Z direction when looking beyond the beginning of a segment. The second
-  setting specifies how many sections can be skipped between adjacent real
-  nodes. How far this actually is depends on a stack's Z resolution. This is
-  taken from the last stack focused.
+- The review widget has a new settings: in-between node step. It specifies how
+  many sections can be skipped between adjacent real nodes. This is done with
+  respect to the currently focused stack. This stack is also used to determine
+  in which direction to move to look beyond the start of a segment.
 
 
 Neuron search:

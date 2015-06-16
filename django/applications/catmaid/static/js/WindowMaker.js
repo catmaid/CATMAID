@@ -2270,22 +2270,6 @@ var WindowMaker = new function()
 
         var tabs = appendTabs(bar, '-review', ['Main', 'Miscellaneous']);
 
-        var orientationsSel = [
-          ['XY', Stack.ORIENTATION_XY],
-          ['XZ', Stack.ORIENTATION_XZ],
-          ['ZY', Stack.ORIENTATION_ZY]
-        ].reduce(function(select, ro) {
-          var active = (ro[1] === RS.referenceOrientation);
-          select.options.add(new Option(ro[0], ro[1], active, active));
-          return select;
-         }, document.createElement('select'));
-        orientationsSel.onchange = function() {
-          RS.referenceOrientation = parseInt(this.value, 10);
-        };
-        var orientations = document.createElement('label');
-        orientations.appendChild(document.createTextNode('Ref. orientation'));
-        orientations.appendChild(orientationsSel);
-
         appendToTab(tabs['Main'],
             [
               ['Start to review skeleton',
@@ -2294,7 +2278,6 @@ var WindowMaker = new function()
                   RS.startReviewActiveSkeleton.bind(RS, true)],
               ['End review', RS.endReview.bind(RS)],
               ['Reset own revisions', RS.resetOwnRevisions.bind(RS)],
-              [orientations],
               ['Auto centering', RS.getAutoCentering(),
                   function() { RS.setAutoCentering(this.checked); }, false]
             ]);

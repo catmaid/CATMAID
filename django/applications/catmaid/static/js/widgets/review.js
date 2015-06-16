@@ -25,8 +25,6 @@
     // Set to true, if no auto-refresh should happen after a segment has been
     // rully reviewed.
     self.noRefreshBetwenSegments = false;
-    // Default reference orientation to XY
-    self.referenceOrientation = Stack.ORIENTATION_XY;
     // Specify step size for skipping consecutive virtual nodes
     self.virtualNodeStep = 1;
     // Keep track of last virtual node step, if any
@@ -36,10 +34,6 @@
     this.init = function() {
       projectID = project.id;
       followedUsers = [session.userid];
-      // Default reference orientation to currently focused stack
-      if (project.focusedStack) {
-        self.referenceOrientation = project.focusedStack.orientation;
-      }
     };
 
     this.setAutoCentering = function(centering) {
@@ -59,7 +53,7 @@
      * False otherwise.
      */
     this.isXView = function() {
-      return this.referenceOrientation === Stack.ORIENTATION_ZY;
+      return project.focusedStack.orientation === Stack.ORIENTATION_ZY;
     };
 
     /**
@@ -67,7 +61,7 @@
      * False otherwise.
      */
     this.isYView = function() {
-      return this.referenceOrientation === Stack.ORIENTATION_XZ;
+      return project.focusedStack.orientation === Stack.ORIENTATION_XZ;
     };
 
     /**
@@ -75,7 +69,7 @@
      * False otherwise.
      */
     this.isZView = function() {
-      return this.referenceOrientation === Stack.ORIENTATION_XY;
+      return project.focusedStack.orientation === Stack.ORIENTATION_XY;
     };
 
     /**

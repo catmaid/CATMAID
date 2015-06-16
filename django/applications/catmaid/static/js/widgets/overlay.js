@@ -1893,7 +1893,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
  * we should pass it the completionCallback.  Otherwise, just fire the
  * completionCallback at the end of this method.
  */
-SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCallback ) {
+SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCallback) {
   // TODO: this should also check for the size of the containing
   // div having changed.  You can see this problem if you have
   // another window open beside one with the tracing overlay -
@@ -1917,7 +1917,7 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function( stack, completionCal
     }
   }
 
-  doNotUpdate = doNotUpdate || this.suspended;
+  doNotUpdate = !force && (doNotUpdate || this.suspended);
 
   var screenScale = userprofile.tracing_overlay_screen_scaling;
   this.paper.classed('screen-scale', screenScale);

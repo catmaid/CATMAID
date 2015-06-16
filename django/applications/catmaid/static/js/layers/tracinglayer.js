@@ -22,7 +22,7 @@ function TracingLayer( stack )
 
   this.resize = function ( width, height )
   {
-    self.svgOverlay.redraw( stack );
+    self.svgOverlay.redraw();
     return;
   };
 
@@ -51,8 +51,16 @@ function TracingLayer( stack )
     // TODO: only move the nodes in the Raphael paper
     // will only update them when releasing the mouse when navigating.
 
-    self.svgOverlay.redraw( stack, completionCallback );
+    self.svgOverlay.redraw(false, completionCallback);
     return;
+  };
+
+  /**
+   * Force redrwar of the tracing layer.
+   */
+  this.forceRedraw = function(completionCallback)
+  {
+    self.svgOverlay.redraw(true, completionCallback);
   };
 
   /*

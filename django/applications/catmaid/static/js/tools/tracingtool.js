@@ -93,12 +93,17 @@
       tracingLayer.svgOverlay.suspended = true;
     };
 
-    var createTracingLayer = function( parentStack )
+    /**
+     * Add a tracing layer to the given stack. If the stack already has a
+     * tracing layer, it is used.
+     */
+    var createTracingLayer = function(parentStack)
     {
-      var layer = new TracingLayer( parentStack );
       var layerName =  getTracingLayerName(parentStack);
-      activateStack( parentStack, layer );
+      var layer = parentStack.getLayer(layerName);
+      if (layer) return layer;
 
+      layer = new TracingLayer( parentStack );
 
       parentStack.addLayer(layerName, layer);
 
@@ -218,13 +223,15 @@
             activateStack(parentStack, existingLayer);
             reactivateBindings(parentStack);
           } else {
-            createTracingLayer(parentStack);
+            var layer = createTracingLayer(parentStack);
+            activateStack( parentStack, layer);
           }
         } else {
           reactivateBindings(parentStack);
         }
       } else {
-        createTracingLayer( parentStack );
+        var layer = createTracingLayer(parentStack);
+        activateStack( parentStack, layer);
       }
 
       return;

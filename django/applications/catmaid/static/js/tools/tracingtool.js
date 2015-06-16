@@ -96,13 +96,14 @@
     var createTracingLayer = function( parentStack )
     {
       var layer = new TracingLayer( parentStack );
-
-      parentStack.addLayer( getTracingLayerName(parentStack), layer );
-
+      var layerName =  getTracingLayerName(parentStack);
       activateStack( parentStack, layer );
 
+
+      parentStack.addLayer(layerName, layer);
+
       // view is the mouseCatcher now
-      var view = tracingLayer.svgOverlay.view;
+      var view = layer.svgOverlay.view;
 
       // A handle to a delayed update
       var updateTimeout;
@@ -112,7 +113,7 @@
         switch ( CATMAID.ui.getMouseButton( e ) )
         {
           case 1:
-            tracingLayer.svgOverlay.whenclicked( e );
+            layer.svgOverlay.whenclicked( e );
             break;
           case 2:
             // Put all tracing layers, except active, in "don't update" mode
@@ -121,8 +122,8 @@
             // Attach to the node limit hit event to disable node updates
             // temporary if the limit was hit. This allows for smoother panning
             // when many nodes are visible.
-            tracingLayer.svgOverlay.on(tracingLayer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
-                disableLayerUpdate, tracingLayer);
+            layer.svgOverlay.on(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                disableLayerUpdate, layer);
             // Cancel any existing update timeout, if there is one
             if (updateTimeout) {
               clearTimeout(updateTimeout);
@@ -138,9 +139,9 @@
                 CATMAID.ui.releaseEvents();
                 CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
                 CATMAID.ui.removeEvent( "onmouseup", onmouseup );
-                tracingLayer.svgOverlay.off(tracingLayer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
-                    disableLayerUpdate, tracingLayer);
-                if (tracingLayer.svgOverlay.suspended) {
+                layer.svgOverlay.off(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                    disableLayerUpdate, layer);
+                if (layer.svgOverlay.suspended) {
                   // Wait a second before updating the view, just in case the user
                   // continues to pan to not hit the node limit again. Then make
                   // sure the next update is not stopped.
@@ -169,13 +170,14 @@
 
       // Insert a text div for the neuron name in the canvas window title bar
       var neuronnameDisplay = document.createElement( "p" );
-      neuronnameDisplay.id = "neuronName" + stack.getId();
+      neuronnameDisplay.id = "neuronName" + parentStack.getId();
       neuronnameDisplay.className = "neuronname";
       var spanName = document.createElement( "span" );
       spanName.appendChild( document.createTextNode( "" ) );
       neuronnameDisplay.appendChild( spanName );
-      stack.getWindow().getFrame().appendChild( neuronnameDisplay );
-      SkeletonAnnotations.setNeuronNameInTopbar(stack.getId(), SkeletonAnnotations.getActiveSkeletonId());
+      parentStack.getWindow().getFrame().appendChild( neuronnameDisplay );
+      SkeletonAnnotations.setNeuronNameInTopbar(parentStack.getId(),
+          SkeletonAnnotations.getActiveSkeletonId());
 
       return layer;
     };

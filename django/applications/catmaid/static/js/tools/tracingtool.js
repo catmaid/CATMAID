@@ -913,6 +913,13 @@
       self.prototype.redraw();
     };
 
+    // Initialize a tracing layer in all available stacks, but let register()
+    // take care of bindings.
+    project.getStacks().forEach(function(s) {
+      var layer = createTracingLayer(s);
+      layer.svgOverlay.updateNodes(layer.forceRedraw.bind(layer));
+		  s.getView().appendChild(layer.svgOverlay.view);
+    }, this);
   }
 
   /* Works as well for skeletons.

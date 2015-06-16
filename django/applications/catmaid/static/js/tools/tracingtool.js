@@ -97,15 +97,18 @@
      * Add a tracing layer to the given stack. If the stack already has a
      * tracing layer, it is used.
      */
-    var createTracingLayer = function(parentStack)
+    var createTracingLayer = function(parentStack, activate)
     {
       var layerName =  getTracingLayerName(parentStack);
       var layer = parentStack.getLayer(layerName);
-      if (layer) return layer;
+      if (!layer) {
+        layer = new TracingLayer( parentStack );
+        parentStack.addLayer(layerName, layer);
+      }
 
-      layer = new TracingLayer( parentStack );
+      if (!activate) return layer;
 
-      parentStack.addLayer(layerName, layer);
+      activateStack(parentStack, layer);
 
       // view is the mouseCatcher now
       var view = layer.svgOverlay.view;
@@ -223,15 +226,13 @@
             activateStack(parentStack, existingLayer);
             reactivateBindings(parentStack);
           } else {
-            var layer = createTracingLayer(parentStack);
-            activateStack( parentStack, layer);
+            var layer = createTracingLayer(parentStack, true);
           }
         } else {
           reactivateBindings(parentStack);
         }
       } else {
-        var layer = createTracingLayer(parentStack);
-        activateStack( parentStack, layer);
+        var layer = createTracingLayer(parentStack, true);
       }
 
       return;
@@ -917,7 +918,7 @@
     // Initialize a tracing layer in all available stacks, but let register()
     // take care of bindings.
     project.getStacks().forEach(function(s) {
-      var layer = createTracingLayer(s);
+      var layer = createTracingLayer(s, false);
       layer.svgOverlay.updateNodes(layer.forceRedraw.bind(layer));
 		  s.getView().appendChild(layer.svgOverlay.view);
     }, this);

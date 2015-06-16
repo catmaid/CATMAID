@@ -18,11 +18,15 @@
   function TracingTool()
   {
     this.prototype = new Navigator();
-    var self = this;
-    var tracingLayer = null;
-    var stack = null;
-    var bindings = new Map();
     this.toolname = "tracingtool";
+
+    var self = this;
+    // Currently focused tracing layer
+    var tracingLayer = null;
+    // Currently focused stack
+    var stack = null;
+    // Map stacks to its mouse handlers
+    var bindings = new Map();
 
     this.resize = function( width, height )
     {

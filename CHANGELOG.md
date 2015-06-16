@@ -26,10 +26,11 @@ realistic.
 
 Multi-view tracing and virtual nodes:
 
-- Orthogonal views on a regular XY stack can now be used for tracing as well. If
-  they are available as CATMAID stacks and opened while the tracing tool is
-  activated, tracing data will be shown in the respective orthogonal views as
-  well. Tracing can be done in these views just like in the regular XY view.
+- Orthogonal views on a regular XY stack can now also be used for neuron
+  reconstruction. If they are available as CATMAID stacks and opened while the
+  tracing tool is activated, tracing data will be shown in the respective
+  orthogonal views as well. Tracing can be done in these views just like in the
+  regular XY view.
 
 - When tracing, it is not required anymore to place a node in every section. If
   no node has been placed in a section, CATMAID will place a so called virtual node
@@ -38,8 +39,13 @@ Multi-view tracing and virtual nodes:
   slightly changes the way reviews work. Review information is only stored on
   real nodes.
 
-- Treenode Table refurbishing: far faster, supports multiple skeletons, can do
-  tag search with regular expressions and lists the skeleton treenode ID.
+- The review widget has two new settings: reference orientation and in-between
+  node step. By default the reference orientation is the orientation of the
+  stack it was opened from (usually XY), bat can be changed. It is used to find
+  the Z direction when looking beyond the beginning of a segment. The second
+  setting specifies how many sections can be skipped between adjacent real
+  nodes. How far this actually is depends on a stack's Z resolution. This is
+  taken from the last stack focused.
 
 
 Neuron search:
@@ -54,6 +60,9 @@ Miscellaneous:
 - In the connectivity widget, upstream and downstream thresholds can now be set
   at once for all seed neurons. Two drop down controls used for this will be
   displayed if there is more than one seed neuron.
+
+- Treenode Table refurbishing: far faster, supports multiple skeletons, can do
+  tag search with regular expressions and lists the skeleton treenode ID.
 
 
 Administration:

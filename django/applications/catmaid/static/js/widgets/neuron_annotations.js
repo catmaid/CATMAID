@@ -9,7 +9,6 @@
   project,
   requestQueue,
   SelectionTable,
-  TracingTool,
   WindowMaker
 */
 
@@ -224,7 +223,7 @@
     if (entity.type == 'neuron') {
       var create_handler = function(skid) {
         return function() {
-          TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skid );
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skid );
         };
       };
       // Go to nearest

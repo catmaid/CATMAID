@@ -96,7 +96,7 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
 };
 
 SkeletonMeasurementsTable.prototype._makeStringLink = function(name, skid) {
-  return '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\',' + skid + ');">' + name + '</a>';
+  return '<a href="#" onclick="CATMAID.TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\',' + skid + ');">' + name + '</a>';
 };
 
 SkeletonMeasurementsTable.prototype.clear = function() {

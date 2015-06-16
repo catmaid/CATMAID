@@ -104,7 +104,7 @@
                         data.missing_relations, data.missing_classinstances,
                         data.initialize);
                     } else {
-                      project.setTool( new TracingTool() );
+                      project.setTool( new CATMAID.TracingTool() );
                     }
                   }
             });

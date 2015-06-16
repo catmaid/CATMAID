@@ -2727,7 +2727,7 @@ var WindowMaker = new function()
             // Submit form in iframe to store autocomplete information
             submitFormInIFrame(document.getElementById('search-form'));
             // Do actual search
-            TracingTool.search();
+            CATMAID.TracingTool.search();
             // Cancel submit in this context to not reload the page
             return false;
           })

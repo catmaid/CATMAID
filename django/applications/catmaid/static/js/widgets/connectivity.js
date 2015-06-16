@@ -6,7 +6,6 @@
   project,
   requestQueue,
   SelectionTable,
-  TracingTool,
   User,
   WindowMaker
 */
@@ -1170,7 +1169,7 @@
     content.off('click', 'a[data-skeleton-id]');
     content.on('click', 'a[data-skeleton-id]', function() {
       var skeletonId = this.dataset.skeletonId;
-      TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
       return false;
     });
 

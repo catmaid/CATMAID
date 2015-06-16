@@ -9,7 +9,6 @@
   requestQueue,
   SkeletonAnnotations,
   SkeletonMeasurementsTable,
-  TracingTool,
   User,
   WindowMaker
 */
@@ -723,7 +722,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       .attr('href', '#')
       .attr('class', 'neuron-selection-link')
       .click(function() {
-        TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
+        CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
       })));
 
   // percent reviewed

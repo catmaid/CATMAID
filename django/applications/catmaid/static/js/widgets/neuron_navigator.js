@@ -14,7 +14,6 @@
   requestQueue,
   SelectionTable,
   SkeletonAnnotations,
-  TracingTool,
   TreenodeTable,
   User,
   WindowMaker
@@ -1670,7 +1669,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   container.append(activate_button);
 
   activate_button.onclick = (function() {
-    TracingTool.goToNearestInNeuronOrSkeleton('neuron', this.neuron_id);
+    CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('neuron', this.neuron_id);
   }).bind(this);
 
   var root_button = document.createElement('input');
@@ -1838,7 +1837,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   $('#' + skeleton_table_id).on('dblclick', ' tbody tr', function () {
       var aData = skeleton_datatable.fnGetData(this);
       var skeleton_id = aData[0];
-      TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton_id );
+      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton_id );
   });
 
 

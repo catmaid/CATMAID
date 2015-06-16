@@ -13,7 +13,6 @@
   session,
   SVGCanvas,
   SynapseClustering,
-  TracingTool,
   WebGLApplication,
   WindowMaker
 */
@@ -360,7 +359,7 @@ GroupGraph.prototype.init = function() {
     if (evt.originalEvent.altKey) {
       // Select in the overlay
       var models = node.data('skeletons');
-      if (1 === models.length) TracingTool.goToNearestInNeuronOrSkeleton("skeleton", models[0].id);
+      if (1 === models.length) CATMAID.TracingTool.goToNearestInNeuronOrSkeleton("skeleton", models[0].id);
     } else if (evt.originalEvent.shiftKey && (evt.originalEvent.ctrlKey || evt.originalEvent.metaKey)) {
       // Remove node
       delete this.groups[node.id()]; // if present

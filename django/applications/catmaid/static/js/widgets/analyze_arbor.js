@@ -8,7 +8,6 @@
   SelectionTable,
   SkeletonAnnotations,
   SynapseClustering,
-  TracingTool
 */
 
 "use strict";
@@ -722,7 +721,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
       'arbor cable (µm)', '# twigs',
       total_cable_vs_n_twigs,
       function(d) {
-        TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.skid);
+        CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.skid);
       },
       rows.map((function(row, i) { return {name: row[0] + ' (' + total_cable_vs_n_twigs[i].y  + ' twigs)', color: this(i)}; }).bind(d3.scale.category10())),
       true, true
@@ -734,7 +733,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
       'dendritic backbone cable (µm)', '# dendritic twigs',
       total_dendritic_backbone_cable_vs_dendritic_twigs,
       function(d) {
-        TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.skid);
+        CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.skid);
       },
       rows.map((function(row, i) { return {name: row[0] + ' (' + total_dendritic_backbone_cable_vs_dendritic_twigs[i].y  + ' twigs)', color: this(i)}; }).bind(d3.scale.category10())),
       true, true

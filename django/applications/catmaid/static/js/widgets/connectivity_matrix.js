@@ -461,7 +461,7 @@
           return;
         }
         if (1 === skeletonIDs.length) {
-          TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
         } else {
           var ST = new SelectionTable();
           var models = skeletonIDs.reduce(function(o, skid) {

@@ -1005,7 +1005,7 @@ var realInit = function()
   $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
     CATMAID.SegmentationTool.actions, 'toolbox_segmentation', ''));
 	$('#toolbox_data').replaceWith(createButtonsFromActions(
-		TracingTool.actions, 'toolbox_data', ''));
+		CATMAID.TracingTool.actions, 'toolbox_data', ''));
 
 	// Add the toolbar buttons:
 	document.getElementById( "toolbar_nav" ).style.display = "none";
@@ -1042,7 +1042,7 @@ var realInit = function()
 	login(undefined, undefined, function() {
 		var tools = {
 			navigator: Navigator,
-			tracingtool: TracingTool,
+			tracingtool: CATMAID.TracingTool,
 			segmentationtool: CATMAID.SegmentationTool,
 			classification_editor: null
 		};

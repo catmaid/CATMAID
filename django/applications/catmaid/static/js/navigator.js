@@ -51,7 +51,8 @@ function Navigator()
 			8,
 			function( val ){ CATMAID.statusBar.replaceLast( "s: " + val ); },
 			undefined,
-			false );
+			false,
+			0.05 );
 	
 	var slider_z_box = document.createElement( "div" );
 	slider_z_box.className = "box";

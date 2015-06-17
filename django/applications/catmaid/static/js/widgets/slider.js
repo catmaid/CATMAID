@@ -22,7 +22,8 @@ Slider = function(
   def,      //!< default value
   onchange, //!< method to call
   split,    //!< split value
-  forceSnap //!< whether to force input to snap to indexed values
+  forceSnap,//!< whether to force input to snap to indexed values
+  minMove   //!< a required minimum change when calling move
   )
 {
   /**
@@ -283,6 +284,10 @@ Slider = function(
     return;
   };
 
+  var clampIndex = function (index, major) {
+    return Math.max(0, Math.min((major ? majorValues.length : values.length) - 1, index));
+  };
+
   /**
    * move the slider from outside
    */
@@ -297,11 +302,16 @@ Slider = function(
         valBin[0]++;
       }
 
-      setByIndex( isValue( majorValues [ Math.max( 0, Math.min( majorValues.length - 1, valBin[0] + i ) ) ] ) );
+      setByIndex( isValue( majorValues [ clampIndex( valBin[0] + i, true ) ] ) );
     }
     else
     {
-      setByIndex( Math.max( 0, Math.min( values.length - 1, ind + i ) ) );
+      var newIndex = clampIndex(ind + i);
+      if (Math.abs(values[newIndex] - self.val) < minMove) {
+        // If the resulting move is below the minMove threshold, try moving twice.
+        newIndex = clampIndex(newIndex + i);
+      }
+      setByIndex(newIndex);
     }
   };
 

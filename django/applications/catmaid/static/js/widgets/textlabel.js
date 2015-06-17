@@ -22,7 +22,7 @@ function TextlabelTool()
     document.getElementById( typeof buttonName == "undefined" ? "edit_button_text" : buttonName ).className = "button_active";
     document.getElementById( "toolbar_text" ).style.display = "block";
     $('#textlabeleditable').change(function(e) {
-      if ($(this).attr("checked")) {
+      if ($(this).prop("checked")) {
         textlabelLayer.setEditableTextlabels();
       } else {
         textlabelLayer.setUneditableTextlabels();
@@ -927,7 +927,7 @@ TextlabelLayer = function(
 	 */
 	var handle_update = function( status, text, xml )
 	{
-    var check = $('#textlabeleditable').attr("checked");
+    var check = $('#textlabeleditable').prop("checked");
 		if ( 200 === status )
 		{
 			//alert( "data: " + text );

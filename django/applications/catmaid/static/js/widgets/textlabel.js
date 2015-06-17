@@ -492,7 +492,6 @@ Textlabel = function(
 		icon_apply.style.display = "block";
 		
 		requestQueue.register(
-			//'model/textlabel.delete.php',
             django_url + project.id + '/textlabel/delete',
 			'POST',
 			{
@@ -502,7 +501,10 @@ Textlabel = function(
 				y : self.location.y,
 				z : self.location.z
 			},
-			window.onresize ); // TODO: what is the proper way to call updateTextlabels of the tool?
+			function () {
+				icon_apply.style.display = 'none';
+				window.resize();
+			}); // TODO: what is the proper way to call updateTextlabels of the tool?
             // the window.onresize solution calls onresize about 6 times
 	};
 	

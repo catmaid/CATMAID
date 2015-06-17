@@ -38,7 +38,7 @@ var SkeletonAnnotations = {
     y: null,
     z: null,
     parent_id: null,
-    stack_id: null
+    stack_viewer_id: null
   },
 
   TYPE_NODE : "treenode",
@@ -66,12 +66,12 @@ Events.extend(SkeletonAnnotations);
  * cleared. Since the node passed is expected to come in scaled (!) stack space
  * coordinates, its position has to be unscaled.
  */
-SkeletonAnnotations.atn.set = function(node, stack_id) {
+SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
   var changed = false;
 
   if (node) {
     // Find out if there was a change
-    var stack = project.getStack(stack_id);
+    var stack_viewer = project.getStackViewer(stack_viewer_id);
     changed = (this.id !== node.id) ||
               (this.skeleton_id !== node.skeleton_id) ||
               (this.type !== node.type) ||
@@ -80,7 +80,7 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
               (this.y !== node.y)  ||
               (this.x !== node.x) ||
               (this.parent_id !== node.parent_id) ||
-              (this.stack_id !== stack_id);
+              (this.stack_viewer_id !== stack_viewer_id);
 
     // Assign new properties
     this.id = node.id;
@@ -91,7 +91,7 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
     this.y = node.y;
     this.z = node.z;
     this.parent_id = node.parent ? node.parent.id : null;
-    this.stack_id = stack_id;
+    this.stack_viewer_id = stack_viewer_id;
   } else {
     changed = true;
     // Set all to null
@@ -119,7 +119,7 @@ SkeletonAnnotations.atn.set = function(node, stack_id) {
  */
 SkeletonAnnotations.atn.promise = function()
 {
-  var overlay = SkeletonAnnotations.getSVGOverlay(this.stack_id);
+  var overlay = SkeletonAnnotations.getSVGOverlay(this.stack_viewer_id);
   var nodePromise = overlay.promiseNode(overlay.nodes[this.id]);
   function AtnPromise(atn) {
     // Override prototype's
@@ -144,10 +144,10 @@ SkeletonAnnotations.atn.promise = function()
 };
 
 /**
- * Map a stack to a displayed overlay.
+ * Map a stack viewer to a displayed overlay.
  */
-SkeletonAnnotations.getSVGOverlay = function(stack) {
-  return this.SVGOverlay.prototype._instances[stack];
+SkeletonAnnotations.getSVGOverlay = function(stackViewerId) {
+  return this.SVGOverlay.prototype._instances[stackViewerId];
 };
 
 /**
@@ -155,9 +155,9 @@ SkeletonAnnotations.getSVGOverlay = function(stack) {
  */
 SkeletonAnnotations.getSVGOverlayByPaper = function(paper) {
   var instances = this.SVGOverlay.prototype._instances;
-  for (var stackID in instances) {
-    if (instances.hasOwnProperty(stackID)) {
-      var s = instances[stackID];
+  for (var stackViewerId in instances) {
+    if (instances.hasOwnProperty(stackViewerId)) {
+      var s = instances[stackViewerId];
       if (paper === s.paper.node()) {
         return s;
       }
@@ -186,9 +186,9 @@ SkeletonAnnotations.staticSelectNode = function(nodeID) {
  */
 SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
   var instances = SkeletonAnnotations.SVGOverlay.prototype._instances;
-  for (var stack in instances) {
-    if (instances.hasOwnProperty(stack)) {
-      instances[stack].moveTo(z, y, x, fn);
+  for (var stackViewerId in instances) {
+    if (instances.hasOwnProperty(stackViewerId)) {
+      instances[stackViewerId].moveTo(z, y, x, fn);
     }
   }
 };
@@ -199,9 +199,9 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
  */
 SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
   var instances = SkeletonAnnotations.SVGOverlay.prototype._instances;
-  for (var stack in instances) {
-    if (instances.hasOwnProperty(stack)) {
-      instances[stack].moveToAndSelectNode(nodeID, fn);
+  for (var stackViewerId in instances) {
+    if (instances.hasOwnProperty(stackViewerId)) {
+      instances[stackViewerId].moveToAndSelectNode(nodeID, fn);
     }
   }
 };
@@ -258,10 +258,10 @@ SkeletonAnnotations.getActiveNodePositionW = function() {
   if (null === this.atn.id) {
     return null;
   } else {
-    var stack = project.getStack(this.atn.stack_id);
-    return {'x': stack.stackToProjectX(this.atn.z, this.atn.y, this.atn.x),
-            'y': stack.stackToProjectY(this.atn.z, this.atn.y, this.atn.x),
-            'z': stack.stackToProjectZ(this.atn.z, this.atn.y, this.atn.x)};
+    var stack = project.getStackViewer(this.atn.stack_viewer_id);
+    return {'x': stack.primaryStack.stackToProjectX(this.atn.z, this.atn.y, this.atn.x),
+            'y': stack.primaryStack.stackToProjectY(this.atn.z, this.atn.y, this.atn.x),
+            'z': stack.primaryStack.stackToProjectZ(this.atn.z, this.atn.y, this.atn.x)};
   }
 };
 
@@ -273,11 +273,11 @@ SkeletonAnnotations.getActiveNodeVector3 = function() {
 };
 
 /**
- * Get the ID of the stack the active node was selected from or null if there is
- * no active node.
+ * Get the ID of the stack viewer the active node was selected from or null if
+ * there is no active node.
  */
-SkeletonAnnotations.getActiveStackId = function() {
-  return this.atn.stack_id;
+SkeletonAnnotations.getActiveStackViewerId = function() {
+  return this.atn.stack_viewer_id;
 };
 
 /**
@@ -326,12 +326,12 @@ SkeletonAnnotations.setTracingMode = function (mode) {
 };
 
 /**
- * Set the text in the small bar next to the close button of a stack to the
- * name of the skeleton as it is given by the nameservice.
+ * Set the text in the small bar next to the close button of a stack viewer to
+ * the name of the skeleton as it is given by the nameservice.
  */
-SkeletonAnnotations.setNeuronNameInTopbar = function(stackID, skeletonID) {
+SkeletonAnnotations.setNeuronNameInTopbar = function(stackViewerId, skeletonID) {
   if (!skeletonID) return;
-  var label = $('#neuronName' + stackID);
+  var label = $('#neuronName' + stackViewerId);
   NeuronNameService.getInstance().unregister(label.data());
   label.data('skeleton_id', skeletonID);
   label.data('updateNeuronNames', function () {
@@ -343,10 +343,10 @@ SkeletonAnnotations.setNeuronNameInTopbar = function(stackID, skeletonID) {
 };
 
 /**
- * Clear the small bar next to the close button of the stack window.
+ * Clear the small bar next to the close button of the stack viewer window.
  */
-SkeletonAnnotations.clearTopbar = function(stackID) {
-  var label = $('#neuronName' + stackID);
+SkeletonAnnotations.clearTopbar = function(stackViewerId) {
+  var label = $('#neuronName' + stackViewerId);
   NeuronNameService.getInstance().unregister(label.data());
   label.text("");
 };
@@ -429,11 +429,11 @@ SkeletonAnnotations.getZOfVirtualNode = function(nodeID, matches)
 /**
  * The constructor for SVGOverlay.
  */
-SkeletonAnnotations.SVGOverlay = function(stack) {
-  this.stack = stack;
+SkeletonAnnotations.SVGOverlay = function(stackViewer) {
+  this.stackViewer = stackViewer;
 
   // Register instance
-  this.register(stack);
+  this.register(stackViewer);
 
   this.submit = submitterFn();
 
@@ -457,31 +457,31 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   /* padding beyond screen borders for fetching data and updating nodes */
   this.PAD = 256;
  
-  /* old_x and old_y record the x and y position of the stack the
+  /* old_x and old_y record the x and y position of the stack viewer the
      last time that an updateNodes request was made.  When panning
-     the stack, these are used to tell whether the user has panned
+     the stack viewer, these are used to tell whether the user has panned
      far enough to merit issuing another updateNodes. */
-  this.old_x = stack.x;
-  this.old_y = stack.y;
+  this.old_x = stackViewer.x;
+  this.old_y = stackViewer.y;
 
   this.view = document.createElement("div");
   this.view.className = "sliceSVGOverlay";
-  this.view.id = "sliceSVGOverlayId" + stack.getId();
+  this.view.id = "sliceSVGOverlayId" + stackViewer.getId();
   this.view.style.zIndex = 5;
   // Custom cursor for tracing
   this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
-  this.view.onmousemove = this.createViewMouseMoveFn(this.stack, this.coords);
+  this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
 
   this.paper = d3.select(this.view)
                   .append('svg')
                   .attr({
-                      width: stack.viewWidth,
-                      height: stack.viewHeight,
+                      width: stackViewer.viewWidth,
+                      height: stackViewer.viewHeight,
                       style: 'overflow: hidden; position: relative;'});
 // If the equal ratio between stack, SVG viewBox and overlay DIV size is not
 // maintained, this additional attribute would be necessary:
 // this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
-  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(this.paper, stack.getId());
+  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(this.paper, stackViewer.getId());
 
   // Listen to change and delete events of skeletons
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -549,9 +549,9 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
         pid: project.id,
         parent_id: node.parent_id,
         child_id: childId,
-        x: self.stack.stackToProjectX(node.z, node.y, node.x),
-        y: self.stack.stackToProjectY(node.z, node.y, node.x),
-        z: self.stack.stackToProjectZ(node.z, node.y, node.x),
+        x: self.stackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x),
+        y: self.stackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x),
+        z: self.stackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x),
         radius: node.radius,
         confidence: node.confidence,
         useneuron: node.useneuron
@@ -703,25 +703,25 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
 };
 
 /**
- * Register of stackID vs instances.
+ * Register of stack viewer ID vs instances.
  */
 SkeletonAnnotations.SVGOverlay.prototype._instances = {};
 
 /**
  * Register a new stack with this instance.
  */
-SkeletonAnnotations.SVGOverlay.prototype.register = function (stack) {
-  this._instances[stack.id] = this;
+SkeletonAnnotations.SVGOverlay.prototype.register = function (stackViewer) {
+  this._instances[stackViewer.getId()] = this;
 };
 
 /**
- * Unregister this overlay from all stacks.
+ * Unregister this overlay from all stack viewers.
  */
 SkeletonAnnotations.SVGOverlay.prototype.unregister = function () {
-  for (var stack in this._instances) {
-    if (this._instances.hasOwnProperty(stack)) {
-      if (this === this._instances[stack]) {
-        delete this._instances[stack];
+  for (var stackViewerId in this._instances) {
+    if (this._instances.hasOwnProperty(stackViewerId)) {
+      if (this === this._instances[stackViewerId]) {
+        delete this._instances[stackViewerId];
       }
     }
   }
@@ -737,23 +737,23 @@ SkeletonAnnotations.SVGOverlay.prototype.getNodes = function() {
 };
 
 /**
- * The stack this overlay is registered with.
+ * The stack viewer this overlay is registered with.
  */
-SkeletonAnnotations.SVGOverlay.prototype.getStack = function() {
-  return this.stack;
+SkeletonAnnotations.SVGOverlay.prototype.getStackViewer = function() {
+  return this.stackViewer;
 };
 
 /**
  * Stores the current mouse coordinates in unscaled stack coordinates in the
  * @coords parameter.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack, coords) {
+SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stackViewer, coords) {
   return function(e) {
-    var m = CATMAID.ui.getMouse(e, stack.getView(), true);
+    var m = CATMAID.ui.getMouse(e, stackViewer.getView(), true);
     if (m) {
-      var screenPosition = stack.screenPosition();
-      coords.lastX = screenPosition.left + m.offsetX / stack.scale;
-      coords.lastY = screenPosition.top  + m.offsetY / stack.scale;
+      var screenPosition = stackViewer.screenPosition();
+      coords.lastX = screenPosition.left + m.offsetX / stackViewer.scale;
+      coords.lastY = screenPosition.top  + m.offsetY / stackViewer.scale;
       // This function is called often, so the least memory consuming way should
       // be used to create the status bar update.
       CATMAID.statusBar.printCoords('['+ Math.round(coords.lastX) + ", " +
@@ -769,7 +769,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stack,
  * of surprising bugs happen...
  */
 SkeletonAnnotations.SVGOverlay.prototype.ensureFocused = function() {
-  var win = this.stack.getWindow();
+  var win = this.stackViewer.getWindow();
   if (win.hasFocus()) {
     return false;
   } else {
@@ -864,7 +864,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     // Check if the node is already selected/activated
     if (node.id === atn.id && node.skeleton_id === atn.skeleton_id) {
       // Update coordinates
-      atn.set(node, this.getStack().getId());
+      atn.set(node, this.getStackViewer().getId());
       return;
     }
     // Else, select the node
@@ -874,14 +874,14 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
           "Node " + node.id + ", skeleton " + node.skeleton_id :
           "Virtual node, skeleton " + node.skeleton_id;
       this.printTreenodeInfo(node.id, prefix);
-      atn.set(node, this.getStack().getId());
+      atn.set(node, this.getStackViewer().getId());
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
       if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === node.subtype) {
         CATMAID.statusBar.replaceLast("Activated abutting connector node #" + node.id);
       } else {
         CATMAID.statusBar.replaceLast("Activated synaptic connector node #" + node.id);
       }
-      atn.set(node, this.getStack().getId());
+      atn.set(node, this.getStackViewer().getId());
     }
   } else {
     // Deselect
@@ -906,7 +906,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNearestNode = function (respect
   var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
       this.coords.lastY, Number.MAX_VALUE, respectVirtualNodes);
   if (nearestnode) {
-    if (Math.abs(nearestnode.z - this.stack.z) < 0.5) {
+    if (Math.abs(nearestnode.z - this.stackViewer.z) < 0.5) {
       this.activateNode(nearestnode);
     } else {
       CATMAID.statusBar.replaceLast("No nodes were visible in the current " +
@@ -961,7 +961,7 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (
       xdiff = x - node.x;
       ydiff = y - node.y;
       // Must discard those not within current z
-      if (Math.abs(this.stack.z - node.z) > 0.5) continue;
+      if (Math.abs(this.stackViewer.z - node.z) > 0.5) continue;
       distsq = xdiff*xdiff + ydiff*ydiff;
       if (distsq < mindistsq) {
         mindistsq = distsq;
@@ -1043,8 +1043,8 @@ SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (
     x, y, z, skeleton_id, additionalNodes, respectVirtualNodes)
 {
   var nearest = { distsq: Infinity, node: null, point: null };
-  var phys_radius = (30.0 / this.stack.scale) *
-    Math.max(this.stack.resolution.x, this.stack.resolution.y);
+  var phys_radius = (30.0 / this.stackViewer.scale) *
+    Math.max(this.stackViewer.primaryStack.resolution.x, this.stackViewer.primaryStack.resolution.y);
 
   var self = this;
   // Allow virtual nodes, if wanted
@@ -1584,7 +1584,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
 
         // Check whether the Z coordinate of the new node is beyond one section away
         // from the Z coordinate of the parent node (which is the active by definition)
-        if (active_node_z !== null && Math.abs(active_node_z - nn.z) > self.stack.resolution.z) {
+        if (active_node_z !== null && Math.abs(active_node_z - nn.z) > self.stackViewer.primaryStack.resolution.z) {
           CATMAID.msg('BEWARE', 'Node added beyond one section from its parent node!');
         }
 
@@ -1676,7 +1676,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   if (extraNodes) {
     extraNodes.forEach(function(n) {
       this.nodes[n.id] = this.graphics.newNode(n.id, null, n.parent_id, n.radius,
-          n.x, n.y, n.z, n.z - this.stack.z, n.confidence, n.skeleton_id, n.can_edit);
+          n.x, n.y, n.z, n.z - this.stackViewer.z, n.confidence, n.skeleton_id, n.can_edit);
     }, this);
   }
 
@@ -1684,12 +1684,12 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   jso[0].forEach(function(a, index, array) {
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
-    var z = this.stack.projectToStackZ(a[4], a[3], a[2]);
+    var z = this.stackViewer.primaryStack.projectToStackZ(a[4], a[3], a[2]);
     this.nodes[a[0]] = this.graphics.newNode(
       a[0], null, a[1], a[6],
-      this.stack.projectToStackX(a[4], a[3], a[2]),
-      this.stack.projectToStackY(a[4], a[3], a[2]),
-      z, z - this.stack.z, a[5], a[7], a[8]);
+      this.stackViewer.primaryStack.projectToStackX(a[4], a[3], a[2]),
+      this.stackViewer.primaryStack.projectToStackY(a[4], a[3], a[2]),
+      z, z - this.stackViewer.z, a[5], a[7], a[8]);
   }, this);
 
   // Populate ConnectorNodes
@@ -1706,12 +1706,12 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
     // and confidence, a[7]: undirected nodes as array of arrays with treenode
     // id, a[8]: whether the user can edit the connector
-    var z = this.stack.projectToStackZ(a[3], a[2], a[1]);
+    var z = this.stackViewer.primaryStack.projectToStackZ(a[3], a[2], a[1]);
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0],
-      this.stack.projectToStackX(a[3], a[2], a[1]),
-      this.stack.projectToStackY(a[3], a[2], a[1]),
-      z, z - this.stack.z, a[4], subtype, a[8]);
+      this.stackViewer.primaryStack.projectToStackX(a[3], a[2], a[1]),
+      this.stackViewer.primaryStack.projectToStackY(a[3], a[2], a[1]),
+      z, z - this.stackViewer.z, a[4], subtype, a[8]);
   }, this);
 
   // Disable any unused instances
@@ -1781,7 +1781,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
       // Check if parent is also not in this section
       var p = n.parent;
       if (p && p.zdiff !== 0 && !CATMAID.tools.sameSign(n.zdiff, p.zdiff)) {
-        var vn = createVirtualNode(this.graphics, n, p, this.stack.z);
+        var vn = createVirtualNode(this.graphics, n, p, this.stackViewer.z);
         if (vn) {
           this.nodes[vn.id] = vn;
         }
@@ -1790,7 +1790,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
       for (var cid in n.children) {
         var c = n.children[cid];
         if (c.zdiff !== 0 && !CATMAID.tools.sameSign(n.zdiff, c.zdiff)) {
-          var vn = createVirtualNode(this.graphics, c, n, this.stack.z);
+          var vn = createVirtualNode(this.graphics, c, n, this.stackViewer.z);
           if (vn) {
             this.nodes[vn.id] = vn;
           }
@@ -1900,18 +1900,18 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
   // enlarged but will have extra nodes fetched for the exposed
   // area.
 
-  var stack = this.stack;
+  var stackViewer = this.stackViewer;
 
-  var doNotUpdate = stack.old_z == stack.z && stack.old_s == stack.s;
+  var doNotUpdate = stackViewer.old_z == stackViewer.z && stackViewer.old_s == stackViewer.s;
   if ( doNotUpdate )
   {
-    var sPAD = this.PAD / stack.scale;
-    var dx = this.old_x - stack.x;
+    var sPAD = this.PAD / stackViewer.scale;
+    var dx = this.old_x - stackViewer.x;
     doNotUpdate = dx < sPAD && dx > -sPAD;
     
     if ( doNotUpdate )
     {
-      var dy = this.old_y - stack.y;
+      var dy = this.old_y - stackViewer.y;
       doNotUpdate = dy < sPAD && dy > -sPAD;
     }
   }
@@ -1923,8 +1923,8 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
   // All SVG elements scale automatcally, if the viewport on the SVG data
   // changes. If in screen scale mode, where the size of all elements should
   // stay the same (regardless of zoom level), counter acting this is required.
-  var resScale = Math.max(stack.resolution.x, stack.resolution.y);
-  var dynamicScale = screenScale ? (1 / (stack.scale * resScale)) : false;
+  var resScale = Math.max(stackViewer.primaryStack.resolution.x, stackViewer.primaryStack.resolution.y);
+  var dynamicScale = screenScale ? (1 / (stackViewer.scale * resScale)) : false;
   this.graphics.scale(userprofile.tracing_overlay_scale, resScale, dynamicScale);
 
   if ( !doNotUpdate ) {
@@ -1933,7 +1933,7 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
     this.updateNodes(completionCallback);
   }
 
-  var stackViewBox = stack.createStackViewBox();
+  var stackViewBox = stackViewer.createStackViewBox();
 
   // Use project coordinates for the SVG's view box
   this.paper.attr({
@@ -1942,8 +1942,8 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
           stackViewBox.min.y,
           stackViewBox.max.x - stackViewBox.min.x,
           stackViewBox.max.y - stackViewBox.min.y].join(' '),
-      width: stack.viewWidth,     // Width and height only need to be updated on
-      height: stack.viewHeight}); // resize.
+      width: stackViewer.viewWidth,     // Width and height only need to be updated on
+      height: stackViewer.viewHeight}); // resize.
 
   if (doNotUpdate) {
     if (typeof completionCallback !== "undefined") {
@@ -1994,7 +1994,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     if (null !== atn.id) {
       CATMAID.statusBar.replaceLast("Deactivated node #" + atn.id);
     }
-    SkeletonAnnotations.clearTopbar(this.stack.getId());
+    SkeletonAnnotations.clearTopbar(this.stackViewer.getId());
     this.activateNode(null);
     handled = true;
   } else {
@@ -2025,7 +2025,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(insert, lin
   // take into account current local offset coordinates and scale
   var pos_x = this.coords.lastX;
   var pos_y = this.coords.lastY;
-  var pos_z = this.stack.z; // or this.phys2pixZ(project.coordinates.z);
+  var pos_z = this.stackViewer.z; // or this.phys2pixZ(project.coordinates.z);
 
   // get physical coordinates for node position creation
   var phys_x = this.pix2physX(pos_z, pos_y, pos_x);
@@ -2179,22 +2179,22 @@ SkeletonAnnotations.SVGOverlay.prototype.createNewOrExtendActiveSkeleton =
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (z, y, x) {
-  return this.stack.projectToStackX(z, y, x);
+  return this.stackViewer.primaryStack.projectToStackX(z, y, x);
 };
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (z, y, x) {
-  return this.stack.projectToStackY(z, y, x);
+  return this.stackViewer.primaryStack.projectToStackY(z, y, x);
 };
 SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (z, y, x) {
-  return this.stack.projectToStackZ(z, y, x);
+  return this.stackViewer.primaryStack.projectToStackZ(z, y, x);
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physX = function (z, y, x) {
-  return this.stack.stackToProjectX(z, y, x);
+  return this.stackViewer.primaryStack.stackToProjectX(z, y, x);
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physY = function (z, y, x) {
-  return this.stack.stackToProjectY(z, y, x);
+  return this.stackViewer.primaryStack.stackToProjectY(z, y, x);
 };
 SkeletonAnnotations.SVGOverlay.prototype.pix2physZ = function (z, y, x) {
-  return this.stack.stackToProjectZ(z, y, x);
+  return this.stackViewer.primaryStack.stackToProjectZ(z, y, x);
 };
 
 SkeletonAnnotations.SVGOverlay.prototype.show = function () {
@@ -2219,9 +2219,9 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
   }
 
   this.updateNodeCoordinatesinDB(function () {
-    // stack.viewWidth and .viewHeight are in screen pixels
+    // stackViewer.viewWidth and .viewHeight are in screen pixels
     // so they must be scaled and then transformed to nanometers
-    // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
+    // and stackViewer.x, .y are in absolute pixels, so they also must be brought to nanometers
     var atnid = -1; // cannot send a null
     var atntype = "";
     if (SkeletonAnnotations.getActiveNodeId() &&
@@ -2254,30 +2254,30 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
       atnid = -1;
     }
 
-    var stack = self.stack;
-    self.old_x = stack.x;
-    self.old_y = stack.y;
+    var stackViewer = self.stackViewer;
+    self.old_x = stackViewer.x;
+    self.old_y = stackViewer.y;
 
     // (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y
 
-    var halfWidth =  (stack.viewWidth  / 2) / stack.scale,
-        halfHeight = (stack.viewHeight / 2) / stack.scale;
+    var halfWidth =  (stackViewer.viewWidth  / 2) / stackViewer.scale,
+        halfHeight = (stackViewer.viewHeight / 2) / stackViewer.scale;
 
-    var x0 = stack.x - halfWidth,
-        y0 = stack.y - halfHeight,
-        z0 = stack.z;
+    var x0 = stackViewer.x - halfWidth,
+        y0 = stackViewer.y - halfHeight,
+        z0 = stackViewer.z;
 
-    var x1 = stack.x + halfWidth,
-        y1 = stack.y + halfHeight,
-        z1 = stack.z + 1; // stack.z is always in discreet units
+    var x1 = stackViewer.x + halfWidth,
+        y1 = stackViewer.y + halfHeight,
+        z1 = stackViewer.z + 1; // stackViewer.z is always in discreet units
 
-    var wx0 = stack.stackToProjectX(z0, y0, x0),
-        wy0 = stack.stackToProjectY(z0, y0, x0),
-        wz0 = stack.stackToProjectZ(z0, y0, x0);
+    var wx0 = stackViewer.primaryStack.stackToProjectX(z0, y0, x0),
+        wy0 = stackViewer.primaryStack.stackToProjectY(z0, y0, x0),
+        wz0 = stackViewer.primaryStack.stackToProjectZ(z0, y0, x0);
 
-    var wx1 = stack.stackToProjectX(z1, y1, x1),
-        wy1 = stack.stackToProjectY(z1, y1, x1),
-        wz1 = stack.stackToProjectZ(z1, y1, x1);
+    var wx1 = stackViewer.primaryStack.stackToProjectX(z1, y1, x1),
+        wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
+        wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
 
     var params = {
       left: wx0,
@@ -2319,7 +2319,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
       true,
       errCallback,
       false,
-      'stack-' + self.stack.id + '-url-' + url);
+      'stack-' + self.stackViewer.primaryStack.id + '-url-' + url);
   });
 };
 
@@ -2614,8 +2614,8 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
             return;
           }
           // Convert pixel radius components to nanometers
-          var prx = self.stack.stackToProjectX(self.stack.z, ry, rx),
-              pry = self.stack.stackToProjectY(self.stack.z, ry, rx),
+          var prx = self.stackViewer.primaryStack.stackToProjectX(self.stackViewer.z, ry, rx),
+              pry = self.stackViewer.primaryStack.stackToProjectY(self.stackViewer.z, ry, rx),
               pr = Math.round(Math.sqrt(Math.pow(prx, 2) + Math.pow(pry, 2)));
           // Callback with the selected radius
           completionCallback(pr);
@@ -2628,11 +2628,11 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
      */
     function toStack(r)
     {
-      var offsetX = self.stack.x - self.stack.viewWidth / self.stack.scale / 2;
-      var offsetY = self.stack.y - self.stack.viewHeight / self.stack.scale / 2;
+      var offsetX = self.stackViewer.x - self.stackViewer.viewWidth / self.stackViewer.scale / 2;
+      var offsetY = self.stackViewer.y - self.stackViewer.viewHeight / self.stackViewer.scale / 2;
       return {
-        x: (r.x / self.stack.scale) + offsetX,
-        y: (r.y / self.stack.scale) + offsetY
+        x: (r.x / self.stackViewer.scale) + offsetX,
+        y: (r.y / self.stackViewer.scale) + offsetY
       };
     }
 
@@ -2642,8 +2642,8 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
     function stackToProject(s)
     {
       return {
-        x: self.stack.stackToProjectX(self.stack.z, s.y, s.x),
-        y: self.stack.stackToProjectY(self.stack.z, s.y, s.x)
+        x: self.stackViewer.primaryStack.stackToProjectX(self.stackViewer.z, s.y, s.x),
+        y: self.stackViewer.primaryStack.stackToProjectY(self.stackViewer.z, s.y, s.x)
       };
     }
   }
@@ -2718,9 +2718,9 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
  * otherwise, coordinates for moved nodes would not be updated.
  */
 SkeletonAnnotations.SVGOverlay.prototype.moveTo = function(z, y, x, fn) {
-  var stack = this.stack;
+  var stackViewer = this.stackViewer;
   this.updateNodeCoordinatesinDB(function() {
-    stack.getProject().moveTo(z, y, x, undefined, fn);
+    stackViewer.getProject().moveTo(z, y, x, undefined, fn);
   });
 };
 
@@ -2777,9 +2777,9 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
           {tnid: parentID},
           function(json) {
             var p = {
-              x: self.stack.projectToStackX(json[3], json[2], json[1]),
-              y: self.stack.projectToStackY(json[3], json[2], json[1]),
-              z: self.stack.projectToStackZ(json[3], json[2], json[1])
+              x: self.stackViewer.primaryStack.projectToStackX(json[3], json[2], json[1]),
+              y: self.stackViewer.primaryStack.projectToStackY(json[3], json[2], json[1]),
+              z: self.stackViewer.primaryStack.projectToStackZ(json[3], json[2], json[1])
             };
 
             // Query child location
@@ -2788,17 +2788,17 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
                 {tnid: childID},
                 function(json) {
                   var c = {
-                    x: self.stack.projectToStackX(json[3], json[2], json[1]),
-                    y: self.stack.projectToStackY(json[3], json[2], json[1]),
-                    z: self.stack.projectToStackZ(json[3], json[2], json[1])
+                    x: self.stackViewer.primaryStack.projectToStackX(json[3], json[2], json[1]),
+                    y: self.stackViewer.primaryStack.projectToStackY(json[3], json[2], json[1]),
+                    z: self.stackViewer.primaryStack.projectToStackZ(json[3], json[2], json[1])
                   };
                   // Find intersection at virtual node
                   var pos = CATMAID.tools.intersectLineWithZPlane(c.x, c.y, c.z,
                       p.x, p.y, p.z, vnZ);
                   // Move there in project space
-                  var x = self.stack.stackToProjectX(vnZ, pos[1], pos[0]);
-                  var y = self.stack.stackToProjectY(vnZ, pos[1], pos[0]);
-                  var z = self.stack.stackToProjectZ(vnZ, pos[1], pos[0]);
+                  var x = self.stackViewer.primaryStack.stackToProjectX(vnZ, pos[1], pos[0]);
+                  var y = self.stackViewer.primaryStack.stackToProjectY(vnZ, pos[1], pos[0]);
+                  var z = self.stackViewer.primaryStack.stackToProjectZ(vnZ, pos[1], pos[0]);
                   self.moveTo(z, y, x, fn);
                 },
                 false,
@@ -2859,9 +2859,9 @@ SkeletonAnnotations.SVGOverlay.prototype.getNodeOnSectionAndEdge = function (
       // Convert previous result to project cooridnates
       return {
         id: node.id,
-        x: self.stack.stackToProjectX(node.z, node.y, node.x),
-        y: self.stack.stackToProjectY(node.z, node.y, node.x),
-        z: self.stack.stackToProjectZ(node.z, node.y, node.x)
+        x: self.stackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x),
+        y: self.stackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x),
+        z: self.stackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x)
       };
     }).then(resolve).catch(reject);
   });
@@ -2924,9 +2924,9 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
     .then(function(json) {
       return {
         id: json[0],
-        x: self.stack.projectToStackX(json[3], json[2], json[1]),
-        y: self.stack.projectToStackY(json[3], json[2], json[1]),
-        z: self.stack.projectToStackZ(json[3], json[2], json[1])
+        x: self.stackViewer.primaryStack.projectToStackX(json[3], json[2], json[1]),
+        y: self.stackViewer.primaryStack.projectToStackY(json[3], json[2], json[1]),
+        z: self.stackViewer.primaryStack.projectToStackZ(json[3], json[2], json[1])
       };
     }, function(error) {
       return Promise.reject("Could not get node location: " + error);
@@ -3271,12 +3271,12 @@ SkeletonAnnotations.SVGOverlay.prototype.nodeIsPartOfSkeleton = function(skeleto
 SkeletonAnnotations.SVGOverlay.prototype.handleActiveNodeChange = function(node) {
   if (node) {
     if (SkeletonAnnotations.TYPE_NODE === node.type) {
-      SkeletonAnnotations.setNeuronNameInTopbar(this.stack.getId(), node.skeleton_id);
+      SkeletonAnnotations.setNeuronNameInTopbar(this.stackViewer.getId(), node.skeleton_id);
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-      SkeletonAnnotations.clearTopbar(this.stack.getId());
+      SkeletonAnnotations.clearTopbar(this.stackViewer.getId());
     }
   } else {
-    SkeletonAnnotations.clearTopbar(this.stack.getId());
+    SkeletonAnnotations.clearTopbar(this.stackViewer.getId());
   }
   this.recolorAllNodes();
 };
@@ -3395,7 +3395,7 @@ SkeletonAnnotations.Tag = new (function() {
   this.handle_tagbox = function(atn, svgOverlay) {
     SkeletonAnnotations.atn.promise().then((function() {
       var atnID = SkeletonAnnotations.getActiveNodeId();
-      var stack = project.getStack(atn.stack_id);
+      var stack = project.getStackViewer(atn.stack_viewer_id);
       var screenOrigin = stack.screenPosition();
       var screenPos = [
         stack.scale * (atn.x - screenOrigin.left),

@@ -5,27 +5,11 @@
   "use strict";
 
   /**
-   * Get the part of the tile name that consists of dimensions z, t, ...
-   * For a 3D stack this will return 'z/', for a 4D stack 't/z/', etc.
-   *
-   * @param pixelPos pixel position of the stack [x, y, z, t, ...]
-   */
-  CATMAID.getTileBaseName = function (pixelPos) {
-    var n = pixelPos.length;
-    var dir = '';
-    for (var i = n - 1; i > 1; --i) {
-      dir += pixelPos[i] + '/';
-    }
-    return dir;
-  };
-
-  /**
    * Displays a grid of tiles from an image stack.
    * @constructor
+   * @param {StackViewer} stackViewer Stack viewer to which this layer belongs.
    * @param {string}  displayname  Name displayed in window controls.
    * @param {Stack}   stack        Image stack from which to draw tiles.
-   * @param {number}  tileWidth    Width of tile images in pixels.
-   * @param {number}  tileHeight   Height of tile images in pixel.
    * @param {Object}  tileSource   Tile source for generating image URLs.
    * @param {boolean} visibility   Whether the tile layer is initially visible.
    * @param {number}  opacity      Opacity to draw the layer.
@@ -33,18 +17,16 @@
    *                               stack.
    */
   function TileLayer(
+      stackViewer,
       displayname,
       stack,
-      tileWidth,
-      tileHeight,
       tileSource,
       visibility,
       opacity,
       showOverview) {
+    this.stackViewer = stackViewer;
     this.displayname = displayname;
     this.stack = stack;
-    this.tileWidth = tileWidth;
-    this.tileHeight = tileHeight;
     this.tileSource = tileSource;
     this.opacity = opacity; // in the range [0,1]
     this.visible = visibility;
@@ -63,7 +45,7 @@
     this.tilesContainer = document.createElement('div');
     this.tilesContainer.className = 'sliceTiles';
 
-    stack.getLayersView().appendChild(this.tilesContainer);
+    stackViewer.getLayersView().appendChild(this.tilesContainer);
 
     if (showOverview) {
       // Initialize the OverviewLayer on the bottom-right with the correct
@@ -138,21 +120,23 @@
    * Update and draw the tile grid based on the current stack position and scale.
    */
   TileLayer.prototype.redraw = function (completionCallback) {
-    var pixelPos = [this.stack.x, this.stack.y, this.stack.z];
-    var tileBaseName = CATMAID.getTileBaseName(pixelPos);
+    var tileInfo = this.tilesForLocation(
+        this.stackViewer.xc,
+        this.stackViewer.yc,
+        this.stackViewer.z,
+        this.stackViewer.s);
 
-    var tileInfo = this.tilesForLocation(this.stack.xc, this.stack.yc, this.stack.z, this.stack.s);
-
-    var effectiveTileWidth = this.tileWidth * tileInfo.mag;
-    var effectiveTileHeight = this.tileHeight * tileInfo.mag;
+    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag;
+    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag;
 
     var rows = this._tiles.length, cols = this._tiles[0].length;
 
     // If panning only (no scaling, no browsing through z)
-    if (this.stack.z == this.stack.old_z && this.stack.s == this.stack.old_s)
+    if (this.stackViewer.z == this.stackViewer.old_z &&
+        this.stackViewer.s == this.stackViewer.old_s)
     {
-      var old_fr = Math.floor(this.stack.old_yc / effectiveTileHeight);
-      var old_fc = Math.floor(this.stack.old_xc / effectiveTileWidth);
+      var old_fr = Math.floor(this.stackViewer.old_yc / effectiveTileHeight);
+      var old_fc = Math.floor(this.stackViewer.old_xc / effectiveTileWidth);
 
       // Compute panning in X and Y
       var xd = tileInfo.first_col - old_fc;
@@ -184,22 +168,22 @@
     var top;
     var left;
 
-    if (this.stack.yc >= 0)
-      top  = -(this.stack.yc % effectiveTileHeight);
+    if (this.stackViewer.yc >= 0)
+      top  = -(this.stackViewer.yc % effectiveTileHeight);
     else
-      top  = -((this.stack.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
-    if (this.stack.xc >= 0)
-      left = -(this.stack.xc % effectiveTileWidth);
+      top  = -((this.stackViewer.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
+    if (this.stackViewer.xc >= 0)
+      left = -(this.stackViewer.xc % effectiveTileWidth);
     else
-      left = -((this.stack.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
+      left = -((this.stackViewer.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
 
     var t = top;
     var l = left;
 
     // If zooming or changing z sections (not panning), attempt to preload
     // images to paint at once (but let regular code run for new stacks.)
-    this._buffering = this.stack.z !== this.stack.old_z ||
-                      this.stack.s !== this.stack.old_s;
+    this._buffering = this.stackViewer.z !== this.stackViewer.old_z ||
+                      this.stackViewer.s !== this.stackViewer.old_s;
 
     var to_buffer =
         (tileInfo.last_col - Math.max(0, tileInfo.first_col) + 1) *
@@ -245,8 +229,7 @@
 
         if (c >= 0 && c <= tileInfo.last_col &&
             r >= 0 && r <= tileInfo.last_row) {
-          var source = this.tileSource.getTileURL(project, this.stack,
-              tileBaseName, this.tileWidth, this.tileHeight,
+          var source = this.tileSource.getTileURL(project, this.stack, this.stackViewer,
               c, r, tileInfo.zoom);
 
           tile.style.top = t + 'px';
@@ -332,8 +315,8 @@
    * @param  {number} height Height of the view in pixels.
    */
   TileLayer.prototype.resize = function (width, height) {
-    var rows = Math.ceil(height / this.tileHeight) + 1;
-    var cols = Math.ceil(width / this.tileWidth) + 1;
+    var rows = Math.ceil(height / this.tileSource.tileHeight) + 1;
+    var cols = Math.ceil(width / this.tileSource.tileWidth) + 1;
     if (this._tiles.length === 0 || this._tiles.length !== rows || this._tiles[0].length !== cols)
       this._initTiles(rows, cols);
     this.redraw();
@@ -376,9 +359,7 @@
           self.cacheTiles(tileIndices, progressCallback, cachedCounter + numLoaders, loaders);
       };
       img.src = self.tileSource.getTileURL(
-          project, self.stack,
-          CATMAID.getTileBaseName(tileInd.slice(0, 3)),
-          self.tileWidth, self.tileHeight,
+          project, self.stack, self.stackViewer,
           tileInd[0], tileInd[1], tileInd[3]);
     });
   };
@@ -392,18 +373,18 @@
    * @param  {function(number, number)} progressCallback
    */
   TileLayer.prototype.cacheLocations = function (locations, progressCallback) {
-    var s = this.stack.s;
+    var s = this.stackViewer.s;
     var self = this;
 
     var tileIndices = locations.reduce(function (tileInds, loc) {
-      var px = self.stack.projectToStackX(loc[2], loc[1], loc[0]);
-      var py = self.stack.projectToStackY(loc[2], loc[1], loc[0]);
-      var pz = self.stack.projectToStackZ(loc[2], loc[1], loc[0]);
+      var px = self.stackViewer.primaryStack.projectToStackX(loc[2], loc[1], loc[0]);
+      var py = self.stackViewer.primaryStack.projectToStackY(loc[2], loc[1], loc[0]);
+      var pz = self.stackViewer.primaryStack.projectToStackZ(loc[2], loc[1], loc[0]);
 
       var tileInfo = self.tilesForLocation(
           // Convert project coords to scaled stack coords of a view corner.
-          self.stack.scale * px - self.stack.viewWidth / 2,
-          self.stack.scale * py - self.stack.viewHeight / 2,
+          self.stackViewer.scale * px - self.stackViewer.viewWidth / 2,
+          self.stackViewer.scale * py - self.stackViewer.viewHeight / 2,
           pz,
           s);
       for (var i = tileInfo.first_col; i <= tileInfo.last_col; ++i)
@@ -450,8 +431,8 @@
       mag = Math.pow(2, zoom - s);
     }
 
-    var effectiveTileWidth = this.tileWidth * mag;
-    var effectiveTileHeight = this.tileHeight * mag;
+    var effectiveTileWidth = this.tileSource.tileWidth * mag;
+    var effectiveTileHeight = this.tileSource.tileHeight * mag;
 
     var fr = Math.floor(yc / effectiveTileHeight);
     var fc = Math.floor(xc / effectiveTileWidth);
@@ -461,12 +442,12 @@
     // Adjust last tile index to display to the one intersecting the bottom right
     // of the field of view. The purpose: to hide images beyond the stack edges.
     // Notice that we add the panning xd, yd as well (which is already in tile units).
-    lc = Math.floor((xc + this.stack.viewWidth) / effectiveTileWidth);
-    lr = Math.floor((yc + this.stack.viewHeight) / effectiveTileHeight);
+    lc = Math.floor((xc + this.stackViewer.viewWidth) / effectiveTileWidth);
+    lr = Math.floor((yc + this.stackViewer.viewHeight) / effectiveTileHeight);
 
     // Clamp last tile coordinates within the slice edges.
-    lc = Math.min(lc, Math.floor((this.stack.dimension.x * Math.pow(2, -zoom) - 1) / this.tileWidth));
-    lr = Math.min(lr, Math.floor((this.stack.dimension.y * Math.pow(2, -zoom) - 1) / this.tileHeight));
+    lc = Math.min(lc, Math.floor((this.stack.dimension.x * Math.pow(2, -zoom) - 1) / this.tileSource.tileWidth));
+    lr = Math.min(lr, Math.floor((this.stack.dimension.y * Math.pow(2, -zoom) - 1) / this.tileSource.tileHeight));
 
     return {
       first_row: fr,
@@ -483,6 +464,11 @@
    * Get the stack.
    */
   TileLayer.prototype.getStack = function () { return this.stack; };
+
+  /**
+   * Get the stack viewer.
+   */
+   TileLayer.prototype.getStackViewer = function () { return this.stackViewer; };
 
   /**
    * Get the DOM element view for this layer.

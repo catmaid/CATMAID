@@ -9,7 +9,7 @@
 function TaggingTool()
 {
     var self = this;
-    this.stack = null;
+    this.stackViewer = null;
     this.toolname = "taggingtool";
 
     // indicate if the tags have been loaded
@@ -34,9 +34,8 @@ function TaggingTool()
      */
     this.retrieve_project_tags = function()
     {
-        var project = self.stack.getProject();
+        var project = self.stackViewer.getProject();
         var pid = project.id;
-        var sid = self.stack.getId();
         requestQueue.register(django_url + pid + '/tags/list',
             'GET', undefined, self.retrieve_project_tags_handler);
     };
@@ -47,9 +46,9 @@ function TaggingTool()
      */
     this.retrieve_stack_tags = function()
     {
-        var project = self.stack.getProject();
+        var project = self.stackViewer.getProject();
         var pid = project.id;
-        var sid = self.stack.getId();
+        var sid = self.stackViewer.primaryStack.id;
         requestQueue.register(django_url + pid + '/stack/' + sid + '/tags/list',
             'GET', undefined, self.retrieve_stack_tags_handler);
     };
@@ -127,9 +126,9 @@ function TaggingTool()
         var stack_tags = self.trim_elements( self.input_stack_tags.value );
 
         // get project and stack IDs
-        var project = self.stack.getProject();
+        var project = self.stackViewer.getProject();
         var pid = project.id;
-        var sid = self.stack.getId();
+        var sid = self.stackViewer.primaryStack.id;
 
         /* check if there was a change and return if there wasn't
          * one. Send the tags to the server otherwise.
@@ -297,16 +296,16 @@ function TaggingTool()
         document.getElementById( "edit_button_tags" ).className = "button";
         document.getElementById( "toolbar_tags" ).style.display = "none";
 
-        self.stack = null;
+        self.stackViewer = null;
     };
 
     /**
      * install this tool in a stack.
      * register all GUI control elements and event handlers
      */
-    this.register = function( parentStack )
+    this.register = function( parentStackViewer )
     {
-        self.stack = parentStack;
+        self.stackViewer = parentStackViewer;
 
         // enable button and toolbar
         document.getElementById( "edit_button_tags" ).className = "button_active";

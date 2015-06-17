@@ -6,8 +6,8 @@ QUnit.test('Multi-view stack test', function( assert ) {
     var dim = {'x': 100, 'y': 100, 'z': 100};
     var res = {'x': 0.1, 'y': 0.5, 'z': 2.0};
     var trs = {'x': 1, 'y': 2, 'z': 3};
-    return new Stack(1, 1, name, dim, res, trs,
-        [], false, 3, 4, 1, "", "", false, orientation);
+    return new Stack(1, name, dim, res, trs,
+        [], false, 3, 4, "", "", orientation);
   }
 
   // Create test stacks for each orientation

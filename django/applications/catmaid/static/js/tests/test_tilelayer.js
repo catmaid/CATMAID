@@ -6,21 +6,22 @@ QUnit.test('Tile layer test', function (assert) {
     var dim = {'x': 1000, 'y': 100, 'z': 100};
     var res = {'x': 0.1, 'y': 0.5, 'z': 2.0};
     var trs = {'x': 0, 'y': 0, 'z': 0};
-    return new Stack(1, 1, name, dim, res, trs,
-        [], false, 3, 4, 1, "", "", false, orientation);
+    return new Stack(1, name, dim, res, trs,
+        [], false, 3, 4, "", "", orientation);
   }
 
   var stack = create_stack("Test Stack", Stack.ORIENTATION_XY);
-  var tileSource = CATMAID.getTileSource(1, 'fake', 'png');
+  var stackViewer = new StackViewer(null, stack, false);
   var tileWidth = 10;
   var tileHeight = 12;
-  var tilelayer = new CATMAID.TileLayer("Test TileLayer", stack,
-      tileWidth, tileHeight, tileSource,
+  var tileSource = CATMAID.getTileSource(1, 'fake', 'png', tileWidth, tileHeight);
+  var tilelayer = new CATMAID.TileLayer(stackViewer, "Test TileLayer", stack,
+      tileSource,
       true, 1.0, false);
 
   var expCols = 5, expRows = 3;
-  stack.viewWidth = tileWidth * expCols - 1; // 49
-  stack.viewHeight = tileHeight * expRows - 1; // 35
+  stackViewer.viewWidth = tileWidth * expCols - 1; // 49
+  stackViewer.viewHeight = tileHeight * expRows - 1; // 35
   var tileInd = tilelayer.tilesForLocation(0, 0, 1, 0);
   var expected = {
     first_row: 0,

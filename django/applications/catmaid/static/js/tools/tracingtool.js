@@ -5,9 +5,9 @@
  * tracingtool.js
  *
  * requirements:
- *	 tools.js
- *	 slider.js
- *   stack.js
+ *   tools.js
+ *   slider.js
+ *   stackViewer.js
  */
 
 (function(CATMAID) {
@@ -23,8 +23,8 @@
     var self = this;
     // Currently focused tracing layer
     var activeTracingLayer = null;
-    // Currently focused stack
-    var activeStack = null;
+    // Currently focused stack viewer
+    var activeStackViewer = null;
     // Map stacks to its mouse handlers
     var bindings = new Map();
 
@@ -32,11 +32,6 @@
     {
       self.prototype.resize( width, height );
       return;
-    };
-
-    this.updateLayer = function()
-    {
-      activeTracingLayer.svgOverlay.updateNodes();
     };
 
     this.deselectActiveNode = function()
@@ -47,7 +42,7 @@
     var setupSubTools = function()
     {
       var box;
-      if ( self.prototype.stack === null ) {
+      if ( self.prototype.stackViewer === null ) {
         box = createButtonsFromActions(
           actions,
           "tracingbuttons",
@@ -60,9 +55,9 @@
     var setTracingLayersSuspended = function(value, excludeActive)
     {
       value = Boolean(value);
-      project.getStacks().forEach(function(s) {
-        // Exclude stack that is currently bound to the tracing tool
-        if (excludeActive && activeStack === s) return;
+      project.getStackViewers().forEach(function(s) {
+        // Exclude stack viewer that is currently bound to the tracing tool
+        if (excludeActive && activeStackViewer === s) return;
         // Set suspended state for each known tracing layer
         var layer = s.getLayer(getTracingLayerName(s));
         if (layer) layer.svgOverlay.suspended = value;
@@ -71,9 +66,9 @@
 
     var updateNodesInTracingLayers = function(excludeActive)
     {
-      project.getStacks().forEach(function(s) {
-        // Exclude stack that is currently bound to the tracing tool
-        if (excludeActive && activeStack === s) return;
+      project.getStackViewers().forEach(function(s) {
+        // Exclude stack viewer that is currently bound to the tracing tool
+        if (excludeActive && activeStackViewer === s) return;
         // Update nodes in each known tracing layer
         var layer = s.getLayer(getTracingLayerName(s));
         if (layer) layer.svgOverlay.updateNodes();
@@ -81,11 +76,11 @@
     };
 
     /**
-     * Return a unique name for the tracing layer of a given stack.
+     * Return a unique name for the tracing layer of a given stack viewer.
      */
-    var getTracingLayerName = function(stack)
+    var getTracingLayerName = function(stackViewer)
     {
-      return "TracingLayer" + stack.id;
+      return "TracingLayer" + stackViewer.getId();
     };
 
     var disableLayerUpdate = function() {
@@ -94,25 +89,25 @@
     };
 
     /**
-     * Add a tracing layer to the given stack. If the stack already has a
-     * tracing layer, it is used.
+     * Add a tracing layer to the given stack viewer. If the stack viewer
+     * already has a tracing layer, it is used.
      */
-    var createTracingLayer = function(parentStack)
+    var createTracingLayer = function(parentStackViewer)
     {
-      var layerName = getTracingLayerName(parentStack);
-      var layer = new TracingLayer(parentStack);
-      parentStack.addLayer(layerName, layer);
+      var layerName = getTracingLayerName(parentStackViewer);
+      var layer = new TracingLayer(parentStackViewer);
+      parentStackViewer.addLayer(layerName, layer);
 
       // Insert a text div for the neuron name in the canvas window title bar
-      var stackFrame = parentStack.getWindow().getFrame();
+      var stackFrame = parentStackViewer.getWindow().getFrame();
       var neuronnameDisplay = document.createElement( "p" );
-      neuronnameDisplay.id = "neuronName" + parentStack.getId();
+      neuronnameDisplay.id = "neuronName" + parentStackViewer.getId();
       neuronnameDisplay.className = "neuronname";
       var spanName = document.createElement( "span" );
       spanName.appendChild( document.createTextNode( "" ) );
       neuronnameDisplay.appendChild( spanName );
       stackFrame.appendChild( neuronnameDisplay );
-      SkeletonAnnotations.setNeuronNameInTopbar(parentStack.getId(),
+      SkeletonAnnotations.setNeuronNameInTopbar(parentStackViewer.getId(),
           SkeletonAnnotations.getActiveSkeletonId());
 
       return layer;
@@ -121,13 +116,13 @@
     /**
      * Create new mouse bindings for the layer's view.
      */
-    function createMouseBindings(stack, layer, mouseCatcher)
+    function createMouseBindings(stackViewer, layer, mouseCatcher)
     {
       // A handle to a delayed update
       var updateTimeout;
 
       var proto_onmousedown = mouseCatcher.onmousedown;
-      var stackBindings = {
+      var stackViewerBindings = {
         onmousedown: function( e ) {
           switch ( CATMAID.ui.getMouseButton( e ) )
           {
@@ -190,18 +185,18 @@
 
       // Assign bindings to view
       var view = layer.svgOverlay.view;
-      for (var fn in stackBindings) {
-        view[fn] = stackBindings[fn];
+      for (var fn in stackViewerBindings) {
+        view[fn] = stackViewerBindings[fn];
       }
 
-      bindings.set(stack, stackBindings);
+      bindings.set(stackViewer, stackViewerBindings);
     }
 
     /**
-     * install this tool in a stack.
+     * install this tool in a stack viewer.
      * register all GUI control elements and event handlers
      */
-    this.register = function( parentStack )
+    this.register = function( parentStackViewer )
     {
       document.getElementById( "toolbox_data" ).style.display = "block";
 
@@ -210,39 +205,39 @@
       // Update annotation cache for the current project
       annotations.update();
 
-      // Get or create the tracing layer for this stack
-      var layer = parentStack.getLayer(getTracingLayerName(parentStack));
-      if (!layer) layer = createTracingLayer(parentStack);
+      // Get or create the tracing layer for this stack viewer
+      var layer = parentStackViewer.getLayer(getTracingLayerName(parentStackViewer));
+      if (!layer) layer = createTracingLayer(parentStackViewer);
 
       // Set this layer as mouse catcher in Navigator
       var view = layer.svgOverlay.view;
       self.prototype.setMouseCatcher(view);
 
-      // Register stack with prototype, after the mouse catcher has been set.
+      // Register stack viewer with prototype, after the mouse catcher has been set.
       // This attaches mouse handlers to the view.
-      self.prototype.register(parentStack, "edit_button_trace");
+      self.prototype.register(parentStackViewer, "edit_button_trace");
 
       // Try to get existing mouse bindings for this layer
-      if (!bindings.has(parentStack)) createMouseBindings(parentStack, layer, view);
+      if (!bindings.has(parentStackViewer)) createMouseBindings(parentStackViewer, layer, view);
 
-      // Force an update and skeleton tracing mode if stack or layer changed
-      if (activeTracingLayer !== layer || activeStack !== parentStack) {
+      // Force an update and skeleton tracing mode if stack viewer or layer changed
+      if (activeTracingLayer !== layer || activeStackViewer !== parentStackViewer) {
         SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
         layer.svgOverlay.updateNodes();
       }
 
-      activeStack = parentStack;
+      activeStackViewer = parentStackViewer;
       activeTracingLayer = layer;
-      activateBindings(parentStack);
+      activateBindings(parentStackViewer);
     };
 
     /**
-     * Remove bindings for the given stack from the prototype mouse catcher. The
-     * bindings are stored in the bindings variable that is available in the
-     * closure.
+     * Remove bindings for the given stack viewer from the prototype mouse
+     * catcher. The bindings are stored in the bindings variable that is
+     * available in the closure.
      */
-    var inactivateBindings = function(stack) {
-      var handlers = bindings.get(stack);
+    var inactivateBindings = function(stackViewer) {
+      var handlers = bindings.get(stackViewer);
       var c = self.prototype.mouseCatcher;
       for (var fn in handlers) {
         if (c[fn]) delete c[fn];
@@ -251,26 +246,26 @@
 
     /**
      * Replace bindings of the mouse catcher with the stored bindings for the
-     * given stack.
+     * given stack viewer.
      */
-    var activateBindings = function(stack) {
-      var stackBindings = bindings.get(stack);
+    var activateBindings = function(stackViewer) {
+      var stackViewerBindings = bindings.get(stackViewer);
       var c = self.prototype.mouseCatcher;
-      for (var b in stackBindings) {
-        if (stackBindings.hasOwnProperty(b)) {
-          c[b] = stackBindings[b];
+      for (var b in stackViewerBindings) {
+        if (stackViewerBindings.hasOwnProperty(b)) {
+          c[b] = stackViewerBindings[b];
         }
       }
     };
 
     /**
-     * unregister all stack related mouse and keyboard controls
+     * unregister all stack viewer related mouse and keyboard controls
      */
     this.unregister = function()
     {
-      // do it before calling the prototype destroy that sets stack to null
-      if (self.prototype.stack) {
-        inactivateBindings(self.prototype.stack);
+      // do it before calling the prototype destroy that sets stack viewer to null
+      if (self.prototype.stackViewer) {
+        inactivateBindings(self.prototype.stackViewer);
       }
       // Do NOT unregister: would remove the mouseCatcher layer
       // and the annotations would disappear
@@ -284,21 +279,21 @@
      */
     this.destroy = function()
     {
-      project.getStacks().forEach(function(stack) {
+      project.getStackViewers().forEach(function(stackViewer) {
         // Remove div with the neuron's name
-        $("#neuronName" + stack.id).remove();
+        $("#neuronName" + stackViewer.getId()).remove();
 
 
-        var layerName = getTracingLayerName(stack);
-        var layer = stack.getLayer(layerName);
+        var layerName = getTracingLayerName(stackViewer);
+        var layer = stackViewer.getLayer(layerName);
         if (layer) {
           // Synchronize data with database
           layer.svgOverlay.updateNodeCoordinatesinDB();
-          // Remove layer from stack
-          stack.removeLayer(layerName);
+          // Remove layer from stack viewer
+          stackViewer.removeLayer(layerName);
 
           // the prototype destroy calls the prototype's unregister, not self.unregister
-          // do it before calling the prototype destroy that sets stack to null
+          // do it before calling the prototype destroy that sets stack viewer to null
           // TODO: remove all skeletons from staging area
           layer.svgOverlay.destroy();
 
@@ -313,8 +308,8 @@
         map.delete(key);
       });
 
-      // Forget the current stack
-      self.activeStack = null;
+      // Forget the current stack viewer
+      self.activeStackViewer = null;
 
       return;
     };
@@ -323,7 +318,7 @@
     {
       WebGLApplication.prototype.staticUpdateZPlane();
 
-      activeStack.moveToPixel( val, activeStack.y, activeStack.x, activeStack.s );
+      activeStackViewer.moveToPixel( val, activeStackViewer.y, activeStackViewer.x, activeStackViewer.s );
     };
 
 
@@ -335,10 +330,11 @@
         offY = m.offsetY;
 
         // TODO pos_x and pos_y never change
-        var stack = activeStack;
-        pos_x = stack.translation.x + (stack.x + (offX - stack.viewWidth / 2) / stack.scale) * stack.resolution.x;
-        pos_y = stack.translation.x + (stack.y + (offY - stack.viewHeight / 2) / stack.scale) * stack.resolution.y;
-        CATMAID.statusBar.replaceLast("[" + pos_x.toFixed(3) + ", " + pos_y.toFixed(3) + "]" + " stack.x,y: " + stack.x + ", " + stack.y);
+        var stackViewer = activeStackViewer;
+        // TODO pos_x and pos_y never change
+        pos_x = stackViewer.primaryStack.translation.x + (stackViewer.x + (offX - stackViewer.viewWidth  / 2) / stackViewer.scale) * stackViewer.primaryStack.resolution.x;
+        pos_y = stackViewer.primaryStack.translation.x + (stackViewer.y + (offY - stackViewer.viewHeight / 2) / stackViewer.scale) * stackViewer.primaryStack.resolution.y;
+        CATMAID.statusBar.replaceLast("[" + pos_x.toFixed(3) + ", " + pos_y.toFixed(3) + "]" + " stack x,y: " + stackViewer.x + ", " + stackViewer.y);
       }
       return true;
     };
@@ -564,9 +560,9 @@
                 var respectVirtualNodes = true;
                 var node = activeTracingLayer.svgOverlay.nodes[atnID];
                 var selectedIDs = activeTracingLayer.svgOverlay.findAllNodesWithinRadius(
-                    activeStack.stackToProjectX(node.z, node.y, node.x),
-                    activeStack.stackToProjectY(node.z, node.y, node.x),
-                    activeStack.stackToProjectZ(node.z, node.y, node.x),
+                    activeStackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x),
+                    activeStackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x),
+                    activeStackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x),
                     radius, respectVirtualNodes);
                 selectedIDs = selectedIDs.map(function (nodeID) {
                     return activeTracingLayer.svgOverlay.nodes[nodeID].skeleton_id;
@@ -905,12 +901,12 @@
       self.prototype.redraw();
     };
 
-    // Initialize a tracing layer in all available stacks, but let register()
-    // take care of bindings.
-    project.getStacks().forEach(function(s) {
+    // Initialize a tracing layer in all available stack viewers, but let
+    // register() take care of bindings.
+    project.getStackViewers().forEach(function(s) {
       var layer = createTracingLayer(s);
       layer.svgOverlay.updateNodes(layer.forceRedraw.bind(layer));
-		  s.getView().appendChild(layer.svgOverlay.view);
+      s.getView().appendChild(layer.svgOverlay.view);
     }, this);
   }
 
@@ -919,7 +915,7 @@
    * @param objectID the ID of a neuron or a skeleton.
    */
   TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
-    var projectCoordinates = project.focusedStack.projectCoordinates();
+    var projectCoordinates = project.focusedStackViewer.projectCoordinates();
     var parameters = {
       x: projectCoordinates.x,
       y: projectCoordinates.y,

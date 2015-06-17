@@ -19,10 +19,10 @@
     CATMAID.PixiLayer.call(this);
 
     // Replace tiles container.
-    this.stack.getLayersView().removeChild(this.tilesContainer);
+    this.stackViewer.getLayersView().removeChild(this.tilesContainer);
     this.tilesContainer = this.renderer.view;
     this.tilesContainer.className = 'sliceTiles';
-    this.stack.getLayersView().appendChild(this.tilesContainer);
+    this.stackViewer.getLayersView().appendChild(this.tilesContainer);
   }
 
   PixiTileLayer.prototype = Object.create(CATMAID.TileLayer.prototype);
@@ -37,7 +37,7 @@
 
     var graphic = new PIXI.Graphics();
     graphic.beginFill(0xFFFFFF,0);
-    graphic.drawRect(0,0,this.tileWidth,this.tileHeight);
+    graphic.drawRect(0,0,this.tileSource.tileWidth,this.tileSource.tileHeight);
     graphic.endFill();
     var emptyTex = graphic.generateTexture(false);
 
@@ -49,8 +49,8 @@
       for (var j = 0; j < cols; ++j) {
         this._tiles[i][j] = new PIXI.Sprite(emptyTex);
         this.batchContainer.addChild(this._tiles[i][j]);
-        this._tiles[i][j].position.x = j * this.tileWidth;
-        this._tiles[i][j].position.y = i * this.tileHeight;
+        this._tiles[i][j].position.x = j * this.tileSource.tileWidth;
+        this._tiles[i][j].position.y = i * this.tileSource.tileHeight;
 
         this._tilesBuffer[i][j] = false;
       }
@@ -61,21 +61,23 @@
 
   /** @inheritdoc */
   PixiTileLayer.prototype.redraw = function (completionCallback) {
-    var pixelPos = [this.stack.x, this.stack.y, this.stack.z];
-    var tileBaseName = CATMAID.getTileBaseName(pixelPos);
+    var tileInfo = this.tilesForLocation(
+        this.stackViewer.xc,
+        this.stackViewer.yc,
+        this.stackViewer.z,
+        this.stackViewer.s);
 
-    var tileInfo = this.tilesForLocation(this.stack.xc, this.stack.yc, this.stack.z, this.stack.s);
-
-    var effectiveTileWidth = this.tileWidth * tileInfo.mag;
-    var effectiveTileHeight = this.tileHeight * tileInfo.mag;
+    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag;
+    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag;
 
     var rows = this._tiles.length, cols = this._tiles[0].length;
 
     // If panning only (no scaling, no browsing through z)
-    if (this.stack.z == this.stack.old_z && this.stack.s == this.stack.old_s)
+    if (this.stackViewer.z == this.stackViewer.old_z &&
+        this.stackViewer.s == this.stackViewer.old_s)
     {
-      var old_fr = Math.floor(this.stack.old_yc / effectiveTileHeight);
-      var old_fc = Math.floor(this.stack.old_xc / effectiveTileWidth);
+      var old_fr = Math.floor(this.stackViewer.old_yc / effectiveTileHeight);
+      var old_fc = Math.floor(this.stackViewer.old_xc / effectiveTileWidth);
 
       // Compute panning in X and Y
       var xd = tileInfo.first_col - old_fc;
@@ -89,14 +91,14 @@
     var top;
     var left;
 
-    if (this.stack.yc >= 0)
-      top  = -(this.stack.yc % effectiveTileHeight);
+    if (this.stackViewer.yc >= 0)
+      top  = -(this.stackViewer.yc % effectiveTileHeight);
     else
-      top  = -((this.stack.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
-    if (this.stack.xc >= 0)
-      left = -(this.stack.xc % effectiveTileWidth);
+      top  = -((this.stackViewer.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
+    if (this.stackViewer.xc >= 0)
+      left = -(this.stackViewer.xc % effectiveTileWidth);
     else
-      left = -((this.stack.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
+      left = -((this.stackViewer.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
 
     // Set tile grid offset and magnification on the whole container, rather than
     // individual tiles.
@@ -121,8 +123,7 @@
 
         if (c >= 0 && c <= tileInfo.last_col &&
             r >= 0 && r <= tileInfo.last_row) {
-          var source = this.tileSource.getTileURL(project, this.stack,
-              tileBaseName, this.tileWidth, this.tileHeight,
+          var source = this.tileSource.getTileURL(project, this.stack, this.stackViewer,
               c, r, tileInfo.zoom);
 
           if (source !== tile.texture.baseTexture.imageUrl) {
@@ -136,13 +137,13 @@
           tile.visible = false;
           this._tilesBuffer[i][j] = false;
         }
-        x += this.tileWidth;
+        x += this.tileSource.tileWidth;
       }
-      y += this.tileHeight;
+      y += this.tileSource.tileHeight;
     }
 
-    if (this.stack.z === this.stack.old_z &&
-        tileInfo.zoom === Math.max(0, Math.ceil(this.stack.old_s)))
+    if (this.stackViewer.z === this.stackViewer.old_z &&
+        tileInfo.zoom === Math.max(0, Math.ceil(this.stackViewer.old_s)))
       this.renderer.render(this.stage);
 
     // If any tiles need to be buffered (that are not already being buffered):

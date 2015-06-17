@@ -26,50 +26,37 @@ function Project( pid )
 	};
 
 	/**
-	 * Add a stack to the project. The stack reference is returned. In
-	 * case a stack with the same ID is already loaded, a reference to
-	 * this existing stack is returned.
+	 * Add a stack viewer to the project.
 	 */
-	this.addStack = function( stack )
+	this.addStackViewer = function( stackViewer )
 	{
 		// Save a local reference to the currently focused stack, because it gets
 		// overwritten if the new stack is added.
-		var lastFocusedStack = self.focusedStack;
+		var lastFocusedStackViewer = self.focusedStackViewer;
 
-		var opened = false;
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			if ( stacks[ i ].isEqual( stack ) )
-			{
-				stack = stacks[ i ];
-				opened = true;
-				break;
-			}
-		}
-		if ( !opened )
-		{
-			stacks.push( stack );
-			if ( rootWindow.getChild() === null )
-				rootWindow.replaceChild( stack.getWindow() );
-			else
-				rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), stack.getWindow() ) );
+		stackViewers.push( stackViewer );
 
-			stack.getWindow().focus();
-			CATMAID.ui.onresize();
-		}
-		if ( stacks.length > 1 )
+		if ( rootWindow.getChild() === null )
+			rootWindow.replaceChild( stackViewer.getWindow() );
+		else
+			rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), stackViewer.getWindow() ) );
+
+		stackViewer.getWindow().focus();
+		CATMAID.ui.onresize();
+
+		if ( stackViewers.length > 1 )
 			self.moveToProject( self.coordinates.z, self.coordinates.y, self.coordinates.x,
-					lastFocusedStack.resolution.x / lastFocusedStack.scale );
+					lastFocusedStackViewer.primaryStack.resolution.x / lastFocusedStackViewer.scale );
 		else
 		{
-			var c = stack.projectCoordinates();
+			var c = stackViewer.projectCoordinates();
 			self.moveTo( c.z, c.y, c.x );
 		}
 
-		self.setFocusedStack( stack );
+		self.setFocusedStackViewer( stackViewer );
 
-		// only set the tool for the first stack
-		if ( stacks.length == 1 )
+		// only set the tool for the first stack viewer
+		if ( stackViewers.length == 1 )
 		{
 			if ( !tool )
 				tool = new Navigator();
@@ -77,45 +64,51 @@ function Project( pid )
 			// self.focusedStack.setTool( tool );
 
 		}
-
-		// return the (possibly updated) stack reference
-		return stack;
 	};
 
 	/**
-	 * get one of the projects currently opened stacks
+	 * Get one of the projects currently opened stack viewers.
 	 */
-	this.getStack = function( sid )
+	this.getStackViewer = function (id)
 	{
-		for ( var i = 0; i < stacks.length; ++i )
+		for ( var i = 0; i < stackViewers.length; ++i )
 		{
-			if ( stacks[ i ].id == sid ) return stacks[ i ];
+			if ( stackViewers[ i ].getId() === id ) return stackViewers[ i ];
 		}
 		return false;
 	};
 
 	/**
-	 * get all the currently opened stacks
+	 * Get all currently opened stack viewers.
+	 *
+	 * @return {StackViewer[]}
 	 */
-	this.getStacks = function()
+	this.getStackViewers = function()
 	{
-		return stacks;
+		return stackViewers;
+	};
+
+	this.getViewersForStack = function (stackId)
+	{
+		return stackViewers.filter(function (stackViewer) {
+			return stackViewer.primaryStack.id === stackId;
+		});
 	};
 
 	/**
-	 * remove a stack from the list
+	 * Remove a stack viewer from the list.
 	 */
-	this.removeStack = function( sid )
+	this.removeStackViewer = function (id)
 	{
-		for ( var i = 0; i < stacks.length; ++i )
+		for ( var i = 0; i < stackViewers.length; ++i )
 		{
-			if ( stacks[ i ].id == sid )
+			if ( stackViewers[ i ].getId() === id )
 			{
-				stacks.splice( i, 1 );
-				if ( stacks.length === 0 )
+				stackViewers.splice( i, 1 );
+				if ( stackViewers.length === 0 )
 					self.destroy();
 				else
-					stacks[ ( i + 1 ) % stacks.length ].getWindow().focus();
+					stackViewers[ ( i + 1 ) % stackViewers.length ].getWindow().focus();
 			}
 		}
 		CATMAID.ui.onresize();
@@ -124,11 +117,11 @@ function Project( pid )
 	/**
 	 * focus a stack and blur the rest
 	 */
-	this.setFocusedStack = function( stack )
+	this.setFocusedStackViewer = function( stackViewer )
 	{
-		self.focusedStack = stack;
+		self.focusedStackViewer = stackViewer;
 		if ( tool )
-			self.focusedStack.setTool( tool );
+			self.focusedStackViewer.setTool( tool );
 		window.onresize();
 	};
 
@@ -138,10 +131,10 @@ function Project( pid )
 	this.switchFocus = function( s )
 	{
 		var i;
-		for ( i = 0; i < stacks.length; ++i )
-			if ( self.focusedStack == stacks[ i ] ) break;
+		for ( i = 0; i < stackViewers.length; ++i )
+			if ( self.focusedStackViewer == stackViewers[ i ] ) break;
 
-		stacks[ ( i + stacks.length + s ) % stacks.length ].getWindow().focus();
+		stackViewers[ ( i + stackViewers.length + s ) % stackViewers.length ].getWindow().focus();
 	};
 
 	//!< Associative array of selected objects
@@ -197,15 +190,15 @@ function Project( pid )
 
 		self.hideToolboxes();
 
-		if ( !self.focusedStack && stacks.length > 0 ) {
-			self.setFocusedStack( stacks[ 0 ] );
+		if ( !self.focusedStackViewer && stackViewers.length > 0 ) {
+			self.setFocusedStackViewer( stackViewers[ 0 ] );
 		}
 
-		self.focusedStack.setTool( tool );
+		self.focusedStackViewer.setTool( tool );
 
-		if ( self.focusedStack ) {
-			if (!self.focusedStack.getWindow().hasFocus())
-				self.focusedStack.getWindow().focus();
+		if ( self.focusedStackViewer ) {
+			if (!self.focusedStackViewer.getWindow().hasFocus())
+				self.focusedStackViewer.getWindow().focus();
 		}
 		window.onresize();
 		WindowMaker.setKeyShortcuts();
@@ -225,14 +218,14 @@ function Project( pid )
 			{
 				show_textlabels = false;
 				document.getElementById( "show_button_text" ).className = "button";
-				for ( var i = 0; i < stacks.length; ++i )
-					stacks[ i ].showTextlabels( false );
+				for ( var i = 0; i < stackViewers.length; ++i )
+					stackViewers[ i ].showTextlabels( false );
 			}
 			else
 			{
 				show_textlabels = true;
-				for ( var i = 0; i < stacks.length; ++i )
-					stacks[ i ].showTextlabels( true );
+				for ( var i = 0; i < stackViewers.length; ++i )
+					stackViewers[ i ].showTextlabels( true );
 				document.getElementById( "show_button_text" ).className = "button_active";
 			}
 		}
@@ -301,11 +294,11 @@ function Project( pid )
 		yp,
 		xp,
 		sp,
-		stacks,
+		stackViewers,
 		completionCallback)
 	{
 		var stackToMove;
-		if (stacks.length === 0) {
+		if (stackViewers.length === 0) {
 			// FIXME: do we need a callback for tool.redraw as well?
 			if ( tool && tool.redraw )
 				tool.redraw();
@@ -315,13 +308,13 @@ function Project( pid )
 		} else {
 			// Move current stack and continue with next one (or the completion
 			// callback) as a continuation of the moveTo() call on the current stack.
-			stackToMove = stacks.shift();
+			stackToMove = stackViewers.shift();
 			stackToMove.moveTo( zp,
 					    yp,
 					    xp,
 					    sp,
 					    function () {
-						    self.moveToInStacks( zp, yp, xp, sp, stacks, completionCallback );
+						    self.moveToInStacks( zp, yp, xp, sp, stackViewers, completionCallback );
 					    });
 		}
 	};
@@ -349,9 +342,9 @@ function Project( pid )
 		self.coordinates.z = zp;
 
 
-		for ( var i = 0; i < stacks.length; ++i )
+		for ( var i = 0; i < stackViewers.length; ++i )
 		{
-			stacksToMove.push( stacks[ i ] );
+			stacksToMove.push( stackViewers[ i ] );
 		}
 
 		// Call recursive moving function which executes the completion callback as
@@ -365,11 +358,11 @@ function Project( pid )
 		yp,
 		xp,
 		res,
-		stacks,
+		stackViewers,
 		completionCallback)
 	{
 		var stackToMove;
-		if (stacks.length === 0) {
+		if (stackViewers.length === 0) {
 			// FIXME: do we need a callback for tool.redraw as well?
 			if ( tool && tool.redraw )
 				tool.redraw();
@@ -377,13 +370,13 @@ function Project( pid )
 				completionCallback();
 			}
 		} else {
-			stackToMove = stacks.shift();
+			stackToMove = stackViewers.shift();
 			stackToMove.moveToProject( zp,
 					    yp,
 					    xp,
 					    res,
 					    function () {
-						    self.moveToProjectInStacks( zp, yp, xp, res, stacks, completionCallback );
+						    self.moveToProjectInStacks( zp, yp, xp, res, stackViewers, completionCallback );
 					    });
 		}
 	};
@@ -405,9 +398,9 @@ function Project( pid )
 		self.coordinates.z = zp;
 
 
-		for ( var i = 0; i < stacks.length; ++i )
+		for ( var i = 0; i < stackViewers.length; ++i )
 		{
-			stacksToMove.push( stacks[ i ] );
+			stacksToMove.push( stackViewers[ i ] );
 		}
 
 		self.moveToProjectInStacks( zp, yp, xp, res, stacksToMove, completionCallback );
@@ -435,7 +428,7 @@ function Project( pid )
 	{
 		var coords;
 		var url="?pid=" + self.id;
-		if ( stacks.length > 0 )
+		if ( stackViewers.length > 0 )
 		{
 			//coords = stacks[ 0 ].projectCoordinates();		//!< @todo get this from the SELECTED stack to avoid approximation errors!
 			url += "&zp=" + self.coordinates.z + "&yp=" + self.coordinates.y + "&xp=" + self.coordinates.x;
@@ -447,9 +440,9 @@ function Project( pid )
           url += "&active_node_id=" + SkeletonAnnotations.getActiveNodeId();
         }
       }
-			for ( var i = 0; i < stacks.length; ++i )
+			for ( var i = 0; i < stackViewers.length; ++i )
 			{
-				url += "&sid" + i + "=" + stacks[ i ].id + "&s" + i + "=" + stacks[ i ].s;
+				url += "&sid" + i + "=" + stackViewers[ i ].primaryStack.id + "&s" + i + "=" + stackViewers[ i ].s;
 			}
 		}
 		return url;
@@ -572,8 +565,8 @@ function Project( pid )
 	var template;				//!< DTD like abstract object tree (classes)
 	var data;					//!< instances in a DOM representation
 
-	var stacks = [];	//!< a list of stacks related to the project
-	this.focusedStack = undefined;
+	var stackViewers = [];	//!< a list of stacks related to the project
+	this.focusedStackViewer = undefined;
 
 	var mode = "move";
 	var show_textlabels = true;

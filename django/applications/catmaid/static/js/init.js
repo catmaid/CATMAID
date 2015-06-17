@@ -440,7 +440,7 @@ function updateProjectListFromCache() {
  * freeze the window to wait for an answer. The successFn callback is called
  * only if the loading was successful.
  */
-function openProjectStack( pid, sid, successFn, stackConstructor )
+function openProjectStack( pid, sid, successFn, stackViewerConstructor )
 {
 	if ( project && project.id != pid )
 	{
@@ -454,10 +454,10 @@ function openProjectStack( pid, sid, successFn, stackConstructor )
 		{ },
 		CATMAID.jsonResponseHandler(
 			function(json) {
-				var stack = handle_openProjectStack(json, stackConstructor);
-				// Call success function, if any, if a stack was added
-				if (stack) {
-					CATMAID.tools.callIfFn(successFn, stack);
+				var stackViewer = handle_openProjectStack(json, stackViewerConstructor);
+				// Call success function, if any, if a stack viewer was added
+				if (stackViewer) {
+					CATMAID.tools.callIfFn(successFn, stackViewer);
 				}
 			}, function(e) {
 				// Handle login errors
@@ -475,9 +475,8 @@ function openProjectStack( pid, sid, successFn, stackConstructor )
  *
  * free the window
  */
-function handle_openProjectStack( e, stackConstructor )
+function handle_openProjectStack( e, stackViewerConstructor )
 {
-  var stack = null;
   //! look if the project is already opened, otherwise open a new one
   if ( !( project && project.id == e.pid ) )
   {
@@ -493,9 +492,8 @@ function handle_openProjectStack( e, stackConstructor )
     labelupload = e.labelupload_url;
   }
 
-  if (typeof stackConstructor === 'undefined') stackConstructor = Stack;
-  stack = new stackConstructor(
-      project,
+  if (typeof stackViewerConstructor === 'undefined') stackViewerConstructor = StackViewer;
+  var stack = new Stack(
       e.sid,
       e.stitle,
       e.dimension,
@@ -505,53 +503,51 @@ function handle_openProjectStack( e, stackConstructor )
       e.trakem2_project,
       e.num_zoom_levels,
       -2,
-      e.tile_source_type,
       labelupload, // TODO: if there is any
       e.metadata,
-      userprofile.inverse_mouse_wheel,
       e.orientation );
+  var stackViewer = new stackViewerConstructor(
+      project,
+      stack,
+      userprofile.inverse_mouse_wheel);
 
   document.getElementById( "toolbox_project" ).style.display = "block";
 
   var tilesource = CATMAID.getTileSource(e.tile_source_type,
-      e.image_base, e.file_extension);
+      e.image_base, e.file_extension, e.tile_width, e.tile_height);
   var tilelayerConstructor = userprofile.prefer_webgl_layers ? CATMAID.PixiTileLayer : CATMAID.TileLayer;
   var tilelayer = new tilelayerConstructor(
+      stackViewer,
       "Image data",
       stack,
-      e.tile_width,
-      e.tile_height,
       tilesource,
       true,
       1,
       true);
 
-  stack.addLayer( "TileLayer", tilelayer );
+  stackViewer.addLayer( "TileLayer", tilelayer );
 
   $.each(e.overlay, function(key, value) {
     var tilesource = CATMAID.getTileSource( value.tile_source_type,
-      value.image_base, value.file_extension );
+        value.image_base, value.file_extension, value.tile_width, value.tile_height );
     var layer_visibility = false;
     if( parseInt(value.default_opacity) > 0)
       layer_visibility = true;
     var tilelayer2 = new tilelayerConstructor(
+            stackViewer,
             value.title,
             stack,
-            value.tile_width,
-            value.tile_height,
             tilesource,
             layer_visibility,
             value.default_opacity / 100,
             false);
-    stack.addLayer( value.title, tilelayer2 );
+    stackViewer.addLayer( value.title, tilelayer2 );
   });
 
-  // If the requested stack is already loaded, the existing
-  // stack is returned. Continue work with the existing stack.
-  stack = project.addStack( stack );
+  project.addStackViewer( stackViewer );
 
   // refresh the overview handler to also register the mouse events on the buttons
-  stack.tilelayercontrol.refresh();
+  stackViewer.tilelayercontrol.refresh();
 
   /* Update the projects stack menu. If there is more
   than one stack linked to the current project, a submenu for easy
@@ -578,7 +574,7 @@ function handle_openProjectStack( e, stackConstructor )
   });
 
   CATMAID.ui.releaseEvents();
-  return stack;
+  return stackViewer;
 }
 
 /**

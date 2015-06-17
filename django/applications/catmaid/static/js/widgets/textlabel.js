@@ -7,7 +7,7 @@ function TextlabelTool()
 
   var self = this;
   var textlabelLayer = null;
-  var stack = null;
+  var stackViewer = null;
   var bindings = {};
   this.toolname = "textlabeltool";
 
@@ -31,8 +31,8 @@ function TextlabelTool()
   };
 
   self.updateTextlabels = function () {
-      textlabelLayer.update(0, 0, stack.dimension.x * stack.resolution.x,
-          stack.dimension.y * stack.resolution.y );
+      textlabelLayer.update(0, 0, stackViewer.primaryStack.dimension.x * stackViewer.primaryStack.resolution.x,
+          stackViewer.primaryStack.dimension.y * stackViewer.primaryStack.resolution.y );
   };
 
   this.getMouseHelp = function( e ) {
@@ -78,16 +78,16 @@ function TextlabelTool()
     return;
   };
 
-  var createTextlabelLayer = function( parentStack )
+  var createTextlabelLayer = function( parentStackViewer )
   {
-    stack = parentStack;
+    stackViewer = parentStackViewer;
 
-    textlabelLayer = new TextlabelLayer( parentStack, self );
+    textlabelLayer = new TextlabelLayer( parentStackViewer, self );
     
-    parentStack.addLayer( "TextlabelLayer", textlabelLayer );
+    parentStackViewer.addLayer( "TextlabelLayer", textlabelLayer );
 
     // register the move toolbar and reuse the mouseCatcher
-    self.prototype.register( parentStack, "edit_button_move" );
+    self.prototype.register( parentStackViewer, "edit_button_move" );
     // view is the mouseCatcher now
     var proto_onmousedown = self.prototype.mouseCatcher.onmousedown;
     self.prototype.mouseCatcher.onmousedown = function( e ) {
@@ -98,10 +98,10 @@ function TextlabelTool()
             // needs shift in addition
             if( e.shiftKey ) {
                 var m = CATMAID.ui.getMouse(e, self.prototype.mouseCatcher);
-                var tlx = (stack.x + (m.offsetX - stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x;
-                var tly = (stack.y + (m.offsetY - stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y;
-                var tlz = stack.z * stack.resolution.z + stack.translation.z;
-                createTextlabel(tlx, tly, tlz, stack.resolution.y, stack.scale);
+                var tlx = (stackViewer.x + (m.offsetX - stackViewer.viewWidth  / 2) / stackViewer.scale) * stackViewer.primaryStack.resolution.x + stackViewer.primaryStack.translation.x;
+                var tly = (stackViewer.y + (m.offsetY - stackViewer.viewHeight / 2) / stackViewer.scale) * stackViewer.primaryStack.resolution.y + stackViewer.primaryStack.translation.y;
+                var tlz = stackViewer.z * stackViewer.primaryStack.resolution.z + stackViewer.primaryStack.translation.z;
+                createTextlabel(tlx, tly, tlz, stackViewer.primaryStack.resolution.y, stackViewer.scale);
             }
           break;
         case 2:
@@ -122,23 +122,23 @@ function TextlabelTool()
   };
 
 	/**
-	 * install this tool in a stack.
+	 * install this tool in a stack viewer.
 	 * register all GUI control elements and event handlers
 	 */
-	this.register = function( parentStack )
+	this.register = function( parentStackViewer )
 	{
     setupSubTools();
 
-    if (textlabelLayer && stack) {
-      if (stack !== parentStack) {
-        // If the tracing layer exists and it belongs to a different stack, replace it
-        stack.removeLayer( textlabelLayer );
-        createTextlabelLayer( parentStack );
+    if (textlabelLayer && stackViewer) {
+      if (stackViewer !== parentStackViewer) {
+        // If the tracing layer exists and it belongs to a different stack viewer, replace it
+        stackViewer.removeLayer( textlabelLayer );
+        createTextlabelLayer( parentStackViewer );
       } else {
         reactivateBindings();
       }
     } else {
-      createTextlabelLayer( parentStack );
+      createTextlabelLayer( parentStackViewer );
     }
 
     return;
@@ -167,13 +167,13 @@ function TextlabelTool()
   };
 
 	/**
-	 * unregister all stack related mouse and keyboard controls
+	 * unregister all stack viewer related mouse and keyboard controls
 	 */
   this.unregister = function()
   {
     document.getElementById( "toolbar_text" ).style.display = "none";
-    // do it before calling the prototype destroy that sets stack to null
-    if (self.prototype.stack) {
+    // do it before calling the prototype destroy that sets stack viewer to null
+    if (self.prototype.stackViewer) {
       inactivateBindings();
     }
     return;
@@ -189,8 +189,8 @@ function TextlabelTool()
     self.unregister();
     textlabelLayer.removeTextlabels();
     // the prototype destroy calls the prototype's unregister, not self.unregister
-    // do it before calling the prototype destroy that sets stack to null
-    self.prototype.stack.removeLayer( "TextlabelLayer" );
+    // do it before calling the prototype destroy that sets stack viewer to null
+    self.prototype.stackViewer.removeLayer( "TextlabelLayer" );
     self.prototype.destroy( "edit_button_move" );
     for (var b in bindings) {
       if (bindings.hasOwnProperty(b)) {
@@ -824,14 +824,14 @@ Textlabel = function(
 };
 
 TextlabelLayer = function(
-		stack,
+		stackViewer,
         parentTool )
 {
   var self = this;
-	var stack = stack;
+	var stackViewer = stackViewer;
 	var parentTool = parentTool;
 	var textlabels = [];
-	var stackWindow = stack.getWindow();
+	var stackWindow = stackViewer.getWindow();
 	var opacity = 1.0;
 
   this.resize = function ( width, height )
@@ -898,16 +898,16 @@ TextlabelLayer = function(
 		height					//!< height in project coordinates
 	)
 	{
-		var scale = stack.scale;
-		var coordinates = stack.projectCoordinates();
-		var resolution = stack.resolution;
+		var scale = stackViewer.scale;
+		var coordinates = stackViewer.projectCoordinates();
+		var resolution = stackViewer.primaryStack.resolution;
 		
 		requestQueue.register(
             django_url + project.id + '/textlabel/all',
 			'POST',
 			{
-				pid : stack.getProject().getId(),
-				sid : stack.getId(),
+				pid : stackViewer.getProject().getId(),
+				sid : stackViewer.primaryStack.id,
 				z : coordinates.z,
 				top : y,
 				left : x,
@@ -950,11 +950,11 @@ TextlabelLayer = function(
 				
 				if ( text )
 				{
-					var resolution = stack.resolution;
-					var translation = stack.translation;
+					var resolution = stackViewer.primaryStack.resolution;
+					var translation = stackViewer.primaryStack.translation;
 					var stackWindowFrame = stackWindow.getFrame();
 
-					var wc = stack.getWorldTopLeft();
+					var wc = stackViewer.getWorldTopLeft();
 					var pl = wc.worldLeft,
 							pt = wc.worldTop,
 							new_scale = wc.scale;

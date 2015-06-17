@@ -10,17 +10,17 @@
   "use strict";
 
   /**
-   * The tilelayer control element on the top-left of the stack window
+   * The tilelayer control element on the top-left of the stackViewer window
    */
-  var TilelayerControl = function ( stack )
+  var TilelayerControl = function ( stackViewer )
   {
-    this.stack = stack;
+    this.stackViewer = stackViewer;
     this.view = document.createElement( "div" );
     this.view.className = "TilelayerControl";
-    this.view.id = "TilelayerControl" + stack.id;
+    this.view.id = "TilelayerControl" + stackViewer.id;
     this.view.style.zIndex = 8;
 
-    stack.getView().appendChild( this.view );
+    stackViewer.getView().appendChild( this.view );
   };
 
   TilelayerControl.prototype = {};
@@ -39,9 +39,9 @@
   TilelayerControl.prototype.refresh = function()
   {
     // Get current set of layers
-    var stack = this.stack;
-    var layers = stack.getLayers();
-    var layerOrder = stack.getLayerOrder();
+    var stackViewer = this.stackViewer;
+    var layers = stackViewer.getLayers();
+    var layerOrder = stackViewer.getLayerOrder();
 
     // Empty container
     var $view = $(this.view);
@@ -62,12 +62,12 @@
     var layerList = $('<ol/>');
 
     var setOpac = function (val) {
-      var layers = stack.getLayers();
+      var layers = stackViewer.getLayers();
 
       if (!layers.hasOwnProperty(this.idd)) return;
 
       layers[this.idd].setOpacity(val);
-      stack.redraw();
+      stackViewer.redraw();
     };
 
     // Add slider for each layer
@@ -121,8 +121,8 @@
         });
         blendSelect.change(function () {
           var key = $(this).parents('.layerControl').data('key');
-          stack.getLayers()[key].setBlendMode(this.value);
-          stack.redraw();
+          stackViewer.getLayers()[key].setBlendMode(this.value);
+          stackViewer.redraw();
         });
 
         blendLabel.append(blendSelect);
@@ -148,7 +148,7 @@
         var filterAdd = $('<input type="button" value="Add"/>');
         filterAdd.click(function () {
           var key = $(this).parents('.layerControl').data('key');
-          var layer = stack.getLayers()[key];
+          var layer = stackViewer.getLayers()[key];
           var filterName = $(this).siblings('select')[0].value;
           var filter = new (layer.getAvailableFilters()[filterName])();
           layer.addFilter(filter);
@@ -165,7 +165,7 @@
           var removeBtn = $('<input type="button" value="x" class="remove"/>')
               .click(function () {
                 var key = $(this).parents('.layerControl').data('key');
-                var layer = stack.getLayers()[key];
+                var layer = stackViewer.getLayers()[key];
                 layer.removeFilter(filter);
                 layer.redraw();
                 self.refresh();
@@ -183,7 +183,7 @@
           },
           stop: function (event, ui) {
             var key = $(this).parents('.layerControl').data('key');
-            var layer = stack.getLayers()[key];
+            var layer = stackViewer.getLayers()[key];
             layer.moveFilter(ui.item.startIndex, ui.item.index());
             layer.redraw();
           }
@@ -201,8 +201,8 @@
       placeholder: 'highlight',
       update: function (event, ui) {
         var beforeKey = ui.item.next().data('key') || null;
-        stack.moveLayer(ui.item.data('key'), beforeKey);
-        stack.redraw();
+        stackViewer.moveLayer(ui.item.data('key'), beforeKey);
+        stackViewer.redraw();
       }
     });
   };

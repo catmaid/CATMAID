@@ -12,7 +12,7 @@
  */
 function BoxSelectionTool()
 {
-    this.stack = null;
+    this.stackViewer = null;
     this.cropBox = false;
     this.cropBoxCache = {};
     this.zoomlevel = null;
@@ -29,12 +29,12 @@ function BoxSelectionTool()
 
 BoxSelectionTool.prototype.toPx = function( world_coord, resolution )
 {
-    return world_coord / resolution * this.stack.scale;
+    return world_coord / resolution * this.stackViewer.scale;
 };
 
 BoxSelectionTool.prototype.toWorld = function( px_coord, resolution )
 {
-    return px_coord / this.stack.scale * resolution;
+    return px_coord / this.stackViewer.scale * resolution;
 };
 
 /**
@@ -46,23 +46,23 @@ BoxSelectionTool.prototype.convertWorld = function( val )
     return val * this.output_unit_factor;
 };
 
-BoxSelectionTool.prototype.getScreenLeft = function(stack)
+BoxSelectionTool.prototype.getScreenLeft = function(stackViewer)
 {
-    return ( ( stack.x - stack.viewWidth / stack.scale / 2 ) +
-        stack.translation.x ) * stack.resolution.x;
+    return ( ( stackViewer.x - stackViewer.viewWidth / stackViewer.scale / 2 ) +
+        stackViewer.primaryStack.translation.x ) * stackViewer.primaryStack.resolution.x;
 };
 
-BoxSelectionTool.prototype.getScreenTop = function(stack)
+BoxSelectionTool.prototype.getScreenTop = function(stackViewer)
 {
-    return ( ( stack.y - stack.viewHeight / stack.scale / 2 ) +
-        stack.translation.y ) * stack.resolution.y;
+    return ( ( stackViewer.y - stackViewer.viewHeight / stackViewer.scale / 2 ) +
+        stackViewer.primaryStack.translation.y ) * stackViewer.primaryStack.resolution.y;
 };
 
 /**
  * Gets the bounding box of the current crop box in world
  * and pixel coordinates.
  */
-BoxSelectionTool.prototype.getCropBoxBoundingBox = function(stack)
+BoxSelectionTool.prototype.getCropBoxBoundingBox = function(stackViewer)
 {
     var t = Math.min( this.cropBox.top, this.cropBox.bottom );
     var b = Math.max( this.cropBox.top, this.cropBox.bottom );
@@ -71,11 +71,11 @@ BoxSelectionTool.prototype.getCropBoxBoundingBox = function(stack)
     var width = r - l;
     var height = b - t;
     //! left-most border of the view in physical project coordinates
-    var screen_left = this.getScreenLeft(stack);
-    var screen_top = this.getScreenTop(stack);
+    var screen_left = this.getScreenLeft(stackViewer);
+    var screen_top = this.getScreenTop(stackViewer);
 
-    var rx = stack.resolution.x / stack.scale;
-    var ry = stack.resolution.y / stack.scale;
+    var rx = stackViewer.primaryStack.resolution.x / stackViewer.scale;
+    var ry = stackViewer.primaryStack.resolution.y / stackViewer.scale;
 
     var left_px = Math.floor( ( l - screen_left ) / rx );
     var top_px = Math.floor( ( t - screen_top ) / ry );
@@ -117,16 +117,16 @@ BoxSelectionTool.prototype.redraw = function()
 };
 
 /**
- * Creates a new cropping box and attaches it to the stack.
+ * Creates a new cropping box and attaches it to the stack viewer.
  */
-BoxSelectionTool.prototype.initCropBox = function( stack )
+BoxSelectionTool.prototype.initCropBox = function( stackViewer )
 {
     var cb = {};
-    cb.stack = stack;
+    cb.stackViewer = stackViewer;
 
     // Add new layer (it removes existing ones by itself)
-    cb.layer = new BoxSelectionLayer(stack, this, cb);
-    stack.addLayer("BoxSelectionLayer", cb.layer);
+    cb.layer = new BoxSelectionLayer(stackViewer, this, cb);
+    stackViewer.addLayer("BoxSelectionLayer", cb.layer);
 
     return cb;
 };
@@ -141,11 +141,11 @@ BoxSelectionTool.prototype.createCropBox = function( screenX, screenY,
 {
     if(typeof(screenWidth)==='undefined') screenWidth = 0;
     if(typeof(screenHeight)==='undefined') screenHeight = 0;
-    var s = this.stack;
-    var worldX = (s.x + ( screenX  - s.viewWidth / 2 ) / s.scale ) * s.resolution.x;
-    var worldY = (s.y + ( screenY - s.viewHeight / 2 ) / s.scale ) * s.resolution.y;
-    var worldWidth = this.toWorld( screenWidth, s.resolution.x );
-    var worldHeight = this.toWorld( screenHeight, s.resolution.y );
+    var s = this.stackViewer;
+    var worldX = (s.x + ( screenX - s.viewWidth  / 2 ) / s.scale ) * s.primaryStack.resolution.x;
+    var worldY = (s.y + ( screenY - s.viewHeight / 2 ) / s.scale ) * s.primaryStack.resolution.y;
+    var worldWidth = this.toWorld( screenWidth, s.primaryStack.resolution.x );
+    var worldHeight = this.toWorld( screenHeight, s.primaryStack.resolution.y );
 
     this.createCropBoxByWorld(worldX, worldY, worldWidth, worldHeight);
 };
@@ -158,15 +158,15 @@ BoxSelectionTool.prototype.createCropBox = function( screenX, screenY,
 BoxSelectionTool.prototype.createCropBoxByWorld = function( worldX,
     worldY, worldWidth, worldHeight, rotation_cw )
 {
-    var view = this.stack.getView();
+    var view = this.stackViewer.getView();
     if ( this.cropBox )
     {
         delete this.cropBox;
         this.cropBox = false;
     }
-    this.cropBox = this.initCropBox( this.stack );
-    this.cropBox.left = worldX + this.stack.translation.x;
-    this.cropBox.top = worldY + this.stack.translation.y;
+    this.cropBox = this.initCropBox( this.stackViewer );
+    this.cropBox.left = worldX + this.stackViewer.primaryStack.translation.x;
+    this.cropBox.top = worldY + this.stackViewer.primaryStack.translation.y;
     this.cropBox.right = this.cropBox.left + worldWidth;
     this.cropBox.bottom = this.cropBox.top + worldHeight;
     this.cropBox.xdist = 0;
@@ -176,7 +176,7 @@ BoxSelectionTool.prototype.createCropBoxByWorld = function( worldX,
     this.cropBox.rotation_cw = rotation_cw ? rotation_cw : 0;
 
     // update the cache
-    this.cropBoxCache[ this.stack.getId() ] = this.cropBox;
+    this.cropBoxCache[ this.stackViewer.primaryStack.id ] = this.cropBox;
 
     // update other (passive) crop boxes
     this.updateCropBox();
@@ -192,40 +192,40 @@ BoxSelectionTool.prototype.destroy = function()
     for ( var s in this.cropBoxCache )
     {
         var cb = this.cropBoxCache[ s ];
-        cb.stack.removeLayer( "BoxSelectionLayer" );
+        cb.stackViewer.removeLayer( "BoxSelectionLayer" );
         delete this.cropBoxCache[ s ];
     }
     this.cropBoxCache = {};
     this.cropBox = false;
 
-    this.stack = null;
+    this.stackViewer = null;
 
     return;
 };
 
 /**
-* install this tool in a stack.
+* install this tool in a stack viewer.
 * register all GUI control elements and event handlers
 */
-BoxSelectionTool.prototype.register = function( parentStack )
+BoxSelectionTool.prototype.register = function( parentStackViewer )
 {
     var self = this;
     // make sure the tool knows all (and only) open projecs
     getStackMenuInfo(project.id, function(stacks) {
         $.each(stacks, function(i, s) {
             var id = s.id;
-            var opened_stack = project.getStack( id );
+            var opened_stacks = project.getViewersForStack( id );
             if ( id in self.cropBoxCache )
             {
                 // remove the entry if the project isn't opened
-                if ( !opened_stack )
+                if ( opened_stacks.length === 0 )
                     delete self.cropBoxCache[ id ];
             }
             else
             {
                 // make sure it has got a cropping box container in the cache
-                if ( opened_stack )
-                    self.cropBoxCache[ id ] = self.initCropBox( opened_stack );
+                if ( opened_stacks.length )
+                    self.cropBoxCache[ id ] = self.initCropBox( opened_stacks[0] );
             }
         });
 
@@ -234,15 +234,15 @@ BoxSelectionTool.prototype.register = function( parentStack )
         for ( var s in self.cropBoxCache )
         {
             var cb = self.cropBoxCache[ s ];
-            var is_active = (cb.stack == parentStack);
+            var is_active = (cb.stackViewer == parentStackViewer);
             cb.layer.setActive( is_active );
             if (is_active)
                 self.cropBox = cb;
         }
     });
 
-    this.stack = parentStack;
-    this.zoomlevel = this.stack.s;
+    this.stackViewer = parentStackViewer;
+    this.zoomlevel = this.stackViewer.s;
 
     return;
 };
@@ -251,7 +251,7 @@ BoxSelectionTool.prototype.register = function( parentStack )
  * The box selection layer that hosts the a box selection/region of
  * interest.
  */
-function BoxSelectionLayer( stack, tool, crop_box)
+function BoxSelectionLayer( stackViewer, tool, crop_box)
 {
     this.setOpacity = function( val )
     {
@@ -266,7 +266,7 @@ function BoxSelectionLayer( stack, tool, crop_box)
 
     this.redraw = function(completionCallback)
     {
-        var cropBoxBB = tool.getCropBoxBoundingBox(stack);
+        var cropBoxBB = tool.getCropBoxBoundingBox(stackViewer);
 
         // Size and positioning
         view.style.visibility = "visible";
@@ -283,7 +283,7 @@ function BoxSelectionLayer( stack, tool, crop_box)
         view.style.OTransform = rotation_cmd;
         view.style.transform = rotation_cmd;
 
-        var current_scale = stack.scale;
+        var current_scale = stackViewer.scale;
         var output_scale = 1 / Math.pow( 2, tool.zoomlevel );
         var output_width_px = ( cropBoxBB.width_px / current_scale) * output_scale;
         var output_height_px = ( cropBoxBB.height_px / current_scale) * output_scale;
@@ -338,8 +338,8 @@ function BoxSelectionLayer( stack, tool, crop_box)
 
     this.unregister = function()
     {
-        if ( stack && view.parentNode == stack.getView() )
-            stack.getView().removeChild( view );
+        if ( stackViewer && view.parentNode == stackViewer.getView() )
+            stackViewer.getView().removeChild( view );
     };
 
     this.setActive = function( active )
@@ -357,7 +357,7 @@ function BoxSelectionLayer( stack, tool, crop_box)
     // indicates if this the currently active crop box
     var is_active = true;
 
-    var stack = stack;
+    var stackViewer = stackViewer;
     var crop_box = crop_box;
 
     var view = document.createElement( "div" );
@@ -378,7 +378,7 @@ function BoxSelectionLayer( stack, tool, crop_box)
 
     // add view to DOM
     if( self.visible )
-        stack.getView().appendChild( view );
+        stackViewer.getView().appendChild( view );
 }
 
 /**

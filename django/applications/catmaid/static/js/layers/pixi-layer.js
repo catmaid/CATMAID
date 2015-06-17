@@ -7,27 +7,28 @@
   PixiLayer.contexts = new Map();
 
   /**
-   * A layer that shares a common Pixi renderer with other layers in this stack.
-   * Creates a renderer and stage context for the stack if none exists.
+   * A layer that shares a common Pixi renderer with other layers in this stack
+   * viewer. Creates a renderer and stage context for the stack viewer if none
+   * exists.
    *
-   * Must be used as a mixin for an object with a `stack` property.
+   * Must be used as a mixin for an object with a `stackViewer` property.
    *
    * @class PixiLayer
    * @constructor
    */
   function PixiLayer() {
     this.batchContainer = null;
-    var context = PixiLayer.contexts.get(this.stack);
+    var context = PixiLayer.contexts.get(this.stackViewer);
     if (!context) {
       if (!PIXI.BaseTextureCacheManager || PIXI.BaseTextureCacheManager.constructor !== PIXI.LRUCacheManager) {
         PIXI.BaseTextureCacheManager = new PIXI.LRUCacheManager(PIXI.BaseTextureCache, 512);
       }
       context = {
           renderer: new PIXI.autoDetectRenderer(
-              this.stack.getView().clientWidth,
-              this.stack.getView().clientHeight),
+              this.stackViewer.getView().clientWidth,
+              this.stackViewer.getView().clientHeight),
           stage: new PIXI.Stage(0x000000)};
-      PixiLayer.contexts.set(this.stack, context);
+      PixiLayer.contexts.set(this.stackViewer, context);
     }
     this.renderer = context.renderer;
     this.stage = context.stage;
@@ -61,8 +62,8 @@
 
   /**
    * Notify this layer that it has been reordered to be before another layer.
-   * While the stack orders DOM elements, layers are responsible for any internal
-   * order representation, such as in a scene graph.
+   * While the stack viewer orders DOM elements, layers are responsible for any
+   * internal order representation, such as in a scene graph.
    * @param  {Layer} beforeLayer The layer which this layer was inserted before,
    *                             or null if this layer was moved to the end (top).
    */

@@ -142,7 +142,7 @@
       ds.append(createCheckboxSetting("Display reference lines", function() {
         userprofile.display_stack_reference_lines = this.checked;
         userprofile.saveAll(function () {
-          project.getStacks().forEach(function(s) {
+          project.getStackViewers().forEach(function(s) {
             s.showReferenceLines(userprofile.display_stack_reference_lines);
           });
           CATMAID.msg('Success', 'User profile updated successfully.');
@@ -203,12 +203,12 @@
             // Add a grid layer to all open stacks
             if (this.checked) {
               // Get current settings
-              project.getStacks().forEach(function(s) {
+              project.getStackViewers().forEach(function(s) {
                 s.addLayer("grid", new CATMAID.GridLayer(s, getGridOptions()));
                 s.redraw();
               });
             } else {
-              project.getStacks().forEach(function(s) {
+              project.getStackViewers().forEach(function(s) {
                 s.removeLayer("grid");
               });
             }
@@ -222,7 +222,7 @@
         // Get current settings
         var o = getGridOptions();
         // Update grid, if visible
-        project.getStacks().forEach(function(s) {
+        project.getStackViewers().forEach(function(s) {
           var grid = s.getLayer("grid");
           if (grid) {
             grid.setOptions(o.cellWidth, o.cellHeight, o.xOffset,
@@ -359,7 +359,7 @@
               checked: !userprofile.tracing_overlay_screen_scaling}
       ], function () {
         userprofile.tracing_overlay_screen_scaling = this.value === 'overlay-scaling-screen';
-        project.getStacks().forEach(function (s) {s.redraw();});
+        project.getStackViewers().forEach(function (s) {s.redraw();});
       }).addClass('setting'));
 
       ds.append(createLabeledControl(
@@ -373,7 +373,7 @@
               change: function (event, ui) {
                 userprofile.tracing_overlay_scale = Math.pow(2, ui.value);
                 $('#overlay-scale-value').text((userprofile.tracing_overlay_scale*100).toFixed());
-                project.getStacks().forEach(function (s) {s.redraw();});
+                project.getStackViewers().forEach(function (s) {s.redraw();});
               }})));
 
       ds.append($('<button>Save to your profile</button>').click(function () {

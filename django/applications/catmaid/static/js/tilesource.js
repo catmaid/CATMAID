@@ -11,9 +11,29 @@
   'use strict';
 
   /**
+   * Get the part of the tile name that consists of dimensions z, t, ...
+   * For a 3D stack this will return 'z/', for a 4D stack 't/z/', etc.
+   *
+   * @param pixelPos pixel position of the stack [x, y, z, t, ...]
+   */
+  CATMAID.getTileBaseName = function (pixelPos) {
+    var n = pixelPos.length;
+    var dir = '';
+    for (var i = n - 1; i > 1; --i) {
+      dir += pixelPos[i] + '/';
+    }
+    return dir;
+  };
+
+  CATMAID.getTileBaseNameFromViewer = function (stackViewer) {
+    var pixelPos = [stackViewer.x, stackViewer.y, stackViewer.z];
+    return CATMAID.getTileBaseName(pixelPos);
+  };
+
+  /**
    * Creates a new tile source, based on a source type.
    */
-  CATMAID.getTileSource = function(tileSourceType, baseURL, fileExtension) {
+  CATMAID.getTileSource = function(tileSourceType, baseURL, fileExtension, tileWidth, tileHeight) {
     // Map tile source types to corresponding constructors. This could also be
     // represented as an array, but is this way more clear and readable.
     var tileSources = {
@@ -28,7 +48,13 @@
     };
 
     var TileSource = tileSources[tileSourceType];
-    return TileSource ? new TileSource(baseURL, fileExtension) : null;
+    if (TileSource) {
+      var source = new TileSource(baseURL, fileExtension, tileWidth, tileHeight);
+      source.tileWidth = tileWidth;
+      source.tileHeight = tileHeight;
+      return source;
+    } else return null;
+    // return TileSource ?  : null;
   };
 
   /**
@@ -36,19 +62,20 @@
    *
    * Source type: 1
    */
-  CATMAID.DefaultTileSource = function(baseURL, fileExtension) {
+  CATMAID.DefaultTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
     /**
      * Return the URL of a single tile, defined by it grid position
      * (x, y), ...
      */
-    this.getTileURL = function(project, stack, baseName, tileWidth, tileHeight,
+    this.getTileURL = function(project, stack, stackViewer,
                                col, row, zoomLevel) {
+      var baseName = CATMAID.getTileBaseNameFromViewer(stackViewer);
       return baseURL + baseName + row + '_' + col + '_' + zoomLevel + '.' +
           fileExtension;
     };
 
-    this.getOverviewURL = function(stack) {
-      return baseURL + stack.z + '/small.' + fileExtension;
+    this.getOverviewURL = function(stackViewer) {
+      return baseURL + stackViewer.z + '/small.' + fileExtension;
     };
 
     this.getOverviewLayer = function(layer) {
@@ -63,8 +90,8 @@
    *
    * Source type: 2
    */
-  CATMAID.RequestTileSource = function(baseURL, fileExtension) {
-    this.getTileURL = function( project, stack, baseName, tileWidth, tileHeight,
+  CATMAID.RequestTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
+    this.getTileURL = function( project, stack, stackViewer,
                                 col, row, zoomLevel ) {
       return baseURL + '?' + $.param({
         x: col * tileWidth,
@@ -73,8 +100,8 @@
         height : tileHeight,
         row : 'y',
         col : 'x',
-        scale : stack.scale, // defined as 1/2**zoomlevel
-        z : stack.z
+        scale : stackViewer.scale, // defined as 1/2**zoomlevel
+        z : stackViewer.z
       });
     };
 
@@ -88,8 +115,8 @@
   *
   * Source type: 3
   */
-  CATMAID.HDF5TileSource = function(baseURL, fileExtension) {
-    this.getTileURL = function(project, stack, baseName, tileWidth, tileHeight,
+  CATMAID.HDF5TileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
+    this.getTileURL = function(project, stack, stackViewer,
                                col, row, zoomLevel) {
       return django_url + project.id + '/stack/' + stack.id + '/tile?' +
           $.param({
@@ -99,8 +126,8 @@
             height : tileHeight,
             row : 'y',
             col : 'x',
-            scale : stack.s, // defined as 1/2**zoomlevel
-            z: stack.z,
+            scale : stackViewer.s, // defined as 1/2**zoomlevel
+            z: stackViewer.z,
             file_extension: fileExtension,
             basename: baseURL,
             type:'all'
@@ -118,19 +145,20 @@
    *
    * Source type: 4
    */
-  CATMAID.BackslashTileSource = function(baseURL, fileExtension) {
+  CATMAID.BackslashTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
     /**
      * Return the URL of a single tile, defined by it grid position
      * (x, y), ...
      */
-    this.getTileURL = function(project, stack, baseName, tileWidth, tileHeight,
+    this.getTileURL = function(project, stack, stackViewer,
                                col, row, zoomLevel) {
+      var baseName = CATMAID.getTileBaseNameFromViewer(stackViewer);
       return baseURL + baseName + zoomLevel + '/' + row + '_' + col + '.' +
           fileExtension;
     };
 
-    this.getOverviewURL = function(stack) {
-      return baseURL + stack.z + '/small.' + fileExtension;
+    this.getOverviewURL = function(stackViewer) {
+      return baseURL + stackViewer.z + '/small.' + fileExtension;
     };
 
     this.getOverviewLayer = function( layer )
@@ -146,14 +174,15 @@
    *
    * Source type: 5
    */
-  CATMAID.LargeDataTileSource = function(baseURL, fileExtension)
+  CATMAID.LargeDataTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
     /**
      * Return the URL of a single tile, defined by it grid position
      * (x, y), ...
      */
-    this.getTileURL = function( project, stack, baseName, tileWidth, tileHeight,
+    this.getTileURL = function( project, stack, stackViewer,
         col, row, zoomLevel ) {
+      var baseName = CATMAID.getTileBaseNameFromViewer(stackViewer);
       return baseURL + zoomLevel + '/' + baseName + row + '/' +  col + '.' +
          fileExtension;
     };
@@ -177,13 +206,12 @@
 
   * Source type: 6
   */
-  CATMAID.DVIDTileSource = function(baseURL, fileExtension)
+  CATMAID.DVIDTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
-  this.getTileURL = function( project, stack, baseName,
-  tileWidth, tileHeight, col, row, zoomLevel )
-  {
-  return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
-  row * tileHeight + '_' + stack.z + '/' + fileExtension;
+  this.getTileURL = function( project, stack, stackViewer,
+      col, row, zoomLevel ) {
+    return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
+        row * tileHeight + '_' + stackViewer.z + '/' + fileExtension;
   };
 
   this.getOverviewLayer = function( layer )
@@ -204,28 +232,28 @@
    *
    * Source type: 7
    */
-  CATMAID.RenderServTileSource = function(baseURL, fileExtension)
+  CATMAID.RenderServTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
     var self = this;
     this.mimeType = fileExtension == 'png' ? '/png-image' : '/jpeg-image';
-    this.getTileURL = function(project, stack, baseName, tileWidth, tileHeight,
+    this.getTileURL = function(project, stack, stackViewer,
                                col, row, zoomLevel) {
       var scale = Math.pow(2, zoomLevel);
       var tw = tileWidth * scale;
       var th = tileHeight * scale;
       var invScale = 1.0 / scale;
-      return baseURL + 'z/' + stack.z + '/box/' + col * tw + ',' + row * th +
+      return baseURL + 'z/' + stackViewer.z + '/box/' + col * tw + ',' + row * th +
           ',' + tw + ',' + th + ',' + invScale + self.mimeType;
     };
 
-    this.getOverviewURL = function(stack) {
-      return baseURL + 'z/' + stack.z + '/box/0,0,' + stack.dimension.x + ',' +
+    this.getOverviewURL = function(stackViewer) {
+      return baseURL + 'z/' + stackViewer.z + '/box/0,0,' + stack.dimension.x + ',' +
           stack.dimension.y + ',' + 192 / stack.dimension.x + self.mimeType;
     };
 
     this.getOverviewLayer = function(layer) {
       return new CATMAID.GenericOverviewLayer(layer, baseURL,
-      fileExtension, this.getOverviewURL);
+          fileExtension, this.getOverviewURL);
     };
   };
 
@@ -238,16 +266,16 @@
   * 
   * Source type: 8
   */
-  CATMAID.DVIDMultiScaleTileSource = function(baseURL, fileExtension)
+  CATMAID.DVIDMultiScaleTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
-    this.getTileURL = function(project, stack, baseName,
-                               tileWidth, tileHeight, col, row, zoomLevel) {
+    this.getTileURL = function(project, stack, stackViewer,
+                               col, row, zoomLevel) {
       if (stack.orientation === Stack.ORIENTATION_XY) {
-        return baseURL + 'xy/' + zoomLevel + '/' + col + '_' + row + '_' + stack.z;
+        return baseURL + 'xy/' + zoomLevel + '/' + col + '_' + row + '_' + stackViewer.z;
       } else if (stack.orientation === Stack.ORIENTATION_XZ) {
-        return baseURL + 'xz/' + zoomLevel + '/' + col + '_' + stack.z + '_' + row;
+        return baseURL + 'xz/' + zoomLevel + '/' + col + '_' + stackViewer.z + '_' + row;
       } else if (stack.orientation === Stack.ORIENTATION_ZY) {
-        return baseURL + 'yz/' + zoomLevel + '/' + stack.z + '_' + col + '_' + row;
+        return baseURL + 'yz/' + zoomLevel + '/' + stackViewer.z + '_' + col + '_' + row;
       }
     };
 
@@ -272,7 +300,7 @@
   CATMAID.GenericOverviewLayer = function(layer, baseURL, fileExtension,
                                           getOverviewURL) {
     this.redraw = function() {
-      img.src = getOverviewURL( stack );
+      img.src = getOverviewURL( stackViewer );
     };
 
     this.unregister = function() {
@@ -281,12 +309,12 @@
       }
     };
 
-    var stack = layer.getStack();
+    var stackViewer = layer.getStackViewer();
     var img = document.createElement( 'img' );
     img.className = 'smallMapMap';
     this.redraw(); // sets the img URL
-    stack.overview.getView().appendChild( img );
-    stack.overview.addLayer( 'tilelayer', this );
+    stackViewer.overview.getView().appendChild( img );
+    stackViewer.overview.addLayer( 'tilelayer', this );
   };
 
 })(CATMAID);

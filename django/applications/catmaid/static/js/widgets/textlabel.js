@@ -14,7 +14,6 @@ function TextlabelTool()
   this.resize = function( width, height )
   {
     self.prototype.resize( width, height );
-    return;
   };
 
   var setupSubTools = function()
@@ -75,7 +74,6 @@ function TextlabelTool()
       }
       return true;
     });
-    return;
   };
 
   var createTextlabelLayer = function( parentStackViewer )
@@ -111,7 +109,6 @@ function TextlabelTool()
           proto_onmousedown( e );
           break;
       }
-      return;
     };
 
     var proto_changeSlice = self.prototype.changeSlice;
@@ -140,8 +137,6 @@ function TextlabelTool()
     } else {
       createTextlabelLayer( parentStackViewer );
     }
-
-    return;
   };
 
   /** Inactivate only onmousedown, given that the others are injected when onmousedown is called.
@@ -176,7 +171,6 @@ function TextlabelTool()
     if (self.prototype.stackViewer) {
       inactivateBindings();
     }
-    return;
   };
 
 	/**
@@ -197,7 +191,6 @@ function TextlabelTool()
         delete bindings[b];
       }
     }
-    return;
 	};
 
   var actions = [];
@@ -414,8 +407,6 @@ Textlabel = function(
 			}
 			break;
 		}
-		
-		return;
 	};
 
   this.setOpacity = function( val )
@@ -442,7 +433,6 @@ Textlabel = function(
 			moveHandle.style.display = "none";
 			closeHandle.style.display = "none";
 		}
-		return;
 	};
 	
 	var synchText = function( e )
@@ -503,7 +493,6 @@ Textlabel = function(
 				return true;
 			},
 			"textlabel_" + this.id );
-		return;
 	};
 	
 	var close = function( e )
@@ -523,7 +512,6 @@ Textlabel = function(
 			},
 			window.onresize ); // TODO: what is the proper way to call updateTextlabels of the tool?
             // the window.onresize solution calls onresize about 6 times
-		return;
 	};
 	
 	/**
@@ -842,7 +830,6 @@ TextlabelLayer = function(
   this.redraw = function( completionCallback )
   {
       parentTool.updateTextlabels();
-      return;
   };
 
   this.unregister = function() {
@@ -918,7 +905,6 @@ TextlabelLayer = function(
 				resolution : resolution.y
 			},
 			handle_update );
-		return;
 	};
 	
 	/**
@@ -971,7 +957,6 @@ TextlabelLayer = function(
 				}
 			}
 		}
-		return;
 	};
 
 };

@@ -528,52 +528,20 @@ Textlabel = function(
 	/**
 	 * onchange handler for the red colour input element
 	 */
-	var changeColourRed = function( e )
-	{
-		var val = parseInt( this.value );
-		if ( isNaN( val ) || val < 0 || val > 255 ) this.value = self.colour.r;
-		else
-		{
-			self.colour.r = val;
-			apply();
-			textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
-		}
-		return false;
+	var changeColour = function (channel) {
+		return function (e) {
+			var val = parseInt( this.value );
+			if ( isNaN( val ) || val < 0 || val > 255 ) this.value = self.colour[channel];
+			else
+			{
+				self.colour[channel] = val;
+				apply();
+				textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
+			}
+			return false;
+		};
 	};
-	
-	/**
-	 * onchange handler for the green colour input element
-	 */
-	var changeColourGreen = function( e )
-	{
-		var val = parseInt( this.value );
-		if ( isNaN( val ) || val < 0 || val > 255 ) this.value = self.colour.g;
-		else
-		{
-			self.colour.g = val;
-			apply();
-			textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
-		}
-		return false;
-	};
-	
-	/**
-	 * onchange handler for the blue colour input element
-	 */
-	var changeColourBlue = function( e )
-	{
-		var val = parseInt( this.value );
-		if ( isNaN( val ) || val < 0 || val > 255 ) this.value = self.colour.b;
-		else
-		{
-			self.colour.b = val;
-			apply();
-			textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
-		}
-		return false;
-	};
-	
-	
+
 	/**
 	 * bind all input elements
 	 */
@@ -582,11 +550,11 @@ Textlabel = function(
 		input_size.onchange = changeSize;
 		input_size.value = self.fontSize;
 		
-		input_colour_red.onchange = changeColourRed;
+		input_colour_red.onchange = changeColour('r');
 		input_colour_red.value = self.colour.r;
-		input_colour_green.onchange = changeColourGreen;
+		input_colour_green.onchange = changeColour('g');
 		input_colour_green.value = self.colour.g;
-		input_colour_blue.onchange = changeColourBlue;
+		input_colour_blue.onchange = changeColour('b');
 		input_colour_blue.value = self.colour.b;
 		
 		checkbox_fontstyle_bold.onchange = function( e )

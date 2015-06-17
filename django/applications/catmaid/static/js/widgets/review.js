@@ -320,7 +320,7 @@
             }
             // Segment fully reviewed, go to next without refreshing table
             // much faster for smaller fragments
-            markSegmentDone(selg.current_segment, [session.userid])
+            markSegmentDone(selg.current_segment, [session.userid]);
             self.selectNextSegment();
             return;
           } else {

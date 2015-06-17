@@ -676,16 +676,7 @@ StackViewer.prototype.moveTo = function (zp, yp, xp, sp, completionCallback) {
 };
 
 StackViewer.prototype.bestScaleLevel = function (res) {
-	var l = ( res / this.primaryStack.resolution.x );
-	var sp;
-	if ( l >= 1 )
-		for ( sp = 0; l > 1; l >>= 1, ++sp );
-	else
-	{
-		l = ( this.primaryStack.resolution.x / res );
-		for ( sp = 0; l > 1; l >>= 1, --sp );
-	}
-	return sp;
+	return Math.log(res / this.primaryStack.resolution.x) / Math.LN2;
 };
 
 /**
@@ -720,7 +711,7 @@ StackViewer.prototype.moveToPixel = function (zs, ys, xs, ss) {
 		this.primaryStack.stackToProjectZ( zs, ys, xs ),
 		this.primaryStack.stackToProjectY( zs, ys, xs ),
 		this.primaryStack.stackToProjectX( zs, ys, xs ),
-		ss >= 0 ? this.primaryStack.resolution.x * ( 1 << ss ) : this.primaryStack.resolution.x / ( 1 << -ss ) );
+		this.primaryStack.resolution.x * Math.pow(2, ss));
 
 	return true;
 };

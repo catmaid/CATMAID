@@ -367,19 +367,11 @@ Textlabel = function(
 				var ty = target_y + dir_y;
 				
 				ctx.strokeStyle = "rgb(0,0,255)";
-				
-				if ( IE )
-				{
-					ctx.fillStyle = "rgb(255,255,255)";
-					ctx.lineWidth = 2;
-					ctx.strokeRect( 1 + offset_x, 1 + offset_y, boxWidth - 1, boxHeight - 1 );
-				}
-				else
-				{
-					ctx.fillStyle = "rgba(255,255,255,0.85)";
-					ctx.strokeRect( 0.5 + offset_x, 0.5 + offset_y, boxWidth, boxHeight );
-					ctx.lineWidth = 1.5;
-				}
+
+				ctx.fillStyle = "rgba(255,255,255,0.85)";
+				ctx.strokeRect( 0.5 + offset_x, 0.5 + offset_y, boxWidth, boxHeight );
+				ctx.lineWidth = 1.5;
+
 				ctx.beginPath();
 				ctx.moveTo( target_x, target_y );
 				ctx.lineTo( tx + dir_yn, ty - dir_xn );
@@ -458,7 +450,7 @@ Textlabel = function(
 			{
 				pid : project.id,
 				tid : self.id,
-				text : ( IE ? self.text.replace( /\r\n/g, "\n" ) : self.text ),
+				text : self.text,
 				x : self.location.x,
 				y : self.location.y,
 				z : self.location.z,
@@ -724,7 +716,6 @@ Textlabel = function(
 	//-------------------------------------------------------------------------
 	self.id = data.tid ? data.tid : 0;
 	self.text = data.text ? data.text : "";
-	if ( IE ) self.text = data.text.replace( /\n/g, "\r" );
 	self.location = data.location ? data.location :
 			{
 				x : 0,

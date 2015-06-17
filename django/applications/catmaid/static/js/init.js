@@ -518,7 +518,7 @@ function handle_openProjectStack( e, stackViewerConstructor )
   var tilelayerConstructor = userprofile.prefer_webgl_layers ? CATMAID.PixiTileLayer : CATMAID.TileLayer;
   var tilelayer = new tilelayerConstructor(
       stackViewer,
-      "Image data",
+      "Image data (" + stack.title + ")",
       stack,
       tilesource,
       true,

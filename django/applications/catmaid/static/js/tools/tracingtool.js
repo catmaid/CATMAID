@@ -1402,7 +1402,7 @@
       modal: true,
       buttons: buttons,
     });
-  }
+  };
 
   // Make tracing tool in CATMAID namespace
   CATMAID.TracingTool = TracingTool;

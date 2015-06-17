@@ -374,7 +374,6 @@ function StackViewer(
 
 	var indicatorbar = document.createElement( "div" );
 	indicatorbar.className = "indicatorbar";
-	indicatorbar.id = "indicatorbar";
 	this._view.appendChild( indicatorbar );
 
 	// Display horizontal and vertical reference lines if wanted.

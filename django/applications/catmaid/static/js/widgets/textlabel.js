@@ -931,10 +931,10 @@ TextlabelLayer = function(
 					var translation = stackViewer.primaryStack.translation;
 					var stackWindowFrame = stackWindow.getFrame();
 
-					var wc = stackViewer.getWorldTopLeft();
-					var pl = wc.worldLeft,
-							pt = wc.worldTop,
-							new_scale = wc.scale;
+					var wc = stackViewer.screenPosition();
+					var pl = stackViewer.primaryStack.stackToProjectX(stackViewer.z, wc.top, wc.left),
+							pt = stackViewer.primaryStack.stackToProjectY(stackViewer.z, wc.top, wc.left),
+							new_scale = stackViewer.scale;
 
 					//! import new
 					for ( var i in e )

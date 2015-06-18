@@ -453,6 +453,22 @@ StackViewer.prototype.update = function (completionCallback) {
 };
 
 /**
+ * Get inclusive zoom level extents for all stacks in the viewer.
+ */
+StackViewer.prototype.getZoomExtents = function () {
+	var extents = this._stacks.reduce(function (extents, stack) {
+		extents.min = Math.min(extents.min, stack.stackToProjectSX(stack.MIN_S));
+		extents.max = Math.max(extents.max, stack.stackToProjectSX(stack.MAX_S));
+		return extents;
+	}, {min: Infinity, max: -Infinity});
+
+	return {
+		min: this.primaryStack.projectToStackSX(extents.min),
+		max: this.primaryStack.projectToStackSX(extents.max)
+	};
+};
+
+/**
  * Get stack coordinates of the current view's top left corner.
  * These values might be used as an offset to get the stack coordinates of a
  * mouse event handled by the stack.
@@ -674,7 +690,8 @@ StackViewer.prototype.moveToAfterBeforeMoves = function (
 
 		if ( typeof sp == "number" )
 		{
-			this.s = Math.max( this.primaryStack.MIN_S, Math.min( this.primaryStack.MAX_S, sp ) );
+			var sExtents = this.getZoomExtents();
+			this.s = Math.max( sExtents.min, Math.min( sExtents.max, sp ) );
 			this.scale = 1.0 / Math.pow( 2, this.s );
 		}
 

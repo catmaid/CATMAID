@@ -298,6 +298,8 @@ function StackViewer(
 	this.scale = 1 / Math.pow( 2, this.s );
  	this.old_scale = this.scale;
 
+	this.navigateWithProject = true;
+
 	this._tool = null;
 	this._layers = {};
 	this._layerOrder = [];
@@ -764,11 +766,19 @@ StackViewer.prototype.moveToProject = function (zp, yp, xp, res, completionCallb
  * move to pixel coordinates
  */
 StackViewer.prototype.moveToPixel = function (zs, ys, xs, ss) {
-	this._project.moveToProject(
-		this.primaryStack.stackToProjectZ( zs, ys, xs ),
-		this.primaryStack.stackToProjectY( zs, ys, xs ),
-		this.primaryStack.stackToProjectX( zs, ys, xs ),
-		this.primaryStack.stackToProjectSX( ss ));
+	if (this.navigateWithProject) {
+		this._project.moveToProject(
+			this.primaryStack.stackToProjectZ( zs, ys, xs ),
+			this.primaryStack.stackToProjectY( zs, ys, xs ),
+			this.primaryStack.stackToProjectX( zs, ys, xs ),
+			this.primaryStack.stackToProjectSX( ss ));
+	} else {
+		this.moveTo(
+			this.primaryStack.stackToProjectZ( zs, ys, xs ),
+			this.primaryStack.stackToProjectY( zs, ys, xs ),
+			this.primaryStack.stackToProjectX( zs, ys, xs ),
+			ss);
+	}
 
 	return true;
 };

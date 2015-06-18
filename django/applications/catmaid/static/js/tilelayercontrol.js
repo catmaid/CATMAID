@@ -47,6 +47,17 @@
     var $view = $(this.view);
     $view.empty();
 
+    var navcb = $('<input/>')
+        .attr('type', 'checkbox')
+        .prop('checked', stackViewer.navigateWithProject)
+        .change(function () {
+          stackViewer.navigateWithProject = !stackViewer.navigateWithProject;
+        });
+    var navlabel = $('<div/>')
+        .addClass('setting')
+        .append($('<label/>').append(navcb).append('Navigate with project'));
+    $view.append(navlabel);
+
     var benchmark = $view.siblings('.sliceBenchmark');
     var cb = $('<input/>')
         .attr('type', 'checkbox')
@@ -56,8 +67,9 @@
         });
     var label = $('<div/>')
         .addClass('setting')
-        .append($('<label/>').append(cb).append('Show Scale Bar'));
+        .append($('<label/>').append(cb).append('Show scale bar'));
     $view.append(label);
+
     $view.append('<h3>Layers by render order (drag to reorder)</h3>');
     var layerList = $('<ol/>');
 

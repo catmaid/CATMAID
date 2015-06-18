@@ -344,7 +344,7 @@ function Project( pid )
 
 		for ( var i = 0; i < stackViewers.length; ++i )
 		{
-			stacksToMove.push( stackViewers[ i ] );
+			if ( stackViewers[ i ].navigateWithProject ) stacksToMove.push( stackViewers[ i ] );
 		}
 
 		// Call recursive moving function which executes the completion callback as
@@ -400,7 +400,7 @@ function Project( pid )
 
 		for ( var i = 0; i < stackViewers.length; ++i )
 		{
-			stacksToMove.push( stackViewers[ i ] );
+			if ( stackViewers[ i ].navigateWithProject ) stacksToMove.push( stackViewers[ i ] );
 		}
 
 		self.moveToProjectInStacks( zp, yp, xp, res, stacksToMove, completionCallback );

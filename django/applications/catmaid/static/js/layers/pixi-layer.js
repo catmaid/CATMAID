@@ -37,6 +37,17 @@
   }
 
   /**
+   * Free any pixi display objects associated with this layer. Does not destroy
+   * any pixi contexts.
+   */
+  PixiLayer.prototype.unregister = function () {
+    if (this.batchContainer) {
+      this.batchContainer.removeChildren();
+      this.stage.removeChild(this.batchContainer);
+    }
+  };
+
+  /**
    * Initialise the layer's batch container.
    */
   PixiLayer.prototype._initBatchContainer = function () {

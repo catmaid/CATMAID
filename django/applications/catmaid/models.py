@@ -664,14 +664,6 @@ class CardinalityRestriction(models.Model):
         else:
             raise Exception("Unsupported cardinality type.")
 
-#class Session(models.Model):
-#    class Meta:
-#        db_table = "sessions"
-#        managed = False
-#    session_id = models.CharField(max_length=26)
-#    data = models.TextField(default='')
-#    last_accessed = models.DateTimeField(default=now)
-
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
 
@@ -875,23 +867,6 @@ post_syncdb.disconnect(
     create_superuser,
     sender=auth_models,
     dispatch_uid='django.contrib.auth.management.create_superuser')
-
-# ------------------------------------------------------------------------
-
-# Include models for deprecated PHP-only tables, just so that we can
-# remove them with South in a later migration.
-
-class DeprecatedAppliedMigrations(models.Model):
-    class Meta:
-        db_table = "applied_migrations"
-    id = models.CharField(max_length=32, primary_key=True)
-
-class DeprecatedSession(models.Model):
-    class Meta:
-        db_table = "sessions"
-    session_id = models.CharField(max_length=26)
-    data = models.TextField(default='')
-    last_accessed = models.DateTimeField(default=datetime.now)
 
 
 class ChangeRequest(UserFocusedModel):

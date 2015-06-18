@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  display_tracing_setup_dialog,
   Events,
   mayEdit,
   NeuronNameService,
@@ -2297,9 +2296,10 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
       params,
       function(json) {
         if (json.needs_setup) {
-            display_tracing_setup_dialog(project.id, json.has_needed_permissions,
-                json.missing_classes, json.missing_relations,
-                json.missing_classinstances);
+          CATMAID.TracingTool.display_tracing_setup_dialog(project.id,
+              json.has_needed_permissions, json.missing_classes,
+              json.missing_relations, json.missing_classinstances,
+              json.initialize);
         } else {
           self.refreshNodesFromTuples(json, extraNodes);
 

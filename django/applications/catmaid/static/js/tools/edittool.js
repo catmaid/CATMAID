@@ -99,7 +99,7 @@
                       alert("An error was returned when trying to test the tracing setup: "
                         + data.error);
                     } else if (data.needs_setup) {
-                      display_tracing_setup_dialog(project.id,
+                      CATMAID.TracingTool.display_tracing_setup_dialog(project.id,
                         data.has_needed_permissions, data.missing_classes,
                         data.missing_relations, data.missing_classinstances,
                         data.initialize);

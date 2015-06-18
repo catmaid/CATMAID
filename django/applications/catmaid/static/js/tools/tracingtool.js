@@ -97,111 +97,104 @@
      * Add a tracing layer to the given stack. If the stack already has a
      * tracing layer, it is used.
      */
-    var createTracingLayer = function(parentStack, activate)
+    var createTracingLayer = function(parentStack)
     {
-      var layerName =  getTracingLayerName(parentStack);
-      var layer = parentStack.getLayer(layerName);
-      if (!layer) {
-        layer = new TracingLayer( parentStack );
-        parentStack.addLayer(layerName, layer);
-      }
-
-      if (!activate) return layer;
-
-      activateStack(parentStack, layer);
-
-      // view is the mouseCatcher now
-      var view = layer.svgOverlay.view;
-
-      // A handle to a delayed update
-      var updateTimeout;
-
-      var proto_onmousedown = view.onmousedown;
-      view.onmousedown = function( e ) {
-        switch ( CATMAID.ui.getMouseButton( e ) )
-        {
-          case 1:
-            layer.svgOverlay.whenclicked( e );
-            break;
-          case 2:
-            // Put all tracing layers, except active, in "don't update" mode
-            setTracingLayersSuspended(true, true);
-
-            // Attach to the node limit hit event to disable node updates
-            // temporary if the limit was hit. This allows for smoother panning
-            // when many nodes are visible.
-            layer.svgOverlay.on(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
-                disableLayerUpdate, layer);
-            // Cancel any existing update timeout, if there is one
-            if (updateTimeout) {
-              clearTimeout(updateTimeout);
-              updateTimeout = undefined;
-            }
-
-            // Handle mouse event
-            proto_onmousedown( e );
-
-            CATMAID.ui.registerEvent( "onmousemove", updateStatusBar );
-            CATMAID.ui.registerEvent( "onmouseup",
-              function onmouseup (e) {
-                CATMAID.ui.releaseEvents();
-                CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
-                CATMAID.ui.removeEvent( "onmouseup", onmouseup );
-                layer.svgOverlay.off(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
-                    disableLayerUpdate, layer);
-                if (layer.svgOverlay.suspended) {
-                  // Wait a second before updating the view, just in case the user
-                  // continues to pan to not hit the node limit again. Then make
-                  // sure the next update is not stopped.
-                  updateTimeout = setTimeout(function() {
-                    // Wake tracing overlays up again
-                    setTracingLayersSuspended(false, false);
-                    // Recreate nodes by fetching them from the database for the new
-                    // field of view, don't exclude active layer.
-                    updateNodesInTracingLayers(false);
-                  }, 1000);
-                } else {
-                  // Wake tracing overlays up again
-                  setTracingLayersSuspended(false, false);
-                  // Recreate nodes by fetching them from the database for the new
-                  // field of view. The active layer can be excluded, it should be
-                  // updated through the move already.
-                  updateNodesInTracingLayers(true);
-                }
-              });
-            break;
-          default:
-            proto_onmousedown( e );
-            break;
-        }
-      };
+      var layerName = getTracingLayerName(parentStack);
+      var layer = new TracingLayer(parentStack);
+      parentStack.addLayer(layerName, layer);
 
       // Insert a text div for the neuron name in the canvas window title bar
+      var stackFrame = parentStack.getWindow().getFrame();
       var neuronnameDisplay = document.createElement( "p" );
       neuronnameDisplay.id = "neuronName" + parentStack.getId();
       neuronnameDisplay.className = "neuronname";
       var spanName = document.createElement( "span" );
       spanName.appendChild( document.createTextNode( "" ) );
       neuronnameDisplay.appendChild( spanName );
-      parentStack.getWindow().getFrame().appendChild( neuronnameDisplay );
+      stackFrame.appendChild( neuronnameDisplay );
       SkeletonAnnotations.setNeuronNameInTopbar(parentStack.getId(),
           SkeletonAnnotations.getActiveSkeletonId());
 
       return layer;
     };
 
-    function activateStack(newStack, layer)
+    /**
+     * Create new mouse bindings for the layer's view.
+     */
+    function createMouseBindings(stack, layer, mouseCatcher)
     {
-      activeStack = newStack;
-      activeTracingLayer = layer;
-      self.prototype.setMouseCatcher( activeTracingLayer.svgOverlay.view );
+      // A handle to a delayed update
+      var updateTimeout;
 
-      // Call register AFTER changing the mouseCatcher
-      self.prototype.register( activeStack, "edit_button_trace" );
+      var proto_onmousedown = mouseCatcher.onmousedown;
+      var stackBindings = {
+        onmousedown: function( e ) {
+          switch ( CATMAID.ui.getMouseButton( e ) )
+          {
+            case 1:
+              layer.svgOverlay.whenclicked( e );
+              break;
+            case 2:
+              // Put all tracing layers, except active, in "don't update" mode
+              setTracingLayersSuspended(true, true);
 
-      // NOW set the mode TODO cleanup this initialization problem
-      SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
-      activeTracingLayer.svgOverlay.updateNodes();
+              // Attach to the node limit hit event to disable node updates
+              // temporary if the limit was hit. This allows for smoother panning
+              // when many nodes are visible.
+              layer.svgOverlay.on(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                  disableLayerUpdate, layer);
+              // Cancel any existing update timeout, if there is one
+              if (updateTimeout) {
+                clearTimeout(updateTimeout);
+                updateTimeout = undefined;
+              }
+
+              // Handle mouse event
+              proto_onmousedown( e );
+
+              CATMAID.ui.registerEvent( "onmousemove", updateStatusBar );
+              CATMAID.ui.registerEvent( "onmouseup",
+                function onmouseup (e) {
+                  CATMAID.ui.releaseEvents();
+                  CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
+                  CATMAID.ui.removeEvent( "onmouseup", onmouseup );
+                  layer.svgOverlay.off(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                      disableLayerUpdate, layer);
+                  if (layer.svgOverlay.suspended) {
+                    // Wait a second before updating the view, just in case the user
+                    // continues to pan to not hit the node limit again. Then make
+                    // sure the next update is not stopped.
+                    updateTimeout = setTimeout(function() {
+                      // Wake tracing overlays up again
+                      setTracingLayersSuspended(false, false);
+                      // Recreate nodes by fetching them from the database for the new
+                      // field of view, don't exclude active layer.
+                      updateNodesInTracingLayers(false);
+                    }, 1000);
+                  } else {
+                    // Wake tracing overlays up again
+                    setTracingLayersSuspended(false, false);
+                    // Recreate nodes by fetching them from the database for the new
+                    // field of view. The active layer can be excluded, it should be
+                    // updated through the move already.
+                    updateNodesInTracingLayers(true);
+                  }
+                });
+              break;
+            default:
+              proto_onmousedown( e );
+              break;
+          }
+        }
+      };
+
+      // Assign bindings to view
+      var view = layer.svgOverlay.view;
+      for (var fn in stackBindings) {
+        view[fn] = stackBindings[fn];
+      }
+
+      bindings.set(stack, stackBindings);
     }
 
     /**
@@ -217,53 +210,50 @@
       // Update annotation cache for the current project
       annotations.update();
 
-      if (activeTracingLayer && activeStack) {
-        if (activeStack !== parentStack) {
-          // If the tracing layer exists and it belongs to a different stack,
-          // replace it.
-          var existingLayer = parentStack.getLayer(getTracingLayerName(parentStack));
-          if (existingLayer) {
-            activateStack(parentStack, existingLayer);
-            reactivateBindings(parentStack);
-          } else {
-            var layer = createTracingLayer(parentStack, true);
-          }
-        } else {
-          reactivateBindings(parentStack);
-        }
-      } else {
-        var layer = createTracingLayer(parentStack, true);
+      // Get or create the tracing layer for this stack
+      var layer = parentStack.getLayer(getTracingLayerName(parentStack));
+      if (!layer) layer = createTracingLayer(parentStack);
+
+      // Set this layer as mouse catcher in Navigator
+      var view = layer.svgOverlay.view;
+      self.prototype.setMouseCatcher(view);
+
+      // Register stack with prototype, after the mouse catcher has been set.
+      // This attaches mouse handlers to the view.
+      self.prototype.register(parentStack, "edit_button_trace");
+
+      // Try to get existing mouse bindings for this layer
+      if (!bindings.has(parentStack)) createMouseBindings(parentStack, layer, view);
+
+      // Force an update and skeleton tracing mode if stack or layer changed
+      if (activeTracingLayer !== layer || activeStack !== parentStack) {
+        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
+        layer.svgOverlay.updateNodes();
       }
 
-      return;
+      activeStack = parentStack;
+      activeTracingLayer = layer;
+      activateBindings(parentStack);
     };
 
     /**
      * Remove bindings for the given stack from the prototype mouse catcher. The
      * bindings are stored in the bindings variable that is available in the
-     * closure. Inactivate only onmousedown, given that the others are injected
-     * when onmousedown is called.  Leave alone onmousewheel: it is different in
-     * every browser, and it cannot do any harm to have it active.
+     * closure.
      */
     var inactivateBindings = function(stack) {
-      // Backup and delete handlers
-      var stackBindings = {};
+      var handlers = bindings.get(stack);
       var c = self.prototype.mouseCatcher;
-      ['onmousedown'].map(function(fn) {
-        if (c[fn]) {
-          stackBindings[fn] = c[fn];
-          delete c[fn];
-        }
-      });
-      // Save bindings for this stack
-      bindings.set(stack, stackBindings);
+      for (var fn in handlers) {
+        if (c[fn]) delete c[fn];
+      }
     };
 
     /**
      * Replace bindings of the mouse catcher with the stored bindings for the
      * given stack.
      */
-    var reactivateBindings = function(stack) {
+    var activateBindings = function(stack) {
       var stackBindings = bindings.get(stack);
       var c = self.prototype.mouseCatcher;
       for (var b in stackBindings) {
@@ -918,7 +908,7 @@
     // Initialize a tracing layer in all available stacks, but let register()
     // take care of bindings.
     project.getStacks().forEach(function(s) {
-      var layer = createTracingLayer(s, false);
+      var layer = createTracingLayer(s);
       layer.svgOverlay.updateNodes(layer.forceRedraw.bind(layer));
 		  s.getView().appendChild(layer.svgOverlay.view);
     }, this);

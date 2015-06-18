@@ -489,6 +489,10 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
     this.handleChangedSkeleton, this);
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
     this.handleDeletedSkeleton, this);
+
+  // Listen to active node change events
+  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+      this.handleActiveNodeChange, this);
 };
 
 SkeletonAnnotations.SVGOverlay.prototype = {
@@ -799,6 +803,9 @@ SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
       this.handleChangedSkeleton, this);
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
+
+  SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+      this.handleActiveNodeChange, this);
 };
 
 /**
@@ -868,9 +875,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
           "Node " + node.id + ", skeleton " + node.skeleton_id :
           "Virtual node, skeleton " + node.skeleton_id;
       this.printTreenodeInfo(node.id, prefix);
-      SkeletonAnnotations.setNeuronNameInTopbar(this.stack.getId(), node.skeleton_id);
       atn.set(node, this.getStack().getId());
-      this.recolorAllNodes();
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
       if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === node.subtype) {
         CATMAID.statusBar.replaceLast("Activated abutting connector node #" + node.id);
@@ -878,15 +883,11 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
         CATMAID.statusBar.replaceLast("Activated synaptic connector node #" + node.id);
       }
       atn.set(node, this.getStack().getId());
-      SkeletonAnnotations.clearTopbar(this.stack.getId());
-      this.recolorAllNodes();
     }
   } else {
     // Deselect
     atn.set(null, null);
     project.setSelectObject( null, null );
-    this.recolorAllNodes();
-    SkeletonAnnotations.clearTopbar(this.stack.getId());
   }
 
   // (de)highlight in SkeletonSource instances if any if different from the last
@@ -3262,6 +3263,23 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
 SkeletonAnnotations.SVGOverlay.prototype.nodeIsPartOfSkeleton = function(skeletonID, nodeID) {
   if (!this.nodes[nodeID]) throw new CATMAID.ValueError("Node not loaded");
   return this.nodes[nodeID].skeleton_id === skeletonID;
+};
+
+/**
+ * Handle update of active node. All nodes are recolored and the neuron name in
+ * the top bar is updated.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.handleActiveNodeChange = function(node) {
+  if (node) {
+    if (SkeletonAnnotations.TYPE_NODE === node.type) {
+      SkeletonAnnotations.setNeuronNameInTopbar(this.stack.getId(), node.skeleton_id);
+    } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
+      SkeletonAnnotations.clearTopbar(this.stack.getId());
+    }
+  } else {
+    SkeletonAnnotations.clearTopbar(this.stack.getId());
+  }
+  this.recolorAllNodes();
 };
 
 /**

@@ -199,6 +199,7 @@ def get_stacks_menu_info(project):
     for s in project.stacks.all():
         info.append( {
             'id': s.id,
+            'pid': project.id,
             'title': s.title,
             'comment': s.comment,
             'note': '',

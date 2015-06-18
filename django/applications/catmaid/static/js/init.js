@@ -566,16 +566,25 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
   access is generated. */
   stack_menu.update();
   getStackMenuInfo(project.id, function(stacks) {
+    /* jshint scripturl:true */
     if (stacks.length > 1)
     {
       var stack_menu_content = [];
       $.each(stacks, function(i, s) {
-        stack_menu_content.push(
-          {
+        stack_menu_content.push({
             id : s.id,
             title : s.title,
             note : s.note,
-            action : s.action
+            action : [{
+                title: 'Open in new viewer',
+                note: '',
+                action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ')')
+              },{
+                title: 'Add to focused viewer',
+                note: '',
+                action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ', undefined, undefined, true)')
+              }
+            ]
           }
         );
       });

@@ -92,6 +92,7 @@ PIPELINE_JS['catmaid'] = {
         'js/segmentationtool.js',
         'js/selector.js',
         'js/stack.js',
+        'js/stack-viewer.js',
         'js/tilelayercontrol.js',
         'js/tilelayer.js',
         'js/tilesource.js',

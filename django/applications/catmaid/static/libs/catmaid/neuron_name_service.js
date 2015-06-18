@@ -201,7 +201,8 @@ var NeuronNameService = (function()
             }
           });
         } else {
-          return this.updateNames(unknownSkids, callback);
+          return this.updateNames(unknownSkids, callback)
+            .then(this.notifyClients.bind(this));
         }
       },
 

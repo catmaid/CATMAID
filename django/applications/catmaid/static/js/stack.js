@@ -482,6 +482,35 @@ StackViewer.prototype.projectCoordinates = function () {
 	return l;
 };
 
+/**
+ * Scaled stack coordinates of the current view's top left corner for the given
+ * stack.
+ *
+ * @param  {Stack} stack  Target stack for the scaled view coordinates.
+ * @return {xc, yc, z, s} Top left view scaled coordinates in the target stack.
+ */
+StackViewer.prototype.scaledPositionInStack = function (stack) {
+	if (stack.id === this.primaryStack.id) {
+		return {
+			xc: this.xc,
+			yc: this.yc,
+			z: this.z,
+			s: this.s
+		};
+	} else {
+		var px = this.primaryStack.stackToProjectX(this.z, this.y, this.x),
+			py = this.primaryStack.stackToProjectY(this.z, this.y, this.x),
+			pz = this.primaryStack.stackToProjectZ(this.z, this.y, this.x),
+			stackS = stack.projectToStackSX(this.primaryStack.stackToProjectSX(this.s));
+		return {
+			xc: Math.floor(stack.projectToStackX(pz, py, px) / Math.pow(2, stackS) - this.viewWidth / 2),
+			yc: Math.floor(stack.projectToStackY(pz, py, px) / Math.pow(2, stackS) - this.viewHeight / 2),
+			z:  stack.projectToStackZ(pz, py, px),
+			s:  stackS
+		};
+	}
+};
+
 
 /**
  * Write the limiting coordinates of the current stack view's bounding box

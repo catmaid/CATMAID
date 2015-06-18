@@ -38,6 +38,10 @@
     this._tileOrigR = 0;
     /** @type {number} Current origin column in the tiles array. */
     this._tileOrigC = 0;
+    /** @type {number} Current stack tile row of the tiles array origin. */
+    this._tileFirstR = 0;
+    /** @type {number} Current stack tile column of the tiles array origin. */
+    this._tileFirstC = 0;
     this._tilesBuffer = [];
     this._buffering = false;
     this._swapBuffersTimeout = null;
@@ -83,6 +87,8 @@
 
     this._tileOrigR = 0;
     this._tileOrigC = 0;
+    this._tileFirstR = 0;
+    this._tileFirstC = 0;
 
     for (var i = 0; i < rows; ++i) {
       this._tiles[i] = [];
@@ -120,11 +126,12 @@
    * Update and draw the tile grid based on the current stack position and scale.
    */
   TileLayer.prototype.redraw = function (completionCallback) {
+    var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
     var tileInfo = this.tilesForLocation(
-        this.stackViewer.xc,
-        this.stackViewer.yc,
-        this.stackViewer.z,
-        this.stackViewer.s);
+        scaledStackPosition.xc,
+        scaledStackPosition.yc,
+        scaledStackPosition.z,
+        scaledStackPosition.s);
 
     var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag;
     var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag;
@@ -135,12 +142,9 @@
     if (this.stackViewer.z == this.stackViewer.old_z &&
         this.stackViewer.s == this.stackViewer.old_s)
     {
-      var old_fr = Math.floor(this.stackViewer.old_yc / effectiveTileHeight);
-      var old_fc = Math.floor(this.stackViewer.old_xc / effectiveTileWidth);
-
       // Compute panning in X and Y
-      var xd = tileInfo.first_col - old_fc;
-      var yd = tileInfo.first_row - old_fr;
+      var xd = tileInfo.first_col - this._tileFirstC;
+      var yd = tileInfo.first_row - this._tileFirstR;
 
       // Hide wrapped tiles. Here it is assumed abs({xd|yd}) <= 1, i.e.,
       // it is impossible to pan more than one tile in a single redraw.
@@ -165,17 +169,20 @@
       this._tileOrigC = this.colTransform(xd); //(tileOrigC + xd + tiles[0].length) % tiles[0].length;
     }
 
+    this._tileFirstC = tileInfo.first_col;
+    this._tileFirstR = tileInfo.first_row;
+
     var top;
     var left;
 
-    if (this.stackViewer.yc >= 0)
-      top  = -(this.stackViewer.yc % effectiveTileHeight);
+    if (scaledStackPosition.yc >= 0)
+      top  = -(scaledStackPosition.yc % effectiveTileHeight);
     else
-      top  = -((this.stackViewer.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
-    if (this.stackViewer.xc >= 0)
-      left = -(this.stackViewer.xc % effectiveTileWidth);
+      top  = -((scaledStackPosition.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
+    if (scaledStackPosition.xc >= 0)
+      left = -(scaledStackPosition.xc % effectiveTileWidth);
     else
-      left = -((this.stackViewer.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
+      left = -((scaledStackPosition.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
 
     var t = top;
     var l = left;
@@ -373,18 +380,18 @@
    * @param  {function(number, number)} progressCallback
    */
   TileLayer.prototype.cacheLocations = function (locations, progressCallback) {
-    var s = this.stackViewer.s;
+    var s = self.stack.projectToStackSX(this.stackViewer.primaryStack.stackToProjectSX(this.stackViewer.s));
     var self = this;
 
     var tileIndices = locations.reduce(function (tileInds, loc) {
-      var px = self.stackViewer.primaryStack.projectToStackX(loc[2], loc[1], loc[0]);
-      var py = self.stackViewer.primaryStack.projectToStackY(loc[2], loc[1], loc[0]);
-      var pz = self.stackViewer.primaryStack.projectToStackZ(loc[2], loc[1], loc[0]);
+      var px = self.stack.projectToStackX(loc[2], loc[1], loc[0]);
+      var py = self.stack.projectToStackY(loc[2], loc[1], loc[0]);
+      var pz = self.stack.projectToStackZ(loc[2], loc[1], loc[0]);
 
       var tileInfo = self.tilesForLocation(
           // Convert project coords to scaled stack coords of a view corner.
-          self.stackViewer.scale * px - self.stackViewer.viewWidth / 2,
-          self.stackViewer.scale * py - self.stackViewer.viewHeight / 2,
+          px / Math.pow(2, s) - self.stackViewer.viewWidth / 2,
+          py / Math.pow(2, s) - self.stackViewer.viewHeight / 2,
           pz,
           s);
       for (var i = tileInfo.first_col; i <= tileInfo.last_col; ++i)

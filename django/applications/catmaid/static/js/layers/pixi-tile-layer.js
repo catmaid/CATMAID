@@ -42,6 +42,8 @@
     var emptyTex = graphic.generateTexture(false);
 
     this._tiles = [];
+    this._tileFirstR = 0;
+    this._tileFirstC = 0;
 
     for (var i = 0; i < rows; ++i) {
       this._tiles[i] = [];
@@ -61,11 +63,12 @@
 
   /** @inheritdoc */
   PixiTileLayer.prototype.redraw = function (completionCallback) {
+    var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
     var tileInfo = this.tilesForLocation(
-        this.stackViewer.xc,
-        this.stackViewer.yc,
-        this.stackViewer.z,
-        this.stackViewer.s);
+        scaledStackPosition.xc,
+        scaledStackPosition.yc,
+        scaledStackPosition.z,
+        scaledStackPosition.s);
 
     var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag;
     var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag;
@@ -76,29 +79,29 @@
     if (this.stackViewer.z == this.stackViewer.old_z &&
         this.stackViewer.s == this.stackViewer.old_s)
     {
-      var old_fr = Math.floor(this.stackViewer.old_yc / effectiveTileHeight);
-      var old_fc = Math.floor(this.stackViewer.old_xc / effectiveTileWidth);
-
       // Compute panning in X and Y
-      var xd = tileInfo.first_col - old_fc;
-      var yd = tileInfo.first_row - old_fr;
+      var xd = tileInfo.first_col - this._tileFirstC;
+      var yd = tileInfo.first_row - this._tileFirstR;
 
       // Update the toroidal origin in the tiles array
       this._tileOrigR = this.rowTransform(yd);
       this._tileOrigC = this.colTransform(xd);
     }
 
+    this._tileFirstC = tileInfo.first_col;
+    this._tileFirstR = tileInfo.first_row;
+
     var top;
     var left;
 
-    if (this.stackViewer.yc >= 0)
-      top  = -(this.stackViewer.yc % effectiveTileHeight);
+    if (scaledStackPosition.yc >= 0)
+      top  = -(scaledStackPosition.yc % effectiveTileHeight);
     else
-      top  = -((this.stackViewer.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
-    if (this.stackViewer.xc >= 0)
-      left = -(this.stackViewer.xc % effectiveTileWidth);
+      top  = -((scaledStackPosition.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
+    if (scaledStackPosition.xc >= 0)
+      left = -(scaledStackPosition.xc % effectiveTileWidth);
     else
-      left = -((this.stackViewer.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
+      left = -((scaledStackPosition.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
 
     // Set tile grid offset and magnification on the whole container, rather than
     // individual tiles.

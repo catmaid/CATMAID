@@ -304,7 +304,8 @@ function Navigator()
 	this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
 		var old_s = self.stackViewer.s;
 		var old_scale = self.stackViewer.scale;
-		var new_s = Math.max(self.stackViewer.primaryStack.MIN_S, Math.min(self.stackViewer.primaryStack.MAX_S, sp));
+		var s_extents = self.stackViewer.getZoomExtents();
+		var new_s = Math.max(s_extents.min, Math.min(s_extents.max, sp));
 		var new_scale = 1 / Math.pow(2, new_s);
 
 		if (old_s == new_s)
@@ -514,11 +515,12 @@ function Navigator()
 
 		self.stackViewer.getView().appendChild( self.mouseCatcher );
 
+		var sExtents = self.stackViewer.getZoomExtents();
 		self.slider_s.update(
-			self.stackViewer.primaryStack.MAX_S,
-			self.stackViewer.primaryStack.MIN_S,
-			{ major: (Math.abs(self.stackViewer.primaryStack.MAX_S) + Math.abs(self.stackViewer.primaryStack.MIN_S)) + 1,
-			  minor: (Math.abs(self.stackViewer.primaryStack.MAX_S) + Math.abs(self.stackViewer.primaryStack.MIN_S))*10 + 1 },
+			sExtents.max,
+			sExtents.min,
+			{ major: (Math.abs(sExtents.max) + Math.abs(sExtents.min)) + 1,
+			  minor: (Math.abs(sExtents.max) + Math.abs(sExtents.min))*10 + 1 },
 			self.stackViewer.s,
 			self.changeScaleDelayed,
 			-0.01);

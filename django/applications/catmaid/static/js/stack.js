@@ -874,6 +874,20 @@ StackViewer.prototype.moveLayer = function (key, beforeKey) {
 };
 
 /**
+ * Add a tile layer for a stack to this stack viewer.
+ * @param {Stack} stack The stack associated with this layer.
+ * @param {Object} layer The layer to add.
+ */
+StackViewer.prototype.addStackLayer = function (stack, layer) {
+	if (stack.orientation !== this.primaryStack.orientation) {
+		throw new Error('Stacks must have the same orientation as the primary stack');
+	}
+
+	this.addLayer('TileLayer' + stack.id, layer);
+	this.resize();
+};
+
+/**
  * Register a tool at this stack.  Unregisters the current tool and then
  * makes the tool working.
  */

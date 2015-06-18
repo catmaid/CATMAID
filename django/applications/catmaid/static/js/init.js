@@ -514,7 +514,7 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
       e.orientation );
 
   if (!useExistingViewer) {
-    if (typeof stackViewerConstructor === 'undefined') stackViewerConstructor = StackViewer;
+    if (typeof stackViewerConstructor === 'undefined') stackViewerConstructor = CATMAID.StackViewer;
     stackViewer = new stackViewerConstructor(
         project,
         stack,

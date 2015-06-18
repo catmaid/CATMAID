@@ -69,6 +69,13 @@
   };
 
   /**
+   * Remove any DOM created by this layer from the stack viewer.
+   */
+  TileLayer.prototype.unregister = function () {
+    this.stackViewer.getLayersView().removeChild(this.tilesContainer);
+  };
+
+  /**
    * Initialise the tiles array and buffer.
    */
   TileLayer.prototype._initTiles = function (rows, cols) {

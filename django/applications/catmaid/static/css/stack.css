@@ -188,6 +188,13 @@ div.TilelayerControl h4
 	margin: 0.5em 0;
 }
 
+div.TilelayerControl .layerClose
+{
+	float: right;
+	margin: 0.5em;
+	cursor: pointer;
+}
+
 .layerControl .setting
 {
 	float: none;

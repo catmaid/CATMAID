@@ -82,6 +82,12 @@
       if (layer.isOrderable) container.addClass('orderable');
 
       var layer_name = layer.getLayerName ? layer.getLayerName() : key;
+      if (stackViewer.isLayerRemovable(key)) {
+        container.append($('<div class="layerClose">[ x ]</div>').click(function () {
+          stackViewer.removeLayer(key);
+          stackViewer.redraw();
+        }));
+      }
       container.append($('<h4/>').append(layer_name));
 
       // Opacity slider

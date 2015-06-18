@@ -150,8 +150,8 @@
         this.stackViewer.s == this.stackViewer.old_s)
     {
       // Compute panning in X and Y
-      var xd = tileInfo.first_col - this._tileFirstC;
-      var yd = tileInfo.first_row - this._tileFirstR;
+      var xd = tileInfo.firstCol - this._tileFirstC;
+      var yd = tileInfo.firstRow - this._tileFirstR;
 
       // Hide wrapped tiles. Here it is assumed abs({xd|yd}) <= 1, i.e.,
       // it is impossible to pan more than one tile in a single redraw.
@@ -176,8 +176,8 @@
       this._tileOrigC = this.colTransform(xd); //(tileOrigC + xd + tiles[0].length) % tiles[0].length;
     }
 
-    this._tileFirstC = tileInfo.first_col;
-    this._tileFirstR = tileInfo.first_row;
+    this._tileFirstC = tileInfo.firstCol;
+    this._tileFirstR = tileInfo.firstRow;
 
     var top;
     var left;
@@ -200,8 +200,8 @@
                       this.stackViewer.s !== this.stackViewer.old_s;
 
     var to_buffer =
-        (tileInfo.last_col - Math.max(0, tileInfo.first_col) + 1) *
-        (tileInfo.last_row - Math.max(0, tileInfo.first_row) + 1);
+        (tileInfo.lastCol - Math.max(0, tileInfo.firstCol) + 1) *
+        (tileInfo.lastRow - Math.max(0, tileInfo.firstRow) + 1);
     var buffered = 0;
 
     // Set a timeout for slow connections to swap in the buffer whether or
@@ -230,19 +230,19 @@
 
     // Update tiles (or the tile buffer).
     for (var i = this._tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows) {
-      var r = tileInfo.first_row + ti;
+      var r = tileInfo.firstRow + ti;
 
       nextT = t + effectiveTileHeight;
       seamRow = Math.round(nextT) - nextT > 0;
 
       for (var j = this._tileOrigC, tj = 0; tj < cols; ++tj, j = (j+1) % cols) {
-        var c = tileInfo.first_col + tj;
+        var c = tileInfo.firstCol + tj;
         var tile = this._buffering ? this._tilesBuffer[i][j] : this._tiles[i][j];
 
         nextL = l + effectiveTileWidth;
 
-        if (c >= 0 && c <= tileInfo.last_col &&
-            r >= 0 && r <= tileInfo.last_row) {
+        if (c >= 0 && c <= tileInfo.lastCol &&
+            r >= 0 && r <= tileInfo.lastRow) {
           var source = this.tileSource.getTileURL(project, this.stack, this.stackViewer,
               c, r, tileInfo.zoom);
 
@@ -401,8 +401,8 @@
           py / Math.pow(2, s) - self.stackViewer.viewHeight / 2,
           pz,
           s);
-      for (var i = tileInfo.first_col; i <= tileInfo.last_col; ++i)
-        for (var j = tileInfo.first_row; j <= tileInfo.last_row; ++j)
+      for (var i = tileInfo.firstCol; i <= tileInfo.lastCol; ++i)
+        for (var j = tileInfo.firstRow; j <= tileInfo.lastRow; ++j)
           tileInds.push([i, j, tileInfo.z, tileInfo.zoom]);
 
       return tileInds;
@@ -464,10 +464,10 @@
     lr = Math.min(lr, Math.floor((this.stack.dimension.y * Math.pow(2, -zoom) - 1) / this.tileSource.tileHeight));
 
     return {
-      first_row: fr,
-      first_col: fc,
-      last_row:  lr,
-      last_col:  lc,
+      firstRow:  fr,
+      firstCol:  fc,
+      lastRow:   lr,
+      lastCol:   lc,
       z:         z,
       zoom:      zoom,
       mag:       mag

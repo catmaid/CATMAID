@@ -80,16 +80,16 @@
         this.stackViewer.s == this.stackViewer.old_s)
     {
       // Compute panning in X and Y
-      var xd = tileInfo.first_col - this._tileFirstC;
-      var yd = tileInfo.first_row - this._tileFirstR;
+      var xd = tileInfo.firstCol - this._tileFirstC;
+      var yd = tileInfo.firstRow - this._tileFirstR;
 
       // Update the toroidal origin in the tiles array
       this._tileOrigR = this.rowTransform(yd);
       this._tileOrigC = this.colTransform(xd);
     }
 
-    this._tileFirstC = tileInfo.first_col;
-    this._tileFirstR = tileInfo.first_row;
+    this._tileFirstC = tileInfo.firstCol;
+    this._tileFirstR = tileInfo.firstRow;
 
     var top;
     var left;
@@ -114,18 +114,18 @@
 
     // Update tiles.
     for (var i = this._tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows) {
-      var r = tileInfo.first_row + ti;
+      var r = tileInfo.firstRow + ti;
       var x = 0;
 
       for (var j = this._tileOrigC, tj = 0; tj < cols; ++tj, j = (j+1) % cols) {
-        var c = tileInfo.first_col + tj;
+        var c = tileInfo.firstCol + tj;
         var tile = this._tiles[i][j];
         // Set tile positions to handle toroidal wrapping.
         tile.position.x = x;
         tile.position.y = y;
 
-        if (c >= 0 && c <= tileInfo.last_col &&
-            r >= 0 && r <= tileInfo.last_row) {
+        if (c >= 0 && c <= tileInfo.lastCol &&
+            r >= 0 && r <= tileInfo.lastRow) {
           var source = this.tileSource.getTileURL(project, this.stack, this.stackViewer,
               c, r, tileInfo.zoom);
 

@@ -276,6 +276,7 @@ function StackViewer(
 {
 	this._project = project;
 	this.primaryStack = primaryStack;
+	this._stacks = [primaryStack];
 
 	this._widgetId = this.registerInstance();
 
@@ -837,6 +838,25 @@ StackViewer.prototype.removeLayer = function (key) {
 		layer.unregister();
 		delete this._layers[ key ];
 		this._layerOrder.splice(this._layerOrder.indexOf(key), 1);
+
+		if (layer instanceof CATMAID.TileLayer) {
+			var self = this;
+			var otherStackLayers = Object.keys(this._layers).some(function (key) {
+				var otherLayer = self._layers[key];
+				return otherLayer instanceof CATMAID.TileLayer && otherLayer.stack.id === layer.stack.id;
+			});
+
+			// If this was the last tile layer for a particular stack...
+			if (!otherStackLayers) {
+				// Remove that stack from this stack viewer and update the tool.
+				this._stacks = this._stacks.filter(function (s) { return s.id !== layer.stack.id; });
+				if (this._tool) {
+					this._tool.unregister(this);
+					this._tool.register(this);
+				}
+			}
+		}
+
 		this.tilelayercontrol.refresh();
 		return layer;
 	}
@@ -899,7 +919,12 @@ StackViewer.prototype.addStackLayer = function (stack, layer) {
 		throw new Error('Stacks must have the same orientation as the primary stack');
 	}
 
+	this._stacks.push(stack);
 	this.addLayer('TileLayer' + stack.id, layer);
+	if (this._tool) {
+		this._tool.unregister(this);
+		this._tool.register(this);
+	}
 	this.resize();
 };
 

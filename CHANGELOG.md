@@ -45,6 +45,25 @@ Multi-view tracing and virtual nodes:
   in which direction to move to look beyond the start of a segment.
 
 
+Stack viewer:
+
+- Other stacks in a project can be added to an open stack view by selecting the
+  "Add to focused viewer" option from the stacks menu. This allows multiple
+  stacks to exist in the same view like overlays, while accounting for
+  differences in translation and resolution. The navigator will expand the
+  available zoom levels to accomodate the maximum and minimum zoom possible in
+  all of the open stacks.
+
+- Tile layers for stacks added to a viewer can be removed from a viewer via an
+  "x" in the tile layer control.
+
+- Multiple viewers into the same stack can now be opened.
+
+- Each stack viewer can be toggled between coupling its navigation with other
+  open stack viewers. Toggle this via the "Navigate with project" checkbox in
+  the tile layer control.
+
+
 Neuron search:
 
 - The name displayed for neurons now follows the same naming mechanism used for

@@ -845,6 +845,22 @@ StackViewer.prototype.removeLayer = function (key) {
 };
 
 /**
+ * Detemines whether a layer can be removed from this stack viewer.
+ * @param  {*} key      Key of the layer to test.
+ * @return {Boolean}    Whether the layer is removable.
+ */
+StackViewer.prototype.isLayerRemovable = function (key) {
+	if (this._layers.length === 1) return false;
+
+	var layer = this._layers[ key ];
+	if ( typeof layer !== "undefined" && layer && layer instanceof CATMAID.TileLayer ) {
+		return layer.stack.id !== this.primaryStack.id;
+	}
+	else
+		return false;
+};
+
+/**
  * Move a layer to a new position in the layer order.
  * @param {*} key       Key of the layer to move.
  * @param {*} beforeKey Key of the layer to move the layer before or null to

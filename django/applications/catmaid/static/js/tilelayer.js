@@ -437,7 +437,7 @@
        * increasing the number of tiles to fill the viewport since
        * in that case effectiveTileWidth < tileWidth.
        */
-      zoom = Math.max(0, Math.ceil(zoom));
+      zoom = Math.min(this.stack.MAX_S, Math.max(0, Math.ceil(zoom)));
       /* Magnification is positive for digital zoom beyond image
        * resolution and negative for non-integral zooms within
        * image resolution.

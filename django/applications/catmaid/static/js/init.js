@@ -440,7 +440,7 @@ function updateProjectListFromCache() {
  * freeze the window to wait for an answer. The successFn callback is called
  * only if the loading was successful.
  */
-function openProjectStack( pid, sid, successFn, stackViewerConstructor )
+function openProjectStack( pid, sid, successFn, stackViewerConstructor, useExistingViewer )
 {
 	if ( project && project.id != pid )
 	{
@@ -454,7 +454,10 @@ function openProjectStack( pid, sid, successFn, stackViewerConstructor )
 		{ },
 		CATMAID.jsonResponseHandler(
 			function(json) {
-				var stackViewer = handle_openProjectStack(json, stackViewerConstructor);
+				var stackViewer = handle_openProjectStack(
+            json,
+            useExistingViewer ? project.focusedStackViewer : undefined,
+            stackViewerConstructor);
 				// Call success function, if any, if a stack viewer was added
 				if (stackViewer) {
 					CATMAID.tools.callIfFn(successFn, stackViewer);
@@ -475,8 +478,10 @@ function openProjectStack( pid, sid, successFn, stackViewerConstructor )
  *
  * free the window
  */
-function handle_openProjectStack( e, stackViewerConstructor )
+function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
 {
+  var useExistingViewer = false;
+
   //! look if the project is already opened, otherwise open a new one
   if ( !( project && project.id == e.pid ) )
   {
@@ -484,6 +489,8 @@ function handle_openProjectStack( e, stackViewerConstructor )
     project.register();
     // TODO: There should be a project change event for this to subscribe
     CATMAID.ReviewSystem.Whitelist.refresh();
+  } else {
+    useExistingViewer = typeof stackViewer !== 'undefined';
   }
 
   var labelupload = '';
@@ -492,7 +499,6 @@ function handle_openProjectStack( e, stackViewerConstructor )
     labelupload = e.labelupload_url;
   }
 
-  if (typeof stackViewerConstructor === 'undefined') stackViewerConstructor = StackViewer;
   var stack = new Stack(
       e.sid,
       e.stitle,
@@ -506,10 +512,14 @@ function handle_openProjectStack( e, stackViewerConstructor )
       labelupload, // TODO: if there is any
       e.metadata,
       e.orientation );
-  var stackViewer = new stackViewerConstructor(
-      project,
-      stack,
-      userprofile.inverse_mouse_wheel);
+
+  if (!useExistingViewer) {
+    if (typeof stackViewerConstructor === 'undefined') stackViewerConstructor = StackViewer;
+    stackViewer = new stackViewerConstructor(
+        project,
+        stack,
+        userprofile.inverse_mouse_wheel);
+  }
 
   document.getElementById( "toolbox_project" ).style.display = "block";
 
@@ -525,27 +535,31 @@ function handle_openProjectStack( e, stackViewerConstructor )
       1,
       true);
 
-  stackViewer.addLayer( "TileLayer", tilelayer );
+  if (!useExistingViewer) {
+    stackViewer.addLayer( "TileLayer", tilelayer );
 
-  $.each(e.overlay, function(key, value) {
-    var tilesource = CATMAID.getTileSource( value.tile_source_type,
-        value.image_base, value.file_extension, value.tile_width, value.tile_height );
-    var layer_visibility = parseInt(value.default_opacity) > 0;
-    var tilelayer2 = new tilelayerConstructor(
-            stackViewer,
-            value.title,
-            stack,
-            tilesource,
-            layer_visibility,
-            value.default_opacity / 100,
-            false);
-    stackViewer.addLayer( value.title, tilelayer2 );
-  });
+    $.each(e.overlay, function(key, value) {
+      var tilesource = CATMAID.getTileSource( value.tile_source_type,
+          value.image_base, value.file_extension, value.tile_width, value.tile_height );
+      var layer_visibility = parseInt(value.default_opacity) > 0;
+      var tilelayer2 = new tilelayerConstructor(
+              stackViewer,
+              value.title,
+              stack,
+              tilesource,
+              layer_visibility,
+              value.default_opacity / 100,
+              false);
+      stackViewer.addLayer( value.title, tilelayer2 );
+    });
 
-  project.addStackViewer( stackViewer );
+    project.addStackViewer( stackViewer );
 
-  // refresh the overview handler to also register the mouse events on the buttons
-  stackViewer.tilelayercontrol.refresh();
+    // refresh the overview handler to also register the mouse events on the buttons
+    stackViewer.tilelayercontrol.refresh();
+  } else {
+    stackViewer.addStackLayer(stack, tilelayer);
+  }
 
   /* Update the projects stack menu. If there is more
   than one stack linked to the current project, a submenu for easy

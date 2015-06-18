@@ -208,6 +208,20 @@ function Stack(
 	};
 
 	/**
+	 * Project x-resolution for a given zoom level.
+	 */
+	this.stackToProjectSX = function (s) {
+		return this.resolution.x * Math.pow(2, s);
+	};
+
+	/**
+	 * Stack zoom level for a given x-resolution.
+	 */
+	this.projectToStackSX = function (res) {
+		return Math.log(res / this.resolution.x) / Math.LN2;
+	};
+
+	/**
 	 * Transfer the limiting coordinates of an orthogonal box from stack to
 	 * project coordinates.  Transferred coordinates are written into
 	 * projectBox.  This method is faster than createStackToProjectBox because
@@ -675,10 +689,6 @@ StackViewer.prototype.moveTo = function (zp, yp, xp, sp, completionCallback) {
 	this.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
 };
 
-StackViewer.prototype.bestScaleLevel = function (res) {
-	return Math.log(res / this.primaryStack.resolution.x) / Math.LN2;
-};
-
 /**
  * move to project-coordinates passing project coordinates and resolution
  *
@@ -688,7 +698,7 @@ StackViewer.prototype.bestScaleLevel = function (res) {
  * @param res spatial resolution in units per pixel
  */
 StackViewer.prototype.moveToProject = function (zp, yp, xp, res, completionCallback) {
-	var sp = this.bestScaleLevel( res );
+	var sp = this.primaryStack.projectToStackSX( res );
 	var layersWithBeforeMove = [], l;
 	for ( var key in this._layers ) {
 		if (this._layers.hasOwnProperty(key)) {
@@ -711,7 +721,7 @@ StackViewer.prototype.moveToPixel = function (zs, ys, xs, ss) {
 		this.primaryStack.stackToProjectZ( zs, ys, xs ),
 		this.primaryStack.stackToProjectY( zs, ys, xs ),
 		this.primaryStack.stackToProjectX( zs, ys, xs ),
-		this.primaryStack.resolution.x * Math.pow(2, ss));
+		this.primaryStack.stackToProjectSX( ss ));
 
 	return true;
 };

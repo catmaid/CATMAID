@@ -23,6 +23,8 @@
     this.tilesContainer = this.renderer.view;
     this.tilesContainer.className = 'sliceTiles';
     this.stackViewer.getLayersView().appendChild(this.tilesContainer);
+
+    this._oldZoom = 0;
   }
 
   PixiTileLayer.prototype = Object.create(CATMAID.TileLayer.prototype);
@@ -146,8 +148,9 @@
     }
 
     if (this.stackViewer.z === this.stackViewer.old_z &&
-        tileInfo.zoom === Math.max(0, Math.ceil(this.stackViewer.old_s)))
+        tileInfo.zoom === this._oldZoom)
       this.renderer.render(this.stage);
+    this._oldZoom = tileInfo.zoom;
 
     // If any tiles need to be buffered (that are not already being buffered):
     if (toLoad.length > 0) {

@@ -385,10 +385,10 @@
         if (SkeletonAnnotations.TYPE_NODE === node.type) {
           setNeuronNameInTopbars(node.skeleton_id);
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-          clearTopbar(this.stackViewer.getId());
+          clearTopbars();
         }
       } else {
-        clearTopbar(this.stackViewer.getId());
+        clearTopbars();
       }
     };
 

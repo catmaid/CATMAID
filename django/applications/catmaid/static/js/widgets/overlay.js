@@ -2242,7 +2242,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
 
     var x1 = stackViewer.x + halfWidth,
         y1 = stackViewer.y + halfHeight,
-        z1 = stackViewer.z + 1; // stackViewer.z is always in discreet units
+        z1 = stackViewer.z + 1.0;
 
     var wx0 = stackViewer.primaryStack.stackToProjectX(z0, y0, x0),
         wy0 = stackViewer.primaryStack.stackToProjectY(z0, y0, x0),
@@ -2251,6 +2251,14 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     var wx1 = stackViewer.primaryStack.stackToProjectX(z1, y1, x1),
         wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
         wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
+
+    // Compensate for rounding mismatches of stack view's discrete Z coordinates
+    // (sections), which can make its position differ from the project space
+    // position. The difference is added to the query bounding box, but clamped
+    // at zero;
+    wx0 = Math.max(0, wy0 - Math.abs(wx0 - project.coordinates.x));
+    wy0 = Math.max(0, wy0 - Math.abs(wy0 - project.coordinates.y));
+    wz0 = Math.max(0, wz0 - Math.abs(wz0 - project.coordinates.z));
 
     var params = {
       left: wx0,

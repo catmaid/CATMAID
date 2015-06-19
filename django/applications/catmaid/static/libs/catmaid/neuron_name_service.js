@@ -169,6 +169,10 @@ var NeuronNameService = (function()
        */
       registerAll: function(client, models, callback)
       {
+        if (!client) {
+          throw new CATMAID.ValueError("Please provide a valid client");
+        }
+
         // Link all skeleton IDs to the client and create a list of unknown
         // skeletons.
         var unknownSkids = [];
@@ -275,7 +279,7 @@ var NeuronNameService = (function()
       notifyClients: function() {
         clients.forEach(function(c) {
           // If a client has a method called 'updateNeuronNames', call it
-          if (c.updateNeuronNames) {
+          if (c && c.updateNeuronNames) {
             c.updateNeuronNames();
           }
         });

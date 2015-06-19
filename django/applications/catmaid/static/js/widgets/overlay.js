@@ -332,6 +332,8 @@ SkeletonAnnotations.setTracingMode = function (mode) {
 SkeletonAnnotations.setNeuronNameInTopbar = function(stackViewerId, skeletonID) {
   if (!skeletonID) return;
   var label = $('#neuronName' + stackViewerId);
+  if (0 === label.length) return;
+
   NeuronNameService.getInstance().unregister(label.data());
   label.data('skeleton_id', skeletonID);
   label.data('updateNeuronNames', function () {

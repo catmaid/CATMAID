@@ -18,20 +18,23 @@
    */
   function PixiLayer() {
     this.batchContainer = null;
-    var context = PixiLayer.contexts.get(this.stackViewer);
-    if (!context) {
+    this._context = PixiLayer.contexts.get(this.stackViewer);
+    if (!this._context) {
       if (!PIXI.BaseTextureCacheManager || PIXI.BaseTextureCacheManager.constructor !== PIXI.LRUCacheManager) {
         PIXI.BaseTextureCacheManager = new PIXI.LRUCacheManager(PIXI.BaseTextureCache, 512);
       }
-      context = {
+      this._context = {
           renderer: new PIXI.autoDetectRenderer(
               this.stackViewer.getView().clientWidth,
               this.stackViewer.getView().clientHeight),
-          stage: new PIXI.Stage(0x000000)};
-      PixiLayer.contexts.set(this.stackViewer, context);
+          stage: new PIXI.Stage(0x000000),
+          layersRegistered: 0,
+          layersReady: 0};
+      PixiLayer.contexts.set(this.stackViewer, this._context);
     }
-    this.renderer = context.renderer;
-    this.stage = context.stage;
+    this._context.layersRegistered += 1;
+    this.renderer = this._context.renderer;
+    this.stage = this._context.stage;
     this.blendMode = 'normal';
     this.filters = [];
   }
@@ -45,6 +48,13 @@
       this.batchContainer.removeChildren();
       this.stage.removeChild(this.batchContainer);
     }
+
+    this._context.layersRegistered -= 1;
+
+    // If this was the last layer using this Pixi context, remove it.
+    if (this._context.layersRegistered === 0) {
+      PixiLayer.contexts.delete(this.stackViewer);
+    }
   };
 
   /**
@@ -56,6 +66,17 @@
       this.syncFilters();
       this.stage.addChild(this.batchContainer);
     } else this.batchContainer.removeChildren();
+  };
+
+  /**
+   * Render the Pixi context if all layers using it are ready.
+   */
+  PixiLayer.prototype._renderIfReady = function () {
+    this._context.layersReady += 1;
+    if (this._context.layersReady >= this._context.layersRegistered) {
+      this._context.layersReady = 0;
+      this.renderer.render(this.stage);
+    }
   };
 
   /**

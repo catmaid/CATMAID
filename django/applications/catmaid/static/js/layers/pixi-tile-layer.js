@@ -149,7 +149,7 @@
 
     if (this.stackViewer.z === this.stackViewer.old_z &&
         tileInfo.zoom === this._oldZoom)
-      this.renderer.render(this.stage);
+      this._renderIfReady();
     this._oldZoom = tileInfo.zoom;
 
     // If any tiles need to be buffered (that are not already being buffered):
@@ -195,7 +195,7 @@
       }
     }
 
-    this.renderer.render(this.stage);
+    this._renderIfReady();
   };
 
   CATMAID.PixiTileLayer = PixiTileLayer;

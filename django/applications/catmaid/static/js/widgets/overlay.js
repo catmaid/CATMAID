@@ -341,7 +341,10 @@ SkeletonAnnotations.setNeuronNameInTopbar = function(stackViewerId, skeletonID) 
   });
   var models = {};
   models[skeletonID] = {};
-  NeuronNameService.getInstance().registerAll(label.data(), models);
+  NeuronNameService.getInstance().registerAll(label.data(), models)
+    .then(function() {
+      label.text(NeuronNameService.getInstance().getName(skeletonID));
+    });
 };
 
 /**

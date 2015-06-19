@@ -66,7 +66,7 @@ function Project( pid )
 		}
 
 		// Announce that a new stack view was added
-		this.trigger(Project.EVENT_STACKVIEW_ADDED, stackViewer.getId());
+		this.trigger(Project.EVENT_STACKVIEW_ADDED, stackViewer);
 	};
 
 	/**
@@ -107,14 +107,14 @@ function Project( pid )
 		{
 			if ( stackViewers[ i ].getId() === id )
 			{
-				stackViewers.splice( i, 1 );
+				var removedViews = stackViewers.splice( i, 1 );
 				if ( stackViewers.length === 0 )
 					self.destroy();
 				else
 					stackViewers[ ( i + 1 ) % stackViewers.length ].getWindow().focus();
 
 				// Announce that this stack view was closed
-				this.trigger(Project.EVENT_STACKVIEW_CLOSED, id);
+				this.trigger(Project.EVENT_STACKVIEW_CLOSED, removedViews[0]);
 			}
 		}
 		CATMAID.ui.onresize();

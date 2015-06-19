@@ -270,11 +270,11 @@
   {
     this.getTileURL = function(project, stack, stackViewer,
                                col, row, zoomLevel) {
-      if (stack.orientation === Stack.ORIENTATION_XY) {
+      if (stack.orientation === CATMAID.Stack.ORIENTATION_XY) {
         return baseURL + 'xy/' + zoomLevel + '/' + col + '_' + row + '_' + stackViewer.z;
-      } else if (stack.orientation === Stack.ORIENTATION_XZ) {
+      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
         return baseURL + 'xz/' + zoomLevel + '/' + col + '_' + stackViewer.z + '_' + row;
-      } else if (stack.orientation === Stack.ORIENTATION_ZY) {
+      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
         return baseURL + 'yz/' + zoomLevel + '/' + stackViewer.z + '_' + col + '_' + row;
       }
     };

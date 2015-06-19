@@ -6,14 +6,14 @@ QUnit.test('Multi-view stack test', function( assert ) {
     var dim = {'x': 100, 'y': 100, 'z': 100};
     var res = {'x': 0.1, 'y': 0.5, 'z': 2.0};
     var trs = {'x': 1, 'y': 2, 'z': 3};
-    return new Stack(1, name, dim, res, trs,
+    return new CATMAID.Stack(1, name, dim, res, trs,
         [], false, 3, 4, "", "", orientation);
   }
 
   // Create test stacks for each orientation
-  var xy_stack = create_stack("XY Stack", Stack.ORIENTATION_XY);
-  var xz_stack = create_stack("XZ Stack", Stack.ORIENTATION_XZ);
-  var zy_stack = create_stack("ZY Stack", Stack.ORIENTATION_ZY);
+  var xy_stack = create_stack("XY Stack", CATMAID.Stack.ORIENTATION_XY);
+  var xz_stack = create_stack("XZ Stack", CATMAID.Stack.ORIENTATION_XZ);
+  var zy_stack = create_stack("ZY Stack", CATMAID.Stack.ORIENTATION_ZY);
 
   // Test stack to project transformation for X coordinate
   assert.strictEqual(xy_stack.stackToProjectX(0, 0, 0), 1,

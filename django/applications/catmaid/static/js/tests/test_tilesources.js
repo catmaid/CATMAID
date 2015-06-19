@@ -13,7 +13,7 @@ QUnit.test('Tile sources test', function( assert ) {
     var p = 1;
     var s = {
       id: 1,
-      orientation: Stack.ORIENTATION_XY
+      orientation: CATMAID.Stack.ORIENTATION_XY
     };
     var sv = {
       scale: 2,
@@ -75,12 +75,12 @@ QUnit.test('Tile sources test', function( assert ) {
         "https://example.com/xy/0/4_5_3",
         "Tile source 8 produces correct URL for XY stack");
     var stackXZ = CATMAID.tools.deepCopy(s);
-    stackXZ.orientation = Stack.ORIENTATION_XZ;
+    stackXZ.orientation = CATMAID.Stack.ORIENTATION_XZ;
     assert.equal(ts8.getTileURL(p, stackXZ, sv, c, r, z),
         "https://example.com/xz/0/4_3_5",
         "Tile source 8 produces correct URL for XZ stack");
     var stackZY = CATMAID.tools.deepCopy(s);
-    stackZY.orientation = Stack.ORIENTATION_ZY;
+    stackZY.orientation = CATMAID.Stack.ORIENTATION_ZY;
     assert.equal(ts8.getTileURL(p, stackZY, sv, c, r, z),
         "https://example.com/yz/0/3_4_5",
         "Tile source 8 produces correct URL for ZY stack");

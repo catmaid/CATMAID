@@ -499,7 +499,7 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
     labelupload = e.labelupload_url;
   }
 
-  var stack = new Stack(
+  var stack = new CATMAID.Stack(
       e.sid,
       e.stitle,
       e.dimension,

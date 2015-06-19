@@ -6,11 +6,11 @@ QUnit.test('Tile layer test', function (assert) {
     var dim = {'x': 1000, 'y': 100, 'z': 100};
     var res = {'x': 0.1, 'y': 0.5, 'z': 2.0};
     var trs = {'x': 0, 'y': 0, 'z': 0};
-    return new Stack(1, name, dim, res, trs,
+    return new CATMAID.Stack(1, name, dim, res, trs,
         [], false, 3, 4, "", "", orientation);
   }
 
-  var stack = create_stack("Test Stack", Stack.ORIENTATION_XY);
+  var stack = create_stack("Test Stack", CATMAID.Stack.ORIENTATION_XY);
   var stackViewer = new CATMAID.StackViewer(null, stack, false);
   var tileWidth = 10;
   var tileHeight = 12;

@@ -53,7 +53,7 @@
      * False otherwise.
      */
     this.isXView = function() {
-      return project.focusedStack.orientation === Stack.ORIENTATION_ZY;
+      return project.focusedStack.orientation === CATMAID.Stack.ORIENTATION_ZY;
     };
 
     /**
@@ -61,7 +61,7 @@
      * False otherwise.
      */
     this.isYView = function() {
-      return project.focusedStack.orientation === Stack.ORIENTATION_XZ;
+      return project.focusedStack.orientation === CATMAID.Stack.ORIENTATION_XZ;
     };
 
     /**
@@ -69,7 +69,7 @@
      * False otherwise.
      */
     this.isZView = function() {
-      return project.focusedStack.orientation === Stack.ORIENTATION_XY;
+      return project.focusedStack.orientation === CATMAID.Stack.ORIENTATION_XY;
     };
 
     /**

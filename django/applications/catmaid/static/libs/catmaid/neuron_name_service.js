@@ -173,10 +173,19 @@ var NeuronNameService = (function()
           throw new CATMAID.ValueError("Please provide a valid client");
         }
 
+        // Make sure all skeletons have valid integer IDs.
+        var validIDs = [];
+        for (var skid in models) {
+          var id = parseInt(skid, 10)
+          if (!id) throw new CATMAID.ValueError("Please provide valid IDs");
+          else validIDs.push(id);
+        }
+
         // Link all skeleton IDs to the client and create a list of unknown
         // skeletons.
         var unknownSkids = [];
-        for (var skid in models) {
+        for (var i=0; i<validIDs.length; ++i) {
+          var skid = validIDs[i];
           if (skid in managedSkeletons) {
             if (-1 === managedSkeletons[skid].clients.indexOf(client)) {
               managedSkeletons[skid].clients.push(client);

@@ -89,31 +89,6 @@
     };
 
     /**
-     * Add a tracing layer to the given stack viewer. If the stack viewer
-     * already has a tracing layer, it is used.
-     */
-    var createTracingLayer = function(parentStackViewer)
-    {
-      var layerName = getTracingLayerName(parentStackViewer);
-      var layer = new TracingLayer(parentStackViewer);
-      parentStackViewer.addLayer(layerName, layer);
-
-      // Insert a text div for the neuron name in the canvas window title bar
-      var stackFrame = parentStackViewer.getWindow().getFrame();
-      var neuronnameDisplay = document.createElement( "p" );
-      neuronnameDisplay.id = "neuronName" + parentStackViewer.getId();
-      neuronnameDisplay.className = "neuronname";
-      var spanName = document.createElement( "span" );
-      spanName.appendChild( document.createTextNode( "" ) );
-      neuronnameDisplay.appendChild( spanName );
-      stackFrame.appendChild( neuronnameDisplay );
-      SkeletonAnnotations.setNeuronNameInTopbar(parentStackViewer.getId(),
-          SkeletonAnnotations.getActiveSkeletonId());
-
-      return layer;
-    };
-
-    /**
      * Create new mouse bindings for the layer's view.
      */
     function createMouseBindings(stackViewer, layer, mouseCatcher)
@@ -193,6 +168,61 @@
     }
 
     /**
+     * Add the neuron name display and the tracing layer to the given stack
+     * viewer, if they don't exist already.
+     */
+    function prepareStackViewer(stackViewer) {
+      var layerName = getTracingLayerName(stackViewer);
+      var layer = stackViewer.getLayer(layerName);
+
+      if (!layer) {
+        layer = new TracingLayer(stackViewer);
+        stackViewer.addLayer(layerName, layer);
+      }
+
+      // Insert a text div for the neuron name in the canvas window title bar
+      var neuronNameDisplayID = "neuronName" + stackViewer.getId();
+      var neuronNameDisplay = document.getElementById(neuronNameDisplayID);
+      if (!neuronNameDisplay) {
+        var stackFrame = stackViewer.getWindow().getFrame();
+        neuronnameDisplay = document.createElement("p");
+        neuronnameDisplay.id = neuronNameDisplayID;
+        neuronnameDisplay.className = "neuronname";
+        var spanName = document.createElement("span");
+        spanName.appendChild(document.createTextNode(""));
+        neuronnameDisplay.appendChild(spanName);
+        stackFrame.appendChild(neuronnameDisplay);
+        SkeletonAnnotations.setNeuronNameInTopbar(stackViewer.getId(),
+            SkeletonAnnotations.getActiveSkeletonId());
+      }
+
+      return layer;
+    }
+
+    /**
+     * Remove the neuron name display and the tacing layer from a stack view.
+     */
+    function closeStackViewer(stackViewer) {
+      // Remove div with the neuron's name
+      $("#neuronName" + stackViewer.getId()).remove();
+
+      // Remove the tracing layer
+      var layerName = getTracingLayerName(stackViewer);
+      var layer = stackViewer.getLayer(layerName);
+      if (layer) {
+        // Synchronize data with database
+        layer.svgOverlay.updateNodeCoordinatesinDB();
+        // Remove layer from stack viewer
+        stackViewer.removeLayer(layerName);
+
+        // the prototype destroy calls the prototype's unregister, not self.unregister
+        // do it before calling the prototype destroy that sets stack viewer to null
+        // TODO: remove all skeletons from staging area
+        layer.svgOverlay.destroy();
+      }
+    }
+
+    /**
      * install this tool in a stack viewer.
      * register all GUI control elements and event handlers
      */
@@ -206,8 +236,7 @@
       annotations.update();
 
       // Get or create the tracing layer for this stack viewer
-      var layer = parentStackViewer.getLayer(getTracingLayerName(parentStackViewer));
-      if (!layer) layer = createTracingLayer(parentStackViewer);
+      var layer = prepareStackViewer(parentStackViewer);
 
       // Set this layer as mouse catcher in Navigator
       var view = layer.svgOverlay.view;
@@ -279,25 +308,11 @@
      */
     this.destroy = function()
     {
+      project.off(Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
+      project.off(Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
+
       project.getStackViewers().forEach(function(stackViewer) {
-        // Remove div with the neuron's name
-        $("#neuronName" + stackViewer.getId()).remove();
-
-
-        var layerName = getTracingLayerName(stackViewer);
-        var layer = stackViewer.getLayer(layerName);
-        if (layer) {
-          // Synchronize data with database
-          layer.svgOverlay.updateNodeCoordinatesinDB();
-          // Remove layer from stack viewer
-          stackViewer.removeLayer(layerName);
-
-          // the prototype destroy calls the prototype's unregister, not self.unregister
-          // do it before calling the prototype destroy that sets stack viewer to null
-          // TODO: remove all skeletons from staging area
-          layer.svgOverlay.destroy();
-
-        }
+        closeStackViewer(stackViewer);
       });
 
       self.prototype.destroy( "edit_button_trace" );
@@ -904,10 +919,14 @@
     // Initialize a tracing layer in all available stack viewers, but let
     // register() take care of bindings.
     project.getStackViewers().forEach(function(s) {
-      var layer = createTracingLayer(s);
+      var layer = prepareStackViewer(s);
       layer.svgOverlay.updateNodes(layer.forceRedraw.bind(layer));
       s.getView().appendChild(layer.svgOverlay.view);
     }, this);
+
+    // Listen to creation and removal of new stack views in current project.
+    project.on(Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
+    project.on(Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
   }
 
   /* Works as well for skeletons.

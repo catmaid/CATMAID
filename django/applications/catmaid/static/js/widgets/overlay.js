@@ -802,6 +802,11 @@ SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
     this.view = null;
   }
 
+  // Unregister the neuron name label from the neuron name service
+  var label = $('#neuronName' + this.stackViewer.getId());
+  var labelData = label.data();
+  if (labelData) NeuronNameService.getInstance().unregisterAll(labelData);
+
   // Unregister from neuron controller
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);

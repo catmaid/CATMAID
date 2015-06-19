@@ -192,8 +192,7 @@
         spanName.appendChild(document.createTextNode(""));
         neuronnameDisplay.appendChild(spanName);
         stackFrame.appendChild(neuronnameDisplay);
-        SkeletonAnnotations.setNeuronNameInTopbar(stackViewer.getId(),
-            SkeletonAnnotations.getActiveSkeletonId());
+        setNeuronNameInTopbars(SkeletonAnnotations.getActiveSkeletonId());
       }
 
       return layer;
@@ -203,8 +202,12 @@
      * Remove the neuron name display and the tacing layer from a stack view.
      */
     function closeStackViewer(stackViewer) {
-      // Remove div with the neuron's name
-      $("#neuronName" + stackViewer.getId()).remove();
+      // Unregister the neuron name label from the neuron name service and
+      // remove it.
+      var label = $('#neuronName' + stackViewer.getId());
+      var labelData = label.data();
+      if (labelData) NeuronNameService.getInstance().unregisterAll(labelData);
+      label.remove();
 
       // Remove the tracing layer
       var layerName = getTracingLayerName(stackViewer);
@@ -310,6 +313,8 @@
     {
       project.off(Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
       project.off(Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
+      SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+          handleActiveNodeChange, this);
 
       project.getStackViewers().forEach(function(stackViewer) {
         closeStackViewer(stackViewer);
@@ -327,6 +332,64 @@
       self.activeStackViewer = null;
 
       return;
+    };
+
+    /**
+     * Clear the small bar next to the close button of the stack viewer window.
+     */
+    function clearTopbars() {
+      project.getStackViewers().forEach(function(stackViewer) {
+        var label = $('#neuronName' + stackViewer.getId());
+        label.text("");
+        var labelData = label.data();
+        if (labelData) NeuronNameService.getInstance().unregister(labelData);
+      });
+    };
+
+    /**
+     * Set the text in the small bar next to the close button of each stack
+     * viewer to the name of the skeleton as it is given by the nameservice.
+     */
+    function setNeuronNameInTopbars(skeletonID) {
+      if (!skeletonID) {
+        clearTopbars();
+        return;
+      }
+
+      project.getStackViewers().forEach(function(stackViewer) {
+        var label = $('#neuronName' + stackViewer.getId());
+        if (0 === label.length) return;
+
+        NeuronNameService.getInstance().unregister(label.data());
+
+        label.data('skeleton_id', skeletonID);
+        label.data('updateNeuronNames', function () {
+          label.text(NeuronNameService.getInstance().getName(this.skeleton_id));
+        });
+
+        var models = {};
+        models[skeletonID] = {};
+        NeuronNameService.getInstance().registerAll(label.data(), models)
+          .then(function() {
+            label.text(NeuronNameService.getInstance().getName(skeletonID));
+          });
+      });
+    };
+
+    /**
+     * Handle update of active node. All nodes are recolored and the neuron name in
+     * the top bar is updated.
+     */
+    function handleActiveNodeChange(node) {
+      if (node) {
+        if (SkeletonAnnotations.TYPE_NODE === node.type) {
+          setNeuronNameInTopbars(node.skeleton_id);
+        } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
+          clearTopbar(this.stackViewer.getId());
+        }
+      } else {
+        clearTopbar(this.stackViewer.getId());
+      }
     };
 
     this.prototype.changeSlice = function( val )
@@ -927,6 +990,10 @@
     // Listen to creation and removal of new stack views in current project.
     project.on(Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
     project.on(Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
+
+    // Listen to active node change events
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        handleActiveNodeChange, this);
   }
 
   /* Works as well for skeletons.

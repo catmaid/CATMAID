@@ -326,37 +326,6 @@ SkeletonAnnotations.setTracingMode = function (mode) {
 };
 
 /**
- * Set the text in the small bar next to the close button of a stack viewer to
- * the name of the skeleton as it is given by the nameservice.
- */
-SkeletonAnnotations.setNeuronNameInTopbar = function(stackViewerId, skeletonID) {
-  if (!skeletonID) return;
-  var label = $('#neuronName' + stackViewerId);
-  if (0 === label.length) return;
-
-  NeuronNameService.getInstance().unregister(label.data());
-  label.data('skeleton_id', skeletonID);
-  label.data('updateNeuronNames', function () {
-    label.text(NeuronNameService.getInstance().getName(this.skeleton_id));
-  });
-  var models = {};
-  models[skeletonID] = {};
-  NeuronNameService.getInstance().registerAll(label.data(), models)
-    .then(function() {
-      label.text(NeuronNameService.getInstance().getName(skeletonID));
-    });
-};
-
-/**
- * Clear the small bar next to the close button of the stack viewer window.
- */
-SkeletonAnnotations.clearTopbar = function(stackViewerId) {
-  var label = $('#neuronName' + stackViewerId);
-  NeuronNameService.getInstance().unregister(label.data());
-  label.text("");
-};
-
-/**
  * Get a valid virtual node ID for a node between child, parent at section Z. If
  * the child is a virtual node, its real child will be used. If the parent is a
  * vitual node, its real parent will be used.
@@ -801,11 +770,6 @@ SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
     this.view.onmousedown = null;
     this.view = null;
   }
-
-  // Unregister the neuron name label from the neuron name service
-  var label = $('#neuronName' + this.stackViewer.getId());
-  var labelData = label.data();
-  if (labelData) NeuronNameService.getInstance().unregisterAll(labelData);
 
   // Unregister from neuron controller
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -2004,7 +1968,6 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
     if (null !== atn.id) {
       CATMAID.statusBar.replaceLast("Deactivated node #" + atn.id);
     }
-    SkeletonAnnotations.clearTopbar(this.stackViewer.getId());
     this.activateNode(null);
     handled = true;
   } else {
@@ -3275,19 +3238,9 @@ SkeletonAnnotations.SVGOverlay.prototype.nodeIsPartOfSkeleton = function(skeleto
 };
 
 /**
- * Handle update of active node. All nodes are recolored and the neuron name in
- * the top bar is updated.
+ * Handle update of active node with recoloring all nodes.
  */
 SkeletonAnnotations.SVGOverlay.prototype.handleActiveNodeChange = function(node) {
-  if (node) {
-    if (SkeletonAnnotations.TYPE_NODE === node.type) {
-      SkeletonAnnotations.setNeuronNameInTopbar(this.stackViewer.getId(), node.skeleton_id);
-    } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-      SkeletonAnnotations.clearTopbar(this.stackViewer.getId());
-    }
-  } else {
-    SkeletonAnnotations.clearTopbar(this.stackViewer.getId());
-  }
   this.recolorAllNodes();
 };
 

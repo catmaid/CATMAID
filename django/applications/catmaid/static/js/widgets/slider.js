@@ -386,24 +386,6 @@
     return false;
   };
 
-  /**
-   * decreases the index and invoke timeout
-   */
-  Slider.prototype._decrease = function()
-  {
-    this.move( -1 );
-    this._timer = window.setTimeout( this._decrease.bind(this), 250 );
-  };
-
-  /**
-   * increases the index and invoke timeout
-   */
-  Slider.prototype._increase = function()
-  {
-    this.move( 1 );
-    this._timer = window.setTimeout( this._increase.bind(this), 250 );
-  };
-
   Slider.prototype._clampIndex = function (index, major) {
     return Math.max(0, Math.min((major ? this._majorValues.length : this._values.length) - 1, index));
   };
@@ -436,6 +418,14 @@
   };
 
   /**
+   * Move the slider and invoke timeout
+   */
+  Slider.prototype._moveWithTimeout = function(i, major) {
+    this.move(i, major);
+    this._timer = window.setTimeout(this._moveWithTimeout.bind(this, i, major), 250);
+  };
+
+  /**
    * mouse down on the top bar, so move up, setting a timer
    */
   Slider.prototype._barTopMouseDown = function( e )
@@ -447,7 +437,7 @@
     CATMAID.ui.catchEvents();
     CATMAID.ui.onmousedown( e );
 
-    this._decrease();
+    this._moveWithTimeout(-1, e.shiftKey);
     return false;
   };
 
@@ -463,7 +453,7 @@
     CATMAID.ui.catchEvents();
     CATMAID.ui.onmousedown( e );
 
-    this._increase();
+    this._moveWithTimeout(1, e.shiftKey);
     return false;
   };
 

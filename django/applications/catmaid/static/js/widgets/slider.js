@@ -393,7 +393,6 @@
   {
     this.move( -1 );
     this._timer = window.setTimeout( this._decrease.bind(this), 250 );
-    return;
   };
 
   /**
@@ -403,7 +402,6 @@
   {
     this.move( 1 );
     this._timer = window.setTimeout( this._increase.bind(this), 250 );
-    return;
   };
 
   Slider.prototype._clampIndex = function (index, major) {
@@ -501,7 +499,6 @@
 
     // update the handle position
     this._setByIndex( this._ind, true );
-    return;
   };
 
   Slider.prototype.update = function(
@@ -586,8 +583,6 @@
           return typeof x === "undefined" ? 0 : x.toString().length;
         }).reduce(function (m, x) { return Math.max(m, x); }, 2) + 1;
     }
-
-    return;
   };
 
   CATMAID.Slider = Slider;

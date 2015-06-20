@@ -2256,7 +2256,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     // (sections), which can make its position differ from the project space
     // position. The difference is added to the query bounding box, but clamped
     // at zero;
-    wx0 = Math.max(0, wy0 - Math.abs(wx0 - project.coordinates.x));
+    wx0 = Math.max(0, wx0 - Math.abs(wx0 - project.coordinates.x));
     wy0 = Math.max(0, wy0 - Math.abs(wy0 - project.coordinates.y));
     wz0 = Math.max(0, wz0 - Math.abs(wz0 - project.coordinates.z));
 

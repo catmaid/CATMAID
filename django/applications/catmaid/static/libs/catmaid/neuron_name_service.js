@@ -176,7 +176,7 @@ var NeuronNameService = (function()
         // Make sure all skeletons have valid integer IDs.
         var validIDs = [];
         for (var skid in models) {
-          var id = parseInt(skid, 10)
+          var id = parseInt(skid, 10);
           if (!id) throw new CATMAID.ValueError("Please provide valid IDs");
           else validIDs.push(id);
         }

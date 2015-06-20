@@ -123,16 +123,18 @@ Slider = function(
       valBin = [0];
     }
 
-    setHandle(index);
-    self.val = val;
-    ind = valBin[0];
+    if (val !== self.val) {
+      setHandle(index);
+      self.val = val;
+      ind = valBin[0];
 
-    if (input) {
-      // Set input textbox to new value, truncating the value for display
-      input.value = Number(val).toFixed(2).replace(/\.?0+$/,"");
+      if (input) {
+        // Set input textbox to new value, truncating the value for display
+        input.value = Number(val).toFixed(2).replace(/\.?0+$/,"");
+      }
+
+      if (!cancelOnchange) self.onchange(self.val);
     }
-
-    if (!cancelOnchange) self.onchange(self.val);
   };
 
   /**

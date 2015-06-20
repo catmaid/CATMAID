@@ -47,8 +47,8 @@
     this._barSize = false;
 
     this._handle.onmousedown = this._handleMouseDown.bind(this);
-    this._barTop.onmousedown = this._barTopMouseDown.bind(this);
-    this._barBottom.onmousedown = this._barBottomMouseDown.bind(this);
+    this._barTop.onmousedown = this._barMouseDown.bind(this, -1);
+    this._barBottom.onmousedown = this._barMouseDown.bind(this, 1);
 
     switch ( type )
     {
@@ -102,12 +102,12 @@
       switch ( type )
       {
       case Slider.HORIZONTAL:
-        area1.onmousedown = this._barBottomMouseDown.bind(this);
-        area2.onmousedown = this._barTopMouseDown.bind(this);
+        area1.onmousedown = this._barMouseDown.bind(this, 1);
+        area2.onmousedown = this._barMouseDown.bind(this, -1);
         break;
       case Slider.VERTICAL:
-        area1.onmousedown = this._barTopMouseDown.bind(this);
-        area2.onmousedown = this._barBottomMouseDown.bind(this);
+        area1.onmousedown = this._barMouseDown.bind(this, -1);
+        area2.onmousedown = this._barMouseDown.bind(this, 1);
         break;
       }
 
@@ -426,9 +426,9 @@
   };
 
   /**
-   * mouse down on the top bar, so move up, setting a timer
+   * mouse down on the bar, so move in the specified direction, setting a timer
    */
-  Slider.prototype._barTopMouseDown = function( e )
+  Slider.prototype._barMouseDown = function( step, e )
   {
     if ( this._timer ) window.clearTimeout( this._timer );
 
@@ -437,23 +437,7 @@
     CATMAID.ui.catchEvents();
     CATMAID.ui.onmousedown( e );
 
-    this._moveWithTimeout(-1, e.shiftKey);
-    return false;
-  };
-
-  /**
-   * mouse down on the top bar, so move up, setting a timer
-   */
-  Slider.prototype._barBottomMouseDown = function( e )
-  {
-    if ( this._timer ) window.clearTimeout( this._timer );
-
-    CATMAID.ui.registerEvent( "onmouseup", this._boundBarMouseUp );
-    CATMAID.ui.setCursor( "auto" );
-    CATMAID.ui.catchEvents();
-    CATMAID.ui.onmousedown( e );
-
-    this._moveWithTimeout(1, e.shiftKey);
+    this._moveWithTimeout(step, e.shiftKey);
     return false;
   };
 

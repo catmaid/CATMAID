@@ -374,4 +374,12 @@
 
   CATMAID.PixiLayer = PixiLayer;
 
+  CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED,
+      function (project) {
+        project.on(Project.EVENT_STACKVIEW_CLOSED,
+            function (stackViewer) {
+              PixiLayer.contexts.delete(stackViewer);
+            });
+      });
+
 })(CATMAID);

@@ -344,7 +344,7 @@
         var labelData = label.data();
         if (labelData) NeuronNameService.getInstance().unregister(labelData);
       });
-    };
+    }
 
     /**
      * Set the text in the small bar next to the close button of each stack
@@ -374,7 +374,7 @@
             label.text(NeuronNameService.getInstance().getName(skeletonID));
           });
       });
-    };
+    }
 
     /**
      * Handle update of active node. All nodes are recolored and the neuron name in
@@ -390,7 +390,7 @@
       } else {
         clearTopbars();
       }
-    };
+    }
 
     this.prototype.changeSlice = function( val )
     {

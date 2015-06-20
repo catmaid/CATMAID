@@ -114,9 +114,15 @@
    * @return {string[]} Names of supported blend modes.
    */
   PixiLayer.prototype.getAvailableBlendModes = function () {
-    return Object.keys(PIXI.blendModes).map(function (modeKey) {
-      return modeKey.toLowerCase().replace(/_/, ' ');
-    });
+    var normBlendFuncs = PIXI.blendModesWebGL[PIXI.blendModes.NORMAL];
+    return Object.keys(PIXI.blendModes)
+        .filter(function (modeKey) { // Filter modes that are not different from normal.
+          var glBlendFuncs = PIXI.blendModesWebGL[PIXI.blendModes[modeKey]];
+          return modeKey == 'NORMAL' ||
+              glBlendFuncs[0] !== normBlendFuncs[0] ||
+              glBlendFuncs[1] !== normBlendFuncs[1]; })
+        .map(function (modeKey) {
+          return modeKey.toLowerCase().replace(/_/, ' '); });
   };
 
   /**

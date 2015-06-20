@@ -53,6 +53,7 @@
 
     // If this was the last layer using this Pixi context, remove it.
     if (this._context.layersRegistered === 0) {
+      this._context.renderer.destroy();
       PixiLayer.contexts.delete(this.stackViewer);
     }
   };
@@ -378,7 +379,11 @@
       function (project) {
         project.on(Project.EVENT_STACKVIEW_CLOSED,
             function (stackViewer) {
-              PixiLayer.contexts.delete(stackViewer);
+              var context = PixiLayer.contexts.get(stackViewer);
+              if (context) {
+                context.renderer.destroy();
+                PixiLayer.contexts.delete(stackViewer);
+              }
             });
       });
 

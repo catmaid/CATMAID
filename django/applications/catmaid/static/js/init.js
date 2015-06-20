@@ -1,6 +1,12 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+/** @type {Object} Global access to window and project control events and variables. */
+CATMAID.Init = {};
+Events.extend(CATMAID.Init);
+CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
+CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
+
 var global_bottom = 29;
 
 var requestQueue;
@@ -218,6 +224,8 @@ function handle_profile_update(e) {
     'toolbox_edit', '');
   $('#toolbox_edit').replaceWith(new_edit_actions);
   $('#toolbox_edit').hide();
+
+  CATMAID.Init.trigger(CATMAID.Init.EVENT_USER_CHANGED);
 
   // TODO: There should be a user change event for this to subscribe
   CATMAID.ReviewSystem.Whitelist.refresh();
@@ -487,6 +495,8 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
   {
     project = new Project( e.pid );
     project.register();
+    CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
+
     // TODO: There should be a project change event for this to subscribe
     CATMAID.ReviewSystem.Whitelist.refresh();
   } else {

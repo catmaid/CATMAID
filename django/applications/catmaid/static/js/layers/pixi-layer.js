@@ -257,8 +257,8 @@
 
       switch (param.type) {
         case 'slider':
-          var slider = new Slider(
-              SLIDER_HORIZONTAL,
+          var slider = new CATMAID.Slider(
+              CATMAID.Slider.HORIZONTAL,
               true,
               param.range[0],
               param.range[1],

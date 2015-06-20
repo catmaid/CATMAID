@@ -1,9 +1,5 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-/* global
-  Slider,
-  SLIDER_HORIZONTAL
-*/
 
 (function(CATMAID) {
 
@@ -109,8 +105,8 @@
       // Make layer re-evaluate its opacity
       layer.setOpacity(layer.getOpacity());
 
-      var slider = new Slider(
-          SLIDER_HORIZONTAL,
+      var slider = new CATMAID.Slider(
+          CATMAID.Slider.HORIZONTAL,
           false,
           0,
           1,

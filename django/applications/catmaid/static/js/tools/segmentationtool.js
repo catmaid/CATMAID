@@ -72,8 +72,8 @@
           document.getElementById( "edit_button_segmentation" ).className = "button_active";
           document.getElementById( "toolbar_segmentation" ).style.display = "block";
 
-          self.slider_z = new Slider(
-              SLIDER_HORIZONTAL,
+          self.slider_z = new CATMAID.Slider(
+              CATMAID.Slider.HORIZONTAL,
               true,
               0,
               self.stack.slices,

@@ -19,8 +19,8 @@ function CroppingTool() {
 	var self = this;
 	this.toolname = "croppingtool";
 
-	this.slider_crop_top_z = new Slider(
-			SLIDER_HORIZONTAL,
+	this.slider_crop_top_z = new CATMAID.Slider(
+			CATMAID.Slider.HORIZONTAL,
 			true,
 			1,
 			1,
@@ -28,8 +28,8 @@ function CroppingTool() {
 			1,
 			function( val ){ CATMAID.statusBar.replaceLast( "crop top z: " + val ); return; } );
 
-	this.slider_crop_bottom_z = new Slider(
-			SLIDER_HORIZONTAL,
+	this.slider_crop_bottom_z = new CATMAID.Slider(
+			CATMAID.Slider.HORIZONTAL,
 			true,
 			1,
 			1,
@@ -37,8 +37,8 @@ function CroppingTool() {
 			1,
 			function( val ){ CATMAID.statusBar.replaceLast( "crop bottom z: " + val ); return; } );
 
-	this.slider_crop_s = new Slider(
-			SLIDER_HORIZONTAL,
+	this.slider_crop_s = new CATMAID.Slider(
+			CATMAID.Slider.HORIZONTAL,
 			true,
 			5,
 			0,

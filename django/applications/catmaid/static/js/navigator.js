@@ -28,8 +28,8 @@ function Navigator()
 	while ( sliders_box.firstChild )
 		sliders_box.removeChild( sliders_box.firstChild );
 	
-	this.slider_z = new Slider(
-			SLIDER_HORIZONTAL,
+	this.slider_z = new CATMAID.Slider(
+			CATMAID.Slider.HORIZONTAL,
 			true,
 			1,
 			388,
@@ -37,8 +37,8 @@ function Navigator()
 			1,
 			function( val ){ CATMAID.statusBar.replaceLast( "z: " + val ); return; } );
 	
-	this.slider_s = new Slider(
-			SLIDER_HORIZONTAL,
+	this.slider_s = new CATMAID.Slider(
+			CATMAID.Slider.HORIZONTAL,
 			true,
 			undefined,
 			undefined,

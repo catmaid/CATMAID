@@ -226,9 +226,6 @@ function handle_profile_update(e) {
   $('#toolbox_edit').hide();
 
   CATMAID.Init.trigger(CATMAID.Init.EVENT_USER_CHANGED);
-
-  // TODO: There should be a user change event for this to subscribe
-  CATMAID.ReviewSystem.Whitelist.refresh();
 }
 
 /**
@@ -496,9 +493,6 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
     project = new Project( e.pid );
     project.register();
     CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
-
-    // TODO: There should be a project change event for this to subscribe
-    CATMAID.ReviewSystem.Whitelist.refresh();
   } else {
     useExistingViewer = typeof stackViewer !== 'undefined';
   }

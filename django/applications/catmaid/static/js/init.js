@@ -537,7 +537,7 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
       tilesource,
       true,
       1,
-      true);
+      !useExistingViewer);
 
   if (!useExistingViewer) {
     stackViewer.addLayer( "TileLayer", tilelayer );

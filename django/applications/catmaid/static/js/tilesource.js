@@ -207,16 +207,15 @@
   */
   CATMAID.DVIDTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
-  this.getTileURL = function( project, stack, stackViewer,
-      col, row, zoomLevel ) {
-    return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
-        row * tileHeight + '_' + stackViewer.z + '/' + fileExtension;
-  };
+    this.getTileURL = function( project, stack, stackViewer,
+        col, row, zoomLevel ) {
+      return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
+          row * tileHeight + '_' + stackViewer.z + '/' + fileExtension;
+    };
 
-  this.getOverviewLayer = function( layer )
-  {
-  return new CATMAID.DummyOverviewLayer();
-  };
+    this.getOverviewLayer = function( layer ) {
+      return new CATMAID.DummyOverviewLayer();
+    };
   };
 
 

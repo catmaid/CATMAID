@@ -125,7 +125,7 @@
             height : tileHeight,
             row : 'y',
             col : 'x',
-            scale : stackViewer.s, // defined as 1/2**zoomlevel
+            scale : stackViewer.scale, // defined as 1/2**zoomlevel
             z: stackViewer.z,
             file_extension: fileExtension,
             basename: baseURL,

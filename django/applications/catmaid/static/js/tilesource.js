@@ -53,8 +53,7 @@
       source.tileWidth = tileWidth;
       source.tileHeight = tileHeight;
       return source;
-    } else return null;
-    // return TileSource ?  : null;
+    } else throw new RangeError('Tile source type ' + tileSourceType + ' is unknown.');
   };
 
   /**

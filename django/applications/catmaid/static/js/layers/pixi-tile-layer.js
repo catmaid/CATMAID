@@ -113,6 +113,7 @@
     this.batchContainer.scale.y = tileInfo.mag;
     var toLoad = [];
     var y = 0;
+    var slicePixelPosition = [tileInfo.z];
 
     // Update tiles.
     for (var i = this._tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows) {
@@ -128,7 +129,7 @@
 
         if (c >= 0 && c <= tileInfo.lastCol &&
             r >= 0 && r <= tileInfo.lastRow) {
-          var source = this.tileSource.getTileURL(project, this.stack, this.stackViewer,
+          var source = this.tileSource.getTileURL(project, this.stack, slicePixelPosition,
               c, r, tileInfo.zoom);
 
           if (source !== tile.texture.baseTexture.imageUrl) {

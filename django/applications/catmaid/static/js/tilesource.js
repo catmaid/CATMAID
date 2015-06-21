@@ -11,23 +11,19 @@
   'use strict';
 
   /**
-   * Get the part of the tile name that consists of dimensions z, t, ...
+   * Get the part of the tile name that consists of invariant dimensions of the
+   * slice plane: z, t, ...
    * For a 3D stack this will return 'z/', for a 4D stack 't/z/', etc.
    *
-   * @param pixelPos pixel position of the stack [x, y, z, t, ...]
+   * @param slicePixelPos stack pixel position for the slice plane [z, t, ...]
    */
-  CATMAID.getTileBaseName = function (pixelPos) {
-    var n = pixelPos.length;
+  CATMAID.getTileBaseName = function (slicePixelPos) {
+    var n = slicePixelPos.length;
     var dir = '';
-    for (var i = n - 1; i > 1; --i) {
-      dir += pixelPos[i] + '/';
+    for (var i = n - 1; i >= 0; --i) {
+      dir += slicePixelPos[i] + '/';
     }
     return dir;
-  };
-
-  CATMAID.getTileBaseNameFromViewer = function (stackViewer) {
-    var pixelPos = [stackViewer.x, stackViewer.y, stackViewer.z];
-    return CATMAID.getTileBaseName(pixelPos);
   };
 
   /**
@@ -66,9 +62,9 @@
      * Return the URL of a single tile, defined by it grid position
      * (x, y), ...
      */
-    this.getTileURL = function(project, stack, stackViewer,
+    this.getTileURL = function(project, stack, slicePixelPosition,
                                col, row, zoomLevel) {
-      var baseName = CATMAID.getTileBaseNameFromViewer(stackViewer);
+      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
       return baseURL + baseName + row + '_' + col + '_' + zoomLevel + '.' +
           fileExtension;
     };
@@ -90,7 +86,7 @@
    * Source type: 2
    */
   CATMAID.RequestTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
-    this.getTileURL = function( project, stack, stackViewer,
+    this.getTileURL = function( project, stack, slicePixelPosition,
                                 col, row, zoomLevel ) {
       return baseURL + '?' + $.param({
         x: col * tileWidth,
@@ -100,7 +96,7 @@
         row : 'y',
         col : 'x',
         scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
-        z : stackViewer.z
+        z : slicePixelPosition[0]
       });
     };
 
@@ -115,7 +111,7 @@
   * Source type: 3
   */
   CATMAID.HDF5TileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
-    this.getTileURL = function(project, stack, stackViewer,
+    this.getTileURL = function(project, stack, slicePixelPosition,
                                col, row, zoomLevel) {
       return django_url + project.id + '/stack/' + stack.id + '/tile?' +
           $.param({
@@ -126,7 +122,7 @@
             row : 'y',
             col : 'x',
             scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
-            z: stackViewer.z,
+            z: slicePixelPosition[0],
             file_extension: fileExtension,
             basename: baseURL,
             type:'all'
@@ -149,9 +145,9 @@
      * Return the URL of a single tile, defined by it grid position
      * (x, y), ...
      */
-    this.getTileURL = function(project, stack, stackViewer,
+    this.getTileURL = function(project, stack, slicePixelPosition,
                                col, row, zoomLevel) {
-      var baseName = CATMAID.getTileBaseNameFromViewer(stackViewer);
+      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
       return baseURL + baseName + zoomLevel + '/' + row + '_' + col + '.' +
           fileExtension;
     };
@@ -179,9 +175,9 @@
      * Return the URL of a single tile, defined by it grid position
      * (x, y), ...
      */
-    this.getTileURL = function( project, stack, stackViewer,
+    this.getTileURL = function( project, stack, slicePixelPosition,
         col, row, zoomLevel ) {
-      var baseName = CATMAID.getTileBaseNameFromViewer(stackViewer);
+      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
       return baseURL + zoomLevel + '/' + baseName + row + '/' +  col + '.' +
          fileExtension;
     };
@@ -207,10 +203,10 @@
   */
   CATMAID.DVIDTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
-    this.getTileURL = function( project, stack, stackViewer,
+    this.getTileURL = function( project, stack, slicePixelPosition,
         col, row, zoomLevel ) {
       return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
-          row * tileHeight + '_' + stackViewer.z + '/' + fileExtension;
+          row * tileHeight + '_' + slicePixelPosition[0] + '/' + fileExtension;
     };
 
     this.getOverviewLayer = function( layer ) {
@@ -234,13 +230,13 @@
   {
     var self = this;
     this.mimeType = fileExtension == 'png' ? '/png-image' : '/jpeg-image';
-    this.getTileURL = function(project, stack, stackViewer,
+    this.getTileURL = function(project, stack, slicePixelPosition,
                                col, row, zoomLevel) {
       var scale = Math.pow(2, zoomLevel);
       var tw = tileWidth * scale;
       var th = tileHeight * scale;
       var invScale = 1.0 / scale;
-      return baseURL + 'z/' + stackViewer.z + '/box/' + col * tw + ',' + row * th +
+      return baseURL + 'z/' + slicePixelPosition[0] + '/box/' + col * tw + ',' + row * th +
           ',' + tw + ',' + th + ',' + invScale + self.mimeType;
     };
 
@@ -266,14 +262,14 @@
   */
   CATMAID.DVIDMultiScaleTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
-    this.getTileURL = function(project, stack, stackViewer,
+    this.getTileURL = function(project, stack, slicePixelPosition,
                                col, row, zoomLevel) {
       if (stack.orientation === CATMAID.Stack.ORIENTATION_XY) {
-        return baseURL + 'xy/' + zoomLevel + '/' + col + '_' + row + '_' + stackViewer.z;
+        return baseURL + 'xy/' + zoomLevel + '/' + col + '_' + row + '_' + slicePixelPosition[0];
       } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
-        return baseURL + 'xz/' + zoomLevel + '/' + col + '_' + stackViewer.z + '_' + row;
+        return baseURL + 'xz/' + zoomLevel + '/' + col + '_' + slicePixelPosition[0] + '_' + row;
       } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
-        return baseURL + 'yz/' + zoomLevel + '/' + stackViewer.z + '_' + col + '_' + row;
+        return baseURL + 'yz/' + zoomLevel + '/' + slicePixelPosition[0] + '_' + col + '_' + row;
       }
     };
 

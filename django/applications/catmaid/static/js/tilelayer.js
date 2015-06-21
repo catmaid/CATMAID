@@ -227,6 +227,7 @@
     }
 
     var nextL, nextT, seamRow;
+    var slicePixelPosition = [tileInfo.z];
 
     // Update tiles (or the tile buffer).
     for (var i = this._tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows) {
@@ -243,7 +244,7 @@
 
         if (c >= 0 && c <= tileInfo.lastCol &&
             r >= 0 && r <= tileInfo.lastRow) {
-          var source = this.tileSource.getTileURL(project, this.stack, this.stackViewer,
+          var source = this.tileSource.getTileURL(project, this.stack, slicePixelPosition,
               c, r, tileInfo.zoom);
 
           tile.style.top = t + 'px';
@@ -373,7 +374,7 @@
           self.cacheTiles(tileIndices, progressCallback, cachedCounter + numLoaders, loaders);
       };
       img.src = self.tileSource.getTileURL(
-          project, self.stack, self.stackViewer,
+          project, self.stack, [tileInd[2]],
           tileInd[0], tileInd[1], tileInd[3]);
     });
   };

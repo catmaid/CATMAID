@@ -59,7 +59,7 @@ div.smallMapView_hidden
 	border-top:solid 4px #000000;
 	border-left:solid 4px #000000;
 	background:#000000;
-	z-index:4;
+	z-index:6;
 }
 div.smallMapView_hidden
 {

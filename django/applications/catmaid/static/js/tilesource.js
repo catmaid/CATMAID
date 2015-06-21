@@ -99,7 +99,7 @@
         height : tileHeight,
         row : 'y',
         col : 'x',
-        scale : stackViewer.scale, // defined as 1/2**zoomlevel
+        scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
         z : stackViewer.z
       });
     };
@@ -125,7 +125,7 @@
             height : tileHeight,
             row : 'y',
             col : 'x',
-            scale : stackViewer.scale, // defined as 1/2**zoomlevel
+            scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
             z: stackViewer.z,
             file_extension: fileExtension,
             basename: baseURL,

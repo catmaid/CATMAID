@@ -16,7 +16,6 @@ QUnit.test('Tile sources test', function( assert ) {
       orientation: CATMAID.Stack.ORIENTATION_XY
     };
     var sv = {
-      scale: 2,
       x: 8,
       y: 9,
       z: 3
@@ -33,7 +32,7 @@ QUnit.test('Tile sources test', function( assert ) {
     assert.ok(ts2 instanceof CATMAID.RequestTileSource,
             "CATMAID.getTileSource maps type 2 correctly");
     assert.equal(ts2.getTileURL(p, s, sv, c, r, z),
-        "https://example.com/?x=2048&y=2570&width=512&height=514&row=y&col=x&scale=2&z=3",
+        "https://example.com/?x=2048&y=2570&width=512&height=514&row=y&col=x&scale=1&z=3",
         "Tile source 2 produces correct URL");
 
     var ts3 = CATMAID.getTileSource(3, baseURL, fileExt, tw, th);

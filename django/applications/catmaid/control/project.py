@@ -80,26 +80,9 @@ def projects(request):
     """ Returns a list of project objects that are visible for the requesting
     user and that have at least one stack linked to it.
     """
-    # This is somewhat ridiculous - four queries where one could be
-    # used in raw SQL.  The problem here is chiefly that
-    # 'select_related' in Django doesn't work through
-    # ManyToManyFields.  Development versions of Django have
-    # introduced prefetch_related, but this isn't in the stable
-    # version that I'm using.  (Another way around this would be to
-    # query on ProjectStack, but the legacy CATMAID schema doesn't
-    # include a single-column primary key for that table.)
-
-    stacks = dict((x.id, x) for x in Stack.objects.all())
-
-    # Create a dictionary that maps from projects to stacks:
-    c = connection.cursor() #@UndefinedVariable
-    c.execute("SELECT project_id, stack_id FROM project_stack")
-    project_to_stacks = defaultdict(list)
-    for project_id, stack_id in c.fetchall():
-        project_to_stacks[project_id].append(stacks[stack_id])
 
     # Get all projects that are visisble for the current user
-    projects = get_project_qs_for_user(request.user).order_by('title')
+    projects = get_project_qs_for_user(request.user).order_by('title').prefetch_related('stacks')
 
     # Extend projects with extra catalogueable info
     projects = extend_projects(request.user, projects)
@@ -107,10 +90,10 @@ def projects(request):
     # Create a dictionary with those results that we can output as JSON:
     result = []
     for p in projects:
-        if p.id not in project_to_stacks:
+        if not p.stacks.all():
             continue
         stacks_dict = {}
-        for s in project_to_stacks[p.id]:
+        for s in p.stacks.all():
             stacks_dict[s.id] = {
                 'title': s.title,
                 'comment': s.comment,

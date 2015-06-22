@@ -258,8 +258,8 @@
    */
   PixiLayer.FilterWrapper.prototype.redrawControl = function (container, callback) {
     container.append('<h5>' + this.displayName + '</h5>');
-    for (var i = 0; i < this.params.length; i++) {
-      var param = this.params[i];
+    for (var paramIndex = 0; paramIndex < this.params.length; paramIndex++) {
+      var param = this.params[paramIndex];
 
       switch (param.type) {
         case 'slider':

@@ -142,4 +142,4 @@ def get_data_view( request, data_view_id ):
         'STATIC_URL': settings.STATIC_URL,
     })
 
-    return HttpResponse( template.render( context ) );
+    return HttpResponse( template.render( context ) )

@@ -531,24 +531,10 @@
     {
       // set split index
       this._splitIndex = this._binValue( split, this._values );
-      if ( this._splitIndex.length > 1)
-      {
-        this._splitIndex = this._splitIndex[1];
-      }
-      else
-      {
-        this._splitIndex = this._splitIndex[0];
-      }
+      this._splitIndex = this._splitIndex[ this._splitIndex.length > 1 ? 1 : 0 ];
     }
 
-    if ( typeof def !== "undefined" )
-    {
-      this.setByValue( def, true );
-    }
-    else
-    {
-      this.setByValue( this._values[ 0 ], true );
-    }
+    this.setByValue( typeof def !== "undefined" ? def : this._values[ 0 ], true );
 
     if (this._input)
     {

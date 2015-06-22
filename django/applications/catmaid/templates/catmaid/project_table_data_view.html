@@ -10,10 +10,10 @@
 
 <table>
 {% for p in projects %}
-	{% if p.stacks.count > 0 %}
+	{% if stacks_of|get:p.id %}
 	<tr>
 		<td class="projectname">{{ p.title }}</td>
-		{% for s in p.stacks|order_by:'id' %}
+		{% for s in stacks_of|get:p.id|dictsort:'id' %}
 			{% if sample_images %}
 				<td class="stackimage">
 				{# Get the wanted slice #}

@@ -123,15 +123,6 @@
     };
     this._view.appendChild( controlToggle );
 
-    if ( primaryStack.metadata.length > 0 ) {
-      var metadataDisplay = document.createElement( "div" );
-      metadataDisplay.className = "metadata";
-      metadataDisplay.appendChild( document.createElement( "p" ) );
-      metadataDisplay.firstChild.appendChild( document.createElement( "span" ) );
-      metadataDisplay.firstChild.firstChild.appendChild( document.createTextNode( metadata ) );
-      this._view.appendChild( metadataDisplay );
-    }
-
     if( inverse_mouse_wheel === 0 )
       this.inverse_mouse_wheel = 1;
     else
@@ -155,6 +146,10 @@
     this._view.appendChild( this._vert );
     this._view.appendChild( this._horr );
     this.showReferenceLines( userprofile ? userprofile.display_stack_reference_lines : false );
+
+    if (primaryStack.metadata.length > 0) {
+      this.addLayer('Stack metadata', new CATMAID.MetadataLayer(this, primaryStack.metadata));
+    }
   }
 
   StackViewer.prototype = {};

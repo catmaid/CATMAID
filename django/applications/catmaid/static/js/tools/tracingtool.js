@@ -206,7 +206,7 @@
       // remove it.
       var label = $('#neuronName' + stackViewer.getId());
       var labelData = label.data();
-      if (labelData) NeuronNameService.getInstance().unregisterAll(labelData);
+      if (labelData) NeuronNameService.getInstance().unregister(labelData);
       label.remove();
 
       // Remove the tracing layer

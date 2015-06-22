@@ -33,7 +33,7 @@
     this._values = [];
     this._majorValues = [];
     this._ind = 0;  //!< the current index
-    this.val = 0;     //!< the current value
+    this.val = undefined;     //!< the current value
     this._splitIndex = 0; //!< index where to change div class
     if ( typeof forceSnap === 'undefined' ) forceSnap = true;
     this._forceSnap = forceSnap;

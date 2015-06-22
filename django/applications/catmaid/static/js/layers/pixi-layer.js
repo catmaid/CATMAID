@@ -169,6 +169,10 @@
       'Color Transform': PixiLayer.FilterWrapper.bind(null, 'Color Transform', PIXI.ColorMatrixFilter, [
         {displayName: 'RGBA Matrix', name: 'matrix', type: 'matrix', size: [4, 4]}
       ], this),
+      'Intensity Thresholded Transparency': PixiLayer.FilterWrapper.bind(null, 'Intensity Thresholded Transparency', PixiLayer.Filters.IntensityThresholdTransparencyFilter, [
+        {displayName: 'Intensity Threshold', name: 'intensityThreshold', type: 'slider', range: [0, 1]},
+        {displayName: 'Luminance Coefficients', name: 'luminanceCoeff', type: 'matrix', size: [1, 3]}
+      ], this),
     };
   };
 
@@ -370,6 +374,55 @@
 
   ['brightness', 'contrast', 'saturation'].forEach(function (prop) {
     Object.defineProperty(PixiLayer.Filters.BrightnessContrastSaturationFilter.prototype, prop, {
+      get: function () {
+        return this.uniforms[prop].value;
+      },
+      set: function (value) {
+        this.uniforms[prop].value = value;
+      }
+    });
+  });
+
+  /**
+   * This filter makes pixels transparent according to an intensity threshold.
+   * The luminance projection used to determine intensity is configurable.
+   * @constructor
+   */
+  PixiLayer.Filters.IntensityThresholdTransparencyFilter = function () {
+    PIXI.AbstractFilter.call(this);
+
+    this.passes = [this];
+
+    this.uniforms = {
+      luminanceCoeff: {type: '3fv', value: [0.2125, 0.7154, 0.0721]},
+      intensityThreshold: {type: '1f', value: 0.01}
+    };
+
+    this.fragmentSrc = [
+        'precision mediump float;',
+        'uniform vec3 luminanceCoeff;',
+        'uniform float intensityThreshold;',
+
+        'varying vec2 vTextureCoord;',
+        'uniform sampler2D uSampler;',
+
+        'void main(void) {',
+        '  vec4 frag = texture2D(uSampler, vTextureCoord);',
+        '  vec3 color = frag.rgb;',
+        '  float intensityMag = dot(color, luminanceCoeff);',
+
+        '  frag.a = min(step(intensityThreshold, intensityMag), frag.a);',
+        '  frag.rgb = frag.rgb * frag.a;', // Use premultiplied RGB
+        '  gl_FragColor = frag;',
+        '}'
+    ];
+  };
+
+  PixiLayer.Filters.IntensityThresholdTransparencyFilter.prototype = Object.create(PIXI.AbstractFilter.prototype);
+  PixiLayer.Filters.IntensityThresholdTransparencyFilter.prototype.constructor = PixiLayer.Filters.IntensityThresholdTransparencyFilter;
+
+  ['luminanceCoeff', 'intensityThreshold'].forEach(function (prop) {
+    Object.defineProperty(PixiLayer.Filters.IntensityThresholdTransparencyFilter.prototype, prop, {
       get: function () {
         return this.uniforms[prop].value;
       },

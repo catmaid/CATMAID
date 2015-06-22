@@ -236,10 +236,9 @@
     var l =
     {
       z : this.primaryStack.stackToProjectZ( this.z, this.y, this.x ),
-      s : this.s,
-      scale : this.scale,
       y : this.primaryStack.stackToProjectY( this.z, this.y, this.x ),
-      x : this.primaryStack.stackToProjectX( this.z, this.y, this.x )
+      x : this.primaryStack.stackToProjectX( this.z, this.y, this.x ),
+      s : this.primaryStack.stackToProjectSX( this.s )
     };
     return l;
   };
@@ -260,14 +259,12 @@
         s: this.s
       };
     } else {
-      var px = this.primaryStack.stackToProjectX(this.z, this.y, this.x),
-        py = this.primaryStack.stackToProjectY(this.z, this.y, this.x),
-        pz = this.primaryStack.stackToProjectZ(this.z, this.y, this.x),
-        stackS = stack.projectToStackSX(this.primaryStack.stackToProjectSX(this.s));
+      var pc = this.projectCoordinates();
+      var stackS = stack.projectToStackSX(pc.s);
       return {
-        xc: Math.floor(stack.projectToStackX(pz, py, px) / Math.pow(2, stackS) - this.viewWidth / 2),
-        yc: Math.floor(stack.projectToStackY(pz, py, px) / Math.pow(2, stackS) - this.viewHeight / 2),
-        z:  stack.projectToStackZ(pz, py, px),
+        xc: Math.floor(stack.projectToStackX(pc.z, pc.y, pc.x) / Math.pow(2, stackS) - this.viewWidth / 2),
+        yc: Math.floor(stack.projectToStackY(pc.z, pc.y, pc.x) / Math.pow(2, stackS) - this.viewHeight / 2),
+        z:  stack.projectToStackZ(pc.z, pc.y, pc.x),
         s:  stackS
       };
     }

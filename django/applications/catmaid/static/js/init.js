@@ -594,7 +594,9 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
       });
 
       stack_menu.update( stack_menu_content );
-      document.getElementById( "stackmenu_box" ).style.display = "block";
+      var stackMenuBox = document.getElementById( "stackmenu_box" );
+      stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
+      stackMenuBox.style.display = "block";
     }
   });
 

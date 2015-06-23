@@ -7,6 +7,50 @@
   PixiLayer.contexts = new Map();
 
   /**
+   * A WebGL/Pixi context shared by all WebGL layers in the same stack viewer.
+   *
+   * @class PixiContext
+   * @constructor
+   * @param {StackViewer} stackViewer The stack viewer to which this context belongs.
+   */
+  function PixiContext(stackViewer) {
+    this.renderer = new PIXI.autoDetectRenderer(
+        stackViewer.getView().clientWidth,
+        stackViewer.getView().clientHeight);
+    this.stage = new PIXI.Stage(0x000000);
+    this.layersRegistered = new Set();
+  }
+
+  /**
+   * Release any Pixi resources owned by this context.
+   */
+  PixiContext.prototype.destroy = function () {
+    this.renderer.destroy();
+  };
+
+  /**
+   * Mark all layers using this context as not being ready for rendering.
+   */
+  PixiContext.prototype.resetRenderReadiness = function () {
+    this.layersRegistered.forEach(function (layer) {
+      layer.readyForRender = false;
+    });
+  };
+
+  /**
+   * Render the Pixi context if all layers using it are ready.
+   */
+  PixiContext.prototype.renderIfReady = function () {
+    var allReady = true;
+    this.layersRegistered.forEach(function (layer) {
+        allReady = allReady && (layer.readyForRender || !layer.visible);
+    });
+
+    if (allReady) this.renderer.render(this.stage);
+  };
+
+
+  /**
    * A layer that shares a common Pixi renderer with other layers in this stack
    * viewer. Creates a renderer and stage context for the stack viewer if none
    * exists.
@@ -23,25 +67,19 @@
       if (!PIXI.BaseTextureCacheManager || PIXI.BaseTextureCacheManager.constructor !== PIXI.LRUCacheManager) {
         PIXI.BaseTextureCacheManager = new PIXI.LRUCacheManager(PIXI.BaseTextureCache, 512);
       }
-      this._context = {
-          renderer: new PIXI.autoDetectRenderer(
-              this.stackViewer.getView().clientWidth,
-              this.stackViewer.getView().clientHeight),
-          stage: new PIXI.Stage(0x000000),
-          layersRegistered: 0,
-          layersReady: 0};
+      this._context = new PixiContext(this.stackViewer);
       PixiLayer.contexts.set(this.stackViewer, this._context);
     }
-    this._context.layersRegistered += 1;
+    this._context.layersRegistered.add(this);
     this.renderer = this._context.renderer;
     this.stage = this._context.stage;
     this.blendMode = 'normal';
     this.filters = [];
+    this.readyForRender = false;
   }
 
   /**
-   * Free any pixi display objects associated with this layer. Does not destroy
-   * any pixi contexts.
+   * Free any pixi display objects associated with this layer.
    */
   PixiLayer.prototype.unregister = function () {
     if (this.batchContainer) {
@@ -49,11 +87,11 @@
       this.stage.removeChild(this.batchContainer);
     }
 
-    this._context.layersRegistered -= 1;
+    this._context.layersRegistered.delete(this);
 
     // If this was the last layer using this Pixi context, remove it.
-    if (this._context.layersRegistered === 0) {
-      this._context.renderer.destroy();
+    if (this._context.layersRegistered.size === 0) {
+      this._context.destroy();
       PixiLayer.contexts.delete(this.stackViewer);
     }
   };
@@ -73,11 +111,8 @@
    * Render the Pixi context if all layers using it are ready.
    */
   PixiLayer.prototype._renderIfReady = function () {
-    this._context.layersReady += 1;
-    if (this._context.layersReady >= this._context.layersRegistered) {
-      this._context.layersReady = 0;
-      this.renderer.render(this.stage);
-    }
+    this.readyForRender = true;
+    this._context.renderIfReady();
   };
 
   /**

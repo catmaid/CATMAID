@@ -360,6 +360,10 @@
     this.yc = Math.floor( this.y * this.scale - ( this.viewHeight / 2 ) );
     this.xc = Math.floor( this.x * this.scale - ( this.viewWidth / 2 ) );
 
+    // If using WebGL/Pixi, must explicitly tell all layers beforehand that a
+    // a redraw is beginning.
+    var context = CATMAID.PixiLayer.contexts.get(this);
+    if (context) context.resetRenderReadiness();
 
     // Semaphore pattern from: http://stackoverflow.com/a/3709809/223092
     for (var i = 0; i < this._layerOrder.length; i++) {

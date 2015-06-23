@@ -1,5 +1,5 @@
 QUnit.test('Event system test', function( assert ) {
-  var e = Events.Event;
+  var e = CATMAID.Events.Event;
 
   /**
    * Test if something is a function. From:
@@ -79,17 +79,17 @@ QUnit.test('Event system test', function( assert ) {
 
   // Test extension of object with event system
   var obj2 = {};
-  Events.extend(obj2);
-  assert.strictEqual(obj2.on, Events.Event.on);
-  assert.strictEqual(obj2.trigger, Events.Event.trigger);
+  CATMAID.Events.extend(obj2);
+  assert.strictEqual(obj2.on, CATMAID.Events.Event.on);
+  assert.strictEqual(obj2.trigger, CATMAID.Events.Event.trigger);
 
   // Test if extension of an object returns the object
   var obj3 = {};
-  assert.strictEqual(Events.extend(obj3), obj3);
+  assert.strictEqual(CATMAID.Events.extend(obj3), obj3);
 
   // Test if context is ignored  on removal, if not passed
   (function() {
-    var e = Events.Event;
+    var e = CATMAID.Events.Event;
     var wasExecuted = false;
     var handler = function() { wasExecuted = true; };
     var o1 = {}, o2 = {};
@@ -103,7 +103,7 @@ QUnit.test('Event system test', function( assert ) {
 
   // Test if context is respected on removal, if passed
   (function() {
-    var e = Events.Event;
+    var e = CATMAID.Events.Event;
     var wasExecuted = false;
     var executionContext;
     var handler = function() { wasExecuted = true; executionContext = this; };

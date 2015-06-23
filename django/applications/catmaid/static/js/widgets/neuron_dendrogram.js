@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  Events,
   InstanceRegistry,
   project,
   requestQueue,
@@ -57,7 +56,7 @@ var NeuronDendrogram = function() {
 NeuronDendrogram.prototype = {};
 $.extend(NeuronDendrogram.prototype, new InstanceRegistry());
 $.extend(NeuronDendrogram.prototype, new CATMAID.SkeletonSource());
-$.extend(NeuronDendrogram.prototype, Events.Event);
+$.extend(NeuronDendrogram.prototype, CATMAID.Events.Event);
 
 /* Implement interfaces */
 

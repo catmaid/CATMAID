@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  Events,
   mayEdit,
   NeuronNameService,
   OverlayLabel,
@@ -59,7 +58,7 @@ SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.setRadiusAfterNodeCreation = false;
-Events.extend(SkeletonAnnotations);
+CATMAID.Events.extend(SkeletonAnnotations);
 
 /**
  * Sets the active node, if node is not null. Otherwise, the active node is
@@ -471,7 +470,7 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer) {
 SkeletonAnnotations.SVGOverlay.prototype = {
   EVENT_HIT_NODE_DISPLAY_LIMIT: "tracing_hit_node_display_limit"
 };
-Events.extend(SkeletonAnnotations.SVGOverlay.prototype);
+CATMAID.Events.extend(SkeletonAnnotations.SVGOverlay.prototype);
 
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,

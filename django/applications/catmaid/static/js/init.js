@@ -3,7 +3,7 @@
 
 /** @type {Object} Global access to window and project control events and variables. */
 CATMAID.Init = {};
-Events.extend(CATMAID.Init);
+CATMAID.Events.extend(CATMAID.Init);
 CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
 CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
 

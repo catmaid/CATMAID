@@ -17,7 +17,7 @@
   };
 
   NeuronController.prototype = {};
-  Events.extend(NeuronController.prototype);
+  CATMAID.Events.extend(NeuronController.prototype);
 
   /**
    * Delete a neuron and the skeleton is is modeled by.

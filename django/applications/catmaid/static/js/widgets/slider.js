@@ -131,7 +131,7 @@
       this._inputView.style.display = "none";
       this._inputView.style.display = "block";
 
-      this._input.onchange = this._setByInput;
+      this._input.onchange = this._setByInputHandler();
       this._input.addEventListener( "wheel", this._mouseWheel.bind(this), false );
     }
 
@@ -260,13 +260,15 @@
   /**
    * set a value, priorly check if it is in the value array
    */
-  Slider.prototype._setByInput = function( e )
-  {
-    var inputVal = Number(this.value);
-    // If not a valid Number, reset slider to previous value (or first value if
-    // previous value is also NaN, such as through bad initialization).
-    if (isNaN(inputVal)) this.value = isNaN(this.val) ? this.values[0] : this.val;
-    else this.setByValue(inputVal);
+  Slider.prototype._setByInputHandler = function () {
+    var self = this;
+    return function (e) {
+      var inputVal = Number(this.value);
+      // If not a valid Number, reset slider to previous value (or first value if
+      // previous value is also NaN, such as through bad initialization).
+      if (isNaN(inputVal)) this.value = isNaN(self.val) ? self.values[0] : self.val;
+      else self.setByValue(inputVal);
+    };
   };
 
   /**

@@ -192,25 +192,30 @@
 		};
 
 
+		/**
+		 * Stack z-coordinate from project coordinates. In stack space, Z is
+		 * discrete and by convention, coordinates between one section and the next
+		 * are projected onto the first.
+		 */
 		var projectToStackZ;
 		switch ( orientation )
 		{
 		case Stack.ORIENTATION_XZ:
 			projectToStackZ = function( zp, yp, xp )
 			{
-				return Math.round( ( yp - translation.y ) / resolution.z );
+				return Math.floor( ( yp - translation.y ) / resolution.z );
 			};
 			break;
 		case Stack.ORIENTATION_ZY:
 			projectToStackZ = function( zp, yp, xp )
 			{
-				return Math.round( ( xp - translation.x ) / resolution.z );
+				return Math.floor( ( xp - translation.x ) / resolution.z );
 			};
 			break;
 		default:
 			projectToStackZ = function( zp, yp, xp )
 			{
-				return Math.round( ( zp - translation.z ) / resolution.z );
+				return Math.floor( ( zp - translation.z ) / resolution.z );
 			};
 		}
 

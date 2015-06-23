@@ -64,6 +64,10 @@ Stack viewer:
   the tile layer control.
 
 
+Tile layer:
+- New filter (WebGL only): intensity thresholded transparency
+
+
 Neuron search:
 
 - The name displayed for neurons now follows the same naming mechanism used for

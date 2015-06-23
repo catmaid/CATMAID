@@ -50,7 +50,7 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	}
 	this.divID = divID;
 	this.container = document.getElementById(divID);
-	this.stack = project.focusedStack;
+  this.stack = project.focusedStackViewer.primaryStack;
   this.submit = new submitterFn();
 	this.options = new WebGLApplication.prototype.OPTIONS.clone();
 	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.options);

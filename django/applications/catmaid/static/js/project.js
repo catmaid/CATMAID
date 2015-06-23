@@ -129,6 +129,7 @@ function Project( pid )
 		if ( tool )
 			self.focusedStackViewer.setTool( tool );
 		window.onresize();
+		this.trigger(Project.EVENT_STACKVIEW_FOCUS_CHANGED, stackViewer);
 	};
 
 	/**
@@ -596,3 +597,4 @@ function Project( pid )
 CATMAID.Events.extend(Project.prototype);
 Project.EVENT_STACKVIEW_ADDED = 'project_stackview_added';
 Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
+Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';

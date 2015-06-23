@@ -755,6 +755,7 @@ SkeletonAnnotations.SVGOverlay.prototype.ensureFocused = function() {
  * Unregister this layer and destroy all UI elements and event handlers.
  */
 SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
+  this.suspended = true;
   this.unregister();
   // Show warning in case of pending request
 
@@ -2198,6 +2199,11 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
   }
 
   this.updateNodeCoordinatesinDB(function () {
+    // Bail if the overlay was destroyed or suspended before this callback.
+    if (self.suspended) {
+      return;
+    }
+
     // stackViewer.viewWidth and .viewHeight are in screen pixels
     // so they must be scaled and then transformed to nanometers
     // and stackViewer.x, .y are in absolute pixels, so they also must be brought to nanometers
@@ -2288,6 +2294,11 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
               json.missing_relations, json.missing_classinstances,
               json.initialize);
         } else {
+          // Bail if the overlay was destroyed or suspended before this callback.
+          if (self.suspended) {
+            return;
+          }
+
           self.refreshNodesFromTuples(json, extraNodes);
 
           // initialization hack for "URL to this view"

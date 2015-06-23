@@ -1646,6 +1646,13 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   // Prepare existing Node and ConnectorNode instances for reuse
   this.graphics.resetCache();
 
+  // Set curently allowed section distances, to correctly account for broken
+  // sections.
+  var sv = this.stackViewer;
+  var dToSecBefore = sv.primaryStack.validZDistanceBefore(sv.z);
+  var dToSecAfter = sv.primaryStack.validZDistanceAfter(sv.z);
+  this.graphics.init(dToSecBefore, dToSecAfter);
+
   // Add extra nodes
   if (extraNodes) {
     extraNodes.forEach(function(n) {

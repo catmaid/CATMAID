@@ -121,6 +121,13 @@
       this.cache.reset();
     };
 
+    this.init = function(dToSecBefore, dToSecAfter) {
+      dToSecBefore = (null === dToSecBefore) ? -1 : dToSecBefore;
+      dToSecAfter = (null === dToSecAfter) ? 1 : dToSecAfter;
+      this.NodePrototype.dToSecBefore = dToSecBefore;
+      this.NodePrototype.dToSecAfter = dToSecAfter;
+    };
+
     /** Disable all cached Node instances at or beyond the cutoff index,
      * preserving up to 100 disabled nodes and 20 disabled connector nodes,
      * and removing the rest from the cache.
@@ -258,6 +265,10 @@
       this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
       // Store current node scaling factor
       this.scaling = 1.0;
+      // Store current section distance to next and previous sections. These can
+      // be changed to correct for broken nodes.
+      this.dToSecBefore = -1;
+      this.dToSecAfter = 1;
 
       /** Update the local x,y coordinates of the node
        * and for its SVG object c well. */
@@ -419,12 +430,12 @@
         }
 
         // If the parent or this itself is more than one slice away from the current
-        // Z, draw the line only until it meets with the next slice, in direction of
-        // the child or the parent, respectively.
+        // Z, draw the line only until it meets with the next non-boken slice,
+        // in direction of the child or the parent, respectively.
         var childLocation = getIntersection(this, this.parent,
-            Math.max(-1, Math.min(1, this.zdiff)));
+            Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.zdiff)));
         var parentLocation = getIntersection(this.parent, this,
-            Math.max(-1, Math.min(1, this.parent.zdiff)));
+            Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
 
         this.line.attr({
             x1: childLocation[0], y1: childLocation[1],
@@ -465,7 +476,9 @@
       };
 
       /** Trigger the redrawing of the lines with parent treenode,
-       * and also with children when toChildren is true. */
+       * and also with children when toChildren is true. To be able to respect
+       * broken slices, the distance to the next and previous section is asked
+       * for. */
       this.drawEdges = function(toChildren) {
         if (toChildren) {
           for (var ID in this.children) {

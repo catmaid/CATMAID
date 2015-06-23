@@ -258,6 +258,32 @@
 		{
 			return this.stackToProjectBox(stackBox, {min: {}, max: {}});
 		};
+
+		/**
+		 * Return the distance to the closest valid section number before the
+		 * given one. Or null if there is none.
+		 */
+		self.validZDistanceBefore = function(section) {
+		  var adj = section;
+		  while (true) {
+			--adj;
+			if (adj < 0) return null;
+			if (-1 === self.broken_slices.indexOf(adj)) return adj - section;
+		  }
+		};
+
+		/**
+		 * Return the distance to the closest valid section after the given one.
+		 * Or null if there is none.
+		 */
+		self.validZDistanceAfter = function(section) {
+		  var adj = section;
+		  while (true) {
+			++adj;
+			if (adj > self.MAX_Z) return null;
+			if (-1 === self.broken_slices.indexOf(adj)) return adj - section;
+		  }
+		};
 	}
 
 	CATMAID.Stack = Stack;

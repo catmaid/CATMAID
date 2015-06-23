@@ -360,11 +360,18 @@ def split_skeleton(request, project_id=None):
     # Make sure the user has permissions to edit
     can_edit_class_instance_or_fail(request.user, neuron.id, 'neuron')
 
-    # retrieve the id, parent_id of all nodes in the skeleton
-    # with minimal ceremony
+    # Retrieve the id, parent_id of all nodes in the skeleton. Also
+    # pre-emptively lock all treenodes and connectors in the skeleton to prevent
+    # race conditions resulting in inconsistent skeleton IDs from, e.g., node
+    # creation or update.
     cursor.execute('''
-    SELECT id, parent_id FROM treenode WHERE skeleton_id=%s
-    ''' % skeleton_id) # no need to sanitize
+        SELECT 1 FROM treenode_connector tc WHERE tc.skeleton_id = %s
+        ORDER BY tc.id
+        FOR NO KEY UPDATE OF tc;
+        SELECT t.id, t.parent_id FROM treenode t WHERE t.skeleton_id = %s
+        ORDER BY t.id
+        FOR NO KEY UPDATE OF t
+        ''', (skeleton_id, skeleton_id)) # no need to sanitize
     # build the networkx graph from it
     graph = nx.DiGraph()
     for row in cursor.fetchall():

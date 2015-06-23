@@ -142,7 +142,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
-    def insert_new_treenode(parent_id=None, skeleton=None):
+    def insert_new_treenode(parent_id=None, skeleton_id=None):
         """ If the parent_id is not None and the skeleton_id of the parent does
         not match with the skeleton.id, then the database will throw an error
         given that the skeleton_id, being defined as foreign key in the
@@ -158,7 +158,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
         new_treenode.location_y = float(y)
         new_treenode.location_z = float(z)
         new_treenode.radius = int(radius)
-        new_treenode.skeleton = skeleton
+        new_treenode.skeleton_id = skeleton_id
         new_treenode.confidence = int(confidence)
         if parent_id:
             new_treenode.parent_id = parent_id
@@ -176,13 +176,19 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
             # the neuron the skeleton of the treenode is modeling.
             can_edit_treenode_or_fail(editor, project_id, parent_id)
 
-            parent_treenode = Treenode.objects.get(pk=parent_id)
+            # Select the parent treenode for update to prevent race condition
+            # updates to its skeleton ID while this node is being created.
+            cursor = connection.cursor()
+            cursor.execute('''
+                SELECT t.skeleton_id FROM treenode t WHERE t.id = %s
+                FOR NO KEY UPDATE OF t
+                ''', (parent_id,))
+            parent_skeleton_id = cursor.fetchone()[0]
 
             response_on_error = 'Could not insert new treenode!'
-            skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)
-            new_treenode = insert_new_treenode(parent_id, skeleton)
+            new_treenode = insert_new_treenode(parent_id, parent_skeleton_id)
 
-            return (new_treenode.id, skeleton.id)
+            return (new_treenode.id, parent_skeleton_id)
         else:
             # No parent node: We must create a new root node, which needs a
             # skeleton and a neuron to belong to.
@@ -213,7 +219,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                 relate_neuron_to_skeleton(neuron_id, new_skeleton.id)
 
                 response_on_error = 'Could not insert new treenode!'
-                new_treenode = insert_new_treenode(None, new_skeleton)
+                new_treenode = insert_new_treenode(None, new_skeleton.id)
 
                 return (new_treenode.id, new_skeleton.id)
             else:
@@ -234,7 +240,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                 relate_neuron_to_skeleton(new_neuron.id, new_skeleton.id)
 
                 response_on_error = 'Failed to insert instance of treenode.'
-                new_treenode = insert_new_treenode(None, new_skeleton)
+                new_treenode = insert_new_treenode(None, new_skeleton.id)
 
                 response_on_error = 'Failed to write to logs.'
                 new_location = (new_treenode.location_x, new_treenode.location_y,

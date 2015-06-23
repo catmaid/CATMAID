@@ -53,7 +53,8 @@
      * False otherwise.
      */
     this.isXView = function() {
-      return project.focusedStack.orientation === CATMAID.Stack.ORIENTATION_ZY;
+      return project.focusedStackViewer.primaryStack.orientation ===
+        CATMAID.Stack.ORIENTATION_ZY;
     };
 
     /**
@@ -61,7 +62,8 @@
      * False otherwise.
      */
     this.isYView = function() {
-      return project.focusedStack.orientation === CATMAID.Stack.ORIENTATION_XZ;
+      return project.focusedStackViewer.primaryStack.orientation ===
+          CATMAID.Stack.ORIENTATION_XZ;
     };
 
     /**
@@ -69,7 +71,8 @@
      * False otherwise.
      */
     this.isZView = function() {
-      return project.focusedStack.orientation === CATMAID.Stack.ORIENTATION_XY;
+      return project.focusedStackViewer.primaryStack.orientation ===
+          CATMAID.Stack.ORIENTATION_XY;
     };
 
     /**
@@ -237,7 +240,7 @@
       var vP = [to.x - from.x, to.y - from.y, to.z - from.z];
       // Get difference vector in stack space coordinates and check that not
       // more sections are crossed than allowed.
-      var stack = project.focusedStack;
+      var stack = project.focusedStackViewer.primaryStack;
       var vPAbs = [Math.abs(vP[0]), Math.abs(vP[1]), Math.abs(vP[2])];
       var vSAbs = [stack.projectToStackX(vPAbs[2], vPAbs[1], vPAbs[0]),
                    stack.projectToStackY(vPAbs[2], vPAbs[1], vPAbs[0]),
@@ -468,7 +471,7 @@
       var cn = self.current_segment.sequence[self.current_segment_index];
       var ln = skipStep ? skipStep :
         self.current_segment.sequence[self.current_segment_index - 1];
-      var zdiff = project.focusedStack.projectToStackZ(
+      var zdiff = project.focusedStackViewer.primaryStack.projectToStackZ(
           cn.z - ln.z, cn.y - ln.y, cn.x - ln.x);
       if (Math.abs(zdiff) > self.virtualNodeStep) {
         CATMAID.msg("Skipped sections", "This node is " + Math.abs(zdiff) +

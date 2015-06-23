@@ -262,9 +262,9 @@
       var pc = this.projectCoordinates();
       var stackS = stack.projectToStackSX(pc.s);
       return {
-        xc: Math.floor(stack.projectToStackX(pc.z, pc.y, pc.x) / Math.pow(2, stackS) - this.viewWidth / 2),
-        yc: Math.floor(stack.projectToStackY(pc.z, pc.y, pc.x) / Math.pow(2, stackS) - this.viewHeight / 2),
-        z:  stack.projectToStackZ(pc.z, pc.y, pc.x),
+        xc: Math.floor(stack.projectToUnclampedStackX(pc.z, pc.y, pc.x) / Math.pow(2, stackS) - this.viewWidth / 2),
+        yc: Math.floor(stack.projectToUnclampedStackY(pc.z, pc.y, pc.x) / Math.pow(2, stackS) - this.viewHeight / 2),
+        z:  stack.projectToUnclampedStackZ(pc.z, pc.y, pc.x),
         s:  stackS
       };
     }
@@ -437,9 +437,9 @@
         this.scale = 1.0 / Math.pow( 2, this.s );
       }
 
-      this.x = this.primaryStack.projectToStackX( zp, yp, xp );
-      this.y = this.primaryStack.projectToStackY( zp, yp, xp );
-      this.z = this.primaryStack.projectToStackZ( zp, yp, xp );
+      this.x = this.primaryStack.projectToUnclampedStackX( zp, yp, xp );
+      this.y = this.primaryStack.projectToUnclampedStackY( zp, yp, xp );
+      this.z = this.primaryStack.projectToUnclampedStackZ( zp, yp, xp );
 
       this.update( completionCallback );
 

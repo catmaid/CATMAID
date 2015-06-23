@@ -135,41 +135,61 @@
 		}
 
 
-	    /**
-		 * Stack x-coordinate from project coordinates
+		/**
+		 * Stack x-coordinate from project coordinates, without clamping to the
+		 * stack bounds.
 		 */
 		switch ( orientation )
 		{
 		case Stack.ORIENTATION_ZY:
-			this.projectToStackX = function( zp, yp, xp )
+			this.projectToUnclampedStackX = function( zp, yp, xp )
 			{
-				return Math.max( 0, Math.min( MAX_X, ( zp - translation.z ) / resolution.x ) );
+				return ( zp - translation.z ) / resolution.x;
 			};
 			break;
 		default:
-			this.projectToStackX = function( zp, yp, xp )
+			this.projectToUnclampedStackX = function( zp, yp, xp )
 			{
-				return Math.max( 0, Math.min( MAX_X, ( xp - translation.x ) / resolution.x ) );
+				return ( xp - translation.x ) / resolution.x;
 			};
 		}
 
 		/**
-		 * Stack y-coordinate from project coordinates
+		 * Stack x-coordinate from project coordinates, clamped to the stack
+		 * bounds.
+		 */
+		this.projectToStackX = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_X, this.projectToUnclampedStackX( zp, yp, xp ) ) );
+		};
+
+		/**
+		 * Stack y-coordinate from project coordinates, without clamping to the
+		 * stack bounds.
 		 */
 		switch ( orientation )
 		{
 		case Stack.ORIENTATION_XZ:
-			this.projectToStackY = function( zp, yp, xp )
+			this.projectToUnclampedStackY = function( zp, yp, xp )
 			{
-				return Math.max( 0, Math.min( MAX_Y, ( zp - translation.z ) / resolution.y ) );
+				return ( zp - translation.z ) / resolution.y;
 			};
 			break;
 		default:	// xy
-			this.projectToStackY = function( zp, yp, xp )
+			this.projectToUnclampedStackY = function( zp, yp, xp )
 			{
-				return Math.max( 0, Math.min( MAX_Y, ( yp - translation.y ) / resolution.y ) );
+				return ( yp - translation.y ) / resolution.y;
 			};
 		}
+
+		/**
+		 * Stack y-coordinate from project coordinates, clamped to the stack
+		 * bounds.
+		 */
+		this.projectToStackY = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_Y, this.projectToUnclampedStackY( zp, yp, xp ) ) );
+		};
 
 
 		var projectToStackZ;
@@ -196,9 +216,10 @@
 
 
 		/**
-		 * Stack z-coordinate from project coordinates
+		 * Stack z-coordinate from project coordinates, without clamping to the
+		 * stack bounds.
 		 */
-		this.projectToStackZ = function( zp, yp, xp )
+		this.projectToUnclampedStackZ = function( zp, yp, xp )
 		{
 			var z1, z2;
 			z1 = z2 = projectToStackZ( zp, yp, xp );
@@ -207,8 +228,16 @@
 				z1 = Math.max( 0, z1 - 1 );
 				z2 = Math.min( MAX_Z, z2 + 1 );
 			}
-			var z3 = skip_planes[ z1 ] ? z2 : z1;
-			return Math.max( 0, Math.min( MAX_Z, z3 ) );
+			return skip_planes[ z1 ] ? z2 : z1;
+		};
+
+		/**
+		 * Stack y-coordinate from project coordinates, clamped to the stack
+		 * bounds.
+		 */
+		this.projectToStackZ = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_Z, this.projectToUnclampedStackZ( zp, yp, xp ) ) );
 		};
 
 		/**

@@ -294,6 +294,17 @@
 		};
 
 		/**
+		 * Create a new stack box representing the extents of the stack.
+		 * @return {min {x, y, z}, max{x, y, z}} extents of the stack in stack coordinates
+		 */
+		this.createStackExtentsBox = function () {
+			return {
+				min: {x:     0, y:     0, z:     0},
+				max: {x: MAX_X, y: MAX_Y, z: MAX_Z}
+			};
+		};
+
+		/**
 		 * Return the distance to the closest valid section number before the
 		 * given one. Or null if there is none.
 		 */

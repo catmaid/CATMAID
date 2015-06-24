@@ -2508,8 +2508,8 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
 
   // If the existing nextBranches was fetched for this treenode, reuse it to
   // prevent repeated queries when quickly alternating between child and parent.
-  if (cycle ||
-      typeof this.nextBranches !== 'undefined' && this.nextBranches.tnid === treenode_id) {
+  var hasCachedBranches = this.nextBranches && this.nextBranches.tnid === treenode_id;
+  if (cycle || hasCachedBranches) {
         this.cycleThroughBranches(treenode_id, 0, false);
   } else {
     var self = this;

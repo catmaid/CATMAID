@@ -2510,7 +2510,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
   // prevent repeated queries when quickly alternating between child and parent.
   var hasCachedBranches = this.nextBranches && this.nextBranches.tnid === treenode_id;
   if (cycle || hasCachedBranches) {
-        this.cycleThroughBranches(treenode_id, 0, false);
+    this.cycleThroughBranches(treenode_id, 0, false);
   } else {
     var self = this;
     if (SkeletonAnnotations.isRealNode(treenode_id)) {

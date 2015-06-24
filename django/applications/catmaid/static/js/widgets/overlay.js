@@ -2936,7 +2936,8 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
 /**
  * Moves the view to the location where the skeleton between a child
  * and a parent node intersects with the first section next to the child. Or,
- * alternatively, the parent if reverse is trueish. Returns a promise.
+ * alternatively, the parent if reverse is trueish. Returns a promise which
+ * resolves to the node datastructure, return by getNodeOnSectionAndEdge.
  */
 SkeletonAnnotations.SVGOverlay.prototype.moveToNodeOnSectionAndEdge = function (
     childID, parentID, select, reverse) {
@@ -2944,6 +2945,7 @@ SkeletonAnnotations.SVGOverlay.prototype.moveToNodeOnSectionAndEdge = function (
     .then((function(node) {
       var callback = select ? this.selectNode.bind(this, node.id) : undefined;
       this.moveTo(node.z, node.y, node.x, callback);
+      return node;
     }).bind(this));
 };
 

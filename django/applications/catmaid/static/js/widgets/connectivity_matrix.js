@@ -475,14 +475,20 @@
       });
 
       // Create a hidden removal button, that can be shown on demand
-      var removalButtonIcon = document.createElement('span');
-      removalButtonIcon.setAttribute('title', 'Remove this neuron vom list');
-      removalButtonIcon.setAttribute('class', 'ui-icon ui-icon-close');
-      var removalButton = document.createElement('div');
-      removalButton.setAttribute('class', 'remove-skeleton');
-      removalButton.style.display = 'none';
-      removalButton.appendChild(removalButtonIcon);
-      content.appendChild(removalButton);
+      var removalButton = appendHoverButton(content, 'close', 'remove-skeleton',
+          'Remove this neuron vom list');
+
+      function appendHoverButton(target, label, cls, title) {
+        var buttonIcon = document.createElement('span');
+        buttonIcon.setAttribute('title', title);
+        buttonIcon.setAttribute('class', 'ui-icon ui-icon-' + label);
+        var button = document.createElement('div');
+        button.setAttribute('class', 'hover-button ' + cls);
+        button.style.display = 'none';
+        button.appendChild(buttonIcon);
+        target.appendChild(button);
+        return button;
+      }
 
       // Add a handler for hovering over table headers
       $(table).on('hover', 'th', content, function(e) {

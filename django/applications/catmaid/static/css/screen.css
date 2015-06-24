@@ -500,10 +500,18 @@ div#classification_graph_object img.roiimage {
   min-width: 3em;
 }
 
-.connectivity_matrix .remove-skeleton {
+.connectivity_matrix .hover-button {
   position: absolute;
-  background-color: salmon;
   cursor: pointer;
+}
+
+.connectivity_matrix .remove-skeleton {
+  background-color: salmon;
+}
+
+.connectivity_matrix .move-up,
+.connectivity_matrix .move-down {
+  background-color: blue;
 }
 
 .connectivity_widget table {

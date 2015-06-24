@@ -1556,12 +1556,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
           }
         }
 
-        // Check whether the Z coordinate of the new node is beyond one section away
-        // from the Z coordinate of the parent node (which is the active by definition)
-        if (active_node_z !== null && Math.abs(active_node_z - nn.z) > self.stackViewer.primaryStack.resolution.z) {
-          CATMAID.msg('BEWARE', 'Node added beyond one section from its parent node!');
-        }
-
         // Invoke callback if necessary
         if (afterCreate) afterCreate(self, nn);
       });

@@ -2513,30 +2513,24 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
     this.cycleThroughBranches(treenode_id, 0, false);
   } else {
     var self = this;
-    if (SkeletonAnnotations.isRealNode(treenode_id)) {
-      this.submit(
-          django_url + project.id + "/node/next_branch_or_end",
-          {tnid: treenode_id},
-          function(json) {
-            // See goToNextBranchOrEndNode for JSON schema description.
-            if (json.length === 0) {
-              // Already at a branch or end node
-              CATMAID.msg('Already there', 'You are at an end node');
-            } else {
-              self.cacheBranches(treenode_id, json);
-              self.cycleThroughBranches(null, 0, false);
-            }
-          });
-    } else {
-      // There is no need to get branches or end nodes for virtual nodes, they
-      // are always inbetween two real nodes.
-      var childID = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
-      this.submit
-        .then(this.moveToNodeOnSectionAndEdge.bind(this, childID, treenode_id, true, true))
-        .then((function(node) {
-          self.cacheBranches(treenode_id, [[node]]);
-        }).bind(this));
-    }
+    var startFromRealNode = SkeletonAnnotations.isRealNode(treenode_id);
+    // If we deal with a virtual node, get next branch and interesting node for
+    // parent. All result nodes will be after the virtual node.
+    var queryNode = startFromRealNode ? treenode_id :
+        SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
+    this.submit(
+        django_url + project.id + "/node/next_branch_or_end",
+        {tnid: queryNode},
+        function(json) {
+          // See goToNextBranchOrEndNode for JSON schema description.
+          if (json.length === 0) {
+            // Already at a branch or end node
+            CATMAID.msg('Already there', 'You are at an end node');
+          } else {
+            self.cacheBranches(treenode_id, json);
+            self.cycleThroughBranches(null, 0, false);
+          }
+        });
   }
 };
 

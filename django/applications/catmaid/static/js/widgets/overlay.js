@@ -2914,18 +2914,17 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
 
   // Request location from backend
   var self = this;
-  var url = django_url + project.id + "/node/get_location";
-  return this.submit(url, {tnid: nodeID}, false, true)
-    .then(function(json) {
-      return {
-        id: json[0],
-        x: self.stackViewer.primaryStack.projectToStackX(json[3], json[2], json[1]),
-        y: self.stackViewer.primaryStack.projectToStackY(json[3], json[2], json[1]),
-        z: self.stackViewer.primaryStack.projectToStackZ(json[3], json[2], json[1])
-      };
-    }, function(error) {
-      return Promise.reject("Could not get node location: " + error);
-    });
+  return new Promise(function(resolve, reject) {
+    var url = django_url + project.id + "/node/get_location";
+    self.submit(url, {tnid: nodeID}, resolve, true, false, reject)
+  }).then(function(json) {
+    return {
+      id: json[0],
+      x: self.stackViewer.primaryStack.projectToStackX(json[3], json[2], json[1]),
+      y: self.stackViewer.primaryStack.projectToStackY(json[3], json[2], json[1]),
+      z: self.stackViewer.primaryStack.projectToStackZ(json[3], json[2], json[1])
+    };
+  });
 };
 
 /**

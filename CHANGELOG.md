@@ -107,6 +107,12 @@ Administration:
   in it is merged.
 
 
+- There is no longer a race condition in the database during concurrent
+  split/merge of a skeleton and creation of a treenode in that skeleton. While
+  this is not a comprehensive guarantee of conflict-free concurrency, it does
+  remove the most likely scenario resulting in corruption of the database model.
+
+
 ## 2015.5.27
 
 ### Bug fixes

@@ -1,6 +1,11 @@
 ## Under development
 
 
+CATMAID now uses the GPLv3 license and moved away from the stricter
+AGPLv3. This move was discussed with all previous contributors and
+agreed on. See the corresponding commit for more details.
+
+
 ### Notes
 
 This release includes database changes that require manual intervention if you

@@ -2531,7 +2531,8 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
       // There is no need to get branches or end nodes for virtual nodes, they
       // are always inbetween two real nodes.
       var childID = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
-      this.moveToNodeOnSectionAndEdge(childID, treenode_id, true, true)
+      this.submit
+        .then(this.moveToNodeOnSectionAndEdge.bind(this, childID, treenode_id, true, true))
         .then((function(node) {
           self.cacheBranches(treenode_id, [[node]]);
         }).bind(this));

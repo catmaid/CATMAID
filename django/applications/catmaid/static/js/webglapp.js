@@ -9,6 +9,7 @@
   InstanceRegistry,
   NeuronNameService,
   project,
+  Project,
   requestQueue,
   SelectionTable,
   session,
@@ -55,6 +56,7 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.options = new WebGLApplication.prototype.OPTIONS.clone();
 	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.options);
   this.updateActiveNodePosition();
+  project.on(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
 	this.initialized = true;
 };
 
@@ -68,6 +70,7 @@ WebGLApplication.prototype.getName = function() {
 WebGLApplication.prototype.destroy = function() {
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.staticUpdateActiveNodePosition, this);
+  project.off(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
   this.unregisterInstance();
   this.unregisterSource();
   this.space.destroy();
@@ -671,7 +674,7 @@ WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color
 WebGLApplication.prototype.OPTIONS = new WebGLApplication.prototype.Options();
 
 WebGLApplication.prototype.updateZPlane = function() {
-	this.space.staticContent.updateZPlanePosition(this.stack);
+	this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer);
 	this.space.render();
 };
 
@@ -1593,35 +1596,65 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.adjust = func
 
 	this.box.visible = options.show_box;
 
-	if (this.zplane) space.scene.remove(this.zplane);
 	if (options.show_zplane) {
-		this.zplane = this.createZPlane(space.stack);
-    this.updateZPlanePosition(space.stack);
-		space.scene.add(this.zplane);
+		this.createZPlane(space, project.focusedStackViewer);
 	} else {
+    if (this.zplane) space.scene.remove(this.zplane);
 		this.zplane = null;
 	}
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(stack) {
-	var geometry = new THREE.Geometry(),
-	    xwidth = stack.dimension.x * stack.resolution.x,
-			ywidth = stack.dimension.y * stack.resolution.y,
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(space, stackViewer) {
+  if (this.zplane) space.scene.remove(this.zplane);
+  var stack = stackViewer.primaryStack,
+      stackPlane = stack.createStackExtentsBox(),
+      plane = stack.createStackToProjectBox(stackPlane),
+	    geometry = new THREE.Geometry(),
 	    material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide } );
 
-	geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
-	geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
-	geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
-	geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
+  switch (stack.orientation) {
+    case CATMAID.Stack.ORIENTATION_XY:
+      plane.min.z = plane.max.z = 0;
+      break;
+    case CATMAID.Stack.ORIENTATION_XZ:
+      plane.min.y = plane.max.y = 0;
+      var swap = plane.min.z;
+      plane.min.z = plane.max.z;
+      plane.max.z = swap;
+      break;
+    case CATMAID.Stack.ORIENTATION_ZY:
+      plane.min.x = plane.max.x = 0;
+      break;
+  }
+
+	geometry.vertices.push( new THREE.Vector3( plane.min.x, -plane.min.y, -plane.min.z ) );
+  geometry.vertices.push( new THREE.Vector3( plane.max.x, -plane.min.y, -plane.max.z ) );
+  geometry.vertices.push( new THREE.Vector3( plane.min.x, -plane.max.y, -plane.min.z ) );
+  geometry.vertices.push( new THREE.Vector3( plane.max.x, -plane.max.y, -plane.max.z ) );
 	geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
 	geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
 
-	return new THREE.Mesh( geometry, material );
+  this.zplane = new THREE.Mesh( geometry, material );
+  space.scene.add(this.zplane);
+
+  this.updateZPlanePosition(space, stackViewer);
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(stack) {
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(space, stackViewer) {
 	if (this.zplane) {
-		this.zplane.position.z = (-stack.z * stack.resolution.z - stack.translation.z);
+    var v = new THREE.Vector3(0, 0, 0);
+    switch (stackViewer.primaryStack.orientation) {
+      case CATMAID.Stack.ORIENTATION_XY:
+        v.z = stackViewer.primaryStack.stackToProjectZ(stackViewer.z, stackViewer.y, stackViewer.x);
+        break;
+      case CATMAID.Stack.ORIENTATION_XZ:
+        v.y = stackViewer.primaryStack.stackToProjectY(stackViewer.z, stackViewer.y, stackViewer.x);
+        break;
+      case CATMAID.Stack.ORIENTATION_ZY:
+        v.x = stackViewer.primaryStack.stackToProjectX(stackViewer.z, stackViewer.y, stackViewer.x);
+        break;
+    }
+    this.zplane.position.copy(space.toSpace(v));
 	}
 };
 

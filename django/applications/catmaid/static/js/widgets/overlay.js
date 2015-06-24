@@ -2527,6 +2527,12 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
             // Already at a branch or end node
             CATMAID.msg('Already there', 'You are at an end node');
           } else {
+            // In case of a virtual node, we need to filter the returned array
+            // to only include the branch that contains the virtual node.
+            if (!startFromRealNode) {
+              var childID = parseInt(SkeletonAnnotations.getChildOfVirtualNode(treenode_id), 10);
+              json = json.filter(function(b) { return b[0][0] === childID; });
+            }
             self.cacheBranches(treenode_id, json);
             self.cycleThroughBranches(null, 0, false);
           }

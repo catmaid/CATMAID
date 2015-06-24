@@ -2426,7 +2426,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
               self.moveTo(atn.z, atn.y, atn.x);
             }
           } else {
-            self.nextBranches = {tnid: treenode_id, branches: json};
+            self.cacheBranches(treenode_id, json);
             self.cycleThroughBranches(null, e.altKey ? 1 : 2, true);
           }
         });
@@ -2523,7 +2523,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
               // Already at a branch or end node
               CATMAID.msg('Already there', 'You are at an end node');
             } else {
-              self.nextBranches = {tnid: treenode_id, branches: json};
+              self.cacheBranches(treenode_id, json);
               self.cycleThroughBranches(null, 0, false);
             }
           });
@@ -2533,11 +2533,19 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
       var childID = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
       this.moveToNodeOnSectionAndEdge(childID, treenode_id, true, true)
         .then((function(node) {
-          self.nextBranches = {tnid: treenode_id, branches: [[node]]};
+          self.cacheBranches(treenode_id, [[node]]);
         }).bind(this));
     }
   }
 };
+
+/**
+ * Stores child nodes of a treenode in a local cache.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.cacheBranches = function(treenode_id, branches) {
+  this.nextBranches = {tnid: treenode_id, branches: branches};
+};
+
 
 /**
  * Lets the user select a radius around a node with the help of a small

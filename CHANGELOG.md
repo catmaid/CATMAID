@@ -31,7 +31,8 @@ realistic.
 
 Key shortcuts / mouse operations:
 
-- Ctrl + mouse wheel will no zoom in and out the focused stack.
+- Ctrl + mouse wheel now zooms the stack, while shift zooms by smaller
+  increments.
 
 
 Multi-view tracing and virtual nodes:
@@ -72,12 +73,6 @@ Stack viewer:
 - Each stack viewer can be toggled between coupling its navigation with other
   open stack viewers. Toggle this via the "Navigate with project" checkbox in
   the tile layer control.
-
-
-Navigator:
-
-- Ctrl + mouse wheel now zooms the stack, while shift zooms by smaller
-  increments.
 
 
 Tile layer:

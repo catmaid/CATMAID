@@ -676,7 +676,7 @@
           var rP = stackToProject(r);
           var newRP = Math.sqrt(Math.pow(rP.x, 2) + Math.pow(rP.y, 2));
           labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
-          labelText.text(Math.round(newRP) + 'nm');
+          labelText.text(Math.round(newRP) + 'nm (' + Math.round(newR) + 'px)');
           var bbox = labelText.node().getBBox();
           labelShadow.attr({
               x: nodeX + r.x + 2 * pad,

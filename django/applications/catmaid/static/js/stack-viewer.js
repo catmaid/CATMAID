@@ -19,11 +19,14 @@
    */
   function StackViewer(
       project,          //!< {Project} reference to the parent project
-      primaryStack
+      primaryStack,
+      offset            //!< {[Number]} (optional) an navigation offset (translation) from the project position
   ) {
     this._project = project;
     this.primaryStack = primaryStack;
     this._stacks = [primaryStack];
+
+    this._offset = offset ? offset : [0, 0, 0];
 
     this._widgetId = this.registerInstance();
 
@@ -441,9 +444,9 @@
         this.scale = 1.0 / Math.pow( 2, this.s );
       }
 
-      this.x = this.primaryStack.projectToUnclampedStackX( zp, yp, xp );
-      this.y = this.primaryStack.projectToUnclampedStackY( zp, yp, xp );
-      this.z = this.primaryStack.projectToUnclampedStackZ( zp, yp, xp );
+      this.x = this.primaryStack.projectToUnclampedStackX( zp, yp, xp ) + this._offset[0];
+      this.y = this.primaryStack.projectToUnclampedStackY( zp, yp, xp ) + this._offset[1];
+      this.z = this.primaryStack.projectToUnclampedStackZ( zp, yp, xp ) + this._offset[2];
 
       this.update( completionCallback );
 
@@ -511,6 +514,9 @@
    */
   StackViewer.prototype.moveToPixel = function (zs, ys, xs, ss) {
     if (this.navigateWithProject) {
+      zs -= this._offset[2];
+      ys -= this._offset[1];
+      xs -= this._offset[0];
       this._project.moveToProject(
         this.primaryStack.stackToProjectZ( zs, ys, xs ),
         this.primaryStack.stackToProjectY( zs, ys, xs ),

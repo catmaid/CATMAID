@@ -43,6 +43,8 @@
     var $view = $(this.view);
     $view.empty();
 
+    $view.append('<h3>Stack Viewer</h3>');
+
     var navcb = $('<input/>')
         .attr('type', 'checkbox')
         .prop('checked', stackViewer.navigateWithProject)
@@ -65,6 +67,27 @@
         .addClass('setting')
         .append($('<label/>').append(cb).append('Show scale bar'));
     $view.append(label);
+
+    var offsetTable = $('<table />');
+    var row = $('<tr/>');
+    var cellNames = ['X', 'Y', 'Z'];
+    for (var j = 0; j < 3; ++j) {
+      var cell = $('<input type="number" step="1" value="' + stackViewer._offset[j] + '"/>');
+      cell.change((function (ind) {
+        return function () {
+          stackViewer._offset[ind] = Number($(this).val());
+          stackViewer.moveToPixel(stackViewer.z, stackViewer.y, stackViewer.x, stackViewer.s);
+        };
+      })(j));
+      cell.css('width', '4em');
+      row.append($('<td/>').append($('<label/>').append(cellNames[j]).append(cell)));
+    }
+    offsetTable.append(row);
+
+    var offsetSelect = $('<div class="setting"/>');
+    offsetSelect.append('<span>Offset from project (stack coordinates)</span>');
+    offsetSelect.append(offsetTable);
+    $view.append(offsetSelect);
 
     $view.append('<h3>Layers by render order (drag to reorder)</h3>');
     var layerList = $('<ol/>');

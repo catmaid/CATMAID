@@ -445,7 +445,7 @@ function updateProjectListFromCache() {
  * freeze the window to wait for an answer. The successFn callback is called
  * only if the loading was successful.
  */
-function openProjectStack( pid, sid, successFn, stackViewerConstructor, useExistingViewer )
+function openProjectStack( pid, sid, successFn, useExistingViewer )
 {
 	if ( project && project.id != pid )
 	{
@@ -461,8 +461,7 @@ function openProjectStack( pid, sid, successFn, stackViewerConstructor, useExist
 			function(json) {
 				var stackViewer = handle_openProjectStack(
             json,
-            useExistingViewer ? project.focusedStackViewer : undefined,
-            stackViewerConstructor);
+            useExistingViewer ? project.focusedStackViewer : undefined);
 				// Call success function, if any, if a stack viewer was added
 				if (stackViewer) {
 					CATMAID.tools.callIfFn(successFn, stackViewer);
@@ -483,7 +482,7 @@ function openProjectStack( pid, sid, successFn, stackViewerConstructor, useExist
  *
  * free the window
  */
-function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
+function handle_openProjectStack( e, stackViewer )
 {
   var useExistingViewer = false;
 
@@ -518,8 +517,7 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
       e.orientation );
 
   if (!useExistingViewer) {
-    if (typeof stackViewerConstructor === 'undefined') stackViewerConstructor = CATMAID.StackViewer;
-    stackViewer = new stackViewerConstructor(project, stack);
+    stackViewer = new CATMAID.StackViewer(project, stack);
   }
 
   document.getElementById( "toolbox_project" ).style.display = "block";
@@ -583,7 +581,7 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
               },{
                 title: 'Add to focused viewer',
                 note: '',
-                action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ', undefined, undefined, true)')
+                action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ', undefined, true)')
               }
             ]
           }

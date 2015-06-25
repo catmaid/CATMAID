@@ -2842,8 +2842,14 @@ SkeletonAnnotations.SVGOverlay.prototype.getNodeOnSectionAndEdge = function (
       var from = reverse ? locations[1] : locations[0],
             to = reverse ? locations[0] : locations[1],
           toID = reverse ? childID : parentID;
-      // Calculate target section
-      var z = from.z + (from.z < to.z ? 1 : (from.z > to.z ? -1 : 0));
+      // Calculate target section, respect broken slices
+      var z = from.z;
+      var inc = from.z < to.z ? 1 : (from.z > to.z ? -1 : 0);
+      var brokenSlices = self.stackViewer.primaryStack.broken_slices;
+      while (true) {
+        z += inc;
+        if (-1 === brokenSlices.indexOf(z)) break;
+      }
 
       // If the target is in the section below, above or in the same section as
       // the from node, return it instead of a virtual node

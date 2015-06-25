@@ -90,15 +90,12 @@ function Navigator()
 
 		self.input_x.value = self.stackViewer.x;
 		self.input_y.value = self.stackViewer.y;
-		
-		return;
 	};
 	
 	this.resize = function( width, height )
 	{
 		self.mouseCatcher.style.width = width + "px";
 		self.mouseCatcher.style.height = height + "px";
-		return;
 	};
 	
 	this.redraw = function()
@@ -183,7 +180,6 @@ function Navigator()
 	this.changeSlice = function( val )
 	{
 		self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
-		return;
 	};
 	//--------------------------------------------------------------------------
 	
@@ -259,7 +255,6 @@ function Navigator()
 		var val = parseInt( this.value );
 		if ( isNaN( val ) ) this.value = self.stackViewer.x;
 		else self.stackViewer.moveToPixel( self.stackViewer.z, self.stackViewer.y, val, self.stackViewer.s );
-		return;
 	};
 	
 	var changeYByInput = function( e )
@@ -267,7 +262,6 @@ function Navigator()
 		var val = parseInt( this.value );
 		if ( isNaN( val ) ) this.value = self.stackViewer.y;
 		else self.stackViewer.moveToPixel( self.stackViewer.z, val, self.stackViewer.x, self.stackViewer.s );
-		return;
 	};
 	
 	var YXMouseWheel = function( e )
@@ -480,8 +474,6 @@ function Navigator()
 		self.input_y.addEventListener( "wheel", YXMouseWheel, false );
 
 		self.updateControls();
-		
-		return;
 	};
 	
 	
@@ -492,7 +484,6 @@ function Navigator()
 	{
 		if ( self.stackViewer && self.mouseCatcher.parentNode == self.stackViewer.getView() )
 			self.stackViewer.getView().removeChild( self.mouseCatcher );
-		return;
 	};
 	
 	
@@ -528,8 +519,6 @@ function Navigator()
 		self.input_y.removeEventListener( "wheel", YXMouseWheel, false );
 
 		self.stackViewer = null;
-		
-		return;
 	};
 
 	/** This function should return true if there was any action

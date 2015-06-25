@@ -60,6 +60,9 @@ var WindowMaker = new function()
             }
 
             break;
+          case CMWWindow.POINTER_ENTER:
+            if (CATMAID.FOCUS_ALL === CATMAID.focusBehavior) win.focus();
+            break;
         }
         return true;
       });

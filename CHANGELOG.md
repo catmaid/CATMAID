@@ -98,6 +98,13 @@ Miscellaneous:
 - Rows and columns of the connectivity matrix can now be moved around with
   little buttons that appear when the mouse is over row and column header cells.
 
+- There are now three options to change focus if a pointer enters a window:
+  don't change focus (how it has been so far), focus stacks (will activate
+  stacks when hovered, but won't change focus for other windows) and focus all
+  (will change focus to every window hovered). The default will be stack focus
+  follows the pointer. The settings widget makes these options available in
+  general settings area.
+
 
 Administration:
 

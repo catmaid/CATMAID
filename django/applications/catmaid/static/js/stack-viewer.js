@@ -84,6 +84,12 @@
             self._tool.unregister();
           self._tool = null;
           break;
+        case CMWWindow.POINTER_ENTER:
+          if (CATMAID.FOCUS_ALL === CATMAID.focusBehavior ||
+              CATMAID.FOCUS_STACKS === CATMAID.focusBehavior) {
+            callingWindow.focus();
+          }
+          break;
         }
         return true;
       } );

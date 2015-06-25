@@ -130,6 +130,25 @@
       msgPosition.on('change', function(e) {
         CATMAID.messagePosition = this.value;
       });
+
+      // Focus follows cursor settings
+      var hoverBehavior = $('<select/>');
+      var behaviors = [
+        {name: 'Don\'t change focus', id: CATMAID.FOCUS_SAME},
+        {name: 'Focus stacks when hovered', id: CATMAID.FOCUS_STACKS},
+        {name: 'Focus any window when hovered', id: CATMAID.FOCUS_ALL}
+      ];
+      behaviors.forEach(function(o) {
+        var selected = (o.id === CATMAID.hoverBehavior);
+        this.append(new Option(o.name, o.id, selected, selected));
+      }, hoverBehavior);
+
+      ds.append($('<div/>').addClass('setting').append('Select if and how ' +
+            'focus should change when the mouse pointer moves over a window.'));
+      ds.append(createLabeledControl('Window hover behavior', hoverBehavior));
+      hoverBehavior.on('change', function(e) {
+        CATMAID.focusBehavior = parseInt(this.value, 10);
+      });
     };
 
     /**

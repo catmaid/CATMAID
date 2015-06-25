@@ -85,6 +85,24 @@ window.onerror = function(msg, url, lineno, colno, err)
     }
   });
 
+  // Configuration of behavior when the (mouse) pointer hovers over a window.
+  CATMAID.FOCUS_SAME = 0;
+  CATMAID.FOCUS_STACKS = 1;
+  CATMAID.FOCUS_ALL = 2;
+  var focusBehavior = CATMAID.FOCUS_STACKS;
+  Object.defineProperty(CATMAID, 'focusBehavior', {
+    get: function() { return focusBehavior; },
+    set: function(newValue) {
+      var allowedValues = [CATMAID.FOCUS_SAME, CATMAID.FOCUS_STACKS,
+          CATMAID.FOCUS_ALL];
+      if (-1 === allowedValues.indexOf(newValue)) {
+        throw new CATMAID.ValueError('Please use one of these values: ' +
+            allowedValues.join(','));
+      }
+      focusBehavior = newValue;
+    }
+  });
+
   /**
    * Convenience function to show a growl message
    */

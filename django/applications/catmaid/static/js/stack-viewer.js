@@ -19,8 +19,7 @@
    */
   function StackViewer(
       project,          //!< {Project} reference to the parent project
-      primaryStack,
-      inverse_mouse_wheel     //!< {boolean} Whether to inverse mouse wheel for changing sections
+      primaryStack
   ) {
     this._project = project;
     this.primaryStack = primaryStack;
@@ -122,11 +121,6 @@
       $(this).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
     };
     this._view.appendChild( controlToggle );
-
-    if( inverse_mouse_wheel === 0 )
-      this.inverse_mouse_wheel = 1;
-    else
-      this.inverse_mouse_wheel = -1;
 
     var indicatorbar = document.createElement( "div" );
     indicatorbar.className = "indicatorbar";

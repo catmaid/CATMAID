@@ -131,7 +131,7 @@ var Userprofile = function(profile) {
  */
 Userprofile.prototype.getOptions = function() {
   return {
-    inverse_mouse_wheel: false,
+    inverse_mouse_wheel: true,
     display_stack_reference_lines: true,
     independent_ontology_workspace_is_default: false,
     show_text_label_tool: false,

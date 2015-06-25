@@ -142,7 +142,7 @@ function Navigator()
 		if (!w) return false;
 		e.preventDefault();
 
-		w = self.stackViewer.inverse_mouse_wheel * w;
+		if (!userprofile.inverse_mouse_wheel) w = -w;
 		w /= Math.abs(w); // Normalize w to {-1, 1}.
 
 		if (e.ctrlKey || e.metaKey) { // Zoom.

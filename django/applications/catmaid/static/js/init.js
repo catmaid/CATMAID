@@ -519,10 +519,7 @@ function handle_openProjectStack( e, stackViewer, stackViewerConstructor )
 
   if (!useExistingViewer) {
     if (typeof stackViewerConstructor === 'undefined') stackViewerConstructor = CATMAID.StackViewer;
-    stackViewer = new stackViewerConstructor(
-        project,
-        stack,
-        userprofile.inverse_mouse_wheel);
+    stackViewer = new stackViewerConstructor(project, stack);
   }
 
   document.getElementById( "toolbox_project" ).style.display = "block";

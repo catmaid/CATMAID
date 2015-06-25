@@ -139,6 +139,13 @@
     {
       var ds = addSettingsContainer(container, "Stack view");
 
+      ds.append(createCheckboxSetting("Invert mouse wheel", function() {
+        userprofile.inverse_mouse_wheel = this.checked;
+        userprofile.saveAll(function () {
+          CATMAID.msg('Success', 'User profile updated successfully.');
+        });
+      }, userprofile.inverse_mouse_wheel));
+
       ds.append(createCheckboxSetting("Display reference lines", function() {
         userprofile.display_stack_reference_lines = this.checked;
         userprofile.saveAll(function () {

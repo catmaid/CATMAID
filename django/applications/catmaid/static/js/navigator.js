@@ -236,10 +236,9 @@ function Navigator()
 	 */
 	this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
 		var old_s = self.stackViewer.s;
-		var old_scale = self.stackViewer.scale;
 		var s_extents = self.stackViewer.getZoomExtents();
 		var new_s = Math.max(s_extents.min, Math.min(s_extents.max, sp));
-		var new_scale = 1 / Math.pow(2, new_s);
+		var scale_ratio = Math.pow(2, new_s - old_s);
 
 		if (old_s == new_s)
 			return;
@@ -247,8 +246,8 @@ function Navigator()
 		var dx = keep_x - self.stackViewer.x;
 		var dy = keep_y - self.stackViewer.y;
 
-		var new_centre_x = keep_x - dx * (old_scale / new_scale);
-		var new_centre_y = keep_y - dy * (old_scale / new_scale);
+		var new_centre_x = keep_x - dx * scale_ratio;
+		var new_centre_y = keep_y - dy * scale_ratio;
 
 		self.stackViewer.moveToPixel(self.stackViewer.z, new_centre_y, new_centre_x, sp);
 	};

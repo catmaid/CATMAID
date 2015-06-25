@@ -501,8 +501,8 @@ div#classification_graph_object img.roiimage {
 }
 
 .connectivity_matrix .hover-button {
-  position: absolute;
   cursor: pointer;
+  float: left;
 }
 
 .connectivity_matrix .remove-skeleton {
@@ -510,8 +510,10 @@ div#classification_graph_object img.roiimage {
 }
 
 .connectivity_matrix .move-up,
-.connectivity_matrix .move-down {
-  background-color: blue;
+.connectivity_matrix .move-down,
+.connectivity_matrix .move-left,
+.connectivity_matrix .move-right {
+  background-color: skyblue;
 }
 
 .connectivity_widget table {

@@ -15,8 +15,8 @@
     // Color index for table cell coloring option
     this.color = 0;
     // Sorting indices for row and columns, default to name
-    this.rowSorting = 1;
-    this.colSorting = 1;
+    this.rowSorting = 2;
+    this.colSorting = 2;
     // Rotate column headers by 90 degree
     this.rotateColumnHeaders = false;
   };
@@ -474,49 +474,76 @@
         }
       });
 
-      // Create a hidden removal button, that can be shown on demand
-      var removalButton = appendHoverButton(content, 'close', 'remove-skeleton',
-          'Remove this neuron vom list');
+      // A container for all the buttons
+      var buttons = document.createElement('div');
+      buttons.style.display = 'none';
+      buttons.style.position = 'absolute';
 
-      function appendHoverButton(target, label, cls, title) {
-        var buttonIcon = document.createElement('span');
-        buttonIcon.setAttribute('title', title);
-        buttonIcon.setAttribute('class', 'ui-icon ui-icon-' + label);
-        var button = document.createElement('div');
-        button.setAttribute('class', 'hover-button ' + cls);
-        button.style.display = 'none';
-        button.appendChild(buttonIcon);
-        target.appendChild(button);
-        return button;
-      }
+      // Create a removal button
+      var removalButton = appendHoverButton(buttons, 'close',
+          'remove-skeleton', 'Remove this neuron vom list');
+
+      // Create a move up and a move down button
+      var moveUpButton = appendHoverButton(buttons, 'triangle-1-n',
+          'move-up', 'Move this row up');
+      var moveDownButton = appendHoverButton(buttons, 'triangle-1-s',
+          'move-down', 'Move this row down');
+
+      // Create a move left and a right button
+      var moveLeftButton = appendHoverButton(buttons, 'triangle-1-w',
+          'move-left', 'Move this column to the left');
+      var moveRightButton = appendHoverButton(buttons, 'triangle-1-e',
+          'move-right', 'Move this column to the right');
+
+      content.appendChild(buttons);
+
+      var moveButtons = [moveUpButton, moveDownButton, moveLeftButton,
+          moveRightButton];
 
       // Add a handler for hovering over table headers
       $(table).on('hover', 'th', content, function(e) {
         var links = $(this).find('a[data-skeleton-ids]');
         if (0 === links.length) return false;
-        var skeletonIds = links[0].dataset.skeletonIds;
-        if (0 === JSON.parse(skeletonIds).length) return false;
+        var skeletonIdsJSON = links[0].dataset.skeletonIds;
+        var skeletonIds = JSON.parse(skeletonIdsJSON);
+        if (0 === skeletonIds.length) return false;
         var isRow = ("true" === links[0].dataset.isRow);
+        var group = links[0].dataset.group;
 
-        // Assign skeleton IDs to remoal buttons
-        removalButton.dataset.skeletonIds = skeletonIds;
+        // Let removal button know if it is in a row and assign skeleton ids
         removalButton.dataset.isRow = isRow;
+        removalButton.dataset.skeletonIds = skeletonIdsJSON;
+        // Assign group and key information to move buttons
+        moveButtons.forEach(function(b) {
+          if (group) b.dataset.group = group;
+          else b.dataset.key = skeletonIds[0];
+        });
 
-        // Move removal button to current cell and toggle its visiblity
+        // For rows show up and down, for columns left and right
+        if (isRow) {
+          $(moveUpButton).add(moveDownButton).show();
+          $(moveLeftButton).add(moveRightButton).hide();
+        } else {
+          $(moveUpButton).add(moveDownButton).hide();
+          $(moveLeftButton).add(moveRightButton).show();
+        }
+
+        // Move removal button to current cell and toggle its visiblity. Move it
+        // one pixel into the cell from left and top.
         var pos = $(this).position();
-        removalButton.style.left = ($(content).scrollLeft() + pos.left) + "px";
+        buttons.style.left = ($(content).scrollLeft() + pos.left) + 1 + "px";
         if (rotateColumns && !isRow) {
           // This is required, because the removal button div is not rotated
           // with the table cell (it is no part of it).
-          removalButton.style.top = ($(content).scrollTop() + pos.top +
-            $(this).width() - $(this).height()) + "px";
+          buttons.style.top = ($(content).scrollTop() + pos.top +
+            $(this).width() - $(this).height()) + 1 + "px";
         } else {
-          removalButton.style.top = ($(content).scrollTop() + pos.top) + "px";
+          buttons.style.top = ($(content).scrollTop() + pos.top) + 1 + "px";
         }
 
-        // Determine visibility by checkick if the mouse cursor is still in the
+        // Determine visibility by checking if the mouse cursor is still in the
         // table cell and is just hoving the remove button.
-        if ($(removalButton).is(':visible')) {
+        if ($(buttons).is(':visible')) {
           var offset = $(this).offset();
           var hidden;
           if (rotateColumns && !isRow) {
@@ -533,17 +560,17 @@
                      (e.pageY < offset.top) ||
                      (e.pageY > (offset.top + $(this).height()));
           }
-          if (hidden) $(removalButton).hide();
+          if (hidden) $(buttons).hide();
         } else {
-          $(removalButton).toggle();
+          $(buttons).toggle();
         }
       });
 
       // Add a handler to hide the remove button if left on all sides but right
-      $(removalButton).on('mouseout', function(e) {
+      $(buttons).on('mouseout', function(e) {
         var offset = $(this).offset();
         var visible = (e.pageX > (offset.left + $(this).width()));
-        if (!visible) $(removalButton).hide();
+        if (!visible) $(buttons).hide();
       });
 
       // Add a click handler to the remove button that triggers the removal
@@ -565,6 +592,48 @@
         }
         return true;
       });
+
+      // Add a click handler to move buttons
+      $(moveUpButton).on('click', {widget: this, up: true}, handleMove);
+      $(moveDownButton).on('click', {widget: this, down: true}, handleMove);
+      $(moveLeftButton).on('click', {widget: this, left: true}, handleMove);
+      $(moveRightButton).on('click', {widget: this, right: true}, handleMove);
+
+      /**
+       * Swap two elements in either the row or column skeleton source and
+       * refresh.
+       */
+      function handleMove(e) {
+        var group = this.dataset.group;
+        var key = this.dataset.key;
+        // If this is not a group cell, try to parse the key as a integer to
+        // refer to a skeleton ID.
+        if (group) key = group;
+        else key = parseInt(key, 10);
+        // Find element list to work on
+        var widget = e.data.widget;
+        var isRow = (e.data.up || e.data.down);
+        var keys = isRow ? widget.rowDimension.orderedElements :
+            widget.colDimension.orderedElements;
+        // Swap elements
+        var currentIndex = keys.indexOf(key);
+        if (-1 === currentIndex) return true;
+        if (e.data.up || e.data.left) {
+          if (0 === currentIndex) return true;
+          var prevKey = keys[currentIndex - 1];
+          keys[currentIndex - 1] = key;
+          keys[currentIndex] = prevKey;
+        } else {
+          if (keys.length - 1 === currentIndex) return true;
+          var nextKey = keys[currentIndex + 1];
+          keys[currentIndex + 1] = key;
+          keys[currentIndex] = nextKey;
+        }
+        // Disable soting and refresh
+        if (isRow) widget.rowSorting = 0;
+        else widget.colSorting = 0
+        widget.refresh();
+      }
     }
 
     return content;
@@ -596,6 +665,12 @@
 
     // Chreate a cell with skeleton link
     function createHeaderCell(name, group, skeletonIDs, isRow) {
+      // Make sure we have either a group or a single skeleton ID
+      if (!group && skeletonIDs.length > 1) {
+        throw new CATMAID.ValueError('Expected either a group or a single skeleton ID');
+      }
+
+      // Create element
       var a = document.createElement('a');
       a.href = '#';
       a.setAttribute('data-skeleton-ids', JSON.stringify(skeletonIDs));
@@ -606,6 +681,7 @@
       var th = document.createElement('th');
       th.appendChild(div);
       if (group) {
+        a.setAttribute('data-group', group);
         th.setAttribute('title', 'This group contains ' + group.length +
             ' skeleton(s): ' + group.join(', '));
       }
@@ -665,6 +741,20 @@
           e.appendChild(td);
         }
       });
+    }
+
+    /**
+     * Append a hover button with the given properties to a target element.
+     */
+    function appendHoverButton(target, label, cls, title) {
+      var buttonIcon = document.createElement('span');
+      buttonIcon.setAttribute('title', title);
+      buttonIcon.setAttribute('class', 'ui-icon ui-icon-' + label);
+      var button = document.createElement('div');
+      button.setAttribute('class', 'hover-button ' + cls);
+      button.appendChild(buttonIcon);
+      target.appendChild(button);
+      return button;
     }
   };
 
@@ -869,6 +959,12 @@
 
   // The available sort options for rows and columns
   var sortOptions = [
+    {
+      name: 'No Sorting',
+      sort: function(matrix, src, isRow, a, b) {
+        return 0;
+      }
+    },
     {
       name: 'ID',
       sort: function(matrix, src, isRow, a, b) {

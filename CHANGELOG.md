@@ -89,6 +89,9 @@ Miscellaneous:
 - Treenode Table refurbishing: far faster, supports multiple skeletons, can do
   tag search with regular expressions and lists the skeleton treenode ID.
 
+- Rows and columns of the connectivity matrix can now be moved around with
+  little buttons that appear when the mouse is over row and column header cells.
+
 
 Administration:
 

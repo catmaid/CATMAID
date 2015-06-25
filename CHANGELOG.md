@@ -76,6 +76,7 @@ Stack viewer:
 
 
 Tile layer:
+
 - New filter (WebGL only): intensity thresholded transparency
 
 

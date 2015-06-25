@@ -69,6 +69,12 @@ Stack viewer:
   the tile layer control.
 
 
+Navigator:
+
+- Ctrl + mouse wheel now zooms the stack, while shift zooms by smaller
+  increments.
+
+
 Tile layer:
 - New filter (WebGL only): intensity thresholded transparency
 

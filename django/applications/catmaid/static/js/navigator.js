@@ -135,93 +135,26 @@ function Navigator()
 		
 		return false;
 	};
-	
-	var onmousewheel = function( e )
-	{
+
+	var onmousewheel = function (e) {
 		var w = CATMAID.ui.getMouseWheel( e );
-		if ( w )
-		{
-			if ( w > 0 )
-			{
-				self.slider_z.move( 1 );
-			}
-			else
-			{
-				self.slider_z.move( -1 );
-			}
+
+		if (!w) return false;
+		e.preventDefault();
+
+		w = self.stackViewer.inverse_mouse_wheel * w;
+		w /= Math.abs(w); // Normalize w to {-1, 1}.
+
+		if (e.ctrlKey || e.metaKey) { // Zoom.
+			self.slider_s.move(w, !e.shiftKey);
+		} else { // Move sections.
+			if (e.shiftKey) w *= 10;
+			self.slider_z.move(w);
 		}
-		return false;
+
+		return true;
 	};
 
-	var onmousewheel = 
-	{
-		zoom : function( e )
-		{
-			var w = CATMAID.ui.getMouseWheel( e );
-			if ( w )
-			{
-				w = self.stackViewer.inverse_mouse_wheel * w;
-				if ( w > 0 )
-				{
-          if( e.shiftKey ) {
-            self.slider_z.move( 10 );
-          } else {
-            self.slider_z.move( 1 );
-          }
-				}
-				else
-				{
-          if( e.shiftKey ) {
-            self.slider_z.move( -10 );
-          } else {
-            self.slider_z.move( -1 );
-          }
-
-				}
-			}
-			return false;
-		},
-		move : function( e )
-		{
-			var xp = self.stackViewer.x;
-			var yp = self.stackViewer.y;
-			var m = CATMAID.ui.getMouse( e, self.stackViewer.getView() );
-			var w = CATMAID.ui.getMouseWheel( e );
-			if ( m )
-			{
-				xp = m.offsetX - self.stackViewer.viewWidth / 2;
-				yp = m.offsetY - self.stackViewer.viewHeight / 2;
-			}
-			if ( w )
-			{
-				if ( w > 0 )
-				{
-					if ( self.stackViewer.s < self.stackViewer.primaryStack.MAX_S )
-					{
-						self.stackViewer.moveToPixel(
-							self.stackViewer.z,
-							self.stackViewer.y - Math.floor( yp / self.stackViewer.scale ),
-							self.stackViewer.x - Math.floor( xp / self.stackViewer.scale ),
-							self.stackViewer.s + 1 );
-					}
-				}
-				else
-				{
-					if ( self.stackViewer.s > 0 )
-					{
-						var ns = self.stackViewer.scale * 2;
-						self.moveToPixel(
-							self.stackViewer.z,
-							self.stackViewer.y + Math.floor( yp / ns ),
-							self.stackViewer.x + Math.floor( xp / ns ),
-							self.stackViewer.s - 1 );
-					}
-				}
-			}
-			return false;
-		}
-	};
-	
 	//--------------------------------------------------------------------------
 	/**
 	 * Slider commands for changing the slice come in too frequently, thus the
@@ -511,7 +444,7 @@ function Navigator()
 		self.stackViewer = parentStackViewer;
 
 		self.mouseCatcher.onmousedown = onmousedown;
-		self.mouseCatcher.addEventListener( "wheel", onmousewheel.zoom, false );
+		self.mouseCatcher.addEventListener( "wheel", onmousewheel, false );
 
 		self.stackViewer.getView().appendChild( self.mouseCatcher );
 

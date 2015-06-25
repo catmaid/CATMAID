@@ -29,6 +29,11 @@ realistic.
 
 ### Features and enhancements
 
+Key shortcuts / mouse operations:
+
+- Ctrl + mouse wheel will no zoom in and out the focused stack.
+
+
 Multi-view tracing and virtual nodes:
 
 - Orthogonal views on a regular XY stack can now also be used for neuron

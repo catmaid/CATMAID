@@ -502,47 +502,9 @@
 
       // Add a handler for hovering over table headers
       $(table).on('hover', 'th', content, function(e) {
-        var links = $(this).find('a[data-skeleton-ids]');
-        if (0 === links.length) return false;
-        var skeletonIdsJSON = links[0].dataset.skeletonIds;
-        var skeletonIds = JSON.parse(skeletonIdsJSON);
-        if (0 === skeletonIds.length) return false;
-        var isRow = ("true" === links[0].dataset.isRow);
-        var group = links[0].dataset.group;
-
-        // Let removal button know if it is in a row and assign skeleton ids
-        removalButton.dataset.isRow = isRow;
-        removalButton.dataset.skeletonIds = skeletonIdsJSON;
-        // Assign group and key information to move buttons
-        moveButtons.forEach(function(b) {
-          if (group) b.dataset.group = group;
-          else b.dataset.key = skeletonIds[0];
-        });
-
-        // For rows show up and down, for columns left and right
-        if (isRow) {
-          $(moveUpButton).add(moveDownButton).show();
-          $(moveLeftButton).add(moveRightButton).hide();
-        } else {
-          $(moveUpButton).add(moveDownButton).hide();
-          $(moveLeftButton).add(moveRightButton).show();
-        }
-
-        // Move removal button to current cell and toggle its visiblity. Move it
-        // one pixel into the cell from left and top.
-        var pos = $(this).position();
-        buttons.style.left = ($(content).scrollLeft() + pos.left) + 1 + "px";
-        if (rotateColumns && !isRow) {
-          // This is required, because the removal button div is not rotated
-          // with the table cell (it is no part of it).
-          buttons.style.top = ($(content).scrollTop() + pos.top +
-            $(this).width() - $(this).height()) + 1 + "px";
-        } else {
-          buttons.style.top = ($(content).scrollTop() + pos.top) + 1 + "px";
-        }
-
         // Determine visibility by checking if the mouse cursor is still in the
-        // table cell and is just hoving the remove button.
+        // table cell and is just hoving the remove button. If the buttons are
+        // not visible, set them up and show them.
         if ($(buttons).is(':visible')) {
           var offset = $(this).offset();
           var hidden;
@@ -562,7 +524,45 @@
           }
           if (hidden) $(buttons).hide();
         } else {
-          $(buttons).toggle();
+          var links = $(this).find('a[data-skeleton-ids]');
+          if (0 === links.length) return false;
+          var skeletonIdsJSON = links[0].dataset.skeletonIds;
+          var skeletonIds = JSON.parse(skeletonIdsJSON);
+          if (0 === skeletonIds.length) return false;
+          var isRow = ("true" === links[0].dataset.isRow);
+          var group = links[0].dataset.group;
+
+          // Let removal button know if it is in a row and assign skeleton ids
+          removalButton.dataset.isRow = isRow;
+          removalButton.dataset.skeletonIds = skeletonIdsJSON;
+          // Assign group and key information to move buttons
+          moveButtons.forEach(function(b) {
+            if (group) b.dataset.group = group;
+            else b.dataset.key = skeletonIds[0];
+          });
+
+          // For rows show up and down, for columns left and right
+          if (isRow) {
+            $(moveUpButton).add(moveDownButton).show();
+            $(moveLeftButton).add(moveRightButton).hide();
+          } else {
+            $(moveUpButton).add(moveDownButton).hide();
+            $(moveLeftButton).add(moveRightButton).show();
+          }
+          // Move removal button to current cell and toggle its visiblity. Move it
+          // one pixel into the cell from left and top.
+          var pos = $(this).position();
+          buttons.style.left = ($(content).scrollLeft() + pos.left) + 1 + "px";
+          if (rotateColumns && !isRow) {
+            // This is required, because the removal button div is not rotated
+            // with the table cell (it is no part of it).
+            buttons.style.top = ($(content).scrollTop() + pos.top +
+              $(this).width() - $(this).height()) + 1 + "px";
+          } else {
+            buttons.style.top = ($(content).scrollTop() + pos.top) + 1 + "px";
+          }
+
+          $(buttons).show();
         }
       });
 

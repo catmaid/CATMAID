@@ -194,7 +194,9 @@
       var layer = stackViewer.getLayer(layerName);
 
       if (!layer) {
-        layer = new TracingLayer(stackViewer);
+        layer = new TracingLayer(stackViewer, {
+          show_labels: show_labels
+        });
         stackViewer.addLayer(layerName, layer);
       }
 

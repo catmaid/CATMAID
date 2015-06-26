@@ -114,10 +114,11 @@
 
       var layer_name = layer.getLayerName ? layer.getLayerName() : key;
       if (stackViewer.isLayerRemovable(key)) {
-        container.append($('<div class="layerClose">[ x ]</div>').click(function () {
-          stackViewer.removeLayer(key);
-          stackViewer.redraw();
-        }));
+        container.append($('<div class="layerClose">')
+            .append($('<input type="button" value="x" class="remove"/>').click(function () {
+              stackViewer.removeLayer(key);
+              stackViewer.redraw();
+            })));
       }
       container.append($('<h4/>').append(layer_name));
 

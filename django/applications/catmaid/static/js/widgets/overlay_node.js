@@ -659,6 +659,7 @@
         // be drawn while the node is changing location.
         var nodeX = this.x;
         var nodeY = this.y;
+        var nodeZ = this.z;
 
         // Update radius on mouse move
         mc.on('mousemove', function() {
@@ -666,15 +667,16 @@
           var rS = toStack({x: e.layerX, y: e.layerY});
           var r = {
             x: rS.x - nodeX,
-            y: rS.y - nodeY
+            y: rS.y - nodeY,
+            z: rS.z - nodeZ
           };
-          var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2));
+          var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2) + Math.pow(r.z, 2));
           c.attr('r', newR);
           // Strore also x and y components
           c.datum(r);
           // Update radius measurement label.
           var rP = stackToProject(r);
-          var newRP = Math.sqrt(Math.pow(rP.x, 2) + Math.pow(rP.y, 2));
+          var newRP = Math.sqrt(Math.pow(rP.x, 2) + Math.pow(rP.y, 2) + Math.pow(rP.z, 2));
           labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
           labelText.text(Math.round(newRP) + 'nm (' + Math.round(newR) + 'px)');
           var bbox = labelText.node().getBBox();
@@ -711,7 +713,7 @@
         delete this.surroundingCircleElements;
         // Execute callback, if any, with radius in stack coordinates as argument
         if (callback) {
-          if (r) callback(r.x, r.y);
+          if (r) callback(r.x, r.y, r.z);
           else callback();
         }
       };

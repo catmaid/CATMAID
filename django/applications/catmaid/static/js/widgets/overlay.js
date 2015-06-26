@@ -2557,6 +2557,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
   var self = this;
   // References the original node the selector was created for
   var originalNode;
+  var originalZ;
 
   if (no_centering) {
     toggleMeasurementTool();
@@ -2579,6 +2580,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
   function toggleMeasurementTool() {
     // Keep a reference to the original node
     originalNode = self.nodes[treenode_id];
+    originalZ = originalNode.z;
     // If there was a measurement tool based radius selection started
     // before, stop this.
     if (originalNode.surroundingCircleElements) {
@@ -2609,15 +2611,14 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
         originalNode.removeSurroundingCircle();
       } else {
         // Remove circle and call callback
-        node.removeSurroundingCircle(function(rx, ry) {
+        node.removeSurroundingCircle(function(rx, ry, rz) {
           if (typeof rx === 'undefined' || typeof ry === 'undefined') {
             completionCallback(undefined);
             return;
           }
           // Convert pixel radius components to nanometers
-          var prx = self.stackViewer.primaryStack.stackToProjectX(self.stackViewer.z, ry, rx),
-              pry = self.stackViewer.primaryStack.stackToProjectY(self.stackViewer.z, ry, rx),
-              pr = Math.round(Math.sqrt(Math.pow(prx, 2) + Math.pow(pry, 2)));
+          var p = stackToProject({x: rx, y: ry, z: rz}),
+              pr = Math.round(Math.sqrt(Math.pow(p.x, 2) + Math.pow(p.y, 2) + Math.pow(p.z, 2)));
           // Callback with the selected radius
           completionCallback(pr);
         });
@@ -2633,7 +2634,8 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
       var offsetY = self.stackViewer.y - self.stackViewer.viewHeight / self.stackViewer.scale / 2;
       return {
         x: (r.x / self.stackViewer.scale) + offsetX,
-        y: (r.y / self.stackViewer.scale) + offsetY
+        y: (r.y / self.stackViewer.scale) + offsetY,
+        z: originalZ  // Use an unchanging Z so that stack Z distance is ignored.
       };
     }
 
@@ -2642,9 +2644,12 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
      */
     function stackToProject(s)
     {
+      // Subract the translation, since we care about distance in project space,
+      // not position.
       return {
-        x: self.stackViewer.primaryStack.stackToProjectX(self.stackViewer.z, s.y, s.x),
-        y: self.stackViewer.primaryStack.stackToProjectY(self.stackViewer.z, s.y, s.x)
+        x: self.stackViewer.primaryStack.stackToProjectX(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.x,
+        y: self.stackViewer.primaryStack.stackToProjectY(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.y,
+        z: self.stackViewer.primaryStack.stackToProjectZ(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.z
       };
     }
   }

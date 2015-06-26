@@ -566,11 +566,20 @@
         }
       });
 
-      // Add a handler to hide the remove button if left on all sides but right
+      // Add a handler to hide the remove button if left with the pointer on all
+      // sides but its right side.
       $(buttons).on('mouseout', function(e) {
+        // This event is also triggered for child elements. Make sure we only
+        // look at the button container.
+        var t = e.relatedTarget;
+        while (t && t.parentNode && t.parentNode != window) {
+          if (t.parentNode === this || t === this) return false;
+          t = t.parentNode;
+        }
+
+        // Get the current position (or zero coordinates if invisible)
         var offset = $(this).offset();
-        var visible = (e.pageX > (offset.left + $(this).width()));
-        if (!visible) $(buttons).hide();
+        if (e.pageX <= (offset.left + $(this).width())) $(this).hide();
       });
 
       // Add a click handler to the remove button that triggers the removal

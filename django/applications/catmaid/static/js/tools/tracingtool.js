@@ -52,26 +52,41 @@
       }
     };
 
+    /**
+     * Return a list of all tracing layers, optionally excluding the active one.
+     */
+    var getTracingLayers = function(excludeActive)
+    {
+      var viewers = project.getStackViewers();
+      if (excludeActive) {
+        viewers = viewers.filter(function(sv) {
+          // Exclude active stack viewer
+          return activeStackViewer !== sv;
+        });
+      }
+
+      return viewers.map(function(sv) {
+        // Get tracing layer for this stack view, or undefined
+        return sv.getLayer(getTracingLayerName(sv));
+      }).filter(function(layer) {
+        // Ignore falsy layers (which come from stacks
+        // that don't have tracing layers.
+        return layer ? true : false;
+      });
+    }
+
     var setTracingLayersSuspended = function(value, excludeActive)
     {
       value = Boolean(value);
-      project.getStackViewers().forEach(function(s) {
-        // Exclude stack viewer that is currently bound to the tracing tool
-        if (excludeActive && activeStackViewer === s) return;
-        // Set suspended state for each known tracing layer
-        var layer = s.getLayer(getTracingLayerName(s));
-        if (layer) layer.svgOverlay.suspended = value;
+      getTracingLayers(excludeActive).forEach(function(layer) {
+        layer.svgOverlay.suspended = value;
       });
     };
 
     var updateNodesInTracingLayers = function(excludeActive)
     {
-      project.getStackViewers().forEach(function(s) {
-        // Exclude stack viewer that is currently bound to the tracing tool
-        if (excludeActive && activeStackViewer === s) return;
-        // Update nodes in each known tracing layer
-        var layer = s.getLayer(getTracingLayerName(s));
-        if (layer) layer.svgOverlay.updateNodes();
+      getTracingLayers(excludeActive).forEach(function(layer) {
+        layer.svgOverlay.updateNodes();
       });
     };
 

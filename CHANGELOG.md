@@ -34,6 +34,11 @@ Key shortcuts / mouse operations:
 - Ctrl + mouse wheel now zooms the stack, while shift zooms by smaller
   increments.
 
+- Pressing X in the tracing tool will begin measuring distance from the current
+  cursor position. The mouse wheel can be used to measure along the stack Z
+  axis. Clicking will close the measurement tool and show the final distance in
+  the status bar. ESC cancels the tool.
+
 
 Multi-view tracing and virtual nodes:
 

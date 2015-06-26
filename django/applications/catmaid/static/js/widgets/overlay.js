@@ -2586,7 +2586,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
     if (originalNode.surroundingCircleElements) {
       hideCircleAndCallback();
     } else {
-      originalNode.drawSurroundingCircle(toStack, stackToProject,
+      originalNode.drawSurroundingCircle(false, toStack, stackToProject,
           hideCircleAndCallback);
       // Attach a handler for the ESC key to cancel selection
       $('body').on('keydown.catmaidRadiusSelect', function(event) {
@@ -2716,6 +2716,89 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
     }
   } else {
     this.selectRadius(treenode_id, no_centering, no_dialog ? updateRadius : show_dialog);
+  }
+};
+
+/**
+ * Measure a distance from the current cursor position to the position of the
+ * next click using the radius measurement tool.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.measureRadius = function () {
+  console.log('foo');
+  var self = this;
+
+  var pos = [this.coords.lastX, this.coords.lastY, this.stackViewer.z];
+  var id = 'vn-fake-fake-fake';
+  var r = -1;
+  var c = 5;
+
+  var fakeNode = new this.graphics.Node(this.paper, id, null, null, r, pos[0], pos[1], pos[2], 0, c,
+      null, false, '1');
+
+  toggleMeasurementTool();
+
+  function displayRadius(rx, ry, rz) {
+    if (typeof rx === 'undefined' || typeof ry === 'undefined' || typeof rz === 'undefined') {
+      return;
+    }
+    // Convert pixel radius components to nanometers
+    var p = stackToProject({x: rx, y: ry, z: rz}),
+        pr = Math.round(Math.sqrt(Math.pow(p.x, 2) + Math.pow(p.y, 2) + Math.pow(p.z, 2)));
+    CATMAID.statusBar.replaceLast(
+        'Distance: ' + pr + 'nm ' +
+        '(Project nm X: ' + p.x + ' Y: ' + p.y + ' Z: ' + p.z + ') ' +
+        '(Stack px X: ' + rx + ' Y: ' + ry + ' Z: ' + rz + ')');
+  }
+
+  function toggleMeasurementTool() {
+    fakeNode.createGraphics();
+    fakeNode.drawSurroundingCircle(true, toStack, stackToProject,
+        hideCircleAndCallback);
+    // Attach a handler for the ESC key to cancel selection
+    $('body').on('keydown.catmaidRadiusSelect', function(event) {
+      if (27 === event.keyCode) {
+        // Unbind key handler and remove circle
+        $('body').off('keydown.catmaidRadiusSelect');
+        fakeNode.removeSurroundingCircle();
+        fakeNode.obliterate();
+        return true;
+      }
+      return false;
+    });
+
+    function hideCircleAndCallback() {
+      // Unbind key handler
+      $('body').off('keydown.catmaidRadiusSelect');
+      // Remove circle and call callback
+      fakeNode.removeSurroundingCircle(displayRadius);
+      fakeNode.obliterate();
+    }
+  }
+
+  /**
+   * Transform a layer coordinate into stack space.
+   */
+  function toStack (r) {
+    var offsetX = self.stackViewer.x - self.stackViewer.viewWidth / self.stackViewer.scale / 2;
+    var offsetY = self.stackViewer.y - self.stackViewer.viewHeight / self.stackViewer.scale / 2;
+    return {
+      x: (r.x / self.stackViewer.scale) + offsetX,
+      y: (r.y / self.stackViewer.scale) + offsetY,
+      z: self.stackViewer.z
+    };
+  }
+
+  /**
+   * Transform a stack coordinate into project space.
+   */
+  function stackToProject (s) {
+    // Subract the translation, since we care about distance in project space,
+    // not position.
+    return {
+      x: self.stackViewer.primaryStack.stackToProjectX(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.x,
+      y: self.stackViewer.primaryStack.stackToProjectY(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.y,
+      z: self.stackViewer.primaryStack.stackToProjectZ(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.z
+    };
   }
 };
 

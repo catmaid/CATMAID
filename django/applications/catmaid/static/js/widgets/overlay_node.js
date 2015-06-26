@@ -607,9 +607,9 @@
        * Draws a circle around the treenode and control its radius with the help of
        * the mouse (and a mouse-to-stack transform function).
        */
-      this.drawSurroundingCircle = function(toStack, stackToProject, onclickHandler) {
+      this.drawSurroundingCircle = function(drawLine, toStack, stackToProject, onclickHandler) {
         var self = this;
-        // Create a raphael circle object that represents the surrounding circle
+        // Create a circle object that represents the surrounding circle
         var color = "rgb(255,255,0)";
         var c = this.paper.select('.nodes').append('circle')
           .attr({
@@ -620,6 +620,18 @@
             stroke: color,
             'stroke-width': 1.5,
           });
+        // Create a line from the node to mouse if requested
+        if (drawLine) {
+          var line = this.paper.select('.lines').append('line')
+            .attr({
+              x1: this.x,
+              y1: this.y,
+              x2: this.x,
+              y2: this.y,
+              stroke: color,
+              'stroke-width': this.EDGE_WIDTH
+            });
+        }
         // Create an adhoc mouse catcher
         var mc = this.paper.select('.nodes').append('circle')
           .attr({
@@ -652,7 +664,7 @@
             'pointer-events': 'none'});
 
         // Mark this node as currently edited
-        this.surroundingCircleElements = [c, mc, label];
+        this.surroundingCircleElements = [c, mc, label, line];
 
         // Store current position of this node, just in case this instance will be
         // re-initialized due to an update. This also means that the circle cannot
@@ -685,6 +697,12 @@
               y: nodeY + r.y + 2 * pad - bbox.height,
               width: bbox.width + 2 * pad,
               height: bbox.height + pad});
+
+          if (line) {
+            var lineColor = self.active_skeleton_color;
+            if (r.z !== 0) lineColor = (r.z < 0) ? self.inactive_skeleton_color_above : self.inactive_skeleton_color_below;
+            line.attr({x2: nodeX + r.x, y2: nodeY + r.y, stroke: lineColor});
+          }
         });
 
         // Don't let mouse down events bubble up
@@ -709,7 +727,7 @@
         // Get last radius components
         var r = this.surroundingCircleElements[0].datum();
         // Clean up
-        this.surroundingCircleElements.forEach(function (e) { e.remove() ;});
+        this.surroundingCircleElements.forEach(function (e) { if (e) e.remove() ;});
         delete this.surroundingCircleElements;
         // Execute callback, if any, with radius in stack coordinates as argument
         if (callback) {

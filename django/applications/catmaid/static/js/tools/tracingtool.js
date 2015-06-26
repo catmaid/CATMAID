@@ -607,6 +607,17 @@
     }) );
 
     this.addAction( new Action({
+      helpText: "Measure the distance between the cursor and a clicked point",
+      keyShortcuts: { "X": [ 88 ] },
+      run: function (e) {
+        if (!mayView())
+          return false;
+        activeTracingLayer.svgOverlay.measureRadius();
+        return true;
+      }
+    }) );
+
+    this.addAction( new Action({
       helpText: "Go to last edited node in this skeleton",
       keyShortcuts: { "H": [ 72 ] },
       run: function (e) {

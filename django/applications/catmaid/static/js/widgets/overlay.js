@@ -52,6 +52,7 @@ var SkeletonAnnotations = {
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
   EVENT_SKELETON_CHANGED: "tracing_skeleton_changed",
+  EVENT_NODE_CREATED: "tracing_node_Create"
 };
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
@@ -1409,6 +1410,11 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (
             pos_z, 0, 5 /* confidence */, subtype, true);
         self.nodes[jso.connector_id] = nn;
         nn.createGraphics();
+        // Emit new node event after we added to our local node set to not
+        // trigger a node update.
+        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+            jso.connector_id, phys_x, phys_y, phys_z);
+
         self.activateNode(nn);
         if (typeof completionCallback !== "undefined") {
           completionCallback(jso.connector_id);
@@ -1483,7 +1489,9 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (
           // Use a new node reference, because createLink() triggers an update,
           // which potentially re-initializes node objects.
           var node = self.nodes[nid];
-          // Trigger skeleton change event
+          // Emit node creation and  skeleton change events
+          SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+              jso.nid, phys_x, phys_y, phys_z);
           SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
               node.skeleton_id);
 
@@ -1534,6 +1542,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
 
         self.nodes[nid] = nn;
         nn.createGraphics();
+
+        // Emit new node event after we added to our local node set to not
+        // trigger a node update.
+        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+            nid, phys_x, phys_y, phys_z);
+
         // Set atn to be the newly created node
         self.activateNode(nn);
         // Append to parent and recolor

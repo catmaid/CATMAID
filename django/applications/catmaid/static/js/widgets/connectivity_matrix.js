@@ -507,7 +507,7 @@
         // not visible, set them up and show them.
         if ($(buttons).is(':visible')) {
           var offset = $(this).offset();
-          var hidden;
+          var hidden = false;
           if (rotateColumns && !isRow) {
             // This is required, because offset() is apparently not correct
             // after rotating the cell.

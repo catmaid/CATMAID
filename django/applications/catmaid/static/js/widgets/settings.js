@@ -139,7 +139,7 @@
         {name: 'Focus any window when hovered', id: CATMAID.FOCUS_ALL}
       ];
       behaviors.forEach(function(o) {
-        var selected = (o.id === CATMAID.hoverBehavior);
+        var selected = (o.id === CATMAID.focusBehavior);
         this.append(new Option(o.name, o.id, selected, selected));
       }, hoverBehavior);
 

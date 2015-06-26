@@ -1534,8 +1534,6 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
 
         self.nodes[nid] = nn;
         nn.createGraphics();
-        // Obtain active_node_z prior to altering atn
-        var active_node_z = SkeletonAnnotations.atn.z;
         // Set atn to be the newly created node
         self.activateNode(nn);
         // Append to parent and recolor

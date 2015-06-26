@@ -468,6 +468,8 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
   // Listen to active node change events
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
+  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_NODE_CREATED,
+      this.handleNewNode, this);
 };
 
 SkeletonAnnotations.SVGOverlay.prototype = {
@@ -782,6 +784,8 @@ SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
 
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
+  SkeletonAnnotations.off(SkeletonAnnotations.EVENT_NODE_CREATED,
+      this.handleNewNode, this);
 };
 
 /**
@@ -3368,6 +3372,20 @@ SkeletonAnnotations.SVGOverlay.prototype.nodeIsPartOfSkeleton = function(skeleto
  */
 SkeletonAnnotations.SVGOverlay.prototype.handleActiveNodeChange = function(node) {
   this.recolorAllNodes();
+};
+
+/**
+ * Handle the creation of new nodes. Update our view
+ */
+SkeletonAnnotations.SVGOverlay.prototype.handleNewNode = function(nodeID, px, py, pz) {
+  // If we know the new node already, do nothing. We assume it has been taken
+  // care of somewhere else.
+  if (this.nodes[nodeID]) return;
+  // Otherwise, trigger an update. A possible optimization would be to only
+  // update if the new node is visible in the current view. However, this
+  // would also not help if an edge to or from the node intersects with the
+  // current view. Updating always, ensures we catch also this case.
+  this.updateNodes();
 };
 
 /**

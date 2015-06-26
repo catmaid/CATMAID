@@ -1173,17 +1173,6 @@ SkeletonAnnotations.SVGOverlay.prototype.showLabels = function() {
 };
 
 /**
- * Hide labels if they are shown and show them if they are hidden.
- */
-SkeletonAnnotations.SVGOverlay.prototype.toggleLabels = function() {
-  if (this.getLabelStatus()) {
-    this.hideLabels();
-  } else {
-    this.showLabels();
-  }
-};
-
-/**
  * Test if the node with the given ID is loaded and display a warning if not.
  * Test also if the node is root and display a message if so. In both cases,
  * false is returned. False, otherwise.

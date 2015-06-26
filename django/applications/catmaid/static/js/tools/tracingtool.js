@@ -27,6 +27,9 @@
     var activeStackViewer = null;
     // Map stacks to its mouse handlers
     var bindings = new Map();
+    // Whether node labels should be shown
+    var show_labels = false;
+
 
     this.resize = function( width, height )
     {
@@ -719,7 +722,11 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.toggleLabels();
+        show_labels = !show_labels;
+        getTracingLayers().forEach(function(layer) {
+          if (show_labels) layer.svgOverlay.showLabels();
+          else layer.svgOverlay.hideLabels();
+        });
         return true;
       }
     }) );

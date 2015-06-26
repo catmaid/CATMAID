@@ -2423,7 +2423,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
             // Center already selected node
             var atn = SkeletonAnnotations.atn;
             if (atn) {
-              self.moveTo(atn.z, atn.y, atn.x);
+              self.goToNode(atn.id);
             }
           } else {
             self.cacheBranches(treenode_id, json);

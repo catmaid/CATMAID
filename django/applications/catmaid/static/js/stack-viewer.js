@@ -19,12 +19,13 @@
    */
   function StackViewer(
       project,          //!< {Project} reference to the parent project
-      primaryStack,
-      offset            //!< {[Number]} (optional) an navigation offset (translation) from the project position
+      primaryStack
   ) {
     this._project = project;
     this.primaryStack = primaryStack;
     this._stacks = [primaryStack];
+
+    this._offset = [0, 0, 0];
 
     this._widgetId = this.registerInstance();
 
@@ -55,8 +56,6 @@
     //-------------------------------------------------------------------------
 
     this._stackWindow = new CMWWindow( primaryStack.title );
-    // Set offset after window creation so title can be updated.
-    this.setOffset(offset ? offset : [0, 0, 0]);
     this._view = this._stackWindow.getFrame();
     this._layersView = document.createElement("div");
     this._view.appendChild(this._layersView);

@@ -3016,7 +3016,7 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
   var self = this;
   return new Promise(function(resolve, reject) {
     var url = django_url + project.id + "/node/get_location";
-    self.submit(url, {tnid: nodeID}, resolve, true, false, reject)
+    self.submit(url, {tnid: nodeID}, resolve, true, false, reject);
   }).then(function(json) {
     return {
       id: json[0],

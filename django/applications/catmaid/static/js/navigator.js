@@ -395,13 +395,14 @@ function Navigator()
 				// Hide any visible layers (besides the tile layer).
 				var stackLayers = project.getStackViewers().map(function (s) { return s.getLayers(); });
 				var layerOpacities = stackLayers.map(function (layers) {
-					return Object.keys(layers).reduce(function (opacities, k) {
+					var opacities = {};
+					layers.forEach(function (layer, k) {
 						if (k !== 'TileLayer') {
-							opacities[k] = layers[k].getOpacity();
-							layers[k].setOpacity(0);
+							opacities[k] = layer.getOpacity();
+							layer.setOpacity(0);
 						}
-						return opacities;
-					}, {});
+					});
+					return opacities;
 				});
 
 				// Set a key up a listener to make these layers visible again
@@ -412,7 +413,7 @@ function Navigator()
 					if (e.keyCode == 32) {
 						stackLayers.forEach(function (layers, ind) {
 							Object.keys(layerOpacities[ind]).forEach(function (k) {
-								layers[k].setOpacity(layerOpacities[ind][k]);
+								layers.get(k).setOpacity(layerOpacities[ind][k]);
 							});
 							target.onkeyup = oldListener;
 							self.hideLayersHeld = false;

@@ -49,7 +49,7 @@
     this.navigateWithProject = true;
 
     this._tool = null;
-    this._layers = {};
+    this._layers = new Map();
     this._layerOrder = [];
 
     //-------------------------------------------------------------------------
@@ -370,7 +370,7 @@
 
     // Semaphore pattern from: http://stackoverflow.com/a/3709809/223092
     for (var i = 0; i < this._layerOrder.length; i++) {
-      layer = this._layers[this._layerOrder[i]];
+      layer = this._layers.get(this._layerOrder[i]);
       // If a layer is invisble, continue with the next one.
       if (layer.hasOwnProperty('visible') && !layer.visible) {
         continue;
@@ -493,16 +493,13 @@
   StackViewer.prototype.moveTo = function (zp, yp, xp, sp, completionCallback) {
     // Collect all layers in this stack that require a call before the stack is
     // moved (that is all the layers that have a beforeMove() function).
-    var layersWithBeforeMove = [], l;
-    for ( var key in this._layers ) {
-      if (this._layers.hasOwnProperty(key)) {
-        l = this._layers[key];
-        // if (l.beforeMove) {
-        if( typeof l.beforeMove === 'function') {
-          layersWithBeforeMove.push(l);
-        }
+    var layersWithBeforeMove = [];
+
+    this._layers.forEach(function (layer) {
+      if( typeof layer.beforeMove === 'function') {
+        layersWithBeforeMove.push(layer);
       }
-    }
+    });
 
     this.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
   };
@@ -517,18 +514,8 @@
    */
   StackViewer.prototype.moveToProject = function (zp, yp, xp, res, completionCallback) {
     var sp = this.primaryStack.projectToStackSX( res );
-    var layersWithBeforeMove = [], l;
-    for ( var key in this._layers ) {
-      if (this._layers.hasOwnProperty(key)) {
-        l = this._layers[key];
-        // if (l.beforeMove) {
-        if( typeof l.beforeMove === 'function') {
-          layersWithBeforeMove.push(l);
-        }
-      }
-    }
 
-    this.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
+    this.moveTo( zp, yp, xp, sp, completionCallback );
   };
 
   /**
@@ -556,14 +543,12 @@
   };
 
   StackViewer.prototype.resize = function () {
-    this.viewWidth = this._stackWindow.getFrame().offsetWidth;
-    this.viewHeight = this._stackWindow.getFrame().offsetHeight;
+    var width = this.viewWidth = this._stackWindow.getFrame().offsetWidth;
+    var height = this.viewHeight = this._stackWindow.getFrame().offsetHeight;
 
-    for ( var key in this._layers ) {
-      if( this._layers.hasOwnProperty( key )) {
-        this._layers[ key ].resize( this.viewWidth, this.viewHeight );
-      }
-    }
+    this._layers.forEach(function (layer) {
+      layer.resize(width, height);
+    });
 
     this.updateScaleBar();
 
@@ -598,8 +583,7 @@
    * @param key
    */
   StackViewer.prototype.getLayer = function (key) {
-    if ( this._layers[ key ] )
-      return this._layers[key];
+    return this._layers.get(key);
   };
 
   /**
@@ -618,9 +602,9 @@
    * @param layer
    */
   StackViewer.prototype.addLayer = function (key, layer) {
-    if ( this._layers[ key ] )
-      this._layers[ key ].unregister();
-    this._layers[ key ] = layer;
+    if (this._layers.has(key))
+      this._layers.get(key).unregister();
+    this._layers.set(key, layer);
     if (this._layerOrder.indexOf(key) === -1) this._layerOrder.push(key);
     this.tilelayercontrol.refresh();
   };
@@ -631,17 +615,16 @@
    *
    */
   StackViewer.prototype.removeLayer = function (key) {
-    var layer = this._layers[ key ];
+    var layer = this._layers.get(key);
     if ( typeof layer !== "undefined" && layer )
     {
       layer.unregister();
-      delete this._layers[ key ];
+      this._layers.delete(key);
       this._layerOrder.splice(this._layerOrder.indexOf(key), 1);
 
       if (layer instanceof CATMAID.TileLayer) {
         var self = this;
-        var otherStackLayers = Object.keys(this._layers).some(function (key) {
-          var otherLayer = self._layers[key];
+        var otherStackLayers = this._layers.forEach(function (otherLayer) {
           return otherLayer instanceof CATMAID.TileLayer && otherLayer.stack.id === layer.stack.id;
         });
 
@@ -669,9 +652,9 @@
    * @return {Boolean}    Whether the layer is removable.
    */
   StackViewer.prototype.isLayerRemovable = function (key) {
-    if (this._layers.length === 1) return false;
+    if (this._layers.size === 1) return false;
 
-    var layer = this._layers[ key ];
+    var layer = this._layers.get(key);
     if ( typeof layer !== "undefined" && layer && layer instanceof CATMAID.TileLayer ) {
       return layer.stack.id !== this.primaryStack.id;
     }
@@ -691,8 +674,8 @@
 
     if (currIndex === -1 || newIndex === -1) return; // Invalid arguments.
 
-    var layerA = this._layers[key],
-      layerB = beforeKey === null ? null : this._layers[beforeKey];
+    var layerA = this._layers.get(key),
+        layerB = beforeKey === null ? null : this._layers.get(beforeKey);
 
     if (layerB !== null && layerB.getView) {
       var viewA = layerA.getView(),

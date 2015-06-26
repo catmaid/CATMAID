@@ -832,7 +832,7 @@
       var counterContainer = $('#counting-cache');
       counterContainer.empty();
       project.getStacks().forEach(function(stack) {
-        var tilelayer = stack.getLayers()['TileLayer'];
+        var tilelayer = stack.getLayer('TileLayer');
         // Create loading information text for each stack
         var layerCounter = document.createElement('div');
         counterContainer.append(layerCounter);

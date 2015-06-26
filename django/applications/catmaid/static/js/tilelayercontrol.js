@@ -36,7 +36,6 @@
   {
     // Get current set of layers
     var stackViewer = this.stackViewer;
-    var layers = stackViewer.getLayers();
     var layerOrder = stackViewer.getLayerOrder();
 
     // Empty container
@@ -94,18 +93,18 @@
     var layerList = $('<ol/>');
 
     var setOpac = function (val) {
-      var layers = stackViewer.getLayers();
+      var layer = stackViewer.getLayer(this.idd);
 
-      if (!layers.hasOwnProperty(this.idd)) return;
+      if (!layer) return;
 
-      layers[this.idd].setOpacity(val);
+      layer.setOpacity(val);
       stackViewer.redraw();
     };
 
     // Add slider for each layer
     for (var i = 0; i < layerOrder.length; i++) {
       var key = layerOrder[i];
-      var layer = layers[key];
+      var layer = stackViewer.getLayer(key);
       var self = this;
 
       var container = $('<li/>');
@@ -159,7 +158,7 @@
         });
         blendSelect.change(function () {
           var key = $(this).parents('.layerControl').data('key');
-          stackViewer.getLayers()[key].setBlendMode(this.value);
+          stackViewer.getLayer(key).setBlendMode(this.value);
           stackViewer.redraw();
         });
 
@@ -186,7 +185,7 @@
         var filterAdd = $('<input type="button" value="Add"/>');
         filterAdd.click(function () {
           var key = $(this).parents('.layerControl').data('key');
-          var layer = stackViewer.getLayers()[key];
+          var layer = stackViewer.getLayer(key);
           var filterName = $(this).siblings('select')[0].value;
           var filter = new (layer.getAvailableFilters()[filterName])();
           layer.addFilter(filter);
@@ -203,7 +202,7 @@
           var removeBtn = $('<input type="button" value="x" class="remove"/>')
               .click(function () {
                 var key = $(this).parents('.layerControl').data('key');
-                var layer = stackViewer.getLayers()[key];
+                var layer = stackViewer.getLayer(key);
                 layer.removeFilter(filter);
                 layer.redraw();
                 self.refresh();
@@ -221,7 +220,7 @@
           },
           stop: function (event, ui) {
             var key = $(this).parents('.layerControl').data('key');
-            var layer = stackViewer.getLayers()[key];
+            var layer = stackViewer.getLayer(key);
             layer.moveFilter(ui.item.startIndex, ui.item.index());
             layer.redraw();
           }

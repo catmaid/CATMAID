@@ -75,8 +75,9 @@
       var cell = $('<input type="number" step="1" value="' + stackViewer._offset[j] + '"/>');
       cell.change((function (ind) {
         return function () {
-          stackViewer._offset[ind] = Number($(this).val());
-          stackViewer.moveToPixel(stackViewer.z, stackViewer.y, stackViewer.x, stackViewer.s);
+          var offset = stackViewer.getOffset();
+          offset[ind] = Number($(this).val());
+          stackViewer.setOffset(offset);
         };
       })(j));
       cell.css('width', '4em');

@@ -26,8 +26,6 @@
     this.primaryStack = primaryStack;
     this._stacks = [primaryStack];
 
-    this._offset = offset ? offset : [0, 0, 0];
-
     this._widgetId = this.registerInstance();
 
     // take care, that all values are within a proper range
@@ -57,6 +55,8 @@
     //-------------------------------------------------------------------------
 
     this._stackWindow = new CMWWindow( primaryStack.title );
+    // Set offset after window creation so title can be updated.
+    this.setOffset(offset ? offset : [0, 0, 0]);
     this._view = this._stackWindow.getFrame();
     this._layersView = document.createElement("div");
     this._view.appendChild(this._layersView);
@@ -417,6 +417,28 @@
    */
   StackViewer.prototype.getLayers = function () {
       return this._layers;
+  };
+
+  /**
+   * Get offset translation.
+   * @return {[number]} Offset translation as [x, y, z].
+   */
+  StackViewer.prototype.getOffset = function () {
+    return this._offset.slice(); // Clone array.
+  };
+
+  /**
+   * Set offset translation and update UI as necessary.
+   * @param {[number]} offset Translation as [x, y, z].
+   */
+  StackViewer.prototype.setOffset = function (offset) {
+    this._offset = offset;
+    if (offset.some(Math.abs)) {
+      this._stackWindow.setTitle(this.primaryStack.title + ' (Offset ' + offset.join(', ') + ')');
+    } else {
+      this._stackWindow.setTitle(this.primaryStack.title);
+    }
+    this.moveToPixel(this.z, this.y, this.x, this.s);
   };
 
   /**

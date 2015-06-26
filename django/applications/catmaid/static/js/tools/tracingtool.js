@@ -76,7 +76,7 @@
         // that don't have tracing layers.
         return layer ? true : false;
       });
-    }
+    };
 
     var setTracingLayersSuspended = function(value, excludeActive)
     {

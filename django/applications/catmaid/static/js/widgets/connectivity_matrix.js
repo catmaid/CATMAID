@@ -737,6 +737,7 @@
      * and to indicate the moving direction.
      */
     function handleMove(e) {
+      /* jshint validthis: true */
       var group = this.dataset.group;
       var key = this.dataset.key;
       // If this is not a group cell, try to parse the key as a integer to
@@ -764,7 +765,7 @@
       }
       // Disable soting and refresh
       if (isRow) widget.rowSorting = 0;
-      else widget.colSorting = 0
+      else widget.colSorting = 0;
       widget.refresh();
     }
   };

@@ -402,7 +402,9 @@ SkeletonAnnotations.getZOfVirtualNode = function(nodeID, matches)
 /**
  * The constructor for SVGOverlay.
  */
-SkeletonAnnotations.SVGOverlay = function(stackViewer) {
+SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
+  var options = options || {};
+
   this.stackViewer = stackViewer;
 
   // Register instance
@@ -415,9 +417,9 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer) {
   /** The DOM elements representing node labels. */
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
-  this.show_labels = false;
+  this.show_labels = options.show_labels || false;
   /** Indicate if this overlay is suspended and won't update nodes on redraw. */
-  this.suspended = false;
+  this.suspended = options.suspended || false;
 
   /* Variables keeping state for toggling between a terminal and its connector. */
   this.switchingConnectorID = null;

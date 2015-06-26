@@ -4,13 +4,14 @@
 /**
  * The tracing layer that hosts the tracing data
  */
-function TracingLayer( stack )
+function TracingLayer( stack, options )
 {
+  options = options || {};
 
   var self = this;
 
-  self.opacity = 1.0; // in the range [0,1]
-  this.svgOverlay = new SkeletonAnnotations.SVGOverlay(stack);
+  self.opacity = options.opacity || 1.0; // in the range [0,1]
+  this.svgOverlay = new SkeletonAnnotations.SVGOverlay(stack, options);
 
   /**
    * Return friendly name of this layer.

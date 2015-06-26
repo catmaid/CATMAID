@@ -598,42 +598,6 @@
       $(moveDownButton).on('click', {widget: this, down: true}, handleMove);
       $(moveLeftButton).on('click', {widget: this, left: true}, handleMove);
       $(moveRightButton).on('click', {widget: this, right: true}, handleMove);
-
-      /**
-       * Swap two elements in either the row or column skeleton source and
-       * refresh.
-       */
-      function handleMove(e) {
-        var group = this.dataset.group;
-        var key = this.dataset.key;
-        // If this is not a group cell, try to parse the key as a integer to
-        // refer to a skeleton ID.
-        if (group) key = group;
-        else key = parseInt(key, 10);
-        // Find element list to work on
-        var widget = e.data.widget;
-        var isRow = (e.data.up || e.data.down);
-        var keys = isRow ? widget.rowDimension.orderedElements :
-            widget.colDimension.orderedElements;
-        // Swap elements
-        var currentIndex = keys.indexOf(key);
-        if (-1 === currentIndex) return true;
-        if (e.data.up || e.data.left) {
-          if (0 === currentIndex) return true;
-          var prevKey = keys[currentIndex - 1];
-          keys[currentIndex - 1] = key;
-          keys[currentIndex] = prevKey;
-        } else {
-          if (keys.length - 1 === currentIndex) return true;
-          var nextKey = keys[currentIndex + 1];
-          keys[currentIndex + 1] = key;
-          keys[currentIndex] = nextKey;
-        }
-        // Disable soting and refresh
-        if (isRow) widget.rowSorting = 0;
-        else widget.colSorting = 0
-        widget.refresh();
-      }
     }
 
     return content;
@@ -755,6 +719,44 @@
       button.appendChild(buttonIcon);
       target.appendChild(button);
       return button;
+    }
+
+    /**
+     * Swap two elements in either the row or column skeleton source and
+     * refresh. This event handler expects the widget to be available as
+     * e.data.widget and either e.up, e.down, e.left or e.right to be true
+     * and to indicate the moving direction.
+     */
+    function handleMove(e) {
+      var group = this.dataset.group;
+      var key = this.dataset.key;
+      // If this is not a group cell, try to parse the key as a integer to
+      // refer to a skeleton ID.
+      if (group) key = group;
+      else key = parseInt(key, 10);
+      // Find element list to work on
+      var widget = e.data.widget;
+      var isRow = (e.data.up || e.data.down);
+      var keys = isRow ? widget.rowDimension.orderedElements :
+          widget.colDimension.orderedElements;
+      // Swap elements
+      var currentIndex = keys.indexOf(key);
+      if (-1 === currentIndex) return true;
+      if (e.data.up || e.data.left) {
+        if (0 === currentIndex) return true;
+        var prevKey = keys[currentIndex - 1];
+        keys[currentIndex - 1] = key;
+        keys[currentIndex] = prevKey;
+      } else {
+        if (keys.length - 1 === currentIndex) return true;
+        var nextKey = keys[currentIndex + 1];
+        keys[currentIndex + 1] = key;
+        keys[currentIndex] = nextKey;
+      }
+      // Disable soting and refresh
+      if (isRow) widget.rowSorting = 0;
+      else widget.colSorting = 0
+      widget.refresh();
     }
   };
 

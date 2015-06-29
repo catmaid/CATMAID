@@ -195,22 +195,22 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         crows = []
 
         if treenode_ids:
+            treenode_list = ','.join('({0})'.format(t) for t in treenode_ids)
             response_on_error = 'Failed to query connector locations.'
             cursor.execute('''
-            SELECT connector.id,
-                connector.location_x,
-                connector.location_y,
-                connector.location_z,
-                connector.confidence,
-                treenode_connector.relation_id,
-                treenode_connector.treenode_id,
-                treenode_connector.confidence,
-                connector.user_id
-            FROM treenode_connector,
-                 connector
-            WHERE treenode_connector.treenode_id IN (%s)
-              AND treenode_connector.connector_id = connector.id
-            ''' % ','.join(map(str, treenode_ids)))
+            SELECT c.id,
+                c.location_x,
+                c.location_y,
+                c.location_z,
+                c.confidence,
+                tc.relation_id,
+                tc.treenode_id,
+                tc.confidence,
+                c.user_id
+            FROM treenode_connector tc
+            INNER JOIN connector c ON (tc.connector_id = c.id)
+            INNER JOIN (VALUES %s) vals(v) ON tc.treenode_id = v
+                           ''' % treenode_list)
 
             crows = list(cursor.fetchall())
 

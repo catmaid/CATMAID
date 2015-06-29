@@ -3601,7 +3601,7 @@ SkeletonAnnotations.Tag = new (function() {
       CATMAID.msg('BEWARE', 'Close tagbox first before you tag another node!');
       return;
     }
-    if (svgOverlay.stack.z !== atn.z) {
+    if (svgOverlay.stackViewer.z !== atn.z) {
       var self = this;
       svgOverlay.goToNode(atn.id,
           function() {

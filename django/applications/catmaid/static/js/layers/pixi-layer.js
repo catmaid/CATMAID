@@ -136,7 +136,10 @@
    *                             or null if this layer was moved to the end (top).
    */
   PixiLayer.prototype.notifyReorder = function (beforeLayer) {
-    if (!(beforeLayer === null || beforeLayer instanceof PixiLayer)) return;
+    // PixiLayers can only reorder around other PixiLayers, since their ordering
+    // is independent of the DOM. Use batchContainer to check for PixiLayers,
+    // since instanceof does not work with MI/mixin inheritance.
+    if (!(beforeLayer === null || beforeLayer.batchContainer)) return;
 
     var newIndex = beforeLayer === null ?
         this.stage.children.length - 1 :

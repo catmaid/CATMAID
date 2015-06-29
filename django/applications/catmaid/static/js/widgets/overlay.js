@@ -1232,7 +1232,7 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
       var name = NeuronNameService.getInstance().getName(node.skeleton_id);
       var model = new SelectionTable.prototype.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
       /* Create the dialog */
-      var dialog = new SplitMergeDialog({
+      var dialog = new CATMAID.SplitMergeDialog({
         model1: model,
         splitNodeId: nodeId
       });
@@ -1315,7 +1315,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
               var to_color = new THREE.Color().setRGB(1, 0, 1);
               var to_model = new SelectionTable.prototype.SkeletonModel(
                   to_skid, json['neuron_name'], to_color);
-              var dialog = new SplitMergeDialog({
+              var dialog = new CATMAID.SplitMergeDialog({
                 model1: from_model,
                 model2: to_model
               });

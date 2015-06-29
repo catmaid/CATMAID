@@ -129,18 +129,17 @@ def get_treenodes_postgis(cursor, params):
         t2.radius,
         t2.skeleton_id,
         t2.user_id
-    FROM treenode t1 INNER JOIN treenode t2 ON (
+    FROM treenode t1
+    INNER JOIN treenode t2 ON (
                (t1.id = t2.parent_id OR t1.parent_id = t2.id)
             OR (t1.parent_id IS NULL AND t1.id = t2.id))
-    WHERE
-            t1.project_id = %(project_id)s
-        AND t1.id IN (
-            SELECT
-                te.id
-            FROM treenode_edge te
-            WHERE
-                te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
-                                         %(right)s %(top)s %(z1)s)')
+    INNER JOIN (
+        SELECT te.id
+        FROM treenode_edge te
+        WHERE te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
+                                       %(right)s %(top)s %(z1)s)')
+        edges(edge_child_id) ON edge_child_id = t1.id
+    WHERE t1.project_id = %(project_id)s
     LIMIT %(limit)s
     ''', params)
 

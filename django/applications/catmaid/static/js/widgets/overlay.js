@@ -1965,11 +1965,11 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
 
   var handled = false;
   var atn = SkeletonAnnotations.atn;
-  var insert = e.altKey;
+  var insert = e.altKey && e.ctrlKey;
   var link = e.shiftKey;
   var postLink = e.altKey;
   // e.metaKey should correspond to the command key on Mac OS
-  var deselect = e.ctrlKey || e.metaKey ||
+  var deselect = (!insert && e.ctrlKey) || e.metaKey ||
     (insert && (null === atn.id || SkeletonAnnotations.TYPE_NODE !== atn.type));
 
   if (deselect) {

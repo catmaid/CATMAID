@@ -1374,22 +1374,24 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
 /**
  * Asynchronuously, create a link between the nodes @fromid and @toid of type
  * @link_type. It is expected, that both nodes are existant. All nodes are
- * updated after this.
+ * updated after this. If the from-node is virtual, it will be created.
  */
 SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid,
     link_type, afterCreate)
 {
   var self = this;
-  this.submit(
-      django_url + project.id + '/link/create',
-      {pid: project.id,
-       from_id: fromid,
-       link_type: link_type,
-       to_id: toid},
-       function(json) {
-         if (json.warning) CATMAID.warn(json.warning);
-         self.updateNodes(afterCreate);
-       });
+  this.promiseNode(fromid).then(function(nodeID) {
+    self.submit(
+        django_url + project.id + '/link/create',
+        {pid: project.id,
+         from_id: nodeID,
+         link_type: link_type,
+         to_id: toid},
+         function(json) {
+           if (json.warning) CATMAID.warn(json.warning);
+           self.updateNodes(afterCreate);
+         });
+  });
 };
 
 /**
@@ -2055,9 +2057,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(insert, lin
         CATMAID.statusBar.replaceLast(msg);
         this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
           SkeletonAnnotations.newConnectorType, function (connectorID) {
-              self.promiseNode(targetTreenode).then(function(nid) {
-                self.createLink(nid, connectorID, linkType);
-              });
+            self.createLink(targetTreenode.id, connectorID, linkType);
           });
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {

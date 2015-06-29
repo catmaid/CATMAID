@@ -25,11 +25,28 @@
     this.stackViewer.getLayersView().appendChild(this.tilesContainer);
 
     this._oldZoom = 0;
+    this._oldZ = undefined;
+
+    this._tileRequest = {};
   }
 
   PixiTileLayer.prototype = Object.create(CATMAID.TileLayer.prototype);
   $.extend(PixiTileLayer.prototype, CATMAID.PixiLayer.prototype); // Mixin/multiple inherit PixiLayer.
   PixiTileLayer.prototype.constructor = PixiTileLayer;
+
+  /** @inheritdoc */
+  PixiTileLayer.prototype.unregister = function () {
+    for (var i = 0; i < this._tiles.length; ++i) {
+      for (var j = 0; j < this._tiles[0].length; ++j) {
+        var tile = this._tiles[i][j];
+        if (tile.texture && tile.texture.valid) {
+          CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.source.src);
+        }
+      }
+    }
+
+    CATMAID.PixiLayer.prototype.unregister.call(this);
+  };
 
   /**
    * Initialise the tiles array and buffer.
@@ -112,6 +129,7 @@
     this.batchContainer.scale.x = tileInfo.mag;
     this.batchContainer.scale.y = tileInfo.mag;
     var toLoad = [];
+    var loading = false;
     var y = 0;
     var slicePixelPosition = [tileInfo.z];
 
@@ -132,13 +150,28 @@
           var source = this.tileSource.getTileURL(project, this.stack, slicePixelPosition,
               c, r, tileInfo.zoom);
 
-          if (source !== tile.texture.baseTexture.imageUrl) {
-            tile.visible = false;
-            if (source !== this._tilesBuffer[i][j]) {
+          if (source !== tile.texture.baseTexture.source.src) {
+            var texture = PIXI.utils.TextureCache[source];
+            if (texture) {
+              if (texture.valid) {
+                this._tilesBuffer[i][j] = false;
+                CATMAID.PixiContext.GlobalTextureManager.inc(source);
+                CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.source.src);
+                tile.texture = texture;
+                tile.visible = true;
+              } else {
+                loading = true;
+                tile.visible = false;
+              }
+            } else {
+              tile.visible = false;
               toLoad.push(source);
               this._tilesBuffer[i][j] = source;
             }
-          } else tile.visible = true;
+          } else {
+            tile.visible = true;
+            this._tilesBuffer[i][j] = false;
+          }
         } else {
           tile.visible = false;
           this._tilesBuffer[i][j] = false;
@@ -148,21 +181,27 @@
       y += this.tileSource.tileHeight;
     }
 
-    if (this.stackViewer.z === this.stackViewer.old_z &&
-        tileInfo.zoom === this._oldZoom)
+    if (tileInfo.z    === this._oldZ &&
+        tileInfo.zoom === this._oldZoom) {
       this._renderIfReady();
-    this._oldZoom = tileInfo.zoom;
+    }
+    this._swapZoom = tileInfo.zoom;
+    this._swapZ = tileInfo.z;
 
     // If any tiles need to be buffered (that are not already being buffered):
     if (toLoad.length > 0) {
-      var loader = new PIXI.AssetLoader(toLoad);
-      loader.once('onComplete', this._swapBuffers.bind(this, false));
       // Set a timeout for slow connections to swap in the buffer whether or
       // not it has loaded. Do this before loading tiles in case they load
       // immediately, so that the buffer will be cleared.
       window.clearTimeout(this._swapBuffersTimeout);
       this._swapBuffersTimeout = window.setTimeout(this._swapBuffers.bind(this, true), 3000);
-      loader.load();
+      var newRequest = CATMAID.PixiContext.GlobalTextureManager.load(toLoad, this._swapBuffers.bind(this, false, this._swapBuffersTimeout));
+      CATMAID.PixiContext.GlobalTextureManager.cancel(this._tileRequest);
+      this._tileRequest = newRequest;
+    } else if (!loading) {
+      this._oldZoom = this._swapZoom;
+      this._oldZ    = this._swapZ;
+      this._renderIfReady();
     }
 
     if (typeof completionCallback !== 'undefined') {
@@ -178,23 +217,29 @@
   };
 
   /** @inheritdoc */
-  PixiTileLayer.prototype._swapBuffers = function (force) {
+  PixiTileLayer.prototype._swapBuffers = function (force, timeout) {
+    if (timeout && timeout !== this._swapBuffersTimeout) return;
     window.clearTimeout(this._swapBuffersTimeout);
 
     for (var i = 0; i < this._tiles.length; ++i) {
       for (var j = 0; j < this._tiles[0].length; ++j) {
         var source = this._tilesBuffer[i][j];
         if (source) {
-          var texture = PIXI.TextureCache[source];
+          var texture = PIXI.utils.TextureCache[source];
+          var tile = this._tiles[i][j];
           // Check whether the tile is loaded.
           if (force || texture && texture.valid) {
             this._tilesBuffer[i][j] = false;
-            this._tiles[i][j].setTexture(texture ? texture : PIXI.Texture.fromImage(source));
-            this._tiles[i][j].visible = true;
+            CATMAID.PixiContext.GlobalTextureManager.inc(source);
+            CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.source.src);
+            tile.texture = texture || PIXI.Texture.fromImage(source);
+            tile.visible = true;
           }
         }
       }
     }
+    this._oldZoom = this._swapZoom;
+    this._oldZ    = this._swapZ;
 
     this._renderIfReady();
   };

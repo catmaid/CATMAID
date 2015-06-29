@@ -1283,8 +1283,8 @@
         if( le === 0 ) {
             le = 0.9 * rloc;
         }
-        rloc *= 2; // rloc is the radius of target node, which we don't want to touch.
-        var F = (1 - rloc / le);
+        // rloc is the radius of target node, which we don't want to touch.
+        var F = 1 - rloc / le;
         var x2new = (x2 - x1) * F + x1;
         var y2new = (y2 - y1) * F + y1;
 

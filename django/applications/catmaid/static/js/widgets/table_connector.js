@@ -69,7 +69,7 @@ var ConnectorTable = function(optionalSkid)
           });
           aoData.push({
             "name": "stack_id",
-            "value": project.focusedStack.id
+            "value": project.focusedStackViewer.primaryStack.id
           });
 
           $.ajax({

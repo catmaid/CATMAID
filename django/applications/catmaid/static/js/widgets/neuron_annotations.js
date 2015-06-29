@@ -291,24 +291,30 @@
                   if (e.error) {
                     new CATMAID.ErrorDialog(e.error, e.detail).show();
                   } else {
-                    // Append new content right after the current node and save a
-                    // reference for potential removal.
-                    var appender = function(new_tr) {
-                      new_tr.setAttribute('expansion_' + entity.id, 'true');
-                      $(tr).after(new_tr);
-                    };
+                    // Register search results with neuron name service and rebuild
+                    // result table.
+                    var skeletonObject = getSkeletonIDsInResult(e);
+                    NeuronNameService.getInstance().registerAll(this, skeletonObject,
+                        function () {
+                          // Append new content right after the current node and save a
+                          // reference for potential removal.
+                          var appender = function(new_tr) {
+                            new_tr.setAttribute('expansion_' + entity.id, 'true');
+                            $(tr).after(new_tr);
+                          };
 
-                    // Mark entities as unselected and create result table rows
-                    e.entities.forEach((function(entity) {
-                      self.entity_selection_map[entity.id] = false;
-                      self.add_result_table_row(entity, appender, indent + 1);
-                    }).bind(self));
+                          // Mark entities as unselected and create result table rows
+                          e.entities.forEach((function(entity) {
+                            self.entity_selection_map[entity.id] = false;
+                            self.add_result_table_row(entity, appender, indent + 1);
+                          }).bind(self));
 
-                    // The order of the query result array doesn't matter.
-                    // It is therefore possible to just append the new results.
-                    self.queryResults[sub_id] = e.entities;
-                    // Update current result table classes
-                    self.update_result_row_classes();
+                          // The order of the query result array doesn't matter.
+                          // It is therefore possible to just append the new results.
+                          self.queryResults[sub_id] = e.entities;
+                          // Update current result table classes
+                          self.update_result_row_classes();
+                        });
                   }
                 }
           });
@@ -466,20 +472,29 @@
 
               // Register search results with neuron name service and rebuild
               // result table.
-              var skeletonObject = e.entities.filter(function(e) {
-                return 'neuron' === e.type;
-              }).reduce(function(o, e) {
-                return e.skeleton_ids.reduce(function(o, skid) {
-                  o[skid] = {};
-                  return o;
-                }, o);
-              }, {});
+              var skeletonObject = getSkeletonIDsInResult(e);
               NeuronNameService.getInstance().registerAll(this, skeletonObject,
                   this.refresh.bind(this));
             }
           }
         }, this));
   };
+
+  /**
+   * Return an object with fields being the skeleton IDs of all neurons in the
+   * search result passed as argument.
+   */
+  function getSkeletonIDsInResult(result) {
+    return result.entities.filter(function(e) {
+      return 'neuron' === e.type;
+    }).reduce(function(o, e) {
+      return e.skeleton_ids.reduce(function(o, skid) {
+        o[skid] = {};
+        return o;
+      }, o);
+    }, {});
+  };
+
 
   /**
    * Rebuild the search result table.

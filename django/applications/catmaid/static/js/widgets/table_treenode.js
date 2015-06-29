@@ -132,7 +132,7 @@ TreenodeTable.prototype._appendSkeletons = function(skeleton_ids) {
       ' ' + d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
   };
 
-  var stack = project.focusedStack,
+  var stack = project.focusedStackViewer.primaryStack,
       users = User.all(),
       n_rows = this.oTable.fnSettings().fnRecordsTotal(),
       all_rows = [];

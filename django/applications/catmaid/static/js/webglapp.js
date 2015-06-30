@@ -1599,7 +1599,7 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.adjust = func
 	if (options.show_zplane) {
 		this.createZPlane(space, project.focusedStackViewer);
 	} else {
-    if (this.zplane) space.scene.remove(this.zplane);
+		if (this.zplane) space.scene.remove(this.zplane);
 		this.zplane = null;
 	}
 };

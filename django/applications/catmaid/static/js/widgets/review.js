@@ -237,29 +237,31 @@
      * sections in the currently focused stack.
      */
     this.limitMove = function(from, to, refIndex, backwards) {
-      var vP = [to.x - from.x, to.y - from.y, to.z - from.z];
+      var stackViewer = project.focusedStackViewer;
+      var stack = stackViewer.primaryStack;
       // Get difference vector in stack space coordinates and check that not
-      // more sections are crossed than allowed.
-      var stack = project.focusedStackViewer.primaryStack;
-      var vPAbs = [Math.abs(vP[0]), Math.abs(vP[1]), Math.abs(vP[2])];
-      var vSAbs = [stack.projectToStackX(vPAbs[2], vPAbs[1], vPAbs[0]),
-                   stack.projectToStackY(vPAbs[2], vPAbs[1], vPAbs[0]),
-                   stack.projectToStackZ(vPAbs[2], vPAbs[1], vPAbs[0])];
+      // more sections are crossed than allowed. Unfortunately, we can't
+      // transform vectors into stack space (due to translation being applied)
+      // and so we have to transform both to and from nodes separately.
+      var fromSZ = stack.projectToUnclampedStackZ(from.z, from.y, from.x);
+      var toSZ = stack.projectToUnclampedStackZ(to.z, to.y, to.x);
+      var zDiff = toSZ - fromSZ;
+      var zDiffAbs = Math.abs(zDiff);
       // If the stack space Z distance is larger than the virtual node step
       // value, stop at the section that is reachable with this value.
-      if (vSAbs[2] > self.virtualNodeStep) {
+      if (zDiffAbs > self.virtualNodeStep) {
         // Get project space coordinate of intermediate point, move to it and
         // select a virtual node there.
-        var zS = stack.z + self.virtualNodeStep * (vP[2] > 0 ? 1 : -1);
+        var zS = stackViewer.z + self.virtualNodeStep * (zDiff > 0 ? 1 : -1);
         var vnID = backwards ?
           SkeletonAnnotations.getVirtualNodeID(to.id, from.id, zS) :
           SkeletonAnnotations.getVirtualNodeID(from.id, to.id, zS);
-        var zRatio = self.virtualNodeStep / vSAbs[2];
+        var zRatio = self.virtualNodeStep / zDiffAbs;
         return {
           id: vnID,
-          x: from.x + vP[0] * zRatio,
-          y: from.y + vP[1] * zRatio,
-          z: from.z + vP[2] * zRatio,
+          x: from.x + (to.x - from.x) * zRatio,
+          y: from.y + (to.y - from.y) * zRatio,
+          z: from.z + (to.z - from.z) * zRatio,
           stack: stack,
           to: to,
           refIndex: refIndex

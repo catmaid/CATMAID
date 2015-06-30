@@ -520,8 +520,9 @@
     // Combine major and minor values, sort, and filter duplicates.
     this._values = this._majorValues.concat( this._values[ 1 ] ).sort( function ( a, b ) { return a - b; } );
     if ( this._majorValues[ 0 ] > this._majorValues[ this._majorValues.length - 1 ] ) this._values.reverse();
-    this._values = this._values.filter( function ( el, ind, arr )
-      { return ind === arr.indexOf( el ); } );
+    this._values = this._values.filter(function (el, ind, arr) {
+      return ind === 0 || el !== arr[ind - 1];
+    });
 
     // was a split parameter passed?
     if (split === undefined)

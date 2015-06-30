@@ -309,6 +309,8 @@ function Project( pid )
 			// FIXME: do we need a callback for tool.redraw as well?
 			if ( tool && tool.redraw )
 				tool.redraw();
+			this.trigger(Project.EVENT_LOCATION_CHANGED, this.coordinates.x,
+				this.coordinates.y, this.coordinates.z);
 			if (typeof completionCallback !== "undefined") {
 				completionCallback();
 			}
@@ -373,6 +375,9 @@ function Project( pid )
 			// FIXME: do we need a callback for tool.redraw as well?
 			if ( tool && tool.redraw )
 				tool.redraw();
+			// Emit location change event and call callback
+			this.trigger(Project.EVENT_LOCATION_CHANGED, this.coordinates.x,
+				this.coordinates.y, this.coordinates.z);
 			if (typeof completionCallback !== "undefined") {
 				completionCallback();
 			}
@@ -598,3 +603,4 @@ CATMAID.Events.extend(Project.prototype);
 Project.EVENT_STACKVIEW_ADDED = 'project_stackview_added';
 Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
 Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';
+Project.EVENT_LOCATION_CHANGED = 'project_location_changed';

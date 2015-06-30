@@ -362,7 +362,7 @@
           // user or any review team member.
           var i = newIndex;
           while (i < sequenceLength) {
-            if (!seq[i].rids.some(reviewedByTeam)) {
+            if (!sequence[i].rids.some(reviewedByTeam)) {
               newIndex = i;
               break;
             }

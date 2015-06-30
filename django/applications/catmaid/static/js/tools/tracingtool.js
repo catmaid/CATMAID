@@ -414,8 +414,6 @@
 
     this.prototype.changeSlice = function( val )
     {
-      WebGLApplication.prototype.staticUpdateZPlane();
-
       activeStackViewer.moveToPixel( val, activeStackViewer.y, activeStackViewer.x, activeStackViewer.s );
     };
 

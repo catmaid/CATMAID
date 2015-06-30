@@ -367,7 +367,7 @@
       modal: true,
       close: function(ev, ui) {
         if (self.webglapp) {
-          self.webglapp.space.destroy();
+          self.webglapp.destroy();
         }
         $(this).dialog("destroy");
       },

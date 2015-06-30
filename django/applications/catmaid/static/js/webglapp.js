@@ -57,7 +57,7 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.options);
   this.updateActiveNodePosition();
   project.on(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
-  project.on(Project.EVENT_LOCATION_CHANGED, this.adjustStaticContent, this);
+  project.on(Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
 	this.initialized = true;
 };
 
@@ -72,7 +72,7 @@ WebGLApplication.prototype.destroy = function() {
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.staticUpdateActiveNodePosition, this);
   project.off(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
-  project.off(Project.EVENT_LOCATION_CHANGED, this.adjustStaticContent, this);
+  project.off(Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
   this.unregisterInstance();
   this.unregisterSource();
   this.space.destroy();
@@ -674,11 +674,6 @@ WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color
 
 /** Persistent options, get replaced every time the 'ok' button is pushed in the dialog. */
 WebGLApplication.prototype.OPTIONS = new WebGLApplication.prototype.Options();
-
-WebGLApplication.prototype.updateZPlane = function() {
-	this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer);
-	this.space.render();
-};
 
 /** Receives an extra argument (an event) which is ignored. */
 WebGLApplication.prototype.updateColorMethod = function(colorMenu) {
@@ -3999,7 +3994,7 @@ WebGLApplication.prototype.adjustContent = function() {
  * updated.
  */
 WebGLApplication.prototype.handlelLocationChange = function() {
-  this.space.content.updateZPlane();
+  this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer);
   this.space.render();
 };
 

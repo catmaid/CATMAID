@@ -105,10 +105,20 @@ def get_treenodes_postgis(cursor, params):
     """ Selects all treenodes of which links to other treenodes intersect with
     the request bounding box.
     """
+    params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+    params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
 
-    # Fetch treenodes which are in the bounding box, which in z it includes the
-    # full thickess of the prior section and of the next section (therefore the
-    # '<' and not '<=' for zhigh)
+    # Fetch treenodes with the help of two PostGIS filters: The &&& operator
+    # to exclude all edges that don't have a bounding box that intersect with
+    # the query bounding box. This leads to false positives, because edge
+    # bounding boxes can intersect without the edge actually intersecting. To
+    # limit the result set, ST_3DDWithin is used. It allows to limit the result
+    # set by a distance to another geometry. Here it only allows edges that are
+    # no farther away than half the height of the query bounding box from a
+    # plane that cuts the query bounding box in half in Z. There are still false
+    # positives, but much fewer. Even though ST_3DDWithin is used, it seems to
+    # be enough to have a n-d index available (the query plan says ST_3DDWithin
+    # wouldn't use a 2-d index in this query, even if present).
     cursor.execute('''
     SELECT
         t1.id,
@@ -134,8 +144,13 @@ def get_treenodes_postgis(cursor, params):
       treenode t2,
       (SELECT te.id
          FROM treenode_edge te
-        WHERE te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
-                                       %(right)s %(top)s %(z1)s)') edges(edge_child_id)
+         WHERE te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
+                                       %(right)s %(top)s %(z1)s)'
+           AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
+            'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
+                        %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
+                        %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+      ) edges(edge_child_id)
     WHERE
           t1.project_id = %(project_id)s
       AND (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)

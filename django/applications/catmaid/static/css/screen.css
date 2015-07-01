@@ -747,3 +747,7 @@ a.neuron-selection-link:hover {
 .vertical-table-header div {
   position: absolute;
 }
+
+.ui-dialog-extra-buttonset {
+  float: left;
+}

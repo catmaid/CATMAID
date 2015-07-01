@@ -283,6 +283,58 @@
       }
     }).bind(this));
 
+    var self = this;
+    // Create controls and handlers for 3d viewer settings
+    var customOptions = document.createElement('div');
+    customOptions.setAttribute('class', 'ui-dialog-extra-buttonset');
+
+    var showInputsCb = document.createElement('input');
+    showInputsCb.setAttribute('type', 'checkbox');
+    showInputsCb.setAttribute('class', 'ui-button');
+    showInputsCb.checked = true;
+    showInputsCb.onchange = function() {
+      for (var m in self.models) {
+        self.models[m].post_visible = this.checked;
+      }
+      self.webglapp.updateModels(self.models);
+    };
+    var showInputs = document.createElement('label');
+    showInputs.appendChild(showInputsCb);
+    showInputs.appendChild(document.createTextNode('Show inputs'));
+    customOptions.appendChild(showInputs);
+
+    var showOutputsCb = document.createElement('input');
+    showOutputsCb.setAttribute('type', 'checkbox');
+    showOutputsCb.setAttribute('class', 'ui-button');
+    showOutputsCb.checked = true;
+    showOutputsCb.onchange = function() {
+      for (var m in self.models) {
+        self.models[m].pre_visible = this.checked;
+      }
+      self.webglapp.updateModels(self.models);
+    };
+    var showOutputs = document.createElement('label');
+    showOutputs.appendChild(showOutputsCb);
+    showOutputs.appendChild(document.createTextNode('Show outputs'));
+    customOptions.appendChild(showOutputs);
+
+    var strahlerShadingCb = document.createElement('input');
+    strahlerShadingCb.setAttribute('type', 'checkbox');
+    strahlerShadingCb.setAttribute('class', 'ui-button');
+    strahlerShadingCb.checked = false;
+    strahlerShadingCb.onchange = function() {
+      var shading = this.checked ? 'strahler' :'active_node_split';
+      self.webglapp.options.shading_method = shading;
+      self.webglapp.updateSkeletonColors();
+    };
+    var strahlerShading = document.createElement('label');
+    strahlerShading.appendChild(strahlerShadingCb);
+    strahlerShading.appendChild(document.createTextNode('Strahler index shading'));
+    customOptions.appendChild(strahlerShading);
+
+    // Add extra options to the button pane
+    $(".ui-dialog-buttonpane", this.dialog.parent).prepend(customOptions);
+
     return this;
   };
 

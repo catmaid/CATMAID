@@ -111,6 +111,12 @@ Miscellaneous:
   follows the pointer. The settings widget makes these options available in
   general settings area.
 
+- There are three new controls in the split/merge dialog: Toggle the
+  display of input and output markers on neurons in the embedded 3D viewer and
+  select which shading method is used (default: "active node split").
+  Alternatively, "Strahler index" coloring can be used, which helps with
+  depth perception.
+
 
 Administration:
 

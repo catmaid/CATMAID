@@ -320,7 +320,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         # below.
 
         if missing_treenode_ids:
-            params['missing'] = tuple(missing_treenode_ids)
+            missing_id_list = ','.join('({0})'.format(mnid) for mnid in missing_treenode_ids)
             response_on_error = 'Failed to query treenodes from connectors'
             cursor.execute('''
             SELECT id,
@@ -332,8 +332,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 radius,
                 skeleton_id,
                 user_id
-            FROM treenode
-            WHERE id IN %(missing)s''', params)
+            FROM treenode, (VALUES %s) missingnodes(mnid)
+            WHERE id = mnid''' % missing_id_list)
 
             for row in cursor.fetchall():
                 treenodes.append(row)

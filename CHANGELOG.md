@@ -117,6 +117,11 @@ Miscellaneous:
   Alternatively, "Strahler index" coloring can be used, which helps with
   depth perception.
 
+- Attempting to reload a CATMAID browser tab or go back in history, will now
+  result in a warning dialog, asking for confirmation. It makes clear that
+  CATMAID's window layout and content won't be saved if the acton isn't
+  canceled.
+
 
 Administration:
 

@@ -131,19 +131,22 @@
 
         var loadRows = document.createElement('input');
         loadRows.setAttribute("type", "button");
-        loadRows.setAttribute("value", "Append presynaptic neurons");
+        loadRows.setAttribute("value", "Append pre");
+        loadRows.setAttribute("title", "Append presynaptic neurons");
         loadRows.onclick = loadWith.bind(this, true, false);
         tabs['Main'].appendChild(loadRows);
 
         var loadColumns = document.createElement('input');
         loadColumns.setAttribute("type", "button");
-        loadColumns.setAttribute("value", "Append postsynaptic neurons");
+        loadColumns.setAttribute("value", "Append post");
+        loadColumns.setAttribute("title", "Append postsynaptic neurons");
         loadColumns.onclick = loadWith.bind(this, false, true);
         tabs['Main'].appendChild(loadColumns);
 
         var loadAll = document.createElement('input');
         loadAll.setAttribute("type", "button");
         loadAll.setAttribute("value", "Append to both");
+        loadColumns.setAttribute("title", "Append both as presynaptic and postsynaptic neurons");
         loadAll.onclick = loadWith.bind(this, true, true);
         tabs['Main'].appendChild(loadAll);
 

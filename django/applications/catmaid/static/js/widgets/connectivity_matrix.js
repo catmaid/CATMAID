@@ -147,12 +147,32 @@
         loadAll.onclick = loadWith.bind(this, true, true);
         tabs['Main'].appendChild(loadAll);
 
+        var clearPre = document.createElement('input');
+        clearPre.setAttribute("type", "button");
+        clearPre.setAttribute("value", "Clear pre");
+        clearPre.onclick = (function() {
+          if (confirm("Do you really want to clear all row neurons?")) {
+            this.clear(true, false);
+          }
+        }).bind(this);
+        tabs['Main'].appendChild(clearPre);
+
+        var clearPost = document.createElement('input');
+        clearPost.setAttribute("type", "button");
+        clearPost.setAttribute("value", "Clear post");
+        clearPost.onclick = (function() {
+          if (confirm("Do you really want to clear all column neurons?")) {
+            this.clear(false, true);
+          }
+        }).bind(this);
+        tabs['Main'].appendChild(clearPost);
+
         var clear = document.createElement('input');
         clear.setAttribute("type", "button");
-        clear.setAttribute("value", "Clear");
+        clear.setAttribute("value", "Clear both");
         clear.onclick = (function() {
           if (confirm("Do you really want to clear the current selection?")) {
-            this.clear();
+            this.clear(true, true);
           }
         }).bind(this);
         tabs['Main'].appendChild(clear);
@@ -265,12 +285,12 @@
   };
 
   /**
-   * Clear all sources.
+   * Clear all selected sources.
    */
-  ConnectivityMatrixWidget.prototype.clear = function() {
-    this.rowDimension.clear();
-    this.colDimension.clear();
-    this.update();
+  ConnectivityMatrixWidget.prototype.clear = function(clearRows, clearCols) {
+    if (clearRows) this.rowDimension.clear();
+    if (clearCols) this.colDimension.clear();
+    if (clearRows || clearCols) this.update();
   };
 
   /**

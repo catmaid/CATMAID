@@ -516,6 +516,10 @@ div#classification_graph_object img.roiimage {
   background-color: skyblue;
 }
 
+.connectivity_matrix .select {
+  background-color: lightgreen;
+}
+
 .connectivity_widget table {
   padding: 3px;
   border-collapse: collapse;

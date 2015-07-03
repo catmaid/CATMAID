@@ -527,6 +527,10 @@
       var moveRightButton = appendHoverButton(buttons, 'triangle-1-e',
           'move-right', 'Move this column to the right');
 
+      // Create selection/link button
+      var selectionButton = appendHoverButton(buttons, 'extlink',
+          'select', 'Select this neuron and move view to it');
+
       content.appendChild(buttons);
 
       var moveButtons = [moveUpButton, moveDownButton, moveLeftButton,
@@ -572,6 +576,8 @@
             if (group) b.dataset.group = group;
             else b.dataset.key = skeletonIds[0];
           });
+          // Attach skeleton ID(s) to selcet button
+          selectionButton.dataset.skeletonIds = skeletonIdsJSON;
 
           // For rows show up and down, for columns left and right
           if (isRow) {
@@ -639,6 +645,11 @@
       $(moveDownButton).on('click', {widget: this, down: true}, handleMove);
       $(moveLeftButton).on('click', {widget: this, left: true}, handleMove);
       $(moveRightButton).on('click', {widget: this, right: true}, handleMove);
+      $(selectionButton).on('click', {widget: this, right: true}, function(e) {
+        if (!this.dataset.skeletonIds) return false;
+        var skeletonIDs = JSON.parse(this.dataset.skeletonIds);
+        followSkeletonList(skeletonIDs);
+      });
     }
 
     return content;

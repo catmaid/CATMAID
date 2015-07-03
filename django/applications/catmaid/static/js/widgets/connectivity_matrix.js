@@ -479,6 +479,15 @@
       // Add a handler for selecting skeletons when their names are clicked
       $(table).on('click', 'a[data-skeleton-ids]', function(e) {
         var skeletonIDs = JSON.parse(this.dataset.skeletonIds);
+        followSkeletonList(skeletonIDs);
+      });
+
+      /**
+       * If the skeleton list has only one entry, this skeleton is selected and
+       * the view is moved to its closest node of it. Otherwise, a selection
+       * table, with all skeletons of the list appended, will be opened.
+       */
+      function followSkeletonList(skeletonIDs) {
         if (!skeletonIDs || !skeletonIDs.length) {
           CATMAID.warn('Could not find expected list of skleton IDs');
           return;
@@ -495,7 +504,7 @@
           WindowMaker.create('neuron-staging-area', ST);
           ST.append(models);
         }
-      });
+      }
 
       // A container for all the buttons
       var buttons = document.createElement('div');

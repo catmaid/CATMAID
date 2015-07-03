@@ -1343,12 +1343,12 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                * there are some. Otherwise merge the single not without showing
                * the dialog.
                */
-              CATMAID.NeuronAnnotations.retrieve_annotations_for_skeleton(to_skid,
+              CATMAID.retrieve_annotations_for_skeleton(to_skid,
                   function(annotations) {
                     if (annotations.length > 0) {
                       merge_multiple_nodes();
                     } else {
-                      CATMAID.NeuronAnnotations.retrieve_annotations_for_skeleton(
+                      CATMAID.retrieve_annotations_for_skeleton(
                           from_model.id, function(annotations) {
                               merge(annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
                           });

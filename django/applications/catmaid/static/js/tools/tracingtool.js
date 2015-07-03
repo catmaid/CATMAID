@@ -949,7 +949,7 @@
             if (!mayEdit()) {
                 return false;
             }
-            CATMAID.NeuronAnnotations.prototype.annotate_neurons_of_skeletons(
+            CATMAID.annotate_neurons_of_skeletons(
               [SkeletonAnnotations.getActiveSkeletonId()]);
             return true;
         }

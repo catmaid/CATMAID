@@ -122,7 +122,7 @@
 
     // Get all annotations for a skeleton and fill the list boxes
     var add_annotations_fn = function(skid, listboxes, disable_unpermitted) {
-      CATMAID.NeuronAnnotations.retrieve_annotations_for_skeleton(skid,
+      CATMAID.retrieve_annotations_for_skeleton(skid,
           function(annotations) {
             // Create annotation check boxes
             annotations.forEach(function(aobj) {

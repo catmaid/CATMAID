@@ -401,7 +401,7 @@
      * the top bar is updated.
      */
     function handleActiveNodeChange(node) {
-      if (node) {
+      if (node && node.id) {
         if (SkeletonAnnotations.TYPE_NODE === node.type) {
           setNeuronNameInTopbars(node.skeleton_id);
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {

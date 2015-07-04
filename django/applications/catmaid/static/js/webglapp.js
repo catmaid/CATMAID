@@ -886,29 +886,42 @@ WebGLApplication.filterPrePostConnectors = function(counts) {
  * Allow only connectors that have more than one partner in the current
  * selection and that connect skeletons between the two groups.
  */
-WebGLApplication.filterGroupSharedConnectors = function(group1, group2, counts) {
+WebGLApplication.filterGroupSharedConnectors = function(group1, group2, onlyPrePost, counts) {
   // Find all shared connecors
   var common = {};
   for (var connector_id in counts) {
     if (counts.hasOwnProperty(connector_id)) {
-      var skeletonIDs = counts[connector_id].map(function(l) { return l[0]; });
-      // Require that more than one neuron must be linked to the connector
-      if (skeletonIDs.length < 2) continue;
-
-      // Only allow connectors that connect to both source groups
-      var inSource1 = false;
-      var inSource2 = false;
-      for (var i=0; i<skeletonIDs.length; ++i) {
-        inSource1 = group1.hasOwnProperty(skeletonIDs[i]) ? true : inSource1;
-        inSource2 = group2.hasOwnProperty(skeletonIDs[i]) ? true : inSource2;
+      // Only allow connectors that connect to both source groups, find links to
+      // each group from the current connector.
+      var inSource1 = [], inSource2 = [];
+      for (var i=0; i<counts[connector_id].length; ++i) {
+        var link = counts[connector_id][i];
+        if (group1.hasOwnProperty(link[0])) inSource1.push(link)
+        if (group2.hasOwnProperty(link[0])) inSource2.push(link)
       }
 
-      if (inSource1 && inSource2) {
+      // For being visible, the connector has to have links into both groups
+      var visible = inSource1.length > 0 && inSource2.length > 0;
+      // If at least one pre-post-connection between the two groups is required,
+      // check for this.
+      if (visible && onlyPrePost) {
+        var preIn1 = inSource1.some(isPresynaptic);
+        var preIn2 = inSource2.some(isPresynaptic);
+        var postIn1 = inSource1.some(isPostsynaptic);
+        var postIn2 = inSource2.some(isPostsynaptic);
+        visible = (preIn1 && postIn2 ) || (preIn2 && postIn1);
+      }
+
+      if (visible) {
         common[connector_id] = null; // null, just to add something
       }
     }
   }
+
   return common;
+
+  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; };
+  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; };
 };
 
 /**
@@ -916,7 +929,7 @@ WebGLApplication.filterGroupSharedConnectors = function(group1, group2, counts) 
  * two skeleton sources that form the groups between which connectors are
  * allowed.
  */
-WebGLApplication.makeGroupShareConnectorFilter = function(callback) {
+WebGLApplication.makeGroupShareConnectorFilter = function(onlyPrePost, callback) {
   var source1, source2;
 
   // Add skeleton source message and controls
@@ -945,7 +958,7 @@ WebGLApplication.makeGroupShareConnectorFilter = function(callback) {
     }
 
     var filter =  WebGLApplication.filterGroupSharedConnectors.bind(
-        this, group1, group2);
+        this, group1, group2, onlyPrePost);
 
     if (CATMAID.tools.isFn(callback)) {
       callback(filter);
@@ -985,8 +998,10 @@ WebGLApplication.prototype.setConnectorRestriction = function(restriction) {
     this.options.connector_filter = WebGLApplication.filterSharedConnectors;
   } else if ('all-pre-post' === restriction) {
     this.options.connector_filter = WebGLApplication.filterPrePostConnectors;
-  } else if ('all-group-shared' === restriction) {
-    WebGLApplication.makeGroupShareConnectorFilter(function(filter) {
+  } else if ('all-group-shared' === restriction ||
+      'all-group-shared-pre-post' === restriction) {
+    var onlyPrePost = 'all-group-shared-pre-post' === restriction;
+    WebGLApplication.makeGroupShareConnectorFilter(onlyPrePost, function(filter) {
       if (filter) self.options.connector_filter = filter;
       applyFilter(self.options.connector_filter);
     });

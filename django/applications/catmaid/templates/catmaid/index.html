@@ -21,7 +21,7 @@
 
     {% for f in JS_FILES %}
 		{% if f == 'arbor' %}
-			<script type="text/javascript" src="{{ STATIC_URL }}js/arbor.js"></script>
+			<script type="text/javascript" src="{{ STATIC_URL}}libs/cytoscapejs/arbor.js"></script>
 		{% else %}
 		  {% compressed_js f %}
 		{% endif %}

@@ -1002,8 +1002,10 @@ WebGLApplication.prototype.setConnectorRestriction = function(restriction) {
       'all-group-shared-pre-post' === restriction) {
     var onlyPrePost = 'all-group-shared-pre-post' === restriction;
     WebGLApplication.makeGroupShareConnectorFilter(onlyPrePost, function(filter) {
-      if (filter) self.options.connector_filter = filter;
-      applyFilter(self.options.connector_filter);
+      if (filter) {
+        self.options.connector_filter = filter;
+        self.refreshRestrictedConnectors();
+      }
     });
     // Prevent application of filter. This is done in function above, once user
     // input is complete.
@@ -1012,77 +1014,70 @@ WebGLApplication.prototype.setConnectorRestriction = function(restriction) {
     throw new CATMAID.ValueError('Unknown connector restriction: ' + restriction);
   }
 
-  applyFilter(this.options.connector_filter);
-
-  function applyFilter(filter) {
-    var skeletons = self.space.content.skeletons;
-    var skids = Object.keys(skeletons);
-
-    var regularMarkerVisible = filter ? false : true;
-    skids.forEach(function(skid) {
-      skeletons[skid].setPreVisibility(regularMarkerVisible);
-      skeletons[skid].setPostVisibility(regularMarkerVisible);
-      $('#skeletonpre-'  + skid).attr('checked', regularMarkerVisible);
-      $('#skeletonpost-' + skid).attr('checked', regularMarkerVisible);
-    });
-
-    if (self.options.connector_filter) {
-      self.refreshRestrictedConnectors();
-    } else {
-      skids.forEach(function(skid) {
-        skeletons[skid].remove_connector_selection();
-      });
-      self.space.render();
-    }
-  }
+  this.refreshRestrictedConnectors();
 };
 
 WebGLApplication.prototype.refreshRestrictedConnectors = function() {
-	if (!this.options.connector_filter) return;
-	var restriction = this.options.connector_filter;
+  // Display regular markers only if no restriction is used
+  var skeletons = this.space.content.skeletons;
+  var skids = Object.keys(skeletons);
+  var regularMarkerVisible = this.options.connector_filter ? false : true;
+  skids.forEach(function(skid) {
+    skeletons[skid].setPreVisibility(regularMarkerVisible);
+    skeletons[skid].setPostVisibility(regularMarkerVisible);
+    $('#skeletonpre-'  + skid).attr('checked', regularMarkerVisible);
+    $('#skeletonpost-' + skid).attr('checked', regularMarkerVisible);
+  });
 
-	// Find all connector IDs referred to by more than one skeleton
-	// but only for visible skeletons
-	var skeletons = this.space.content.skeletons;
-	var visible_skeletons = Object.keys(skeletons).filter(function(skeleton_id) {
-		return skeletons[skeleton_id].visible;
-	});
-	var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
+	if (this.options.connector_filter) {
+    var restriction = this.options.connector_filter;
 
-	// Map all connectors to the skeletons they connect to
-	var counts = visible_skeletons.reduce(function(counts, skeleton_id) {
-    return synapticTypes.reduce(function(counts, type) {
-      var vertices = skeletons[skeleton_id].geometry[type].vertices;
-      // Vertices is an array of Vector3, every two a pair, the first at the
-      // connector and the second at the node
-      for (var i=vertices.length-2; i>-1; i-=2) {
-        var connector_id = vertices[i].node_id;
-        if (!counts.hasOwnProperty(connector_id)) {
-          counts[connector_id] = [];
+    // Find all connector IDs referred to by more than one skeleton
+    // but only for visible skeletons
+    var visible_skeletons = Object.keys(skeletons).filter(function(skeleton_id) {
+      return skeletons[skeleton_id].visible;
+    });
+    var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
+
+    // Map all connectors to the skeletons they connect to
+    var counts = visible_skeletons.reduce(function(counts, skeleton_id) {
+      return synapticTypes.reduce(function(counts, type) {
+        var vertices = skeletons[skeleton_id].geometry[type].vertices;
+        // Vertices is an array of Vector3, every two a pair, the first at the
+        // connector and the second at the node
+        for (var i=vertices.length-2; i>-1; i-=2) {
+          var connector_id = vertices[i].node_id;
+          if (!counts.hasOwnProperty(connector_id)) {
+            counts[connector_id] = [];
+          }
+          // Store a reference to the type for each connector
+          counts[connector_id].push([skeleton_id, type]);
         }
-        // Store a reference to the type for each connector
-        counts[connector_id].push([skeleton_id, type]);
-      }
-      return counts;
-    }, counts);
-  }, {});
+        return counts;
+      }, counts);
+    }, {});
 
-  // Filter all connectors
-  var common = restriction(counts);
+    // Filter all connectors
+    var common = restriction(counts);
 
-  var visible_set = visible_skeletons.reduce(function(o, skeleton_id) {
-    o[skeleton_id] = null;
-    return o;
-  }, {});
+    var visible_set = visible_skeletons.reduce(function(o, skeleton_id) {
+      o[skeleton_id] = null;
+      return o;
+    }, {});
 
-  for (var skeleton_id in skeletons) {
-    if (skeletons.hasOwnProperty(skeleton_id)) {
-      skeletons[skeleton_id].remove_connector_selection();
-      if (skeleton_id in visible_set) {
-        skeletons[skeleton_id].create_connector_selection( common );
+    for (var skeleton_id in skeletons) {
+      if (skeletons.hasOwnProperty(skeleton_id)) {
+        skeletons[skeleton_id].remove_connector_selection();
+        if (skeleton_id in visible_set) {
+          skeletons[skeleton_id].create_connector_selection( common );
+        }
       }
     }
-	}
+  } else {
+    skids.forEach(function(skid) {
+      skeletons[skid].remove_connector_selection();
+    });
+  }
 
 	this.space.render();
 };

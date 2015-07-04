@@ -849,18 +849,19 @@ WebGLApplication.prototype.setSkeletonPreVisibility = WebGLApplication.prototype
 WebGLApplication.prototype.setSkeletonPostVisibility = WebGLApplication.prototype._skeletonVizFn('Post');
 WebGLApplication.prototype.setSkeletonTextVisibility = WebGLApplication.prototype._skeletonVizFn('Text');
 
-WebGLApplication.prototype.toggleConnectors = function() {
-  this.options.connector_filter = ! this.options.connector_filter;
+WebGLApplication.prototype.setConnectorRestriction = function(restriction) {
+  if ('none' === restriction) this.options.connector_filter = false;
+  else this.options.connector_filter = restriction;
 
-  var f = this.options.connector_filter;
   var skeletons = this.space.content.skeletons;
   var skids = Object.keys(skeletons);
 
+  var regularMarkerVisible = (false === this.options.connector_filter);
   skids.forEach(function(skid) {
-    skeletons[skid].setPreVisibility( !f );
-    skeletons[skid].setPostVisibility( !f );
-    $('#skeletonpre-'  + skid).attr('checked', !f );
-    $('#skeletonpost-' + skid).attr('checked', !f );
+    skeletons[skid].setPreVisibility(regularMarkerVisible);
+    skeletons[skid].setPostVisibility(regularMarkerVisible);
+    $('#skeletonpre-'  + skid).attr('checked', regularMarkerVisible);
+    $('#skeletonpost-' + skid).attr('checked', regularMarkerVisible);
   });
 
   if (this.options.connector_filter) {
@@ -875,16 +876,22 @@ WebGLApplication.prototype.toggleConnectors = function() {
 
 WebGLApplication.prototype.refreshRestrictedConnectors = function() {
 	if (!this.options.connector_filter) return;
+	var restriction = this.options.connector_filter;
+
 	// Find all connector IDs referred to by more than one skeleton
 	// but only for visible skeletons
 	var skeletons = this.space.content.skeletons;
-	var visible_skeletons = Object.keys(skeletons).filter(function(skeleton_id) { return skeletons[skeleton_id].visible; });
-  var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
+	var visible_skeletons = Object.keys(skeletons).filter(function(skeleton_id) {
+		return skeletons[skeleton_id].visible;
+	});
+	var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
 
+	// Map all connectors to the skeletons they connect to
 	var counts = visible_skeletons.reduce(function(counts, skeleton_id) {
     return synapticTypes.reduce(function(counts, type) {
       var vertices = skeletons[skeleton_id].geometry[type].vertices;
-      // Vertices is an array of Vector3, every two a pair, the first at the connector and the second at the node
+      // Vertices is an array of Vector3, every two a pair, the first at the
+      // connector and the second at the node
       for (var i=vertices.length-2; i>-1; i-=2) {
         var connector_id = vertices[i].node_id;
         if (!counts.hasOwnProperty(connector_id)) {
@@ -896,12 +903,18 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
     }, counts);
   }, {});
 
-	var common = {};
-	for (var connector_id in counts) {
-		if (counts.hasOwnProperty(connector_id) && Object.keys(counts[connector_id]).length > 1) {
-			common[connector_id] = null; // null, just to add something
-		}
-	}
+  var common = {};
+  if ('all-shared' === restriction) {
+    // Allow only connectors that have more than one partner in the current
+    // selection
+    for (var connector_id in counts) {
+      if (counts.hasOwnProperty(connector_id) && Object.keys(counts[connector_id]).length > 1) {
+        common[connector_id] = null; // null, just to add something
+      }
+    }
+  } else {
+    throw new CATMAID.ValueError('Unknown connector restriction: ' + restriction);
+  }
 
   var visible_set = visible_skeletons.reduce(function(o, skeleton_id) {
     o[skeleton_id] = null;

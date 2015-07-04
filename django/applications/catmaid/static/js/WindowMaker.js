@@ -927,6 +927,16 @@ var WindowMaker = new function()
 
     var storedViewsSelect = document.createElement('select');
 
+    var connectorRestrictionsSl = document.createElement('select');
+    connectorRestrictionsSl.options.add(new Option('All connectors', 'none', true, true));
+    connectorRestrictionsSl.options.add(new Option('All shared connectos', 'all-shared'));
+    connectorRestrictionsSl.onchange = function () {
+      WA.setConnectorRestriction(this.value);
+    };
+    var connectorRestrictions = document.createElement('label');
+    connectorRestrictions.appendChild(document.createTextNode('Connector restriction'));
+    connectorRestrictions.appendChild(connectorRestrictionsSl);
+
     var orthographicCbElems = createCheckbox('Orthographic mode', false,
         function() { WA.updateCameraView(this.checked); });
 
@@ -940,7 +950,7 @@ var WindowMaker = new function()
           ['ZX', WA.ZXView.bind(WA)],
           [storedViewsSelect],
           ['Save view', storeView],
-          ['Restrict connectors', WA.toggleConnectors.bind(WA)],
+          [connectorRestrictions],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
           ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
           [orthographicCbElems[0]],

@@ -895,9 +895,10 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
       for (var i=vertices.length-2; i>-1; i-=2) {
         var connector_id = vertices[i].node_id;
         if (!counts.hasOwnProperty(connector_id)) {
-          counts[connector_id] = {};
+          counts[connector_id] = [];
         }
-        counts[connector_id][skeleton_id] = null;
+        // Store a reference to the type for each connector
+        counts[connector_id].push([skeleton_id, type]);
       }
       return counts;
     }, counts);
@@ -908,7 +909,17 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
     // Allow only connectors that have more than one partner in the current
     // selection
     for (var connector_id in counts) {
-      if (counts.hasOwnProperty(connector_id) && Object.keys(counts[connector_id]).length > 1) {
+      if (counts.hasOwnProperty(connector_id) && counts[connector_id].length > 1) {
+        common[connector_id] = null; // null, just to add something
+      }
+    }
+  } else if ('all-pre-post' === restriction) {
+    // Allow only connectors that have more than one partner in the current
+    // selection
+    for (var connector_id in counts) {
+      if (counts.hasOwnProperty(connector_id) &&
+          counts[connector_id].some(isPresynaptic) &&
+          counts[connector_id].some(isPostsynaptic)) {
         common[connector_id] = null; // null, just to add something
       }
     }
@@ -931,6 +942,9 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
 	}
 
 	this.space.render();
+
+  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; };
+  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; };
 };
 
 WebGLApplication.prototype.set_shading_method = function() {

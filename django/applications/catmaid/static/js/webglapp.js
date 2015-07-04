@@ -882,35 +882,143 @@ WebGLApplication.filterPrePostConnectors = function(counts) {
   function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; };
 };
 
+/**
+ * Allow only connectors that have more than one partner in the current
+ * selection and that connect skeletons between the two groups.
+ */
+WebGLApplication.filterGroupSharedConnectors = function(group1, group2, counts) {
+  // Find all shared connecors
+  var common = {};
+  for (var connector_id in counts) {
+    if (counts.hasOwnProperty(connector_id)) {
+      var skeletonIDs = counts[connector_id].map(function(l) { return l[0]; });
+      // Require that more than one neuron must be linked to the connector
+      if (skeletonIDs.length < 2) continue;
+
+      // Only allow connectors that connect to both source groups
+      var inSource1 = false;
+      var inSource2 = false;
+      for (var i=0; i<skeletonIDs.length; ++i) {
+        inSource1 = group1.hasOwnProperty(skeletonIDs[i]) ? true : inSource1;
+        inSource2 = group2.hasOwnProperty(skeletonIDs[i]) ? true : inSource2;
+      }
+
+      if (inSource1 && inSource2) {
+        common[connector_id] = null; // null, just to add something
+      }
+    }
+  }
+  return common;
+};
+
+/**
+ * Get user input for creating a goup share filter for connectors. It requires
+ * two skeleton sources that form the groups between which connectors are
+ * allowed.
+ */
+WebGLApplication.makeGroupShareConnectorFilter = function(callback) {
+  var source1, source2;
+
+  // Add skeleton source message and controls
+  var dialog = new CATMAID.OptionsDialog('Select groups');
+
+  // Add user interface
+  dialog.appendMessage('Please select two skeleton sources that represent ' +
+      'groups. Only connections between neurons visible in the 3D viewer ' +
+      'that link neurons from one group to the other will be shown.');
+  var source1Input = addSourceInput(dialog.dialog, "Source 1:");
+  var source2Input = addSourceInput(dialog.dialog, "Source 2:");
+
+  // Add handler for initiating the export
+  dialog.onOK = function() {
+    var source1 = CATMAID.skeletonListSources.getSource($(source1Input).val());
+    var source2 = CATMAID.skeletonListSources.getSource($(source2Input).val());
+    if (!source1 || !source2) {
+      CATMAID.error("Couldn't find expected skeleton sources");
+      return;
+    }
+    var group1 = source1.getSelectedSkeletonModels();
+    var group2 = source2.getSelectedSkeletonModels();
+    if (!group1 || !group2) {
+      CATMAID.error("Couldn't find expected skeleton models");
+      return
+    }
+
+    var filter =  WebGLApplication.filterGroupSharedConnectors.bind(
+        this, group1, group2);
+
+    if (CATMAID.tools.isFn(callback)) {
+      callback(filter);
+    }
+  };
+
+  dialog.onCancel = function() {
+    if (CATMAID.tools.isFn(callback)) {
+      callback(null);
+    }
+  };
+
+  dialog.show(350, 250, true);
+
+  function addSourceInput(d, name) {
+    var select = document.createElement('select');
+    CATMAID.skeletonListSources.createOptions().forEach(function(option, i) {
+      select.options.add(option);
+      if (option.value === 'Active skeleton') select.selectedIndex = i;
+    });
+    var label_p = document.createElement('p');
+    var label = document.createElement('label');
+    label.appendChild(document.createTextNode(name));
+    label.appendChild(select);
+    label_p.appendChild(label);
+    d.appendChild(label_p);
+    return select;
+  }
+};
+
 WebGLApplication.prototype.setConnectorRestriction = function(restriction) {
+  var self = this;
+
   if ('none' === restriction) {
     this.options.connector_filter = false;
   } else if ('all-shared' === restriction) {
     this.options.connector_filter = WebGLApplication.filterSharedConnectors;
   } else if ('all-pre-post' === restriction) {
     this.options.connector_filter = WebGLApplication.filterPrePostConnectors;
+  } else if ('all-group-shared' === restriction) {
+    WebGLApplication.makeGroupShareConnectorFilter(function(filter) {
+      if (filter) self.options.connector_filter = filter;
+      applyFilter(self.options.connector_filter);
+    });
+    // Prevent application of filter. This is done in function above, once user
+    // input is complete.
+    return;
   } else {
     throw new CATMAID.ValueError('Unknown connector restriction: ' + restriction);
   }
 
-  var skeletons = this.space.content.skeletons;
-  var skids = Object.keys(skeletons);
+  applyFilter(this.options.connector_filter);
 
-  var regularMarkerVisible = (false === this.options.connector_filter);
-  skids.forEach(function(skid) {
-    skeletons[skid].setPreVisibility(regularMarkerVisible);
-    skeletons[skid].setPostVisibility(regularMarkerVisible);
-    $('#skeletonpre-'  + skid).attr('checked', regularMarkerVisible);
-    $('#skeletonpost-' + skid).attr('checked', regularMarkerVisible);
-  });
+  function applyFilter(filter) {
+    var skeletons = self.space.content.skeletons;
+    var skids = Object.keys(skeletons);
 
-  if (this.options.connector_filter) {
-    this.refreshRestrictedConnectors();
-  } else {
+    var regularMarkerVisible = filter ? false : true;
     skids.forEach(function(skid) {
-      skeletons[skid].remove_connector_selection();
+      skeletons[skid].setPreVisibility(regularMarkerVisible);
+      skeletons[skid].setPostVisibility(regularMarkerVisible);
+      $('#skeletonpre-'  + skid).attr('checked', regularMarkerVisible);
+      $('#skeletonpost-' + skid).attr('checked', regularMarkerVisible);
     });
-    this.space.render();
+
+    if (self.options.connector_filter) {
+      self.refreshRestrictedConnectors();
+    } else {
+      skids.forEach(function(skid) {
+        skeletons[skid].remove_connector_selection();
+      });
+      self.space.render();
+    }
   }
 };
 

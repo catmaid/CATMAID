@@ -88,11 +88,14 @@ Tile layer:
 3D Viewer:
 
 - Connector restriction can now explicitly be turned on and off with a pull
-  down list. One can select between "Show all" (i.e. turned restriction turned
-  off), "All shared connectors" will only show connectors with partners in the
-  current selection and "All pre->post connectors" will only allow connectors
-  with at least one presynaptic partner and one postsynaptic partner in the
-  current selection.
+  down list. One can select between "Show all" (i.e. restriction turned off),
+  "All shared connectors" will only show connectors with partners in the current
+  selection and "All pre->post connectors" will only allow connectors with at
+  least one presynaptic partner and one postsynaptic partner in the current
+  selection. The last option, "All group shared" allos to select two skeleton
+  sources (e.g. two selection table) and it will only show connectors that are
+  part of the 3D viewer and that connect between both selected groups of
+  skeletons.
 
 
 Neuron search:

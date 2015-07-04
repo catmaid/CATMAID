@@ -849,9 +849,49 @@ WebGLApplication.prototype.setSkeletonPreVisibility = WebGLApplication.prototype
 WebGLApplication.prototype.setSkeletonPostVisibility = WebGLApplication.prototype._skeletonVizFn('Post');
 WebGLApplication.prototype.setSkeletonTextVisibility = WebGLApplication.prototype._skeletonVizFn('Text');
 
+/**
+ * Allow only connectors that have more than one partner in the current
+ * selection
+ */
+WebGLApplication.filterSharedConnectors = function(counts) {
+  var common = {};
+  for (var connector_id in counts) {
+    if (counts.hasOwnProperty(connector_id) && counts[connector_id].length > 1) {
+      common[connector_id] = null; // null, just to add something
+    }
+  }
+  return common;
+};
+
+/**
+ * Allow only connectors that have more than one partner in the current
+ * selection
+ */
+WebGLApplication.filterPrePostConnectors = function(counts) {
+  var common = {};
+  for (var connector_id in counts) {
+    if (counts.hasOwnProperty(connector_id) &&
+        counts[connector_id].some(isPresynaptic) &&
+        counts[connector_id].some(isPostsynaptic)) {
+      common[connector_id] = null; // null, just to add something
+    }
+  }
+  return common;
+
+  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; };
+  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; };
+};
+
 WebGLApplication.prototype.setConnectorRestriction = function(restriction) {
-  if ('none' === restriction) this.options.connector_filter = false;
-  else this.options.connector_filter = restriction;
+  if ('none' === restriction) {
+    this.options.connector_filter = false;
+  } else if ('all-shared' === restriction) {
+    this.options.connector_filter = WebGLApplication.filterSharedConnectors;
+  } else if ('all-pre-post' === restriction) {
+    this.options.connector_filter = WebGLApplication.filterPrePostConnectors;
+  } else {
+    throw new CATMAID.ValueError('Unknown connector restriction: ' + restriction);
+  }
 
   var skeletons = this.space.content.skeletons;
   var skids = Object.keys(skeletons);
@@ -904,28 +944,8 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
     }, counts);
   }, {});
 
-  var common = {};
-  if ('all-shared' === restriction) {
-    // Allow only connectors that have more than one partner in the current
-    // selection
-    for (var connector_id in counts) {
-      if (counts.hasOwnProperty(connector_id) && counts[connector_id].length > 1) {
-        common[connector_id] = null; // null, just to add something
-      }
-    }
-  } else if ('all-pre-post' === restriction) {
-    // Allow only connectors that have more than one partner in the current
-    // selection
-    for (var connector_id in counts) {
-      if (counts.hasOwnProperty(connector_id) &&
-          counts[connector_id].some(isPresynaptic) &&
-          counts[connector_id].some(isPostsynaptic)) {
-        common[connector_id] = null; // null, just to add something
-      }
-    }
-  } else {
-    throw new CATMAID.ValueError('Unknown connector restriction: ' + restriction);
-  }
+  // Filter all connectors
+  var common = restriction(counts);
 
   var visible_set = visible_skeletons.reduce(function(o, skeleton_id) {
     o[skeleton_id] = null;
@@ -942,9 +962,6 @@ WebGLApplication.prototype.refreshRestrictedConnectors = function() {
 	}
 
 	this.space.render();
-
-  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; };
-  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; };
 };
 
 WebGLApplication.prototype.set_shading_method = function() {

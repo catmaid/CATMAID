@@ -1,3 +1,13 @@
+## Under development
+
+### Features and enhancements
+
+
+
+### Bug fixes
+
+
+
 ## 2015.7.6
 
 CATMAID now uses the GPLv3 license and moved away from the stricter

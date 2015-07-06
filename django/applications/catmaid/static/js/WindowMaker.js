@@ -1404,6 +1404,8 @@ var WindowMaker = new function()
          [document.createTextNode(' - ')],
          ['Hide', GG.hideSelected.bind(GG)],
          ['Show hidden', GG.showHidden.bind(GG), {id: 'graph_show_hidden' + GG.widgetID, disabled: true}],
+         ['lock', GG.applyToNodes.bind(GG, 'lock', true)],
+         ['unlock', GG.applyToNodes.bind(GG, 'unlock', true)],
          [document.createTextNode(' - ')],
          ['Remove', GG.removeSelected.bind(GG)],
          [document.createTextNode(' - ')],

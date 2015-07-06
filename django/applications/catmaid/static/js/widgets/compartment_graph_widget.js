@@ -449,6 +449,13 @@ GroupGraph.prototype.updateLayout = function(layout) {
   this.cy.layout( options );
 };
 
+GroupGraph.prototype.applyToNodes = function(fn, selected) {
+  this.cy.nodes().each(function(i, node) {
+    if (selected && !node.selected()) return;
+    node[fn]();
+  });
+};
+
 GroupGraph.prototype.createLayoutOptions = function(name) {
   var options;
   if ('grid' === name) {

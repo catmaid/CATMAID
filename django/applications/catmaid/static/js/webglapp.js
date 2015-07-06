@@ -878,8 +878,8 @@ WebGLApplication.filterPrePostConnectors = function(counts) {
   }
   return common;
 
-  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; };
-  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; };
+  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; }
+  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; }
 };
 
 /**
@@ -896,8 +896,8 @@ WebGLApplication.filterGroupSharedConnectors = function(group1, group2, onlyPreP
       var inSource1 = [], inSource2 = [];
       for (var i=0; i<counts[connector_id].length; ++i) {
         var link = counts[connector_id][i];
-        if (group1.hasOwnProperty(link[0])) inSource1.push(link)
-        if (group2.hasOwnProperty(link[0])) inSource2.push(link)
+        if (group1.hasOwnProperty(link[0])) inSource1.push(link);
+        if (group2.hasOwnProperty(link[0])) inSource2.push(link);
       }
 
       // For being visible, the connector has to have links into both groups
@@ -920,8 +920,8 @@ WebGLApplication.filterGroupSharedConnectors = function(group1, group2, onlyPreP
 
   return common;
 
-  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; };
-  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; };
+  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; }
+  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; }
 };
 
 /**
@@ -954,7 +954,7 @@ WebGLApplication.makeGroupShareConnectorFilter = function(onlyPrePost, callback)
     var group2 = source2.getSelectedSkeletonModels();
     if (!group1 || !group2) {
       CATMAID.error("Couldn't find expected skeleton models");
-      return
+      return;
     }
 
     var filter =  WebGLApplication.filterGroupSharedConnectors.bind(

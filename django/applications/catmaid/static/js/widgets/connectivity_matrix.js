@@ -482,30 +482,6 @@
         followSkeletonList(skeletonIDs);
       });
 
-      /**
-       * If the skeleton list has only one entry, this skeleton is selected and
-       * the view is moved to its closest node of it. Otherwise, a selection
-       * table, with all skeletons of the list appended, will be opened.
-       */
-      function followSkeletonList(skeletonIDs) {
-        if (!skeletonIDs || !skeletonIDs.length) {
-          CATMAID.warn('Could not find expected list of skleton IDs');
-          return;
-        }
-        if (1 === skeletonIDs.length) {
-          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
-        } else {
-          var ST = new SelectionTable();
-          var models = skeletonIDs.reduce(function(o, skid) {
-            o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "",
-                new THREE.Color().setRGB(1, 1, 0));
-            return o;
-          }, {});
-          WindowMaker.create('neuron-staging-area', ST);
-          ST.append(models);
-        }
-      }
-
       // A container for all the buttons
       var buttons = document.createElement('div');
       buttons.style.display = 'none';
@@ -609,8 +585,8 @@
           top = ($(content).scrollTop() + pos.top) + 1;
         }
 
-        buttons.style.left = left + 'px'
-        buttons.style.top = top + 'px'
+        buttons.style.left = left + 'px';
+        buttons.style.top = top + 'px';
 
         // Disable old hiding timeout
         if (hideTimeout) {
@@ -1203,5 +1179,29 @@
       element.childNodes[i].style.color = fg;
     }
   };
+
+  /**
+   * If the skeleton list has only one entry, this skeleton is selected and
+   * the view is moved to its closest node of it. Otherwise, a selection
+   * table, with all skeletons of the list appended, will be opened.
+   */
+  function followSkeletonList(skeletonIDs) {
+    if (!skeletonIDs || !skeletonIDs.length) {
+      CATMAID.warn('Could not find expected list of skleton IDs');
+      return;
+    }
+    if (1 === skeletonIDs.length) {
+      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
+    } else {
+      var ST = new SelectionTable();
+      var models = skeletonIDs.reduce(function(o, skid) {
+        o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "",
+            new THREE.Color().setRGB(1, 1, 0));
+        return o;
+      }, {});
+      WindowMaker.create('neuron-staging-area', ST);
+      ST.append(models);
+    }
+  }
 
 })(CATMAID);

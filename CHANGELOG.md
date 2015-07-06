@@ -1,5 +1,4 @@
-## Under development
-
+## 2015.7.6
 
 CATMAID now uses the GPLv3 license and moved away from the stricter
 AGPLv3. This move was discussed with all previous contributors and

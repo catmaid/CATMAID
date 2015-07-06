@@ -87,47 +87,48 @@ def circles_of_hell(request, project_id=None):
 def find_directed_paths(request, project_id=None):
     """ Given a set of two or more skeleton IDs, find directed paths of connected neurons between them, for a maximum inner path length as given (i.e. origin and destination not counted). A directed path means that all edges are of the same kind, e.g. presynaptic_to. """
 
-    sources = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
-    if len(sources) < 2:
-        raise Exception('Need at least 2 skeleton IDs to find directed paths!')
+    sources = set(int(v) for k,v in request.POST.iteritems() if k.startswith('sources['))
+    targets = set(int(v) for k,v in request.POST.iteritems() if k.startswith('targets['))
+    if len(sources) < 1 or len(targets) < 1:
+        raise Exception('Need at least 1 skeleton IDs for both sources and targets to find directed paths!')
 
     path_length = int(request.POST.get('n_circles', 1))
     cursor = connection.cursor()
     mins, relations = _clean_mins(request, cursor, int(project_id))
     presynaptic_to = relations['presynaptic_to']
-    graph = nx.DiGraph()
-    next_sources = sources
-    all_sources = sources
-    length = path_length
 
-    def rev_args(fn):
-        def f(arg1, arg2):
-            fn(arg2, arg1)
-        return f
-
-    # Create a graph by growing the sources
-    while length > 0 and next_sources:
-        length -= 1
-        next_circles = _next_circle(next_sources, relations, cursor)
-        next_sources = set()
-        for skid1, c in next_circles.iteritems():
+    def grow(graph, circle):
+        s = set()
+        for skid1, c in circle.iteritems():
             for relationID, targets in c.iteritems():
                 threshold = mins[relationID]
-                add_edge = graph.add_edge if relationID == presynaptic_to else rev_args(graph.add_edge)
                 for skid2, count in targets.iteritems():
                     if count < threshold:
                         continue
-                    add_edge(skid1, skid2)
-                    next_sources.add(skid2)
-        next_sources = next_sources - all_sources
-        all_sources = all_sources.union(next_sources)
+                    if relationID == presynaptic_to:
+                        graph.add_edge(skid1, skid2)
+                    else:
+                        graph.add_edge(skid2, skid2)
+                    s.add(skid2)
+        return s
 
-    # Find all directed paths between all pairs of inputs
+    for source in sources:
+        for target in targets:
+            graph = nx.DiGraph()
+            length = path_length
+            s1 = set()
+            t1 = set()
+            s1.add(source)
+            t1.add(target)
+            while length > 0:
+                length -= 1
+                s1 = grow(graph, _next_circle(s1, relations, cursor))
+                t1 = grow(graph, _next_circle(t1, relations, cursor))
+
     all_paths = []
-    for start, end in combinations(sources, 2):
-        for paths in [nx.all_simple_paths(graph, start, end, path_length + 1),
-                      nx.all_simple_paths(graph, end, start, path_length + 1)]:
-            for path in paths:
+    for source in sources:
+        for target in targets:
+            for path in nx.all_simple_paths(graph, source, target, path_length + 1):
                 all_paths.append(path)
 
     return HttpResponse(json.dumps(all_paths))

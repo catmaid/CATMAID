@@ -1578,7 +1578,8 @@ GroupGraph.prototype.growPaths = function() {
   // Will grow in both directions, therefore use the max as the min synapse count
   var findPaths = function(skids, n_hops, process, continuation) {
     requestQueue.register(django_url + project.id + "/graph/directedpaths", "POST",
-        {skeleton_ids: skids,
+        {sources: skids,
+         targets: skids,
          n_circles: n_hops,
          min_pre: min,
          min_post: min},

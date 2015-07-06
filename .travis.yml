@@ -14,7 +14,7 @@ install:
   - travis_retry travis_wait 60 pip install -q -r django/pip-frozen
   # Install additional dependencies for Travis
   - pip install coveralls
-  - npm install jshint phantomjs qunit-phantomjs-runner
+  - npm install jshint
 before_script:
   - psql -c 'CREATE DATABASE catmaid;' -U postgres
   - cd django
@@ -41,7 +41,5 @@ script:
   - python manage.py runserver &
   - sleep 5
   - cd ../../..
-  - phantomjs --version
-  - phantomjs node_modules/qunit-phantomjs-runner/runner.js "http://localhost:8000/tests"
 after_success:
   - cd django/projects/mysite && coveralls

@@ -98,10 +98,10 @@ QUnit.test('Multi-view stack test', function( assert ) {
   assert.strictEqual(zy_stack.projectToStackZ(0, 0, 0), 0,
       'transforms project origin (Z) correctly to ZY stack space');
 
-  assert.strictEqual(xy_stack.projectToStackZ(6, 5, 4), 2,
+  assert.strictEqual(xy_stack.projectToStackZ(6, 5, 4), 1,
       'transforms project origin (Z) correctly to XY stack space');
-  assert.strictEqual(xz_stack.projectToStackZ(6, 5, 4), 2,
+  assert.strictEqual(xz_stack.projectToStackZ(6, 5, 4), 1,
       'transforms project origin (Z) correctly to XZ stack space');
-  assert.strictEqual(zy_stack.projectToStackZ(6, 5, 4), 2,
+  assert.strictEqual(zy_stack.projectToStackZ(6, 5, 4), 1,
       'transforms project origin (Z) correctly to ZY stack space');
 });

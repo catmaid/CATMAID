@@ -1,75 +1,8 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  OptionsDialog,
   login
 */
-
-(function(CATMAID)
- {
-  // The UI singleton
-  var ui;
-  Object.defineProperty(CATMAID, 'ui', {
-    get: function() {
-      // Initialize the singleton if it doesn't exist, yet
-      if (!ui) {
-        ui = new CATMAID.UI();
-      }
-      return ui;
-    },
-  });
-
-  // Configuration of message position
-  var messagePosition = 'tr';
-  Object.defineProperty(CATMAID, 'messagePosition', {
-    get: function() { return messagePosition; },
-    set: function(newValue) {
-      var allowedValues = ['tl', 'tr', 'bl', 'br', 'tc', 'bc'];
-      if (-1 === allowedValues.indexOf(newValue)) {
-        throw new CATMAID.ValueError('Please use one of these values: ' +
-            allowedValues.join(','));
-      }
-      messagePosition = newValue;
-    }
-  });
-
-  /**
-   * Convenience function to show a growl message
-   */
-  CATMAID.msg = function(title, message, options)
-  {
-    var settings = {
-      title: title,
-      message: message,
-      duration: 3000,
-      size: 'large',
-      location: messagePosition,
-      style: undefined // Gray background by default, alternatives are:
-                       // 'error' = red, 'warning' = yellow, 'notice' = green
-    };
-
-    // If an alert style wasn't provided, guess from the alert title
-    if (!options || !options.style) {
-      if (title.match(/error/i)) settings.style = 'error';
-      else if (title.match(/warn|beware/i)) settings.style = 'warning';
-      else if (title.match(/done|success/i)) settings.style = 'notice';
-    }
-
-    $.extend(settings, options);
-    $.growl(settings);
-  };
-
-  /**
-   * Convenience function to show a growl info message.
-   */
-  CATMAID.info = CATMAID.msg.bind(window, "Information");
-
-  /**
-   * Convenience function to show a growl warning message.
-   */
-  CATMAID.warn = CATMAID.msg.bind(window, "Warning");
-
-})(CATMAID);
 
 
 /* It's very easy to accidentally leave in a console.log if you're working with
@@ -123,144 +56,145 @@ window.onerror = function(msg, url, lineno, colno, err)
   return true;
 };
 
-
-/**
- * Creates a jQuery UI based error dialog. If detail is passed, it is hidden by
- * default. The dialog allows to expand it, however.
- */
-CATMAID.ErrorDialog = function(text, detail) {
-  this.dialog = document.getElementById("error-dialog-confirm");
-  if (null === this.dialog) {
-    this.dialog = document.createElement('div');
-    this.dialog.setAttribute("id", "error-dialog-confirm");
-    this.dialog.setAttribute("title", "An error occured");
-  } else {
-    var metaMsg = "Several errors have occured:";
-    if (this.dialog.firstChild.textContent !== metaMsg) {
-      this.dialog.insertAdjacentHTML("afterbegin", "<h3>" + metaMsg + "</h3>");
-    }
-  }
-  // Create error message tags
-  var msg = document.createElement('p');
-  msg.appendChild(document.createTextNode(text));
-  this.dialog.appendChild(msg);
-  // Create detail field, if detail available
-  if (detail) {
-    var detail_head = document.createElement('p');
-    var detail_head_em = document.createElement('em');
-    detail_head_em.appendChild(document.createTextNode('Show/hide detail'));
-    detail_head.appendChild(detail_head_em);
-    this.dialog.appendChild(detail_head);
-    var detail_text = document.createElement('p');
-    detail_text.appendChild(document.createTextNode(detail));
-    this.dialog.appendChild(detail_text);
-    // Hide detail by default and toggle display by click on header
-    $(detail_text).hide();
-    $(detail_head).click(function() {
-      $(detail_text).toggle();
-    });
-    $(detail_head_em).css('cursor', 'pointer');
-  }
+// Let user cancel going back in browser history
+window.onbeforeunload = function() {
+  return "CATMAID's window arrangement and content won't be saved if you continue.";
 };
 
-CATMAID.ErrorDialog.prototype = {};
 
-/**
- * Displays the error dialog.
- */
-CATMAID.ErrorDialog.prototype.show = function() {
-  $(this.dialog).dialog({
-    width: '400px',
-    height: 'auto',
-    maxHeight: 600,
-    modal: true,
-    buttons: {
-      "OK": function() {
-        $(this).dialog("destroy");
+(function(CATMAID)
+ {
+  // The UI singleton
+  var ui;
+  Object.defineProperty(CATMAID, 'ui', {
+    get: function() {
+      // Initialize the singleton if it doesn't exist, yet
+      if (!ui) {
+        ui = new CATMAID.UI();
       }
+      return ui;
     },
-    close: function() {
-      $( this ).dialog( "destroy" );
+  });
+
+  // Configuration of message position
+  var messagePosition = 'tr';
+  Object.defineProperty(CATMAID, 'messagePosition', {
+    get: function() { return messagePosition; },
+    set: function(newValue) {
+      var allowedValues = ['tl', 'tr', 'bl', 'br', 'tc', 'bc'];
+      if (-1 === allowedValues.indexOf(newValue)) {
+        throw new CATMAID.ValueError('Please use one of these values: ' +
+            allowedValues.join(','));
+      }
+      messagePosition = newValue;
     }
   });
-};
 
-/**
- * Creates a simple login dialog.
- */
-CATMAID.LoginDialog = function(text, callback) {
-  this.dialog = new OptionsDialog("Permission required");
-  if (text) {
-    this.dialog.appendMessage(text);
-  }
-  // Add short login text
-  var login_text = "Please enter the credentials for a user with the " +
-      "necessary credentials to continue to the requested information";
-  this.dialog.appendMessage(login_text);
-  // Add input fields
-  var user_field = this.dialog.appendField('Username', 'username', '', true);
-  var pass_field = this.dialog.appendField('Password', 'password', '', true);
-  pass_field.setAttribute('type', 'password');
-  // Align input fields better
-  $(this.dialog.dialog).find('label').css('width', '25%');
-  $(this.dialog.dialog).find('label').css('display', 'inline-block');
+  // Configuration of behavior when the (mouse) pointer hovers over a window.
+  CATMAID.FOCUS_SAME = 0;
+  CATMAID.FOCUS_STACKS = 1;
+  CATMAID.FOCUS_ALL = 2;
+  var focusBehavior = CATMAID.FOCUS_STACKS;
+  Object.defineProperty(CATMAID, 'focusBehavior', {
+    get: function() { return focusBehavior; },
+    set: function(newValue) {
+      var allowedValues = [CATMAID.FOCUS_SAME, CATMAID.FOCUS_STACKS,
+          CATMAID.FOCUS_ALL];
+      if (-1 === allowedValues.indexOf(newValue)) {
+        throw new CATMAID.ValueError('Please use one of these values: ' +
+            allowedValues.join(','));
+      }
+      focusBehavior = newValue;
+    }
+  });
 
-  // If OK is pressed, the dialog should cause a (re-)login
-  this.dialog.onOK = function() {
-    login($(user_field).val(), $(pass_field).val(), callback);
+  /**
+   * Convenience function to show a growl message
+   */
+  CATMAID.msg = function(title, message, options)
+  {
+    var settings = {
+      title: title,
+      message: message,
+      duration: 3000,
+      size: 'large',
+      location: messagePosition,
+      style: undefined // Gray background by default, alternatives are:
+                       // 'error' = red, 'warning' = yellow, 'notice' = green
+    };
+
+    // If an alert style wasn't provided, guess from the alert title
+    if (!options || !options.style) {
+      if (title.match(/error/i)) settings.style = 'error';
+      else if (title.match(/warn|beware/i)) settings.style = 'warning';
+      else if (title.match(/done|success/i)) settings.style = 'notice';
+    }
+
+    $.extend(settings, options);
+    $.growl(settings);
   };
-};
 
-CATMAID.LoginDialog.prototype = {};
+  /**
+   * Convenience function to show a growl info message.
+   */
+  CATMAID.info = CATMAID.msg.bind(window, "Information");
 
-/**
- * Displays the login dialog.
- */
-CATMAID.LoginDialog.prototype.show = function() {
-  this.dialog.show('400', 'auto', true);
-};
+  /**
+   * Convenience function to show a growl warning message.
+   */
+  CATMAID.warn = CATMAID.msg.bind(window, "Warning");
 
-/**
- * Creates a generic JSON response handler that complains when the response
- * status is different from 200 or a JSON error is set.
- *
- * @param success Called on success
- * @param error Called on error
- * @param silent No error dialogs are shown, if true
- */
-CATMAID.jsonResponseHandler = function(success, error, silent)
-{
-  return function(status, text, xml) {
-    if (status === 200 && text) {
-      var json = $.parseJSON(text);
-      if (json.error) {
-        // Call error handler, if any, and force silence if it returned true.
-        if (CATMAID.tools.isFn(error)) {
-          silent = silent || error(json);
-        }
-        if (!silent) {
-          CATMAID.error(json.error, json.detail);
+  /**
+   * Creates a generic JSON response handler that complains when the response
+   * status is different from 200 or a JSON error is set.
+   *
+   * @param success Called on success
+   * @param error Called on error
+   * @param silent No error dialogs are shown, if true
+   */
+  CATMAID.jsonResponseHandler = function(success, error, silent)
+  {
+    return function(status, text, xml) {
+      if (status === 200 && text) {
+        var json = $.parseJSON(text);
+        if (json.error) {
+          // Call error handler, if any, and force silence if it returned true.
+          if (CATMAID.tools.isFn(error)) {
+            silent = silent || error(json);
+          }
+          if (!silent) {
+            CATMAID.error(json.error, json.detail);
+          }
+        } else {
+          CATMAID.tools.callIfFn(success, json);
         }
       } else {
-        CATMAID.tools.callIfFn(success, json);
+        // Call error handler, if any, and force silence if it returned true.
+        if (CATMAID.tools.isFn(error)) {
+          silent = silent || error();
+        }
+        if (!silent) {
+          CATMAID.error("An error occured", "The server returned an unexpected " +
+              "status: " + status);
+        }
       }
-    } else {
-      // Call error handler, if any, and force silence if it returned true.
-      if (CATMAID.tools.isFn(error)) {
-        silent = silent || error();
-      }
-      if (!silent) {
-        CATMAID.error("An error occured", "The server returned an unexpected " +
-            "status: " + status);
-      }
-    }
+    };
   };
-};
 
-/**
- * Convenience function to show an error dialog.
- */
-CATMAID.error = function(msg, detail)
-{
-  new CATMAID.ErrorDialog(msg, detail).show();
-};
+  /**
+   * Convenience function to show an error dialog.
+   */
+  CATMAID.error = function(msg, detail)
+  {
+    new CATMAID.ErrorDialog(msg, detail).show();
+  };
+
+  /**
+   * Make status information available through the front-ends status bar.
+   */
+  CATMAID.status = function(msg)
+  {
+    CATMAID.statusBar.replaceLast(msg);
+  };
+
+})(CATMAID);

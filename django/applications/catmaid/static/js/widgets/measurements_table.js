@@ -4,7 +4,6 @@
   fetchSkeletons,
   InstanceRegistry,
   NeuronNameService,
-  OptionsDialog,
   project,
 */
 
@@ -80,7 +79,7 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
             be = arbor.findBranchAndEndNodes(),
             n_branching = be.n_branches,
             n_ends = be.ends.length;
-        rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(models[skid].baseName, skid), skid,
+        rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(NeuronNameService.getInstance().getName(models[skid]), skid), skid,
                    raw_cable, smooth_cable, lower_bound_cable,
                    n_inputs, n_outputs, n_presynaptic_sites,
                    n_nodes, n_branching, n_ends]);
@@ -97,7 +96,7 @@ SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
 };
 
 SkeletonMeasurementsTable.prototype._makeStringLink = function(name, skid) {
-  return '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\',' + skid + ');">' + name + '</a>';
+  return '<a href="#" onclick="CATMAID.TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\',' + skid + ');">' + name + '</a>';
 };
 
 SkeletonMeasurementsTable.prototype.clear = function() {
@@ -194,7 +193,7 @@ SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {
 };
 
 SkeletonMeasurementsTable.prototype.adjustOptions = function() {
-  var od = new OptionsDialog("Parameters");
+  var od = new CATMAID.OptionsDialog("Parameters");
   od.appendField("Smooth skeletons by Gaussian convolution with sigma (nm): ", "SMT-sigma-" + this.widgetID, this.sigma);
   od.onOK = (function() {
     var field = $('#SMT-sigma-' + this.widgetID);

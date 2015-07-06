@@ -60,6 +60,9 @@ var WindowMaker = new function()
             }
 
             break;
+          case CMWWindow.POINTER_ENTER:
+            if (CATMAID.FOCUS_ALL === CATMAID.focusBehavior) win.focus();
+            break;
         }
         return true;
       });
@@ -165,11 +168,11 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>Connector</th>' +
             '<th>Node 1</th>' +
-            '<th>Sk 1</th>' +
+            '<th>Presyn. neuron</th>' +
             '<th>C 1</th>' +
             '<th>Creator 1</th>' +
             '<th>Node 2</th>' +
-            '<th>Sk 2</th>' +
+            '<th>Postsyn. neuron</th>' +
             '<th>C 2</th>' +
             '<th>Creator 2</th>' +
           '</tr>' +
@@ -178,11 +181,11 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>Connector</th>' +
             '<th>Node 1</th>' +
-            '<th>Sk 1</th>' +
+            '<th>Presyn. neuron</th>' +
             '<th>C 1</th>' +
             '<th>Creator 1</th>' +
             '<th>Node 2</th>' +
-            '<th>Sk 2</th>' +
+            '<th>Postsyn. neuron</th>' +
             '<th>C 2</th>' +
             '<th>Creator 2</th>' +
           '</tr>' +
@@ -776,6 +779,7 @@ var WindowMaker = new function()
             '<td><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" /></td>' +
             '<td><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked /></td>' +
             '<td><input type="button" id="selection-table-sort-by-color' + ST.widgetID + '" value="Sort by color" /></td>' +
+            '<td><input type="button" id="selection-table-info' + ST.widgetID + '" value="Summary info" /></td>' +
           '</tr>' +
         '</tbody>';
     container.appendChild(tab);
@@ -867,6 +871,24 @@ var WindowMaker = new function()
     });
   };
 
+  /**
+   * Create a tab group and add it to the given container. The widget ID is
+   * expected to be unique.
+   */
+  var appendTabs = function(container, widgetID, titles) {
+    var ul = document.createElement('ul');
+    container.appendChild(ul);
+    return titles.reduce(function(o, name) {
+      var id = name.replace(/ /, '') + widgetID;
+      ul.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
+      var div = document.createElement('div');
+      div.setAttribute('id', id);
+      container.appendChild(div);
+      o[name] = div;
+      return o;
+    }, {});
+  };
+
   /** Creates and returns a new 3d webgl window */
   var create3dWebGLWindow = function()
   {
@@ -886,17 +908,9 @@ var WindowMaker = new function()
     bar.id = "3d_viewer_buttons";
     bar.setAttribute('class', 'buttonpanel');
 
-    var titles = document.createElement('ul');
-    bar.appendChild(titles);
-    var tabs = ['Main', 'View', 'Shading', 'Skeleton filters', 'View settings', 'Shading parameters', 'Animation', 'Export'].reduce(function(o, name) {
-          var id = name.replace(/ /, '') + WA.widgetID;
-          titles.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
-          var div = document.createElement('div');
-          div.setAttribute('id', id);
-          bar.appendChild(div);
-          o[name] = div;
-          return o;
-    }, {});
+    var tabs = appendTabs(bar, WA.widgetID, ['Main', 'View', 'Shading',
+        'Skeleton filters', 'View settings', 'Shading parameters',
+        'Animation', 'Export']);
 
     var select_source = CATMAID.skeletonListSources.createSelect(WA);
 
@@ -913,6 +927,19 @@ var WindowMaker = new function()
 
     var storedViewsSelect = document.createElement('select');
 
+    var connectorRestrictionsSl = document.createElement('select');
+    connectorRestrictionsSl.options.add(new Option('All connectors', 'none', true, true));
+    connectorRestrictionsSl.options.add(new Option('All shared connectos', 'all-shared'));
+    connectorRestrictionsSl.options.add(new Option('All pre->post connectos', 'all-pre-post'));
+    connectorRestrictionsSl.options.add(new Option('All group shared', 'all-group-shared'));
+    connectorRestrictionsSl.options.add(new Option('All pre->post group shared', 'all-group-shared-pre-post'));
+    connectorRestrictionsSl.onchange = function () {
+      WA.setConnectorRestriction(this.value);
+    };
+    var connectorRestrictions = document.createElement('label');
+    connectorRestrictions.appendChild(document.createTextNode('Connector restriction'));
+    connectorRestrictions.appendChild(connectorRestrictionsSl);
+
     var orthographicCbElems = createCheckbox('Orthographic mode', false,
         function() { WA.updateCameraView(this.checked); });
 
@@ -926,7 +953,7 @@ var WindowMaker = new function()
           ['ZX', WA.ZXView.bind(WA)],
           [storedViewsSelect],
           ['Save view', storeView],
-          ['Restrict connectors', WA.toggleConnectors.bind(WA)],
+          [connectorRestrictions],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
           ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
           [orthographicCbElems[0]],
@@ -1318,16 +1345,8 @@ var WindowMaker = new function()
     bar.setAttribute("id", 'compartment_graph_window_buttons' + GG.widgetID);
     bar.setAttribute('class', 'buttonpanel');
 
-    var titles = document.createElement('ul');
-    bar.appendChild(titles);
-    var tabs = ['Main', 'Grow', 'Graph', 'Selection', 'Subgraphs', 'Align', 'Export'].reduce(function(o, name) {
-          titles.appendChild($('<li><a href="#' + name + GG.widgetID + '">' + name + '</a></li>')[0]);
-          var div = document.createElement('div');
-          div.setAttribute('id', name + GG.widgetID);
-          bar.appendChild(div);
-          o[name] = div;
-          return o;
-    }, {});
+    var tabs = appendTabs(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
+        'Selection', 'Subgraphs', 'Align', 'Export']);
 
     appendToTab(tabs['Main'],
         [[document.createTextNode('From')],
@@ -1829,16 +1848,23 @@ var WindowMaker = new function()
     var contentbutton = document.createElement('div');
     contentbutton.setAttribute("id", 'table_of_skeleton_buttons' + TNT.widgetID);
 
+    contentbutton.appendChild(document.createTextNode('From'));
+    contentbutton.appendChild(CATMAID.skeletonListSources.createSelect(TNT));
+
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "update_treenodetable_current_skeleton" + TNT.widgetID);
-    add.setAttribute("value", "List active skeleton");
-    add.onclick = TNT.update.bind(TNT);
+    add.setAttribute("value", "Append");
+    add.onclick = TNT.loadSource.bind(TNT);
     contentbutton.appendChild(add);
+
+    var clear = document.createElement('input');
+    clear.setAttribute("type", "button");
+    clear.setAttribute("value", "Clear");
+    clear.onclick = TNT.clear.bind(TNT);
+    contentbutton.appendChild(clear);
 
     var refresh = document.createElement('input');
     refresh.setAttribute("type", "button");
-    refresh.setAttribute("id", "refresh_treenodetable" + TNT.widgetID);
     refresh.setAttribute("value", "Refresh");
     refresh.onclick = TNT.refresh.bind(TNT);
     contentbutton.appendChild(refresh);
@@ -1854,11 +1880,11 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>id</th>' +
             '<th>type' +
-        '' +
-        '<select name="search_type" id="search_type' + TNT.widgetID + '" class="search_init">' +
-        '<option value="">Any</option><option value="R">Root</option><option value="LR" selected="selected">Leaf</option>' +
-        '<option value="B">Branch</option><option value="S">Slab</option></select>' +
-        '</th>' +
+              '' +
+              '<select name="search_type" id="search_type' + TNT.widgetID + '" class="search_init">' +
+              '<option value="">Any</option><option value="R">Root</option><option value="L" selected="selected">Leaf</option>' +
+              '<option value="B">Branch</option><option value="S">Slab</option></select>' +
+            '</th>' +
         // <input type="text" name="search_type" value="Search" class="search_init" />
             '<th>tags<input type="text" name="search_labels" id="search_labels' + TNT.widgetID + '" value="Search" class="search_init" /></th>' +
             '<th>c</th>' +
@@ -1889,9 +1915,24 @@ var WindowMaker = new function()
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +
-          '<tr><td colspan="10"></td></tr>' +
+          '<tr>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+          '</tr>' +
         '</tbody>' +
       '</table>';
+    // Above notice that without an empty row the table will fail to initialize.
+    // This empty row gets removed when calling fnClearTable
 
     addListener(win, container, 'table_of_skeleton_buttons' + TNT.widgetID, TNT.destroy.bind(TNT));
 
@@ -2236,33 +2277,47 @@ var WindowMaker = new function()
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
 
-        var contentbutton = document.createElement('div');
-        contentbutton.setAttribute("id", 'review_window_buttons');
+        var bar = document.createElement( "div" );
+        bar.id = "review_buttons";
+        bar.setAttribute('class', 'buttonpanel');
 
-        var start = document.createElement('input');
-        start.setAttribute("type", "button");
-        start.setAttribute("id", "start_review_whole skeleton");
-        start.setAttribute("value", "Start to review skeleton");
-        start.onclick = CATMAID.ReviewSystem.startReviewActiveSkeleton.bind(
-            CATMAID.ReviewSystem, false);
-        contentbutton.appendChild(start);
+        var RS = CATMAID.ReviewSystem;
+        RS.init();
 
-        var start = document.createElement('input');
-        start.setAttribute("type", "button");
-        start.setAttribute("id", "start_review_subarbor");
-        start.setAttribute("value", "Start to review current sub-arbor");
-        start.onclick = CATMAID.ReviewSystem.startReviewActiveSkeleton.bind(
-            CATMAID.ReviewSystem, true);
-        contentbutton.appendChild(start);
+        var tabs = appendTabs(bar, '-review', ['Main', 'Miscellaneous']);
 
-        var end = document.createElement('input');
-        end.setAttribute("type", "button");
-        end.setAttribute("id", "end_review_skeleton");
-        end.setAttribute("value", "End review");
-        end.onclick = CATMAID.ReviewSystem.endReview;
-        contentbutton.appendChild(end);
+        appendToTab(tabs['Main'],
+            [
+              ['Start to review skeleton',
+                  RS.startReviewActiveSkeleton.bind(RS, false)],
+              ['Start to review current sub-arbor',
+                  RS.startReviewActiveSkeleton.bind(RS, true)],
+              ['End review', RS.endReview.bind(RS)],
+              ['Reset own revisions', RS.resetOwnRevisions.bind(RS)],
+              ['Auto centering', RS.getAutoCentering(),
+                  function() { RS.setAutoCentering(this.checked); }, false]
+            ]);
 
-        content.appendChild( contentbutton );
+        appendToTab(tabs['Miscellaneous'],
+            [
+              ['In-between node step', RS.virtualNodeStep, null, function() {
+                  RS.virtualNodeStep = parseInt(this.value, 10);
+                }, 3],
+              ['Cache tiles', false, RS.cacheImages.bind(this), false],
+              ['No refresh after segment done', RS.noRefreshBetwenSegments,
+                  function() { RS.noRefreshBetwenSegments = this.checked; }, false]
+            ]);
+
+        content.appendChild(bar);
+        $(bar).tabs();
+
+        var cacheCounter = document.createElement('div');
+        cacheCounter.setAttribute("id", "counting-cache");
+        content.appendChild(cacheCounter);
+
+        var cacheInfoCounter = document.createElement('div');
+        cacheInfoCounter.setAttribute("id", "counting-cache-info");
+        content.appendChild(cacheInfoCounter);
 
         var label = document.createElement('div');
         label.setAttribute("id", "reviewing_skeleton");
@@ -2277,59 +2332,16 @@ var WindowMaker = new function()
         container.style.backgroundColor = "#ffffff";
         content.appendChild(container);
 
-        var resetOwns = document.createElement('input');
-        resetOwns.setAttribute("type", "button");
-        resetOwns.setAttribute("id", "reset_skeleton_review_owns");
-        resetOwns.setAttribute("value", "Reset own revisions");
-        resetOwns.onclick = CATMAID.ReviewSystem.resetOwnRevisions;
-        contentbutton.appendChild(resetOwns);
-
-        var cacheImages = document.createElement('input');
-        cacheImages.setAttribute("type", "button");
-        cacheImages.setAttribute("id", "cache_images_of_skeleton");
-        cacheImages.setAttribute("value", "Cache tiles");
-        cacheImages.onclick = CATMAID.ReviewSystem.cacheImages;
-        contentbutton.appendChild(cacheImages);
-
-        var autoCenter = document.createElement('input');
-        autoCenter.setAttribute('type', 'checkbox');
-        autoCenter.setAttribute('id', 'review_auto_center');
-        autoCenter.setAttribute('checked', 'checked');
-        autoCenter.onchange = function() {
-          CATMAID.ReviewSystem.setAutoCentering(this.checked);
-        };
-        var autoCenterLabel = document.createElement('label');
-        autoCenterLabel.appendChild(autoCenter);
-        autoCenterLabel.appendChild(document.createTextNode('Auto centering'));
-        contentbutton.appendChild(autoCenterLabel);
-
-        var sync = document.createElement('input');
-        sync.setAttribute('type', 'checkbox');
-        sync.setAttribute('id', 'remote_review_skeleton');
-        sync.checked = false;
-        contentbutton.appendChild(sync);
-        contentbutton.appendChild(document.createTextNode(' Remote? '));
-
-        var cacheCounter = document.createElement('div');
-        cacheCounter.setAttribute("id", "counting-cache");
-        contentbutton.appendChild(cacheCounter);
-
-        var cacheInfoCounter = document.createElement('div');
-        cacheInfoCounter.setAttribute("id", "counting-cache-info");
-        contentbutton.appendChild(cacheInfoCounter);
-
         addListener(win, container, 'review_window_buttons');
 
         addLogic(win);
-
-        CATMAID.ReviewSystem.init();
 
         return win;
     };
 
     var createConnectivityWindow = function()
     {
-        var SC = new SkeletonConnectivity();
+        var SC = new CATMAID.SkeletonConnectivity();
         var widgetID = SC.widgetID;
 
         var win = new CMWWindow(SC.getName());
@@ -2731,7 +2743,7 @@ var WindowMaker = new function()
             // Submit form in iframe to store autocomplete information
             submitFormInIFrame(document.getElementById('search-form'));
             // Do actual search
-            TracingTool.search();
+            CATMAID.TracingTool.search();
             // Cancel submit in this context to not reload the page
             return false;
           })
@@ -2765,8 +2777,8 @@ var WindowMaker = new function()
           'HHMI Janelia Farm, U.S..<br /><br />' +
           'Visit the <a href="http://www.catmaid.org/" target="_blank">' +
           'CATMAID homepage</a> for further information. You can find the ' +
-          'source code on <a href="https://github.com/acardona/CATMAID">' +
-          'GitHub</a>, where you can also <a href="https://github.com/acardona/CATMAID/issues">' +
+          'source code on <a href="https://github.com/catmaid/CATMAID">' +
+          'GitHub</a>, where you can also <a href="https://github.com/catmaid/CATMAID/issues">' +
           'report</a> bugs and problems.');
 
     addListener(win, container);
@@ -2874,7 +2886,7 @@ var WindowMaker = new function()
   
   var createNeuronAnnotationsWindow = function()
   {
-    var NA = new NeuronAnnotations();
+    var NA = new CATMAID.NeuronAnnotations();
     var win = new CMWWindow(NA.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
@@ -3130,7 +3142,7 @@ var WindowMaker = new function()
     addLogic(win);
 
     // Initialize settings window with container added to the DOM
-    var SW = new SettingsWidget();
+    var SW = new CATMAID.SettingsWidget();
     SW.init(container);
 
     return win;

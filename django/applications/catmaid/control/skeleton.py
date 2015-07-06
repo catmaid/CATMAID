@@ -6,11 +6,13 @@ from operator import itemgetter
 from datetime import datetime, timedelta
 from collections import defaultdict
 from itertools import chain
+from functools import partial
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
+from django.db.models import Q
 
 from catmaid.models import Project, UserRole, Class, ClassInstance, Review, \
         ClassInstanceClassInstance, Relation, Treenode, TreenodeConnector
@@ -23,7 +25,6 @@ from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query, \
         _annotate_entities, _update_neuron_annotations
 from catmaid.control.review import get_treenodes_to_reviews, get_review_status
-from catmaid.control.treenode import _create_interpolated_treenode
 from catmaid.control.tree_util import find_root, reroot, edge_count_to_root
 
 
@@ -93,7 +94,7 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
     end_regex = re.compile('(?:' + ')|(?:'.join(end_tags) + ')')
 
     for nodeID, out_degree in tree.out_degree_iter():
-        if 0 == out_degree:
+        if 0 == out_degree or nodeID == tnid and 1 == out_degree:
             # Found an end node
             props = tree.node[nodeID]
             # Check if not tagged with a tag containing 'end'
@@ -121,65 +122,106 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
         'measure_construction_time': construction_time,
         'percentage_reviewed': "%.2f" % skel.percentage_reviewed() }), content_type='text/json')
 
-# Will fail if skeleton_id does not exist
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def contributor_statistics(request, project_id=None, skeleton_id=None):
+    return contributor_statistics_multiple(request, project_id=project_id, skeleton_ids=[int(skeleton_id)])
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None):
     contributors = defaultdict(int)
     n_nodes = 0
     # Count the total number of 20-second intervals with at least one treenode in them
-    time_bins = set()
-    min_review_bins = set()
-    multi_review_bins = 0
+    n_time_bins = 0
+    n_review_bins = 0
+    n_multi_review_bins = 0
     epoch = datetime.utcfromtimestamp(0)
 
-    for row in Treenode.objects.filter(skeleton_id=skeleton_id).values_list('user_id', 'creation_time'):
-        n_nodes += 1
-        contributors[row[0]] += 1
-        time_bins.add(int((row[1] - epoch).total_seconds() / 20))
+    if not skeleton_ids:
+        skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
 
+    # Count time bins separately for each skeleton
+    time_bins = None
+    last_skeleton_id = None
+    for row in Treenode.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('skeleton_id', 'user_id', 'creation_time').iterator():
+        if last_skeleton_id != row[0]:
+            if time_bins:
+                n_time_bins += len(time_bins)
+            time_bins = set()
+            last_skeleton_id = row[0]
+        n_nodes += 1
+        contributors[row[1]] += 1
+        time_bins.add(int((row[2] - epoch).total_seconds() / 20))
+
+    # Process last one
+    if time_bins:
+        n_time_bins += len(time_bins)
+    
+    
     # Take into account that multiple people may have reviewed the same nodes
     # Therefore measure the time for the user that has the most nodes reviewed,
     # then add the nodes not reviewed by that user but reviewed by the rest
-    rev = defaultdict(dict)
-    for row in Review.objects.filter(skeleton_id=skeleton_id).values_list('reviewer', 'treenode', 'review_time'):
+    def process_reviews(rev):
+        seen = set()
+        min_review_bins = set()
+        multi_review_bins = 0
+        for reviewer, treenodes in sorted(rev.iteritems(), key=itemgetter(1), reverse=True):
+            reviewer_bins = set()
+            for treenode, timestamp in treenodes.iteritems():
+                time_bin = int((timestamp - epoch).total_seconds() / 20)
+                reviewer_bins.add(time_bin)
+                if not (treenode in seen):
+                    seen.add(treenode)
+                    min_review_bins.add(time_bin)
+            multi_review_bins += len(reviewer_bins)
+        #
+        return len(min_review_bins), multi_review_bins
+
+    rev = None
+    last_skeleton_id = None
+    for row in Review.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('reviewer', 'treenode', 'review_time', 'skeleton_id').iterator():
+        if last_skeleton_id != row[3]:
+            if rev:
+                a, b = process_reviews(rev)
+                n_review_bins += a
+                n_multi_review_bins += b
+            # Reset for next skeleton
+            rev = defaultdict(dict)
+            last_skeleton_id = row[3]
+        #
         rev[row[0]][row[1]] = row[2]
-    seen = set()
 
-    for reviewer, treenodes in sorted(rev.iteritems(), key=itemgetter(1), reverse=True):
-        reviewer_bins = set()
-        for treenode, timestamp in treenodes.iteritems():
-            time_bin = int((timestamp - epoch).total_seconds() / 20)
-            reviewer_bins.add(time_bin)
-            if not (treenode in seen):
-                seen.add(treenode)
-                min_review_bins.add(time_bin)
-        multi_review_bins += len(reviewer_bins)
+    # Process last one
+    if rev:
+        a, b = process_reviews(rev)
+        n_review_bins += a
+        n_multi_review_bins += b
 
-    relations = {row[0]: row[1] for row in Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id')}
+
+    relations = {row[0]: row[1] for row in Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id').iterator()}
+
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
 
     synapses = {}
-    synapses[relations['presynaptic_to']] = defaultdict(int)
-    synapses[relations['postsynaptic_to']] = defaultdict(int)
+    synapses[pre] = defaultdict(int)
+    synapses[post] = defaultdict(int)
 
-    for row in TreenodeConnector.objects.filter(skeleton_id=skeleton_id).values_list('user_id', 'relation_id'):
-        if row[1] in synapses:
-            synapses[row[1]][row[0]] += 1
-
-    cq = ClassInstanceClassInstance.objects.filter(
-            relation__relation_name='model_of',
-            project_id=project_id,
-            class_instance_a=int(skeleton_id)).select_related('class_instance_b')
-    neuron_name = cq[0].class_instance_b.name
+    # This may be succint but unless one knows SQL it makes no sense at all
+    for row in TreenodeConnector.objects.filter(
+            Q(relation_id=pre) | Q(relation_id=post),
+            skeleton_id__in=skeleton_ids
+    ).values_list('user_id', 'relation_id').iterator():
+        synapses[row[1]][row[0]] += 1
 
     return HttpResponse(json.dumps({
-        'name': neuron_name,
-        'construction_minutes': int(len(time_bins) / 3.0),
-        'min_review_minutes': int(len(min_review_bins) / 3.0),
-        'multiuser_review_minutes': int(multi_review_bins / 3.0),
+        'construction_minutes': int(n_time_bins / 3.0),
+        'min_review_minutes': int(n_review_bins / 3.0),
+        'multiuser_review_minutes': int(n_multi_review_bins / 3.0),
         'n_nodes': n_nodes,
         'node_contributors': contributors,
-        'n_pre': sum(synapses[relations['presynaptic_to']].values()),
-        'n_post': sum(synapses[relations['postsynaptic_to']].values()),
+        'n_pre': sum(synapses[relations['presynaptic_to']].itervalues()),
+        'n_post': sum(synapses[relations['postsynaptic_to']].itervalues()),
         'pre_contributors': synapses[relations['presynaptic_to']],
         'post_contributors': synapses[relations['postsynaptic_to']]}))
 
@@ -318,11 +360,18 @@ def split_skeleton(request, project_id=None):
     # Make sure the user has permissions to edit
     can_edit_class_instance_or_fail(request.user, neuron.id, 'neuron')
 
-    # retrieve the id, parent_id of all nodes in the skeleton
-    # with minimal ceremony
+    # Retrieve the id, parent_id of all nodes in the skeleton. Also
+    # pre-emptively lock all treenodes and connectors in the skeleton to prevent
+    # race conditions resulting in inconsistent skeleton IDs from, e.g., node
+    # creation or update.
     cursor.execute('''
-    SELECT id, parent_id FROM treenode WHERE skeleton_id=%s
-    ''' % skeleton_id) # no need to sanitize
+        SELECT 1 FROM treenode_connector tc WHERE tc.skeleton_id = %s
+        ORDER BY tc.id
+        FOR NO KEY UPDATE OF tc;
+        SELECT t.id, t.parent_id FROM treenode t WHERE t.skeleton_id = %s
+        ORDER BY t.id
+        FOR NO KEY UPDATE OF t
+        ''', (skeleton_id, skeleton_id)) # no need to sanitize
     # build the networkx graph from it
     graph = nx.DiGraph()
     for row in cursor.fetchall():
@@ -965,47 +1014,6 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
-
-@requires_user_role(UserRole.Annotate)
-def join_skeletons_interpolated(request, project_id=None):
-    """ Join two skeletons, adding nodes in between the two nodes to join
-    if they are separated by more than one section in the Z axis."""
-    # Parse parameters
-    decimal_values = {
-            'x': 0,
-            'y': 0,
-            'z': 0,
-            'resx': 0,
-            'resy': 0,
-            'resz': 0,
-            'stack_translation_z': 0,
-            'radius': -1}
-    int_values = {
-            'from_id': 0,
-            'to_id': 0,
-            'stack_id': 0,
-            'confidence': 5}
-    params = {}
-    for p in decimal_values.keys():
-        params[p] = decimal.Decimal(request.POST.get(p, decimal_values[p]))
-    for p in int_values.keys():
-        params[p] = int(request.POST.get(p, int_values[p]))
-    # Copy of the id for _create_interpolated_treenode
-    params['parent_id'] = params['from_id']
-    params['skeleton_id'] = Treenode.objects.get(pk=params['from_id']).skeleton_id
-
-    # Create interpolate nodes skipping the last one
-    last_treenode_id, skeleton_id = _create_interpolated_treenode(request, params, project_id, True)
-
-    # Get set of annoations the combinet skeleton should have
-    annotation_map = json.loads(request.POST.get('annotation_set'))
-
-    # Link last_treenode_id to to_id
-    _join_skeleton(request.user, last_treenode_id, params['to_id'], project_id,
-            annotation_map)
-
-    return HttpResponse(json.dumps({'treenode_id': params['to_id']}))
-
 
 def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=None):
     """Create a skeleton from a networkx directed tree.

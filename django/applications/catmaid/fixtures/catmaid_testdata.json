@@ -72,6 +72,24 @@
     }
   },
   {
+    "pk": 4,
+    "model": "auth.user",
+    "fields": {
+      "username": "admin",
+      "first_name": "Admin",
+      "last_name": "Superuser",
+      "is_active": true,
+      "is_superuser": true,
+      "is_staff": true,
+      "last_login": "2014-09-03T11:17:50.752",
+      "groups": [1],
+      "user_permissions": [],
+      "password": "pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=",
+      "email": "",
+      "date_joined": "2014-03-26T17:49:36"
+    }
+  },
+  {
     "pk": 1,
     "model": "auth.group",
     "fields": {
@@ -10938,230 +10956,5 @@
       "operation_type": "create_neuron", 
       "location": "(3680.000, 2530.000, 180.000)"
     }
-  }, 
-  {
-    "pk": 1, 
-    "model": "catmaid.dataviewtype", 
-    "fields": {
-      "comment": "A simple list of all projects and their stacks. It is rendered in the browser with the help of JavaScript and it does not support any configuration options. The config field of a data view is therefore likely to read only {}.\n", 
-      "code_type": "legacy_project_list_data_view", 
-      "title": "Legacy project list view"
-    }
-  }, 
-  {
-    "pk": 2, 
-    "model": "catmaid.dataviewtype", 
-    "fields": {
-      "comment": "A simple adjustable list of all projects and their stacks. This view is rendered server side and supports the display of sample images. The following options are available: \"filter_tags\": [list of tags], \"sample_images\": [true|false], \"sample_stack\": [\"first\"|\"last\"], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"], \"sample_width\": [pixel size] and \"sample_height\": [pixel size]. By default projects are sorted. Use \"sort\":false to turn this off. Thus, a valid sample configuration could look like: {\"sample_images\":true, \"sample_stack\":\"last\", \"sample_slice\":\"center\", \"sample_width\":100, \"filter_tags\":[\"TagA\",\"TagB\"]}\n", 
-      "code_type": "project_list_data_view", 
-      "title": "Project list view"
-    }
-  }, 
-  {
-    "pk": 3, 
-    "model": "catmaid.dataviewtype", 
-    "fields": {
-      "comment": "A simple table of all projects and their stacks. This view is rendered server side and supports the display of sample images instead of stack names. The following options are available: \"filter_tags\": [list of tags], \"sample_images\": [true|false], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"], \"sample_width\": [pixel size], \"sample_height\": [pixel size] and \"sort\": [true|false]. By default projects are sorted and displayed without images. A valid configuration could look like: {\"sample_images\":true, \"sample_slice\":\"center\", \"sample_height\":42, \"filter_tags\":[\"TagA\",\"TagB\"]}\n", 
-      "code_type": "project_table_data_view", 
-      "title": "Tabular project view"
-    }
-  }, 
-  {
-    "pk": 4, 
-    "model": "catmaid.dataviewtype", 
-    "fields": {
-      "comment": "A table that allows to define tags for the columns and rows. This view is rendered server side and supports the display of sample images instead of stack names. The following options are available: \"filter_tags\": [list of tags], \"col_tags\": [list of tags], \"row_tags\": [list of tags], \"sample_images\": [true|false], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"], \"sample_width\": [pixel size], \"sample_height\": [pixel size], \"sort\": [true|false]. By default projects are sorted and displayed without images. A valid configuration could look like: {\"row_tags\":[\"DAPI\",\"Crb\"], \"col_tags\":[\"Wing Disc\",\"CNS\"]}\n", 
-      "code_type": "project_tags_data_view", 
-      "title": "Tag project view"
-    }
-  }, 
-  {
-    "pk": 1, 
-    "model": "catmaid.dataview", 
-    "fields": {
-      "comment": "", 
-      "title": "Project list", 
-      "is_default": false, 
-      "data_view_type": 2, 
-      "position": 0, 
-      "config": "{}"
-    }
-  }, 
-  {
-    "pk": 2, 
-    "model": "catmaid.dataview", 
-    "fields": {
-      "comment": "", 
-      "title": "Project table with images", 
-      "is_default": true, 
-      "data_view_type": 3, 
-      "position": 1, 
-      "config": "{\"sample_images\":true}"
-    }
-  },
-  {
-    "pk": "2011-07-10T19:23:39", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-07-12T17:22:30", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-07-12T17:30:44", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-07-12T19:48:11", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-10-19T08:33:49", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-10-20T15:14:59", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-10-30T16:10:19", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-11-23T10:18:23", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-11-24T14:35:19", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-12-13T17:21:03", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-12-14T13:42:27", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-12-14T18:42:00", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-12-20T13:42:27", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-12-12T10:18:23", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2011-12-27T12:51:12", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-01-15T14:45:48", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-02-07T15:50:32", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-02-14T08:46:38", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-02-14T14:32:05", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-02-27T13:10:42", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-03-08T10:00:16", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-03-22T20:16:56", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-03-25 T01:26:02", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-03-30T15:56:17", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-04-06T16:06:41", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-04-06T16:07:41", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-04-06T18:06:41", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-04-06T18:07:41", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-04-10T10:15:16", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-04-12T15:59:28", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-05-16T12:20:53", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-07-10T20:43:35", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
-  }, 
-  {
-    "pk": "2012-07-10T20:44:35", 
-    "model": "catmaid.deprecatedappliedmigrations", 
-    "fields": {}
   }
 ]

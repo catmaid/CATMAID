@@ -1,6 +1,12 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+/** @type {Object} Global access to window and project control events and variables. */
+CATMAID.Init = {};
+CATMAID.Events.extend(CATMAID.Init);
+CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
+CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
+
 var global_bottom = 29;
 
 var requestQueue;
@@ -214,14 +220,12 @@ function handle_profile_update(e) {
   }
 
   // update the edit tool actions and its div container
-  createEditToolActions();
-  var new_edit_actions = createButtonsFromActions(editToolActions,
+  var new_edit_actions = createButtonsFromActions(CATMAID.EditTool.actions,
     'toolbox_edit', '');
   $('#toolbox_edit').replaceWith(new_edit_actions);
   $('#toolbox_edit').hide();
 
-  // TODO: There should be a user change event for this to subscribe
-  CATMAID.ReviewSystem.Whitelist.refresh();
+  CATMAID.Init.trigger(CATMAID.Init.EVENT_USER_CHANGED);
 }
 
 /**
@@ -441,7 +445,7 @@ function updateProjectListFromCache() {
  * freeze the window to wait for an answer. The successFn callback is called
  * only if the loading was successful.
  */
-function openProjectStack( pid, sid, successFn, stackConstructor )
+function openProjectStack( pid, sid, successFn, useExistingViewer )
 {
 	if ( project && project.id != pid )
 	{
@@ -455,10 +459,12 @@ function openProjectStack( pid, sid, successFn, stackConstructor )
 		{ },
 		CATMAID.jsonResponseHandler(
 			function(json) {
-				var stack = handle_openProjectStack(json, stackConstructor);
-				// Call success function, if any, if a stack was added
-				if (stack) {
-					CATMAID.tools.callIfFn(successFn, stack);
+				var stackViewer = handle_openProjectStack(
+            json,
+            useExistingViewer ? project.focusedStackViewer : undefined);
+				// Call success function, if any, if a stack viewer was added
+				if (stackViewer) {
+					CATMAID.tools.callIfFn(successFn, stackViewer);
 				}
 			}, function(e) {
 				// Handle login errors
@@ -476,16 +482,18 @@ function openProjectStack( pid, sid, successFn, stackConstructor )
  *
  * free the window
  */
-function handle_openProjectStack( e, stackConstructor )
+function handle_openProjectStack( e, stackViewer )
 {
-  var stack = null;
+  var useExistingViewer = false;
+
   //! look if the project is already opened, otherwise open a new one
   if ( !( project && project.id == e.pid ) )
   {
     project = new Project( e.pid );
     project.register();
-    // TODO: There should be a project change event for this to subscribe
-    CATMAID.ReviewSystem.Whitelist.refresh();
+    CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
+  } else {
+    useExistingViewer = typeof stackViewer !== 'undefined';
   }
 
   var labelupload = '';
@@ -494,9 +502,7 @@ function handle_openProjectStack( e, stackConstructor )
     labelupload = e.labelupload_url;
   }
 
-  if (typeof stackConstructor === 'undefined') stackConstructor = Stack;
-  stack = new stackConstructor(
-      project,
+  var stack = new CATMAID.Stack(
       e.sid,
       e.stitle,
       e.dimension,
@@ -506,80 +512,91 @@ function handle_openProjectStack( e, stackConstructor )
       e.trakem2_project,
       e.num_zoom_levels,
       -2,
-      e.tile_source_type,
       labelupload, // TODO: if there is any
       e.metadata,
-      userprofile.inverse_mouse_wheel,
       e.orientation );
+
+  if (!useExistingViewer) {
+    stackViewer = new CATMAID.StackViewer(project, stack);
+  }
 
   document.getElementById( "toolbox_project" ).style.display = "block";
 
   var tilesource = CATMAID.getTileSource(e.tile_source_type,
-      e.image_base, e.file_extension);
+      e.image_base, e.file_extension, e.tile_width, e.tile_height);
   var tilelayerConstructor = userprofile.prefer_webgl_layers ? CATMAID.PixiTileLayer : CATMAID.TileLayer;
   var tilelayer = new tilelayerConstructor(
-      "Image data",
+      stackViewer,
+      "Image data (" + stack.title + ")",
       stack,
-      e.tile_width,
-      e.tile_height,
       tilesource,
       true,
       1,
-      true);
+      !useExistingViewer);
 
-  stack.addLayer( "TileLayer", tilelayer );
+  if (!useExistingViewer) {
+    stackViewer.addLayer( "TileLayer", tilelayer );
 
-  $.each(e.overlay, function(key, value) {
-    var tilesource = CATMAID.getTileSource( value.tile_source_type,
-      value.image_base, value.file_extension );
-    var layer_visibility = false;
-    if( parseInt(value.default_opacity) > 0)
-      layer_visibility = true;
-    var tilelayer2 = new tilelayerConstructor(
-            value.title,
-            stack,
-            value.tile_width,
-            value.tile_height,
-            tilesource,
-            layer_visibility,
-            value.default_opacity / 100,
-            false);
-    stack.addLayer( value.title, tilelayer2 );
-  });
+    $.each(e.overlay, function(key, value) {
+      var tilesource = CATMAID.getTileSource( value.tile_source_type,
+          value.image_base, value.file_extension, value.tile_width, value.tile_height );
+      var layer_visibility = parseInt(value.default_opacity) > 0;
+      var tilelayer2 = new tilelayerConstructor(
+              stackViewer,
+              value.title,
+              stack,
+              tilesource,
+              layer_visibility,
+              value.default_opacity / 100,
+              false);
+      stackViewer.addLayer( value.title, tilelayer2 );
+    });
 
-  // If the requested stack is already loaded, the existing
-  // stack is returned. Continue work with the existing stack.
-  stack = project.addStack( stack );
+    project.addStackViewer( stackViewer );
 
-  // refresh the overview handler to also register the mouse events on the buttons
-  stack.tilelayercontrol.refresh();
+    // refresh the overview handler to also register the mouse events on the buttons
+    stackViewer.tilelayercontrol.refresh();
+  } else {
+    stackViewer.addStackLayer(stack, tilelayer);
+  }
 
   /* Update the projects stack menu. If there is more
   than one stack linked to the current project, a submenu for easy
   access is generated. */
   stack_menu.update();
   getStackMenuInfo(project.id, function(stacks) {
+    /* jshint scripturl:true */
     if (stacks.length > 1)
     {
       var stack_menu_content = [];
       $.each(stacks, function(i, s) {
-        stack_menu_content.push(
-          {
+        stack_menu_content.push({
             id : s.id,
             title : s.title,
             note : s.note,
-            action : s.action
+            action : [{
+                title: 'Open in new viewer',
+                note: '',
+                action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ')')
+              },{
+                title: 'Add to focused viewer',
+                note: '',
+                action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ', undefined, true)')
+              }
+            ]
           }
         );
       });
 
       stack_menu.update( stack_menu_content );
-      document.getElementById( "stackmenu_box" ).style.display = "block";
+      var stackMenuBox = document.getElementById( "stackmenu_box" );
+      stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
+      stackMenuBox.style.display = "block";
     }
   });
 
   CATMAID.ui.releaseEvents();
-  return stack;
+  return stackViewer;
 }
 
 /**
@@ -1000,13 +1017,13 @@ var realInit = function()
 
 	// Create the toolboxes
 	$('#toolbox_project').replaceWith(createButtonsFromActions(
-		toolActions, 'toolbox_project', ''));
+		CATMAID.toolActions, 'toolbox_project', ''));
 	$('#toolbox_edit').replaceWith(createButtonsFromActions(
-		editToolActions, 'toolbox_edit', ''));
+		CATMAID.EditTool.actions, 'toolbox_edit', ''));
   $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
-    segmentationWindowActions, 'toolbox_segmentation', ''));
+    CATMAID.SegmentationTool.actions, 'toolbox_segmentation', ''));
 	$('#toolbox_data').replaceWith(createButtonsFromActions(
-		tracingWindowActions, 'toolbox_data', ''));
+		CATMAID.TracingTool.actions, 'toolbox_data', ''));
 
 	// Add the toolbar buttons:
 	document.getElementById( "toolbar_nav" ).style.display = "none";
@@ -1043,8 +1060,8 @@ var realInit = function()
 	login(undefined, undefined, function() {
 		var tools = {
 			navigator: Navigator,
-			tracingtool: TracingTool,
-			segmentationtool: SegmentationTool,
+			tracingtool: CATMAID.TracingTool,
+			segmentationtool: CATMAID.SegmentationTool,
 			classification_editor: null
 		};
 

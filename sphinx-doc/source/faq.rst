@@ -18,7 +18,8 @@ Now you should be able to call the ./scripts/createuser.sh script.
 My CATMAID instance is working in debug mode, but can't be reached in production. What is the problem?
 ------------------------------------------------------------------------------------------------------
 
-Check the `ALLOWED_HOSTS` setting in your Django configuration file:
+If you see return code 400 (Bad Request), check the ``ALLOWED_HOSTS`` setting in
+your Django configuration file::
 
     django/projects/mysite/settings.py
 
@@ -26,6 +27,18 @@ Since Django 1.5 this setting is present and should contain a list of all
 host/domain names that your CATMAID instance is reachable under. Access will be
 blocked if target host isn't found in this list. For more detail have a look at
 the `Django documentation <https://docs.djangoproject.com/en/1.6/ref/settings/#allowed-hosts>`_.
+
+Be aware that if you use Nginx and make a WSGI server available through an
+*upstream* definition, the host that Django sees is the upstream's name. So this
+is what you want to add to ``ALLOWED_HOSTS``. Alternatively, you can add a
+``X-Forwarded-Host`` header when calling the upstream in a Nginx location block
+to forward the original host to Django::
+
+  proxy_set_header X-Forwarded-Host $host;
+
+If you then instruct Django to use this header by setting ``USE_X_FORWARDED_HOST
+= True`` in ``settings.py`` (see `doc <https://docs.djangoproject.com/en/1.8/ref/settings/#use-x-forwarded-host>`_),
+you can add the original host name to ``ALLOWED_HOSTS``.
 
 I have more than one CATMAID instance running on the same (sub-)domain, but in different folders. When I open different instances in the same browser at the same time, one session is always logged out. Why?
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

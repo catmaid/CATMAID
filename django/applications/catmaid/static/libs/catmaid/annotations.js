@@ -1,0 +1,242 @@
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+
+(function(CATMAID) {
+
+  "use strict";
+
+  CATMAID.prompt_for_annotations = function(success_fn)
+  {
+    var dialog = new CATMAID.OptionsDialog("Add new annotation");
+    dialog.appendMessage("Add a new annotation for the selected objects.");
+
+    var helpMsg = dialog.appendMessage("Click here for details");
+    $(helpMsg).click(function() {
+      $(this).empty().append(document.createTextNode("Every occurence of " +
+        "'{nX}' with X being a number is replaced by a number that is " +
+        "autmatically incremented (starting from X) for each annotated " +
+        "object."));
+    });
+
+    // Add annotation input field supporting auto-completion
+    var annotation_input = dialog.appendField('Annotation: ', 'new-annotation',
+        '', true);
+    // Add button to toggle display of meta annotation input field
+    var $meta_toggle = $(dialog.appendMessage(
+        "Click here to also add a meta annotation"));
+    dialog.meta_annotation_inputs = [];
+    // Have a method to create new meta annotation fields
+    var add_meta_annotation_fields = function(continuation) {
+      // Add meta annotation input field with autocompletion
+      var meta_annotation_input = dialog.appendField('Meta annotation: ',
+          'new-meta-annotation' + dialog.meta_annotation_inputs.length, '', true);
+      this.add_autocomplete_to_input(meta_annotation_input);
+      // Add text to append new field
+      var $new_meta_field = $(dialog.appendMessage(
+          "Click to add another meta annotation to basic annotation"));
+      $new_meta_field.click(add_meta_annotation_fields.bind(this,
+          $new_meta_field.hide.bind($new_meta_field)));
+      // Increase meta annotation counter in dialog
+      dialog.meta_annotation_inputs.push(meta_annotation_input);
+      // Call continuation
+      continuation();
+    };
+    // Add toggle functionalty to text and hide meta input box
+    $meta_toggle.click(add_meta_annotation_fields.bind(this,
+        $meta_toggle.hide.bind($meta_toggle)));
+
+    dialog.onOK = function() {
+      // Get annotation, if any
+      var annotation = annotation_input.value;
+      if (!annotation) return;
+      annotation = annotation.trim();
+      if (0 === annotation.length) return; // can't annotate with nothing
+      // Get meta annotation, if any
+      var meta_annotations = this.meta_annotation_inputs.reduce(function(o, e) {
+        var ma = e.value.trim();
+        if (ma.length > 0) {
+          o.push(ma);
+        }
+        return o;
+      }, []);
+      // Call handler
+      success_fn([annotation], meta_annotations);
+    };
+
+    dialog.show(400, 'auto', true);
+
+    // Auto-completion has to be added after the dialog has been created to ensure
+    // the auto completion controls com after the dialog in the DOM (to display
+    // them above the dialog).
+    this.add_autocomplete_to_input(annotation_input);
+  };
+
+  CATMAID.annotate_neurons_of_skeletons = function(
+      skeleton_ids, callback)
+  {
+    CATMAID.annotate(null, skeleton_ids, callback);
+  };
+
+  CATMAID.annotate_entities = function(entity_ids,
+      callback)
+  {
+    CATMAID.annotate(entity_ids, null, callback);
+  };
+
+  CATMAID.annotate = function(entity_ids, skeleton_ids,
+      callback)
+  {
+    // Complain if the user has no annotation permissions for the current project
+    if (!checkPermission('can_annotate')) {
+      CATMAID.error("You don't have have permission to add annotations");
+      return;
+    }
+
+    // Complain if there is no target
+    var has_target = (entity_ids && entity_ids.length > 0) ||
+        (skeleton_ids && skeleton_ids.length > 0);
+    if (!has_target) {
+      CATMAID.error("Please select at least one annotation, neuron or skeleton!");
+      return;
+    }
+
+    // Get annotation terms
+    var annotations = CATMAID.prompt_for_annotations(function(annotations,
+        meta_annotations) {
+      if (!annotations) return;
+      // Build request data structure
+      var data = {
+        annotations: annotations,
+      };
+      if (meta_annotations) {
+        data.meta_annotations = meta_annotations;
+      }
+      if (entity_ids) {
+          data.entity_ids = entity_ids;
+      }
+      if (skeleton_ids) {
+          data.skeleton_ids = skeleton_ids;
+      }
+      // Do request
+      requestQueue.register(django_url + project.id + '/annotations/add',
+          'POST', data, function(status, text, xml) {
+            if (status === 200) {
+              var e = $.parseJSON(text);
+              if (e.error) {
+                new CATMAID.ErrorDialog(e.error, e.detail).show();
+              } else {
+                var ann_names = e.annotations.map(function(a) { return a.name; });
+                var used_annotations = e.annotations.reduce(function(o, a) {
+                  if (a.entities.length > 0) o.push(a.name);
+                  return o;
+                }, []);
+                if (e.annotations.length == 1)
+                  if (used_annotations.length > 0) {
+                    CATMAID.info('Annotation ' + ann_names[0] + ' added to ' +
+                        e.annotations[0].entities.length +
+                        (e.annotations[0].entities.length > 1 ? ' entities.' : ' entity.'));
+                  } else {
+                    CATMAID.info('Couldn\'t add annotation ' + ann_names[0] + '.');
+                  }
+                else
+                  if (used_annotations.length > 0) {
+                    CATMAID.info('Annotations ' + used_annotations.join(', ') + ' added.');
+                  } else {
+                    CATMAID.info('Couldn\'t add any of the annotations' +
+                        ann_names.join(', ') + '.');
+                  }
+                // Update the annotation cache with new annotations, if any
+                try {
+                  window.annotations.push(e.annotations);
+                } catch(err) {
+                  new CATMAID.ErrorDialog("There was a problem updating the " +
+                      "annotation cache, please close and re-open the tool",
+                      err).show();
+                }
+
+                // Let the neuron name service update itself and execute the
+                // callbackback after this is done
+                NeuronNameService.getInstance().refresh(function() {
+                  if (callback) callback();
+                });
+              }
+            }
+          });
+    });
+  };
+
+  /**
+   * This neuron annotation namespace method removes an annotation from another
+   * entity. It is not dependent on any context, but asks the user for
+   * confirmation. A callback can be executed in the case of success.
+   */
+  CATMAID.remove_annotation = function(entity_id,
+      annotation_id, callback)
+  {
+    CATMAID.remove_annotation_from_entities([entity_id],
+        annotation_id, callback);
+  };
+
+  /**
+   * This neuron annotation namespace method removes an annotation from a list of
+   * entities. It is not dependent on any context, but asks the user for
+   * confirmation. A callback can be executed in the case of success.
+   */
+  CATMAID.remove_annotation_from_entities = function(entity_ids,
+      annotation_id, callback)
+  {
+    // Complain if the user has no annotation permissions for the current project
+    if (!checkPermission('can_annotate')) {
+      CATMAID.error("You don't have have permission to remove annotations");
+      return;
+    }
+
+    if (!confirm('Are you sure you want to remove annotation "' +
+          annotations.getName(annotation_id) + '"?')) {
+      return;
+    }
+
+    requestQueue.register(django_url + project.id + '/annotations/' +
+        annotation_id + '/remove',
+        'POST', {
+          entity_ids: entity_ids
+        },
+        $.proxy(function(status, text, xml) {
+          if (status === 200) {
+            var e = $.parseJSON(text);
+            if (e.error) {
+              new CATMAID.ErrorDialog(e.error, e.detail).show();
+            } else {
+              // Let the neuron name service update itself
+              NeuronNameService.getInstance().refresh();
+
+              if (callback) callback(e.message);
+            }
+          }
+        }, this));
+  };
+
+  /**
+   * A neuron annotation namespace method to retrieve annotations from the backend
+   * for the neuron modeled by a particular skeleton. If the call was successfull,
+   * the passed handler is called with the annotation set as parameter.
+   */
+  CATMAID.retrieve_annotations_for_skeleton = function(skid, handler) {
+    requestQueue.register(django_url + project.id +  '/annotations/list',
+      'POST', {'skeleton_id': skid}, function(status, text) {
+        if (status !== 200) {
+          alert("Unexpected status code: " + status);
+          return false;
+        }
+        if (text && text !== " ") {
+          var json = $.parseJSON(text);
+          if (json.error) {
+            new CATMAID.ErrorDialog(json.error, json.detail).show();
+          } else if (handler) {
+            handler(json.annotations);
+          }
+        }
+      });
+  };
+
+})(CATMAID);

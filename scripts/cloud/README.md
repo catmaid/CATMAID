@@ -6,7 +6,7 @@ Script Requirements: fabric, boto
     sudo pip install fabric
     sudo pip install boto
 
-Based on install steps for CATMAID at https://github.com/acardona/CATMAID
+Based on install steps for CATMAID at https://github.com/catmaid/CATMAID
 
 # Create keypair
 

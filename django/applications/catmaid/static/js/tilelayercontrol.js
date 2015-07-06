@@ -1,26 +1,22 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-/* global
-  Slider,
-  SLIDER_HORIZONTAL
-*/
 
 (function(CATMAID) {
 
   "use strict";
 
   /**
-   * The tilelayer control element on the top-left of the stack window
+   * The tilelayer control element on the top-left of the stackViewer window
    */
-  var TilelayerControl = function ( stack )
+  var TilelayerControl = function ( stackViewer )
   {
-    this.stack = stack;
+    this.stackViewer = stackViewer;
     this.view = document.createElement( "div" );
     this.view.className = "TilelayerControl";
-    this.view.id = "TilelayerControl" + stack.id;
+    this.view.id = "TilelayerControl" + stackViewer.id;
     this.view.style.zIndex = 8;
 
-    stack.getView().appendChild( this.view );
+    stackViewer.getView().appendChild( this.view );
   };
 
   TilelayerControl.prototype = {};
@@ -39,13 +35,25 @@
   TilelayerControl.prototype.refresh = function()
   {
     // Get current set of layers
-    var stack = this.stack;
-    var layers = stack.getLayers();
-    var layerOrder = stack.getLayerOrder();
+    var stackViewer = this.stackViewer;
+    var layerOrder = stackViewer.getLayerOrder();
 
     // Empty container
     var $view = $(this.view);
     $view.empty();
+
+    $view.append('<h3>Stack Viewer</h3>');
+
+    var navcb = $('<input/>')
+        .attr('type', 'checkbox')
+        .prop('checked', stackViewer.navigateWithProject)
+        .change(function () {
+          stackViewer.navigateWithProject = !stackViewer.navigateWithProject;
+        });
+    var navlabel = $('<div/>')
+        .addClass('setting')
+        .append($('<label/>').append(navcb).append('Navigate with project'));
+    $view.append(navlabel);
 
     var benchmark = $view.siblings('.sliceBenchmark');
     var cb = $('<input/>')
@@ -56,24 +64,47 @@
         });
     var label = $('<div/>')
         .addClass('setting')
-        .append($('<label/>').append(cb).append('Show Scale Bar'));
+        .append($('<label/>').append(cb).append('Show scale bar'));
     $view.append(label);
+
+    var offsetTable = $('<table />');
+    var row = $('<tr/>');
+    var cellNames = ['X', 'Y', 'Z'];
+    for (var j = 0; j < 3; ++j) {
+      var cell = $('<input type="number" step="1" value="' + stackViewer._offset[j] + '"/>');
+      cell.change((function (ind) {
+        return function () {
+          var offset = stackViewer.getOffset();
+          offset[ind] = Number($(this).val());
+          stackViewer.setOffset(offset);
+        };
+      })(j));
+      cell.css('width', '4em');
+      row.append($('<td/>').append($('<label/>').append(cellNames[j]).append(cell)));
+    }
+    offsetTable.append(row);
+
+    var offsetSelect = $('<div class="setting"/>');
+    offsetSelect.append('<span>Offset from project (stack coordinates)</span>');
+    offsetSelect.append(offsetTable);
+    $view.append(offsetSelect);
+
     $view.append('<h3>Layers by render order (drag to reorder)</h3>');
     var layerList = $('<ol/>');
 
     var setOpac = function (val) {
-      var layers = stack.getLayers();
+      var layer = stackViewer.getLayer(this.idd);
 
-      if (!layers.hasOwnProperty(this.idd)) return;
+      if (!layer) return;
 
-      layers[this.idd].setOpacity(val);
-      stack.redraw();
+      layer.setOpacity(val);
+      stackViewer.redraw();
     };
 
     // Add slider for each layer
     for (var i = 0; i < layerOrder.length; i++) {
       var key = layerOrder[i];
-      var layer = layers[key];
+      var layer = stackViewer.getLayer(key);
       var self = this;
 
       var container = $('<li/>');
@@ -82,6 +113,13 @@
       if (layer.isOrderable) container.addClass('orderable');
 
       var layer_name = layer.getLayerName ? layer.getLayerName() : key;
+      if (stackViewer.isLayerRemovable(key)) {
+        container.append($('<div class="layerClose">')
+            .append($('<input type="button" value="x" class="remove"/>').click(function () {
+              stackViewer.removeLayer(key);
+              stackViewer.redraw();
+            })));
+      }
       container.append($('<h4/>').append(layer_name));
 
       // Opacity slider
@@ -91,8 +129,8 @@
       // Make layer re-evaluate its opacity
       layer.setOpacity(layer.getOpacity());
 
-      var slider = new Slider(
-          SLIDER_HORIZONTAL,
+      var slider = new CATMAID.Slider(
+          CATMAID.Slider.HORIZONTAL,
           false,
           0,
           1,
@@ -121,8 +159,8 @@
         });
         blendSelect.change(function () {
           var key = $(this).parents('.layerControl').data('key');
-          stack.getLayers()[key].setBlendMode(this.value);
-          stack.redraw();
+          stackViewer.getLayer(key).setBlendMode(this.value);
+          stackViewer.redraw();
         });
 
         blendLabel.append(blendSelect);
@@ -148,7 +186,7 @@
         var filterAdd = $('<input type="button" value="Add"/>');
         filterAdd.click(function () {
           var key = $(this).parents('.layerControl').data('key');
-          var layer = stack.getLayers()[key];
+          var layer = stackViewer.getLayer(key);
           var filterName = $(this).siblings('select')[0].value;
           var filter = new (layer.getAvailableFilters()[filterName])();
           layer.addFilter(filter);
@@ -165,7 +203,7 @@
           var removeBtn = $('<input type="button" value="x" class="remove"/>')
               .click(function () {
                 var key = $(this).parents('.layerControl').data('key');
-                var layer = stack.getLayers()[key];
+                var layer = stackViewer.getLayer(key);
                 layer.removeFilter(filter);
                 layer.redraw();
                 self.refresh();
@@ -183,7 +221,7 @@
           },
           stop: function (event, ui) {
             var key = $(this).parents('.layerControl').data('key');
-            var layer = stack.getLayers()[key];
+            var layer = stackViewer.getLayer(key);
             layer.moveFilter(ui.item.startIndex, ui.item.index());
             layer.redraw();
           }
@@ -201,8 +239,8 @@
       placeholder: 'highlight',
       update: function (event, ui) {
         var beforeKey = ui.item.next().data('key') || null;
-        stack.moveLayer(ui.item.data('key'), beforeKey);
-        stack.redraw();
+        stackViewer.moveLayer(ui.item.data('key'), beforeKey);
+        stackViewer.redraw();
       }
     });
   };

@@ -7,14 +7,13 @@ function TextlabelTool()
 
   var self = this;
   var textlabelLayer = null;
-  var stack = null;
+  var stackViewer = null;
   var bindings = {};
   this.toolname = "textlabeltool";
 
   this.resize = function( width, height )
   {
     self.prototype.resize( width, height );
-    return;
   };
 
   var setupSubTools = function()
@@ -22,7 +21,7 @@ function TextlabelTool()
     document.getElementById( typeof buttonName == "undefined" ? "edit_button_text" : buttonName ).className = "button_active";
     document.getElementById( "toolbar_text" ).style.display = "block";
     $('#textlabeleditable').change(function(e) {
-      if ($(this).attr("checked")) {
+      if ($(this).prop("checked")) {
         textlabelLayer.setEditableTextlabels();
       } else {
         textlabelLayer.setUneditableTextlabels();
@@ -31,8 +30,8 @@ function TextlabelTool()
   };
 
   self.updateTextlabels = function () {
-      textlabelLayer.update(0, 0, stack.dimension.x * stack.resolution.x,
-          stack.dimension.y * stack.resolution.y );
+      textlabelLayer.update(0, 0, stackViewer.primaryStack.dimension.x * stackViewer.primaryStack.resolution.x,
+          stackViewer.primaryStack.dimension.y * stackViewer.primaryStack.resolution.y );
   };
 
   this.getMouseHelp = function( e ) {
@@ -75,19 +74,18 @@ function TextlabelTool()
       }
       return true;
     });
-    return;
   };
 
-  var createTextlabelLayer = function( parentStack )
+  var createTextlabelLayer = function( parentStackViewer )
   {
-    stack = parentStack;
+    stackViewer = parentStackViewer;
 
-    textlabelLayer = new TextlabelLayer( parentStack, self );
+    textlabelLayer = new TextlabelLayer( parentStackViewer, self );
     
-    parentStack.addLayer( "TextlabelLayer", textlabelLayer );
+    parentStackViewer.addLayer( "TextlabelLayer", textlabelLayer );
 
     // register the move toolbar and reuse the mouseCatcher
-    self.prototype.register( parentStack, "edit_button_move" );
+    self.prototype.register( parentStackViewer, "edit_button_move" );
     // view is the mouseCatcher now
     var proto_onmousedown = self.prototype.mouseCatcher.onmousedown;
     self.prototype.mouseCatcher.onmousedown = function( e ) {
@@ -98,10 +96,10 @@ function TextlabelTool()
             // needs shift in addition
             if( e.shiftKey ) {
                 var m = CATMAID.ui.getMouse(e, self.prototype.mouseCatcher);
-                var tlx = (stack.x + (m.offsetX - stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x;
-                var tly = (stack.y + (m.offsetY - stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y;
-                var tlz = stack.z * stack.resolution.z + stack.translation.z;
-                createTextlabel(tlx, tly, tlz, stack.resolution.y, stack.scale);
+                var tlx = (stackViewer.x + (m.offsetX - stackViewer.viewWidth  / 2) / stackViewer.scale) * stackViewer.primaryStack.resolution.x + stackViewer.primaryStack.translation.x;
+                var tly = (stackViewer.y + (m.offsetY - stackViewer.viewHeight / 2) / stackViewer.scale) * stackViewer.primaryStack.resolution.y + stackViewer.primaryStack.translation.y;
+                var tlz = stackViewer.z * stackViewer.primaryStack.resolution.z + stackViewer.primaryStack.translation.z;
+                createTextlabel(tlx, tly, tlz, stackViewer.primaryStack.resolution.y, stackViewer.scale);
             }
           break;
         case 2:
@@ -111,7 +109,6 @@ function TextlabelTool()
           proto_onmousedown( e );
           break;
       }
-      return;
     };
 
     var proto_changeSlice = self.prototype.changeSlice;
@@ -122,26 +119,24 @@ function TextlabelTool()
   };
 
 	/**
-	 * install this tool in a stack.
+	 * install this tool in a stack viewer.
 	 * register all GUI control elements and event handlers
 	 */
-	this.register = function( parentStack )
+	this.register = function( parentStackViewer )
 	{
     setupSubTools();
 
-    if (textlabelLayer && stack) {
-      if (stack !== parentStack) {
-        // If the tracing layer exists and it belongs to a different stack, replace it
-        stack.removeLayer( textlabelLayer );
-        createTextlabelLayer( parentStack );
+    if (textlabelLayer && stackViewer) {
+      if (stackViewer !== parentStackViewer) {
+        // If the tracing layer exists and it belongs to a different stack viewer, replace it
+        stackViewer.removeLayer( textlabelLayer );
+        createTextlabelLayer( parentStackViewer );
       } else {
         reactivateBindings();
       }
     } else {
-      createTextlabelLayer( parentStack );
+      createTextlabelLayer( parentStackViewer );
     }
-
-    return;
   };
 
   /** Inactivate only onmousedown, given that the others are injected when onmousedown is called.
@@ -167,16 +162,15 @@ function TextlabelTool()
   };
 
 	/**
-	 * unregister all stack related mouse and keyboard controls
+	 * unregister all stack viewer related mouse and keyboard controls
 	 */
   this.unregister = function()
   {
     document.getElementById( "toolbar_text" ).style.display = "none";
-    // do it before calling the prototype destroy that sets stack to null
-    if (self.prototype.stack) {
+    // do it before calling the prototype destroy that sets stack viewer to null
+    if (self.prototype.stackViewer) {
       inactivateBindings();
     }
-    return;
   };
 
 	/**
@@ -189,15 +183,14 @@ function TextlabelTool()
     self.unregister();
     textlabelLayer.removeTextlabels();
     // the prototype destroy calls the prototype's unregister, not self.unregister
-    // do it before calling the prototype destroy that sets stack to null
-    self.prototype.stack.removeLayer( "TextlabelLayer" );
+    // do it before calling the prototype destroy that sets stack viewer to null
+    self.prototype.stackViewer.removeLayer( "TextlabelLayer" );
     self.prototype.destroy( "edit_button_move" );
     for (var b in bindings) {
       if (bindings.hasOwnProperty(b)) {
         delete bindings[b];
       }
     }
-    return;
 	};
 
   var actions = [];
@@ -374,19 +367,11 @@ Textlabel = function(
 				var ty = target_y + dir_y;
 				
 				ctx.strokeStyle = "rgb(0,0,255)";
-				
-				if ( IE )
-				{
-					ctx.fillStyle = "rgb(255,255,255)";
-					ctx.lineWidth = 2;
-					ctx.strokeRect( 1 + offset_x, 1 + offset_y, boxWidth - 1, boxHeight - 1 );
-				}
-				else
-				{
-					ctx.fillStyle = "rgba(255,255,255,0.85)";
-					ctx.strokeRect( 0.5 + offset_x, 0.5 + offset_y, boxWidth, boxHeight );
-					ctx.lineWidth = 1.5;
-				}
+
+				ctx.fillStyle = "rgba(255,255,255,0.85)";
+				ctx.strokeRect( 0.5 + offset_x, 0.5 + offset_y, boxWidth, boxHeight );
+				ctx.lineWidth = 1.5;
+
 				ctx.beginPath();
 				ctx.moveTo( target_x, target_y );
 				ctx.lineTo( tx + dir_yn, ty - dir_xn );
@@ -414,8 +399,6 @@ Textlabel = function(
 			}
 			break;
 		}
-		
-		return;
 	};
 
   this.setOpacity = function( val )
@@ -442,7 +425,6 @@ Textlabel = function(
 			moveHandle.style.display = "none";
 			closeHandle.style.display = "none";
 		}
-		return;
 	};
 	
 	var synchText = function( e )
@@ -468,7 +450,7 @@ Textlabel = function(
 			{
 				pid : project.id,
 				tid : self.id,
-				text : ( IE ? self.text.replace( /\r\n/g, "\n" ) : self.text ),
+				text : self.text,
 				x : self.location.x,
 				y : self.location.y,
 				z : self.location.z,
@@ -503,7 +485,6 @@ Textlabel = function(
 				return true;
 			},
 			"textlabel_" + this.id );
-		return;
 	};
 	
 	var close = function( e )
@@ -511,7 +492,6 @@ Textlabel = function(
 		icon_apply.style.display = "block";
 		
 		requestQueue.register(
-			//'model/textlabel.delete.php',
             django_url + project.id + '/textlabel/delete',
 			'POST',
 			{
@@ -521,9 +501,11 @@ Textlabel = function(
 				y : self.location.y,
 				z : self.location.z
 			},
-			window.onresize ); // TODO: what is the proper way to call updateTextlabels of the tool?
+			function () {
+				icon_apply.style.display = 'none';
+				window.resize();
+			}); // TODO: what is the proper way to call updateTextlabels of the tool?
             // the window.onresize solution calls onresize about 6 times
-		return;
 	};
 	
 	/**
@@ -548,52 +530,20 @@ Textlabel = function(
 	/**
 	 * onchange handler for the red colour input element
 	 */
-	var changeColourRed = function( e )
-	{
-		var val = parseInt( this.value );
-		if ( isNaN( val ) || val < 0 || val > 255 ) this.value = self.colour.r;
-		else
-		{
-			self.colour.r = val;
-			apply();
-			textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
-		}
-		return false;
+	var changeColour = function (channel) {
+		return function (e) {
+			var val = parseInt( this.value );
+			if ( isNaN( val ) || val < 0 || val > 255 ) this.value = self.colour[channel];
+			else
+			{
+				self.colour[channel] = val;
+				apply();
+				textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
+			}
+			return false;
+		};
 	};
-	
-	/**
-	 * onchange handler for the green colour input element
-	 */
-	var changeColourGreen = function( e )
-	{
-		var val = parseInt( this.value );
-		if ( isNaN( val ) || val < 0 || val > 255 ) this.value = self.colour.g;
-		else
-		{
-			self.colour.g = val;
-			apply();
-			textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
-		}
-		return false;
-	};
-	
-	/**
-	 * onchange handler for the blue colour input element
-	 */
-	var changeColourBlue = function( e )
-	{
-		var val = parseInt( this.value );
-		if ( isNaN( val ) || val < 0 || val > 255 ) this.value = self.colour.b;
-		else
-		{
-			self.colour.b = val;
-			apply();
-			textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
-		}
-		return false;
-	};
-	
-	
+
 	/**
 	 * bind all input elements
 	 */
@@ -602,11 +552,11 @@ Textlabel = function(
 		input_size.onchange = changeSize;
 		input_size.value = self.fontSize;
 		
-		input_colour_red.onchange = changeColourRed;
+		input_colour_red.onchange = changeColour('r');
 		input_colour_red.value = self.colour.r;
-		input_colour_green.onchange = changeColourGreen;
+		input_colour_green.onchange = changeColour('g');
 		input_colour_green.value = self.colour.g;
-		input_colour_blue.onchange = changeColourBlue;
+		input_colour_blue.onchange = changeColour('b');
 		input_colour_blue.value = self.colour.b;
 		
 		checkbox_fontstyle_bold.onchange = function( e )
@@ -736,7 +686,6 @@ Textlabel = function(
 	//-------------------------------------------------------------------------
 	self.id = data.tid ? data.tid : 0;
 	self.text = data.text ? data.text : "";
-	if ( IE ) self.text = data.text.replace( /\n/g, "\r" );
 	self.location = data.location ? data.location :
 			{
 				x : 0,
@@ -824,14 +773,14 @@ Textlabel = function(
 };
 
 TextlabelLayer = function(
-		stack,
+		stackViewer,
         parentTool )
 {
   var self = this;
-	var stack = stack;
+	var stackViewer = stackViewer;
 	var parentTool = parentTool;
 	var textlabels = [];
-	var stackWindow = stack.getWindow();
+	var stackWindow = stackViewer.getWindow();
 	var opacity = 1.0;
 
   this.resize = function ( width, height )
@@ -842,7 +791,6 @@ TextlabelLayer = function(
   this.redraw = function( completionCallback )
   {
       parentTool.updateTextlabels();
-      return;
   };
 
   this.unregister = function() {
@@ -898,16 +846,16 @@ TextlabelLayer = function(
 		height					//!< height in project coordinates
 	)
 	{
-		var scale = stack.scale;
-		var coordinates = stack.projectCoordinates();
-		var resolution = stack.resolution;
+		var scale = stackViewer.scale;
+		var coordinates = stackViewer.projectCoordinates();
+		var resolution = stackViewer.primaryStack.resolution;
 		
 		requestQueue.register(
             django_url + project.id + '/textlabel/all',
 			'POST',
 			{
-				pid : stack.getProject().getId(),
-				sid : stack.getId(),
+				pid : stackViewer.getProject().getId(),
+				sid : stackViewer.primaryStack.id,
 				z : coordinates.z,
 				top : y,
 				left : x,
@@ -918,7 +866,6 @@ TextlabelLayer = function(
 				resolution : resolution.y
 			},
 			handle_update );
-		return;
 	};
 	
 	/**
@@ -927,7 +874,7 @@ TextlabelLayer = function(
 	 */
 	var handle_update = function( status, text, xml )
 	{
-    var check = $('#textlabeleditable').attr("checked");
+    var check = $('#textlabeleditable').prop("checked");
 		if ( 200 === status )
 		{
 			//alert( "data: " + text );
@@ -950,14 +897,14 @@ TextlabelLayer = function(
 				
 				if ( text )
 				{
-					var resolution = stack.resolution;
-					var translation = stack.translation;
+					var resolution = stackViewer.primaryStack.resolution;
+					var translation = stackViewer.primaryStack.translation;
 					var stackWindowFrame = stackWindow.getFrame();
 
-					var wc = stack.getWorldTopLeft();
-					var pl = wc.worldLeft,
-							pt = wc.worldTop,
-							new_scale = wc.scale;
+					var wc = stackViewer.screenPosition();
+					var pl = stackViewer.primaryStack.stackToProjectX(stackViewer.z, wc.top, wc.left),
+							pt = stackViewer.primaryStack.stackToProjectY(stackViewer.z, wc.top, wc.left),
+							new_scale = stackViewer.scale;
 
 					//! import new
 					for ( var i in e )
@@ -971,7 +918,6 @@ TextlabelLayer = function(
 				}
 			}
 		}
-		return;
 	};
 
 };

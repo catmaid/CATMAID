@@ -188,20 +188,22 @@ def stats_user_history(request, project_id=None):
     # a computed field which is just the day of the last edited date/time.
     treenode_stats = []
     cursor = connection.cursor()
-    cursor.execute('''\
-        SELECT "treenode"."user_id", (date_trunc('day', creation_time)) AS "date", COUNT("treenode"."id") AS "count"
-            FROM "treenode"
-            INNER JOIN (
-            SELECT "treenode"."skeleton_id", COUNT("treenode"."id") as "skeleton_nodes"
-                FROM "treenode"
-                GROUP BY "treenode"."skeleton_id") as tn2
-            ON "treenode"."skeleton_id" = tn2."skeleton_id"
-            WHERE ("treenode"."project_id" = %(project_id)s
-            AND "treenode"."creation_time" BETWEEN %(start_date)s AND %(end_date)s
-            AND tn2."skeleton_nodes" > 1)
-            GROUP BY "treenode"."user_id", "date"
-            ORDER BY "treenode"."user_id" ASC, "date" ASC''', \
-            dict(project_id=project_id, start_date=start_date, end_date=end_date))
+
+    cursor.execute('''
+SELECT t.uid, t.day, round(sum(t.edge))
+FROM (SELECT child.user_id as uid,
+             date_trunc('day', child.creation_time) as day,
+             sqrt(  pow(child.location_x - parent.location_x, 2)
+                  + pow(child.location_y - parent.location_y, 2)
+                  + pow(child.location_z - parent.location_z, 2)) as edge
+      FROM treenode child,
+           treenode parent
+      WHERE child.project_id = %(project_id)s
+        AND child.parent_id = parent.id
+        AND child.creation_time BETWEEN %(start_date)s AND %(end_date)s) as t
+GROUP BY t.uid, t.day
+    ''', dict(project_id=project_id, start_date=start_date, end_date=end_date))
+
     treenode_stats = cursor.fetchall()
 
     relations = get_relation_to_id_map(project_id, cursor=cursor)

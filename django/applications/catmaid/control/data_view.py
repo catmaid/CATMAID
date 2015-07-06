@@ -93,7 +93,7 @@ def get_data_view( request, data_view_id ):
     config = json.loads( dv.config )
 
     # Get all the projects that are visible for the current user
-    projects = get_project_qs_for_user(request.user)
+    projects = get_project_qs_for_user(request.user).prefetch_related('stacks')
 
     # If requested, filter projects by tags. Otherwise, get all.
     if "filter_tags" in config:
@@ -103,12 +103,12 @@ def get_data_view( request, data_view_id ):
             repeat_count=Count("id") ).filter( repeat_count=len(filter_tags) )
 
     # Build a stack index
-    stacks = list(Stack.objects.all())
-    stack_index = dict([(s.id, s) for s in stacks])
+    stack_index = defaultdict(list)
     stacks_of = defaultdict(list)
-    for pid, sid in ProjectStack.objects.filter(project__in=projects) \
-            .order_by('stack__id').values_list('project_id', 'stack_id'):
-        stacks_of[pid].append(stack_index[sid])
+    for p in projects:
+        for s in p.stacks.all():
+            stack_index[s.id] = s
+            stacks_of[p.id].append(s)
 
     # Extend the project list with additional information like editabilty
     projects = extend_projects( request.user, projects )
@@ -142,4 +142,4 @@ def get_data_view( request, data_view_id ):
         'STATIC_URL': settings.STATIC_URL,
     })
 
-    return HttpResponse( template.render( context ) );
+    return HttpResponse( template.render( context ) )

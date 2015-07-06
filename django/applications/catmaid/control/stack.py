@@ -40,7 +40,7 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
 
 def get_stack_info_response(p, s, ps, overlay_data, broken_slices):
 
-    # https://github.com/acardona/CATMAID/wiki/Convention-for-Stack-Image-Sources
+    # https://github.com/catmaid/CATMAID/wiki/Convention-for-Stack-Image-Sources
     if int(s.tile_source_type) == 2:
         # request appropriate stack metadata from tile source
         url=s.image_base.rstrip('/').lstrip('http://')
@@ -199,6 +199,7 @@ def get_stacks_menu_info(project):
     for s in project.stacks.all():
         info.append( {
             'id': s.id,
+            'pid': project.id,
             'title': s.title,
             'comment': s.comment,
             'note': '',

@@ -6,7 +6,6 @@
   fetchSkeletons,
   InstanceRegistry,
   NeuronNameService,
-  OptionsDialog,
   parseColorWheel,
   project,
   requestQueue,
@@ -14,7 +13,6 @@
   session,
   SVGCanvas,
   SynapseClustering,
-  TracingTool,
   WebGLApplication,
   WindowMaker
 */
@@ -205,7 +203,7 @@ GroupGraph.prototype.toggle_show_node_labels = function() {
 
 GroupGraph.prototype.graph_properties = function() {
   
-  var dialog = new OptionsDialog("Graph properties");
+  var dialog = new CATMAID.OptionsDialog("Graph properties");
   var vpos = ["top", "center", "bottom"];
   var label_vpos = dialog.appendChoice("Node label vertical position", "valign", vpos, vpos, this.label_valign);
   var hpos = ["left", "center", "right"];
@@ -361,7 +359,7 @@ GroupGraph.prototype.init = function() {
     if (evt.originalEvent.altKey) {
       // Select in the overlay
       var models = node.data('skeletons');
-      if (1 === models.length) TracingTool.goToNearestInNeuronOrSkeleton("skeleton", models[0].id);
+      if (1 === models.length) CATMAID.TracingTool.goToNearestInNeuronOrSkeleton("skeleton", models[0].id);
     } else if (evt.originalEvent.shiftKey && (evt.originalEvent.ctrlKey || evt.originalEvent.metaKey)) {
       // Remove node
       delete this.groups[node.id()]; // if present
@@ -1281,7 +1279,7 @@ GroupGraph.prototype.appendGroup = function(models) {
     all.unshift("--");
     names.unshift("--");
 
-    var options = new OptionsDialog("Group properties");
+    var options = new CATMAID.OptionsDialog("Group properties");
     options.appendMessage("Creating new group with " + (names.length - 1) + " neurons.");
     options.appendMessage("Choose a group name from:");
     options.appendMessage("(Will pick first non-empty match.)");
@@ -2711,7 +2709,7 @@ GroupGraph.prototype.splitBySynapseClustering = function() {
 
 GroupGraph.prototype.splitByTag = function() {
   if (0 === this.getSelectedSkeletons().length) return this.split(); // will show message
-  var dialog = new OptionsDialog("Split at tag"),
+  var dialog = new CATMAID.OptionsDialog("Split at tag"),
       input = dialog.appendField("Tag (exact match): ", "tag_text", this.tag_text),
       first = dialog.appendField("Part with root node: ", "root_text", this.tag_title_root),
       rest = dialog.appendField("Other(s): ", "other_text", this.tag_title_others);

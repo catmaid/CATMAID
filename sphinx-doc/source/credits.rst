@@ -10,7 +10,7 @@ Developers
 - Oliver Uvman (Google Summer of Code 2012)
 - Joachim Ott (Janelia Farm Undergraduate Program 2012)
 
-`See also GitHub commit log statistics <https://github.com/acardona/CATMAID/contributors>`_
+`See also GitHub commit log statistics <https://github.com/catmaid/CATMAID/contributors>`_
 
 Others
 ------

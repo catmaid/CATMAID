@@ -1,20 +1,12 @@
 div.sliceView
 {
 	position:relative;
-/*
-	margin:20px 20px 20px 200px;
-	width:100px;
-	height:100px;
-*/
 	margin:0px;
     sliceViewtop:0px;
 	right:0px;
 	bottom:0px;
 	left:0px;
 	padding:0px;
-	/*
-	background:#808080;
-	*/
 	background:#000000;
 	overflow:hidden;
 }
@@ -38,10 +30,6 @@ div.sliceView div.sliceTiles img
 	margin:0px;
 	padding:0px;
 	transform:translateZ(0px);
-/*
-	width:256px;
-	height:256px;
-*/
 }
 
 div.smallMapView,
@@ -59,7 +47,7 @@ div.smallMapView_hidden
 	border-top:solid 4px #000000;
 	border-left:solid 4px #000000;
 	background:#000000;
-	z-index:4;
+	z-index:6;
 }
 div.smallMapView_hidden
 {
@@ -136,7 +124,9 @@ div.TilelayerControl
 	position:relative;
     top:10px;
     left:10px;
-    width: 40%;
+    width: 40em;
+    min-width: 40%;
+    max-width: 80%;
     height: 65%;
     overflow-x: hidden;
     overflow-y: auto;
@@ -186,6 +176,13 @@ li.layerControl::before
 div.TilelayerControl h4
 {
 	margin: 0.5em 0;
+}
+
+div.TilelayerControl .layerClose
+{
+	float: right;
+	margin: 0.3em;
+	cursor: pointer;
 }
 
 .layerControl .setting

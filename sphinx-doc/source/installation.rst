@@ -39,12 +39,12 @@ up one of these web servers is described in later sections.
 1. Clone the repository
 #######################
 
-The git repository is hosted at `https://github.com/acardona/CATMAID
-<https://github.com/acardona/CATMAID>`_  - clone this repository
+The git repository is hosted at `https://github.com/catmaid/CATMAID
+<https://github.com/catmaid/CATMAID>`_  - clone this repository
 somewhere outside your web root, e.g. in ``/home/alice``, so that
 the source code is in ``/home/alice/catmaid``::
 
-   git clone https://github.com/acardona/CATMAID.git catmaid
+   git clone https://github.com/catmaid/CATMAID.git catmaid
 
 2. Install required Python packages
 ###################################
@@ -143,8 +143,9 @@ supports tiff (check e.g. with the help of "gm convert -list format").
 
 If you are comfortable with creating a new PostgreSQL database
 for CATMAID, then you should do that and continue to the next
-section.  The advice here is a suggested approach for people
-who are unsure what to do.
+section. If you decide to do so, please make sure to also install the
+``postgis`` extension for the new CATMAID database. The advice here is a
+suggested approach for people who are unsure what to do.
 
 If you are uncomfortable with using the PostgreSQL interactive
 terminal from the command line, you may wish to install an
@@ -164,7 +165,7 @@ slightly different version for you) and add this line as the
 
 After saving that file, you need to restart PostgreSQL with::
 
-    sudo /etc/init.d/postgresql restart
+    sudo service postgresql restart
 
 You can generate the commands for creating the database and
 database user with the ``scripts/createuser.sh`` helper script.
@@ -176,8 +177,9 @@ user with, for example::
 
     scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql
 
-You should now be able to access the database and see that it is
-currently empty, e.g.::
+Besides createing the database and the database user, it will also enable a
+required Postgres extension, called ``postgis``. You should now be able to
+access the database and see that it is currently empty, e.g.::
 
     psql -U catmaid_user catmaid
     Password:

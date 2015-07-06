@@ -4,13 +4,14 @@
 /**
  * The tracing layer that hosts the tracing data
  */
-function TracingLayer( stack )
+function TracingLayer( stack, options )
 {
+  options = options || {};
 
   var self = this;
 
-  self.opacity = 1.0; // in the range [0,1]
-  this.svgOverlay = new SkeletonAnnotations.SVGOverlay(stack);
+  self.opacity = options.opacity || 1.0; // in the range [0,1]
+  this.svgOverlay = new SkeletonAnnotations.SVGOverlay(stack, options);
 
   /**
    * Return friendly name of this layer.
@@ -22,7 +23,7 @@ function TracingLayer( stack )
 
   this.resize = function ( width, height )
   {
-    self.svgOverlay.redraw( stack );
+    self.svgOverlay.redraw();
     return;
   };
 
@@ -51,8 +52,16 @@ function TracingLayer( stack )
     // TODO: only move the nodes in the Raphael paper
     // will only update them when releasing the mouse when navigating.
 
-    self.svgOverlay.redraw( stack, completionCallback );
+    self.svgOverlay.redraw(false, completionCallback);
     return;
+  };
+
+  /**
+   * Force redrwar of the tracing layer.
+   */
+  this.forceRedraw = function(completionCallback)
+  {
+    self.svgOverlay.redraw(true, completionCallback);
   };
 
   /*
@@ -66,7 +75,12 @@ function TracingLayer( stack )
 
   this.unregister = function()
   {
+    // Remove from DOM, if attached to it
+    var parentElement = this.svgOverlay.view.parentNode;
+    if (parentElement) {
+      parentElement.removeChild(this.svgOverlay.view);
+    }
+
     this.svgOverlay.destroy();
-    // TODO Remove the SVG raphael object from the DOM
   };
 }

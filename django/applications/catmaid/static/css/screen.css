@@ -500,10 +500,24 @@ div#classification_graph_object img.roiimage {
   min-width: 3em;
 }
 
-.connectivity_matrix .remove-skeleton {
-  position: absolute;
-  background-color: salmon;
+.connectivity_matrix .hover-button {
   cursor: pointer;
+  float: left;
+}
+
+.connectivity_matrix .remove-skeleton {
+  background-color: salmon;
+}
+
+.connectivity_matrix .move-up,
+.connectivity_matrix .move-down,
+.connectivity_matrix .move-left,
+.connectivity_matrix .move-right {
+  background-color: skyblue;
+}
+
+.connectivity_matrix .select {
+  background-color: lightgreen;
 }
 
 .connectivity_widget table {
@@ -736,4 +750,8 @@ a.neuron-selection-link:hover {
 
 .vertical-table-header div {
   position: absolute;
+}
+
+.ui-dialog-extra-buttonset {
+  float: left;
 }

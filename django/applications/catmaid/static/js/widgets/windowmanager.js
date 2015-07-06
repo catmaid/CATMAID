@@ -721,7 +721,9 @@ function CMWWindow( title )
 		for ( var i = 0; i < windows.length; ++i )
 		{
 			var w = windows[ i ];
-			if( w.hasFocus() )
+			// Unfocus other window, if it has focus. Don't unfocus this window, if
+			// focus is called multiple times.
+			if( w !== self && w.hasFocus() )
 			{
 				w.getFrame().firstChild.className = "stackInfo";
 				w.callListeners( CMWWindow.BLUR );
@@ -784,6 +786,11 @@ function CMWWindow( title )
 	};
 	
 	frame.onmousedown = this.focus;
+
+	frame.onmouseenter = function( e ) {
+		self.callListeners( CMWWindow.POINTER_ENTER );
+		return false;
+	};
 	
 	titleBar.onmousedown = function( e )
 	{
@@ -973,12 +980,14 @@ CMWWindow.CLOSE = 0;
 CMWWindow.RESIZE = 1;
 CMWWindow.FOCUS = 2;
 CMWWindow.BLUR = 3;
+CMWWindow.POINTER_ENTER = 4;
 
 CMWWindow.signalName = {};
 CMWWindow.signalName[CMWWindow.CLOSE] = 'CLOSE';
 CMWWindow.signalName[CMWWindow.RESIZE] = 'RESIZE';
 CMWWindow.signalName[CMWWindow.FOCUS] = 'FOCUS';
 CMWWindow.signalName[CMWWindow.BLUR] = 'BLUR';
+CMWWindow.signalName[CMWWindow.POINTER_ENTER] = 'POINTER_ENTER';
 
 
 /**

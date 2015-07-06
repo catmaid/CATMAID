@@ -5,7 +5,7 @@
  * requirements:
  *	 tools.js
  *	 slider.js
- *   stack.js
+ *   stackViewer.js
  */
 
 /**
@@ -17,20 +17,19 @@
 function Navigator()
 {
 	var self = this;
-	this.stack = null;
+	this.stackViewer = null;
 	this.toolname = "navigator";
 
 	var sliders_box = document.getElementById( "sliders_box" );
 	this.input_x = document.getElementById( "x" );		//!< x_input
 	this.input_y = document.getElementById( "y" );		//!< y_input
-	this.checkbox_reflines = document.getElementById( "displayreflines" );
 
 	/* remove all existing dimension sliders */
 	while ( sliders_box.firstChild )
 		sliders_box.removeChild( sliders_box.firstChild );
 	
-	this.slider_z = new Slider(
-			SLIDER_HORIZONTAL,
+	this.slider_z = new CATMAID.Slider(
+			CATMAID.Slider.HORIZONTAL,
 			true,
 			1,
 			388,
@@ -38,8 +37,8 @@ function Navigator()
 			1,
 			function( val ){ CATMAID.statusBar.replaceLast( "z: " + val ); return; } );
 	
-	this.slider_s = new Slider(
-			SLIDER_HORIZONTAL,
+	this.slider_s = new CATMAID.Slider(
+			CATMAID.Slider.HORIZONTAL,
 			true,
 			undefined,
 			undefined,
@@ -52,7 +51,8 @@ function Navigator()
 			8,
 			function( val ){ CATMAID.statusBar.replaceLast( "s: " + val ); },
 			undefined,
-			false );
+			false,
+			0.05 );
 	
 	var slider_z_box = document.createElement( "div" );
 	slider_z_box.className = "box";
@@ -85,20 +85,17 @@ function Navigator()
 	
 	this.updateControls = function()
 	{
-		self.slider_s.setByValue( self.stack.s, true );
-		self.slider_z.setByValue( self.stack.z, true );
+		self.slider_s.setByValue( self.stackViewer.s, true );
+		self.slider_z.setByValue( self.stackViewer.z, true );
 
-		self.input_x.value = self.stack.x;
-		self.input_y.value = self.stack.y;
-		
-		return;
+		self.input_x.value = self.stackViewer.x;
+		self.input_y.value = self.stackViewer.y;
 	};
 	
 	this.resize = function( width, height )
 	{
 		self.mouseCatcher.style.width = width + "px";
 		self.mouseCatcher.style.height = height + "px";
-		return;
 	};
 	
 	this.redraw = function()
@@ -108,11 +105,11 @@ function Navigator()
 	
 	var onmousemove = function( e )
 	{
-		self.stack.moveToPixel(
-			self.stack.z,
-			self.stack.y - CATMAID.ui.diffY / self.stack.scale,
-			self.stack.x - CATMAID.ui.diffX / self.stack.scale,
-			self.stack.s );
+		self.stackViewer.moveToPixel(
+			self.stackViewer.z,
+			self.stackViewer.y - CATMAID.ui.diffY / self.stackViewer.scale,
+			self.stackViewer.x - CATMAID.ui.diffX / self.stackViewer.scale,
+			self.stackViewer.s );
 		return true;
 	};
 	
@@ -135,93 +132,26 @@ function Navigator()
 		
 		return false;
 	};
-	
-	var onmousewheel = function( e )
-	{
+
+	var onmousewheel = function (e) {
 		var w = CATMAID.ui.getMouseWheel( e );
-		if ( w )
-		{
-			if ( w > 0 )
-			{
-				self.slider_z.move( 1 );
-			}
-			else
-			{
-				self.slider_z.move( -1 );
-			}
+
+		if (!w) return false;
+		e.preventDefault();
+
+		if (!userprofile.inverse_mouse_wheel) w = -w;
+		w /= Math.abs(w); // Normalize w to {-1, 1}.
+
+		if (e.ctrlKey || e.metaKey) { // Zoom.
+			self.slider_s.move(w, !e.shiftKey);
+		} else { // Move sections.
+			if (e.shiftKey) w *= 10;
+			self.slider_z.move(w);
 		}
-		return false;
+
+		return true;
 	};
 
-	var onmousewheel = 
-	{
-		zoom : function( e )
-		{
-			var w = CATMAID.ui.getMouseWheel( e );
-			if ( w )
-			{
-        		w = self.stack.inverse_mouse_wheel * w;
-				if ( w > 0 )
-				{
-          if( e.shiftKey ) {
-            self.slider_z.move( 10 );
-          } else {
-            self.slider_z.move( 1 );
-          }
-				}
-				else
-				{
-          if( e.shiftKey ) {
-            self.slider_z.move( -10 );
-          } else {
-            self.slider_z.move( -1 );
-          }
-
-				}
-			}
-			return false;
-		},
-		move : function( e )
-		{
-			var xp = self.stack.x;
-			var yp = self.stack.y;
-			var m = CATMAID.ui.getMouse( e, self.stack.getView() );
-			var w = CATMAID.ui.getMouseWheel( e );
-			if ( m )
-			{
-				xp = m.offsetX - self.stack.viewWidth / 2;
-				yp = m.offsetY - self.stack.viewHeight / 2;
-			}
-			if ( w )
-			{
-				if ( w > 0 )
-				{
-					if ( self.stack.s < self.stack.MAX_S )
-					{
-						self.stack.moveToPixel(
-							self.stack.z,
-							self.stack.y - Math.floor( yp / self.stack.scale ),
-							self.stack.x - Math.floor( xp / self.stack.scale ),
-							self.stack.s + 1 );
-					}
-				}
-				else
-				{
-					if ( self.stack.s > 0 )
-					{
-						var ns = self.stack.scale * 2;
-						self.moveToPixel(
-							self.stack.z,
-							self.stack.y + Math.floor( yp / ns ),
-							self.stack.x + Math.floor( xp / ns ),
-							self.stack.s - 1 );
-					}
-				}
-			}
-			return false;
-		}
-	};
-	
 	//--------------------------------------------------------------------------
 	/**
 	 * Slider commands for changing the slice come in too frequently, thus the
@@ -249,8 +179,7 @@ function Navigator()
 	
 	this.changeSlice = function( val )
 	{
-		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
-		return;
+		self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
 	};
 	//--------------------------------------------------------------------------
 	
@@ -279,20 +208,21 @@ function Navigator()
 	this.changeScale = function( val )
 	{
 		// Determine if the mouse is over the stack view.
-		var offset = $(self.stack.getView()).offset();
+		var offset = $(self.stackViewer.getView()).offset();
 		var m = CATMAID.UI.getLastMouse();
 		var x = m.x - offset.left,
 			y = m.y - offset.top;
-		if (x >= 0 && x <= self.stack.viewWidth &&
-			y >= 0 && y <= self.stack.viewHeight) {
-			x /= self.stack.scale;
-			y /= self.stack.scale;
-			x += (self.stack.x - self.stack.viewWidth / self.stack.scale / 2);
-			y += (self.stack.y - self.stack.viewHeight / self.stack.scale / 2);
+		if (userprofile.use_cursor_following_zoom &&
+			x >= 0 && x <= self.stackViewer.viewWidth &&
+			y >= 0 && y <= self.stackViewer.viewHeight) {
+			x /= self.stackViewer.scale;
+			y /= self.stackViewer.scale;
+			x += (self.stackViewer.x - self.stackViewer.viewWidth / self.stackViewer.scale / 2);
+			y += (self.stackViewer.y - self.stackViewer.viewHeight / self.stackViewer.scale / 2);
 			self.scalePreservingLastPosition(x, y, val);
 		} else {
 			// If the mouse is not over the stack view, zoom towards the center.
-			self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
+			self.stackViewer.moveToPixel( self.stackViewer.z, self.stackViewer.y, self.stackViewer.x, val );
 		}
 	};
 
@@ -301,21 +231,21 @@ function Navigator()
 	 * the same position in the view
 	 */
 	this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
-		var old_s = self.stack.s;
-		var old_scale = self.stack.scale;
-		var new_s = Math.max(self.stack.MIN_S, Math.min(self.stack.MAX_S, sp));
-		var new_scale = 1 / Math.pow(2, new_s);
+		var old_s = self.stackViewer.s;
+		var s_extents = self.stackViewer.getZoomExtents();
+		var new_s = Math.max(s_extents.min, Math.min(s_extents.max, sp));
+		var scale_ratio = Math.pow(2, new_s - old_s);
 
 		if (old_s == new_s)
 			return;
 
-		var dx = keep_x - self.stack.x;
-		var dy = keep_y - self.stack.y;
+		var dx = keep_x - self.stackViewer.x;
+		var dy = keep_y - self.stackViewer.y;
 
-		var new_centre_x = keep_x - dx * (old_scale / new_scale);
-		var new_centre_y = keep_y - dy * (old_scale / new_scale);
+		var new_centre_x = keep_x - dx * scale_ratio;
+		var new_centre_y = keep_y - dy * scale_ratio;
 
-		self.stack.moveToPixel(self.stack.z, new_centre_y, new_centre_x, sp);
+		self.stackViewer.moveToPixel(self.stackViewer.z, new_centre_y, new_centre_x, sp);
 	};
 
 	//--------------------------------------------------------------------------
@@ -323,17 +253,15 @@ function Navigator()
 	var changeXByInput = function( e )
 	{
 		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = self.stack.x;
-		else self.stack.moveToPixel( self.stack.z, self.stack.y, val, self.stack.s );
-		return;
+		if ( isNaN( val ) ) this.value = self.stackViewer.x;
+		else self.stackViewer.moveToPixel( self.stackViewer.z, self.stackViewer.y, val, self.stackViewer.s );
 	};
 	
 	var changeYByInput = function( e )
 	{
 		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = self.stack.y;
-		else self.stack.moveToPixel( self.stack.z, val, self.stack.x, self.stack.s );
-		return;
+		if ( isNaN( val ) ) this.value = self.stackViewer.y;
+		else self.stackViewer.moveToPixel( self.stackViewer.z, val, self.stackViewer.x, self.stackViewer.s );
 	};
 	
 	var YXMouseWheel = function( e )
@@ -465,15 +393,16 @@ function Navigator()
 				self.hideLayersHeld = true;
 
 				// Hide any visible layers (besides the tile layer).
-				var stackLayers = project.getStacks().map(function (s) { return s.getLayers(); });
+				var stackLayers = project.getStackViewers().map(function (s) { return s.getLayers(); });
 				var layerOpacities = stackLayers.map(function (layers) {
-					return Object.keys(layers).reduce(function (opacities, k) {
+					var opacities = {};
+					layers.forEach(function (layer, k) {
 						if (k !== 'TileLayer') {
-							opacities[k] = layers[k].getOpacity();
-							layers[k].setOpacity(0);
+							opacities[k] = layer.getOpacity();
+							layer.setOpacity(0);
 						}
-						return opacities;
-					}, {});
+					});
+					return opacities;
 				});
 
 				// Set a key up a listener to make these layers visible again
@@ -484,7 +413,7 @@ function Navigator()
 					if (e.keyCode == 32) {
 						stackLayers.forEach(function (layers, ind) {
 							Object.keys(layerOpacities[ind]).forEach(function (k) {
-								layers[k].setOpacity(layerOpacities[ind][k]);
+								layers.get(k).setOpacity(layerOpacities[ind][k]);
 							});
 							target.onkeyup = oldListener;
 							self.hideLayersHeld = false;
@@ -498,31 +427,32 @@ function Navigator()
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
 
 	/**
-	 * install this tool in a stack.
+	 * install this tool in a stackViewer.
 	 * register all GUI control elements and event handlers
 	 */
-	this.register = function( parentStack, buttonName )
+	this.register = function( parentStackViewer, buttonName )
 	{
 		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button_active";
 		document.getElementById( "toolbar_nav" ).style.display = "block";
 		
-		self.stack = parentStack;
+		self.stackViewer = parentStackViewer;
 
 		self.mouseCatcher.onmousedown = onmousedown;
-		self.mouseCatcher.addEventListener( "wheel", onmousewheel.zoom, false );
+		self.mouseCatcher.addEventListener( "wheel", onmousewheel, false );
 
-		self.stack.getView().appendChild( self.mouseCatcher );
+		self.stackViewer.getView().appendChild( self.mouseCatcher );
 
+		var sExtents = self.stackViewer.getZoomExtents();
 		self.slider_s.update(
-			self.stack.MAX_S,
-			self.stack.MIN_S,
-			{ major: (Math.abs(self.stack.MAX_S) + Math.abs(self.stack.MIN_S)) + 1,
-			  minor: (Math.abs(self.stack.MAX_S) + Math.abs(self.stack.MIN_S))*10 + 1 },
-			self.stack.s,
+			sExtents.max,
+			sExtents.min,
+			{ major: (Math.abs(sExtents.max) + Math.abs(sExtents.min)) + 1,
+			  minor: (Math.abs(sExtents.max) + Math.abs(sExtents.min))*10 + 1 },
+			self.stackViewer.s,
 			self.changeScaleDelayed,
 			-0.01);
 		
-		if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
+		if ( self.stackViewer.primaryStack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
 		{
 			self.slider_z.getView().parentNode.style.display = "none";
 		}
@@ -533,9 +463,9 @@ function Navigator()
 		self.slider_z.update(
 			undefined,
 			undefined,
-			{ major: self.stack.slices.filter(function(el,ind,arr) { return (ind % 10) === 0; }),
-			  minor: self.stack.slices },
-			self.stack.z,
+			{ major: self.stackViewer.primaryStack.slices.filter(function(el,ind,arr) { return (ind % 10) === 0; }),
+			  minor: self.stackViewer.primaryStack.slices },
+			self.stackViewer.z,
 			self.changeSliceDelayed );
 
 		self.input_x.onchange = changeXByInput;
@@ -544,27 +474,7 @@ function Navigator()
 		self.input_y.onchange = changeYByInput;
 		self.input_y.addEventListener( "wheel", YXMouseWheel, false );
 
-		self.checkbox_reflines.checked = userprofile.display_stack_reference_lines;
-		self.checkbox_reflines.onchange = function( e )
-		{
-			// Save current user profile state
-			userprofile.display_stack_reference_lines = this.checked;
-			userprofile.saveAll(
-					(function() {
-						// Success, toggle lines
-						self.stack.showReferenceLines( this.checked );
-					}).bind(this),
-					(function() {
-						// Error, reset checkbox
-						this.checked = !this.checked;
-					}).bind(this));
-
-			return true;
-		};
-		
 		self.updateControls();
-		
-		return;
 	};
 	
 	
@@ -573,9 +483,8 @@ function Navigator()
 	 */
 	this.unregister = function()
 	{
-		if ( self.stack && self.mouseCatcher.parentNode == self.stack.getView() )
-			self.stack.getView().removeChild( self.mouseCatcher );
-		return;
+		if ( self.stackViewer && self.mouseCatcher.parentNode == self.stackViewer.getView() )
+			self.stackViewer.getView().removeChild( self.mouseCatcher );
 	};
 	
 	
@@ -610,11 +519,7 @@ function Navigator()
 		self.input_y.onchange = null;
 		self.input_y.removeEventListener( "wheel", YXMouseWheel, false );
 
-		self.checkbox_reflines.onchange = null;
-
-		self.stack = null;
-		
-		return;
+		self.stackViewer = null;
 	};
 
 	/** This function should return true if there was any action

@@ -197,7 +197,7 @@ def installCatmaid():
 
         installBasePackages()
 
-        run('git clone -b cmw-integration git://github.com/acardona/CATMAID.git')
+        run('git clone -b cmw-integration git://github.com/catmaid/CATMAID.git')
 
         generateConfigFiles()
 

@@ -249,4 +249,39 @@ CATMAID.tools = CATMAID.tools || {};
     return lum <= 128 ? "white" : "black";
   };
 
+  /**
+   * Return the intersection of the line given by the two points with the XY plane
+   * through the given Z.
+   */
+  tools.intersectLineWithZPlane = function(x1, y1, z1, x2, y2, z2, zPlane)
+  {
+    // General point equation would be P1 + (P2 - P1) * t, calculate d = P2 - P1
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var dz = z2 - z1;
+
+    // Now the correct t needs to be found that intersects the given z plane.
+    // Using the general point equation we can determine z = z1 + dz * t, which
+    // translates to t = (z - z1) / dz. With z being our z plane we get the
+    // correct t where the intersection happens.
+    var t = (zPlane - z1) / dz;
+
+    // Return the intersection X and Y by using the general point equation. Z
+    // was already given as a parameter.
+
+    return [x1 + t * dx, y1 + t * dy];
+  };
+
+  /**
+   * Test if two number have the same sign.
+   *
+   * @param a First number to compare
+   * @param b Second number to compare
+   * @return true if a and b have the same sign, false otherwise.
+   */
+  tools.sameSign = function(a, b)
+  {
+    return (a < 0) === (b < 0);
+  };
+
 })(CATMAID.tools);

@@ -7,7 +7,7 @@
  *	 request.js
  *
  */
- 
+
 /**
  */
 
@@ -26,45 +26,37 @@ function Project( pid )
 	};
 
 	/**
-	 * Add a stack to the project. The stack reference is returned. In
-	 * case a stack with the same ID is already loaded, a reference to
-	 * this existing stack is returned.
+	 * Add a stack viewer to the project.
 	 */
-	this.addStack = function( stack )
+	this.addStackViewer = function( stackViewer )
 	{
-		var opened = false;
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			if ( stacks[ i ].isEqual( stack ) )
-			{
-				stack = stacks[ i ];
-				opened = true;
-				break;
-			}
-		}
-		if ( !opened )
-		{
-			stacks.push( stack );
-			if ( rootWindow.getChild() === null )
-				rootWindow.replaceChild( stack.getWindow() );
-			else
-				rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), stack.getWindow() ) );
-			
-			stack.getWindow().focus();	
-			CATMAID.ui.onresize();
-		}
-		if ( stacks.length > 1 )
-			self.moveTo( self.coordinates.z, self.coordinates.y, self.coordinates.x );
+		// Save a local reference to the currently focused stack, because it gets
+		// overwritten if the new stack is added.
+		var lastFocusedStackViewer = self.focusedStackViewer;
+
+		stackViewers.push( stackViewer );
+
+		if ( rootWindow.getChild() === null )
+			rootWindow.replaceChild( stackViewer.getWindow() );
+		else
+			rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), stackViewer.getWindow() ) );
+
+		stackViewer.getWindow().focus();
+		CATMAID.ui.onresize();
+
+		if ( stackViewers.length > 1 )
+			self.moveToProject( self.coordinates.z, self.coordinates.y, self.coordinates.x,
+					lastFocusedStackViewer.primaryStack.resolution.x / lastFocusedStackViewer.scale );
 		else
 		{
-			var c = stack.projectCoordinates();
+			var c = stackViewer.projectCoordinates();
 			self.moveTo( c.z, c.y, c.x );
 		}
 
-		self.setFocusedStack( stack );
+		self.setFocusedStackViewer( stackViewer );
 
-		// only set the tool for the first stack
-		if ( stacks.length == 1 )
+		// only set the tool for the first stack viewer
+		if ( stackViewers.length == 1 )
 		{
 			if ( !tool )
 				tool = new Navigator();
@@ -73,73 +65,83 @@ function Project( pid )
 
 		}
 
-		// return the (possibly updated) stack reference
-		return stack;
+		// Announce that a new stack view was added
+		this.trigger(Project.EVENT_STACKVIEW_ADDED, stackViewer);
 	};
-	
+
 	/**
-	 * get one of the projects currently opened stacks
+	 * Get one of the projects currently opened stack viewers.
 	 */
-	this.getStack = function( sid )
+	this.getStackViewer = function (id)
 	{
-		for ( var i = 0; i < stacks.length; ++i )
+		for ( var i = 0; i < stackViewers.length; ++i )
 		{
-			if ( stacks[ i ].id == sid ) return stacks[ i ];
+			if ( stackViewers[ i ].getId() === id ) return stackViewers[ i ];
 		}
 		return false;
 	};
 
 	/**
-	 * get all the currently opened stacks
+	 * Get all currently opened stack viewers.
+	 *
+	 * @return {StackViewer[]}
 	 */
-	this.getStacks = function()
+	this.getStackViewers = function()
 	{
-		return stacks;
+		return stackViewers;
+	};
+
+	this.getViewersForStack = function (stackId)
+	{
+		return stackViewers.filter(function (stackViewer) {
+			return stackViewer.primaryStack.id === stackId;
+		});
 	};
 
 	/**
-	 * remove a stack from the list
+	 * Remove a stack viewer from the list.
 	 */
-	this.removeStack = function( sid )
+	this.removeStackViewer = function (id)
 	{
-		for ( var i = 0; i < stacks.length; ++i )
+		for ( var i = 0; i < stackViewers.length; ++i )
 		{
-			if ( stacks[ i ].id == sid )
+			if ( stackViewers[ i ].getId() === id )
 			{
-				stacks.splice( i, 1 );
-				if ( stacks.length === 0 )
+				var removedViews = stackViewers.splice( i, 1 );
+				if ( stackViewers.length === 0 )
 					self.destroy();
 				else
-					stacks[ ( i + 1 ) % stacks.length ].getWindow().focus();
+					stackViewers[ ( i + 1 ) % stackViewers.length ].getWindow().focus();
+
+				// Announce that this stack view was closed
+				this.trigger(Project.EVENT_STACKVIEW_CLOSED, removedViews[0]);
 			}
 		}
 		CATMAID.ui.onresize();
-		return;
 	};
-	
+
 	/**
 	 * focus a stack and blur the rest
 	 */
-	this.setFocusedStack = function( stack )
+	this.setFocusedStackViewer = function( stackViewer )
 	{
-		self.focusedStack = stack;
+		self.focusedStackViewer = stackViewer;
 		if ( tool )
-			self.focusedStack.setTool( tool );
+			self.focusedStackViewer.setTool( tool );
 		window.onresize();
-		return;
+		this.trigger(Project.EVENT_STACKVIEW_FOCUS_CHANGED, stackViewer);
 	};
-	
+
 	/**
 	 * focus the next or prior stack
 	 */
 	this.switchFocus = function( s )
 	{
 		var i;
-		for ( i = 0; i < stacks.length; ++i )
-			if ( self.focusedStack == stacks[ i ] ) break;
-			
-		stacks[ ( i + stacks.length + s ) % stacks.length ].getWindow().focus();
-		return;
+		for ( i = 0; i < stackViewers.length; ++i )
+			if ( self.focusedStackViewer == stackViewers[ i ] ) break;
+
+		stackViewers[ ( i + stackViewers.length + s ) % stackViewers.length ].getWindow().focus();
 	};
 
 	//!< Associative array of selected objects
@@ -178,13 +180,13 @@ function Project( pid )
 		document.getElementById( "toolbar_text" ).style.display = "none";
 		document.getElementById( "toolbar_trace" ).style.display = "none";
 	};
-	
+
     this.hideToolboxes = function()
 	{
 		document.getElementById( "toolbox_segmentation" ).style.display = "none";
 		document.getElementById( "toolbox_data" ).style.display = "none";
 	};
-	
+
 	this.setTool = function( newTool )
 	{
 		// Destroy the old project only, if it isn't the very same project that gets
@@ -192,29 +194,28 @@ function Project( pid )
 		if( tool && newTool !== tool )
 			tool.destroy();
 		tool = newTool;
-		
+
 		self.hideToolboxes();
 
-		if ( !self.focusedStack && stacks.length > 0 ) {
-			self.setFocusedStack( stacks[ 0 ] );
-		} 
+		if ( !self.focusedStackViewer && stackViewers.length > 0 ) {
+			self.setFocusedStackViewer( stackViewers[ 0 ] );
+		}
 
-		self.focusedStack.setTool( tool );
+		self.focusedStackViewer.setTool( tool );
 
-		if ( self.focusedStack ) {
-			if (!self.focusedStack.getWindow().hasFocus())
-				self.focusedStack.getWindow().focus();
+		if ( self.focusedStackViewer ) {
+			if (!self.focusedStackViewer.getWindow().hasFocus())
+				self.focusedStackViewer.getWindow().focus();
 		}
 		window.onresize();
 		WindowMaker.setKeyShortcuts();
-		return;
 	};
 
 	this.getTool = function( )
 	{
 		return tool;
 	};
-	
+
 	this.toggleShow = function( m )
 	{
 		switch ( m )
@@ -224,20 +225,19 @@ function Project( pid )
 			{
 				show_textlabels = false;
 				document.getElementById( "show_button_text" ).className = "button";
-				for ( var i = 0; i < stacks.length; ++i )
-					stacks[ i ].showTextlabels( false );
+				for ( var i = 0; i < stackViewers.length; ++i )
+					stackViewers[ i ].showTextlabels( false );
 			}
 			else
 			{
 				show_textlabels = true;
-				for ( var i = 0; i < stacks.length; ++i )
-					stacks[ i ].showTextlabels( true );
+				for ( var i = 0; i < stackViewers.length; ++i )
+					stackViewers[ i ].showTextlabels( true );
 				document.getElementById( "show_button_text" ).className = "button_active";
 			}
 		}
-		return;
 	};
-	
+
 	/**
 	 * register all GUI elements
 	 */
@@ -248,12 +248,10 @@ function Project( pid )
 		document.body.appendChild( view );
 		CATMAID.ui.registerEvent( "onresize", resize );
 		//window.onresize();
-		
+
 		document.onkeydown = onkeydown;
-		
-		return;
 	};
-	
+
 	/**
 	 * unregister and remove all stacks, free the event-handlers, hide the stack-toolbar
 	 *
@@ -262,11 +260,11 @@ function Project( pid )
 	this.destroy = function()
 	{
 		if ( tool ) tool.destroy();
-		
+
 		//! Close all windows. There is no need to explicitely call close()
 		//! on the root window as this done by the last child.
 		rootWindow.closeAllChildren();
-			
+
 		CATMAID.ui.removeEvent( "onresize", resize );
 		try
 		{
@@ -286,8 +284,6 @@ function Project( pid )
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 
 		project = null;
-
-		return;
 	};
 
 	/**
@@ -305,34 +301,39 @@ function Project( pid )
 		yp,
 		xp,
 		sp,
-		stacks,
+		stackViewers,
 		completionCallback)
 	{
 		var stackToMove;
-		if (stacks.length === 0) {
+		if (stackViewers.length === 0) {
 			// FIXME: do we need a callback for tool.redraw as well?
 			if ( tool && tool.redraw )
 				tool.redraw();
+			this.trigger(Project.EVENT_LOCATION_CHANGED, this.coordinates.x,
+				this.coordinates.y, this.coordinates.z);
 			if (typeof completionCallback !== "undefined") {
 				completionCallback();
 			}
 		} else {
 			// Move current stack and continue with next one (or the completion
 			// callback) as a continuation of the moveTo() call on the current stack.
-			stackToMove = stacks.shift();
+			stackToMove = stackViewers.shift();
 			stackToMove.moveTo( zp,
 					    yp,
 					    xp,
 					    sp,
 					    function () {
-						    self.moveToInStacks( zp, yp, xp, sp, stacks, completionCallback );
+						    self.moveToInStacks( zp, yp, xp, sp, stackViewers, completionCallback );
 					    });
 		}
 	};
 
 	/**
-	 * Move all stacks to the physical coordinates and execute a completion
-	 * callback when everything is done. One stack is moved as a continuation
+	 * move all stacks to the physical coordinates, except sp, sp is a
+	 * stack specific scale level that cannot be traced back to where it
+	 * came from, so we just pass it through.
+         * Rxecute a completion * callback when everything is done.
+         * One stack is moved as a continuation
 	 * of the stack before (except first stack, which is moved directly). This
 	 * makes sure we also wait for asynchronous requests to finish, that a stack
 	 * move might imply (e.g. requesting more treenodes for the tracing tool).
@@ -349,15 +350,72 @@ function Project( pid )
 		self.coordinates.y = yp;
 		self.coordinates.z = zp;
 
-		
-		for ( var i = 0; i < stacks.length; ++i )
+
+		for ( var i = 0; i < stackViewers.length; ++i )
 		{
-			stacksToMove.push( stacks[ i ] );
+			if ( stackViewers[ i ].navigateWithProject ) stacksToMove.push( stackViewers[ i ] );
 		}
 
 		// Call recursive moving function which executes the completion callback as
 		// a continuation after the last stack has been moved.
 		self.moveToInStacks( zp, yp, xp, sp, stacksToMove, completionCallback );
+	};
+
+
+	this.moveToProjectInStacks = function(
+		zp,
+		yp,
+		xp,
+		res,
+		stackViewers,
+		completionCallback)
+	{
+		var stackToMove;
+		if (stackViewers.length === 0) {
+			// FIXME: do we need a callback for tool.redraw as well?
+			if ( tool && tool.redraw )
+				tool.redraw();
+			// Emit location change event and call callback
+			this.trigger(Project.EVENT_LOCATION_CHANGED, this.coordinates.x,
+				this.coordinates.y, this.coordinates.z);
+			if (typeof completionCallback !== "undefined") {
+				completionCallback();
+			}
+		} else {
+			stackToMove = stackViewers.shift();
+			stackToMove.moveToProject( zp,
+					    yp,
+					    xp,
+					    res,
+					    function () {
+						    self.moveToProjectInStacks( zp, yp, xp, res, stackViewers, completionCallback );
+					    });
+		}
+	};
+
+	/**
+	 * move all stacks to the physical coordinates, at a given resolution
+	 * in units per pixels
+	 */
+	this.moveToProject = function(
+		zp,
+		yp,
+		xp,
+		res,
+		completionCallback)
+	{
+		var stacksToMove = [];
+		self.coordinates.x = xp;
+		self.coordinates.y = yp;
+		self.coordinates.z = zp;
+
+
+		for ( var i = 0; i < stackViewers.length; ++i )
+		{
+			if ( stackViewers[ i ].navigateWithProject ) stacksToMove.push( stackViewers[ i ] );
+		}
+
+		self.moveToProjectInStacks( zp, yp, xp, res, stacksToMove, completionCallback );
 	};
 
   this.updateTool = function()
@@ -382,7 +440,7 @@ function Project( pid )
 	{
 		var coords;
 		var url="?pid=" + self.id;
-		if ( stacks.length > 0 )
+		if ( stackViewers.length > 0 )
 		{
 			//coords = stacks[ 0 ].projectCoordinates();		//!< @todo get this from the SELECTED stack to avoid approximation errors!
 			url += "&zp=" + self.coordinates.z + "&yp=" + self.coordinates.y + "&xp=" + self.coordinates.x;
@@ -394,9 +452,9 @@ function Project( pid )
           url += "&active_node_id=" + SkeletonAnnotations.getActiveNodeId();
         }
       }
-			for ( var i = 0; i < stacks.length; ++i )
+			for ( var i = 0; i < stackViewers.length; ++i )
 			{
-				url += "&sid" + i + "=" + stacks[ i ].id + "&s" + i + "=" + stacks[ i ].s;
+				url += "&sid" + i + "=" + stackViewers[ i ].primaryStack.id + "&s" + i + "=" + stackViewers[ i ].s;
 			}
 		}
 		return url;
@@ -493,45 +551,45 @@ function Project( pid )
 			return true;
 		}
 	};
-	
+
 	/**
 	 * Get project ID.
 	 */
 	this.getId = function(){ return pid; };
-	
+
 	// initialise
 	var self = this;
 	this.id = pid;
 	if ( typeof requestQueue == "undefined" ) requestQueue = new RequestQueue();
-	
+
 	var tool = null;
-	
+
 	var view = rootWindow.getFrame();
 	view.className = "projectView";
-	
-	this.coordinates = 
+
+	this.coordinates =
 	{
 		x : 0,
 		y : 0,
 		z : 0
 	};
-	
+
 	var template;				//!< DTD like abstract object tree (classes)
 	var data;					//!< instances in a DOM representation
-	
-	var stacks = [];	//!< a list of stacks related to the project
-	this.focusedStack = undefined;
-	
+
+	var stackViewers = [];	//!< a list of stacks related to the project
+	this.focusedStackViewer = undefined;
+
 	var mode = "move";
 	var show_textlabels = true;
-	
+
 	var icon_text_apply = document.getElementById( "icon_text_apply" );
 
 	/** The only actions that should be added to Project are those
 	    that should be run regardless of the current tool, such as
 	    actions that switch tools. */
 
-	var actions = toolActions.concat(editToolActions);
+	var actions = CATMAID.toolActions.concat(CATMAID.EditTool.actions);
 
 	this.getActions = function () {
 		return actions;
@@ -539,3 +597,10 @@ function Project( pid )
 
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
 }
+
+// Add event support to project and define some event constants
+CATMAID.Events.extend(Project.prototype);
+Project.EVENT_STACKVIEW_ADDED = 'project_stackview_added';
+Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
+Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';
+Project.EVENT_LOCATION_CHANGED = 'project_location_changed';

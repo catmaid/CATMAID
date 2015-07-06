@@ -4,11 +4,30 @@ overrides last_insert_id so that it works with inherited tables.
 Instead of using pg_get_serial_sequence, this finds the default value
 of the primary key for the table and parse out the sequence name from
 that.
+
+As of May 2015 this is still required: It replaces last_insert_id, a
+function that returns the last ID of a sequence. The implementation in
+Django 1.6.11 and more recent versions (like 1.8.2) does the following:
+
+  SELECT CURRVAL(pg_get_serial_sequence(tablename, pk_name))
+
+Unfortunately, in Postgres 9.4 (and I assume in earlier versions, too)
+
+  pg_get_serial_sequence(tablename, pk_name)
+
+can't work with sequences defined in parent tables if inheritance is
+used. CATMAID uses table inheritance and Django this Postgres function.
+So it has to be worked around this problem.
+
+Performance-wise, this should not be a big problem. this extra query is
+also done in Django's version (even if in a much simpler version). The
+function last_insert_id is only used for insert statements through the
+ORM.
 """
 
-from django.db.backends.postgresql_psycopg2.base import DatabaseWrapper as PG2DatabaseWrapper
-from django.db.backends.postgresql_psycopg2.base import DatabaseError as PG2DatabaseError
-from django.db.backends.postgresql_psycopg2.base import DatabaseOperations as PG2DatabaseOperations
+# CATMAID uses PostGIS, so we need to make sure we wrap the PostGIS backend
+from django.contrib.gis.db.backends.postgis.base import DatabaseWrapper as PostGISDatabaseWrapper
+from django.contrib.gis.db.backends.postgis.operations import PostGISOperations
 
 import re
 import sys
@@ -16,7 +35,7 @@ import sys
 class DatabaseError(Exception):
     pass
 
-class DatabaseOperations(PG2DatabaseOperations):
+class DatabaseOperations(PostGISOperations):
     def last_insert_id(self, cursor, table_name, pk_name):
         # Get the default value for the column name:
         cursor.execute('''
@@ -43,7 +62,7 @@ SELECT adsrc
         cursor.execute("SELECT CURRVAL(%s)", (m.group(1),))
         return cursor.fetchone()[0]
 
-class DatabaseWrapper(PG2DatabaseWrapper):
+class DatabaseWrapper(PostGISDatabaseWrapper):
     def __init__(self, *args, **kwargs):
         super(DatabaseWrapper, self).__init__(*args, **kwargs)
         self.ops = DatabaseOperations(self)

@@ -131,7 +131,7 @@ var Userprofile = function(profile) {
  */
 Userprofile.prototype.getOptions = function() {
   return {
-    inverse_mouse_wheel: false,
+    inverse_mouse_wheel: true,
     display_stack_reference_lines: true,
     independent_ontology_workspace_is_default: false,
     show_text_label_tool: false,
@@ -143,7 +143,8 @@ Userprofile.prototype.getOptions = function() {
     show_roi_tool: false,
     tracing_overlay_screen_scaling: true,
     tracing_overlay_scale: true,
-    prefer_webgl_layers: true
+    prefer_webgl_layers: true,
+    use_cursor_following_zoom: true
   };
 };
 

@@ -145,7 +145,7 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
 
     status = {}
     for skid, s in skeletons.iteritems():
-        ratio = int(100 * s.num_reviewed / s.num_nodes)
+        ratio = int(100 * s.num_reviewed / s.num_nodes) if s.num_nodes > 0 else 0
         status[skid] = ratio
 
     return status

@@ -315,10 +315,10 @@ var ClassificationEditor = new function()
         });
 
         // handlers
-        //	"inst" : /* the actual tree instance */,
-        //	"args" : /* arguments passed to the function */,
-        //	"rslt" : /* any data the function passed to the event */,
-        //	"rlbk" : /* an optional rollback object - it is not always present */
+        //  "inst" : /* the actual tree instance */,
+        //  "args" : /* arguments passed to the function */,
+        //  "rslt" : /* any data the function passed to the event */,
+        //  "rlbk" : /* an optional rollback object - it is not always present */
 
         // react to the opening of a node
         tree.bind("open_node.jstree", function (e, data) {
@@ -467,14 +467,14 @@ var ClassificationEditor = new function()
                 x_max: cb.right,
                 y_min: cb.top,
                 y_max: cb.bottom,
-                z: tool.stack.z * tool.stack.resolution.z + tool.stack.translation.z,
-                zoom_level: tool.stack.s,
+                z: tool.stackViewer.z * tool.stackViewer.resolution.z + tool.stackViewer.translation.z,
+                zoom_level: tool.stackViewer.s,
                 rotation_cw: cb.rotation_cw
             };
             // The actual creation and linking of the ROI happens in
             // the back-end. Create URL for initiating this:
             var roi_url = self.get_cls_url(project.id,
-                "/stack/" + tool.stack.getId() + "/linkroi/" + node_id + "/");
+                "/stack/" + tool.stackViewer.primaryStack.getId() + "/linkroi/" + node_id + "/");
             // Make Ajax call and handle response in callback
             requestQueue.register(roi_url, 'POST', data,
                 CATMAID.jsonResponseHandler(
@@ -508,8 +508,8 @@ var ClassificationEditor = new function()
         cancel_button.appendChild(cancel_link);
 
         // Add cancel button to toolbar
-	    var toolbar = document.getElementById("toolbar_roi");
-	    var toolbar_button = document.getElementById("button_roi_apply").parentNode;
+        var toolbar = document.getElementById("toolbar_roi");
+        var toolbar_button = document.getElementById("button_roi_apply").parentNode;
         toolbar.insertBefore(cancel_button, toolbar_button.nextSibling);
 
         // Make sure the cancel button gets removed

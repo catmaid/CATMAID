@@ -23,7 +23,7 @@ except:
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def node_list_tuples(request, project_id=None):
+def node_list_tuples(request, project_id=None, provider=None):
     ''' Retrieve an JSON array with four entries:
     [0] an array of arrays, each array representing a treenode
     [1] an array of arrays, each array representing a connector and containing
@@ -47,11 +47,122 @@ def node_list_tuples(request, project_id=None):
     # top: the Y coordinate of the bounding box (field of view) in calibrated units
     # left: the X coordinate of the bounding box (field of view) in calibrated units
     atnid = int(request.POST.get('atnid', -1))
-    for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
+    for p in ('top', 'left', 'bottom', 'right', 'z1', 'z2'):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
+    includeLabels = (request.POST.get('labels', None) == 'true')
 
+    provider = get_treenodes_postgis
+
+    return node_list_tuples_query(request.user, params, project_id, atnid,
+                                  includeLabels, provider)
+
+
+def get_treenodes_classic(cursor, params):
+    # Fetch treenodes which are in the bounding box,
+    # which in z it includes the full thickess of the prior section
+    # and of the next section (therefore the '<' and not '<=' for zhigh)
+    cursor.execute('''
+    SELECT
+        t1.id,
+        t1.parent_id,
+        t1.location_x,
+        t1.location_y,
+        t1.location_z,
+        t1.confidence,
+        t1.radius,
+        t1.skeleton_id,
+        t1.user_id,
+        t2.id,
+        t2.parent_id,
+        t2.location_x,
+        t2.location_y,
+        t2.location_z,
+        t2.confidence,
+        t2.radius,
+        t2.skeleton_id,
+        t2.user_id
+    FROM treenode t1
+            INNER JOIN treenode t2 ON
+            (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
+            OR (t1.parent_id IS NULL AND t1.id = t2.id))
+    WHERE
+            t1.location_z >= %(z1)s
+        AND t1.location_z <  %(z2)s
+        AND t1.location_x >= %(left)s
+        AND t1.location_x <  %(right)s
+        AND t1.location_y >= %(top)s
+        AND t1.location_y <  %(bottom)s
+        AND t1.project_id = %(project_id)s
+    LIMIT %(limit)s
+    ''', params)
+
+    return cursor.fetchall()
+
+
+def get_treenodes_postgis(cursor, params):
+    """ Selects all treenodes of which links to other treenodes intersect with
+    the request bounding box.
+    """
+    params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+    params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+
+    # Fetch treenodes with the help of two PostGIS filters: The &&& operator
+    # to exclude all edges that don't have a bounding box that intersect with
+    # the query bounding box. This leads to false positives, because edge
+    # bounding boxes can intersect without the edge actually intersecting. To
+    # limit the result set, ST_3DDWithin is used. It allows to limit the result
+    # set by a distance to another geometry. Here it only allows edges that are
+    # no farther away than half the height of the query bounding box from a
+    # plane that cuts the query bounding box in half in Z. There are still false
+    # positives, but much fewer. Even though ST_3DDWithin is used, it seems to
+    # be enough to have a n-d index available (the query plan says ST_3DDWithin
+    # wouldn't use a 2-d index in this query, even if present).
+    cursor.execute('''
+    SELECT
+        t1.id,
+        t1.parent_id,
+        t1.location_x,
+        t1.location_y,
+        t1.location_z,
+        t1.confidence,
+        t1.radius,
+        t1.skeleton_id,
+        t1.user_id,
+        t2.id,
+        t2.parent_id,
+        t2.location_x,
+        t2.location_y,
+        t2.location_z,
+        t2.confidence,
+        t2.radius,
+        t2.skeleton_id,
+        t2.user_id
+    FROM
+      treenode t1,
+      treenode t2,
+      (SELECT te.id
+         FROM treenode_edge te
+         WHERE te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
+                                       %(right)s %(top)s %(z1)s)'
+           AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
+            'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
+                        %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
+                        %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+      ) edges(edge_child_id)
+    WHERE
+          t1.project_id = %(project_id)s
+      AND (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
+           OR (t1.parent_id IS NULL AND t1.id = t2.id))
+      AND edge_child_id = t1.id
+    LIMIT %(limit)s
+    ''', params)
+
+    return cursor.fetchall()
+
+
+def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_provider):
     try:
         cursor = connection.cursor()
 
@@ -62,51 +173,12 @@ def node_list_tuples(request, project_id=None):
 
         response_on_error = 'Failed to query treenodes'
 
-        is_superuser = request.user.is_superuser
-        user_id = request.user.id
+        is_superuser = user.is_superuser
+        user_id = user.id
 
         # Set of other user_id for which the request user has editing rights on.
         # For a superuser, the domain is all users, and implicit.
         domain = None if is_superuser else user_domain(cursor, user_id)
-
-        # Fetch treenodes which are in the bounding box,
-        # which in z it includes the full thickess of the prior section
-        # and of the next section (therefore the '<' and not '<=' for zhigh)
-        params['bottom'] = params['top'] + params['height']
-        params['right'] = params['left'] + params['width']
-        cursor.execute('''
-        SELECT
-            t1.id,
-            t1.parent_id,
-            t1.location_x,
-            t1.location_y,
-            t1.location_z,
-            t1.confidence,
-            t1.radius,
-            t1.skeleton_id,
-            t1.user_id,
-            t2.id,
-            t2.parent_id,
-            t2.location_x,
-            t2.location_y,
-            t2.location_z,
-            t2.confidence,
-            t2.radius,
-            t2.skeleton_id,
-            t2.user_id
-        FROM treenode t1
-             INNER JOIN treenode t2 ON
-               (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
-                OR (t1.parent_id IS NULL AND t1.id = t2.id))
-        WHERE
-            t1.location_z = %(z)s
-            AND t1.location_x > %(left)s
-            AND t1.location_x < %(right)s
-            AND t1.location_y > %(top)s
-            AND t1.location_y < %(bottom)s
-            AND t1.project_id = %(project_id)s
-        LIMIT %(limit)s
-        ''', params)
 
         # Above, notice that the join is done for:
         # 1. A parent-child or child-parent pair (where the first one is in section z)
@@ -121,7 +193,7 @@ def node_list_tuples(request, project_id=None):
         treenode_ids = set()
 
         n_retrieved_nodes = 0 # at one per row, only those within the section
-        for row in cursor.fetchall():
+        for row in tn_provider(cursor, params):
             n_retrieved_nodes += 1
             t1id = row[0]
             if t1id not in treenode_ids:
@@ -138,22 +210,22 @@ def node_list_tuples(request, project_id=None):
         crows = []
 
         if treenode_ids:
+            treenode_list = ','.join('({0})'.format(t) for t in treenode_ids)
             response_on_error = 'Failed to query connector locations.'
             cursor.execute('''
-            SELECT connector.id,
-                connector.location_x,
-                connector.location_y,
-                connector.location_z,
-                connector.confidence,
-                treenode_connector.relation_id,
-                treenode_connector.treenode_id,
-                treenode_connector.confidence,
-                connector.user_id
-            FROM treenode_connector,
-                 connector
-            WHERE treenode_connector.treenode_id IN (%s)
-              AND treenode_connector.connector_id = connector.id
-            ''' % ','.join(map(str, treenode_ids)))
+            SELECT c.id,
+                c.location_x,
+                c.location_y,
+                c.location_z,
+                c.confidence,
+                tc.relation_id,
+                tc.treenode_id,
+                tc.confidence,
+                c.user_id
+            FROM treenode_connector tc
+            INNER JOIN connector c ON (tc.connector_id = c.id)
+            INNER JOIN (VALUES %s) vals(v) ON tc.treenode_id = v
+                           ''' % treenode_list)
 
             crows = list(cursor.fetchall())
 
@@ -174,11 +246,12 @@ def node_list_tuples(request, project_id=None):
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
-          AND connector.location_z = %(z)s
-          AND connector.location_x > %(left)s
-          AND connector.location_x < %(right)s
-          AND connector.location_y > %(top)s
-          AND connector.location_y < %(bottom)s
+          AND connector.location_z >= %(z1)s
+          AND connector.location_z <  %(z2)s
+          AND connector.location_x >= %(left)s
+          AND connector.location_x <  %(right)s
+          AND connector.location_y >= %(top)s
+          AND connector.location_y <  %(bottom)s
         ''', params)
 
         crows.extend(cursor.fetchall())
@@ -247,7 +320,7 @@ def node_list_tuples(request, project_id=None):
         # below.
 
         if missing_treenode_ids:
-            params['missing'] = tuple(missing_treenode_ids)
+            missing_id_list = ','.join('({0})'.format(mnid) for mnid in missing_treenode_ids)
             response_on_error = 'Failed to query treenodes from connectors'
             cursor.execute('''
             SELECT id,
@@ -259,41 +332,42 @@ def node_list_tuples(request, project_id=None):
                 radius,
                 skeleton_id,
                 user_id
-            FROM treenode
-            WHERE id IN %(missing)s''', params)
+            FROM treenode, (VALUES %s) missingnodes(mnid)
+            WHERE id = mnid''' % missing_id_list)
 
             for row in cursor.fetchall():
                 treenodes.append(row)
                 treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
 
         labels = defaultdict(list)
-        if 'true' == request.POST.get('labels', None):
-            z0 = params['z']
+        if includeLabels:
+            z1 = params['z1']
+            z2 = params['z2']
             # Collect treenodes visible in the current section
-            visible = ','.join(str(row[0]) for row in treenodes if row[4] == z0)
+            visible = ','.join('({0})'.format(row[0]) for row in treenodes if row[4] >= z1 and row[4] < z2)
             if visible:
                 cursor.execute('''
-                SELECT treenode.id, class_instance.name
-                FROM treenode, class_instance, treenode_class_instance
+                SELECT tnid, class_instance.name
+                FROM class_instance, treenode_class_instance,
+                     (VALUES %s) treenodes(tnid)
                 WHERE treenode_class_instance.relation_id = %s
-                  AND treenode.id IN (%s)
-                  AND treenode_class_instance.treenode_id = treenode.id
+                  AND treenode_class_instance.treenode_id = tnid
                   AND class_instance.id = treenode_class_instance.class_instance_id
-                ''' % (relation_map['labeled_as'], visible))
+                ''' % (visible, relation_map['labeled_as']))
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 
             # Collect connectors visible in the current section
-            visible = ','.join(str(row[0]) for row in connectors if row[3] == z0)
+            visible = ','.join('({0})'.format(row[0]) for row in connectors if row[3] >= z1 and row[3] < z2)
             if visible:
                 cursor.execute('''
-                SELECT connector.id, class_instance.name
-                FROM connector, class_instance, connector_class_instance
+                SELECT cnid, class_instance.name
+                FROM class_instance, connector_class_instance,
+                     (VALUES %s) connectors(cnid)
                 WHERE connector_class_instance.relation_id = %s
-                  AND connector.id IN (%s)
-                  AND connector_class_instance.connector_id = connector.id
+                  AND connector_class_instance.connector_id = cnid
                   AND class_instance.id = connector_class_instance.class_instance_id
-                ''' % (relation_map['labeled_as'], visible))
+                ''' % (visible, relation_map['labeled_as']))
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 
@@ -537,8 +611,8 @@ def _fetch_locations(location_ids):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_location(request, project_id=None):
+    tnid = int(request.POST['tnid'])
     try:
-        tnid = int(request.POST['tnid'])
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain the location of node with id #%s' % tnid)

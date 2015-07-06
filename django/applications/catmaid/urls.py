@@ -166,7 +166,7 @@ urlpatterns += patterns('catmaid.control.node',
 # Treenode access
 urlpatterns += patterns('catmaid.control.treenode',
     (r'^(?P<project_id>\d+)/treenode/create$', 'create_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/create/interpolated$', 'create_interpolated_treenode'),
+    (r'^(?P<project_id>\d+)/treenode/insert$', 'insert_treenode'),
     (r'^(?P<project_id>\d+)/treenode/delete$', 'delete_treenode'),
     (r'^(?P<project_id>\d+)/treenode/info$', 'treenode_info'),
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/parent$', 'update_parent'),
@@ -185,6 +185,7 @@ urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeleton/review-status$', 'review_status'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', 'skeleton_statistics'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', 'contributor_statistics'),
+    (r'^(?P<project_id>\d+)/skeleton/contributor_statistics_multiple$', 'contributor_statistics_multiple'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/openleaf$', 'last_openleaf'),
     (r'^(?P<project_id>\d+)/skeleton/split$', 'split_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/get-root$', 'root_for_skeleton'),
@@ -193,7 +194,6 @@ urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'reroot_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
             'get_skeleton_permissions'),
-    (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'join_skeletons_interpolated'),
     (r'^(?P<project_id>\d+)/skeleton/annotationlist$', 'annotation_list'),
     (r'^(?P<project_id>\d+)/skeleton/list$', 'list_skeletons'),
 )
@@ -424,8 +424,7 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'object.convert_annotations_to_networkx'),
 
     # Treenode table
-    (r'^(?P<project_id>\d+)/treenode/table/list$', 'treenodetable.list_treenode_table'),
-    (r'^(?P<project_id>\d+)/treenode/table/update$', 'treenodetable.update_treenode_table'),
+    (r'^(?P<project_id>\d+)/treenode/table/(?P<skid>\d+)/content$', 'treenodetable.treenode_table_content'),
 )
 
 # Patterns for FlyTEM access

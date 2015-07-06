@@ -44,7 +44,7 @@ var submitterFn = function() {
 
   var invoke = function(q, json) {
     try {
-      lastResult = q.fn(json);
+      lastResult = q.fn ? q.fn(json) : json;
     } catch (e) {
       alert(e);
     } finally {
@@ -149,7 +149,7 @@ var submitterFn = function() {
 
     if (q.url) {
       if (q.replace) {
-        requestQueue.replace(q.url, "POST", q.post, handlerFn(q), q.url);
+        requestQueue.replace(q.url, "POST", q.post, handlerFn(q), q.id);
       } else {
         requestQueue.register(q.url, "POST", q.post, handlerFn(q));
       }
@@ -159,18 +159,21 @@ var submitterFn = function() {
     }
   };
 
-  var submit = function(url, post, fn, blockUI, replace, errCallback, quiet) {
+  var submit = function(url, post, fn, blockUI, replace, errCallback, quiet, id) {
     queue.push({url: url,
           post: post,
           fn: fn,
           blockUI: blockUI,
           replace: replace,
           errCallback: errCallback,
-          quiet: quiet});
+          quiet: quiet,
+          id: id || url});
     // Invoke if the queue contains only the new entry
     if (1 === queue.length) {
       next();
     }
+    // Return self to allow chaining
+    return submit;
   };
 
   /**

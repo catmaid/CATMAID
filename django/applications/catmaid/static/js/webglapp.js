@@ -8,8 +8,8 @@
   fetchSkeletons,
   InstanceRegistry,
   NeuronNameService,
-  OptionsDialog,
   project,
+  Project,
   requestQueue,
   SelectionTable,
   session,
@@ -51,11 +51,13 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	}
 	this.divID = divID;
 	this.container = document.getElementById(divID);
-	this.stack = project.focusedStack;
+  this.stack = project.focusedStackViewer.primaryStack;
   this.submit = new submitterFn();
 	this.options = new WebGLApplication.prototype.OPTIONS.clone();
 	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.options);
   this.updateActiveNodePosition();
+  project.on(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
+  project.on(Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
 	this.initialized = true;
 };
 
@@ -69,6 +71,8 @@ WebGLApplication.prototype.getName = function() {
 WebGLApplication.prototype.destroy = function() {
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.staticUpdateActiveNodePosition, this);
+  project.off(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
+  project.off(Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
   this.unregisterInstance();
   this.unregisterSource();
   this.space.destroy();
@@ -164,7 +168,7 @@ WebGLApplication.prototype.fullscreenWebGL = function() {
  * dimension afterwards.
  */
 WebGLApplication.prototype.askForDimensions = function(title, fn) {
-  var dialog = new OptionsDialog(title);
+  var dialog = new CATMAID.OptionsDialog(title);
   dialog.appendMessage("Please adjust the dimensions to your liking. They " +
       "default to the current size of the 3D viewer");
   var imageWidthField = dialog.appendField("Image width (px): ",
@@ -270,7 +274,7 @@ WebGLApplication.prototype.exportSVG = function() {
  * Create an store a neuron catalog SVG for the current view.
  */
 WebGLApplication.prototype.exportCatalogSVG = function() {
-  var dialog = new OptionsDialog("Catalog export options");
+  var dialog = new CATMAID.OptionsDialog("Catalog export options");
   dialog.appendMessage('Adjust the catalog export settings to your liking.');
 
   // Create a new empty neuron name service that takes care of the sorting names
@@ -303,7 +307,7 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
     var newLabel = namingOptionIds[sorting.selectedIndex];
     if (newLabel === 'all-meta' || newLabel === 'own-meta') {
       // Ask for meta annotation
-      var dialog = new OptionsDialog("Please enter meta annotation");
+      var dialog = new CATMAID.OptionsDialog("Please enter meta annotation");
       var field = dialog.appendField("Meta annotation", 'meta-annotation',
           '', true);
       dialog.onOK = function() {
@@ -454,7 +458,7 @@ WebGLApplication.prototype.spatialSelect = function() {
       skeletons = this.space.content.skeletons;
   if (!active_skid) return alert("No active skeleton!");
   if (!skeletons[active_skid]) return alert("Active skeleton is not present in the 3D view!");
-  var od = new OptionsDialog("Spatial select"),
+  var od = new CATMAID.OptionsDialog("Spatial select"),
       choice = od.appendChoice("Select neurons ", "spatial-mode",
           ["in nearby space",
            "synapting with active neuron",
@@ -483,7 +487,7 @@ WebGLApplication.prototype.spatialSelect = function() {
         skeleton_mode = Number(choice3.value),
         loaded_only = checkbox.checked,
         active_node = SkeletonAnnotations.getActiveNodeId(),
-        p = SkeletonAnnotations.getActiveNodePosition(),
+        p = SkeletonAnnotations.getActiveNodePositionW(),
         va = new THREE.Vector3(p.x, p.y, p.z),
         synapticTypes = WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes,
         near = null,
@@ -496,8 +500,8 @@ WebGLApplication.prototype.spatialSelect = function() {
         };
     // Restrict by synaptic relation
     switch (synapse_mode) {
-      case 1: synapticTypes = synapticTypes.slice(0, 1); break;
-      case 2: synapticTypes = synapticTypes.slice(1, 1); break;
+      case 0: synapticTypes = synapticTypes.slice(0, 1); break;
+      case 1: synapticTypes = synapticTypes.slice(1, 2); break;
     }
 
     var newSelection = function(skids) {
@@ -547,9 +551,9 @@ WebGLApplication.prototype.spatialSelect = function() {
       }
       var within = arbor.findNodesWithin(active_node,
           (function(child, paren) {
-            return this[child].distanceToSquared(this[paren]);
+            return this[child].distanceTo(this[paren]);
           }).bind(sk.getPositions()),
-          distanceSq);
+          distance);
       // Find connectors within the part to look at
       var connectors = {};
       synapticTypes.forEach(function(type) {
@@ -671,19 +675,25 @@ WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color
 /** Persistent options, get replaced every time the 'ok' button is pushed in the dialog. */
 WebGLApplication.prototype.OPTIONS = new WebGLApplication.prototype.Options();
 
-WebGLApplication.prototype.updateZPlane = function() {
-	this.space.staticContent.updateZPlanePosition(this.stack);
-	this.space.render();
-};
-
-WebGLApplication.prototype.staticUpdateZPlane = function() {
-  this.getInstances().forEach(function(instance) {
-    instance.updateZPlane();
-  });
-};
-
 /** Receives an extra argument (an event) which is ignored. */
 WebGLApplication.prototype.updateColorMethod = function(colorMenu) {
+  if ('downstream-of-tag' === colorMenu.value) {
+    var dialog = new CATMAID.OptionsDialog("Type in tag");
+    dialog.appendMessage("Nodes downstream of tag: magenta.\nNodes upstream of tag: dark grey.");
+    var input = dialog.appendField("Tag (regex): ", "tag_text", this.options.tag_regex);
+    dialog.onOK = (function() {
+      this.options.tag_regex = input.value;
+      this.options.color_method = colorMenu.value;
+      this.updateSkeletonColors();
+    }).bind(this);
+    dialog.onCancel = function() {
+      // Reset to default (can't know easily what was selected before).
+      colorMenu.selectedIndex = 0;
+    };
+    dialog.show();
+    return;
+  }
+
   this.options.color_method = colorMenu.value;
   this.updateSkeletonColors();
 };
@@ -773,7 +783,7 @@ WebGLApplication.prototype.ZXView = function() {
  */
 WebGLApplication.prototype.storeCurrentView = function(name, callback) {
   if (!name) {
-    var dialog = new OptionsDialog("Store current view");
+    var dialog = new CATMAID.OptionsDialog("Store current view");
     dialog.appendMessage('Please enter a name for the current view');
     var n = this.getStoredViews().length + 1;
     var nameField = dialog.appendField("Name: ", "new-view-name", 'View ' + n);
@@ -839,73 +849,235 @@ WebGLApplication.prototype.setSkeletonPreVisibility = WebGLApplication.prototype
 WebGLApplication.prototype.setSkeletonPostVisibility = WebGLApplication.prototype._skeletonVizFn('Post');
 WebGLApplication.prototype.setSkeletonTextVisibility = WebGLApplication.prototype._skeletonVizFn('Text');
 
-WebGLApplication.prototype.toggleConnectors = function() {
-  this.options.connector_filter = ! this.options.connector_filter;
+/**
+ * Allow only connectors that have more than one partner in the current
+ * selection
+ */
+WebGLApplication.filterSharedConnectors = function(counts) {
+  var common = {};
+  for (var connector_id in counts) {
+    if (counts.hasOwnProperty(connector_id) && counts[connector_id].length > 1) {
+      common[connector_id] = null; // null, just to add something
+    }
+  }
+  return common;
+};
 
-  var f = this.options.connector_filter;
+/**
+ * Allow only connectors that have more than one partner in the current
+ * selection
+ */
+WebGLApplication.filterPrePostConnectors = function(counts) {
+  var common = {};
+  for (var connector_id in counts) {
+    if (counts.hasOwnProperty(connector_id) &&
+        counts[connector_id].some(isPresynaptic) &&
+        counts[connector_id].some(isPostsynaptic)) {
+      common[connector_id] = null; // null, just to add something
+    }
+  }
+  return common;
+
+  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; }
+  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; }
+};
+
+/**
+ * Allow only connectors that have more than one partner in the current
+ * selection and that connect skeletons between the two groups.
+ */
+WebGLApplication.filterGroupSharedConnectors = function(group1, group2, onlyPrePost, counts) {
+  // Find all shared connecors
+  var common = {};
+  for (var connector_id in counts) {
+    if (counts.hasOwnProperty(connector_id)) {
+      // Only allow connectors that connect to both source groups, find links to
+      // each group from the current connector.
+      var inSource1 = [], inSource2 = [];
+      for (var i=0; i<counts[connector_id].length; ++i) {
+        var link = counts[connector_id][i];
+        if (group1.hasOwnProperty(link[0])) inSource1.push(link);
+        if (group2.hasOwnProperty(link[0])) inSource2.push(link);
+      }
+
+      // For being visible, the connector has to have links into both groups
+      var visible = inSource1.length > 0 && inSource2.length > 0;
+      // If at least one pre-post-connection between the two groups is required,
+      // check for this.
+      if (visible && onlyPrePost) {
+        var preIn1 = inSource1.some(isPresynaptic);
+        var preIn2 = inSource2.some(isPresynaptic);
+        var postIn1 = inSource1.some(isPostsynaptic);
+        var postIn2 = inSource2.some(isPostsynaptic);
+        visible = (preIn1 && postIn2 ) || (preIn2 && postIn1);
+      }
+
+      if (visible) {
+        common[connector_id] = null; // null, just to add something
+      }
+    }
+  }
+
+  return common;
+
+  function isPresynaptic(value) { return 'presynaptic_to' === value[1]; }
+  function isPostsynaptic(value) { return 'postsynaptic_to' === value[1]; }
+};
+
+/**
+ * Get user input for creating a goup share filter for connectors. It requires
+ * two skeleton sources that form the groups between which connectors are
+ * allowed.
+ */
+WebGLApplication.makeGroupShareConnectorFilter = function(onlyPrePost, callback) {
+  var source1, source2;
+
+  // Add skeleton source message and controls
+  var dialog = new CATMAID.OptionsDialog('Select groups');
+
+  // Add user interface
+  dialog.appendMessage('Please select two skeleton sources that represent ' +
+      'groups. Only connections between neurons visible in the 3D viewer ' +
+      'that link neurons from one group to the other will be shown.');
+  var source1Input = addSourceInput(dialog.dialog, "Source 1:");
+  var source2Input = addSourceInput(dialog.dialog, "Source 2:");
+
+  // Add handler for initiating the export
+  dialog.onOK = function() {
+    var source1 = CATMAID.skeletonListSources.getSource($(source1Input).val());
+    var source2 = CATMAID.skeletonListSources.getSource($(source2Input).val());
+    if (!source1 || !source2) {
+      CATMAID.error("Couldn't find expected skeleton sources");
+      return;
+    }
+    var group1 = source1.getSelectedSkeletonModels();
+    var group2 = source2.getSelectedSkeletonModels();
+    if (!group1 || !group2) {
+      CATMAID.error("Couldn't find expected skeleton models");
+      return;
+    }
+
+    var filter =  WebGLApplication.filterGroupSharedConnectors.bind(
+        this, group1, group2, onlyPrePost);
+
+    if (CATMAID.tools.isFn(callback)) {
+      callback(filter);
+    }
+  };
+
+  dialog.onCancel = function() {
+    if (CATMAID.tools.isFn(callback)) {
+      callback(null);
+    }
+  };
+
+  dialog.show(350, 250, true);
+
+  function addSourceInput(d, name) {
+    var select = document.createElement('select');
+    CATMAID.skeletonListSources.createOptions().forEach(function(option, i) {
+      select.options.add(option);
+      if (option.value === 'Active skeleton') select.selectedIndex = i;
+    });
+    var label_p = document.createElement('p');
+    var label = document.createElement('label');
+    label.appendChild(document.createTextNode(name));
+    label.appendChild(select);
+    label_p.appendChild(label);
+    d.appendChild(label_p);
+    return select;
+  }
+};
+
+WebGLApplication.prototype.setConnectorRestriction = function(restriction) {
+  var self = this;
+
+  if ('none' === restriction) {
+    this.options.connector_filter = false;
+  } else if ('all-shared' === restriction) {
+    this.options.connector_filter = WebGLApplication.filterSharedConnectors;
+  } else if ('all-pre-post' === restriction) {
+    this.options.connector_filter = WebGLApplication.filterPrePostConnectors;
+  } else if ('all-group-shared' === restriction ||
+      'all-group-shared-pre-post' === restriction) {
+    var onlyPrePost = 'all-group-shared-pre-post' === restriction;
+    WebGLApplication.makeGroupShareConnectorFilter(onlyPrePost, function(filter) {
+      if (filter) {
+        self.options.connector_filter = filter;
+        self.refreshRestrictedConnectors();
+      }
+    });
+    // Prevent application of filter. This is done in function above, once user
+    // input is complete.
+    return;
+  } else {
+    throw new CATMAID.ValueError('Unknown connector restriction: ' + restriction);
+  }
+
+  this.refreshRestrictedConnectors();
+};
+
+WebGLApplication.prototype.refreshRestrictedConnectors = function() {
+  // Display regular markers only if no restriction is used
   var skeletons = this.space.content.skeletons;
   var skids = Object.keys(skeletons);
-
+  var regularMarkerVisible = this.options.connector_filter ? false : true;
   skids.forEach(function(skid) {
-    skeletons[skid].setPreVisibility( !f );
-    skeletons[skid].setPostVisibility( !f );
-    $('#skeletonpre-'  + skid).attr('checked', !f );
-    $('#skeletonpost-' + skid).attr('checked', !f );
+    skeletons[skid].setPreVisibility(regularMarkerVisible);
+    skeletons[skid].setPostVisibility(regularMarkerVisible);
+    $('#skeletonpre-'  + skid).attr('checked', regularMarkerVisible);
+    $('#skeletonpost-' + skid).attr('checked', regularMarkerVisible);
   });
 
-  if (this.options.connector_filter) {
-    this.refreshRestrictedConnectors();
+	if (this.options.connector_filter) {
+    var restriction = this.options.connector_filter;
+
+    // Find all connector IDs referred to by more than one skeleton
+    // but only for visible skeletons
+    var visible_skeletons = Object.keys(skeletons).filter(function(skeleton_id) {
+      return skeletons[skeleton_id].visible;
+    });
+    var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
+
+    // Map all connectors to the skeletons they connect to
+    var counts = visible_skeletons.reduce(function(counts, skeleton_id) {
+      return synapticTypes.reduce(function(counts, type) {
+        var vertices = skeletons[skeleton_id].geometry[type].vertices;
+        // Vertices is an array of Vector3, every two a pair, the first at the
+        // connector and the second at the node
+        for (var i=vertices.length-2; i>-1; i-=2) {
+          var connector_id = vertices[i].node_id;
+          if (!counts.hasOwnProperty(connector_id)) {
+            counts[connector_id] = [];
+          }
+          // Store a reference to the type for each connector
+          counts[connector_id].push([skeleton_id, type]);
+        }
+        return counts;
+      }, counts);
+    }, {});
+
+    // Filter all connectors
+    var common = restriction(counts);
+
+    var visible_set = visible_skeletons.reduce(function(o, skeleton_id) {
+      o[skeleton_id] = null;
+      return o;
+    }, {});
+
+    for (var skeleton_id in skeletons) {
+      if (skeletons.hasOwnProperty(skeleton_id)) {
+        skeletons[skeleton_id].remove_connector_selection();
+        if (skeleton_id in visible_set) {
+          skeletons[skeleton_id].create_connector_selection( common );
+        }
+      }
+    }
   } else {
     skids.forEach(function(skid) {
       skeletons[skid].remove_connector_selection();
     });
-    this.space.render();
   }
-};
-
-WebGLApplication.prototype.refreshRestrictedConnectors = function() {
-	if (!this.options.connector_filter) return;
-	// Find all connector IDs referred to by more than one skeleton
-	// but only for visible skeletons
-	var skeletons = this.space.content.skeletons;
-	var visible_skeletons = Object.keys(skeletons).filter(function(skeleton_id) { return skeletons[skeleton_id].visible; });
-  var synapticTypes = this.space.Skeleton.prototype.synapticTypes;
-
-	var counts = visible_skeletons.reduce(function(counts, skeleton_id) {
-    return synapticTypes.reduce(function(counts, type) {
-      var vertices = skeletons[skeleton_id].geometry[type].vertices;
-      // Vertices is an array of Vector3, every two a pair, the first at the connector and the second at the node
-      for (var i=vertices.length-2; i>-1; i-=2) {
-        var connector_id = vertices[i].node_id;
-        if (!counts.hasOwnProperty(connector_id)) {
-          counts[connector_id] = {};
-        }
-        counts[connector_id][skeleton_id] = null;
-      }
-      return counts;
-    }, counts);
-  }, {});
-
-	var common = {};
-	for (var connector_id in counts) {
-		if (counts.hasOwnProperty(connector_id) && Object.keys(counts[connector_id]).length > 1) {
-			common[connector_id] = null; // null, just to add something
-		}
-	}
-
-  var visible_set = visible_skeletons.reduce(function(o, skeleton_id) {
-    o[skeleton_id] = null;
-    return o;
-  }, {});
-
-  for (var skeleton_id in skeletons) {
-    if (skeletons.hasOwnProperty(skeleton_id)) {
-      skeletons[skeleton_id].remove_connector_selection();
-      if (skeleton_id in visible_set) {
-        skeletons[skeleton_id].create_connector_selection( common );
-      }
-    }
-	}
 
 	this.space.render();
 };
@@ -1577,35 +1749,65 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.adjust = func
 
 	this.box.visible = options.show_box;
 
-	if (this.zplane) space.scene.remove(this.zplane);
 	if (options.show_zplane) {
-		this.zplane = this.createZPlane(space.stack);
-    this.updateZPlanePosition(space.stack);
-		space.scene.add(this.zplane);
+		this.createZPlane(space, project.focusedStackViewer);
 	} else {
+		if (this.zplane) space.scene.remove(this.zplane);
 		this.zplane = null;
 	}
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(stack) {
-	var geometry = new THREE.Geometry(),
-	    xwidth = stack.dimension.x * stack.resolution.x,
-			ywidth = stack.dimension.y * stack.resolution.y,
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(space, stackViewer) {
+  if (this.zplane) space.scene.remove(this.zplane);
+  var stack = stackViewer.primaryStack,
+      stackPlane = stack.createStackExtentsBox(),
+      plane = stack.createStackToProjectBox(stackPlane),
+	    geometry = new THREE.Geometry(),
 	    material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide } );
 
-	geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
-	geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
-	geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
-	geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
+  switch (stack.orientation) {
+    case CATMAID.Stack.ORIENTATION_XY:
+      plane.min.z = plane.max.z = 0;
+      break;
+    case CATMAID.Stack.ORIENTATION_XZ:
+      plane.min.y = plane.max.y = 0;
+      var swap = plane.min.z;
+      plane.min.z = plane.max.z;
+      plane.max.z = swap;
+      break;
+    case CATMAID.Stack.ORIENTATION_ZY:
+      plane.min.x = plane.max.x = 0;
+      break;
+  }
+
+	geometry.vertices.push( new THREE.Vector3( plane.min.x, -plane.min.y, -plane.min.z ) );
+  geometry.vertices.push( new THREE.Vector3( plane.max.x, -plane.min.y, -plane.max.z ) );
+  geometry.vertices.push( new THREE.Vector3( plane.min.x, -plane.max.y, -plane.min.z ) );
+  geometry.vertices.push( new THREE.Vector3( plane.max.x, -plane.max.y, -plane.max.z ) );
 	geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
 	geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
 
-	return new THREE.Mesh( geometry, material );
+  this.zplane = new THREE.Mesh( geometry, material );
+  space.scene.add(this.zplane);
+
+  this.updateZPlanePosition(space, stackViewer);
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(stack) {
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(space, stackViewer) {
 	if (this.zplane) {
-		this.zplane.position.z = (-stack.z * stack.resolution.z - stack.translation.z);
+    var v = new THREE.Vector3(0, 0, 0);
+    switch (stackViewer.primaryStack.orientation) {
+      case CATMAID.Stack.ORIENTATION_XY:
+        v.z = stackViewer.primaryStack.stackToProjectZ(stackViewer.z, stackViewer.y, stackViewer.x);
+        break;
+      case CATMAID.Stack.ORIENTATION_XZ:
+        v.y = stackViewer.primaryStack.stackToProjectY(stackViewer.z, stackViewer.y, stackViewer.x);
+        break;
+      case CATMAID.Stack.ORIENTATION_ZY:
+        v.x = stackViewer.primaryStack.stackToProjectX(stackViewer.z, stackViewer.y, stackViewer.x);
+        break;
+    }
+    this.zplane.position.copy(space.toSpace(v));
 	}
 };
 
@@ -1637,11 +1839,16 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissing
 	}, []);
 };
 
+/**
+ * Constructor for an object that manages the content in a scene.
+ */
 WebGLApplication.prototype.Space.prototype.Content = function(options) {
-	// Scene content
-	this.active_node = new this.ActiveNode(options);
-	this.meshes = [];
-	this.skeletons = {};
+  // A representation of the active node
+  this.active_node = new this.ActiveNode(options);
+  // A list of extra meshes
+  this.meshes = [];
+  // Map of skeleton IDs to skeleton representations
+  this.skeletons = {};
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype = {};
@@ -2527,7 +2734,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
 };
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototype.updatePosition = function(space, options) {
-  var pos = SkeletonAnnotations.getActiveNodePosition();
+  var pos = SkeletonAnnotations.getActiveNodePositionW();
   if (!pos) {
     space.updateSplitShading(this.skeleton_id, null, options);
     this.skeleton_id = null;
@@ -2985,7 +3192,13 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
       node_weights = arbor.downstreamAmount(this.createNodeDistanceFn(), true);
 
     } else if ('active_node_split' === options.shading_method) {
+      // The active node is not necessarily a real node and splitting the arbor
+      // will therefore not work in case of a virtual node. The split is
+      // therefore performed with the next real child node and the node weight
+      // of the child will be adjusted to get the same visual effect.
       var atn = SkeletonAnnotations.getActiveNodeId();
+      var virtualAtn = !SkeletonAnnotations.isRealNode(atn);
+      if (virtualAtn) atn = SkeletonAnnotations.getChildOfVirtualNode(atn);
       if (arbor.contains(atn)) {
         node_weights = {};
         var sub = arbor.subArbor(atn),
@@ -2998,6 +3211,19 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
         arbor.nodesArray().forEach(function(node) {
           node_weights[node] = sub.contains(node) ? down : up;
         });
+        if (virtualAtn) {
+          // If the active node is virtual, the weight of its real child is
+          // adjusted so so that it matches the visual appearance of having an
+          // actual node at the ATNs location.
+          var vnPos = this.space.toSpace(SkeletonAnnotations.getActiveNodePositionW());
+          vnPos = new THREE.Vector3(vnPos.x, vnPos.y, vnPos.z);
+          var locations = this.getPositions();
+          var vn = SkeletonAnnotations.getActiveNodeId();
+          var parentPos = locations[SkeletonAnnotations.getParentOfVirtualNode(vn)];
+          var childPos = locations[SkeletonAnnotations.getChildOfVirtualNode(vn)];
+          var distRatio = parentPos.distanceToSquared(vnPos) / parentPos.distanceToSquared(childPos);
+          node_weights[atn] = up - distRatio * (up - down);
+        }
       } else {
         // Don't shade any
         node_weights = {};
@@ -3925,6 +4151,14 @@ WebGLApplication.prototype.adjustContent = function() {
   this.space.render();
 };
 
+/**
+ * Handle project location change. Static content like the z plane will be
+ * updated.
+ */
+WebGLApplication.prototype.handlelLocationChange = function() {
+  this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer);
+  this.space.render();
+};
 
 WebGLApplication.prototype._validate = function(number, error_msg, min) {
   if (!number) return null;
@@ -4197,7 +4431,7 @@ WebGLApplication.prototype.createVisibibilityResetHandler = function(visMap)
  */
 WebGLApplication.prototype.exportAnimation = function()
 {
-  var dialog = new OptionsDialog("Animation export options");
+  var dialog = new CATMAID.OptionsDialog("Animation export options");
   dialog.appendMessage('Adjust the animation export settings to your liking. ' +
      'The resulting file will be in WebM format and might take some seconds ' +
      'to be generated. The default frame size matches the current size of ' +

@@ -664,14 +664,6 @@ class CardinalityRestriction(models.Model):
         else:
             raise Exception("Unsupported cardinality type.")
 
-#class Session(models.Model):
-#    class Meta:
-#        db_table = "sessions"
-#        managed = False
-#    session_id = models.CharField(max_length=26)
-#    data = models.TextField(default='')
-#    last_accessed = models.DateTimeField(default=now)
-
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
 
@@ -797,6 +789,8 @@ class UserProfile(models.Model):
         default=settings.PROFILE_TRACING_OVERLAY_SCALE)
     prefer_webgl_layers = models.BooleanField(
         default=settings.PROFILE_PREFER_WEBGL_LAYERS)
+    use_cursor_following_zoom = models.BooleanField(
+        default=settings.PROFILE_USE_CURSOR_FOLLOWING_ZOOM)
 
     def __unicode__(self):
         return self.user.username
@@ -820,6 +814,7 @@ class UserProfile(models.Model):
         pdict['tracing_overlay_screen_scaling'] = self.tracing_overlay_screen_scaling
         pdict['tracing_overlay_scale'] = self.tracing_overlay_scale
         pdict['prefer_webgl_layers'] = self.prefer_webgl_layers
+        pdict['use_cursor_following_zoom'] = self.use_cursor_following_zoom
         return pdict
 
     # Fix a problem with duplicate keys when new users are added.
@@ -872,23 +867,6 @@ post_syncdb.disconnect(
     create_superuser,
     sender=auth_models,
     dispatch_uid='django.contrib.auth.management.create_superuser')
-
-# ------------------------------------------------------------------------
-
-# Include models for deprecated PHP-only tables, just so that we can
-# remove them with South in a later migration.
-
-class DeprecatedAppliedMigrations(models.Model):
-    class Meta:
-        db_table = "applied_migrations"
-    id = models.CharField(max_length=32, primary_key=True)
-
-class DeprecatedSession(models.Model):
-    class Meta:
-        db_table = "sessions"
-    session_id = models.CharField(max_length=26)
-    data = models.TextField(default='')
-    last_accessed = models.DateTimeField(default=datetime.now)
 
 
 class ChangeRequest(UserFocusedModel):

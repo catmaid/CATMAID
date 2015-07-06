@@ -45,7 +45,8 @@ libraries_js = {
     'modernizr': ['*.js'],
     'jquery': ['jquery-2.1.3.min.js', 'jquery-migrate-1.2.1.js',
                'jquery-ui.min.js', 'jquery-ui.*.js',
-               'jquery.dataTables.min.js', 'jquery.*.js'],
+               'jquery.dataTables.min.js', 'jquery.*.js',
+               'dataTables.colReorder.js'],
     'fabric.js': ['all.modified.js'],
     'raphael': ['raphael.js', 'g.raphael.js', 'g.pie-min.js', 'g.line.altered.js',
                 'raphael-custom.js', 'colorwheel.js', 'raphael.export.js'],
@@ -76,7 +77,7 @@ for k,v in libraries_js.iteritems():
 
 PIPELINE_JS['arbor'] = {
     'source_filenames': ('libs/cytoscapejs/arbor.js',),
-    'output_filename': 'js/arbor.js'
+    'output_filename': 'js/libs/cytoscapejs/arbor.js'
 }
 
 PIPELINE_JS['catmaid'] = {
@@ -91,6 +92,7 @@ PIPELINE_JS['catmaid'] = {
         'js/segmentationtool.js',
         'js/selector.js',
         'js/stack.js',
+        'js/stack-viewer.js',
         'js/tilelayercontrol.js',
         'js/tilelayer.js',
         'js/tilesource.js',
@@ -103,6 +105,7 @@ PIPELINE_JS['catmaid'] = {
         'js/tools/boxselectiontool.js',
         'js/tools/roitool.js',
         'js/tools/*.js',
+        'js/layers/pixi-layer.js',
         'js/layers/*.js',
         'js/widgets/*.js',
     ),

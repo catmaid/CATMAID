@@ -1,10 +1,163 @@
-## Under development
+## 2015.7.6
+
+CATMAID now uses the GPLv3 license and moved away from the stricter
+AGPLv3. This move was discussed with all previous contributors and
+agreed on. See the corresponding commit for more details.
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+
+### Notes
+
+This release includes database changes that require manual intervention if you
+are upgrading from an existing installation. A new dependency is now required:
+PostGIS, an extension to PostgreSQL. After its installation, it has to be
+activated for the CATMAID database. To do so, connect to the database using a
+Postgres system user. Assuming a Postgres system user named "postgres" and a
+CATMAID database named "catmaid", this could be done by calling
+
+  sudo -u postgres psql -d catmaid
+
+Being connected to the database, PostGIS can be enabled by executing
+
+  CREATE EXTENSION postgis;
+
+Now PostGIS is enabled and the connection can be closed again. Now a regular
+update can be performed. Please note that this update can take quite some time
+to complete. On bigger neuron tracing installations, multiple hours are
+realistic.
+
 
 ### Features and enhancements
 
+Key shortcuts / mouse operations:
+
+- Ctrl + mouse wheel now zooms the stack, while shift zooms by smaller
+  increments.
+
+- Pressing X in the tracing tool will begin measuring distance from the current
+  cursor position. The mouse wheel can be used to measure along the stack Z
+  axis. Clicking will close the measurement tool and show the final distance in
+  the status bar. ESC cancels the tool.
+
+
+Multi-view tracing and virtual nodes:
+
+- Orthogonal views on a regular XY stack can now also be used for neuron
+  reconstruction. If they are available as CATMAID stacks and opened while the
+  tracing tool is activated, tracing data will be shown in the respective
+  orthogonal views as well. Tracing can be done in these views just like in the
+  regular XY view.
+
+- When tracing, it is not required anymore to place a node in every section. If
+  no node has been placed in a section, CATMAID will place a so called virtual node
+  where the skeleton and the section meet. If this virtual node is modified in
+  any way, e.g. tagging, joining, moving, etc. it will be created. This also
+  slightly changes the way reviews work. Review information is only stored on
+  real nodes.
+
+- The review widget has a new settings: in-between node step. It specifies how
+  many sections can be skipped between adjacent real nodes. This is done with
+  respect to the currently focused stack. This stack is also used to determine
+  in which direction to move to look beyond the start of a segment.
+
+
+Stack viewer:
+
+- Other stacks in a project can be added to an open stack view by selecting the
+  "Add to focused viewer" option from the stacks menu. This allows multiple
+  stacks to exist in the same view like overlays, while accounting for
+  differences in translation and resolution. The navigator will expand the
+  available zoom levels to accomodate the maximum and minimum zoom possible in
+  all of the open stacks.
+
+- Tile layers for stacks added to a viewer can be removed from a viewer via an
+  "x" in the tile layer control.
+
+- Multiple viewers into the same stack can now be opened.
+
+- Each stack viewer can be toggled between coupling its navigation with other
+  open stack viewers. Toggle this via the "Navigate with project" checkbox in
+  the tile layer control.
+
+
+Tile layer:
+
+- New filter (WebGL only): intensity thresholded transparency
+
+
+3D Viewer:
+
+- Connector restriction can now explicitly be turned on and off with a pull
+  down list. One can select between "Show all" (i.e. restriction turned off),
+  "All shared connectors" will only show connectors with partners in the current
+  selection and "All pre->post connectors" will only allow connectors with at
+  least one presynaptic partner and one postsynaptic partner in the current
+  selection. The last option, "All group shared" allows to select two skeleton
+  sources (e.g. two selection table) and it will only show connectors that are
+  part of the 3D viewer and that connect between both selected groups of
+  skeletons. There is also a pre->post enforcing variant of it.
+
+
+Neuron search:
+
+- The name displayed for neurons now follows the same naming mechanism used for
+  other widgets. It can be controlled through the settings widget and will
+  automatically update if a neuron name is changed.
+
+
+Miscellaneous:
+
+- In the connectivity widget, upstream and downstream thresholds can now be set
+  at once for all seed neurons. Two drop down controls used for this will be
+  displayed if there is more than one seed neuron.
+
+- Treenode Table refurbishing: far faster, supports multiple skeletons, can do
+  tag search with regular expressions and lists the skeleton treenode ID.
+
+- Rows and columns of the connectivity matrix can now be moved around with
+  little buttons that appear when the mouse is over row and column header cells.
+
+- There are now three options to change focus if a pointer enters a window:
+  don't change focus (how it has been so far), focus stacks (will activate
+  stacks when hovered, but won't change focus for other windows) and focus all
+  (will change focus to every window hovered). The default will be stack focus
+  follows the pointer. The settings widget makes these options available in
+  general settings area.
+
+- There are three new controls in the split/merge dialog: Toggle the
+  display of input and output markers on neurons in the embedded 3D viewer and
+  select which shading method is used (default: "active node split").
+  Alternatively, "Strahler index" coloring can be used, which helps with
+  depth perception.
+
+- Attempting to reload a CATMAID browser tab or go back in history, will now
+  result in a warning dialog, asking for confirmation. It makes clear that
+  CATMAID's window layout and content won't be saved if the acton isn't
+  canceled.
+
+
+Administration:
+
+- Now that virtual nodes are available, existing database can (but don't have
+  to) be optimized. A new management command will look for straight skeleton
+  parts that are not referenced in any way and prunes them. In other words, if
+  there are three successive collinear nodes and the middle one is not
+  referenced, it will be removed.
+
+  manage.py catmaid_prune_skeletons
 
 
 ### Bug fixes
+
+- The Neuron Search widget doesn't throw an error anymore when a neuron listed
+  in it is merged.
+
+
+- There is no longer a race condition in the database during concurrent
+  split/merge of a skeleton and creation of a treenode in that skeleton. While
+  this is not a comprehensive guarantee of conflict-free concurrency, it does
+  remove the most likely scenario resulting in corruption of the database model.
 
 
 ## 2015.5.27
@@ -269,7 +422,7 @@ Tile layer:
   and fixes some flickering issues. Enable via "Prefer WebGL Layers" in
   Settings. The WebGL renderer is currently considered experimental and may have
   stability issues on some clients. See
-  https://github.com/acardona/CATMAID/issues/186#issuecomment-86540706 for
+  https://github.com/catmaid/CATMAID/issues/186#issuecomment-86540706 for
   details on using WebGL layers with your image stack host.
 
 - The blend mode used to combine stacks and overlays is now configurable when

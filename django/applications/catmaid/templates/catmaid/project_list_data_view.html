@@ -11,11 +11,11 @@
 
 {% if sample_images %}<table>{% endif %}
 {% for p in projects %}
-    {% if p.stacks.count > 0 %}
+    {% if stacks_of|get:p.id %}
     {# Add a sample image if requested #}
     {% if sample_images %}<tr><td class="stackimage">
             {# Get the samlpe stack  #}
-            {% with stack=p.stacks|order_by:'id'|get_stack:sample_stack %}
+            {% with stack=stacks_of|get:p.id|dictsort:'id'|get_stack:sample_stack %}
             {% if stack|is_none %}
                 Couldn't find requested stack: {{ sample_stack }}
             {% else %}
@@ -36,7 +36,7 @@
     {% endif %}
             <dl>
                 <dt>{{ p.title }}</dt>
-                {% for s in p.stacks|order_by:"id" %}
+                {% for s in stacks_of|get:p.id|dictsort:"id" %}
                 <dd><a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1" onclick="openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}</a></dd><dd>{{ s.comment|safe }}</dd>
                 {% endfor %}
                 {# Optionally, add the the neuron catalogue link #}

@@ -15,8 +15,8 @@
     // Color index for table cell coloring option
     this.color = 0;
     // Sorting indices for row and columns, default to name
-    this.rowSorting = 1;
-    this.colSorting = 1;
+    this.rowSorting = 2;
+    this.colSorting = 2;
     // Rotate column headers by 90 degree
     this.rotateColumnHeaders = false;
   };
@@ -131,28 +131,51 @@
 
         var loadRows = document.createElement('input');
         loadRows.setAttribute("type", "button");
-        loadRows.setAttribute("value", "Append presynaptic neurons");
+        loadRows.setAttribute("value", "Append pre");
+        loadRows.setAttribute("title", "Append presynaptic neurons");
         loadRows.onclick = loadWith.bind(this, true, false);
         tabs['Main'].appendChild(loadRows);
 
         var loadColumns = document.createElement('input');
         loadColumns.setAttribute("type", "button");
-        loadColumns.setAttribute("value", "Append postsynaptic neurons");
+        loadColumns.setAttribute("value", "Append post");
+        loadColumns.setAttribute("title", "Append postsynaptic neurons");
         loadColumns.onclick = loadWith.bind(this, false, true);
         tabs['Main'].appendChild(loadColumns);
 
         var loadAll = document.createElement('input');
         loadAll.setAttribute("type", "button");
         loadAll.setAttribute("value", "Append to both");
+        loadColumns.setAttribute("title", "Append both as presynaptic and postsynaptic neurons");
         loadAll.onclick = loadWith.bind(this, true, true);
         tabs['Main'].appendChild(loadAll);
 
+        var clearPre = document.createElement('input');
+        clearPre.setAttribute("type", "button");
+        clearPre.setAttribute("value", "Clear pre");
+        clearPre.onclick = (function() {
+          if (confirm("Do you really want to clear all row neurons?")) {
+            this.clear(true, false);
+          }
+        }).bind(this);
+        tabs['Main'].appendChild(clearPre);
+
+        var clearPost = document.createElement('input');
+        clearPost.setAttribute("type", "button");
+        clearPost.setAttribute("value", "Clear post");
+        clearPost.onclick = (function() {
+          if (confirm("Do you really want to clear all column neurons?")) {
+            this.clear(false, true);
+          }
+        }).bind(this);
+        tabs['Main'].appendChild(clearPost);
+
         var clear = document.createElement('input');
         clear.setAttribute("type", "button");
-        clear.setAttribute("value", "Clear");
+        clear.setAttribute("value", "Clear both");
         clear.onclick = (function() {
           if (confirm("Do you really want to clear the current selection?")) {
-            this.clear();
+            this.clear(true, true);
           }
         }).bind(this);
         tabs['Main'].appendChild(clear);
@@ -265,12 +288,12 @@
   };
 
   /**
-   * Clear all sources.
+   * Clear all selected sources.
    */
-  ConnectivityMatrixWidget.prototype.clear = function() {
-    this.rowDimension.clear();
-    this.colDimension.clear();
-    this.update();
+  ConnectivityMatrixWidget.prototype.clear = function(clearRows, clearCols) {
+    if (clearRows) this.rowDimension.clear();
+    if (clearCols) this.colDimension.clear();
+    if (clearRows || clearCols) this.update();
   };
 
   /**
@@ -456,63 +479,54 @@
       // Add a handler for selecting skeletons when their names are clicked
       $(table).on('click', 'a[data-skeleton-ids]', function(e) {
         var skeletonIDs = JSON.parse(this.dataset.skeletonIds);
-        if (!skeletonIDs || !skeletonIDs.length) {
-          CATMAID.warn('Could not find expected list of skleton IDs');
-          return;
-        }
-        if (1 === skeletonIDs.length) {
-          TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
-        } else {
-          var ST = new SelectionTable();
-          var models = skeletonIDs.reduce(function(o, skid) {
-            o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "",
-                new THREE.Color().setRGB(1, 1, 0));
-            return o;
-          }, {});
-          WindowMaker.create('neuron-staging-area', ST);
-          ST.append(models);
-        }
+        followSkeletonList(skeletonIDs);
       });
 
-      // Create a hidden removal button, that can be shown on demand
-      var removalButtonIcon = document.createElement('span');
-      removalButtonIcon.setAttribute('title', 'Remove this neuron vom list');
-      removalButtonIcon.setAttribute('class', 'ui-icon ui-icon-close');
-      var removalButton = document.createElement('div');
-      removalButton.setAttribute('class', 'remove-skeleton');
-      removalButton.style.display = 'none';
-      removalButton.appendChild(removalButtonIcon);
-      content.appendChild(removalButton);
+      // A container for all the buttons
+      var buttons = document.createElement('div');
+      buttons.style.display = 'none';
+      buttons.style.position = 'absolute';
+
+      // Create a removal button
+      var removalButton = appendHoverButton(buttons, 'close',
+          'remove-skeleton', 'Remove this neuron vom list');
+
+      // Create a move up and a move down button
+      var moveUpButton = appendHoverButton(buttons, 'triangle-1-n',
+          'move-up', 'Move this row up');
+      var moveDownButton = appendHoverButton(buttons, 'triangle-1-s',
+          'move-down', 'Move this row down');
+
+      // Create a move left and a right button
+      var moveLeftButton = appendHoverButton(buttons, 'triangle-1-w',
+          'move-left', 'Move this column to the left');
+      var moveRightButton = appendHoverButton(buttons, 'triangle-1-e',
+          'move-right', 'Move this column to the right');
+
+      // Create selection/link button
+      var selectionButton = appendHoverButton(buttons, 'extlink',
+          'select', 'Select this neuron and move view to it');
+
+      content.appendChild(buttons);
+
+      var moveButtons = [moveUpButton, moveDownButton, moveLeftButton,
+          moveRightButton];
+
+      // Keep track of button hiding time out and last position
+      var hideTimeout, lastButtonLeft, lastButtonTop;
 
       // Add a handler for hovering over table headers
-      $(table).on('hover', 'th', content, function(e) {
-        var links = $(this).find('a[data-skeleton-ids]');
-        if (0 === links.length) return false;
-        var skeletonIds = links[0].dataset.skeletonIds;
-        if (0 === JSON.parse(skeletonIds).length) return false;
-        var isRow = ("true" === links[0].dataset.isRow);
+      $(table).on('mouseenter', 'th', content, function(e) {
+        // Determine if this event comes from either a focus change within the
+        // cell or the button pane, respectively.
+        var inCell = $.contains(this, e.relatedTarget) || $.contains(buttons, e.relatedTarget);
+        // Determine visibility by checking if the mouse cursor is still in the
+        // table cell and is just hoving the buttons. If they are not visible,
+        // set them up and show them.
+        if ($(buttons).is(':visible')) {
 
-        // Assign skeleton IDs to remoal buttons
-        removalButton.dataset.skeletonIds = skeletonIds;
-        removalButton.dataset.isRow = isRow;
-
-        // Move removal button to current cell and toggle its visiblity
-        var pos = $(this).position();
-        removalButton.style.left = ($(content).scrollLeft() + pos.left) + "px";
-        if (rotateColumns && !isRow) {
-          // This is required, because the removal button div is not rotated
-          // with the table cell (it is no part of it).
-          removalButton.style.top = ($(content).scrollTop() + pos.top +
-            $(this).width() - $(this).height()) + "px";
-        } else {
-          removalButton.style.top = ($(content).scrollTop() + pos.top) + "px";
-        }
-
-        // Determine visibility by checkick if the mouse cursor is still in the
-        // table cell and is just hoving the remove button.
-        if ($(removalButton).is(':visible')) {
           var offset = $(this).offset();
-          var hidden;
+          var hidden = false;
           if (rotateColumns && !isRow) {
             // This is required, because offset() is apparently not correct
             // after rotating the cell.
@@ -527,17 +541,94 @@
                      (e.pageY < offset.top) ||
                      (e.pageY > (offset.top + $(this).height()));
           }
-          if (hidden) $(removalButton).hide();
-        } else {
-          $(removalButton).toggle();
+          if (hidden) $(buttons).hide();
         }
+
+        var links = $(this).find('a[data-skeleton-ids]');
+        if (0 === links.length) return false;
+        var skeletonIdsJSON = links[0].dataset.skeletonIds;
+        var skeletonIds = JSON.parse(skeletonIdsJSON);
+        if (0 === skeletonIds.length) return false;
+        var isRow = ("true" === links[0].dataset.isRow);
+        var group = links[0].dataset.group;
+
+        // Let removal button know if it is in a row and assign skeleton ids
+        removalButton.dataset.isRow = isRow;
+        removalButton.dataset.skeletonIds = skeletonIdsJSON;
+        // Assign group and key information to move buttons
+        moveButtons.forEach(function(b) {
+          if (group) b.dataset.group = group;
+          else b.dataset.key = skeletonIds[0];
+        });
+        // Attach skeleton ID(s) to selcet button
+        selectionButton.dataset.skeletonIds = skeletonIdsJSON;
+
+        // For rows show up and down, for columns left and right
+        if (isRow) {
+          $(moveUpButton).add(moveDownButton).show();
+          $(moveLeftButton).add(moveRightButton).hide();
+        } else {
+          $(moveUpButton).add(moveDownButton).hide();
+          $(moveLeftButton).add(moveRightButton).show();
+        }
+        // Move removal button to current cell and toggle its visiblity. Move it
+        // one pixel into the cell from left and top.
+        var pos = $(this).position();
+        var left = ($(content).scrollLeft() + pos.left) + 1;
+        var top;
+        if (rotateColumns && !isRow) {
+          // This is required, because the removal button div is not rotated
+          // with the table cell (it is no part of it).
+          top = ($(content).scrollTop() + pos.top +
+            $(this).width() - $(this).height()) + 1;
+        } else {
+          top = ($(content).scrollTop() + pos.top) + 1;
+        }
+
+        buttons.style.left = left + 'px';
+        buttons.style.top = top + 'px';
+
+        // Disable old hiding timeout
+        if (hideTimeout) {
+          clearTimeout(hideTimeout);
+          hideTimeout = undefined;
+        }
+
+        // Store and check button location to not show buttons twice
+        if ((lastButtonLeft !== left || lastButtonTop !== top ) || !inCell) {
+          lastButtonLeft = left;
+          lastButtonTop = top;
+          $(buttons).show();
+
+          // Hide the button after three seconds of visibility at this positon
+          hideTimeout = setTimeout(function() {
+            $(buttons).hide();
+          }, 3000);
+        }
+
+        return true;
       });
 
-      // Add a handler to hide the remove button if left on all sides but right
-      $(removalButton).on('mouseout', function(e) {
+      // Add a handler to hide the remove button if left with the pointer on all
+      // sides but its right side.
+      $(buttons).on('mouseout', function(e) {
+        // This event is also triggered for child elements. Make sure we only
+        // look at the button container.
+        var t = e.relatedTarget;
+        while (t && t.parentNode && t.parentNode != window) {
+          if (t.parentNode === this || t === this) return false;
+          t = t.parentNode;
+        }
+        // Get the current position (or zero coordinates if invisible)
         var offset = $(this).offset();
-        var visible = (e.pageX > (offset.left + $(this).width()));
-        if (!visible) $(removalButton).hide();
+        if (e.pageX <= (offset.left + $(this).width())) {
+          // Disable old hiding timeout, if there was one and hide buttons
+          if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = undefined;
+          }
+          $(this).hide();
+        }
       });
 
       // Add a click handler to the remove button that triggers the removal
@@ -558,6 +649,17 @@
           CATMAID.error("Could not find expected pre/post information");
         }
         return true;
+      });
+
+      // Add a click handler to move buttons
+      $(moveUpButton).on('click', {widget: this, up: true}, handleMove);
+      $(moveDownButton).on('click', {widget: this, down: true}, handleMove);
+      $(moveLeftButton).on('click', {widget: this, left: true}, handleMove);
+      $(moveRightButton).on('click', {widget: this, right: true}, handleMove);
+      $(selectionButton).on('click', {widget: this, right: true}, function(e) {
+        if (!this.dataset.skeletonIds) return false;
+        var skeletonIDs = JSON.parse(this.dataset.skeletonIds);
+        followSkeletonList(skeletonIDs);
       });
     }
 
@@ -590,6 +692,12 @@
 
     // Chreate a cell with skeleton link
     function createHeaderCell(name, group, skeletonIDs, isRow) {
+      // Make sure we have either a group or a single skeleton ID
+      if (!group && skeletonIDs.length > 1) {
+        throw new CATMAID.ValueError('Expected either a group or a single skeleton ID');
+      }
+
+      // Create element
       var a = document.createElement('a');
       a.href = '#';
       a.setAttribute('data-skeleton-ids', JSON.stringify(skeletonIDs));
@@ -600,6 +708,7 @@
       var th = document.createElement('th');
       th.appendChild(div);
       if (group) {
+        a.setAttribute('data-group', group);
         th.setAttribute('title', 'This group contains ' + group.length +
             ' skeleton(s): ' + group.join(', '));
       }
@@ -659,6 +768,59 @@
           e.appendChild(td);
         }
       });
+    }
+
+    /**
+     * Append a hover button with the given properties to a target element.
+     */
+    function appendHoverButton(target, label, cls, title) {
+      var buttonIcon = document.createElement('span');
+      buttonIcon.setAttribute('title', title);
+      buttonIcon.setAttribute('class', 'ui-icon ui-icon-' + label);
+      var button = document.createElement('div');
+      button.setAttribute('class', 'hover-button ' + cls);
+      button.appendChild(buttonIcon);
+      target.appendChild(button);
+      return button;
+    }
+
+    /**
+     * Swap two elements in either the row or column skeleton source and
+     * refresh. This event handler expects the widget to be available as
+     * e.data.widget and either e.up, e.down, e.left or e.right to be true
+     * and to indicate the moving direction.
+     */
+    function handleMove(e) {
+      /* jshint validthis: true */
+      var group = this.dataset.group;
+      var key = this.dataset.key;
+      // If this is not a group cell, try to parse the key as a integer to
+      // refer to a skeleton ID.
+      if (group) key = group;
+      else key = parseInt(key, 10);
+      // Find element list to work on
+      var widget = e.data.widget;
+      var isRow = (e.data.up || e.data.down);
+      var keys = isRow ? widget.rowDimension.orderedElements :
+          widget.colDimension.orderedElements;
+      // Swap elements
+      var currentIndex = keys.indexOf(key);
+      if (-1 === currentIndex) return true;
+      if (e.data.up || e.data.left) {
+        if (0 === currentIndex) return true;
+        var prevKey = keys[currentIndex - 1];
+        keys[currentIndex - 1] = key;
+        keys[currentIndex] = prevKey;
+      } else {
+        if (keys.length - 1 === currentIndex) return true;
+        var nextKey = keys[currentIndex + 1];
+        keys[currentIndex + 1] = key;
+        keys[currentIndex] = nextKey;
+      }
+      // Disable soting and refresh
+      if (isRow) widget.rowSorting = 0;
+      else widget.colSorting = 0;
+      widget.refresh();
     }
   };
 
@@ -830,7 +992,7 @@
    * Display a modal dialog to ask the user for a group name.
    */
   function askForGroupName(validGroupName, callback) {
-    var options = new OptionsDialog("Group properties");
+    var options = new CATMAID.OptionsDialog("Group properties");
     options.appendMessage("Please choose a name for the new group.");
     var nameField = options.appendField("Name: ", "groupname-typed", "", null);
     var invalidMessage = options.appendMessage("Please choose a different name!");
@@ -863,6 +1025,12 @@
 
   // The available sort options for rows and columns
   var sortOptions = [
+    {
+      name: 'No Sorting',
+      sort: function(matrix, src, isRow, a, b) {
+        return 0;
+      }
+    },
     {
       name: 'ID',
       sort: function(matrix, src, isRow, a, b) {
@@ -1011,5 +1179,29 @@
       element.childNodes[i].style.color = fg;
     }
   };
+
+  /**
+   * If the skeleton list has only one entry, this skeleton is selected and
+   * the view is moved to its closest node of it. Otherwise, a selection
+   * table, with all skeletons of the list appended, will be opened.
+   */
+  function followSkeletonList(skeletonIDs) {
+    if (!skeletonIDs || !skeletonIDs.length) {
+      CATMAID.warn('Could not find expected list of skleton IDs');
+      return;
+    }
+    if (1 === skeletonIDs.length) {
+      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
+    } else {
+      var ST = new SelectionTable();
+      var models = skeletonIDs.reduce(function(o, skid) {
+        o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "",
+            new THREE.Color().setRGB(1, 1, 0));
+        return o;
+      }, {});
+      WindowMaker.create('neuron-staging-area', ST);
+      ST.append(models);
+    }
+  }
 
 })(CATMAID);

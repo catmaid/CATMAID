@@ -9,8 +9,8 @@
    * A GridLayer object can render a SVG grid to a view. Its offset is relative to
    * the project's origin.
    */
-  var GridLayer = function(stack, options) {
-    this.stack = stack;
+  var GridLayer = function(stackViewer, options) {
+    this.stackViewer = stackViewer;
     // Make sure there is an options object
     options = options || {};
     this.opacity = 1;
@@ -29,10 +29,10 @@
     this.view.style.top = 0;
 
     // Append it to DOM
-    stack.getView().appendChild(this.view);
+    stackViewer.getView().appendChild(this.view);
 
     // Create SVG
-    this.paper = Raphael(this.view, stack.viewWidth, stack.viewHeight);
+    this.paper = Raphael(this.view, stackViewer.viewWidth, stackViewer.viewHeight);
   };
 
   GridLayer.prototype = {};
@@ -74,8 +74,8 @@
   GridLayer.prototype.redraw = function(completionCallback)
   {
     // Get view box in local/stack and world/project coordinates
-    var localViewBox = this.stack.createStackViewBox();
-    var worldViewBox = this.stack.createStackToProjectBox(localViewBox);
+    var localViewBox = this.stackViewer.createStackViewBox();
+    var worldViewBox = this.stackViewer.primaryStack.createStackToProjectBox(localViewBox);
 
     // Find first horizontal and vertical start coordinate for grid, in
     // world/project coordinates.
@@ -85,11 +85,11 @@
     // TODO: Make this work with different orientations
     // The drawing math should be done in local/stack coordinates to avoid a
     // performance hit.
-    var xGridStartL = (xGridStartW - this.stack.translation.x) * (this.stack.scale / this.stack.resolution.x);
-    var yGridStartL = (yGridStartW - this.stack.translation.y) * (this.stack.scale / this.stack.resolution.y);
+    var xGridStartL = (xGridStartW - this.stackViewer.primaryStack.translation.x) * (this.stackViewer.scale / this.stackViewer.primaryStack.resolution.x);
+    var yGridStartL = (yGridStartW - this.stackViewer.primaryStack.translation.y) * (this.stackViewer.scale / this.stackViewer.primaryStack.resolution.y);
     // Round later to not let rounding errors add up
-    var cellWidthL = (this.cellWidth * this.stack.scale) / this.stack.resolution.x;
-    var cellHeightL = (this.cellHeight * this.stack.scale) / this.stack.resolution.y;
+    var cellWidthL = (this.cellWidth * this.stackViewer.scale) / this.stackViewer.primaryStack.resolution.x;
+    var cellHeightL = (this.cellHeight * this.stackViewer.scale) / this.stackViewer.primaryStack.resolution.y;
 
     // Number of cells and grid height/width
     var numHCells = Math.ceil((worldViewBox.max.x - worldViewBox.min.x - xGridStartW) / this.cellWidth) + 1;
@@ -123,7 +123,7 @@
 
   GridLayer.prototype.unregister = function()
   {
-    this.stack.getView().removeChild(this.view);
+    this.stackViewer.getView().removeChild(this.view);
   };
 
   // Export the grid layer into the CATMAID namespace

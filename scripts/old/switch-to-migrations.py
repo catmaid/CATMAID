@@ -86,7 +86,7 @@ if not everything_ok:
 described in master.sql from commit 5145c06574a2, so
 this script refuses to set the schema version.  You will
 need to fix this by hand.  For more information see:
-https://github.com/acardona/CATMAID/wiki/Automatic-Database-Migrations'''
+https://github.com/catmaid/CATMAID/wiki/Automatic-Database-Migrations'''
     sys.exit(1)
 
 # Otherwise we can go ahead and set the schema version:

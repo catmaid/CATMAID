@@ -1419,31 +1419,13 @@ var WindowMaker = new function()
          [' X ', GG.distributeCoordinate.bind(GG, 'x')],
          [' Y ', GG.distributeCoordinate.bind(GG, 'y')]]);
 
-    var n_circles = document.createElement('select');
-    n_circles.setAttribute("id", "n_circles_of_hell" + GG.widgetID);
-    [1, 2, 3, 4, 5].forEach(function(title, i) {
-      var option = document.createElement("option");
-      option.text = title;
-      option.value = title;
-      n_circles.appendChild(option);
-    });
-
     var f = function(name) {
       var e = document.createElement('select');
-      e.setAttribute("id", "n_circles_min_" + name + GG.widgetID);
-      var option = document.createElement("option");
-      option.text = "All " + name;
-      option.value = 0;
-      e.appendChild(option);
-      option = document.createElement("option");
-      option.text = "No " + name;
-      option.value = -1;
-      e.appendChild(option);
+      e.setAttribute("id", "gg_n_min_" + name + GG.widgetID);
+      e.appendChild(new Option("All " + name, 0);
+      e.appendChild(new Option("No " + name, -1);
       for (var i=1; i<51; ++i) {
-        option = document.createElement("option");
-        option.text = i;
-        option.value = i;
-        e.appendChild(option);
+        e.appendChild(new Option(i, i));
       }
       e.selectedIndex = 3; // value of 2 pre or post min
       return e;
@@ -1452,13 +1434,21 @@ var WindowMaker = new function()
     appendToTab(tabs['Grow'],
         [[document.createTextNode('Grow ')],
          ['Circles', GG.growGraph.bind(GG)],
-         [document.createTextNode(" or ")],
-         ['Paths', GG.growPaths.bind(GG)],
          [document.createTextNode(" by ")],
-         [n_circles],
-         [document.createTextNode("hops, limit:")],
+         [createSelect("gg_n_circles_of_hell" + GG.widgetID, [1, 2, 3, 4, 5])],
+         [document.createTextNode(" orders, limit:")],
          [f("upstream")],
-         [f("downstream")]]);
+         [f("downstream")],
+         [document.createTextNode(" - Find ")],
+         ['paths', GG.growPaths.bind(GG)],
+         [document.createTextNode(" by ")],
+         [createSelect("n_hops" + GG.widgetID, [1, 2, 3, 4, 5])],
+         [document.createTextNode(" hops, limit:")],
+         [f("path-synapses")],
+         ['pick sources', GG.pickPathOrigins.bind(GG, 'source'), {id: 'gg_path_source' + GG.widgetID}],
+         ['X', GG.clearPathOrigins.bind(GG, 'source')],
+         ['pick targets', GG.pickPathOrigins.bind(GG, 'target'), {id: 'gg_path_target' + GG.widgetID}],
+         ['X', GG.clearPathOrigins.bind(GG, 'target')]]);
 
     appendToTab(tabs['Export'],
         [['Export GML', GG.exportGML.bind(GG)],
@@ -2033,15 +2023,20 @@ var WindowMaker = new function()
     return win;
   };
 
-  var appendSelect = function(div, name, entries) {
+  var createSelect = function(id, items, use_numbers) {
     var select = document.createElement('select');
-    select.setAttribute("id", div.id + "_" + name);
-    entries.forEach(function(title, i) {
+    select.setAttribute("id", id);
+    items.forEach(function(item, i) {
       var option = document.createElement("option");
-      option.text = title;
-      option.value = i;
+      option.text = item;
+      option.value = use_numbers ? i : item;
       select.appendChild(option);
     });
+    return select;
+  }:
+
+  var appendSelect = function(div, name, entries) {
+    var select = createSelect(div.id + "_" + name, entries, true);
     div.appendChild(select);
     return select;
   };

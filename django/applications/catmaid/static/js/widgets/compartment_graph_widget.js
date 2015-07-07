@@ -1107,6 +1107,7 @@ GroupGraph.prototype.toggleTrimmedNodeLabels = function() {
 GroupGraph.prototype.clear = function() {
   this.groups = {};
   this.subgraphs = {};
+  this.resetPathOrigins();
   if (this.cy) this.cy.elements("node").remove();
 };
 
@@ -1478,9 +1479,9 @@ GroupGraph.prototype.exportGML = function() {
 // Find skeletons to grow from groups or single skeleton nodes
 // and skeletons to append from subnodes
 GroupGraph.prototype._findSkeletonsToGrow = function() {
-  var n_circles = Number($('#n_circles_of_hell' + this.widgetID).val()),
-      min_downstream = Number($('#n_circles_min_downstream' + this.widgetID).val()),
-      min_upstream = Number($('#n_circles_min_upstream' + this.widgetID).val());
+  var n_circles = Number($('#gg_n_circles_of_hell' + this.widgetID).val()),
+      min_downstream = Number($('#gg_n_min_downstream' + this.widgetID).val()),
+      min_upstream = Number($('#gg_n_min_upstream' + this.widgetID).val());
 
   var skids = {},
       split_partners = {},
@@ -1522,7 +1523,7 @@ GroupGraph.prototype._findSkeletonsToGrow = function() {
 
 GroupGraph.prototype.growGraph = function() {
   var s = this._findSkeletonsToGrow(),
-      accum = $.extend({}, s.split_partners);
+      accum = $.extend({}, s.split_partners); // TODO unused?
 
   var grow = function(skids, n_circles, callback) {
         requestQueue.register(django_url + project.id + "/graph/circlesofhell",
@@ -1567,6 +1568,33 @@ GroupGraph.prototype.growGraph = function() {
   } else {
     CATMAID.info("No partners found.");
   }
+};
+
+/** Populates variables this.path_source and this.path_target. */
+GroupGraph.prototype.pickPathOrigins = function(type) {
+  // TODO update to store not the skeleton ID but the nodes
+  // TODO then use the "find' function from inside _findSkeletonsToGrow
+  if (type !== 'source' && type !== 'target') return; // sanitize
+  var origin = 'path_' + type;
+  var selected = this.getSelectedSkeletons();
+  if (0 === selected.length) return CATMAID.info("Select one or more nodes first!");
+  this[origin] = selected.reduce(function(o, skid) {
+    o[skid] = true;
+    return o;
+  }, this[origin] ? this[origin] : {});
+  $('#gg_path_' + type + this.widgetID).val('pick ' + type + 's (' + Object.keys(this[origin]).length + ')');
+};
+
+GroupGraph.prototype.clearPathOrigins = function(type) {
+  if (type !== 'source' && type !== 'target') return; // sanitize
+  var origin = 'path_' + type;
+  delete this[origin];
+  $('#gg_path_' + type + this.widgetID).val('pick ' + type + 's');
+};
+
+GroupGraph.prototype.resetPathOrigins = function() {
+  delete this['path_source'];
+  delete this['path_target'];
 };
 
 GroupGraph.prototype.growPaths = function() {

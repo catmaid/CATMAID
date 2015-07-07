@@ -1455,6 +1455,7 @@ var WindowMaker = new function()
 
     appendToTab(tabs['Graph'],
         [['Re-layout', GG.updateLayout.bind(GG, layout)],
+         [' fit', true, GG.toggleLayoutFit.bind(GG), true],
          [document.createTextNode(' - Color: ')],
          [color],
          [document.createTextNode(' - Hide edges with less than ')],

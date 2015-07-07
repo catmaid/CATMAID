@@ -1102,7 +1102,19 @@
       var checkNodeID = function(svgNode) {
         if (!o || o.id !== svgNode.__data__) {
           console.log("WARNING: detected ID mismatch in mouse event system.");
-          SkeletonAnnotations.getSVGOverlayByPaper(svgNode.parentNode.parentNode).updateNodes();
+          // Reload nodes if the source node is still part of the SVG. It might
+          // happen that this is not the case, e.g. if the section was changed
+          // before the mouse up event is triggered.
+          if (svgNode.parentNode && svgNode.parentNode.parentNode) {
+            var svg = SkeletonAnnotations.getSVGOverlayByPaper(svgNode.parentNode.parentNode);
+            if (svg) {
+              svg.updateNodes();
+            } else {
+              console.log("Couldn't find SVG overlay for the node receiving the event");
+            }
+          } else {
+            console.log("Couldn't find parent SVG elements for the node receiving the event");
+          }
           return false;
         }
         return true;

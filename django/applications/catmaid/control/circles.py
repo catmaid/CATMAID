@@ -32,6 +32,10 @@ def _next_circle(skeleton_set, relations, cursor):
         connections[row[0]][row[1]][row[2]] += 1
     return connections
 
+def _relations(cursor, project_id):
+    cursor.execute("SELECT relation_name, id FROM relation WHERE project_id = %s AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')" % int(project_id))
+    return dict(cursor.fetchall())
+
 def _clean_mins(request, cursor, project_id):
     min_pre  = int(request.POST.get('min_pre',  -1))
     min_post = int(request.POST.get('min_post', -1))
@@ -43,14 +47,13 @@ def _clean_mins(request, cursor, project_id):
     if -1 == min_post:
         min_post = float('inf')
 
-    cursor.execute("SELECT relation_name, id FROM relation WHERE project_id = %s AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')" % int(project_id))
-    relations = dict(cursor.fetchall())
+    relations = _relations(cursor, project_id)
     mins = {}
     mins[relations['presynaptic_to']]  = min_post # inverted: all postsynaptic to the set
     mins[relations['postsynaptic_to']] = min_pre # inverted: all presynaptic to the set
     return mins, relations
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def circles_of_hell(request, project_id=None):
     """ Given a set of one or more skeleton IDs, find all skeletons that connect
     them (n_circles=1), or that connect to others that connect them (n_circles=2), etc.
@@ -83,7 +86,7 @@ def circles_of_hell(request, project_id=None):
     skeleton_ids = tuple(all_circles - first_circle)
     return HttpResponse(json.dumps([skeleton_ids, _neuronnames(skeleton_ids, project_id)]))
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def find_directed_paths(request, project_id=None):
     """ Given a set of two or more skeleton IDs, find directed paths of connected neurons between them, for a maximum inner path length as given (i.e. origin and destination not counted). A directed path means that all edges are of the same kind, e.g. presynaptic_to. """
 
@@ -92,44 +95,71 @@ def find_directed_paths(request, project_id=None):
     if len(sources) < 1 or len(targets) < 1:
         raise Exception('Need at least 1 skeleton IDs for both sources and targets to find directed paths!')
 
-    path_length = int(request.POST.get('n_circles', 1))
+    path_length = int(request.POST.get('path_length', 2))
     cursor = connection.cursor()
-    mins, relations = _clean_mins(request, cursor, int(project_id))
-    presynaptic_to = relations['presynaptic_to']
+    min = int(request.POST.get('min_synapses', -1))
+    if -1 == min:
+        min = float('inf')
 
-    def grow(graph, circle):
-        s = set()
-        for skid1, c in circle.iteritems():
-            for relationID, targets in c.iteritems():
-                threshold = mins[relationID]
-                for skid2, count in targets.iteritems():
-                    if count < threshold:
-                        continue
-                    if relationID == presynaptic_to:
-                        graph.add_edge(skid1, skid2)
-                    else:
-                        graph.add_edge(skid2, skid2)
-                    s.add(skid2)
-        return s
+    relations = _relations(cursor, project_id)
 
-    for source in sources:
-        for target in targets:
-            graph = nx.DiGraph()
-            length = path_length
-            s1 = set()
-            t1 = set()
-            s1.add(source)
-            t1.add(target)
-            while length > 0:
-                length -= 1
-                s1 = grow(graph, _next_circle(s1, relations, cursor))
-                t1 = grow(graph, _next_circle(t1, relations, cursor))
+    def next_level(skids, rel1, rel2):
+        cursor.execute('''
+        SELECT tc1.skeleton_id, tc2.skeleton_id
+        FROM treenode_connector tc1,
+             treenode_connector tc2
+        WHERE tc1.skeleton_id in (%s)
+          AND tc1.connector_id = tc2.connector_id
+          AND tc1.skeleton_id != tc2.skeleton_id
+          AND tc1.relation_id = %s
+          AND tc2.relation_id = %s
+        GROUP BY tc1.skeleton_id, tc2.skeleton_id
+        HAVING count(*) >= %s
+        ''' % (','.join(str(skid) for skid in skids),
+               rel1,
+               rel2,
+               min))
+        return cursor.fetchall()
 
+
+    # bidirectional search
+    i = 0
+    middle = path_length / 2
+    s1 = sources
+    t1 = targets
+    graph = nx.DiGraph()
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
+
+    while i <= middle:
+        if 0 == len(s1):
+            break
+        s2 = set()
+        for pre_skid, post_skid in next_level(s1, pre, post):
+            graph.add_edge(pre_skid, post_skid)
+            if not post_skid in s1:
+                s2.add(post_skid)
+        print i, middle
+        print s2
+        s1 = s2
+        i += 1
+        if i < middle and len(t1) > 0:
+            t2 = set()
+            for post_skid, pre_skid in next_level(t1, post, pre):
+                graph.add_edge(pre_skid, post_skid)
+                if not pre_skid in t1:
+                    t2.add(pre_skid)
+            t1 = t2
+            print i, middle
+            print t2
+ 
     all_paths = []
     for source in sources:
         for target in targets:
-            for path in nx.all_simple_paths(graph, source, target, path_length + 1):
-                all_paths.append(path)
+            for path in nx.all_simple_paths(graph, source, target, cutoff=path_length):
+                # cutoff doesn't work, so:
+                if len(path) <= path_length:
+                    all_paths.append(path)
 
     return HttpResponse(json.dumps(all_paths))
 

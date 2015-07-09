@@ -1422,8 +1422,8 @@ var WindowMaker = new function()
     var f = function(name) {
       var e = document.createElement('select');
       e.setAttribute("id", "gg_n_min_" + name + GG.widgetID);
-      e.appendChild(new Option("All " + name, 0);
-      e.appendChild(new Option("No " + name, -1);
+      e.appendChild(new Option("All " + name, 0));
+      e.appendChild(new Option("No " + name, -1));
       for (var i=1; i<51; ++i) {
         e.appendChild(new Option(i, i));
       }
@@ -1442,9 +1442,9 @@ var WindowMaker = new function()
          [document.createTextNode(" - Find ")],
          ['paths', GG.growPaths.bind(GG)],
          [document.createTextNode(" by ")],
-         [createSelect("n_hops" + GG.widgetID, [1, 2, 3, 4, 5])],
+         [createSelect("gg_n_hops" + GG.widgetID, [2, 3, 4, 5, 6])],
          [document.createTextNode(" hops, limit:")],
-         [f("path-synapses")],
+         [f("path_synapses")],
          ['pick sources', GG.pickPathOrigins.bind(GG, 'source'), {id: 'gg_path_source' + GG.widgetID}],
          ['X', GG.clearPathOrigins.bind(GG, 'source')],
          ['pick targets', GG.pickPathOrigins.bind(GG, 'target'), {id: 'gg_path_target' + GG.widgetID}],
@@ -2033,7 +2033,7 @@ var WindowMaker = new function()
       select.appendChild(option);
     });
     return select;
-  }:
+  };
 
   var appendSelect = function(div, name, entries) {
     var select = createSelect(div.id + "_" + name, entries, true);

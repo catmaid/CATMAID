@@ -1611,6 +1611,11 @@ GroupGraph.prototype.removeFromPathOrigins = function(nodeID) {
     $('#gg_' + type + this.widgetID).val('pick ' + type.substring(5) + 's' + (count > 0 ? ' (' + count + ')' : ''));
   }, this);
 };
+
+GroupGraph.prototype.nodesWillChangeFor = function(skid) {
+  this.getNodes(skid).each((function(i, node) {
+    this.removeFromPathOrigins(node.id());
+  }).bind(this));
 };
 
 GroupGraph.prototype.growPaths = function() {
@@ -2734,7 +2739,10 @@ GroupGraph.prototype.split = function(mode) {
   if (0 === sel.length) return CATMAID.info("Select one or more nodes first!");
   sel.forEach(function(skid) {
     if (undefined === mode) delete this.subgraphs[skid];
-    else this.subgraphs[skid] = mode;
+    else {
+      this.subgraphs[skid] = mode;
+      this.nodesWillChangeFor(skid);
+    }
   }, this);
   this.update();
 };

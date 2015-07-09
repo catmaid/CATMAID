@@ -139,8 +139,6 @@ def find_directed_paths(request, project_id=None):
             graph.add_edge(pre_skid, post_skid)
             if not post_skid in s1:
                 s2.add(post_skid)
-        print i, middle
-        print s2
         s1 = s2
         i += 1
         if i < middle and len(t1) > 0:
@@ -150,8 +148,6 @@ def find_directed_paths(request, project_id=None):
                 if not pre_skid in t1:
                     t2.add(pre_skid)
             t1 = t2
-            print i, middle
-            print t2
  
     all_paths = []
     for source in sources:

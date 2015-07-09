@@ -672,12 +672,14 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
   // Store positions of current nodes and their selected state
   var positions = {},
       selected = {},
-      hidden = {};
+      hidden = {},
+      locked = {};
   this.cy.nodes().each(function(i, node) {
     var id = node.id();
     positions[id] = node.position();
     if (node.selected()) selected[id] = true;
     if (node.hidden()) hidden[id] = true;
+    if (node.locked()) locked[id] = true;
   });
 
   // Store visibility and selection state of edges as well
@@ -1039,6 +1041,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
     if (id in selected) node.select();
     // Restore visibility state
     if (id in hidden) node.hide();
+    // Restore locked state
+    if (id in locked) node.lock();
     // Make branch nodes, if any, be smaller
     if (node.data('branch')) {
       node.css('height', 15);
@@ -1107,6 +1111,7 @@ GroupGraph.prototype.toggleTrimmedNodeLabels = function() {
 GroupGraph.prototype.clear = function() {
   this.groups = {};
   this.subgraphs = {};
+  this.resetPathOrigins();
   if (this.cy) this.cy.elements("node").remove();
 };
 
@@ -1475,13 +1480,15 @@ GroupGraph.prototype.exportGML = function() {
   saveAs(blob, "graph.gml");
 };
 
+GroupGraph.prototype._getGrowParameters = function() {
+  return {n_circles: Number($('#gg_n_circles_of_hell' + this.widgetID).val()),
+          min_downstream: Number($('#gg_n_min_downstream' + this.widgetID).val()),
+          min_upstream: Number($('#gg_n_min_upstream' + this.widgetID).val())};
+};
+
 // Find skeletons to grow from groups or single skeleton nodes
 // and skeletons to append from subnodes
-GroupGraph.prototype._findSkeletonsToGrow = function() {
-  var n_circles = Number($('#n_circles_of_hell' + this.widgetID).val()),
-      min_downstream = Number($('#n_circles_min_downstream' + this.widgetID).val()),
-      min_upstream = Number($('#n_circles_min_upstream' + this.widgetID).val());
-
+GroupGraph.prototype._findSkeletonsToGrow = function(nodes, min_downstream, min_upstream) {
   var skids = {},
       split_partners = {},
       splits = [],
@@ -1499,7 +1506,7 @@ GroupGraph.prototype._findSkeletonsToGrow = function() {
           splits.push([node.id(), partners, node.data('skeletons')[0].id]);
         }
       };
-  this.cy.nodes((function(i, node) {
+  nodes.each((function(i, node) {
     if (node.selected() && node.visible()) {
 			node.data("skeletons").forEach(function(skeleton) {
         if (this.subgraphs[skeleton.id]) {
@@ -1514,23 +1521,21 @@ GroupGraph.prototype._findSkeletonsToGrow = function() {
 
   return {skids: skids,
           split_partners: split_partners,
-          splits: splits,
-          n_circles: n_circles,
-          min_downstream: min_downstream,
-          min_upstream: min_upstream};
+          splits: splits};
 };
 
 GroupGraph.prototype.growGraph = function() {
-  var s = this._findSkeletonsToGrow(),
-      accum = $.extend({}, s.split_partners);
+  var p = this._getGrowParameters(),
+      s = this._findSkeletonsToGrow(this.cy.nodes(), p.min_downstream, p.min_upstream),
+      accum = $.extend({}, s.split_partners); // TODO unused?
 
   var grow = function(skids, n_circles, callback) {
         requestQueue.register(django_url + project.id + "/graph/circlesofhell",
             "POST",
             {skeleton_ids: skids,
              n_circles: n_circles,
-             min_pre: s.min_upstream,
-             min_post: s.min_downstream},
+             min_pre: p.min_upstream,
+             min_post: p.min_downstream},
             function(status, text) {
               if (200 !== status) return;
               var json = $.parseJSON(text);
@@ -1549,7 +1554,7 @@ GroupGraph.prototype.growGraph = function() {
         this.append(models);
       }).bind(this),
       rest = function(skids, n_circles) {
-        if (0 === s.n_circles -1) append(Object.keys(skids));
+        if (0 === p.n_circles -1) append(Object.keys(skids));
         else grow(Object.keys(skids), n_circles, append);
       },
       skids = Object.keys(s.skids);
@@ -1559,110 +1564,165 @@ GroupGraph.prototype.growGraph = function() {
     grow(skids, 1, function(ids) {
       var unique = $.extend({}, s.split_partners);
       ids.forEach(function(id) { unique[id] = true; });
-      rest(unique, s.n_circles -1);
+      rest(unique, p.n_circles -1);
     });
   } else if (s.splits.length > 0) {
     // Otherwise directly just grow the partners of the split nodes by n_circles -1
-    rest(s.split_partners, s.n_circles -1);
+    rest(s.split_partners, p.n_circles -1);
   } else {
     CATMAID.info("No partners found.");
   }
 };
 
+/** Populates variables this.path_source and this.path_target. */
+GroupGraph.prototype.pickPathOrigins = function(type) {
+  if (type !== 'source' && type !== 'target') return; // sanitize
+  var origin = 'path_' + type;
+  if (!this[origin]) this[origin] = {};
+  var count = Object.keys(this[origin]).length;
+  this.cy.nodes().each((function(i, node) {
+    if (node.visible() && node.selected()) {
+      this[origin][node.id()] = true;
+    }
+  }).bind(this));
+  if (count === Object.keys(this[origin]).length) {
+    return CATMAID.info("Select one or more nodes first!");
+  }
+  $('#gg_path_' + type + this.widgetID).val('pick ' + type + 's (' + Object.keys(this[origin]).length + ')');
+};
+
+GroupGraph.prototype.clearPathOrigins = function(type) {
+  if (type !== 'source' && type !== 'target') return; // sanitize
+  var origin = 'path_' + type;
+  delete this[origin];
+  $('#gg_path_' + type + this.widgetID).val('pick ' + type + 's');
+};
+
+GroupGraph.prototype.resetPathOrigins = function() {
+  delete this['path_source'];
+  delete this['path_target'];
+};
+
+GroupGraph.prototype.removeFromPathOrigins = function(nodeID) {
+  ['path_source', 'path_target'].forEach(function(type) {
+    if (!this[type]) return;
+    delete this[type][nodeID];
+    var count = Object.keys(this[type]).length;
+    $('#gg_' + type + this.widgetID).val('pick ' + type.substring(5) + 's' + (count > 0 ? ' (' + count + ')' : ''));
+  }, this);
+};
+
+GroupGraph.prototype.nodesWillChangeFor = function(skid) {
+  this.getNodes(skid).each((function(i, node) {
+    this.removeFromPathOrigins(node.id());
+  }).bind(this));
+};
+
 GroupGraph.prototype.growPaths = function() {
-  var s = this._findSkeletonsToGrow();
+  var types = ['source', 'target'];
+  for (var i=0; i<types; ++i) {
+    var type = 'path_' + types[i];
+    if (!this[type] || 0 === Object.keys(this[type]]).length)  {
+      return CATMAID.msg('Select ' + type + ' nodes first!');
+    }
+  }
+
+  var collect = function(nodes, set, subgraphs, direction, min_synapses) {
+    var skids = {},
+        split_skids = {};
+    nodes.each(function(i, node) {
+      if (set[node.id()] && node.visible()) {
+        node.data('skeletons').forEach(function(skeleton) {
+          if (subgraphs[skeleton.id]) {
+            var map = node.data(direction); // upstream_skids or downstream_skids
+            if (map) {
+              Object.keys(map).forEach(function(skid) {
+                if (map[skid].length >= min_synapses) split_skids[skid] = true;
+              });
+            }
+          } else skids[skeleton.id] = true;
+        });
+      }
+    });
+    return {skids: skids,
+            split_skids: split_skids};
+  };
+
+  var n_hops = Number($('#gg_n_hops' + this.widgetID).val()),
+      min_synapses = Number($('#gg_n_min_path_synapses' + this.widgetID).val()),
+      sources = collect(this.cy.nodes(), this['path_source'], this.subgraphs, 'downstream_skids', min_synapses),
+      targets = collect(this.cy.nodes(), this['path_target'], this.subgraphs, 'upstream_skids', min_synapses);
 
   // Paths:
   // 1. skids to skids
-  // 2. skids to split_partners with hops -1
-  // 3. split_partners to split_partners with hops -2
+  // 2. skids to split_skid partners with hops -1
+  // 3. split_skid partners to skids with hops -1
+  // 4. split_partners to split_partners with hops -2
 
-  var new_skids = {},
-      errors = [],
-      min = Math.max(s.min_upstream, s.min_downstream);
+  var new_skids = {};
 
-
-  // Will grow in both directions, therefore use the max as the min synapse count
-  var findPaths = function(skids, n_hops, process, continuation) {
+  var findPaths = function(source_skids, target_skids, n_hops, process, continuation) {
     requestQueue.register(django_url + project.id + "/graph/directedpaths", "POST",
-        {sources: skids,
-         targets: skids,
-         n_circles: n_hops,
-         min_pre: min,
-         min_post: min},
+        {sources: source_skids,
+         targets: target_skids,
+         path_length: n_hops + 1,
+         min_synapses: min_synapses},
          function(status, text) {
            if (200 !== status) return;
            var json = $.parseJSON(text);
-           if (json.error) errors.push(json.error);
+           if (json.error) return alert(json.error);
            else process(json);
            continuation();
          });
   };
 
+  var addSkids = function(json) {
+    for (var i=0; i<json.length; ++i) {
+      var path = json[i];
+      for (var j=0; j<path.length; ++j) {
+        new_skids[path[j]] = true;
+      }
+    }
+  };
+
   var end = (function() {
-    var skids = Object.keys(new_skids);
-    if (0 === skids.length) return CATMAID.info("No paths found.");
-    skids = skids.filter(function(skid) { return !this.hasSkeleton(skid); }, this);
-    if (0 === skids.length) return CATMAID.info("No other paths found.");
+    var all = {};
+    this.cy.nodes().each(function(i, node) {
+      // If any of the new skeletons is present but hidden, make it visible
+      node.data('skeletons').forEach(function(skeleton) {
+        if (new_skids[skeleton.id]) node.show();
+        all[skeleton.id] = true;
+      });
+    });
+    // Skip skeletons that are already loaded
+    var skids = Object.keys(new_skids).filter(function(skid) { return !all[skid]; });
+    if (0 === skids.length) return CATMAID.info("No new paths found.");
+    // Append all new
     this.append(skids.reduce(function(o, skid) {
       o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setHex(0xffae56));
       return o;
     }, {}));
   }).bind(this);
 
-  var step3 = function() {
-    // 3. split_partners to split_partners with hops -2
-    if (s.n_circles -2 < 1) return end();
-    var skids = Object.keys(s.split_partners);
-    if (skids.length < 2) return end();
-    findPaths(skids, s.n_circles -2,
-        function(json) {
-          var origins = s.splits.reduce(function(o, e) {
-            Object.keys(e[1]).forEach(function(skid) { o[skid] = e[0]; });
-            return o;
-          }, {});
-          for (var i=0; i<json.length; ++i) {
-            var path = json[i],
-                first = path[0],
-                last = path[path.length -1];
-            if (origins[first] == origins[last]) continue;
-            for (var j=0; j<path.length; ++j) new_skids[path[j]] = true;
-          }
-        },
-        end);
+  var stepper = function(s, t, n_hops, next) {
+    return function() {
+      if (n_hops < 1) return next();
+
+      var src = Object.keys(s),
+          tgt = Object.keys(t);
+
+      if (0 === src.length || 0 === tgt.length) return next();
+
+      findPaths(src, tgt, n_hops, addSkids, next);
+    };
   };
 
-  var step2 = function() {
-    // 2. skids to split partners with hops -1
-    if (s.n_circles -1 < 1) return step3();
-    var skids = Object.keys(s.skids),
-        split_skids = Object.keys(s.split_partners);
-    if (skids.length < 1 || split_skids.length < 1) return step3();
-    findPaths(skids.concat(split_skids), s.n_circles -1,
-        function(json) {
-          for (var i=0; i<json.length; ++i) {
-            var path = json[i],
-                first = path[0],
-                last = path[path.length -1];
-            if (  (s.skids[first] && s.split_partners[last])
-               || (s.skids[last] && s.split_partners[first])) {
-              for (var j=0; j<path.length; ++j) new_skids[path[j]] = true;
-            }
-          }
-        },
-        step3);
-  };
+  var f4 = stepper(sources.split_skids, targets.split_skids, n_hops -2, end);
+  var f3 = stepper(sources.skids,       targets.split_skids, n_hops -1, f4);
+  var f2 = stepper(sources.split_skids, targets.skids,       n_hops -1, f3);
+  var f1 = stepper(sources.skids,       targets.skids,       n_hops,    f2);
 
-  // 1. skids to skids
-  var skids = Object.keys(s.skids);
-  if (skids.length < 2) step2();
-  else findPaths(skids, s.n_circles,
-      function(json) {
-        for (var i=0; i<json.length; ++i) {
-          for (var j=0, p=json[i]; j<p.length; ++j) new_skids[p[j]] = true;
-        }
-      },
-      step2);
+  f1();
 };
 
 GroupGraph.prototype.hideSelected = function() {
@@ -2679,7 +2739,10 @@ GroupGraph.prototype.split = function(mode) {
   if (0 === sel.length) return CATMAID.info("Select one or more nodes first!");
   sel.forEach(function(skid) {
     if (undefined === mode) delete this.subgraphs[skid];
-    else this.subgraphs[skid] = mode;
+    else {
+      this.subgraphs[skid] = mode;
+      this.nodesWillChangeFor(skid);
+    }
   }, this);
   this.update();
 };

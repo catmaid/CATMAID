@@ -672,12 +672,14 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
   // Store positions of current nodes and their selected state
   var positions = {},
       selected = {},
-      hidden = {};
+      hidden = {},
+      locked = {};
   this.cy.nodes().each(function(i, node) {
     var id = node.id();
     positions[id] = node.position();
     if (node.selected()) selected[id] = true;
     if (node.hidden()) hidden[id] = true;
+    if (node.locked()) locked[id] = true;
   });
 
   // Store visibility and selection state of edges as well
@@ -1039,6 +1041,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
     if (id in selected) node.select();
     // Restore visibility state
     if (id in hidden) node.hide();
+    // Restore locked state
+    if (id in locked) node.lock();
     // Make branch nodes, if any, be smaller
     if (node.data('branch')) {
       node.css('height', 15);

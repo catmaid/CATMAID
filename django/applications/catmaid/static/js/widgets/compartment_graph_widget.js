@@ -1622,7 +1622,7 @@ GroupGraph.prototype.growPaths = function() {
   var types = ['source', 'target'];
   for (var i=0; i<types; ++i) {
     var type = 'path_' + types[i];
-    if (!this[type] || 0 === Object.keys(this[type]]).length)  {
+    if (!this[type] || 0 === Object.keys(this[type]).length)  {
       return CATMAID.msg('Select ' + type + ' nodes first!');
     }
   }

@@ -1614,8 +1614,12 @@ GroupGraph.prototype.removeFromPathOrigins = function(nodeID) {
 };
 
 GroupGraph.prototype.growPaths = function() {
-  if (!this['path_source'] || !this['path_target']) {
-    return CATMAID.msg('Select nodes first!');
+  var types = ['source', 'target'];
+  for (var i=0; i<types; ++i) {
+    var type = 'path_' + types[i];
+    if (!this[type] || 0 === Object.keys(this[type]]).length)  {
+      return CATMAID.msg('Select ' + type + ' nodes first!');
+    }
   }
 
   var collect = function(nodes, set, subgraphs, direction, min_synapses) {

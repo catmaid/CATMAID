@@ -1604,8 +1604,13 @@ GroupGraph.prototype.resetPathOrigins = function() {
 };
 
 GroupGraph.prototype.removeFromPathOrigins = function(nodeID) {
-  if (this['path_source']) delete this['path_source'][nodeID];
-  if (this['path_target']) delete this['path_target'][nodeID];
+  ['path_source', 'path_target'].forEach(function(type) {
+    if (!this[type]) return;
+    delete this[type][nodeID];
+    var count = Object.keys(this[type]).length;
+    $('#gg_' + type + this.widgetID).val('pick ' + type.substring(5) + 's' + (count > 0 ? ' (' + count + ')' : ''));
+  }, this);
+};
 };
 
 GroupGraph.prototype.growPaths = function() {

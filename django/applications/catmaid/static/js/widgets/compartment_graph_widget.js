@@ -1264,21 +1264,21 @@ GroupGraph.prototype.appendGroup = function(models) {
     if (json.error) return alert(json.error);
 
     // Find common annotations, if any
-    var skids = Object.keys(json);
-    var common = skids.length > 0 ? json[skids[0]] : [];
+    var skids = Object.keys(json.skeletons);
+    var common = skids.length > 0 ? json.skeletons[skids[0]] : [];
     common = common.filter(function(annotation) {
       return skids.reduce(function(all, skid) {
-        return all && -1 !== json[skid].indexOf(annotation);
+        return all && -1 !== json.skeletons[skid].indexOf(annotation);
       }, true);
-    }).sort();
+    }).map(function(aid) { return json.annotations[aid]; }).sort();
 
     // Find set of all annotations
     var all = Object.keys(skids.reduce(function(o, skid) {
-      return json[skid].reduce(function(o, annotation) {
+      return json.skeletons[skid].reduce(function(o, annotation) {
         o[annotation] = true;
         return o;
       }, o);
-    }, {})).sort();
+    }, {})).map(function(aid) { return json.annotations[aid]; }).sort();
 
     // All neuron names
     var names = Object.keys(models).map(function(skid) {

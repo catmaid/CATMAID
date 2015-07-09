@@ -895,7 +895,7 @@ def annotations_for_skeletons(request, project_id=None):
     # Select pairs of skeleton_id vs annotation name
     cursor.execute('''
     SELECT skeleton_neuron.class_instance_a,
-           annotation.name
+           annotation.id, annotation.name
     FROM class_instance_class_instance skeleton_neuron,
          class_instance_class_instance neuron_annotation,
          class_instance annotation
@@ -907,8 +907,13 @@ def annotations_for_skeletons(request, project_id=None):
 
     # Group by skeleton ID
     m = defaultdict(list)
-    for skid, name in cursor.fetchall():
-        m[skid].append(name)
+    a = dict()
+    for skid, aid, name in cursor.fetchall():
+        m[skid].append(aid)
+        a[aid] = name
 
-    return HttpResponse(json.dumps(m, separators=(',', ':')))
+    return HttpResponse(json.dumps({
+        'skeletons': m,
+        'annotations': a
+    }, separators=(',', ':')))
 

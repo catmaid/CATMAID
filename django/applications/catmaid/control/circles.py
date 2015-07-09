@@ -149,13 +149,17 @@ def find_directed_paths(request, project_id=None):
                     t2.add(pre_skid)
             t1 = t2
  
+    # Nodes will not be in the graph if they didn't have further connections,
+    # like for example will happen for placeholder skeletons e.g. at unmerged postsynaptic sites.
     all_paths = []
     for source in sources:
-        for target in targets:
-            for path in nx.all_simple_paths(graph, source, target, cutoff=path_length):
-                # cutoff doesn't work, so:
-                if len(path) <= path_length:
-                    all_paths.append(path)
+        if graph.has_node(source):
+            for target in targets:
+                if graph.has_node(target):
+                    for path in nx.all_simple_paths(graph, source, target, cutoff=path_length):
+                        # cutoff doesn't work, so:
+                        if len(path) <= path_length:
+                            all_paths.append(path)
 
     return HttpResponse(json.dumps(all_paths))
 

@@ -170,6 +170,27 @@
     </ul>
   </p>
 
+  <h3>Results</h3>
+  <p>
+    <table>
+        <tr>
+            <th>Creation time</th>
+            <th>View</th>
+            <th>Time</th>
+            <th>Version</th>
+        </tr>
+        {% for r in test_results %}
+            <tr>
+               <td>{{ r.creation_time }}</td>
+               <td>{{ r.view }}</td>
+               <td>{{ r.time }}</td>
+               <td><a href="https://github.com/catmaid/CATMAID/commit/{{ r.version }}">
+                    {{ r.version }}</a></td>
+            </tr>
+        {% endfor %}
+    </table>
+  </p>
+
 {% else %}
 
   <p>There is no test result available for display.</p>

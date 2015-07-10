@@ -529,7 +529,6 @@ def skeleton_ancestry(request, project_id=None):
 def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_of_id, cursor):
     class Partner:
         def __init__(self):
-            self.name = None
             self.num_nodes = 0
             self.union_reviewed = 0 # total number reviewed nodes
             self.reviewed = {} # number of reviewed nodes per reviewer
@@ -570,13 +569,14 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
         return partners
 
     # Obtain a string with unique skeletons
-    skids_string = ','.join(map(str, partners.iterkeys()))
+    skids_string = '),('.join(map(str, partners.iterkeys()))
 
     # Count nodes of each partner skeleton
     cursor.execute('''
     SELECT skeleton_id, count(skeleton_id)
-    FROM treenode
-    WHERE skeleton_id IN (%s)
+    FROM treenode,
+         (VALUES (%s)) skeletons(skid)
+    WHERE skeleton_id = skid
     GROUP BY skeleton_id
     ''' % skids_string) # no need to sanitize
     for row in cursor.fetchall():
@@ -585,8 +585,9 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     # Count nodes that have been reviewed by each user in each partner skeleton
     cursor.execute('''
     SELECT skeleton_id, reviewer_id, count(*)
-    FROM review
-    WHERE skeleton_id IN (%s)
+    FROM review,
+         (VALUES (%s)) skeletons(skid)
+    WHERE skeleton_id = skid
     GROUP BY reviewer_id, skeleton_id
     ''' % skids_string) # no need to sanitize
     for row in cursor.fetchall():
@@ -597,27 +598,15 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     cursor.execute('''
     SELECT skeleton_id, count(*)
     FROM (SELECT skeleton_id, treenode_id
-          FROM review
-          WHERE skeleton_id IN (%s)
+          FROM review,
+               (VALUES (%s)) skeletons(skid)
+          WHERE skeleton_id = skid
           GROUP BY skeleton_id, treenode_id) AS sub
     GROUP BY skeleton_id
     ''' % skids_string) # no need to sanitize
     for row in cursor.fetchall():
         partner = partners[row[0]]
         partner.union_reviewed = row[1]
-
-    # Obtain name of each skeleton's neuron
-    cursor.execute('''
-    SELECT class_instance_class_instance.class_instance_a,
-           class_instance.name
-    FROM class_instance_class_instance,
-         class_instance
-    WHERE class_instance_class_instance.relation_id=%s
-      AND class_instance_class_instance.class_instance_a IN (%s)
-      AND class_instance.id=class_instance_class_instance.class_instance_b
-    ''' % (model_of_id, skids_string)) # No need to sanitize, and would quote skids_string
-    for row in cursor.fetchall():
-        partners[row[0]].name = row[1]
 
     return partners
 

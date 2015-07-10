@@ -323,8 +323,7 @@
             // Register this widget with the name service for all neurons
             var createPartnerModels = function(partners, result) {
               for (var skid in partners) {
-                result[skid] = new SelectionTable.prototype.SkeletonModel(skid,
-                    partners[skid].name, null);
+                result[skid] = new SelectionTable.prototype.SkeletonModel(skid, '', null);
               }
             };
             var partnerModels = {};
@@ -332,10 +331,7 @@
             createPartnerModels(self.outgoing, partnerModels);
 
             // Make all partners known to the name service
-            NeuronNameService.getInstance().registerAll(self, partnerModels, function() {
-              // Create connectivity tables
-              self.redraw();
-            });
+            NeuronNameService.getInstance().registerAll(self, partnerModels, self.redraw.bind(self));
           };
 
           // Handle result and create tables, if possible
@@ -414,8 +410,11 @@
    * changed.
    */
   SkeletonConnectivity.prototype.updateNeuronNames = function() {
-    //this.update();
-    this.redraw();
+    $("#connectivity_widget" + this.widgetID)
+        .find('[data-skeleton-id]')
+        .each(function (index, element) {
+          this.textContent = NeuronNameService.getInstance().getName(this.getAttribute('data-skeleton-id'));
+    });
   };
 
   SkeletonConnectivity.prototype.createConnectivityTable = function() {
@@ -1049,9 +1048,6 @@
           this.downstreamCollapsed = !this.downstreamCollapsed;
         }).bind(this));
 
-    incoming.append(table_incoming);
-    outgoing.append(table_outgoing);
-
     // Extend tables with DataTables for sorting, reordering and filtering
     var dataTableOptions = {
       aaSorting: [[2, 'desc']],
@@ -1083,6 +1079,9 @@
 
     table_incoming.dataTable(dataTableOptions);
     table_outgoing.dataTable(dataTableOptions);
+
+    incoming.append(table_incoming);
+    outgoing.append(table_outgoing);
 
     $('.dataTables_wrapper', tables).css('min-height', 0);
 

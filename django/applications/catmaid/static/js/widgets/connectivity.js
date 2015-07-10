@@ -415,6 +415,14 @@
         .each(function (index, element) {
           this.textContent = NeuronNameService.getInstance().getName(this.getAttribute('data-skeleton-id'));
     });
+
+    $("#connectivity_widget" + this.widgetID)
+        .find('.syncount[skid]')
+        .each(function (index, element) {
+          var count = this.firstChild.textContent;
+          this.setAttribute('title', count + " synapse(s) for neuron '" +
+              NeuronNameService.getInstance().getName(this.getAttribute('skid')));
+    });
   };
 
   SkeletonConnectivity.prototype.createConnectivityTable = function() {
@@ -592,8 +600,12 @@
        * Support function to add a table cell that links to a connector selection,
        * displaying a connector count.
        */
-      function createSynapseCountCell(count, partner, title) {
+      function createSynapseCountCell(count, partner, skid) {
         var td = document.createElement('td');
+        var title = skid ?
+            count + " synapse(s) for neuron '" +
+                NeuronNameService.getInstance().getName(skid) + "'." :
+            count + " synapses for all selected neurons.";
         td.setAttribute('class', 'syncount');
         // Only add the count as displayed text if it is greater zero. This
         // reduces visual noise for larger tables.
@@ -605,15 +617,15 @@
           a.appendChild(document.createTextNode(count));
           a.setAttribute('href', '#');
           a.setAttribute('partnerID', partner.id);
-          // Create tool-tip
-          a.setAttribute('title', title);
         } else { // Make a hidden span including the zero for semantic clarity and table exports.
           var s = document.createElement('span');
           td.appendChild(s);
           s.appendChild(document.createTextNode(count));
           s.style.display = 'none';
         }
+        // Create tool-tip
         td.setAttribute('title', title);
+        if (skid) td.setAttribute('skid', skid);
         return td;
       }
 
@@ -664,15 +676,12 @@
         tr.appendChild(td);
 
         // Cell with synapses with partner neuron
-        tr.appendChild(createSynapseCountCell(partner.synaptic_count, partner,
-            partner.synaptic_count + " synapses for all selected neurons."));
+        tr.appendChild(createSynapseCountCell(partner.synaptic_count, partner));
         // Extra columns for individual neurons
         if (extraCols) {
           skids.forEach(function(skid, i) {
             var count = partner.skids[skid] || 0;
-            this.appendChild(createSynapseCountCell(count, partner,
-                count + " synapse(s) for neuron '" +
-                NeuronNameService.getInstance().getName(skid) + "'."));
+            this.appendChild(createSynapseCountCell(count, partner, skid));
           }, tr);
         }
 

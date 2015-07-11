@@ -33,27 +33,27 @@ class Migration(SchemaMigration):
             END;
             $$;''')
 
-        # Rebuild edges that are potentially wrong. These are edges of treenodes
-        # that were either NULL before or after an update, specifically edges
-        # that start from a root node or edges that were are root node before
-        # and therefore have an edge length of zero (i.e. start point equals end
-        # point). This should be much faster than rebuilding the whole edge
-        # table.
+        # Rebuild complete edge table. This is way faster than selectively
+        # updating the edge that are wrong from an earlier version of the
+        # trigger, at least for typical large data sets.
         db.execute('''
-            WITH edges_to_update(id) AS (
-                    SELECT t.id
-                    FROM treenode t, treenode_edge te
-                    WHERE t.id = te.id AND (t.parent_id IS NULL OR
-                        ST_StartPoint(te.edge) = ST_EndPoint(te.edge))
-                 )
-            UPDATE treenode_edge te SET edge = ST_MakeLine(
-                   ST_MakePoint(t.location_x, t.location_y, t.location_z),
+            DELETE FROM treenode_edge''')
+        # Add edges of available treenodes
+        db.execute('''
+            INSERT INTO treenode_edge (id, project_id, edge) (
+                SELECT c.id, c.project_id, ST_MakeLine(
+                   ST_MakePoint(c.location_x, c.location_y, c.location_z),
                    ST_MakePoint(p.location_x, p.location_y, p.location_z))
-            FROM treenode t, treenode p, edges_to_update e
-            WHERE te.id = e.id AND e.id = t.id AND (
-                    (t.parent_id IS NOT DISTINCT FROM p.id) OR
-                    (t.parent_id IS NULL AND t.id IS NOT DISTINCT FROM p.id))
-                    ''')
+                FROM treenode c JOIN treenode p ON c.parent_id = p.id
+                WHERE c.parent_id IS NOT NULL)''')
+        # Add self referencing adges for all root nodes
+        db.execute('''
+            INSERT INTO treenode_edge (id, project_id, edge) (
+                SELECT r.id, r.project_id, ST_MakeLine(
+                   ST_MakePoint(r.location_x, r.location_y, r.location_z),
+                   ST_MakePoint(r.location_x, r.location_y, r.location_z))
+                FROM treenode r
+                WHERE r.parent_id IS NULL)''')
 
     def backwards(self, orm):
         # Add broken trigger function for updating treenodes. Existing edges

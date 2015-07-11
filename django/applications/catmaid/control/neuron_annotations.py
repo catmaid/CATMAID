@@ -10,7 +10,8 @@ from django.db import connection
 from catmaid.models import UserRole, Project, Class, ClassInstance, \
         ClassInstanceClassInstance, Relation
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
-from catmaid.control.common import defaultdict
+from catmaid.control.common import defaultdict, get_relation_to_id_map, \
+        get_class_to_id_map
 
 def create_basic_annotated_entity_query(project, params, relations, classes,
         allowed_classes=['neuron', 'annotation']):
@@ -699,9 +700,30 @@ def list_annotations(request, project_id=None):
     """ Creates a list of objects containing an annotation name and the user
     name and ID of the users having linked that particular annotation.
     """
-    annotation_query = create_annotation_query(project_id, request.POST)
-    annotation_tuples = annotation_query.distinct().values_list('name', 'id',
-        'cici_via_b__user__id', 'cici_via_b__user__username')
+
+    if not request.POST:
+        cursor = connection.cursor()
+        classes = get_class_to_id_map(project_id, ('annotation',), cursor)
+        relations = get_relation_to_id_map(project_id, ('annotated_with',), cursor)
+
+        cursor.execute('''
+            SELECT DISTINCT ci.name, ci.id, u.id, u.username
+            FROM class_instance ci
+            LEFT OUTER JOIN class_instance_class_instance cici
+                         ON (ci.id = cici.class_instance_b)
+            LEFT OUTER JOIN auth_user u
+                         ON (cici.user_id = u.id)
+            WHERE (ci.class_id = %s AND cici.relation_id = %s
+              AND ci.project_id = %s AND cici.project_id = %s);
+                       ''',
+            (classes['annotation'], relations['annotated_with'], project_id,
+                project_id))
+        annotation_tuples = cursor.fetchall()
+    else:
+        annotation_query = create_annotation_query(project_id, request.POST)
+        annotation_tuples = annotation_query.distinct().values_list('name', 'id',
+            'cici_via_b__user__id', 'cici_via_b__user__username')
+
     # Create a set mapping annotation names to its users
     ids = {}
     annotation_dict = {}

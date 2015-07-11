@@ -37,7 +37,7 @@ class Migration(SchemaMigration):
         # updating the edge that are wrong from an earlier version of the
         # trigger, at least for typical large data sets.
         db.execute('''
-            DELETE FROM treenode_edge''')
+            TRUNCATE TABLE treenode_edge''')
         # Add edges of available treenodes
         db.execute('''
             INSERT INTO treenode_edge (id, project_id, edge) (

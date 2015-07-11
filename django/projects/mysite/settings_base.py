@@ -217,3 +217,8 @@ for subdirectory in ('projects', 'applications', 'lib'):
 # environment. The custom PostgreSQL database wrapper uses this flag to change
 # its behavior.
 TEST_RUNNER = 'custom_testrunner.TestSuiteRunner'
+
+# To simplify configuration for performance test CATMAID instances, the SCM URL
+# used to create commit links is defined here. The {} is used to denote the
+# commit name.
+PERFORMANCETEST_SCM_URL = "https://github.com/catmaid/CATMAID/commit/{version}"

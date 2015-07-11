@@ -184,7 +184,7 @@
                <td>{{ r.creation_time }}</td>
                <td>{{ r.view }}</td>
                <td>{{ r.time }}</td>
-               <td><a href="https://github.com/catmaid/CATMAID/commit/{{ r.version }}">
+               <td><a href="{{ r.version | make_version_link | safe }}">
                     {{ r.version }}</a></td>
             </tr>
         {% endfor %}

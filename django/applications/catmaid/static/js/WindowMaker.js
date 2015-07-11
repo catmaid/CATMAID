@@ -2275,7 +2275,7 @@ var WindowMaker = new function()
         content.style.backgroundColor = "#ffffff";
 
         var bar = document.createElement( "div" );
-        bar.id = "review_buttons";
+        bar.id = "review_widget_buttons";
         bar.setAttribute('class', 'buttonpanel');
 
         var RS = CATMAID.ReviewSystem;
@@ -2308,29 +2308,30 @@ var WindowMaker = new function()
         content.appendChild(bar);
         $(bar).tabs();
 
+        var container = createContainer('review_widget');
+
         var cacheCounter = document.createElement('div');
         cacheCounter.setAttribute("id", "counting-cache");
-        content.appendChild(cacheCounter);
+        container.appendChild(cacheCounter);
 
         var cacheInfoCounter = document.createElement('div');
         cacheInfoCounter.setAttribute("id", "counting-cache-info");
-        content.appendChild(cacheInfoCounter);
+        container.appendChild(cacheInfoCounter);
 
         var label = document.createElement('div');
         label.setAttribute("id", "reviewing_skeleton");
-        content.appendChild(label);
+        container.appendChild(label);
 
-        var container = document.createElement("div");
-        container.setAttribute("id", "project_review_widget");
-        container.style.position = "relative";
-        container.style.width = "100%";
-        container.style.height = "100%";
-        container.style.overflow = "auto";
-        container.style.backgroundColor = "#ffffff";
+        var table = document.createElement("div");
+        table.setAttribute("id", "project_review_widget");
+        table.style.position = "relative";
+        table.style.width = "100%";
+        table.style.overflow = "auto";
+        table.style.backgroundColor = "#ffffff";
+        container.appendChild(table);
+
         content.appendChild(container);
-
-        addListener(win, container, 'review_window_buttons');
-
+        addListener(win, container, 'review_widget_buttons');
         addLogic(win);
 
         return win;

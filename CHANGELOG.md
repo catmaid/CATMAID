@@ -8,6 +8,9 @@
 
 - Fix display of intermediate nodes on edge between two joined skeletons.
 
+- The last lines of the review widget were hidden sometimes. This is not the
+  case anymore.
+
 
 ## 2015.7.6
 

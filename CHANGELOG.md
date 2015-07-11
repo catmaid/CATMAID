@@ -6,6 +6,7 @@
 
 ### Bug fixes
 
+- Fix display of intermediate nodes on edge between two joined skeletons.
 
 
 ## 2015.7.6

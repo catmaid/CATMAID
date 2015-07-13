@@ -808,36 +808,34 @@ def _reroot_skeleton(treenode_id, project_id):
     response_on_error = ''
     try:
         response_on_error = 'Failed to select treenode with id %s.' % treenode_id
-        q_treenode = Treenode.objects.filter(
-            id=treenode_id,
-            project=project_id)
+        rootnode = Treenode.objects.get(id=treenode_id, project=project_id)
 
         # Obtain the treenode from the response
-        response_on_error = 'An error occured while rerooting. No valid query result.'
-        treenode = q_treenode[0]
-        first_parent = treenode.parent
+        first_parent = rootnode.parent_id
 
         # If no parent found it is assumed this node is already root
         if first_parent is None:
             return False
 
+        response_on_error = 'An error occured while rerooting.'
+        q_treenode = Treenode.objects.filter(
+                skeleton_id=rootnode.skeleton_id,
+                project=project_id).values_list('id', 'parent_id', 'confidence')
+        nodes = {tnid: (parent_id, confidence) for (tnid, parent_id, confidence) in list(q_treenode)}
+
         # Traverse up the chain of parents, reversing the parent relationships so
         # that the selected treenode (with ID treenode_id) becomes the root.
-        new_parent = treenode
-        new_confidence = treenode.confidence
+        new_parents = []
+        new_parent = rootnode.id
+        new_confidence = rootnode.confidence
         node = first_parent
 
         while True:
-            response_on_error = 'Failed to update treenode with id %s to have new parent %s' % (node.id, new_parent.id)
-
             # Store current values to be used in next iteration
-            parent = node.parent
-            confidence = node.confidence
+            parent, confidence = nodes[node]
 
             # Set new values
-            node.parent = new_parent
-            node.confidence = new_confidence
-            node.save()
+            new_parents.append((node, new_parent, new_confidence))
 
             if parent is None:
                 # Root has been reached
@@ -849,12 +847,18 @@ def _reroot_skeleton(treenode_id, project_id):
                 node = parent
 
         # Finally make treenode root
-        response_on_error = 'Failed to set treenode with ID %s as root.' % treenode.id
-        treenode.parent = None
-        treenode.confidence = 5 # reset to maximum confidence, now it is root.
-        treenode.save()
+        new_parents.append((rootnode.id, 'NULL', 5)) # Reset to maximum confidence.
 
-        return treenode
+        cursor = connection.cursor()
+        cursor.execute('''
+                UPDATE treenode
+                SET parent_id = v.parent_id,
+                    confidence = v.confidence
+                FROM (VALUES %s) v(id, parent_id, confidence)
+                WHERE treenode.id = v.id
+                ''' % ','.join(['(%s,%s,%s)' % node for node in new_parents]))
+
+        return rootnode
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

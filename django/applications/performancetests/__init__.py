@@ -2,6 +2,7 @@ import sys
 import gc
 import timeit
 import subprocess
+import compileall
 
 from django.conf import settings
 from .models import TestResult
@@ -128,6 +129,10 @@ class PerformanceTest(object):
         from django.test.utils import setup_test_environment, \
             teardown_test_environment
         setup_test_environment()
+
+        # Make sure all python code is compiled to not include this timing
+        compileall.compile_path(maxlevels=10)
+        self.log("Made sure all Python modules in sys.path are compiled")
 
         # We need a cursor to talk to the database
         cursor = self.connection.cursor()

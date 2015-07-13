@@ -467,14 +467,14 @@ var ClassificationEditor = new function()
                 x_max: cb.right,
                 y_min: cb.top,
                 y_max: cb.bottom,
-                z: tool.stackViewer.z * tool.stackViewer.resolution.z + tool.stackViewer.translation.z,
+                z: tool.stackViewer.z * tool.stackViewer.primaryStack.resolution.z + tool.stackViewer.primaryStack.translation.z,
                 zoom_level: tool.stackViewer.s,
                 rotation_cw: cb.rotation_cw
             };
             // The actual creation and linking of the ROI happens in
             // the back-end. Create URL for initiating this:
             var roi_url = self.get_cls_url(project.id,
-                "/stack/" + tool.stackViewer.primaryStack.getId() + "/linkroi/" + node_id + "/");
+                "/stack/" + tool.stackViewer.primaryStack.id + "/linkroi/" + node_id + "/");
             // Make Ajax call and handle response in callback
             requestQueue.register(roi_url, 'POST', data,
                 CATMAID.jsonResponseHandler(

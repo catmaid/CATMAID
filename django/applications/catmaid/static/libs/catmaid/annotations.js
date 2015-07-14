@@ -65,6 +65,9 @@
 
     dialog.show(400, 'auto', true);
 
+    // Allow content to overflow the dialog borders. This is needed for
+    // displaying all annotation autocompletion options.
+    dialog.dialog.parentNode.style.overflow = 'visible';
     // Auto-completion has to be added after the dialog has been created to ensure
     // the auto completion controls com after the dialog in the DOM (to display
     // them above the dialog).

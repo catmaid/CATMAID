@@ -1328,10 +1328,10 @@ GroupGraph.prototype.appendGroup = function(models) {
 
       if (!label) return alert("You must choose a name!");
 
-      if ($('#gg-number').is(':checked')) label += ' [#' + (names.length -1) + ']';
+      if ($('#gg-number').prop('checked')) label += ' [#' + (names.length -1) + ']';
 
       var gid = self.nextGroupID();
-      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColorWheel(cw.color()), $('#gg-edges').is(':checked'));
+      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColorWheel(cw.color()), $('#gg-edges').prop('checked'));
       self.append(models); // will remove/add/group nodes as appropriate
     };
 

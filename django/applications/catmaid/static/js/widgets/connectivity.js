@@ -191,7 +191,7 @@
     } else if (post.length > 0) color.setRGB(0.5, 1, 1); // post
 
     var model = new SelectionTable.prototype.SkeletonModel(skeleton_id, name, color);
-    model.selected = pre.is(':checked') || post.is(':checked');
+    model.selected = pre.prop('checked') || post.prop('checked');
     return model;
   };
 
@@ -203,7 +203,7 @@
       // Test if checked
       var cb = $('input#neuron-selector-' + widgetID + '-' + skid +
           '[type=checkbox]');
-      if (cb.is(':checked')) {
+      if (cb.prop('checked')) {
         var name = skeletons[skid];
         o[skid] = new SelectionTable.prototype.SkeletonModel(skid,
             skeletons[skid], new THREE.Color().setRGB(1, 1, 0));

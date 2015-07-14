@@ -746,7 +746,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
           })
           .prop('checked', skeleton[key])
           .click( function( event ) {
-            var visible = $('#skeleton' + key + widgetID + '-' + skeleton.id).is(':checked');
+            var visible = $('#skeleton' + key + widgetID + '-' + skeleton.id).prop('checked');
             skeleton[key] = visible;
             // The first checkbox controls all others
             if (0 === i) {

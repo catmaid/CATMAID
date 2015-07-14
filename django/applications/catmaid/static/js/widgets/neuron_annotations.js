@@ -356,7 +356,7 @@
     var create_cb_handler = function(widget) {
       return function() {
             var clicked_cb = this;
-            var is_checked = $(this).is(':checked');
+            var is_checked = this.checked;
             var entity_id = $(this).attr('entity_id');
             // Update the entities selection state
             widget.entity_selection_map[entity_id] = is_checked;

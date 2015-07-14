@@ -315,12 +315,12 @@
         self.markAsReviewed( sequence[self.current_segment_index] );
 
         if( self.current_segment_index === sequenceLength - 1  ) {
+          CATMAID.msg('Done', 'Segment fully reviewed: ' +
+              self.current_segment['nr_nodes'] + ' nodes');
           if (self.noRefreshBetwenSegments) {
             end_puffer_count += 1;
             // do not directly jump to the next segment to review
             if( end_puffer_count < 3) {
-              CATMAID.msg('DONE', 'Segment fully reviewed: ' +
-                  self.current_segment['nr_nodes'] + ' nodes');
               return;
             }
             // Segment fully reviewed, go to next without refreshing table

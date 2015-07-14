@@ -987,7 +987,7 @@
     // Add a drop-down menu to select a review focus. It defaults to 'Union'
     // if nothing else was selected before.
     var reviewFilter = $('<select />')
-        .append($('<option />').attr('value', 'union').append('All (union)'))
+        .append($('<option />').attr('value', 'union').append('All (union)').prop('selected', this.reviewFilter === null))
         .change((function(widget) {
           return function() {
             widget.reviewFilter = this.value === 'union' ? null : this.value;
@@ -995,27 +995,36 @@
           };
         })(this));
     // Support function to extract reviewer IDs from partners
-    var collectReviewers = function(o, collection) {
+    var collectReviewers = function(o, set) {
       for (var p in o) {
         if (o.hasOwnProperty(p)) {
           for (var r in o[p].reviewed) {
-            r = parseInt(r);
-            if (o[p].reviewed.hasOwnProperty(r) && collection.indexOf(r) === -1) {
-              collection.push(r);
+            if (o[p].reviewed.hasOwnProperty(r)) {
+              set.add(r);
             }
           }
         }
       }
     };
     // Get reviewer IDs
-    var reviewers = [];
+    var reviewers = new Set();
     collectReviewers(this.incoming, reviewers);
     collectReviewers(this.outgoing, reviewers);
     // Build select options
+    var reviewerNames = {};
     reviewers.forEach(function(r) {
       var u = User.all()[r];
-      var opt = $('<option />').attr('value', r).append(u ? u.fullName : r);
-      if (this.reviewFilter == r) {
+      var displayName = u ? u.fullName : r;
+      if (r === 'whitelist') displayName = 'Team';
+      reviewerNames[displayName] = r;
+    });
+    var displayOrder = Object.keys(reviewerNames).sort();
+    displayOrder.splice(displayOrder.indexOf('Team'), 1);
+    displayOrder.unshift('Team');
+    displayOrder.forEach(function (displayName) {
+      var r = reviewerNames[displayName];
+      var opt = $('<option />').attr('value', r).append(displayName);
+      if (this.reviewFilter === r) {
         opt.prop('selected', true);
       }
       reviewFilter.append(opt);

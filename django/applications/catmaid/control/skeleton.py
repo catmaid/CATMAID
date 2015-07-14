@@ -526,7 +526,7 @@ def skeleton_ancestry(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
-def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_of_id, cursor):
+def _connected_skeletons(project_id, user_id, skeleton_ids, op, relation_id_1, relation_id_2, model_of_id, cursor):
     class Partner:
         def __init__(self):
             self.num_nodes = 0
@@ -594,6 +594,22 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
         partner = partners[row[0]]
         partner.reviewed[row[1]] = row[2]
 
+    # Count nodes that have been reviewed by each user in each partner skeleton
+    cursor.execute('''
+    SELECT r.skeleton_id, count(*)
+    FROM review r,
+         (VALUES (%s)) skeletons(skid),
+         reviewer_whitelist wl
+    WHERE r.skeleton_id = skid
+      AND wl.user_id = %s AND wl.project_id = %s
+      AND r.reviewer_id = wl.reviewer_id
+      AND r.review_time >= wl.accept_after
+    GROUP BY r.reviewer_id, r.skeleton_id
+    ''' % (skids_string, user_id, project_id)) # no need to sanitize
+    for row in cursor.fetchall():
+        partner = partners[row[0]]
+        partner.reviewed['whitelist'] = row[1]
+
     # Count total number of reviewed nodes per skeleton
     cursor.execute('''
     SELECT skeleton_id, count(*)
@@ -610,7 +626,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     return partners
 
-def _skeleton_info_raw(project_id, skeletons, op):
+def _skeleton_info_raw(project_id, user_id, skeletons, op):
     cursor = connection.cursor()
 
     # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
@@ -625,8 +641,8 @@ def _skeleton_info_raw(project_id, skeletons, op):
     relation_ids = dict(cursor.fetchall())
 
     # Obtain partner skeletons and their info
-    incoming = _connected_skeletons(skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
-    outgoing = _connected_skeletons(skeletons, op, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
+    incoming = _connected_skeletons(project_id, user_id, skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
+    outgoing = _connected_skeletons(project_id, user_id, skeletons, op, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
 
     def prepare(partners):
         for partnerID in partners.keys():
@@ -651,7 +667,7 @@ def skeleton_info_raw(request, project_id=None):
     op = request.POST.get('boolean_op') # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op[6:]] # sanitize
 
-    incoming, outgoing = _skeleton_info_raw(project_id, skeletons, op)
+    incoming, outgoing = _skeleton_info_raw(project_id, request.user.id, skeletons, op)
 
     return HttpResponse(json.dumps({'incoming': incoming, 'outgoing': outgoing}), content_type='text/json')
 

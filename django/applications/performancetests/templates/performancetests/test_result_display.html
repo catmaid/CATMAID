@@ -45,29 +45,50 @@
 {% if test_results %}
   <h3>Results over time</h3>
 
+  <div id="result_plot_controls">
+    <label>
+      Scale
+      <select id="result_plot_scale">
+        <option value="linear" selected="selected">Linear</option>
+        <option value="log">Log</option>
+      </select>
+    </label>
+  </div>
+
   <div id="result_plot"></div>
 
   <script type="text/javascript">
     var views = {{ view_index.values | jsonify | safe }};
     var results = {{ test_results | jsonify | safe }};
 
-    redrawPlot(views, results);
+    var parseDate = d3.time.format("%Y-%m-%dT%H:%M:%S.%L").parse;
+    results.forEach(function(r) {
+      r.creation_time = parseDate(r.creation_time);
+    });
+
+    redrawPlot(views, results, "linear");
+
+    $("select#result_plot_scale").on("change", function() {
+      redrawPlot(views, results, this.value);
+    });
 
     /**
      * Create a timing plot of all test results.
      */
-    function redrawPlot(views, results) {
+    function redrawPlot(views, results, scale) {
       var margin = {top: 20, right: 80, bottom: 30, left: 50},
           width = 960 - margin.left - margin.right,
           height = 500 - margin.top - margin.bottom;
 
-      var parseDate = d3.time.format("%Y-%m-%dT%H:%M:%S.%L").parse;
-
       var x = d3.time.scale()
           .range([0, width]);
 
-      var y = d3.scale.linear()
-          .range([height, 0]);
+      var yScale;
+      if ("linear" === scale) yScale = d3.scale.linear();
+      else if ("log" === scale) yScale = d3.scale.log();
+      else throw new Error("Unknown scale: " + scale);
+
+      var y = yScale.range([height, 0]);
 
       var color = d3.scale.category10();
 
@@ -84,6 +105,9 @@
           .x(function(d) { return x(d.creation_time); })
           .y(function(d) { return y(d.time); });
 
+      // Remove existing plot, if any
+      d3.selectAll("div#result_plot svg").remove();
+
       // Create a new plot
       var svg = d3.select("div#result_plot").append("svg")
           .attr("width", width + margin.left + margin.right)
@@ -93,10 +117,6 @@
 
       var view_ids = views.map(function(v) { return v.view_id; });
       color.domain(view_ids);
-
-      results.forEach(function(r) {
-        r.creation_time = parseDate(r.creation_time);
-      });
 
       var views = color.domain().map(function(v_id) {
         return {

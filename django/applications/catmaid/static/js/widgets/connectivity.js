@@ -1097,11 +1097,11 @@
       });
     };
 
-    table_incoming.dataTable(dataTableOptions);
-    table_outgoing.dataTable(dataTableOptions);
-
     incoming.append(table_incoming);
     outgoing.append(table_outgoing);
+
+    table_incoming.dataTable(dataTableOptions);
+    table_outgoing.dataTable(dataTableOptions);
 
     $('.dataTables_wrapper', tables).css('min-height', 0);
 

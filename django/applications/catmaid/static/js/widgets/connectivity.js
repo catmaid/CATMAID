@@ -423,6 +423,14 @@
           this.setAttribute('title', count + " synapse(s) for neuron '" +
               NeuronNameService.getInstance().getName(this.getAttribute('skid')));
     });
+
+    var widgetID = this.widgetID;
+    ['presynaptic', 'postsynaptic'].forEach(function (partnerSet) {
+      var table = $("#" + partnerSet + '_tostream_connectivity_table' + widgetID);
+
+      // Inform DataTables that the data has changed.
+      table.DataTable().rows().invalidate().draw();
+    });
   };
 
   SkeletonConnectivity.prototype.createConnectivityTable = function() {

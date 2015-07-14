@@ -614,13 +614,13 @@
           // handler to do this is created separate to only require one handler.
           var a = document.createElement('a');
           td.appendChild(a);
-          a.appendChild(document.createTextNode(count));
+          a.textContent = count;
           a.setAttribute('href', '#');
           a.setAttribute('partnerID', partner.id);
         } else { // Make a hidden span including the zero for semantic clarity and table exports.
           var s = document.createElement('span');
           td.appendChild(s);
-          s.appendChild(document.createTextNode(count));
+          s.textContent = count;
           s.style.display = 'none';
         }
         // Create tool-tip
@@ -689,13 +689,13 @@
         var pReviewed = parseInt(Math.floor((100 *
             getNrReviews([partner], reviewFilter) / partner.num_nodes)));
         var td = document.createElement('td');
-        td.appendChild(document.createTextNode(pReviewed + "%"));
+        td.textContent = pReviewed + "%";
         td.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(pReviewed);
         tr.appendChild(td);
 
         // Cell with number of nodes of partner neuron
         var td = document.createElement('td');
-        td.appendChild(document.createTextNode(partner.num_nodes));
+        td.textContent = partner.num_nodes;
         tr.appendChild(td);
 
         return filtered;
@@ -789,15 +789,17 @@
      * Support function to create a threshold selector element.
      */
     var createThresholdSelector = function(id, selected, max) {
-      var select = $('<select />');
+      var select = document.createElement('select');
       for (var i=1; i < max; ++i) {
-        var option = $('<option />').val(i).text(i);
+        var option = document.createElement('option');
+        option.value = i;
+        option.textContent = i;
         if (selected === i) {
-          option.prop('selected', true);
+          option.selected = true;
         }
-        select.append(option);
+        select.appendChild(option);
       }
-      return select;
+      return $(select);
     };
 
     // Clear table

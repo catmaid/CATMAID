@@ -30,7 +30,7 @@
       // Add meta annotation input field with autocompletion
       var meta_annotation_input = dialog.appendField('Meta annotation: ',
           'new-meta-annotation' + dialog.meta_annotation_inputs.length, '', true);
-      this.add_autocomplete_to_input(meta_annotation_input);
+      annotations.add_autocomplete_to_input(meta_annotation_input);
       // Add text to append new field
       var $new_meta_field = $(dialog.appendMessage(
           "Click to add another meta annotation to basic annotation"));
@@ -68,7 +68,7 @@
     // Auto-completion has to be added after the dialog has been created to ensure
     // the auto completion controls com after the dialog in the DOM (to display
     // them above the dialog).
-    this.add_autocomplete_to_input(annotation_input);
+    annotations.add_autocomplete_to_input(annotation_input);
   };
 
   CATMAID.annotate_neurons_of_skeletons = function(

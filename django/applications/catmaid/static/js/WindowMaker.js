@@ -3010,7 +3010,7 @@ var WindowMaker = new function()
 
     // Update annotation cache and add autocompletion to annotation input field
     annotations.update(function() {
-      NA.add_autocomplete_to_input($('.neuron_query_by_annotation_name' +
+      annotations.add_autocomplete_to_input($('.neuron_query_by_annotation_name' +
           NA.widgetID));
     });
 

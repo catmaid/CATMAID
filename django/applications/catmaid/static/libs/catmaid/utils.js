@@ -138,6 +138,18 @@ AnnotationCache.prototype.push = function(annotationList) {
   }, this);
 };
 
+/**
+ * Add jQuery autocompletion for all cached annotations to the given input
+ * element.
+ */
+AnnotationCache.prototype.add_autocomplete_to_input = function(input)
+{
+  // Expects the annotation cache to be up-to-date
+  $(input).autocomplete({
+    source: this.getAllNames()
+  });
+};
+
 var annotations = new AnnotationCache();
 
 

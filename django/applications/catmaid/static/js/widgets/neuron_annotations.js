@@ -571,7 +571,7 @@
         value: ''
     });
     // Add autocompletion to it
-    this.add_autocomplete_to_input($text);
+    annotations.add_autocomplete_to_input($text);
 
     // Update the button attributes.
     var $button = $newRow.find("input[type='button']");
@@ -666,14 +666,6 @@
     // Update auto completion for input fields
     $('.neuron_query_by_annotation_name' + this.widgetID).autocomplete(
         "option", {source: annotations.getAllNames()});
-  };
-
-  NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
-  {
-    // Expects the annotation cache to be up-to-date
-    $(input).autocomplete({
-      source: annotations.getAllNames()
-    });
   };
 
   /**

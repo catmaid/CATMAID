@@ -3032,7 +3032,7 @@ var WindowMaker = new function()
           return e.id;
         });
         // Refresh display after annotations have been added
-        this.annotate_entities(selected_entity_ids,
+        CATMAID.annotate_entities(selected_entity_ids,
             this.refresh_annotations.bind(this));
     }).bind(NA);
     $('#neuron_annotation_prev_page' + NA.widgetID)[0].onclick =

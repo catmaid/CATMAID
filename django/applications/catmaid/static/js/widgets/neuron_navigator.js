@@ -1030,7 +1030,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
   $(annotate_button).click(function() {
     var selected_neurons = getSelectedNeurons();
     if (selected_neurons.length > 0) {
-      CATMAID.NeuronAnnotations.prototype.annotate_entities(selected_neurons);
+      CATMAID.annotate_entities(selected_neurons);
     } else {
       alert("Please select at least one neuron to annotate first!");
     }
@@ -1419,7 +1419,7 @@ NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
 
   // Handle annotation of annotations
   $(annotate_button).click((function() {
-    CATMAID.NeuronAnnotations.prototype.annotate_entities([this.annotation_id]);
+    CATMAID.annotate_entities([this.annotation_id]);
   }).bind(this));
 
   // Append double click handler
@@ -1634,7 +1634,7 @@ NeuronNavigator.NeuronNode.prototype.add_content = function(container, filters)
   // When clicked, the annotate button should prompt for a new annotation and
   // reload the node
   $(annotate_button).click((function() {
-    CATMAID.NeuronAnnotations.prototype.annotate_entities([this.neuron_id]);
+    CATMAID.annotate_entities([this.neuron_id]);
   }).bind(this));
 
   var rename_button = document.createElement('input');

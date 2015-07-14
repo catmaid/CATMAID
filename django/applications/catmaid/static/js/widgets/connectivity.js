@@ -713,6 +713,8 @@
         var filtered_node_count = getSum(filtered, 'num_nodes');
         // Build the row
         var $tr = $('<tr />')
+            // Select column
+            .append($('<td />'))
             .append($('<td />').append('Hidden partners'))
             // Synapse count sum column
             .append($('<td />').addClass('syncount')
@@ -730,8 +732,6 @@
         $tr.append($('<td />').append((filtered_reviewed / filtered.length) | 0));
         // Node count column
         $tr.append($('<td />').append(filtered_node_count));
-        // Select column
-        $tr.append($('<td />'));
 
         // Add column to footer of table
         $(table).append($('<tfoot />').append($tr));

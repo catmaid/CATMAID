@@ -49,92 +49,99 @@
 
   <script type="text/javascript">
     var views = {{ view_index.values | jsonify | safe }};
-    var view_ids = views.map(function(v) { return v.view_id; });
     var results = {{ test_results | jsonify | safe }};
 
-    var margin = {top: 20, right: 80, bottom: 30, left: 50},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+    redrawPlot(views, results);
 
-    var parseDate = d3.time.format("%Y-%m-%dT%H:%M:%S.%L").parse;
+    /**
+     * Create a timing plot of all test results.
+     */
+    function redrawPlot(views, results) {
+      var margin = {top: 20, right: 80, bottom: 30, left: 50},
+          width = 960 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
 
-    var x = d3.time.scale()
-        .range([0, width]);
+      var parseDate = d3.time.format("%Y-%m-%dT%H:%M:%S.%L").parse;
 
-    var y = d3.scale.linear()
-        .range([height, 0]);
+      var x = d3.time.scale()
+          .range([0, width]);
 
-    var color = d3.scale.category10();
+      var y = d3.scale.linear()
+          .range([height, 0]);
 
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("bottom");
+      var color = d3.scale.category10();
 
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left");
+      var xAxis = d3.svg.axis()
+          .scale(x)
+          .orient("bottom");
 
-    var line = d3.svg.line()
-        .interpolate("linear")
-        .x(function(d) { return x(d.creation_time); })
-        .y(function(d) { return y(d.time); });
+      var yAxis = d3.svg.axis()
+          .scale(y)
+          .orient("left");
 
-    var svg = d3.select("div#result_plot").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      var line = d3.svg.line()
+          .interpolate("linear")
+          .x(function(d) { return x(d.creation_time); })
+          .y(function(d) { return y(d.time); });
 
-    color.domain(view_ids);
+      // Create a new plot
+      var svg = d3.select("div#result_plot").append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    results.forEach(function(r) {
-      r.creation_time = parseDate(r.creation_time);
-    });
+      var view_ids = views.map(function(v) { return v.view_id; });
+      color.domain(view_ids);
 
-    var views = color.domain().map(function(v_id) {
-      return {
-        view_id: v_id,
-        values: results.filter(function(r) {
-          return r.view_id === v_id;
-        }).map(function(r) {
-          return {creation_time: r.creation_time, time: r.time};
-        })
-      };
-    });
+      results.forEach(function(r) {
+        r.creation_time = parseDate(r.creation_time);
+      });
 
-    x.domain(d3.extent(results, function(r) { return r.creation_time; }));
+      var views = color.domain().map(function(v_id) {
+        return {
+          view_id: v_id,
+          values: results.filter(function(r) {
+            return r.view_id === v_id;
+          }).map(function(r) {
+            return {creation_time: r.creation_time, time: r.time};
+          })
+        };
+      });
 
-    y.domain(d3.extent(results, function(r) { return r.time; }));
+      x.domain(d3.extent(results, function(r) { return r.creation_time; }));
 
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
+      y.domain(d3.extent(results, function(r) { return r.time; }));
 
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-      .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text("Timing");
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(xAxis);
 
-     var testView = svg.selectAll(".testview")
-        .data(views)
-      .enter().append("g")
-        .attr("class", "testview");
+      svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+        .append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", ".71em")
+          .style("text-anchor", "end")
+          .text("Timing");
 
-     testView.append("path")
-        .attr("class", "line")
-        .attr("d", function(d) {
-          return line(d.values);
-        })
-        .attr("data-legend",function(d) { return d.name})
-        .style("stroke", function(d) {
-          return color(d.view_id);
-        });
+      var testView = svg.selectAll(".testview")
+         .data(views)
+       .enter().append("g")
+         .attr("class", "testview");
+
+      testView.append("path")
+         .attr("class", "line")
+         .attr("d", function(d) {
+           return line(d.values);
+         })
+         .attr("data-legend",function(d) { return d.name})
+         .style("stroke", function(d) {
+           return color(d.view_id);
+         });
 
       var legend = svg.selectAll(".legend")
           .data(color.domain().slice().reverse())
@@ -158,6 +165,7 @@
           .text(function (d) {
           return d;
       });
+    }
 
   </script>
 

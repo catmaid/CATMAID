@@ -19,6 +19,9 @@ Miscellaneous:
 - Selection table: all columns except "action" and "property" can now be used
   for sorting.
 
+- The maximum number of nodes returned to the tracing overlay is now
+  configurable as a server setting: NODE_LIST_MAXIMUM_COUNT (default 5000).
+
 
 ### Bug fixes
 

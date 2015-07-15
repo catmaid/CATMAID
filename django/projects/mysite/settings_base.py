@@ -140,6 +140,12 @@ PROFILE_USE_CURSOR_FOLLOWING_ZOOM = True
 # such an image will be created when requested.
 ROI_AUTO_CREATE_IMAGE = False
 
+# The maximum number of nodes returned by a single spatial query. This
+# determines the maximum number of nodes shown in the tracing overlay, so has
+# severe worst-case performance implications for the database, web server, and
+# client.
+NODE_LIST_MAXIMUM_COUNT = 5000
+
 # Default importer tile width and height
 IMPORTER_DEFAULT_TILE_WIDTH = 256
 IMPORTER_DEFAULT_TILE_HEIGHT = 256

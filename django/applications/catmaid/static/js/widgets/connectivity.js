@@ -57,7 +57,7 @@
     // Update all threshold selection states
     this.upAllThresholds = 1;
     this.downllThresholds = 1;
-    // Indicates whether single nodes should be hidden
+    // Filter partners with fewer nodes than this threshold
     this.hidePartnerThreshold = 1;
     // ID of the user who is currently reviewing or null for 'union'
     this.reviewFilter = null;
@@ -1012,7 +1012,7 @@
     var tableSettings = $('<div />').attr('class', 'header');
     content.append(tableSettings);
 
-    // Add a checkbox to toggle display of single-node neurons
+    // Add an input to filter partners with fewer than a given number of nodes.
     var hidePartnerThresholdInput = $('<input />')
         .attr('type', 'number')
         .attr('min', 0)
@@ -1046,13 +1046,7 @@
           return false;
       };
     })(this);
-        // .change((function(widget) {
-        //   return function() {
-        //     this.value = Math.round(this.value);
-        //     widget.hidePartnerThreshold = this.value;
-        //     widget.createConnectivityTable();
-        //   };
-        // })(this));
+
     var hidePartnerThresholdContainer = $('<label />')
         .attr('class', 'left')
         .append('Hide partners with fewer nodes than')

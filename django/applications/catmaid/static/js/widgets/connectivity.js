@@ -1145,14 +1145,6 @@
       ]
     };
 
-    // Sorting function for checkbox column
-    // Plug-in from: http://datatables.net/plug-ins/sorting/custom-data-source/dom-checkbox
-    $.fn.dataTable.ext.order['dom-checkbox'] = function (settings, col) {
-      return this.api().column(col, {order:'index'}).nodes().map(function (td, i) {
-        return $('input', td).prop('checked') ? '1' : '0';
-      });
-    };
-
     incoming.append(table_incoming);
     outgoing.append(table_outgoing);
 

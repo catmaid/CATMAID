@@ -727,14 +727,6 @@ var WindowMaker = new function()
     filter.onkeyup = function(ev) { if (13 === ev.keyCode) ST.filterBy(filter.value); };
     buttons.appendChild(filter);
 
-    buttons.appendChild(document.createTextNode(' Review filter'));
-    var reviewFilter = appendSelect(buttons, 'ST-review-filter' + ST.widgetID,
-        ['Union', 'Team']);
-    reviewFilter.onchange = function () {
-      ST.review_filter = reviewFilter.options[reviewFilter.selectedIndex].text;
-      ST.update();
-    };
-
     buttons.appendChild(document.createTextNode(' Batch color:'));
     var batch = document.createElement('input');
     batch.setAttribute('type', 'button');
@@ -773,7 +765,10 @@ var WindowMaker = new function()
             '<th></th>' +
             '<th><img src="' + STATIC_URL_JS + 'images/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
             '<th></th>' +
-            '<th></th>' +
+            '<th><select class="review-filter">' +
+              '<option value="Union" selected>Union</option>' +
+              '<option value="Team">Team</option>' +
+            '</select></th>' +
             '<th><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></th>' +
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked style="float: left" /></th>' +
@@ -788,6 +783,11 @@ var WindowMaker = new function()
         '<tbody>' +
         '</tbody>';
     container.appendChild(tab);
+
+    $("select.review-filter", tab).on("change",  function () {
+      ST.review_filter = this.value;
+      ST.update();
+    });
 
     //addListener(win, container, buttons, ST.destroy.bind(ST));
     win.addListener(

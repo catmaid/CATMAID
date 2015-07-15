@@ -58,7 +58,7 @@
     this.upAllThresholds = 1;
     this.downllThresholds = 1;
     // Indicates whether single nodes should be hidden
-    this.hideSingleNodePartners = false;
+    this.hidePartnerThreshold = 1;
     // ID of the user who is currently reviewing or null for 'union'
     this.reviewFilter = null;
     // An object mapping skeleton IDs to their selection state
@@ -551,7 +551,7 @@
      * Support function for creating a partner table.
      */
     var create_table = function(skids, skeletons, thresholds, partners, title, relation,
-        hideSingles, reviewFilter, collapsed, collapsedCallback) {
+        hidePartnerThreshold, reviewFilter, collapsed, collapsedCallback) {
       // Create table with unique ID and the class 'partner_table'
       var table = $('<table />').attr('id', relation + 'stream_connectivity_table' + widgetID)
               .attr('class', 'partner_table');
@@ -685,10 +685,8 @@
           return (partner.skids[skid] || 0) < thresholds[skid];
         });
         ignore = ignore || partner.synaptic_count < thresholds['sum'];
-        // Ignore partner if it has only a single node, if requested
-        if (hideSingles) {
-          ignore = ignore || partner.num_nodes == 1;
-        }
+        // Ignore partner if it has only fewer nodes than a threshold
+        ignore = ignore || partner.num_nodes < hidePartnerThreshold;
         if (ignore) {
           filtered.push(partner);
           return filtered;
@@ -758,7 +756,7 @@
         var $tr = $('<tr />')
             // Select column
             .append($('<td />'))
-            .append($('<td />').append('Hidden partners'))
+            .append($('<td />').append(filtered.length + ' hidden partners'))
             // Synapse count sum column
             .append($('<td />').addClass('syncount')
                 .append(filtered_synaptic_count));
@@ -1015,21 +1013,51 @@
     content.append(tableSettings);
 
     // Add a checkbox to toggle display of single-node neurons
-    var singleNeuronToggle = $('<input />').attr('type', 'checkbox')
-        .change((function(widget) {
-          return function() {
-            widget.hideSingleNodePartners = this.checked;
-            widget.createConnectivityTable();
-          };
-        })(this));
-    if (this.hideSingleNodePartners) {
-      singleNeuronToggle.prop('checked', true);
-    }
-    var singleNeuronToggleContainer = $('<label />')
+    var hidePartnerThresholdInput = $('<input />')
+        .attr('type', 'number')
+        .attr('min', 0)
+        .attr('max', 999999)
+        .val(this.hidePartnerThreshold)
+        .get(0);
+
+    (function (widget) {
+      hidePartnerThresholdInput.onchange = function () {
+          widget.hidePartnerThreshold = parseInt(this.value, 10);
+          widget.createConnectivityTable();
+      };
+      hidePartnerThresholdInput.oninput = function (e) {
+        if (13 === e.keyCode) {
+          widget.createConnectivityTable();
+        } else {
+          widget.hidePartnerThreshold = parseInt(this.value, 10);
+        }
+      };
+      hidePartnerThresholdInput.onwheel = function (e) {
+          if ((e.deltaX + e.deltaY) > 0) {
+            if (this.value > 1) {
+              this.value = parseInt(this.value, 10) - 1;
+              this.onchange();
+            }
+          } else {
+            this.value = parseInt(this.value, 10) + 1;
+            this.onchange();
+          }
+
+          return false;
+      };
+    })(this);
+        // .change((function(widget) {
+        //   return function() {
+        //     this.value = Math.round(this.value);
+        //     widget.hidePartnerThreshold = this.value;
+        //     widget.createConnectivityTable();
+        //   };
+        // })(this));
+    var hidePartnerThresholdContainer = $('<label />')
         .attr('class', 'left')
-        .append(singleNeuronToggle)
-        .append('Hide single node partners');
-    tableSettings.append(singleNeuronToggleContainer);
+        .append('Hide partners with fewer nodes than')
+        .append(hidePartnerThresholdInput);
+    tableSettings.append(hidePartnerThresholdContainer);
 
     // Add a drop-down menu to select a review focus. It defaults to 'Union'
     // if nothing else was selected before.
@@ -1085,13 +1113,13 @@
     // Create incomining and outgoing tables
     var table_incoming = create_table.call(this, this.ordered_skeleton_ids,
         this.skeletons, this.upThresholds, to_sorted_array(this.incoming),
-        'Up', 'presynaptic_to', this.hideSingleNodePartners, this.reviewFilter,
+        'Up', 'presynaptic_to', this.hidePartnerThreshold, this.reviewFilter,
         this.upstreamCollapsed, (function() {
           this.upstreamCollapsed = !this.upstreamCollapsed;
         }).bind(this));
     var table_outgoing = create_table.call(this, this.ordered_skeleton_ids,
         this.skeletons, this.downThresholds, to_sorted_array(this.outgoing),
-        'Down', 'postsynaptic_to', this.hideSingleNodePartners, this.reviewFilter,
+        'Down', 'postsynaptic_to', this.hidePartnerThreshold, this.reviewFilter,
         this.downstreamCollapsed, (function() {
           this.downstreamCollapsed = !this.downstreamCollapsed;
         }).bind(this));

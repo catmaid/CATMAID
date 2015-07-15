@@ -49,8 +49,8 @@
     <label>
       Scale
       <select id="result_plot_scale">
-        <option value="linear" selected="selected">Linear</option>
-        <option value="log">Log</option>
+        <option value="linear">Linear</option>
+        <option value="log" selected="selected">Log</option>
       </select>
     </label>
   </div>
@@ -66,7 +66,7 @@
       r.creation_time = parseDate(r.creation_time);
     });
 
-    redrawPlot(views, results, "linear");
+    redrawPlot(views, results, "log");
 
     $("select#result_plot_scale").on("change", function() {
       redrawPlot(views, results, this.value);

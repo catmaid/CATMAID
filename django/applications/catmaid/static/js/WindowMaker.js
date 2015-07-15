@@ -713,6 +713,13 @@ var WindowMaker = new function()
     measure.onclick = ST.measure.bind(ST);
     buttons.appendChild(measure);
 
+    var summaryInfoButton = document.createElement('input');
+    summaryInfoButton.setAttribute('type', 'button');
+    summaryInfoButton.setAttribute('value', 'Summary info');
+    summaryInfoButton.setAttribute('id', 'selection-table-info' + ST.widgetID);
+    summaryInfoButton.onclick = ST.summary_info.bind(ST);
+    buttons.appendChild(summaryInfoButton);
+
     buttons.appendChild(document.createElement('br'));
 
     var filterButton = document.createElement('input');
@@ -775,9 +782,7 @@ var WindowMaker = new function()
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th><input type="button" id="selection-table-sort-by-color' +
-              ST.widgetID + '" value="Sort by color" style="width: 50%" />' +
-            '<input type="button" id="selection-table-info' + ST.widgetID +
-              '" value="Summary info" style="width: 50%" /></th>' +
+              ST.widgetID + '" value="Sort by color" />' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +

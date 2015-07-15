@@ -343,7 +343,6 @@ SelectionTable.prototype.init = function() {
   }, this);
 
   $('#selection-table-sort-by-color' + this.widgetID).click(this.sortByColor.bind(this));
-  $('#selection-table-info' + this.widgetID).click(this.summary_info.bind(this));
 };
 
 /** sks: object with skeleton_id as keys and neuron names as values. */

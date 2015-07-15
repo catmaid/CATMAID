@@ -7,6 +7,7 @@
   NeuronNameService,
   project,
   requestQueue,
+  session,
   SkeletonAnnotations,
   SkeletonMeasurementsTable,
   User,
@@ -22,7 +23,7 @@ var SelectionTable = function() {
   this.skeletons = [];
   this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
   this.reviews = {};  // skeleton_id vs review percentage
-  this.review_filter = 'Union'; // filter for review percentage: 'Union' or 'Team'
+  this.review_filter = 'Union'; // filter for review percentage: 'Union', 'Team' or 'Self'
   this.all_visible = true;
   this.all_items_visible = {pre: true, post: true, text: false, meta: true};
   this.selected_skeleton_id = null;
@@ -383,8 +384,12 @@ SelectionTable.prototype.append = function(models) {
   }
 
   // Retrieve review status before doing anything else
+  var postData = {
+      skeleton_ids: skeleton_ids,
+      whitelist: this.review_filter === 'Team'};
+  if (this.review_filter === 'Self') postData.user_ids = [session.userid];
   requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
-    {skeleton_ids: skeleton_ids, whitelist: this.review_filter === 'Team'},
+    postData,
     (function(status, text) {
       if (200 !== status) return;
       var json = $.parseJSON(text);
@@ -573,8 +578,12 @@ SelectionTable.prototype.update = function() {
 
       // Retrieve review status
       skeleton_ids = skeleton_ids.concat(Object.keys(new_models));
+      var postData = {
+          skeleton_ids: skeleton_ids,
+          whitelist: self.review_filter === 'Team'};
+      if (self.review_filter === 'Self') postData.user_ids = [session.userid];
       requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
-        {skeleton_ids: skeleton_ids, whitelist: self.review_filter === 'Team'},
+        postData,
         CATMAID.jsonResponseHandler(function(json) {
           // Update review information
           skeleton_ids.forEach(function(skeleton_id) {

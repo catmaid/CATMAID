@@ -745,6 +745,7 @@ var WindowMaker = new function()
             '<th><select class="review-filter">' +
               '<option value="Union" selected>Union</option>' +
               '<option value="Team">Team</option>' +
+              '<option value="Self">Self</option>' +
             '</select></th>' +
             '<th><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></th>' +
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked style="float: left" /></th>' +

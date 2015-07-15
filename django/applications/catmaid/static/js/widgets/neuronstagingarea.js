@@ -701,7 +701,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
     paging: false,
     processing: true,
     serverSide: false,
-    autoWidth: true,
+    autoWidth: false,
     orderCellsTop: true,
     columns: [
       { "type": "text", "visible": false },

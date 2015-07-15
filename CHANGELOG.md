@@ -2,6 +2,18 @@
 
 ### Features and enhancements
 
+Connectivity widget:
+
+- Partners can now be filtered by a minimum threshold on number of nodes, rather
+  than only being able to filter single-node partners.
+
+- The user's review team is now an option in the partner review filter.
+
+- Changing the review filter no longer reloads the entire widget.
+
+- Many small performance improvements.
+
+
 Miscellaneous:
 
 - Selection table: all columns except "action" and "property" can now be used

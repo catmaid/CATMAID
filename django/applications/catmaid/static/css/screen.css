@@ -769,14 +769,12 @@ table.skeleton-table .ui-icon-close {
 /* Center checkboxes in selection table */
 table.skeleton-table td input[type=checkbox] {
   width: 100%;
-  margin: 0.3em 0 0.3em 0;
 }
 
 /* Center buttons in selection table */
 table.skeleton-table tr td:first-child,
 table.skeleton-table tr td:last-child {
   text-align: center;
-  padding: 0.3em 0 0.3em 0;
 }
 
 /* Center colorwheel in selection table */

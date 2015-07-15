@@ -929,7 +929,7 @@ SelectionTable.prototype.batchColorSelected = function(rgb, alpha) {
 };
 
 SelectionTable.prototype.toggleBatchColorWheel = function() {
-  var div = $('#selection-table-batch-color-wheel' + this.widgetID + ' .batch-colorwheel-' + this.widgetID);
+  var div = $('#selection-table-batch-color-wheel' + this.widgetID);
   if (this.batch_cw) {
     // hide it
     delete this.batch_cw;

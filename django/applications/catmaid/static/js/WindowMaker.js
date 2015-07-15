@@ -734,20 +734,6 @@ var WindowMaker = new function()
     filter.onkeyup = function(ev) { if (13 === ev.keyCode) ST.filterBy(filter.value); };
     buttons.appendChild(filter);
 
-    buttons.appendChild(document.createTextNode(' Batch color:'));
-    var batch = document.createElement('input');
-    batch.setAttribute('type', 'button');
-    batch.setAttribute('value', 'color');
-    batch.setAttribute('id', 'selection-table-batch-color-button' + ST.widgetID);
-    batch.style.backgroundColor = '#ffff00';
-    batch.onclick = ST.toggleBatchColorWheel.bind(ST);
-    buttons.appendChild(batch);
-
-    var colorwheeldiv = document.createElement('div');
-    colorwheeldiv.setAttribute('id', 'selection-table-batch-color-wheel' + ST.widgetID);
-    colorwheeldiv.innerHTML = '<div class="batch-colorwheel-' + ST.widgetID + '"></div>';
-    buttons.appendChild(colorwheeldiv);
-
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
     
@@ -782,7 +768,11 @@ var WindowMaker = new function()
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th><input type="button" id="selection-table-sort-by-color' +
-              ST.widgetID + '" value="Sort by color" />' +
+              ST.widgetID + '" value="Sort by color" style="width: 50%" />' +
+              '<input id="selection-table-batch-color-button' + ST.widgetID +
+                '" type="button" value="Batch color" style="width: 50%; background-color: #ffff00" />' +
+              '<div id="selection-table-batch-color-wheel' + ST.widgetID + '">' +
+                '<div class="batch-colorwheel"></div></div>'
           '</tr>' +
         '</thead>' +
         '<tbody>' +
@@ -793,6 +783,8 @@ var WindowMaker = new function()
       ST.review_filter = this.value;
       ST.update();
     });
+    $("input#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
+        ST.toggleBatchColorWheel.bind(ST));
 
     //addListener(win, container, buttons, ST.destroy.bind(ST));
     win.addListener(

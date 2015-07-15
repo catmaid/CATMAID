@@ -31,11 +31,11 @@
           var l = o[s.project];
           if (undefined === l) {
             l = [];
-            o[s.project = l;
+            o[s.project] = l;
           }
           l.push(s.stack);
 
-          return o;  
+          return o;
         }, {});
 
         console.log(projectsToStacks);
@@ -52,7 +52,7 @@
         error(msg, textStatus);
       }
     });
-  };
+  }
 
   /**
    * Entry point.
@@ -63,7 +63,7 @@
 
     var projectURL = "http://renderer-data1.int.janelia.org:8080/render-ws/v1/owner/flyTEM/stackIds";
     listAvailableProjects(projectURL);
-  };
+  }
 
 </script>
 

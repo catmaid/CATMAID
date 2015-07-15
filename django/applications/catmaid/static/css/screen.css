@@ -786,31 +786,31 @@ table.skeleton-table .sorting_disabled {
 }
 
 table.skeleton-table .sorting_asc::after {
-	content: url('../images/sort_asc.png');
+	content: url('../libs/jquery/datatable/images/sort_asc.png');
     position: relative;
     top: 0.5em;
 }
 
 table.skeleton-table .sorting_desc::after {
-	content: url('../images/sort_desc.png');
+	content: url('../libs/jquery/datatable/images/sort_desc.png');
     position: relative;
     top: 0.5em;
 }
 
 table.skeleton-table .sorting::after {
-	content: url('../images/sort_both.png');
+	content: url('../libs/jquery/datatable/images/sort_both.png');
     position: relative;
     top: 0.5em;
 }
 
 table.skeleton-table .sorting_asc_disabled::after {
-	content: url('../images/sort_asc_disabled.png');
+	content: url('../libs/jquery/datatable/images/sort_asc_disabled.png');
     position: relative;
     top: 0.5em;
 }
 
 table.skeleton-table .sorting_desc_disabled::after {
-	content: url('../images/sort_desc_disabled.png');
+	content: url('../libs/jquery/datatable/images/sort_desc_disabled.png');
     position: relative;
     top: 0.5em;
 }

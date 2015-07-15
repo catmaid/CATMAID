@@ -950,10 +950,7 @@
       var removeSkeleton = $('<span />')
         .attr('class', 'ui-icon ui-icon-close remove-skeleton')
         .attr('title', 'Remove this neuron from list')
-        .attr('skid', skid)
-        .click(this, function(e) {
-          e.data.removeSkeletons([parseInt($(this).attr('skid'), 10)]);
-        });
+        .attr('skid', skid);
 
       // Create and append row for current skeleton
       var row = $('<tr />')
@@ -969,6 +966,10 @@
       neuronTable.append(row);
     }, this);
     content.append(neuronTable);
+
+    neuronTable.on('click', '.remove-skeleton', this, function (e) {
+          e.data.removeSkeletons([parseInt($(this).attr('skid'), 10)]);
+        });
 
     // Check the select all box, if all skeletons are selected
     var notSelected = function(skid) {

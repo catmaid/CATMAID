@@ -47,6 +47,7 @@
     // Incoming an outgoing connections of current neurons
     this.incoming = {};
     this.outgoing = {};
+    this.reviewers = new Set();
     // Default upstream and downstream tables to be not collapsed
     this.upstreamCollapsed = false;
     this.downstreamCollapsed = false;
@@ -299,6 +300,7 @@
             if (200 !== status) {
               self.incoming = {};
               self.outgoing = {};
+              self.reviewers.clear();
               new CATMAID.ErrorDialog("Couldn't load connectivity information",
                   "The server returned an unexpected status code: " +
                       status).show();
@@ -309,6 +311,7 @@
               if ('REPLACED' !== json.error) {
                 self.incoming = {};
                 self.outgoing = {};
+                self.reviewers.clear();
                 new CATMAID.ErrorDialog("Couldn't load connectivity information",
                     json.error).show();
               }
@@ -319,6 +322,9 @@
             // the connectivity plots in a separate widget.
             self.incoming = json.incoming;
             self.outgoing = json.outgoing;
+            self.reviewers.clear();
+            json.incoming_reviewers.forEach(self.reviewers.add.bind(self.reviewers));
+            json.outgoing_reviewers.forEach(self.reviewers.add.bind(self.reviewers));
 
             // Register this widget with the name service for all neurons
             var createPartnerModels = function(partners, result) {
@@ -433,6 +439,60 @@
     });
   };
 
+  SkeletonConnectivity.prototype.updateReviewSummaries = function () {
+    var partnerSkids = [this.incoming, this.outgoing].reduce(function (skids, partners) {
+      return skids.concat(Object.keys(partners));
+    }, []);
+
+    var self = this;
+    var request = {skeleton_ids: partnerSkids, whitelist: this.reviewFilter === 'whitelist'};
+    if (this.reviewFilter && this.reviewFilter !== 'whitelist') request.user_ids = [this.reviewFilter];
+    return new Promise(function (resolve, reject) {
+      requestQueue.register(
+          CATMAID.makeURL(project.id + '/skeleton/review-status'),
+          'POST',
+          request,
+          CATMAID.jsonResponseHandler(function(json) {
+              $("#connectivity_widget" + self.widgetID)
+                  .find('.review-summary[skid]')
+                  .each(function (index, element) {
+                    var counts = json[this.getAttribute('skid')];
+                    var pReviewed = parseInt(Math.floor(100 * counts[1] / counts[0])) | 0;
+                    this.textContent = pReviewed + '%';
+                    this.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(pReviewed);
+              });
+
+              $("#connectivity_widget" + self.widgetID)
+                  .find('.node-count[skid]')
+                  .each(function (index, element) {
+                    var counts = json[this.getAttribute('skid')];
+                    this.textContent = counts[0];
+              });
+
+              ['incoming', 'outgoing'].forEach(function (partnerSet) {
+                var countSums = Object.keys(self[partnerSet]).reduce(function (nodes, partner) {
+                  var count = json[partner];
+                  return [nodes[0] + count[0], nodes[1] + count[1]];
+                }, [0, 0]);
+
+                var pReviewed = parseInt(Math.floor(100 * countSums[1] / countSums[0])) | 0;
+                var table = $("#" +
+                    (partnerSet === 'incoming' ? 'presynaptic' : 'postsynaptic') +
+                    '_tostream_connectivity_table' + self.widgetID);
+                table.find('.node-count-total').text(countSums[0]);
+                table.find('.review-summary-total').each(function () {
+                  this.textContent = pReviewed + '%';
+                  this.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(pReviewed);
+                });
+
+                // Inform DataTables that the data has changed.
+                table.DataTable().rows().invalidate().draw();
+              });
+              resolve();
+            }, reject));
+    });
+  };
+
   SkeletonConnectivity.prototype.createConnectivityTable = function() {
     // Simplify access to this widget's ID in sub functions
     var widgetID = this.widgetID;
@@ -512,27 +572,6 @@
       };
       // The total synapse count
       var total_synaptic_count = getSum(partners, 'synaptic_count');
-      // The total node count
-      var total_node_count = getSum(partners, 'num_nodes');
-
-      /**
-       * Support function to accumulate the number of reviews for a set of
-       * synaptic partners.
-       */
-      var getNrReviews = function(synPartners, filter) {
-        if (filter) {
-          return synPartners.reduce(function(sum, e) {
-            var reviews = e.reviewed[filter];
-            return reviews ? sum + reviews : sum;
-          }, 0);
-        } else {
-          return synPartners.reduce(function(sum, e) {
-            return sum + e.union_reviewed;
-          }, 0);
-        }
-      };
-      // The total review count
-      var total_reviewed = getNrReviews(partners, reviewFilter);
 
       // The table header
       var thead = $('<thead />');
@@ -575,10 +614,9 @@
           this.append($('<td />').addClass('syncount').text(count));
         }, row);
       }
-      var average = Math.floor(100 * total_reviewed / total_node_count) | 0;
-      row.append( $('<td />').text(average + "%")
-          .css('background-color', CATMAID.ReviewSystem.getBackgroundColor(average)));
-      row.append( $('<td />').text(total_node_count));
+
+      row.append($('<td />').addClass('review-summary-total'));
+      row.append($('<td />').addClass('node-count-total'));
       thead.append(row);
 
       var tbody = $('<tbody />');
@@ -694,16 +732,17 @@
         }
 
         // Cell with percent reviewed of partner neuron
-        var pReviewed = parseInt(Math.floor((100 *
-            getNrReviews([partner], reviewFilter) / partner.num_nodes)));
         var td = document.createElement('td');
-        td.textContent = pReviewed + "%";
-        td.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(pReviewed);
+        td.className = 'review-summary';
+        td.setAttribute('skid', partner.id);
+        td.textContent = '...';
         tr.appendChild(td);
 
         // Cell with number of nodes of partner neuron
         var td = document.createElement('td');
-        td.textContent = partner.num_nodes;
+        td.className = 'node-count';
+        td.setAttribute('skid', partner.id);
+        td.textContent = '...';
         tr.appendChild(td);
 
         return filtered;
@@ -715,10 +754,6 @@
       if (filtered.length > 0) {
         // The filtered synapse count
         var filtered_synaptic_count = getSum(filtered, 'synaptic_count');
-        // The filtered review count
-        var filtered_reviewed = getSum(filtered, 'reviewed');
-        // The filtered node count
-        var filtered_node_count = getSum(filtered, 'num_nodes');
         // Build the row
         var $tr = $('<tr />')
             // Select column
@@ -736,10 +771,11 @@
             $tr.append($('<td />').addClass('syncount').append(count));
           });
         }
-        // Review column
-        $tr.append($('<td />').append((filtered_reviewed / filtered.length) | 0));
-        // Node count column
-        $tr.append($('<td />').append(filtered_node_count));
+        $tr
+            // Review column
+            .append($('<td />'))
+            // Node count column
+            .append($('<td />'));
 
         // Add column to footer of table
         $(table).append($('<tfoot />').append($tr));
@@ -1001,35 +1037,18 @@
         .change((function(widget) {
           return function() {
             widget.reviewFilter = this.value === 'union' ? null : this.value;
-            widget.createConnectivityTable();
+            widget.updateReviewSummaries();
           };
         })(this));
-    // Support function to extract reviewer IDs from partners
-    var collectReviewers = function(o, set) {
-      for (var p in o) {
-        if (o.hasOwnProperty(p)) {
-          for (var r in o[p].reviewed) {
-            if (o[p].reviewed.hasOwnProperty(r)) {
-              set.add(r);
-            }
-          }
-        }
-      }
-    };
-    // Get reviewer IDs
-    var reviewers = new Set();
-    collectReviewers(this.incoming, reviewers);
-    collectReviewers(this.outgoing, reviewers);
+
     // Build select options
     var reviewerNames = {};
-    reviewers.forEach(function(r) {
+    this.reviewers.forEach(function(r) {
       var u = User.all()[r];
-      var displayName = u ? u.fullName : r;
-      if (r === 'whitelist') displayName = 'Team';
-      reviewerNames[displayName] = r;
+      reviewerNames[u ? u.fullName : r] = r;
     });
+    reviewerNames['Team'] = 'whitelist';
     var displayOrder = Object.keys(reviewerNames).sort();
-    displayOrder.splice(displayOrder.indexOf('Team'), 1);
     displayOrder.unshift('Team');
     displayOrder.forEach(function (displayName) {
       var r = reviewerNames[displayName];
@@ -1158,6 +1177,8 @@
         )
       );
     });
+
+    this.updateReviewSummaries();
 
     // Add a handler for openening connector selections for individual partners
 

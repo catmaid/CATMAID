@@ -22,6 +22,7 @@ TreenodeTable.prototype.getName = function() {
 };
 
 TreenodeTable.prototype.destroy = function() {
+  this.unregisterSource();
   this.unregisterInstance();
 };
 

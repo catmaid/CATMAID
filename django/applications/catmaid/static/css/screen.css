@@ -761,6 +761,19 @@ table.skeleton-table th {
   white-space: nowrap;
 }
 
+/* Center checkboxes in selection table */
+table.skeleton-table td input[type=checkbox] {
+  width: 100%;
+  margin: 0.3em 0 0.3em 0;
+}
+
+/* Center buttons in selection table */
+table.skeleton-table tr td:first-child,
+table.skeleton-table tr td:last-child {
+  text-align: center;
+  padding: 0.3em 0 0.3em 0;
+}
+
 /* Exception for display problem in datatables*/
 table.skeleton-table tr:last-child th::after {
   content: "";

@@ -773,6 +773,7 @@ table.skeleton-table .ui-icon-close {
 /* Center checkboxes in selection table */
 table.skeleton-table td input[type=checkbox] {
   width: 100%;
+  margin: 0;
 }
 
 /* Center buttons in selection table */

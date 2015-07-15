@@ -211,7 +211,7 @@
             <tr>
                <td>{{ r.creation_time }}</td>
                <td>{{ r.view }}</td>
-               <td>{{ r.time }}</td>
+               <td>{{ r.time | floatformat }}</td>
                <td><a href="{{ r.version | make_version_link | safe }}">
                     {{ r.version }}</a></td>
             </tr>

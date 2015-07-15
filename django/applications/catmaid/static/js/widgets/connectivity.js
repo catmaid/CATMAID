@@ -952,7 +952,7 @@
         .attr('title', 'Remove this neuron from list')
         .attr('skid', skid)
         .click(this, function(e) {
-          e.data.removeSkeletons([$(this).attr('skid')]);
+          e.data.removeSkeletons([parseInt($(this).attr('skid'), 10)]);
         });
 
       // Create and append row for current skeleton

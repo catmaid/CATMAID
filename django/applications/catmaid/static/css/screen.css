@@ -756,6 +756,10 @@ a.neuron-selection-link:hover {
   float: left;
 }
 
+table.skeleton-table {
+  width: 100%;
+}
+
 table.skeleton-table th {
   vertical-align: middle;
   white-space: nowrap;

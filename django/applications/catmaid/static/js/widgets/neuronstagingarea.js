@@ -27,7 +27,7 @@ var SelectionTable = function() {
   this.all_items_visible = {pre: true, post: true, text: false, meta: true};
   this.selected_skeleton_id = null;
   this.next_color_index = 0;
-  this.gui = new this.GUI(this, 20);
+  this.gui = new this.GUI(this);
 };
 
 SelectionTable._lastFocused = null; // Static reference to last focused instance
@@ -631,30 +631,15 @@ SelectionTable.prototype.showNext = function() {
 };
 
 
-SelectionTable.prototype.GUI = function(table, max) {
+SelectionTable.prototype.GUI = function(table) {
   this.table = table;
-  this.first = 0;
-  this.max = max;
   this.count = 0;
 };
 
 SelectionTable.prototype.GUI.prototype = {};
 
 SelectionTable.prototype.GUI.prototype.clear = function() {
-  this.first = 0;
   this.count = 0;
-  this.update();
-};
-
-SelectionTable.prototype.GUI.prototype.showPrevious = function() {
-  if (0 === this.first) return;
-  this.first -= this.max;
-  this.update();
-};
-
-SelectionTable.prototype.GUI.prototype.showNext = function() {
-  if (this.first + this.max > this.table.skeletons.length) return;
-  this.first += this.max;
   this.update();
 };
 
@@ -668,22 +653,8 @@ SelectionTable.prototype.GUI.prototype.update = function() {
   var skeletons = this.table.filteredSkeletons(false),
       skeleton_ids = skeletons.reduce(function(o, sk, i) { o[sk.id] = i; return o; }, {});
 
-  // Cope with changes in size
-  if (this.first >= skeletons.length) {
-    this.first = Math.max(0, skeletons.length - this.max);
-  }
-
   // Update GUI state
   var widgetID = this.table.widgetID;
-  var one = 0 === skeletons.length? 0 : 1;
-  $('#selection_table_first' + widgetID).text(this.first + one);
-  $('#selection_table_last' + widgetID).text(Math.min(this.first + this.max + one, skeletons.length));
-
-  var total = this.table.skeletons.length;
-  if (this.table.match) {
-    total = skeletons.length + " (of " + total + ")";
-  }
-  $('#selection_table_length' + widgetID).text(total);
 
   var datatable = $("table#skeleton-table" + widgetID ).DataTable();
   if (datatable) datatable.destroy();
@@ -692,13 +663,13 @@ SelectionTable.prototype.GUI.prototype.update = function() {
   $("tr[id^='skeletonrow" + widgetID + "']").remove();
   this.count = 0;
 
-  // Re-add the range
-  skeletons.slice(this.first, this.first + this.max).forEach(this.append, this);
+  // Re-create table, let DataTables take care of paging
+  skeletons.forEach(this.append, this);
 
   $("table#skeleton-table" + widgetID ).dataTable({
     destroy: true,
-    dom: "lrtip",
-    paging: false,
+    dom: "lrptip",
+    paging: true,
     processing: true,
     serverSide: false,
     autoWidth: false,

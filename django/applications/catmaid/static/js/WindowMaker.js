@@ -664,22 +664,6 @@ var WindowMaker = new function()
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
 
-    var prev = document.createElement('input');
-    prev.setAttribute("type", "button");
-    prev.setAttribute("value", "<");
-    prev.onclick = ST.showPrevious.bind(ST);
-    buttons.appendChild(prev);
-
-    var range = document.createElement('span');
-    range.innerHTML = "[<span id='selection_table_first" + ST.widgetID  + "'>0</span>, <span id='selection_table_last" + ST.widgetID  + "'>0</span>] of <span id='selection_table_length" + ST.widgetID  + "'>0</span>";
-    buttons.appendChild(range);
-
-    var next = document.createElement('input');
-    next.setAttribute("type", "button");
-    next.setAttribute("value", ">");
-    next.onclick = ST.showNext.bind(ST);
-    buttons.appendChild(next);
-
     buttons.appendChild(document.createTextNode(' Sync to:'));
     var link = CATMAID.skeletonListSources.createPushSelect(ST, 'link');
     link.onchange = ST.syncLink.bind(ST, link);

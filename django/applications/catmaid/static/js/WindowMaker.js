@@ -756,7 +756,7 @@ var WindowMaker = new function()
           '</tr>' +
           '<tr>' +
             '<th></th>' +
-            '<th><img src="' + STATIC_URL_JS + 'images/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
+            '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
             '<th></th>' +
             '<th><select class="review-filter">' +
               '<option value="Union" selected>Union</option>' +

@@ -761,6 +761,11 @@ table.skeleton-table th {
   white-space: nowrap;
 }
 
+table.skeleton-table .ui-icon-close {
+  margin: auto;
+  zoom: 1.25;
+}
+
 /* Center checkboxes in selection table */
 table.skeleton-table td input[type=checkbox] {
   width: 100%;

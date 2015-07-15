@@ -734,13 +734,13 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   rowElement.append($('<td />').text(this.count));
 
   var td = $(document.createElement("td"));
-  td.append( $(document.createElement("img"))
+  td.append( $(document.createElement("span"))
         .click( function( event )
         {
           table.removeSkeletons( [skeleton.id] );
         })
+        .addClass('ui-icon ui-icon-close')
         .attr({
-          src: STATIC_URL_JS + 'images/delete.png',
           alt: 'Remove',
           title: 'Remove'
         })

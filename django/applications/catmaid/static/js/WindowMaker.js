@@ -754,9 +754,11 @@ var WindowMaker = new function()
     
     var tab = document.createElement('table');
     tab.setAttribute("id", "skeleton-table" + ST.widgetID);
+    tab.setAttribute("class", "skeleton-table");
     tab.innerHTML =
         '<thead>' +
           '<tr>' +
+            '<th>nr</th>' +
             '<th>action</th>' +
             '<th>name</th>' +
             '<th>% reviewed</th>' +
@@ -765,22 +767,25 @@ var WindowMaker = new function()
             '<th>post</th>' +
             '<th>text</th>' +
             '<th>meta</th>' +
-            '<th>property  </th>' +
+            '<th>property</th>' +
+          '</tr>' +
+          '<tr>' +
+            '<th></th>' +
+            '<th><img src="' + STATIC_URL_JS + 'images/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
+            '<th></th>' +
+            '<th></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></th>' +
+            '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked style="float: left" /></th>' +
+            '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked style="float: left" /></th>' +
+            '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
+            '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
+            '<th><input type="button" id="selection-table-sort-by-color' +
+              ST.widgetID + '" value="Sort by color" style="width: 50%" />' +
+            '<input type="button" id="selection-table-info' + ST.widgetID +
+              '" value="Summary info" style="width: 50%" /></th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +
-          '<tr>' +
-            '<td><img src="' + STATIC_URL_JS + 'images/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></td>' +
-            '<td><input type="button" id="selection-table-sort-by-name' + ST.widgetID + '" value="Sort by name" /></td>' +
-            '<td></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked /></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked /></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" /></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked /></td>' +
-            '<td><input type="button" id="selection-table-sort-by-color' + ST.widgetID + '" value="Sort by color" /></td>' +
-            '<td><input type="button" id="selection-table-info' + ST.widgetID + '" value="Summary info" /></td>' +
-          '</tr>' +
         '</tbody>';
     container.appendChild(tab);
 

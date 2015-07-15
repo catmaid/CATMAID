@@ -21,3 +21,16 @@ $.fn.dataTable.ext.order['dom-checkbox'] = function (settings, col) {
   });
 };
 
+/**
+ * Add ascending natural sort string compare type.
+ */
+$.fn.dataTable.ext.oSort['text-asc']  = function(a, b) {
+    return CATMAID.tools.compareStrings(a, b);
+};
+
+/**
+ * Add descending natural sort string compare type.
+ */
+$.fn.dataTable.ext.oSort['text-desc']  = function(a, b) {
+    return -1 * CATMAID.tools.compareStrings(a, b);
+};

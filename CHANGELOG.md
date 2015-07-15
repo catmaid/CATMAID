@@ -2,6 +2,10 @@
 
 ### Features and enhancements
 
+Miscellaneous:
+
+- Selection table: all columns except "action" and "property" can now be used
+  for sorting.
 
 
 ### Bug fixes

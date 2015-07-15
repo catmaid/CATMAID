@@ -218,7 +218,7 @@ SelectionTable.prototype.skeleton_info = function(skeleton_ids) {
 
 SelectionTable.prototype.highlight = function( skeleton_id ) {
   if (this.selected_skeleton_id in this.skeleton_ids) {
-    $('#skeletonrow' + this.widgetID + '-' + this.selected_skeleton_id).css('background-color', 'white');
+    $('#skeletonrow' + this.widgetID + '-' + this.selected_skeleton_id).css('background-color', '');
     this.selected_skeleton_id = null;
   }
   if (skeleton_id in this.skeleton_ids) {
@@ -342,7 +342,6 @@ SelectionTable.prototype.init = function() {
     $('#selection-table-show-all-' + suffix + this.widgetID).click(this.toggleAllKeyUI.bind(this, suffix));
   }, this);
 
-  $('#selection-table-sort-by-name' + this.widgetID).click(this.sortByName.bind(this));
   $('#selection-table-sort-by-color' + this.widgetID).click(this.sortByColor.bind(this));
   $('#selection-table-info' + this.widgetID).click(this.summary_info.bind(this));
 };
@@ -637,12 +636,14 @@ SelectionTable.prototype.GUI = function(table, max) {
   this.table = table;
   this.first = 0;
   this.max = max;
+  this.count = 0;
 };
 
 SelectionTable.prototype.GUI.prototype = {};
 
 SelectionTable.prototype.GUI.prototype.clear = function() {
   this.first = 0;
+  this.count = 0;
   this.update();
 };
 
@@ -685,10 +686,37 @@ SelectionTable.prototype.GUI.prototype.update = function() {
   }
   $('#selection_table_length' + widgetID).text(total);
 
+  var datatable = $("table#skeleton-table" + widgetID ).DataTable();
+  if (datatable) datatable.destroy();
+
   // Remove all table rows
   $("tr[id^='skeletonrow" + widgetID + "']").remove();
+  this.count = 0;
+
   // Re-add the range
   skeletons.slice(this.first, this.first + this.max).forEach(this.append, this);
+
+  $("table#skeleton-table" + widgetID ).dataTable({
+    destroy: true,
+    dom: "lrtip",
+    paging: false,
+    processing: true,
+    serverSide: false,
+    autoWidth: true,
+    orderCellsTop: true,
+    columns: [
+      { "type": "text", "visible": false },
+      { "orderable": false },
+      { "type": "text" },
+      { "type": "text" },
+      { "orderDataType": "dom-checkbox" },
+      { "orderDataType": "dom-checkbox" },
+      { "orderDataType": "dom-checkbox" },
+      { "orderDataType": "dom-checkbox" },
+      { "orderDataType": "dom-checkbox" },
+      { "orderable": false }
+    ]
+  });
 
   // If the active skeleton is within the range, highlight it
   this.selected_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
@@ -702,6 +730,9 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   var rowElement = $('<tr/>').attr({
     id: 'skeletonrow' + widgetID + '-' + skeleton.id
   });
+
+  this.count++;
+  rowElement.append($('<td />').text(this.count));
 
   var td = $(document.createElement("td"));
   td.append( $(document.createElement("img"))

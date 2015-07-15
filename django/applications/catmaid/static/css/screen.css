@@ -755,3 +755,62 @@ a.neuron-selection-link:hover {
 .ui-dialog-extra-buttonset {
   float: left;
 }
+
+table.skeleton-table th {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Exception for display problem in datatables*/
+table.skeleton-table tr:last-child th::after {
+  content: "";
+}
+
+/* Disable sorting column highlighting */
+table.skeleton-table tr.odd td.sorting_1,
+table.skeleton-table tr.even td.sorting_1 {
+    background: none;
+}
+
+table.skeleton-table .sorting_asc,
+table.skeleton-table .sorting_desc,
+table.skeleton-table .sorting,
+table.skeleton-table .sorting_asc_disabled,
+table.skeleton-table .sorting_desc_disabled {
+	background: none;
+}
+
+table.skeleton-table .sorting_disabled {
+    position: relative;
+    top: 4px;
+}
+
+table.skeleton-table .sorting_asc::after {
+	content: url('../images/sort_asc.png');
+    position: relative;
+    top: 0.5em;
+}
+
+table.skeleton-table .sorting_desc::after {
+	content: url('../images/sort_desc.png');
+    position: relative;
+    top: 0.5em;
+}
+
+table.skeleton-table .sorting::after {
+	content: url('../images/sort_both.png');
+    position: relative;
+    top: 0.5em;
+}
+
+table.skeleton-table .sorting_asc_disabled::after {
+	content: url('../images/sort_asc_disabled.png');
+    position: relative;
+    top: 0.5em;
+}
+
+table.skeleton-table .sorting_desc_disabled::after {
+	content: url('../images/sort_desc_disabled.png');
+    position: relative;
+    top: 0.5em;
+}

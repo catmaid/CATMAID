@@ -554,7 +554,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     # There may not be any synapses
     if not partners:
-        return partners
+        return partners, []
 
     # If op is AND, discard entries where only one of the skids has synapses
     if len(skeleton_ids) > 1 and 'AND' == op:
@@ -564,7 +564,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     # With AND it is possible that no common partners exist
     if not partners:
-        return partners
+        return partners, []
 
     # Obtain a string with unique skeletons
     skids_string = '),('.join(map(str, partners.iterkeys()))

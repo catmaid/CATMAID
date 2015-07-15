@@ -813,7 +813,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       .click( function( event )
       {
         // Select the inner div, which will contain the color wheel
-        var sel = $('#color-wheel' + widgetID + '-' + skeleton.id + ' .colorwheel' + skeleton.id);
+        var sel = $('#color-wheel' + widgetID + '-' + skeleton.id + ' .colorwheel');
         if (skeleton.cw) {
           delete skeleton.cw;
           $('#color-wheel' + widgetID + '-' + skeleton.id).hide();
@@ -835,9 +835,6 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       .css("background-color", '#' + skeleton.color.getHexString())
   );
   td.append(
-    $('<div id="color-wheel' + widgetID + '-' + skeleton.id + '"><div class="colorwheel' + skeleton.id + '"></div></div>').hide()
-  );
-  td.append(
     $(document.createElement("button")).attr({
       value: 'Info'
     })
@@ -846,6 +843,10 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
         SelectionTable.prototype.skeleton_info([skeleton.id]);
       })
       .text('Info')
+  );
+  td.append(
+    $('<div id="color-wheel' + widgetID + '-' + skeleton.id +
+      '"><div class="colorwheel"></div></div>').hide()
   );
 
   rowElement.append( td );

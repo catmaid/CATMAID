@@ -1868,7 +1868,8 @@ GroupGraph.prototype.colorBy = function(mode, select) {
             var skeletons = node.data("skeletons");
             // Compute average
             var percent_reviewed = skeletons.reduce(function(sum, model) {
-              return sum + json[model.id];
+              var counts = json[model.id];
+              return sum + Math.floor(100 * counts[1] / counts[0]);
             }, 0) / skeletons.length;
             node.data('color', CATMAID.ReviewSystem.getBackgroundColor(percent_reviewed));
           });

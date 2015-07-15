@@ -79,11 +79,12 @@ def get_review_count(skeleton_ids):
 def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
         user_ids=None, excluding_user_ids=None):
     """ Returns a dictionary that maps skeleton IDs to their review
-    status as a value between 0 and 100 (integers). If <whitelist_id> is
-    not false, reviews are filtered according to the user's whitelist.
-    Otherwise, if <user_ids> evaluates to false a union review is returned.
-    Otherwise a list of user IDs is expected to create a review status for a
-    sub-union or a single user.
+    status as an array of total nodes and number of reviewed nodes
+    (integers). If <whitelist_id> is not false, reviews are filtered
+    according to the user's whitelist. Otherwise, if <user_ids>
+    evaluates to false a union review is returned. Otherwise a list of
+    user IDs is expected to create a review status for a sub-union or a
+    single user.
     """
     if user_ids and excluding_user_ids:
         raise ValueError("user_ids and excluding_user_ids can't be used at the same time")
@@ -92,10 +93,9 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
 
     cursor = connection.cursor()
 
-    class Skeleton:
-        num_nodes = 0
-        num_reviewed = 0
-    skeletons = defaultdict(Skeleton)
+    skeletons = {}
+
+    skids_string = ','.join(map(str, skeleton_ids))
 
     # Count nodes of each skeleton
     cursor.execute('''
@@ -103,9 +103,9 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
     FROM treenode
     WHERE skeleton_id IN (%s)
     GROUP BY skeleton_id
-    ''' % ",".join(map(str, skeleton_ids)))
+    ''' % skids_string)
     for row in cursor.fetchall():
-        skeletons[row[0]].num_nodes = row[1]
+        skeletons[row[0]] = [row[1], 0]
 
     query_joins = ""
     # Optionally, add a filter
@@ -139,16 +139,11 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
           WHERE skeleton_id IN (%s)%s
           GROUP BY skeleton_id, treenode_id) AS sub
     GROUP BY skeleton_id
-    ''' % (query_joins, ",".join(map(str, skeleton_ids)), user_filter))
+    ''' % (query_joins, skids_string, user_filter))
     for row in cursor.fetchall():
-        skeletons[row[0]].num_reviewed = row[1]
+        skeletons[row[0]][1] = row[1]
 
-    status = {}
-    for skid, s in skeletons.iteritems():
-        ratio = int(100 * s.num_reviewed / s.num_nodes) if s.num_nodes > 0 else 0
-        status[skid] = ratio
-
-    return status
+    return skeletons
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def reviewer_whitelist(request, project_id=None):

@@ -776,8 +776,8 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
 
 @requires_user_role([UserRole.Browse, UserRole.Annotate])
 def review_status(request, project_id=None):
-    """ Return the review status for each skeleton in the request
-    as a value between 0 and 100 (integers). """
+    """ Return the review status for each skeleton in the request as a
+    tuple of total nodes and number of reviewed nodes (integers). """
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
     whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
     whitelist_id = None

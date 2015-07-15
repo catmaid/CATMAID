@@ -2772,7 +2772,7 @@ class ViewPageTests(TestCase):
         url = '/%d/skeleton/review-status' % (self.test_project_id)
         response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
         self.assertEqual(response.status_code, 200)
-        expected_result = {'2388': 0}
+        expected_result = {'2388': [3, 0]}
         self.assertJSONEqual(response.content, expected_result)
 
         # Add reviews
@@ -2785,14 +2785,14 @@ class ViewPageTests(TestCase):
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2394)
         response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
         self.assertEqual(response.status_code, 200)
-        expected_result = {'2388': 66}
+        expected_result = {'2388': [3, 2]}
         self.assertJSONEqual(response.content, expected_result)
 
         # Use empty whitelist
         response = self.client.post(url,
                 {'skeleton_ids[0]': skeleton_id, 'whitelist': 'true'})
         self.assertEqual(response.status_code, 200)
-        expected_result = {'2388': 0}
+        expected_result = {'2388': [3, 0]}
         self.assertJSONEqual(response.content, expected_result)
 
         # Add a user to whitelist
@@ -2801,7 +2801,7 @@ class ViewPageTests(TestCase):
         response = self.client.post(url,
                 {'skeleton_ids[0]': skeleton_id, 'whitelist': 'true'})
         self.assertEqual(response.status_code, 200)
-        expected_result = {'2388': 33}
+        expected_result = {'2388': [3, 1]}
         self.assertJSONEqual(response.content, expected_result)
 
     def test_export_review_skeleton(self):

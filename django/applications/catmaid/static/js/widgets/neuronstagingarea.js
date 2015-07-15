@@ -409,7 +409,8 @@ SelectionTable.prototype.append = function(models) {
           return;
         }
         this.skeletons.push(model);
-        this.reviews[skeleton_id] = parseInt(json[skeleton_id]);
+        var counts = json[skeleton_id];
+        this.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
         this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
       }, this);
 
@@ -579,7 +580,8 @@ SelectionTable.prototype.update = function() {
         CATMAID.jsonResponseHandler(function(json) {
           // Update review information
           skeleton_ids.forEach(function(skeleton_id) {
-            self.reviews[skeleton_id] = parseInt(json[skeleton_id]);
+            var counts = json[skeleton_id];
+            self.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
           }, this);
           // Update user interface
           self.gui.update();

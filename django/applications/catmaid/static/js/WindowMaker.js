@@ -757,7 +757,7 @@ var WindowMaker = new function()
               '<input id="selection-table-batch-color-button' + ST.widgetID +
                 '" type="button" value="Batch color" style="width: 50%; background-color: #ffff00" />' +
               '<div id="selection-table-batch-color-wheel' + ST.widgetID + '">' +
-                '<div class="batch-colorwheel"></div></div>'
+                '<div class="batch-colorwheel"></div></div>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +

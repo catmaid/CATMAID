@@ -800,6 +800,16 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       })
       .text('Info')
   );
+  td.append(
+    $(document.createElement("button"))
+      .click( function( event )
+      {
+        var navigator = new NeuronNavigator();
+        WindowMaker.create('neuron-navigator', navigator);
+        navigator.set_neuron_node_from_skeleton(skeleton.id);
+      })
+      .text('Navigator')
+  );
 
   rowElement.append( td );
 

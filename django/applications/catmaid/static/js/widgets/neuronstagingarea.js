@@ -868,7 +868,6 @@ SelectionTable.prototype.filterBy = function(text) {
     delete this.match;
   } else {
     this.match = text;
-    this.first = 0;
   }
   this.gui.update();
 };

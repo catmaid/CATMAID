@@ -730,7 +730,7 @@ var WindowMaker = new function()
             '<th>nr</th>' +
             '<th>action</th>' +
             '<th>name</th>' +
-            '<th>% reviewed</th>' +
+            '<th>rev</th>' +
             '<th>selected</th>' +
             '<th>pre</th>' +
             '<th>post</th>' +

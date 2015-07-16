@@ -805,8 +805,8 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       .click( function( event )
       {
         var navigator = new NeuronNavigator();
-        navigator.set_neuron_node_from_skeleton(skeleton.id);
         WindowMaker.create('neuron-navigator', navigator);
+        navigator.set_neuron_node_from_skeleton(skeleton.id);
       })
       .addClass("ui-icon ui-icon-folder-collapsed")
       .attr({

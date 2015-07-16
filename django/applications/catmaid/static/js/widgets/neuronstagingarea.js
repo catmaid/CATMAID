@@ -5,6 +5,7 @@
   Colorizer,
   InstanceRegistry,
   NeuronNameService,
+  NeuronNavigator,
   project,
   requestQueue,
   session,

@@ -643,6 +643,7 @@ SelectionTable.prototype.showNext = function() {
 SelectionTable.prototype.GUI = function(table) {
   this.table = table;
   this.count = 0;
+  this.entriesPerPage = 25;
 };
 
 SelectionTable.prototype.GUI.prototype = {};
@@ -679,6 +680,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
     destroy: true,
     dom: "lrptip",
     paging: true,
+    pageLength: this.entriesPerPage,
     processing: true,
     serverSide: false,
     autoWidth: false,

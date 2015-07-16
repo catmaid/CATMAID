@@ -251,12 +251,22 @@
       // value, stop at the section that is reachable with this value.
       if (zDiffAbs > self.virtualNodeStep) {
         // Get project space coordinate of intermediate point, move to it and
-        // select a virtual node there.
-        var zS = stackViewer.z + self.virtualNodeStep * (zDiff > 0 ? 1 : -1);
+        // select a virtual node there. Make sure this new section is not a
+        // broken slice.
+        var zS = stackViewer.z, nSteps = 0;
+        while (true) {
+          ++nSteps;
+          zS += self.virtualNodeStep * (zDiff > 0 ? 1 : -1);
+          if (-1 === stack.broken_slices.indexOf(zS)) break;
+        }
+        // Use original target, if we advanced too far due to skipping broken
+        // slices.
+        if (zS >= toSZ) return null;
+
         var vnID = backwards ?
           SkeletonAnnotations.getVirtualNodeID(to.id, from.id, zS) :
           SkeletonAnnotations.getVirtualNodeID(from.id, to.id, zS);
-        var zRatio = self.virtualNodeStep / zDiffAbs;
+        var zRatio = (nSteps * self.virtualNodeStep) / zDiffAbs;
         return {
           id: vnID,
           x: from.x + (to.x - from.x) * zRatio,

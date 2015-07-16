@@ -666,8 +666,15 @@ SelectionTable.prototype.GUI.prototype.update = function() {
   // Update GUI state
   var widgetID = this.table.widgetID;
 
-  var datatable = $("table#skeleton-table" + widgetID ).DataTable();
-  if (datatable) datatable.destroy();
+  // Remember number of entries on page and destroy table, if it exists.
+  var tableSelector = "table#skeleton-table" + widgetID;
+  if ($.fn.DataTable.isDataTable(tableSelector)) {
+    var datatable = $(tableSelector).DataTable();
+    if (datatable) {
+      this.entriesPerPage = datatable.page.len();
+      datatable.destroy();
+    }
+  }
 
   // Remove all table rows
   $("tr[id^='skeletonrow" + widgetID + "']").remove();

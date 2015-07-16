@@ -706,18 +706,6 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createElement('br'));
 
-    var filterButton = document.createElement('input');
-    filterButton.setAttribute('type', 'button');
-    filterButton.setAttribute('value', 'Filter by regex:');
-    filterButton.onclick = function() { ST.filterBy(filter.value); };
-    buttons.appendChild(filterButton);
-
-    var filter = document.createElement('input');
-    filter.setAttribute('type', 'text');
-    filter.setAttribute('id', 'selection-table-filter' + ST.widgetID);
-    filter.onkeyup = function(ev) { if (13 === ev.keyCode) ST.filterBy(filter.value); };
-    buttons.appendChild(filter);
-
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
     
@@ -742,7 +730,8 @@ var WindowMaker = new function()
           '<tr>' +
             '<th></th>' +
             '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
-            '<th></th>' +
+            '<th><input type="button" value="Filter by regex" class="filter" />' +
+              '<input class="filter" type="text" id="selection-table-filter' + ST.widgetID + '" /></th>' +
             '<th><select class="review-filter">' +
               '<option value="Union" selected>Union</option>' +
               '<option value="Team">Team</option>' +
@@ -770,6 +759,14 @@ var WindowMaker = new function()
     });
     $("input#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
         ST.toggleBatchColorWheel.bind(ST));
+    $('th input[type=button].filter', tab).on("click", function() {
+      var filter = $('th input[type=text].filter', tab).val();
+      ST.filterBy(filter);
+    });
+    $('th input[type=text].filter', tab).on("keyup", function(e) {
+      if (13 === e.keyCode) ST.filterBy(this.value);
+    });
+
 
     //addListener(win, container, buttons, ST.destroy.bind(ST));
     win.addListener(

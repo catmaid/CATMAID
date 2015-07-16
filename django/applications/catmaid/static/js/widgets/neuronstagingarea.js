@@ -107,32 +107,6 @@ SelectionTable.prototype.SkeletonModel.prototype.clone = function() {
   return m;
 };
 
-// TODO doesn't do anything?
-SelectionTable.prototype.SkeletonModel.prototype.property_dialog = function() {
-  var dialog = document.createElement('div');
-  dialog.setAttribute("id", "dialog-confirm");
-  dialog.setAttribute("title", "Skeleton Properties");
-
-  var entry = document.createElement('input');
-  entry.setAttribute("type", "text");
-  entry.setAttribute("id", "skeleton-selected");
-  entry.setAttribute("value", this.selected );
-  dialog.appendChild(entry);
-
-  $(dialog).dialog({
-    height: 440,
-    modal: true,
-    buttons: {
-      "Cancel": function() {
-        $(this).dialog("close");
-      },
-      "OK": function() {
-        $(this).dialog("close");
-      }
-    }
-  });
-};
-
 SelectionTable.prototype.summary_info = function() {
   var skids = this.getSelectedSkeletons();
   if (0 === skids.length) return CATMAID.msg("Add or select skeletons first!");
@@ -816,16 +790,6 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   rowElement.append( td );
 
   var td = $(document.createElement("td"));
-  td.append(
-    $(document.createElement("button")).attr({
-      value: 'P'
-    })
-      .click( function( event )
-      {
-        skeleton.property_dialog();
-      })
-      .text('P')
-  );
   td.append(
     $(document.createElement("button")).attr({
       value: 'Info'

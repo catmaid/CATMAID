@@ -3111,7 +3111,7 @@ var WindowMaker = new function()
 
     // Let the navigator initialize the interface within
     // the created container.
-    NN.init_ui(container);
+    NN.init_ui(container, new_nn_instance !== undefined);
 
     CATMAID.skeletonListSources.updateGUI();
 

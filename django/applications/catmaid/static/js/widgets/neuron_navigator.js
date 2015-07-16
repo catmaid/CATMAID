@@ -75,7 +75,7 @@ NeuronNavigator.prototype.highlight = function(skeleton_id)
 
 /* Non-interface methods */
 
-NeuronNavigator.prototype.init_ui = function(container)
+NeuronNavigator.prototype.init_ui = function(container, createHomeNode)
 {
   // Create a navigation bar to see the current path of nodes
   var navigation_bar = document.createElement('div');
@@ -89,10 +89,12 @@ NeuronNavigator.prototype.init_ui = function(container)
   content.setAttribute('class', 'navigator_content');
   container.appendChild(content);
 
-  // Add home node as starting point without any parent
-  var home_node = new NeuronNavigator.HomeNode(this.widgetID);
-  home_node.link(this, null);
-  this.select_node(home_node);
+  if (createHomeNode) {
+    // Add home node as starting point without any parent
+    var home_node = new NeuronNavigator.HomeNode(this.widgetID);
+    home_node.link(this, null);
+    this.select_node(home_node);
+  }
 };
 
 /**

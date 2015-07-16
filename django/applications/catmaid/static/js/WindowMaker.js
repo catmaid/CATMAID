@@ -728,14 +728,14 @@ var WindowMaker = new function()
         '<thead>' +
           '<tr>' +
             '<th>nr</th>' +
-            '<th>action</th>' +
-            '<th>name</th>' +
-            '<th>rev</th>' +
-            '<th>selected</th>' +
-            '<th>pre</th>' +
-            '<th>post</th>' +
-            '<th>text</th>' +
-            '<th>meta</th>' +
+            '<th title="Remove one or all neurons">action</th>' +
+            '<th title="Neuron name">name</th>' +
+            '<th title="% reviewed">rev</th>' +
+            '<th title="Select a neuron and control its visibility (3D viewer)">selected</th>' +
+            '<th title="Control visibility of pre-synaptic connections (3D viewer)">pre</th>' +
+            '<th title="Control visibility of post-synaptic connections (3D viewer)">post</th>' +
+            '<th title="Control visibility of tags (3D viewer)">text</th>' +
+            '<th title="Control visibility of special nodes (3D viewer)">meta</th>' +
             '<th>property</th>' +
           '</tr>' +
           '<tr>' +

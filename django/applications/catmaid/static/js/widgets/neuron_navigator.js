@@ -127,6 +127,23 @@ NeuronNavigator.prototype.set_annotation_node = function(
   this.select_node(a_node);
 };
 
+NeuronNavigator.prototype.set_neuron_node_from_skeleton = function(skeleton_id)
+{
+  requestQueue.register(django_url + project.id + '/skeleton/' +
+      skeleton_id + '/neuronname', 'POST', {}, CATMAID.jsonResponseHandler((function(json) {
+          var n = {
+            'name': json.neuronname,
+            'skeleton_ids': [skeleton_id],
+            'id': json.neuronid
+          };
+          var home_node = new NeuronNavigator.HomeNode(this.widgetID);
+          home_node.link(this, null);
+          var node = new NeuronNavigator.NeuronNode(n);
+          node.link(this, home_node);
+          this.select_node(node);
+      }).bind(this)));
+};
+
 NeuronNavigator.prototype.select_node = function(node)
 {
   if (!node) {

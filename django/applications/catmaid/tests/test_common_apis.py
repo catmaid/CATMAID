@@ -1931,6 +1931,11 @@ class ViewPageTests(TestCase):
         assertHasParent(377, 405)
         assertHasParent(407, None)
 
+    def assertTreenodeHasProperties(self, treenode_id, parent_id, skeleton_id):
+        treenode = get_object_or_404(Treenode, id=treenode_id)
+        self.assertEqual(parent_id, treenode.parent_id)
+        self.assertEqual(skeleton_id, treenode.skeleton_id)
+
     def test_reroot_and_join_skeletons(self):
         self.fake_authentication()
 
@@ -1965,19 +1970,40 @@ class ViewPageTests(TestCase):
 
         self.assertEqual(2 + log_count, count_logs())
 
-        def assertTreenodeHasProperties(treenode_id, parent_id, skeleton_id):
-            treenode = get_object_or_404(Treenode, id=treenode_id)
-            self.assertEqual(parent_id, treenode.parent_id)
-            self.assertEqual(skeleton_id, treenode.skeleton_id)
-
-        assertTreenodeHasProperties(2396, 2394, new_skeleton_id)
-        assertTreenodeHasProperties(2392, 2394, new_skeleton_id)
-        assertTreenodeHasProperties(2394, 2415, new_skeleton_id)
+        self.assertTreenodeHasProperties(2396, 2394, new_skeleton_id)
+        self.assertTreenodeHasProperties(2392, 2394, new_skeleton_id)
+        self.assertTreenodeHasProperties(2394, 2415, new_skeleton_id)
 
         self.assertEqual(0, ClassInstance.objects.filter(id=2388).count())
         self.assertEqual(0, ClassInstanceClassInstance.objects.filter(id=2390).count())
 
         self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
+
+    def test_split_skeleton(self):
+        self.fake_authentication()
+
+        # Test simple split of 3-node skeleton at middle node.
+        old_skeleton_id = 2388
+        response = self.client.post(
+            '/%d/skeleton/split' % (self.test_project_id,),
+            {'treenode_id': 2394, 'upstream_annotation_map': '{}', 'downstream_annotation_map': '{}'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        new_skeleton_id = parsed_response['skeleton_id']
+
+        self.assertTreenodeHasProperties(2392, None, old_skeleton_id)
+        self.assertTreenodeHasProperties(2394, None, new_skeleton_id)
+        self.assertTreenodeHasProperties(2396, 2394, new_skeleton_id)
+
+        # Test error is returned when trying to split root node.
+        response = self.client.post(
+            '/%d/skeleton/split' % (self.test_project_id,),
+            {'treenode_id': 237, 'upstream_annotation_map': '{}', 'downstream_annotation_map': '{}'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                "error": "Can't split at the root node: it doesn't have a parent."}
+        self.assertEqual(expected_result, parsed_response)
 
     def test_treenode_info_nonexisting_treenode_failure(self):
         self.fake_authentication()

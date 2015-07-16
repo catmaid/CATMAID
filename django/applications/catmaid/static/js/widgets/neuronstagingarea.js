@@ -657,6 +657,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
     paging: true,
     displayStart: this.entriesPerPage * this.page,
     pageLength: this.entriesPerPage,
+    lengthMenu: [[10, 25, 100, -1], [10, 25, 100, "All"]],
     processing: true,
     serverSide: false,
     autoWidth: false,

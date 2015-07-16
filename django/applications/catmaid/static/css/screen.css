@@ -778,6 +778,7 @@ table.skeleton-table td input[type=checkbox] {
 
 /* Center buttons in selection table */
 table.skeleton-table tr td:first-child,
+table.skeleton-table tr td:nth-child(9),
 table.skeleton-table tr td:last-child {
   text-align: center;
 }

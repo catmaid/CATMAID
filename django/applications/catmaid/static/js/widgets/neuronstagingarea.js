@@ -313,19 +313,7 @@ SelectionTable.prototype.sortByColor = function() {
   this.sort(function(sk1, sk2) {
     var hsl1 = sk1.color.getHSL(),
         hsl2 = sk2.color.getHSL();
-    if (hsl1.h === hsl2.h) {
-      if (hsl1.s === hsl2.s) {
-        if (hsl1.l === hsl2.l) {
-          return 0;
-        } else {
-          return hsl1.l < hsl2.l ? -1 : 1;
-        }
-      } else {
-        return hsl1.s < hsl2.s ? -1 : 1;
-      }
-    } else {
-      return hsl1.h < hsl2.h ? -1 : 1;
-    }
+    return CATMAID.tools.compareHSLColors(hsl1, hsl2);
   });
 };
 
@@ -342,8 +330,6 @@ SelectionTable.prototype.init = function() {
   ['pre', 'post', 'text', 'meta'].forEach(function(suffix) {
     $('#selection-table-show-all-' + suffix + this.widgetID).click(this.toggleAllKeyUI.bind(this, suffix));
   }, this);
-
-  $('#selection-table-sort-by-color' + this.widgetID).click(this.sortByColor.bind(this));
 
   this.gui.update();
 };
@@ -657,7 +643,11 @@ SelectionTable.prototype.GUI.prototype.clear = function() {
 };
 
 SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(skeleton) {
-  $('#skeletonaction-changecolor-' + this.table.widgetID + '-' + skeleton.id).css("background-color", '#' + skeleton.color.getHexString());
+  var button = $('#skeletonaction-changecolor-' + this.table.widgetID + '-' + skeleton.id);
+  var color = '#' + skeleton.color.getHexString();
+  button.css("background-color", color);
+  // Set data of table cell for sorting and invalidate it to update data table
+  button.closest('td').attr('data-color', color);
 };
 
 /** Remove all, and repopulate with the current range. */
@@ -707,6 +697,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
       { "orderDataType": "dom-checkbox" },
       { "orderDataType": "dom-checkbox" },
       { "orderDataType": "dom-checkbox" },
+      { "orderDataType": "dom-color-property", "type": "hslcolor" },
       { "orderable": false }
     ]
   });
@@ -788,16 +779,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   });
 
   var td = $(document.createElement("td"));
-  td.append(
-    $(document.createElement("button")).attr({
-      value: 'P'
-    })
-      .click( function( event )
-      {
-        skeleton.property_dialog();
-      })
-      .text('P')
-  );
+  td.attr('data-color', '#' + skeleton.color.getHexString());
   td.append(
     $(document.createElement("button")).attr({
       id: 'skeletonaction-changecolor-' + widgetID + '-' + skeleton.id,
@@ -828,6 +810,23 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       .css("background-color", '#' + skeleton.color.getHexString())
   );
   td.append(
+    $('<div id="color-wheel' + widgetID + '-' + skeleton.id +
+      '"><div class="colorwheel"></div></div>').hide()
+  );
+  rowElement.append( td );
+
+  var td = $(document.createElement("td"));
+  td.append(
+    $(document.createElement("button")).attr({
+      value: 'P'
+    })
+      .click( function( event )
+      {
+        skeleton.property_dialog();
+      })
+      .text('P')
+  );
+  td.append(
     $(document.createElement("button")).attr({
       value: 'Info'
     })
@@ -836,10 +835,6 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
         SelectionTable.prototype.skeleton_info([skeleton.id]);
       })
       .text('Info')
-  );
-  td.append(
-    $('<div id="color-wheel' + widgetID + '-' + skeleton.id +
-      '"><div class="colorwheel"></div></div>').hide()
   );
 
   rowElement.append( td );

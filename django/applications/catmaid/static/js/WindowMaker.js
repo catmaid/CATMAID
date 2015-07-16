@@ -728,7 +728,7 @@ var WindowMaker = new function()
         '<thead>' +
           '<tr>' +
             '<th>nr</th>' +
-            '<th title="Remove one or all neurons">action</th>' +
+            '<th title="Remove one or all neurons"></th>' +
             '<th title="Neuron name">name</th>' +
             '<th title="% reviewed">rev</th>' +
             '<th title="Select a neuron and control its visibility (3D viewer)">selected</th>' +
@@ -736,7 +736,8 @@ var WindowMaker = new function()
             '<th title="Control visibility of post-synaptic connections (3D viewer)">post</th>' +
             '<th title="Control visibility of tags (3D viewer)">text</th>' +
             '<th title="Control visibility of special nodes (3D viewer)">meta</th>' +
-            '<th>property</th>' +
+            '<th title="Control the color of a neuron (3D viewer)">color</th>' +
+            '<th>actions</th>' +
           '</tr>' +
           '<tr>' +
             '<th></th>' +
@@ -752,12 +753,11 @@ var WindowMaker = new function()
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
             '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
-            '<th><input type="button" id="selection-table-sort-by-color' +
-              ST.widgetID + '" value="Sort by color" style="width: 50%" />' +
-              '<input id="selection-table-batch-color-button' + ST.widgetID +
-                '" type="button" value="Batch color" style="width: 50%; background-color: #ffff00" />' +
+            '<th><input id="selection-table-batch-color-button' + ST.widgetID +
+                '" type="button" value="Batch color" style="background-color: #ffff00" />' +
               '<div id="selection-table-batch-color-wheel' + ST.widgetID + '">' +
                 '<div class="batch-colorwheel"></div></div></th>' +
+            '<th></th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +

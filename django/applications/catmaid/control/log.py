@@ -5,7 +5,7 @@ from string import upper
 from django.http import HttpResponse
 from django.contrib.auth.decorators import user_passes_test
 
-from catmaid.models import UserRole, Log
+from catmaid.models import UserRole, Log, ReviewerWhitelist
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.user import access_check
 
@@ -54,6 +54,7 @@ def list_logs(request, project_id=None):
         user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
     else:
         user_id = None
+    whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
     operation_type = request.POST.get('operation_type', "-1")
     search_freetext = request.POST.get('search_freetext', "")
     
@@ -75,6 +76,9 @@ def list_logs(request, project_id=None):
     log_query = Log.objects.for_user(request.user).filter(project=project_id)
     if user_id:
         log_query = log_query.filter(user=user_id)
+    if whitelist:
+        log_query = log_query.filter(user_id__in=ReviewerWhitelist.objects.filter(
+                project_id=project_id, user_id=request.user.id).values_list('reviewer_id'))
     if not operation_type == "-1":
         log_query = log_query.filter(operation_type=operation_type)
     if not search_freetext == "":

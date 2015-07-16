@@ -19,6 +19,9 @@ Miscellaneous:
 - Selection table: all columns except "action" and "property" can now be used
   for sorting.
 
+- Log: entries can now be filtered to include only actions from the user's
+  review team.
+
 - The maximum number of nodes returned to the tracing overlay is now
   configurable as a server setting: NODE_LIST_MAXIMUM_COUNT (default 5000).
 

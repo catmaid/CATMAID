@@ -39,6 +39,11 @@ var LogTable = new function()
                             name: "user_id",
                             value: user_id
                         });
+                    } else if (user_id === 'Team') {
+                        aoData.push({
+                            name: "whitelist",
+                            value: true
+                        });
                     }
                     aoData.push({
                         "name" : "pid",

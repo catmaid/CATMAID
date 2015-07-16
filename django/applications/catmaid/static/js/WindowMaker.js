@@ -2161,6 +2161,10 @@ var WindowMaker = new function()
         option.text = "All";
         option.value = "All";
         sync.appendChild(option);
+        option = document.createElement("option");
+        option.text = "Team";
+        option.value = "Team";
+        sync.appendChild(option);
         contentbutton.appendChild(sync);
 
         requestQueue.register(django_url + 'user-list', 'GET', undefined,

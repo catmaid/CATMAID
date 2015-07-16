@@ -643,6 +643,7 @@ SelectionTable.prototype.showNext = function() {
 SelectionTable.prototype.GUI = function(table) {
   this.table = table;
   this.count = 0;
+  this.page = 0;
   this.entriesPerPage = 25;
 };
 
@@ -671,6 +672,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
   if ($.fn.DataTable.isDataTable(tableSelector)) {
     var datatable = $(tableSelector).DataTable();
     if (datatable) {
+      this.page = datatable.page();
       this.entriesPerPage = datatable.page.len();
       datatable.destroy();
     }
@@ -687,6 +689,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
     destroy: true,
     dom: "lrptip",
     paging: true,
+    displayStart: this.entriesPerPage * this.page,
     pageLength: this.entriesPerPage,
     processing: true,
     serverSide: false,

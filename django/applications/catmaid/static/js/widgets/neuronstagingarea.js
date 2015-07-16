@@ -790,26 +790,29 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   rowElement.append( td );
 
   var td = $(document.createElement("td"));
-  td.append(
-    $(document.createElement("button")).attr({
-      value: 'Info'
-    })
-      .click( function( event )
-      {
+  td.append($(document.createElement("span"))
+      .click(function( event ) {
         SelectionTable.prototype.skeleton_info([skeleton.id]);
       })
-      .text('Info')
-  );
+      .addClass("ui-icon ui-icon-info")
+      .attr({
+        alt: "Info",
+        title: "Open skeleton information"
+      }));
+
   td.append(
-    $(document.createElement("button"))
+    $(document.createElement("span"))
       .click( function( event )
       {
         var navigator = new NeuronNavigator();
-        WindowMaker.create('neuron-navigator', navigator);
         navigator.set_neuron_node_from_skeleton(skeleton.id);
+        WindowMaker.create('neuron-navigator', navigator);
       })
-      .text('Navigator')
-  );
+      .addClass("ui-icon ui-icon-folder-collapsed")
+      .attr({
+        alt: "Navigator",
+        title: "Open neuron navigator for skeleton"
+      }));
 
   rowElement.append( td );
 

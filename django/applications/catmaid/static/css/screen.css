@@ -765,8 +765,13 @@ table.skeleton-table th {
   white-space: nowrap;
 }
 
-table.skeleton-table .ui-icon-close {
+table.skeleton-table .ui-icon {
   margin: auto;
+  display: inline-block;
+  cursor: pointer;
+}
+
+table.skeleton-table .ui-icon-close {
   zoom: 1.2;
 }
 

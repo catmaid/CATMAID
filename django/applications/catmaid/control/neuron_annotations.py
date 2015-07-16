@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.db import connection
 
 from catmaid.models import UserRole, Project, Class, ClassInstance, \
-        ClassInstanceClassInstance, Relation
+        ClassInstanceClassInstance, Relation, ReviewerWhitelist
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.common import defaultdict, get_relation_to_id_map, \
         get_class_to_id_map
@@ -27,7 +27,7 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
 
     # Get name, annotator and time constraints, if available
     name = params.get('neuron_query_by_name', "").strip()
-    annotator_id = params.get('neuron_query_by_annotator', None)
+    annotator_ids = set(map(int, params.getlist('neuron_query_by_annotator')))
     start_date = params.get('neuron_query_by_start_date', "").strip()
     end_date = params.get('neuron_query_by_end_date', "").strip()
 
@@ -50,8 +50,11 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
         filters['name__iregex'] = name
 
     # Add annotator and time constraints, if available
-    if annotator_id:
-        filters['cici_via_a__user'] = annotator_id
+    if annotator_ids:
+        if len(annotator_ids) == 1:
+            filters['cici_via_a__user'] = next(iter(annotator_ids))
+        else:
+            filters['cici_via_a__user__in'] = annotator_ids
         filters['cici_via_a__relation_id'] = annotated_with
     if start_date:
         filters['cici_via_a__creation_time__gte'] = start_date

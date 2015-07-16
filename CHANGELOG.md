@@ -19,6 +19,9 @@ Miscellaneous:
 - Selection table: all columns except "action" and "property" can now be used
   for sorting.
 
+- Neuron search: annotations can now be searched for those by users in the
+  review team.
+
 - Log: entries can now be filtered to include only actions from the user's
   review team.
 

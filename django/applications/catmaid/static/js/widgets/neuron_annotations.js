@@ -430,6 +430,9 @@
         var empty_val = '';
         if (field === 'neuron_query_by_annotator') {
           empty_val = '-2';
+          if (form_data[field] === 'Team') {
+            form_data[field] = Object.keys(CATMAID.ReviewSystem.Whitelist.getWhitelist());
+          }
         }
         if (form_data[field] && form_data[field] != empty_val) {
           // We found at least one constraint

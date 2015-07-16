@@ -2916,6 +2916,7 @@ var WindowMaker = new function()
             '<select name="neuron_query_by_annotator" ' +
                 'id="neuron_query_by_annotator{{NA-ID}}" class="">' +
               '<option value="-2">Anyone</option>' +
+              '<option value="Team">Team</option>' +
             '</select>' +
           '</td>' +
         '</tr>' +

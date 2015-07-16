@@ -2005,6 +2005,23 @@ class ViewPageTests(TestCase):
                 "error": "Can't split at the root node: it doesn't have a parent."}
         self.assertEqual(expected_result, parsed_response)
 
+    def test_skeleton_connectivity(self):
+        self.fake_authentication()
+
+        # Test a simple request like that from the connectivity widget.
+        response = self.client.post(
+            '/%d/skeleton/connectivity' % (self.test_project_id,),
+            {'source[0]': 235, 'source[1]': 373, 'boolean_op': 'logic-OR'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+            "outgoing_reviewers": [],
+            "outgoing": {"361": {"skids": {"235": 1}, "num_nodes": 9},
+                         "373": {"skids": {"235": 2}, "num_nodes": 5}},
+            "incoming": {"235": {"skids": {"373": 2}, "num_nodes": 28}},
+            "incoming_reviewers": []}
+        self.assertEqual(expected_result, parsed_response)
+
     def test_treenode_info_nonexisting_treenode_failure(self):
         self.fake_authentication()
         treenode_id = 55555

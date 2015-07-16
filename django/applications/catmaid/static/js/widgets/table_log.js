@@ -33,10 +33,13 @@ var LogTable = new function()
                 "iDisplayLength": possibleLengths[0],
                 "sAjaxSource": django_url + project.id + '/logs/list',
                 "fnServerData": function (sSource, aoData, fnCallback) {
-                    aoData.push({
-                        "name": "user_id",
-                        "value" : $('#logtable_username').val()
-                    });
+                    var user_id = $('#logtable_username').val();
+                    if (!isNaN(user_id)) {
+                        aoData.push({
+                            name: "user_id",
+                            value: user_id
+                        });
+                    }
                     aoData.push({
                         "name" : "pid",
                         "value" : pid

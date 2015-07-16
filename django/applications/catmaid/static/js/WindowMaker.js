@@ -2159,7 +2159,7 @@ var WindowMaker = new function()
         sync.setAttribute("id", "logtable_username");
         var option = document.createElement("option");
         option.text = "All";
-        option.value = -1;
+        option.value = "All";
         sync.appendChild(option);
         contentbutton.appendChild(sync);
 

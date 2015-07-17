@@ -44,6 +44,9 @@ Miscellaneous:
 - The maximum number of nodes returned to the tracing overlay is now
   configurable as a server setting: NODE_LIST_MAXIMUM_COUNT (default 5000).
 
+- Group graph: a new lock buttons in the Selection tab allows to lock selected
+  nodes, so that their position doesn't change until they are unlocked again.
+
 
 ### Bug fixes
 

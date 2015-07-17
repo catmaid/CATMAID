@@ -737,25 +737,14 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
     rowElement.append(
       $(document.createElement("td")).append(
         $(document.createElement("input"))
+          .addClass("action-visibility")
           .attr({
                   id:    'skeleton' + key + widgetID + '-' + skeleton.id,
                   value: skeleton.id,
-                  type:  'checkbox'
+                  type:  'checkbox',
+                  "data-action": key
           })
           .prop('checked', skeleton[key])
-          .click( function( event ) {
-            var visible = $('#skeleton' + key + widgetID + '-' + skeleton.id).prop('checked');
-            skeleton[key] = visible;
-            // The first checkbox controls all others
-            if (0 === i) {
-              keys.slice(1).forEach(function(other, k) {
-                if (visible && 2 === k) return; // don't make text visible
-                skeleton[other] = visible;
-                $('#skeleton' + other + widgetID + '-' + skeleton.id).prop('checked', visible);
-              });
-            }
-            table.notifyLink(skeleton);
-          } )
     ));
   });
 

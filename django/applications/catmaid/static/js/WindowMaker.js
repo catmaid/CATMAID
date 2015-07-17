@@ -796,6 +796,24 @@ var WindowMaker = new function()
         var navigator = new NeuronNavigator();
         WindowMaker.create('neuron-navigator', navigator);
         navigator.set_neuron_node_from_skeleton(skeletonID);
+      })
+      .on("click", "td input.action-visibility", ST, function(e) {
+        var table = e.data;
+        var skeletonID = rowToSkeletonID(this);
+        var action = this.dataset.action;
+        var skeleton = table.skeletons[table.skeleton_ids[skeletonID]];
+        var visible = this.checked;
+        skeleton[action] = visible;
+
+        // The first checkbox controls all others
+        if ("selected" === action) {
+          ['pre_visible', 'post_visible', 'text_visible', 'meta_visible'].forEach(function(other, k) {
+            if (visible && 2 === k) return; // don't make text visible
+            skeleton[other] = visible;
+            $('#skeleton' + other + table.widgetID + '-' + skeletonID).prop('checked', visible);
+          });
+        }
+        table.notifyLink(skeleton);
       });
 
     /**

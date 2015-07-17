@@ -705,6 +705,18 @@ var WindowMaker = new function()
     summaryInfoButton.onclick = ST.summary_info.bind(ST);
     buttons.appendChild(summaryInfoButton);
 
+    var hideVisibilitySettigsCb = document.createElement('input');
+    hideVisibilitySettigsCb.setAttribute('type', 'checkbox');
+    hideVisibilitySettigsCb.onchange = function() {
+      ST.setVisbilitySettingsVisible(this.checked);
+    };
+    var hideVisibilitySettigs = document.createElement('label');
+    hideVisibilitySettigs.appendChild(hideVisibilitySettigsCb);
+    hideVisibilitySettigsCb.checked = true;
+    hideVisibilitySettigs.appendChild(document.createTextNode(
+          'Show visibility controls'));
+    buttons.appendChild(hideVisibilitySettigs);
+
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
     

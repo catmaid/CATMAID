@@ -581,6 +581,10 @@ SelectionTable.prototype.getSelectedSkeletonNames = function() {
   }, {});
 };
 
+SelectionTable.prototype.setVisbilitySettingsVisible = function(visible) {
+  this.gui.setVisbilitySettingsVisible(visible);
+};
+
 SelectionTable.prototype.setVisible = function(skeleton_ids, visible) {
   skeleton_ids.forEach(function(skid) {
     if (skid in this.skeleton_ids) {
@@ -594,23 +598,25 @@ SelectionTable.prototype.get_all_skeletons = function() {
   return Object.keys( this.skeleton_ids );
 };
 
-SelectionTable.prototype.showPrevious = function() {
-  this.gui.showPrevious();
-};
-
-SelectionTable.prototype.showNext = function() {
-  this.gui.showNext();
-};
-
-
 SelectionTable.prototype.GUI = function(table) {
   this.table = table;
   this.count = 0;
   this.page = 0;
   this.entriesPerPage = 25;
+  this.showVisibilityControls = true;
 };
 
 SelectionTable.prototype.GUI.prototype = {};
+
+SelectionTable.prototype.GUI.prototype.setVisbilitySettingsVisible = function(visible) {
+  var tableSelector = "table#skeleton-table" + this.table.widgetID;
+  if ($.fn.DataTable.isDataTable(tableSelector)) {
+    this.showVisibilityControls = visible;
+    var datatable = $(tableSelector).DataTable();
+    datatable.columns([5, 6, 7, 8]).visible(visible);
+    datatable.columns.adjust().draw( false ); // adjust column sizing and redraw
+  }
+};
 
 SelectionTable.prototype.GUI.prototype.clear = function() {
   this.count = 0;
@@ -669,10 +675,10 @@ SelectionTable.prototype.GUI.prototype.update = function() {
       { "type": "text" },
       { "type": "text" },
       { "orderDataType": "dom-checkbox" },
-      { "orderDataType": "dom-checkbox" },
-      { "orderDataType": "dom-checkbox" },
-      { "orderDataType": "dom-checkbox" },
-      { "orderDataType": "dom-checkbox" },
+      { "orderDataType": "dom-checkbox", "visible": this.showVisibilityControls },
+      { "orderDataType": "dom-checkbox", "visible": this.showVisibilityControls },
+      { "orderDataType": "dom-checkbox", "visible": this.showVisibilityControls },
+      { "orderDataType": "dom-checkbox", "visible": this.showVisibilityControls },
       { "orderDataType": "dom-color-property", "type": "hslcolor" },
       { "orderable": false }
     ]

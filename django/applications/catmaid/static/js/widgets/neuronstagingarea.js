@@ -762,7 +762,8 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
     ));
   });
 
-  var td = $(document.createElement("td"));
+  var td = $(document.createElement("td"))
+    .addClass("centering");
   td.attr('data-color', '#' + skeleton.color.getHexString());
   td.append(
     $(document.createElement("button")).attr({
@@ -799,7 +800,8 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   );
   rowElement.append( td );
 
-  var td = $(document.createElement("td"));
+  var td = $(document.createElement("td"))
+    .addClass("centering");
   td.append($(document.createElement("span"))
       .click(function( event ) {
         SelectionTable.prototype.skeleton_info([skeleton.id]);

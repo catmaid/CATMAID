@@ -761,8 +761,21 @@ table.skeleton-table {
 }
 
 table.skeleton-table th {
-  vertical-align: middle;
   white-space: nowrap;
+}
+
+table.skeleton-table tr th,
+table.skeleton-table tr td {
+  width: 2em;
+}
+
+table.skeleton-table tr th.expanding,
+table.skeleton-table tr td.expanding {
+  width: auto;
+}
+
+table.skeleton-table td * {
+  vertical-align: middle;
 }
 
 table.skeleton-table .ui-icon {
@@ -780,27 +793,19 @@ table.skeleton-table th input.filter {
   max-width: 10em;
 }
 
-/* Center checkboxes in selection table */
-table.skeleton-table td input[type=checkbox] {
-  width: 100%;
+table.skeleton-table input,
+table.skeleton-table select {
   margin: 0;
 }
 
+/* Center checkboxes in selection table */
+table.skeleton-table td input[type=checkbox] {
+  width: 100%;
+}
+
 /* Center buttons in selection table */
-table.skeleton-table tr td:first-child,
-table.skeleton-table tr td:nth-child(9),
-table.skeleton-table tr td:last-child {
+table.skeleton-table tr td.centering {
   text-align: center;
-}
-
-table.skeleton-table tr th,
-table.skeleton-table tr td {
-  width: 2em;
-}
-
-table.skeleton-table tr th.expanding,
-table.skeleton-table tr td.expanding {
-  width: auto;
 }
 
 /* Center colorwheel in selection table */

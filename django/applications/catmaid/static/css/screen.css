@@ -850,3 +850,7 @@ table.skeleton-table .sorting_desc_disabled::after {
     position: relative;
     top: 0.5em;
 }
+
+div.selection-table.windowContent {
+    margin-top: 1em;
+}

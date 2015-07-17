@@ -635,6 +635,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var container = createContainer("neuron_staging_table" + ST.widgetID);
+    $(container).addClass("selection-table");
 
     var buttons = document.createElement("div");
     buttons.setAttribute('id', 'ST_button_bar' + ST.widgetID);

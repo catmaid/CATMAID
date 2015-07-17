@@ -783,6 +783,10 @@ var WindowMaker = new function()
         var skeletonID = rowToSkeletonID(this);
         e.data.removeSkeletons([skeletonID]);
       })
+      .on("click", "td .action-select", ST, function(e) {
+        var skeletonID = rowToSkeletonID(this);
+        CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeletonID );
+      })
       .on("click", "td .action-annotate", function() {
         var skeletonID = rowToSkeletonID(this);
         CATMAID.annotate_neurons_of_skeletons([skeletonID]);

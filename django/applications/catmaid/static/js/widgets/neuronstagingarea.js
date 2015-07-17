@@ -718,10 +718,8 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       .append($('<a />')
         .text(name ? name : 'undefined')
         .attr('href', '#')
-        .attr('class', 'neuron-selection-link')
-        .click(function() {
-          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
-        })));
+        .attr('class', 'neuron-selection-link action-select')
+      ));
 
   // percent reviewed
   rowElement.append($('<td/>')

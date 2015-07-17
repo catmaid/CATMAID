@@ -704,8 +704,6 @@ var WindowMaker = new function()
     summaryInfoButton.onclick = ST.summary_info.bind(ST);
     buttons.appendChild(summaryInfoButton);
 
-    buttons.appendChild(document.createElement('br'));
-
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
     

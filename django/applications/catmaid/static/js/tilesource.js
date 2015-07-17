@@ -205,8 +205,16 @@
   {
     this.getTileURL = function( project, stack, slicePixelPosition,
         col, row, zoomLevel ) {
-      return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
-          row * tileHeight + '_' + slicePixelPosition[0] + '/' + fileExtension;
+      if (stack.orientation === CATMAID.Stack.ORIENTATION_XY) {
+        return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
+            row * tileHeight + '_' + slicePixelPosition[0] + '/' + fileExtension;
+      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
+        return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
+            slicePixelPosition[0] + '_' + row * tileHeight + '/' + fileExtension;
+      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
+        return baseURL + tileWidth + '_' + tileHeight + '/' + slicePixelPosition[0] + '_' +
+            row * tileHeight + '_' + col * tileWidth + '/' + fileExtension;
+      }
     };
 
     this.getOverviewLayer = function( layer ) {

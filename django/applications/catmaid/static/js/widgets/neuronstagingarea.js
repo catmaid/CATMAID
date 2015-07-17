@@ -226,13 +226,13 @@ SelectionTable.prototype.toggleSelectAllSkeletonsUI = function() {
   var updated = {};
   ['pre', 'post', 'text', 'meta'].forEach(function(suffix, i) {
     if (2 === i && this.all_visible) return; // don't turn on text
-    $('#selection-table-show-all-' + suffix + this.widgetID).attr('checked', this.all_visible);
+    $('#selection-table-show-all-' + suffix + this.widgetID).prop('checked', this.all_visible);
   }, this);
   this.filteredSkeletons(false).forEach(function(skeleton) {
       // Update checkboxes
       ['selected', 'pre_visible', 'post_visible', 'text_visible', 'meta_visible'].forEach(function(key, i) {
         if (3 === i && this.all_visible) return; // don't turn on text
-        $("#skeleton" + key + this.widgetID + "-" + skeleton.id).attr('checked', this.all_visible);
+        $("#skeleton" + key + this.widgetID + "-" + skeleton.id).prop('checked', this.all_visible);
       }, this);
       // Update model
       skeleton.setVisible(this.all_visible);
@@ -251,7 +251,7 @@ SelectionTable.prototype.toggleAllKeyUI = function(type) {
   var skeletons = this.filteredSkeletons(true);
   var key = type + '_visible';
   skeletons.forEach(function(skeleton) {
-    $("#skeleton" + key + this.widgetID + "-" + skeleton.id).attr('checked', state);
+    $("#skeleton" + key + this.widgetID + "-" + skeleton.id).prop('checked', state);
     skeleton[key] = state;
   }, this);
   if (this.linkTarget && skeletons.length > 0) {
@@ -805,7 +805,7 @@ SelectionTable.prototype.selectSkeletonById = function(id) {
 };
 
 SelectionTable.prototype.selectSkeleton = function( skeleton, vis ) {
-  $('#skeletonselect' + this.widgetID + '-' + skeleton.id).attr('checked', vis);
+  $('#skeletonselect' + this.widgetID + '-' + skeleton.id).prop('checked', vis);
   skeleton.setVisible(vis);
   this.notifyLink(skeleton);
 };

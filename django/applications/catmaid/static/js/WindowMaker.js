@@ -850,7 +850,7 @@ var WindowMaker = new function()
       var skeletonID = $(element).closest("tr").attr("data-skeleton-id");
       if (!skeletonID) throw new Error("Couldn't find skeleton ID");
       return skeletonID;
-    };
+    }
 
     //addListener(win, container, buttons, ST.destroy.bind(ST));
     win.addListener(

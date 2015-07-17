@@ -694,7 +694,8 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
       widgetID = this.table.widgetID;
 
   var rowElement = $('<tr/>').attr({
-    id: 'skeletonrow' + widgetID + '-' + skeleton.id
+    'id': 'skeletonrow' + widgetID + '-' + skeleton.id,
+    'data-skeleton-id': skeleton.id
   });
 
   this.count++;
@@ -702,11 +703,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
 
   var td = $(document.createElement("td"));
   td.append( $(document.createElement("span"))
-        .click( function( event )
-        {
-          table.removeSkeletons( [skeleton.id] );
-        })
-        .addClass('ui-icon ui-icon-close')
+        .addClass('ui-icon ui-icon-close action-remove')
         .attr({
           alt: 'Remove',
           title: 'Remove'
@@ -804,19 +801,13 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
     .addClass("centering")
     .css("white-space", "nowrap");
   td.append($(document.createElement("span"))
-      .click(function( event ) {
-        CATMAID.annotate_neurons_of_skeletons([skeleton.id]);
-      })
-      .addClass("ui-icon ui-icon-tag")
+      .addClass("ui-icon ui-icon-tag action-annotate")
       .attr({
         alt: "Annotate",
         title: "Annotate skeleton"
       }));
   td.append($(document.createElement("span"))
-      .click(function( event ) {
-        SelectionTable.prototype.skeleton_info([skeleton.id]);
-      })
-      .addClass("ui-icon ui-icon-info")
+      .addClass("ui-icon ui-icon-info action-info")
       .attr({
         alt: "Info",
         title: "Open skeleton information"
@@ -824,13 +815,7 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
 
   td.append(
     $(document.createElement("span"))
-      .click( function( event )
-      {
-        var navigator = new NeuronNavigator();
-        WindowMaker.create('neuron-navigator', navigator);
-        navigator.set_neuron_node_from_skeleton(skeleton.id);
-      })
-      .addClass("ui-icon ui-icon-folder-collapsed")
+      .addClass("ui-icon ui-icon-folder-collapsed action-navigator")
       .attr({
         alt: "Navigator",
         title: "Open neuron navigator for skeleton"

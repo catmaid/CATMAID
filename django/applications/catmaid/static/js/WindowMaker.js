@@ -778,6 +778,34 @@ var WindowMaker = new function()
       if (13 === e.keyCode) ST.filterBy(this.value);
     });
 
+    $(tab)
+      .on("click", "td .action-remove", ST, function(e) {
+        var skeletonID = rowToSkeletonID(this);
+        e.data.removeSkeletons([skeletonID]);
+      })
+      .on("click", "td .action-annotate", function() {
+        var skeletonID = rowToSkeletonID(this);
+        CATMAID.annotate_neurons_of_skeletons([skeletonID]);
+      })
+      .on("click", "td .action-info", function() {
+        var skeletonID = rowToSkeletonID(this);
+        SelectionTable.prototype.skeleton_info([skeletonID]);
+      })
+      .on("click", "td .action-navigator", function() {
+        var skeletonID = rowToSkeletonID(this);
+        var navigator = new NeuronNavigator();
+        WindowMaker.create('neuron-navigator', navigator);
+        navigator.set_neuron_node_from_skeleton(skeletonID);
+      });
+
+    /**
+     * Find the closest table row element and read out skeleton ID.
+     */
+    function rowToSkeletonID(element) {
+      var skeletonID = $(element).closest("tr").attr("data-skeleton-id");
+      if (!skeletonID) throw new Error("Couldn't find skeleton ID");
+      return skeletonID;
+    };
 
     //addListener(win, container, buttons, ST.destroy.bind(ST));
     win.addListener(

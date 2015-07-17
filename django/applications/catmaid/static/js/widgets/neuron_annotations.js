@@ -356,7 +356,7 @@
     var create_cb_handler = function(widget) {
       return function() {
             var clicked_cb = this;
-            var is_checked = $(this).is(':checked');
+            var is_checked = this.checked;
             var entity_id = $(this).attr('entity_id');
             // Update the entities selection state
             widget.entity_selection_map[entity_id] = is_checked;
@@ -430,6 +430,9 @@
         var empty_val = '';
         if (field === 'neuron_query_by_annotator') {
           empty_val = '-2';
+          if (form_data[field] === 'Team') {
+            form_data[field] = Object.keys(CATMAID.ReviewSystem.Whitelist.getWhitelist());
+          }
         }
         if (form_data[field] && form_data[field] != empty_val) {
           // We found at least one constraint
@@ -571,7 +574,7 @@
         value: ''
     });
     // Add autocompletion to it
-    this.add_autocomplete_to_input($text);
+    annotations.add_autocomplete_to_input($text);
 
     // Update the button attributes.
     var $button = $newRow.find("input[type='button']");
@@ -666,14 +669,6 @@
     // Update auto completion for input fields
     $('.neuron_query_by_annotation_name' + this.widgetID).autocomplete(
         "option", {source: annotations.getAllNames()});
-  };
-
-  NeuronAnnotations.prototype.add_autocomplete_to_input = function(input)
-  {
-    // Expects the annotation cache to be up-to-date
-    $(input).autocomplete({
-      source: annotations.getAllNames()
-    });
   };
 
   /**

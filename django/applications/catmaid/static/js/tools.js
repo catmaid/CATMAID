@@ -40,6 +40,27 @@ CATMAID.tools = CATMAID.tools || {};
   };
 
   /**
+   * Compare two objects that represent HSL colors. Sorting is done by hue, then
+   * saturation then luminance.
+   */
+  tools.compareHSLColors = function(hsl1, hsl2)
+  {
+    if (hsl1.h === hsl2.h) {
+      if (hsl1.s === hsl2.s) {
+        if (hsl1.l === hsl2.l) {
+          return 0;
+        } else {
+          return hsl1.l < hsl2.l ? -1 : 1;
+        }
+      } else {
+        return hsl1.s < hsl2.s ? -1 : 1;
+      }
+    } else {
+      return hsl1.h < hsl2.h ? -1 : 1;
+    }
+  };
+
+  /**
    * Parse a string as integer or return false if this is not possible or the
    * integer is negative.
    */

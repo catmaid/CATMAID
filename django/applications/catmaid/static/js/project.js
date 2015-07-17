@@ -521,9 +521,9 @@ function Project( pid )
 		fakeEvent.target = CATMAID.UI.getTargetElement(e || event);
 		var n = fakeEvent.target.nodeName.toLowerCase();
 		var fromATextField = false;
-		if (n == "input") {
+		if (n === "input") {
 			var inputType = fakeEvent.target.type.toLowerCase();
-			if (inputType == "text" || inputType == "password" || inputType == "search") {
+			if (inputType !== 'checkbox') {
 				fromATextField = true;
 			}
 		}

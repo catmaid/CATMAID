@@ -284,7 +284,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
 
     not_fully_reviewed = set()
     for skid, status in review_status.iteritems():
-        if status != 100:
+        if status[0] != status[1]:
             not_fully_reviewed.add(skid)
 
     skeleton_ids = skeleton_ids - not_fully_reviewed

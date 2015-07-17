@@ -755,3 +755,118 @@ a.neuron-selection-link:hover {
 .ui-dialog-extra-buttonset {
   float: left;
 }
+
+table.skeleton-table {
+  width: 100%;
+}
+
+table.skeleton-table th {
+  white-space: nowrap;
+}
+
+table.skeleton-table tr th,
+table.skeleton-table tr td {
+  width: 2em;
+}
+
+table.skeleton-table tr th.expanding,
+table.skeleton-table tr td.expanding {
+  width: auto;
+}
+
+table.skeleton-table td * {
+  vertical-align: middle;
+}
+
+table.skeleton-table .ui-icon {
+  margin: auto;
+  display: inline-block;
+  cursor: pointer;
+}
+
+table.skeleton-table .ui-icon-close {
+  zoom: 1.2;
+}
+
+table.skeleton-table th input.filter {
+  width: 50%;
+  max-width: 10em;
+}
+
+table.skeleton-table input,
+table.skeleton-table select {
+  margin: 0;
+}
+
+/* Center checkboxes in selection table */
+table.skeleton-table td input[type=checkbox] {
+  width: 100%;
+}
+
+/* Center buttons in selection table */
+table.skeleton-table tr td.centering {
+  text-align: center;
+}
+
+/* Center colorwheel in selection table */
+table.skeleton-table div.colorwheel {
+  display: inline;
+}
+
+/* Exception for display problem in datatables*/
+table.skeleton-table tr:last-child th::after {
+  content: "";
+}
+
+/* Disable sorting column highlighting */
+table.skeleton-table tr.odd td.sorting_1,
+table.skeleton-table tr.even td.sorting_1 {
+    background: none;
+}
+
+table.skeleton-table .sorting_asc,
+table.skeleton-table .sorting_desc,
+table.skeleton-table .sorting,
+table.skeleton-table .sorting_asc_disabled,
+table.skeleton-table .sorting_desc_disabled {
+	background: none;
+}
+
+table.skeleton-table .sorting_disabled {
+    position: relative;
+    top: 4px;
+}
+
+table.skeleton-table .sorting_asc::after {
+	content: url('../libs/jquery/datatable/images/sort_asc.png');
+    position: relative;
+    top: 0.5em;
+}
+
+table.skeleton-table .sorting_desc::after {
+	content: url('../libs/jquery/datatable/images/sort_desc.png');
+    position: relative;
+    top: 0.5em;
+}
+
+table.skeleton-table .sorting::after {
+	content: url('../libs/jquery/datatable/images/sort_both.png');
+    position: relative;
+    top: 0.5em;
+}
+
+table.skeleton-table .sorting_asc_disabled::after {
+	content: url('../libs/jquery/datatable/images/sort_asc_disabled.png');
+    position: relative;
+    top: 0.5em;
+}
+
+table.skeleton-table .sorting_desc_disabled::after {
+	content: url('../libs/jquery/datatable/images/sort_desc_disabled.png');
+    position: relative;
+    top: 0.5em;
+}
+
+div.selection-table.windowContent {
+    margin-top: 1em;
+}

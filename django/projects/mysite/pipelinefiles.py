@@ -77,12 +77,13 @@ for k,v in libraries_js.iteritems():
 
 PIPELINE_JS['arbor'] = {
     'source_filenames': ('libs/cytoscapejs/arbor.js',),
-    'output_filename': 'js/libs/cytoscapejs/arbor.js'
+    'output_filename': 'libs/cytoscapejs/arbor.js'
 }
 
 PIPELINE_JS['catmaid'] = {
     'source_filenames': (
         'js/CATMAID.js',
+        'js/extensions.js',
         'js/action.js',
         'js/init.js',
         'js/navigator.js',

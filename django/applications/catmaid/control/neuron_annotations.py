@@ -8,9 +8,10 @@ from django.shortcuts import get_object_or_404
 from django.db import connection
 
 from catmaid.models import UserRole, Project, Class, ClassInstance, \
-        ClassInstanceClassInstance, Relation
+        ClassInstanceClassInstance, Relation, ReviewerWhitelist
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
-from catmaid.control.common import defaultdict
+from catmaid.control.common import defaultdict, get_relation_to_id_map, \
+        get_class_to_id_map
 
 def create_basic_annotated_entity_query(project, params, relations, classes,
         allowed_classes=['neuron', 'annotation']):
@@ -26,7 +27,7 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
 
     # Get name, annotator and time constraints, if available
     name = params.get('neuron_query_by_name', "").strip()
-    annotator_id = params.get('neuron_query_by_annotator', None)
+    annotator_ids = set(map(int, params.getlist('neuron_query_by_annotator')))
     start_date = params.get('neuron_query_by_start_date', "").strip()
     end_date = params.get('neuron_query_by_end_date', "").strip()
 
@@ -49,8 +50,11 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
         filters['name__iregex'] = name
 
     # Add annotator and time constraints, if available
-    if annotator_id:
-        filters['cici_via_a__user'] = annotator_id
+    if annotator_ids:
+        if len(annotator_ids) == 1:
+            filters['cici_via_a__user'] = next(iter(annotator_ids))
+        else:
+            filters['cici_via_a__user__in'] = annotator_ids
         filters['cici_via_a__relation_id'] = annotated_with
     if start_date:
         filters['cici_via_a__creation_time__gte'] = start_date
@@ -699,9 +703,30 @@ def list_annotations(request, project_id=None):
     """ Creates a list of objects containing an annotation name and the user
     name and ID of the users having linked that particular annotation.
     """
-    annotation_query = create_annotation_query(project_id, request.POST)
-    annotation_tuples = annotation_query.distinct().values_list('name', 'id',
-        'cici_via_b__user__id', 'cici_via_b__user__username')
+
+    if not request.POST:
+        cursor = connection.cursor()
+        classes = get_class_to_id_map(project_id, ('annotation',), cursor)
+        relations = get_relation_to_id_map(project_id, ('annotated_with',), cursor)
+
+        cursor.execute('''
+            SELECT DISTINCT ci.name, ci.id, u.id, u.username
+            FROM class_instance ci
+            LEFT OUTER JOIN class_instance_class_instance cici
+                         ON (ci.id = cici.class_instance_b)
+            LEFT OUTER JOIN auth_user u
+                         ON (cici.user_id = u.id)
+            WHERE (ci.class_id = %s AND cici.relation_id = %s
+              AND ci.project_id = %s AND cici.project_id = %s);
+                       ''',
+            (classes['annotation'], relations['annotated_with'], project_id,
+                project_id))
+        annotation_tuples = cursor.fetchall()
+    else:
+        annotation_query = create_annotation_query(project_id, request.POST)
+        annotation_tuples = annotation_query.distinct().values_list('name', 'id',
+            'cici_via_b__user__id', 'cici_via_b__user__username')
+
     # Create a set mapping annotation names to its users
     ids = {}
     annotation_dict = {}
@@ -895,7 +920,7 @@ def annotations_for_skeletons(request, project_id=None):
     # Select pairs of skeleton_id vs annotation name
     cursor.execute('''
     SELECT skeleton_neuron.class_instance_a,
-           annotation.name
+           annotation.id, annotation.name
     FROM class_instance_class_instance skeleton_neuron,
          class_instance_class_instance neuron_annotation,
          class_instance annotation
@@ -907,8 +932,13 @@ def annotations_for_skeletons(request, project_id=None):
 
     # Group by skeleton ID
     m = defaultdict(list)
-    for skid, name in cursor.fetchall():
-        m[skid].append(name)
+    a = dict()
+    for skid, aid, name in cursor.fetchall():
+        m[skid].append(aid)
+        a[aid] = name
 
-    return HttpResponse(json.dumps(m, separators=(',', ':')))
+    return HttpResponse(json.dumps({
+        'skeletons': m,
+        'annotations': a
+    }, separators=(',', ':')))
 

@@ -636,11 +636,11 @@ class ViewPageTests(TestCase):
                 [237, None, 5, 1065.0, 3035.0, 0.0, -1.0, 3, 1323111096.0]],
             [], [[261, 'TODO']]]
         parsed_response = json.loads(response.content)
-        self.assertEqual(expected_result, parsed_response)
+        self.assertItemsEqual(expected_result, parsed_response)
 
         # Check each aaData row instead of everything at once for more granular
-        # error reporting.
-        for (expected, parsed) in zip(expected_result[0], parsed_response[0]):
+        # error reporting. Don't expext the same ordering.
+        for (expected, parsed) in zip(sorted(expected_result[0]), sorted(parsed_response[0])):
             self.assertEqual(expected, parsed)
 
     def test_list_treenode_table_empty(self):
@@ -1931,6 +1931,11 @@ class ViewPageTests(TestCase):
         assertHasParent(377, 405)
         assertHasParent(407, None)
 
+    def assertTreenodeHasProperties(self, treenode_id, parent_id, skeleton_id):
+        treenode = get_object_or_404(Treenode, id=treenode_id)
+        self.assertEqual(parent_id, treenode.parent_id)
+        self.assertEqual(skeleton_id, treenode.skeleton_id)
+
     def test_reroot_and_join_skeletons(self):
         self.fake_authentication()
 
@@ -1965,19 +1970,57 @@ class ViewPageTests(TestCase):
 
         self.assertEqual(2 + log_count, count_logs())
 
-        def assertTreenodeHasProperties(treenode_id, parent_id, skeleton_id):
-            treenode = get_object_or_404(Treenode, id=treenode_id)
-            self.assertEqual(parent_id, treenode.parent_id)
-            self.assertEqual(skeleton_id, treenode.skeleton_id)
-
-        assertTreenodeHasProperties(2396, 2394, new_skeleton_id)
-        assertTreenodeHasProperties(2392, 2394, new_skeleton_id)
-        assertTreenodeHasProperties(2394, 2415, new_skeleton_id)
+        self.assertTreenodeHasProperties(2396, 2394, new_skeleton_id)
+        self.assertTreenodeHasProperties(2392, 2394, new_skeleton_id)
+        self.assertTreenodeHasProperties(2394, 2415, new_skeleton_id)
 
         self.assertEqual(0, ClassInstance.objects.filter(id=2388).count())
         self.assertEqual(0, ClassInstanceClassInstance.objects.filter(id=2390).count())
 
         self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
+
+    def test_split_skeleton(self):
+        self.fake_authentication()
+
+        # Test simple split of 3-node skeleton at middle node.
+        old_skeleton_id = 2388
+        response = self.client.post(
+            '/%d/skeleton/split' % (self.test_project_id,),
+            {'treenode_id': 2394, 'upstream_annotation_map': '{}', 'downstream_annotation_map': '{}'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        new_skeleton_id = parsed_response['skeleton_id']
+
+        self.assertTreenodeHasProperties(2392, None, old_skeleton_id)
+        self.assertTreenodeHasProperties(2394, None, new_skeleton_id)
+        self.assertTreenodeHasProperties(2396, 2394, new_skeleton_id)
+
+        # Test error is returned when trying to split root node.
+        response = self.client.post(
+            '/%d/skeleton/split' % (self.test_project_id,),
+            {'treenode_id': 237, 'upstream_annotation_map': '{}', 'downstream_annotation_map': '{}'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                "error": "Can't split at the root node: it doesn't have a parent."}
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_skeleton_connectivity(self):
+        self.fake_authentication()
+
+        # Test a simple request like that from the connectivity widget.
+        response = self.client.post(
+            '/%d/skeleton/connectivity' % (self.test_project_id,),
+            {'source[0]': 235, 'source[1]': 373, 'boolean_op': 'logic-OR'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+            "outgoing_reviewers": [],
+            "outgoing": {"361": {"skids": {"235": 1}, "num_nodes": 9},
+                         "373": {"skids": {"235": 2}, "num_nodes": 5}},
+            "incoming": {"235": {"skids": {"373": 2}, "num_nodes": 28}},
+            "incoming_reviewers": []}
+        self.assertEqual(expected_result, parsed_response)
 
     def test_treenode_info_nonexisting_treenode_failure(self):
         self.fake_authentication()
@@ -2772,7 +2815,7 @@ class ViewPageTests(TestCase):
         url = '/%d/skeleton/review-status' % (self.test_project_id)
         response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
         self.assertEqual(response.status_code, 200)
-        expected_result = {'2388': 0}
+        expected_result = {'2388': [3, 0]}
         self.assertJSONEqual(response.content, expected_result)
 
         # Add reviews
@@ -2785,14 +2828,14 @@ class ViewPageTests(TestCase):
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2394)
         response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
         self.assertEqual(response.status_code, 200)
-        expected_result = {'2388': 66}
+        expected_result = {'2388': [3, 2]}
         self.assertJSONEqual(response.content, expected_result)
 
         # Use empty whitelist
         response = self.client.post(url,
                 {'skeleton_ids[0]': skeleton_id, 'whitelist': 'true'})
         self.assertEqual(response.status_code, 200)
-        expected_result = {'2388': 0}
+        expected_result = {'2388': [3, 0]}
         self.assertJSONEqual(response.content, expected_result)
 
         # Add a user to whitelist
@@ -2801,7 +2844,7 @@ class ViewPageTests(TestCase):
         response = self.client.post(url,
                 {'skeleton_ids[0]': skeleton_id, 'whitelist': 'true'})
         self.assertEqual(response.status_code, 200)
-        expected_result = {'2388': 33}
+        expected_result = {'2388': [3, 1]}
         self.assertJSONEqual(response.content, expected_result)
 
     def test_export_review_skeleton(self):

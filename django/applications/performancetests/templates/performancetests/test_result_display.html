@@ -45,96 +45,123 @@
 {% if test_results %}
   <h3>Results over time</h3>
 
+  <div id="result_plot_controls">
+    <label>
+      Scale
+      <select id="result_plot_scale">
+        <option value="linear">Linear</option>
+        <option value="log" selected="selected">Log</option>
+      </select>
+    </label>
+  </div>
+
   <div id="result_plot"></div>
 
   <script type="text/javascript">
     var views = {{ view_index.values | jsonify | safe }};
-    var view_ids = views.map(function(v) { return v.view_id; });
     var results = {{ test_results | jsonify | safe }};
 
-    var margin = {top: 20, right: 80, bottom: 30, left: 50},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
-
     var parseDate = d3.time.format("%Y-%m-%dT%H:%M:%S.%L").parse;
-
-    var x = d3.time.scale()
-        .range([0, width]);
-
-    var y = d3.scale.linear()
-        .range([height, 0]);
-
-    var color = d3.scale.category10();
-
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("bottom");
-
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left");
-
-    var line = d3.svg.line()
-        .interpolate("linear")
-        .x(function(d) { return x(d.creation_time); })
-        .y(function(d) { return y(d.time); });
-
-    var svg = d3.select("div#result_plot").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    color.domain(view_ids);
-
     results.forEach(function(r) {
       r.creation_time = parseDate(r.creation_time);
     });
 
-    var views = color.domain().map(function(v_id) {
-      return {
-        view_id: v_id,
-        values: results.filter(function(r) {
-          return r.view_id === v_id;
-        }).map(function(r) {
-          return {creation_time: r.creation_time, time: r.time};
-        })
-      };
+    redrawPlot(views, results, "log");
+
+    $("select#result_plot_scale").on("change", function() {
+      redrawPlot(views, results, this.value);
     });
 
-    x.domain(d3.extent(results, function(r) { return r.creation_time; }));
+    /**
+     * Create a timing plot of all test results.
+     */
+    function redrawPlot(views, results, scale) {
+      var margin = {top: 20, right: 80, bottom: 30, left: 50},
+          width = 960 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
 
-    y.domain(d3.extent(results, function(r) { return r.time; }));
+      var x = d3.time.scale()
+          .range([0, width]);
 
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
+      var yScale;
+      if ("linear" === scale) yScale = d3.scale.linear();
+      else if ("log" === scale) yScale = d3.scale.log();
+      else throw new Error("Unknown scale: " + scale);
 
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-      .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text("Timing");
+      var y = yScale.range([height, 0]);
 
-     var testView = svg.selectAll(".testview")
-        .data(views)
-      .enter().append("g")
-        .attr("class", "testview");
+      var color = d3.scale.category10();
 
-     testView.append("path")
-        .attr("class", "line")
-        .attr("d", function(d) {
-          return line(d.values);
-        })
-        .attr("data-legend",function(d) { return d.name})
-        .style("stroke", function(d) {
-          return color(d.view_id);
-        });
+      var xAxis = d3.svg.axis()
+          .scale(x)
+          .orient("bottom");
+
+      var yAxis = d3.svg.axis()
+          .scale(y)
+          .orient("left");
+
+      var line = d3.svg.line()
+          .interpolate("linear")
+          .x(function(d) { return x(d.creation_time); })
+          .y(function(d) { return y(d.time); });
+
+      // Remove existing plot, if any
+      d3.selectAll("div#result_plot svg").remove();
+
+      // Create a new plot
+      var svg = d3.select("div#result_plot").append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      var view_ids = views.map(function(v) { return v.view_id; });
+      color.domain(view_ids);
+
+      var views = color.domain().map(function(v_id) {
+        return {
+          view_id: v_id,
+          values: results.filter(function(r) {
+            return r.view_id === v_id;
+          }).map(function(r) {
+            return {creation_time: r.creation_time, time: r.time};
+          })
+        };
+      });
+
+      x.domain(d3.extent(results, function(r) { return r.creation_time; }));
+
+      y.domain(d3.extent(results, function(r) { return r.time; }));
+
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(xAxis);
+
+      svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+        .append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", ".71em")
+          .style("text-anchor", "end")
+          .text("Timing");
+
+      var testView = svg.selectAll(".testview")
+         .data(views)
+       .enter().append("g")
+         .attr("class", "testview");
+
+      testView.append("path")
+         .attr("class", "line")
+         .attr("d", function(d) {
+           return line(d.values);
+         })
+         .attr("data-legend",function(d) { return d.name})
+         .style("stroke", function(d) {
+           return color(d.view_id);
+         });
 
       var legend = svg.selectAll(".legend")
           .data(color.domain().slice().reverse())
@@ -158,6 +185,7 @@
           .text(function (d) {
           return d;
       });
+    }
 
   </script>
 
@@ -168,6 +196,27 @@
       <li>{{ v.method }} {{v.url }} ({{ v_id }})</li>
       {% endfor %}
     </ul>
+  </p>
+
+  <h3>Results</h3>
+  <p>
+    <table>
+        <tr>
+            <th>Creation time</th>
+            <th>View</th>
+            <th>Time</th>
+            <th>Version</th>
+        </tr>
+        {% for r in test_results %}
+            <tr>
+               <td>{{ r.creation_time }}</td>
+               <td>{{ r.view }}</td>
+               <td>{{ r.time | floatformat }}</td>
+               <td><a href="{{ r.version | make_version_link | safe }}">
+                    {{ r.version }}</a></td>
+            </tr>
+        {% endfor %}
+    </table>
   </p>
 
 {% else %}

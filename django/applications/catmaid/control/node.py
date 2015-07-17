@@ -5,6 +5,7 @@ from collections import defaultdict
 from datetime import datetime
 import itertools as itertools
 
+from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse
 from django.contrib.auth.models import User
@@ -49,7 +50,8 @@ def node_list_tuples(request, project_id=None, provider=None):
     atnid = int(request.POST.get('atnid', -1))
     for p in ('top', 'left', 'bottom', 'right', 'z1', 'z2'):
         params[p] = float(request.POST.get(p, 0))
-    params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
+    # Limit the number of retrieved treenodes within the section
+    params['limit'] = settings.NODE_LIST_MAXIMUM_COUNT
     params['project_id'] = project_id
     includeLabels = (request.POST.get('labels', None) == 'true')
 
@@ -724,6 +726,23 @@ def find_next_branchnode_or_end(request, project_id=None):
 
         branches = [[nodeLocations[id] for id in branch] for branch in branches]
         return HttpResponse(json.dumps(branches))
+    except Exception as e:
+        raise Exception('Could not obtain next branch node or leaf: ' + str(e))
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_children(request, project_id=None):
+    try:
+        tnid = int(request.POST['tnid'])
+        cursor = connection.cursor()
+        cursor.execute('''
+            SELECT id, location_x, location_y, location_z
+            FROM Treenode
+            WHERE parent_id = %s
+            ''', (tnid,))
+
+        children = [[row] for row in cursor.fetchall()]
+        return HttpResponse(json.dumps(children), content_type='text/json')
     except Exception as e:
         raise Exception('Could not obtain next branch node or leaf: ' + str(e))
 

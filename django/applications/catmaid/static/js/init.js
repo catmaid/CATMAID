@@ -617,14 +617,16 @@ var check_messages = (function() {
               // Save the date and get all messages
               latest_message_date = data.latest_unread_date;
               get_messages();
-            } else {
-              // Check again later
-              msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
+              return;
             }
-          } else {
-            // Check again later
-            msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
           }
+
+          // Check again later
+          msg_timeout = window.setTimeout(check_messages, MSG_TIMEOUT_INTERVAL);
+        }, function () {
+          msg_timeout = window.setTimeout(check_messages, MSG_TIMEOUT_INTERVAL);
+          CATMAID.statusBar.replaceLast('Unable to check for messages (network may be disconnected).');
+          return true;
         }));
   };
 })();

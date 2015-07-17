@@ -82,7 +82,7 @@ AnalyzeArbor.prototype.adjustOptions = function() {
     params.forEach((function(param, i) { this[param] = values[i]; }), this);
 
     // Refresh or redraw
-    var override = $('#AA-override-' + this.widgetID).is(':checked');
+    var override = $('#AA-override-' + this.widgetID).prop('checked');
     if (override !== this.override_microtubules_end) {
       this.override_microtubules_end = override;
       this.update();

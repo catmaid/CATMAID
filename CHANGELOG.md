@@ -1,3 +1,64 @@
+## 2015.7.17
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+
+### Features and enhancements
+
+Connectivity widget:
+
+- Partners can now be filtered by a minimum threshold on number of nodes, rather
+  than only being able to filter single-node partners.
+
+- The user's review team is now an option in the partner review filter.
+
+- Changing the review filter no longer reloads the entire widget.
+
+- Many small performance improvements.
+
+
+Selection table:
+
+- The table layout has been streamlined with other tables in CATMAID. All
+  columns except 'action columns' can now be used for sorting. Pagination is now
+  done with the buttons to the right above and below the table, the page length
+  can now be adjusted, too. The summary info button moved into the button panel
+  while the filter input is now part of the table.
+
+- It is now possible to add a new annotation to individual neurons without
+  changing the current selection. This can be  done with the little tag icon in
+  the actions column on the right. The former info button was replaced by a
+  small 'i' icon and clicking the folder icon in the same column will open a
+  Neuron Navigator window for the respective neuron.
+
+- All visibility related colums can be hidden with a new checkbox in the button
+  panel. This might be useful to save space if a selection table is not used to
+  control a 3D viewer.
+
+
+Miscellaneous:
+
+- Neuron search: annotations can now be searched for those by users in the
+  review team.
+
+- Log: entries can now be filtered to include only actions from the user's
+  review team.
+
+- The maximum number of nodes returned to the tracing overlay is now
+  configurable as a server setting: NODE_LIST_MAXIMUM_COUNT (default 5000).
+
+- Group graph: a new lock buttons in the Selection tab allows to lock selected
+  nodes, so that their position doesn't change until they are unlocked again.
+
+
+### Bug fixes
+
+- Fix display of intermediate nodes on edge between two joined skeletons.
+
+- The last lines of the review widget were hidden sometimes. This is not the
+  case anymore.
+
+
 ## 2015.7.6
 
 CATMAID now uses the GPLv3 license and moved away from the stricter

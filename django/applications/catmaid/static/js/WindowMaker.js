@@ -635,6 +635,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var container = createContainer("neuron_staging_table" + ST.widgetID);
+    $(container).addClass("selection-table");
 
     var buttons = document.createElement("div");
     buttons.setAttribute('id', 'ST_button_bar' + ST.widgetID);
@@ -663,22 +664,6 @@ var WindowMaker = new function()
     update.setAttribute("value", "Refresh");
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
-
-    var prev = document.createElement('input');
-    prev.setAttribute("type", "button");
-    prev.setAttribute("value", "<");
-    prev.onclick = ST.showPrevious.bind(ST);
-    buttons.appendChild(prev);
-
-    var range = document.createElement('span');
-    range.innerHTML = "[<span id='selection_table_first" + ST.widgetID  + "'>0</span>, <span id='selection_table_last" + ST.widgetID  + "'>0</span>] of <span id='selection_table_length" + ST.widgetID  + "'>0</span>";
-    buttons.appendChild(range);
-
-    var next = document.createElement('input');
-    next.setAttribute("type", "button");
-    next.setAttribute("value", ">");
-    next.onclick = ST.showNext.bind(ST);
-    buttons.appendChild(next);
 
     buttons.appendChild(document.createTextNode(' Sync to:'));
     var link = CATMAID.skeletonListSources.createPushSelect(ST, 'link');
@@ -713,76 +698,159 @@ var WindowMaker = new function()
     measure.onclick = ST.measure.bind(ST);
     buttons.appendChild(measure);
 
-    buttons.appendChild(document.createElement('br'));
+    var summaryInfoButton = document.createElement('input');
+    summaryInfoButton.setAttribute('type', 'button');
+    summaryInfoButton.setAttribute('value', 'Summary info');
+    summaryInfoButton.setAttribute('id', 'selection-table-info' + ST.widgetID);
+    summaryInfoButton.onclick = ST.summary_info.bind(ST);
+    buttons.appendChild(summaryInfoButton);
 
-    var filterButton = document.createElement('input');
-    filterButton.setAttribute('type', 'button');
-    filterButton.setAttribute('value', 'Filter by regex:');
-    filterButton.onclick = function() { ST.filterBy(filter.value); };
-    buttons.appendChild(filterButton);
-
-    var filter = document.createElement('input');
-    filter.setAttribute('type', 'text');
-    filter.setAttribute('id', 'selection-table-filter' + ST.widgetID);
-    filter.onkeyup = function(ev) { if (13 === ev.keyCode) ST.filterBy(filter.value); };
-    buttons.appendChild(filter);
-
-    buttons.appendChild(document.createTextNode(' Review filter'));
-    var reviewFilter = appendSelect(buttons, 'ST-review-filter' + ST.widgetID,
-        ['Union', 'Team']);
-    reviewFilter.onchange = function () {
-      ST.review_filter = reviewFilter.options[reviewFilter.selectedIndex].text;
-      ST.update();
+    var hideVisibilitySettigsCb = document.createElement('input');
+    hideVisibilitySettigsCb.setAttribute('type', 'checkbox');
+    hideVisibilitySettigsCb.onchange = function() {
+      ST.setVisbilitySettingsVisible(this.checked);
     };
-
-    buttons.appendChild(document.createTextNode(' Batch color:'));
-    var batch = document.createElement('input');
-    batch.setAttribute('type', 'button');
-    batch.setAttribute('value', 'color');
-    batch.setAttribute('id', 'selection-table-batch-color-button' + ST.widgetID);
-    batch.style.backgroundColor = '#ffff00';
-    batch.onclick = ST.toggleBatchColorWheel.bind(ST);
-    buttons.appendChild(batch);
-
-    var colorwheeldiv = document.createElement('div');
-    colorwheeldiv.setAttribute('id', 'selection-table-batch-color-wheel' + ST.widgetID);
-    colorwheeldiv.innerHTML = '<div class="batch-colorwheel-' + ST.widgetID + '"></div>';
-    buttons.appendChild(colorwheeldiv);
+    var hideVisibilitySettigs = document.createElement('label');
+    hideVisibilitySettigs.appendChild(hideVisibilitySettigsCb);
+    hideVisibilitySettigsCb.checked = true;
+    hideVisibilitySettigs.appendChild(document.createTextNode(
+          'Show visibility controls'));
+    buttons.appendChild(hideVisibilitySettigs);
 
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
     
     var tab = document.createElement('table');
     tab.setAttribute("id", "skeleton-table" + ST.widgetID);
+    tab.setAttribute("class", "skeleton-table");
     tab.innerHTML =
         '<thead>' +
           '<tr>' +
-            '<th>action</th>' +
-            '<th>name</th>' +
-            '<th>% reviewed</th>' +
-            '<th>selected</th>' +
-            '<th>pre</th>' +
-            '<th>post</th>' +
-            '<th>text</th>' +
-            '<th>meta</th>' +
-            '<th>property  </th>' +
+            '<th>nr</th>' +
+            '<th title="Remove one or all neurons"></th>' +
+            '<th class="expanding" title="Neuron name">name</th>' +
+            '<th title="% reviewed">rev</th>' +
+            '<th title="Select a neuron and control its visibility (3D viewer)">selected</th>' +
+            '<th title="Control visibility of pre-synaptic connections (3D viewer)">pre</th>' +
+            '<th title="Control visibility of post-synaptic connections (3D viewer)">post</th>' +
+            '<th title="Control visibility of tags (3D viewer)">text</th>' +
+            '<th title="Control visibility of special nodes (3D viewer)">meta</th>' +
+            '<th title="Control the color of a neuron (3D viewer)">color</th>' +
+            '<th>actions</th>' +
+          '</tr>' +
+          '<tr>' +
+            '<th></th>' +
+            '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
+            '<th class="expanding"><input type="button" value="Filter by regex" class="filter" />' +
+              '<input class="filter" type="text" id="selection-table-filter' + ST.widgetID + '" /></th>' +
+            '<th><select class="review-filter">' +
+              '<option value="Union" selected>Union</option>' +
+              '<option value="Team">Team</option>' +
+              '<option value="Self">Self</option>' +
+            '</select></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked style="float: left" /></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked style="float: left" /></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
+            '<th><input id="selection-table-batch-color-button' + ST.widgetID +
+                '" type="button" value="Batch color" style="background-color: #ffff00" />' +
+              '<div id="selection-table-batch-color-wheel' + ST.widgetID + '">' +
+                '<div class="batch-colorwheel"></div></div></th>' +
+            '<th></th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +
-          '<tr>' +
-            '<td><img src="' + STATIC_URL_JS + 'images/delete.png" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></td>' +
-            '<td><input type="button" id="selection-table-sort-by-name' + ST.widgetID + '" value="Sort by name" /></td>' +
-            '<td></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked /></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked /></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" /></td>' +
-            '<td><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked /></td>' +
-            '<td><input type="button" id="selection-table-sort-by-color' + ST.widgetID + '" value="Sort by color" /></td>' +
-            '<td><input type="button" id="selection-table-info' + ST.widgetID + '" value="Summary info" /></td>' +
-          '</tr>' +
         '</tbody>';
     container.appendChild(tab);
+
+    $("select.review-filter", tab).on("change",  function () {
+      ST.review_filter = this.value;
+      ST.update();
+    });
+    $("input#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
+        ST.toggleBatchColorWheel.bind(ST));
+    $('th input[type=button].filter', tab).on("click", function() {
+      var filter = $('th input[type=text].filter', tab).val();
+      ST.filterBy(filter);
+    });
+    $('th input[type=text].filter', tab).on("keyup", function(e) {
+      if (13 === e.keyCode) ST.filterBy(this.value);
+    });
+
+    $(tab)
+      .on("click", "td .action-remove", ST, function(e) {
+        var skeletonID = rowToSkeletonID(this);
+        e.data.removeSkeletons([skeletonID]);
+      })
+      .on("click", "td .action-select", ST, function(e) {
+        var skeletonID = rowToSkeletonID(this);
+        CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeletonID );
+      })
+      .on("click", "td .action-annotate", function() {
+        var skeletonID = rowToSkeletonID(this);
+        CATMAID.annotate_neurons_of_skeletons([skeletonID]);
+      })
+      .on("click", "td .action-info", function() {
+        var skeletonID = rowToSkeletonID(this);
+        SelectionTable.prototype.skeleton_info([skeletonID]);
+      })
+      .on("click", "td .action-navigator", function() {
+        var skeletonID = rowToSkeletonID(this);
+        var navigator = new NeuronNavigator();
+        WindowMaker.create('neuron-navigator', navigator);
+        navigator.set_neuron_node_from_skeleton(skeletonID);
+      })
+      .on("click", "td input.action-visibility", ST, function(e) {
+        var table = e.data;
+        var skeletonID = rowToSkeletonID(this);
+        var action = this.dataset.action;
+        var skeleton = table.skeletons[table.skeleton_ids[skeletonID]];
+        var visible = this.checked;
+        skeleton[action] = visible;
+
+        // The first checkbox controls all others
+        if ("selected" === action) {
+          ['pre_visible', 'post_visible', 'text_visible', 'meta_visible'].forEach(function(other, k) {
+            if (visible && 2 === k) return; // don't make text visible
+            skeleton[other] = visible;
+            $('#skeleton' + other + table.widgetID + '-' + skeletonID).prop('checked', visible);
+          });
+        }
+        table.notifyLink(skeleton);
+      })
+      .on("click", "td .action-changecolor", ST, function(e) {
+        var table = e.data;
+        var skeletonID = rowToSkeletonID(this);
+        var skeleton = table.skeletons[table.skeleton_ids[skeletonID]];
+        // Select the inner div, which will contain the color wheel
+        var sel = $('#color-wheel' + table.widgetID + '-' + skeletonID + ' .colorwheel');
+        if (skeleton.cw) {
+          delete skeleton.cw;
+          $('#color-wheel' + table.widgetID + '-' + skeletonID).hide();
+          sel.empty();
+        } else {
+          var cw = Raphael.colorwheel(sel[0], 150);
+          cw.color('#' + skeleton.color.getHexString(), skeleton.opacity);
+          cw.onchange(function(color, alpha) {
+            skeleton.color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
+            skeleton.opacity = alpha;
+            table.gui.update_skeleton_color_button(skeleton);
+            table.notifyLink(skeleton);
+          });
+          skeleton.cw = cw;
+          $('#color-wheel' + table.widgetID + '-' + skeletonID).show();
+        }
+      });
+
+    /**
+     * Find the closest table row element and read out skeleton ID.
+     */
+    function rowToSkeletonID(element) {
+      var skeletonID = $(element).closest("tr").attr("data-skeleton-id");
+      if (!skeletonID) throw new Error("Couldn't find skeleton ID");
+      return skeletonID;
+    }
 
     //addListener(win, container, buttons, ST.destroy.bind(ST));
     win.addListener(
@@ -1404,6 +1472,8 @@ var WindowMaker = new function()
          [document.createTextNode(' - ')],
          ['Hide', GG.hideSelected.bind(GG)],
          ['Show hidden', GG.showHidden.bind(GG), {id: 'graph_show_hidden' + GG.widgetID, disabled: true}],
+         ['lock', GG.applyToNodes.bind(GG, 'lock', true)],
+         ['unlock', GG.applyToNodes.bind(GG, 'unlock', true)],
          [document.createTextNode(' - ')],
          ['Remove', GG.removeSelected.bind(GG)],
          [document.createTextNode(' - ')],
@@ -1417,31 +1487,13 @@ var WindowMaker = new function()
          [' X ', GG.distributeCoordinate.bind(GG, 'x')],
          [' Y ', GG.distributeCoordinate.bind(GG, 'y')]]);
 
-    var n_circles = document.createElement('select');
-    n_circles.setAttribute("id", "n_circles_of_hell" + GG.widgetID);
-    [1, 2, 3, 4, 5].forEach(function(title, i) {
-      var option = document.createElement("option");
-      option.text = title;
-      option.value = title;
-      n_circles.appendChild(option);
-    });
-
     var f = function(name) {
       var e = document.createElement('select');
-      e.setAttribute("id", "n_circles_min_" + name + GG.widgetID);
-      var option = document.createElement("option");
-      option.text = "All " + name;
-      option.value = 0;
-      e.appendChild(option);
-      option = document.createElement("option");
-      option.text = "No " + name;
-      option.value = -1;
-      e.appendChild(option);
+      e.setAttribute("id", "gg_n_min_" + name + GG.widgetID);
+      e.appendChild(new Option("All " + name, 0));
+      e.appendChild(new Option("No " + name, -1));
       for (var i=1; i<51; ++i) {
-        option = document.createElement("option");
-        option.text = i;
-        option.value = i;
-        e.appendChild(option);
+        e.appendChild(new Option(i, i));
       }
       e.selectedIndex = 3; // value of 2 pre or post min
       return e;
@@ -1450,13 +1502,21 @@ var WindowMaker = new function()
     appendToTab(tabs['Grow'],
         [[document.createTextNode('Grow ')],
          ['Circles', GG.growGraph.bind(GG)],
-         [document.createTextNode(" or ")],
-         ['Paths', GG.growPaths.bind(GG)],
          [document.createTextNode(" by ")],
-         [n_circles],
-         [document.createTextNode("hops, limit:")],
+         [createSelect("gg_n_circles_of_hell" + GG.widgetID, [1, 2, 3, 4, 5])],
+         [document.createTextNode(" orders, limit:")],
          [f("upstream")],
-         [f("downstream")]]);
+         [f("downstream")],
+         [document.createTextNode(" - Find ")],
+         ['paths', GG.growPaths.bind(GG)],
+         [document.createTextNode(" by ")],
+         [createSelect("gg_n_hops" + GG.widgetID, [2, 3, 4, 5, 6])],
+         [document.createTextNode(" hops, limit:")],
+         [f("path_synapses")],
+         ['pick sources', GG.pickPathOrigins.bind(GG, 'source'), {id: 'gg_path_source' + GG.widgetID}],
+         ['X', GG.clearPathOrigins.bind(GG, 'source')],
+         ['pick targets', GG.pickPathOrigins.bind(GG, 'target'), {id: 'gg_path_target' + GG.widgetID}],
+         ['X', GG.clearPathOrigins.bind(GG, 'target')]]);
 
     appendToTab(tabs['Export'],
         [['Export GML', GG.exportGML.bind(GG)],
@@ -2031,15 +2091,20 @@ var WindowMaker = new function()
     return win;
   };
 
-  var appendSelect = function(div, name, entries) {
+  var createSelect = function(id, items, use_numbers) {
     var select = document.createElement('select');
-    select.setAttribute("id", div.id + "_" + name);
-    entries.forEach(function(title, i) {
+    select.setAttribute("id", id);
+    items.forEach(function(item, i) {
       var option = document.createElement("option");
-      option.text = title;
-      option.value = i;
+      option.text = item;
+      option.value = use_numbers ? i : item;
       select.appendChild(option);
     });
+    return select;
+  };
+
+  var appendSelect = function(div, name, entries) {
+    var select = createSelect(div.id + "_" + name, entries, true);
     div.appendChild(select);
     return select;
   };
@@ -2175,7 +2240,11 @@ var WindowMaker = new function()
         sync.setAttribute("id", "logtable_username");
         var option = document.createElement("option");
         option.text = "All";
-        option.value = -1;
+        option.value = "All";
+        sync.appendChild(option);
+        option = document.createElement("option");
+        option.text = "Team";
+        option.value = "Team";
         sync.appendChild(option);
         contentbutton.appendChild(sync);
 
@@ -2278,7 +2347,7 @@ var WindowMaker = new function()
         content.style.backgroundColor = "#ffffff";
 
         var bar = document.createElement( "div" );
-        bar.id = "review_buttons";
+        bar.id = "review_widget_buttons";
         bar.setAttribute('class', 'buttonpanel');
 
         var RS = CATMAID.ReviewSystem;
@@ -2311,29 +2380,30 @@ var WindowMaker = new function()
         content.appendChild(bar);
         $(bar).tabs();
 
+        var container = createContainer('review_widget');
+
         var cacheCounter = document.createElement('div');
         cacheCounter.setAttribute("id", "counting-cache");
-        content.appendChild(cacheCounter);
+        container.appendChild(cacheCounter);
 
         var cacheInfoCounter = document.createElement('div');
         cacheInfoCounter.setAttribute("id", "counting-cache-info");
-        content.appendChild(cacheInfoCounter);
+        container.appendChild(cacheInfoCounter);
 
         var label = document.createElement('div');
         label.setAttribute("id", "reviewing_skeleton");
-        content.appendChild(label);
+        container.appendChild(label);
 
-        var container = document.createElement("div");
-        container.setAttribute("id", "project_review_widget");
-        container.style.position = "relative";
-        container.style.width = "100%";
-        container.style.height = "100%";
-        container.style.overflow = "auto";
-        container.style.backgroundColor = "#ffffff";
+        var table = document.createElement("div");
+        table.setAttribute("id", "project_review_widget");
+        table.style.position = "relative";
+        table.style.width = "100%";
+        table.style.overflow = "auto";
+        table.style.backgroundColor = "#ffffff";
+        container.appendChild(table);
+
         content.appendChild(container);
-
-        addListener(win, container, 'review_window_buttons');
-
+        addListener(win, container, 'review_widget_buttons');
         addLogic(win);
 
         return win;
@@ -2927,6 +2997,7 @@ var WindowMaker = new function()
             '<select name="neuron_query_by_annotator" ' +
                 'id="neuron_query_by_annotator{{NA-ID}}" class="">' +
               '<option value="-2">Anyone</option>' +
+              '<option value="Team">Team</option>' +
             '</select>' +
           '</td>' +
         '</tr>' +
@@ -3012,7 +3083,7 @@ var WindowMaker = new function()
 
     // Update annotation cache and add autocompletion to annotation input field
     annotations.update(function() {
-      NA.add_autocomplete_to_input($('.neuron_query_by_annotation_name' +
+      annotations.add_autocomplete_to_input($('.neuron_query_by_annotation_name' +
           NA.widgetID));
     });
 
@@ -3034,7 +3105,7 @@ var WindowMaker = new function()
           return e.id;
         });
         // Refresh display after annotations have been added
-        this.annotate_entities(selected_entity_ids,
+        CATMAID.annotate_entities(selected_entity_ids,
             this.refresh_annotations.bind(this));
     }).bind(NA);
     $('#neuron_annotation_prev_page' + NA.widgetID)[0].onclick =
@@ -3121,7 +3192,7 @@ var WindowMaker = new function()
 
     // Let the navigator initialize the interface within
     // the created container.
-    NN.init_ui(container);
+    NN.init_ui(container, new_nn_instance === undefined);
 
     CATMAID.skeletonListSources.updateGUI();
 

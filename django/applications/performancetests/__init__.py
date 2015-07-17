@@ -2,6 +2,7 @@ import sys
 import gc
 import timeit
 import subprocess
+import compileall
 
 from django.conf import settings
 from .models import TestResult
@@ -62,7 +63,8 @@ class PerformanceTest(object):
             r.save()
     """
 
-    def __init__(self, connection, username, password, template_db_name):
+    def __init__(self, connection, username, password, template_db_name,
+            target_tablespace = None):
         """
         Create a new performance test instance. It expects a database connection
         as parameter. The easiest way to get one is to use django.db.connection.
@@ -74,6 +76,7 @@ class PerformanceTest(object):
         self.password = password
         self.client = Client()
         self.template_db_name = template_db_name
+        self.target_tablespace = target_tablespace
 
     def log(self, msg):
         """
@@ -81,14 +84,16 @@ class PerformanceTest(object):
         """
         print(msg)
 
-    def create_db(self, cursor, db_name, db_template):
+    def create_db(self, cursor, db_name, db_template, tablespace = None):
         """
         Create a new database from a template.
         """
         try:
             self.log("Creating test database")
-            cursor.execute('CREATE DATABASE "%s" WITH TEMPLATE "%s"' %
-                           (db_name, db_template))
+            query = 'CREATE DATABASE "%s" WITH TEMPLATE "%s"' % (db_name, db_template)
+            if tablespace:
+                query += " TABLESPACE %s" % (tablespace,)
+            cursor.execute(query)
             self.log("Database %s successfully created" % db_name)
         except Exception as e:
             sys.stderr.write("Got an error creating the performance test "
@@ -125,13 +130,17 @@ class PerformanceTest(object):
             teardown_test_environment
         setup_test_environment()
 
+        # Make sure all python code is compiled to not include this timing
+        compileall.compile_path(maxlevels=10)
+        self.log("Made sure all Python modules in sys.path are compiled")
+
         # We need a cursor to talk to the database
         cursor = self.connection.cursor()
 
         # Create test database, based on an existing template database
         db_name = "test_%s" % self.template_db_name
 
-        self.create_db(cursor, db_name, self.template_db_name)
+        self.create_db(cursor, db_name, self.template_db_name, self.target_tablespace)
 
         # Store new database configuration
         self.connection.close()

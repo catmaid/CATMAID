@@ -1232,7 +1232,7 @@
 
     new Action({
       helpText: "Connectivity Matrix",
-      buttonID: "data_button_connectivity",
+      buttonID: "data_button_connectivity_matrix",
       buttonName: 'adj_matrix',
       run: function (e) {
           WindowMaker.create('connectivity-matrix');

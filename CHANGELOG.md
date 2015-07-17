@@ -14,10 +14,26 @@ Connectivity widget:
 - Many small performance improvements.
 
 
-Miscellaneous:
+Selection table:
 
-- Selection table: all columns except "action" and "property" can now be used
-  for sorting.
+- The table layout has been streamlined with other tables in CATMAID. All
+  columns except 'action columns' can now be used for sorting. Pagination is now
+  done with the buttons to the right above and below the table, the page length
+  can now be adjusted, too. The summary info button moved into the button panel
+  while the filter input is now part of the table.
+
+- It is now possible to add a new annotation to individual neurons without
+  changing the current selection. This can be  done with the little tag icon in
+  the actions column on the right. The former info button was replaced by a
+  small 'i' icon and clicking the folder icon in the same column will open a
+  Neuron Navigator window for the respective neuron.
+
+- All visibility related colums can be hidden with a new checkbox in the button
+  panel. This might be useful to save space if a selection table is not used to
+  control a 3D viewer.
+
+
+Miscellaneous:
 
 - Neuron search: annotations can now be searched for those by users in the
   review team.

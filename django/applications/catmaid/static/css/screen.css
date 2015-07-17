@@ -777,7 +777,7 @@ table.skeleton-table .ui-icon-close {
 
 table.skeleton-table th input.filter {
   width: 50%;
-  max-width: 8em;
+  max-width: 10em;
 }
 
 /* Center checkboxes in selection table */

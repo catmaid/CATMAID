@@ -730,6 +730,23 @@ def find_next_branchnode_or_end(request, project_id=None):
         raise Exception('Could not obtain next branch node or leaf: ' + str(e))
 
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_children(request, project_id=None):
+    try:
+        tnid = int(request.POST['tnid'])
+        cursor = connection.cursor()
+        cursor.execute('''
+            SELECT id, location_x, location_y, location_z
+            FROM Treenode
+            WHERE parent_id = %s
+            ''', (tnid,))
+
+        children = [[row] for row in cursor.fetchall()]
+        return HttpResponse(json.dumps(children), content_type='text/json')
+    except Exception as e:
+        raise Exception('Could not obtain next branch node or leaf: ' + str(e))
+
+
 @requires_user_role([UserRole.Browse])
 def user_info(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])

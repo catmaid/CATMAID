@@ -2402,8 +2402,9 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
     // is seen.
     treenode_id = SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
   }
-  if (e.shiftKey) {
-    this.cycleThroughBranches(treenode_id, e.altKey ? 1 : 2, true);
+  var branchIndex = e.altKey ? 1 : 2;
+  if (e.shiftKey && this.hasCachedBranches(branchIndex)) {
+    this.cycleThroughBranches(treenode_id, branchIndex, true);
   } else {
     var self = this;
     this.submit(
@@ -2426,7 +2427,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
             }
           } else {
             self.cacheBranches(treenode_id, json);
-            self.cycleThroughBranches(null, e.altKey ? 1 : 2, true);
+            self.cycleThroughBranches(null, branchIndex, true);
           }
         });
   }
@@ -2507,8 +2508,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
 
   // If the existing nextBranches was fetched for this treenode, reuse it to
   // prevent repeated queries when quickly alternating between child and parent.
-  var hasCachedBranches = this.nextBranches && this.nextBranches.tnid === treenode_id;
-  if (cycle || hasCachedBranches) {
+  if (cycle || this.hasCachedBranches(0, treenode_id)) {
     this.cycleThroughBranches(treenode_id, 0, false);
   } else {
     var self = this;
@@ -2518,7 +2518,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
     var queryNode = startFromRealNode ? treenode_id :
         SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
     this.submit(
-        django_url + project.id + "/node/next_branch_or_end",
+        django_url + project.id + "/node/children",
         {tnid: queryNode},
         function(json) {
           // See goToNextBranchOrEndNode for JSON schema description.
@@ -2546,6 +2546,22 @@ SkeletonAnnotations.SVGOverlay.prototype.cacheBranches = function(treenode_id, b
   this.nextBranches = {tnid: treenode_id, branches: branches};
 };
 
+/**
+ * Predicate for whether the requested branch index type is in the branch cache,
+ * optionally checking the originating node ID for the branch information.
+ * @param  {number}  index       0 for child, 1 for node of interest, 2 for next
+ *                               branch.
+ * @param  {number=} treenode_id Originating node for the branch information.
+ * @return {Boolean}             Whether the requested branch information is
+ *                               cached.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.hasCachedBranches = function (index, treenode_id) {
+  return this.nextBranches && // Branches are cached
+      // Requested index is in cache
+      this.nextBranches.branches.length && this.nextBranches.branches[0][index] &&
+      // Branches are for the correct treenode, if given.
+      (!treenode_id || this.nextBranches.tnid === treenode_id);
+};
 
 /**
  * Lets the user select a radius around a node with the help of a small

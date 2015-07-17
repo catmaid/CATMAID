@@ -1,4 +1,4 @@
-## Under development
+## 2015.7.17
 
 Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
 

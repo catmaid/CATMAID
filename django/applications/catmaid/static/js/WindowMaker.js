@@ -818,6 +818,29 @@ var WindowMaker = new function()
           });
         }
         table.notifyLink(skeleton);
+      })
+      .on("click", "td .action-changecolor", ST, function(e) {
+        var table = e.data;
+        var skeletonID = rowToSkeletonID(this);
+        var skeleton = table.skeletons[table.skeleton_ids[skeletonID]];
+        // Select the inner div, which will contain the color wheel
+        var sel = $('#color-wheel' + table.widgetID + '-' + skeletonID + ' .colorwheel');
+        if (skeleton.cw) {
+          delete skeleton.cw;
+          $('#color-wheel' + table.widgetID + '-' + skeletonID).hide();
+          sel.empty();
+        } else {
+          var cw = Raphael.colorwheel(sel[0], 150);
+          cw.color('#' + skeleton.color.getHexString(), skeleton.opacity);
+          cw.onchange(function(color, alpha) {
+            skeleton.color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
+            skeleton.opacity = alpha;
+            table.gui.update_skeleton_color_button(skeleton);
+            table.notifyLink(skeleton);
+          });
+          skeleton.cw = cw;
+          $('#color-wheel' + table.widgetID + '-' + skeletonID).show();
+        }
       });
 
     /**

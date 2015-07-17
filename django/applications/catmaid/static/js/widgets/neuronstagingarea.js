@@ -750,31 +750,12 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
     .addClass("centering");
   td.attr('data-color', '#' + skeleton.color.getHexString());
   td.append(
-    $(document.createElement("button")).attr({
-      id: 'skeletonaction-changecolor-' + widgetID + '-' + skeleton.id,
-      value: 'color'
-    })
-      .click( function( event )
-      {
-        // Select the inner div, which will contain the color wheel
-        var sel = $('#color-wheel' + widgetID + '-' + skeleton.id + ' .colorwheel');
-        if (skeleton.cw) {
-          delete skeleton.cw;
-          $('#color-wheel' + widgetID + '-' + skeleton.id).hide();
-          sel.empty();
-        } else {
-          var cw = Raphael.colorwheel(sel[0], 150);
-          cw.color('#' + skeleton.color.getHexString(), skeleton.opacity);
-          cw.onchange(function(color, alpha) {
-            skeleton.color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
-            skeleton.opacity = alpha;
-            table.gui.update_skeleton_color_button(skeleton);
-            table.notifyLink(skeleton);
-          });
-          skeleton.cw = cw;
-          $('#color-wheel' + widgetID + '-' + skeleton.id).show();
-        }
+    $(document.createElement("button"))
+      .attr({
+        id: 'skeletonaction-changecolor-' + widgetID + '-' + skeleton.id,
+        value: 'color',
       })
+      .addClass('action-changecolor')
       .text('color')
       .css("background-color", '#' + skeleton.color.getHexString())
   );

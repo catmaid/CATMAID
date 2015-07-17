@@ -7,6 +7,14 @@ Key shortcuts / mouse operations:
 - Ctrl + [ or ] now navigates to the next real (non-virtual) parent or child of
   the active node, respectively.
 
+
+Connectivity widget:
+
+- Upstream and downstream partners can now be filtered by synaptic confidence
+  in addition to synaptic count. Synaptic confidence filtering is applied before
+  count filtering. Confidence is taken to be the minimum of the presynaptic
+  and postsynaptic connector confidence.
+
 ### Bug fixes
 
 - 3D viewer: the correct synapse colors are now used when connectors are

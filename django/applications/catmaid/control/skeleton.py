@@ -527,10 +527,13 @@ def skeleton_ancestry(request, project_id=None):
         raise Exception(response_on_error + ':' + str(e))
 
 def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_of_id, cursor):
+    def newSynapseCounts():
+        return [0, 0, 0, 0, 0]
+
     class Partner:
         def __init__(self):
             self.num_nodes = 0
-            self.skids = defaultdict(int) # skid vs synapse count
+            self.skids = defaultdict(newSynapseCounts) # skid vs synapse count
 
     # Dictionary of partner skeleton ID vs Partner
     def newPartner():
@@ -539,7 +542,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     # Obtain the synapses made by all skeleton_ids considering the desired direction of the synapse, as specified by relation_id_1 and relation_id_2:
     cursor.execute('''
-    SELECT t1.skeleton_id, t2.skeleton_id
+    SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
     FROM treenode_connector t1,
          treenode_connector t2
     WHERE t1.skeleton_id IN (%s)
@@ -549,8 +552,8 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     ''' % (','.join(map(str, skeleton_ids)), int(relation_id_1), int(relation_id_2)))
 
     # Sum the number of synapses
-    for srcID, partnerID in cursor.fetchall():
-        partners[partnerID].skids[srcID] += 1
+    for srcID, partnerID, confidence in cursor.fetchall():
+        partners[partnerID].skids[srcID][confidence - 1] += 1
 
     # There may not be any synapses
     if not partners:

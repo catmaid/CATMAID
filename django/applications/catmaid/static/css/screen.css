@@ -540,8 +540,7 @@ div#classification_graph_object img.roiimage {
   border-bottom: 1px solid black;
 }
 
-.connectivity_widget .header th:nth-child(4),
-.connectivity_widget .header th:nth-child(5) {
+.connectivity_widget .threshold-header{
   width: 7em;
 }
 

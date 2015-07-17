@@ -801,7 +801,17 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   rowElement.append( td );
 
   var td = $(document.createElement("td"))
-    .addClass("centering");
+    .addClass("centering")
+    .css("white-space", "nowrap");
+  td.append($(document.createElement("span"))
+      .click(function( event ) {
+        CATMAID.annotate_neurons_of_skeletons([skeleton.id]);
+      })
+      .addClass("ui-icon ui-icon-tag")
+      .attr({
+        alt: "Annotate",
+        title: "Annotate skeleton"
+      }));
   td.append($(document.createElement("span"))
       .click(function( event ) {
         SelectionTable.prototype.skeleton_info([skeleton.id]);

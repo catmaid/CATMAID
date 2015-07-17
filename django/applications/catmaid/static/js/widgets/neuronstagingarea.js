@@ -716,13 +716,15 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
 
   // name
   var name = NeuronNameService.getInstance().getName(skeleton.id);
-  rowElement.append($(document.createElement("td")).append($('<a />')
-      .text(name ? name : 'undefined')
-      .attr('href', '#')
-      .attr('class', 'neuron-selection-link')
-      .click(function() {
-        CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
-      })));
+  rowElement.append($(document.createElement("td"))
+      .addClass("expanding")
+      .append($('<a />')
+        .text(name ? name : 'undefined')
+        .attr('href', '#')
+        .attr('class', 'neuron-selection-link')
+        .click(function() {
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
+        })));
 
   // percent reviewed
   rowElement.append($('<td/>')

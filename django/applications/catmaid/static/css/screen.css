@@ -793,6 +793,16 @@ table.skeleton-table tr td:last-child {
   text-align: center;
 }
 
+table.skeleton-table tr th,
+table.skeleton-table tr td {
+  width: 2em;
+}
+
+table.skeleton-table tr th.expanding,
+table.skeleton-table tr td.expanding {
+  width: auto;
+}
+
 /* Center colorwheel in selection table */
 table.skeleton-table div.colorwheel {
   display: inline;

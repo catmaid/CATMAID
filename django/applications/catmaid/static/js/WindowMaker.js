@@ -728,7 +728,7 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>nr</th>' +
             '<th title="Remove one or all neurons"></th>' +
-            '<th title="Neuron name">name</th>' +
+            '<th class="expanding" title="Neuron name">name</th>' +
             '<th title="% reviewed">rev</th>' +
             '<th title="Select a neuron and control its visibility (3D viewer)">selected</th>' +
             '<th title="Control visibility of pre-synaptic connections (3D viewer)">pre</th>' +
@@ -741,7 +741,7 @@ var WindowMaker = new function()
           '<tr>' +
             '<th></th>' +
             '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
-            '<th><input type="button" value="Filter by regex" class="filter" />' +
+            '<th class="expanding"><input type="button" value="Filter by regex" class="filter" />' +
               '<input class="filter" type="text" id="selection-table-filter' + ST.widgetID + '" /></th>' +
             '<th><select class="review-filter">' +
               '<option value="Union" selected>Union</option>' +
@@ -749,10 +749,10 @@ var WindowMaker = new function()
               '<option value="Self">Self</option>' +
             '</select></th>' +
             '<th><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></th>' +
-            '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked style="float: left" /></th>' +
-            '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked style="float: left" /></th>' +
-            '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
-            '<th style="min-width: 3em"><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked style="float: left" /></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked style="float: left" /></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
+            '<th><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th><input id="selection-table-batch-color-button' + ST.widgetID +
                 '" type="button" value="Batch color" style="background-color: #ffff00" />' +
               '<div id="selection-table-batch-color-wheel' + ST.widgetID + '">' +

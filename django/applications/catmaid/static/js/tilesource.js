@@ -220,6 +220,8 @@
     this.getOverviewLayer = function( layer ) {
       return new CATMAID.DummyOverviewLayer();
     };
+
+    this.transposeTiles = new Set([CATMAID.Stack.ORIENTATION_ZY]);
   };
 
 
@@ -277,13 +279,15 @@
       } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
         return baseURL + 'xz/' + zoomLevel + '/' + col + '_' + slicePixelPosition[0] + '_' + row;
       } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
-        return baseURL + 'yz/' + zoomLevel + '/' + slicePixelPosition[0] + '_' + col + '_' + row;
+        return baseURL + 'yz/' + zoomLevel + '/' + slicePixelPosition[0] + '_' + row + '_' + col;
       }
     };
 
     this.getOverviewLayer = function(layer) {
       return new CATMAID.DummyOverviewLayer();
     };
+
+    this.transposeTiles = new Set([CATMAID.Stack.ORIENTATION_ZY]);
   };
 
 

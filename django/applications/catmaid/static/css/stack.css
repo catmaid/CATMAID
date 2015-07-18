@@ -32,6 +32,11 @@ div.sliceView div.sliceTiles img
 	transform:translateZ(0px);
 }
 
+div.sliceView div.sliceTiles.transpose img
+{
+	transform:rotate3d(1, 1, 0, 180deg);
+}
+
 div.smallMapView,
 div.smallMapView_hidden
 {

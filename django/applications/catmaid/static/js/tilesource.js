@@ -38,9 +38,9 @@
       '3': CATMAID.HDF5TileSource,
       '4': CATMAID.BackslashTileSource,
       '5': CATMAID.LargeDataTileSource,
-      '6': CATMAID.DVIDTileSource,
+      '6': CATMAID.DVIDImageblkTileSource,
       '7': CATMAID.RenderServTileSource,
-      '8': CATMAID.DVIDMultiScaleTileSource
+      '8': CATMAID.DVIDImagetileTileSource
     };
 
     var TileSource = tileSources[tileSourceType];
@@ -193,7 +193,7 @@
   };
 
   /*
-  * Simple tile source type for DVID grayscale8 datatype
+  * Simple tile source type for DVID imageblk (uint8blk, rgba8blk) datatype
   * see https://github.com/janelia-flyem/dvid
   *
   * GET  <api URL>/node/<UUID>/<data name>/raw/<dims>/<size>/<offset>[/<format>][?throttle=true][?queryopts]
@@ -201,7 +201,7 @@
 
   * Source type: 6
   */
-  CATMAID.DVIDTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
+  CATMAID.DVIDImageblkTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
     this.getTileURL = function( project, stack, slicePixelPosition,
         col, row, zoomLevel ) {
@@ -260,7 +260,7 @@
   };
 
   /*
-  * Simple tile source type for DVID multiscale2d datatype
+  * Simple tile source type for DVID imagetile datatype
   * see https://github.com/janelia-flyem/dvid
   *
   * GET  <api URL>/node/<UUID>/<data name>/tile/<dims>/<scaling>/<tile coord>[?noblanks=true]
@@ -268,7 +268,7 @@
   * 
   * Source type: 8
   */
-  CATMAID.DVIDMultiScaleTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
+  CATMAID.DVIDImagetileTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
     this.getTileURL = function(project, stack, slicePixelPosition,
                                col, row, zoomLevel) {

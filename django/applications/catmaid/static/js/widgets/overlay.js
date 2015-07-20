@@ -2509,7 +2509,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
   // If the existing nextBranches was fetched for this treenode, reuse it to
   // prevent repeated queries when quickly alternating between child and parent.
   if (cycle || this.hasCachedBranches(0, treenode_id)) {
-    this.cycleThroughBranches(treenode_id, 0, false);
+    this.cycleThroughBranches(treenode_id, 0, ignoreVirtual);
   } else {
     var self = this;
     var startFromRealNode = SkeletonAnnotations.isRealNode(treenode_id);
@@ -2533,7 +2533,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
               json = json.filter(function(b) { return b[0][0] === childID; });
             }
             self.cacheBranches(treenode_id, json);
-            self.cycleThroughBranches(null, 0, false);
+            self.cycleThroughBranches(null, 0, ignoreVirtual);
           }
         });
   }

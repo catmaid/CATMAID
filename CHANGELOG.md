@@ -2,7 +2,10 @@
 
 ### Features and enhancements
 
+Key shortcuts / mouse operations:
 
+- Ctrl + [ or ] now navigates to the next real (non-virtual) parent or child of
+  the active node, respectively.
 
 ### Bug fixes
 

@@ -591,23 +591,23 @@
     }) );
 
     this.addAction( new Action({
-      helpText: "Go to the parent of the active node",
+      helpText: "Go to the parent of the active node (Ctrl: ignore virtual nodes)",
       keyShortcuts: { "[": [ 219 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), false);
+        activeTracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), (e.ctrlKey || e.metaKey));
         return true;
       }
     }) );
 
     this.addAction( new Action({
-      helpText: "Go to the child of the active node (Subsequent shift+]: cycle through children)",
+      helpText: "Go to the child of the active node (Ctrl: ignore virtual nodes; Subsequent shift+]: cycle through children)",
       keyShortcuts: { "]": [ 221 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, false);
+        activeTracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, (e.ctrlKey || e.metaKey));
         return true;
       }
     }) );

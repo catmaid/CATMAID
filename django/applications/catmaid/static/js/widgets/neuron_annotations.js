@@ -583,12 +583,13 @@
     $("#neuron_query_by_annotator" + this.widgetID).before($newRow);
 
     // By default, sub-annotations should not be included
-    $newRow.find('input[type=checkbox]').attr({
-        checked: false,
-        id: 'neuron_query_include_subannotation' + this.widgetID + '_' +
-            this.nextFieldID,
-        name: 'neuron_query_include_subannotation' + this.widgetID + '_' +
-            this.nextFieldID,
+    $newRow.find('input[type=checkbox]')
+        .prop('checked', false)
+        .attr({
+          id: 'neuron_query_include_subannotation' + this.widgetID + '_' +
+              this.nextFieldID,
+          name: 'neuron_query_include_subannotation' + this.widgetID + '_' +
+              this.nextFieldID,
     });
 
     this.nextFieldID += 1;

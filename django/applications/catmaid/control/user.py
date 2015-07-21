@@ -19,7 +19,8 @@ def access_check(user):
 @user_passes_test(access_check)
 def user_list(request):
     result = []
-    for u in User.objects.all().order_by('last_name', 'first_name'):
+    for u in User.objects.all().select_related('userprofile') \
+            .order_by('last_name', 'first_name'):
         up = u.userprofile
         result.append({
             "id": u.id,

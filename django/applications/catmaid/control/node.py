@@ -749,29 +749,32 @@ def find_children(request, project_id=None):
 
 @requires_user_role([UserRole.Browse])
 def user_info(request, project_id=None):
-    treenode_id = int(request.POST['treenode_id'])
-    ts = Treenode.objects.filter(pk=treenode_id).select_related('user', 'editor')
-    if not ts:
-        ts = Connector.objects.filter(pk=treenode_id).select_related('user', 'editor')
-        if not ts:
-            return HttpResponse(json.dumps({'error': 'Object #%s is not a treenode or a connector' % treenode_id}))
-    t = ts[0]
-    # Get all reviews for this treenode
-    reviewers = []
-    review_times = []
-    for r, rt in Review.objects.filter(treenode=t) \
-            .values_list('reviewer', 'review_time'):
-        reviewers.append(User.objects.filter(pk=r) \
-                .values('username', 'first_name', 'last_name')[0])
-        review_times.append(str(datetime.date(rt)))
+    """Return information on a treenode or connector. This function is called
+    pretty often (with every node activation) and should therefore be as fast
+    as possible.
+    """
+    node_id = int(request.POST['node_id'])
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT n.id, n.user_id, n.editor_id, n.creation_time, n.edition_time,
+               array_agg(r.reviewer_id), array_agg(r.review_time)
+        FROM location n LEFT OUTER JOIN review r ON r.treenode_id = n.id
+        WHERE n.id = %s
+        GROUP BY n.id
+                   ''', (node_id,))
+
+    # We expect only one result node
+    info = cursor.fetchone()
+    if not info:
+        return HttpResponse(json.dumps({
+            'error': 'Object #%s is not a treenode or a connector' % node_id}))
+
     # Build result
-    return HttpResponse(json.dumps({'user': {'username': t.user.username,
-                                             'first_name': t.user.first_name,
-                                             'last_name': t.user.last_name},
-                                    'creation_time': str(datetime.date(t.creation_time)),
-                                    'editor': {'username': t.editor.username,
-                                               'first_name': t.editor.first_name,
-                                               'last_name': t.editor.last_name},
-                                    'edition_time': str(datetime.date(t.edition_time)),
-                                    'reviewers': reviewers,
-                                    'review_times': review_times}))
+    return HttpResponse(json.dumps({
+        'user': info[1],
+        'editor': info[2],
+        'creation_time': str(datetime.date(info[3])),
+        'edition_time': str(datetime.date(info[4])),
+        'reviewers': [r for r in info[5] if r],
+        'review_times': [str(datetime.date(rt)) for rt in info[6] if rt]
+    }))

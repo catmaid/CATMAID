@@ -3566,7 +3566,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
   } else if ('skeleton' === options.connector_color) {
     skeletons.forEach(function(skeleton) {
       var fnConnectorValue = function() { return 0; },
-          fnMakeColor = function() { return skeleton.skeletonmodel.color; };
+          fnMakeColor = function() { return skeleton.skeletonmodel.color.clone(); };
       skeleton.synapticTypes.forEach(function(type) {
         skeleton._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
       });

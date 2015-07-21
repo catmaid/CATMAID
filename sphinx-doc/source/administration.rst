@@ -173,6 +173,20 @@ CATMAID
   `Bad Request (400)` response, make sure you have set your ``ALLOWED_HOSTS``
   setting in the ``settings.py`` file correct.
 
+* Set `Django's <https://docs.djangoproject.com/en/1.6/ref/databases/#persistent-connections>`_
+  ``CONN_MAX_AGE`` setting, if you don't use a greenlet based threading model
+  for your WSGI server's workers (see `here <https://github.com/benoitc/gunicorn/issues/996>`_
+  for an explanation). This setting controls how long (in seconds) a database
+  connection can be re-used. In the default configuration, this is set to ``0``,
+  which causes every request to use a new database connection. To test if this
+  setting can be used in your environment, set it to a value like ``60`` and
+  monitor the number of database connections (e.g. with ``SELECT count(*) FROM
+  pg_stat_activity;``). If this number matches your number of WSGI workers (plus
+  your own ``psql`` connection), everything is fine. If the number increases
+  over time, you should set ``CONN_MAX_AGE`` back to ``0``, because new
+  connections are apparently not closed anymore (which can happen with greenlet
+  based threading).
+
 Making CATMAID available through SSL
 ------------------------------------
 

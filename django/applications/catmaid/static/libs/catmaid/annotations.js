@@ -157,6 +157,8 @@
                       err).show();
                 }
 
+                CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED);
+
                 // Let the neuron name service update itself and execute the
                 // callbackback after this is done
                 NeuronNameService.getInstance().refresh(function() {
@@ -216,6 +218,7 @@
               // Let the neuron name service update itself
               NeuronNameService.getInstance().refresh();
 
+              CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED);
               if (callback) callback(e.message);
             }
           }
@@ -347,5 +350,10 @@
   // Export the annotation cache constructor and a generally available instance.
   CATMAID.AnnotationCache = AnnotationCache;
   CATMAID.annotations = new AnnotationCache();
+
+  // Collect annotation related events in a dedicated object
+  CATMAID.Annotations = {};
+  CATMAID.Events.extend(CATMAID.Annotations);
+  CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED = "annotations_changed";
 
 })(CATMAID);

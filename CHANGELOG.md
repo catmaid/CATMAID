@@ -9,6 +9,8 @@ Key shortcuts / mouse operations:
 
 ### Bug fixes
 
+- 3D viewer: the correct synapse colors are now used when connectors are
+  restricted.
 
 
 ## 2015.7.17

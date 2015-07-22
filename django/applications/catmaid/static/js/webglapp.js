@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID
-  annotations,
   Arbor,
   error,
   fetchSkeletons,
@@ -315,11 +314,11 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
       };
 
       // Update all annotations before, showing the dialog
-      annotations.update(function() {
+      CATMAID.annotations.update(function() {
         dialog.show();
         // Add auto complete to input field
         $(field).autocomplete({
-          source: annotations.getAllNames()
+          source: CATMAID.annotations.getAllNames()
         });
       });
     } else {

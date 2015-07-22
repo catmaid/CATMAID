@@ -3,7 +3,6 @@
 /* global
   CATMAID
   AnalyzeArbor,
-  annotations,
   Arbor,
   checkPermission,
   ConnectorTable,
@@ -897,7 +896,7 @@ NeuronNavigator.Node.prototype.add_neuron_list_table = function($container,
       var deannotate_button = document.createElement('input');
       deannotate_button.setAttribute('type', 'button');
       deannotate_button.setAttribute('value', 'De-annotate ' +
-          annotations.getName(aid));
+          CATMAID.annotations.getName(aid));
       deannotate_button.setAttribute('data-annotationid', aid);
       NeuronNavigator.disable_on_missing_permissions(deannotate_button);
       $container.append(deannotate_button);

@@ -3083,8 +3083,8 @@ var WindowMaker = new function()
     addLogic(win);
 
     // Update annotation cache and add autocompletion to annotation input field
-    annotations.update(function() {
-      annotations.add_autocomplete_to_input($('.neuron_query_by_annotation_name' +
+    CATMAID.annotations.update(function() {
+      CATMAID.annotations.add_autocomplete_to_input($('.neuron_query_by_annotation_name' +
           NA.widgetID));
     });
 

@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  annotations,
   checkPermission,
   InstanceRegistry,
   NeuronNameService,
@@ -282,7 +281,7 @@
           // and replace the clicked on annotation with the result. Pagination
           // will not be applied to expansions.
           var query_data = {
-            'neuron_query_by_annotation': annotations.getID($(this).attr('annotation')),
+            'neuron_query_by_annotation': CATMAID.annotations.getID($(this).attr('annotation')),
           };
           requestQueue.register(django_url + project.id + '/neuron/query-by-annotations',
               'POST', query_data, function(status, text, xml) {
@@ -407,7 +406,7 @@
     var form_data = $('#neuron_query_by_annotations' +
         this.widgetID).serializeArray().reduce(function(o, e) {
           if (0 === e.name.indexOf('neuron_query_by_annotation')) {
-            o[e.name] = annotations.getID(e.value);
+            o[e.name] = CATMAID.annotations.getID(e.value);
           } else if (0 === e.name.indexOf('neuron_query_include_subannotation')) {
             // Expect the annotation field to be read out before this
             var ann_input_name = e.name.replace(
@@ -574,7 +573,7 @@
         value: ''
     });
     // Add autocompletion to it
-    annotations.add_autocomplete_to_input($text);
+    CATMAID.annotations.add_autocomplete_to_input($text);
 
     // Update the button attributes.
     var $button = $newRow.find("input[type='button']");
@@ -669,7 +668,7 @@
   NeuronAnnotations.prototype.refresh_annotations = function() {
     // Update auto completion for input fields
     $('.neuron_query_by_annotation_name' + this.widgetID).autocomplete(
-        "option", {source: annotations.getAllNames()});
+        "option", {source: CATMAID.annotations.getAllNames()});
   };
 
   /**

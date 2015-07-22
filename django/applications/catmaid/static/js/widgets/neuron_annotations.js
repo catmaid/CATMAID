@@ -32,6 +32,10 @@
     this.display_length = 50;
     this.display_start = 0;
     this.total_n_results = 0;
+
+    // Listen to annotation change events to update self when needed
+    CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+        this.handleAnnotationUpdate, this);
   };
 
   NeuronAnnotations.prototype = {};
@@ -50,6 +54,8 @@
     this.unregisterInstance();
     this.unregisterSource();
     NeuronNameService.getInstance().unregister(this);
+    CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+        this.handleAnnotationUpdate, this);
   };
 
   NeuronAnnotations.prototype.append = function() {};
@@ -140,6 +146,15 @@
   };
 
   /* Non-interface methods */
+
+  /**
+   * In the event of annotations being update while this widget is loaded,
+   * update internal use of annotations (e.g. in auto completion).
+   */
+  NeuronAnnotations.prototype.handleAnnotationUpdate = function() {
+    CATMAID.annotations.add_autocomplete_to_input(
+        $('.neuron_query_by_annotation_name' + this.widgetID));
+  };
 
   /**
    * Create a table row and passes it to add_row_fn which should it add it

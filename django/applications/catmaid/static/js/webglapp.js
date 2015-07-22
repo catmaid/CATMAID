@@ -2821,7 +2821,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects
 	this.textlabels = {};
 
   // Used only with restricted connectors
-	this.connectoractor = {};
+	this.connectoractor = null;
 	this.connectorgeometry = {};
 };
 

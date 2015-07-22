@@ -13,6 +13,7 @@
   submitterFn,
   user_groups,
   userprofile,
+  User,
   WebGLApplication
 */
 

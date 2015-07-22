@@ -3505,8 +3505,36 @@ WebGLApplication.prototype.updateConnectorColors = function(select) {
   this.space.updateConnectorColors(this.options, skeletons, this.space.render.bind(this.space));
 };
 
+/**
+ * If restriced connector geometry is in use, update their material and color
+ * with the color of regular connectors. Only a reference is used.
+ */
+WebGLApplication.prototype.Space.prototype.updateRestrictedConnectorColors = function(skeletons) {
+  for (var i=0; i < skeletons.length; ++i) {
+    var s = skeletons[i];
+    // If there is restricted connector geometry displayed, update it, too
+    if (s.connectoractor) {
+      s.synapticTypes.forEach(function(type) {
+        // A reference is fine, the connectoractor material and geometry color
+        // aren't modified directly.
+        this.connectoractor[type].material = this.actor[type].material;
+        this.connectoractor[type].material.needsUpdate = true;
+        this.connectorgeometry[type].colors = this.geometry[type].colors;
+        this.connectorgeometry[type].colorsNeedUpdate = true;
+      }, s);
+    }
+  }
+};
+
 WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(options, skeletons, callback) {
-  if ('cyan-red' === options.connector_color ||
+  // Make all
+  var self = this;
+  var done = function() {
+    self.updateRestrictedConnectorColors(skeletons);
+    if (CATMAID.tools.isFn(callback)) callback();
+  };
+
+   if ('cyan-red' === options.connector_color ||
       'cyan-red-dark' === options.connector_color) {
     var pre = this.staticContent.synapticColors[0],
         post = this.staticContent.synapticColors[1];
@@ -3524,7 +3552,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
       skeleton.completeUpdateConnectorColor(options);
     });
 
-    if (callback) callback();
+    done();
 
   } else if ('by-amount' === options.connector_color) {
 
@@ -3545,7 +3573,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
               skeleton.completeUpdateConnectorColor(options, json[skeleton.id]);
             });
 
-            if (callback) callback();
+            done();
           } catch (e) {
             console.log(e, e.stack);
             alert(e);
@@ -3560,7 +3588,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
         (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(this),
         function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
         (function() {
-          if (callback) callback();
+          done();
           this.render();
         }).bind(this));
   } else if ('skeleton' === options.connector_color) {
@@ -3571,7 +3599,7 @@ WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(opti
         skeleton._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
       });
     });
-    if (callback) callback();
+    done();
   }
 };
 
@@ -3785,8 +3813,11 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_s
         vertices2.push(v);
       }
     }
-		this.connectoractor[type] = new THREE.Line( this.connectorgeometry[type], this.space.staticContent.connectorLineColors[type], THREE.LinePieces );
-		this.space.add( this.connectoractor[type] );
+    this.connectoractor[type] = new THREE.Line( this.connectorgeometry[type],
+        this.actor[type].material, THREE.LinePieces );
+    this.connectorgeometry[type].colors = this.geometry[type].colors;
+    this.connectorgeometry[type].colorsNeedUpdate = true;
+    this.space.add( this.connectoractor[type] );
   }, this);
 };
 

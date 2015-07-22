@@ -12,6 +12,10 @@ Key shortcuts / mouse operations:
 - 3D viewer: the correct synapse colors are now used when connectors are
   restricted.
 
+- If annotations are added or removed, annotation search widgets are updated
+  correctly. You can now search for newly created annotations without having to
+  open a new search widget.
+
 
 ## 2015.7.17
 

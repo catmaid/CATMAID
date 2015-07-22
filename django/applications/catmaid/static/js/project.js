@@ -108,13 +108,15 @@ function Project( pid )
 			if ( stackViewers[ i ].getId() === id )
 			{
 				var removedViews = stackViewers.splice( i, 1 );
+
+				// Announce that this stack view was closed. Do this before
+				// potentially destroying the project.
+				this.trigger(Project.EVENT_STACKVIEW_CLOSED, removedViews[0]);
+
 				if ( stackViewers.length === 0 )
 					self.destroy();
 				else
 					stackViewers[ ( i + 1 ) % stackViewers.length ].getWindow().focus();
-
-				// Announce that this stack view was closed
-				this.trigger(Project.EVENT_STACKVIEW_CLOSED, removedViews[0]);
 			}
 		}
 		CATMAID.ui.onresize();

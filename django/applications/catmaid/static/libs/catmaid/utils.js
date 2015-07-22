@@ -64,16 +64,6 @@ InstanceRegistry.prototype.getLastInstance = function() {
 };
 
 
-/**
- * This a convience constructor to make it very easy to use the neuron name
- * service.
- */
-var NameServiceClient = function()
-{
-
-};
-
-
 /** Adds ability to pick colors almost randomly, keeping state. */
 var Colorizer = function() {};
 

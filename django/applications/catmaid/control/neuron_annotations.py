@@ -521,7 +521,11 @@ def remove_annotation(request, project_id=None, annotation_id=None):
     else:
         message += " There are %s links left to this annotation." % num_left
 
-    return HttpResponse(json.dumps({'message': message}), content_type='text/json')
+    return HttpResponse(json.dumps({
+        'message': message,
+        'deleted_annotation': deleted,
+        'left_uses': num_left
+    }), content_type='text/json')
 
 def create_annotation_query(project_id, param_dict):
 

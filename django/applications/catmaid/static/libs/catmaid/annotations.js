@@ -210,6 +210,9 @@
             if (e.error) {
               new CATMAID.ErrorDialog(e.error, e.detail).show();
             } else {
+              // If the actual annotation was removed, update cache
+              if (e.deleted_annotation) CATMAID.annotations.remove(annotation_id);
+
               // Let the neuron name service update itself
               NeuronNameService.getInstance().refresh();
 
@@ -314,6 +317,19 @@
         throw "Annotation already known with different id/name";
       }
     }, this);
+  };
+
+  /**
+   * Remove an annotation from the cache.
+   */
+  AnnotationCache.prototype.remove = function(annotationID) {
+    var name = this.annotation_names[annotationID];
+    if (name) {
+      delete this.annotation_names[annotationID];
+    }
+    if (name in this.annotation_ids) {
+      delete this.annotation_ids[name];
+    }
   };
 
   /**

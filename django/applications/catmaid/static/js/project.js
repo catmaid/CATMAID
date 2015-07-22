@@ -285,6 +285,9 @@ function Project( pid )
 		document.getElementById( "toolbox_project" ).style.display = "none";
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 
+		CATMAID.statusBar.replaceLast('');
+		CATMAID.statusBar.printCoords('');
+
 		project = null;
 	};
 

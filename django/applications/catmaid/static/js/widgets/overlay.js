@@ -2265,6 +2265,14 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
         wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
         wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
 
+    // As long as stack space Z coordinates are always clamped to the last
+    // section (i.e. if floor() is used instead of round() when transforming),
+    // there is no need to compensate for rounding mismatches of stack view's
+    // discrete Z coordinates (sections). Otherwise, the stack viewer's position
+    // could get larger than the project space position. And this would require
+    // to lower the bounding box's minimum by that difference to have all views
+    // show the same nodes.
+
     var params = {
       left: wx0,
       top: wy0,

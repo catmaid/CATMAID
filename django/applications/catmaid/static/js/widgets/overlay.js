@@ -2245,8 +2245,6 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     self.old_x = stackViewer.x;
     self.old_y = stackViewer.y;
 
-    // (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y
-
     var halfWidth =  (stackViewer.viewWidth  / 2) / stackViewer.scale,
         halfHeight = (stackViewer.viewHeight / 2) / stackViewer.scale;
 

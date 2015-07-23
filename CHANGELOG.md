@@ -16,6 +16,8 @@ Key shortcuts / mouse operations:
   correctly. You can now search for newly created annotations without having to
   open a new search widget.
 
+- The order of the selection table is now remembered before it is refreshed.
+
 
 ## 2015.7.17
 

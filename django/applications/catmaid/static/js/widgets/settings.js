@@ -324,7 +324,7 @@
             dialog.show();
             // Add auto complete to input field
             $(field).autocomplete({
-              source: annotations.getAllNames()
+              source: CATMAID.annotations.getAllNames()
             });
           });
         } else {

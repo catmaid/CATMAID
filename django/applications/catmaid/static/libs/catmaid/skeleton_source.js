@@ -8,6 +8,13 @@
   var SkeletonSource = function() {};
 
   SkeletonSource.prototype = {};
+  CATMAID.asEventSource(SkeletonSource.prototype);
+
+  // Define event constants on prototype so they can be used on inherting
+  // classes directly.
+  SkeletonSource.prototype.EVENT_SOURCE_REMOVED = "skeleton_source_removed";
+  SkeletonSource.prototype.EVENT_SOURCE_UPDATED = "skeleton_source_updated";
+  SkeletonSource.prototype.EVENT_MODELS_CHANGED = "skeleton_source_models_changed";
 
   SkeletonSource.prototype.registerSource = function() {
     CATMAID.skeletonListSources.add(this);
@@ -15,6 +22,8 @@
 
   SkeletonSource.prototype.unregisterSource = function() {
     CATMAID.skeletonListSources.remove(this);
+    // Remove all event listeners
+    this.clearAllEvents();
   };
 
   SkeletonSource.prototype.loadSource = function() {

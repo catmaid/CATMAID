@@ -2219,7 +2219,8 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
         atnid = SkeletonAnnotations.getActiveNodeId();
       }
     }
-    // Include ID only in qery, if it is real
+    // Include ID only in request, if it is real. Otherwise, keep the active
+    // virtual node in the client and inject it into the result.
     var extraNodes;
     if (!SkeletonAnnotations.isRealNode(atnid)) {
       var n = self.nodes[atnid];

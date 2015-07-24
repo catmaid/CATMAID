@@ -35,6 +35,9 @@ Connectivity widget:
 
 - The order of the selection table is now remembered before it is refreshed.
 
+- Connectivity widget: common partners filtering now correctly enforces that
+  partners are partnered with all target neurons, not just any two.
+
 
 ## 2015.7.17
 

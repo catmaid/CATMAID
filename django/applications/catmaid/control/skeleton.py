@@ -562,7 +562,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     # If op is AND, discard entries where only one of the skids has synapses
     if len(skeleton_ids) > 1 and 'AND' == op:
         for partnerID in partners.keys(): # keys() is a copy of the keys
-            if 1 == len(partners[partnerID].skids):
+            if len(skeleton_ids) != len(partners[partnerID].skids):
                 del partners[partnerID]
 
     # With AND it is possible that no common partners exist

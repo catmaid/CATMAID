@@ -443,7 +443,8 @@ div#classification_graph_object img.roiimage {
 }
 
 .buttonpanel label {
-  margin: 0.5em;
+  margin: 0.1em 0.35em;
+  display: inline-block;
 }
 
 .buttonpanel.ui-tabs {

@@ -2141,9 +2141,11 @@ var WindowMaker = new function()
   };
 
   var appendCheckbox = function(div, title, value, onclickFn, left) {
+    var label = document.createElement('label');
     var elems = createCheckbox(title, value, onclickFn);
     if (left) elems.reverse();
-    elems.forEach(function(elem) { div.appendChild(elem); });
+    elems.forEach(function(elem) { label.appendChild(elem); });
+    div.appendChild(label);
     return left ? elems[elems.length - 1] : elems[0];
   };
 
@@ -2153,9 +2155,15 @@ var WindowMaker = new function()
     nf.setAttribute('value', value);
     if (length) nf.setAttribute('size', length);
     if (onchangeFn) nf.onchange = onchangeFn;
-    if (label) div.appendChild(document.createTextNode(label));
-    div.appendChild(nf);
-    if (postlabel) div.appendChild(document.createTextNode(postlabel));
+    if (label || postlabel) {
+      var labelEl = document.createElement('label');
+      if (label) labelEl.appendChild(document.createTextNode(label));
+      labelEl.appendChild(nf);
+      if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
+      div.appendChild(labelEl);
+    } else {
+      div.appendChild(nf);
+    }
     return nf;
   };
 

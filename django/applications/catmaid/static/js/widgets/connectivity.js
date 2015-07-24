@@ -1036,9 +1036,17 @@
         .get(0);
 
     (function (widget) {
+      var changeThresholdDelayedTimer = null;
+
+      var changePartnerThreshold = function (value) {
+        widget.hidePartnerThreshold = value;
+        widget.createConnectivityTable();
+      };
+
       hidePartnerThresholdInput.onchange = function () {
-          widget.hidePartnerThreshold = parseInt(this.value, 10);
-          widget.createConnectivityTable();
+        if (changeThresholdDelayedTimer) window.clearTimeout(changeThresholdDelayedTimer);
+        var value = parseInt(this.value, 10);
+        changeThresholdDelayedTimer = window.setTimeout(changePartnerThreshold.bind(undefined, value), 400);
       };
       hidePartnerThresholdInput.oninput = function (e) {
         if (13 === e.keyCode) {

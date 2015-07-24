@@ -2852,7 +2852,7 @@ var WindowMaker = new function()
           'Funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">' +
           'Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and ' +
           '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +
-          'HHMI Janelia Farm, U.S..<br /><br />' +
+          'HHMI Janelia Research Campus, U.S..<br /><br />' +
           'Visit the <a href="http://www.catmaid.org/" target="_blank">' +
           'CATMAID homepage</a> for further information. You can find the ' +
           'source code on <a href="https://github.com/catmaid/CATMAID">' +

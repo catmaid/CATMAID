@@ -528,7 +528,7 @@ function Project( pid )
 		var fromATextField = false;
 		if (n === "input") {
 			var inputType = fakeEvent.target.type.toLowerCase();
-			if (inputType !== 'checkbox') {
+			if (inputType !== 'checkbox' && inputType !== 'button') {
 				fromATextField = true;
 			}
 		}

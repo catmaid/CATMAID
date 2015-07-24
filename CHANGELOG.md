@@ -20,6 +20,9 @@ Connectivity widget:
 
 - The active node marker now resizes based on the radius of the active node.
 
+- The active node marker can now optionally always be draw on top of other
+  objects, even if it is occluded.
+
 
 ### Bug fixes
 

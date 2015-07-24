@@ -1157,6 +1157,7 @@ var WindowMaker = new function()
           ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
+          ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Black background -', true, adjustFn('show_background'), false],
           ['Floor -', true, adjustFn('show_floor'), false],
           ['Bounding box -', true, adjustFn('show_box'), false],

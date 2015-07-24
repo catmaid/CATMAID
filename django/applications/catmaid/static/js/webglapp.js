@@ -625,6 +625,7 @@ WebGLApplication.prototype.Options = function() {
 	this.show_missing_sections = false;
 	this.missing_section_height = 20;
 	this.show_active_node = true;
+  this.active_node_on_top = false;
 	this.show_floor = true;
 	this.show_background = true;
 	this.show_box = true;
@@ -1904,6 +1905,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
 		this.meshes = [];
 	}
 
+  this.active_node.mesh.material.depthTest = !options.active_node_on_top;
 	this.active_node.setVisible(options.show_active_node);
   this.active_node.updatePosition(space, options);
 };

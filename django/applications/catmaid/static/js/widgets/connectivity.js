@@ -449,6 +449,8 @@
       return skids.concat(Object.keys(partners));
     }, []);
 
+    if (!partnerSkids.length) return new Promise(function (resolve) { resolve(); });
+
     var self = this;
     var request = {skeleton_ids: partnerSkids, whitelist: this.reviewFilter === 'whitelist'};
     if (this.reviewFilter && this.reviewFilter !== 'whitelist') request.user_ids = [this.reviewFilter];

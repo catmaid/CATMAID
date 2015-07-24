@@ -2016,9 +2016,9 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         expected_result = {
             "outgoing_reviewers": [],
-            "outgoing": {"361": {"skids": {"235": 1}, "num_nodes": 9},
-                         "373": {"skids": {"235": 2}, "num_nodes": 5}},
-            "incoming": {"235": {"skids": {"373": 2}, "num_nodes": 28}},
+            "outgoing": {"361": {"skids": {"235": [0, 0, 0, 0, 1]}, "num_nodes": 9},
+                         "373": {"skids": {"235": [0, 0, 0, 0, 2]}, "num_nodes": 5}},
+            "incoming": {"235": {"skids": {"373": [0, 0, 0, 0, 2]}, "num_nodes": 28}},
             "incoming_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 

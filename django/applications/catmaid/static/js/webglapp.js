@@ -1905,7 +1905,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(o
 	}
 
 	this.active_node.setVisible(options.show_active_node);
-	CATMAID.tools.setXYZ(this.active_node.mesh.scale, options.skeleton_node_scaling);
+  this.active_node.updatePosition(space, options);
 };
 
 WebGLApplication.prototype.Space.prototype.View = function(space) {
@@ -2722,7 +2722,7 @@ WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = functio
 
 WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode = function(options) {
   this.skeleton_id = null;
-  this.mesh = new THREE.Mesh( new THREE.IcosahedronGeometry(40, 2), new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
+  this.mesh = new THREE.Mesh( new THREE.IcosahedronGeometry(1, 2), new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
   CATMAID.tools.setXYZ(this.mesh.scale, options.skeleton_node_scaling);
 };
 
@@ -2750,6 +2750,10 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
   space.toSpace(c);
   
   this.mesh.position.set(c.x, c.y, c.z);
+
+  var overlay = SkeletonAnnotations.getSVGOverlay(SkeletonAnnotations.getActiveStackViewerId());
+  var radius = overlay.nodes[SkeletonAnnotations.getActiveNodeId()].radius;
+  CATMAID.tools.setXYZ(this.mesh.scale, radius > 0 ? radius : 40 * options.skeleton_node_scaling);
 };
 
 WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json, options) {

@@ -15,6 +15,12 @@ Connectivity widget:
   count filtering. Confidence is taken to be the minimum of the presynaptic
   and postsynaptic connector confidence.
 
+
+3D Viewer:
+
+- The active node marker now resizes based on the radius of the active node.
+
+
 ### Bug fixes
 
 - 3D viewer: the correct synapse colors are now used when connectors are

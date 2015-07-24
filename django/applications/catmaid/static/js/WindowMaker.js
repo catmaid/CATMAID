@@ -1008,9 +1008,6 @@ var WindowMaker = new function()
     connectorRestrictions.appendChild(document.createTextNode('Connector restriction'));
     connectorRestrictions.appendChild(connectorRestrictionsSl);
 
-    var orthographicCbElems = createCheckbox('Orthographic mode', false,
-        function() { WA.updateCameraView(this.checked); });
-
     appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
@@ -1021,11 +1018,10 @@ var WindowMaker = new function()
           ['ZX', WA.ZXView.bind(WA)],
           [storedViewsSelect],
           ['Save view', storeView],
-          [connectorRestrictions],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
+          [connectorRestrictions],
           ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
-          [orthographicCbElems[0]],
-          [orthographicCbElems[1]],
+          ['Orthographic mode', false, function() { WA.updateCameraView(this.checked); }, false],
         ]);
 
     // Wait for the 3D viewer to have initialized to get existing views
@@ -1158,20 +1154,20 @@ var WindowMaker = new function()
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
-          ['Black background -', true, adjustFn('show_background'), false],
-          ['Floor -', true, adjustFn('show_floor'), false],
-          ['Bounding box -', true, adjustFn('show_box'), false],
-          ['Z plane -', false, adjustFn('show_zplane'), false],
+          ['Black background', true, adjustFn('show_background'), false],
+          ['Floor', true, adjustFn('show_floor'), false],
+          ['Bounding box', true, adjustFn('show_box'), false],
+          ['Z plane', false, adjustFn('show_zplane'), false],
           ['Missing sections', false, adjustFn('show_missing_sections'), false],
-          [' with height: ', o.missing_section_height, ' % - ', function() {
+          ['with height:', o.missing_section_height, ' %', function() {
               WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));
               WA.adjustStaticContent();
-            }, 10],
-          ['Line width ', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 10],
+            }, 4],
+          ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
         ]);
 
     var nodeScalingInput = appendNumericField(tabs['View settings'],
-        'Node handle scaling ', o.skeleton_node_scaling, null, function() {
+        'Node handle scaling', o.skeleton_node_scaling, null, function() {
               WA.options.skeleton_node_scaling = Math.max(0, this.value) || 1.0;
               WA.adjustContent();
               WA.updateSkeletonNodeHandleScaling(this.value);
@@ -1179,22 +1175,22 @@ var WindowMaker = new function()
 
     appendToTab(tabs['Skeleton filters'],
         [
-          ['Smooth ', o.smooth_skeletons, function() { WA.options.smooth_skeletons = this.checked; WA.updateSkeletons(); }, false],
-          [' with sigma ', o.smooth_skeletons_sigma, ' nm -', function() { WA.updateSmoothSkeletonsSigma(this.value); }, 10],
-          ['Resample ', o.resample_skeletons, function() { WA.options.resample_skeletons = this.checked; WA.updateSkeletons(); }, false],
-          [' with delta ', o.resampling_delta, ' nm -', function() { WA.updateResampleDelta(this.value); }, 10],
+          ['Smooth', o.smooth_skeletons, function() { WA.options.smooth_skeletons = this.checked; WA.updateSkeletons(); }, false],
+          ['with sigma', o.smooth_skeletons_sigma, ' nm', function() { WA.updateSmoothSkeletonsSigma(this.value); }, 10],
+          ['Resample', o.resample_skeletons, function() { WA.options.resample_skeletons = this.checked; WA.updateSkeletons(); }, false],
+          ['with delta', o.resampling_delta, ' nm', function() { WA.updateResampleDelta(this.value); }, 10],
           ['Lean mode (no synapses, no tags)', o.lean_mode, function() { WA.options.lean_mode = this.checked; WA.updateSkeletons();}, false],
         ]);
 
     appendToTab(tabs['Shading parameters'],
         [
-          ['Synapse clustering bandwidth ', o.synapse_clustering_bandwidth, ' nm - ', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 6],
-          ['Near active node ', o.distance_to_active_node, ' nm - ', function() {
+          ['Synapse clustering bandwidth', o.synapse_clustering_bandwidth, ' nm', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 6],
+          ['Near active node', o.distance_to_active_node, ' nm', function() {
             WA.updateActiveNodeNeighborhoodRadius(this.value); }, 6],
-          ['Min. synapse-free cable ', o.min_synapse_free_cable, ' nm - ', function() {
+          ['Min. synapse-free cable', o.min_synapse_free_cable, ' nm', function() {
             WA.updateShadingParameter('min_synapse_free_cable', this.value, 'synapse-free'); }, 6],
-          ['Strahler number ', o.strahler_cut, ' - ', function() { WA.updateShadingParameter('strahler_cut', this.value, 'dendritic-backbone'); }, 4],
-          ['Tag (regex): ', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4]
+          ['Strahler number', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, 'dendritic-backbone'); }, 4],
+          ['Tag (regex):', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4]
         ]);
 
     var axisOptions = document.createElement('select');
@@ -1205,6 +1201,9 @@ var WindowMaker = new function()
     axisOptions.onchange = function() {
       WA.options.animation_axis = this.value;
     };
+    var axisOptionsLabel = document.createElement('label');
+    axisOptionsLabel.appendChild(document.createTextNode('Rotation axis:'));
+    axisOptionsLabel.appendChild(axisOptions);
 
     appendToTab(tabs['Animation'],
         [
@@ -1220,15 +1219,14 @@ var WindowMaker = new function()
             }
           }],
           ['Stop', WA.stopAnimation.bind(WA)],
-          [document.createTextNode(' Rotation axis:')],
-          [axisOptions],
-          [' Rotation speed', o.animation_rotation_speed, '', function() {
+          [axisOptionsLabel],
+          ['Rotation speed', o.animation_rotation_speed, '', function() {
             WA.options.animation_rotation_speed = parseFloat(this.value);
            }, 5],
-          ['Back and forth ', o.animation_back_forth, function() {
+          ['Back and forth', o.animation_back_forth, function() {
             WA.options.animation_back_forth = this.checked;
           }, false],
-          ['Stepwise neuron visibility ', o.animation_stepwise_visibility, function() {
+          ['Stepwise neuron visibility', o.animation_stepwise_visibility, function() {
             WA.options.animation_stepwise_visibility = this.checked;
           }, false]
         ]);

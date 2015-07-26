@@ -334,6 +334,7 @@ def split_skeleton(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
     skeleton_id = treenode.skeleton_id
+    project_id = int(project_id)
     upstream_annotation_map = json.loads(request.POST.get('upstream_annotation_map'))
     downstream_annotation_map = json.loads(request.POST.get('downstream_annotation_map'))
     cursor = connection.cursor()
@@ -350,7 +351,6 @@ def split_skeleton(request, project_id=None):
           "One part has to keep the whole set of annotations!")
 
     skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
-    project_id=int(project_id)
 
     # retrieve neuron of this skeleton
     neuron = ClassInstance.objects.get(

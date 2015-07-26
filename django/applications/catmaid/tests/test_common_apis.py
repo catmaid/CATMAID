@@ -2005,6 +2005,66 @@ class ViewPageTests(TestCase):
                 "error": "Can't split at the root node: it doesn't have a parent."}
         self.assertEqual(expected_result, parsed_response)
 
+    def test_split_skeleton_annotations(self):
+        self.fake_authentication()
+
+        # Annotate skeleton with three test annotations.
+        old_skeleton_id = 2388
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'A',
+             'annotations[1]': 'B',
+             'annotations[2]': 'C',
+             'skeleton_ids[0]': old_skeleton_id})
+        self.assertEqual(response.status_code, 200)
+
+        # Expect an error if some annotations are not assigned.
+        response = self.client.post(
+            '/%d/skeleton/split' % (self.test_project_id,),
+            {'treenode_id': 2394,
+             'upstream_annotation_map':   json.dumps({'A': self.test_user_id}),
+             'downstream_annotation_map': json.dumps({'C': self.test_user_id})})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = "Annotation distribution is not valid for splitting. " \
+                          "One part has to keep the whole set of annotations!"
+        self.assertEqual(expected_result, parsed_response['error'])
+
+        # Expect an error if all annotations are assigned, but neither part has
+        # all.
+        response = self.client.post(
+            '/%d/skeleton/split' % (self.test_project_id,),
+            {'treenode_id': 2394,
+             'upstream_annotation_map':   json.dumps({'A': self.test_user_id, 'B': self.test_user_id}),
+             'downstream_annotation_map': json.dumps({'C': self.test_user_id, 'B': self.test_user_id})})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = "Annotation distribution is not valid for splitting. " \
+                          "One part has to keep the whole set of annotations!"
+        self.assertEqual(expected_result, parsed_response['error'])
+
+        # Test correct assignment of annotations in normal case, including
+        # removal of annotation from skeleton retaining original ID.
+        response = self.client.post(
+            '/%d/skeleton/split' % (self.test_project_id,),
+            {'treenode_id': 2394,
+             'upstream_annotation_map':   json.dumps({'A': self.test_user_id, 'B': self.test_user_id}),
+             'downstream_annotation_map': json.dumps({'A': self.test_user_id, 'B': self.test_user_id, 'C': self.test_user_id})})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        new_skeleton_id = parsed_response['skeleton_id']
+
+        response = self.client.post(
+            '/%d/skeleton/annotationlist' % (self.test_project_id,),
+            {'skeleton_ids[0]': old_skeleton_id,
+             'skeleton_ids[1]': new_skeleton_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        old_skeleton_annotations = set([parsed_response['annotations'][str(aid['id'])] for aid in parsed_response['skeletons'][str(old_skeleton_id)]['annotations']])
+        new_skeleton_annotations = set([parsed_response['annotations'][str(aid['id'])] for aid in parsed_response['skeletons'][str(new_skeleton_id)]['annotations']])
+        self.assertEqual(old_skeleton_annotations, set(['A', 'B']))
+        self.assertEqual(new_skeleton_annotations, set(['A', 'B', 'C']))
+
     def test_skeleton_connectivity(self):
         self.fake_authentication()
 

@@ -26,7 +26,7 @@ Connectivity widget:
 
 Miscellaneous:
 
-- Neuron navigator: neuron name filtering is now case-insensitive.
+- Neuron navigator: neuron name and annotation search are now case-insensitive.
 
 
 ### Bug fixes

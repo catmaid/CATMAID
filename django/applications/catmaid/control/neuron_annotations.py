@@ -863,7 +863,7 @@ def list_annotations_datatable(request, project_id=None):
             'cici.class_instance_b = class_instance.id %s' % conditions})
 
     if len(search_term) > 0:
-        annotation_query = annotation_query.filter(name__regex=search_term)
+        annotation_query = annotation_query.filter(name__iregex=search_term)
 
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))

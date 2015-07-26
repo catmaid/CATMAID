@@ -645,57 +645,6 @@ def skeleton_info_raw(request, project_id=None):
             content_type='text/json')
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeleton_info(request, project_id=None, skeleton_id=None):
-    # This function can take as much as 15 seconds for a mid-sized arbor
-    # Problems in the generated SQL:
-    # 1. Many repetitions of the query: SELECT ...  FROM "relation" WHERE "relation"."project_id" = 4. Originates in one call per connected skeleton, in Skeleton._fetch_upstream_skeletons and _fetch_downstream_skeletons
-    # 2. Usage of WHERE project_id = 4, despite IDs being unique. Everywhere.
-    # 3. Lots of calls to queries similar to: SELECT ...  FROM "class_instance" WHERE "class_instance"."id" = 17054183
-
-
-    p = get_object_or_404(Project, pk=project_id)
-
-    synaptic_count_high_pass = int( request.POST.get( 'threshold', 10 ) )
-
-
-    skeleton = Skeleton( skeleton_id, project_id )
-
-    data = {
-        'incoming': {},
-        'outgoing': {}
-    }
-
-    for skeleton_id_upstream, synaptic_count in skeleton.upstream_skeletons.items():
-        if synaptic_count >= synaptic_count_high_pass:
-            tmp_skeleton = Skeleton( skeleton_id_upstream )
-            data['incoming'][skeleton_id_upstream] = {
-                'synaptic_count': synaptic_count,
-                'skeleton_id': skeleton_id_upstream,
-                'percentage_reviewed': '%i' % tmp_skeleton.percentage_reviewed(),
-                'node_count': tmp_skeleton.node_count(),
-                'name': '{0} / skeleton {1}'.format( tmp_skeleton.neuron.name, skeleton_id_upstream)
-            }
-
-    for skeleton_id_downstream, synaptic_count in skeleton.downstream_skeletons.items():
-        if synaptic_count >= synaptic_count_high_pass:
-            tmp_skeleton = Skeleton( skeleton_id_downstream )
-            data['outgoing'][skeleton_id_downstream] = {
-                'synaptic_count': synaptic_count,
-                'skeleton_id': skeleton_id_downstream,
-                'percentage_reviewed': '%i' % tmp_skeleton.percentage_reviewed(),
-                'node_count': tmp_skeleton.node_count(),
-                'name': '{0} / skeleton {1}'.format( tmp_skeleton.neuron.name, skeleton_id_downstream)
-            }
-
-    result = {
-        'incoming': list(reversed(sorted(data['incoming'].values(), key=itemgetter('synaptic_count')))),
-        'outgoing': list(reversed(sorted(data['outgoing'].values(), key=itemgetter('synaptic_count'))))
-    }
-    json_return = json.dumps(result, sort_keys=True, indent=4)
-    return HttpResponse(json_return, content_type='text/json')
-
-
 @requires_user_role(UserRole.Browse)
 def connectivity_matrix(request, project_id=None):
     # sanitize arguments

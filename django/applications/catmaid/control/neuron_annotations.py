@@ -249,7 +249,7 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
 
     search_term = request.POST.get('sSearch', '')
     if len(search_term) > 0:
-        neuron_query = neuron_query.filter(name__regex=search_term)
+        neuron_query = neuron_query.filter(name__iregex=search_term)
 
     should_sort = request.POST.get('iSortCol_0', False)
     if should_sort:

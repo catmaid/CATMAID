@@ -24,6 +24,11 @@ Connectivity widget:
   objects, even if it is occluded.
 
 
+Miscellaneous:
+
+- Neuron navigator: neuron name filtering is now case-insensitive.
+
+
 ### Bug fixes
 
 - 3D viewer: the correct synapse colors are now used when connectors are

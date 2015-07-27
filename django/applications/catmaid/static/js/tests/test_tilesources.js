@@ -50,7 +50,7 @@ QUnit.test('Tile sources test', function( assert ) {
         "Tile source 5 produces correct URL");
 
     var ts6 = CATMAID.getTileSource(6, baseURL, fileExt, tw, th);
-    assert.ok(ts6 instanceof CATMAID.DVIDTileSource,
+    assert.ok(ts6 instanceof CATMAID.DVIDImageblkTileSource,
             "CATMAID.getTileSource maps type 6 correctly");
     assert.equal(ts6.getTileURL(p, s, spp, c, r, z),
         "https://example.com/512_514/2048_2570_3/png",
@@ -64,7 +64,7 @@ QUnit.test('Tile sources test', function( assert ) {
         "Tile source 7 produces correct URL");
 
     var ts8 = CATMAID.getTileSource(8, baseURL, fileExt, tw, th);
-    assert.ok(ts8 instanceof CATMAID.DVIDMultiScaleTileSource,
+    assert.ok(ts8 instanceof CATMAID.DVIDImagetileTileSource,
             "CATMAID.getTileSource maps type 8 correctly");
     assert.equal(ts8.getTileURL(p, s, spp, c, r, z),
         "https://example.com/xy/0/4_5_3",
@@ -77,6 +77,6 @@ QUnit.test('Tile sources test', function( assert ) {
     var stackZY = CATMAID.tools.deepCopy(s);
     stackZY.orientation = CATMAID.Stack.ORIENTATION_ZY;
     assert.equal(ts8.getTileURL(p, stackZY, spp, c, r, z),
-        "https://example.com/yz/0/3_4_5",
+        "https://example.com/yz/0/3_5_4",
         "Tile source 8 produces correct URL for ZY stack");
 });

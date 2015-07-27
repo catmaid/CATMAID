@@ -263,15 +263,22 @@
         // slices.
         if (zS >= toSZ) return null;
 
-        var vnID = backwards ?
-          SkeletonAnnotations.getVirtualNodeID(to.id, from.id, zS) :
-          SkeletonAnnotations.getVirtualNodeID(from.id, to.id, zS);
         var zRatio = (nSteps * self.virtualNodeStep) / zDiffAbs;
+
+        // Get project space coordinates for virtual node ID
+        var xp = from.x + (to.x - from.x) * zRatio;
+        var yp = from.y + (to.y - from.y) * zRatio;
+        var zp = from.z + (to.z - from.z) * zRatio;
+
+        var vnID = backwards ?
+          SkeletonAnnotations.getVirtualNodeID(to.id, from.id, xp, yp, zp) :
+          SkeletonAnnotations.getVirtualNodeID(from.id, to.id, xp, yp, zp);
+
         return {
           id: vnID,
-          x: from.x + (to.x - from.x) * zRatio,
-          y: from.y + (to.y - from.y) * zRatio,
-          z: from.z + (to.z - from.z) * zRatio,
+          x: xp,
+          y: yp,
+          z: zp,
           stack: stack,
           to: to,
           refIndex: refIndex

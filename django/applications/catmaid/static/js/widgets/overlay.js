@@ -54,7 +54,25 @@ var SkeletonAnnotations = {
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
   EVENT_SKELETON_CHANGED: "tracing_skeleton_changed",
   EVENT_NODE_CREATED: "tracing_node_Create"
+
 };
+
+/**
+ * Raise an error if any essential field is falsy.
+ */
+SkeletonAnnotations.atn.validate = (function() {
+  var essentialFields = ['id', 'skeleton_id', 'type', 'x', 'y', 'z'];
+
+  return  function(node) {
+    var emptyFields = essentialFields.filter(function(f) {
+        return null === node[f] || undefined === node[f];
+      });
+    if (emptyFields.length > 0) {
+      throw new CATMAID.ValueError("Could not set node " + node.id + " active. " +
+          "The following input fields are missing: " + emptyFields.join(', '));
+    }
+  };
+})();
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
@@ -82,6 +100,8 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
               (this.x !== node.x) ||
               (this.parent_id !== node.parent_id) ||
               (this.stack_viewer_id !== stack_viewer_id);
+
+    SkeletonAnnotations.atn.validate(node);
 
     // Assign new properties
     this.id = node.id;
@@ -3091,6 +3111,10 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
       nodeID = SkeletonAnnotations.getParentOfVirtualNode(nodeID);
     }
     var skid = SkeletonAnnotations.getActiveSkeletonId();
+    if (!skid) {
+      CATMAID.error("No active skeleton set for node " + nodeID);
+      return;
+    }
     // TODO could be done by inspecting the graph locally if it is loaded in the
     // 3D viewer or treenode table (but either source may not be up to date)
     this.submit(

@@ -1812,7 +1812,10 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     for (var nid in m) {
       if (m.hasOwnProperty(nid)) {
         var node = this.nodes[nid];
-        this.labels[nid] = new OverlayLabel(nid, this.paper, node.x, node.y, fontSize, m[nid]);
+        // Only add labels for nodes in current section
+        if (0 === node.zdiff) {
+          this.labels[nid] = new OverlayLabel(nid, this.paper, node.x, node.y, fontSize, m[nid]);
+        }
       }
     }
   }

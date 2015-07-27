@@ -18,9 +18,14 @@ Connectivity widget:
 
 3D Viewer:
 
+- Tags matching a custom regex can be shown as handle spheres in addition to
+  tags containing "uncertain" or "end". Note that after entering the regex in
+  the "View Settings" tab the viewer must be refreshed from the "Main" tab
+  before tag spheres are updated.
+
 - The active node marker now resizes based on the radius of the active node.
 
-- The active node marker can now optionally always be draw on top of other
+- The active node marker can now optionally always be drawn on top of other
   objects, even if it is occluded.
 
 

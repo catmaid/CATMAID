@@ -630,6 +630,7 @@ WebGLApplication.prototype.Options = function() {
 	this.show_background = true;
 	this.show_box = true;
 	this.show_zplane = false;
+  this.custom_tag_spheres_regex = '';
 	this.connector_filter = false;
   this.shading_method = 'none';
   this.color_method = 'none';
@@ -1546,7 +1547,8 @@ WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, 
   this.textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
   // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
   this.labelColors = {uncertain: new THREE.MeshBasicMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
-                      todo: new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true})};
+                      todo:      new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true}),
+                      custom:    new THREE.MeshBasicMaterial({color: 0xaa70ff, opacity:0.6, transparent: true})};
   this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache();
   this.synapticColors = [new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ), new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } )];
   this.connectorLineColors = {'presynaptic_to': new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6}),
@@ -1578,8 +1580,9 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.dispose = fun
 
   // dispose shared materials
   this.textMaterial.dispose();
-  this.labelColors.uncertain.dispose();
-  this.labelColors.todo.dispose();
+  Object.keys(this.labelColors).forEach(function (labelType) {
+    this.labelColors[labelType].dispose();
+  }, this);
   this.synapticColors[0].dispose();
   this.synapticColors[1].dispose();
 };
@@ -2774,7 +2777,8 @@ WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmod
  *  Each geometry has its own mesh material and can be switched independently.
  *  In addition, each skeleton node with a pre- or postsynaptic relation to a connector
  *  gets a clickable sphere to represent it.
- *  Nodes with an 'uncertain' or 'todo' in their text tags also get a sphere.
+ *  Nodes matching a custom tag filter or with an 'uncertain' or 'todo' in their
+ *  text tags also get a sphere.
  *
  *  When visualizing only the connectors among the skeletons visible in the WebGL space, the geometries of the pre- and postsynaptic edges are hidden away, and a new pair of geometries are created to represent just the edges that converge onto connectors also related to by the other skeletons.
  *
@@ -4033,6 +4037,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 	}, this);
 
 	// Place spheres on nodes with special labels, if they don't have a sphere there already
+  var customTagRe = new RegExp(options.custom_tag_spheres_regex || 'a^', 'g');
 	for (var tag in this.tags) {
 		if (this.tags.hasOwnProperty(tag)) {
 			var tagLC = tag.toLowerCase();
@@ -4050,7 +4055,14 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 							options.skeleton_node_scaling);
 					}
 				}, this);
-			}
+			} else if (customTagRe.test(tagLC)) {
+        this.tags[tag].forEach(function(nodeID) {
+          if (!this.specialTagSpheres[nodeID]) {
+            this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.custom,
+              options.skeleton_node_scaling);
+          }
+        }, this);
+      }
 		}
 	}
 

@@ -1164,6 +1164,7 @@ var WindowMaker = new function()
               WA.adjustStaticContent();
             }, 4],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
+          ['Custom Tags (regex):', o.custom_tag_spheres_regex, '', function() { WA.options.custom_tag_spheres_regex = this.value; }, 10]
         ]);
 
     var nodeScalingInput = appendNumericField(tabs['View settings'],

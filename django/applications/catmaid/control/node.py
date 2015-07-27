@@ -343,10 +343,17 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
 
         labels = defaultdict(list)
         if includeLabels:
-            z1 = params['z1']
-            z2 = params['z2']
+            # Avoid dict lookups in loop
+            top, left, z1 = params['top'], params['left'], params['z1']
+            bottom, right, z2 = params['bottom'], params['right'], params['z2']
+
+            def is_visible(r):
+                return r[2] >= left and r[2] < right and \
+                    r[3] >= top and r[3] < bottom and \
+                    r[4] >= z1 and r[4] < z2
+
             # Collect treenodes visible in the current section
-            visible = ','.join('({0})'.format(row[0]) for row in treenodes if row[4] >= z1 and row[4] < z2)
+            visible = ','.join('({0})'.format(row[0]) for row in treenodes if is_visible(row))
             if visible:
                 cursor.execute('''
                 SELECT tnid, class_instance.name

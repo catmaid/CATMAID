@@ -179,6 +179,8 @@
     //var stack = self.stackViewer.primaryStack;
 
     var arbor = arborParser.arbor;
+    var nodeID = SkeletonAnnotations.isRealNode(node.id) ? node.id :
+      SkeletonAnnotations.getParentOfVirtualNode(node.id);
     var nodesToOrder = arbor.nodesOrderFrom(node.id);
 
     if (this.simplify) {

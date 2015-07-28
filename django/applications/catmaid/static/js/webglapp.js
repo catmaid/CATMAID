@@ -50,10 +50,9 @@ WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
 	}
 	this.divID = divID;
 	this.container = document.getElementById(divID);
-  this.stack = project.focusedStackViewer.primaryStack;
   this.submit = new submitterFn();
 	this.options = new WebGLApplication.prototype.OPTIONS.clone();
-	this.space = new this.Space(canvasWidth, canvasHeight, this.container, this.stack, this.options);
+	this.space = new this.Space(canvasWidth, canvasHeight, this.container, project.focusedStackViewer.primaryStack, this.options);
   this.updateActiveNodePosition();
   project.on(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
   project.on(Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
@@ -434,7 +433,6 @@ WebGLApplication.prototype.exportCatalogSVG = function() {
 
 WebGLApplication.prototype.exportSkeletonsAsCSV = function() {
   var sks = this.space.content.skeletons,
-      yD = this.space.yDimension,
       rows = ["skeleton_id, treenode_id, parent_treenode_id, x, y, z"];
   Object.keys(sks).forEach(function(skid) {
     var vs = sks[skid].getPositions(),
@@ -443,8 +441,7 @@ WebGLApplication.prototype.exportSkeletonsAsCSV = function() {
     edges[arbor.root] = '';
     Object.keys(vs).forEach(function(tnid) {
       var v = vs[tnid];
-      // Transform back to Stack coords
-      rows.push(skid + "," + tnid + "," + edges[tnid]  + "," + v.x + "," + (yD - v.y) + "," + (-v.z));
+      rows.push(skid + "," + tnid + "," + edges[tnid]  + "," + v.x + "," + v.y + "," + v.z);
     });
   });
   saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "skeleton_coordinates.csv");
@@ -1275,13 +1272,14 @@ WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
 
 	this.canvasWidth = w;
 	this.canvasHeight = h;
-	this.yDimension = stack.dimension.y * stack.resolution.y;
 
+  var p = stack.createStackToProjectBox(stack.createStackExtentsBox());
+  this.dimensions = {
+    min: new THREE.Vector3(p.min.x, p.min.y, p.min.z),
+    max: new THREE.Vector3(p.max.x, p.max.y, p.max.z)
+  };
 	// Absolute center in Space coordinates (not stack coordinates)
 	this.center = this.createCenter();
-	this.dimensions = new THREE.Vector3(stack.dimension.x * stack.resolution.x,
-                                      stack.dimension.y * stack.resolution.y,
-                                      stack.dimension.z * stack.resolution.z);
 
 	// Set the node scaling for skeletons so that it makes nodes not too big for
 	// higher resolutions and not too small for lower ones.
@@ -1297,7 +1295,7 @@ WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
 	this.pickingTexture.generateMipmaps = false;
 
 	this.view = new this.View(this);
-	this.lights = this.createLights(stack.dimension, stack.resolution, this.view.camera);
+	this.lights = this.createLights(this.dimensions, this.center, this.view.camera);
 	this.lights.forEach(function(l) {
 		this.add(l);
 	}, this.scene);
@@ -1325,54 +1323,19 @@ WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canva
 	}
 };
 
-/** Transform a THREE.Vector3d from stack coordinates to Space coordinates.
-	 In other words, transform coordinates from CATMAID coordinate system
-	 to WebGL coordinate system: x->x, y->y+dy, z->-z */
-WebGLApplication.prototype.Space.prototype.toSpace = function(v3) {
-	v3.y = this.yDimension - v3.y;
-	v3.z = -v3.z;
-	return v3;
-};
-
-/** Transform axes but do not scale. */
-WebGLApplication.prototype.Space.prototype.coordsToUnscaledSpace = function(x, y, z) {
-	return [x, this.yDimension - y, -z];
-};
-
-/** Starting at i, edit i, i+1 and i+2, which represent x, y, z of a 3d point. */
-WebGLApplication.prototype.Space.prototype.coordsToUnscaledSpace2 = function(vertices, i) {
-	// vertices[i] equal
-	vertices[i+1] =  this.yDimension -vertices[i+1];
-	vertices[i+2] = -vertices[i+2];
-};
-
 WebGLApplication.prototype.Space.prototype.createCenter = function() {
-	var d = this.stack.dimension,
-			r = this.stack.resolution,
-			t = this.stack.translation,
-      center = new THREE.Vector3((d.x * r.x) / 2.0 + t.x,
-                                 (d.y * r.y) / 2.0 + t.y,
-                                 (d.z * r.z) / 2.0 + t.z);
-
-	// Bring the stack center to Space coordinates
-	this.toSpace(center);
-
-	return center;
+  return this.dimensions.min.clone().lerp(this.dimensions.max, 0.5);
 };
 
 
-WebGLApplication.prototype.Space.prototype.createLights = function(dimension, resolution, camera) {
+WebGLApplication.prototype.Space.prototype.createLights = function(dimensions, center, camera) {
 	var ambientLight = new THREE.AmbientLight( 0x505050 );
 
   var pointLight = new THREE.PointLight( 0xffaa00 );
-	pointLight.position.set(dimension.x * resolution.x,
-                          dimension.y * resolution.y,
-													50);
+	pointLight.position.set(dimensions.max.x, dimensions.max.y, dimensions.min.z - 50);
 
 	var light = new THREE.SpotLight( 0xffffff, 1.5 );
-	light.position.set(dimension.x * resolution.x / 2,
-										 dimension.y * resolution.y / 2,
-										 50);
+	light.position.set(center.x, center.y, dimensions.min.z - 50);
 	light.castShadow = true;
 	light.shadowCameraNear = 200;
 	light.shadowCameraFar = camera.far;
@@ -1532,7 +1495,7 @@ WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
 
 WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, stack, center) {
 	// Space elements
-	this.box = this.createBoundingBox(center, stack.dimension, stack.resolution);
+	this.box = this.createBoundingBox(stack);
 	this.floor = this.createFloor(center, dimensions);
 
 	this.zplane = null;
@@ -1587,51 +1550,49 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.dispose = fun
   this.synapticColors[1].dispose();
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(center, dimension, resolution) {
-  var w2 = (dimension.x * resolution.x) / 2;
-  var h2 = (dimension.y * resolution.y) / 2;
-  var d2 = (dimension.z * resolution.z) / 2;
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(stack) {
+  var p = stack.createStackToProjectBox(stack.createStackExtentsBox());
 
   var geometry = new THREE.Geometry();
 
   geometry.vertices.push(
-    new THREE.Vector3(-w2, -h2, -d2),
-    new THREE.Vector3(-w2,  h2, -d2),
+    new THREE.Vector3(p.min.x, p.min.y, p.min.z),
+    new THREE.Vector3(p.min.x, p.max.y, p.min.z),
 
-    new THREE.Vector3(-w2,  h2, -d2),
-    new THREE.Vector3( w2,  h2, -d2),
+    new THREE.Vector3(p.min.x, p.max.y, p.min.z),
+    new THREE.Vector3(p.max.x, p.max.y, p.min.z),
 
-    new THREE.Vector3( w2,  h2, -d2),
-    new THREE.Vector3( w2, -h2, -d2),
+    new THREE.Vector3(p.max.x, p.max.y, p.min.z),
+    new THREE.Vector3(p.max.x, p.min.y, p.min.z),
 
-    new THREE.Vector3( w2, -h2, -d2),
-    new THREE.Vector3(-w2, -h2, -d2),
-
-
-    new THREE.Vector3(-w2, -h2,  d2),
-    new THREE.Vector3(-w2,  h2,  d2),
-
-    new THREE.Vector3(-w2,  h2,  d2),
-    new THREE.Vector3( w2,  h2,  d2),
-
-    new THREE.Vector3( w2,  h2,  d2),
-    new THREE.Vector3( w2, -h2,  d2),
-
-    new THREE.Vector3( w2, -h2,  d2),
-    new THREE.Vector3(-w2, -h2,  d2),
+    new THREE.Vector3(p.max.x, p.min.y, p.min.z),
+    new THREE.Vector3(p.min.x, p.min.y, p.min.z),
 
 
-    new THREE.Vector3(-w2, -h2, -d2),
-    new THREE.Vector3(-w2, -h2,  d2),
+    new THREE.Vector3(p.min.x, p.min.y, p.max.z),
+    new THREE.Vector3(p.min.x, p.max.y, p.max.z),
 
-    new THREE.Vector3(-w2,  h2, -d2),
-    new THREE.Vector3(-w2,  h2,  d2),
+    new THREE.Vector3(p.min.x, p.max.y, p.max.z),
+    new THREE.Vector3(p.max.x, p.max.y, p.max.z),
 
-    new THREE.Vector3( w2,  h2, -d2),
-    new THREE.Vector3( w2,  h2,  d2),
+    new THREE.Vector3(p.max.x, p.max.y, p.max.z),
+    new THREE.Vector3(p.max.x, p.min.y, p.max.z),
 
-    new THREE.Vector3( w2, -h2, -d2),
-    new THREE.Vector3( w2, -h2,  d2)
+    new THREE.Vector3(p.max.x, p.min.y, p.max.z),
+    new THREE.Vector3(p.min.x, p.min.y, p.max.z),
+
+
+    new THREE.Vector3(p.min.x, p.min.y, p.min.z),
+    new THREE.Vector3(p.min.x, p.min.y, p.max.z),
+
+    new THREE.Vector3(p.min.x, p.max.y, p.min.z),
+    new THREE.Vector3(p.min.x, p.max.y, p.max.z),
+
+    new THREE.Vector3(p.max.x, p.max.y, p.min.z),
+    new THREE.Vector3(p.max.x, p.max.y, p.max.z),
+
+    new THREE.Vector3(p.max.x, p.min.y, p.min.z),
+    new THREE.Vector3(p.max.x, p.min.y, p.max.z)
   );
 
   geometry.computeLineDistances();
@@ -1639,7 +1600,7 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundin
   var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
   var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
 
-  mesh.position.set(center.x, center.y, center.z);
+  mesh.position.set(0, 0, 0);
 
   // The bounding box will not move and automatic matrix update can be disabled.
   // However, we have to apply the initial position change by explicitely
@@ -1660,22 +1621,22 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundin
  */
 WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createFloor = function(center, dimensions, options) {
     var o = options || {};
-    var floor = o['floor'] || 0.0;
+    var floor = o['floor'] || dimensions.max.y;
 
     // 10 steps in each dimension of the bounding box
     var nBaseLines = o['nBaseLines'] || 10.0;
-    var xStep = dimensions.x / nBaseLines;
-    var zStep = dimensions.z / nBaseLines;
+    var xStep = dimensions.max.x / nBaseLines;
+    var zStep = dimensions.max.z / nBaseLines;
     // Extend this around the bounding box
-    var xExtent = o['xExtent'] || Math.ceil(2.0 * dimensions.y / xStep);
-    var zExtent = o['zExtent'] || Math.ceil(2.0 * dimensions.y / zStep);
+    var xExtent = o['xExtent'] || Math.ceil(2.0 * dimensions.max.y / xStep);
+    var zExtent = o['zExtent'] || Math.ceil(2.0 * dimensions.max.y / zStep);
     // Offset from origin
-    var xOffset = dimensions.x * 0.5 - center.x;
-    var zOffset = dimensions.z * 0.5 + center.z;
+    var xOffset = dimensions.max.x * 0.5 - center.x;
+    var zOffset = dimensions.max.z * 0.5 + center.z;
     // Get min and max coordinates of grid
     var min_x = -1.0 * xExtent * xStep + xOffset,
-        max_x = dimensions.x + (xExtent * xStep) + xOffset;
-    var min_z = -1.0 * dimensions.z - zExtent * zStep + zOffset,
+        max_x = dimensions.max.x + (xExtent * xStep) + xOffset;
+    var min_z = -1.0 * dimensions.max.z - zExtent * zStep + zOffset,
         max_z = zExtent * zStep + zOffset;
 
     // Create planar mesh for floor
@@ -1760,35 +1721,44 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.adjust = func
 	}
 };
 
-WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(space, stackViewer) {
-  if (this.zplane) space.scene.remove(this.zplane);
-  var stack = stackViewer.primaryStack,
-      stackPlane = stack.createStackExtentsBox(),
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createPlaneGeometry = function (stack) {
+  var stackPlane = stack.createStackExtentsBox(),
       plane = stack.createStackToProjectBox(stackPlane),
-	    geometry = new THREE.Geometry(),
-	    material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide } );
+      geometry = new THREE.Geometry();
+
+  var majorDimSeq = ['min', 'max', 'min', 'max'],
+      minorDimSeq = ['min', 'min', 'max', 'max'],
+      planeDimSeq = minorDimSeq,
+      seq;
 
   switch (stack.orientation) {
     case CATMAID.Stack.ORIENTATION_XY:
       plane.min.z = plane.max.z = 0;
+      seq = {x: majorDimSeq, y: minorDimSeq, z: planeDimSeq};
       break;
     case CATMAID.Stack.ORIENTATION_XZ:
       plane.min.y = plane.max.y = 0;
-      var swap = plane.min.z;
-      plane.min.z = plane.max.z;
-      plane.max.z = swap;
+      seq = {x: majorDimSeq, y: planeDimSeq, z: minorDimSeq};
       break;
     case CATMAID.Stack.ORIENTATION_ZY:
       plane.min.x = plane.max.x = 0;
+      seq = {x: planeDimSeq, y: minorDimSeq, z: majorDimSeq};
       break;
   }
 
-	geometry.vertices.push( new THREE.Vector3( plane.min.x, -plane.min.y, -plane.min.z ) );
-  geometry.vertices.push( new THREE.Vector3( plane.max.x, -plane.min.y, -plane.max.z ) );
-  geometry.vertices.push( new THREE.Vector3( plane.min.x, -plane.max.y, -plane.min.z ) );
-  geometry.vertices.push( new THREE.Vector3( plane.max.x, -plane.max.y, -plane.max.z ) );
-	geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
-	geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
+  for (var i = 0; i < 4; ++i) {
+    geometry.vertices.push( new THREE.Vector3( plane[seq.x[i]].x, plane[seq.y[i]].y, plane[seq.z[i]].z ) );
+  }
+  geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+  geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
+
+  return geometry;
+};
+
+WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(space, stackViewer) {
+  if (this.zplane) space.scene.remove(this.zplane);
+  var material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide } ),
+      geometry = this.createPlaneGeometry(stackViewer.primaryStack);
 
   this.zplane = new THREE.Mesh( geometry, material );
   space.scene.add(this.zplane);
@@ -1810,33 +1780,39 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlaneP
         v.x = stackViewer.primaryStack.stackToProjectX(stackViewer.z, stackViewer.y, stackViewer.x);
         break;
     }
-    this.zplane.position.copy(space.toSpace(v));
+    this.zplane.position.copy(v);
 	}
 };
 
 /** Returns an array of meshes representing the missing sections. */
 WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissingSections = function(space, missing_section_height) {
-	var d = space.stack.dimension,
-			r = space.stack.resolution,
-			t = space.stack.translation,
-	    geometry = new THREE.Geometry(),
-	    xwidth = d.x * r.x,
-			ywidth = d.y * r.y * missing_section_height / 100.0,
+	var stack = space.stack,
+      geometry = this.createPlaneGeometry(stack),
 	    materials = [new THREE.MeshBasicMaterial( { color: 0x151349, opacity:0.6, transparent: true, side: THREE.DoubleSide } ),
 	                 new THREE.MeshBasicMaterial( { color: 0x00ffff, wireframe: true, wireframeLinewidth: 5, side: THREE.DoubleSide } )];
 
-	geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
-	geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
-	geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
-	geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
-	geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
-	geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
+  // Use scaling to set missing section height.
+  var scale = {x: 1, y: 1, z: 1};
+  switch (stack.orientation) {
+    case CATMAID.Stack.ORIENTATION_XY:
+      scale.y = missing_section_height / 100;
+      break;
+    case CATMAID.Stack.ORIENTATION_XZ:
+      scale.z = missing_section_height / 100;
+      break;
+    case CATMAID.Stack.ORIENTATION_ZY:
+      scale.y = missing_section_height / 100;
+      break;
+  }
 
-  return space.stack.broken_slices.reduce(function(missing_sections, sliceZ) {
-		var z = -sliceZ * r.z - t.z;
+  return space.stack.broken_slices.reduce(function(missing_sections, sliceStackZ) {
+		var x = stack.stackToProjectX(sliceStackZ, 0, 0),
+        y = stack.stackToProjectY(sliceStackZ, 0, 0),
+        z = stack.stackToProjectZ(sliceStackZ, 0, 0);
 		return missing_sections.concat(materials.map(function(material) {
 			var mesh = new THREE.Mesh(geometry, material);
-			mesh.position.z = z;
+      mesh.position.set(x, y, z);
+      mesh.scale.set(scale.x, scale.y, scale.z);
 			return mesh;
 		}));
 	}, []);
@@ -1875,9 +1851,6 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.loadMeshes = functi
            var loader = space.content.newJSONLoader();
            ids.forEach(function(id) {
              var vs = models[id].vertices;
-             for (var i=0; i < vs.length; i+=3) {
-               space.coordsToUnscaledSpace2(vs, i);
-             }
              var geometry = loader.parse(models[id]).geometry;
              var mesh = space.content.newMesh(geometry, material);
              mesh.position.set(0, 0, 0);
@@ -1931,7 +1904,9 @@ WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
   var d = this.space.dimensions;
   var fov = 75;
   var near = 1;
-  var far = 5 * Math.max(d.x, Math.max(d.y, d.z));
+  var far = 5 * Math.max(Math.abs(d.max.x - d.min.x),
+                Math.max(Math.abs(d.max.y - d.min.y),
+                         Math.abs(d.max.z - d.min.z)));
   var orthoNear = -far;
   var orthoFar =  far;
 	this.camera = new THREE.CombinedCamera(-this.space.canvasWidth,
@@ -2305,15 +2280,15 @@ WebGLApplication.prototype.Space.prototype.View.prototype.XY = function() {
 			bbDistance;
 	if (this.height > this.width) {
 		var hFOV = 2 * Math.atan( Math.tan( vFOV * 0.5 ) * this.width / this.height );
-		bbDistance = dimensions.x * 0.5 / Math.tan(hFOV * 0.5);
+		bbDistance = (dimensions.max.x - dimensions.min.x) * 0.5 / Math.tan(hFOV * 0.5);
 	} else {
-		bbDistance = dimensions.y * 0.5 / Math.tan(vFOV * 0.5);
+		bbDistance = (dimensions.max.y - dimensions.min.y) * 0.5 / Math.tan(vFOV * 0.5);
 	}
 	this.controls.target = center;
 	this.camera.position.x = center.x;
 	this.camera.position.y = center.y;
-	this.camera.position.z = center.z + (dimensions.z / 2) + bbDistance;
-	this.camera.up.set(0, 1, 0);
+	this.camera.position.z = center.z - (dimensions.max.z / 2) - bbDistance;
+	this.camera.up.set(0, -1, 0);
 };
 
 /**
@@ -2327,15 +2302,15 @@ WebGLApplication.prototype.Space.prototype.View.prototype.XZ = function() {
 			bbDistance;
 	if (this.height > this.width) {
 		var hFOV = 2 * Math.atan( Math.tan( vFOV * 0.5 ) * this.width / this.height );
-		bbDistance = dimensions.x * 0.5 / Math.tan(hFOV * 0.5);
+		bbDistance = (dimensions.max.x - dimensions.min.x) * 0.5 / Math.tan(hFOV * 0.5);
 	} else {
-		bbDistance = dimensions.z * 0.5 / Math.tan(vFOV * 0.5);
+		bbDistance = (dimensions.max.z - dimensions.min.z) * 0.5 / Math.tan(vFOV * 0.5);
 	}
 	this.controls.target = center;
 	this.camera.position.x = center.x;
-	this.camera.position.y = center.y + (dimensions.y / 2) + bbDistance;
+	this.camera.position.y = center.y - (dimensions.max.y / 2) - bbDistance;
 	this.camera.position.z = center.z;
-	this.camera.up.set(0, 0, 1);
+	this.camera.up.set(0, 0, -1);
 };
 
 /**
@@ -2349,15 +2324,15 @@ WebGLApplication.prototype.Space.prototype.View.prototype.ZY = function() {
 			bbDistance;
 	if (this.height > this.width) {
 		var hFOV = 2 * Math.atan( Math.tan( vFOV * 0.5 ) * this.width / this.height );
-		bbDistance = dimensions.z * 0.5 / Math.tan(hFOV * 0.5);
+		bbDistance = (dimensions.max.z - dimensions.min.z) * 0.5 / Math.tan(hFOV * 0.5);
 	} else {
-		bbDistance = dimensions.y * 0.5 / Math.tan(vFOV * 0.5);
+		bbDistance = (dimensions.max.y - dimensions.min.y) * 0.5 / Math.tan(vFOV * 0.5);
 	}
 	this.controls.target = center;
-	this.camera.position.x = center.x + (dimensions.x / 2) + bbDistance;
+	this.camera.position.x = center.x + (dimensions.max.x / 2) + bbDistance;
 	this.camera.position.y = center.y;
 	this.camera.position.z = center.z;
-	this.camera.up.set(0, 1, 0);
+	this.camera.up.set(0, -1, 0);
 };
 
 /**
@@ -2371,13 +2346,13 @@ WebGLApplication.prototype.Space.prototype.View.prototype.ZX = function() {
 			bbDistance;
 	if (this.height > this.width) {
 		var hFOV = 2 * Math.atan( Math.tan( vFOV * 0.5 ) * this.width / this.height );
-		bbDistance = dimensions.z * 0.5 / Math.tan(hFOV * 0.5);
+		bbDistance = (dimensions.max.z - dimensions.min.z) * 0.5 / Math.tan(hFOV * 0.5);
 	} else {
-		bbDistance = dimensions.x * 0.5 / Math.tan(vFOV * 0.5);
+		bbDistance = (dimensions.max.x - dimensions.min.x) * 0.5 / Math.tan(vFOV * 0.5);
 	}
 	this.controls.target = center;
 	this.camera.position.x = center.x;
-	this.camera.position.y = center.y + (dimensions.y / 2) + bbDistance;
+	this.camera.position.y = center.y - (dimensions.max.y / 2) - bbDistance;
 	this.camera.position.z = center.z;
 	this.camera.up.set(-1, 0, 0);
 };
@@ -2749,12 +2724,7 @@ WebGLApplication.prototype.Space.prototype.Content.prototype.ActiveNode.prototyp
   space.updateSplitShading(this.skeleton_id, skeleton_id, options);
   this.skeleton_id = skeleton_id;
 
-  // Get world coordinates of active node
-  var c = new THREE.Vector3(pos.x, pos.y, pos.z);
-
-  space.toSpace(c);
-  
-  this.mesh.position.set(c.x, c.y, c.z);
+  this.mesh.position.set(pos.x, pos.y, pos.z);
 
   var overlay = SkeletonAnnotations.getSVGOverlay(SkeletonAnnotations.getActiveStackViewerId());
   var radius = overlay.nodes[SkeletonAnnotations.getActiveNodeId()].radius;
@@ -3224,7 +3194,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColo
           // If the active node is virtual, the weight of its real child is
           // adjusted so so that it matches the visual appearance of having an
           // actual node at the ATNs location.
-          var vnPos = this.space.toSpace(SkeletonAnnotations.getActiveNodePositionW());
+          var vnPos = SkeletonAnnotations.getActiveNodePositionW();
           vnPos = new THREE.Vector3(vnPos.x, vnPos.y, vnPos.z);
           var locations = this.getPositions();
           var vn = SkeletonAnnotations.getActiveNodeId();
@@ -3953,7 +3923,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 		if (node[1]) {
       v1 = vs[node[0]];
       if (!v1) {
-			  v1 = this.space.toSpace(new THREE.Vector3(node[3], node[4], node[5]));
+			  v1 = new THREE.Vector3(node[3], node[4], node[5]);
         v1.node_id = node[0];
         v1.user_id = node[2];
         vs[node[0]] = v1;
@@ -3961,7 +3931,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
       var p = nodeProps[node[1]];
       var v2 = vs[p[0]];
       if (!v2) {
-			  v2 = this.space.toSpace(new THREE.Vector3(p[3], p[4], p[5]));
+			  v2 = new THREE.Vector3(p[3], p[4], p[5]);
         v2.node_id = p[0];
         v2.user_id = p[2];
         vs[p[0]] = v2;
@@ -3984,7 +3954,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 			// For the root node, which must be added to vs
 			v1 = vs[node[0]];
       if (!v1) {
-        v1 = this.space.toSpace(new THREE.Vector3(node[3], node[4], node[5]));
+        v1 = new THREE.Vector3(node[3], node[4], node[5]);
         v1.node_id = node[0];
         v1.user_id = node[2];
         vs[node[0]] = v1;
@@ -4029,7 +3999,7 @@ WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = fun
 		// con[2]: 0 for pre, 1 for post
 		// indices 3,4,5 are x,y,z for connector
 		// indices 4,5,6 are x,y,z for node
-		var v1 = this.space.toSpace(new THREE.Vector3(con[3], con[4], con[5]));
+		var v1 = new THREE.Vector3(con[3], con[4], con[5]);
     v1.node_id = con[1];
 		var v2 = vs[con[0]];
 		this.createEdge(v1, v2, this.synapticTypes[con[2]]);

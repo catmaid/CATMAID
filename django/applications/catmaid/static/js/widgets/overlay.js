@@ -465,6 +465,12 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
   this.old_x = stackViewer.x;
   this.old_y = stackViewer.y;
 
+  // Remember the width and height of stack viewer at the time of the last
+  // update. When resizing, this is used to tell whether a node update is
+  // justified.
+  this.old_width = stackViewer.viewWidth;
+  this.old_height = stackViewer.viewHeight;
+
   this.view = document.createElement("div");
   this.view.className = "sliceSVGOverlay";
   this.view.id = "sliceSVGOverlayId" + stackViewer.getId();
@@ -1919,17 +1925,28 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
 
   var stackViewer = this.stackViewer;
 
+  // Don't udpate if the stack's current section or scale wasn't changed
   var doNotUpdate = stackViewer.old_z == stackViewer.z && stackViewer.old_s == stackViewer.s;
-  if ( doNotUpdate )
-  {
+  if ( doNotUpdate ) {
+    // Don't upate if the center didn't move horizontally, but do if
     var sPAD = this.PAD / stackViewer.scale;
     var dx = this.old_x - stackViewer.x;
     doNotUpdate = dx < sPAD && dx > -sPAD;
     
-    if ( doNotUpdate )
-    {
+    if ( doNotUpdate ) {
+      // Don't upate if the center didn't move certically, but do if
       var dy = this.old_y - stackViewer.y;
       doNotUpdate = dy < sPAD && dy > -sPAD;
+    }
+
+    if (doNotUpdate) {
+      // Don't update if the view didn't get higher, but do if
+      doNotUpdate = stackViewer.viewWidth <= (this.old_width + this.PAD);
+    }
+
+    if (doNotUpdate) {
+      // Don't update if the view got wider, but do if
+      doNotUpdate = stackViewer.viewHeight <= (this.old_height + this.PAD);
     }
   }
 
@@ -2277,6 +2294,8 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     var stackViewer = self.stackViewer;
     self.old_x = stackViewer.x;
     self.old_y = stackViewer.y;
+    self.old_width = stackViewer.viewWidth;
+    self.old_height = stackViewer.viewHeight;
 
     var halfWidth =  (stackViewer.viewWidth  / 2) / stackViewer.scale,
         halfHeight = (stackViewer.viewHeight / 2) / stackViewer.scale;

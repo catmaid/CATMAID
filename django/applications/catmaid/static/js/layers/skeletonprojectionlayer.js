@@ -43,6 +43,8 @@
     // Listen to active node change events
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.update, this);
+
+    if (options.initialNode) this.update(options.initialNode);
   };
 
   SkeletonProjectionLayer.prototype = {};

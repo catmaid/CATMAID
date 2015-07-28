@@ -446,7 +446,9 @@
       var title = "Skeleton projection";
       function add(sv) {
         if (sv.getLayer(title)) return;
-        sv.addLayer(title, new CATMAID.SkeletonProjectionLayer(sv));
+        sv.addLayer(title, new CATMAID.SkeletonProjectionLayer(sv, {
+          initialNode: SkeletonAnnotations.atn
+        }));
       }
       function remove(sv) {
         if (!sv.getLayer(title)) return;

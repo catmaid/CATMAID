@@ -608,19 +608,16 @@ function handle_openProjectStack( e, stackViewer )
 CATMAID.Init.checkVersion = function () {
     requestQueue.register(django_url + 'version', 'GET', undefined,
         CATMAID.jsonResponseHandler(function(data) {
-          // If there is a newer latest message than we know of, get all
-          // messages to display them in the message menu and widget.
           if (CATMAID.CLIENT_VERSION !== data.SERVER_VERSION) {
             new CATMAID.ErrorDialog("Your version of CATMAID is different " +
                 "from the server's version. Please refresh your browser " +
-                "immediately to update to the server's version. Continuing " +
+                "immediately to update to the server's version. Continuing to " +
                 "use a different version than the server can cause " +
                 "unintended behavior and data loss.",
                 'Client version: ' + CATMAID.CLIENT_VERSION + '; ' +
                 'Server version: ' + data.SERVER_VERSION).show();
           }
 
-          // Check again later
           window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
         }, function () {
           window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);

@@ -432,8 +432,12 @@ function Navigator()
 	 */
 	this.register = function( parentStackViewer, buttonName )
 	{
-		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button_active";
-		document.getElementById( "toolbar_nav" ).style.display = "block";
+		var buttonID = typeof buttonName == "undefined" ? "edit_button_move" : buttonName;
+		var button = document.getElementById(buttonID);
+		if (button) button.className = "button_active";
+
+		var toolbar = document.getElementById( "toolbar_nav" );
+		if (toolbar) toolbar.style.display = "block";
 		
 		self.stackViewer = parentStackViewer;
 
@@ -495,9 +499,13 @@ function Navigator()
 	this.destroy = function( buttonName )
 	{
 		self.unregister();
-		
-		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button";
-		document.getElementById( "toolbar_nav" ).style.display = "none";
+	
+		var buttonID = typeof buttonName == "undefined" ? "edit_button_move" : buttonName;
+		var button = document.getElementById(buttonID);
+		if (button) button.className = "button";
+
+		var toolbar = document.getElementById( "toolbar_nav" );
+		if (toolbar) toolbar.style.display = "none";
 		
 		self.slider_s.update(
 			0,

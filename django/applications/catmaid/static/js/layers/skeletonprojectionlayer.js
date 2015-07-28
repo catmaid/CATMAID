@@ -160,6 +160,7 @@
    */
   SkeletonProjectionLayer.prototype.clear = function() {
     this.paper.selectAll('use').remove();
+    this.paper.selectAll('line').remove();
   };
 
   /**
@@ -194,15 +195,30 @@
             'xlink:href': '#' + this.ref,
             'x': pos.x,
             'y': pos.y,
-            'fill': this.fillcolor})
+            'fill': this.fillColor})
           .classed('overlay-node', true);
+
+        var e = this.edges[n];
+        if (e) {
+          var pos2 = this.positions[e];
+          var edge = this.paper.select('.lines').append('line');
+          edge.toBack();
+          edge.attr({
+              x1: pos.x, y1: pos.y,
+              x2: pos2.x, y2: pos2.y,
+              stroke: this.fillColor,
+              'stroke-width': this.edgeWidth
+          });
+        }
       }
     }, {
       positions: arborParser.positions,
+      edges: arbor.edges,
       stackViewer: this.stackViewer,
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
-      fillcolor: "rgb(128,0,200)"
+      fillColor: "rgb(128,0,200)",
+      edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 4
     });
   };
 

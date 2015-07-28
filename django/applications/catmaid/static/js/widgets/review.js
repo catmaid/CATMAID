@@ -221,7 +221,7 @@
             self.current_segment_index = newIndex;
           }
 
-          self.warnIfNodeSkipsSections();
+          self.warnIfNodeSkipsSections(ln);
         }
         self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
       } else {
@@ -253,15 +253,22 @@
         // Get project space coordinate of intermediate point, move to it and
         // select a virtual node there. Make sure this new section is not a
         // broken slice.
-        var zS = stackViewer.z, nSteps = 0;
+        var nSteps = 0;
+        var inc = (zDiff > 0 ? 1 : -1);
         while (true) {
+          // Increment step counter and check if
           ++nSteps;
-          zS += self.virtualNodeStep * (zDiff > 0 ? 1 : -1);
-          if (-1 === stack.broken_slices.indexOf(zS)) break;
+          // Set new target section, based on the current number of stacks
+          var targetSZ = fromSZ + nSteps * inc;
+          // If the target section is a broken slice, try the next one. Check
+          // this first, because we want to step to the first valid section as
+          // close as possible to the limit.
+          if (-1 !== stack.broken_slices.indexOf(targetSZ)) continue;
+          // If we reach the section of the original target, use this instead
+          if (targetSZ === toSZ) return null;
+          // Stop incrementing if we reached the step limit
+          if (nSteps >= self.virtualNodeStep) break;
         }
-        // Use original target, if we advanced too far due to skipping broken
-        // slices.
-        if (zS >= toSZ) return null;
 
         var zRatio = (nSteps * self.virtualNodeStep) / zDiffAbs;
 
@@ -436,7 +443,7 @@
           // would be lost, losing state for q/w navigation.
         }
 
-        self.warnIfNodeSkipsSections();
+        self.warnIfNodeSkipsSections(ln);
       }
 
       // Select the (potentially new) current node
@@ -479,17 +486,17 @@
     }
 
     /**
-     * Create a warning message if the distance between the current and the last
-     * node (or last skipping step) is larger than what is allowed to be
-     * skipped.
+     * Show a warning message if the distance between the current node and the
+     * passed in reference node (defaulting to the last node in the current
+     * segment) is larger than what is allowed to be skipped.
      */
-    this.warnIfNodeSkipsSections = function () {
+    this.warnIfNodeSkipsSections = function (referenceNode) {
       if (0 === self.current_segment_index) {
         return;
       }
       // Get current and last node
       var cn = self.current_segment.sequence[self.current_segment_index];
-      var ln = skipStep ? skipStep :
+      var ln = referenceNode ? referenceNode :
         self.current_segment.sequence[self.current_segment_index - 1];
       // Convert to stack space to check against virtual node step limit
       var cnz = project.focusedStackViewer.primaryStack.projectToStackZ(cn.z, cn.y, cn.x);

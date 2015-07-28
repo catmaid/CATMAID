@@ -4,7 +4,7 @@
 
 echo 'Testing '$1
 
-$SLIMERJS ./node_modules/qunit-phantomjs-runner/runner.js $1 | tee ${TMPDIR}/slimerjs.log
+$SLIMERJS ./node_modules/qunit-phantomjs-runner/runner.js $1 30 | tee ${TMPDIR}/slimerjs.log
 
 # Figure out the exit code ourselves because Gecko does not allow
 # SlimerJS to do so for now.

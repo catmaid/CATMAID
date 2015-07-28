@@ -6,6 +6,7 @@ python:
 env:
   - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
 addons:
+  firefox: "38.0"
   postgresql: 9.3
 before_install:
   - mkdir tmp

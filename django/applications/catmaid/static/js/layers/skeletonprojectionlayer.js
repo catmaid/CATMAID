@@ -220,7 +220,7 @@
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
       fillColor: "rgb(128,0,200)",
-      edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 4
+      edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2
     });
   };
 

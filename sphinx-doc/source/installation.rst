@@ -18,7 +18,7 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL >= 9.3
+1. PostgreSQL >= 9.3 and PostGIS >= 2.1
 2. Python 2.7
 3. Imagemagick (for generating image tiles)
 

@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Running a CATMAID instance on Amazon AWS/EC2 &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="running-a-catmaid-instance-on-amazon-aws-ec2">
+<h1>Running a CATMAID instance on Amazon AWS/EC2<a class="headerlink" href="#running-a-catmaid-instance-on-amazon-aws-ec2" title="Permalink to this headline">¶</a></h1>
+<p>First, you have to register for <a class="reference external" href="http://aws.amazon.com/">Amazon Web Services</a>.
+We will use the free tier EC2, but you will need to provide an address, credit card
+and a phone number. Register for EC2.</p>
+<div class="section" id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>You will need two Python packages to interface on the command-line with AWS:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo pip install fabric
+sudo pip install boto
+</pre></div>
+</div>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Copy <cite>configuration.py.template</cite> to <cite>configuration.py</cite> and fill in the details
+from your AWS registration.</p>
+<p>First, we have to initialize an instance. For an overview of your current instances,
+visit your <cite>AWS Management Console</cite> on the web. We create a new instance with fabric and boto:</p>
+<div class="highlight-python"><div class="highlight"><pre>fab buildApp
+</pre></div>
+</div>
+<p>You should see the new instance in the <cite>AWS Management Console</cite>. After a few minutes, status
+checks should be green. Fill in the public DNS name in your <cite>configuration.py</cite> file. Then, we
+can setup CATMAID on this instance with:</p>
+<div class="highlight-python"><div class="highlight"><pre>fab installCatmaid
+</pre></div>
+</div>
+<p>Once this is completed, try to visit your instance in the web browser with the URL: <a class="reference external" href="http://$ec2hostname/catmaid/">http://$ec2hostname/catmaid/</a>
+You should see a message <cite>No projects available</cite>. You can create example projects with:</p>
+<div class="highlight-python"><div class="highlight"><pre>fab installExampleProject
+</pre></div>
+</div>
+<p>Log in with the username &#8216;gerhard&#8217; and password &#8216;gerhard&#8217;.</p>
+<p>You can access your database with the URL <a class="reference external" href="http://$ec2hostname/phppgadmin/">http://$ec2hostname/phppgadmin/</a>. Note that exposing phpPgAdmin
+to the public is highly insecure.</p>
+<p>Now, setup the Django-backend:</p>
+<div class="highlight-python"><div class="highlight"><pre>fab installDjangoBackend
+</pre></div>
+</div>
+<p>In the next steps, you have customize and configure users, projects and stacks in the database,
+and host your image data stacks. You do not need to host your dataset tile on the same instance,
+but can choose to store them at any web-accessible host. You may want to get in contact with the
+<a class="reference external" href="http://openconnectomeproject.org/">OpenConnectome Project</a> for large dataset storage.</p>
+<p>If you want to update your instance to the latest development version, just call:</p>
+<div class="highlight-python"><div class="highlight"><pre>fab updateCATMAID
+</pre></div>
+</div>
+<p>In order to modify and control your database, you can use phppgadmin:</p>
+<div class="highlight-python"><div class="highlight"><pre>http://$ec2-hostname/phppgadmin/
+</pre></div>
+</div>
+<p>To obtain the relevant information for the stack (dimension, image_base), you need to tile your image dataset
+and upload it to publicly accessible host. We assume you have a set of aligned, consecutive image files (e.g. TIFF)
+of your dataset. You can then use the tiling scripts to generate a image pyramid. From the folder with your image
+files, call the <em>tile_stack</em> script:</p>
+<div class="highlight-python"><div class="highlight"><pre>./path-to-your-CATMAID-clone/scripts/tiles/tile_stack &quot;*.tif&quot; 256 192
+</pre></div>
+</div>
+<p>This creates the image pyramid folders with 256x256 pixel sized tiles. You can increase this to a number which is
+a power of two. If you have successfully generated the image pyramid, upload them to your data host, and use
+the URL to the base folder for the <em>image_base</em> when creating the stack.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The script creates tiles with non-square dimension, and it is only creating JPG files. We need a better script.
+Make sure that you also call ./ensure-tilesize.py</p>
+</div>
+<p>To create project, stack and user information and enable the tracing tool, you can login to your instance
+by SSH and call relevant Python scripts:</p>
+<div class="highlight-python"><div class="highlight"><pre>ssh -i downloaded_catmaidkey.pem ubuntu@$ec2-hostname
+cd CATMAID/scripts/database
+</pre></div>
+</div>
+<p>You can then call the scripts as described in section 3 and 4 in <a class="reference internal" href="installation.html#basic-installation"><span>Basic Installation Instructions</span></a>.</p>
+<p>This fabfile should allow you to install CATMAID also on your local Ubuntu machine. Warning: It would
+overwrite your Apache configuration:</p>
+<div class="highlight-python"><div class="highlight"><pre>fab -H localhost installCatmaid
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Running a CATMAID instance on Amazon AWS/EC2</a><ul>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

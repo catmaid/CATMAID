@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Exporting and importing Data &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="User Documentation" href="user.html" />
+    <link rel="next" title="Using Data Views" href="data_views.html" />
+    <link rel="prev" title="Screenshots" href="screenshots.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="data_views.html" title="Using Data Views"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="screenshots.html" title="Screenshots"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="user.html" accesskey="U">User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="exporting-and-importing-data">
+<h1>Exporting and importing Data<a class="headerlink" href="#exporting-and-importing-data" title="Permalink to this headline">¶</a></h1>
+<p>For importing, there are currently two different tool-sets available in CATMAID.
+A front-end in Django&#8217;s admin interface is only available for importing project
+and stack information. If you want to import tracing data, you have to resort to
+the command line.</p>
+<div class="section" id="exporting-and-importing-neuron-tracing-data">
+<h2>Exporting and importing neuron tracing data<a class="headerlink" href="#exporting-and-importing-neuron-tracing-data" title="Permalink to this headline">¶</a></h2>
+<p>Two management commands for Django&#8217;s <code class="docutils literal"><span class="pre">manage.py</span></code> tool are available in CATMAID
+that allow exporting and importing neuron tracing data. They are called
+<code class="docutils literal"><span class="pre">catmaid_export_data</span></code> and <code class="docutils literal"><span class="pre">catmaid_import_data</span></code>. To use them, you have to be
+in the <code class="docutils literal"><span class="pre">virtualenv</span></code> and it is probably easiest to work from the
+<code class="docutils literal"><span class="pre">django/projects/mysite/</span></code> directory.</p>
+<div class="section" id="exporting-data">
+<h3>Exporting data<a class="headerlink" href="#exporting-data" title="Permalink to this headline">¶</a></h3>
+<p>At the moment, the export command is able to create a JSON representation of
+neurons, connectors, tags and annotations. To constrain the exported neurons,
+annotations can be used. To export data, you have to use the
+<code class="docutils literal"><span class="pre">catmaid_export_data</span></code> command:</p>
+<div class="highlight-python"><div class="highlight"><pre>manage.py catmaid_export_data
+</pre></div>
+</div>
+<p>Adding the <code class="docutils literal"><span class="pre">--help</span></code> option will show an overview over all available options.
+When called without any option, the command will ask the user for the project to
+export from and will start exporting the whole project right away. Use the
+additional options to be more precise about what should be exported.</p>
+<p>Without any parameter, everything is exported. The type of data to be exported
+can be adjusted by the <code class="docutils literal"><span class="pre">--notreenodes</span></code>, <code class="docutils literal"><span class="pre">--noconnectors</span></code>,
+<code class="docutils literal"><span class="pre">--noannotations</span></code> and <code class="docutils literal"><span class="pre">--notags</span></code> parameters. To constrain the exported
+neurons, the <code class="docutils literal"><span class="pre">--required-annotation</span></code> option can be used. For instance, to
+export all neurons from the project with ID <code class="docutils literal"><span class="pre">1</span></code> that are annotated with
+&#8220;Kenyon cells&#8221;, one would have to call:</p>
+<div class="highlight-python"><div class="highlight"><pre>manage.py catmaid_export_data --source 1 --required-annotation &quot;Kenyon cells&quot;
+</pre></div>
+</div>
+<p>This will create a file called <code class="docutils literal"><span class="pre">export_pid_1.json</span></code>.</p>
+</div>
+<div class="section" id="importing-data">
+<h3>Importing data<a class="headerlink" href="#importing-data" title="Permalink to this headline">¶</a></h3>
+<p>The JSON file generated in the previous section can be used to import data into
+a CATMAID instance. <em>Currently, the importer won&#8217;t change the primary key IDs in
+the input data, so be aware of potential data loss if you import into an
+instance with existing data.</em> For now, this is only practical to import data
+into a new CATMAID instance. To do this, the <code class="docutils literal"><span class="pre">catmaid_import_data</span></code> management
+command has to be used:</p>
+<div class="highlight-python"><div class="highlight"><pre>manage.py catmaid_import_data
+</pre></div>
+</div>
+<p>You can use the <code class="docutils literal"><span class="pre">--help</span></code> switch to get an overview of the available options.
+Like the exporter, the importer will ask a user if it needs more information.
+Required are currently the source file and a user. The importer does currently
+not preserve ownership if the imported models. The user (and editor and
+reviewer) is needed to override the information in the source data set.</p>
+<p>Assuming a file called <code class="docutils literal"><span class="pre">export_pid_1.json</span></code> is available and a new CATMAID
+project with ID <code class="docutils literal"><span class="pre">1</span></code> has been created, the following command will start the
+import:</p>
+<div class="highlight-python"><div class="highlight"><pre>manage.py catmaid_import_data --source export_pid_1.json --target 1
+</pre></div>
+</div>
+<p>The tool will ask for a user to use for all data before it actually starts the
+import.</p>
+</div>
+</div>
+<div class="section" id="importing-project-and-stack-information">
+<h2>Importing project and stack information<a class="headerlink" href="#importing-project-and-stack-information" title="Permalink to this headline">¶</a></h2>
+<p>Image data in CATMAID is referenced by stacks. Stacks in turn are
+organized in projects. The data used by a stack can have one of
+various types of data sources. A simple and often used source is a
+simple folder structure of tiled image data for each stack. To be
+accessible, a stack&#8217;s image base has to give access to such a folder
+from the web. Of course, stacks and projects can be created by hand,
+but there is also an importing tool available in Django&#8217;s admin
+interface. It can be found under <em>Custom Views</em> and is named
+<em>Importer</em>. For now, the importing tool only supports this standard
+data source.</p>
+<p>Therefore, the importing tool expects a certain data folder layout to
+work on and also relies on so called <em>project files</em> (which are very
+simple) to identify potential projects. The next section will introduce
+the project file format and after that the data layout will be
+explained.</p>
+<p>How to use the importing tool will be shown in the last section.</p>
+<div class="section" id="project-files">
+<h3>Project Files<a class="headerlink" href="#project-files" title="Permalink to this headline">¶</a></h3>
+<p>If the importing tool encounters a folder with a file called
+<code class="docutils literal"><span class="pre">project.yaml</span></code> in it, it will look at it as a potential project. If
+this file is not available, the folder is ignored. However, if the file
+is there it gets parsed and if all information is found the tool is
+looking for, the project can be imported. So let&#8217;s assume we have a
+project with two stacks stored in folder with the following layout:</p>
+<div class="highlight-python"><div class="highlight"><pre>project1/
+  project.yaml
+  stack1/
+  stack2/
+</pre></div>
+</div>
+<p>A project file contains the basic properties of a project and its
+associated stacks. It is a simple <a class="reference external" href="http://en.wikipedia.org/wiki/YAML">YAML</a>
+file and could look like this for the example above:</p>
+<div class="highlight-python"><div class="highlight"><pre>project:
+    name: &quot;Wing Disc 1&quot;
+    stacks:
+      - folder: &quot;stack1&quot;
+        name: &quot;Channel 1&quot;
+        metadata: &quot;PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550&quot;
+        dimension: &quot;(3886,3893,55)&quot;
+        resolution: &quot;(138.0,138.0,1.0)&quot;
+        zoomlevels: 2
+        fileextension: &quot;jpg&quot;
+        overlays:
+          - name: &quot;Channel 2 overlay&quot;
+            folder: &quot;stack2&quot;
+            defaultopacity: 0.5
+            fileextension: &quot;jpg&quot;
+          - name: &quot;Remote overlay&quot;
+            url: &quot;http://my.other.server.net/overlaystack/&quot;
+            fileextension: &quot;jpg&quot;
+      - folder: &quot;stack2&quot;
+        name: &quot;Channel 2&quot;
+        metadata: &quot;PMT Offset: 10, Laser Power: 0.7, PMT Voltage: 500&quot;
+        dimension: &quot;(3886,3893,55)&quot;
+        resolution: &quot;(138.0,138.0,1.0)&quot;
+        zoomlevels: 2
+        fileextension: &quot;jpg&quot;
+      - url: &quot;http://my.other.server.net/examplestack/&quot;
+        name: &quot;Remote stack&quot;
+        dimension: &quot;(3886,3893,55)&quot;
+        resolution: &quot;(138.0,138.0,1.0)&quot;
+        zoomlevels: 3
+        fileextension: &quot;png&quot;
+</pre></div>
+</div>
+<p>As can be seen, a project has only two properties: a name and a set of
+stacks. A stack, however, needs more information. In general, there are
+two ways to specify the data source for a folder: 1. a folder, than can
+be read relative to the project file and 2. a URL which is used as is
+as a stack&#8217;s image base.</p>
+<p>The first stack in the example above is based on a folder in the same
+directory as the project file. The <code class="docutils literal"><span class="pre">folder</span></code> property names this image
+data folder for this stack, relative to the project file. The name of
+stack is stored in the <code class="docutils literal"><span class="pre">name</span></code> field and metadata (which is shown when
+a stack is displayed) can be added with the <code class="docutils literal"><span class="pre">metadata</span></code> property. A
+stack also needs <code class="docutils literal"><span class="pre">dimensions</span></code> and <code class="docutils literal"><span class="pre">resolution</span></code> information.
+Dimensions are the stacks X, Y and Z extent in <em>pixel</em>. The resolution
+should be in in <em>nanometers per pixel</em>, in X, Y and Z.</p>
+<p>Additionally to the folder information, the second stack above uses the
+<code class="docutils literal"><span class="pre">zoomlevels</span></code> setting to declare the number of zoom levels. It also
+specifies the file extension of the image files with the
+<code class="docutils literal"><span class="pre">fileextension</span></code> setting. If these settings are not used, the importer
+will look at the folder to find out the information on its own. Such a
+search is only started if one of those settings is missing and only a
+missing setting is set to the values found. These settings can therefore
+be used to have more explicit project files, avoid file system look-ups
+or to use custom values (e.g. to only use two of four zoom levels).</p>
+<p>The last stack in the example above <em>doesn&#8217;t</em> use a local stack folder,
+but declares the stack&#8217;s image base explicitly by using the <code class="docutils literal"><span class="pre">url</span></code>
+setting. This setting <em>requires</em> to also use the <code class="docutils literal"><span class="pre">zoomlevel</span></code> and the
+<code class="docutils literal"><span class="pre">fileextension</span></code> fields, because the importer won&#8217;t try different URLs
+to get an idea about the file extension and the number of zoom levels.
+Like done for the folder based stacks, a url based stack needs the
+<code class="docutils literal"><span class="pre">resolution</span></code> and <code class="docutils literal"><span class="pre">dimension</span></code> fields, too.</p>
+<p>A stack can also have <em>overlays</em>. To add one or more of them, please
+use the <code class="docutils literal"><span class="pre">overlays</span></code> field in a stack. Like visible in the example, an
+overlay needs at least a <code class="docutils literal"><span class="pre">name</span></code> and a data source, which can be
+either <code class="docutils literal"><span class="pre">folder</span></code> or <code class="docutils literal"><span class="pre">url</span></code> based. The implications of using one or
+the other are similar to the ones for stacks: When using a URL, a
+<code class="docutils literal"><span class="pre">fileextension</span></code> field needs to be present, but zoom level information
+is not needed for overlays. For folder based overlays, you can, but
+don&#8217;t need to, provide a <code class="docutils literal"><span class="pre">fileextension</span></code>. If you don&#8217;t, the import
+tries to find it on its own. Besides that, a default opacity for
+displaying an overlay can be provided, by using the <code class="docutils literal"><span class="pre">defaultopacity</span></code>
+key word. It ranges from zero to one. If not provided, it defaults to zero.</p>
+<p>Also, it wouldn&#8217;t confuse the tool if there is more YAML data in the
+project file than needed. It only uses what is depicted in the sample
+above. But please keep in mind to <em>not use the tab character</em> in the
+whitespace indentation (but simple spaces) as this isn&#8217;t allowed in
+YAML.</p>
+</div>
+<div class="section" id="file-and-folder-layout">
+<h3>File and Folder Layout<a class="headerlink" href="#file-and-folder-layout" title="Permalink to this headline">¶</a></h3>
+<p>The importing tool expects a certain file any folder layout to work with.
+It assumes that there is one data folder per CATMAID instance that is
+accessible from the outside world and is somehow referred to within
+a stack&#8217;s image base (if referring to folders in the project file). As
+an example, let&#8217;s say a link named <em>data</em> has been placed in CATMAID&#8217;s
+httpdocs directory. This link links to your actual data storage and has
+a layout like the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>data/
+  project1/
+  project2/
+  project3/
+  tests/
+    project4/
+</pre></div>
+</div>
+<p>Each project folder has contents similar to the example in the previous
+section. Due to having placed the link in the httpdocs directory it is
+already accessible under (if your webserver user has reading permissions
+on it):</p>
+<div class="highlight-python"><div class="highlight"><pre>http://&lt;CATMAID-URL&gt;/data
+</pre></div>
+</div>
+<p>A typical URL to a tile of a stack could then look like this (if you
+use <code class="docutils literal"><span class="pre">jpeg</span></code> as the file extension):</p>
+<div class="highlight-python"><div class="highlight"><pre>http://&lt;CATMAID-URL&gt;/data/project1/stack1/0/0_0_0.jpeg
+</pre></div>
+</div>
+<p>The importer uses this data directory or a folder below it as working
+directory. In this folder it treats every sub-directory as a potential
+project directory and tests if it contains a project file named
+<code class="docutils literal"><span class="pre">project.yaml</span></code>. If this file is found a folder remains potential
+project. A folder is ignored, though, when the project file is not
+available.</p>
+</div>
+<div class="section" id="using-the-importer">
+<h3>Using the Importer<a class="headerlink" href="#using-the-importer" title="Permalink to this headline">¶</a></h3>
+<p>To use the importer, you have to adjust your CATMAID settings file to
+make your data path and its URL known. These settings are called
+<code class="docutils literal"><span class="pre">CATMAID_IMPORT_PATH</span></code> and <code class="docutils literal"><span class="pre">CATMAID_IMPORT_URL</span></code>. Sticking to the
+examples from before, these variables might be:</p>
+<div class="highlight-python"><div class="highlight"><pre>CATMAID_IMPORT_PATH = &lt;CATMAID-PATH&gt;/httpdocs/data
+CATMAID_IMPORT_URL = http://&lt;CATMAID-URL&gt;/data
+</pre></div>
+</div>
+<p>With this in place, the importer can be used through Django&#8217;s admin
+interface. It is listed as <em>Importer</em> under <em>Custom Views</em>. The first
+step is to give the importer more detail about which folders to look
+in for potential projects:</p>
+<img alt="_images/path_setup.png" src="_images/path_setup.png" />
+<p>With these settings, you can narrow down the set of folders looked at.
+The relative path setting can be used to specify a sub-directory below
+the import path. When doing so, the working directory will be changed
+to <code class="docutils literal"><span class="pre">CATMAID_IMPORT_PATH</span></code> plus the <em>relative path</em>. If left empty, just
+the <code class="docutils literal"><span class="pre">CATMAID_IMPORT_PATH</span></code> setting will be used. Additionally, you
+can <em>filter folders</em> in tho working directory by specifying a filter
+term. You can use Unix shell-style wildcards there. With the check-box
+below this setting, you can make sure the tool looks only at unknown
+projects. Here, a project is unknown if all of its stacks are known to
+CATMAID. A stack in turn is known if there is already a stack with the
+same image base. The last setting on this dialog is the <em>Base URL</em>. By
+default it is set to the value of <code class="docutils literal"><span class="pre">CATMAID_IMPORT_URL</span></code> (if available).
+This setting plus the relative path stay the same for every project
+to be imported in this run. To continue, click on the <em>next step</em>
+button.</p>
+<p>The importer will tell you if it doesn&#8217;t find any projects based on
+the settings of the first step. However, if it does find potential
+projects, it allows you to unselect projects that shouldn&#8217;t get
+imported and to add more details:</p>
+<img alt="_images/project_setup.png" src="_images/project_setup.png" />
+<p>Besides deciding which projects to actually import, you can also add
+tags which will be attached to the new projects. If the tile size
+differs from the standard, it can be adjusted here. If you want your
+projects to be accessible publicly, you can mark the corresponding
+check-box.</p>
+<p>When the <em>Check classification links</em> option is selected, the importer
+tries to suggest existing classification graphs to be linked to the
+new project(s). These suggestions are optional and based on the tags
+you entered before. If existing projects have the same tags or a super
+set of it, their linked classification graphs will be suggested.</p>
+<p>The last adjustment to make are permissions. With the help
+of a list box you can select one or more group/permission combinations
+that the new projects will be assigned. If all is how you want it,
+you can proceed to the next dialog.</p>
+<p>The third and last step is a confirmation where all the information
+is shown the importer found about the projects and stacks to be
+imported. To change things in this import, simply go back to a step
+before, using the buttons at the bottom of the page. If all the
+project and stack properties as well as the tags and permissions are
+correct, the actual import can start.</p>
+<p>In the end the importer will tell you which projects have been
+imported and, if there were problems, which ones not.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Exporting and importing Data</a><ul>
+<li><a class="reference internal" href="#exporting-and-importing-neuron-tracing-data">Exporting and importing neuron tracing data</a><ul>
+<li><a class="reference internal" href="#exporting-data">Exporting data</a></li>
+<li><a class="reference internal" href="#importing-data">Importing data</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#importing-project-and-stack-information">Importing project and stack information</a><ul>
+<li><a class="reference internal" href="#project-files">Project Files</a></li>
+<li><a class="reference internal" href="#file-and-folder-layout">File and Folder Layout</a></li>
+<li><a class="reference internal" href="#using-the-importer">Using the Importer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="user.html">User Documentation</a><ul>
+      <li>Previous: <a href="screenshots.html" title="previous chapter">Screenshots</a></li>
+      <li>Next: <a href="data_views.html" title="next chapter">Using Data Views</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

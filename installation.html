@@ -1,0 +1,436 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Basic Installation Instructions &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="Developer Documentation" href="developer.html" />
+    <link rel="next" title="User Profiles" href="userprofiles.html" />
+    <link rel="prev" title="Developer Documentation" href="developer.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="userprofiles.html" title="User Profiles"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="developer.html" title="Developer Documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="developer.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="basic-installation-instructions">
+<span id="basic-installation"></span><h1>Basic Installation Instructions<a class="headerlink" href="#basic-installation-instructions" title="Permalink to this headline">¶</a></h1>
+<p>These installation instructions have been tested on the most
+recent stable release of Ubuntu (14.04 precise), so may need
+some minor changes for other Debian-based distributions.</p>
+<p>As an alternative, we have generated an AMI (Amazon Machine
+Image) that will let you easily create an EC2 instance with a
+running CATMAID instance and a couple of example projects.  If
+you would prefer that approach, please see the instructions in
+<a class="reference internal" href="ami.html#ami"><span>Creating a CATMAID instance on EC2</span></a>.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The most fundamental dependencies of CATMAID are:</p>
+<ol class="arabic simple">
+<li>PostgreSQL &gt;= 9.3 and PostGIS &gt;= 2.1</li>
+<li>Python 2.7</li>
+<li>Imagemagick (for generating image tiles)</li>
+</ol>
+<p>On Debian-based systems, such as Ubuntu, you can install these
+with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install python postgresql-9.3 imagemagick
+</pre></div>
+</div>
+<p>CATMAID is based on the <a class="reference external" href="https://www.djangoproject.com/">Django web framework</a>.  If you just wish to work on
+developing CATMAID, you can use Django&#8217;s built-in lightweight
+development server.  However, for production you will need to
+configure your webserver to talk to the CATMAID web application
+using WSGI.  We have successfully tested using either Apache
+with mod_wsgi, or nginx with gevent, gunicorn or uswgi.  Setting
+up one of these web servers is described in later sections.</p>
+<div class="section" id="clone-the-repository">
+<h3>1. Clone the repository<a class="headerlink" href="#clone-the-repository" title="Permalink to this headline">¶</a></h3>
+<p>The git repository is hosted at <a class="reference external" href="https://github.com/catmaid/CATMAID">https://github.com/catmaid/CATMAID</a>  - clone this repository
+somewhere outside your web root, e.g. in <code class="docutils literal"><span class="pre">/home/alice</span></code>, so that
+the source code is in <code class="docutils literal"><span class="pre">/home/alice/catmaid</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre>git clone https://github.com/catmaid/CATMAID.git catmaid
+</pre></div>
+</div>
+</div>
+<div class="section" id="install-required-python-packages">
+<h3>2. Install required Python packages<a class="headerlink" href="#install-required-python-packages" title="Permalink to this headline">¶</a></h3>
+<p>We recommend the use of Python 2.7. CATMAID is likely to run with Python 2.6 as
+well, but Python 2.7 is used for development and testing.</p>
+<p>We strongly recommend that you install all Python package dependencies into a
+virtualenv, so that they are isolated from the system-wide installed packages
+and can be upgraded easily.  Some of these Python packages depend on system-wide
+libraries that you will need to install in advance, however. You can do this
+with one of the following commands (the one suiting best your OS):</p>
+<p>Ubuntu 14.04:</p>
+<blockquote>
+<div><div class="highlight-python"><div class="highlight"><pre>sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1 \
+                     imagemagick gcc gfortran python2.7-dev \
+                     postgresql-common libpq-dev libgraphicsmagick++1-dev \
+                     graphicsmagick libhdf5-serial-dev libboost-dev \
+                     virtualenvwrapper libboost-python-dev uuid-dev \
+                     libxml2-dev libxslt1-dev libjpeg-dev libtiff-dev \
+                     libblas-dev liblapack-dev pkg-config
+</pre></div>
+</div>
+</div></blockquote>
+<p>Ubuntu 12.04:</p>
+<blockquote>
+<div><div class="highlight-python"><div class="highlight"><pre>sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1 \
+                     imagemagick gcc gfortran python2.7-dev libpq-dev \
+                     libgraphicsmagick++1-dev graphicsmagick \
+                     libhdf5-serial-dev libboost1.48-dev \
+                     virtualenvwrapper libboost-python1.48-dev uuid-dev \
+                     libxml2-dev libxslt1-dev libjpeg-dev libtiff-dev \
+                     libblas-dev liblapack-dev
+</pre></div>
+</div>
+</div></blockquote>
+<p>Virtualenv Wrapper needs to source your environment. Start a new terminal
+or if you are using the bash:</p>
+<div class="highlight-python"><div class="highlight"><pre>source ~/.bashrc
+</pre></div>
+</div>
+<p>Please test if <code class="docutils literal"><span class="pre">virtualenvwrapper</span></code> is set up correctly, by executing:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">mkvirtualenv</span> <span class="o">--</span><span class="n">version</span>
+</pre></div>
+</div>
+<p>If it gives you a version, everything is fine. Otherwise, e.g. if the command
+<code class="docutils literal"><span class="pre">mkvirtualenv</span></code> is not found, add the following line to your <code class="docutils literal"><span class="pre">~/.bashrc</span></code> file
+and call <code class="docutils literal"><span class="pre">source</span> <span class="pre">~/.bashrc</span></code> again:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">source</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">bash_completion</span><span class="o">.</span><span class="n">d</span><span class="o">/</span><span class="n">virtualenvwrapper</span>
+</pre></div>
+</div>
+<p>To create a new virtualenv for CATMAID&#8217;s Python dependencies,
+you can do:</p>
+<div class="highlight-python"><div class="highlight"><pre>mkvirtualenv --no-site-packages -p /usr/bin/python2.7 catmaid
+</pre></div>
+</div>
+<p>That will create a virtualenv in <code class="docutils literal"><span class="pre">~/.virtualenvs/catmaid/</span></code>, and
+while your virtualenv is activated, Python libraries will be
+imported from (and installed to) there.  After creating the
+virtualenv as above, it will be activated for you, but in new
+shells, for example, you will need to activate it by running:</p>
+<div class="highlight-python"><div class="highlight"><pre>workon catmaid
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>On Ubuntu versions before 14.04 a rather old version of Pip is shipped.
+This is the tool we use to install Python packages within the virtualenv, so
+let&#8217;s update it therefor first&#8212;within the virtualenv:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install pip==1.5.4
+</pre></div>
+</div>
+<p class="last">You can probably use a later version as well, but we tested it with Pip
+v1.5.4.</p>
+</div>
+<p>Due to <a class="reference external" href="https://github.com/h5py/h5py/issues/96">a dependency problem</a>, we need to install
+NumPy and Distribute separately:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install numpy==1.6.1 distribute==0.7.3
+</pre></div>
+</div>
+<p>You should then install all the rest of the required Python
+packages with:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd /home/alice/catmaid/django
+pip install -r pip-frozen
+</pre></div>
+</div>
+<p>If that worked correctly, then the second-last line of output
+will begin <code class="docutils literal"><span class="pre">Successfully</span> <span class="pre">installed</span></code>, and list the Python
+packages that have just been installed.</p>
+<p><em>A note on the pgmagick module:</em> this is a wrapper for GraphicMagick (GM).
+GM uses so-called delegates to support different file formats. Depending
+of the presence of such a delegate a file format is supported or not. The
+cropping tool uses GM through pgmagick and expects the libtiff and the
+libjpeg delegates to be present. So make sure your GM installation
+supports tiff (check e.g. with the help of &#8220;gm convert -list format&#8221;).</p>
+</div>
+<div class="section" id="install-and-configure-postgresql">
+<h3>3. Install and configure PostgreSQL<a class="headerlink" href="#install-and-configure-postgresql" title="Permalink to this headline">¶</a></h3>
+<p>If you are comfortable with creating a new PostgreSQL database
+for CATMAID, then you should do that and continue to the next
+section. If you decide to do so, please make sure to also install the
+<code class="docutils literal"><span class="pre">postgis</span></code> extension for the new CATMAID database. The advice here is a
+suggested approach for people who are unsure what to do.</p>
+<p>If you are uncomfortable with using the PostgreSQL interactive
+terminal from the command line, you may wish to install an
+alternative interface, such as pgAdmin (<code class="docutils literal"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span>
+<span class="pre">pgadmin3</span></code>) or phpPgAdmin (<code class="docutils literal"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">phppgadmin</span></code>).</p>
+<p>We suppose for the examples below that you want to create a
+database called <code class="docutils literal"><span class="pre">catmaid</span></code> and a database user called
+<code class="docutils literal"><span class="pre">catmaid_user</span></code>.  Firstly, we need to reconfigure PostgreSQL to
+allow password-based authentication for that user to that
+database.  To do that, edit the file
+<code class="docutils literal"><span class="pre">/etc/postgresql/9.3/main/pg_hba.conf</span></code> (where <code class="docutils literal"><span class="pre">9.3</span></code> may be a
+slightly different version for you) and add this line as the
+<em>first</em> rule in that file:</p>
+<div class="highlight-python"><div class="highlight"><pre>local catmaid catmaid_user md5
+</pre></div>
+</div>
+<p>After saving that file, you need to restart PostgreSQL with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo service postgresql restart
+</pre></div>
+</div>
+<p>You can generate the commands for creating the database and
+database user with the <code class="docutils literal"><span class="pre">scripts/createuser.sh</span></code> helper script.
+This takes the database name, the database user and the user&#8217;s
+password as arguments and outputs some commands that can be
+interpreted by the PostgreSQL shell.  These can be piped
+directly to <code class="docutils literal"><span class="pre">psql</span></code>, so you could create the database and the
+user with, for example:</p>
+<div class="highlight-python"><div class="highlight"><pre>scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql
+</pre></div>
+</div>
+<p>Besides createing the database and the database user, it will also enable a
+required Postgres extension, called <code class="docutils literal"><span class="pre">postgis</span></code>. You should now be able to
+access the database and see that it is currently empty, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre>psql -U catmaid_user catmaid
+Password:
+psql (9.3.4)
+Type &quot;help&quot; for help.
+
+catmaid=&gt; \d
+No relations found.
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-the-django-settings-files">
+<h3>4. Create the Django settings files<a class="headerlink" href="#create-the-django-settings-files" title="Permalink to this headline">¶</a></h3>
+<p>Now you should change into
+<code class="docutils literal"><span class="pre">/home/alice/catmaid/django/</span></code> and run:</p>
+<div class="highlight-python"><div class="highlight"><pre>cp configuration.py.example configuration.py
+</pre></div>
+</div>
+<p>You should now edit <code class="docutils literal"><span class="pre">configuration.py</span></code> and fill in all the
+details requested.  Then you should run:</p>
+<div class="highlight-python"><div class="highlight"><pre>./create_configuration.py
+</pre></div>
+</div>
+<p>This will output some suggested Nginx and Apache configuration in the
+terminal, and generate the files <code class="docutils literal"><span class="pre">django.wsgi</span></code> and <code class="docutils literal"><span class="pre">settings.py</span></code>
+in <code class="docutils literal"><span class="pre">/home/alice/catmaid/django/projects/mysite</span></code>.</p>
+</div>
+<div class="section" id="create-the-database-tables">
+<h3>5. Create the database tables<a class="headerlink" href="#create-the-database-tables" title="Permalink to this headline">¶</a></h3>
+<p>The commands in the following sections are all based on the
+Django site&#8217;s admin script <code class="docutils literal"><span class="pre">manage.py</span></code>, which would be in
+<code class="docutils literal"><span class="pre">/home/alice/catmaid/django/projects/mysite</span></code>, so these
+instructions assume that you&#8217;ve changed into that directory:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">cd</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">alice</span><span class="o">/</span><span class="n">catmaid</span><span class="o">/</span><span class="n">django</span><span class="o">/</span><span class="n">projects</span><span class="o">/</span><span class="n">mysite</span>
+</pre></div>
+</div>
+<p>Now create some required tables with:</p>
+<div class="highlight-python"><div class="highlight"><pre>./manage.py syncdb
+</pre></div>
+</div>
+<p>And bring the database schema up to date for applications that
+mange changes to their tables with South:</p>
+<div class="highlight-python"><div class="highlight"><pre>./manage.py migrate
+</pre></div>
+</div>
+</div>
+<div class="section" id="prepare-the-static-files">
+<h3>6. Prepare the static files<a class="headerlink" href="#prepare-the-static-files" title="Permalink to this headline">¶</a></h3>
+<p>The static files (mostly Javascript, CSS and image files) that
+CATMAID requires need to be collected together into
+<code class="docutils literal"><span class="pre">/home/alice/catmaid/django/static</span></code> before they will be
+available.  To do this, you need to run:</p>
+<div class="highlight-python"><div class="highlight"><pre>./manage.py collectstatic -l
+</pre></div>
+</div>
+<p>(The <code class="docutils literal"><span class="pre">-l</span></code> means to create symbolic links to the original
+location of the files rather than copy them.)</p>
+</div>
+<div class="section" id="create-an-administrative-user">
+<h3>7. Create an administrative user<a class="headerlink" href="#create-an-administrative-user" title="Permalink to this headline">¶</a></h3>
+<p>In order to be able to log in to the CATMAID admin interface,
+you will need to create a &#8220;superuser&#8221; account to log in with.
+You can do this with:</p>
+<div class="highlight-python"><div class="highlight"><pre>./manage.py createsuperuser
+</pre></div>
+</div>
+</div>
+<div class="section" id="optionally-add-some-example-projects">
+<h3>8. Optionally add some example projects<a class="headerlink" href="#optionally-add-some-example-projects" title="Permalink to this headline">¶</a></h3>
+<p>If you want to have some example projects to try in your new
+CATMAID instance, you can create a couple with the following
+command:</p>
+<div class="highlight-python"><div class="highlight"><pre>./manage.py catmaid_insert_example_projects --user=1
+</pre></div>
+</div>
+<p>(The superuser you just created should have the user ID <code class="docutils literal"><span class="pre">1</span></code>.)</p>
+</div>
+<div class="section" id="try-running-the-django-development-server">
+<h3>9. Try running the Django development server<a class="headerlink" href="#try-running-the-django-development-server" title="Permalink to this headline">¶</a></h3>
+<p>You can run the Django development server with:</p>
+<div class="highlight-python"><div class="highlight"><pre>./manage.py runserver
+</pre></div>
+</div>
+<p>You should then be able to visit your instance of catmaid at <a class="reference external" href="http://localhost:8000">http://localhost:8000</a></p>
+</div>
+<div class="section" id="setting-up-a-production-webserver">
+<h3>10. Setting up a production webserver<a class="headerlink" href="#setting-up-a-production-webserver" title="Permalink to this headline">¶</a></h3>
+<p>You have various options for setting up CATMAID with a
+production webserver - you can choose from (at least) the
+following options:</p>
+<ol class="arabic simple">
+<li>Nginx and either gevent, uWSGI or Gunicorn, in which case see
+<a class="reference internal" href="alternative_install.html#alternative-install"><span>Setting up Nginx for CATMAID</span></a></li>
+<li>Apache + mod_wsgi, in which case see <a class="reference internal" href="apache.html#apache"><span>Setting up Apache and mod_wsgi</span></a></li>
+</ol>
+<p>We usually prefer to use Nginx because of a more straight-forward configuration,
+smaller memory footprint and better performance with Gunicorn.</p>
+<p>In general you want to fine-tune your setup to improve performance. Please have
+a look at our <a class="reference internal" href="administration.html#performance-tuning"><span>collection of advice</span></a> for the various
+infrastructure parts (e.g.  webserver, database, file system). This can really
+make a difference.</p>
+</div>
+<div class="section" id="using-the-admin-interface">
+<h3>11. Using the admin interface<a class="headerlink" href="#using-the-admin-interface" title="Permalink to this headline">¶</a></h3>
+<p>You should be able to login to the CATMAID admin interface and
+complete administration tasks by adding <code class="docutils literal"><span class="pre">/admin/</span></code> after the
+root URL of your CATMAID instance.  For example, with the
+development server, this would be:</p>
+<div class="highlight-python"><div class="highlight"><pre>http://localhost:8000/admin/
+</pre></div>
+</div>
+<p>... or, to use the variables used in the <code class="docutils literal"><span class="pre">configuration.py</span></code> (see step 4), the
+URL would be:</p>
+<div class="highlight-python"><div class="highlight"><pre>http://&lt;catmaid_servername&gt;/&lt;catmaid_subdirectory&gt;/admin/
+</pre></div>
+</div>
+</div>
+<div class="section" id="creating-tiles-for-new-catmaid-stacks">
+<h3>12. Creating tiles for new CATMAID stacks<a class="headerlink" href="#creating-tiles-for-new-catmaid-stacks" title="Permalink to this headline">¶</a></h3>
+<p>You can generate the image tiles for a stack with the
+<code class="docutils literal"><span class="pre">scripts/tiles/tile_stack</span></code> script or by exporting from TrakEM2
+with its &#8220;Export &gt; Flat Images&#8221; option and selecting the &#8220;Export
+for web&#8221; checkbox. Make the folder with the image pyramid
+web-accessible and use the URL as <code class="docutils literal"><span class="pre">image_base</span></code> URL for your
+stack.</p>
+</div>
+<div class="section" id="making-tools-visible">
+<h3>13. Making tools visible<a class="headerlink" href="#making-tools-visible" title="Permalink to this headline">¶</a></h3>
+<p>CATMAID offers a growing set of <a class="reference internal" href="tools.html#tools"><span>tools</span></a>. To not overload
+the user-interface, all tools which go beyond navigation are hidden by
+default. Which tools are visible is stored a
+<a class="reference internal" href="userprofiles.html#user-profiles"><span>user profile</span></a> for each user. You can adjust these
+settings at the bottom of the page while editing a user in the admin
+interface.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Basic Installation Instructions</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a><ul>
+<li><a class="reference internal" href="#clone-the-repository">1. Clone the repository</a></li>
+<li><a class="reference internal" href="#install-required-python-packages">2. Install required Python packages</a></li>
+<li><a class="reference internal" href="#install-and-configure-postgresql">3. Install and configure PostgreSQL</a></li>
+<li><a class="reference internal" href="#create-the-django-settings-files">4. Create the Django settings files</a></li>
+<li><a class="reference internal" href="#create-the-database-tables">5. Create the database tables</a></li>
+<li><a class="reference internal" href="#prepare-the-static-files">6. Prepare the static files</a></li>
+<li><a class="reference internal" href="#create-an-administrative-user">7. Create an administrative user</a></li>
+<li><a class="reference internal" href="#optionally-add-some-example-projects">8. Optionally add some example projects</a></li>
+<li><a class="reference internal" href="#try-running-the-django-development-server">9. Try running the Django development server</a></li>
+<li><a class="reference internal" href="#setting-up-a-production-webserver">10. Setting up a production webserver</a></li>
+<li><a class="reference internal" href="#using-the-admin-interface">11. Using the admin interface</a></li>
+<li><a class="reference internal" href="#creating-tiles-for-new-catmaid-stacks">12. Creating tiles for new CATMAID stacks</a></li>
+<li><a class="reference internal" href="#making-tools-visible">13. Making tools visible</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="developer.html">Developer Documentation</a><ul>
+      <li>Previous: <a href="developer.html" title="previous chapter">Developer Documentation</a></li>
+      <li>Next: <a href="userprofiles.html" title="next chapter">User Profiles</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

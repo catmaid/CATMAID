@@ -1,0 +1,344 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Contributing to CATMAID &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="Developer Documentation" href="developer.html" />
+    <link rel="prev" title="Setting up Nginx for CATMAID" href="alternative_install.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="alternative_install.html" title="Setting up Nginx for CATMAID"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="developer.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="contributing-to-catmaid">
+<h1>Contributing to CATMAID<a class="headerlink" href="#contributing-to-catmaid" title="Permalink to this headline">¶</a></h1>
+<p>CATMAID is open source software and welcomes contributions. This document
+provides a brief overview of the structure of CATMAID and guidelines
+contributing developers follow to help keep the codebase easy to understand and
+easy to extend.</p>
+<p>If you are considering contributing a feature to CATMAID, you can get guidance
+from other active developers through the <a class="reference external" href="https://groups.google.com/forum/#!forum/catmaid">CATMAID mailing list</a> and <a class="reference external" href="https://github.com/catmaid/CATMAID">GitHub repository</a>. Always check the <a class="reference external" href="https://github.com/catmaid/CATMAID/issues">list of open issues</a> as there may be valuable
+discussion relevant to your plans.</p>
+<p>Before developing any features you should follow the
+<a class="reference internal" href="installation.html"><em>basic installation instructions</em></a> to set up your development
+environment.</p>
+<div class="section" id="architecture-overview">
+<h2>Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permalink to this headline">¶</a></h2>
+<p>CATMAID is a distributed client-server application. The backend HTTP API, hosted
+by the server, retrieves and stores information about projects, image stacks,
+and annotations. The client frontend, which runs in the browser, provides an
+interface and suite of analysis tools which interact with the backend&#8217;s HTTP
+API. The frontend also has its own APIs which allow new tools to be quickly
+constructed or expert users to perform novel analysis using the browser console.</p>
+<p>The backend is written primarily in Python 2.7 using the Django web framework.
+Annotations and metadata about stacks are stored in a PostgreSQL database. Most
+endpoints in the backend API expect and return JSON.</p>
+<p>The frontend is written primarily in Javascript and makes use of a several
+external libraries. Most interfaces are built dynamically through Javascript;
+few HTML templates are used.</p>
+<p>A core philosophy of this architecture is to keep the backend API fast and
+minimal. The primary purpose of the backend is to mediate the database. Complex
+analysis and data processing is performed on the client whenever possible. This
+allows large scale collaboration with constrained server resources. Distributing
+computation this way also exploits CATMAID&#8217;s implementation choices, as modern
+Javascript VMs are typically much faster than Python.</p>
+<p>CATMAID is not an image host. Rather, the CATMAID backend provides resource,
+spatial, and semantic metadata about image stacks hosted elsewhere, while the
+CATMAID frontend is capable of rendering and navigating these image stacks. More
+information about the types of image hosts CATMAID supports is available <a class="reference external" href="https://github.com/catmaid/CATMAID/wiki/Convention-for-Stack-Image-Sources">on the
+wiki</a> and <a class="reference external" href="https://github.com/axtimwalde/catmaid-tools/blob/master/README.md">here</a>.</p>
+</div>
+<div class="section" id="project-organization">
+<h2>Project Organization<a class="headerlink" href="#project-organization" title="Permalink to this headline">¶</a></h2>
+<p>Code you are likely to be interested in is under the <code class="docutils literal"><span class="pre">django</span></code> folder in the
+repository root. The sections below outline basic folder, file, and module
+structure for the backend and frontend, as well as primers on a few common data
+structures.</p>
+<div class="section" id="backend">
+<h3>Backend<a class="headerlink" href="#backend" title="Permalink to this headline">¶</a></h3>
+<p>All of the relevant backend code is in the <code class="docutils literal"><span class="pre">django/applications/catmaid</span></code>
+folder. Within this folder, <code class="docutils literal"><span class="pre">models.py</span></code> defines the database schema and
+logical objects on which the back API operates, while <code class="docutils literal"><span class="pre">urls.py</span></code> maps URI
+endpoints in the API to Python methods. Both are useful starting points when
+locating particular functionality or determining where to add new functionality.</p>
+<p>Most of the API routes to the <code class="docutils literal"><span class="pre">catmaid.control</span></code> module and folder. Within this
+module API functions are organized into logical units like skeleton or
+connector, which are grouped into corresponding Python modules. These often
+contain utility functions not exposed by the API that may be useful, so when
+developing a new API endpoint be sure to check related modules for reusable
+utilities.</p>
+</div>
+<div class="section" id="frontend">
+<h3>Frontend<a class="headerlink" href="#frontend" title="Permalink to this headline">¶</a></h3>
+<p>If developing frontend functionality, a good strategy is to start by running
+scripts in the browser console to quickly prototype and become familiar with
+client APIs. The <a class="reference external" href="https://github.com/catmaid/CATMAID/wiki/Scripting">scripting wiki</a> provides an introduction
+to these APIs and snippets for common scripting tasks.</p>
+<p>Javascript source files should be placed in the
+<code class="docutils literal"><span class="pre">django/applications/catmaid/static/js</span></code> folder. External libraries are located
+in the <code class="docutils literal"><span class="pre">django/applications/catmaid/static/libs</span></code> folder, although there is
+also a special CATMAID library for shared, stable components. Javascript and CSS
+assets from these locations are managed by django-pipeline. When you add a
+Javascript file to the <code class="docutils literal"><span class="pre">static/js</span></code> folder and then run:</p>
+<div class="highlight-python"><div class="highlight"><pre>./manage.py collectstatic -l
+</pre></div>
+</div>
+<p>from the project folder, pipeline detects these assets, compiles and compresses
+them (if configured to do so), then passes them to Django to be linked from the
+configured static server directory. Assets for this pipeline are configured in
+<code class="docutils literal"><span class="pre">django/projects/mysite/pipelinefiles.py</span></code>. Source files placed in
+<code class="docutils literal"><span class="pre">static/js</span></code> will be detected automatically, but any external libraries added
+to the <code class="docutils literal"><span class="pre">static/libs</span></code> folder must also be added to <code class="docutils literal"><span class="pre">pipelinefiles.py</span></code>.</p>
+<p>Within the <code class="docutils literal"><span class="pre">static/js</span></code> folder and within the CATMAID frontend there is a
+distinction between <em>tools</em> and <em>widgets</em>. A tool contains a suite of
+annotations, interfaces and analyses. A widget, meanwhile, provides a single
+specific interface. Most likely you are familiar with a single tool in CATMAID,
+the tracing tool, but many widgets within the tracing tool, such as the 3D
+viewer, connectivity widget, and selection table.</p>
+<p>Widgets are generally prototyped objects that extend <code class="docutils literal"><span class="pre">InstanceRegistry</span></code>, which
+provides an easy means to track open instances of a particular widget. Rather
+than construct their own DOM, most widgets&#8217; DOM is built by a corresponding
+method in <code class="docutils literal"><span class="pre">WindowMaker</span></code>. <code class="docutils literal"><span class="pre">WindowMaker</span></code> binds events from the DOM it
+constructs to relevant handlers in the widget object.</p>
+</div>
+</div>
+<div class="section" id="code-style-and-conventions">
+<h2>Code Style and Conventions<a class="headerlink" href="#code-style-and-conventions" title="Permalink to this headline">¶</a></h2>
+<p>Over the history of its development, CATMAID has accumulated a mixture of many
+coding styles. To improve the consistency and clarity of code going forward, as
+well as to prevent some common technical pitfalls, the core developers now
+follow some simple guidelines for new code. These guidelines are relaxed and
+permissive.</p>
+<p>If modifying existing code, feel free to imitate the style of the surrounding
+code if it conflicts with these guidelines.</p>
+<div class="section" id="python">
+<h3>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h3>
+<p>CATMAID does not currently adhere to a specific Python style convention like
+PEP8. However, code should still follow common Python conventions and idioms
+including:</p>
+<ul class="simple">
+<li>4 spaces (not tabs) for indentation</li>
+<li>Maximum line length of 79 characters for comments</li>
+<li>Maximum line length of 120 characters for code</li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0008/#naming-conventions">PEP8 naming conventions</a></li>
+</ul>
+<p>All new code should include docstrings that follow <a class="reference external" href="https://www.python.org/dev/peps/pep-0257/">PEP257</a>.</p>
+</div>
+<div class="section" id="javascript">
+<h3>Javascript<a class="headerlink" href="#javascript" title="Permalink to this headline">¶</a></h3>
+<p>New code in CATMAID is styled similar to the <a class="reference external" href="https://google-styleguide.googlecode.com/svn/trunk/javascriptguide.xml">Google Javascript style guide</a>, with
+notable exceptions that:</p>
+<ul class="simple">
+<li>CATMAID does not use any Google libraries</li>
+<li>CATMAID does not use any requirements/dependency libraries</li>
+<li>CATMAID uses CamelCase namespace naming</li>
+</ul>
+<p>New javascript files should place all code inside an <a class="reference external" href="http://en.wikipedia.org/wiki/Immediately-invoked_function_expression">IIFE</a> to
+namespace it inside the <code class="docutils literal"><span class="pre">CATMAID</span></code> object and use <a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode">ES5 strict mode</a>:</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="hll"><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">CATMAID</span><span class="p">)</span> <span class="p">{</span>
+</span>
+<span class="hll">  <span class="s2">&quot;use strict&quot;</span><span class="p">;</span>
+</span>
+  <span class="kd">var</span> <span class="nx">variableNotExposedOutsideFile</span><span class="p">;</span>
+
+  <span class="kd">var</span> <span class="nx">ClassExposedOutsideFile</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="c1">//...</span>
+  <span class="p">};</span>
+
+  <span class="nx">CATMAID</span><span class="p">.</span><span class="nx">ClassExposedOutsideFile</span> <span class="o">=</span> <span class="nx">ClassExposedOutsideFile</span><span class="p">;</span>
+
+<span class="hll"><span class="p">})(</span><span class="nx">CATMAID</span><span class="p">);</span>
+</span></pre></div>
+</div>
+<p>This prevents unintentional leaking of variables into the global scope and
+possible naming conflicts with other libraries.</p>
+<p>CATMAID makes full use of ES5 language features and allows the following ES6
+features:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promises</a></li>
+<li><a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map">Maps</a>
+and <a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set">Sets</a>
+(IE11-supported <code class="docutils literal"><span class="pre">get</span></code>, <code class="docutils literal"><span class="pre">has</span></code>, <code class="docutils literal"><span class="pre">set</span></code>, <code class="docutils literal"><span class="pre">delete</span></code> and <code class="docutils literal"><span class="pre">forEach</span></code> only)</li>
+<li><code class="docutils literal"><span class="pre">const</span></code> and <code class="docutils literal"><span class="pre">let</span></code> declarations (in strict mode contexts only)</li>
+</ul>
+<p>All features must work correctly in recent versions of Chrome and Firefox, while
+core browsing features must work in IE11. Requiring polyfills for IE is
+acceptable.</p>
+</div>
+<div class="section" id="git">
+<h3>Git<a class="headerlink" href="#git" title="Permalink to this headline">¶</a></h3>
+<p>Try to follow the <a class="reference external" href="http://chris.beams.io/posts/git-commit/#seven-rules">seven rules of great git commit messages</a>:</p>
+<ol class="arabic simple">
+<li>Separate subject from body with a blank line</li>
+<li>Limit the subject line to 50 characters</li>
+<li>Capitalize the subject line</li>
+<li>Do not end the subject line with a period</li>
+<li>Use the imperative mood in the subject line</li>
+<li>Wrap the body at 72 characters</li>
+<li>Use the body to explain what and why vs. how</li>
+</ol>
+<p>That said, always prefer clarity over dogma. The core CATMAID contributors break
+#2 frequently to keep messages descriptive (apologies to our VAX users). If a
+commit focuses on a particular component or widget, prefix the commit message
+with its name, such as &#8220;Selection table:&#8221; or &#8220;SVG overlay:&#8221;.</p>
+<p>Granular commits are preferred. Squashes and rollups are avoided, and rebasing
+branches then fast-forwarding is preferred over merge commits when merging,
+except for large feature branches.</p>
+<p>Development occurs on the <code class="docutils literal"><span class="pre">dev</span></code> branch, which is merged to <code class="docutils literal"><span class="pre">master</span></code> when a
+release is made. It is usually best to develop new features by branching from
+<code class="docutils literal"><span class="pre">dev</span></code>, although critical fixes or extensions to particular releases can be
+based on <code class="docutils literal"><span class="pre">master</span></code> or the appropriate release tag.</p>
+<p>Never rewrite history of <code class="docutils literal"><span class="pre">master</span></code>, <code class="docutils literal"><span class="pre">dev</span></code>, or any other branch used by
+others.</p>
+</div>
+</div>
+<div class="section" id="linting-and-testing">
+<h2>Linting and Testing<a class="headerlink" href="#linting-and-testing" title="Permalink to this headline">¶</a></h2>
+<p>As part of the <a class="reference external" href="https://travis-ci.org/catmaid/CATMAID/branches">continuous integration build</a>, several automated processes are performed
+to help verify the correctness and quality of CATMAID:</p>
+<ul class="simple">
+<li><a class="reference internal" href="djangounittest.html"><em>Unit and integration tests for Django backend</em></a></li>
+<li>Linting (static analysis) of the javascript code with JSHint</li>
+<li>Unit tests of javascript code with QUnit</li>
+</ul>
+<p>If you <a class="reference external" href="http://docs.travis-ci.com/user/getting-started/#Step-two%3A-Activate-GitHub-Webhook">enable Travis-CI for your fork of CATMAID on GitHub</a>, Travis will
+run all of these checks automatically. However, Travis builds take a long time,
+and you may want feedback before committing and pushing changes. Luckily all of
+these checks are easy to run locally.</p>
+<p>Django tests are run through Django&#8217;s admin commands:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd /&lt;path_to_catmaid_install&gt;/django/projects/mysite
+./manage.py test catmaid.tests
+</pre></div>
+</div>
+<p>JSHint can be <a class="reference external" href="http://jshint.com/install/">installed from NPM or your platform&#8217;s package manager</a> and should use CATMAID&#8217;s config settings:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd /&lt;path_to_catmaid_install&gt;
+jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications
+</pre></div>
+</div>
+<p>If you do not want to configure your own JSHint settings, you can set these as
+defaults:</p>
+<div class="highlight-python"><div class="highlight"><pre>ln -s .travis.jshintrc .jshintrc
+ln -s .travis.jshintignore .jshintignore
+jshint django/applications
+</pre></div>
+</div>
+<p>QUnit tests can be run from the browser while your Django server is running. For
+example, with the default configuration this would be:</p>
+<div class="highlight-python"><div class="highlight"><pre>http://localhost:8000/tests
+</pre></div>
+</div>
+<p>... or, for custom configurations:</p>
+<div class="highlight-python"><div class="highlight"><pre>http://&lt;catmaid_servername&gt;/&lt;catmaid_subdirectory&gt;/tests
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Contributing to CATMAID</a><ul>
+<li><a class="reference internal" href="#architecture-overview">Architecture Overview</a></li>
+<li><a class="reference internal" href="#project-organization">Project Organization</a><ul>
+<li><a class="reference internal" href="#backend">Backend</a></li>
+<li><a class="reference internal" href="#frontend">Frontend</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#code-style-and-conventions">Code Style and Conventions</a><ul>
+<li><a class="reference internal" href="#python">Python</a></li>
+<li><a class="reference internal" href="#javascript">Javascript</a></li>
+<li><a class="reference internal" href="#git">Git</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#linting-and-testing">Linting and Testing</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="developer.html">Developer Documentation</a><ul>
+      <li>Previous: <a href="alternative_install.html" title="previous chapter">Setting up Nginx for CATMAID</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

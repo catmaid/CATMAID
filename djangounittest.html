@@ -1,0 +1,196 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Django unit tests for CATMAID &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="Developer Documentation" href="developer.html" />
+    <link rel="next" title="Installation of the CELERY task queue" href="celeryinstall.html" />
+    <link rel="prev" title="Administering a CATMAID instance" href="administration.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="celeryinstall.html" title="Installation of the CELERY task queue"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="administration.html" title="Administering a CATMAID instance"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="developer.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="django-unit-tests-for-catmaid">
+<h1>Django unit tests for CATMAID<a class="headerlink" href="#django-unit-tests-for-catmaid" title="Permalink to this headline">¶</a></h1>
+<p>If you want to be able to run the unit tests, you will need to allow
+the catmaid database user (catmaid_user by default) to create new
+databases.</p>
+<p>Start a postgres shell with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo -u postgres psql
+</pre></div>
+</div>
+<p>You can change the role  with:</p>
+<div class="highlight-python"><div class="highlight"><pre>postgres=# ALTER USER catmaid_user CREATEDB;
+ALTER ROLE
+</pre></div>
+</div>
+<p>... and you should also add this line at the top of
+<em>/etc/postgresql/XversionX/main/pg_hba.conf</em></p>
+<div class="highlight-python"><div class="highlight"><pre>local test_catmaid catmaid_user md5
+</pre></div>
+</div>
+<p>... and then restart PostgreSQL:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo /etc/init.d/postgresql restart
+</pre></div>
+</div>
+<div class="section" id="running-tests">
+<h2>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this headline">¶</a></h2>
+<p>You can run the tests with:</p>
+<div class="highlight-python"><div class="highlight"><pre>./manage.py test
+</pre></div>
+</div>
+<p>If you see an error:</p>
+<div class="highlight-python"><div class="highlight"><pre>DatabaseError: must be owner of extension plpgsql
+</pre></div>
+</div>
+<p>Fix it with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo -u postgres psql
+ALTER ROLE catmaid_user WITH superuser;
+</pre></div>
+</div>
+</div>
+<div class="section" id="loading-the-test-fixtures-schema-and-data-into-a-new-catmaid-database">
+<h2>Loading the test fixtures (schema and data) into a new CATMAID database<a class="headerlink" href="#loading-the-test-fixtures-schema-and-data-into-a-new-catmaid-database" title="Permalink to this headline">¶</a></h2>
+<p>Directly editing the data in the test fixtures (<cite>django/applications/catmaid/tables_and_data.sql</cite>) would be very error-prone.  A better idea is to create a new CATMAID instance pointing to a database that only contains the fixture data.  Then you should only very carefully make changes to the CATMAID instance where they are required to support a new test you want to add.</p>
+<p>To create such an instance, follow the usual installation instructions for CATMAID up to the point where you would use the <cite>createuser.sh</cite> script, and make sure that you specify a new database name, e.g. <cite>catmaid_fixture</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre>scripts/createuser.sh catmaid_fixture catmaid_user p4ssw0rd | sudo -u postgres psql
+</pre></div>
+</div>
+<p>Then, rather than loading the usual example data, just import the fixture data:</p>
+<div class="highlight-python"><div class="highlight"><pre>psql -U catmaid_user catmaid_fixture &lt; django/applications/vncbrowser/tables_and_data.sql
+</pre></div>
+</div>
+<p>If you want to start again and reload the fixture data into the test database, you can do:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo -u postgres dropdb catmaid_fixture
+scripts/createuser.sh catmaid_fixture catmaid_user p4ssw0rd | sudo -u postgres psql
+psql -U catmaid_user catmaid_fixture &lt; django/applications/vncbrowser/tables_and_data.sql
+</pre></div>
+</div>
+</div>
+<div class="section" id="dumping-changes-in-a-catmaid-instance-back-to-the-test-fixtures">
+<h2>Dumping changes in a CATMAID instance back to the test fixtures<a class="headerlink" href="#dumping-changes-in-a-catmaid-instance-back-to-the-test-fixtures" title="Permalink to this headline">¶</a></h2>
+<p>Suppose that to create the data for your test, you needed to add a skeleton and a neuron in your CATMAID instance.  You should then dump the database back to the fixture files afterwards:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd ~/catmaid
+scripts/database/dump-database.sh catmaid_fixture &gt; django/applications/vncbrowser/tables_and_data.sql
+</pre></div>
+</div>
+<p>Then run <cite>git diff</cite> to check that the additions to the fixtures make sense.  (It&#8217;s a good idea to check how these changes to the fixtures affect which tests pass.)</p>
+</div>
+<div class="section" id="test-coverage">
+<h2>Test coverage<a class="headerlink" href="#test-coverage" title="Permalink to this headline">¶</a></h2>
+<p>If you install <cite>coverage.py</cite> (<cite>pip install coverage</cite> in your virtualenv) you can generate test coverage statistics with:</p>
+<div class="highlight-python"><div class="highlight"><pre>coverage run ./manage.py test catmaid
+</pre></div>
+</div>
+<p>Then run:</p>
+<div class="highlight-python"><div class="highlight"><pre>coverage html
+</pre></div>
+</div>
+<p>... to generate HTML output in <cite>htmlcov/index.html</cite></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Django unit tests for CATMAID</a><ul>
+<li><a class="reference internal" href="#running-tests">Running tests</a></li>
+<li><a class="reference internal" href="#loading-the-test-fixtures-schema-and-data-into-a-new-catmaid-database">Loading the test fixtures (schema and data) into a new CATMAID database</a></li>
+<li><a class="reference internal" href="#dumping-changes-in-a-catmaid-instance-back-to-the-test-fixtures">Dumping changes in a CATMAID instance back to the test fixtures</a></li>
+<li><a class="reference internal" href="#test-coverage">Test coverage</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="developer.html">Developer Documentation</a><ul>
+      <li>Previous: <a href="administration.html" title="previous chapter">Administering a CATMAID instance</a></li>
+      <li>Next: <a href="celeryinstall.html" title="next chapter">Installation of the CELERY task queue</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

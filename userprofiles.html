@@ -1,0 +1,135 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>User Profiles &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="Developer Documentation" href="developer.html" />
+    <link rel="next" title="Database Migrations" href="dbmigration.html" />
+    <link rel="prev" title="Basic Installation Instructions" href="installation.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="dbmigration.html" title="Database Migrations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Basic Installation Instructions"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="developer.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="user-profiles">
+<span id="id1"></span><h1>User Profiles<a class="headerlink" href="#user-profiles" title="Permalink to this headline">¶</a></h1>
+<p>To manage per-user settings, in CATMAID each user has a profile attached.
+These profiles can be adjusted in the admin interface by going to a users
+settings page. Currently, there are settings for inverting the mouse wheel
+and for the display of CATMAID&#8217;s different tools.</p>
+<p>Those settings also have default values which are user for new users and
+which can be set for all users at once. To adjust those defaults to your
+use case, add and change the following lines to your Django configuration
+(likely <cite>settings.py</cite>):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">PROFILE_SHOW_TEXT_LABEL_TOOL</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">PROFILE_SHOW_TAGGING_TOOL</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">PROFILE_SHOW_CROPPING_TOOL</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">PROFILE_SHOW_SEGMENTATION_TOOL</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">PROFILE_SHOW_TRACING_TOOL</span> <span class="o">=</span> <span class="bp">False</span>
+</pre></div>
+</div>
+<p>As you can see, by default all tools are invisible. Change <code class="docutils literal"><span class="pre">False</span></code> to
+<code class="docutils literal"><span class="pre">True</span></code> if you want to make a tool available on the toolbar for new users.
+If you want to use these default settings for existing users, please use
+this management command:</p>
+<div class="highlight-python"><div class="highlight"><pre>./manage.py catmaid_set_user_profiles_to_default
+</pre></div>
+</div>
+<p>If you add the <code class="docutils literal"><span class="pre">--update-anon-user</span></code> option, the user profile of the
+anonymous user will get updated to the current default settings as well. By
+default, the anonymous user is not updated.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script><h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="developer.html">Developer Documentation</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Basic Installation Instructions</a></li>
+      <li>Next: <a href="dbmigration.html" title="next chapter">Database Migrations</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

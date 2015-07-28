@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Creating a CATMAID instance on EC2 &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="Developer Documentation" href="developer.html" />
+    <link rel="next" title="Creating new Data View Types" href="data_view_types.html" />
+    <link rel="prev" title="Installation of the CELERY task queue" href="celeryinstall.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="data_view_types.html" title="Creating new Data View Types"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="celeryinstall.html" title="Installation of the CELERY task queue"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="developer.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="creating-a-catmaid-instance-on-ec2">
+<span id="ami"></span><h1>Creating a CATMAID instance on EC2<a class="headerlink" href="#creating-a-catmaid-instance-on-ec2" title="Permalink to this headline">¶</a></h1>
+<p>If you use Amazon&#8217;s EC2 service to host web services in the
+cloud, you may find it easiest to create a new EC2 instance with
+a running CATMAID from our new AMI (Amazon Machine Image).  You
+can launch an EC2 instance (in the <code class="docutils literal"><span class="pre">eu-west-1</span></code> zone, directly
+from <a class="reference external" href="https://console.aws.amazon.com/ec2/home?region=eu-west-1#launchAmi=ami-ec545e98">this link</a>
+or if you want to find the AMI by hand in the public images in
+<code class="docutils literal"><span class="pre">eu-west-1</span></code>, its AMI ID is: <code class="docutils literal"><span class="pre">ami-ec545e98</span></code>.</p>
+<p>This AMI is based on Canonical&#8217;s Ubuntu 12.04 (precise) i386
+image, backed by EBS.  It will run in a &#8220;micro&#8221; instance (one of
+which is available in Amazon&#8217;s free tier for a year if you
+sign up for the first time) but for a production server you
+would want a faster (and more expensive) virtual machine to run
+CATMAID on.  (The CPU throttling on Micro instances will make
+performance very unpredictable.)</p>
+<div class="section" id="launching-the-ec2-instance">
+<h2>Launching the EC2 Instance<a class="headerlink" href="#launching-the-ec2-instance" title="Permalink to this headline">¶</a></h2>
+<p>When you launch the EC2 instance, make sure you choose a
+security group (or security groups) that include at least SSH
+(TCP port 22) and HTTP (TCP port 80).</p>
+</div>
+<div class="section" id="logging-in">
+<h2>Logging In<a class="headerlink" href="#logging-in" title="Permalink to this headline">¶</a></h2>
+<p>You should log in over SSH with the username <code class="docutils literal"><span class="pre">ubuntu</span></code> and
+specifying as your identity file the private key that you
+downloaded from Amazon after creating your keypair; for example:</p>
+<div class="highlight-python"><div class="highlight"><pre>ssh -i ~/.ssh/my-aws.pem ubuntu@whatever.compute.amazonaws.com
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">ubuntu</span></code> user can gain root privileges using <code class="docutils literal"><span class="pre">sudo</span></code>,
+which doesn&#8217;t require a password.  The CATMAID code is owned by
+(and runs as) the <code class="docutils literal"><span class="pre">catmaid</span></code> user, so if you wish to change the
+code, you should switch to that user:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo su - catmaid
+</pre></div>
+</div>
+<p>The source code is in <code class="docutils literal"><span class="pre">/home/catmaid/catmaid/</span></code>.</p>
+</div>
+<div class="section" id="server-configuration">
+<h2>Server Configuration<a class="headerlink" href="#server-configuration" title="Permalink to this headline">¶</a></h2>
+<p>The AMI is configured to use Nginx + Gunicorn; by default it is
+configured to use 4 synchronous worker threads, which can be
+changed in <code class="docutils literal"><span class="pre">/etc/init/gunicorn-catmaid.conf</span></code>.  (You can
+restart Gunicorn with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo initctl restart gunicorn-catmaid
+</pre></div>
+</div>
+<p>(We are not sure, at the moment, whether using gevent-based
+greenlet worker threads is safe to use with CATMAID&#8217;s current
+&#8220;database transaction per HTTP request&#8221; model.)</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Creating a CATMAID instance on EC2</a><ul>
+<li><a class="reference internal" href="#launching-the-ec2-instance">Launching the EC2 Instance</a></li>
+<li><a class="reference internal" href="#logging-in">Logging In</a></li>
+<li><a class="reference internal" href="#server-configuration">Server Configuration</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="developer.html">Developer Documentation</a><ul>
+      <li>Previous: <a href="celeryinstall.html" title="previous chapter">Installation of the CELERY task queue</a></li>
+      <li>Next: <a href="data_view_types.html" title="next chapter">Creating new Data View Types</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

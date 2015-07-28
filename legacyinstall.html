@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1.1 Upgrading from an older PostgreSQL version &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <p>While the article is about version 8.x of PostgreSQL,
+it applies to PostgreSQL &gt;= 9.0 as well. Unfortunately, the
+official Ubuntu 10.10 repositories, don&#8217;t offer PostgreSQL 9.x
+as a backport package yet. To make it available, just add the
+<a class="reference external" href="https://launchpad.net/~pitti/+archive/postgresql">backports PPA</a>
+of Martin Pitt to your system:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo add-apt-repository ppa:pitti/postgresql
+sudo apt-get update
+</pre></div>
+</div>
+<p>In case you are upgrading from a previous PostgreSQL version,
+you might want to follow the steps in section
+<a class="reference internal" href="#upgrading-postgresql"><span>1.1 Upgrading from an older PostgreSQL version</span></a>.</p>
+<div class="section" id="upgrading-from-an-older-postgresql-version">
+<span id="upgrading-postgresql"></span><h1>1.1 Upgrading from an older PostgreSQL version<a class="headerlink" href="#upgrading-from-an-older-postgresql-version" title="Permalink to this headline">¶</a></h1>
+<p>To upgrade a currently running PostgreSQL server to a newer
+version, you should follow the steps listed below. In short
+you create a backup of your data base, save it to two
+different locations, upgrade PostgreSQL and import your
+backup into the new server.</p>
+<p>To do so, the first step is to stop postgresql and services
+that use it (e.g. a web server). Then the backup has to be
+created:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo su - postgres
+pg_dumpall &gt; backup_db
+exit
+</pre></div>
+</div>
+<p>This backup should be copied to another place as well. If you
+modified the PostgreSQL configuration files in <cite>/etc/postgresql</cite>
+you might want to make a backup of these, too.</p>
+<p>Now all traces of the old PostgreSQL server (here 8.4) will
+be removed and a newer version (9.1) installed:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get purge postgresql-8.4
+sudo apt-get install postgresql-9.1
+</pre></div>
+</div>
+<p>As a last step the backup made before, has to be restored:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo su - postgres
+psql &lt; backup_db
+exit
+</pre></div>
+</div>
+<p>Now restart postregsql and the services relying on it. Finally,
+check if all the data is in place no service complains.</p>
+</div>
+<div class="section" id="named-virtual-hosts-approach">
+<h1>2.2 Named Virtual Hosts approach:<a class="headerlink" href="#named-virtual-hosts-approach" title="Permalink to this headline">¶</a></h1>
+<p>Your clone of the CATMAID source code should be <em>outside</em> any
+web-accessible directory.  For example, let&#8217;s say that you have
+the source code in <cite>/home/alice/CATMAID/</cite></p>
+<p>Create a directory for the log files, for example with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo mkdir -p /var/log/apache2/catmaid/
+</pre></div>
+</div>
+<p>Create in /etc/apache2/sites-available a file called &#8220;catmaid&#8221;:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;VirtualHost *:80&gt;
+    ServerName catmaid
+
+    DocumentRoot &quot;/home/alice/CATMAID/httpdocs/&quot;
+
+    php_admin_value register_globals off
+    php_admin_value include_path &quot;.:/home/alice/CATMAID/inc&quot;
+    php_admin_value session.use_only_cookies 1
+    php_admin_value error_reporting 2047
+    php_admin_value display_errors true
+
+    &lt;Directory /home/alice/CATMAID/httpdocs/&gt;
+
+        Options FollowSymLinks
+        AllowOverride AuthConfig Limit FileInfo
+
+        Order allow,deny
+        allow from all
+
+    &lt;/Directory&gt;
+
+    CustomLog /var/log/apache2/catmaid/access_log combined
+    ErrorLog /var/log/apache2/catmaid/error.log
+
+&lt;/VirtualHost&gt;
+</pre></div>
+</div>
+<p>Then make apache aware of the virtual host:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo a2ensite catmaid
+</pre></div>
+</div>
+<p>... then restart apache:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo /etc/init.d/apache2 restart
+</pre></div>
+</div>
+<p>... and finally add this entry to &#8220;/etc/hosts&#8221;:</p>
+<div class="highlight-python"><div class="highlight"><pre>127.0.0.1    catmaid
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1.1 Upgrading from an older PostgreSQL version</a></li>
+<li><a class="reference internal" href="#named-virtual-hosts-approach">2.2 Named Virtual Hosts approach:</a></li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

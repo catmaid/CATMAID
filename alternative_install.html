@@ -1,0 +1,343 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Setting up Nginx for CATMAID &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="Developer Documentation" href="developer.html" />
+    <link rel="next" title="Contributing to CATMAID" href="contributing.html" />
+    <link rel="prev" title="Creating new Data View Types" href="data_view_types.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contributing.html" title="Contributing to CATMAID"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="data_view_types.html" title="Creating new Data View Types"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="developer.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="setting-up-nginx-for-catmaid">
+<span id="alternative-install"></span><h1>Setting up Nginx for CATMAID<a class="headerlink" href="#setting-up-nginx-for-catmaid" title="Permalink to this headline">¶</a></h1>
+<p>Of course, using Apache and its WSGI module (mod_wsgi) is not the only
+way to run CATMAID. There are many web and WSGI servers available.
+This section is intended to provide information on such
+alternatives, and in particular the use of Nginx and various
+WSGI servers.</p>
+<p>The installation instructions provided here, assume that you have set up
+the database and Django as described in the standard installation
+instructions.</p>
+<div class="section" id="setup-based-on-nginx-and-gevent">
+<h2>Setup based on Nginx and Gevent<a class="headerlink" href="#setup-based-on-nginx-and-gevent" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://nginx.org/">Nginx</a> is a web server with focus on high performance
+and concurrency while maintaining a low memory footprint. However, it is
+(by default) not a WSGI server and one needs to set this up separately. Here,
+we will use <a class="reference external" href="http://gevent.org/">Gevent</a> to provide this functionality. It
+is a WSGI server is based on Python <a class="reference external" href="http://en.wikipedia.org/wiki/Coroutine">coroutines</a>
+and <a class="reference external" href="http://greenlet.readthedocs.org/en/latest/">greenlets</a>.</p>
+<p>Of course, you need to install Nginx, and the libevent package if you will use gevent.
+In Debian based distributions, this can be done with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install nginx libevent-dev
+</pre></div>
+</div>
+<p>Nginx can be started after this.</p>
+<p>Gevent in turn is a Python module. To make it usable, activate the <em>virtualenv</em>
+and install Gevent by running:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install gevent
+</pre></div>
+</div>
+<p>After this, Gevent is usable. In the next sections we will configure both
+the web and the WSGI server.</p>
+<div class="section" id="nginx-configuration">
+<h3>Nginx configuration<a class="headerlink" href="#nginx-configuration" title="Permalink to this headline">¶</a></h3>
+<p>A good general introduction to Nginx configuration can be found
+<a class="reference external" href="http://blog.martinfjordvald.com/2010/07/nginx-primer/">here</a>. In the
+following, a Nginx configuration is provided to give access to CATMAID:</p>
+<div class="highlight-nginx"><div class="highlight"><pre><span class="k">upstream</span> <span class="s">catmaid-wsgi</span> <span class="p">{</span>
+    <span class="kn">server</span> <span class="n">127.0.0.1</span><span class="p">:</span><span class="mi">8080</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">server</span> <span class="p">{</span>
+    <span class="kn">listen</span> <span class="mi">80</span><span class="p">;</span>
+    <span class="kn">server_name</span> <span class="s">&lt;CATMAID-HOST&gt;</span><span class="p">;</span>
+
+    <span class="c1"># Give access to Django&#39;s static files</span>
+    <span class="kn">location</span> <span class="s">/catmaid/static/</span> <span class="p">{</span>
+        <span class="kn">alias</span> <span class="s">&lt;CATMAID-PATH&gt;/django/static/</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Route all CATMAID Django WSGI requests to the Gevent WSGI server</span>
+    <span class="kn">location</span> <span class="s">/catmaid/</span> <span class="p">{</span>
+        <span class="kn">proxy_pass</span> <span class="s">http://catmaid-wsgi/</span><span class="p">;</span>
+        <span class="kn">proxy_redirect</span> <span class="s">http://catmaid-wsgi/</span> <span class="s">http://</span><span class="nv">$host/</span><span class="p">;</span>
+        <span class="c1"># This is required to tell Django it is behind a proxy</span>
+        <span class="kn">proxy_set_header</span> <span class="s">X-Forwarded-For</span> <span class="nv">$proxy_add_x_forwarded_for</span><span class="p">;</span>
+        <span class="c1"># This lets Django know which protocol was used to connect and also</span>
+        <span class="c1"># overrides the header a client who fakes it.</span>
+        <span class="kn">proxy_set_header</span> <span class="s">X-Forwarded-Protocol</span> <span class="nv">$scheme</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This setup expects CATMAID to be accessible from a <cite>catmaid</cite> subdirectory
+under the domain&#8217;s root. To use this configuration when CATMAID lives on
+the domain&#8217;s root, just remove <cite>/catmaid</cite> from every location block (and
+do the same in Django&#8217;s settings.py, of course).</p>
+<p>The first block (upstream) defines where the Gevent server will be available.
+In this case, we assumed we can access it under <cite>127.0.0.1:8080</cite>. The server
+block defines the actual web server.</p>
+<p>There you have to adjust <cite>&lt;CATMAID-HOST&gt;</cite> to where your CATMAID instance
+should be available (e.g. catmaid.example.org). The first location block
+defines from where the static files should be served. The <cite>&lt;CATMAID-PATH&gt;</cite>
+placeholder needs to be replaced with the absolute path to your CATMAID
+folder. The second location block passes all requests to the WSGI server
+defined before and allows therefore the execution of Django.</p>
+<div class="section" id="a-note-on-the-proxy-redirect-command">
+<h4>A note on the <code class="docutils literal"><span class="pre">proxy_redirect</span></code> command<a class="headerlink" href="#a-note-on-the-proxy-redirect-command" title="Permalink to this headline">¶</a></h4>
+<p>In general, this command modifies the <em>Location</em> and the <em>Refresh</em> HTTP header
+fields in the header of a redirect reply of the proxied server. In our case
+this is the WSGI server, running CATMAID. Redirects happen e.g. as the correct
+response to HTTP POST request (which e.g. happen if you change something from
+within the admin interface). The first URL gets replaced by the second one,
+i.e.  <code class="docutils literal"><span class="pre">http://catmaid-wsgi/</span></code> with <code class="docutils literal"><span class="pre">http://$host/</span></code>. The
+<a class="reference external" href="http://wiki.nginx.org/HttpCoreModule#.24host">$host</a> variable is the header&#8217;s
+<em>Host</em> field and therefore the host CATMAID is running on. This makes the
+outside world see the front end server in the request URLs&#8212;a good thing and
+if CATMAID is <em>not</em> running in a subdirectory, one can remove this line and the
+default behavior should just work. The
+<a class="reference external" href="http://wiki.nginx.org/HttpProxyModule#proxy_redirect">default behavior</a>
+replaces the URL given to <code class="docutils literal"><span class="pre">proxy_pass</span></code> with the path of the whole
+<code class="docutils literal"><span class="pre">location</span></code> block. When CATMAID doesn&#8217;t live in a subdirectory, this is
+equivalent to:</p>
+<div class="highlight-nginx"><div class="highlight"><pre><span class="k">proxy_redirect</span> <span class="s">http://catmaid-wsgi/</span> <span class="s">/</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>This is fine, so the line could be removed, but it gets a problem if CATMAID
+lives in a subdirectory. The default behavior would then translate to (wrt. to
+the configuration above):</p>
+<div class="highlight-nginx"><div class="highlight"><pre><span class="k">proxy_redirect</span> <span class="s">http://catmaid-wsgi/</span> <span class="s">/catmaid/</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>If CATMAID lives in a subdirectory, you likely also have the
+<code class="docutils literal"><span class="pre">FORCE_SCRIPT_NAME</span></code> property in your settings file set accordingly (e.g. to
+<code class="docutils literal"><span class="pre">/catmaid</span></code>). In short, this leads Django to prepend every generated URL with
+this path. If in a subdirectory, it is needed for all types of HTTP
+requests&#8212;not only, but also for redirects. This in turn results in prepending
+the subdirectory twice for redirect requests: 1. Django does it due to
+<code class="docutils literal"><span class="pre">FORCE_SCRIPT_NAME</span></code> 2. Nginx does it when <code class="docutils literal"><span class="pre">proxy_redirect</span></code> is used with its
+default behavior (e.g. if left out). To fix this, the rewrite of proxies
+redirects has to be explicitly set to rewrite the WSGI URL to <code class="docutils literal"><span class="pre">$host</span></code> or to
+<code class="docutils literal"><span class="pre">/</span></code>, i.e. to:</p>
+<div class="highlight-nginx"><div class="highlight"><pre><span class="k">proxy_redirect</span> <span class="s">http://catmaid-wsgi/</span> <span class="s">http://</span><span class="nv">$host/</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Therefore, it is is part of the above configuration.</p>
+</div>
+</div>
+<div class="section" id="gevent-run-script">
+<h3>Gevent run script<a class="headerlink" href="#gevent-run-script" title="Permalink to this headline">¶</a></h3>
+<p>To start Gevent, a small Python script is used. It is best to place it in:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;CATMAID-path&gt;/django/projects/mysite/
+</pre></div>
+</div>
+<p>There, you put the following lines into a file (e.g. run-gevent.py):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#!/usr/bin/env python</span>
+
+<span class="c"># Import gevent monkey and patch everything</span>
+<span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">monkey</span>
+<span class="n">monkey</span><span class="o">.</span><span class="n">patch_all</span><span class="p">(</span><span class="n">httplib</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># Import the rest</span>
+<span class="kn">from</span> <span class="nn">django.core.handlers.wsgi</span> <span class="kn">import</span> <span class="n">WSGIHandler</span> <span class="k">as</span> <span class="n">DjangoWSGIApp</span>
+<span class="kn">from</span> <span class="nn">django.core.management</span> <span class="kn">import</span> <span class="n">setup_environ</span>
+<span class="kn">from</span> <span class="nn">gevent.wsgi</span> <span class="kn">import</span> <span class="n">WSGIServer</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">settings</span>
+
+<span class="n">setup_environ</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">runserver</span><span class="p">():</span>
+    <span class="c"># Create the server</span>
+    <span class="n">application</span> <span class="o">=</span> <span class="n">DjangoWSGIApp</span><span class="p">()</span>
+    <span class="n">address</span> <span class="o">=</span> <span class="s">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">8080</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">WSGIServer</span><span class="p">(</span> <span class="n">address</span><span class="p">,</span> <span class="n">application</span> <span class="p">)</span>
+    <span class="c"># Run the server</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">server</span><span class="o">.</span><span class="n">serve_forever</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="n">server</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">runserver</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If executed, this will start a Gevent server on IP 127.0.0.1 and port 8080.
+Adjust those values to your liking.</p>
+<p>Having configured and started both servers, you should now be able to access
+CATMAID.</p>
+</div>
+</div>
+<div class="section" id="setup-based-on-nginx-and-uwsgi">
+<h2>Setup based on Nginx and uWSGI<a class="headerlink" href="#setup-based-on-nginx-and-uwsgi" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://projects.unbit.it/uwsgi/">uWSGI</a> is a versatile WSGI server written in C,
+and can serve as the middle layer between Nginx and CATMAID.</p>
+<p>On Ubuntu 12.04, install nginx and uwsgi:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install nginx uwsgi uwsgi-plugin-python
+</pre></div>
+</div>
+<p>Here is a sample uWSGI configuration file.  On Ubuntu, this can be saved as
+<em>/etc/uwsgi/apps-available/catmaid.ini</em>, with a soft link to <em>/etc/uwsgi/apps-enabled/catmaid.ini</em>:</p>
+<div class="highlight-python"><div class="highlight"><pre>; uWSGI instance configuration for CATMAID
+[uwsgi]
+virtualenv = /home/alice/.virtualenvs/catmaid
+chdir = &lt;CATMAID-PATH&gt;/django
+socket = /run/uwsgi/app/catmaid/socket
+mount = /=&lt;CATMAID-path&gt;/django/projects/mysite/django.wsgi
+plugins = python
+; manage-script-name is required if CATMAID will be run in a subdirectory
+manage-script-name = true
+</pre></div>
+</div>
+<p>You now be able to start uWSGI manually with one of the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>uwsgi --ini /etc/uwsgi/apps-available/catmaid.ini
+(or)
+service uwsgi start catmaid.ini
+</pre></div>
+</div>
+<p>Here is a sample nginx configuration file:</p>
+<div class="highlight-python"><div class="highlight"><pre>server {
+    listen 8080;
+    server_name &lt;CATMAID-HOST&gt;;
+
+    # Give access to Django&#39;s static files
+    location /catmaid/static/ {
+       alias &lt;CATMAID-PATH&gt;/django/static/;
+    }
+
+    # Route all CATMAID Django WSGI requests to uWSGI
+    location /catmaid/ {
+        include uwsgi_params;
+        uwsgi_pass unix:///run/uwsgi/app/catmaid/socket;
+    }
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="setup-based-on-nginx-and-gunicorn">
+<h2>Setup based on Nginx and Gunicorn<a class="headerlink" href="#setup-based-on-nginx-and-gunicorn" title="Permalink to this headline">¶</a></h2>
+<p>For using the Gunicorn WSGI server, the same Nginx configuration
+can be used as that given above for use with gevent.  (You may
+need to change the port, however.)  As an example of how to
+start Gunicorn, there is a upstart script, suitable for Ubuntu,
+in <code class="docutils literal"><span class="pre">django/projects/mysite/gunicorn-catmaid.conf</span></code>.  You would
+copy this to <code class="docutils literal"><span class="pre">/etc/init/</span></code>, customize it, and start Gunicorn
+with <code class="docutils literal"><span class="pre">initctl</span> <span class="pre">start</span> <span class="pre">gunicorn-catmaid</span></code>.  (Thereafter it will be
+started on boot automatically, and can be restarted with
+<code class="docutils literal"><span class="pre">initctl</span> <span class="pre">restart</span> <span class="pre">gunicorn-catmaid</span></code>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Setting up Nginx for CATMAID</a><ul>
+<li><a class="reference internal" href="#setup-based-on-nginx-and-gevent">Setup based on Nginx and Gevent</a><ul>
+<li><a class="reference internal" href="#nginx-configuration">Nginx configuration</a><ul>
+<li><a class="reference internal" href="#a-note-on-the-proxy-redirect-command">A note on the <code class="docutils literal"><span class="pre">proxy_redirect</span></code> command</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#gevent-run-script">Gevent run script</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#setup-based-on-nginx-and-uwsgi">Setup based on Nginx and uWSGI</a></li>
+<li><a class="reference internal" href="#setup-based-on-nginx-and-gunicorn">Setup based on Nginx and Gunicorn</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="developer.html">Developer Documentation</a><ul>
+      <li>Previous: <a href="data_view_types.html" title="previous chapter">Creating new Data View Types</a></li>
+      <li>Next: <a href="contributing.html" title="next chapter">Contributing to CATMAID</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

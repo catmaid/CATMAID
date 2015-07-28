@@ -1,0 +1,549 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Using Data Views &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="User Documentation" href="user.html" />
+    <link rel="next" title="Instructions for Tracing Neurons" href="tracing_neurons.html" />
+    <link rel="prev" title="Exporting and importing Data" href="importing_data.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tracing_neurons.html" title="Instructions for Tracing Neurons"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="importing_data.html" title="Exporting and importing Data"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="user.html" accesskey="U">User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="using-data-views">
+<span id="data-views"></span><h1>Using Data Views<a class="headerlink" href="#using-data-views" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>Providing a good entry point to the different data sets served by a
+CATMAID instance is important. Depending on number and type of the
+projects and stacks, different views on this data might help you with
+keeping an overview or to spot the data set you are interested in.
+CATMAID&#8217;s data views try to help you with that. With them you can
+define and tweak the front page of CATMAID.</p>
+<p>In fact, you can have as many front pages as you want. The ones
+available are accessible through a menu, activated by hovering the
+<em>Home</em> link in the menu. The one used when the CATMAID site is opened,
+differs only in one aspect from the others: it is marked as default.
+All data views are configured instances of a particular <em>data view type</em>.
+They define the basic structure of the page, but allow to pass parameters
+to adjust some parts.</p>
+<p>Currently, CATMAID comes with two pre-defined data views:
+<em>Project list</em> and <em>Project table with images</em>. The latter is used
+as the default, i.e. it is shown when CATMAID is loaded. Both views
+have different view types. They are <em>Project list</em> and <em>Project table</em>.
+There is also two more data view types that are not used by the
+pre-defined views: <em>Legacy project list</em>. It allows the display of a
+project list used before the advent of data views. Then there is also
+the <em>Project tag table</em> which allows the construction of a table
+based on tags. The details are described below.</p>
+<p>Different use cases might require different data view types. How to
+extend CATMAID and create own data view types is explained in
+section <a class="reference internal" href="data_view_types.html#creating-data-view-types"><span>Creating new Data View Types</span></a>.</p>
+</div>
+<div class="section" id="configuring-data-views">
+<h2>Configuring Data Views<a class="headerlink" href="#configuring-data-views" title="Permalink to this headline">¶</a></h2>
+<p>To add new or modify the present views, the Django admin interface is
+used. By default, you&#8217;ll find it at <em>http://&lt;CATMAID-URL&gt;/admin</em>
+or a similar URL. It is not necessarily the case, that every CATMAID
+user can administer data views. This depends on the permissions granted and
+in case you can&#8217;t log-in or don&#8217;t see the relevant parts within the admin
+interface, talk to your CATMAID administrator.</p>
+<p>In the admin interface you will be presented different configuration
+options for CATMAID. Amongst them, the data view management:</p>
+<img alt="_images/admin_data_views.png" src="_images/admin_data_views.png" />
+<p>Depending on your CATMAID setup, the admin interface might look a bit
+different. Opening the data view configuration will get you a list of
+all available data views. By default this looks like this:</p>
+<img alt="_images/admin_data_views_list.png" src="_images/admin_data_views_list.png" />
+<p>Next to the name and the type of each view, the position is visible (1).
+With the help of this number you can define the order of the views in
+the drop down menu and within this admin view list. The positioning can
+be changed right there in the list. If you edited the position numbers, click
+<em>Save</em> (3) to, well, save your changes. Also indicated is whether a view
+is default or not (2). If you want to change this setting, please open up
+the configuration of one particular data view (see below). Creating a
+new data view can be accomplished by the button in the upper right (4).
+The same interface is used for adding new views and editing existing
+ones. Editing the default view looks like this:</p>
+<img alt="_images/admin_data_views_change.png" src="_images/admin_data_views_change.png" />
+<p>There are quite some configuration options here: One can easily adjust
+the title (1), mark a view as the default (4) or define its position (5).
+Setting a data view as the default view, will mark all other views as
+non-default at the same time.</p>
+<p>If the data view type is changed (2), the help text under the configuration
+box (3) is updated accordingly. Every data view type has its own set of
+options and the help text will tell you about those. In the case of the
+figure above, a <em>Tabular project view</em> type is used. A detailed description
+of the options available can be found below. The format used to define
+them is called <a class="reference external" href="http://en.wikipedia.org/wiki/JSON">JSON</a> and in order to
+only use the default options you have to set the configuration to <code class="docutils literal"><span class="pre">{}</span></code>.
+If you enter text that cannot be parsed as JSON you will get an error when
+saving. Saving invalid text is thereby prevented. Typos in option names,
+however, will not be identified.</p>
+<p>If wanted, a comment can be added as well. This will be displayed to
+the right of the data view title in the menu.</p>
+</div>
+<div class="section" id="different-data-view-types">
+<h2>Different Data View Types<a class="headerlink" href="#different-data-view-types" title="Permalink to this headline">¶</a></h2>
+<p>Like said above, a data view type defines the general structure of a
+concrete data view, but gives some configuration options. For instance,
+most of the types offer to show sample images. If an option is not
+present in a data views configuration, its default value is used.</p>
+<p>Options in help texts usually have the following notation:</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">&quot;&lt;name&gt;&quot;:[option1|option2]</span></code></div></blockquote>
+<p>An option name has to be quoted and the value has to be delimited by a colon.
+However, also values might need quoting if they are strings other than
+<code class="docutils literal"><span class="pre">true</span></code> or <code class="docutils literal"><span class="pre">false</span></code> (and no numbers). Alternative values are separated by
+a logical <em>or</em>/pipe symbol (<code class="docutils literal"><span class="pre">|</span></code>) and only one of them can be used. Let&#8217;s
+have a look at the <em>sort</em> option as an example: All data view types, except
+the <em>Legacy Project List</em> type, support the option</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">&quot;sort&quot;:[true|false]</span></code>.</div></blockquote>
+<p>When set to <code class="docutils literal"><span class="pre">true</span></code> (default), all projects are sorted naturally and when set
+to false they are displayed like they come from the database. If we don&#8217;t
+want to have the projects sorted, we could use this configuration:</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">{&quot;sort&quot;:false}</span></code></div></blockquote>
+<p>When multiple options are used, each option is separated by a comma from
+another one &#8211; within the same pair of curly braces:</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">{&quot;name1&quot;:opt1,</span> <span class="pre">&quot;name2:opt2,</span> <span class="pre">...}</span></code></div></blockquote>
+<p>Like already mentioned, there are options that are supported by all the
+different data view types. The only exception to this is the <em>Legacy Project
+List</em> type, which doesn&#8217;t support such general options. All the other types
+respect the following general options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="25%" />
+<col width="59%" />
+<col width="16%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Options</th>
+<th class="head">Default</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sort</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">filter_tags</span></code></td>
+<td><code class="docutils literal"><span class="pre">A</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">tags,</span> <span class="pre">e.g.</span> <span class="pre">[&quot;TagA&quot;,</span> <span class="pre">&quot;TagB&quot;]</span></code></td>
+<td><code class="docutils literal"><span class="pre">[]</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">catalogue_link</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>With the help of the <code class="docutils literal"><span class="pre">sort</span></code> option one can make sure the list of projects
+a data view deals with is sorted (or that it is not). The <code class="docutils literal"><span class="pre">filter_tags</span></code>
+option allows to define a list of tags that have to be assigned to all
+projects looked at. If neuron annotations are used in a project, a so called
+neuron catalogue can be displayed. By default, a link to this overview is
+displayed for every project that has such annotations. This can be disabled,
+by setting the <code class="docutils literal"><span class="pre">catalogue_link</span></code> option to <code class="docutils literal"><span class="pre">false</span></code>. If a data view should
+get an unsorted list of projects that are tagged with <code class="docutils literal"><span class="pre">Test</span></code> as well as
+<code class="docutils literal"><span class="pre">CNS</span></code> and catalogue links should not be displayed, the configuration would
+look like:</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">{&quot;sort&quot;:false,</span> <span class="pre">&quot;filter_tags&quot;:[&quot;Test&quot;,</span> <span class="pre">&quot;CNS&quot;],</span> <span class="pre">&quot;catalogue_link&quot;:false}</span></code></div></blockquote>
+<p>The remainder of this section will briefly discuss the different data view
+types available.</p>
+<div class="section" id="legacy-project-list">
+<h3>Legacy Project List<a class="headerlink" href="#legacy-project-list" title="Permalink to this headline">¶</a></h3>
+<p>All data views except this one are processed or the server-side. This project
+list is done with the help of JavaScript in the browser of a user. Since it was
+the only view available for a long time, it is called &#8220;legacy&#8221;. It supports
+an interactive live filter, but it cannot be configured in any way. Therefore,
+the configuration is very likely to be just <code class="docutils literal"><span class="pre">{}</span></code> (an empty JSON object). It
+looks like this:</p>
+<img alt="_images/admin_data_views_legacy_project_list.png" src="_images/admin_data_views_legacy_project_list.png" />
+</div>
+<div class="section" id="project-list">
+<h3>Project List<a class="headerlink" href="#project-list" title="Permalink to this headline">¶</a></h3>
+<p>The appearance of <em>Project List</em> is very similar to the one of
+<em>Legacy Project List</em>. Currently, it doesn&#8217;t support live filtering of projects,
+though. When a project has no stacks, it won&#8217;t be visible with this view type.
+It is processed server-side and offers some configuration options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="56%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Options</th>
+<th class="head">Default</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sort</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">filter_tags</span></code></td>
+<td><code class="docutils literal"><span class="pre">A</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">tags,</span> <span class="pre">e.g.</span> <span class="pre">[&quot;TagA&quot;,</span> <span class="pre">&quot;TagB&quot;]</span></code></td>
+<td><code class="docutils literal"><span class="pre">[]</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">catalogue_link</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sample_images</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sample_stack</span></code></td>
+<td><code class="docutils literal"><span class="pre">stack</span> <span class="pre">index,</span> <span class="pre">&quot;first&quot;,</span> <span class="pre">&quot;last&quot;</span></code></td>
+<td><code class="docutils literal"><span class="pre">0</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sample_slice</span></code></td>
+<td><code class="docutils literal"><span class="pre">slice</span> <span class="pre">index,</span> <span class="pre">&quot;first&quot;,</span> <span class="pre">&quot;center&quot;,</span> <span class="pre">&quot;last&quot;</span></code></td>
+<td><code class="docutils literal"><span class="pre">&quot;center&quot;</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sample_width</span></code></td>
+<td><code class="docutils literal"><span class="pre">width</span> <span class="pre">in</span> <span class="pre">pixel,</span> <span class="pre">e.g.</span> <span class="pre">50</span> <span class="pre">or</span> <span class="pre">75</span></code></td>
+<td><code class="docutils literal"><span class="pre">orig.</span> <span class="pre">width</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sample_height</span></code></td>
+<td><code class="docutils literal"><span class="pre">height</span> <span class="pre">in</span> <span class="pre">pixel,</span> <span class="pre">e.g.</span> <span class="pre">50</span> <span class="pre">or</span> <span class="pre">75</span></code></td>
+<td><code class="docutils literal"><span class="pre">orig.</span> <span class="pre">height</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Please refer to the introduction to this section for an explanation of the
+<code class="docutils literal"><span class="pre">sort</span></code>, <code class="docutils literal"><span class="pre">filter_tags</span></code> and <code class="docutils literal"><span class="pre">catalogue_link</span></code> options. The <code class="docutils literal"><span class="pre">sample_images</span></code>
+option defines whether there should be a sample image displayed to the left of
+each project entry. If an image is displayed, the <code class="docutils literal"><span class="pre">sample_stack</span></code> option
+defines from which stack of the current project the image should be taken. The
+<code class="docutils literal"><span class="pre">stack</span> <span class="pre">index</span></code> value of it represents a single integer (e.g. 0). If this index
+is out of bounds, no image is displayed. With the option <code class="docutils literal"><span class="pre">sample_slice</span></code> one
+defines which slice of the sample stack should be used as sample image. Again,
+<code class="docutils literal"><span class="pre">slice</span> <span class="pre">index</span></code> is an integer number and no image is shown if this is not
+within bounds. The option values <code class="docutils literal"><span class="pre">&quot;first&quot;</span></code> and <code class="docutils literal"><span class="pre">&quot;last&quot;</span></code> refer to the first
+and last slice of the stack, <code class="docutils literal"><span class="pre">&quot;center'</span></code> refers to the middle slice is the stack.
+To make the sample images appear smaller or larger, the <code class="docutils literal"><span class="pre">sample_width</span></code> and
+<code class="docutils literal"><span class="pre">sample_height</span></code> option can be used. The assigned number is treated as pixel
+width and height, respectively.</p>
+<p>So if you were to configure a <em>Project List</em> data view with a sample image
+which should be the middle slice of every last stack in a project, you would
+do this:</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">{&quot;sample_images&quot;:true,</span> <span class="pre">&quot;sample_stack&quot;:&quot;last&quot;,</span> <span class="pre">&quot;sample_slice&quot;:&quot;center&quot;}</span></code></div></blockquote>
+<p>The result could look like the following:</p>
+<img alt="_images/admin_data_views_project_list.png" src="_images/admin_data_views_project_list.png" />
+</div>
+<div class="section" id="project-table">
+<h3>Project table<a class="headerlink" href="#project-table" title="Permalink to this headline">¶</a></h3>
+<p>While the <em>Project List</em> presents all the stacks of a project as links below
+each other, the <em>Project table</em> will list all stacks in the same row as the
+project name. Especially when there are many projects, this helps to get an
+overview of all available image data. It allows the display of images
+as well, but in a different way than the <em>Project List</em> type. Instead of
+providing one image per project, this data view type will show one image per
+stack &#8211; replacing the stack name. Like the <em>Project List</em> type, it won&#8217;t
+show a project, if it has no stacks associated. The following options are
+supported:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="56%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Options</th>
+<th class="head">Default</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sort</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">filter_tags</span></code></td>
+<td><code class="docutils literal"><span class="pre">A</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">tags,</span> <span class="pre">e.g.</span> <span class="pre">[&quot;TagA&quot;,</span> <span class="pre">&quot;TagB&quot;]</span></code></td>
+<td><code class="docutils literal"><span class="pre">[]</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">catalogue_link</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sample_images</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sample_slice</span></code></td>
+<td><code class="docutils literal"><span class="pre">slice</span> <span class="pre">index,</span> <span class="pre">&quot;first&quot;,</span> <span class="pre">&quot;center&quot;,</span> <span class="pre">&quot;last&quot;</span></code></td>
+<td><code class="docutils literal"><span class="pre">&quot;center&quot;</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sample_width</span></code></td>
+<td><code class="docutils literal"><span class="pre">width</span> <span class="pre">in</span> <span class="pre">pixel,</span> <span class="pre">e.g.</span> <span class="pre">50</span> <span class="pre">or</span> <span class="pre">75</span></code></td>
+<td><code class="docutils literal"><span class="pre">orig.</span> <span class="pre">width</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sample_height</span></code></td>
+<td><code class="docutils literal"><span class="pre">height</span> <span class="pre">in</span> <span class="pre">pixel,</span> <span class="pre">e.g.</span> <span class="pre">50</span> <span class="pre">or</span> <span class="pre">75</span></code></td>
+<td><code class="docutils literal"><span class="pre">orig.</span> <span class="pre">height</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Have a look to this section&#8217;s introduction for an explanation of the <code class="docutils literal"><span class="pre">sort</span></code>,
+<code class="docutils literal"><span class="pre">filter_tags</span></code> and <code class="docutils literal"><span class="pre">catalogue_link</span></code>  options. If images should be
+displayed, the <code class="docutils literal"><span class="pre">sample_images</span></code> option should be set to <code class="docutils literal"><span class="pre">true</span></code>. Since there
+is one image per stack, an option like <code class="docutils literal"><span class="pre">sample_stack</span></code> in the <em>Project list</em>
+type, isn&#8217;t needed. However, with the help of the <code class="docutils literal"><span class="pre">sample_slice</span></code> option a
+slice can be selected. Again, this can be done with an integer index or one
+of the string arguments (mind the quotes!). If the numeric index is out of
+range, no image will be displayed. Like in the <em>Project List</em> view type, the
+option values <code class="docutils literal"><span class="pre">&quot;first&quot;</span></code>, <code class="docutils literal"><span class="pre">&quot;center&quot;</span></code> and <code class="docutils literal"><span class="pre">&quot;last&quot;</span></code> refer to the first,
+middle and last slice of each stack. To adjust the (pixel) size of sample
+image, the options <code class="docutils literal"><span class="pre">sample_width</span></code> and <code class="docutils literal"><span class="pre">sample_height</span></code> can be used. If
+only one of the two is used, the images are scaled proportionally.</p>
+<p>If you wanted to display a text-only table, you would actually not need to
+define anything, but <code class="docutils literal"><span class="pre">{}</span></code> (because of the defaults) to get something like:</p>
+<img alt="_images/admin_data_views_project_table_text.png" src="_images/admin_data_views_project_table_text.png" />
+<p>However, to get an image table with the center slice of each stack where
+every sample image has a width of 100px, you would need to define</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">{&quot;sample_images&quot;:true,</span> <span class="pre">&quot;sample_slice&quot;:&quot;center&quot;,</span> <span class="pre">&quot;sample_width&quot;:100}</span></code></div></blockquote>
+<p>and you would get for example this:</p>
+<img alt="_images/admin_data_views_project_table.png" src="_images/admin_data_views_project_table.png" />
+</div>
+<div class="section" id="project-tag-table">
+<h3>Project tag table<a class="headerlink" href="#project-tag-table" title="Permalink to this headline">¶</a></h3>
+<p>In CATMAID, projects and stacks can be tagged. This can be done through the
+admin interface or the tagging tool (see <a class="reference internal" href="tools.html#tagging-tool"><span>Tagging</span></a>). Based on a
+<em>Project tag table</em> data view type, a data view can create a table where each
+cell is associated with a <em>row tag</em> and <em>column tag</em>. Which tag is linked to
+which row and which tag is linked to which columns can be configured.</p>
+<p>To understand the purpose of this data view type, let&#8217;s look at an example:
+You have light microscopy image stacks of different tissues. For every tissue
+there are image stacks for multiple proteins you are interested in. To have
+the tissue and the protein associated with CATMAID projects, one could just
+use tags: Every project would be tagged with a tissue name and protein name.
+To organize the data with the help of the <em>Project tag table</em> data view type,
+one could then assign the tissue tags to the columns and the protein tags
+to the rows of the resulting table. Each cell of the table refers then to one
+column (tissue) tag and one row (protein) tag. Each project will appear in a
+table cell that refers to tags the project itself is tagged with.</p>
+<p>However, there are more options than the tags themselves that can be configured:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="54%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Options</th>
+<th class="head">Default</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sort</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">filter_tags</span></code></td>
+<td><code class="docutils literal"><span class="pre">A</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">tags,</span> <span class="pre">e.g.</span> <span class="pre">[&quot;TagA&quot;,</span> <span class="pre">&quot;TagB&quot;]</span></code></td>
+<td><code class="docutils literal"><span class="pre">[]</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">catalogue_link</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">row_tags</span></code></td>
+<td><code class="docutils literal"><span class="pre">A</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">tags,</span> <span class="pre">e.g.</span> <span class="pre">[&quot;TagA&quot;,</span> <span class="pre">&quot;TagB&quot;]</span></code></td>
+<td><code class="docutils literal"><span class="pre">[]</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">col_tags</span></code></td>
+<td><code class="docutils literal"><span class="pre">A</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">tags,</span> <span class="pre">e.g.</span> <span class="pre">[&quot;TagA&quot;,</span> <span class="pre">&quot;TagB&quot;]</span></code></td>
+<td><code class="docutils literal"><span class="pre">[]</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">linked_stacks</span></code></td>
+<td><code class="docutils literal"><span class="pre">stack</span> <span class="pre">index,</span> <span class="pre">&quot;first&quot;,</span> <span class="pre">&quot;last&quot;,</span> <span class="pre">&quot;all&quot;</span></code></td>
+<td><code class="docutils literal"><span class="pre">&quot;all&quot;</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">force_stack_list</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">highlight_tags</span></code></td>
+<td><code class="docutils literal"><span class="pre">A</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">tags,</span> <span class="pre">e.g.</span> <span class="pre">[&quot;TagA&quot;,</span> <span class="pre">&quot;TagB&quot;]</span></code></td>
+<td><code class="docutils literal"><span class="pre">[]</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sample_images</span></code></td>
+<td><code class="docutils literal"><span class="pre">true,</span> <span class="pre">false</span></code></td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sample_slice</span></code></td>
+<td><code class="docutils literal"><span class="pre">slice</span> <span class="pre">index,</span> <span class="pre">&quot;first&quot;,</span> <span class="pre">&quot;center&quot;,</span> <span class="pre">&quot;last&quot;</span></code></td>
+<td><code class="docutils literal"><span class="pre">&quot;center&quot;</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sample_width</span></code></td>
+<td><code class="docutils literal"><span class="pre">width</span> <span class="pre">in</span> <span class="pre">pixel,</span> <span class="pre">e.g.</span> <span class="pre">50</span> <span class="pre">or</span> <span class="pre">75</span></code></td>
+<td><code class="docutils literal"><span class="pre">orig.</span> <span class="pre">width</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sample_height</span></code></td>
+<td><code class="docutils literal"><span class="pre">height</span> <span class="pre">in</span> <span class="pre">pixel,</span> <span class="pre">e.g.</span> <span class="pre">50</span> <span class="pre">or</span> <span class="pre">75</span></code></td>
+<td><code class="docutils literal"><span class="pre">orig.</span> <span class="pre">height</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Have a look at this section&#8217;s introduction for an explanation of the <code class="docutils literal"><span class="pre">sort</span></code>,
+<code class="docutils literal"><span class="pre">filter_tags</span></code> and <code class="docutils literal"><span class="pre">catalogue_link</span></code> options. The tags to use for the rows
+and columns can be set with the <code class="docutils literal"><span class="pre">row_tags</span></code> and the <code class="docutils literal"><span class="pre">col_tags</span></code> keywords.
+To control which stacks of a project appear in a table cell, the
+<code class="docutils literal"><span class="pre">linked_stacks</span></code> and the <code class="docutils literal"><span class="pre">force_stack_list</span></code> option can be used: They define
+if a list of stacks is displayed per project (like in the <em>Project list</em> type)
+and which stacks should make it into this list. By default, a complete stack
+list is displayed for each project. In some situations, however, it is not
+preferable to list all stacks associated with a project and so you can limit
+this to either the <code class="docutils literal"><span class="pre">first</span></code> stack, the <code class="docutils literal"><span class="pre">last</span></code> or one of a specific index.
+Is there only one stack (selected or at all), then the link to open it is
+rendered solely as the project title and no list is displayed. If this is not
+wanted, the <code class="docutils literal"><span class="pre">force_stack_list</span></code> option can be set to true to get a list with
+one entry.</p>
+<p>It may be desirable to highlight a group of projects which have the same tags.
+This can be achieved by providing <code class="docutils literal"><span class="pre">highlight_tags</span></code>. All projects tagged with
+at least one of those tags will be displayed in bold.</p>
+<p>Like with the other data types, one can opt for showing images instead of stack
+names. To do so, employ the <code class="docutils literal"><span class="pre">sample_images</span></code> option. These images will then
+form links to the actual stack display. With the help of the <code class="docutils literal"><span class="pre">sample_slice</span></code>
+keyword, the displayed slice can be selected. Again, one can choose the
+<code class="docutils literal"><span class="pre">&quot;first&quot;</span></code>, <code class="docutils literal"><span class="pre">&quot;last&quot;</span></code> or <code class="docutils literal"><span class="pre">&quot;center&quot;</span></code> slice of the stack. In case the default
+size of these sample is too big or too small, the <code class="docutils literal"><span class="pre">sample_width</span></code> and
+<code class="docutils literal"><span class="pre">sample_height</span></code> options can be used. It takes a numerical pixel value and
+scales the result images accordingly.</p>
+<p>As an example, consider the situation described above: We have image stacks
+of several tissues and with multiple protein markers. The imaged tissues are
+<em>CNS</em> and <em>salivary gland</em>. For both of them there are stacks labeled with
+markers called <em>Smo</em> and <em>Ptc</em>. The stacks have been labeled accordingly.
+Also, we only want to consider images tagged as &#8220;Valid&#8221;. Additionally, we
+don&#8217;t went to see all the stacks, but only the project name that links to the
+last stack of each project. A configuration might look like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&quot;filter_tags&quot;</span><span class="p">:[</span><span class="s">&quot;Valid&quot;</span><span class="p">],</span> <span class="s">&quot;row_tags&quot;</span><span class="p">:[</span><span class="s">&quot;Smo&quot;</span><span class="p">,</span> <span class="s">&quot;Ptc&quot;</span><span class="p">],</span>
+<span class="s">&quot;col_tags&quot;</span><span class="p">:[</span><span class="s">&quot;CNS&quot;</span><span class="p">,</span> <span class="s">&quot;Salivary Gland&quot;</span><span class="p">],</span> <span class="s">&quot;linked_stacks&quot;</span><span class="p">:</span><span class="s">&quot;last&quot;</span> <span class="p">}</span>
+</pre></div>
+</div>
+<p>With this, the rendered result could look like the following:</p>
+<img alt="_images/admin_data_views_project_tag_table.png" src="_images/admin_data_views_project_tag_table.png" />
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Using Data Views</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#configuring-data-views">Configuring Data Views</a></li>
+<li><a class="reference internal" href="#different-data-view-types">Different Data View Types</a><ul>
+<li><a class="reference internal" href="#legacy-project-list">Legacy Project List</a></li>
+<li><a class="reference internal" href="#project-list">Project List</a></li>
+<li><a class="reference internal" href="#project-table">Project table</a></li>
+<li><a class="reference internal" href="#project-tag-table">Project tag table</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="user.html">User Documentation</a><ul>
+      <li>Previous: <a href="importing_data.html" title="previous chapter">Exporting and importing Data</a></li>
+      <li>Next: <a href="tracing_neurons.html" title="next chapter">Instructions for Tracing Neurons</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

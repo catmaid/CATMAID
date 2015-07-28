@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Creating new Data View Types &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="Developer Documentation" href="developer.html" />
+    <link rel="next" title="Setting up Nginx for CATMAID" href="alternative_install.html" />
+    <link rel="prev" title="Creating a CATMAID instance on EC2" href="ami.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="alternative_install.html" title="Setting up Nginx for CATMAID"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ami.html" title="Creating a CATMAID instance on EC2"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="developer.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="creating-new-data-view-types">
+<span id="creating-data-view-types"></span><h1>Creating new Data View Types<a class="headerlink" href="#creating-new-data-view-types" title="Permalink to this headline">¶</a></h1>
+<p>There are currently only rather general data view types available in
+CATMAID. If these don&#8217;t suit your needs, you can just add your own.
+A data view can then configure your new data view type and be used
+as a CATMAID front page.</p>
+<p>To add a new data view type, you basically need to define two things:</p>
+<ul class="simple">
+<li>A Django template that defines the internals of your view type and</li>
+<li>an entry in the <code class="docutils literal"><span class="pre">data_view_type</span></code> table to link data views to it.</li>
+</ul>
+<p>In the following both steps will be discussed. Details about how to
+use data views can be found in the section <a class="reference internal" href="data_views.html#data-views"><span>Using Data Views</span></a>.</p>
+<div class="section" id="a-new-django-template">
+<h2>A new Django template<a class="headerlink" href="#a-new-django-template" title="Permalink to this headline">¶</a></h2>
+<p>Data view types are written in the
+<a class="reference external" href="https://docs.djangoproject.com/en/dev/topics/templates/">Django template language</a>.
+To make a new template accessible to CATMAID, put it in the
+<code class="docutils literal"><span class="pre">django/templates/catmaid</span></code> directory. There reside the templates
+for the already available data view types as well. Obviously, it
+is good practice to choose a template name that has something to
+do with what it does. E.g., the <em>Project List</em> data view template is
+called <code class="docutils literal"><span class="pre">project_list_data_view.html</span></code>.</p>
+<p>Data view templates get passed a context in which they live. There
+you have access to the variables <code class="docutils literal"><span class="pre">data_view</span></code>, <code class="docutils literal"><span class="pre">projects</span></code> and
+<code class="docutils literal"><span class="pre">config</span></code>. With <code class="docutils literal"><span class="pre">data_view</span></code> the template gets access to the
+current <code class="docutils literal"><span class="pre">DataView</span></code> model for which it is the data view type. A
+list of all projects is available in the <code class="docutils literal"><span class="pre">projects</span></code> variable. If
+you have a look at the existing templates you can see that this
+list is usually walked (e.g. with a <code class="docutils literal"><span class="pre">for</span></code> tag) to render each
+project and its stacks. Also, you need not to deal with the <code class="docutils literal"><span class="pre">sort</span></code>
+option yourself. This is already dealt with in the Django view.
+Therefore, <code class="docutils literal"><span class="pre">projects</span></code> is already sorted when requested. In the
+<code class="docutils literal"><span class="pre">config</span></code> variable one gets access to the already parsed
+configuration for the data view to render. This will keep the
+options defined for a data view.</p>
+<p>A template can now do whatever it wants with these variables. The
+available templates start with these lines:</p>
+<div class="highlight-python"><div class="highlight"><pre>{% load data_view_config %}
+{% include &quot;catmaid/common_data_view_header.html&quot; %}
+</pre></div>
+</div>
+<p>The first thing is to load custom template tags and filters to make
+e.g. option handling easier. The file lives in the folder
+<code class="docutils literal"><span class="pre">django/applications/catmaid/templatetags/</span></code> and you might want to
+have a look at it.</p>
+<p>Next, another template (<code class="docutils literal"><span class="pre">common_data_view_header.html</span></code>) is included.
+This just prints a simple CATMAID header text.</p>
+<p>The available templates then start with option parsing, e.g:</p>
+<div class="highlight-python"><div class="highlight"><pre>{% with opt1=config|get_or_none:&quot;opt1&quot;|default_if_none:0 %}
+{% with opt2=config|get_or_none:&quot;opt2&quot;|default_if_none:&quot;center&quot; %}
+...
+{% endwith %}
+{% endwith %}
+</pre></div>
+</div>
+<p>There is made use of Django&#8217;s template filters and a custom one
+(<code class="docutils literal"><span class="pre">get_or_none</span></code>) to get a configuration option or a default.
+Let&#8217;s take the first line as an example: within this <code class="docutils literal"><span class="pre">with</span></code>-block
+a new variable variable is assigned: <code class="docutils literal"><span class="pre">opt1</span></code>. It&#8217;s value is created
+as follows: Use <code class="docutils literal"><span class="pre">config</span></code> (see above) as the input for the <code class="docutils literal"><span class="pre">get_or_none</span></code>
+filter, parametrized with <code class="docutils literal"><span class="pre">&quot;opt1&quot;</span></code>. This filter checks if its
+argument (<code class="docutils literal"><span class="pre">opt1</span></code>) exists in the input dictionary (<code class="docutils literal"><span class="pre">config</span></code>) and
+returns its value if that is the case. If is not found, <code class="docutils literal"><span class="pre">None</span></code> is
+returned. This result is then passed to the <code class="docutils literal"><span class="pre">default_if_none</span></code> filter
+which in turn is parametrized with the option&#8217;s default value (<code class="docutils literal"><span class="pre">0</span></code>
+in that case). It checks if the input is none and if, this is the
+case, returns the parameter, otherwise the input.</p>
+<p><em>Note: By default, Django doesn&#8217;t support the Python keywords None,
+True and False in templates. Therefore, you might use 0 as False
+and 1 as True.</em></p>
+<p>Within those <code class="docutils literal"><span class="pre">with</span></code>-blocks you can then write your actual presentation
+logic. Have a look at the existing templates to get an idea how this could
+be done.</p>
+</div>
+<div class="section" id="a-new-table-entry">
+<h2>A new table entry<a class="headerlink" href="#a-new-table-entry" title="Permalink to this headline">¶</a></h2>
+<p>If your template is ready, you can make it known to CATMAID and
+thereby usable by data views. To do so you need to add an entry to the
+table <code class="docutils literal"><span class="pre">data_view_type</span></code>. This is currently not available from within
+the Django admin interface, so you have to do it manually.</p>
+<p>A data view type needs basically three things there:</p>
+<ul class="simple">
+<li>Name it, give it a <code class="docutils literal"><span class="pre">title</span></code>, e.g. &#8220;Filtering data view type&#8221;.</li>
+<li>It needs a so called <code class="docutils literal"><span class="pre">code_type</span></code>. This is the template name without file extension, e.g. &#8220;filtering_data_view&#8221;.</li>
+<li>Also, provide a descriptive help text that explains what this view type does, what options it has and maybe provide an example. Put this into the <code class="docutils literal"><span class="pre">comment</span></code> field.</li>
+</ul>
+<p>As an example, in the following the entry in the <code class="docutils literal"><span class="pre">data_view_type</span></code>
+table of the <em>Project List</em> data view type is shown:</p>
+<p><code class="docutils literal"><span class="pre">title</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre>Project list view
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">code_type</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">project_list_data_view</span>
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">comment</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre>A simple adjustable list of all projects and their stacks.
+This view is rendered server side and supports the display
+of sample images. The following options are available:
+&quot;sample_images&quot;: [true|false], &quot;sample_stack&quot;: [&quot;first&quot;|&quot;last&quot;],
+&quot;sample_slice&quot;: [slice number|&quot;first&quot;|&quot;center&quot;|&quot;last&quot;]. By
+default projects are sorted. Use &quot;sort&quot;:false to turn this
+off. Thus, a valid sample configuration could look like:
+{&quot;sample_images&quot;:true,&quot;sample_stack&quot;:&quot;last&quot;,&quot;sample_slice&quot;:&quot;center&quot;}
+</pre></div>
+</div>
+<p>Having done this, a data view should then be able to use your
+data_view_type (also from within Django admin).</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Creating new Data View Types</a><ul>
+<li><a class="reference internal" href="#a-new-django-template">A new Django template</a></li>
+<li><a class="reference internal" href="#a-new-table-entry">A new table entry</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="developer.html">Developer Documentation</a><ul>
+      <li>Previous: <a href="ami.html" title="previous chapter">Creating a CATMAID instance on EC2</a></li>
+      <li>Next: <a href="alternative_install.html" title="next chapter">Setting up Nginx for CATMAID</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

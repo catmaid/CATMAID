@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="User Documentation" href="user.html" />
+    <link rel="next" title="Similar software tools" href="othertools.html" />
+    <link rel="prev" title="Instructions for Tracing Neurons" href="tracing_neurons.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="othertools.html" title="Similar software tools"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tracing_neurons.html" title="Instructions for Tracing Neurons"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="user.html" accesskey="U">User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tools">
+<span id="id1"></span><h1>Tools<a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h1>
+<p>CATMAID includes a set of tools to navigate, share and annotate large
+image data sets. These tools often contain some control elements to
+modify certain parameters. This could e.g. be sliders, buttons or input
+boxes. Most of the controls offer various ways for changing a value
+and so sliders and input boxes can be changed with the help of the mouse
+wheel, small buttons or direct input.</p>
+<p>The tools visible to a user can be set in the admin interface on a per
+user basis. See the section about <a class="reference internal" href="userprofiles.html#user-profiles"><span>user profiles</span></a> to
+learn how to modify the visible tools and how to set defaults suiting
+your use case.</p>
+<div class="section" id="navigation">
+<h2>Navigation<a class="headerlink" href="#navigation" title="Permalink to this headline">¶</a></h2>
+<p>The navigation tool makes it easy to browse a data set. It allows you to
+specify the center of the current view and provides controls to change the
+current slice and zoom level. Keep in mind that a zoom-level defines how
+often the images dimension get divided by two (i.e. dim/2^zoom). A change
+of these controls will redraw the current view.</p>
+<p>Clicking and dragging the view with the mouse can be used to move around
+on the current slice.</p>
+</div>
+<div class="section" id="tagging">
+<span id="tagging-tool"></span><h2>Tagging<a class="headerlink" href="#tagging" title="Permalink to this headline">¶</a></h2>
+<p>Projects and stacks can be associated with tags. Tags are basically strings
+that capture some property of an object. They can contain spaces and any
+other alphanumerical character. CATMAID&#8217;s tagging tool will allow you to
+view and modify the tags of an active stack and of the project it belongs
+to. Changes will only be applied when the check icon on the right is
+clicked.</p>
+</div>
+<div class="section" id="cropping">
+<h2>Cropping<a class="headerlink" href="#cropping" title="Permalink to this headline">¶</a></h2>
+<p>With the help of the cropping tool it is possible to extract sub-stacks
+out of the currently viewed stack and other stacks in the project. The
+region of interest can be specified by clicking with the left mouse
+button on the view and dragging the created rectangle to the desired shape.
+This rectangle can be created and adjusted as well with the help of the
+four input boxes in the cropping tool bar.</p>
+<p>By default only one slice is created. However, by using the &#8220;top z-index&#8221;
+and &#8220;bottom z-index&#8221; sliders, the range in the Z dimension can be
+modified. The &#8220;zoom-level&#8221; slider denotes what the zoom level of the
+<em>output image</em> will be. It is perfectly fine to draw a crop box in a view
+with zoom level three and let the cropping tool create an output stack
+based on zoom level zero. Note that one can easily increase the output
+file size with operations like this.</p>
+<p>If there is more than one stack in the current project available, a menu,
+labeled &#8220;Stacks&#8221;, is shown as well. All the available stacks of the
+project are listed there and can be selected for output. By default
+only the current stack is marked. For all the selected stacks the same
+region of interest is used. The resulting cropped stack will contain
+all the selected stacks and its dimensions are XYCZ ordered. That means,
+that the current slice is appended to the output for every stack before
+the next Z step is made.</p>
+<p>To start the cropping job, one needs to click on the tickmark on the right.
+A confirmation message should appear. You will get a notificiation in the
+message view once the sub-stack has been cropped. By default, cropped
+sub-stacks will remain for two weeks on the server. This can be adjusted
+by configuring a periodic task that manages the clean-up. See the section
+about <a class="reference internal" href="celeryinstall.html#sec-celery-periodic-tasks"><span>creating periodic tasks</span></a> for an
+example how to do this.</p>
+<p>The output image is a TIFF file with potentially multiple pages, with each
+one being an RGB image. The file contains some meta data: the EXIF tags
+<code class="docutils literal"><span class="pre">XResolution</span></code> and <code class="docutils literal"><span class="pre">YResolution</span></code> of every image contain the created
+image&#8217;s X and Y resolution, respectively &#8211; in pixel per nanometer (if the
+image resolution in the data base is nano meter based). The
+<code class="docutils literal"><span class="pre">ImageDescription</span></code> tag contains ImageJ specific meta data. It passes
+information about the number of images, the channels and whether to use
+hyperstacks to ImageJ. For the purpose of creating these meta data tags,
+the tool <code class="docutils literal"><span class="pre">exiftool</span></code> is used internally.</p>
+</div>
+<div class="section" id="ontology-tools">
+<h2>Ontology Tools<a class="headerlink" href="#ontology-tools" title="Permalink to this headline">¶</a></h2>
+<p>The documentation of the ontology tools can be found on a
+<a class="reference internal" href="ontology_tool.html#ontology-tools"><span>separate page</span></a>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tools</a><ul>
+<li><a class="reference internal" href="#navigation">Navigation</a></li>
+<li><a class="reference internal" href="#tagging">Tagging</a></li>
+<li><a class="reference internal" href="#cropping">Cropping</a></li>
+<li><a class="reference internal" href="#ontology-tools">Ontology Tools</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="user.html">User Documentation</a><ul>
+      <li>Previous: <a href="tracing_neurons.html" title="previous chapter">Instructions for Tracing Neurons</a></li>
+      <li>Next: <a href="othertools.html" title="next chapter">Similar software tools</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

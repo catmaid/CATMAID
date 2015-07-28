@@ -1,0 +1,348 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Administering a CATMAID instance &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="Developer Documentation" href="developer.html" />
+    <link rel="next" title="Django unit tests for CATMAID" href="djangounittest.html" />
+    <link rel="prev" title="Frequently Asked Questions" href="faq.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="djangounittest.html" title="Django unit tests for CATMAID"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="faq.html" title="Frequently Asked Questions"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="developer.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="administering-a-catmaid-instance">
+<span id="administering"></span><h1>Administering a CATMAID instance<a class="headerlink" href="#administering-a-catmaid-instance" title="Permalink to this headline">¶</a></h1>
+<p>This section presents information on how to update a running CATMAID
+instance and how to backup/restore its database. These administrative
+tasks might be needed from time to time. Newer CATMAID versions of
+CATMAID (obviously) often include bug fixes and new features.</p>
+<div class="section" id="updating-to-a-newer-version">
+<h2>Updating to a newer version<a class="headerlink" href="#updating-to-a-newer-version" title="Permalink to this headline">¶</a></h2>
+<p>Before updating to a newer version, please make sure that CATMAID is
+currently not running anymore and to have a backup of your current
+database state. While not very likely to cause problems if not stopped,
+it is recommended to not have the server running during the update. At
+the end, your CATMAID instance is very likely to need a restart anyway.</p>
+<p>Updating a CATMAID instance involves several steps: First move to your
+CATMAID instance&#8217;s root directory. This is also the root of CATMAID&#8217;s
+Git repository:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd &lt;LOCAL-CATMAID-PATH&gt;
+</pre></div>
+</div>
+<p>Next, get the source code version you are interested in. The following
+example will update to the current master branch of Git&#8217;s &#8220;origin&#8221;
+remote:</p>
+<div class="highlight-python"><div class="highlight"><pre>git pull origin master
+</pre></div>
+</div>
+<p>Note that this will merge into your local branch. So if you have local
+commits that you want to keep you might want to rebase those on
+origin&#8217;s master branch. Then, move into the Django sub-directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd django
+</pre></div>
+</div>
+<p>Activate the <cite>virtualenv</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre>source env/bin/activate
+</pre></div>
+</div>
+<p>Update Python packages:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install -r pip-frozen
+</pre></div>
+</div>
+<p>Synchronize the Django environment with the database:</p>
+<div class="highlight-python"><div class="highlight"><pre>./projects/mysite/manage.py syncdb
+./projects/mysite/manage.py migrate
+</pre></div>
+</div>
+<p>Collect new and changed static files:</p>
+<div class="highlight-python"><div class="highlight"><pre>./projects/mysite/manage.py collectstatic -l
+</pre></div>
+</div>
+<p>Finally, open the web-frontend of your CATMAID instance in a browser to
+start the database migration. If you don&#8217;t need it anymore, you can also
+clone the virtualenv by calling:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">deactivate</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="backup-an-restore-the-database">
+<h2>Backup an restore the database<a class="headerlink" href="#backup-an-restore-the-database" title="Permalink to this headline">¶</a></h2>
+<p>Backing CATMAID&#8217;s database up as well as restoring it, is currently a
+manual process. Also keep in mind that a certain database state is
+related to a certain source code version. Reflecting the commit name
+in the backup name, might therefore be a good idea. A mismatch might
+cause some trouble when a database backup is used that includes
+migrations that are not present in the selected CATMAID version.</p>
+<p>To backup the database:</p>
+<div class="highlight-python"><div class="highlight"><pre>pg_dump --clean -U &lt;CATMAID-USER&gt; catmaid -f catmaid_dump.sql
+</pre></div>
+</div>
+<p>To restore the dumped database:</p>
+<div class="highlight-python"><div class="highlight"><pre>psql -U &lt;CATMAID-USER&gt; -d catmaid -f catmaid_dump.sql
+</pre></div>
+</div>
+<p>Both commands will ask for the password. Alternatively, you can use the
+scripts <code class="docutils literal"><span class="pre">scripts/database/backup-database.py</span></code> and
+<code class="docutils literal"><span class="pre">scripts/database/revert-database.py</span></code>, which basically do the same
+thing. Those, however, don&#8217;t ask for a password, but require a
+<code class="docutils literal"><span class="pre">.pgpass</span></code> file (see <a class="reference external" href="http://www.postgresql.org/docs/current/static/libpq-pgpass.html">PostgreSQL documentation</a>).</p>
+</div>
+<div class="section" id="performance-tuning">
+<span id="id1"></span><h2>Performance tuning<a class="headerlink" href="#performance-tuning" title="Permalink to this headline">¶</a></h2>
+<p>There are various application involved to make CATMAID work: A web-server/load
+balancer, a WSGI server to run the Python back-end and a PostgreSQL database
+server. The configuration of all of them can be optimized to experience better
+performance. The following list of suggestions is not exhaustive and if you have
+suggestions we are happy to hear about them.</p>
+<div class="section" id="operationg-system-and-infrastructure">
+<h3>Operationg system and infrastructure<a class="headerlink" href="#operationg-system-and-infrastructure" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>In conjunction with the shared memory setting of PostgreSQL (see below), one
+should increase the kernel&#8217;s shared memory limit. It defines how much memory
+can be used as a shared resource by different processes. A rule of thumb is
+that one should use about 25% of the system&#8217;s RAM, but if the machine is
+equipped with plenty of RAM one should be fine for most setups with 4GB (or
+even less). You  can check this kernel setting with <code class="docutils literal"><span class="pre">sysctl</span> <span class="pre">kernel.shmmax</span></code>.
+The default for most distributions is in the range of kilobytes and megabytes.</li>
+<li>The partition that is hosting the image tiles should be mounted with the
+<code class="docutils literal"><span class="pre">noatime</span></code> option. This makes sure no access time is written every time an
+image file is read.</li>
+<li>If LDAP is used to authenticate users and to check permissions on the server
+CATMAID is running or the image data is loaded from, LDAP queries should be
+cached locally. Otherwise, an LDAP request will be made every time a file is
+accessed.</li>
+</ul>
+</div>
+<div class="section" id="webserver">
+<h3>Webserver<a class="headerlink" href="#webserver" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>The access log should be turned off and only critical errors should be written
+to the log. CATMAID can produce a lot of requests and writing every single one
+to disk, especially if multiple users use CATMAID, can be a real performance
+hit.</li>
+<li>Make use of the <a class="reference external" href="https://http://en.wikipedia.org/wiki/SPDY">SPDY</a> protocol.
+Modern browsers and webservers support it and it only requires you to set up
+SSL/TLS as an additional step before activating it. Through multiplexing,
+compression and prioritization much better use of single connections. Requests
+can be answered more quickly and CATMAID will feel more responsive.</li>
+<li>A cache server like Varnish can be beneficial on the machine that serves the
+image data. If multiple users load the same image data, it will reduce the
+number of times image data has to be loaded from the hard drive.</li>
+<li>Have the webserver transfer data with GZIP.</li>
+<li>The webserver should mark image tiles to not expire so that they can be cached
+by a client. If the image data is public, one could let the webserver also set
+the <code class="docutils literal"><span class="pre">Cache-Control:</span> <span class="pre">public</span></code> header for the images.</li>
+</ul>
+</div>
+<div class="section" id="database-management-system">
+<h3>Database management system<a class="headerlink" href="#database-management-system" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>PostgresSQL&#8217;s shared memory setting should match what is allowed by the
+kernel. So if you set your kernel to allow 4GB (see above), Postgres should
+use make use of it. This can be adjusted with the setting <code class="docutils literal"><span class="pre">shared_buffers</span></code> in
+<code class="docutils literal"><span class="pre">postgresql.conf</span></code>.</li>
+<li>Keeping statistics of the CATMAID tables up to date is very important. These
+statistics are used by the query planer to decide about the optimal
+realization of a query. This can be done manually by calling <code class="docutils literal"><span class="pre">VACUUM</span>
+<span class="pre">ANALYZE</span></code> while being connected to the CATMAID database in a psql shell. It is
+also possible (and advisable) to automate this with by setting <code class="docutils literal"><span class="pre">autovacuum</span> <span class="pre">=</span>
+<span class="pre">on</span></code> in <code class="docutils literal"><span class="pre">postgresql.conf</span></code>.</li>
+<li>According to the <a class="reference external" href="https://docs.djangoproject.com/en/1.6/ref/databases/#optimizing-postgresql-s-configuration">Django manual</a>,
+Django expects the following parameters for its database connections:
+<code class="docutils literal"><span class="pre">client_encoding:</span> <span class="pre">'UTF8'</span></code>,  <code class="docutils literal"><span class="pre">default_transaction_isolation:</span> <span class="pre">'read</span> <span class="pre">committed'</span></code>
+and <code class="docutils literal"><span class="pre">timezone:</span> <span class="pre">'UTC'</span></code> when <code class="docutils literal"><span class="pre">USE_TZ</span></code> is True, value of <code class="docutils literal"><span class="pre">TIME_ZONE</span></code>
+otherwise (use of <code class="docutils literal"><span class="pre">TIME_ZONE</span></code> is CATMAID&#8217;s default). All of these settings
+can be configured in <code class="docutils literal"><span class="pre">postgresql.conf</span></code> or more conveniently per database
+user with <a class="reference external" href="http://www.postgresql.org/docs/current/interactive/sql-alterrole.html">ALTER ROLE</a>.
+If these parameters are not the default, Django will do some additional
+queries to set these parameters for each new connection.  Having those
+defaults set will improve the database performance slightly.</li>
+</ul>
+</div>
+<div class="section" id="catmaid">
+<h3>CATMAID<a class="headerlink" href="#catmaid" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Make sure CATMAID is not running in debug mode by checking <code class="docutils literal"><span class="pre">settings.py</span></code> in
+<code class="docutils literal"><span class="pre">django/projects/mysite</span></code>: It should contain <code class="docutils literal"><span class="pre">DEBUG</span> <span class="pre">=</span> <span class="pre">False</span></code>. If you get a
+<cite>Bad Request (400)</cite> response, make sure you have set your <code class="docutils literal"><span class="pre">ALLOWED_HOSTS</span></code>
+setting in the <code class="docutils literal"><span class="pre">settings.py</span></code> file correct.</li>
+<li>Set <a class="reference external" href="https://docs.djangoproject.com/en/1.6/ref/databases/#persistent-connections">Django&#8217;s</a>
+<code class="docutils literal"><span class="pre">CONN_MAX_AGE</span></code> option in the database settings of your <code class="docutils literal"><span class="pre">settings.py</span></code> file,
+if you don&#8217;t use a greenlet based threading model for your WSGI server&#8217;s
+workers (see <a class="reference external" href="https://github.com/benoitc/gunicorn/issues/996">here</a> for an
+explanation). This setting controls how long (in seconds) a database
+connection can be re-used. In the default configuration, this is set to <code class="docutils literal"><span class="pre">0</span></code>,
+which causes every request to use a new database connection. To test if this
+setting can be used in your environment, set it to a value like <code class="docutils literal"><span class="pre">60</span></code> and
+monitor the number of database connections (e.g. with <code class="docutils literal"><span class="pre">SELECT</span> <span class="pre">count(*)</span> <span class="pre">FROM</span>
+<span class="pre">pg_stat_activity;</span></code>). If this number matches your number of WSGI workers (plus
+your own <code class="docutils literal"><span class="pre">psql</span></code> connection), everything is fine. If the number increases
+over time, you should set <code class="docutils literal"><span class="pre">CONN_MAX_AGE</span></code> back to <code class="docutils literal"><span class="pre">0</span></code>, because new
+connections are apparently not closed anymore (which can happen with greenlet
+based threading).</li>
+</ul>
+</div>
+</div>
+<div class="section" id="making-catmaid-available-through-ssl">
+<h2>Making CATMAID available through SSL<a class="headerlink" href="#making-catmaid-available-through-ssl" title="Permalink to this headline">¶</a></h2>
+<p>By default the connection between the CATMAID server and a browser is
+unencrypted. This means data can be read and manipulated on the way between both
+sides. To protect sensitive data like passwords and to improve security as a whole,
+it is recommended to use SSL/TLS to encrypt this communication. Below you will
+find notes on how to do this with Nginx.</p>
+<p>The webserver is the first place where the configuration has to be changed.
+Given that you created a certificate and key file, you would add the following
+to your Nginx server configuration:</p>
+<div class="highlight-python"><div class="highlight"><pre>server {
+    listen 443;
+    ...
+
+    ssl on;
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_prefer_server_ciphers on;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers &quot;EECDH+ECDSA+AESGCM:EECDH+aRSA+AESGCM:EECDH+ECDSA+SHA256:EECDH+aRSA+SHA256:EECDH+ECDSA+SHA384:EECDH+ECDSA+SHA256:EECDH+aRSA+SHA384:EDH+aRSA+AESGCM:EDH+aRSA+SHA256:EDH+aRSA:EECDH:!aNULL:!eNULL:!MEDIUM:!LOW:!3DES:!MD5:!EXP:!PSK:!SRP:!DSS:!RC4:!SEED&quot;;
+
+    ...
+}
+</pre></div>
+</div>
+<p>If you refer to certificates and keys in Nginx that it didn&#8217;t know before, you
+have to restart it (instead of reloading the configuration). The reason is that
+the Nginx process drops privileges after loading and root permissions are
+required to read the certificates and keys.</p>
+<p>A good resource to test your configuration and to disable weak ciphers is
+<a class="reference external" href="https://www.ssllabs.com/ssltest/">Qualys SSL Labs</a>.</p>
+<p>Django&#8217;s <code class="docutils literal"><span class="pre">settings.py</span></code> has to be updated as well to make sure it will only
+hand out session cookies and CSRF tokens on a secure connection:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># This CATMAID instance is served through SSL/TLS. Therefore, send session</span>
+<span class="c"># cookies only over HTTPS and don&#39;t add CSRF tokens for non-HTTPS connections.</span>
+<span class="n">SESSION_COOKIE_SECURE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">CSRF_COOKIE_SECURE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="c"># Assume a secure connection, if the X-FORWARDED-PROTO header is set to</span>
+<span class="c"># &#39;https&#39;. This implies that one has to make sure this head is only set to</span>
+<span class="c"># &#39;https&#39; if the connection is actually secure.</span>
+<span class="n">SECURE_PROXY_SSL_HEADER</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;HTTP_X_FORWARDED_PROTO&#39;</span><span class="p">,</span> <span class="s">&#39;https&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please make also sure that
+you override the <code class="docutils literal"><span class="pre">X-Forwarded-Proto</span></code> header passed to Django. It should only
+contain &#8220;https&#8221; if the connection is actually secure. Consult the <a class="reference external" href="https://docs.djangoproject.com/en/1.6/ref/settings/#std:setting-SECURE_PROXY_SSL_HEADER">Django
+documentation</a>
+to read more about this.</p>
+<p>With this you should be able to provide a secure connection to your CATMAID
+server.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Administering a CATMAID instance</a><ul>
+<li><a class="reference internal" href="#updating-to-a-newer-version">Updating to a newer version</a></li>
+<li><a class="reference internal" href="#backup-an-restore-the-database">Backup an restore the database</a></li>
+<li><a class="reference internal" href="#performance-tuning">Performance tuning</a><ul>
+<li><a class="reference internal" href="#operationg-system-and-infrastructure">Operationg system and infrastructure</a></li>
+<li><a class="reference internal" href="#webserver">Webserver</a></li>
+<li><a class="reference internal" href="#database-management-system">Database management system</a></li>
+<li><a class="reference internal" href="#catmaid">CATMAID</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#making-catmaid-available-through-ssl">Making CATMAID available through SSL</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="developer.html">Developer Documentation</a><ul>
+      <li>Previous: <a href="faq.html" title="previous chapter">Frequently Asked Questions</a></li>
+      <li>Next: <a href="djangounittest.html" title="next chapter">Django unit tests for CATMAID</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

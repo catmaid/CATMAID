@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Setting up Apache and mod_wsgi &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="setting-up-apache-and-mod-wsgi">
+<span id="apache"></span><h1>Setting up Apache and mod_wsgi<a class="headerlink" href="#setting-up-apache-and-mod-wsgi" title="Permalink to this headline">¶</a></h1>
+<p>Firstly, make sure that Apache and mod_wsgi are installed with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install libapache2-mod-wsgi
+</pre></div>
+</div>
+<p>If you have problems with the instructions below, try checking
+that the settings files appear to be correct, and look for
+errors in the Apache error logs, with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo tail -f /var/log/apache2/error.log
+</pre></div>
+</div>
+<p>... or:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo tail -f /var/log/apache2/catmaid/error.log
+</pre></div>
+</div>
+<p>... depending on whether you have set a custom ErrorLog.</p>
+<div class="section" id="subdirectory-installation-of-an-existing-virtual-host">
+<h2>Subdirectory installation of an existing virtual host<a class="headerlink" href="#subdirectory-installation-of-an-existing-virtual-host" title="Permalink to this headline">¶</a></h2>
+<p>We assume that you cloned the CATMAID source code to
+<code class="docutils literal"><span class="pre">/home/alice/catmaid/</span></code>, that the file that defines the
+existing virtual host that you want to modify is in
+<code class="docutils literal"><span class="pre">/etc/apache2/sites-enabled/000-default</span></code> and that you want to
+have your catmaid instance appear at <code class="docutils literal"><span class="pre">/catmaid</span></code>.  We also
+assume that you have already run the <code class="docutils literal"><span class="pre">create_configuration.py</span></code>
+script as described in <span class="xref std std-ref">basic_installation</span> to create your
+<code class="docutils literal"><span class="pre">django.wsgi</span></code> file.</p>
+<p>You should then add lines to your existing virtualhost as shown
+below, from the lines <code class="docutils literal"><span class="pre">#</span> <span class="pre">Add</span> <span class="pre">CATMAID</span> <span class="pre">configuration</span> <span class="pre">here:</span></code> to
+the end of the <code class="docutils literal"><span class="pre">&lt;VirtualHost&gt;</span></code> section.  You can take these
+lines from the output of <code class="docutils literal"><span class="pre">create_configuration.py</span></code> from
+earlier (or by running it again) or follow the example here:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;VirtualHost *:80&gt;
+        ServerAdmin webmaster@localhost
+
+        DocumentRoot /var/www
+        &lt;Directory /&gt;
+                Options FollowSymLinks
+                AllowOverride None
+        &lt;/Directory&gt;
+        ...
+        ...
+
+        # Add CATMAID configuration here:
+
+        Alias /catmaid /home/alice/catmaid/django/projects/mysite/django.wsgi
+        &lt;Location /catmaid&gt;
+                SetHandler wsgi-script
+                Options +ExecCGI
+        &lt;/Location&gt;
+
+        Alias /catmaid/static /home/alice/catmaid/django/static/
+        &lt;Directory /home/alice/catmaid/django/static/&gt;
+            Options FollowSymLinks
+            AllowOverride AuthConfig Limit FileInfo
+            Order deny,allow
+            Allow from all
+        &lt;/Directory&gt;
+
+&lt;/VirtualHost&gt;
+</pre></div>
+</div>
+<p>You should then restart Apache:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo /etc/init.d/apache2 restart
+</pre></div>
+</div>
+</div>
+<div class="section" id="installation-at-the-root-of-a-virtual-host">
+<h2>Installation at the root of a virtual host<a class="headerlink" href="#installation-at-the-root-of-a-virtual-host" title="Permalink to this headline">¶</a></h2>
+<p>To install at the root of a new virtual host, you should create
+a new file in <code class="docutils literal"><span class="pre">/etc/apache2/sites-available/</span></code> (called
+<code class="docutils literal"><span class="pre">catmaid</span></code>, say) with the following contents:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;VirtualHost *:80&gt;
+    ServerName your-catmaid-hostname.example.org
+
+    WSGIScriptAlias / /home/alice/catmaid/django/projects/mysite/django.wsgi
+
+    Alias /static /home/alice/catmaid/django/static/
+    &lt;Directory /home/alice/catmaid/django/static/&gt;
+        Options FollowSymLinks
+        AllowOverride AuthConfig Limit FileInfo
+        Order deny,allow
+        Allow from all
+    &lt;/Directory&gt;
+
+    CustomLog /var/log/apache2/catmaid/access_log combined
+    ErrorLog /var/log/apache2/catmaid/error.log
+
+&lt;/VirtualHost&gt;
+</pre></div>
+</div>
+<p>You should then enable that website with:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo a2ensite catmaid
+</pre></div>
+</div>
+<p>... and finally restart Apache:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo /etc/init.d/apache2 restart
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Setting up Apache and mod_wsgi</a><ul>
+<li><a class="reference internal" href="#subdirectory-installation-of-an-existing-virtual-host">Subdirectory installation of an existing virtual host</a></li>
+<li><a class="reference internal" href="#installation-at-the-root-of-a-virtual-host">Installation at the root of a virtual host</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

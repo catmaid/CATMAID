@@ -1,0 +1,305 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Instructions for Tracing Neurons &mdash; CATMAID 0.24 documentation</title>
+    
+    <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.24',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="up" title="User Documentation" href="user.html" />
+    <link rel="next" title="Tools" href="tools.html" />
+    <link rel="prev" title="Using Data Views" href="data_views.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tools.html" title="Tools"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="data_views.html" title="Using Data Views"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="user.html" accesskey="U">User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="instructions-for-tracing-neurons">
+<h1>Instructions for Tracing Neurons<a class="headerlink" href="#instructions-for-tracing-neurons" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h2>
+<p>There are step-by-step instructions below, but as a quick-reference, once you&#8217;re in tracing mode, the following mouse operations and keyboard shortcuts should mostly be what you need:</p>
+<ul class="simple">
+<li><strong>click on a node</strong>: make that node active</li>
+<li><strong>ctrl-click in space</strong>: deselect the active node</li>
+<li><strong>ctrl-shift-click on a node</strong>: delete that node</li>
+<li><strong>shift-click on a treenode</strong>: join two skeletons (if there was an active treenode)</li>
+<li><strong>shift-click in space</strong>: create a synapse (if there was an active treenode)</li>
+<li><strong>shift-click in space</strong>: create a post-synaptic treenode (if there was an active synapse)</li>
+<li><strong>mouse wheel</strong>: move up and down layers in the stack</li>
+<li><strong>+</strong> and <strong>-</strong>: zoom in and out</li>
+</ul>
+<p>(If you&#8217;re using Mac OS, then in every instance you need to use ⌘ instead of ctrl.)  For help on other keyboard shortcuts, click on the &#8221;?&#8221; button in the toolbar.</p>
+</div>
+<div class="section" id="in-depth-instructions">
+<h2>In-depth Instructions<a class="headerlink" href="#in-depth-instructions" title="Permalink to this headline">¶</a></h2>
+<p>Before you can start tracing, you need to log in.  You can do
+this in the boxes in the top right hand corner of the page.</p>
+<div class="section" id="basic-concepts">
+<h3>Basic Concepts<a class="headerlink" href="#basic-concepts" title="Permalink to this headline">¶</a></h3>
+<p>There are two modes that you&#8217;ll use in these instructions.  The
+&#8220;navigate&#8221; mode is for moving fast around the stack, and is the
+default mode - it&#8217;s shown in the toolbar with this icon:</p>
+<img alt="_images/tool-icons-navigate.png" src="_images/tool-icons-navigate.png" />
+<p>To move around in this mode you can:</p>
+<ul class="simple">
+<li>Click and drag with the mouse to pan around the dataset, as in
+Google maps</li>
+<li>Use the mouse wheel to scroll through sections</li>
+<li>Press &#8216;,&#8217; and &#8216;.&#8217; to move one slice up or down the stack</li>
+<li>Press &#8216;&lt;&#8217; and &#8216;&gt;&#8217; to move ten slices up or down the stack</li>
+<li>Press &#8216;-&#8216; to zoom out</li>
+<li>Press &#8216;+&#8217; to zoom in</li>
+<li>Click on a section of the overview in the bottom right hand corner
+to jump to that area</li>
+</ul>
+<p>In this mode you won&#8217;t see any of the tracing annotations, however.</p>
+<p>First, zoom in on an area that you&#8217;d like to start tracing in and
+click on the icon to change to tracing mode:</p>
+<img alt="_images/tool-icons-trace.png" src="_images/tool-icons-trace.png" />
+<p>If there are any treenodes in view, you&#8217;ll now see them as yellow dots:</p>
+<img alt="_images/no-edges-with-arrow.png" src="_images/no-edges-with-arrow.png" />
+<p>But you&#8217;ll probably want to trace with the edges between treenodes
+also shown.  You can do that by clicking the &#8220;show edges?&#8221; checkbox
+shown in the image above.  Then the view will look more like:</p>
+<img alt="_images/edges-with-arrow.png" src="_images/edges-with-arrow.png" />
+<p>Before starting tracing, it&#8217;s a good idea to create a neuron in the
+logical structure of the project to keep your tracing organized.
+(Otherwise, it will go into the top level &#8220;Fragments&#8221; folder.)  To
+create a neuron (or a group of neurons) you need to use the object
+tree, which can be opened with the icon indicated by the arrow in the
+image above.</p>
+<p>Once the object tree is open, you can navigate down to where you want
+to put your neuron.  Then right-click on the group you want to create
+a new neuron in, and select &#8220;Create neuron&#8221;:</p>
+<img alt="_images/object-tree-create-neuron.png" src="_images/object-tree-create-neuron.png" />
+<p>You might want to rename the neuron by right clicking on it and
+selecting &#8220;Rename Neuron&#8221;.  Now click on your neuron to make sure that
+it is highlighted in blue, like this:</p>
+<img alt="_images/highlighted-neuron.png" src="_images/highlighted-neuron.png" />
+<p>While the neuron is highlighted like that, any new skeletons you
+create by clicking in the interface will be children of that neuron.
+You can now close the object tree (by clicking in the top right hand
+corner of the pane).</p>
+<p>So, to place the first node in your neuron&#8217;s skeleton, just left-click
+within a membrane that doesn&#8217;t already have yellow node in it.  You
+should see a green node appear, like this:</p>
+<img alt="_images/first-node.png" src="_images/first-node.png" />
+<p>The green node is always the <strong>active node</strong>.</p>
+<div class="section" id="the-active-node">
+<h4>The Active Node<a class="headerlink" href="#the-active-node" title="Permalink to this headline">¶</a></h4>
+<p>The active node is important, since any new node you create by
+clicking will be linked to that node.  To make a different node the
+active node, just left-click on it.</p>
+<p>(If you want to create a completely new skeleton, there must be
+no active node - to deselect it, hold down Control (or ⌘ on Mac
+OS) and left-click somewhere other than on a node.)</p>
+<p>Try clicking elsewhere within this layer to create a line of nodes.
+Try changing the active node to one of the middle nodes, and continue
+clicking to create a branch.</p>
+<p>You can move any node by clicking on it and dragging it around.</p>
+</div>
+<div class="section" id="deleting-nodes">
+<h4>Deleting Nodes<a class="headerlink" href="#deleting-nodes" title="Permalink to this headline">¶</a></h4>
+<p>To delete a node, hold down Control (or ⌘ on Mac OS) and Shift,
+and left-click on the node.</p>
+</div>
+<div class="section" id="splitting-skeletons">
+<h4>Splitting Skeletons<a class="headerlink" href="#splitting-skeletons" title="Permalink to this headline">¶</a></h4>
+<p>To split a skeleton into two, select the node at which you want to
+split the skeleton, and then click on the &#8220;Split Skeleton&#8221; icon in the
+toolbar, which looks like this:</p>
+<img alt="_images/scissors.png" src="_images/scissors.png" />
+<p>Then click on the node at which you want to split the skeleton.
+You will then end up with two skeletons in the containing
+neuron.  All parts of the skeleton from the root node up to and
+including the split point will still be in the original
+skeleton, but the nodes downstream from that point will be in a
+new skeleton.</p>
+</div>
+<div class="section" id="joining-skeletons">
+<h4>Joining Skeletons<a class="headerlink" href="#joining-skeletons" title="Permalink to this headline">¶</a></h4>
+<p>To join one skeleton to another one, so that they form a single
+skeleton, hold down Shift and left-click on a node in the other
+skeleton.  (You may not join any part of a skeleton to itself.)</p>
+</div>
+<div class="section" id="tagging-nodes">
+<h4>Tagging Nodes<a class="headerlink" href="#tagging-nodes" title="Permalink to this headline">¶</a></h4>
+<p>To add a tag to the active node, press &#8216;t&#8217;, you should see
+something like the following:</p>
+<img alt="_images/tag-after-t.png" src="_images/tag-after-t.png" />
+<p>Then you can type a tag:</p>
+<img alt="_images/tag-after-writing-todo.png" src="_images/tag-after-writing-todo.png" />
+<p>... and press enter:</p>
+<img alt="_images/tag-after-enter.png" src="_images/tag-after-enter.png" />
+<p>In order to actually save your tag to the database, you then
+need to click &#8220;Save&#8221;:</p>
+<img alt="_images/tag-after-save.png" src="_images/tag-after-save.png" />
+<p>At any time, you can toggle the visibility of the tags with this
+button in the toolbar:</p>
+<img alt="_images/tag-toggle.png" src="_images/tag-toggle.png" />
+</div>
+<div class="section" id="creating-synapses">
+<h4>Creating Synapses<a class="headerlink" href="#creating-synapses" title="Permalink to this headline">¶</a></h4>
+<p>There are two possible ways of creating synapses.  The
+recommended way unless you have many to annotate is the
+following:</p>
+<p>Suppose you have traced up to the active node in this screenshot
+(the green node) and want to annotate the nearby synapse:</p>
+<img alt="_images/synapse-progress0000.png" src="_images/synapse-progress0000.png" />
+<p>If you shift-click on the synaptic cleft (or where you think it
+should be) you&#8217;ll see a larger green circle appear, which is a
+connector:</p>
+<img alt="_images/synapse-progress0001.png" src="_images/synapse-progress0001.png" />
+<p>The purple arrow leading to the large connector indicates that
+your original node is presynaptic to the connector.  Then you
+can add a postsynaptic partner by shift-clicking in the center
+of a membrane that appears to be postsynaptic:</p>
+<img alt="_images/synapse-progress0002.png" src="_images/synapse-progress0002.png" />
+<p>By repeating the last step you can mark multiple postsynaptic
+partners:</p>
+<img alt="_images/synapse-progress0003.png" src="_images/synapse-progress0003.png" />
+<p>When you have finished, click on the origin node again to make
+it active and you can carry on tracing.</p>
+</div>
+<div class="section" id="dropping-multiple-synapses">
+<h4>Dropping Multiple Synapses<a class="headerlink" href="#dropping-multiple-synapses" title="Permalink to this headline">¶</a></h4>
+<p>The alternative approach to creating synapse is to switch to
+synapse-dropping mode with this button in the toolbar:</p>
+<img alt="_images/synapse-dropping-button.png" src="_images/synapse-dropping-button.png" />
+<p>Once you&#8217;ve selected that mode, any click in space on in the
+interface will create a synapse, so you can add many in one go,
+without needing to start by linking them from a treenode:</p>
+<img alt="_images/synapse-dropping-three.png" src="_images/synapse-dropping-three.png" />
+<p>In order to carry on tracing, you need to switch back to the
+normal tracing mode with this button:</p>
+<img alt="_images/synapse-dropping-switch-back.png" src="_images/synapse-dropping-switch-back.png" />
+</div>
+<div class="section" id="using-the-node-table">
+<h4>Using the node table<a class="headerlink" href="#using-the-node-table" title="Permalink to this headline">¶</a></h4>
+<p>You may need to find a particular node of a treeline, for
+example if it was tagged with TODO and you need to go back to
+it.  The easiest way to locate particular nodes in a skeleton is
+to select a node in that skeleton and click on the treenode
+table button:</p>
+<img alt="_images/treenode-table.png" src="_images/treenode-table.png" />
+<p>This will bring up a table of all the nodes in that skeleton:</p>
+<a class="reference internal image-reference" href="_images/treenode-table-open.png"><img alt="_images/treenode-table-open.png" src="_images/treenode-table-open.png" style="width: 1003.8px; height: 608.3px;" /></a>
+<p>You can sort this table by clicking in the column headings.  To
+go to a particular node, just double click on the row.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
+  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+</a></p>
+<br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
+<h3><a href="screenshots.html">Screenshots</a></h3>
+<h3><a href="whouses.html">Who uses it?</a></h3>
+<h3><a href="publications.html">Publications</a></h3>
+<h3><a href="funding.html">Funding</a></h3>
+<h3><a href="credits.html">Credits</a></h3>
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="http://github.com/catmaid/CATMAID">Source Code</a></li>
+  <li><a href="http://github.com/catmaid/CATMAID/issues">Issues</a></li>
+  <li><a href="http://groups.google.com/group/CATMAID">Mailinglist</a></li>
+  <li><a href="http://fly.mpi-cbg.de/~saalfeld/catmaid/">Old page</a></li>
+</ul>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17713054-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Instructions for Tracing Neurons</a><ul>
+<li><a class="reference internal" href="#quick-start">Quick Start</a></li>
+<li><a class="reference internal" href="#in-depth-instructions">In-depth Instructions</a><ul>
+<li><a class="reference internal" href="#basic-concepts">Basic Concepts</a><ul>
+<li><a class="reference internal" href="#the-active-node">The Active Node</a></li>
+<li><a class="reference internal" href="#deleting-nodes">Deleting Nodes</a></li>
+<li><a class="reference internal" href="#splitting-skeletons">Splitting Skeletons</a></li>
+<li><a class="reference internal" href="#joining-skeletons">Joining Skeletons</a></li>
+<li><a class="reference internal" href="#tagging-nodes">Tagging Nodes</a></li>
+<li><a class="reference internal" href="#creating-synapses">Creating Synapses</a></li>
+<li><a class="reference internal" href="#dropping-multiple-synapses">Dropping Multiple Synapses</a></li>
+<li><a class="reference internal" href="#using-the-node-table">Using the node table</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation</a><ul>
+  <li><a href="user.html">User Documentation</a><ul>
+      <li>Previous: <a href="data_views.html" title="previous chapter">Using Data Views</a></li>
+      <li>Next: <a href="tools.html" title="next chapter">Tools</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2015, CATMAID Developers.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+  </body>
+</html>

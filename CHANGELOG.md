@@ -52,6 +52,9 @@ Miscellaneous:
 - Connectivity widget: common partners filtering now correctly enforces that
   partners are partnered with all target neurons, not just any two.
 
+- Review widget: the skipped node warning will now only show up when in fact
+  more nodes have been skipped than allowed.
+
 
 ## 2015.7.17
 

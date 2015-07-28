@@ -487,11 +487,14 @@
       if (0 === self.current_segment_index) {
         return;
       }
+      // Get current and last node
       var cn = self.current_segment.sequence[self.current_segment_index];
       var ln = skipStep ? skipStep :
         self.current_segment.sequence[self.current_segment_index - 1];
-      var zdiff = project.focusedStackViewer.primaryStack.projectToStackZ(
-          cn.z - ln.z, cn.y - ln.y, cn.x - ln.x);
+      // Convert to stack space to check against virtual node step limit
+      var cnz = project.focusedStackViewer.primaryStack.projectToStackZ(cn.z, cn.y, cn.x);
+      var lnz = project.focusedStackViewer.primaryStack.projectToStackZ(ln.z, ln.y, ln.x);
+      var zdiff = cnz - lnz;
       if (Math.abs(zdiff) > self.virtualNodeStep) {
         CATMAID.msg("Skipped sections", "This node is " + Math.abs(zdiff) +
             " sections away from the previous node.", {style: 'warning'});

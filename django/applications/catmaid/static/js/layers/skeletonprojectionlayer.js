@@ -42,7 +42,7 @@
 
     // Listen to active node change events
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-        this.handleActiveNodeChange, this);
+        this.update, this);
   };
 
   SkeletonProjectionLayer.prototype = {};
@@ -100,7 +100,7 @@
     this.stackViewer.getView().removeChild(this.view);
 
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-        this.handleActiveNodeChange, this);
+        this.update, this);
   };
 
 
@@ -109,7 +109,7 @@
   /**
    * Handle update of active node by redrawing.
    */
-  SkeletonProjectionLayer.prototype.handleActiveNodeChange = function(node) {
+  SkeletonProjectionLayer.prototype.update = function(node) {
     var self = this;
     var newSkeleton = null;
     if (node && node.skeleton_id !== this.curentSkeletonID) {

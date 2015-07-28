@@ -26,6 +26,8 @@ var user_menu;
 var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
+/** Frequency (in milliseconds) to check client CATMAID version against server version. */
+CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL = 15*60*1000;
 
 var rootWindow;
 
@@ -598,6 +600,35 @@ function handle_openProjectStack( e, stackViewer )
   CATMAID.ui.releaseEvents();
   return stackViewer;
 }
+
+/**
+ * Check if the client CATMAID version matches the server version. If it does
+ * not, disruptively prompt the user to refresh.
+ */
+CATMAID.Init.checkVersion = function () {
+    requestQueue.register(django_url + 'version', 'GET', undefined,
+        CATMAID.jsonResponseHandler(function(data) {
+          // If there is a newer latest message than we know of, get all
+          // messages to display them in the message menu and widget.
+          if (CATMAID.CLIENT_VERSION !== data.SERVER_VERSION) {
+            new CATMAID.ErrorDialog("Your version of CATMAID is different " +
+                "from the server's version. Please refresh your browser " +
+                "immediately to update to the server's version. Continuing " +
+                "use a different version than the server can cause " +
+                "unintended behavior and data loss.",
+                'Client version: ' + CATMAID.CLIENT_VERSION + '; ' +
+                'Server version: ' + data.SERVER_VERSION).show();
+          }
+
+          // Check again later
+          window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
+        }, function () {
+          window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
+          CATMAID.statusBar.replaceLast('Unable to check version (network may be disconnected).');
+          return true;
+        }));
+};
+window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
 
 /**
  * Check, if there are new messages for the current user.

@@ -33,6 +33,10 @@ Miscellaneous:
 
 - Neuron navigator: neuron name and annotation search are now case-insensitive.
 
+- The client now checks every 15 minutes whether it is the same version as the
+  server. If not, an error dialog is shown prompting the user to refresh their
+  browser.
+
 
 ### Bug fixes
 

@@ -610,7 +610,7 @@ WebGLApplication.prototype.spatialSelect = function() {
     }
   }).bind(this);
 
-  od.show(300, 300, false);
+  od.show("auto", "auto", false);
 };
 
 

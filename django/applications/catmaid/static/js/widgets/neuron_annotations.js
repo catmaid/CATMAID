@@ -4,7 +4,6 @@
   checkPermission,
   InstanceRegistry,
   NeuronNameService,
-  NeuronNavigator,
   project,
   requestQueue,
   SelectionTable,
@@ -360,7 +359,7 @@
         var annotation_name = $(this).text();
         var annotation_id = $(this).attr('annotation_id');
         // Create a new navigator and set it to an annotation filter node
-        var NN = new NeuronNavigator();
+        var NN = new CATMAID.NeuronNavigator();
         // Create a new window, based on the newly created navigator
         WindowMaker.create('neuron-navigator', NN);
         // Select the cloned node in the new navigator

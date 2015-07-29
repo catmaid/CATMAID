@@ -797,7 +797,7 @@ var WindowMaker = new function()
       })
       .on("click", "td .action-navigator", function() {
         var skeletonID = rowToSkeletonID(this);
-        var navigator = new NeuronNavigator();
+        var navigator = new CATMAID.NeuronNavigator();
         WindowMaker.create('neuron-navigator', navigator);
         navigator.set_neuron_node_from_skeleton(skeletonID);
       })
@@ -3181,7 +3181,7 @@ var WindowMaker = new function()
   var createNeuronNavigatorWindow = function(new_nn_instance)
   {
     // If available, a new instance passed as parameter will be used.
-    var NN = new_nn_instance ? new_nn_instance : new NeuronNavigator();
+    var NN = new_nn_instance ? new_nn_instance : new CATMAID.NeuronNavigator();
     var win = new CMWWindow(NN.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

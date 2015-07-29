@@ -78,6 +78,7 @@ SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.setRadiusAfterNodeCreation = false;
+SkeletonAnnotations.defaultNewNeuronName = '';
 CATMAID.Events.extend(SkeletonAnnotations);
 
 /**
@@ -1511,7 +1512,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (
        y: phys_y,
        z: phys_z,
        radius: radius,
-       confidence: confidence},
+       confidence: confidence,
+       neuron_name: SkeletonAnnotations.defaultNewNeuronName},
       function (jso) {
         var nid = parseInt(jso.treenode_id);
         // always create a new treenode which is the root of a new skeleton
@@ -1549,6 +1551,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
   // Check if we want the newly create node to be a model of an existing empty neuron
   var selneuron = project.selectedObjects.selectedneuron;
   var useneuron = null === selneuron ? -1 : selneuron;
+  var neuronname = null === selneuron ? SkeletonAnnotations.defaultNewNeuronName : '';
 
   var self = this;
 
@@ -1561,7 +1564,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
        z: phys_z,
        radius: radius,
        confidence: confidence,
-       useneuron: useneuron},
+       useneuron: useneuron,
+       neuron_name: neuronname},
       function(jso) {
         // add treenode to the display and update it
         var nid = parseInt(jso.treenode_id);

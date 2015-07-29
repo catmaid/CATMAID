@@ -489,6 +489,12 @@
           SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
         }
       }, SkeletonAnnotations.newConnectorType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR));
+      ds.append($('<div/>').addClass('setting').text("Every occurrence of '{nX}' in the default " +
+          "name with X being a number is replaced by a number that is automatically incremented " +
+          "(starting from X) to the smallest unique value in the project."));
+      ds.append(createInputSetting("Default new neuron name", SkeletonAnnotations.defaultNewNeuronName, function () {
+        SkeletonAnnotations.defaultNewNeuronName = $(this).val();
+      }));
     };
 
 

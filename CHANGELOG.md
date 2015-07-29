@@ -31,6 +31,12 @@ Connectivity widget:
 
 Miscellaneous:
 
+- A default neuron name can now be specified in the settings widget. Similar
+  to annotations, the pattern "{nX}" can be used to add an automatically
+  incrementing number to each new neuron created, starting at X. Omitting X
+  will be interpreted to start from 1. This default name does not persist
+  between sessions.
+
 - Neuron navigator: neuron name and annotation search are now case-insensitive.
 
 - The client now checks every 15 minutes whether it is the same version as the

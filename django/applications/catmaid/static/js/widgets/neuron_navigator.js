@@ -1630,7 +1630,7 @@
     // Make self accessible in callbacks more easily
     var self = this;
 
-    container.addClass('multi_table_node');
+    container.addClass('multi_table_node navigator_content');
 
     // Create refresh button
     var refresh_button = document.createElement('input');
@@ -1972,6 +1972,10 @@
     }).bind(this));
 
     if (this.current_skid) {
+      // Prepare a container that is filled by the async request
+      var node_content = $(document.createElement('div'));
+      container.append(node_content);
+
       requestQueue.register(django_url + project.id + '/skeleton/' +
           this.current_skid + '/neuronname', 'POST', {}, (function(status, text) {
             if (200 !== status) {
@@ -1989,7 +1993,7 @@
                 // want the content to reflect that. Therefore, the filters have
                 // to be re-created.
                 NeuronNavigator.NeuronNode.prototype.add_content.call(this,
-                    container, this.get_filter_set());
+                    node_content, this.get_filter_set());
               }
             }
       }).bind(this));

@@ -84,6 +84,9 @@
     var createInputSetting = function(name, val, handler)
     {
       var input = $('<input/>').attr('type', 'text').val(val);
+      if (handler) {
+        input.change(handler);
+      }
       return createLabeledControl(name, input);
     };
 

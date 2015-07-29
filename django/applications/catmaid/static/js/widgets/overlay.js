@@ -61,9 +61,12 @@ var SkeletonAnnotations = {
  * Raise an error if any essential field is falsy.
  */
 SkeletonAnnotations.atn.validate = (function() {
-  var essentialFields = ['id', 'skeleton_id', 'type', 'x', 'y', 'z'];
+  var essentialSkeletonFields = ['id', 'skeleton_id', 'x', 'y', 'z'];
+  var essentialConnectorFields = ['id', 'x', 'y', 'z'];
 
   return  function(node) {
+    var essentialFields = SkeletonAnnotations.TYPE_NODE === node.type ?
+      essentialSkeletonFields : essentialConnectorFields;
     var emptyFields = essentialFields.filter(function(f) {
         return null === node[f] || undefined === node[f];
       });

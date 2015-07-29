@@ -91,12 +91,28 @@
      * review is continued.
      */
     this.handleActiveNodeChange = function(node) {
+      // Ignore this node change if no segment is under review at the moment
       var segment = this.current_segment ? this.current_segment['sequence'] : null;
-      var index = this.current_segment_index;
-      // If there is an active segment and no node is selected anymore or the
-      // node change, mark the current segment as unfocused.
-      if (segment && (!node || segment[index].id !== node.id) &&
-          (!skipStep || skipStep.id !== node.id)) {
+      if (!segment) return;
+      var rNode = segment[this.current_segment_index];
+      if (!rNode) return;
+
+      if (node) {
+        if (!SkeletonAnnotations.isRealNode(node.id)) {
+          // Force re-focus on next step if the newly active virtual node is not
+          // on the edge between parent and child.
+          var pID = SkeletonAnnotations.getParentOfVirtualNode(node.id);
+          var cID = SkeletonAnnotations.getChildOfVirtualNode(node.id);
+          if (rNode.id != pID && rNode.id != cID) {
+            this.segmentUnfocused = true;
+          }
+        } else if (node.id != rNode.id) {
+          // Force re-focus on next step if the new active node is not the
+          // node currently under review.
+          this.segmentUnfocused = true;
+        }
+      } else {
+        // Force re-focus on next step if there is no active node anymore.
         this.segmentUnfocused = true;
       }
     };

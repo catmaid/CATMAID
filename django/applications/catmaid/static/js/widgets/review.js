@@ -270,7 +270,7 @@
           if (nSteps >= self.virtualNodeStep) break;
         }
 
-        var zRatio = (nSteps * self.virtualNodeStep) / zDiffAbs;
+        var zRatio = nSteps / zDiffAbs;
 
         // Get project space coordinates for virtual node ID
         var xp = from.x + (to.x - from.x) * zRatio;

@@ -5,6 +5,10 @@
 
   "use strict";
 
+  /**
+   * A skeleton source is an object that manages a set of skeletons of which a
+   * subset can be marked as selected.
+   */
   var SkeletonSource = function() {};
 
   SkeletonSource.prototype = {};

@@ -12,9 +12,9 @@
 
     var helpMsg = dialog.appendMessage("Click here for details");
     $(helpMsg).click(function() {
-      $(this).empty().append(document.createTextNode("Every occurence of " +
+      $(this).empty().append(document.createTextNode("Every occurrence of " +
         "'{nX}' with X being a number is replaced by a number that is " +
-        "autmatically incremented (starting from X) for each annotated " +
+        "automatically incremented (starting from X) for each annotated " +
         "object."));
     });
 

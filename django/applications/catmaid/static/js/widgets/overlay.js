@@ -55,7 +55,7 @@ var SkeletonAnnotations = {
   SUBTYPE_SYNAPTIC_CONNECTOR : "synaptic-connector",
   SUBTYPE_ABUTTING_CONNECTOR : "abutting-connector",
 
-  sourceView : new CATMAID.ActiveSkeleton(),
+  activeSkeleton : new CATMAID.ActiveSkeleton(),
 
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
@@ -939,7 +939,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
   // (de)highlight in SkeletonSource instances if any if different from the last
   // activated skeleton
   if (last_skeleton_id !== SkeletonAnnotations.getActiveSkeletonId()) {
-    CATMAID.skeletonListSources.highlight(SkeletonAnnotations.sourceView,
+    CATMAID.skeletonListSources.highlight(SkeletonAnnotations.activeSkeleton,
         SkeletonAnnotations.getActiveSkeletonId());
   }
 };
@@ -1346,7 +1346,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
       django_url + project.id + '/treenode/info',
       {treenode_id: toid},
       function(json) {
-        var from_model = SkeletonAnnotations.sourceView.createModel();
+        var from_model = SkeletonAnnotations.activeSkeleton.createModel();
         var to_skid = json['skeleton_id'];
         // Make sure the user has permissions to edit both the from and the to
         // skeleton.

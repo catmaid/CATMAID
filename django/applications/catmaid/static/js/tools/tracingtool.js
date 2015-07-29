@@ -723,7 +723,7 @@
                 SkeletonAnnotations.getActiveSkeletonId()]);
           } else {
             SelectionTable.getLastFocused().append(
-                SkeletonAnnotations.sourceView.getSelectedSkeletonModels());
+                SkeletonAnnotations.activeSkeleton.getSelectedSkeletonModels());
           }
         }
       }

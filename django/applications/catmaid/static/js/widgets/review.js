@@ -428,42 +428,44 @@
         // already been taken before, this step is the reference point for the
         // distance test.
         skipStep = self.limitMove(ln, nn, refIndex, false);
-        if (skipStep) {
-          // Move to skipping step
-          this.goToNodeOfSegmentSequence(skipStep, forceCentering);
-          return;
-        } else {
+        if (!skipStep) {
+          // If a real node is next, update current segment index and check if
+          // we are close to the segment end.
           self.current_segment_index = newIndex;
-        }
 
-        if (self.current_segment_index < sequenceLength -1) {
-          // Check if the remainder of the segment was complete at an earlier time
-          // and perhaps now the whole segment is done:
-          var i_user = self.current_segment_index;
-          var i_union = self.current_segment_index;
-          while (i_user < sequenceLength && sequence[i_user].rids.some(reviewedByTeam)) {
-            i_user += 1;
+          if (self.current_segment_index < sequenceLength -1) {
+            // Check if the remainder of the segment was complete at an earlier time
+            // and perhaps now the whole segment is done:
+            var i_user = self.current_segment_index;
+            var i_union = self.current_segment_index;
+            while (i_user < sequenceLength && sequence[i_user].rids.some(reviewedByTeam)) {
+              i_user += 1;
+            }
+            while (i_union < sequenceLength && 0 !== sequence[i_union].rids.length) {
+              i_union += 1;
+            }
+            var cellIDs = [];
+            if (i_user === sequenceLength) {
+              cellIDs.push(session.userid);
+              CATMAID.msg('DONE', 'Segment fully reviewed: ' +
+                  self.current_segment['nr_nodes'] + ' nodes');
+            }
+            if (i_union === sequenceLength) cellIDs.push('union');
+            if (cellIDs.length > 0) markSegmentDone(self.current_segment, cellIDs);
+            // Don't startSkeletonToReview, because self.current_segment_index
+            // would be lost, losing state for q/w navigation.
           }
-          while (i_union < sequenceLength && 0 !== sequence[i_union].rids.length) {
-            i_union += 1;
-          }
-          var cellIDs = [];
-          if (i_user === sequenceLength) {
-            cellIDs.push(session.userid);
-            CATMAID.msg('DONE', 'Segment fully reviewed: ' +
-                self.current_segment['nr_nodes'] + ' nodes');
-          }
-          if (i_union === sequenceLength) cellIDs.push('union');
-          if (cellIDs.length > 0) markSegmentDone(self.current_segment, cellIDs);
-          // Don't startSkeletonToReview, because self.current_segment_index
-          // would be lost, losing state for q/w navigation.
-        }
 
-        self.warnIfNodeSkipsSections(ln);
+          self.warnIfNodeSkipsSections(ln);
+        }
       }
 
       // Select the (potentially new) current node
-      self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
+      if (skipStep) {
+        self.goToNodeOfSegmentSequence(skipStep, forceCentering);
+      } else {
+        self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
+      }
     };
 
     /**

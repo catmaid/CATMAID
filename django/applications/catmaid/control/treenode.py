@@ -125,7 +125,7 @@ def insert_treenode(request, project_id=None):
     # Create new treenode
     treenode_id, skeleton_id = _create_treenode(project_id, user, request.user,
             params['x'], params['y'], params['z'], params['radius'],
-            params['confidence'], -1 , params['parent_id'], time)
+            params['confidence'], -1, params['parent_id'], time)
 
     # Update parent of child to new treenode
     child.parent_id = treenode_id
@@ -203,7 +203,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
             new_skeleton.name = 'skeleton %d' % new_skeleton.id
             new_skeleton.save()
 
-            if -1 == neuron_id:
+            if -1 != neuron_id:
                 # Check that the neuron to use exists
                 if 0 == ClassInstance.objects.filter(pk=neuron_id).count():
                     neuron_id = -1

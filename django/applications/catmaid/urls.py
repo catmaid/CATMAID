@@ -141,6 +141,7 @@ urlpatterns += patterns('catmaid.control.connector',
     (r'^(?P<project_id>\d+)/connector/skeletons$', 'connector_skeletons'),
     (r'^(?P<project_id>\d+)/connector/edgetimes$', 'connector_associated_edgetimes'),
     (r'^(?P<project_id>\d+)/connector/pre-post-info$', 'connectors_info'),
+    (r'^(?P<project_id>\d+)/connector/user-info$', 'connector_user_info'),
 )
 
 # Neuron acess

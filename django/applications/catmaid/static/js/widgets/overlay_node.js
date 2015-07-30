@@ -1245,6 +1245,7 @@
       // this can be achieved on the original line with a marker-segment.
       this.catcher = paper.select('.arrows').append('line');
       this.catcher.on('mousedown', this.mousedown);
+      this.catcher.on('mouseover', this.mouseover);
       this.confidence_text = null;
       this.hrefSuffix = hrefSuffix;
     };
@@ -1287,6 +1288,24 @@
           }
         });
       });
+
+      this.mouseover = function (d) {
+        requestQueue.register(
+            django_url + project.id + '/connector/user-info',
+            'GET',
+            { treenode_id: d.treenode_id,
+              connector_id: d.connector_id,
+              relation_name: d.is_pre ? 'presynaptic_to' : 'postsynaptic_to'},
+            CATMAID.jsonResponseHandler(function(data) {
+              var msg = (d.is_pre ? 'Presynaptic' : 'Postsynaptic') + ' edge: ';
+              msg += data.map(function (info) {
+                return 'created by ' + User.safeToString(info.user) + ' on ' +
+                    info.creation_time + ', last edited on ' +
+                    info.edition_time;
+              }).join('; ');
+              CATMAID.statusBar.replaceLast(msg);
+            }));
+      };
 
       this.update = function(x1, y1, x2, y2, is_pre, confidence, rloc) {
         var xdiff = (x2 - x1);
@@ -1347,6 +1366,7 @@
       this.obliterate = function() {
         this.catcher.datum(null);
         this.catcher.on('mousedown', null);
+        this.catcher.on('mouseover', null);
         this.line.remove();
         this.line = null;
         this.catcher.remove();
@@ -1358,7 +1378,7 @@
       };
 
       this.init = function(connector, node, confidence, is_pre) {
-        this.catcher.datum({connector_id: connector.id, treenode_id: node.id});
+        this.catcher.datum({connector_id: connector.id, treenode_id: node.id, is_pre: is_pre});
         if (is_pre) {
           this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*node.scaling);
         } else {

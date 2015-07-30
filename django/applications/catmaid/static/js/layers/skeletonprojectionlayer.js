@@ -135,6 +135,10 @@
             projectViewBox.max.y - projectViewBox.min.y].join(' '),
         width: this.stackViewer.viewWidth,     // Width and height only need to be updated on
         height: this.stackViewer.viewHeight}); // resize.
+
+    if (CATMAID.tools.isFn(completionCallback)) {
+      completionCallback();
+    }
   };
 
   SkeletonProjectionLayer.prototype.unregister = function() {

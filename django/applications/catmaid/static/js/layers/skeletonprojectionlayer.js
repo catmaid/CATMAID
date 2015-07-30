@@ -20,14 +20,14 @@
     // Indicate if skeleton should be simplified
     this.simplify = false;
     // Indicate coloiring mode
-    this.shadingMode = "plain";
+    this.shadingMode = options.shadingMode || "plain";
     // Indicate if edges should be rendered
     this.showEdges = true;
     // Indicate if nodes should be rendered
     this.showNodes = false;
 
     // Limiting Strahler number for Strahler based shading.
-    this.strahlerShadingMax = 2;
+    this.strahlerShadingMax = options.strahlerShadingMax || 2;
 
     // Create grid view, aligned to the upper left
     this.view = document.createElement("div");

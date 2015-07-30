@@ -892,11 +892,13 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
       this.printTreenodeInfo(node.id, prefix);
       atn.set(node, this.getStackViewer().getId());
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
+      var prefix;
       if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === node.subtype) {
-        CATMAID.statusBar.replaceLast("Activated abutting connector node #" + node.id);
+        prefix = "Abutting connector node #" + node.id;
       } else {
-        CATMAID.statusBar.replaceLast("Activated synaptic connector node #" + node.id);
+        prefix = "Synaptic connector node #" + node.id;
       }
+      this.printTreenodeInfo(node.id, prefix);
       atn.set(node, this.getStackViewer().getId());
     }
   } else {

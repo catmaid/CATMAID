@@ -61,6 +61,9 @@ Miscellaneous:
 - Review widget: the skipped node warning will now only show up when in fact
   more nodes have been skipped than allowed.
 
+- Fixed a vulnerability that allowed any user with "browse" access permissions
+  to any project to execute arbitrary SQL statements on the CATMAID database.
+
 
 ## 2015.7.17
 

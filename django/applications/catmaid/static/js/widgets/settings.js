@@ -407,6 +407,93 @@
         });
       }).addClass('setting'));
 
+      var dsSkeletonProjection = addSettingsContainer(ds,
+          "Active skeleton projection");
+      dsSkeletonProjection.append($('<div/>').addClass('setting')
+        .append("Activating this layer adds upstream and downstream " +
+            "projections of the active skeleton to the tracing display."));
+
+      // Figure out if all displayed stack viewers have a skeleton projection
+      // layer
+      var allHaveLayers = project.getStackViewers().every(function(sv) {
+        return !!sv.getLayer('skeletonprojection');
+      });
+
+      var skpVisible = createCheckboxSetting("Display projections",
+          updateSkeletonProjectionDisplay, allHaveLayers);
+      dsSkeletonProjection.append(skpVisible);
+
+      var skpShading = $('<select/>');
+      var skpShadingOptions = [
+        {name: 'Plain color', id: 'plain'},
+        {name: 'Strahler gradient', id: 'strahlergradient'},
+        {name: 'Strahler cut', id: 'strahlercut'}
+      ];
+      skpShadingOptions.forEach(function(o) {
+        var selected = o.id === CATMAID.SkeletonProjectionLayer.options.shadingMode;
+        this.append(new Option(o.name, o.id, selected, selected));
+      }, skpShading);
+      skpShading.on('change', updateSkeletonProjectionDisplay);
+
+      dsSkeletonProjection.append(createLabeledControl('Shading', skpShading));
+
+      // Set default properties
+      var skpDownstreamColor = createInputSetting("Downstream color",
+          CATMAID.SkeletonProjectionLayer.options.downstreamColor);
+      var skpUpstreamColor = createInputSetting("Upstream color",
+          CATMAID.SkeletonProjectionLayer.options.upstreamColor);
+      var skpSimplify = createCheckboxSetting("Simplify skeleton",
+          updateSkeletonProjectionDisplay,
+          CATMAID.SkeletonProjectionLayer.options.simplify);
+      var skpShowEdges = createCheckboxSetting("Show edges",
+          updateSkeletonProjectionDisplay,
+          CATMAID.SkeletonProjectionLayer.options.showEdges);
+      var skpShowNodes = createCheckboxSetting("Show nodes",
+          updateSkeletonProjectionDisplay,
+          CATMAID.SkeletonProjectionLayer.options.showNodes);
+
+      dsSkeletonProjection.append(skpDownstreamColor);
+      dsSkeletonProjection.append(skpUpstreamColor);
+      dsSkeletonProjection.append(skpSimplify);
+      dsSkeletonProjection.append(skpShowEdges);
+      dsSkeletonProjection.append(skpShowNodes);
+
+      // Get all relevant skeleton projection options
+      function getSkeletonProjectionOptions() {
+        return {
+          "visible": skpVisible.find('input').prop('checked'),
+          "shadingMode": skpShading.val(),
+          "downstreamColor": skpDownstreamColor.find('input').val(),
+          "upstreamColor": skpUpstreamColor.find('input').val(),
+          "simplify": skpSimplify.find('input').prop('checked'),
+          "showEdges": skpShowEdges.find('input').prop('checked'),
+          "showNodes": skpShowNodes.find('input').prop('checked'),
+          "initialNode": SkeletonAnnotations.atn
+        };
+      };
+
+      function updateSkeletonProjectionDisplay() {
+        var options = getSkeletonProjectionOptions();
+        CATMAID.SkeletonProjectionLayer.updateDefaultOptions(options);
+        // Create a skeleton projection layer for all stack viewers that
+        // don't have one already.
+        project.getStackViewers().forEach(function(sv) {
+          var layer = sv.getLayer('skeletonprojection');
+          if (options.visible) {
+            if (layer) {
+              // Update existing instance
+              layer.updateOptions(options, false);
+              layer.update(options.initialNode);
+            } else {
+              // Create new if not already present
+              layer = new CATMAID.SkeletonProjectionLayer(sv, options);
+              sv.addLayer("skeletonprojection", layer);
+            }
+          } else if (layer) {
+            sv.removeLayer("skeletonprojection");
+          }
+        });
+      }
 
       // Reviewer whitelist settings
       ds = addSettingsContainer(container, "Reviewer Team");

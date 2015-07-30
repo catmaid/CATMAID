@@ -318,7 +318,7 @@
      * Shade a skeleton with a plain color for upstream and downstream nodes.
      */
     "plain": function(layer, arbor, subarbor) {
-      return function (node, pos, zDist) {
+      return function (node, pos, zStack) {
         return 1;
       };
     },
@@ -346,7 +346,7 @@
 
       var relMaxStrahler = maxStrahler - minStrahler + 1;
 
-      return function(node, pos, zDist) {
+      return function(node, pos, zStack) {
         // Normalize Strahler to min/max range
         var s = strahler[node] - minStrahler + 1;
         return (s > 0 &&  s <= relMaxStrahler) ? s / maxStrahler: 0;
@@ -378,7 +378,7 @@
 
       var relMaxStrahler = maxStrahler - minStrahler + 1;
 
-      return function(node, pos, zDist) {
+      return function(node, pos, zStack) {
         // Normalize Strahler to min/max range
         var s = strahler[node] - minStrahler + 1;
         return (s > 0 && s <= relMaxStrahler) ? 1 : 0;

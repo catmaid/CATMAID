@@ -229,7 +229,7 @@
     var downstream = fragments[0];
     var upstream = fragments[1];
 
-    var createShading = this.shadingModes[this.options.shadingMode];
+    var createShading = SkeletonProjectionLayer.shadingModes[this.options.shadingMode];
     if (!createShading) {
       throw new CATMAID.ValueError("Couldn't find shading method " +
           this.shadingMode);
@@ -243,7 +243,7 @@
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
       color: this.options.downstreamColor,
-      shade: createShading(this, downstream),
+      shade: createShading(this, arbor, downstream),
       edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
       showEdges: this.options.showEdges,
       showNodes: this.options.showNodes
@@ -259,7 +259,7 @@
 
       // Update render options with upstream color
       renderOptions.color = this.options.upstreamColor;
-      renderOptions.shade = createShading(this, upstream);
+      renderOptions.shade = createShading(this, arbor, upstream);
 
       // Render downstream nodes
       upstream.nodesArray().forEach(renderNodes, renderOptions);
@@ -310,12 +310,12 @@
    * A set of shading modes for the projected skeleton parts. Each function
    * returns a color based on a node distance and world position.
    */
-  SkeletonProjectionLayer.prototype.shadingModes = {
+  SkeletonProjectionLayer.shadingModes = {
 
     /**
      * Shade a skeleton with a plain color for upstream and downstream nodes.
      */
-    "plain": function(layer, arbor) {
+    "plain": function(layer, arbor, subarbor) {
       return function (node, pos, zDist) {
         return 1;
       };
@@ -324,7 +324,7 @@
     /**
      * Shade a skeleton with increasing transparency based on Strahler numbers.
      */
-    "strahlergradient": function(layer, arbor) {
+    "strahlergradient": function(layer, arbor, subarbor) {
       var strahler = arbor.strahlerAnalysis();
       var minStrahler = layer.options.strahlerShadingMin;
       var maxStrahler = layer.options.strahlerShadingMax;
@@ -352,9 +352,18 @@
     },
 
     /**
+     * Shade a skeleton with increasing transparency based on Strahler numbers.
+     * This variant works relative to the current node.
+     */
+    "relstrahlergradient": function(layer, arbor, subarbor) {
+      var absStrahler = SkeletonProjectionLayer.shadingModes['strahlergradient'];
+      return absStrahler(layer, subarbor, subarbor);
+    },
+
+    /**
      * Display only part of a skeleton based on Strahler numbers.
      */
-    "strahlercut": function(layer, arbor) {
+    "strahlercut": function(layer, arbor, subarbor) {
       var strahler = arbor.strahlerAnalysis();
       var minStrahler = layer.options.strahlerShadingMin;
       var maxStrahler = layer.options.strahlerShadingMax;
@@ -372,7 +381,16 @@
         var s = strahler[node] - minStrahler + 1;
         return (s > 0 && s <= relMaxStrahler) ? 1 : 0;
       };
-    }
+    },
+
+    /**
+     * Shade a skeleton with increasing transparency based on Strahler numbers.
+     * This variant works relative to the current node.
+     */
+    "relstrahlercut": function(layer, arbor, subarbor) {
+      var absStrahler = SkeletonProjectionLayer.shadingModes['strahlercut'];
+      return absStrahler(layer, subarbor, subarbor);
+    },
   };
 
   /**

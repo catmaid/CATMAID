@@ -10,21 +10,12 @@
    */
   var SkeletonProjectionLayer = function(stackViewer, options) {
     this.stackViewer = stackViewer;
-
-    // Make sure there is an options object
-    options = options || {};
-    this.opacity = options.opacity || 1.0;
-
     // The currently displayed skeleton arbor instance
     this.currentSkeleton = null;
-    // Indicate if skeleton should be simplified
-    this.simplify = false;
-    // Indicate coloiring mode
-    this.shadingMode = options.shadingMode || "plain";
-    // Indicate if edges should be rendered
-    this.showEdges = true;
-    // Indicate if nodes should be rendered
-    this.showNodes = false;
+
+    // Make sure there is an options object
+    this.options = {};
+    this.updateOptions(options, true);
 
     // Limiting Strahler number for Strahler based shading.
     this.strahlerShadingMax = options.strahlerShadingMax || 2;
@@ -56,13 +47,47 @@
     if (options.initialNode) this.update(options.initialNode);
   };
 
-  SkeletonProjectionLayer.downwardsColor = "rgb(0,0,0)";
-  SkeletonProjectionLayer.upwardsColor = "rgb(255,255,255)";
+  /**
+   * The set of options and defaults.
+   */
+  SkeletonProjectionLayer.options = {
+    opacity: 1.0,
+    // Indicate if skeleton should be simplified
+    simplify: false,
+    // Indicate coloiring mode
+    shadingMode: "plain",
+    // Indicate if edges should be rendered
+    showEdges: true,
+    // Indicate if nodes should be rendered
+    showNodes: false,
+    // Color of downstream nodes and edges
+    downstreamColor: "rgb(0,0,0)",
+    // Color of upstream nodes and edges
+    upstreamColor: "rgb(255,255,255)",
+  };
+
+  /**
+   * Update default options
+   */
+  SkeletonProjectionLayer.updateDefaultOptions = function(options) {
+    mergeOptions(SkeletonProjectionLayer.options, options || {},
+        SkeletonProjectionLayer.options, true);
+  };
 
   SkeletonProjectionLayer.prototype = {};
 
   SkeletonProjectionLayer.prototype.treenodeReference = 'treenodeCircle';
   SkeletonProjectionLayer.prototype.NODE_RADIUS = 8;
+
+  /**
+   * Update options of this layer, giving preference to option fields in the
+   * passed in object. If a known object key isn't available, the default can
+   * optionally be set.
+   */
+  SkeletonProjectionLayer.prototype.updateOptions = function(options, setDefaults) {
+    mergeOptions(this.options, options || {}, SkeletonProjectionLayer.options,
+        setDefaults);
+  };
 
   /* Iterface methods */
 
@@ -192,7 +217,7 @@
       SkeletonAnnotations.getParentOfVirtualNode(node.id);
     var arbor = arborParser.arbor;
 
-    if (this.simplify) {
+    if (this.options.simplify) {
       var keepers = {};
       keepers[nodeID] = true;
       arbor = arbor.simplify(keepers);
@@ -204,7 +229,7 @@
     var downstream = fragments[0];
     var upstream = fragments[1];
 
-    var createShading = this.shadingModes[this.shadingMode];
+    var createShading = this.shadingModes[this.options.shadingMode];
     if (!createShading) {
       throw new CATMAID.ValueError("Couldn't find shading method " +
           this.shadingMode);
@@ -217,11 +242,11 @@
       stackViewer: this.stackViewer,
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
-      color: CATMAID.SkeletonProjectionLayer.downwardsColor,
+      color: this.options.downstreamColor,
       shade: createShading(this, downstream),
       edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
-      showEdges: this.showEdges,
-      showNodes: this.showNodes
+      showEdges: this.options.showEdges,
+      showNodes: this.options.showNodes
     };
 
     // Render downstream nodes
@@ -233,7 +258,7 @@
       upstream = upstream.reroot(node.parent_id);
 
       // Update render options with upstream color
-      renderOptions.color = CATMAID.SkeletonProjectionLayer.upwardsColor;
+      renderOptions.color = this.options.upstreamColor;
       renderOptions.shade = createShading(this, upstream);
 
       // Render downstream nodes
@@ -320,6 +345,22 @@
       };
     }
   };
+
+  /**
+   * Merge source fields into key if they appear in defaults, if a default does
+   * not exist in the source, set it optionally to the default.
+   */
+  var mergeOptions = function(target, source, defaults, setDefaults) {
+    // Only allow options that are defined in the default option list
+    for (var key in defaults) {
+      if (source.hasOwnProperty(key)) {
+        target[key] = source[key];
+      } else if (setDefaults &&
+          defaults.hasOwnProperty(key)) {
+        target[key] = defaults[key];
+      }
+    }
+  }
 
   // Make layer available in CATMAID namespace
   CATMAID.SkeletonProjectionLayer = SkeletonProjectionLayer;

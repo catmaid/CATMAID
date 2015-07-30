@@ -26,6 +26,9 @@
     // Indicate if nodes should be rendered
     this.showNodes = false;
 
+    // Limiting Strahler number for Strahler based shading.
+    this.strahlerShadingMax = 2;
+
     // Create grid view, aligned to the upper left
     this.view = document.createElement("div");
     this.view.style.position = "absolute";
@@ -201,9 +204,6 @@
     var downstream = fragments[0];
     var upstream = fragments[1];
 
-    // Get downstream order
-    var order = downstream.nodesOrderFrom(nodeID);
-
     var createShading = this.shadingModes[this.shadingMode];
     if (!createShading) {
       throw new CATMAID.ValueError("Couldn't find shading method " +
@@ -218,7 +218,7 @@
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
       color: CATMAID.SkeletonProjectionLayer.downwardsColor,
-      shade: createShading(this, order),
+      shade: createShading(this, downstream),
       edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
       showEdges: this.showEdges,
       showNodes: this.showNodes
@@ -229,15 +229,12 @@
 
     // If there is also an upstream part, show it as well
     if (upstream) {
-      fragments[1].reroot(node.parent_id);
-      var upOrder = fragments[1].nodesOrderFrom(node.parent_id);
-      // Increment order to compensate for the split that caused the upstream
-      // fragment to start from node's parent.
-      for (var o in upOrder) { upOrder[o] = upOrder[o] + 1}
+      // Make sure we look at upstream like we look at downstream
+      upstream = upstream.reroot(node.parent_id);
 
       // Update render options with upstream color
       renderOptions.color = CATMAID.SkeletonProjectionLayer.upwardsColor;
-      renderOptions.shade = createShading(this, upOrder);
+      renderOptions.shade = createShading(this, upstream);
 
       // Render downstream nodes
       upstream.nodesArray().forEach(renderNodes, renderOptions);
@@ -293,9 +290,33 @@
     /**
      * Shade a skeleton with a plain color for upstream and downstream nodes.
      */
-    "plain": function(layer, order) {
+    "plain": function(layer, arbor) {
       return function (node, pos, zDist) {
         return 1;
+      };
+    },
+
+    /**
+     * Shade a skeleton with increasing transparency based on Strahler numbers.
+     */
+    "strahlergradient": function(layer, arbor) {
+      var strahler = arbor.strahlerAnalysis();
+      var maxStrahler = layer.strahlerShadingMax;
+      return function(node, pos, zDist) {
+        var s = strahler[node];
+        return s <= maxStrahler ? 1 - s / maxStrahler : 0;
+      };
+    },
+
+    /**
+     * Display only part of a skeleton based on Strahler numbers.
+     */
+    "strahlercut": function(layer, arbor) {
+      var strahler = arbor.strahlerAnalysis();
+      var maxStrahler = layer.strahlerShadingMax;
+      return function(node, pos, zDist) {
+        var s = strahler[node];
+        return s <= maxStrahler ? 1 : 0;
       };
     }
   };

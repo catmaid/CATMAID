@@ -19,6 +19,12 @@
     this.currentSkeleton = null;
     // Indicate if skeleton should be simplified
     this.simplify = false;
+    // Indicate coloiring mode
+    this.shadingMode = "plain";
+    // Indicate if edges should be rendered
+    this.showEdges = true;
+    // Indicate if nodes should be rendered
+    this.showNodes = false;
 
     // Create grid view, aligned to the upper left
     this.view = document.createElement("div");
@@ -46,6 +52,9 @@
 
     if (options.initialNode) this.update(options.initialNode);
   };
+
+  SkeletonProjectionLayer.downwardsColor = "rgb(0,0,0)";
+  SkeletonProjectionLayer.upwardsColor = "rgb(255,255,255)";
 
   SkeletonProjectionLayer.prototype = {};
 
@@ -175,44 +184,77 @@
     // Return, if there is no node
     if (!arborParser) return;
 
-    // Get coordinates of node in stack space
-    //var stack = self.stackViewer.primaryStack;
-
-    var arbor = arborParser.arbor;
+    // Get nodes
     var nodeID = SkeletonAnnotations.isRealNode(node.id) ? node.id :
       SkeletonAnnotations.getParentOfVirtualNode(node.id);
-    var nodesToOrder = arbor.nodesOrderFrom(node.id);
+    var arbor = arborParser.arbor;
 
     if (this.simplify) {
       var keepers = {};
+      keepers[nodeID] = true;
       arbor = arbor.simplify(keepers);
     }
 
+    var split = {};
+    split[nodeID] = true;
+    var fragments = arbor.split(split);
+
+    // Get downstream order
+    var order = fragments[0].nodesOrderFrom(nodeID);
+    // Add upstream order iv available
+    if (fragments.length > 1) {
+      fragments[1].reroot(node.parent_id);
+      var upOrder = fragments[1].nodesOrderFrom(node.parent_id);
+      // Make upstream order negative and shift by one to compensate for the
+      // split that caused the upstream fragment to start from node's parent.
+      for (var o in upOrder) { order[o] = -1 * upOrder[o] - 1}
+    }
+
+    var shade = this.shadingModes[this.shadingMode];
+    if (!shade) {
+      throw new CATMAID.ValueError("Couldn't find shading method " +
+          this.shadingMode);
+    }
+
+    // Partially apply shading function
+    shade = shade.bind(this,
+      CATMAID.SkeletonProjectionLayer.downwardsColor,
+      CATMAID.SkeletonProjectionLayer.upwardsColor,
+      order);
+
+    // Iterate over all nodes of the skeleton
     var nodes = arbor.nodesArray();
     nodes.forEach(function(n, i, nodes) {
-      // render node that are not in this layerA
+      // render node that are not in this layer
       var pos = this.positions[n];
       var zs = this.stackViewer.primaryStack.projectToStackZ(pos.z, pos.y, pos.x);
-      if (zs !== this.stackViewer.z) {
-        var c = this.paper.select('.nodes').append('use')
-          .attr({
-            'xlink:href': '#' + this.ref,
-            'x': pos.x,
-            'y': pos.y,
-            'fill': this.fillColor})
-          .classed('overlay-node', true);
+      var color = this.shade(n, pos, zs);
 
-        var e = this.edges[n];
-        if (e) {
-          var pos2 = this.positions[e];
-          var edge = this.paper.select('.lines').append('line');
-          edge.toBack();
-          edge.attr({
-              x1: pos.x, y1: pos.y,
-              x2: pos2.x, y2: pos2.y,
-              stroke: this.fillColor,
-              'stroke-width': this.edgeWidth
-          });
+      // Display only nodes and edges not on the current section
+      if (zs !== this.stackViewer.z) {
+        if (this.showNodes) {
+          var c = this.paper.select('.nodes').append('use')
+            .attr({
+              'xlink:href': '#' + this.ref,
+              'x': pos.x,
+              'y': pos.y,
+              'fill': color})
+            .classed('overlay-node', true);
+        }
+
+        if (this.showEdges) {
+          var e = this.edges[n];
+          if (e) {
+            var pos2 = this.positions[e];
+            var edge = this.paper.select('.lines').append('line');
+            edge.toBack();
+            edge.attr({
+                x1: pos.x, y1: pos.y,
+                x2: pos2.x, y2: pos2.y,
+                stroke: color,
+                'stroke-width': this.edgeWidth
+            });
+          }
         }
       }
     }, {
@@ -221,9 +263,28 @@
       stackViewer: this.stackViewer,
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
-      fillColor: "rgb(128,0,200)",
-      edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2
+      shade: shade,
+      edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
+      showEdges: this.showEdges,
+      showNodes: this.showNodes
     });
+  };
+
+  /**
+   * A set of shading modes for the projected skeleton parts. Each function
+   * returns a color based on a node distance and world position.
+   */
+  SkeletonProjectionLayer.prototype.shadingModes = {
+    /**
+     * Shade a skeleton with a plain color for upstream and downstream nodes.
+     */
+    "plain": function(downColor, upColor, order, node, pos, zDist) {
+      if (order[node] > 0) {
+        return downColor;
+      } else {
+        return upColor;
+      }
+    }
   };
 
   // Make layer available in CATMAID namespace

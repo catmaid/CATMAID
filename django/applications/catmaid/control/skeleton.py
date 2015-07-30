@@ -9,7 +9,7 @@ from itertools import chain
 from functools import partial
 
 from django.core.serializers.json import DjangoJSONEncoder
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
@@ -1119,6 +1119,9 @@ def annotation_list(request, project_id=None):
     """, (project_id, relations['model_of'], skeleton_ids))
     n_to_sk_ids = {n:s for s,n in cursor.fetchall()}
     neuron_ids = n_to_sk_ids.keys()
+
+    if not neuron_ids:
+        raise Http404('No skeleton or neuron found')
 
     # Query for annotations of the given skeletons, specifically
     # neuron_id, auid, aid and aname.

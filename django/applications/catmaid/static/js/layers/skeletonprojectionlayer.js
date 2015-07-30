@@ -17,9 +17,6 @@
     this.options = {};
     this.updateOptions(options, true);
 
-    // Limiting Strahler number for Strahler based shading.
-    this.strahlerShadingMax = options.strahlerShadingMax || 2;
-
     // Create grid view, aligned to the upper left
     this.view = document.createElement("div");
     this.view.style.position = "absolute";
@@ -64,6 +61,9 @@
     downstreamColor: "rgb(0,0,0)",
     // Color of upstream nodes and edges
     upstreamColor: "rgb(255,255,255)",
+    // Limiting Strahler number for Strahler based shading.
+    strahlerShadingMin: 1,
+    strahlerShadingMax: -1
   };
 
   /**
@@ -326,10 +326,28 @@
      */
     "strahlergradient": function(layer, arbor) {
       var strahler = arbor.strahlerAnalysis();
-      var maxStrahler = layer.strahlerShadingMax;
+      var minStrahler = layer.options.strahlerShadingMin;
+      var maxStrahler = layer.options.strahlerShadingMax;
+
+      // Clamp min Strahler to lowest possible Strahler, if it is disabled
+      if (minStrahler < 0) minStrahler = 1;
+
+      // Find maximum available Strahler and set max Strahler to it, if disabled
+      var maxAvailableStrahler =  Object.keys(strahler).reduce((function(max, n) {
+        var s = this[n];
+        return s > max ? s : max;
+      }).bind(strahler), 0);
+
+      if (maxStrahler < 0 || maxStrahler > maxAvailableStrahler) {
+        maxStrahler = maxAvailableStrahler;
+      }
+
+      var relMaxStrahler = maxStrahler - minStrahler + 1;
+
       return function(node, pos, zDist) {
-        var s = strahler[node];
-        return s <= maxStrahler ? 1 - s / maxStrahler : 0;
+        // Normalize Strahler to min/max range
+        var s = strahler[node] - minStrahler + 1;
+        return (s > 0 &&  s <= relMaxStrahler) ? s / maxStrahler: 0;
       };
     },
 
@@ -338,10 +356,21 @@
      */
     "strahlercut": function(layer, arbor) {
       var strahler = arbor.strahlerAnalysis();
-      var maxStrahler = layer.strahlerShadingMax;
+      var minStrahler = layer.options.strahlerShadingMin;
+      var maxStrahler = layer.options.strahlerShadingMax;
+
+      // Clamp min Strahler to lowest possible Strahler, if it is disabled
+      if (minStrahler < 0) minStrahler = 1;
+
+      // Set max allowed Strahler to infinity, if disabled
+      if (maxStrahler < 0) maxStrahler = Number.POSITIVE_INFINITY;
+
+      var relMaxStrahler = maxStrahler - minStrahler + 1;
+
       return function(node, pos, zDist) {
-        var s = strahler[node];
-        return s <= maxStrahler ? 1 : 0;
+        // Normalize Strahler to min/max range
+        var s = strahler[node] - minStrahler + 1;
+        return (s > 0 && s <= relMaxStrahler) ? 1 : 0;
       };
     }
   };

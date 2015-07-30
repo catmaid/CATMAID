@@ -451,12 +451,32 @@
       var skpShowNodes = createCheckboxSetting("Show nodes",
           updateSkeletonProjectionDisplay,
           CATMAID.SkeletonProjectionLayer.options.showNodes);
+      var skpMinStrahler = createInputSetting("Min. Strahler",
+          CATMAID.SkeletonProjectionLayer.options.strahlerShadingMin);
+      var skpMaxStrahler = createInputSetting("Max. Strahler",
+          CATMAID.SkeletonProjectionLayer.options.strahlerShadingMax);
 
       dsSkeletonProjection.append(skpDownstreamColor);
       dsSkeletonProjection.append(skpUpstreamColor);
       dsSkeletonProjection.append(skpSimplify);
       dsSkeletonProjection.append(skpShowEdges);
       dsSkeletonProjection.append(skpShowNodes);
+
+      // Add explanatory text
+      dsSkeletonProjection.append($('<div/>').addClass('setting').append(
+          "For Strahler based shading, the relative min and max Strahler " +
+          "number can be set. These numbers are relative to the active Node. " +
+          "Nodes not in this range won't be shown. -1 deactivates a condition."));
+
+      dsSkeletonProjection.append(skpMinStrahler);
+      dsSkeletonProjection.append(skpMaxStrahler);
+
+      // Add a spinner to Strahler configuration
+      $(skpMinStrahler).add(skpMaxStrahler).find('input').spinner({
+        min: -1,
+        change: updateSkeletonProjectionDisplay,
+        stop: updateSkeletonProjectionDisplay
+      });
 
       // Get all relevant skeleton projection options
       function getSkeletonProjectionOptions() {
@@ -468,6 +488,8 @@
           "simplify": skpSimplify.find('input').prop('checked'),
           "showEdges": skpShowEdges.find('input').prop('checked'),
           "showNodes": skpShowNodes.find('input').prop('checked'),
+          "strahlerShadingMin": skpMinStrahler.find('input').val(),
+          "strahlerShadingMax": skpMaxStrahler.find('input').val(),
           "initialNode": SkeletonAnnotations.atn
         };
       };

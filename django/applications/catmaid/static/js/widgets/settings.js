@@ -445,9 +445,6 @@
           CATMAID.SkeletonProjectionLayer.options.downstreamColor);
       var skpUpstreamColor = createInputSetting("Upstream color",
           CATMAID.SkeletonProjectionLayer.options.upstreamColor);
-      var skpSimplify = createCheckboxSetting("Simplify skeleton",
-          updateSkeletonProjectionDisplay,
-          CATMAID.SkeletonProjectionLayer.options.simplify);
       var skpShowEdges = createCheckboxSetting("Show edges",
           updateSkeletonProjectionDisplay,
           CATMAID.SkeletonProjectionLayer.options.showEdges);
@@ -463,7 +460,6 @@
 
       dsSkeletonProjection.append(skpDownstreamColor);
       dsSkeletonProjection.append(skpUpstreamColor);
-      dsSkeletonProjection.append(skpSimplify);
       dsSkeletonProjection.append(skpShowEdges);
       dsSkeletonProjection.append(skpShowNodes);
 
@@ -511,7 +507,6 @@
           "shadingMode": skpShading.val(),
           "downstreamColor": skpDownstreamColor.find('input').val(),
           "upstreamColor": skpUpstreamColor.find('input').val(),
-          "simplify": skpSimplify.find('input').prop('checked'),
           "showEdges": skpShowEdges.find('input').prop('checked'),
           "showNodes": skpShowNodes.find('input').prop('checked'),
           "strahlerShadingMin": skpMinStrahler.find('input').val(),

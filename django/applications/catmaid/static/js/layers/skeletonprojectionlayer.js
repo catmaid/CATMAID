@@ -219,12 +219,6 @@
       SkeletonAnnotations.getParentOfVirtualNode(node.id);
     var arbor = arborParser.arbor;
 
-    if (this.options.simplify) {
-      var keepers = {};
-      keepers[nodeID] = true;
-      arbor = arbor.simplify(keepers);
-    }
-
     var split = {};
     split[nodeID] = true;
     var fragments = arbor.split(split);

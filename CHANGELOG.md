@@ -43,6 +43,16 @@ Miscellaneous:
   server. If not, an error dialog is shown prompting the user to refresh their
   browser.
 
+- It is now possible to show a projection of the active skeleton in the tracing
+  overlay. All nodes will be displayed in the current slice, but no interaction
+  is allowed with them. This feature can be useful to get more context on the
+  current location in the active skeleton. This mode can be toggled with F10 or
+  through a new entry in the settings (Tracing Overlay > Active skeleton
+  projection), where different parameters can be adjusted. The color for the
+  upstream and downstream part can be independently changed and various shading
+  modes can be selected (plain color, Z distance transparency, Strahler based
+  transparency or cut off).
+
 
 ### Bug fixes
 

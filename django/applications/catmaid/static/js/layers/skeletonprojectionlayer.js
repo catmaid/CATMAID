@@ -151,7 +151,7 @@
   SkeletonProjectionLayer.prototype.update = function(node) {
     var self = this;
     var newSkeleton = null;
-    if (node && node.skeleton_id !== this.curentSkeletonID) {
+    if (node && node.id && node.skeleton_id !== this.curentSkeletonID) {
       this.loadSkeletonOfNode(node)
         .then(this.createProjection.bind(this, node))
         .then(this.redraw.bind(this))

@@ -478,6 +478,12 @@
         stop: updateSkeletonProjectionDisplay
       });
 
+      // Allow color confirmation with enter
+      skpDownstreamColor.find('input').add(skpUpstreamColor.find('input'))
+        .on('keyup', function(e) {
+          if (13 === e.keyCode) updateSkeletonProjectionDisplay();
+        });
+
       // Get all relevant skeleton projection options
       function getSkeletonProjectionOptions() {
         return {

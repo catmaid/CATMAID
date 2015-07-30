@@ -517,7 +517,7 @@
           "distanceFalloff": skpDistanceFalloff.find('input').val(),
           "initialNode": SkeletonAnnotations.atn
         };
-      };
+      }
 
       function updateSkeletonProjectionDisplay() {
         var options = getSkeletonProjectionOptions();

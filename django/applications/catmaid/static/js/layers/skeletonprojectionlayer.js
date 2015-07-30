@@ -169,7 +169,7 @@
    */
   SkeletonProjectionLayer.prototype.loadSkeletonOfNode = function(node) {
     return new Promise(function(resolve, reject) {
-      if (!node) reject("No node provided")
+      if (!node) reject("No node provided");
       if (!node.skeleton_id) reject("Node has no skeleton");
 
       var self = this, failed = false, ap;
@@ -265,6 +265,8 @@
      * Render nodes on a D3 paper.
      */
     function renderNodes(n, i, nodes) {
+      /* jshint validthis: true */ // `this` is bound to a set of options above
+
       // render node that are not in this layer
       var pos = this.positions[n];
       var zs = this.stackViewer.primaryStack.projectToStackZ(pos.z, pos.y, pos.x);
@@ -299,7 +301,7 @@
           }
         }
       }
-    };
+    }
   };
 
   /**
@@ -415,7 +417,7 @@
         target[key] = defaults[key];
       }
     }
-  }
+  };
 
   // Make layer available in CATMAID namespace
   CATMAID.SkeletonProjectionLayer = SkeletonProjectionLayer;

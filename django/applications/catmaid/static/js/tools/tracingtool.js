@@ -439,23 +439,24 @@
     /**
      * Add or remove a skeleton projection layer to each view.
      */
-    var skeletonProjectionVisible = false;
     var toggleSkeletonProjectionLayers = function() {
-      skeletonProjectionVisible = !skeletonProjectionVisible;
+      var key = "skeletonprojection";
+      var allHaveLayers = project.getStackViewers().every(function(sv) {
+        return !!sv.getLayer(key);
+      });
 
-      var title = "Skeleton projection";
       function add(sv) {
-        if (sv.getLayer(title)) return;
-        sv.addLayer(title, new CATMAID.SkeletonProjectionLayer(sv, {
+        if (sv.getLayer(key)) return;
+        sv.addLayer(key, new CATMAID.SkeletonProjectionLayer(sv, {
           initialNode: SkeletonAnnotations.atn
         }));
       }
       function remove(sv) {
-        if (!sv.getLayer(title)) return;
-        sv.removeLayer(title);
+        if (!sv.getLayer(key)) return;
+        sv.removeLayer(key);
       }
 
-      var fn = skeletonProjectionVisible ? add : remove;
+      var fn = allHaveLayers ? remove : add;
       project.getStackViewers().forEach(fn);
     };
 

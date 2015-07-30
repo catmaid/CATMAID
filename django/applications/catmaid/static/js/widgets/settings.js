@@ -410,6 +410,137 @@
         });
       }).addClass('setting'));
 
+      var dsSkeletonProjection = addSettingsContainer(ds,
+          "Active skeleton projection");
+      dsSkeletonProjection.append($('<div/>').addClass('setting')
+        .append("Activating this layer adds upstream and downstream " +
+            "projections of the active skeleton to the tracing display."));
+
+      // Figure out if all displayed stack viewers have a skeleton projection
+      // layer
+      var allHaveLayers = project.getStackViewers().every(function(sv) {
+        return !!sv.getLayer('skeletonprojection');
+      });
+
+      var skpVisible = createCheckboxSetting("Display projections",
+          updateSkeletonProjectionDisplay, allHaveLayers);
+      dsSkeletonProjection.append(skpVisible);
+
+      var skpShading = $('<select/>');
+      var skpShadingOptions = [
+        {name: 'Plain color', id: 'plain'},
+        {name: 'Z distance', id: 'zdistance'},
+        {name: 'Relative Strahler gradient', id: 'relstrahlergradient'},
+        {name: 'Relative Strahler cut', id: 'relstrahlercut'},
+        {name: 'Absolute Strahler gradient', id: 'strahlergradient'},
+        {name: 'Absolute Strahler cut', id: 'strahlercut'}
+      ];
+      skpShadingOptions.forEach(function(o) {
+        var selected = o.id === CATMAID.SkeletonProjectionLayer.options.shadingMode;
+        this.append(new Option(o.name, o.id, selected, selected));
+      }, skpShading);
+      skpShading.on('change', updateSkeletonProjectionDisplay);
+
+      dsSkeletonProjection.append(createLabeledControl('Shading', skpShading));
+
+      // Set default properties
+      var skpDownstreamColor = createInputSetting("Downstream color",
+          CATMAID.SkeletonProjectionLayer.options.downstreamColor);
+      var skpUpstreamColor = createInputSetting("Upstream color",
+          CATMAID.SkeletonProjectionLayer.options.upstreamColor);
+      var skpShowEdges = createCheckboxSetting("Show edges",
+          updateSkeletonProjectionDisplay,
+          CATMAID.SkeletonProjectionLayer.options.showEdges);
+      var skpShowNodes = createCheckboxSetting("Show nodes",
+          updateSkeletonProjectionDisplay,
+          CATMAID.SkeletonProjectionLayer.options.showNodes);
+      var skpMinStrahler = createInputSetting("Min. Strahler",
+          CATMAID.SkeletonProjectionLayer.options.strahlerShadingMin);
+      var skpMaxStrahler = createInputSetting("Max. Strahler",
+          CATMAID.SkeletonProjectionLayer.options.strahlerShadingMax);
+      var skpDistanceFalloff = createInputSetting("Distance falloff",
+          CATMAID.SkeletonProjectionLayer.options.distanceFalloff);
+
+      dsSkeletonProjection.append(skpDownstreamColor);
+      dsSkeletonProjection.append(skpUpstreamColor);
+      dsSkeletonProjection.append(skpShowEdges);
+      dsSkeletonProjection.append(skpShowNodes);
+
+      // Add explanatory text
+      dsSkeletonProjection.append($('<div/>').addClass('setting').append(
+          "For Strahler based shading, the relative min and max Strahler " +
+          "number can be set. These numbers are relative to the active Node. " +
+          "Nodes not in this range won't be shown. -1 deactivates a condition."));
+
+      dsSkeletonProjection.append(skpMinStrahler);
+      dsSkeletonProjection.append(skpMaxStrahler);
+
+      // Add Z distance shading controls
+      dsSkeletonProjection.append($('<div/>').addClass('setting').append(
+          "For distance based shading, a fall-off can be set, by which opacity " +
+          "is reduced with every layer"));
+
+      dsSkeletonProjection.append(skpDistanceFalloff);
+
+      // Add a spinner to Strahler configuration
+      $(skpMinStrahler).add(skpMaxStrahler).find('input').spinner({
+        min: -1,
+        change: updateSkeletonProjectionDisplay,
+        stop: updateSkeletonProjectionDisplay
+      });
+
+      // Add a spinner to z distance fallof
+      $(skpDistanceFalloff).find('input').spinner({
+        min: 0,
+        step: 0.001,
+        change: updateSkeletonProjectionDisplay,
+        stop: updateSkeletonProjectionDisplay
+      });
+
+      // Allow color confirmation with enter
+      skpDownstreamColor.find('input').add(skpUpstreamColor.find('input'))
+        .on('keyup', function(e) {
+          if (13 === e.keyCode) updateSkeletonProjectionDisplay();
+        });
+
+      // Get all relevant skeleton projection options
+      function getSkeletonProjectionOptions() {
+        return {
+          "visible": skpVisible.find('input').prop('checked'),
+          "shadingMode": skpShading.val(),
+          "downstreamColor": skpDownstreamColor.find('input').val(),
+          "upstreamColor": skpUpstreamColor.find('input').val(),
+          "showEdges": skpShowEdges.find('input').prop('checked'),
+          "showNodes": skpShowNodes.find('input').prop('checked'),
+          "strahlerShadingMin": skpMinStrahler.find('input').val(),
+          "strahlerShadingMax": skpMaxStrahler.find('input').val(),
+          "distanceFalloff": skpDistanceFalloff.find('input').val(),
+          "initialNode": SkeletonAnnotations.atn
+        };
+      };
+
+      function updateSkeletonProjectionDisplay() {
+        var options = getSkeletonProjectionOptions();
+        CATMAID.SkeletonProjectionLayer.updateDefaultOptions(options);
+        // Create a skeleton projection layer for all stack viewers that
+        // don't have one already.
+        project.getStackViewers().forEach(function(sv) {
+          var layer = sv.getLayer('skeletonprojection');
+          if (options.visible) {
+            if (layer) {
+              // Update existing instance
+              layer.updateOptions(options, false);
+              layer.update(options.initialNode);
+            } else {
+              // Create new if not already present
+              layer = new CATMAID.SkeletonProjectionLayer(sv, options);
+              sv.addLayer("skeletonprojection", layer);
+            }
+          } else if (layer) {
+            sv.removeLayer("skeletonprojection");
+          }
+        });
+      }
 
       // Reviewer whitelist settings
       ds = addSettingsContainer(container, "Reviewer Team");

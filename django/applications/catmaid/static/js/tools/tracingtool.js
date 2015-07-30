@@ -435,6 +435,31 @@
       return true;
     };
 
+
+    /**
+     * Add or remove a skeleton projection layer to each view.
+     */
+    var skeletonProjectionVisible = false;
+    var toggleSkeletonProjectionLayers = function() {
+      skeletonProjectionVisible = !skeletonProjectionVisible;
+
+      var title = "Skeleton projection";
+      function add(sv) {
+        if (sv.getLayer(title)) return;
+        sv.addLayer(title, new CATMAID.SkeletonProjectionLayer(sv, {
+          initialNode: SkeletonAnnotations.atn
+        }));
+      }
+      function remove(sv) {
+        if (!sv.getLayer(title)) return;
+        sv.removeLayer(title);
+      }
+
+      var fn = skeletonProjectionVisible ? add : remove;
+      project.getStackViewers().forEach(fn);
+    };
+
+
     /**
      * ACTIONS
      *
@@ -962,6 +987,17 @@
         },
         run: function (e) {
           WindowMaker.create('neuron-dendrogram');
+          return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Toggle skeleton projection layer",
+        keyShortcuts: {
+            'F10': [ 121 ]
+        },
+        run: function (e) {
+          toggleSkeletonProjectionLayers();
           return true;
         }
     }) );

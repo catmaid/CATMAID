@@ -780,8 +780,8 @@ def user_info(request, project_id=None):
     return HttpResponse(json.dumps({
         'user': info[1],
         'editor': info[2],
-        'creation_time': str(datetime.date(info[3])),
-        'edition_time': str(datetime.date(info[4])),
+        'creation_time': str(info[3].isoformat()),
+        'edition_time': str(info[4].isoformat()),
         'reviewers': [r for r in info[5] if r],
-        'review_times': [str(datetime.date(rt)) for rt in info[6] if rt]
+        'review_times': [str(rt.isoformat()) for rt in info[6] if rt]
     }))

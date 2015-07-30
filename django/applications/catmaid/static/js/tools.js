@@ -305,4 +305,45 @@ CATMAID.tools = CATMAID.tools || {};
     return (a < 0) === (b < 0);
   };
 
+  /**
+   * Return a contextual description of a date based on the current time:
+   *
+   * - For dates less than a minute ago: "x seconds ago"
+   * - For dates less than an hour ago: "x minutes ago"
+   * - For dates less than a day ago: "at YYYY-MM-DD HH:MM:SS"
+   * - For dates more than a day ago: "on YYYY-MM-DD"
+   *
+   * @param  {string} isodate   An ISO 8601 date string.
+   * @return {string}           A description of the date (see comment above).
+   */
+  tools.contextualDateString = (function () {
+    var MINUTE = 60000;
+    var HOUR = 60 * MINUTE;
+    var DAY = 24 * HOUR;
+
+    var formattedDate = function (date) {
+      return date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
+    };
+
+    return function (isodate) {
+      var date = new Date(isodate);
+      // ES5 interprets all ISO 8601 times without time zone as UTC, while
+      // CATMAID uses local time. Adjust the time accordingly. This is not
+      // robust for users in different time zones, but is the least surprising
+      // behavior possible so long as CATMAID does not account for time zones.
+      date.setTime(date.getTime() + date.getTimezoneOffset() * MINUTE);
+      var ago = Date.now() - date;
+
+      if (ago < MINUTE) {
+        return Math.round(ago / 1000) + ' seconds ago';
+      } else if (ago < HOUR) {
+        return Math.round(ago / MINUTE) + ' minutes ago';
+      } else if (ago < DAY) {
+        return 'at ' + formattedDate(date) + ' ' + date.toLocaleTimeString();
+      } else {
+        return 'on ' + formattedDate(date);
+      }
+    };
+  })();
+
 })(CATMAID.tools);

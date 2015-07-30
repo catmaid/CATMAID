@@ -1299,9 +1299,10 @@
             CATMAID.jsonResponseHandler(function(data) {
               var msg = (d.is_pre ? 'Presynaptic' : 'Postsynaptic') + ' edge: ';
               msg += data.map(function (info) {
-                return 'created by ' + User.safeToString(info.user) + ' on ' +
-                    info.creation_time + ', last edited on ' +
-                    info.edition_time;
+                return 'created by ' + User.safeToString(info.user) + ' ' +
+                    CATMAID.tools.contextualDateString(info.creation_time) +
+                    ', last edited ' +
+                    CATMAID.tools.contextualDateString(info.edition_time);
               }).join('; ');
               CATMAID.statusBar.replaceLast(msg);
             }));

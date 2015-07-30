@@ -3217,19 +3217,20 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
   }
 
   var url = django_url + project.id + '/node/user-info';
+
   this.submit(url, {node_id: nodeID}, function(jso) {
       var creator = User.safeToString(jso.user);
       var editor = User.safeToString(jso.editor);
 
-      var msg = prefixMessage + " created by " + creator + " on " +
-          jso.creation_time + ", last edited by " + editor + " on " +
-          jso.edition_time + ", reviewed by ";
+      var msg = prefixMessage + " created by " + creator + ' ' +
+          CATMAID.tools.contextualDateString(jso.creation_time) + ", last edited by " + editor + ' ' +
+          CATMAID.tools.contextualDateString(jso.edition_time) + ", reviewed by ";
       // Add review information
       if (jso.reviewers.length > 0) {
         var reviews = [];
         for (var i=0; i<jso.reviewers.length; ++i) {
-          reviews.push(User.safeToString(jso.reviewers[i]) +
-              " on " + jso.review_times[i]);
+          reviews.push(User.safeToString(jso.reviewers[i]) + ' ' +
+              CATMAID.tools.contextualDateString(jso.review_times[i]));
         }
         msg += reviews.join(', ');
       } else {

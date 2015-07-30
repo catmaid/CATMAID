@@ -655,6 +655,6 @@ def connector_user_info(request, project_id):
     # multiple rows.
     return HttpResponse(json.dumps([{
         'user': info[1],
-        'creation_time': str(datetime.date(info[2])),
-        'edition_time': str(datetime.date(info[3])),
+        'creation_time': str(info[2].isoformat()),
+        'edition_time': str(info[3].isoformat()),
     } for info in cursor.fetchall()]))

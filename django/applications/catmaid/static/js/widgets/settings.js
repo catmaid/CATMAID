@@ -426,6 +426,7 @@
       var skpShading = $('<select/>');
       var skpShadingOptions = [
         {name: 'Plain color', id: 'plain'},
+        {name: 'Z distance', id: 'zdistance'},
         {name: 'Relative Strahler gradient', id: 'relstrahlergradient'},
         {name: 'Relative Strahler cut', id: 'relstrahlercut'},
         {name: 'Absolute Strahler gradient', id: 'strahlergradient'},
@@ -457,6 +458,8 @@
           CATMAID.SkeletonProjectionLayer.options.strahlerShadingMin);
       var skpMaxStrahler = createInputSetting("Max. Strahler",
           CATMAID.SkeletonProjectionLayer.options.strahlerShadingMax);
+      var skpDistanceFalloff = createInputSetting("Distance falloff",
+          CATMAID.SkeletonProjectionLayer.options.distanceFalloff);
 
       dsSkeletonProjection.append(skpDownstreamColor);
       dsSkeletonProjection.append(skpUpstreamColor);
@@ -473,9 +476,24 @@
       dsSkeletonProjection.append(skpMinStrahler);
       dsSkeletonProjection.append(skpMaxStrahler);
 
+      // Add Z distance shading controls
+      dsSkeletonProjection.append($('<div/>').addClass('setting').append(
+          "For distance based shading, a fall-off can be set, by which opacity " +
+          "is reduced with every layer"));
+
+      dsSkeletonProjection.append(skpDistanceFalloff);
+
       // Add a spinner to Strahler configuration
       $(skpMinStrahler).add(skpMaxStrahler).find('input').spinner({
         min: -1,
+        change: updateSkeletonProjectionDisplay,
+        stop: updateSkeletonProjectionDisplay
+      });
+
+      // Add a spinner to z distance fallof
+      $(skpDistanceFalloff).find('input').spinner({
+        min: 0,
+        step: 0.001,
         change: updateSkeletonProjectionDisplay,
         stop: updateSkeletonProjectionDisplay
       });
@@ -498,6 +516,7 @@
           "showNodes": skpShowNodes.find('input').prop('checked'),
           "strahlerShadingMin": skpMinStrahler.find('input').val(),
           "strahlerShadingMax": skpMaxStrahler.find('input').val(),
+          "distanceFalloff": skpDistanceFalloff.find('input').val(),
           "initialNode": SkeletonAnnotations.atn
         };
       };

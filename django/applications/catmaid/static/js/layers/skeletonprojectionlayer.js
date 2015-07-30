@@ -63,7 +63,9 @@
     upstreamColor: "rgb(255,255,255)",
     // Limiting Strahler number for Strahler based shading.
     strahlerShadingMin: 1,
-    strahlerShadingMax: -1
+    strahlerShadingMax: -1,
+    // Distance reduction per section for distance based shading
+    distanceFalloff: 0.01
   };
 
   /**
@@ -391,6 +393,18 @@
       var absStrahler = SkeletonProjectionLayer.shadingModes['strahlercut'];
       return absStrahler(layer, subarbor, subarbor);
     },
+
+    /**
+     * Reduce opacity linearly with increasing Z distance.
+     */
+    "zdistance": function(layer, arbor, subarbor) {
+      var falloff = layer.options.distanceFalloff;
+      var stackViewer = layer.stackViewer;
+      return function(node, pos, zStack) {
+        var zDist = Math.abs(zStack - stackViewer.z);
+        return Math.max(0, 1 - falloff * zDist);
+      };
+    }
   };
 
   /**

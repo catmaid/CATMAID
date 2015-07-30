@@ -426,8 +426,8 @@
       var skpShading = $('<select/>');
       var skpShadingOptions = [
         {name: 'Plain color', id: 'plain'},
-        {name: 'Strahler gradient', id: 'strahlergradient'},
-        {name: 'Strahler cut', id: 'strahlercut'}
+        {name: 'Relative Strahler gradient', id: 'strahlergradient'},
+        {name: 'Relative Strahler cut', id: 'strahlercut'}
       ];
       skpShadingOptions.forEach(function(o) {
         var selected = o.id === CATMAID.SkeletonProjectionLayer.options.shadingMode;

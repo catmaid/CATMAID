@@ -198,37 +198,59 @@
     var split = {};
     split[nodeID] = true;
     var fragments = arbor.split(split);
+    var downstream = fragments[0];
+    var upstream = fragments[1];
 
     // Get downstream order
-    var order = fragments[0].nodesOrderFrom(nodeID);
-    // Add upstream order iv available
-    if (fragments.length > 1) {
-      fragments[1].reroot(node.parent_id);
-      var upOrder = fragments[1].nodesOrderFrom(node.parent_id);
-      // Make upstream order negative and shift by one to compensate for the
-      // split that caused the upstream fragment to start from node's parent.
-      for (var o in upOrder) { order[o] = -1 * upOrder[o] - 1}
-    }
+    var order = downstream.nodesOrderFrom(nodeID);
 
-    var shade = this.shadingModes[this.shadingMode];
-    if (!shade) {
+    var createShading = this.shadingModes[this.shadingMode];
+    if (!createShading) {
       throw new CATMAID.ValueError("Couldn't find shading method " +
           this.shadingMode);
     }
 
-    // Partially apply shading function
-    shade = shade.bind(this,
-      CATMAID.SkeletonProjectionLayer.downwardsColor,
-      CATMAID.SkeletonProjectionLayer.upwardsColor,
-      order);
+    // Construct rendering option context
+    var renderOptions = {
+      positions: arborParser.positions,
+      edges: arbor.edges,
+      stackViewer: this.stackViewer,
+      paper: this.paper,
+      ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
+      color: CATMAID.SkeletonProjectionLayer.downwardsColor,
+      shade: createShading(this, order),
+      edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
+      showEdges: this.showEdges,
+      showNodes: this.showNodes
+    };
 
-    // Iterate over all nodes of the skeleton
-    var nodes = arbor.nodesArray();
-    nodes.forEach(function(n, i, nodes) {
+    // Render downstream nodes
+    downstream.nodesArray().forEach(renderNodes, renderOptions);
+
+    // If there is also an upstream part, show it as well
+    if (upstream) {
+      fragments[1].reroot(node.parent_id);
+      var upOrder = fragments[1].nodesOrderFrom(node.parent_id);
+      // Increment order to compensate for the split that caused the upstream
+      // fragment to start from node's parent.
+      for (var o in upOrder) { upOrder[o] = upOrder[o] + 1}
+
+      // Update render options with upstream color
+      renderOptions.color = CATMAID.SkeletonProjectionLayer.upwardsColor;
+      renderOptions.shade = createShading(this, upOrder);
+
+      // Render downstream nodes
+      upstream.nodesArray().forEach(renderNodes, renderOptions);
+    }
+
+    /**
+     * Render nodes on a D3 paper.
+     */
+    function renderNodes(n, i, nodes) {
       // render node that are not in this layer
       var pos = this.positions[n];
       var zs = this.stackViewer.primaryStack.projectToStackZ(pos.z, pos.y, pos.x);
-      var color = this.shade(n, pos, zs);
+      var opacity = this.shade(n, pos, zs);
 
       // Display only nodes and edges not on the current section
       if (zs !== this.stackViewer.z) {
@@ -238,7 +260,8 @@
               'xlink:href': '#' + this.ref,
               'x': pos.x,
               'y': pos.y,
-              'fill': color})
+              'fill': this.color,
+              'opacity': opacity})
             .classed('overlay-node', true);
         }
 
@@ -251,23 +274,14 @@
             edge.attr({
                 x1: pos.x, y1: pos.y,
                 x2: pos2.x, y2: pos2.y,
-                stroke: color,
-                'stroke-width': this.edgeWidth
+                stroke: this.color,
+                'stroke-width': this.edgeWidth,
+                'opacity': opacity
             });
           }
         }
       }
-    }, {
-      positions: arborParser.positions,
-      edges: arbor.edges,
-      stackViewer: this.stackViewer,
-      paper: this.paper,
-      ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
-      shade: shade,
-      edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
-      showEdges: this.showEdges,
-      showNodes: this.showNodes
-    });
+    };
   };
 
   /**
@@ -275,15 +289,14 @@
    * returns a color based on a node distance and world position.
    */
   SkeletonProjectionLayer.prototype.shadingModes = {
+
     /**
      * Shade a skeleton with a plain color for upstream and downstream nodes.
      */
-    "plain": function(downColor, upColor, order, node, pos, zDist) {
-      if (order[node] > 0) {
-        return downColor;
-      } else {
-        return upColor;
-      }
+    "plain": function(layer, order) {
+      return function (node, pos, zDist) {
+        return 1;
+      };
     }
   };
 

@@ -3079,7 +3079,7 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
     var url = django_url + project.id + "/node/get_location";
     self.submit(url, {tnid: nodeID}, resolve, true, false, reject);
   }).then(function(json) {
-    var stack = this.stackViewer.primaryStack;
+    var stack = self.stackViewer.primaryStack;
     return {
       id: json[0],
       x: stack.projectToStackX(json[3], json[2], json[1]),

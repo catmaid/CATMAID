@@ -1143,8 +1143,8 @@ def annotation_list(request, project_id=None):
     """ Returns a JSON serialized object that contains information about the
     given skeletons.
     """
-    skeleton_ids = [v for k,v in request.POST.iteritems()
-            if k.startswith('skeleton_ids[')]
+    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems()
+            if k.startswith('skeleton_ids['))
     annotations = bool(int(request.POST.get("annotations", 0)))
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
@@ -1163,9 +1163,8 @@ def annotation_list(request, project_id=None):
         FROM class_instance_class_instance cici
         WHERE cici.project_id = %s AND
               cici.relation_id = %s AND
-              cici.class_instance_a IN (%s)
-    """ % (project_id, relations['model_of'],
-           ','.join(map(str, skeleton_ids))))
+              cici.class_instance_a IN %s
+    """, (project_id, relations['model_of'], skeleton_ids))
     n_to_sk_ids = {n:s for s,n in cursor.fetchall()}
     neuron_ids = n_to_sk_ids.keys()
 

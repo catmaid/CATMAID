@@ -3216,9 +3216,8 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
 
   var url = django_url + project.id + '/node/user-info';
   this.submit(url, {node_id: nodeID}, function(jso) {
-      var users = User.all();
-      var creator = userToString(users, jso.user);
-      var editor = userToString(users, jso.editor);
+      var creator = User.safeToString(jso.user);
+      var editor = User.safeToString(jso.editor);
 
       var msg = prefixMessage + " created by " + creator + " on " +
           jso.creation_time + ", last edited by " + editor + " on " +
@@ -3227,7 +3226,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
       if (jso.reviewers.length > 0) {
         var reviews = [];
         for (var i=0; i<jso.reviewers.length; ++i) {
-          reviews.push(userToString(users, jso.reviewers[i]) +
+          reviews.push(User.safeToString(jso.reviewers[i]) +
               " on " + jso.review_times[i]);
         }
         msg += reviews.join(', ');
@@ -3238,11 +3237,6 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
     },
     false,
     true);
-
-  function userToString(users, userID) {
-    var u = users[userID];
-    return u ? u.fullName + ' (' + u.login + ')' : ('unknown user ' + userID);
-  }
 };
 
 /**

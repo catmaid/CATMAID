@@ -64,6 +64,15 @@ User.safe_get = function(id)
 };
 
 /**
+ * Returns a display-friendly representation of the user where or not it is in
+ * the user cache.
+ */
+User.safeToString = function (id) {
+  var u = User.prototype.users[id];
+  return u ? u.fullName + ' (' + u.login + ')' : ('unknown user ' + id);
+};
+
+/**
  * Gets the user object belonging the passed ID and calls the passed function
  * with this as parameter. If the user object is not available, an update of
  * the user cache is scheduled before.

@@ -2954,7 +2954,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
     var vnZ = SkeletonAnnotations.getZOfVirtualNode(nodeID, vnComponents);
 
     if (parentID && childID && vnX && vnY && vnZ) {
-      self.moveTo(vnZ, vnY, vnX, fn);
+      this.moveTo(vnZ, vnY, vnX, fn);
     } else {
       CATMAID.warn("Could not find location for node " + nodeID);
     }

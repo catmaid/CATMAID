@@ -131,10 +131,10 @@
     // Use project coordinates for the SVG's view box
     this.paper.attr({
         viewBox: [
-            projectViewBox.min.x,
-            projectViewBox.min.y,
-            projectViewBox.max.x - projectViewBox.min.x,
-            projectViewBox.max.y - projectViewBox.min.y].join(' '),
+            stackViewBox.min.x,
+            stackViewBox.min.y,
+            stackViewBox.max.x - stackViewBox.min.x,
+            stackViewBox.max.y - stackViewBox.min.y].join(' '),
         width: this.stackViewer.viewWidth,     // Width and height only need to be updated on
         height: this.stackViewer.viewHeight}); // resize.
 
@@ -286,8 +286,11 @@
       /* jshint validthis: true */ // `this` is bound to a set of options above
 
       // render node that are not in this layer
+      var stack = this.stackViewer.primaryStack;
       var pos = this.positions[n];
-      var zs = this.stackViewer.primaryStack.projectToStackZ(pos.z, pos.y, pos.x);
+      var xs = stack.projectToStackX(pos.z, pos.y, pos.x);
+      var ys = stack.projectToStackY(pos.z, pos.y, pos.x);
+      var zs = stack.projectToStackZ(pos.z, pos.y, pos.x);
       var opacity = this.shade(n, pos, zs);
 
       // Display only nodes and edges not on the current section
@@ -296,8 +299,8 @@
           var c = this.paper.select('.nodes').append('use')
             .attr({
               'xlink:href': '#' + this.ref,
-              'x': pos.x,
-              'y': pos.y,
+              'x': xs,
+              'y': ys,
               'fill': this.color,
               'opacity': opacity})
             .classed('overlay-node', true);
@@ -307,11 +310,13 @@
           var e = this.edges[n];
           if (e) {
             var pos2 = this.positions[e];
+            var xs2 = stack.projectToStackX(pos2.z, pos2.y, pos2.x);
+            var ys2 = stack.projectToStackY(pos2.z, pos2.y, pos2.x);
             var edge = this.paper.select('.lines').append('line');
             edge.toBack();
             edge.attr({
-                x1: pos.x, y1: pos.y,
-                x2: pos2.x, y2: pos2.y,
+                x1: xs, y1: ys,
+                x2: xs2, y2: ys2,
                 stroke: this.color,
                 'stroke-width': this.edgeWidth,
                 'opacity': opacity

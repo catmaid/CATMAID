@@ -10,8 +10,10 @@
    */
   var SkeletonProjectionLayer = function(stackViewer, options) {
     this.stackViewer = stackViewer;
-    // The currently displayed skeleton arbor instance
-    this.currentSkeleton = null;
+    // The currently displayed skeleton, node and arbor parser
+    this.currentNodeID = null;
+    this.currentSkeletonID = null;
+    this.currentArborParser = null;
 
     // Make sure there is an options object
     this.options = {};
@@ -157,8 +159,15 @@
   SkeletonProjectionLayer.prototype.update = function(node) {
     var self = this;
     var newSkeleton = null;
-    if (node && node.id && node.skeleton_id !== this.curentSkeletonID) {
-      this.loadSkeletonOfNode(node)
+    if (node && node.id) {
+      // If possible, use a cached skeleton to avoid requesting it with every
+      // node change.
+      var cached = (node.skeleton_id === this.currentSkeletonID) &&
+          this.currentArborParser;
+      var prepare = cached ? Promise.resolve(this.currentArborParser) :
+          this.loadSkeletonOfNode(node);
+
+      prepare
         .then(this.createProjection.bind(this, node))
         .then(this.redraw.bind(this))
         .catch(CATMAID.error);
@@ -217,6 +226,11 @@
 
     // Return, if there is no node
     if (!arborParser) return;
+
+    // Store current targets
+    this.currentSkeletonID = node.skeleton_id;
+    this.currentArborParser = arborParser;
+    this.currentNodeID = node.id;
 
     // Get nodes
     var nodeID = SkeletonAnnotations.isRealNode(node.id) ? node.id :

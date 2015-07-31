@@ -797,7 +797,7 @@ var WindowMaker = new function()
       })
       .on("click", "td .action-navigator", function() {
         var skeletonID = rowToSkeletonID(this);
-        var navigator = new NeuronNavigator();
+        var navigator = new CATMAID.NeuronNavigator();
         WindowMaker.create('neuron-navigator', navigator);
         navigator.set_neuron_node_from_skeleton(skeletonID);
       })
@@ -1008,9 +1008,6 @@ var WindowMaker = new function()
     connectorRestrictions.appendChild(document.createTextNode('Connector restriction'));
     connectorRestrictions.appendChild(connectorRestrictionsSl);
 
-    var orthographicCbElems = createCheckbox('Orthographic mode', false,
-        function() { WA.updateCameraView(this.checked); });
-
     appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
@@ -1021,11 +1018,10 @@ var WindowMaker = new function()
           ['ZX', WA.ZXView.bind(WA)],
           [storedViewsSelect],
           ['Save view', storeView],
-          [connectorRestrictions],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
+          [connectorRestrictions],
           ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
-          [orthographicCbElems[0]],
-          [orthographicCbElems[1]],
+          ['Orthographic mode', false, function() { WA.updateCameraView(this.checked); }, false],
         ]);
 
     // Wait for the 3D viewer to have initialized to get existing views
@@ -1157,20 +1153,22 @@ var WindowMaker = new function()
           ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
-          ['Black background -', true, adjustFn('show_background'), false],
-          ['Floor -', true, adjustFn('show_floor'), false],
-          ['Bounding box -', true, adjustFn('show_box'), false],
-          ['Z plane -', false, adjustFn('show_zplane'), false],
+          ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
+          ['Black background', true, adjustFn('show_background'), false],
+          ['Floor', true, adjustFn('show_floor'), false],
+          ['Bounding box', true, adjustFn('show_box'), false],
+          ['Z plane', false, adjustFn('show_zplane'), false],
           ['Missing sections', false, adjustFn('show_missing_sections'), false],
-          [' with height: ', o.missing_section_height, ' % - ', function() {
+          ['with height:', o.missing_section_height, ' %', function() {
               WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));
               WA.adjustStaticContent();
-            }, 10],
-          ['Line width ', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 10],
+            }, 4],
+          ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
+          ['Custom Tags (regex):', o.custom_tag_spheres_regex, '', function() { WA.options.custom_tag_spheres_regex = this.value; }, 10]
         ]);
 
     var nodeScalingInput = appendNumericField(tabs['View settings'],
-        'Node handle scaling ', o.skeleton_node_scaling, null, function() {
+        'Node handle scaling', o.skeleton_node_scaling, null, function() {
               WA.options.skeleton_node_scaling = Math.max(0, this.value) || 1.0;
               WA.adjustContent();
               WA.updateSkeletonNodeHandleScaling(this.value);
@@ -1178,22 +1176,22 @@ var WindowMaker = new function()
 
     appendToTab(tabs['Skeleton filters'],
         [
-          ['Smooth ', o.smooth_skeletons, function() { WA.options.smooth_skeletons = this.checked; WA.updateSkeletons(); }, false],
-          [' with sigma ', o.smooth_skeletons_sigma, ' nm -', function() { WA.updateSmoothSkeletonsSigma(this.value); }, 10],
-          ['Resample ', o.resample_skeletons, function() { WA.options.resample_skeletons = this.checked; WA.updateSkeletons(); }, false],
-          [' with delta ', o.resampling_delta, ' nm -', function() { WA.updateResampleDelta(this.value); }, 10],
+          ['Smooth', o.smooth_skeletons, function() { WA.options.smooth_skeletons = this.checked; WA.updateSkeletons(); }, false],
+          ['with sigma', o.smooth_skeletons_sigma, ' nm', function() { WA.updateSmoothSkeletonsSigma(this.value); }, 10],
+          ['Resample', o.resample_skeletons, function() { WA.options.resample_skeletons = this.checked; WA.updateSkeletons(); }, false],
+          ['with delta', o.resampling_delta, ' nm', function() { WA.updateResampleDelta(this.value); }, 10],
           ['Lean mode (no synapses, no tags)', o.lean_mode, function() { WA.options.lean_mode = this.checked; WA.updateSkeletons();}, false],
         ]);
 
     appendToTab(tabs['Shading parameters'],
         [
-          ['Synapse clustering bandwidth ', o.synapse_clustering_bandwidth, ' nm - ', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 6],
-          ['Near active node ', o.distance_to_active_node, ' nm - ', function() {
+          ['Synapse clustering bandwidth', o.synapse_clustering_bandwidth, ' nm', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 6],
+          ['Near active node', o.distance_to_active_node, ' nm', function() {
             WA.updateActiveNodeNeighborhoodRadius(this.value); }, 6],
-          ['Min. synapse-free cable ', o.min_synapse_free_cable, ' nm - ', function() {
+          ['Min. synapse-free cable', o.min_synapse_free_cable, ' nm', function() {
             WA.updateShadingParameter('min_synapse_free_cable', this.value, 'synapse-free'); }, 6],
-          ['Strahler number ', o.strahler_cut, ' - ', function() { WA.updateShadingParameter('strahler_cut', this.value, 'dendritic-backbone'); }, 4],
-          ['Tag (regex): ', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4]
+          ['Strahler number', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, 'dendritic-backbone'); }, 4],
+          ['Tag (regex):', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4]
         ]);
 
     var axisOptions = document.createElement('select');
@@ -1204,6 +1202,9 @@ var WindowMaker = new function()
     axisOptions.onchange = function() {
       WA.options.animation_axis = this.value;
     };
+    var axisOptionsLabel = document.createElement('label');
+    axisOptionsLabel.appendChild(document.createTextNode('Rotation axis:'));
+    axisOptionsLabel.appendChild(axisOptions);
 
     appendToTab(tabs['Animation'],
         [
@@ -1219,15 +1220,14 @@ var WindowMaker = new function()
             }
           }],
           ['Stop', WA.stopAnimation.bind(WA)],
-          [document.createTextNode(' Rotation axis:')],
-          [axisOptions],
-          [' Rotation speed', o.animation_rotation_speed, '', function() {
+          [axisOptionsLabel],
+          ['Rotation speed', o.animation_rotation_speed, '', function() {
             WA.options.animation_rotation_speed = parseFloat(this.value);
            }, 5],
-          ['Back and forth ', o.animation_back_forth, function() {
+          ['Back and forth', o.animation_back_forth, function() {
             WA.options.animation_back_forth = this.checked;
           }, false],
-          ['Stepwise neuron visibility ', o.animation_stepwise_visibility, function() {
+          ['Stepwise neuron visibility', o.animation_stepwise_visibility, function() {
             WA.options.animation_stepwise_visibility = this.checked;
           }, false]
         ]);
@@ -1455,6 +1455,7 @@ var WindowMaker = new function()
 
     appendToTab(tabs['Graph'],
         [['Re-layout', GG.updateLayout.bind(GG, layout)],
+         [' fit', true, GG.toggleLayoutFit.bind(GG), true],
          [document.createTextNode(' - Color: ')],
          [color],
          [document.createTextNode(' - Hide edges with less than ')],
@@ -2139,9 +2140,11 @@ var WindowMaker = new function()
   };
 
   var appendCheckbox = function(div, title, value, onclickFn, left) {
+    var label = document.createElement('label');
     var elems = createCheckbox(title, value, onclickFn);
     if (left) elems.reverse();
-    elems.forEach(function(elem) { div.appendChild(elem); });
+    elems.forEach(function(elem) { label.appendChild(elem); });
+    div.appendChild(label);
     return left ? elems[elems.length - 1] : elems[0];
   };
 
@@ -2151,9 +2154,15 @@ var WindowMaker = new function()
     nf.setAttribute('value', value);
     if (length) nf.setAttribute('size', length);
     if (onchangeFn) nf.onchange = onchangeFn;
-    if (label) div.appendChild(document.createTextNode(label));
-    div.appendChild(nf);
-    if (postlabel) div.appendChild(document.createTextNode(postlabel));
+    if (label || postlabel) {
+      var labelEl = document.createElement('label');
+      if (label) labelEl.appendChild(document.createTextNode(label));
+      labelEl.appendChild(nf);
+      if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
+      div.appendChild(labelEl);
+    } else {
+      div.appendChild(nf);
+    }
     return nf;
   };
 
@@ -2844,7 +2853,7 @@ var WindowMaker = new function()
           'Funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">' +
           'Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and ' +
           '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +
-          'HHMI Janelia Farm, U.S..<br /><br />' +
+          'HHMI Janelia Research Campus, U.S..<br /><br />' +
           'Visit the <a href="http://www.catmaid.org/" target="_blank">' +
           'CATMAID homepage</a> for further information. You can find the ' +
           'source code on <a href="https://github.com/catmaid/CATMAID">' +
@@ -3082,10 +3091,7 @@ var WindowMaker = new function()
     addLogic(win);
 
     // Update annotation cache and add autocompletion to annotation input field
-    annotations.update(function() {
-      annotations.add_autocomplete_to_input($('.neuron_query_by_annotation_name' +
-          NA.widgetID));
-    });
+    CATMAID.annotations.update(NA.handleAnnotationUpdate.bind(NA));
 
     $('#neuron_annotations_add_annotation' + NA.widgetID)[0].onclick =
         NA.add_query_field.bind(NA);
@@ -3175,7 +3181,7 @@ var WindowMaker = new function()
   var createNeuronNavigatorWindow = function(new_nn_instance)
   {
     // If available, a new instance passed as parameter will be used.
-    var NN = new_nn_instance ? new_nn_instance : new NeuronNavigator();
+    var NN = new_nn_instance ? new_nn_instance : new CATMAID.NeuronNavigator();
     var win = new CMWWindow(NN.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

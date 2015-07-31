@@ -38,9 +38,9 @@
       '3': CATMAID.HDF5TileSource,
       '4': CATMAID.BackslashTileSource,
       '5': CATMAID.LargeDataTileSource,
-      '6': CATMAID.DVIDTileSource,
+      '6': CATMAID.DVIDImageblkTileSource,
       '7': CATMAID.RenderServTileSource,
-      '8': CATMAID.DVIDMultiScaleTileSource
+      '8': CATMAID.DVIDImagetileTileSource
     };
 
     var TileSource = tileSources[tileSourceType];
@@ -193,7 +193,7 @@
   };
 
   /*
-  * Simple tile source type for DVID grayscale8 datatype
+  * Simple tile source type for DVID imageblk (uint8blk, rgba8blk) datatype
   * see https://github.com/janelia-flyem/dvid
   *
   * GET  <api URL>/node/<UUID>/<data name>/raw/<dims>/<size>/<offset>[/<format>][?throttle=true][?queryopts]
@@ -201,17 +201,27 @@
 
   * Source type: 6
   */
-  CATMAID.DVIDTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
+  CATMAID.DVIDImageblkTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
     this.getTileURL = function( project, stack, slicePixelPosition,
         col, row, zoomLevel ) {
-      return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
-          row * tileHeight + '_' + slicePixelPosition[0] + '/' + fileExtension;
+      if (stack.orientation === CATMAID.Stack.ORIENTATION_XY) {
+        return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
+            row * tileHeight + '_' + slicePixelPosition[0] + '/' + fileExtension;
+      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
+        return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
+            slicePixelPosition[0] + '_' + row * tileHeight + '/' + fileExtension;
+      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
+        return baseURL + tileWidth + '_' + tileHeight + '/' + slicePixelPosition[0] + '_' +
+            row * tileHeight + '_' + col * tileWidth + '/' + fileExtension;
+      }
     };
 
     this.getOverviewLayer = function( layer ) {
       return new CATMAID.DummyOverviewLayer();
     };
+
+    this.transposeTiles = new Set([CATMAID.Stack.ORIENTATION_ZY]);
   };
 
 
@@ -252,7 +262,7 @@
   };
 
   /*
-  * Simple tile source type for DVID multiscale2d datatype
+  * Simple tile source type for DVID imagetile datatype
   * see https://github.com/janelia-flyem/dvid
   *
   * GET  <api URL>/node/<UUID>/<data name>/tile/<dims>/<scaling>/<tile coord>[?noblanks=true]
@@ -260,7 +270,7 @@
   * 
   * Source type: 8
   */
-  CATMAID.DVIDMultiScaleTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
+  CATMAID.DVIDImagetileTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
     this.getTileURL = function(project, stack, slicePixelPosition,
                                col, row, zoomLevel) {
@@ -269,13 +279,15 @@
       } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
         return baseURL + 'xz/' + zoomLevel + '/' + col + '_' + slicePixelPosition[0] + '_' + row;
       } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
-        return baseURL + 'yz/' + zoomLevel + '/' + slicePixelPosition[0] + '_' + col + '_' + row;
+        return baseURL + 'yz/' + zoomLevel + '/' + slicePixelPosition[0] + '_' + row + '_' + col;
       }
     };
 
     this.getOverviewLayer = function(layer) {
       return new CATMAID.DummyOverviewLayer();
     };
+
+    this.transposeTiles = new Set([CATMAID.Stack.ORIENTATION_ZY]);
   };
 
 

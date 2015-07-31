@@ -190,18 +190,29 @@ def stats_user_history(request, project_id=None):
     cursor = connection.cursor()
 
     cursor.execute('''
-SELECT t.uid, t.day, round(sum(t.edge))
-FROM (SELECT child.user_id as uid,
-             date_trunc('day', child.creation_time) as day,
-             sqrt(  pow(child.location_x - parent.location_x, 2)
-                  + pow(child.location_y - parent.location_y, 2)
-                  + pow(child.location_z - parent.location_z, 2)) as edge
-      FROM treenode child,
-           treenode parent
-      WHERE child.project_id = %(project_id)s
-        AND child.parent_id = parent.id
-        AND child.creation_time BETWEEN %(start_date)s AND %(end_date)s) as t
-GROUP BY t.uid, t.day
+        SELECT child.uid, child.day, round(sum(edge.length))
+        FROM (
+            SELECT
+                child.user_id AS uid,
+                date_trunc('day', child.creation_time) AS day,
+                child.parent_id,
+                child.location_x,
+                child.location_y,
+                child.location_z
+            FROM treenode child
+            WHERE child.project_id = %(project_id)s
+              AND child.creation_time BETWEEN %(start_date)s AND %(end_date)s
+        ) AS child
+        INNER JOIN LATERAL (
+            SELECT sqrt(pow(child.location_x - parent.location_x, 2)
+                      + pow(child.location_y - parent.location_y, 2)
+                      + pow(child.location_z - parent.location_z, 2)) AS length
+            FROM treenode parent
+            WHERE parent.project_id = %(project_id)s
+              AND parent.id = child.parent_id
+            LIMIT 1
+        ) AS edge ON TRUE
+        GROUP BY child.uid, child.day
     ''', dict(project_id=project_id, start_date=start_date, end_date=end_date))
 
     treenode_stats = cursor.fetchall()

@@ -623,3 +623,38 @@ def connectors_info(request, project_id):
 
     return HttpResponse(json.dumps(rows))
 
+@requires_user_role([UserRole.Browse])
+def connector_user_info(request, project_id):
+    """ Return information on a treenode connector edge.
+
+    This function is called often (every connector mouseover) and should
+    therefore be as fast as possible. Analogous to user_info for treenodes and
+    connectors.
+    """
+    treenode_id = int(request.GET.get('treenode_id'))
+    connector_id = int(request.GET.get('connector_id'))
+    cursor = connection.cursor()
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+    relation_id = relations[request.GET.get('relation_name')]
+    cursor.execute('''
+        SELECT tc.id, tc.user_id, tc.creation_time, tc.edition_time
+        FROM treenode_connector tc
+        WHERE tc.treenode_id = %s
+          AND tc.connector_id = %s
+          AND tc.relation_id = %s
+                   ''', (treenode_id, connector_id, relation_id))
+
+    # We expect at least one result node.
+    if not cursor.rowcount:
+        return HttpResponse(json.dumps({
+            'error': 'No treenode connector exists for treenode %s, connector %s, relation %s' %
+            (treenode_id, connector_id, relation_id)}))
+
+    # Build result. Because there is no uniqueness restriction on treenode
+    # connector edges, even with the same relation, the response must handle
+    # multiple rows.
+    return HttpResponse(json.dumps([{
+        'user': info[1],
+        'creation_time': str(info[2].isoformat()),
+        'edition_time': str(info[3].isoformat()),
+    } for info in cursor.fetchall()]))

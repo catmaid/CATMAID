@@ -68,6 +68,8 @@ var GroupGraph = function() {
   this.tag_text = '';
   this.tag_title_root = '';
   this.tag_title_others = '';
+
+  this.layout_fit = true;
 };
 
 GroupGraph.prototype = {};
@@ -456,8 +458,13 @@ GroupGraph.prototype.applyToNodes = function(fn, selected) {
   });
 };
 
+GroupGraph.prototype.toggleLayoutFit = function() {
+  this.layout_fit = !this.layout_fit;
+};
+
 GroupGraph.prototype.createLayoutOptions = function(name) {
   var options;
+  var fit = this.layout_fit;
   if ('grid' === name) {
     options = {
       name: 'grid',
@@ -470,7 +477,7 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
         name: 'arbor',
         liveUpdate: true, // whether to show the layout as it's running
         maxSimulationTime: 2000, // max length in ms to run the layout
-        fit: true, // fit to viewport
+        fit: fit, // fit to viewport
         padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
         ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
 
@@ -499,7 +506,7 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
   } else if ('circle' === name) {
       options = {
           name: 'circle',
-          fit: true, // whether to fit the viewport to the graph
+          fit: fit, // whether to fit the viewport to the graph
           rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
           padding: 30, // the padding on fit
           startAngle: 3/2 * Math.PI, // the position of the first node
@@ -508,7 +515,7 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
   } else if ('breadthfirst' === name) {
     options = {
         name: 'breadthfirst', // Hierarchical
-        fit: true, // whether to fit the viewport to the graph
+        fit: fit, // whether to fit the viewport to the graph
         directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
         padding: 30, // padding on fit
         circle: false, // put depths in concentric circles if true, put depths top down if false
@@ -517,7 +524,7 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
   } else if ('random' === name) {
     options = {
         name: 'random',
-        fit: true // whether to fit to viewport
+        fit: fit // whether to fit to viewport
     };
   } else if ('cose' === name) {
     options = {
@@ -525,7 +532,7 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
       // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
       refresh: 0,
       // Whether to fit the network view after when done
-      fit: true,
+      fit: fit,
       // Whether to randomize node positions on the beginning
       randomize: true,
       // Whether to use the JS console to print debug messages
@@ -557,14 +564,14 @@ GroupGraph.prototype.createLayoutOptions = function(name) {
     options = {
       name: 'preset',
       // whether to fit to viewport
-      fit: true,
+      fit: fit,
       // padding on fit
       padding: 30
     };
   } else if (0 === name.indexOf('concentric')) {
     options = {
       name: 'concentric',
-      fit: true, // whether to fit the viewport to the graph
+      fit: fit, // whether to fit the viewport to the graph
       ready: undefined, // callback on layoutready
       stop: undefined, // callback on layoutstop
       padding: 30, // the padding on fit

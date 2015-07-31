@@ -15,7 +15,8 @@ wordlist= r'\w+(,\w+)*'
 # Add the main index.html page at the root:
 urlpatterns = patterns('',
     url(r'^$', CatmaidView.as_view(template_name='catmaid/index.html'),
-        name="home")
+        name="home"),
+    url(r'^version$', 'catmaid.control.common.get_catmaid_version')
 )
 
 # Authentication and permissions
@@ -140,6 +141,7 @@ urlpatterns += patterns('catmaid.control.connector',
     (r'^(?P<project_id>\d+)/connector/skeletons$', 'connector_skeletons'),
     (r'^(?P<project_id>\d+)/connector/edgetimes$', 'connector_associated_edgetimes'),
     (r'^(?P<project_id>\d+)/connector/pre-post-info$', 'connectors_info'),
+    (r'^(?P<project_id>\d+)/connector/user-info$', 'connector_user_info'),
 )
 
 # Neuron acess

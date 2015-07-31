@@ -1,6 +1,7 @@
 import decimal
 import json
 import math
+import re
 
 from collections import defaultdict
 
@@ -64,7 +65,8 @@ def create_treenode(request, project_id=None):
 
     treenode_id, skeleton_id = _create_treenode(project_id, request.user, request.user,
             params['x'], params['y'], params['z'], params['radius'],
-            params['confidence'], params['useneuron'], params['parent_id'])
+            params['confidence'], params['useneuron'], params['parent_id'],
+            neuron_name=request.POST.get('neuron_name', None))
 
     return HttpResponse(json.dumps({
         'treenode_id': treenode_id,
@@ -125,7 +127,7 @@ def insert_treenode(request, project_id=None):
     # Create new treenode
     treenode_id, skeleton_id = _create_treenode(project_id, user, request.user,
             params['x'], params['y'], params['z'], params['radius'],
-            params['confidence'], -1 , params['parent_id'], time)
+            params['confidence'], -1, params['parent_id'], time)
 
     # Update parent of child to new treenode
     child.parent_id = treenode_id
@@ -137,7 +139,7 @@ def insert_treenode(request, project_id=None):
     }))
 
 def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
-                     neuron_id, parent_id, creation_time=None):
+                     neuron_id, parent_id, creation_time=None, neuron_name=None):
 
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
@@ -203,7 +205,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
             new_skeleton.name = 'skeleton %d' % new_skeleton.id
             new_skeleton.save()
 
-            if -1 == neuron_id:
+            if -1 != neuron_id:
                 # Check that the neuron to use exists
                 if 0 == ClassInstance.objects.filter(pk=neuron_id).count():
                     neuron_id = -1
@@ -230,9 +232,45 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                 new_neuron.user = creator
                 new_neuron.project_id = project_id
                 new_neuron.class_column_id = class_map['neuron']
-                new_neuron.name = 'neuron'
-                new_neuron.save()
-                new_neuron.name = 'neuron %d' % new_neuron.id
+                if neuron_name:
+                    # Create a regular expression to find allowed patterns. The
+                    # first group is the whole {nX} part, while the second group
+                    # is X only.
+                    counting_pattern = re.compile(r"(\{n(\d+)\})")
+                    # Look for patterns, replace all {n} with {n1} to normalize.
+                    neuron_name = neuron_name.replace("{n}", "{n1}")
+
+                    if counting_pattern.search(neuron_name):
+                        # Find starting values for each substitution.
+                        counts = [int(m.groups()[1]) for m in counting_pattern.finditer(neuron_name)]
+                        # Find existing matching neurons in database.
+                        name_match = counting_pattern.sub("(\d+)", neuron_name)
+                        name_pattern = re.compile(name_match)
+                        matching_neurons = ClassInstance.objects.filter(
+                                project_id=project_id,
+                                class_column_id=class_map['neuron'],
+                                name__regex=name_match).order_by('name')
+
+                        # Increment substitution values based on existing neurons.
+                        for n in matching_neurons:
+                            for i, (count, g) in enumerate(zip(counts, name_pattern.search(n.name).groups())):
+                                if count == int(g):
+                                    counts[i] = count + 1
+
+                        # Substitute values.
+                        count_ind = 0
+                        m = counting_pattern.search(neuron_name)
+                        while m:
+                            neuron_name = m.string[:m.start()] + str(counts[count_ind]) + m.string[m.end():]
+                            count_ind = count_ind + 1
+                            m = counting_pattern.search(neuron_name)
+
+                    new_neuron.name = neuron_name
+                else:
+                    new_neuron.name = 'neuron'
+                    new_neuron.save()
+                    new_neuron.name = 'neuron %d' % new_neuron.id
+
                 new_neuron.save()
 
                 response_on_error = 'Could not relate the neuron model to ' \

@@ -51,12 +51,17 @@
     // Default upstream and downstream tables to be not collapsed
     this.upstreamCollapsed = false;
     this.downstreamCollapsed = false;
-    // Thresholds for current skeleton set
-    this.upThresholds = {};
-    this.downThresholds = {};
-    // Update all threshold selection states
-    this.upAllThresholds = 1;
-    this.downllThresholds = 1;
+    // Synapse thresholds for current skeleton set.
+    // (Count is applied after confidence filtering.)
+    this.thresholds = {
+      up:   {confidence: {}, count: {}},
+      down: {confidence: {}, count: {}}
+    };
+    // Update all synapse count threshold selection states
+    this.allThresholds = {
+      up:   {confidence: 1, count: 1},
+      down: {confidence: 1, count: 1}
+    };
     // Filter partners with fewer nodes than this threshold
     this.hidePartnerThreshold = 1;
     // ID of the user who is currently reviewing or null for 'union'
@@ -417,7 +422,7 @@
    */
   SkeletonConnectivity.prototype.updateNeuronNames = function() {
     $("#connectivity_widget" + this.widgetID)
-        .find('[data-skeleton-id]')
+        .find('a[data-skeleton-id]')
         .each(function (index, element) {
           this.textContent = NeuronNameService.getInstance().getName(this.getAttribute('data-skeleton-id'));
     });
@@ -443,6 +448,8 @@
     var partnerSkids = [this.incoming, this.outgoing].reduce(function (skids, partners) {
       return skids.concat(Object.keys(partners));
     }, []);
+
+    if (!partnerSkids.length) return new Promise(function (resolve) { resolve(); });
 
     var self = this;
     var request = {skeleton_ids: partnerSkids, whitelist: this.reviewFilter === 'whitelist'};
@@ -524,22 +531,33 @@
     };
 
     /**
-     * Helper to get the synpatic count of a skeleton ID dictionary.
+     * Helper to get the number of synapses with confidence greater than or
+     * equal to a threshold.
      */
-    var synaptic_count = function(skids_dict) {
+    var filter_synapses = function (synapses, threshold) {
+      if (!synapses) return 0;
+      return synapses
+              .slice(threshold - 1)
+              .reduce(function (skidSum, c) {return skidSum + c;}, 0);
+    };
+
+    /**
+     * Helper to get the confidence-filtered synpatic count of a skeleton ID dictionary.
+     */
+    var synaptic_count = function(skids_dict, confidence) {
       return Object.keys(skids_dict).reduce(function(sum, skid) {
-        return sum + skids_dict[skid];
+        return sum + filter_synapses(skids_dict[skid], confidence[skid]);
       }, 0);
     };
 
     /**
      * Helper to sort an array.
      */
-    var to_sorted_array = function(partners) {
+    var to_sorted_array = function(partners, confidence) {
       return Object.keys(partners).reduce(function(list, skid) {
         var partner = partners[skid];
         partner['id'] = parseInt(skid);
-        partner['synaptic_count'] = synaptic_count(partner.skids);
+        partner['synaptic_count'] = synaptic_count(partner.skids, confidence);
         list.push(partner);
         return list;
       }, []).sort(function(a, b) {
@@ -570,6 +588,7 @@
           return sum + e[field];
         }, 0);
       };
+
       // The total synapse count
       var total_synaptic_count = getSum(partners, 'synaptic_count');
 
@@ -609,7 +628,7 @@
       if (extraCols) {
         skids.forEach(function(skid) {
           var count = partners.reduce(function(sum, partner) {
-            return sum + (partner.skids[skid] || 0);
+            return sum + filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
           }, 0);
           this.append($('<td />').addClass('syncount').text(count));
         }, row);
@@ -682,9 +701,10 @@
         // this test.
         var ignore = Object.keys(partner.skids).every(function(skid) {
           // Return true if object is below threshold
-          return (partner.skids[skid] || 0) < thresholds[skid];
+          var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
+          return count < (thresholds.count[skid] || 1);
         });
-        ignore = ignore || partner.synaptic_count < thresholds['sum'];
+        ignore = ignore || partner.synaptic_count < thresholds.count['sum'];
         // Ignore partner if it has only fewer nodes than a threshold
         ignore = ignore || partner.num_nodes < hidePartnerThreshold;
         if (ignore) {
@@ -724,7 +744,7 @@
         // Extra columns for individual neurons
         if (extraCols) {
           skids.forEach(function(skid, i) {
-            var count = partner.skids[skid] || 0;
+            var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
             this.appendChild(createSynapseCountCell(count, partner, skid));
           }, tr);
         }
@@ -764,7 +784,7 @@
         if (extraCols) {
           skids.forEach(function(skid, i) {
             var count = filtered.reduce(function(sum, partner) {
-              return sum + (partner.skids[skid] || 0);
+              return sum + filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
             }, 0);
             $tr.append($('<td />').addClass('syncount').append(count));
           });
@@ -830,8 +850,13 @@
     /**
      * Support function to create a threshold selector element.
      */
-    var createThresholdSelector = function(id, selected, max) {
+    var createThresholdSelector = function(dir, type, skid, selected) {
+      var max = type === 'count' ? 21 : 6;
       var select = document.createElement('select');
+      select.className = 'threshold';
+      select.setAttribute('data-dir', dir);
+      select.setAttribute('data-type', type);
+      select.setAttribute('data-skeleton-id', skid);
       for (var i=1; i < max; ++i) {
         var option = document.createElement('option');
         option.value = i;
@@ -863,37 +888,41 @@
       };
     })(this));
 
-    // An update all thresholds for both upstream and downstream is added if
-    // there is more than one seed neuron.
-    var upThresholdHeader = $('<th />').text('Upstream Threshold');
-    var downThresholdHeader = $('<th />').text('Downstream Threshold');
+    var thresholdKeys = Object.keys(this.thresholds).reduce((function (dirKeys, dir) {
+      return dirKeys.concat(Object.keys(this.thresholds[dir]).map(function (type) {
+        return {dir: dir, type: type};
+      }));
+    }).bind(this), []);
+
+    var thresholdHeaders = Object.keys(this.thresholds).reduce((function (dirHeaders, dir) {
+      dirHeaders[dir] = Object.keys(this.thresholds[dir]).reduce(function (typeHeaders, type) {
+        typeHeaders[type] = $('<th />').text(
+              ('up' === dir ? 'Upstream ' : 'Downstream ') +
+              type + ' threshold').addClass('threshold-header');
+        return typeHeaders;
+      }, {});
+      return dirHeaders;
+    }).bind(this), {});
+
+    // An input to update all thresholds for both upstream and downstream is
+    // added if there is more than one seed neuron.
     if (this.ordered_skeleton_ids.length > 1) {
-      var upAllThresholdsSel = createThresholdSelector(
-          'all-neurons-up-threshold-' + id, this.upAllThresholds || 1, 21);
-      var downAllThresholdsSel = createThresholdSelector(
-          'all-neurons-down-threshold-' + id, this.downAllThresholds || 1, 21);
-      upThresholdHeader.append(upAllThresholdsSel);
-      downThresholdHeader.append(downAllThresholdsSel);
+      thresholdKeys.forEach((function (t) {
+        var selector = createThresholdSelector(
+          t.dir, t.type, 'all',
+          this.allThresholds[t.dir][t.type] || 1);
+        thresholdHeaders[t.dir][t.type].append(selector);
 
-      upAllThresholdsSel.change(this, function(e) {
-        var widget = e.data;
-        var threshold = parseInt(this.value, 10);
-        for (var i=0; i<widget.ordered_skeleton_ids.length; ++i) {
-          widget.upThresholds[widget.ordered_skeleton_ids[i]] = threshold;
-        }
-        widget.upAllThresholds = threshold;
-        widget.redraw();
-      });
-
-      downAllThresholdsSel.change(this, function(e) {
-        var widget = e.data;
-        var threshold = parseInt(this.value, 10);
-        for (var i=0; i<widget.ordered_skeleton_ids.length; ++i) {
-          widget.downThresholds[widget.ordered_skeleton_ids[i]] = threshold;
-        }
-        widget.downAllThresholds = threshold;
-        widget.redraw();
-      });
+        selector.change(this, function(e) {
+          var widget = e.data;
+          var threshold = parseInt(this.value, 10);
+          for (var i=0; i<widget.ordered_skeleton_ids.length; ++i) {
+            widget.thresholds[t.dir][t.type][widget.ordered_skeleton_ids[i]] = threshold;
+          }
+          widget.allThresholds[t.dir][t.type] = threshold;
+          widget.redraw();
+        });
+      }).bind(this));
     }
 
     // Create list of selected neurons
@@ -902,29 +931,18 @@
               .append($('<th />'))
               .append($('<th />').text('Selected').append(selectAllCb))
               .append($('<th />').text('Neuron'))
-              .append(upThresholdHeader)
-              .append(downThresholdHeader)));
+              .append(thresholdKeys.map(function (t) {
+                return thresholdHeaders[t.dir][t.type];
+              }))));
     // Add a row for each neuron looked at
     this.ordered_skeleton_ids.forEach(function(skid, i) {
       var id = this.widgetID + '-' + skid;
-      var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
-          this.upThresholds[skid] || 1, 21);
-      var $downThrSelector = createThresholdSelector('neuron-down-threshold-' + id,
-          this.downThresholds[skid] || 1, 21);
-      // Create and attach handlers to threshold selectors. Generate the function
-      // to avoid the creation of a closure.
-      $upThrSelector.change((function(widget, skid) {
-        return function() {
-          widget.upThresholds[skid] = parseInt(this.value);
-          widget.redraw();
-        };
-      })(this, skid));
-      $downThrSelector.change((function(widget, skid) {
-        return function() {
-          widget.downThresholds[skid] = parseInt(this.value);
-          widget.redraw();
-        };
-      })(this, skid));
+
+      var thresholdSelectors = thresholdKeys.map(function (t) {
+        return createThresholdSelector(
+          t.dir, t.type, skid,
+          this.thresholds[t.dir][t.type][skid] || 1);
+      }, this);
 
       // Make a neuron selected by default
       if (!(skid in this.skeletonSelection)) {
@@ -957,16 +975,27 @@
               .append(selectionCb))
           .append($('<td />').append(
               createNameElement(this.skeletons[skid], skid)))
-          .append($('<td />').append($upThrSelector)
-              .attr('class', 'input-container'))
-          .append($('<td />').append($downThrSelector)
-              .attr('class', 'input-container'));
+          .append(thresholdSelectors.map(function (selector) {
+            return $('<td />').append(selector).attr('class', 'input-container');
+          }));
       neuronTable.append(row);
     }, this);
     content.append(neuronTable);
 
     neuronTable.on('click', '.remove-skeleton', this, function (e) {
           e.data.removeSkeletons([parseInt($(this).attr('skid'), 10)]);
+        });
+
+    neuronTable.on('change', '.threshold', this, function (e) {
+          var $this = $(this),
+              dir = $this.attr('data-dir'),
+              type = $this.attr('data-type'),
+              skid = $this.attr('data-skeleton-id');
+          e.data.thresholds[dir][type][skid] = parseInt(this.value);
+          if (skid === 'sum')
+            e.data.createConnectivityTable();
+          else
+            e.data.redraw();
         });
 
     // Check the select all box, if all skeletons are selected
@@ -978,33 +1007,21 @@
     // If there is more than one neuron looked at, add a sum row
     if (this.ordered_skeleton_ids.length > 1) {
       var id = this.widgetID + '-sum';
-      var $upThrSelector = createThresholdSelector('neuron-up-threshold-' + id,
-          this.upThresholds['sum'] || 1, 21);
-      var $downThrSelector = createThresholdSelector('neuron-down-threshold-' + id,
-          this.downThresholds['sum'] || 1, 21);
-      // Create and attach handlers to threshold selectors. Generate the function
-      // to avoid the creation of a closure.
-      $upThrSelector.change((function(widget) {
-        return function() {
-          widget.upThresholds['sum'] = parseInt(this.value);
-          widget.createConnectivityTable();
-        };
-      })(this));
-      $downThrSelector.change((function(widget, skid) {
-        return function() {
-          widget.downThresholds['sum'] = parseInt(this.value);
-          widget.createConnectivityTable();
-        };
-      })(this));
-      // Create and append footer for current skeleton
+
+      var thresholdSelectors = thresholdKeys.map(function (t) {
+        if (t.type === 'confidence') return; // No meaningful sum for confidence.
+        return createThresholdSelector(
+            t.dir, t.type, 'sum',
+            this.thresholds[t.dir][t.type]['sum'] || 1);
+      }, this);
+
       var row = $('<tfoot />').append($('<tr />')
           .append($('<td />'))
           .append($('<td />'))
           .append($('<td />').text('Sum'))
-          .append($('<td />').append($upThrSelector)
-              .attr('class', 'input-container'))
-          .append($('<td />').append($downThrSelector)
-              .attr('class', 'input-container')));
+          .append(thresholdSelectors.map(function (selector) {
+            return $('<td />').append(selector).attr('class', 'input-container');
+          })));
       neuronTable.append(row);
     }
 
@@ -1021,9 +1038,17 @@
         .get(0);
 
     (function (widget) {
+      var changeThresholdDelayedTimer = null;
+
+      var changePartnerThreshold = function (value) {
+        widget.hidePartnerThreshold = value;
+        widget.createConnectivityTable();
+      };
+
       hidePartnerThresholdInput.onchange = function () {
-          widget.hidePartnerThreshold = parseInt(this.value, 10);
-          widget.createConnectivityTable();
+        if (changeThresholdDelayedTimer) window.clearTimeout(changeThresholdDelayedTimer);
+        var value = parseInt(this.value, 10);
+        changeThresholdDelayedTimer = window.setTimeout(changePartnerThreshold.bind(undefined, value), 400);
       };
       hidePartnerThresholdInput.oninput = function (e) {
         if (13 === e.keyCode) {
@@ -1106,13 +1131,13 @@
 
     // Create incomining and outgoing tables
     var table_incoming = create_table.call(this, this.ordered_skeleton_ids,
-        this.skeletons, this.upThresholds, to_sorted_array(this.incoming),
+        this.skeletons, this.thresholds.up, to_sorted_array(this.incoming, this.thresholds.up.confidence),
         'Up', 'presynaptic_to', this.hidePartnerThreshold, this.reviewFilter,
         this.upstreamCollapsed, (function() {
           this.upstreamCollapsed = !this.upstreamCollapsed;
         }).bind(this));
     var table_outgoing = create_table.call(this, this.ordered_skeleton_ids,
-        this.skeletons, this.downThresholds, to_sorted_array(this.outgoing),
+        this.skeletons, this.thresholds.down, to_sorted_array(this.outgoing, this.thresholds.down.confidence),
         'Down', 'postsynaptic_to', this.hidePartnerThreshold, this.reviewFilter,
         this.downstreamCollapsed, (function() {
           this.downstreamCollapsed = !this.downstreamCollapsed;

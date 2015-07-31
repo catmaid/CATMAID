@@ -256,7 +256,7 @@
       setupSubTools();
 
       // Update annotation cache for the current project
-      annotations.update();
+      CATMAID.annotations.update();
 
       // Get or create the tracing layer for this stack viewer
       var layer = prepareStackViewer(parentStackViewer);
@@ -435,6 +435,32 @@
       return true;
     };
 
+
+    /**
+     * Add or remove a skeleton projection layer to each view.
+     */
+    var toggleSkeletonProjectionLayers = function() {
+      var key = "skeletonprojection";
+      var allHaveLayers = project.getStackViewers().every(function(sv) {
+        return !!sv.getLayer(key);
+      });
+
+      function add(sv) {
+        if (sv.getLayer(key)) return;
+        sv.addLayer(key, new CATMAID.SkeletonProjectionLayer(sv, {
+          initialNode: SkeletonAnnotations.atn
+        }));
+      }
+      function remove(sv) {
+        if (!sv.getLayer(key)) return;
+        sv.removeLayer(key);
+      }
+
+      var fn = allHaveLayers ? remove : add;
+      project.getStackViewers().forEach(fn);
+    };
+
+
     /**
      * ACTIONS
      *
@@ -591,23 +617,23 @@
     }) );
 
     this.addAction( new Action({
-      helpText: "Go to the parent of the active node",
-      keyShortcuts: { "[": [ 219 ] },
+      helpText: "Go to the parent of the active node (Ctrl: ignore virtual nodes)",
+      keyShortcuts: { "[": [ 219, 56 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), false);
+        activeTracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), (e.ctrlKey || e.metaKey));
         return true;
       }
     }) );
 
     this.addAction( new Action({
-      helpText: "Go to the child of the active node (Subsequent shift+]: cycle through children)",
-      keyShortcuts: { "]": [ 221 ] },
+      helpText: "Go to the child of the active node (Ctrl: ignore virtual nodes; Subsequent shift+]: cycle through children)",
+      keyShortcuts: { "]": [ 221, 57 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, false);
+        activeTracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, (e.ctrlKey || e.metaKey));
         return true;
       }
     }) );
@@ -962,6 +988,17 @@
         },
         run: function (e) {
           WindowMaker.create('neuron-dendrogram');
+          return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Toggle skeleton projection layer",
+        keyShortcuts: {
+            'F10': [ 121 ]
+        },
+        run: function (e) {
+          toggleSkeletonProjectionLayers();
           return true;
         }
     }) );

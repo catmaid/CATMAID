@@ -249,7 +249,7 @@ def query_neurons_by_annotations_datatable(request, project_id=None):
 
     search_term = request.POST.get('sSearch', '')
     if len(search_term) > 0:
-        neuron_query = neuron_query.filter(name__regex=search_term)
+        neuron_query = neuron_query.filter(name__iregex=search_term)
 
     should_sort = request.POST.get('iSortCol_0', False)
     if should_sort:
@@ -521,7 +521,11 @@ def remove_annotation(request, project_id=None, annotation_id=None):
     else:
         message += " There are %s links left to this annotation." % num_left
 
-    return HttpResponse(json.dumps({'message': message}), content_type='text/json')
+    return HttpResponse(json.dumps({
+        'message': message,
+        'deleted_annotation': deleted,
+        'left_uses': num_left
+    }), content_type='text/json')
 
 def create_annotation_query(project_id, param_dict):
 
@@ -859,7 +863,7 @@ def list_annotations_datatable(request, project_id=None):
             'cici.class_instance_b = class_instance.id %s' % conditions})
 
     if len(search_term) > 0:
-        annotation_query = annotation_query.filter(name__regex=search_term)
+        annotation_query = annotation_query.filter(name__iregex=search_term)
 
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))

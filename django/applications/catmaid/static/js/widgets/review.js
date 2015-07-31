@@ -91,12 +91,28 @@
      * review is continued.
      */
     this.handleActiveNodeChange = function(node) {
+      // Ignore this node change if no segment is under review at the moment
       var segment = this.current_segment ? this.current_segment['sequence'] : null;
-      var index = this.current_segment_index;
-      // If there is an active segment and no node is selected anymore or the
-      // node change, mark the current segment as unfocused.
-      if (segment && (!node || segment[index].id !== node.id) &&
-          (!skipStep || skipStep.id !== node.id)) {
+      if (!segment) return;
+      var rNode = segment[this.current_segment_index];
+      if (!rNode) return;
+
+      if (node) {
+        if (!SkeletonAnnotations.isRealNode(node.id)) {
+          // Force re-focus on next step if the newly active virtual node is not
+          // on the edge between parent and child.
+          var pID = SkeletonAnnotations.getParentOfVirtualNode(node.id);
+          var cID = SkeletonAnnotations.getChildOfVirtualNode(node.id);
+          if (rNode.id != pID && rNode.id != cID) {
+            this.segmentUnfocused = true;
+          }
+        } else if (node.id != rNode.id) {
+          // Force re-focus on next step if the new active node is not the
+          // node currently under review.
+          this.segmentUnfocused = true;
+        }
+      } else {
+        // Force re-focus on next step if there is no active node anymore.
         this.segmentUnfocused = true;
       }
     };
@@ -221,7 +237,7 @@
             self.current_segment_index = newIndex;
           }
 
-          self.warnIfNodeSkipsSections();
+          self.warnIfNodeSkipsSections(ln);
         }
         self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
       } else {
@@ -253,25 +269,39 @@
         // Get project space coordinate of intermediate point, move to it and
         // select a virtual node there. Make sure this new section is not a
         // broken slice.
-        var zS = stackViewer.z, nSteps = 0;
+        var nSteps = 0;
+        var inc = (zDiff > 0 ? 1 : -1);
         while (true) {
+          // Increment step counter and check if
           ++nSteps;
-          zS += self.virtualNodeStep * (zDiff > 0 ? 1 : -1);
-          if (-1 === stack.broken_slices.indexOf(zS)) break;
+          // Set new target section, based on the current number of stacks
+          var targetSZ = fromSZ + nSteps * inc;
+          // If the target section is a broken slice, try the next one. Check
+          // this first, because we want to step to the first valid section as
+          // close as possible to the limit.
+          if (-1 !== stack.broken_slices.indexOf(targetSZ)) continue;
+          // If we reach the section of the original target, use this instead
+          if (targetSZ === toSZ) return null;
+          // Stop incrementing if we reached the step limit
+          if (nSteps >= self.virtualNodeStep) break;
         }
-        // Use original target, if we advanced too far due to skipping broken
-        // slices.
-        if (zS >= toSZ) return null;
+
+        var zRatio = nSteps / zDiffAbs;
+
+        // Get project space coordinates for virtual node ID
+        var xp = from.x + (to.x - from.x) * zRatio;
+        var yp = from.y + (to.y - from.y) * zRatio;
+        var zp = from.z + (to.z - from.z) * zRatio;
 
         var vnID = backwards ?
-          SkeletonAnnotations.getVirtualNodeID(to.id, from.id, zS) :
-          SkeletonAnnotations.getVirtualNodeID(from.id, to.id, zS);
-        var zRatio = (nSteps * self.virtualNodeStep) / zDiffAbs;
+          SkeletonAnnotations.getVirtualNodeID(to.id, from.id, xp, yp, zp) :
+          SkeletonAnnotations.getVirtualNodeID(from.id, to.id, xp, yp, zp);
+
         return {
           id: vnID,
-          x: from.x + (to.x - from.x) * zRatio,
-          y: from.y + (to.y - from.y) * zRatio,
-          z: from.z + (to.z - from.z) * zRatio,
+          x: xp,
+          y: yp,
+          z: zp,
           stack: stack,
           to: to,
           refIndex: refIndex
@@ -335,7 +365,7 @@
             }
             // Segment fully reviewed, go to next without refreshing table
             // much faster for smaller fragments
-            markSegmentDone(selg.current_segment, [session.userid]);
+            markSegmentDone(self.current_segment, [session.userid]);
             self.selectNextSegment();
             return;
           } else {
@@ -398,42 +428,44 @@
         // already been taken before, this step is the reference point for the
         // distance test.
         skipStep = self.limitMove(ln, nn, refIndex, false);
-        if (skipStep) {
-          // Move to skipping step
-          this.goToNodeOfSegmentSequence(skipStep, forceCentering);
-          return;
-        } else {
+        if (!skipStep) {
+          // If a real node is next, update current segment index and check if
+          // we are close to the segment end.
           self.current_segment_index = newIndex;
-        }
 
-        if (self.current_segment_index < sequenceLength -1) {
-          // Check if the remainder of the segment was complete at an earlier time
-          // and perhaps now the whole segment is done:
-          var i_user = self.current_segment_index;
-          var i_union = self.current_segment_index;
-          while (i_user < sequenceLength && sequence[i_user].rids.some(reviewedByTeam)) {
-            i_user += 1;
+          if (self.current_segment_index < sequenceLength -1) {
+            // Check if the remainder of the segment was complete at an earlier time
+            // and perhaps now the whole segment is done:
+            var i_user = self.current_segment_index;
+            var i_union = self.current_segment_index;
+            while (i_user < sequenceLength && sequence[i_user].rids.some(reviewedByTeam)) {
+              i_user += 1;
+            }
+            while (i_union < sequenceLength && 0 !== sequence[i_union].rids.length) {
+              i_union += 1;
+            }
+            var cellIDs = [];
+            if (i_user === sequenceLength) {
+              cellIDs.push(session.userid);
+              CATMAID.msg('DONE', 'Segment fully reviewed: ' +
+                  self.current_segment['nr_nodes'] + ' nodes');
+            }
+            if (i_union === sequenceLength) cellIDs.push('union');
+            if (cellIDs.length > 0) markSegmentDone(self.current_segment, cellIDs);
+            // Don't startSkeletonToReview, because self.current_segment_index
+            // would be lost, losing state for q/w navigation.
           }
-          while (i_union < sequenceLength && 0 !== sequence[i_union].rids.length) {
-            i_union += 1;
-          }
-          var cellIDs = [];
-          if (i_user === sequenceLength) {
-            cellIDs.push(session.userid);
-            CATMAID.msg('DONE', 'Segment fully reviewed: ' +
-                self.current_segment['nr_nodes'] + ' nodes');
-          }
-          if (i_union === sequenceLength) cellIDs.push('union');
-          if (cellIDs.length > 0) markSegmentDone(self.current_segment, cellIDs);
-          // Don't startSkeletonToReview, because self.current_segment_index
-          // would be lost, losing state for q/w navigation.
-        }
 
-        self.warnIfNodeSkipsSections();
+          self.warnIfNodeSkipsSections(ln);
+        }
       }
 
       // Select the (potentially new) current node
-      self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
+      if (skipStep) {
+        self.goToNodeOfSegmentSequence(skipStep, forceCentering);
+      } else {
+        self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
+      }
     };
 
     /**
@@ -472,19 +504,22 @@
     }
 
     /**
-     * Create a warning message if the distance between the current and the last
-     * node (or last skipping step) is larger than what is allowed to be
-     * skipped.
+     * Show a warning message if the distance between the current node and the
+     * passed in reference node (defaulting to the last node in the current
+     * segment) is larger than what is allowed to be skipped.
      */
-    this.warnIfNodeSkipsSections = function () {
+    this.warnIfNodeSkipsSections = function (referenceNode) {
       if (0 === self.current_segment_index) {
         return;
       }
+      // Get current and last node
       var cn = self.current_segment.sequence[self.current_segment_index];
-      var ln = skipStep ? skipStep :
+      var ln = referenceNode ? referenceNode :
         self.current_segment.sequence[self.current_segment_index - 1];
-      var zdiff = project.focusedStackViewer.primaryStack.projectToStackZ(
-          cn.z - ln.z, cn.y - ln.y, cn.x - ln.x);
+      // Convert to stack space to check against virtual node step limit
+      var cnz = project.focusedStackViewer.primaryStack.projectToStackZ(cn.z, cn.y, cn.x);
+      var lnz = project.focusedStackViewer.primaryStack.projectToStackZ(ln.z, ln.y, ln.x);
+      var zdiff = cnz - lnz;
       if (Math.abs(zdiff) > self.virtualNodeStep) {
         CATMAID.msg("Skipped sections", "This node is " + Math.abs(zdiff) +
             " sections away from the previous node.", {style: 'warning'});

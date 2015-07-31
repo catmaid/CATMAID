@@ -1,3 +1,83 @@
+## 2015.7.31
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+
+### Features and enhancements
+
+Key shortcuts / mouse operations:
+
+- Ctrl + [ or ] now navigates to the next real (non-virtual) parent or child of
+  the active node, respectively.
+
+
+Connectivity widget:
+
+- Upstream and downstream partners can now be filtered by synaptic confidence
+  in addition to synaptic count. Synaptic confidence filtering is applied before
+  count filtering. Confidence is taken to be the minimum of the presynaptic
+  and postsynaptic connector confidence.
+
+
+3D Viewer:
+
+- Tags matching a custom regex can be shown as handle spheres in addition to
+  tags containing "uncertain" or "end". Note that after entering the regex in
+  the "View Settings" tab the viewer must be refreshed from the "Main" tab
+  before tag spheres are updated.
+
+- The active node marker now resizes based on the radius of the active node.
+
+- The active node marker can now optionally always be drawn on top of other
+  objects, even if it is occluded.
+
+
+Miscellaneous:
+
+- A default neuron name can now be specified in the settings widget. Similar
+  to annotations, the pattern "{nX}" can be used to add an automatically
+  incrementing number to each new neuron created, starting at X. Omitting X
+  will be interpreted to start from 1. This default name does not persist
+  between sessions.
+
+- Neuron navigator: neuron name and annotation search are now case-insensitive.
+
+- The client now checks every 15 minutes whether it is the same version as the
+  server. If not, an error dialog is shown prompting the user to refresh their
+  browser.
+
+- It is now possible to show a projection of the active skeleton in the tracing
+  overlay. All nodes will be displayed in the current slice, but no interaction
+  is allowed with them. This feature can be useful to get more context on the
+  current location in the active skeleton. This mode can be toggled with F10 or
+  through a new entry in the settings (Tracing Overlay > Active skeleton
+  projection), where different parameters can be adjusted. The color for the
+  upstream and downstream part can be independently changed and various shading
+  modes can be selected (plain color, Z distance transparency, Strahler based
+  transparency or cut off).
+
+
+### Bug fixes
+
+- 3D viewer: the correct synapse colors are now used when connectors are
+  restricted.
+
+- If annotations are added or removed, annotation search widgets are updated
+  correctly. You can now search for newly created annotations without having to
+  open a new search widget.
+
+- The order of the selection table is now remembered before it is refreshed.
+
+- Connectivity widget: common partners filtering now correctly enforces that
+  partners are partnered with all target neurons, not just any two.
+
+- Review widget: the skipped node warning will now only show up when in fact
+  more nodes have been skipped than allowed.
+
+- Fixed a vulnerability that allowed any user with "browse" access permissions
+  to any project to execute arbitrary SQL statements on the CATMAID database.
+
+
 ## 2015.7.17
 
 Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers

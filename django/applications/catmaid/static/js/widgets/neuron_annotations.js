@@ -1,11 +1,9 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  annotations,
   checkPermission,
   InstanceRegistry,
   NeuronNameService,
-  NeuronNavigator,
   project,
   requestQueue,
   SelectionTable,
@@ -33,6 +31,10 @@
     this.display_length = 50;
     this.display_start = 0;
     this.total_n_results = 0;
+
+    // Listen to annotation change events to update self when needed
+    CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+        this.handleAnnotationUpdate, this);
   };
 
   NeuronAnnotations.prototype = {};
@@ -51,6 +53,8 @@
     this.unregisterInstance();
     this.unregisterSource();
     NeuronNameService.getInstance().unregister(this);
+    CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+        this.handleAnnotationUpdate, this);
   };
 
   NeuronAnnotations.prototype.append = function() {};
@@ -141,6 +145,15 @@
   };
 
   /* Non-interface methods */
+
+  /**
+   * In the event of annotations being update while this widget is loaded,
+   * update internal use of annotations (e.g. in auto completion).
+   */
+  NeuronAnnotations.prototype.handleAnnotationUpdate = function() {
+    CATMAID.annotations.add_autocomplete_to_input(
+        $('.neuron_query_by_annotation_name' + this.widgetID));
+  };
 
   /**
    * Create a table row and passes it to add_row_fn which should it add it
@@ -282,7 +295,7 @@
           // and replace the clicked on annotation with the result. Pagination
           // will not be applied to expansions.
           var query_data = {
-            'neuron_query_by_annotation': annotations.getID($(this).attr('annotation')),
+            'neuron_query_by_annotation': CATMAID.annotations.getID($(this).attr('annotation')),
           };
           requestQueue.register(django_url + project.id + '/neuron/query-by-annotations',
               'POST', query_data, function(status, text, xml) {
@@ -346,7 +359,7 @@
         var annotation_name = $(this).text();
         var annotation_id = $(this).attr('annotation_id');
         // Create a new navigator and set it to an annotation filter node
-        var NN = new NeuronNavigator();
+        var NN = new CATMAID.NeuronNavigator();
         // Create a new window, based on the newly created navigator
         WindowMaker.create('neuron-navigator', NN);
         // Select the cloned node in the new navigator
@@ -407,7 +420,7 @@
     var form_data = $('#neuron_query_by_annotations' +
         this.widgetID).serializeArray().reduce(function(o, e) {
           if (0 === e.name.indexOf('neuron_query_by_annotation')) {
-            o[e.name] = annotations.getID(e.value);
+            o[e.name] = CATMAID.annotations.getID(e.value);
           } else if (0 === e.name.indexOf('neuron_query_include_subannotation')) {
             // Expect the annotation field to be read out before this
             var ann_input_name = e.name.replace(
@@ -574,7 +587,7 @@
         value: ''
     });
     // Add autocompletion to it
-    annotations.add_autocomplete_to_input($text);
+    CATMAID.annotations.add_autocomplete_to_input($text);
 
     // Update the button attributes.
     var $button = $newRow.find("input[type='button']");
@@ -583,12 +596,13 @@
     $("#neuron_query_by_annotator" + this.widgetID).before($newRow);
 
     // By default, sub-annotations should not be included
-    $newRow.find('input[type=checkbox]').attr({
-        checked: false,
-        id: 'neuron_query_include_subannotation' + this.widgetID + '_' +
-            this.nextFieldID,
-        name: 'neuron_query_include_subannotation' + this.widgetID + '_' +
-            this.nextFieldID,
+    $newRow.find('input[type=checkbox]')
+        .prop('checked', false)
+        .attr({
+          id: 'neuron_query_include_subannotation' + this.widgetID + '_' +
+              this.nextFieldID,
+          name: 'neuron_query_include_subannotation' + this.widgetID + '_' +
+              this.nextFieldID,
     });
 
     this.nextFieldID += 1;
@@ -668,7 +682,7 @@
   NeuronAnnotations.prototype.refresh_annotations = function() {
     // Update auto completion for input fields
     $('.neuron_query_by_annotation_name' + this.widgetID).autocomplete(
-        "option", {source: annotations.getAllNames()});
+        "option", {source: CATMAID.annotations.getAllNames()});
   };
 
   /**

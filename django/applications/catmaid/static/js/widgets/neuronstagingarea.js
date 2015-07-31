@@ -5,7 +5,6 @@
   Colorizer,
   InstanceRegistry,
   NeuronNameService,
-  NeuronNavigator,
   project,
   requestQueue,
   session,
@@ -29,6 +28,7 @@ var SelectionTable = function() {
   this.all_items_visible = {pre: true, post: true, text: false, meta: true};
   this.selected_skeleton_id = null;
   this.next_color_index = 0;
+  this.order = [[0, 'asc']];
   this.gui = new this.GUI(this);
 };
 
@@ -647,6 +647,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
     if (datatable) {
       this.page = datatable.page();
       this.entriesPerPage = datatable.page.len();
+      this.order = datatable.order();
       datatable.destroy();
     }
   }
@@ -668,6 +669,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
     processing: true,
     serverSide: false,
     autoWidth: false,
+    order: this.order,
     orderCellsTop: true,
     columns: [
       { "type": "text", "visible": false },

@@ -443,7 +443,8 @@ div#classification_graph_object img.roiimage {
 }
 
 .buttonpanel label {
-  margin: 0.5em;
+  margin: 0.1em 0.35em;
+  display: inline-block;
 }
 
 .buttonpanel.ui-tabs {
@@ -540,8 +541,7 @@ div#classification_graph_object img.roiimage {
   border-bottom: 1px solid black;
 }
 
-.connectivity_widget .header th:nth-child(4),
-.connectivity_widget .header th:nth-child(5) {
+.connectivity_widget .threshold-header{
   width: 7em;
 }
 

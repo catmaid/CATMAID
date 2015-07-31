@@ -3,10 +3,15 @@ notifications:
 language: python
 python:
   - "2.7"
+env:
+  - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
 addons:
+  firefox: "38.0"
   postgresql: 9.3
 before_install:
+  - mkdir tmp
   - travis_retry sudo apt-get update -y -qq
+  - sh -e /etc/init.d/xvfb start
 install:
   - travis_retry sudo apt-get install -y -qq $(< packagelist-ubuntu-12.04-apt.txt)
   - travis_retry pip install -q pip==1.5.4
@@ -14,7 +19,7 @@ install:
   - travis_retry travis_wait 60 pip install -q -r django/pip-frozen
   # Install additional dependencies for Travis
   - pip install coveralls
-  - npm install jshint
+  - npm install jshint qunit-phantomjs-runner
 before_script:
   - psql -c 'CREATE DATABASE catmaid;' -U postgres
   - psql -c 'CREATE EXTENSION postgis;' -U postgres catmaid
@@ -42,5 +47,10 @@ script:
   - python manage.py runserver &
   - sleep 5
   - cd ../../..
+  # Run QUnit tests through SlimerJS with Firefox
+  - wget http://download.slimerjs.org/releases/0.9.6/slimerjs-0.9.6.zip
+  - unzip slimerjs-0.9.6.zip
+  - mv slimerjs-0.9.6 ./slimerjs
+  - ./.travis-run-slimerjs.sh http://localhost:8000/tests
 after_success:
   - cd django/projects/mysite && coveralls

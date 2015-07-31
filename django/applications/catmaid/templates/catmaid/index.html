@@ -29,6 +29,7 @@
 
 		<script type="text/javascript">
 			CATMAID.configure("{{ CATMAID_URL }}", "{{ STATIC_URL|escapejs }}");
+			CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
 		</script>
 	</head>
 	<body onload="realInit();"><a></a>

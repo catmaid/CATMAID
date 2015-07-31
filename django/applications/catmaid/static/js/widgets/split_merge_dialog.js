@@ -270,7 +270,7 @@
           // Create new line representing interpolated link
           var geometry = new THREE.Geometry();
           pairs.forEach(function(v) {
-            geometry.vertices.push(this.webglapp.space.toSpace(v.clone()));
+            geometry.vertices.push(v.clone());
           }, this);
           var material = new THREE.LineBasicMaterial({
             color: 0x00ff00,

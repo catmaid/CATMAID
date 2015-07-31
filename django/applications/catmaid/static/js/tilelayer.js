@@ -49,6 +49,14 @@
     this.tilesContainer = document.createElement('div');
     this.tilesContainer.className = 'sliceTiles';
 
+    if (tileSource.transposeTiles && tileSource.transposeTiles.has(stack.orientation)) {
+      // Some tile sources may provide transposed tiles versus CATMAID's
+      // expectation, e.g., YZ tiles for a ZY oriented stack. In these cases
+      // the tile layer is responsible for transposing them back to CATMAID's
+      // preferred orientation in the client.
+      this.tilesContainer.classList.add('transpose');
+    }
+
     stackViewer.getLayersView().appendChild(this.tilesContainer);
 
     if (showOverview) {

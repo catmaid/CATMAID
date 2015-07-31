@@ -343,10 +343,17 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
 
         labels = defaultdict(list)
         if includeLabels:
-            z1 = params['z1']
-            z2 = params['z2']
+            # Avoid dict lookups in loop
+            top, left, z1 = params['top'], params['left'], params['z1']
+            bottom, right, z2 = params['bottom'], params['right'], params['z2']
+
+            def is_visible(r):
+                return r[2] >= left and r[2] < right and \
+                    r[3] >= top and r[3] < bottom and \
+                    r[4] >= z1 and r[4] < z2
+
             # Collect treenodes visible in the current section
-            visible = ','.join('({0})'.format(row[0]) for row in treenodes if row[4] >= z1 and row[4] < z2)
+            visible = ','.join('({0})'.format(row[0]) for row in treenodes if is_visible(row))
             if visible:
                 cursor.execute('''
                 SELECT tnid, class_instance.name
@@ -749,29 +756,32 @@ def find_children(request, project_id=None):
 
 @requires_user_role([UserRole.Browse])
 def user_info(request, project_id=None):
-    treenode_id = int(request.POST['treenode_id'])
-    ts = Treenode.objects.filter(pk=treenode_id).select_related('user', 'editor')
-    if not ts:
-        ts = Connector.objects.filter(pk=treenode_id).select_related('user', 'editor')
-        if not ts:
-            return HttpResponse(json.dumps({'error': 'Object #%s is not a treenode or a connector' % treenode_id}))
-    t = ts[0]
-    # Get all reviews for this treenode
-    reviewers = []
-    review_times = []
-    for r, rt in Review.objects.filter(treenode=t) \
-            .values_list('reviewer', 'review_time'):
-        reviewers.append(User.objects.filter(pk=r) \
-                .values('username', 'first_name', 'last_name')[0])
-        review_times.append(str(datetime.date(rt)))
+    """Return information on a treenode or connector. This function is called
+    pretty often (with every node activation) and should therefore be as fast
+    as possible.
+    """
+    node_id = int(request.POST['node_id'])
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT n.id, n.user_id, n.editor_id, n.creation_time, n.edition_time,
+               array_agg(r.reviewer_id), array_agg(r.review_time)
+        FROM location n LEFT OUTER JOIN review r ON r.treenode_id = n.id
+        WHERE n.id = %s
+        GROUP BY n.id
+                   ''', (node_id,))
+
+    # We expect only one result node
+    info = cursor.fetchone()
+    if not info:
+        return HttpResponse(json.dumps({
+            'error': 'Object #%s is not a treenode or a connector' % node_id}))
+
     # Build result
-    return HttpResponse(json.dumps({'user': {'username': t.user.username,
-                                             'first_name': t.user.first_name,
-                                             'last_name': t.user.last_name},
-                                    'creation_time': str(datetime.date(t.creation_time)),
-                                    'editor': {'username': t.editor.username,
-                                               'first_name': t.editor.first_name,
-                                               'last_name': t.editor.last_name},
-                                    'edition_time': str(datetime.date(t.edition_time)),
-                                    'reviewers': reviewers,
-                                    'review_times': review_times}))
+    return HttpResponse(json.dumps({
+        'user': info[1],
+        'editor': info[2],
+        'creation_time': str(info[3].isoformat()),
+        'edition_time': str(info[4].isoformat()),
+        'reviewers': [r for r in info[5] if r],
+        'review_times': [str(rt.isoformat()) for rt in info[6] if rt]
+    }))

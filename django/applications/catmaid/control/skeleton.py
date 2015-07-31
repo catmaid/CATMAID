@@ -9,7 +9,7 @@ from itertools import chain
 from functools import partial
 
 from django.core.serializers.json import DjangoJSONEncoder
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
@@ -334,6 +334,7 @@ def split_skeleton(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
     skeleton_id = treenode.skeleton_id
+    project_id = int(project_id)
     upstream_annotation_map = json.loads(request.POST.get('upstream_annotation_map'))
     downstream_annotation_map = json.loads(request.POST.get('downstream_annotation_map'))
     cursor = connection.cursor()
@@ -350,7 +351,6 @@ def split_skeleton(request, project_id=None):
           "One part has to keep the whole set of annotations!")
 
     skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
-    project_id=int(project_id)
 
     # retrieve neuron of this skeleton
     neuron = ClassInstance.objects.get(
@@ -527,10 +527,13 @@ def skeleton_ancestry(request, project_id=None):
         raise Exception(response_on_error + ':' + str(e))
 
 def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_of_id, cursor):
+    def newSynapseCounts():
+        return [0, 0, 0, 0, 0]
+
     class Partner:
         def __init__(self):
             self.num_nodes = 0
-            self.skids = defaultdict(int) # skid vs synapse count
+            self.skids = defaultdict(newSynapseCounts) # skid vs synapse count
 
     # Dictionary of partner skeleton ID vs Partner
     def newPartner():
@@ -539,7 +542,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     # Obtain the synapses made by all skeleton_ids considering the desired direction of the synapse, as specified by relation_id_1 and relation_id_2:
     cursor.execute('''
-    SELECT t1.skeleton_id, t2.skeleton_id
+    SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
     FROM treenode_connector t1,
          treenode_connector t2
     WHERE t1.skeleton_id IN (%s)
@@ -549,8 +552,8 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     ''' % (','.join(map(str, skeleton_ids)), int(relation_id_1), int(relation_id_2)))
 
     # Sum the number of synapses
-    for srcID, partnerID in cursor.fetchall():
-        partners[partnerID].skids[srcID] += 1
+    for srcID, partnerID, confidence in cursor.fetchall():
+        partners[partnerID].skids[srcID][confidence - 1] += 1
 
     # There may not be any synapses
     if not partners:
@@ -559,7 +562,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     # If op is AND, discard entries where only one of the skids has synapses
     if len(skeleton_ids) > 1 and 'AND' == op:
         for partnerID in partners.keys(): # keys() is a copy of the keys
-            if 1 == len(partners[partnerID].skids):
+            if len(skeleton_ids) != len(partners[partnerID].skids):
                 del partners[partnerID]
 
     # With AND it is possible that no common partners exist
@@ -640,57 +643,6 @@ def skeleton_info_raw(request, project_id=None):
                 'incoming_reviewers': incoming_reviewers,
                 'outgoing_reviewers': outgoing_reviewers}),
             content_type='text/json')
-
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeleton_info(request, project_id=None, skeleton_id=None):
-    # This function can take as much as 15 seconds for a mid-sized arbor
-    # Problems in the generated SQL:
-    # 1. Many repetitions of the query: SELECT ...  FROM "relation" WHERE "relation"."project_id" = 4. Originates in one call per connected skeleton, in Skeleton._fetch_upstream_skeletons and _fetch_downstream_skeletons
-    # 2. Usage of WHERE project_id = 4, despite IDs being unique. Everywhere.
-    # 3. Lots of calls to queries similar to: SELECT ...  FROM "class_instance" WHERE "class_instance"."id" = 17054183
-
-
-    p = get_object_or_404(Project, pk=project_id)
-
-    synaptic_count_high_pass = int( request.POST.get( 'threshold', 10 ) )
-
-
-    skeleton = Skeleton( skeleton_id, project_id )
-
-    data = {
-        'incoming': {},
-        'outgoing': {}
-    }
-
-    for skeleton_id_upstream, synaptic_count in skeleton.upstream_skeletons.items():
-        if synaptic_count >= synaptic_count_high_pass:
-            tmp_skeleton = Skeleton( skeleton_id_upstream )
-            data['incoming'][skeleton_id_upstream] = {
-                'synaptic_count': synaptic_count,
-                'skeleton_id': skeleton_id_upstream,
-                'percentage_reviewed': '%i' % tmp_skeleton.percentage_reviewed(),
-                'node_count': tmp_skeleton.node_count(),
-                'name': '{0} / skeleton {1}'.format( tmp_skeleton.neuron.name, skeleton_id_upstream)
-            }
-
-    for skeleton_id_downstream, synaptic_count in skeleton.downstream_skeletons.items():
-        if synaptic_count >= synaptic_count_high_pass:
-            tmp_skeleton = Skeleton( skeleton_id_downstream )
-            data['outgoing'][skeleton_id_downstream] = {
-                'synaptic_count': synaptic_count,
-                'skeleton_id': skeleton_id_downstream,
-                'percentage_reviewed': '%i' % tmp_skeleton.percentage_reviewed(),
-                'node_count': tmp_skeleton.node_count(),
-                'name': '{0} / skeleton {1}'.format( tmp_skeleton.neuron.name, skeleton_id_downstream)
-            }
-
-    result = {
-        'incoming': list(reversed(sorted(data['incoming'].values(), key=itemgetter('synaptic_count')))),
-        'outgoing': list(reversed(sorted(data['outgoing'].values(), key=itemgetter('synaptic_count'))))
-    }
-    json_return = json.dumps(result, sort_keys=True, indent=4)
-    return HttpResponse(json_return, content_type='text/json')
 
 
 @requires_user_role(UserRole.Browse)
@@ -1143,8 +1095,8 @@ def annotation_list(request, project_id=None):
     """ Returns a JSON serialized object that contains information about the
     given skeletons.
     """
-    skeleton_ids = [v for k,v in request.POST.iteritems()
-            if k.startswith('skeleton_ids[')]
+    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems()
+            if k.startswith('skeleton_ids['))
     annotations = bool(int(request.POST.get("annotations", 0)))
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
@@ -1163,11 +1115,13 @@ def annotation_list(request, project_id=None):
         FROM class_instance_class_instance cici
         WHERE cici.project_id = %s AND
               cici.relation_id = %s AND
-              cici.class_instance_a IN (%s)
-    """ % (project_id, relations['model_of'],
-           ','.join(map(str, skeleton_ids))))
+              cici.class_instance_a IN %s
+    """, (project_id, relations['model_of'], skeleton_ids))
     n_to_sk_ids = {n:s for s,n in cursor.fetchall()}
     neuron_ids = n_to_sk_ids.keys()
+
+    if not neuron_ids:
+        raise Http404('No skeleton or neuron found')
 
     # Query for annotations of the given skeletons, specifically
     # neuron_id, auid, aid and aname.

@@ -227,14 +227,16 @@
     // Return, if there is no node
     if (!arborParser) return;
 
+    // Make sure we deal with a real node
+    var nodeID = SkeletonAnnotations.isRealNode(node.id) ? node.id :
+      SkeletonAnnotations.getParentOfVirtualNode(node.id);
+
     // Store current targets
     this.currentSkeletonID = node.skeleton_id;
     this.currentArborParser = arborParser;
-    this.currentNodeID = node.id;
+    this.currentNodeID = nodeID;
 
     // Get nodes
-    var nodeID = SkeletonAnnotations.isRealNode(node.id) ? node.id :
-      SkeletonAnnotations.getParentOfVirtualNode(node.id);
     var arbor = arborParser.arbor;
 
     var split = {};
@@ -268,8 +270,10 @@
 
     // If there is also an upstream part, show it as well
     if (upstream) {
+      var parentID = SkeletonAnnotations.isRealNode(node.parent_id) ?
+        node.parent_id : SkeletonAnnotations.getParentOfVirtualNode(node.parent_id);
       // Make sure we look at upstream like we look at downstream
-      upstream = upstream.reroot(node.parent_id);
+      upstream = upstream.reroot(parentID);
 
       // Update render options with upstream color
       renderOptions.color = this.options.upstreamColor;

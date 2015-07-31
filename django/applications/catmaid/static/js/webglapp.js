@@ -1757,7 +1757,7 @@ WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createPlaneGe
 
 WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(space, stackViewer) {
   if (this.zplane) space.scene.remove(this.zplane);
-  var material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide } ),
+  var material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide, opacity: 0.5, transparent: true } ),
       geometry = this.createPlaneGeometry(stackViewer.primaryStack);
 
   this.zplane = new THREE.Mesh( geometry, material );

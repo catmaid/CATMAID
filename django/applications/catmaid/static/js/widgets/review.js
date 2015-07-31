@@ -966,7 +966,7 @@
        */
       refresh: function (callback) {
         // If no project is open or no user is logged in, clear the whitelist.
-        if (typeof project === 'undefined' || typeof session === 'undefined') {
+        if (typeof project === 'undefined' || !project || typeof session === 'undefined') {
           whitelist = {};
           return;
         }

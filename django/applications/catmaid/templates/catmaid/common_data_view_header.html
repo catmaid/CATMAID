@@ -1,6 +1,12 @@
 {% load common %}
 
-<h1 title="Version: {% catmaid_version %}">CATMAID</h1>
+<div class="header">
+  <h1 title="Version: {% catmaid_version %}">CATMAID</h1>
+  <img src="{{ STATIC_URL }}images/catmaidlogo.svg"
+       onerror="this.onerror=null; this.src='{{ STATIC_URL }}/images/catmaidlogo.png';" />
+</div>
+<div class="clear"></div>
+
 <p>Please feel free to open one of the public projects or log in with your account and password. In total there are currently {{ projects|length }} projects available.</p>
 
 {% if projects|length > 0 %}

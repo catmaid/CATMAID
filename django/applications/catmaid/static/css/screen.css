@@ -186,6 +186,22 @@ div.form textarea, div.form input, div.form select
 	padding:0.5em 1em 0.5em 1em;
 }
 
+div#data_view .header {
+	margin:1.5em 16px 0.5em 20px;
+}
+
+div#data_view .header img {
+    float: left;
+    height: 2em;
+    margin-top: 0.2em;
+    margin-left: 1em;
+}
+
+div#data_view .header h1 {
+    float: left;
+    margin: 0px;
+}
+
 div#data_view table
 {
 	margin:1.5em 16px 0.5em 20px;

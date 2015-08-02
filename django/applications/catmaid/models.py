@@ -664,6 +664,19 @@ class CardinalityRestriction(models.Model):
         else:
             raise Exception("Unsupported cardinality type.")
 
+class StackClassInstance(models.Model):
+    class Meta:
+        db_table = "stack_class_instance"
+    # Repeat the columns inherited from 'relation_instance'
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
+    project = models.ForeignKey(Project)
+    relation = models.ForeignKey(Relation)
+    # Now new columns:
+    stack = models.ForeignKey(Stack)
+    class_instance = models.ForeignKey(ClassInstance)
+
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
 

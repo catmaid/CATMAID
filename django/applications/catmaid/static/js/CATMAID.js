@@ -17,10 +17,13 @@ if (!window.console) {
 // Attach a general error handler
 window.onerror = function(msg, url, lineno, colno, err)
 {
+  var userAgent = navigator ? navigator.userAgent : 'N/A';
+
   var info = 'An error occured in CATMAID and the current action can\'t be ' +
       'completed. You can try to reload the widget or tool you just used.';
   var detail = 'Error: ' + msg + ' URL: ' + url + ' Line: ' + lineno +
-      ' Column: ' + colno + ' Stacktrace: ' + (err ? err.stack : 'N/A');
+      ' Column: ' + colno + ' User agent: ' + userAgent + ' Stacktrace: ' +
+      (err ? err.stack : 'N/A');
 
   // Log the error detail to the console
   console.log(detail);

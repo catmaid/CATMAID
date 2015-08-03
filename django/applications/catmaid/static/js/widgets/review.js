@@ -337,9 +337,21 @@
         coords = {x: project.coordinates.x, y: project.coordinates.y,
            z: project.coordinates.z};
       }
-      var inc = segment[i-1][depthField] - segment[i][depthField];
-      coords[depthField] = segment[0][depthField] + inc;
-      project.moveTo(coords.z, coords.y, coords.x);
+
+      // If the second node of the current segment is on a lower index section
+      // than the first one, we move beyond the segment by looking at the next
+      // higher index section after the first node. Otherwise, we look at the
+      // next lower index section.
+      var viewer = project.focusedStackViewer;
+      var stack = project.focusedStackViewer.primaryStack;
+      var validDistanced = segment[i][depthField] > segment[i-1][depthField] ?
+          stack.validZDistanceBefore(viewer.z) : stack.validZDistanceAfter(viewer.z);
+      var targetZ = validDistanced ? viewer.z + validDistanced : viewer.z;
+      // Move to location found
+      project.moveTo(
+          stack.stackToProjectZ(targetZ, viewer.y, viewer.x),
+          stack.stackToProjectY(targetZ, viewer.y, viewer.x),
+          stack.stackToProjectX(targetZ, viewer.y, viewer.x))
     };
 
     this.moveNodeInSegmentForward = function(advanceToNextUnfollowed) {

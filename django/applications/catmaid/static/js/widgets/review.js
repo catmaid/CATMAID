@@ -351,7 +351,7 @@
       project.moveTo(
           stack.stackToProjectZ(targetZ, viewer.y, viewer.x),
           stack.stackToProjectY(targetZ, viewer.y, viewer.x),
-          stack.stackToProjectX(targetZ, viewer.y, viewer.x))
+          stack.stackToProjectX(targetZ, viewer.y, viewer.x));
     };
 
     this.moveNodeInSegmentForward = function(advanceToNextUnfollowed) {

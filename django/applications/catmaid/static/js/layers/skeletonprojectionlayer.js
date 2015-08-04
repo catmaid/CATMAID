@@ -124,7 +124,7 @@
     // stay the same (regardless of zoom level), counter acting this is required.
     var resScale = Math.max(this.stackViewer.primaryStack.resolution.x,
        this.stackViewer.primaryStack.resolution.y);
-    var dynamicScale = screenScale ? (1 / this.stackViewer.scale) : false;
+    var dynamicScale = screenScale ? (1 / (this.stackViewer.scale * resScale)) : false;
 
     this.graphics.scale(userprofile.tracing_overlay_scale, resScale, dynamicScale);
 

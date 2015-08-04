@@ -6,6 +6,7 @@
 
 ### Bug fixes
 
+- Nodes are now correctly scaled in skeleton projection layers.
 
 
 ## 2015.7.31

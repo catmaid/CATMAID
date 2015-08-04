@@ -376,7 +376,7 @@ var NeuronNameService = (function()
                 if (skid in data.skeletons) {
                   // Collect all annotations annotated with the requested meta
                   // annotation.
-                  var label = metaLabel(annotations.getID(l.option));
+                  var label = metaLabel(CATMAID.annotations.getID(l.option));
                   if (null !== label) {
                     return label;
                   }
@@ -399,7 +399,8 @@ var NeuronNameService = (function()
                 if (skid in data.skeletons) {
                   // Collect all annotations that are annotated with requested meta
                   // annotation.
-                  var label = metaLabel(annotations.getID(l.option), session.userid);
+                  var label = metaLabel(CATMAID.annotations.getID(l.option),
+                      session.userid);
                   if (null !== label) {
                     return label;
                   }

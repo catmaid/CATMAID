@@ -459,8 +459,9 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
    * the mouse was. */
   this.coords = {lastX: null, lastY: null};
 
-  /* padding beyond screen borders for fetching data and updating nodes */
-  this.PAD = 256;
+  /* Padding beyond screen borders in X and Y for fetching data and updating
+   * nodes, in screen space pixel coordinates. */
+  this.padding = 256;
  
   /* old_x and old_y record the x and y position of the stack viewer the
      last time that an updateNodes request was made.  When panning
@@ -1937,25 +1938,25 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
   // Don't udpate if the stack's current section or scale wasn't changed
   var doNotUpdate = stackViewer.old_z == stackViewer.z && stackViewer.old_s == stackViewer.s;
   if ( doNotUpdate ) {
+    var padS = this.padding / stackViewer.scale;
     // Don't upate if the center didn't move horizontally, but do if
-    var sPAD = this.PAD / stackViewer.scale;
     var dx = this.old_x - stackViewer.x;
-    doNotUpdate = dx < sPAD && dx > -sPAD;
+    doNotUpdate = dx <= padS && dx >= -padS;
     
     if ( doNotUpdate ) {
       // Don't upate if the center didn't move certically, but do if
       var dy = this.old_y - stackViewer.y;
-      doNotUpdate = dy < sPAD && dy > -sPAD;
+      doNotUpdate = dy <= padS && dy >= -padS;
     }
 
     if (doNotUpdate) {
       // Don't update if the view didn't get higher, but do if
-      doNotUpdate = stackViewer.viewWidth <= (this.old_width + this.PAD);
+      doNotUpdate = stackViewer.viewWidth <= (this.old_width + 2 * padS);
     }
 
     if (doNotUpdate) {
       // Don't update if the view got wider, but do if
-      doNotUpdate = stackViewer.viewHeight <= (this.old_height + this.PAD);
+      doNotUpdate = stackViewer.viewHeight <= (this.old_height + 2 * padS);
     }
   }
 
@@ -2324,6 +2325,14 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     var wx1 = stackViewer.primaryStack.stackToProjectX(z1, y1, x1),
         wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
         wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
+
+    // Add padding to bounding box
+    var xPadP = self.padding * stackViewer.primaryStack.resolution.x / stackViewer.scale;
+    var yPadP = self.padding * stackViewer.primaryStack.resolution.y / stackViewer.scale;
+    wx0 -= xPadP;
+    wx1 += xPadP;
+    wy0 -= yPadP;
+    wy1 += yPadP;
 
     // As long as stack space Z coordinates are always clamped to the last
     // section (i.e. if floor() is used instead of round() when transforming),

@@ -57,6 +57,9 @@
           pid: projectID,
           treenode_id: nodeID
         },
+        // Make the response handler silent so that it doesn't produce error
+        // messages on its own. Continuations to the returned promise should
+        // handle this instead.
         CATMAID.jsonResponseHandler(
           (function(json) {
             resolve(json);
@@ -69,7 +72,7 @@
               this.trigger(this.EVENT_SKELETON_CHANGED, json.skeleton_id);
             }
           }).bind(this),
-          reject));
+          reject, true));
     }).bind(this));
   };
 

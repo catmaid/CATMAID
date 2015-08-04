@@ -397,7 +397,7 @@ SelectionTable.prototype.append = function(models) {
           return !this[skid];
         }, json);
         var msg = 'Could not load ' + nInvalid + ' skeletons, because they could ' +
-            'not be found. See details for more info.'
+            'not be found. See details for more info.';
         var detail =  'Thie following skeletons are missing: ' + missing.join(', ');
         CATMAID.error(msg, detail);
       }

@@ -163,7 +163,7 @@ window.onbeforeunload = function() {
         if (json.error) {
           // Call error handler, if any, and force silence if it returned true.
           if (CATMAID.tools.isFn(error)) {
-            silent = silent || error(json);
+            silent = error(json) || silent;
           }
           if (!silent) {
             CATMAID.error(json.error, json.detail);
@@ -174,7 +174,7 @@ window.onbeforeunload = function() {
       } else {
         // Call error handler, if any, and force silence if it returned true.
         if (CATMAID.tools.isFn(error)) {
-          silent = silent || error();
+          silent = error() || silent;
         }
         if (!silent) {
           CATMAID.error("An error occured", "The server returned an unexpected " +

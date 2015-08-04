@@ -361,8 +361,12 @@ SelectionTable.prototype.append = function(models) {
         return;
       }
 
-      skeleton_ids.forEach(function(skeleton_id) {
-        // Makre sure existing widget settings are respected
+      var valid_skeletons = skeleton_ids.filter(function(skid) {
+        return !!this[skid];
+      }, json);
+
+      valid_skeletons.forEach(function(skeleton_id) {
+        // Make sure existing widget settings are respected
         var model = models[skeleton_id];
         model.meta_visible = this.all_items_visible['meta'];
         model.text_visible = this.all_items_visible['text'];
@@ -385,6 +389,18 @@ SelectionTable.prototype.append = function(models) {
           this.gui.update.bind(this.gui));
 
       this.updateLink(models);
+
+      // Notify user if not all skeletons are valid
+      var nInvalid = skeleton_ids.length - valid_skeletons.length;
+      if (0 !== nInvalid) {
+        var missing = skeleton_ids.filter(function(skid) {
+          return !this[skid];
+        }, json);
+        var msg = 'Could not load ' + nInvalid + ' skeletons, because they could ' +
+            'not be found. See details for more info.'
+        var detail =  'Thie following skeletons are missing: ' + missing.join(', ');
+        CATMAID.error(msg, detail);
+      }
     }).bind(this));
 };
 

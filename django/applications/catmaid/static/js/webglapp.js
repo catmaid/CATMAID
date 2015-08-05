@@ -4156,7 +4156,9 @@ WebGLApplication.prototype.toggleInvertShading = function() {
 
 WebGLApplication.prototype.setFollowActive = function(value) {
   this.options.follow_active = value ? true : false;
-  this.space.render();
+  // If active node following was enabled, center active node right away
+  if (value) this.look_at_active_node();
+  else this.space.render();
 };
 
 WebGLApplication.prototype.adjustStaticContent = function() {

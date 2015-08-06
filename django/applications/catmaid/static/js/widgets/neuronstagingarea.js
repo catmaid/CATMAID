@@ -9,7 +9,6 @@
   requestQueue,
   session,
   SkeletonAnnotations,
-  SkeletonMeasurementsTable,
   User,
   WindowMaker
 */
@@ -836,7 +835,7 @@ SelectionTable.prototype.measure = function() {
     this.measurements_table.append(models);
   } else {
     WindowMaker.show('skeleton-measurements-table');
-    this.measurements_table = SkeletonMeasurementsTable.prototype.getLastInstance();
+    this.measurements_table = CATMAID.SkeletonMeasurementsTable.prototype.getLastInstance();
     this.measurements_table.append(models);
   }
 };

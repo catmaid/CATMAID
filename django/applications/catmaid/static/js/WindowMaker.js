@@ -205,7 +205,7 @@ var WindowMaker = new function()
 
   var createSkeletonMeasurementsTable = function()
   {
-    var SMT = new SkeletonMeasurementsTable();
+    var SMT = new CATMAID.SkeletonMeasurementsTable();
     var win = new CMWWindow("Skeleton Measurements Table " + SMT.widgetID);
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

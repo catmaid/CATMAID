@@ -124,7 +124,9 @@
       });
 
       this.table.fnClearTable();
-      this.table.fnAddData(rows);
+      if (rows.length > 0) {
+        this.table.fnAddData(rows);
+      }
   };
 
   SkeletonMeasurementsTable.prototype.update = function() {

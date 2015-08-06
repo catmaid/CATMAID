@@ -158,6 +158,12 @@
 
   SkeletonMeasurementsTable.prototype.getSkeletonModels = SkeletonMeasurementsTable.prototype.getSelectedSkeletonModels;
 
+  SkeletonMeasurementsTable.prototype.getSkeletonModel = function( id ) {
+    if (id in this.models) {
+      return this.models[id].clone();
+    }
+  };
+
   SkeletonMeasurementsTable.prototype.highlight = function(skid) {
       // TODO
   };

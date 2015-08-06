@@ -295,7 +295,9 @@
    */
   NeuronNavigator.prototype.updateNeuronNames = function()
   {
-    this.select_node(this.current_node);
+    if (this.current_node.updateNeuronNames) {
+      this.current_node.updateNeuronNames();
+    }
   };
 
 

@@ -443,7 +443,15 @@ var NeuronNameService = (function()
         }).length;
 
         return new Promise(function(resolve, reject) {
-          if (needsNoBackend || (!skids && !Object.keys(managedSkeletons).length)) {
+          // Get all skeletons to query, either all known ones or all known ones
+          // of the given list.
+          var querySkids = (skids === undefined) ?
+            Object.keys(managedSkeletons) :
+            skids.filter(function(skid) {
+              return skid in managedSkeletons;
+            });
+
+          if (needsNoBackend || 0 === querySkids.length) {
             // If no back-end is needed, call the update method right away, without
             // any data.
             update(null, resolve, reject);
@@ -461,7 +469,7 @@ var NeuronNameService = (function()
             requestQueue.register(django_url + project.id + '/skeleton/annotationlist',
               'POST',
               {
-                skeleton_ids: Object.keys(managedSkeletons),
+                skeleton_ids: querySkids,
                 metaannotations: needsMetaAnnotations ? 1 : 0,
                 neuronnames: needsNeueonNames ? 1 : 0,
               },

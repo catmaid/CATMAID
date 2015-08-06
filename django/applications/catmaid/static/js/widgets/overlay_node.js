@@ -1290,15 +1290,26 @@
       });
 
       this.mouseover = function (d) {
+        var relation_name, title;
+        if (d.is_pre === undefined) {
+          relation_name = 'abutting';
+          title = 'Abutting';
+        } else if (d.is_pre) {
+          relation_name = 'presynaptic_to';
+          title = 'Presynaptic';
+        } else {
+          relation_name = 'postsynaptic_to';
+          title = 'Postsynaptic';
+        }
+
         requestQueue.register(
             django_url + project.id + '/connector/user-info',
             'GET',
             { treenode_id: d.treenode_id,
               connector_id: d.connector_id,
-              relation_name: d.is_pre ? 'presynaptic_to' : 'postsynaptic_to'},
+              relation_name: relation_name},
             CATMAID.jsonResponseHandler(function(data) {
-              var msg = (d.is_pre ? 'Presynaptic' : 'Postsynaptic') + ' edge: ';
-              msg += data.map(function (info) {
+              var msg = title + ' edge: ' + data.map(function (info) {
                 return 'created by ' + User.safeToString(info.user) + ' ' +
                     CATMAID.tools.contextualDateString(info.creation_time) +
                     ', last edited ' +

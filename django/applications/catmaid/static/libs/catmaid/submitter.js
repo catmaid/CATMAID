@@ -46,7 +46,7 @@ var submitterFn = function() {
     try {
       lastResult = q.fn ? q.fn(json) : json;
     } catch (e) {
-      alert(e);
+      CATMAID.error(e, e.stack);
     } finally {
       // If the result of the invocation is a promise (i.e. has a then()
       // method), wait with completion for its fulfillment.

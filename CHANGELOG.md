@@ -2,6 +2,10 @@
 
 ### Features and enhancements
 
+Miscellaneous:
+
+- When a connector is selected, basic information about it is displayed at the
+  top of the window (where otherwise the neuron name is displayed).
 
 
 ### Bug fixes

@@ -355,12 +355,13 @@
     };
 
     /**
-     * Clear the small bar next to the close button of the stack viewer window.
+     * Clear the small bar next to the close button of the stack viewer window,
+     * optionally with a replacement text.
      */
-    function clearTopbars() {
+    function clearTopbars(text) {
       project.getStackViewers().forEach(function(stackViewer) {
         var label = $('#neuronName' + stackViewer.getId());
-        label.text("");
+        label.text(text || '');
         var labelData = label.data();
         if (labelData) NeuronNameService.getInstance().unregister(labelData);
       });
@@ -370,11 +371,14 @@
      * Set the text in the small bar next to the close button of each stack
      * viewer to the name of the skeleton as it is given by the nameservice.
      */
-    function setNeuronNameInTopbars(skeletonID) {
+    function setNeuronNameInTopbars(skeletonID, prefix) {
       if (!skeletonID) {
         clearTopbars();
         return;
       }
+
+      // Make sure we can refer to at least an empty prefix
+      prefix = prefix || '';
 
       project.getStackViewers().forEach(function(stackViewer) {
         var label = $('#neuronName' + stackViewer.getId());
@@ -384,14 +388,14 @@
 
         label.data('skeleton_id', skeletonID);
         label.data('updateNeuronNames', function () {
-          label.text(NeuronNameService.getInstance().getName(this.skeleton_id));
+          label.text(prefix + NeuronNameService.getInstance().getName(this.skeleton_id));
         });
 
         var models = {};
         models[skeletonID] = {};
         NeuronNameService.getInstance().registerAll(label.data(), models)
           .then(function() {
-            label.text(NeuronNameService.getInstance().getName(skeletonID));
+            label.text(prefix + NeuronNameService.getInstance().getName(skeletonID));
           });
       });
     }
@@ -405,7 +409,23 @@
         if (SkeletonAnnotations.TYPE_NODE === node.type) {
           setNeuronNameInTopbars(node.skeleton_id);
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-          clearTopbars();
+          if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
+            // Retrieve presynaptic skeleton
+            requestQueue.register(django_url + project.id + "/connector/skeletons",
+                "POST",
+                { connector_ids: [node.id] },
+                CATMAID.jsonResponseHandler(function(json) {
+                  var presynaptic_to = json[0][1].presynaptic_to;
+                  if (presynaptic_to) {
+                    setNeuronNameInTopbars(presynaptic_to, 'Connector ' + node.id +
+                        ', presynaptic partner: ');
+                  } else {
+                    clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
+                  }
+                }));
+          } else {
+            clearTopbars('Abutting connector #' + node.id);
+          }
         }
       } else {
         clearTopbars();

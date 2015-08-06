@@ -1258,6 +1258,7 @@
       this.CATCH_SCALE = 3;
       this.CONFIDENCE_FONT_PT = 15;
       this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
+      this.scaling = 1.0;
 
       /** Function to assign to the SVG arrow. */
       this.mousedown = (function(d) {
@@ -1401,11 +1402,11 @@
       var markerSize = [5, 4];
 
       this.scale = function(baseScale, resScale, dynamicScale) {
-        var scale = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * baseScale * (dynamicScale ? 1 : resScale);
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT*scale + 'pt';
+        this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.scaling + 'pt';
         // If not in screen scaling mode, do not need to scale markers (but must reset scale).
-        scale = dynamicScale ? resScale*dynamicScale : 1;
+        var scale = dynamicScale ? resScale*dynamicScale : 1;
         this.markerDefs.forEach(function (m) {
           m.attr({
             markerWidth: markerSize[0]*scale,
@@ -1452,7 +1453,7 @@
                                            confidence,
                                            existing) {
         var text,
-        numberOffset = this.CONFIDENCE_FONT_PT * 1.5,
+        numberOffset = 0.8 * this.CONFIDENCE_FONT_PT * this.scaling,
         xdiff = parentx - x,
         ydiff = parenty - y,
         length = Math.sqrt(xdiff*xdiff + ydiff*ydiff),
@@ -1475,8 +1476,7 @@
                    y: newConfidenceY,
                    'font-size': this.confidenceFontSize,
                    'text-anchor': 'middle',
-                   stroke: 'black',
-                   'stroke-width': 0.5,
+                   'alignment-baseline': 'middle',
                    fill: fillColor})
             .text(""+confidence);
 

@@ -445,8 +445,7 @@ var NeuronNameService = (function()
         return new Promise(function(resolve, reject) {
           // Get all skeletons to query, either all known ones or all known ones
           // of the given list.
-          var querySkids = (skids === undefined) ?
-            Object.keys(managedSkeletons) :
+          var querySkids = !skids ? Object.keys(managedSkeletons) :
             skids.filter(function(skid) {
               return skid in managedSkeletons;
             });

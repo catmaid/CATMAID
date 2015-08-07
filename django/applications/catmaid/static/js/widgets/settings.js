@@ -62,7 +62,7 @@
     /**
      * Helper function to create a checkbox with label.
      */
-    var createCheckboxSetting = function(name, handler, checked)
+    var createCheckboxSetting = function(name, checked, handler)
     {
       var cb = $('<input/>').attr('type', 'checkbox');
       if (checked) {
@@ -160,34 +160,37 @@
     {
       var ds = addSettingsContainer(container, "Stack view");
 
-      ds.append(createCheckboxSetting("Invert mouse wheel", function() {
-        userprofile.inverse_mouse_wheel = this.checked;
-        userprofile.saveAll(function () {
-          CATMAID.msg('Success', 'User profile updated successfully.');
-        });
-      }, userprofile.inverse_mouse_wheel));
-
-      ds.append(createCheckboxSetting("Display reference lines", function() {
-        userprofile.display_stack_reference_lines = this.checked;
-        userprofile.saveAll(function () {
-          project.getStackViewers().forEach(function(s) {
-            s.showReferenceLines(userprofile.display_stack_reference_lines);
+      ds.append(createCheckboxSetting("Invert mouse wheel",
+        userprofile.inverse_mouse_wheel, function() {
+          userprofile.inverse_mouse_wheel = this.checked;
+          userprofile.saveAll(function () {
+            CATMAID.msg('Success', 'User profile updated successfully.');
           });
-          CATMAID.msg('Success', 'User profile updated successfully.');
-        });
-      }, userprofile.display_stack_reference_lines));
+        }));
+
+      ds.append(createCheckboxSetting("Display reference lines",
+        userprofile.display_stack_reference_lines, function() {
+          userprofile.display_stack_reference_lines = this.checked;
+          userprofile.saveAll(function () {
+            project.getStackViewers().forEach(function(s) {
+              s.showReferenceLines(userprofile.display_stack_reference_lines);
+            });
+            CATMAID.msg('Success', 'User profile updated successfully.');
+          });
+        }));
 
       // Cursor following zoom
       ds.append($('<div/>').addClass('setting').append('Choose whether zooming ' +
         'follows the position of the cursor (checked) or the center of the ' +
         'stack view (unchecked).'));
 
-      ds.append(createCheckboxSetting("Use cursor following zoom", function () {
-        userprofile.use_cursor_following_zoom = this.checked;
-        userprofile.saveAll(function () {
-          CATMAID.msg('Success', 'User profile updated successfully.');
-        });
-      }, userprofile.use_cursor_following_zoom));
+      ds.append(createCheckboxSetting("Use cursor following zoom",
+        userprofile.use_cursor_following_zoom, function () {
+          userprofile.use_cursor_following_zoom = this.checked;
+          userprofile.saveAll(function () {
+            CATMAID.msg('Success', 'User profile updated successfully.');
+          });
+        }));
 
       // WebGL layers
       ds.append($('<div/>').addClass('setting').append('Choose whether to use ' +
@@ -197,12 +200,13 @@
           'WebGL</a>. (Note: you must reload the page for this setting to take ' +
           'effect.)'));
 
-      ds.append(createCheckboxSetting("Prefer WebGL Layers", function() {
-        userprofile.prefer_webgl_layers = this.checked;
-        userprofile.saveAll(function () {
-          CATMAID.msg('Success', 'User profile updated successfully.');
-        });
-      }, userprofile.prefer_webgl_layers));
+      ds.append(createCheckboxSetting("Prefer WebGL Layers",
+        userprofile.prefer_webgl_layers, function() {
+          userprofile.prefer_webgl_layers = this.checked;
+          userprofile.saveAll(function () {
+            CATMAID.msg('Success', 'User profile updated successfully.');
+          });
+        }));
     };
 
     /*
@@ -227,7 +231,8 @@
         };
       };
       // General grid visibility
-      $(ds).append(createCheckboxSetting("Show grid on open stacks", function() {
+      $(ds).append(createCheckboxSetting("Show grid on open stacks", false,
+          function() {
             // Add a grid layer to all open stacks
             if (this.checked) {
               // Get current settings
@@ -285,9 +290,10 @@
           "You can add different representations to a fallback list, in case " +
           "a desired representation isn't available for a neuron."));
 
-      ds.append(createCheckboxSetting("Append Skeleton ID", function() {
-        NeuronNameService.getInstance().setAppendSkeletonId(this.checked);
-      }, NeuronNameService.getInstance().getAppendSkeletonId()));
+      ds.append(createCheckboxSetting("Append Skeleton ID",
+        NeuronNameService.getInstance().getAppendSkeletonId(), function() {
+          NeuronNameService.getInstance().setAppendSkeletonId(this.checked);
+       }));
       // Get all available options
       var namingOptions = NeuronNameService.getInstance().getOptions();
       // Add naming option select box
@@ -423,7 +429,7 @@
       });
 
       var skpVisible = createCheckboxSetting("Display projections",
-          updateSkeletonProjectionDisplay, allHaveLayers);
+          allHaveLayers, updateSkeletonProjectionDisplay);
       dsSkeletonProjection.append(skpVisible);
 
       var skpShading = $('<select/>');
@@ -449,11 +455,11 @@
       var skpUpstreamColor = createInputSetting("Upstream color",
           CATMAID.SkeletonProjectionLayer.options.upstreamColor);
       var skpShowEdges = createCheckboxSetting("Show edges",
-          updateSkeletonProjectionDisplay,
-          CATMAID.SkeletonProjectionLayer.options.showEdges);
+          CATMAID.SkeletonProjectionLayer.options.showEdges,
+          updateSkeletonProjectionDisplay);
       var skpShowNodes = createCheckboxSetting("Show nodes",
-          updateSkeletonProjectionDisplay,
-          CATMAID.SkeletonProjectionLayer.options.showNodes);
+          CATMAID.SkeletonProjectionLayer.options.showNodes,
+          updateSkeletonProjectionDisplay);
       var skpMinStrahler = createInputSetting("Min. Strahler",
           CATMAID.SkeletonProjectionLayer.options.strahlerShadingMin);
       var skpMaxStrahler = createInputSetting("Max. Strahler",
@@ -613,16 +619,19 @@
 
       // Tracing settings
       ds = addSettingsContainer(container, "Tracing");
-      ds.append(createCheckboxSetting("Edit radius after node creation", function() {
-        SkeletonAnnotations.setRadiusAfterNodeCreation = this.checked;
-      }, SkeletonAnnotations.setRadiusAfterNodeCreation));
-      ds.append(createCheckboxSetting("Create abutting connectors", function() {
-        if (this.checked) {
-          SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR;
-        } else {
-          SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
-        }
-      }, SkeletonAnnotations.newConnectorType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR));
+      ds.append(createCheckboxSetting("Edit radius after node creation",
+        SkeletonAnnotations.setRadiusAfterNodeCreation, function() {
+          SkeletonAnnotations.setRadiusAfterNodeCreation = this.checked;
+        }));
+      ds.append(createCheckboxSetting("Create abutting connectors",
+        SkeletonAnnotations.newConnectorType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR,
+        function() {
+          if (this.checked) {
+            SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR;
+          } else {
+            SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
+          }
+        }));
       ds.append($('<div/>').addClass('setting').text("Every occurrence of '{nX}' in the default " +
           "name with X being a number is replaced by a number that is automatically incremented " +
           "(starting from X) to the smallest unique value in the project."));

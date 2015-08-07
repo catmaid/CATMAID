@@ -187,7 +187,9 @@
         }));
 
       ds.append(createCheckboxSetting("Display reference lines",
-        userprofile.display_stack_reference_lines, null, function() {
+        userprofile.display_stack_reference_lines, "Show a faint horizontal " +
+        "and vertical line that meet at the current view's center.",
+        function() {
           userprofile.display_stack_reference_lines = this.checked;
           userprofile.saveAll(function () {
             project.getStackViewers().forEach(function(s) {
@@ -199,9 +201,9 @@
 
       // Cursor following zoom
       ds.append(createCheckboxSetting("Use cursor following zoom",
-        userprofile.use_cursor_following_zoom, null,
-        'Choose whether zooming follows the position of the cursor (checked) ' +
-        'or the center of the stack view (unchecked).',
+        userprofile.use_cursor_following_zoom, "Choose whether zooming " +
+        "follows the position of the cursor (checked) or the center of the " +
+        "stack view (unchecked).",
         function () {
           userprofile.use_cursor_following_zoom = this.checked;
           userprofile.saveAll(function () {
@@ -627,12 +629,15 @@
       // Tracing settings
       ds = addSettingsContainer(container, "Tracing");
       ds.append(createCheckboxSetting("Edit radius after node creation",
-        SkeletonAnnotations.setRadiusAfterNodeCreation, null, function() {
+        SkeletonAnnotations.setRadiusAfterNodeCreation, "The visual radius " +
+        "editing tool will be shown right after a node has been created.",
+        function() {
           SkeletonAnnotations.setRadiusAfterNodeCreation = this.checked;
         }));
       ds.append(createCheckboxSetting("Create abutting connectors",
         SkeletonAnnotations.newConnectorType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR,
-        null, function() {
+        "Instead of creating synaptic connectors, abutting ones will be created",
+        function() {
           if (this.checked) {
             SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR;
           } else {

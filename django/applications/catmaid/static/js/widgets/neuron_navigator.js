@@ -29,9 +29,11 @@
     this.current_node = null;
     // Map registered neurons to the number of nodes referencing them
     this.registered_neurons = {};
-    // Listen to skeleton change events
+    // Listen to skeleton and annotation change events
     CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);
+    CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+      this.handleChangedAnnotations, this);
   };
 
   NeuronNavigator.prototype = {};
@@ -54,6 +56,8 @@
     // Unregister from event stream
     CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
         this.handleChangedSkeleton, this);
+    CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+        this.handleChangedAnnotations, this);
   };
 
   NeuronNavigator.prototype.append = function() {};
@@ -304,6 +308,16 @@
   {
     if (this.current_node.handleChangedSkeleton) {
       this.current_node.handleChangedSkeleton(skeleton_id);
+    }
+  };
+
+  /**
+   * Delegate annotation change event to the current node.
+   */
+  NeuronNavigator.prototype.handleChangedAnnotations = function(annotated_enteties)
+  {
+    if (this.current_node.handleChangedAnnotations) {
+      this.current_node.handleChangedAnnotations(annotated_enteties);
     }
   };
 
@@ -1598,6 +1612,16 @@
   NeuronNavigator.NeuronNode.prototype.handleChangedSkeleton = function(skeleton_id)
   {
     if (-1 !== this.skeleton_ids.indexOf(skeleton_id)) {
+      this.navigator.select_node(this);
+    }
+  };
+
+  /**
+   * Update this node if the neuron's annotation changed.
+   */
+  NeuronNavigator.NeuronNode.prototype.handleChangedAnnotations = function(annotated_entities)
+  {
+    if (-1 !== annotated_entities.indexOf(this.neuron_id)) {
       this.navigator.select_node(this);
     }
   };

@@ -157,7 +157,16 @@
                       err).show();
                 }
 
-                CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED);
+                // Collect updated entities
+                var changedEntities = e.annotations.reduce(function(ce, a) {
+                  a.entities.forEach(function(e) {
+                    if (-1 === this.indexOf(e)) this.push(e);
+                  }, ce);
+                  return ce;
+                }, []);
+
+                CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+                    changedEntities);
 
                 // Let the neuron name service update itself and execute the
                 // callbackback after this is done
@@ -218,7 +227,14 @@
               // Let the neuron name service update itself
               NeuronNameService.getInstance().refresh();
 
-              CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED);
+              // Use a copy of the entity id list, because we we will use this array also
+              // as a callback parameter. No deep clone required, we expect only numbers
+              // (or strungs).
+              var changed_entities = entity_ids.slice(0);
+
+              // Use a copy of th
+              CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+                  entity_ids);
               if (callback) callback(e.message);
             }
           }

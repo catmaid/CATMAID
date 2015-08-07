@@ -886,3 +886,17 @@ table.skeleton-table .sorting_desc_disabled::after {
 div.selection-table.windowContent {
     margin-top: 1em;
 }
+
+.help {
+    color: #999;
+    margin-left: 15em;
+}
+
+.checkbox-row .help {
+    margin-left: 0;
+}
+
+.setting input,
+.setting select {
+    margin-left: 0;
+}

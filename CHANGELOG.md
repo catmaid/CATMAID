@@ -12,6 +12,8 @@ Miscellaneous:
 
 - Nodes are now correctly scaled in skeleton projection layers.
 
+- Neuron navigator now updates if a skeleton is changed (e.g. due to a merge).
+
 
 ## 2015.7.31
 

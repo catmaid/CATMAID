@@ -29,6 +29,9 @@
     this.current_node = null;
     // Map registered neurons to the number of nodes referencing them
     this.registered_neurons = {};
+    // Listen to skeleton change events
+    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+      this.handleChangedSkeleton, this);
   };
 
   NeuronNavigator.prototype = {};
@@ -47,6 +50,10 @@
     this.unregisterInstance();
     this.unregisterSource();
     NeuronNameService.getInstance().unregister(this);
+
+    // Unregister from event stream
+    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+        this.handleChangedSkeleton, this);
   };
 
   NeuronNavigator.prototype.append = function() {};
@@ -291,7 +298,17 @@
   };
 
   /**
-   * Will refresh current node if notified by the neuron name service.
+   * Delegate neuron change event to the current node.
+   */
+  NeuronNavigator.prototype.handleChangedSkeleton = function(skeleton_id)
+  {
+    if (this.current_node.handleChangedSkeleton) {
+      this.current_node.handleChangedSkeleton(skeleton_id);
+    }
+  };
+
+  /**
+   * Delegate neuron name change handling to the current node.
    */
   NeuronNavigator.prototype.updateNeuronNames = function()
   {
@@ -1576,6 +1593,13 @@
             this.navigator.unregister(this, skid);
           }).bind(this));
       }
+  };
+
+  NeuronNavigator.NeuronNode.prototype.handleChangedSkeleton = function(skeleton_id)
+  {
+    if (-1 !== this.skeleton_ids.indexOf(skeleton_id)) {
+      this.navigator.select_node(this);
+    }
   };
 
   NeuronNavigator.NeuronNode.prototype.create_ann_post_process_fn = function(

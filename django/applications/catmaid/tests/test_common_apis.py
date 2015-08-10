@@ -2256,6 +2256,44 @@ class ViewPageTests(TestCase):
         for x in expected:
             self.assertTreenodeHasRadius(*x)
 
+    def test_remove_annotations(self):
+        self.fake_authentication()
+        skeleton_id = 2364
+        neuron_id = 2365
+
+        # Annotate skeleton with three test annotations.
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'A',
+             'annotations[1]': 'B',
+             'annotations[2]': 'C',
+             'skeleton_ids[0]': skeleton_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
+        for a in ('A', 'B', 'C'):
+            self.assertTrue(a in annotations)
+
+        # Remove annotations A and C and expect B to still be there
+        response = self.client.post(
+            '/%d/annotations/remove' % (self.test_project_id,),
+            {'entity_ids[0]': neuron_id,
+             'annotation_ids[0]': annotations['A'],
+             'annotation_ids[1]': annotations['C']})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+
+        response = self.client.post(
+            '/%d/annotations/skeletons/list' % (self.test_project_id,),
+            {'skids[0]': skeleton_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+
+        linked_annotations = parsed_response['skeletons'][str(skeleton_id)]
+        self.assertFalse(annotations['A'] in linked_annotations)
+        self.assertFalse(annotations['C'] in linked_annotations)
+
+
     def test_read_message_error(self):
         self.fake_authentication()
         message_id = 5050

@@ -2,6 +2,14 @@
 
 ### Features and enhancements
 
+Neuron Navigator:
+
+- It is now possible to remove multiple annotations at once from a neuron. A new
+  column is added to annotation tables, each annotation row has now a checkbox
+  in its first column. A click on the de-annotate link in this column's header
+  or footer will remove all selected annotations from the current neuron.
+
+
 Miscellaneous:
 
 - When a connector is selected, basic information about it is displayed at the

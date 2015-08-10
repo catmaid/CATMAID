@@ -242,6 +242,48 @@
   };
 
   /**
+   * Removes multiple annotation from a list of entities. It is not dependent on
+   * any context, but asks the user for confirmation. A promise is returned.
+   */
+  CATMAID.remove_annotations_from_entities = function(entity_ids,
+      annotation_ids, callback) {
+    // Complain if the user has no annotation permissions for the current project
+    if (!checkPermission('can_annotate')) {
+      CATMAID.error("You don't have have permission to remove annotations");
+      return;
+    }
+
+    var annotations = annotation_ids.map(function(annotation_id) {
+      return CATMAID.annotations.getName(annotation_id);
+    });
+
+    if (!confirm('Are you sure you want to remove annotations "' +
+          annotations.join(', ') + '"?')) {
+      return;
+    }
+
+    requestQueue.register(django_url + project.id + '/annotations/remove',
+        'POST', {
+          entity_ids: entity_ids,
+          annotation_ids: annotation_ids
+        },
+        CATMAID.jsonResponseHandler(function(json) {
+          // Let the neuron name service update itself
+          NeuronNameService.getInstance().refresh();
+
+          // Use a copy of the entity id list, because we we will use this array also
+          // as a callback parameter. No deep clone required, we expect only numbers
+          // (or strungs).
+          var changed_entities = entity_ids.slice(0);
+
+          // Use a copy of th
+          CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+              entity_ids);
+          if (callback) callback(json);
+        }));
+  };
+
+  /**
    * A neuron annotation namespace method to retrieve annotations from the backend
    * for the neuron modeled by a particular skeleton. If the call was successfull,
    * the passed handler is called with the annotation set as parameter.

@@ -653,6 +653,13 @@
           function () {
             SkeletonAnnotations.defaultNewNeuronName = $(this).val();
           }));
+    ds.append(createCheckboxSetting("Merge annotations of single-node skeletons without asking",
+      SkeletonAnnotations.quickSingleNodeSkeletonMerge, "If true, no merge dialog " +
+      "will be shown for single-node skeletons with annotations. Instead, all " +
+      "annotations will be merged without asking.",
+      function() {
+        SkeletonAnnotations.quickSingleNodeSkeletonMerge = this.checked;
+      }));
     };
 
 

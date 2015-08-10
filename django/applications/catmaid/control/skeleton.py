@@ -832,7 +832,9 @@ def join_skeleton(request, project_id=None):
     try:
         from_treenode_id = int(request.POST.get('from_id', None))
         to_treenode_id = int(request.POST.get('to_id', None))
-        annotation_set = json.loads(request.POST.get('annotation_set'))
+        annotation_set = request.POST.get('annotation_set', None)
+        if annotation_set:
+            annotation_set = json.loads(annotation_set)
 
         _join_skeleton(request.user, from_treenode_id, to_treenode_id,
                 project_id, annotation_set)
@@ -857,7 +859,8 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
     linked to the skeleton of to_treenode. It is expected that <annotation_map>
     is a dictionary, mapping an annotation to an annotator ID. Also, all
     reviews of the skeleton that changes ID are changed to refer to the new
-    skeleton ID.
+    skeleton ID. If annotation_map is None, the resulting skeleton will have
+    all annotations available on both skeletons combined.
     """
     if from_treenode_id is None or to_treenode_id is None:
         raise Exception('Missing arguments to _join_skeleton')
@@ -883,21 +886,42 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         to_skid = to_treenode.skeleton_id
         to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
 
+        if from_skid == to_skid:
+            raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
+
         # Make sure the user has permissions to edit both neurons
         can_edit_class_instance_or_fail(
                 user, from_neuron['neuronid'], 'neuron')
         can_edit_class_instance_or_fail(
                 user, to_neuron['neuronid'], 'neuron')
 
-        # Check if annotations are valid
-        if not check_annotations_on_join(project_id, user,
-                from_neuron['neuronid'], to_neuron['neuronid'],
-                frozenset(annotation_map.keys())):
-            raise Exception("Annotation distribution is not valid for joining. " \
-              "Annotations for which you don't have permissions have to be kept!")
-
-        if from_skid == to_skid:
-            raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
+        # Check if annotations are valid, if there is a particular selection
+        if annotation_map is None:
+            # Get all current annotations of both skeletons and merge them for
+            # a complete result set.
+            from_annotation_info = get_annotation_info(project_id, (from_skid,),
+                    annotations=True, metaannotations=False, neuronnames=False)
+            to_annotation_info = get_annotation_info(project_id, (to_skid,),
+                    annotations=True, metaannotations=False, neuronnames=False)
+            # Create a new annotation map with the expected structure of
+            # 'annotationname' vs. 'annotator id'.
+            def merge_into_annotation_map(source, skid, target):
+                skeletons = source['skeletons']
+                if skeletons and skid in skeletons:
+                    for a in skeletons[skid]['annotations']:
+                        annotation = source['annotations'][a['id']]
+                        target[annotation] = a['uid']
+            # Merge from after to, so that it overrides entries from the merged
+            # in skeleton.
+            annotation_map = dict()
+            merge_into_annotation_map(to_annotation_info, to_skid, annotation_map)
+            merge_into_annotation_map(from_annotation_info, from_skid, annotation_map)
+        else:
+            if not check_annotations_on_join(project_id, user,
+                    from_neuron['neuronid'], to_neuron['neuronid'],
+                    frozenset(annotation_map.keys())):
+                raise Exception("Annotation distribution is not valid for joining. " \
+                "Annotations for which you don't have permissions have to be kept!")
 
         # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id
@@ -1101,6 +1125,13 @@ def annotation_list(request, project_id=None):
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
 
+    response = get_annotation_info(project_id, skeleton_ids, annotations,
+                                   metaannotations, neuronnames)
+
+    return HttpResponse(json.dumps(response), content_type="text/json")
+
+def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
+                        neuronnames):
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
@@ -1203,7 +1234,7 @@ def annotation_list(request, project_id=None):
             })
         response['metaannotations'] = metaannotations
 
-    return HttpResponse(json.dumps(response), content_type="text/json")
+    return response
 
 @requires_user_role(UserRole.Browse)
 def list_skeletons(request, project_id):

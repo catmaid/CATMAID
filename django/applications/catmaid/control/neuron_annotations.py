@@ -467,6 +467,38 @@ def annotate_entities(request, project_id = None):
     return HttpResponse(json.dumps(result), content_type='text/json')
 
 @requires_user_role(UserRole.Annotate)
+def remove_annotations(request, project_id=None):
+    """ Removes an annotation from one or more entities.
+    """
+    annotation_ids = [int(v) for k,v in request.POST.iteritems()
+            if k.startswith('annotation_ids[')]
+    entity_ids = [int(v) for k,v in request.POST.iteritems()
+            if k.startswith('entity_ids[')]
+
+    if not annotation_ids:
+        raise ValueError("No annotation IDs provided")
+
+    if not entity_ids:
+        raise ValueError("No entity IDs provided")
+
+    # Remove individual annotations
+    deleted_annotations = []
+    num_left_annotations = {}
+    for annotation_id in annotation_ids:
+        cicis_to_delete, missed_cicis, deleted, num_left = _remove_annotation(
+                request.user, project_id, entity_ids, annotation_id)
+        # Keep track of results
+        num_left_annotations[str(annotation_id)] = num_left
+        for cici in cicis_to_delete:
+            deleted_annotations.append(cici.id)
+
+    return HttpResponse(json.dumps({
+        'deleted_annotations': deleted_annotations,
+        'left_uses': num_left_annotations
+    }), content_type='text/json')
+
+
+@requires_user_role(UserRole.Annotate)
 def remove_annotation(request, project_id=None, annotation_id=None):
     """ Removes an annotation from one or more entities.
     """

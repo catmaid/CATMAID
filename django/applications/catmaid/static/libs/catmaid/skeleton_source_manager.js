@@ -115,6 +115,7 @@
 
   SkeletonSourceManager.prototype.createPushSelect = function(source, suffix) {
     var select = document.createElement('select');
+    select.setAttribute('class', this.createSelectClass());
     select.setAttribute('id', this.createSelectID(source) + '-push-' + suffix);
     select.options.add(new Option('None', 'None'));
     var name = source.getName();

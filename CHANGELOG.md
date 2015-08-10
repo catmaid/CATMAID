@@ -22,6 +22,10 @@ Miscellaneous:
 
 - Neuron navigator now updates if a skeleton is changed (e.g. due to a merge).
 
+- 'Sync to' selections to push changes from one widget to another (e.g. 3D
+  viewer controlled by selection table) are now updated correctly, if a selected
+  target is closed.
+
 
 ## 2015.7.31
 

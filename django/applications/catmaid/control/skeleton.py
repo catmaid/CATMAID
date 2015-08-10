@@ -1101,6 +1101,13 @@ def annotation_list(request, project_id=None):
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
 
+    response = get_annotation_info(project_id, skeleton_ids, annotations,
+                                   metaannotations, neuronnames)
+
+    return HttpResponse(json.dumps(response), content_type="text/json")
+
+def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
+                        neuronnames):
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
@@ -1203,7 +1210,7 @@ def annotation_list(request, project_id=None):
             })
         response['metaannotations'] = metaannotations
 
-    return HttpResponse(json.dumps(response), content_type="text/json")
+    return response
 
 @requires_user_role(UserRole.Browse)
 def list_skeletons(request, project_id):

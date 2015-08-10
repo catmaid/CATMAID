@@ -508,9 +508,12 @@ def _remove_annotation(user, project_id, entity_ids, annotation_id):
     left.
     """
     p = get_object_or_404(Project, pk=project_id)
+    relations = dict(Relation.objects.filter(
+        project_id=project_id).values_list('relation_name', 'id'))
 
     # Get CICI instance representing the link
     cici_n_a = ClassInstanceClassInstance.objects.filter(project=p,
+            relation_id=relations['annotated_with'],
             class_instance_a__id__in=entity_ids,
             class_instance_b__id=annotation_id)
     # Make sure the current user has permissions to remove the annotation.

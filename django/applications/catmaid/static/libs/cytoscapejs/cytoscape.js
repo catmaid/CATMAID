@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.8.
+ * This file is part of cytoscape.js 2.2.14.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -77,7 +77,7 @@ var cytoscape;
 // type testing utility functions
 
 ;(function($$, window){ 'use strict';
-  
+
   $$.is = {
     string: function(obj){
       return obj != null && typeof obj == typeof '';
@@ -88,7 +88,7 @@ var cytoscape;
     },
     
     array: function(obj){
-      return obj != null && obj instanceof Array;
+      return Array.isArray ? Array.isArray(obj) : obj != null && obj instanceof Array;
     },
     
     plainObject: function(obj){
@@ -176,7 +176,7 @@ var cytoscape;
   
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$){ 'use strict';
+;(function($$, window){ 'use strict';
   
   // utility functions only for internal use
 
@@ -909,14 +909,16 @@ var cytoscape;
   $$.util.regex.hex3 = "\\#[0-9a-fA-F]{3}";
   $$.util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
 
-  var requestAnimationFrame = typeof window === 'undefined' ? function(fn){ if(fn){ fn(); } } : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+  var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
         window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
 
+  raf = raf || function(fn){ if(fn){ setTimeout(fn, 1000/60); } };
+
   $$.util.requestAnimationFrame = function(fn){
-    requestAnimationFrame(fn);
+    raf( fn );
   };
 
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window  );
 
 ;(function($$){ 'use strict';
   
@@ -2511,123 +2513,6 @@ var cytoscape;
   
 })( cytoscape );
 
-// type testing utility functions
-
-;(function($$){ 'use strict';
-  
-  // list of ids with other metadata assoc'd with it
-  $$.instances = [];
-  $$.instanceCounter = 0;
-  $$.lastInstanceTime = undefined;
-
-  $$.registerInstance = function( instance, domElement ){
-    var cy;
-
-    if( $$.is.core(instance) ){
-      cy = instance;
-    } else if( $$.is.domElement(instance) ){
-      domElement = instance;
-    }
-
-    // if we have an old reg that is empty (no cy), then 
-    var oldReg = $$.getRegistrationForInstance(instance, domElement);
-    if( oldReg ){
-      if( !oldReg.cy ){
-        oldReg.cy = instance;
-        oldReg.domElement = domElement;
-      } else {
-        $$.util.error('Tried to register on a pre-existing registration');
-      }
-
-      return oldReg;
-
-    // otherwise, just make a new registration
-    } else {
-      var time = +new Date();
-      var suffix;
-
-      // add a suffix in case instances collide on the same time
-      if( !$$.lastInstanceTime || $$.lastInstanceTime === time ){
-        $$.instanceCounter = 0;
-      } else {
-        ++$$.instanceCounter;
-      }
-      $$.lastInstanceTime = time;
-      suffix = $$.instanceCounter;
-
-      var id = 'cy-' + time + '-' + suffix;
-
-      // create the registration object
-      var registration = {
-        id: id,
-        cy: cy,
-        domElement: domElement,
-        readies: [] // list of bound ready functions before calling init
-      };
-
-      // put the registration object in the pool
-      $$.instances.push( registration );
-      $$.instances[ id ] = registration;
-
-      return registration;
-    }
-  };
-
-  $$.removeRegistrationForInstance = function(instance, domElement){
-    var cy;
-
-    if( $$.is.core(instance) ){
-      cy = instance;
-    } else if( $$.is.domElement(instance) ){
-      domElement = instance;
-    }
-
-    if( $$.is.core(cy) ){
-      var id = cy._private.instanceId;
-      delete $$.instances[ id ];
-      $$.instances.splice(id, 1);
-
-    } else if( $$.is.domElement(domElement) ){
-      for( var i = 0; i < $$.instances.length; i++ ){
-        var reg = $$.instances[i];
-
-        if( reg.domElement === domElement ){
-          delete $$.instances[ reg.id ];
-          $$.instances.splice(i, 1);
-          i--;
-        }
-      }
-    }
-  };
-
-  $$.getRegistrationForInstance = function( instance, domElement ){
-    var cy;
-
-    if( $$.is.core(instance) ){
-      if( instance.registered() ){ // only want it if it's registered b/c if not it has no reg'd id
-        cy = instance;
-      }
-    } else if( $$.is.domElement(instance) ){
-      domElement = instance;
-    }
-
-    if( $$.is.core(cy) ){
-      var id = cy._private.instanceId;
-      return $$.instances[ id ];
-
-    } else if( $$.is.domElement(domElement) ){
-      for( var i = $$.instances.length - 1; i >= 0; i-- ){ // look backwards, since most recent is the one we want
-        var reg = $$.instances[i];
-
-        if( reg.domElement === domElement ){
-          return reg;
-        }
-      }
-    }
-  };
-  
-})( cytoscape );
-
 ;(function($$){ 'use strict';
   
   // registered extensions to cytoscape, indexed by name
@@ -2710,6 +2595,12 @@ var cytoscape;
   
   if( !$ ){ return; } // no jquery => don't need this
 
+  var cyReg = function( $ele ){
+    var d = $ele[0]._cyreg = $ele[0]._cyreg || {};
+
+    return d;
+  };
+
   // allow calls on a jQuery selector by proxying calls to $.cytoscape
   // e.g. $("#foo").cytoscape(options) => $.cytoscape(options) on #foo
   $.fn.cytoscape = function(opts){
@@ -2717,30 +2608,23 @@ var cytoscape;
 
     // get object
     if( opts === 'get' ){
-      var reg = $$.getRegistrationForInstance( $this[0] );
-      return reg.cy;
+      return cyReg( $this ).cy;
     }
     
     // bind to ready
     else if( $$.is.fn(opts) ){
-      //debugger;
 
       var ready = opts;
-      var domEle = $this[0];
-      var reg = $$.getRegistrationForInstance( domEle );
-
-      if( !reg ){
-        reg = $$.registerInstance( domEle );
-      }
+      var cy = cyReg( $this ).cy;
       
-      if( reg && reg.cy && reg.cy.ready() ){
-        // already ready so just trigger now
-        reg.cy.trigger('ready', [], ready);
+      if( cy && cy.ready() ){ // already ready so just trigger now
+        cy.trigger('ready', [], ready);
 
-      } else {
-        // not yet ready, so add to readies list
-        
-        reg.readies.push( ready );
+      } else { // not yet ready, so add to readies list
+        var data = cyReg( $this );
+        var readies = data.readies = data.readies || [];
+
+        readies.push( ready );
       } 
       
     }
@@ -2755,37 +2639,6 @@ var cytoscape;
         cytoscape(options);
       });
     }
-    
-    // proxy a function call
-    else {
-      var domEle = $this[0];
-      var rets = [];
-      var args = [];
-      for(var i = 1; i < arguments.length; i++){
-        args[i - 1] = arguments[i];
-      }
-      
-      $this.each(function(){
-        var reg = $$.getRegistrationForInstance( domEle );
-        var cy = reg.cy;
-        var fnName = opts;
-        
-        if( cy && $$.is.fn( cy[fnName] ) ){
-          var ret = cy[fnName].apply(cy, args);
-          rets.push(ret);
-        }
-      });
-      
-      // if only one instance, don't need to return array
-      if( rets.length === 1 ){
-        rets = rets[0];
-      } else if( rets.length === 0 ){
-        rets = $(this);
-      }
-      
-      return rets;
-    }
-
   };
   
   // allow access to the global cytoscape object under jquery for legacy reasons
@@ -5085,9 +4938,9 @@ var cytoscape;
             // console.log(i + ' x MISS: rolling back context');
             this.rollBackContext( ele, context );
             removedCxts.push( context );
-          }
 
-          delete _p.styleCxts[i];
+            delete _p.styleCxts[i];
+          }
         }
       } // for context
 
@@ -5273,7 +5126,7 @@ var cytoscape;
           bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
           name: prop.name,
           value: clr,
-          strValue: 'rgba(' + clr[0] + ", " + clr[1] + ", " + clr[2] + ", " + clr[3]
+          strValue: 'rgb(' + clr[0] + ', ' + clr[1] + ', ' + clr[2] + ')'
         };
       
       } else if( type.number ){
@@ -6025,16 +5878,20 @@ var cytoscape;
     opts = $$.util.extend({}, defaults, opts);
 
     var container = opts.container;
-    var reg = $$.getRegistrationForInstance(cy, container);
+    var reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
+    reg = reg || {};
+
     if( reg && reg.cy ){ 
-      reg.domElement.innerHTML = '';
+      if( container ){ container.innerHTML = ''; }
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
-      $$.removeRegistrationForInstance(reg.cy, reg.domElement);
-    } 
+      reg = {}; // old instance => replace reg completely
+    }
 
-    reg = $$.registerInstance( cy, container );
-    var readies = reg.readies;
+    var readies = reg.readies = reg.readies || [];
+    
+    if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
+    reg.cy = cy;
 
     var options = opts;
     options.layout = $$.util.extend( { name: window && container ? 'grid' : 'null' }, options.layout );
@@ -6050,7 +5907,6 @@ var cytoscape;
     var _p = this._private = {
       ready: false, // whether ready has been triggered
       initrender: false, // has initrender has been triggered
-      instanceId: reg.id, // the registered instance id
       options: options, // cached options
       elements: [], // array of elements
       id2index: {}, // element id => index in elements array
@@ -6143,7 +5999,7 @@ var cytoscape;
         var fn = readies[i];
         cy.bind('ready', fn);
       }
-      reg.readies = []; // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
+      if( reg ){ reg.readies = []; } // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
       
       cy.trigger('ready');
     }, options.done);
@@ -6161,16 +6017,16 @@ var cytoscape;
       return this._private.initrender;
     },
 
-    registered: function(){
-      if( this._private && this._private.instanceId != null ){
-        return true;
-      } else {
-        return false;
-      }
-    },
+    destroy: function(){
+      this.notify({ type: 'destroy' }); // destroy the renderer
 
-    registeredId: function(){
-      return this._private.instanceId;
+      var domEle = this.container();
+      var parEle = domEle.parentNode;
+      if( parEle ){
+        parEle.removeChild( domEle );
+      }
+
+      return this;
     },
 
     getElementById: function( id ){
@@ -7313,6 +7169,61 @@ var cytoscape;
 
       return this; // chaining
     },
+
+    viewport: function( opts ){ 
+      var _p = this._private;
+      var zoomDefd = true;
+      var panDefd = true;
+      var events = []; // to trigger
+      var zoomFailed = false;
+      var panFailed = false;
+
+      if( !opts ){ return this; }
+      if( !$$.is.number(opts.zoom) ){ zoomDefd = false; }
+      if( !$$.is.plainObject(opts.pan) ){ panDefd = false; }
+      if( !zoomDefd && !panDefd ){ return this; }
+
+      if( zoomDefd ){
+        var z = opts.zoom;
+
+        if( z < _p.minZoom || z > _p.maxZoom || !_p.zoomingEnabled ){
+          zoomFailed = true;
+
+        } else {
+          _p.zoom = z;
+
+          events.push('zoom');
+        }
+      }
+
+      if( panDefd && !zoomFailed && _p.panningEnabled ){
+        var p = opts.pan;
+
+        if( $$.is.number(p.x) ){
+          _p.pan.x = p.x;
+          panFailed = false;
+        }
+
+        if( $$.is.number(p.y) ){
+          _p.pan.y = p.y;
+          panFailed = false;
+        }
+
+        if( !panFailed ){
+          events.push('pan');
+        }
+      }
+
+      if( events.length > 0 ){
+        this.trigger( events.join(' ') );
+      }
+
+      this.notify({
+        type: 'viewport'
+      });
+
+      return this; // chaining
+    },
     
     // get the bounding box of the elements (in raw model position)
     boundingBox: function( selector ){
@@ -7334,9 +7245,9 @@ var cytoscape;
 
       if( $$.is.string(elements) ){
         var selector = elements;
-        elements = cy.elements( selector );
+        elements = this.elements( selector );
       } else if( !$$.is.elementOrCollection(elements) ){
-        elements = cy.elements();
+        elements = this.elements();
       }
 
       var bb = elements.boundingBox();
@@ -9653,82 +9564,71 @@ var cytoscape;
 
     sortByZIndex: function(){
       return this.sort( $$.Collection.zIndexSort );
+    },
+
+    zDepth: function(){
+      var ele = this[0];
+      if( !ele ){ return undefined; }
+
+      var _p = ele._private;
+      var group = _p.group;
+
+      if( group === 'nodes' ){
+        return _p.data.parent ? ele.parents().size() : 0;
+      } else {
+        var src = _p.source;
+        var tgt = _p.target;
+        var srcDepth = src._private.data.parent ? src.parents().size() : 0;
+        var tgtDepth = tgt._private.data.parent ? tgt.parents().size() : 0;
+
+        return Math.max( srcDepth - 1, tgtDepth - 1, 0 ) + 0.5; // depth of deepest parent and just a bit above
+      }
     }
   });
 
-
-  $$.Collection.zIndexSort = function(a, b) {
-    var elementDepth = function(ele) {
-      if (ele._private.group === 'nodes')
-      {
-        return ele._private.data.parent ? ele.parents().size() : 0;
-      }
-      else if (ele._private.group === 'edges')
-      {
-        var source = ele._private.source;
-        var target = ele._private.target;
-
-        var sourceDepth = source._private.data.parent ? source.parents().size() : 0;
-        var targetDepth = target._private.data.parent ? target.parents().size() : 0;
-
-        return Math.max(sourceDepth, targetDepth);
-      }
-      else
-      {
-        return 0;
-      }
-    };
-
-    var result = a._private.style['z-index'].value - b._private.style['z-index'].value;
-
+  $$.Collection.zIndexSort = function(a, b){
+    var cy = a.cy();
+    var a_p = a._private;
+    var b_p = b._private;
+    var zDiff = a_p.style['z-index'].value - b_p.style['z-index'].value;
     var depthA = 0;
     var depthB = 0;
+    var hasCompoundNodes = cy.hasCompoundNodes();
+    var aIsNode = a_p.group === 'nodes';
+    var aIsEdge = a_p.group === 'edges';
+    var bIsNode = b_p.group === 'nodes';
+    var bIsEdge = b_p.group === 'edges';
 
     // no need to calculate element depth if there is no compound node
-    if ( a.cy().hasCompoundNodes() )
-    {
-      depthA = elementDepth(a);
-      depthB = elementDepth(b);
+    if( hasCompoundNodes ){
+      depthA = a.zDepth();
+      depthB = b.zDepth();
     }
 
-    // if both elements has same depth,
-    // then edges should be drawn first
-    if (depthA - depthB === 0)
-    {
-      // 'a' is a node, it should be drawn later
-      if (a._private.group === 'nodes'
-        && b._private.group === 'edges')
-      {
-        return 1;
-      }
-      
-      // 'a' is an edge, it should be drawn first
-      else if (a._private.group === 'edges'
-        && b._private.group === 'nodes')
-      {
-        return -1;
-      }
+    var depthDiff = depthA - depthB;
+    var sameDepth = depthDiff === 0;
 
-      // both nodes or both edges
-      else
-      {
-        if( result === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
-          return a._private.index - b._private.index;
+    if( sameDepth ){
+      
+      if( aIsNode && bIsEdge ){
+        return 1; // 'a' is a node, it should be drawn later       
+      
+      } else if( aIsEdge && bIsNode ){
+        return -1; // 'a' is an edge, it should be drawn first
+
+      } else { // both nodes or both edges
+        if( zDiff === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
+          return a_p.index - b_p.index;
         } else {
-          return result;
+          return zDiff;
         }
       }
-    }
-
+    
     // elements on different level
-    else
-    {
-      // deeper element should be drawn later
-      return depthA - depthB;
+    } else {
+      return depthDiff; // deeper element should be drawn later
     }
 
-    // return zero if z-index values are not the same
-    return 0;
   };
   
 })( cytoscape );
@@ -10816,6 +10716,7 @@ var cytoscape;
     var containerStyle = this.data.canvasContainer.style;
     containerStyle.position = 'absolute';
     containerStyle.zIndex = '0';
+    containerStyle.overflow = 'hidden';
 
     this.data.container.appendChild( this.data.canvasContainer );
 
@@ -10829,6 +10730,7 @@ var cytoscape;
       
       this.data.canvasNeedsRedraw[i] = false;
     }
+    this.data.topCanvas = this.data.canvases[0];
 
     this.data.canvases[CanvasRenderer.NODE].setAttribute('data-id', 'layer' + CanvasRenderer.NODE + '-node');
     this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute('data-id', 'layer' + CanvasRenderer.SELECT_BOX + '-selectbox');
@@ -13496,11 +13398,17 @@ var cytoscape;
     var y = node._private.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
+    var usePaths = CanvasRenderer.usePaths();
 
     if( pieSize.units === '%' ){
       radius = radius * pieSize.value / 100;
     } else if( pieSize.pxValue !== undefined ){
       radius = pieSize.pxValue / 2;
+    }
+
+    if( usePaths ){
+      x = 0;
+      y = 0;
     }
 
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
@@ -13776,11 +13684,13 @@ var cytoscape;
       var eles = {
         drag: {
           nodes: [],
-          edges: []
+          edges: [],
+          eles: []
         },
         nondrag: {
           nodes: [],
-          edges: []
+          edges: [],
+          eles: []
         }
       };
 
@@ -13893,44 +13803,37 @@ var cytoscape;
             list = eles.nondrag;
           }
 
-          list[ ele._private.group ].push( ele );
+          list.eles.push( ele );
         }
 
       }
       
       
       function drawElements( list, context ){
-        var edges = list.edges;
-        var nodes = list.nodes;
+        var eles = list.eles;
 
-        for (var i = 0; i < edges.length && !hideEdges; i++) {
-          ele = edges[i];
-          
-          r.drawEdge(context, ele);
-        }
+        for( var i = 0; i < eles.length; i++ ){
+          var ele = eles[i];
 
-        for (var i = 0; i < edges.length && !hideEdges && !hideLabels; i++) {
-          ele = edges[i];
-          
-          r.drawEdgeText(context, ele);
-        }
+          if( ele.isNode() ){
+            r.drawNode(context, ele);
 
-        for (var i = 0; i < edges.length && !hideEdges; i++) {
-          ele = edges[i];
-          
-          r.drawEdge(context, ele, true);
-        }
+            if( !hideLabels ){
+              r.drawNodeText(context, ele);
+            }
 
-        for( var i = 0; i < nodes.length; i++ ){
-          var ele = nodes[i];
+            r.drawNode(context, ele, true);
+          } else if( !hideEdges ) {
+            r.drawEdge(context, ele);
 
-          r.drawNode(context, ele);
-          
-          if( !hideLabels ){
-            r.drawNodeText(context, ele);
+            if( !hideLabels ){
+              r.drawEdgeText(context, ele);
+            }
+
+            r.drawEdge(context, ele, true);
           }
           
-          r.drawNode(context, ele, true);
+          
         }
 
       }
@@ -14223,6 +14126,19 @@ var cytoscape;
     target.addEventListener(event, handler, useCapture);
   };
 
+  CanvasRenderer.prototype.nodeIsDraggable = function(node) {
+    if (node._private.style['opacity'].value !== 0
+      && node._private.style['visibility'].value == 'visible'
+      && node._private.style['display'].value == 'element'
+      && !node.locked()
+      && node.grabbable() ) {
+
+      return true;
+    }
+    
+    return false;
+  };
+
   CanvasRenderer.prototype.load = function() {
     var r = this;
 
@@ -14319,18 +14235,9 @@ var cytoscape;
       }
     };
 
-    CanvasRenderer.prototype.nodeIsDraggable = function(node) {
-      if (node._private.style['opacity'].value !== 0
-        && node._private.style['visibility'].value == 'visible'
-        && node._private.style['display'].value == 'element'
-        && !node.locked()
-        && node.grabbable() ) {
-  
-        return true;
-      }
-      
-      return false;
-    };
+    r.registerBinding(r.data.container, 'DOMNodeRemoved', function(e){
+      r.destroy();
+    });
 
     // auto resize
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
@@ -14387,20 +14294,19 @@ var cytoscape;
 
         r.hoverData.cxtStarted = true;
 
-        if( near ){
-          near.activate();
-          near.trigger( new $$.Event(e, {
-            type: 'cxttapstart', 
-            cyPosition: { x: pos[0], y: pos[1] } 
-          }) );
-
-          r.hoverData.down = near;
-        }
-
-        cy.trigger( new $$.Event(e, {
+        var cxtEvt = new $$.Event(e, {
           type: 'cxttapstart', 
           cyPosition: { x: pos[0], y: pos[1] } 
-        }) );
+        });
+
+        if( near ){
+          near.activate();
+          near.trigger( cxtEvt );
+
+          r.hoverData.down = near;
+        } else {
+          cy.trigger( cxtEvt );
+        }
 
         r.hoverData.downTime = (new Date()).getTime();
         r.hoverData.cxtDragged = false;
@@ -14554,13 +14460,30 @@ var cytoscape;
       if (!capture) {
         
         var containerPageCoords = r.findContainerClientCoords();
-        
+
         if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
-          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight) {
-          
+          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
+        ) {
+          // inside container bounds so OK
         } else {
           return;
         }
+
+        var cyContainer = r.data.container;
+        var target = e.target;
+        var tParent = target.parentNode;
+        var containerIsTarget = false;
+
+        while( tParent ){
+          if( tParent === cyContainer ){
+            containerIsTarget = true;
+            break;
+          }
+
+          tParent = tParent.parentNode;
+        }
+
+        if( !containerIsTarget ){ return; } // if target is outisde cy container, then this event is not for us
       }
 
       var cy = r.data.cy;
@@ -15201,7 +15124,7 @@ var cytoscape;
         ];
 
         // consider context tap
-        if( distance1 < 200 ){
+        if( distance1 < 200 && !e.touches[2] ){
 
           var near1 = r.findNearestElement(now[0], now[1], true);
           var near2 = r.findNearestElement(now[2], now[3], true);
@@ -15446,7 +15369,7 @@ var cytoscape;
 
       }  
 
-      if( capture && r.touchData.cxt ){
+      if( capture && r.touchData.cxt ){ 
         var cxtEvt = new $$.Event(e, {
           type: 'cxtdrag',
           cyPosition: { x: now[0], y: now[1] }
@@ -15491,7 +15414,7 @@ var cytoscape;
 
         }
 
-      } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
+      } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){ 
         r.data.bgActivePosistion = undefined;
         clearTimeout( this.threeFingerSelectTimeout );
         this.lastThreeTouch = +new Date();
@@ -15515,6 +15438,16 @@ var cytoscape;
       } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
         r.data.bgActivePosistion = undefined;
         r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+
+        var draggedEles = r.dragData.touchDragEles;
+        if( draggedEles ){ 
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
+          for( var i = 0; i < draggedEles.length; i++ ){
+            draggedEles[i]._private.grabbed = false;
+            draggedEles[i]._private.rscratch.inDragLayer = false;
+          }
+        }
 
         // console.log('touchmove ptz');
 
@@ -15596,12 +15529,10 @@ var cytoscape;
             ;
           }
 
-          cy._private.zoom = zoom2;
-          cy._private.pan = pan2;
-          cy
-            .trigger('pan zoom')
-            .notify('viewport')
-          ;
+          cy.viewport({
+            zoom: zoom2,
+            pan: pan2
+          });
 
           distance1 = distance2;  
           f1x1 = f1x2;
@@ -15620,11 +15551,7 @@ var cytoscape;
       } else if (e.touches[0]) {
         var start = r.touchData.start;
         var last = r.touchData.last;
-        var near = null;
-
-        if( !r.hoverData.draggingEles ){
-          r.findNearestElement(now[0], now[1], true);
-        }
+        var near = near || r.findNearestElement(now[0], now[1], true);
 
         if ( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start)) {
           var draggedEles = r.dragData.touchDragEles;
@@ -15746,6 +15673,8 @@ var cytoscape;
             }
 
             r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+
+            r.touchData.start = null;
           }
 
           cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});

@@ -414,6 +414,18 @@ div#classification_graph_object img.roiimage {
     margin-bottom: 1em;
 }
 
+.navigator_content th a {
+    text-decoration: underline !important;
+}
+
+.navigator_content th a:hover {
+    text-decoration: none !important;
+}
+
+.navigator_content td input {
+    margin-left: 0;
+}
+
 .neuron_annotations_query_results_table td {
     padding: 2px;
     vertical-align: top;

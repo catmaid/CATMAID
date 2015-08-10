@@ -1328,14 +1328,17 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
           self.executeIfSkeletonEditable(to_skid, function() {
             // The function used to instruct the backend to do the merge
             var merge = function(annotation_set) {
+              var data = {
+                  from_id: fromid,
+                  to_id: toid
+              };
+              if (annotation_set) {
+                data.annotation_set = JSON.stringify(annotation_set);
+              };
               // The call to join will reroot the target skeleton at the shift-clicked treenode
               self.submit(
                 django_url + project.id + '/skeleton/join',
-                {
-                  from_id: fromid,
-                  to_id: toid,
-                  annotation_set: JSON.stringify(annotation_set),
-                },
+                data,
                 function (json) {
                   self.updateNodes(function() {
                     self.selectNode(toid);
@@ -1384,24 +1387,31 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                * there are some. Otherwise merge the single not without showing
                * the dialog.
                */
-              CATMAID.retrieve_annotations_for_skeleton(to_skid,
-                  function(to_annotations) {
-                    var noUI = SkeletonAnnotations.quickSingleNodeSkeletonMerge;
-                    if (to_annotations.length === 0 || noUI) {
-                      CATMAID.retrieve_annotations_for_skeleton(
-                          from_model.id, function(from_annotations) {
-                            // Merge annotations from both neurons
-                            function collectAnnotations(o, e) {
-                              o[e.name] = e.users[0].id; return o;
-                            };
-                            var annotationMap = to_annotations.reduce(collectAnnotations, {});
-                            from_annotations.reduce(collectAnnotations, annotationMap);
-                            merge(annotationMap);
-                          });
-                    } else {
-                      merge_multiple_nodes();
-                    }
-                  });
+              var noUI = SkeletonAnnotations.quickSingleNodeSkeletonMerge;
+
+              if (noUI) {
+                // Not specifying an annotation map will cause the combined
+                // annotation set of both skeletons to be used.
+                merge();
+              } else {
+                // Only show a dialog if the merged in neuron is annotated.
+                CATMAID.retrieve_annotations_for_skeleton(to_skid,
+                    function(to_annotations) {
+                      if (to_annotations.length === 0) {
+                        CATMAID.retrieve_annotations_for_skeleton(
+                            from_model.id, function(from_annotations) {
+                              // Merge annotations from both neurons
+                              function collectAnnotations(o, e) {
+                                o[e.name] = e.users[0].id; return o;
+                              };
+                              var annotationMap = from_annotations.reduce(collectAnnotations, {});
+                              merge(annotationMap);
+                            });
+                      } else {
+                        merge_multiple_nodes();
+                      }
+                    });
+              }
             };
 
             /* If the to-node contains more than one node, show the dialog.

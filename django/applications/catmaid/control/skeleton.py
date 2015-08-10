@@ -883,6 +883,9 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         to_skid = to_treenode.skeleton_id
         to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
 
+        if from_skid == to_skid:
+            raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
+
         # Make sure the user has permissions to edit both neurons
         can_edit_class_instance_or_fail(
                 user, from_neuron['neuronid'], 'neuron')
@@ -895,9 +898,6 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                 frozenset(annotation_map.keys())):
             raise Exception("Annotation distribution is not valid for joining. " \
               "Annotations for which you don't have permissions have to be kept!")
-
-        if from_skid == to_skid:
-            raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
 
         # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id

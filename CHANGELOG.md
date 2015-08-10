@@ -10,6 +10,15 @@ Neuron Navigator:
   or footer will remove all selected annotations from the current neuron.
 
 
+Tracing:
+
+- If a single-node skeleton is merged into another skeleton, no merge dialog is
+  now shown by default. All annotations of this single-node skeleton are merged
+  into the target skeleton without asking. This behavior can be changed to again
+  show a merge UI if the single-node skeleton has annotations (behavior so far)
+  through a new entry in the Tracing section of the settings widget.
+
+
 Miscellaneous:
 
 - When a connector is selected, basic information about it is displayed at the

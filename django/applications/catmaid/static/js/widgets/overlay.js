@@ -82,6 +82,9 @@ SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.setRadiusAfterNodeCreation = false;
 SkeletonAnnotations.defaultNewNeuronName = '';
+// Don't show merging UI for single node skeletons
+SkeletonAnnotations.quickSingleNodeSkeletonMerge = true;
+
 CATMAID.Events.extend(SkeletonAnnotations);
 
 /**
@@ -1382,14 +1385,21 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                * the dialog.
                */
               CATMAID.retrieve_annotations_for_skeleton(to_skid,
-                  function(annotations) {
-                    if (annotations.length > 0) {
-                      merge_multiple_nodes();
-                    } else {
+                  function(to_annotations) {
+                    var noUI = SkeletonAnnotations.quickSingleNodeSkeletonMerge;
+                    if (to_annotations.length === 0 || noUI) {
                       CATMAID.retrieve_annotations_for_skeleton(
-                          from_model.id, function(annotations) {
-                              merge(annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
+                          from_model.id, function(from_annotations) {
+                            // Merge annotations from both neurons
+                            function collectAnnotations(o, e) {
+                              o[e.name] = e.users[0].id; return o;
+                            };
+                            var annotationMap = to_annotations.reduce(collectAnnotations, {});
+                            from_annotations.reduce(collectAnnotations, annotationMap);
+                            merge(annotationMap);
                           });
+                    } else {
+                      merge_multiple_nodes();
                     }
                   });
             };

@@ -1334,7 +1334,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
               };
               if (annotation_set) {
                 data.annotation_set = JSON.stringify(annotation_set);
-              };
+              }
               // The call to join will reroot the target skeleton at the shift-clicked treenode
               self.submit(
                 django_url + project.id + '/skeleton/join',
@@ -1403,7 +1403,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                               // Merge annotations from both neurons
                               function collectAnnotations(o, e) {
                                 o[e.name] = e.users[0].id; return o;
-                              };
+                              }
                               var annotationMap = from_annotations.reduce(collectAnnotations, {});
                               merge(annotationMap);
                             });

@@ -656,6 +656,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
                       skeletons: [model.clone()],
                       label: NeuronNameService.getInstance().getName(model.id),
                       node_count: 0,
+                      shape: "ellipse",
                       color: '#' + model.color.getHexString()}};
   };
 

@@ -448,6 +448,13 @@ GroupGraph.prototype.updateLayout = function(layout) {
   var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'concentric', 'concentric out', 'concentric in', 'random', 'cose', 'preset'][index];
   var options = this.createLayoutOptions(name);
   options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
+
+  // TODO: This is workaround for a problem in Cytoscape's arbor layour,
+  // which will break if nodes are locked.
+  if ('arbor' === name) {
+      this.cy.nodes().unlock();
+  }
+
   this.cy.layout( options );
 };
 

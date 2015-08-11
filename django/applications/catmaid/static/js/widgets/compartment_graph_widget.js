@@ -343,6 +343,7 @@ GroupGraph.prototype.init = function() {
             "width": 15,
             "height": 15
           }),
+      boxSelectionEnabled: true,
   };
   var sel = $("#cyelement" + this.widgetID);
   sel.cytoscape(options).css('background', 'white');

@@ -606,6 +606,11 @@ GroupGraph.prototype.init = function() {
   }).bind(this));
 };
 
+// The index is relied upon by the updateLayout function
+GroupGraph.prototype.layoutStrings = ["Force-directed", "Hierarchical", "Grid", "Circle",
+         "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
+         "Random", "Compound Spring Embedder", "Manual", "Dagre (DAG-based)", "Cola (force-directed)"];
+
 /** Unlocks locked nodes, if any, when done. */
 GroupGraph.prototype.updateLayout = function(layout) {
   var index = layout ? layout.selectedIndex : 0;

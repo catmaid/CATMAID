@@ -1444,10 +1444,7 @@ var WindowMaker = new function()
     color.options.add(new Option('circles of hell (downstream)', 'circles_of_hell_downstream'));
     color.onchange = GG._colorize.bind(GG, color);
 
-    var layout = appendSelect(tabs['Graph'], "compartment_layout",
-        ["Force-directed", "Hierarchical", "Grid", "Circle",
-         "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
-         "Random", "Compound Spring Embedder", "Manual", "Dagre (DAG-based)", "Cola (force-directed)"]);
+    var layout = appendSelect(tabs['Graph'], "compartment_layout", GG.layoutStrings);
 
     var edges = document.createElement('select');
     for (var i=1; i<101; ++i) edges.appendChild(new Option(i, i));

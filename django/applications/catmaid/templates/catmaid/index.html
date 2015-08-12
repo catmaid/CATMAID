@@ -20,7 +20,7 @@
 		{% compressed_css 'libraries' %}
 		{% compressed_css 'catmaid' %}
 
-    <!-- Regular CATMAID components --!>
+    <!-- Regular CATMAID components -->
     {% for f in JS_FILES %}
 		{% if f == 'arbor' %}
 			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/arbor.js"></script>
@@ -29,12 +29,12 @@
 		{% endif %}
     {% endfor %}
 
-    <!-- Extensions --!>
+    <!-- Extensions -->
     {% for f in STATIC_EXTENSION_FILES %}
       <script type="text/javascript" src="{{ STATIC_EXTENSION_URL }}{{ f }}"></script>
     {% endfor %}
 
-    <!-- Front end initialization --!>
+    <!-- Front end initialization -->
 		<script type="text/javascript">
 			CATMAID.configure("{{ CATMAID_URL }}", "{{ STATIC_URL|escapejs }}");
 			CATMAID.CLIENT_VERSION = "{% catmaid_version %}";

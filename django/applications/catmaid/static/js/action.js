@@ -8,6 +8,7 @@
  *   - The help text associated with the action
  *   - The button IDs that can trigger the action
  *   - The tooltips for those buttons
+ *   - An optional explicit icon URL
  *   - The function that should be run to carry out the action
  */
 
@@ -17,6 +18,7 @@ function Action (properties) {
   var helpText = "[No help text set]";
   var buttonID = null;
   var buttonName = null;
+  var iconURL = null;
   var keyShortcuts = {};
 
   /**
@@ -59,6 +61,10 @@ function Action (properties) {
     return buttonName;
   };
 
+  this.getIconURL = function( ) {
+    return iconURL;
+  };
+
   this.getHelpText = function( ) {
     return helpText;
   };
@@ -69,6 +75,10 @@ function Action (properties) {
 
   this.setButtonName = function( newButtonName ) {
     buttonName = newButtonName;
+  };
+
+  this.setIconURL = function( newIconURL ) {
+    iconURL = newIconURL;
   };
 
   this.setHelpText = function( newHelpText ) {
@@ -91,6 +101,9 @@ function Action (properties) {
       }
       if (key === 'buttonName') {
         this.setButtonName(properties.buttonName);
+      }
+      if (key === 'iconURL') {
+        this.setIconURL(properties.iconURL);
       }
       if (key === 'keyShortcuts') {
         for (var name in properties.keyShortcuts) {
@@ -144,13 +157,17 @@ function createButtonsFromActions(actions, boxID, iconPrefix) {
       a.setAttribute('class', 'button');
       a.setAttribute('id', buttonID);
       a.onclick = action.run;
+
       img = document.createElement('img');
       img.setAttribute('id', buttonID + '_img');
-      var iconFilename = STATIC_URL_JS + 'images/' + iconPrefix + action.getButtonName();
+      // Prioritize an explicit icon URL
+      var iconFilename = action.iconURL ? action.iconURL :
+          STATIC_URL_JS + 'images/' + iconPrefix + action.getButtonName();
       img.setAttribute('src', iconFilename + '.svg');
       // If an SVG icon is not found, fallback to a PNG icon
       img.setAttribute('onerror', 'this.onerror = null; this.src="' + iconFilename + '.png";');
       img.setAttribute('alt', action.getHelpText());
+
       shortcuts = action.getKeyShortcutsString();
       if (shortcuts.length === 0) {
         title = action.getHelpText();

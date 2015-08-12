@@ -228,3 +228,11 @@ TEST_RUNNER = 'custom_testrunner.TestSuiteRunner'
 # used to create commit links is defined here. The {} is used to denote the
 # commit name.
 PERFORMANCETEST_SCM_URL = "https://github.com/catmaid/CATMAID/commit/{version}"
+
+# Additional static files can be loaded by CATMAID if they are placed in the
+# django/applications/catmaid/static/extensions folder. These files are not
+# respected by Pipeline to allow updating them without running collectstatic.
+# To use this feature, your webserver has to resolve the STATIC_EXTENSION_URL
+# to this folder.
+STATIC_EXTENSION_URL = "/staticext/"
+STATIC_EXTENSION_FILES = []

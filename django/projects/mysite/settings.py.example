@@ -106,3 +106,6 @@ CELERYD_CONCURRENCY = 1
 # Simple django-kumbo message broker
 INSTALLED_APPS += ("kombu.transport.django",)
 BROKER_URL = 'django://'
+
+# The URL under which custom front-end code can be made available
+STATIC_EXTENSION_URL = '/CATMAID_SUBDIR/staticext/'

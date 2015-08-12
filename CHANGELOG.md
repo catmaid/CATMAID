@@ -25,6 +25,14 @@ Miscellaneous:
   top of the window (where otherwise the neuron name is displayed).
 
 
+Administration:
+
+- Adding custom code to CATMAID's front end is now easier: Add file names to the
+  STATIC_EXTENSION_FILES array variable and have your web-server point the URL
+  defined in STATIC_EXTENSION_URL (defaults to /staticext/) to the folder were
+  those files live. CATMAID will then load those files after its own files.
+
+
 ### Bug fixes
 
 - Nodes are now correctly scaled in skeleton projection layers.

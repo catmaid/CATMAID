@@ -80,6 +80,11 @@ PIPELINE_JS['arbor'] = {
     'output_filename': 'libs/cytoscapejs/arbor.js'
 }
 
+PIPELINE_JS['dagre'] = {
+    'source_filenames': ('libs/cytoscapejs/dagre.js',),
+    'output_filename': 'libs/cytoscapejs/dagre.js'
+}
+
 PIPELINE_JS['catmaid'] = {
     'source_filenames': (
         'js/CATMAID.js',

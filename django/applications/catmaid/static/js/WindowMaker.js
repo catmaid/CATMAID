@@ -1447,7 +1447,7 @@ var WindowMaker = new function()
     var layout = appendSelect(tabs['Graph'], "compartment_layout",
         ["Force-directed", "Hierarchical", "Grid", "Circle",
          "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
-         "Random", "Compound Spring Embedder", "Manual"]);
+         "Random", "Compound Spring Embedder", "Manual", "Dagre"]);
 
     var edges = document.createElement('select');
     for (var i=1; i<101; ++i) edges.appendChild(new Option(i, i));

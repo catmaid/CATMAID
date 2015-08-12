@@ -85,14 +85,14 @@ function Action (properties) {
     if (properties.hasOwnProperty(key)) {
       if (key === 'helpText') {
         this.setHelpText(properties.helpText);
-            }
-            if (key === 'buttonID') {
+      }
+      if (key === 'buttonID') {
         this.setButtonID(properties.buttonID);
-            }
-            if (key === 'buttonName') {
+      }
+      if (key === 'buttonName') {
         this.setButtonName(properties.buttonName);
-            }
-            if (key === 'keyShortcuts') {
+      }
+      if (key === 'keyShortcuts') {
         for (var name in properties.keyShortcuts) {
           if (properties.keyShortcuts.hasOwnProperty(name)) {
             this.addKey(name, properties.keyShortcuts[name]);

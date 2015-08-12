@@ -70,6 +70,121 @@ var GroupGraph = function() {
   this.tag_title_others = '';
 
   this.layout_fit = true;
+
+  this.layout_options = {
+    preset: {
+      name: 'preset',
+      // whether to fit to viewport
+      fit: true,
+      // padding on fit
+      padding: 30
+    },
+    grid: {
+      name: 'grid',
+      fit: true, // whether to fit the viewport to the graph
+      rows: undefined, // force num of rows in the grid
+      columns: undefined, // force num of cols in the grid
+    },
+    random: {
+      name: 'random',
+      fit: true // whether to fit to viewport
+    },
+    arbor: {
+      name: 'arbor',
+      liveUpdate: true, // whether to show the layout as it's running
+      maxSimulationTime: 2000, // max length in ms to run the layout
+      fit: true, // fit to viewport
+      padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+      ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
+
+      // forces used by arbor (use arbor default on undefined)
+      repulsion: undefined,
+      stiffness: undefined,
+      friction: undefined,
+      gravity: true,
+      fps: undefined,
+      precision: undefined,
+
+      // static numbers or functions that dynamically return what these
+      // values should be for each element
+      nodeMass: undefined,
+      edgeLength: undefined,
+
+      stepSize: 1, // size of timestep in simulation
+
+      // function that returns true if the system is stable to indicate
+      // that the layout can be stopped
+      stableEnergy: function( energy ){
+          var e = energy;
+          return (e.max <= 0.5) || (e.mean <= 0.3);
+      }
+    },
+    circle: {
+      name: 'circle',
+      fit: true, // whether to fit the viewport to the graph
+      rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
+      padding: 30, // the padding on fit
+      startAngle: 3/2 * Math.PI, // the position of the first node
+      counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+    },
+    breadthfirst: {
+      name: 'breadthfirst', // Hierarchical
+      fit: true, // whether to fit the viewport to the graph
+      directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
+      padding: 30, // padding on fit
+      circle: false, // put depths in concentric circles if true, put depths top down if false
+      roots: undefined // the roots of the trees
+    },
+    cose: {
+      name: 'cose',
+      // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
+      refresh: 0,
+      // Whether to fit the network view after when done
+      fit: true,
+      // Whether to randomize node positions on the beginning
+      randomize: true,
+      // Whether to use the JS console to print debug messages
+      debug: false,
+
+      // Node repulsion (non overlapping) multiplier
+      nodeRepulsion: 10000,
+      // Node repulsion (overlapping) multiplier
+      nodeOverlap: 10,
+      // Ideal edge (non nested) length
+      idealEdgeLength: 50,
+      // Divisor to compute edge forces
+      edgeElasticity: 100,
+      // Nesting factor (multiplier) to compute ideal edge length for nested edges
+      nestingFactor: 5,
+      // Gravity force (constant) for each group of nested nodes
+      gravity: 250,
+
+      // Maximum number of iterations to perform
+      numIter: 100,
+      // Initial temperature (maximum node displacement)
+      initialTemp: 200,
+      // Cooling factor (how the temperature is reduced between consecutive iterations)
+      coolingFactor: 0.95,
+      // Lower temperature threshold (below this point the layout will end)
+      minTemp: 1
+    },
+    concentric: {
+      name: 'concentric',
+      fit: true, // whether to fit the viewport to the graph
+      ready: undefined, // callback on layoutready
+      stop: undefined, // callback on layoutstop
+      padding: 30, // the padding on fit
+      startAngle: 3/2 * Math.PI, // the position of the first node
+      counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
+      minNodeSpacing: 80, // min spacing between outside of nodes (used for radius adjustment)
+      height: undefined, // height of layout area (overrides container height)
+      width: undefined, // width of layout area (overrides container width)
+      levelWidth: function(nodes) { // the variation of concentric values in each level
+        return nodes.maxDegree() / 4;
+      }
+    }
+  };
+
 };
 
 GroupGraph.prototype = {};
@@ -471,132 +586,25 @@ GroupGraph.prototype.toggleLayoutFit = function() {
 };
 
 GroupGraph.prototype.createLayoutOptions = function(name) {
-  var options;
-  var fit = this.layout_fit;
-  if ('grid' === name) {
-    options = {
-      name: 'grid',
-      fit: true, // whether to fit the viewport to the graph
-      rows: undefined, // force num of rows in the grid
-      columns: undefined, // force num of cols in the grid
-    };
-  } else if ('arbor' === name) {
-    options = {
-        name: 'arbor',
-        liveUpdate: true, // whether to show the layout as it's running
-        maxSimulationTime: 2000, // max length in ms to run the layout
-        fit: fit, // fit to viewport
-        padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
-        ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
+  var original;
 
-        // forces used by arbor (use arbor default on undefined)
-        repulsion: undefined,
-        stiffness: undefined,
-        friction: undefined,
-        gravity: true,
-        fps: undefined,
-        precision: undefined,
+  if (0 === name.indexOf('concentric')) {
+    original = name;
+    name = 'concentric';
+  }
 
-        // static numbers or functions that dynamically return what these
-        // values should be for each element
-        nodeMass: undefined,
-        edgeLength: undefined,
+  var options = this.layout_options[name];
+  if (!options) return alert("Invalid layout: " + name);
 
-        stepSize: 1, // size of timestep in simulation
+  // clone, to avoid modifying the original
+  options = $.extend({}, options);
+  options.fit = this.layout_fit;
 
-        // function that returns true if the system is stable to indicate
-        // that the layout can be stopped
-        stableEnergy: function( energy ){
-            var e = energy;
-            return (e.max <= 0.5) || (e.mean <= 0.3);
-        }
-    };
-  } else if ('circle' === name) {
-      options = {
-          name: 'circle',
-          fit: fit, // whether to fit the viewport to the graph
-          rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
-          padding: 30, // the padding on fit
-          startAngle: 3/2 * Math.PI, // the position of the first node
-          counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
-      };
-  } else if ('breadthfirst' === name) {
-    options = {
-        name: 'breadthfirst', // Hierarchical
-        fit: fit, // whether to fit the viewport to the graph
-        directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
-        padding: 30, // padding on fit
-        circle: false, // put depths in concentric circles if true, put depths top down if false
-        roots: undefined // the roots of the trees
-    };
-  } else if ('random' === name) {
-    options = {
-        name: 'random',
-        fit: fit // whether to fit to viewport
-    };
-  } else if ('cose' === name) {
-    options = {
-      name: 'cose',
-      // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-      refresh: 0,
-      // Whether to fit the network view after when done
-      fit: fit,
-      // Whether to randomize node positions on the beginning
-      randomize: true,
-      // Whether to use the JS console to print debug messages
-      debug: false,
-
-      // Node repulsion (non overlapping) multiplier
-      nodeRepulsion: 10000,
-      // Node repulsion (overlapping) multiplier
-      nodeOverlap: 10,
-      // Ideal edge (non nested) length
-      idealEdgeLength: 10,
-      // Divisor to compute edge forces
-      edgeElasticity: 100,
-      // Nesting factor (multiplier) to compute ideal edge length for nested edges
-      nestingFactor: 5,
-      // Gravity force (constant)
-      gravity: 250,
-
-      // Maximum number of iterations to perform
-      numIter: 100,
-      // Initial temperature (maximum node displacement)
-      initialTemp: 200,
-      // Cooling factor (how the temperature is reduced between consecutive iterations)
-      coolingFactor: 0.95,
-      // Lower temperature threshold (below this point the layout will end)
-      minTemp: 1
-    };
-  } else if ('preset' === name) {
-    options = {
-      name: 'preset',
-      // whether to fit to viewport
-      fit: fit,
-      // padding on fit
-      padding: 30
-    };
-  } else if (0 === name.indexOf('concentric')) {
-    options = {
-      name: 'concentric',
-      fit: fit, // whether to fit the viewport to the graph
-      ready: undefined, // callback on layoutready
-      stop: undefined, // callback on layoutstop
-      padding: 30, // the padding on fit
-      startAngle: 3/2 * Math.PI, // the position of the first node
-      counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
-      minNodeSpacing: 80, // min spacing between outside of nodes (used for radius adjustment)
-      height: undefined, // height of layout area (overrides container height)
-      width: undefined, // width of layout area (overrides container width)
-      levelWidth: function(nodes) { // the variation of concentric values in each level
-        return nodes.maxDegree() / 4;
-      }
-    };
-
+  if (original) {
     // Define the concentric value function: returns numeric value for each node, placing higher nodes in levels towards the centre
-    if      ('concentric'     === name) options.concentric = function() { return this.degree(); };
-    else if ('concentric in ' === name) options.concentric = function() { return this.indegree(); };
-    else if ('concentric out' === name) options.concentric = function() { return this.outdegree(); };
+    if      ('concentric'     === original) options.concentric = function() { return this.degree(); };
+    else if ('concentric in ' === original) options.concentric = function() { return this.indegree(); };
+    else if ('concentric out' === original) options.concentric = function() { return this.outdegree(); };
   }
 
   return options;

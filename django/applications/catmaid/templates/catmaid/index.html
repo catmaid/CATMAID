@@ -26,6 +26,8 @@
 			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/arbor.js"></script>
 		{% elif f == 'dagre' %}
 			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/dagre.js"></script>
+		{% elif f == 'cola' %}
+			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/cola.js"></script>
 		{% else %}
 		  {% compressed_js f %}
 		{% endif %}

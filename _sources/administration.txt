@@ -85,6 +85,21 @@ thing. Those, however, don't ask for a password, but require a
 
 .. _performance-tuning:
 
+Adding custom code
+------------------
+
+CATMAID supports adding custom code to its front end. This can be used to
+create custom tools separate from upstream development, which can make
+administration easier: To do so, collect your custom JavaScript files in a
+folder and add their filenames to the ``settings.py`` array variable
+``STATIC_EXTENSION_FILES``, for instance::
+
+    STATIC_EXTENSION_FILES += ('test.js', )
+
+Next you will have to instruct your web-server to make this folder available
+through the URL defined in ``STATIC_EXTENSION_URL``, which defaults to
+"/staticext/"). CATMAID will then try to load those files after its own files.
+
 Performance tuning
 ------------------
 

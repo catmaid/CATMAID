@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -6,15 +8,16 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Administering a CATMAID instance &mdash; CATMAID 0.24 documentation</title>
+    <title>Administering a CATMAID instance &mdash; CATMAID 2015.7.17-dev documentation</title>
     
     <link rel="stylesheet" href="_static/jinja.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.24',
+        VERSION:     '2015.7.17-dev',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +26,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="CATMAID 0.24 documentation" href="index.html" />
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="CATMAID 2015.7.17-dev documentation" href="index.html" />
     <link rel="up" title="Developer Documentation" href="developer.html" />
     <link rel="next" title="Django unit tests for CATMAID" href="djangounittest.html" />
     <link rel="prev" title="Frequently Asked Questions" href="faq.html" /> 
@@ -41,7 +45,7 @@
         <li class="right" >
           <a href="faq.html" title="Frequently Asked Questions"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 0.24 documentation</a> &raquo;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CATMAID 2015.7.17-dev documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="developer.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -128,8 +132,22 @@ scripts <code class="docutils literal"><span class="pre">scripts/database/backup
 thing. Those, however, don&#8217;t ask for a password, but require a
 <code class="docutils literal"><span class="pre">.pgpass</span></code> file (see <a class="reference external" href="http://www.postgresql.org/docs/current/static/libpq-pgpass.html">PostgreSQL documentation</a>).</p>
 </div>
-<div class="section" id="performance-tuning">
-<span id="id1"></span><h2>Performance tuning<a class="headerlink" href="#performance-tuning" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="adding-custom-code">
+<span id="performance-tuning"></span><h2>Adding custom code<a class="headerlink" href="#adding-custom-code" title="Permalink to this headline">¶</a></h2>
+<p>CATMAID supports adding custom code to its front end. This can be used to
+create custom tools separate from upstream development, which can make
+administration easier: To do so, collect your custom JavaScript files in a
+folder and add their filenames to the <code class="docutils literal"><span class="pre">settings.py</span></code> array variable
+<code class="docutils literal"><span class="pre">STATIC_EXTENSION_FILES</span></code>, for instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">STATIC_EXTENSION_FILES</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;test.js&#39;</span><span class="p">,</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>Next you will have to instruct your web-server to make this folder available
+through the URL defined in <code class="docutils literal"><span class="pre">STATIC_EXTENSION_URL</span></code>, which defaults to
+&#8220;/staticext/&#8221;). CATMAID will then try to load those files after its own files.</p>
+</div>
+<div class="section" id="id1">
+<h2>Performance tuning<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>There are various application involved to make CATMAID work: A web-server/load
 balancer, a WSGI server to run the Python back-end and a PostgreSQL database
 server. The configuration of all of them can be optimized to experience better
@@ -283,7 +301,7 @@ server.</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper"><p class="logo"><a href="index.html">
-  <img class="logo" src="_static/catmaid-small.png" alt="Logo" align="left"/>
+  <img class="logo" src="_static/catmaidlogo.png" alt="Logo" align="left"/>
 </a></p>
 <br clear="all"/><br /><h3><a href="index.html">Home</a></h3>
 <h3><a href="screenshots.html">Screenshots</a></h3>
@@ -316,7 +334,8 @@ server.</p>
 <li><a class="reference internal" href="#">Administering a CATMAID instance</a><ul>
 <li><a class="reference internal" href="#updating-to-a-newer-version">Updating to a newer version</a></li>
 <li><a class="reference internal" href="#backup-an-restore-the-database">Backup an restore the database</a></li>
-<li><a class="reference internal" href="#performance-tuning">Performance tuning</a><ul>
+<li><a class="reference internal" href="#adding-custom-code">Adding custom code</a></li>
+<li><a class="reference internal" href="#id1">Performance tuning</a><ul>
 <li><a class="reference internal" href="#operationg-system-and-infrastructure">Operationg system and infrastructure</a></li>
 <li><a class="reference internal" href="#webserver">Webserver</a></li>
 <li><a class="reference internal" href="#database-management-system">Database management system</a></li>

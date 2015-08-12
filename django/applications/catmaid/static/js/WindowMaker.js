@@ -3287,4 +3287,34 @@ var WindowMaker = new function()
     }
   };
 
+  /**
+   * Allow new widgets to register with a window maker.
+   */
+  this.registerWidget = function(key, creator) {
+    if (key in creators) {
+      throw new CATMAID.ValueError("A widget with the following key is " +
+          "already registered: " + key);
+    }
+    if (!CATMAID.tools.isFn(creator)) {
+      throw new CATMAID.ValueError("No valid constructor function provided");
+    }
+
+    creators[key] = function(options) {
+      return createWidget(new creator(options));
+    };
+  };
 }();
+
+
+(function(CATMAID) {
+
+  "use strict";
+
+  /**
+   * Make new widgets available under the given unique key.
+   */
+  CATMAID.registerWidget = function(options) {
+    WindowMaker.registerWidget(options.key, options.creator);
+  }
+
+})(CATMAID);

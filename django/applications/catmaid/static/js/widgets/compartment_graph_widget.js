@@ -2252,7 +2252,7 @@ GroupGraph.prototype._exportSVG = function() {
   // Fix edge arrowheads if necessary
   for (var k=0; k<edges.length; ++k) {
     var edge = edges[k];
-    if (edge.length < 3) continue; // undirected edge
+    if (edge.length < 3) continue; // undirected edge or edge without duplicates
     // Fix the style
     var path = edge[2],
         attr = path.attributes;

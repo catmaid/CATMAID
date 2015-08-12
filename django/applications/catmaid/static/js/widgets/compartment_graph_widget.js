@@ -2142,6 +2142,11 @@ GroupGraph.prototype.loadSVGLibraries = function(callback) {
           // and explains perhaps the issues with the position of the M point in paths below,
           // which is fixable.
         };
+        // Monkey path SVGCanvas so that beginPath() does not perform a moveTo()
+        SVGCanvas.prototype.beginPath = function() {
+          // This is all the original function does, besides moveTo()
+          this._subpaths = [""];
+        };
       },
       chainLoad = function(libs, i) {
     try {

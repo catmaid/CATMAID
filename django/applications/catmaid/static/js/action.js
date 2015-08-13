@@ -161,11 +161,16 @@ function createButtonsFromActions(actions, boxID, iconPrefix) {
       img = document.createElement('img');
       img.setAttribute('id', buttonID + '_img');
       // Prioritize an explicit icon URL
-      var iconFilename = action.iconURL ? action.iconURL :
-          STATIC_URL_JS + 'images/' + iconPrefix + action.getButtonName();
-      img.setAttribute('src', iconFilename + '.svg');
-      // If an SVG icon is not found, fallback to a PNG icon
-      img.setAttribute('onerror', 'this.onerror = null; this.src="' + iconFilename + '.png";');
+      var iconFilename = action.getIconURL();
+      if (iconFilename) {
+        img.setAttribute('src', iconFilename);
+      } else {
+        iconFilename = CATMAID.makeStaticURL('images/' + iconPrefix +
+            action.getButtonName());
+        img.setAttribute('src', iconFilename + '.svg');
+        // If an SVG icon is not found, fallback to a PNG icon
+        img.setAttribute('onerror', 'this.onerror = null; this.src="' + iconFilename + '.png";');
+      }
       img.setAttribute('alt', action.getHelpText());
 
       shortcuts = action.getKeyShortcutsString();

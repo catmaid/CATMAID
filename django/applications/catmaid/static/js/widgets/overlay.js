@@ -983,7 +983,8 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (
       xdiff = x - node.x;
       ydiff = y - node.y;
       // Must discard those not within current z
-      if (Math.abs(this.stackViewer.z - node.z) > 0.5) continue;
+      var d = node.z - this.stackViewer.z;
+      if (d < 0 || d >= 1) continue;
       distsq = xdiff*xdiff + ydiff*ydiff;
       if (distsq < mindistsq) {
         mindistsq = distsq;

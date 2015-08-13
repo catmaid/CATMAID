@@ -231,6 +231,40 @@ var GroupGraph = function() {
       allConstIter: undefined, // initial layout iterations with all constraints including non-overlap
       // infinite layout options
       infinite: false // overrides all other options for a forces-all-the-time mode
+    },
+    spread: {
+      name: 'spread',
+      animate: true, // whether to show the layout as it's running
+      ready: undefined, // Callback on layoutready
+      stop: undefined, // Callback on layoutstop
+      fit: true, // Reset viewport to fit default simulationBounds
+      minDist: 20, // Minimum distance between nodes
+      padding: 20, // Padding
+      expandingFactor: -1.0, // If the network does not satisfy the minDist
+      // criterium then it expands the network of this amount
+      // If it is set to -1.0 the amount of expansion is automatically
+      // calculated based on the minDist, the aspect ratio and the
+      // number of nodes
+      maxFruchtermanReingoldIterations: 50, // Maximum number of initial force-directed iterations
+      maxExpandIterations: 4, // Maximum number of expanding iterations
+      boundingBox: undefined // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    },
+    springy: {
+      name: 'springy',
+      animate: true, // whether to show the layout as it's running
+      maxSimulationTime: 2000, // max length in ms to run the layout
+      ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
+      fit: true, // whether to fit the viewport to the graph
+      padding: 30, // padding on fit
+      boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+      random: false, // whether to use random initial positions
+      infinite: false, // overrides all other options for a forces-all-the-time mode
+      ready: undefined, // callback on layoutready
+      stop: undefined, // callback on layoutstop
+      // springy forces
+      stiffness: 400,
+      repulsion: 400,
+      damping: 0.5
     }
   };
 };
@@ -609,12 +643,13 @@ GroupGraph.prototype.init = function() {
 // The index is relied upon by the updateLayout function
 GroupGraph.prototype.layoutStrings = ["Force-directed", "Hierarchical", "Grid", "Circle",
          "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
-         "Random", "Compound Spring Embedder", "Manual", "Dagre (DAG-based)", "Cola (force-directed)"];
+         "Random", "Compound Spring Embedder", "Manual", "Dagre (DAG-based)", "Cola (force-directed)",
+         "Spread (force-directed)", "Springy (force-directed)"];
 
 /** Unlocks locked nodes, if any, when done. */
 GroupGraph.prototype.updateLayout = function(layout) {
   var index = layout ? layout.selectedIndex : 0;
-  var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'concentric', 'concentric out', 'concentric in', 'random', 'cose', 'preset', 'dagre', 'cola'][index];
+  var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'concentric', 'concentric out', 'concentric in', 'random', 'cose', 'preset', 'dagre', 'cola', 'spread', 'springy'][index];
   var options = this.createLayoutOptions(name);
   options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
 

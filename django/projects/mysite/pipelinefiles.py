@@ -90,6 +90,22 @@ PIPELINE_JS['cola'] = {
     'output_filename': 'libs/cytoscapejs/cola.js'
 }
 
+PIPELINE_JS['springy'] = {
+    'source_filenames': ('libs/cytoscapejs/springy.js',),
+    'output_filename': 'libs/cytoscapejs/springy.js'
+}
+
+PIPELINE_JS['foograph'] = {
+    'source_filenames': ('libs/cytoscapejs/foograph.js',),
+    'output_filename': 'libs/cytoscapejs/foograph.js'
+}
+
+PIPELINE_JS['rhill-voronoi-core'] = {
+    'source_filenames': ('libs/cytoscapejs/rhill-voronoi-core.js',),
+    'output_filename': 'libs/cytoscapejs/rhill-voronoi-core.js'
+}
+
+
 PIPELINE_JS['catmaid'] = {
     'source_filenames': (
         'js/CATMAID.js',

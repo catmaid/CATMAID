@@ -28,6 +28,12 @@
 			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/dagre.js"></script>
 		{% elif f == 'cola' %}
 			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/cola.js"></script>
+		{% elif f == 'foograph' %}
+			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/foograph.js"></script>
+		{% elif f == 'rhill-voronoi-core' %}
+			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/rhill-voronoi-core.js"></script>
+		{% elif f == 'springy' %}
+			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/springy.js"></script>
 		{% else %}
 		  {% compressed_js f %}
 		{% endif %}

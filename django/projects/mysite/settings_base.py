@@ -230,9 +230,10 @@ TEST_RUNNER = 'custom_testrunner.TestSuiteRunner'
 PERFORMANCETEST_SCM_URL = "https://github.com/catmaid/CATMAID/commit/{version}"
 
 # Additional static files can be loaded by CATMAID if they are placed in the
-# django/applications/catmaid/static/extensions folder. These files are not
-# respected by Pipeline to allow updating them without running collectstatic.
-# To use this feature, your webserver has to resolve the STATIC_EXTENSION_URL
-# to this folder.
+# folder defined by STATIC_EXTENSION_ROOT. These files are not respected by
+# Pipeline to allow updating them without running collectstatic. To use this
+# feature, your webserver has to resolve the STATIC_EXTENSION_URL to this
+# folder.
 STATIC_EXTENSION_URL = "/staticext/"
+STATIC_EXTENSION_ROOT = "/tmp"
 STATIC_EXTENSION_FILES = []

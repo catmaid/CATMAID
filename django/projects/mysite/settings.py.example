@@ -109,3 +109,5 @@ BROKER_URL = 'django://'
 
 # The URL under which custom front-end code can be made available
 STATIC_EXTENSION_URL = '/CATMAID_SUBDIR/staticext/'
+# The absolute local path where the static extension files live
+STATIC_EXTENSION_ROOT =  'CATMAIDPATH/django/staticext'

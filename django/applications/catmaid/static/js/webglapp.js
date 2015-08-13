@@ -4481,7 +4481,9 @@ WebGLApplication.prototype.exportAnimation = function()
 
   function handleOK() {
     /* jshint validthis: true */ // `this` is bound to this WebGLApplication
-    $.blockUI();
+    $.blockUI({message: '<img src="' + CATMAID.staticURL +
+        'images/busy.gif" /> <h2>Rendering animation frame ' +
+        '<div id="counting-rendered-frames">0</div></h2>'});
 
     // Get current visibility
     var visMap = this.space.getVisibilityMap();
@@ -4522,21 +4524,33 @@ WebGLApplication.prototype.exportAnimation = function()
           options['stop'] = this.createVisibibilityResetHandler(visMap);
         }
 
+        // Indicate progress
+        var counter = $('#counting-rendered-frames');
+        var onStep = function(i, nframes) {
+          counter.text((i + 1) + " / " + nframes);
+        };
+
+        // Save result to file
+        var onDone = (function(frames) {
+          // Export movie
+          var output = Whammy.fromImageArray(frames, framerate);
+          saveAs(output, "catmaid_3d_view.webm");
+
+          // Reset visibility and unblock UI
+          this.space.setSkeletonVisibility(visMap);
+          $.unblockUI();
+        }).bind(this);
+
         // Get frame images
         var animation = CATMAID.AnimationFactory.createAnimation(options);
-        var images = this.getAnimationFrames(animation, nframes, undefined, width, height);
-
-        // Export movie
-        var output = Whammy.fromImageArray(images, framerate);
-        saveAs(output, "catmaid_3d_view.webm");
+        this.getAnimationFrames(animation, nframes, undefined,
+            width, height, onDone, onStep);
       } catch (e) {
         // Unblock UI and re-throw exception
+        this.space.setSkeletonVisibility(visMap);
         $.unblockUI();
         throw e;
       }
-      // Reset visibility and unblock UI
-      this.space.setSkeletonVisibility(visMap);
-      $.unblockUI();
     }
   }
 };
@@ -4544,9 +4558,11 @@ WebGLApplication.prototype.exportAnimation = function()
 /**
  * Create a list of images for a given animation and the corresponding options.
  * By default, 100 frames are generated, starting from timepoint zero.
+ * Optionally, a function can be passed in that is called after every exported
+ * frame.
  */
 WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
-    startTime, width, height)
+    startTime, width, height, onDone, onStep)
 {
   // Save current dimensions and set new ones, if available
   var originalWidth, originalHeight;
@@ -4554,27 +4570,41 @@ WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
     if (width !== this.space.canvasWidth || height !== this.space.canvasHeight) {
       originalWidth = this.space.canvasWidth;
       originalHeight = this.space.canvasHeight;
-      this.resizeView(width, height);
     }
   }
 
+  onStep = onStep || function() {};
   nframes = nframes || 100;
   startTime = startTime || 0;
   var frames = new Array(nframes);
-  for (var i=0; i<nframes; ++i) {
+
+  // Render each frame in own timeout to be able to update UI between frames.
+  setTimeout(renderFrame.bind(this, animation, startTime, 0, nframes, frames,
+        width, height, onDone, onStep), 5)
+
+  function renderFrame(animation, startTime, i, nframes, frames, w, h, onDone, onStep) {
     animation.update(startTime + i);
-    this.space.render();
-
-    // Store image
+    // Make sure we still render with the correct size and redraw
+    this.resizeView(w, h);
+    // Add image to output array and callback
     frames[i] = this.space.view.getImageData('image/webp');
-  }
 
-  // Restore original dimensions
-  if (originalWidth && originalHeight) {
-    this.resizeView(originalWidth, originalHeight);
-  }
+    onStep(i, nframes);
 
-  return frames;
+    // Render next frame if there are more frames
+    var nextFrame = i + 1;
+    if (nextFrame < nframes) {
+      setTimeout(renderFrame.bind(this, animation, startTime, nextFrame,
+            nframes, frames, w, h, onDone, onStep), 5)
+    } else {
+      // Restore original dimensions
+      if (originalWidth && originalHeight) {
+        this.resizeView(originalWidth, originalHeight);
+      }
+
+      onDone(frames);
+    }
+  }
 };
 
 

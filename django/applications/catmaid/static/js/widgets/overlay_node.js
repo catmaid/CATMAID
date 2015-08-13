@@ -365,7 +365,7 @@
       // For drawing:
       this.USE_HREF = 'treenodeCircle';
       this.NODE_RADIUS = 3;
-      this.CATCH_RADIUS = 5;
+      this.CATCH_RADIUS = 6;
       this.BASE_EDGE_WIDTH = 2;
 
       // ID of the disabled nodes

@@ -33,11 +33,6 @@
 		{% endif %}
     {% endfor %}
 
-    <!-- Extensions -->
-    {% for f in STATIC_EXTENSION_FILES %}
-      <script type="text/javascript" src="{{ STATIC_EXTENSION_URL }}{{ f }}"></script>
-    {% endfor %}
-
     <!-- Front end initialization -->
 		<script type="text/javascript">
 			CATMAID.configure("{{ CATMAID_URL }}", "{{ STATIC_URL|escapejs }}",
@@ -45,6 +40,12 @@
 			CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
 		</script>
 	</head>
+
+    <!-- Extensions -->
+    {% for f in STATIC_EXTENSION_FILES %}
+      <script type="text/javascript" src="{{ STATIC_EXTENSION_URL }}{{ f }}"></script>
+    {% endfor %}
+
 	<body onload="realInit();"><a></a>
 		<!-- Toolbars
 		***********************************************************************

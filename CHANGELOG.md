@@ -19,6 +19,15 @@ Tracing:
   through a new entry in the Tracing section of the settings widget.
 
 
+Graph widget:
+
+- New layout modes "dagre, "cola", "spread" and "springy". The first is based on
+  DAGs (directed acyclic graphs) and the last three are force-directed. To note
+	that "spread" will evenly layout neurons in trying to occupy as much space as
+	possible, and also leads to symmetric-looking graphs when rendering multiple
+	disconnected graphs of e.g. left and right homologous neurons. Try it.
+
+
 Miscellaneous:
 
 - When a connector is selected, basic information about it is displayed at the

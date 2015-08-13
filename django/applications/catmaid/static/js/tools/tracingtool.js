@@ -415,7 +415,7 @@
                 "POST",
                 { connector_ids: [node.id] },
                 CATMAID.jsonResponseHandler(function(json) {
-                  var presynaptic_to = json[0][1].presynaptic_to;
+                  var presynaptic_to = json[0] ? json[0][1].presynaptic_to : false;
                   if (presynaptic_to) {
                     setNeuronNameInTopbars(presynaptic_to, 'Connector ' + node.id +
                         ', presynaptic partner: ');

@@ -435,7 +435,7 @@
       }).addClass('setting'));
 
       var dsSkeletonProjection = addSettingsContainer(ds,
-          "Active skeleton projection");
+          "Active skeleton projection", true);
 
       // Figure out if all displayed stack viewers have a skeleton projection
       // layer

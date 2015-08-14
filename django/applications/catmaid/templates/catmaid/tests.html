@@ -7,8 +7,11 @@
     <title>CATMAID front-end tests (using QUnit)---to be run with manage.py testerver</title>
     <link rel="stylesheet" href="{{ STATIC_URL }}js/tests/libs/qunit-1.17.1.css">
 
-    {% for f in JS_FILES %}
-      {% compressed_js f %}
+    {% for f in COMPRESSED_FILE_IDS %}
+          {% compressed_js f %}
+    {% endfor %}
+    {% for f in NON_COMPRESSED_FILES %}
+      <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
     {% endfor %}
   </head>
   <body>

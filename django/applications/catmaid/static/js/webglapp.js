@@ -4482,8 +4482,8 @@ WebGLApplication.prototype.exportAnimation = function()
   function handleOK() {
     /* jshint validthis: true */ // `this` is bound to this WebGLApplication
     $.blockUI({message: '<img src="' + CATMAID.staticURL +
-        'images/busy.gif" /> <h2>Rendering animation frame ' +
-        '<div id="counting-rendered-frames">0</div></h2>'});
+        'images/busy.gif" /> <span>Rendering animation frame ' +
+        '<div id="counting-rendered-frames">0</div></span>'});
 
     // Get current visibility
     var visMap = this.space.getVisibilityMap();

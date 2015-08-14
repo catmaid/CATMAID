@@ -41,8 +41,8 @@ var submitterFn = function() {
     // Block UI after a defined amount of time
     blockingTimeoutHandle = setTimeout(function() {
       $.blockUI({
-        message: '<h2><img src="' + STATIC_URL_JS +
-          'images/busy.gif" /> Just a moment...</h2>'
+        message: '<img src="' + STATIC_URL_JS +
+          'images/busy.gif" /><span>Just a moment...</span>'
       });
     }, blockingTimeout);
   };

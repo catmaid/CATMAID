@@ -2017,7 +2017,7 @@ GroupGraph.prototype.colorBy = function(mode, select) {
       graph.add_edge(d.source, d.target, {weight: d.weight});
     });
 
-    if (graph.number_of_nodes() > 10) $.blockUI({message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /> <h2>Computing betweenness centrality for ' + graph.number_of_nodes() + ' nodes and ' + graph.number_of_edges() + ' edges.</div></h2>'});
+    if (graph.number_of_nodes() > 10) $.blockUI({message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /> <span>Computing betweenness centrality for ' + graph.number_of_nodes() + ' nodes and ' + graph.number_of_edges() + ' edges.</span>'});
 
     try {
       var bc = jsnx.betweenness_centrality(graph, {weight: 'weight'});

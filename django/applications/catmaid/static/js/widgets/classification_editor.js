@@ -389,7 +389,7 @@ var ClassificationEditor = new function()
                 return false;
             }
 
-            $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'images/busy.gif" /> Removing classification graph node. Just a moment...</h2>' });
+            $.blockUI({ message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /><span>Removing classification graph node. Just a moment...</span>' });
             // Remove classes
             $.post(self.get_cls_url(project.id, '/instance-operation'), {
                 "operation": "remove_node",
@@ -423,7 +423,7 @@ var ClassificationEditor = new function()
                 $.jstree.rollback(treebefore);
                 return false;
             }
-            $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'images/busy.gif" /> Renaming classification graph node. Just a moment...</h2>' });
+            $.blockUI({ message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /><span>Renaming classification graph node. Just a moment...</span>' });
             $.post(self.get_cls_url(project.id, '/instance-operation'), {
                  "operation": "rename_node",
                  "id": node.attr("id").replace("node_", ""),

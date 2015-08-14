@@ -25,10 +25,13 @@ var SelectionTable = function() {
   this.review_filter = 'Union'; // filter for review percentage: 'Union', 'Team' or 'Self'
   this.all_visible = true;
   this.all_items_visible = {pre: true, post: true, text: false, meta: true};
-  this.selected_skeleton_id = null;
   this.next_color_index = 0;
   this.order = [[0, 'asc']];
   this.gui = new this.GUI(this);
+
+  // Listen to change events of the active node and skeletons
+  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+      this.selectActiveNode, this);
 };
 
 SelectionTable._lastFocused = null; // Static reference to last focused instance
@@ -51,6 +54,8 @@ SelectionTable.prototype.destroy = function() {
   this.unregisterSource();
   NeuronNameService.getInstance().unregister(this);
   if (SelectionTable._lastFocused === this) SelectionTable._lastFocused = null;
+  SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+      this.selectActiveNode, this);
 };
 
 SelectionTable.prototype.updateModels = function(models, source_chain) {
@@ -191,14 +196,26 @@ SelectionTable.prototype.skeleton_info = function(skeleton_ids) {
       }).bind(this));
 };
 
-SelectionTable.prototype.highlight = function( skeleton_id ) {
-  if (this.selected_skeleton_id in this.skeleton_ids) {
-    $('#skeletonrow' + this.widgetID + '-' + this.selected_skeleton_id).css('background-color', '');
-    this.selected_skeleton_id = null;
-  }
-  if (skeleton_id in this.skeleton_ids) {
-    $('#skeletonrow'+ this.widgetID + '-' + skeleton_id).css('background-color', this.highlighting_color);
-    this.selected_skeleton_id = skeleton_id;
+/**
+ * Will highlight the active node, if its skeleton is part of this table.
+ */
+SelectionTable.prototype.selectActiveNode = function(activeNode)
+{
+  this.highlight(activeNode ? activeNode.skeleton_id : null);
+};
+
+/**
+ * Will highlight the active node, if its skeleton is part of this table.
+ * Otherwise, all existing highlighting will be removed.
+ */
+SelectionTable.prototype.highlight = function(skeleton_id) {
+  var table = $("table#skeleton-table" + this.widgetID);
+  // Reset highlighting
+  $('tbody tr', table).css('background-color', '');
+  // Add new highlighting
+  if (skeleton_id && skeleton_id in this.skeleton_ids) {
+    $('tbody tr[data-skeleton-id=' + skeleton_id + ']', table).css(
+        'background-color', this.highlighting_color);
   }
 };
 
@@ -417,10 +434,6 @@ SelectionTable.prototype.removeSkeletons = function(ids) {
     if (ids[0] in this.skeleton_ids) {
       // Remove element
       this.skeletons.splice(this.skeleton_ids[ids[0]], 1);
-      // Edit selection
-      if (ids[0] === this.selected_skeleton_id) {
-        this.selected_skeleton_id = null;
-      }
     }
   } else {
     var ids_set = ids.reduce(function(o, id) { o[id] = null; return o; }, {});
@@ -428,10 +441,6 @@ SelectionTable.prototype.removeSkeletons = function(ids) {
     this.skeletons = this.skeletons.filter(function(sk) {
       return !(sk.id in ids_set);
     });
-    // Edit selection
-    if (this.selected_skeleton_id in ids_set) {
-      this.selected_skeleton_id = null;
-    }
   }
 
   // Recreate map of indices
@@ -455,7 +464,6 @@ SelectionTable.prototype.clear = function(source_chain) {
   this.skeleton_ids = {};
   this.reviews = {};
   this.gui.clear();
-  this.selected_skeleton_id = null;
   this.next_color_index = 0;
 
   this.clearLink(source_chain);
@@ -702,8 +710,8 @@ SelectionTable.prototype.GUI.prototype.update = function() {
   });
 
   // If the active skeleton is within the range, highlight it
-  this.selected_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
-  if (this.selected_skeleton_id) this.table.highlight(this.selected_skeleton_id);
+  var selectedSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+  if (selectedSkeletonId) this.table.highlight(selectedSkeletonId);
 };
 
 SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
@@ -809,10 +817,6 @@ SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
   rowElement.append( td );
 
   $('#skeleton-table' + widgetID + ' > tbody:last').append( rowElement );
- 
-  if (skeleton.id === this.table.selected_skeleton_id) {
-    this.table.highlight(skeleton.id);
-  }
 };
 
 SelectionTable.prototype.selectSkeletonById = function(id) {

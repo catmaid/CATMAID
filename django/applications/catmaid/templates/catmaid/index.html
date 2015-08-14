@@ -21,22 +21,11 @@
 		{% compressed_css 'catmaid' %}
 
     <!-- Regular CATMAID components -->
-    {% for f in JS_FILES %}
-		{% if f == 'arbor' %}
-			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/arbor.js"></script>
-		{% elif f == 'dagre' %}
-			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/dagre.js"></script>
-		{% elif f == 'cola' %}
-			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/cola.js"></script>
-		{% elif f == 'foograph' %}
-			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/foograph.js"></script>
-		{% elif f == 'rhill-voronoi-core' %}
-			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/rhill-voronoi-core.js"></script>
-		{% elif f == 'springy' %}
-			<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/springy.js"></script>
-		{% else %}
+    {% for f in COMPRESSED_FILE_IDS %}
 		  {% compressed_js f %}
-		{% endif %}
+    {% endfor %}
+    {% for f in NON_COMPRESSED_FILES %}
+      <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
     {% endfor %}
 
     <!-- Front end initialization -->

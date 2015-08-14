@@ -13,7 +13,8 @@ class CatmaidView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(self.__class__, self).get_context_data(**kwargs)
         context['CATMAID_URL'] = settings.CATMAID_URL
-        context['JS_FILES'] = settings.PIPELINE_JS.keys()
+        context['COMPRESSED_FILE_IDS'] = settings.COMPRESSED_FILE_IDS
+        context['NON_COMPRESSED_FILES'] = settings.NON_COMPRESSED_FILES
         context['STATIC_EXTENSION_URL'] = settings.STATIC_EXTENSION_URL
         context['STATIC_EXTENSION_FILES'] = settings.STATIC_EXTENSION_FILES
         profile_context = self.request.user.userprofile.as_dict()

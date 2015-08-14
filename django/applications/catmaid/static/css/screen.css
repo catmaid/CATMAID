@@ -683,8 +683,16 @@ div#classification_graph_object img.roiimage {
   font-weight: bold;
 }
 
-#settings_widget .content {
-  margin-left: 3em;
+#settings_widget > .settings-container {
+  margin-left: 1em;
+}
+
+.settings-container > p {
+  margin-left: 0;
+}
+
+.settings-container .content {
+  margin-left: 1em;
 }
 
 .setting {

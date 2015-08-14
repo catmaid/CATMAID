@@ -352,16 +352,6 @@
     })();
 
     ptype.AbstractTreenode = function() {
-      // Colors that a node can take
-      this.active_skeleton_color = "rgb(255,255,0)";
-      this.active_skeleton_color_virtual = "rgb(255,255,0)";
-      this.inactive_skeleton_color = "rgb(255,0,255)";
-      this.inactive_skeleton_color_virtual = "rgb(255,0,255)";
-      this.inactive_skeleton_color_above = "rgb(0,0,255)";
-      this.inactive_skeleton_color_below = "rgb(255,0,0)";
-      this.root_node_color = "rgb(255,0,0)";
-      this.leaf_node_color = "rgb(128,0,0)";
-
       // For drawing:
       this.USE_HREF = 'treenodeCircle';
       this.NODE_RADIUS = 3;
@@ -390,9 +380,9 @@
           color = SkeletonAnnotations.getActiveNodeColor();
         } else if (this.isroot) {
           // The root node should be colored red unless it's active:
-          color = this.root_node_color;
+          color = SkeletonAnnotations.root_node_color;
         } else if (0 === this.numberOfChildren) {
-          color = this.leaf_node_color;
+          color = SkeletonAnnotations.leaf_node_color;
         } else {
           // If none of the above applies, just colour according to the z difference.
           color = this.colorFromZDiff();
@@ -505,19 +495,19 @@
         // zdiff is in sections, therefore the current section is at [0, 1) --
         // notice 0 is inclusive and 1 is exclusive.
         if (this.zdiff >= 1) {
-          return this.inactive_skeleton_color_above;
+          return SkeletonAnnotations.inactive_skeleton_color_above;
         } else if (this.zdiff < 0) {
-          return this.inactive_skeleton_color_below;
+          return SkeletonAnnotations.inactive_skeleton_color_below;
         } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
           if (SkeletonAnnotations.isRealNode(this.id)) {
-            return this.active_skeleton_color;
+            return SkeletonAnnotations.active_skeleton_color;
           } else {
-            return this.active_skeleton_color_virtual;
+            return SkeletonAnnotations.active_skeleton_color_virtual;
           }
         } else if (SkeletonAnnotations.isRealNode(this.id)) {
-          return this.inactive_skeleton_color;
+          return SkeletonAnnotations.inactive_skeleton_color;
         } else {
-          return this.inactive_skeleton_color_virtual;
+          return SkeletonAnnotations.inactive_skeleton_color_virtual;
         }
       };
 
@@ -699,8 +689,12 @@
               height: bbox.height + pad});
 
           if (line) {
-            var lineColor = self.active_skeleton_color;
-            if (r.z !== 0) lineColor = (r.z < 0) ? self.inactive_skeleton_color_above : self.inactive_skeleton_color_below;
+            var lineColor = SkeletonAnnotations.active_skeleton_color;
+            if (r.z !== 0) {
+              lineColor = (r.z < 0) ?
+                  SkeletonAnnotations.inactive_skeleton_color_above :
+                  SkeletonAnnotations.inactive_skeleton_color_below;
+            }
             line.attr({x2: nodeX + r.x, y2: nodeY + r.y, stroke: lineColor});
           }
         });

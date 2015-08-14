@@ -23,7 +23,16 @@
  * Contains the current state of skeleton annotations.
  */
 var SkeletonAnnotations = {
+  // Colors that a node can take
   atn_fillcolor : "rgb(0, 255, 0)",
+  active_skeleton_color: "rgb(255,255,0)",
+  active_skeleton_color_virtual: "rgb(255,255,0)",
+  inactive_skeleton_color: "rgb(255,0,255)",
+  inactive_skeleton_color_virtual: "rgb(255,0,255)",
+  inactive_skeleton_color_above: "rgb(0,0,255)",
+  inactive_skeleton_color_below: "rgb(255,0,0)",
+  root_node_color: "rgb(255,0,0)",
+  leaf_node_color: "rgb(128,0,0)",
 
   /**
    * Data of the active Treenode or ConnectorNode. Its position is stored in

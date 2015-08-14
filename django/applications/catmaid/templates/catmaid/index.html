@@ -45,12 +45,12 @@
 					"{{ STATIC_EXTENSION_URL|escapejs }}");
 			CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
 		</script>
-	</head>
 
     <!-- Extensions -->
     {% for f in STATIC_EXTENSION_FILES %}
       <script type="text/javascript" src="{{ STATIC_EXTENSION_URL }}{{ f }}"></script>
     {% endfor %}
+	</head>
 
 	<body onload="realInit();"><a></a>
 		<!-- Toolbars

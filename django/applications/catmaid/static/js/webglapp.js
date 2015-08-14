@@ -4580,9 +4580,10 @@ WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
 
   // Render each frame in own timeout to be able to update UI between frames.
   setTimeout(renderFrame.bind(this, animation, startTime, 0, nframes, frames,
-        width, height, onDone, onStep), 5)
+        width, height, onDone, onStep), 5);
 
   function renderFrame(animation, startTime, i, nframes, frames, w, h, onDone, onStep) {
+    /* jshint validthis: true */ // `this` is bound to this WebGLApplication
     animation.update(startTime + i);
     // Make sure we still render with the correct size and redraw
     this.resizeView(w, h);
@@ -4595,7 +4596,7 @@ WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
     var nextFrame = i + 1;
     if (nextFrame < nframes) {
       setTimeout(renderFrame.bind(this, animation, startTime, nextFrame,
-            nframes, frames, w, h, onDone, onStep), 5)
+            nframes, frames, w, h, onDone, onStep), 5);
     } else {
       // Restore original dimensions
       if (originalWidth && originalHeight) {

@@ -3312,6 +3312,6 @@ var WindowMaker = new function()
    */
   CATMAID.registerWidget = function(options) {
     WindowMaker.registerWidget(options.key, options.creator);
-  }
+  };
 
 })(CATMAID);

@@ -48,6 +48,7 @@ var requestQueue = new RequestQueue();
   CATMAID.configure = function(backendURL, staticURL, staticExtURL) {
     validateString(backendURL, "back-end URL");
     validateString(staticURL, "static URL");
+    if (typeof staticExtURL === 'undefined') staticExtURL = '';
 
     Object.defineProperty(CATMAID, "backendURL", {
       enumerable: false,

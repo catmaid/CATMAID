@@ -928,13 +928,14 @@ var WindowMaker = new function()
   };
 
   var appendToTab = function(tab, elems) {
-    elems.forEach(function(e) {
+    return elems.map(function(e) {
       switch (e.length) {
-        case 1: tab.appendChild(e[0]); break;
-        case 2: appendButton(tab, e[0], e[1]); break;
-        case 3: appendButton(tab, e[0], e[1], e[2]); break;
-        case 4: appendCheckbox(tab, e[0], e[1], e[2], e[3]); break;
-        case 5: appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]); break;
+        case 1: return tab.appendChild(e[0]); break;
+        case 2: return appendButton(tab, e[0], e[1]); break;
+        case 3: return appendButton(tab, e[0], e[1], e[2]); break;
+        case 4: return appendCheckbox(tab, e[0], e[1], e[2], e[3]); break;
+        case 5: return appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]); break;
+        default: return undefined;
       }
     });
   };
@@ -1008,7 +1009,7 @@ var WindowMaker = new function()
     connectorRestrictions.appendChild(document.createTextNode('Connector restriction'));
     connectorRestrictions.appendChild(connectorRestrictionsSl);
 
-    appendToTab(tabs['View'],
+    var viewControls = appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
           ['Follow active', false, function() { WA.setFollowActive(this.checked); }, false],
@@ -1040,7 +1041,7 @@ var WindowMaker = new function()
       var name = this.options[this.selectedIndex].value;
       WA.activateView(name);
       // Update orthographic view checkbox
-      orthographicCbElems[0].checked = ('orthographic' === WA.options.camera_view);
+      viewControls[11].checked = ('orthographic' === WA.options.camera_view);
     };
     storedViewsSelect.onclick = storedViewsSelect.onchange;
     // Update the list when the element is focused

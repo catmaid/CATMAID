@@ -461,7 +461,7 @@
         if (13 === e.keyCode) {
           colors.forEach(function(field, label) {
             var input = colorControls.get(field);
-            var color = $(input).find('input').val()
+            var color = $(input).find('input').val();
             SkeletonAnnotations[field] = color;
           });
           // Update all tracing layers

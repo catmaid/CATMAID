@@ -434,6 +434,45 @@
         });
       }).addClass('setting'));
 
+
+      var dsNodeColors = addSettingsContainer(ds, "Skeleton colors", true);
+      // Node color settings: Title vs. SkeletonAnnotations field.
+      var colors = new Map([
+        ['Active node', 'atn_fillcolor'],
+        ['Active skeleton', 'active_skeleton_color'],
+        ['Inactive skeleton', 'inactive_skeleton_color'],
+        ['Active virtual node/edge', 'active_skeleton_color_virtual'],
+        ['Inactive virtual node/edge', 'inactive_skeleton_color_virtual'],
+        ['Inactive upstream edge', 'inactive_skeleton_color_above'],
+        ['Inactive downstream edge', 'inactive_skeleton_color_below'],
+        ['Root node', 'root_node_color'],
+        ['Leaf node', 'leaf_node_color'],
+      ]);
+
+      var colorControls = new Map();
+      colors.forEach(function(field, label) {
+        var input = createInputSetting(label, SkeletonAnnotations[field]);
+        this.append(input);
+        colorControls.set(field, input);
+      }, dsNodeColors);
+
+      // Allow color confirmation with enter
+      dsNodeColors.find('input').on('keyup', function(e) {
+        if (13 === e.keyCode) {
+          colors.forEach(function(field, label) {
+            var input = colorControls.get(field);
+            var color = $(input).find('input').val()
+            SkeletonAnnotations[field] = color;
+          });
+          // Update all tracing layers
+          project.getStackViewers().forEach(function(sv) {
+            var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
+            if (overlay) overlay.recolorAllNodes();
+          });
+        }
+      });
+
+
       var dsSkeletonProjection = addSettingsContainer(ds,
           "Active skeleton projection", true);
 

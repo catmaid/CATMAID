@@ -165,7 +165,7 @@ WebGLApplication.prototype.fullscreenWebGL = function() {
  * new dimensions,execute the given function and return to the original
  * dimension afterwards.
  */
-WebGLApplication.prototype.askForDimensions = function(title, fn) {
+WebGLApplication.prototype.askForDimensions = function(title, fn, block) {
   var dialog = new CATMAID.OptionsDialog(title);
   dialog.appendMessage("Please adjust the dimensions to your liking. They " +
       "default to the current size of the 3D viewer");
@@ -179,7 +179,10 @@ WebGLApplication.prototype.askForDimensions = function(title, fn) {
 
   function handleOK() {
     /* jshint validthis: true */ // `this` is bound to this WebGLApplication
-    $.blockUI();
+    if (block) {
+      $.blockUI({message: '<img src="' + CATMAID.staticURL +
+          'images/busy.gif" /> <span>Please wait</span>'});
+    }
 
     var originalWidth, originalHeight;
     try {
@@ -210,7 +213,9 @@ WebGLApplication.prototype.askForDimensions = function(title, fn) {
       this.resizeView(originalWidth, originalHeight);
     }
 
-    $.unblockUI();
+    if (block) {
+      $.unblockUI();
+    }
   }
 };
 
@@ -229,7 +234,7 @@ WebGLApplication.prototype.exportPNG = function() {
     } catch(e) {
       CATMAID.error("Could not export current 3D view, there was an error.", e);
     }
-  }).bind(this));
+  }).bind(this), true);
 };
 
 /**

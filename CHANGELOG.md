@@ -33,6 +33,10 @@ Miscellaneous:
 - When a connector is selected, basic information about it is displayed at the
   top of the window (where otherwise the neuron name is displayed).
 
+- A neuron search result's annotation list is now kept in sync with the rest of
+  the widgets. If annotations change on a listed neuron or annotation, the
+  search query is re-done.
+
 
 Administration:
 
@@ -54,6 +58,9 @@ Administration:
 
 - Changing the order of rows and columns of the connectivity matrix manually
   does now work like expected.
+
+- From within the neuron search removed annotations will now disappear again
+  from the search widget after they are unlinked.
 
 
 ## 2015.7.31

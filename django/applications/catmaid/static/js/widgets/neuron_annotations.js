@@ -150,9 +150,20 @@
    * In the event of annotations being update while this widget is loaded,
    * update internal use of annotations (e.g. in auto completion).
    */
-  NeuronAnnotations.prototype.handleAnnotationUpdate = function() {
+  NeuronAnnotations.prototype.handleAnnotationUpdate = function(changedEntities) {
     CATMAID.annotations.add_autocomplete_to_input(
         $('.neuron_query_by_annotation_name' + this.widgetID));
+    // Re-query if one of the affected enteties is displayed by this search
+    // widget.
+    if (this.queryResults && this.queryResults.length > 0 &&
+        changedEntities && changedEntities.length > 0) {
+      var hasEntety = this.queryResults[0].some(function(r) {
+        return -1 !== changedEntities.indexOf(r.id);
+      });
+      if (hasEntety) {
+        this.query(false);
+      }
+    }
   };
 
   /**

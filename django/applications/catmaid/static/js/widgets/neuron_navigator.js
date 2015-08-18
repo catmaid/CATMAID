@@ -2058,7 +2058,7 @@
           } else {
             // Unlink the annotation from the current neuron
             CATMAID.remove_annotation(self.neuron_id,
-                annotation_id, function(message) {
+                annotation_ids, function(message) {
                     // Display message returned by the server
                     CATMAID.info(message);
                 });

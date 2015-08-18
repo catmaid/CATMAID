@@ -336,7 +336,8 @@
       this.rowDimension.sort(rowSort.sort.bind(this, this.matrix,
             this.rowDimension, true));
       this.matrix.refresh();
-    } else {
+    } else if (undefined === rowSort.sort) {
+      // Explicitly allow null as no-op
       CATMAID.error('Could not find row sorting function with name ' +
           this.rowSorting);
     }
@@ -346,7 +347,8 @@
     if (colSort && CATMAID.tools.isFn(colSort.sort)) {
       this.colDimension.sort(colSort.sort.bind(this, this.matrix,
             this.colDimension, false));
-    } else {
+    } else if (undefined === colSort.sort) {
+      // Explicitly allow null as no-op
       CATMAID.error('Could not find column sorting function with name ' +
           this.colSorting);
     }
@@ -1027,9 +1029,7 @@
   var sortOptions = [
     {
       name: 'No Sorting',
-      sort: function(matrix, src, isRow, a, b) {
-        return 0;
-      }
+      sort: null /* No-op */
     },
     {
       name: 'ID',

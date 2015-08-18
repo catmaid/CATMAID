@@ -52,6 +52,9 @@ Administration:
   viewer controlled by selection table) are now updated correctly, if a selected
   target is closed.
 
+- Changing the order of rows and columns of the connectivity matrix manually
+  does now work like expected.
+
 
 ## 2015.7.31
 

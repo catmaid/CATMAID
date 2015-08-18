@@ -346,6 +346,22 @@
             annotation_id, (function(message) {
                 // Display message returned by the server
                 CATMAID.info(message);
+                // Update internal representation
+                var hasAnnotation = function(r) {
+                  return r.annotations.some(function(a) {
+                    return a.id == annotation_id;
+                  });
+                };
+                var nextAnnotationMatch = function(r) {
+                  for (var i=0; i<r.annotations.length; ++i) {
+                    if (r.annotations[i].id == annotation_id) return i;
+                  }
+                  return null;
+                };
+                this.queryResults[0].filter(hasAnnotation).forEach(function(r) {
+                  var i = nextAnnotationMatch(r);
+                  if (i !== null) r.annotations.splice(i, 1);
+                });
                 // Remove current annotation from displayed list
                 var result_tr = $('#neuron_annotations_query_results' +
                     this.widgetID).find('.show_annotation[neuron_id=' +

@@ -237,34 +237,60 @@ WebGLApplication.prototype.exportPNG = function() {
  */
 WebGLApplication.prototype.exportSVG = function() {
   this.askForDimensions("SVG export", (function() {
-    try {
-      /* jshint validthis: true */ // `this` is bound to this WebGLApplication
-      var svg = this.space.view.getSVGData();
-      CATMAID.svgutil.reduceCoordinatePrecision(svg, 1);
-      CATMAID.svgutil.stripStyleProperties(svg, {
-        'fill': 'none',
-        'stroke-opacity': 1,
-        'stroke-linejoin': undefined
-      });
-      CATMAID.svgutil.reduceStylePrecision(svg, 1);
+    $.blockUI({message: '<img src="' + CATMAID.staticURL +
+        'images/busy.gif" /> <span id="block-export-svg">Please wait</span>'});
+    var label = $('#block-export-svg')
 
-      var styleDict = CATMAID.svgutil.classifyStyles(svg);
-
-      var styles = Object.keys(styleDict).reduce(function(o, s) {
-        var cls = styleDict[s];
-        o = o + "." + cls + "{" + s + "}";
-        return o;
-      }, "");
-
-      var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
-      CATMAID.svgutil.addStyles(xml, styles);
-
-      var data = new XMLSerializer().serializeToString(xml);
-      var blob = new Blob([data], {type: 'text/svg'});
-      saveAs(blob, "catmaid-3d-view.svg");
-    } catch (e) {
-      CATMAID.error("Could not export current 3D view, there was an error.", e);
+    // Queue individual steps as tasks to have better UI feedback.
+    var error = false;
+    function queue(msg, fn) {
+      // Update message and start task
+      label.text(msg);
+      setTimeout(function() {
+        if (error) return;
+        try {
+          fn();
+        } catch (e) {
+          $.unblockUI();
+          error = true;
+          CATMAID.error("Could not export current 3D view, there was an error.", e);
+        }
+      }, 0);
     }
+
+    var self = this;
+    queue("Rendering SVG", function() {
+      var svg = self.space.view.getSVGData();
+
+      queue("Postprocessing", function() {
+          CATMAID.svgutil.reduceCoordinatePrecision(svg, 1);
+          CATMAID.svgutil.stripStyleProperties(svg, {
+            'fill': 'none',
+            'stroke-opacity': 1,
+            'stroke-linejoin': undefined
+          });
+          CATMAID.svgutil.reduceStylePrecision(svg, 1);
+      });
+
+      queue("Generating output", function() {
+        var styleDict = CATMAID.svgutil.classifyStyles(svg);
+
+        var styles = Object.keys(styleDict).reduce(function(o, s) {
+          var cls = styleDict[s];
+          o = o + "." + cls + "{" + s + "}";
+          return o;
+        }, "");
+
+        var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+        CATMAID.svgutil.addStyles(xml, styles);
+
+        var data = new XMLSerializer().serializeToString(xml);
+        var blob = new Blob([data], {type: 'text/svg'});
+        saveAs(blob, "catmaid-3d-view.svg");
+      });
+
+      setTimeout($.unblockUI, 0);
+    });
   }).bind(this));
 };
 

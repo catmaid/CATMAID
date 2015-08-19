@@ -335,7 +335,6 @@
     if (rowSort && CATMAID.tools.isFn(rowSort.sort)) {
       this.rowDimension.sort(rowSort.sort.bind(this, this.matrix,
             this.rowDimension, true));
-      this.matrix.refresh();
     } else if (undefined === rowSort.sort) {
       // Explicitly allow null as no-op
       CATMAID.error('Could not find row sorting function with name ' +

@@ -848,13 +848,26 @@
       if (!checkSkeletonID()) {
         return;
       }
-      if (!confirm("Are you sure you want to alter the review state of skeleton #" + skeletonID + " with '" + fnName + "' ?")) {
-        return;
-      }
-      submit(django_url+projectID+"/skeleton/" + skeletonID + "/review/" + fnName, {},
-        function(json) {
-          self.startReviewActiveSkeleton();
-        });
+      $('<div id="dialog-confirm" />')
+          .text('This will remove all of your reviews from this skeleton. ' +
+                'This cannot be undone. Are you sure you want to continue?')
+          .dialog({
+            resizable: false,
+            modal: true,
+            title: 'Reset own revisions?',
+            buttons: {
+              "Cancel": function () {
+                $(this).dialog('destroy');
+              },
+              "Remove all of my reviews": function () {
+                submit(django_url + projectID + "/skeleton/" + skeletonID + "/review/" + fnName, {},
+                  function (json) {
+                    self.startReviewActiveSkeleton();
+                  });
+                $(this).dialog('destroy');
+              }
+            }
+          });
     };
 
     this.resetOwnRevisions = function() {

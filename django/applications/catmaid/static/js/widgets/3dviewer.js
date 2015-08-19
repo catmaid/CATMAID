@@ -244,7 +244,7 @@ WebGLApplication.prototype.exportSVG = function() {
   this.askForDimensions("SVG export", (function() {
     $.blockUI({message: '<img src="' + CATMAID.staticURL +
         'images/busy.gif" /> <span id="block-export-svg">Please wait</span>'});
-    var label = $('#block-export-svg')
+    var label = $('#block-export-svg');
 
     // Queue individual steps as tasks to have better UI feedback.
     var error = false;

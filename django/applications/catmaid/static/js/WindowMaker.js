@@ -2278,27 +2278,29 @@ var WindowMaker = new function()
         option.value = -1;
         sync.appendChild(option);
         var operation_type_array = [
-        "rename_root",
-        "create_neuron",
-        "rename_neuron",
-        "remove_neuron",
-        "move_neuron",
+          "rename_root",
+          "create_neuron",
+          "rename_neuron",
+          "remove_neuron",
+          "move_neuron",
 
-        "create_group",
-        "rename_group",
-        "remove_group",
-        "move_group",
+          "create_group",
+          "rename_group",
+          "remove_group",
+          "move_group",
 
-        "create_skeleton",
-        "rename_skeleton",
-        "remove_skeleton",
-        "move_skeleton",
+          "create_skeleton",
+          "rename_skeleton",
+          "remove_skeleton",
+          "move_skeleton",
 
-        "split_skeleton",
-        "join_skeleton",
-        "reroot_skeleton",
+          "split_skeleton",
+          "join_skeleton",
+          "reroot_skeleton",
 
-        "change_confidence"
+          "change_confidence",
+
+          "reset_reviews"
         ];
         for( var i = 0; i < operation_type_array.length; i++ ) {
           var option = document.createElement("option");

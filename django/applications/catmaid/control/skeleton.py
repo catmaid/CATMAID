@@ -1088,7 +1088,9 @@ def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
     <skeleton_id>.
     """
     skeleton_id = int(skeleton_id) # sanitize
-    Review.objects.filter(skeleton_id=skeleton_id, reviewer=request.user).delete();
+    Review.objects.filter(skeleton_id=skeleton_id, reviewer=request.user).delete()
+    insert_into_log(project_id, request.user.id, 'reset_reviews',
+                    None, 'Reset reviews for skeleton %s' % skeleton_id)
     return HttpResponse(json.dumps({'status': 'success'}), content_type='text/json')
 
 

@@ -1374,6 +1374,13 @@
      * avoid skeletons whose node count is too small, like e.g. a single node.
      */
     var distribution = function(partners, skeleton_node_count_threshold, skeletons) {
+      var filterSynapses = function (synapses, threshold) {
+        if (!synapses) return 0;
+        return synapses
+                .slice(threshold - 1)
+                .reduce(function (skidSum, c) {return skidSum + c;}, 0);
+      };
+
       var d = Object.keys(partners)
           .reduce(function(ob, partnerID) {
             var props = partners[partnerID];
@@ -1384,7 +1391,7 @@
             return Object.keys(skids)
                 .reduce(function(ob, skid) {
                   if (!ob.hasOwnProperty(skid)) ob[skid] = [];
-                  var synapse_count = skids[skid];
+                  var synapse_count = filterSynapses(skids[skid], 1);
                   if (!ob[skid].hasOwnProperty(synapse_count)) {
                     ob[skid][synapse_count] = 1;
                   } else {

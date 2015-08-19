@@ -1261,6 +1261,10 @@
         if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
           return;
         }
+        // Mark this edge as suspended so that other interaction modes don't
+        // expect it to be there.
+        d.suspended = true;
+
         // 'this' will be the the connector's mouse catcher line
         var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
         requestQueue.register(django_url + project.id + '/link/delete', "POST", {
@@ -1274,9 +1278,13 @@
               if (text && text !== " ") {
                 var e = $.parseJSON(text);
                 if (e.error) {
+                  d.suspended = false;
                   alert(e.error);
                 } else {
-                  catmaidSVGOverlay.updateNodes();
+                  catmaidSVGOverlay.updateNodes(function() {
+                    // Reset deletion flag
+                    d.suspended = false;
+                  });
                   return true;
                 }
               }
@@ -1285,6 +1293,10 @@
       });
 
       this.mouseover = function (d) {
+        // If this edge is suspended, don't try to retrieve any information.
+        if (d.suspended) {
+          return;
+        }
         var relation_name, title;
         if (d.is_pre === undefined) {
           relation_name = 'abutting';

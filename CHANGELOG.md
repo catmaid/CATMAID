@@ -28,6 +28,11 @@ Graph widget:
 	disconnected graphs of e.g. left and right homologous neurons. Try it.
 
 
+Connectivity matrix:
+
+- Descending and ascending sorting is now available for all sorting modes.
+
+
 Miscellaneous:
 
 - When a connector is selected, basic information about it is displayed at the

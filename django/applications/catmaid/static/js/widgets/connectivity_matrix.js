@@ -17,6 +17,9 @@
     // Sorting indices for row and columns, default to name
     this.rowSorting = 2;
     this.colSorting = 2;
+    // Default to ascending sorting
+    this.rowSortingDesc = false;
+    this.colSortingDesc = false;
     // Rotate column headers by 90 degree
     this.rotateColumnHeaders = false;
   };
@@ -232,6 +235,18 @@
         sortRows.appendChild(sortRowsSelect);
         tabs['Display'].appendChild(sortRows);
 
+        var sortRowsDescCb = document.createElement('input');
+        sortRowsDescCb.setAttribute('type', 'checkbox');
+        sortRowsDescCb.checked = this.rowSortingDesc;
+        sortRowsDescCb.onclick = (function(e) {
+          this.rowSortingDesc = e.target.checked;
+          this.refresh();
+        }).bind(this);
+        var sortRowsDesc = document.createElement('label');
+        sortRowsDesc.appendChild(sortRowsDescCb);
+        sortRowsDesc.appendChild(document.createTextNode('Desc.'));
+        tabs['Display'].appendChild(sortRowsDesc);
+
         var sortColsSelect = document.createElement('select');
         for (var i=0; i < sortOptionNames.length; ++i) {
           var selected = (this.colSorting === i);
@@ -246,6 +261,18 @@
         sortCols.appendChild(document.createTextNode('Sort columns by'));
         sortCols.appendChild(sortColsSelect);
         tabs['Display'].appendChild(sortCols);
+
+        var sortColsDescCb = document.createElement('input');
+        sortColsDescCb.setAttribute('type', 'checkbox');
+        sortColsDescCb.checked = this.colSortingDesc;
+        sortColsDescCb.onclick = (function(e) {
+          this.colSortingDesc = e.target.checked;
+          this.refresh();
+        }).bind(this);
+        var sortColsDesc = document.createElement('label');
+        sortColsDesc.appendChild(sortColsDescCb);
+        sortColsDesc.appendChild(document.createTextNode('Desc.'));
+        tabs['Display'].appendChild(sortColsDesc);
 
         var colorSelect = document.createElement('select');
         for (var i=0; i < colorOptions.length; ++i) {
@@ -333,8 +360,8 @@
     // Sort row dimensions
     var rowSort = sortOptions[this.rowSorting];
     if (rowSort && CATMAID.tools.isFn(rowSort.sort)) {
-      this.rowDimension.sort(rowSort.sort.bind(this, this.matrix,
-            this.rowDimension, true));
+      this.rowDimension.sort(rowSort.sort.bind(this, this.rowSortingDesc,
+            this.matrix, this.rowDimension, true));
     } else if (undefined === rowSort.sort) {
       // Explicitly allow null as no-op
       CATMAID.error('Could not find row sorting function with name ' +
@@ -344,8 +371,8 @@
     // Sort coumn dimensions
     var colSort = sortOptions[this.colSorting];
     if (colSort && CATMAID.tools.isFn(colSort.sort)) {
-      this.colDimension.sort(colSort.sort.bind(this, this.matrix,
-            this.colDimension, false));
+      this.colDimension.sort(colSort.sort.bind(this, this.colSortingDesc,
+            this.matrix, this.colDimension, false));
     } else if (undefined === colSort.sort) {
       // Explicitly allow null as no-op
       CATMAID.error('Could not find column sorting function with name ' +
@@ -1032,43 +1059,35 @@
     },
     {
       name: 'ID',
-      sort: function(matrix, src, isRow, a, b) {
-        return CATMAID.tools.compareStrings('' + a, '' + b);
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var c = CATMAID.tools.compareStrings('' + a, '' + b);
+        return desc ? -1 * c : c;
       }
     },
     {
       name: 'Name',
-      sort: function(matrix, src, isRow, a, b) {
+      sort: function(desc, matrix, src, isRow, a, b) {
         // Compare against the group name, if a or b is a group,
         // otherwise use the name of the neuron name service.
         var nns = NeuronNameService.getInstance();
         a = src.isGroup(a) ? a : nns.getName(a);
         b = src.isGroup(b) ? b : nns.getName(b);
-        return CATMAID.tools.compareStrings('' + a, '' + b);
+        var c = CATMAID.tools.compareStrings('' + a, '' + b);
+        return desc ? -1 * c : c;
       }
     },
     {
-      name: 'Max synapse count (desc.)',
-      sort: function(matrix, src, isRow, a, b) {
-        return compareDescendingSynapseCount(matrix, src, isRow, a, b);
+      name: 'Max synapse count',
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var c = compareDescendingSynapseCount(matrix, src, isRow, a, b);
+        return desc ? -1 * c : c;
       }
     },
     {
-      name: 'Max synapse count (asc.)',
-      sort: function(matrix, src, isRow, a, b) {
-        return -1 * compareDescendingSynapseCount(matrix, src, isRow, a, b);
-      }
-    },
-    {
-      name: 'Max total synapse count (desc.)',
-      sort: function(matrix, src, isRow, a, b) {
-        return compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
-      }
-    },
-    {
-      name: 'Max total synapse count (asc.)',
-      sort: function(matrix, src, isRow, a, b) {
-        return -1 * compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
+      name: 'Max total synapse count',
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var c =  compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
+        return desc ? -1 * c : c;
       }
     }
   ];
@@ -1095,7 +1114,7 @@
         if (m[i][ia] > maxa) maxa = m[i][ia];
         if (m[i][ib] > maxb) maxb = m[i][ib];
       }
-      return maxa === maxb ? 0 : (maxa > maxb ? -1 : 1);
+      return maxa === maxb ? 0 : (maxa > maxb ? 1 : -1);
     }
   };
 
@@ -1124,7 +1143,7 @@
       }
     }
     // Compare aggregated synapses
-    return aAll === bAll ? 0 : (aAll > bAll ? -1 : 1);
+    return aAll === bAll ? 0 : (aAll > bAll ? 1 : -1);
   };
 
   /**

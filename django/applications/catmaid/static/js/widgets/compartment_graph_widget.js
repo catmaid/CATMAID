@@ -652,14 +652,6 @@ GroupGraph.prototype.updateLayout = function(layout) {
   var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'concentric', 'concentric out', 'concentric in', 'random', 'cose', 'preset', 'dagre', 'cola', 'spread', 'springy'][index];
   var options = this.createLayoutOptions(name);
   options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
-
-  // TODO: This is workaround for a problem in Cytoscape's arbor layout, which
-  // will break if nodes are locked. This is fixed upstream aleady and it should
-  // be fine to remove this when Cytoscape.js is update to a version > 2.4.5.
-  if ('arbor' === name) {
-      this.cy.nodes().unlock();
-  }
-
   this.cy.layout( options );
 };
 

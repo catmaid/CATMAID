@@ -930,11 +930,11 @@ var WindowMaker = new function()
   var appendToTab = function(tab, elems) {
     return elems.map(function(e) {
       switch (e.length) {
-        case 1: return tab.appendChild(e[0]); break;
-        case 2: return appendButton(tab, e[0], e[1]); break;
-        case 3: return appendButton(tab, e[0], e[1], e[2]); break;
-        case 4: return appendCheckbox(tab, e[0], e[1], e[2], e[3]); break;
-        case 5: return appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]); break;
+        case 1: return tab.appendChild(e[0]);
+        case 2: return appendButton(tab, e[0], e[1]);
+        case 3: return appendButton(tab, e[0], e[1], e[2]);
+        case 4: return appendCheckbox(tab, e[0], e[1], e[2], e[3]);
+        case 5: return appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]);
         default: return undefined;
       }
     });

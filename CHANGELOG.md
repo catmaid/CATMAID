@@ -37,6 +37,11 @@ Miscellaneous:
   the widgets. If annotations change on a listed neuron or annotation, the
   search query is re-done.
 
+- If only transparency is changed in the batch color picker of the Selection
+  Table, the transparency alone (and not the color) of the target skeletons will
+  be updated. To also update the skeleton color, the color has to be changed in
+  the color picker, too.
+
 
 Administration:
 

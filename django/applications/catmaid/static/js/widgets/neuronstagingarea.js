@@ -875,13 +875,16 @@ SelectionTable.prototype.filteredSkeletons = function(only_selected) {
   return this.skeletons;
 };
 
-SelectionTable.prototype.batchColorSelected = function(rgb, alpha) {
+SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged, alphaChanged) {
   var c = [parseInt(rgb.r) / 255.0,
            parseInt(rgb.g) / 255.0,
            parseInt(rgb.b) / 255.0];
   this.getSelectedSkeletons().forEach(function(skid) {
     var skeleton = this.skeletons[this.skeleton_ids[skid]];
-    skeleton.color.setRGB(c[0], c[1], c[2]);
+    if (colorChanged) {
+      // Set color only if it was actually changed
+      skeleton.color.setRGB(c[0], c[1], c[2]);
+    }
     skeleton.opacity = alpha;
     this.gui.update_skeleton_color_button(skeleton);
     this.notifyLink(skeleton); // TODO need a batchNotifyLink

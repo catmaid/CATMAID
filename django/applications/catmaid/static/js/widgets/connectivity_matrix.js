@@ -227,10 +227,10 @@
           this.rowSorting = e.target.value;
           this.refresh();
         }).bind(this);
-        var postColor = document.createElement('label');
-        postColor.appendChild(document.createTextNode('Sort rows by'));
-        postColor.appendChild(sortRowsSelect);
-        tabs['Display'].appendChild(postColor);
+        var sortRows = document.createElement('label');
+        sortRows.appendChild(document.createTextNode('Sort rows by'));
+        sortRows.appendChild(sortRowsSelect);
+        tabs['Display'].appendChild(sortRows);
 
         var sortColsSelect = document.createElement('select');
         for (var i=0; i < sortOptionNames.length; ++i) {
@@ -242,10 +242,10 @@
           this.colSorting = e.target.value;
           this.refresh();
         }).bind(this);
-        var postColor = document.createElement('label');
-        postColor.appendChild(document.createTextNode('Sort columns by'));
-        postColor.appendChild(sortColsSelect);
-        tabs['Display'].appendChild(postColor);
+        var sortCols = document.createElement('label');
+        sortCols.appendChild(document.createTextNode('Sort columns by'));
+        sortCols.appendChild(sortColsSelect);
+        tabs['Display'].appendChild(sortCols);
 
         var colorSelect = document.createElement('select');
         for (var i=0; i < colorOptions.length; ++i) {

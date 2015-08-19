@@ -1323,6 +1323,12 @@
                     CATMAID.tools.contextualDateString(info.edition_time);
               }).join('; ');
               CATMAID.statusBar.replaceLast(msg);
+            }, function(json) {
+              // Display only a warning in case of an error. Since it is
+              // possible that we get false errors when the link or one of the
+              // nodes get removed, this is probably okay.
+              if (json && json.error) CATMAID.warn(json.error);
+              return true;
             }));
       };
 

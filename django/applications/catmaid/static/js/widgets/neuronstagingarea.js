@@ -240,23 +240,21 @@ SelectionTable.getLastFocused = function () {
 SelectionTable.prototype.toggleSelectAllSkeletonsUI = function() {
   this.all_visible = !this.all_visible;
   var updated = {};
+  // Update table header
   ['pre', 'post', 'text', 'meta'].forEach(function(suffix, i) {
     if (2 === i && this.all_visible) return; // don't turn on text
     $('#selection-table-show-all-' + suffix + this.widgetID).prop('checked', this.all_visible);
   }, this);
+  // Update models
   this.filteredSkeletons(false).forEach(function(skeleton) {
-      // Update checkboxes
-      ['selected', 'pre_visible', 'post_visible', 'text_visible', 'meta_visible'].forEach(function(key, i) {
-        if (3 === i && this.all_visible) return; // don't turn on text
-        $("#skeleton" + key + this.widgetID + "-" + skeleton.id).prop('checked', this.all_visible);
-      }, this);
-      // Update model
       skeleton.setVisible(this.all_visible);
       updated[skeleton.id] = skeleton.clone();
     }, this);
   if (this.linkTarget && Object.keys(updated).length > 0) {
     this.updateLink(updated);
   }
+  // Update UI
+  this.gui.invalidate();
 };
 
 /** Where 'type' is 'pre' or 'post' or 'text' or 'meta', which are the prefixes of
@@ -267,7 +265,6 @@ SelectionTable.prototype.toggleAllKeyUI = function(type) {
   var skeletons = this.filteredSkeletons(true);
   var key = type + '_visible';
   skeletons.forEach(function(skeleton) {
-    $("#skeleton" + key + this.widgetID + "-" + skeleton.id).prop('checked', state);
     skeleton[key] = state;
   }, this);
   if (this.linkTarget && skeletons.length > 0) {
@@ -276,6 +273,8 @@ SelectionTable.prototype.toggleAllKeyUI = function(type) {
       return o;
     }, {}));
   }
+  // Update UI
+  this.gui.invalidate();
 };
 
 /** setup button handlers */
@@ -444,9 +443,10 @@ SelectionTable.prototype.randomizeColorsOfSelected = function() {
   this.next_color_index = 0; // reset
   this.filteredSkeletons(true).forEach(function(skeleton) {
     skeleton.color = this.pickColor();
-    this.gui.update_skeleton_color_button(skeleton);
   }, this);
   this.updateLink(this.getSelectedSkeletonModels());
+  // Update UI
+  this.gui.invalidate();
 };
 
 SelectionTable.prototype.colorizeWith = function(scheme) {
@@ -474,9 +474,10 @@ SelectionTable.prototype.colorizeWith = function(scheme) {
   if (colorFn) {
     skeletons.forEach(function(sk, i) {
       sk.color.setStyle(colorFn(i));
-      this.gui.update_skeleton_color_button(sk);
     }, this);
     this.updateLink(this.getSelectedSkeletonModels());
+    // Update UI
+    this.gui.invalidate();
   }
 };
  
@@ -612,6 +613,19 @@ SelectionTable.prototype.GUI.prototype.setVisbilitySettingsVisible = function(vi
 
 SelectionTable.prototype.GUI.prototype.clear = function() {
   this.update();
+};
+
+/**
+ * Make the UI reload all cached data and refresh the display.
+ */
+SelectionTable.prototype.GUI.prototype.invalidate = function() {
+  var tableSelector = "table#skeleton-table" + this.table.widgetID;
+  if ($.fn.DataTable.isDataTable(tableSelector)) {
+    var datatable = $(tableSelector).DataTable();
+    if (datatable) {
+      datatable.rows().invalidate();
+    }
+  }
 };
 
 SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(skeleton) {
@@ -868,7 +882,6 @@ SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged,
       skeleton.color.setRGB(c[0], c[1], c[2]);
     }
     skeleton.opacity = alpha;
-    this.gui.update_skeleton_color_button(skeleton);
     this.notifyLink(skeleton); // TODO need a batchNotifyLink
   }, this);
   $('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor = rgb.hex;

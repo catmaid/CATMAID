@@ -623,7 +623,6 @@ SelectionTable.prototype.get_all_skeletons = function() {
 
 SelectionTable.prototype.GUI = function(table) {
   this.table = table;
-  this.count = 0;
   this.page = 0;
   this.entriesPerPage = 25;
   this.showVisibilityControls = true;
@@ -642,7 +641,6 @@ SelectionTable.prototype.GUI.prototype.setVisbilitySettingsVisible = function(vi
 };
 
 SelectionTable.prototype.GUI.prototype.clear = function() {
-  this.count = 0;
   this.update();
 };
 
@@ -677,12 +675,28 @@ SelectionTable.prototype.GUI.prototype.update = function() {
 
   // Remove all table rows
   $("tr[id^='skeletonrow" + widgetID + "']").remove();
-  this.count = 0;
 
   // Re-create table, let DataTables take care of paging
-  skeletons.forEach(this.append, this);
+  var reviews = this.table.reviews;
+  var data = skeletons.reduce(function(d, s, i) {
+    d[i] = {
+      index: i, // For initial sorting
+      skeleton: s,
+      name: NeuronNameService.getInstance().getName(s.id),
+      reviewPercentage: reviews[s.id],
+    };
+    return d;
+  }, new Array(skeletons.length));
 
-  $("table#skeleton-table" + widgetID ).dataTable({
+  var createCheckbox = function(key, skeleton) {
+    var id = 'skeleton' + key + widgetID + '-' + skeleton.id;
+    return '<input type="checkbox" class="action-visibility" id="' + id +
+      '" value="' + skeleton.id + '" data-action="' + key + '"' +
+      (skeleton[key] ? ' checked' : '') + ' />';
+  };
+
+  var table = $("table#skeleton-table" + widgetID ).DataTable({
+    data: data,
     destroy: true,
     dom: "lrptip",
     paging: true,
@@ -695,128 +709,110 @@ SelectionTable.prototype.GUI.prototype.update = function() {
     order: this.order,
     orderCellsTop: true,
     columns: [
-      { "type": "text", "visible": false },
-      { "orderable": false },
-      { "type": "text" },
-      { "type": "text" },
-      { "orderDataType": "dom-checkbox" },
-      { "orderDataType": "dom-checkbox", "visible": this.showVisibilityControls },
-      { "orderDataType": "dom-checkbox", "visible": this.showVisibilityControls },
-      { "orderDataType": "dom-checkbox", "visible": this.showVisibilityControls },
-      { "orderDataType": "dom-checkbox", "visible": this.showVisibilityControls },
-      { "orderDataType": "dom-color-property", "type": "hslcolor" },
-      { "orderable": false }
-    ]
+      {
+        "type": "text",
+        "visible": false,
+        "render": function(data, type, row, meta) {
+          return row.index + '';
+        }
+      },
+      {
+        "orderable": false,
+        "render": function(data, type, row, meta) {
+          return '<span class="ui-icon ui-icon-close action-remove" alt="Remove" title="Remove"></span>';
+        }
+      },
+      {
+        "type": "text",
+        "render": function(data, type, row, meta) {
+          return '<a href="#" class="neuron-selection-link action-select">' +
+            (row.name ? row.name : "undefined") + '</a>';
+        }
+      },
+      {
+        "type": "text",
+        "render": function(data, type, row, meta) {
+          return row.reviewPercentage + "%";
+        }
+      },
+      {
+        "orderDataType": "dom-checkbox",
+        "render": function(data, type, row, meta) {
+          return createCheckbox('selected', row.skeleton);
+        }
+      },
+      {
+        "orderDataType": "dom-checkbox",
+        "visible": this.showVisibilityControls,
+        "render": function(data, type, row, meta) {
+          return createCheckbox('pre_visible', row.skeleton);
+        }
+      },
+      {
+        "orderDataType": "dom-checkbox",
+        "visible": this.showVisibilityControls,
+        "render": function(data, type, row, meta) {
+          return createCheckbox('post_visible', row.skeleton);
+        }
+      },
+      {
+        "orderDataType": "dom-checkbox",
+        "visible": this.showVisibilityControls,
+        "render": function(data, type, row, meta) {
+          return createCheckbox('text_visible', row.skeleton);
+        }
+      },
+      {
+        "orderDataType": "dom-checkbox",
+        "visible": this.showVisibilityControls,
+        "render": function(data, type, row, meta) {
+          return createCheckbox('meta_visible', row.skeleton);
+        }
+      },
+      {
+        "orderDataType": "dom-color-property",
+        "type": "hslcolor",
+        "render": function(data, type, row, meta) {
+          return '<button value="color" class="action-changecolor" ' +
+              'id="skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id +
+              '" style="background-color: #' + row.skeleton.color.getHexString() +
+              '">color</button>' +
+              '<div id="color-wheel' + widgetID + '-' + row.skeleton.id +
+              '"><div class="colorwheel"></div></div>';
+        }
+      },
+      {
+        "orderable": false,
+        "render": function(data, type, row, meta) {
+          return '<span class="ui-icon ui-icon-tag action-annotate" ' +
+            'alt="Annotate" title="Annotate skeleton"></span>' +
+            '<span class="ui-icon ui-icon-info action-info" alt="Info" ' +
+            'title="Open skeleton information"></span>' +
+            '<span class="ui-icon ui-icon-folder-collapsed action-navigator" ' +
+            'alt="Navigator" title="Open neuron navigator for skeleton"></span>';
+        }
+      }
+    ],
+    createdRow: function(row, data, index) {
+      var tds = $('td', row);
+      // Store skeleton ID in row
+      $(row).attr('data-skeleton-id', data.skeleton.id);
+      // Add 'expanding' class to name cell
+      tds.eq(1).addClass('expanding');
+      // Add review background color
+      tds.eq(2).css('background-color',
+          CATMAID.ReviewSystem.getBackgroundColor(data.reviewPercentage));
+      // Prepare color wheel cell
+      tds.eq(-2).addClass('centering').attr(
+          'data-color', data.skeleton.color.getHexString());
+      // Prepare action cell
+      tds.eq(-1).addClass('centering').css('white-space', 'nowrap');
+    }
   });
 
   // If the active skeleton is within the range, highlight it
   var selectedSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
   if (selectedSkeletonId) this.table.highlight(selectedSkeletonId);
-};
-
-SelectionTable.prototype.GUI.prototype.append = function (skeleton) {
-  var table = this.table,
-      widgetID = this.table.widgetID;
-
-  var rowElement = $('<tr/>').attr({
-    'id': 'skeletonrow' + widgetID + '-' + skeleton.id,
-    'data-skeleton-id': skeleton.id
-  });
-
-  this.count++;
-  rowElement.append($('<td />').text(this.count));
-
-  var td = $(document.createElement("td"));
-  td.append( $(document.createElement("span"))
-        .addClass('ui-icon ui-icon-close action-remove')
-        .attr({
-          alt: 'Remove',
-          title: 'Remove'
-        })
-  );
-  rowElement.append( td );
-
-  // name
-  var name = NeuronNameService.getInstance().getName(skeleton.id);
-  rowElement.append($(document.createElement("td"))
-      .addClass("expanding")
-      .append($('<a />')
-        .text(name ? name : 'undefined')
-        .attr('href', '#')
-        .attr('class', 'neuron-selection-link action-select')
-      ));
-
-  // percent reviewed
-  rowElement.append($('<td/>')
-      .text(this.table.reviews[skeleton.id] + "%")
-      .css('background-color',
-          CATMAID.ReviewSystem.getBackgroundColor(this.table.reviews[skeleton.id])));
-
-  ['selected',
-   'pre_visible',
-   'post_visible',
-   'text_visible',
-   'meta_visible'].forEach(function(key, i, keys) {
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("input"))
-          .addClass("action-visibility")
-          .attr({
-                  id:    'skeleton' + key + widgetID + '-' + skeleton.id,
-                  value: skeleton.id,
-                  type:  'checkbox',
-                  "data-action": key
-          })
-          .prop('checked', skeleton[key])
-    ));
-  });
-
-  var td = $(document.createElement("td"))
-    .addClass("centering");
-  td.attr('data-color', '#' + skeleton.color.getHexString());
-  td.append(
-    $(document.createElement("button"))
-      .attr({
-        id: 'skeletonaction-changecolor-' + widgetID + '-' + skeleton.id,
-        value: 'color',
-      })
-      .addClass('action-changecolor')
-      .text('color')
-      .css("background-color", '#' + skeleton.color.getHexString())
-  );
-  td.append(
-    $('<div id="color-wheel' + widgetID + '-' + skeleton.id +
-      '"><div class="colorwheel"></div></div>').hide()
-  );
-  rowElement.append( td );
-
-  var td = $(document.createElement("td"))
-    .addClass("centering")
-    .css("white-space", "nowrap");
-  td.append($(document.createElement("span"))
-      .addClass("ui-icon ui-icon-tag action-annotate")
-      .attr({
-        alt: "Annotate",
-        title: "Annotate skeleton"
-      }));
-  td.append($(document.createElement("span"))
-      .addClass("ui-icon ui-icon-info action-info")
-      .attr({
-        alt: "Info",
-        title: "Open skeleton information"
-      }));
-
-  td.append(
-    $(document.createElement("span"))
-      .addClass("ui-icon ui-icon-folder-collapsed action-navigator")
-      .attr({
-        alt: "Navigator",
-        title: "Open neuron navigator for skeleton"
-      }));
-
-  rowElement.append( td );
-
-  $('#skeleton-table' + widgetID + ' > tbody:last').append( rowElement );
 };
 
 SelectionTable.prototype.selectSkeletonById = function(id) {

@@ -278,36 +278,6 @@ SelectionTable.prototype.toggleAllKeyUI = function(type) {
   }
 };
 
-SelectionTable.prototype.sort = function(sortingFn) {
-  this.skeletons.sort(sortingFn);
-
-  // Refresh indices
-  this.skeleton_ids = this.skeletons.reduce(function(o, sk, i) {
-    o[sk.id] = i;
-    return o;
-  }, {});
-
-  this.gui.update();
-};
-
-SelectionTable.prototype.sortByName = function() {
-  this.sort(function(sk1, sk2) {
-    var name1 = NeuronNameService.getInstance().getName(sk1.id).toLowerCase(),
-        name2 = NeuronNameService.getInstance().getName(sk2.id).toLowerCase();
-    return CATMAID.tools.compareStrings(name1, name2);
-  });
-
-};
-
-/** Sort by hue, then saturation, then luminance. */
-SelectionTable.prototype.sortByColor = function() {
-  this.sort(function(sk1, sk2) {
-    var hsl1 = sk1.color.getHSL(),
-        hsl2 = sk2.color.getHSL();
-    return CATMAID.tools.compareHSLColors(hsl1, hsl2);
-  });
-};
-
 /** setup button handlers */
 SelectionTable.prototype.init = function() {
   $('#selection-table-remove-all' + this.widgetID).click((function() {

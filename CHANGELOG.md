@@ -72,6 +72,9 @@ Administration:
 - From within the neuron search removed annotations will now disappear again
   from the search widget after they are unlinked.
 
+- Using the CATMAID coloring scheme in the Selection Table is not random
+  anymore.
+
 
 ## 2015.7.31
 

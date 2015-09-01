@@ -810,6 +810,22 @@ SelectionTable.prototype.GUI.prototype.update = function() {
     }
   });
 
+  // If the skeleton order changed through the datatable, propagate this change
+  // back to the internal skeleton ID list.
+  table.on("order.dt", this, function(e) {
+    // Get the current order of skeletons
+    var data = $(this).DataTable().rows({order: 'current'}).data().toArray();
+    // Update the widget's internal representation
+    var widget = e.data.table;
+    widget.skeletons = data.map(function(d) {
+      return d.skeleton;
+    });
+    widget.skeleton_ids = widget.skeletons.reduce(function(o, sk, i) {
+      o[sk.id] = i;
+      return o;
+    }, {});
+  });
+
   // If the active skeleton is within the range, highlight it
   var selectedSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
   if (selectedSkeletonId) this.table.highlight(selectedSkeletonId);

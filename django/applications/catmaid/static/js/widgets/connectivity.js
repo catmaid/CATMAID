@@ -1237,7 +1237,8 @@
                 .filter(function(c, j) { return j > 0; }).join(',');
             }).join('\n');
             // Export table body
-            text += '\n' + self.fnGetData().map(function (r) {
+            var data = self.DataTable().rows({order: 'current'}).data();
+            text += '\n' + data.map(function (r) {
               return r.map(cellToText.bind(this, false))
                 .filter(function(c, i) { return i > 0; }).join(',');
             }).join('\n');

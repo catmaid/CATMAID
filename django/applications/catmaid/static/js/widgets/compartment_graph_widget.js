@@ -641,7 +641,7 @@ GroupGraph.prototype.init = function() {
 };
 
 // The index is relied upon by the updateLayout function
-GroupGraph.prototype.layoutStrings = ["Force-directed", "Hierarchical", "Grid", "Circle",
+GroupGraph.prototype.layoutStrings = ["Arbor (force-directed)", "Hierarchical", "Grid", "Circle",
          "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
          "Random", "Compound Spring Embedder", "Manual", "Dagre (DAG-based)", "Cola (force-directed)",
          "Spread (force-directed)", "Springy (force-directed)"];

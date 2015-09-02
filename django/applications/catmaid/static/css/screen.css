@@ -933,3 +933,7 @@ div.selection-table.windowContent {
     font-weight: bold;
     display: block;
 }
+
+.dataTables_wrapper {
+  min-height: 0;
+}

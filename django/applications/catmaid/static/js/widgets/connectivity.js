@@ -23,6 +23,8 @@
     this.tablesSideBySide = true;
     // Do not update automatically by default
     this.autoUpdate = false;
+    // Ordering of neuron table, by default no ordering is applied
+    this.currentOrder = [];
 
     // Register for changed and removed skeletons
     CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -970,6 +972,7 @@
 
       // Create and append row for current skeleton
       var row = $('<tr />')
+          .attr('data-skeleton-id', skid)
           .append($('<td />').append((i + 1) + '.').append(removeSkeleton))
           .append($('<td />').attr('class', 'input-container')
               .append(selectionCb))
@@ -981,6 +984,37 @@
       neuronTable.append(row);
     }, this);
     content.append(neuronTable);
+
+    // Make the target neuron table a data table so that sorting is done in a
+    // consistent fashion.
+    neuronTable.DataTable({
+      dom: "t",
+      paging: false,
+      serverSide: false,
+      order: this.currentOrder,
+      columns: [
+        {orderable: false},
+        {orderable: false},
+        null,
+        {orderable: false},
+        {orderable: false},
+        {orderable: false},
+        {orderable: false},
+      ]
+    }).on("order.dt", this, function(e) {
+      var widget = e.data;
+      var table = $(this).DataTable();
+      // Get the current order of skeletons
+      var rows = table.rows({order: 'current'}).nodes().toArray();
+      var orderedSkids = rows.map(function(tr) {
+        return Number(tr.dataset.skeletonId);
+      });
+      // Write out current ordering
+      widget.currentOrder = table.order();
+      widget.ordered_skeleton_ids = orderedSkids;
+      // Redraw tables
+      widget.createConnectivityTable();
+    });
 
     neuronTable.on('click', '.remove-skeleton', this, function (e) {
           e.data.removeSkeletons([parseInt($(this).attr('skid'), 10)]);

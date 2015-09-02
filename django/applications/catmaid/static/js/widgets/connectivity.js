@@ -1172,6 +1172,7 @@
 
     $('.dataTables_wrapper', tables).css('min-height', 0);
 
+    var widget = this;
     $.each([table_incoming, table_outgoing], function () {
       var self = this;
       $(this).siblings('.connectivity_table_actions')
@@ -1204,10 +1205,38 @@
         // Add table export buttons.
         .append($('<div class="dataTables_export"></div>').append(
           $('<input type="button" value="Export CSV" />').click(function () {
-            var text = self.fnSettings().aoHeader.map(function (r) {
+            // Add neuron names to synapse count cells. The header is different
+            // if multiple neurons have been added to this widget.
+            var addNames = (1 === widget.ordered_skeleton_ids.length) ?
+                function(rowIndex, c, i) {
+                  // Include neuron name in "syn count" field of first header row.
+                  if (0 === rowIndex && 2 === i) {
+                    var sk = widget.ordered_skeleton_ids[0];
+                    return '"#Synapses with ' + NeuronNameService.getInstance().getName(sk) + '"';
+                  }
+                  return c;
+                } :
+                function(rowIndex, c, i) {
+                  // Include neuron name in "syn count" field of first header row.
+                  var nSkeletons = widget.ordered_skeleton_ids.length;
+                  if (0 === rowIndex && -1 === c.indexOf("Sum") &&
+                      1 < i && (3 + nSkeletons) > i) {
+                    var index = parseInt(c.replace(/\"/g, ''), 10);
+                    var sk = widget.ordered_skeleton_ids[index - 1];
+                    return '"#Synapses with ' + NeuronNameService.getInstance().getName(sk) + '"';
+                  }
+                  return c;
+                };
+            // Remove duplicate header row if there are multiple input neurons
+            var removeDuplicate = (1 === widget.ordered_skeleton_ids.length) ?
+                function() { return true; } : function(c, i) { return i > 0; };
+            // Export CSV based on the HTML table content.
+            var text = self.fnSettings().aoHeader.filter(removeDuplicate).map(function (r, i) {
               return r.map(cellToText.bind(this, true))
-                .filter(function(c, i) { return i > 0; }).join(',');
+                .map(addNames.bind(this, i))
+                .filter(function(c, j) { return j > 0; }).join(',');
             }).join('\n');
+            // Export table body
             text += '\n' + self.fnGetData().map(function (r) {
               return r.map(cellToText.bind(this, false))
                 .filter(function(c, i) { return i > 0; }).join(',');

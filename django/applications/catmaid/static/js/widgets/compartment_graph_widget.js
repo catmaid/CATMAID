@@ -805,6 +805,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         parts = {},
         name = NeuronNameService.getInstance().getName(skid),
         common = {skeletons: [models[skid]],
+                  shape: "ellipse",
                   node_count: 0,
                   color: '#' + models[skid].color.getHexString()},
         createNode = function(id, label, is_branch) {

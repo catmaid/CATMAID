@@ -75,6 +75,9 @@ Administration:
 - Using the CATMAID coloring scheme in the Selection Table is not random
   anymore.
 
+- CSV files exported from the Connectivity Widget now respect the table ordering
+  and include the target neuron names.
+
 
 ## 2015.7.31
 

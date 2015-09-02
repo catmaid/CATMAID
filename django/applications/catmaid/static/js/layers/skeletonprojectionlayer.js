@@ -67,7 +67,7 @@
     strahlerShadingMin: 1,
     strahlerShadingMax: -1,
     // Distance reduction per section for distance based shading
-    distanceFalloff: 0.01
+    distanceFalloff: 0.001
   };
 
   /**

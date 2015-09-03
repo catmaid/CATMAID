@@ -13,8 +13,7 @@
   submitterFn,
   user_groups,
   userprofile,
-  User,
-  WebGLApplication
+  User
 */
 
 "use strict";
@@ -2807,7 +2806,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
          option: updateMode},
         function(json) {
           // Refresh 3d views if any
-          WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
+          CATMAID.WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
           // Reinit SVGOverlay to read in the radius of each altered treenode
           self.updateNodes();
         });

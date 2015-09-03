@@ -161,7 +161,7 @@
 
     // Create a 3D View that is not a SkeletonSource neither in an instance registry
     var W = function() {};
-    W.prototype = WebGLApplication.prototype;
+    W.prototype = CATMAID.WebGLApplication.prototype;
     this.webglapp = new W();
     this.webglapp.init(this.width - leftWidth - 50, usable_height,
         'dialog-3d-view'); // add to the right

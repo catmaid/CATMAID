@@ -967,7 +967,7 @@ var WindowMaker = new function()
       return;
     }
 
-    var WA = new WebGLApplication();
+    var WA = new CATMAID.WebGLApplication();
 
     var win = new CMWWindow(WA.getName());
     var content = win.getFrame();
@@ -1147,7 +1147,7 @@ var WindowMaker = new function()
         WA.adjustStaticContent();
       };
     };
-    var o = WebGLApplication.prototype.OPTIONS;
+    var o = CATMAID.WebGLApplication.prototype.OPTIONS;
 
     appendToTab(tabs['View settings'],
         [

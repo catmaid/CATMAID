@@ -583,7 +583,7 @@
           return false;
         if (e.shiftKey) {
           var skid = SkeletonAnnotations.getActiveSkeletonId();
-          if (Number.isInteger(skid)) WebGLApplication.prototype.staticReloadSkeletons([skid]);
+          if (Number.isInteger(skid)) CATMAID.WebGLApplication.prototype.staticReloadSkeletons([skid]);
         } else {
           activeTracingLayer.svgOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
         }

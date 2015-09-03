@@ -13,7 +13,6 @@
   session,
   SVGCanvas,
   SynapseClustering,
-  WebGLApplication,
   WindowMaker
 */
 
@@ -3028,7 +3027,7 @@ GroupGraph.prototype.loadFromJSON = function(files) {
 
 GroupGraph.prototype.hideEdges = function(v) {
   // TODO refactor _validate into a Util or CATMAID namespace
-  v = WebGLApplication.prototype._validate(v, 'Invalid synaptic count', 1);
+  v = CATMAID.WebGLApplication.prototype._validate(v, 'Invalid synaptic count', 1);
   if (!v) return;
   v = v | 0; // cast to int
   this.edge_threshold = v;

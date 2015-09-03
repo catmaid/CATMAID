@@ -1176,6 +1176,11 @@
         skeleton.actorColor = model.color.clone();
         skeleton.opacity = model.opacity;
         skeleton.updateSkeletonColor(this.options);
+        // In case connectors are colored like skeletons, they have yo be
+        // updated, too.
+        if ('skeleton' === this.options.connector_color) {
+          this.space.updateConnectorColors(this.options, [skeleton]);
+        }
         return false;
       }
       return true;

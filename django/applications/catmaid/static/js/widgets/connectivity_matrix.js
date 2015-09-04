@@ -12,8 +12,9 @@
     this.colDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Columns");
     // Synapse counts are only displayed if they are at least that big
     this.synapseThreshold = 1;
-    // Color index for table cell coloring option
-    this.color = 0;
+    // Color index for table cell coloring option, default to Greens
+    var defaultIndex = colorOptions.indexOf('Greens');
+    this.color = defaultIndex < 0 ? 0 : defaultIndex;
     // Sorting indices for row and columns, default to name
     this.rowSorting = 2;
     this.colSorting = 2;

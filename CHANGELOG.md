@@ -32,6 +32,10 @@ Connectivity matrix:
 
 - Descending and ascending sorting is now available for all sorting modes.
 
+- The new 'order of other' sorting mode will try to follow the column order for
+  rows and vice versa. If skeletons are not found in the reference dimension,
+  they are pushed to the end.
+
 
 Miscellaneous:
 

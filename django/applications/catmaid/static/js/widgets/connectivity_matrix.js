@@ -1077,6 +1077,27 @@
       }
     },
     {
+      name: 'Order of other',
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var ia, ib;
+        // Get index of a and b in other dimensions
+        if (isRow) {
+          ia = matrix.colSkeletonIDs.indexOf(a);
+          ib = matrix.colSkeletonIDs.indexOf(b);
+        } else {
+          ia = matrix.rowSkeletonIDs.indexOf(a);
+          ib = matrix.rowSkeletonIDs.indexOf(b);
+        }
+        // If either a or b is -1, meaning they were not found in the other
+        // dimension, the columns not found will be pushed to the end.
+        if (-1 === ia || -1 === ib) {
+          return -1
+        } else {
+          return ia === ib ? 0 : (ia < ib ? -1 : 1);
+        }
+      }
+    },
+    {
       name: 'Max synapse count',
       sort: function(desc, matrix, src, isRow, a, b) {
         var c = compareDescendingSynapseCount(matrix, src, isRow, a, b);

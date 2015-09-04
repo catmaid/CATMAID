@@ -1159,6 +1159,7 @@ var WindowMaker = new function()
           ['Floor', true, adjustFn('show_floor'), false],
           ['Bounding box', true, adjustFn('show_box'), false],
           ['Z plane', false, adjustFn('show_zplane'), false],
+          ['Debug', false, function() { WA.setDebug(this.checked); }, false],
           ['Missing sections', false, adjustFn('show_missing_sections'), false],
           ['with height:', o.missing_section_height, ' %', function() {
               WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));

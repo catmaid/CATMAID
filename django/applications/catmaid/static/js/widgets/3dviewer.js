@@ -649,6 +649,7 @@
 
 
   WebGLApplication.prototype.Options = function() {
+    this.debug = true;
     this.show_meshes = false;
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
@@ -1349,6 +1350,28 @@
 
   WebGLApplication.prototype.Space.prototype = {};
 
+  /**
+   * Activate a separate camera which as a look on this the scene. Additionally,
+   * a camera helper is activated for the main camera. This helper visualizes
+   * the main camera's view frustum.
+   */
+  WebGLApplication.prototype.Space.prototype.setDebug = function(debug) {
+    var camera;
+    if (debug) {
+      camera = this.view.debugCamera;
+      this.cameraHelper = new THREE.CameraHelper(this.view.mainCamera);
+      this.scene.add(this.cameraHelper);
+    } else {
+      camera = this.view.mainCamera;
+      if (this.cameraHelper) {
+        this.scene.remove(this.cameraHelper);
+        this.cameraHelper = undefined;
+      }
+    }
+    this.view.camera = camera;
+    this.view.controls.object = camera;
+  };
+
   WebGLApplication.prototype.Space.prototype.setSize = function(canvasWidth, canvasHeight) {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
@@ -1947,9 +1970,19 @@
                            Math.abs(d.max.z - d.min.z)));
     var orthoNear = -far;
     var orthoFar =  far;
-    this.camera = new THREE.CombinedCamera(-this.space.canvasWidth,
+    this.mainCamera = new THREE.CombinedCamera(-this.space.canvasWidth,
         -this.space.canvasHeight, fov, near, far, orthoNear, orthoFar);
-    this.camera.frustumCulled = false;
+    this.mainCamera.frustumCulled = false;
+
+    this.camera = this.mainCamera;
+
+    this.debugCamera = new THREE.CombinedCamera(-this.space.canvasWidth,
+        -this.space.canvasHeight, fov, 1e-6, 1e27, orthoNear, orthoFar);
+    this.debugCamera.position.x = 2 * d.max.x;
+    this.debugCamera.position.y = -2 * d.max.y;
+    this.debugCamera.position.z = 2 * d.max.z;
+    this.debugCamera.up.set(0, -1, 0);
+    this.debugCamera.lookAt(this.space.center);
 
     this.projector = new THREE.Projector();
 
@@ -4206,6 +4239,12 @@
 
   WebGLApplication.prototype.adjustContent = function() {
     this.space.content.adjust(this.options, this.space, this.submit);
+    this.space.render();
+  };
+
+  WebGLApplication.prototype.setDebug = function(debug) {
+    this.options.debug = !!debug;
+    this.space.setDebug(this.options.debug);
     this.space.render();
   };
 

@@ -1098,21 +1098,21 @@
       }
     },
     {
-      name: 'Max synapse count',
+      name: 'Synapse count',
       sort: function(desc, matrix, src, isRow, a, b) {
         var c = compareDescendingSynapseCount(matrix, src, isRow, a, b);
         return desc ? -1 * c : c;
       }
     },
     {
-      name: 'Max output synapse count',
+      name: 'Output synapse count',
       sort: function(desc, matrix, src, isRow, a, b) {
         var c = compareDescendingSynapseCount(matrix, src, isRow, a, b, true);
         return desc ? -1 * c : c;
       }
     },
     {
-      name: 'Max total synapse count',
+      name: 'Total synapse count',
       sort: function(desc, matrix, src, isRow, a, b) {
         var c =  compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
         return desc ? -1 * c : c;

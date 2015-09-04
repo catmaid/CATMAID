@@ -78,6 +78,9 @@ Administration:
 - CSV files exported from the Connectivity Widget now respect the table ordering
   and include the target neuron names.
 
+- Spheres that intersect in the 3D viewer (e.g. somas) don't appear broken up
+  anymore.
+
 
 ## 2015.7.31
 

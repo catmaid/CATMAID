@@ -1181,7 +1181,7 @@
     for (var i=0; i<b.length; ++i) {
       if (b[i] > maxb) maxb = b[i];
     }
-    return maxa === maxb ? 0 : (maxa > maxb ? -1 : 1);
+    return maxa === maxb ? 0 : (maxa > maxb ? 1 : -1);
   };
 
   /**

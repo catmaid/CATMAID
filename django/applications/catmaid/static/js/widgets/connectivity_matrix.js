@@ -1105,6 +1105,13 @@
       }
     },
     {
+      name: 'Max output synapse count',
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var c = compareDescendingSynapseCount(matrix, src, isRow, a, b, true);
+        return desc ? -1 * c : c;
+      }
+    },
+    {
       name: 'Max total synapse count',
       sort: function(desc, matrix, src, isRow, a, b) {
         var c =  compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
@@ -1114,18 +1121,28 @@
   ];
 
   /**
-   * Compare by the maximum synapse count in rows or columns a and b.
+   * Compare by the maximum synapse count in rows or columns a and b. If the
+   * preToPost parameter is truthy, only columns will also be ordered by synapse
+   * count from row-to-column (pre to post).
    */
-  var compareDescendingSynapseCount = function(matrix, src, isRow, a, b) {
+  var compareDescendingSynapseCount = function(matrix, src, isRow, a, b, preToPost) {
     var m = matrix.connectivityMatrix;
-    if (isRow) {
+    if (isRow || preToPost) {
       // Find maximum synapse counts in the given rows
       var ia = matrix.rowSkeletonIDs.indexOf(a);
       var ib = matrix.rowSkeletonIDs.indexOf(b);
       var ca = m[ia];
       var cb = m[ib];
-      if (!ca) throw new CATMAID.ValueError("Invalid column: " + ia);
-      if (!cb) throw new CATMAID.ValueError("Invalid column: " + ib);
+      // If only pre-to-post (row-to-column) connections should be taken into
+      // account and a column doesn't exist as row, it is pushed to the end.
+      if (!ca) {
+        if (preToPost) return -1;
+        else throw new CATMAID.ValueError("Invalid column: " + ia);
+      }
+      if (!cb) {
+        if (preToPost) return -1;
+        throw new CATMAID.ValueError("Invalid column: " + ib);
+      }
       return compareMaxInArray(ca, cb);
     } else {
       var ia = matrix.colSkeletonIDs.indexOf(a);

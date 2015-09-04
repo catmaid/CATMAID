@@ -1949,6 +1949,7 @@
 
   WebGLApplication.prototype.Space.prototype.View = function(space) {
     this.space = space;
+    this.logDepthBuffer = true;
 
     this.init();
 
@@ -1960,16 +1961,19 @@
 
   WebGLApplication.prototype.Space.prototype.View.prototype.init = function() {
     /* Create a camera which generates a picture fitting in our canvas. The
-    * frustum's far culling plane is three times the longest size of the
-    * displayed space. The near plan starts at one. */
-    var d = this.space.dimensions;
+    * frustum's far culling plane for the perspective camera is very far away.
+    * This is needed to avoid some strange clipping of the floor geometry when a
+    * logarithmic depth buffer is used (what we do). */
     var fov = 75;
+    var d = this.space.dimensions;
+    var regularFarPlane = 5 * Math.max(Math.abs(d.max.x - d.min.x),
+                              Math.max(Math.abs(d.max.y - d.min.y),
+                                       Math.abs(d.max.z - d.min.z)));
     var near = 1;
-    var far = 5 * Math.max(Math.abs(d.max.x - d.min.x),
-                  Math.max(Math.abs(d.max.y - d.min.y),
-                           Math.abs(d.max.z - d.min.z)));
-    var orthoNear = -far;
-    var orthoFar =  far;
+    var far = this.logDepthBuffer ? 1e27 : regularFarPlane;
+    var orthoNear = -regularFarPlane;
+    var orthoFar = regularFarPlane;
+
     this.mainCamera = new THREE.CombinedCamera(-this.space.canvasWidth,
         -this.space.canvasHeight, fov, near, far, orthoNear, orthoFar);
     this.mainCamera.frustumCulled = false;
@@ -2021,7 +2025,7 @@
   WebGLApplication.prototype.Space.prototype.View.prototype.createRenderer = function(type) {
     var renderer = null;
     if ('webgl' === type) {
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: this.logDepthBuffer });
     } else if ('svg' === type) {
       renderer = new THREE.SVGRenderer();
     } else {
@@ -2453,12 +2457,42 @@
     this.camera.position.copy(position);
     this.camera.up.copy(up);
     this.camera.zoom = zoom;
-    if(orthographic) {
-      this.camera.toOrthographic();
-    } else {
-      this.camera.toPerspective();
-    }
+    this.setCameraMode(orthographic);
   };
+
+  /**
+   * Make the camera act as a perspective or an orthographic camera.
+   *
+   * @param {Boolean} orthographic - use orthographic or perspective mode
+   */
+  WebGLApplication.prototype.Space.prototype.View.prototype.setCameraMode = (function() {
+    // Store the original far plane distance of the perspective camera privately.
+    var originalFarPlaneP;
+
+    // If a logarithmic depth buffer is used, the perspective camera's far
+    // clipping plane has to be changed while the camera is set to
+    // orthographic mode. This is because the perspective camera's far
+    // clipping plan is used to calculate the orthographic camera's view
+    // (initially as well as for later updates like zoom. Unfortunately, we
+    // can't use a closer far clipping with logarithmic depth buffers (or some
+    // strange near field clipping is happening).
+    return function(orthographic) {
+      if(orthographic) {
+        if (this.logDepthBuffer) {
+          originalFarPlaneP = this.camera.cameraP.far;
+          this.camera.cameraP.far = this.camera.cameraO.far
+          this.camera.toOrthographic();
+        } else {
+          this.camera.toOrthographic();
+        }
+      } else {
+        if (this.logDepthBuffer && originalFarPlaneP) {
+          this.camera.cameraP.far = originalFarPlaneP;
+        }
+        this.camera.toPerspective();
+      }
+    };
+  })();
 
   /** Construct mouse controls as objects, so that no context is retained. */
   WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = function() {
@@ -3537,11 +3571,11 @@
   WebGLApplication.prototype.updateCameraView = function(toOrthographic) {
     if(toOrthographic) {
       this.options.camera_view = 'orthographic';
-      this.space.view.camera.toOrthographic();
+      this.space.view.setCameraMode(true);
     } else {
       this.options.camera_view = 'perspective';
       this.space.view.camera.setZoom(1.0);
-      this.space.view.camera.toPerspective();
+      this.space.view.setCameraMode(false);
     }
     this.space.render();
   };

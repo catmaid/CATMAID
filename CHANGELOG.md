@@ -37,6 +37,13 @@ Connectivity matrix:
   they are pushed to the end.
 
 
+Selection table:
+
+- When changing the color of a neuron, all other selected neurons can be colored
+  at the same time, when the new 'all selected' checkbox (right above the color
+  wheel) is checked.
+
+
 Miscellaneous:
 
 - When a connector is selected, basic information about it is displayed at the

@@ -885,6 +885,7 @@ SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged,
     this.notifyLink(skeleton); // TODO need a batchNotifyLink
   }, this);
   $('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor = rgb.hex;
+  this.gui.invalidate();
 };
 
 SelectionTable.prototype.toggleBatchColorWheel = function() {

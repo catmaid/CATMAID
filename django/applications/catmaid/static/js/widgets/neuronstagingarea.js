@@ -761,8 +761,8 @@ SelectionTable.prototype.GUI.prototype.update = function() {
               'id="skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id +
               '" style="background-color: #' + row.skeleton.color.getHexString() +
               '">color</button>' +
-              '<div id="color-wheel' + widgetID + '-' + row.skeleton.id +
-              '"><div class="colorwheel"></div></div>';
+              '<div style="display: none" id="color-wheel' + widgetID + '-' + row.skeleton.id +
+              '"><div><label><input type="checkbox" />all selected</label></div><div class="colorwheel"></div></div>';
         }
       },
       {

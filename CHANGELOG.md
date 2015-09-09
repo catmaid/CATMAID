@@ -92,6 +92,9 @@ Administration:
 - Spheres that intersect in the 3D viewer (e.g. somas) don't appear broken up
   anymore.
 
+- The 3D viewer's SVG export will now correctly calculate the size of exported
+  spheres (e.g. soma tags).
+
 
 ## 2015.7.31
 

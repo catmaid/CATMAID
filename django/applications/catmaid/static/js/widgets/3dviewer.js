@@ -2162,7 +2162,9 @@
 
       var tmp = new THREE.Vector3();
       var line = new THREE.Line3();
-      var screenXWorld = new THREE.Vector3(1,0,0).unproject(self.camera).normalize();
+      // Use the camera's up vector to constuct a normalized vector embedded in
+      // the screen space plane.
+      var up = self.camera.up.clone().normalize();
       addedData.d = meshes.map(function(mesh) {
         var hex = mesh.material.color.getHexString();
         // Get radius of sphere in 3D world coordinates, but only use a 3x3 world
@@ -2170,7 +2172,7 @@
         var r = tmp.set(mesh.geometry.boundingSphere.radius,0,0)
                       .applyMatrix3(mesh.matrixWorld).length();
         // The radius has to be corrected for perspective
-        var sr = tmp.copy(screenXWorld).multiplyScalar(r);
+        var sr = tmp.copy(up).multiplyScalar(r);
         line.set(mesh.position.clone(), sr.add(mesh.position));
         line.start.project(self.camera);
         line.end.project(self.camera);

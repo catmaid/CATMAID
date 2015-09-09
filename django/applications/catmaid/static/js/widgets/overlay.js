@@ -807,6 +807,7 @@ SkeletonAnnotations.SVGOverlay.prototype.ensureFocused = function() {
  * Unregister this layer and destroy all UI elements and event handlers.
  */
 SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
+  this.updateNodeCoordinatesinDB();
   this.suspended = true;
   this.unregister();
   // Show warning in case of pending request

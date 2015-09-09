@@ -233,15 +233,9 @@
       var layerName = getTracingLayerName(stackViewer);
       var layer = stackViewer.getLayer(layerName);
       if (layer) {
-        // Synchronize data with database
-        layer.svgOverlay.updateNodeCoordinatesinDB();
-        // Remove layer from stack viewer
+        // Remove layer from stack viewer. This will also unregister it and
+        // destroy the tracing overlay.
         stackViewer.removeLayer(layerName);
-
-        // the prototype destroy calls the prototype's unregister, not self.unregister
-        // do it before calling the prototype destroy that sets stack viewer to null
-        // TODO: remove all skeletons from staging area
-        layer.svgOverlay.destroy();
       }
     }
 

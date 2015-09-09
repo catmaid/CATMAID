@@ -247,57 +247,86 @@
       $.blockUI({message: '<img src="' + CATMAID.staticURL +
           'images/busy.gif" /> <span id="block-export-svg">Please wait</span>'});
       var label = $('#block-export-svg');
+      label.text("Exporting SVG");
 
-      // Queue individual steps as tasks to have better UI feedback.
-      var error = false;
+      // Queue individual steps as tasks to have better UI feedback. To give the
+      // browser a chance to render progress messages, setTimeout() has to be
+      // used instead of promises. The former queue an tasks and the latter
+      // queue microtasks. Rendering happens only between tasks.
+      var error = false, start, last;
       function queue(msg, fn) {
-        // Update message and start task
-        label.text(msg);
-        setTimeout(function() {
-          if (error) return;
-          try {
-            fn();
-          } catch (e) {
-            $.unblockUI();
-            error = true;
-            CATMAID.error("Could not export current 3D view, there was an error.", e);
+        var f = function() {
+          if (msg) {
+            // Update message and start task
+            label.text(msg);
           }
-        }, 0);
+          setTimeout(function() {
+            if (error) return;
+            try {
+              fn();
+              if (f.callback) {
+                f.callback();
+              }
+            } catch (e) {
+              $.unblockUI();
+              error = true;
+              CATMAID.error("Could not export current 3D view, there was an error.", e);
+            }
+          }, 0);
+        };
+
+        // If there is no function queued yet, make this function the first. If
+        // there is at least one function queued, run this function as a
+        // callback of the last function.
+        if (!start) {
+          start = f;
+        } else if (last) {
+          last.callback = f;
+        }
+        // Make this function the last one added
+        last = f;
       }
 
-      var self = this;
+      var self = this, svg;
       queue("Rendering SVG", function() {
-        var svg = self.space.view.getSVGData();
+        svg = self.space.view.getSVGData();
+      });
 
-        queue("Postprocessing", function() {
-            CATMAID.svgutil.reduceCoordinatePrecision(svg, 1);
-            CATMAID.svgutil.stripStyleProperties(svg, {
-              'fill': 'none',
-              'stroke-opacity': 1,
-              'stroke-linejoin': undefined
-            });
-            CATMAID.svgutil.reduceStylePrecision(svg, 1);
-        });
+      queue("Postprocessing", function() {
+          CATMAID.svgutil.reduceCoordinatePrecision(svg, 1);
+          CATMAID.svgutil.stripStyleProperties(svg, {
+            'fill': 'none',
+            'stroke-opacity': 1,
+            'stroke-linejoin': undefined
+          });
+          CATMAID.svgutil.reduceStylePrecision(svg, 1);
+      });
 
-        queue("Generating output", function() {
-          var styleDict = CATMAID.svgutil.classifyStyles(svg);
+      queue("Generating output", function() {
+        var styleDict = CATMAID.svgutil.classifyStyles(svg);
 
-          var styles = Object.keys(styleDict).reduce(function(o, s) {
-            var cls = styleDict[s];
-            o = o + "." + cls + "{" + s + "}";
-            return o;
-          }, "");
+        var styles = Object.keys(styleDict).reduce(function(o, s) {
+          var cls = styleDict[s];
+          o = o + "." + cls + "{" + s + "}";
+          return o;
+        }, "");
 
-          var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
-          CATMAID.svgutil.addStyles(xml, styles);
+        var xml = $.parseXML(new XMLSerializer().serializeToString(svg));
+        CATMAID.svgutil.addStyles(xml, styles);
 
-          var data = new XMLSerializer().serializeToString(xml);
-          var blob = new Blob([data], {type: 'text/svg'});
-          saveAs(blob, "catmaid-3d-view.svg");
-        });
+        var data = new XMLSerializer().serializeToString(xml);
+        var blob = new Blob([data], {type: 'text/svg'});
+        saveAs(blob, "catmaid-3d-view.svg");
+      });
 
+      queue(false, function() {
         setTimeout($.unblockUI, 0);
       });
+
+      // Start processing and give the browser a chance to render progress
+      // information.
+      setTimeout(start, 100);
+
     }).bind(this));
   };
 

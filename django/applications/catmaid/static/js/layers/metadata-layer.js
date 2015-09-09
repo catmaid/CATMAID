@@ -40,7 +40,7 @@
    * Remove any DOM created by this layer from the stack viewer.
    */
   MetadataLayer.prototype.unregister = function () {
-    this.stackViewer.removeChild(this._metadataDisplay);
+    this.stackViewer.getLayersView().removeChild(this._metadataDisplay);
   };
 
   /**

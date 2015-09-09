@@ -27,6 +27,8 @@
    */
   PixiContext.prototype.destroy = function () {
     this.renderer.destroy();
+    this.renderer = null;
+    this.stage = null;
   };
 
   /**
@@ -42,6 +44,8 @@
    * Render the Pixi context if all layers using it are ready.
    */
   PixiContext.prototype.renderIfReady = function () {
+    if (!this.renderer) return;
+
     var allReady = true;
     this.layersRegistered.forEach(function (layer) {
         allReady = allReady && (layer.readyForRender || !layer.visible);

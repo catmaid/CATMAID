@@ -2511,7 +2511,7 @@
       if(orthographic) {
         if (this.logDepthBuffer) {
           originalFarPlaneP = this.camera.cameraP.far;
-          this.camera.cameraP.far = this.camera.cameraO.far
+          this.camera.cameraP.far = this.camera.cameraO.far;
           this.camera.toOrthographic();
         } else {
           this.camera.toOrthographic();

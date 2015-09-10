@@ -1092,7 +1092,7 @@
         // If either a or b is -1, meaning they were not found in the other
         // dimension, the columns not found will be pushed to the end.
         if (-1 === ia || -1 === ib) {
-          return -1
+          return -1;
         } else {
           return ia === ib ? 0 : (ia < ib ? -1 : 1);
         }

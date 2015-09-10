@@ -866,7 +866,7 @@ var WindowMaker = new function()
             table.notifyLink(s);
           });
           $('#selection-table-batch-color-button' + table.widgetID)[0].style.backgroundColor = color.getStyle();
-        };
+        }
       });
 
     /**

@@ -156,20 +156,6 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
     entities = entities_qs.select_related('class_column')
     entity_ids = [e.id for e in entities]
 
-    # Make second query to retrieve annotations and skeletons
-    annotations = ClassInstanceClassInstance.objects.filter(
-        relation_id = relations['annotated_with'],
-        class_instance_a__id__in = entity_ids).order_by('id').values_list(
-                'class_instance_a', 'class_instance_b',
-                'class_instance_b__name', 'user__id')
-
-    annotation_dict = {}
-    for a in annotations:
-        if a[0] not in annotation_dict:
-            annotation_dict[a[0]] = []
-        annotation_dict[a[0]].append(
-          {'id': a[1], 'name': a[2], 'uid': a[3]})
-
     # Make third query to retrieve all skeletons and root nodes for entities (if
     # they have such).
     skeletons = ClassInstanceClassInstance.objects.filter(
@@ -186,11 +172,9 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
     annotated_entities = [];
     for e in entities:
         class_name = e.class_column.class_name
-        annotations = annotation_dict[e.id] if e.id in annotation_dict else []
         entity_info = {
             'id': e.id,
             'name': e.name,
-            'annotations': annotations,
             'type': class_name,
         }
 
@@ -200,6 +184,24 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
                     if e.id in skeleton_dict else []
 
         annotated_entities.append(entity_info)
+
+    if annotations:
+        # Make second query to retrieve annotations and skeletons
+        annotations = ClassInstanceClassInstance.objects.filter(
+            relation_id = relations['annotated_with'],
+            class_instance_a__id__in = entity_ids).order_by('id').values_list(
+                    'class_instance_a', 'class_instance_b',
+                    'class_instance_b__name', 'user__id')
+
+        annotation_dict = {}
+        for a in annotations:
+            if a[0] not in annotation_dict:
+                annotation_dict[a[0]] = []
+            annotation_dict[a[0]].append(
+            {'id': a[1], 'name': a[2], 'uid': a[3]})
+
+        for e in annotated_entities:
+            e['annotations'] = annotation_dict.get(e['id'], [])
 
     return annotated_entities
 

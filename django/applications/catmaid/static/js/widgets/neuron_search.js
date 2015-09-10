@@ -188,7 +188,9 @@
         { "orderable": false },
         { "orderable": false, "visible": this.displayAnnotations }
       ]
-    });
+    }).off('.dt').on('draw.dt', this, function(e) {
+      e.data.updateSelectionUI();
+    })
   };
 
   /**
@@ -482,6 +484,18 @@
     }, {});
   }
 
+  /**
+   * Make sure the UI doesn't show any outdated data.
+   */
+  NeuronAnnotations.prototype.invalidateUI = function() {
+    var selector = 'table#neuron_annotations_query_results_table' + this.widgetID;
+    if ($.fn.DataTable.isDataTable(selector)) {
+      var datatable = $(selector).DataTable();
+      if (datatable) {
+        datatable.rows().invalidate();
+      }
+    }
+  };
 
   /**
    * Rebuild the search result table.
@@ -674,6 +688,25 @@
   {
     var $row = $("#neuron_query_by_annotation" + this.widgetID + "_" + rowNum);
     $row.remove();
+  };
+
+  /**
+   * Update selection state of all checkboxes, based on on the internal
+   * selection model.
+   */
+  NeuronAnnotations.prototype.updateSelectionUI = function() {
+    var self = this;
+    $("#neuron_annotations_query_results_table" + this.widgetID).find(
+        'tbody tr td input[class*=result' + this.widgetID + '_]').each(
+            function(i, element) {
+              var id = this.getAttribute('entity_id');
+              if (id) {
+                element.checked = self.entity_selection_map[id];
+              } else {
+                throw new CATMAID.ValueError("Couldn't find expected entity " +
+                    "id for checkbox");
+              }
+            });
   };
 
   NeuronAnnotations.prototype.toggle_neuron_selections = function()

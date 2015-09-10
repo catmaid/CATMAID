@@ -3064,9 +3064,6 @@ var WindowMaker = new function()
           'class="neuron_annotations_query_footer">' +
         '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
             'value="Annotate..." />' +
-        '<input id="neuron_annotation_prev_page{{NA-ID}}" type="button" value="<" />' +
-        '<span id="neuron_annotations_paginattion{{NA-ID}}">[0, 0] of 0</span>' +
-        '<input id="neuron_annotation_next_page{{NA-ID}}" type="button" value=">" />' +
         '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
           'Sync to: ' +
         '</label>' +
@@ -3141,10 +3138,6 @@ var WindowMaker = new function()
         CATMAID.annotate_entities(selected_entity_ids,
             this.refresh_annotations.bind(this));
     }).bind(NA);
-    $('#neuron_annotation_prev_page' + NA.widgetID)[0].onclick =
-        NA.prev_page.bind(NA);
-    $('#neuron_annotation_next_page' + NA.widgetID)[0].onclick =
-        NA.next_page.bind(NA);
 
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);

@@ -21,11 +21,12 @@ Tracing:
 
 Graph widget:
 
-- New layout modes "dagre, "cola", "spread" and "springy". The first is based on
-  DAGs (directed acyclic graphs) and the last three are force-directed. To note
-	that "spread" will evenly layout neurons in trying to occupy as much space as
-	possible, and also leads to symmetric-looking graphs when rendering multiple
-	disconnected graphs of e.g. left and right homologous neurons. Try it.
+- New layout modes "dagre", "cola", "spread" and "springy". The first is based
+  on DAGs (directed acyclic graphs) and the last three are force-directed. To
+  note that "spread" will evenly layout neurons in trying to occupy as much
+  space as possible, and also leads to symmetric-looking graphs when rendering
+  multiple disconnected graphs of e.g. left and right homologous neurons. Try
+  it.
 
 
 Connectivity matrix:

@@ -2999,6 +2999,8 @@ var WindowMaker = new function()
     
     var queryFields = document.createElement('div');
     queryFields.setAttribute('id', 'neuron_annotations_query_fields' + NA.widgetID);
+    queryFields.setAttribute('class', 'buttonpanel');
+
     // Create the query fields HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
     var queryFields_html =

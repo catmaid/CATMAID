@@ -34,6 +34,8 @@
 
     // Indicate if annotations should be displayed
     this.displayAnnotations = true;
+    // Set a user ID to show only annotations of specific users
+    this.annotationUserFilter = null;
 
     // Listen to annotation change events to update self when needed
     CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
@@ -190,7 +192,8 @@
       ]
     }).off('.dt').on('draw.dt', this, function(e) {
       e.data.updateSelectionUI();
-    })
+      e.data.updateAnnotationUI();
+    });
   };
 
   /**
@@ -783,17 +786,15 @@
   };
 
   /**
-   * If passed 'true', this function will hide all annotation objects within the
-   * result table that hasn't been linked by the user passed as second argument.
-   * Otherwise, it will show all annotations.
+   * If an annotation user filter is set, this function will hide all annotation
+   * objects within the result table that hasn't been linked by the user passed
+   * as second argument. Otherwise, it will show all annotations.
    */
-  NeuronAnnotations.prototype.toggle_annotation_display = function(
-      show_only_user, user_id)
-  {
+  NeuronAnnotations.prototype.updateAnnotationUI = function() {
     var $results= $('#neuron_annotations_query_results' + this.widgetID);
-    if (show_only_user) {
-      $results.find('li[user_id!=' + user_id + ']').hide();
-      $results.find('li[user_id=' + user_id + ']').show();
+    if (this.annotationUserFilter) {
+      $results.find('li[user_id!=' + this.annotationUserFilter + ']').hide();
+      $results.find('li[user_id=' + this.annotationUserFilter + ']').show();
     } else {
       $results.find('li').show();
     }

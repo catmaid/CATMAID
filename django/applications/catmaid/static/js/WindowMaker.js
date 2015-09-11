@@ -3174,7 +3174,8 @@ var WindowMaker = new function()
     $filter_select.combobox({
       selected: function(event, ui) {
         var val = $(this).val();
-        NA.toggle_annotation_display(val != 'show_all', val);
+        NA.annotationUserFilter = val != 'show_all' ? val : null;
+        NA.updateAnnotationUI();
       }
     });
     

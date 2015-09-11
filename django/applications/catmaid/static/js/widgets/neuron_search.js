@@ -33,7 +33,7 @@
     this.total_n_results = 0;
 
     // Indicate if annotations should be displayed
-    this.displayAnnotations = true;
+    this.displayAnnotations = false;
     // Set a user ID to show only annotations of specific users
     this.annotationUserFilter = null;
 
@@ -192,8 +192,10 @@
       ]
     }).off('.dt').on('draw.dt', this, function(e) {
       e.data.updateSelectionUI();
-      e.data.updateAnnotationUI();
-    });
+      e.data.updateAnnotationFiltering();
+    }).on('page.dt', this, function(e) {
+      e.data.updateAnnotations();
+    });;
   };
 
   /**
@@ -212,7 +214,6 @@
 
     // Checkbox & name column, potentially indented
     var td_cb = document.createElement('td');
-    td_cb.setAttribute('colspan', '2');
     var div_cb = document.createElement('div');
     // Make sure the line will not become shorter than 300px
     div_cb.style.minWidth = '200px';
@@ -243,38 +244,36 @@
     tr.appendChild(td_type);
 
     // Annotations column
-    if (this.displayAnnotations) {
-      var td_ann = document.createElement('td');
-      // Build list of alphabetically sorted annotations and use layout of jQuery
-      // tagbox
-      var sortedAnnotations = entity.annotations ? entity.annotations.sort(
-          function(a, b) {
-            return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-          }) : [];
-      var ul = sortedAnnotations.reduce(
-        function(o, e) {
-          var li = document.createElement('li');
-          li.setAttribute('title', 'Show annotation in navigator');
-          li.setAttribute('class', 'show_annotation');
-          li.setAttribute('neuron_id', entity.id);
-          li.setAttribute('annotation_id', e.id);
-          li.setAttribute('user_id', e.uid);
+    var td_ann = document.createElement('td');
+    // Build list of alphabetically sorted annotations and use layout of jQuery
+    // tagbox
+    var sortedAnnotations = entity.annotations ? entity.annotations.sort(
+        function(a, b) {
+          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        }) : [];
+    var ul = sortedAnnotations.reduce(
+      function(o, e) {
+        var li = document.createElement('li');
+        li.setAttribute('title', 'Show annotation in navigator');
+        li.setAttribute('class', 'show_annotation');
+        li.setAttribute('neuron_id', entity.id);
+        li.setAttribute('annotation_id', e.id);
+        li.setAttribute('user_id', e.uid);
 
-          var remove_button = document.createElement('div');
-          remove_button.setAttribute('title', 'Remove annotation');
-          remove_button.setAttribute('class', 'remove_annotation');
-          li.appendChild(document.createTextNode(e.name));
-          li.appendChild(remove_button);
-          o.appendChild(li);
-          return o;
-        }, document.createElement('ul'));
-      ul.setAttribute('class', 'resultTags');
-      td_ann.appendChild(ul);
-      tr.appendChild(td_ann);
+        var remove_button = document.createElement('div');
+        remove_button.setAttribute('title', 'Remove annotation');
+        remove_button.setAttribute('class', 'remove_annotation');
+        li.appendChild(document.createTextNode(e.name));
+        li.appendChild(remove_button);
+        o.appendChild(li);
+        return o;
+      }, document.createElement('ul'));
+    ul.setAttribute('class', 'resultTags');
+    td_ann.appendChild(ul);
+    tr.appendChild(td_ann);
 
-      // Add row to table
-      add_row_fn(tr);
-    }
+    // Add row to table
+    add_row_fn(tr);
 
     // Wire up handlers
     if (entity.type == 'neuron') {
@@ -440,6 +439,7 @@
     // Augment form data with offset and limit information
     form_data.display_start = this.display_start;
     form_data.display_length = this.display_length;
+    form_data.with_annotations = this.displayAnnotations;
 
     // Here, $.proxy is used to bind 'this' to the anonymous function
     requestQueue.register(django_url + this.pid + '/neuron/query-by-annotations',
@@ -593,7 +593,8 @@
         // and replace the clicked on annotation with the result. Pagination
         // will not be applied to expansions.
         var query_data = {
-          'neuron_query_by_annotation': aID
+          'neuron_query_by_annotation': aID,
+          'with_annotations': self.displayAnnotations
         };
         requestQueue.register(django_url + project.id + '/neuron/query-by-annotations',
             'POST', query_data, function(status, text, xml) {
@@ -786,11 +787,68 @@
   };
 
   /**
+   * Query annotations for results on the current page that no annotations have
+   * been queried for before.
+   */
+  NeuronAnnotations.prototype.updateAnnotations = function() {
+    if (!this.displayAnnotations) {
+      this.refresh();
+      return;
+    }
+
+    // Query annotations for all results that we don't have annotations for yet
+    var entities = this.queryResults[0];
+    var querySkeletons = entities.filter(function(e) {
+      return 'neuron' === e.type && (!e.annotations || 0 === e.annotations.length);
+    }).reduce(function(o, e) {
+      return o.concat(e.skeleton_ids);
+    }, []);
+
+    if (querySkeletons.length > 0) {
+      var url = CATMAID.makeURL(project.id + '/annotations/skeletons/list');
+      var self = this;
+      requestQueue.register(url, 'POST',
+          {
+            skids: querySkeletons
+          },
+          CATMAID.jsonResponseHandler(function(json) {
+            // Create mapping from skeleton ID to result object
+            var results = entities.reduce(function(o, r, i) {
+              for (var j=0, max=r.skeleton_ids.length; j<max; ++j) {
+                o[r.skeleton_ids[j]] = r;
+              }
+              return o;
+            }, {});
+            // Add annotation id, name and annotator to result set
+            Object.keys(json.skeletons).forEach(function(skid) {
+              var result = results[skid]
+              if (!(result.annotations)) {
+                result.annotations = [];
+              }
+              var links = json.skeletons[skid];
+              var annotations = json.annotations;
+              links.forEach(function(a) {
+                result.annotations.push({
+                  id: a.id,
+                  name: annotations[a.id],
+                  uid: a.uid
+                });
+              });
+
+              self.refresh();
+            });
+          }));
+    } else {
+      this.refresh();
+    }
+  };
+
+  /**
    * If an annotation user filter is set, this function will hide all annotation
    * objects within the result table that hasn't been linked by the user passed
    * as second argument. Otherwise, it will show all annotations.
    */
-  NeuronAnnotations.prototype.updateAnnotationUI = function() {
+  NeuronAnnotations.prototype.updateAnnotationFiltering = function() {
     var $results= $('#neuron_annotations_query_results' + this.widgetID);
     if (this.annotationUserFilter) {
       $results.find('li[user_id!=' + this.annotationUserFilter + ']').hide();

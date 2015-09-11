@@ -3142,6 +3142,13 @@ var WindowMaker = new function()
         CATMAID.annotate_entities(selected_entity_ids,
             this.refresh_annotations.bind(this));
     }).bind(NA);
+    $('#neuron_search_show_annotations' + NA.widgetID)
+      .prop('checked', NA.displayAnnotations)
+      .on('change', NA, function(e) {
+        var widget = e.data;
+        widget.displayAnnotations = this.checked;
+        widget.updateAnnotations();
+      });
 
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);

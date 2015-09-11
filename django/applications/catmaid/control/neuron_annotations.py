@@ -216,8 +216,11 @@ def query_neurons_by_annotations(request, project_id = None):
             request.POST, relations, classes)
     query = query.order_by('id').distinct()
 
+    with_annotations = request.POST.get('with_annotations', 'false') == 'true'
+
     # Collect entity information
-    entities = create_annotated_entity_list(p, query, relations, True)
+    entities = create_annotated_entity_list(p, query, relations,
+            with_annotations)
 
     return HttpResponse(json.dumps({
       'entities': entities,

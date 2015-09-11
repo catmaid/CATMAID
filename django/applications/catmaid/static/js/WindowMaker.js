@@ -3069,6 +3069,10 @@ var WindowMaker = new function()
         '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
           'Sync to: ' +
         '</label>' +
+        '<label>' +
+          '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
+          'Show annotations' +
+        '</label>' +
       '</div>' +
       '<table cellpadding="0" cellspacing="0" border="0" ' +
             'class="neuron_annotations_query_results_table display" ' +
@@ -3078,9 +3082,7 @@ var WindowMaker = new function()
             '<th>' +
               '<input type="checkbox" ' +
                   'id="neuron_annotations_toggle_neuron_selections_checkbox{{NA-ID}}" />' +
-            '</th>' +
-            '<th>' +
-              'Entity Name' +
+              '<span>Entity Name</span>' +
             '</th>' +
             '<th>Type</th>' +
             '<th>' +

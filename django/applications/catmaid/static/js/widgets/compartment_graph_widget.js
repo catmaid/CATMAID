@@ -1368,19 +1368,24 @@ GroupGraph.prototype.appendGroup = function(models) {
     var json = $.parseJSON(text);
     if (json.error) return alert(json.error);
 
+    function hasAnnotation(aid, annotation) {
+      return annotation.id == aid;
+    };
+
     // Find common annotations, if any
     var skids = Object.keys(json.skeletons);
     var common = skids.length > 0 ? json.skeletons[skids[0]] : [];
     common = common.filter(function(annotation) {
+      var match = hasAnnotation.bind(window, annotation);
       return skids.reduce(function(all, skid) {
-        return all && -1 !== json.skeletons[skid].indexOf(annotation);
+        return all && -1 !== json.skeletons[skid].some(match);
       }, true);
-    }).map(function(aid) { return json.annotations[aid]; }).sort();
+    }).map(function(a) { return json.annotations[a.id]; }).sort();
 
     // Find set of all annotations
     var all = Object.keys(skids.reduce(function(o, skid) {
       return json.skeletons[skid].reduce(function(o, annotation) {
-        o[annotation] = true;
+        o[annotation.id] = true;
         return o;
       }, o);
     }, {})).map(function(aid) { return json.annotations[aid]; }).sort();

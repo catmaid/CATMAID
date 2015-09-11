@@ -275,18 +275,10 @@
     // Add row to table
     add_row_fn(tr);
 
-    // Wire up handlers
     if (entity.type == 'neuron') {
-      var create_handler = function(skid) {
-        return function() {
-          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skid );
-        };
-      };
       // Go to nearest
       if (entity.skeleton_ids.length > 0) {
-        $(a).click(create_handler(entity.skeleton_ids[0]));
-      } else {
-        $(a).click(function() { alert("No skeleton found!"); });
+        a.dataset.skeletonId = entity.skeleton_ids[0];
       }
     } else if (entity.type == 'annotation') {
       // Add annotation attribute to link
@@ -545,6 +537,10 @@
     // Add expand handler
     var self = this;
     $table.off('click.cm');
+    $table.on('click.cm', 'a[data-skeleton-id]', function() {
+      var skeletonId = this.dataset.skeletonId;
+      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+    });
     $table.on('click.cm', 'a[data-annotation]', function() {
       var indent = Number(this.dataset.indent);
       var annotation = this.dataset.annotation;

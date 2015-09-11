@@ -55,7 +55,9 @@ def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
         "join_skeleton",
         "reroot_skeleton",
 
-        "change_confidence"
+        "change_confidence",
+
+        "reset_reviews"
     ]
 
     if not op_type in operation_type_array:

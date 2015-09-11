@@ -12,11 +12,15 @@
     this.colDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Columns");
     // Synapse counts are only displayed if they are at least that big
     this.synapseThreshold = 1;
-    // Color index for table cell coloring option
-    this.color = 0;
+    // Color index for table cell coloring option, default to Greens
+    var defaultIndex = colorOptions.indexOf('Greens');
+    this.color = defaultIndex < 0 ? 0 : defaultIndex;
     // Sorting indices for row and columns, default to name
     this.rowSorting = 2;
     this.colSorting = 2;
+    // Default to ascending sorting
+    this.rowSortingDesc = false;
+    this.colSortingDesc = false;
     // Rotate column headers by 90 degree
     this.rotateColumnHeaders = false;
   };
@@ -227,10 +231,22 @@
           this.rowSorting = e.target.value;
           this.refresh();
         }).bind(this);
-        var postColor = document.createElement('label');
-        postColor.appendChild(document.createTextNode('Sort rows by'));
-        postColor.appendChild(sortRowsSelect);
-        tabs['Display'].appendChild(postColor);
+        var sortRows = document.createElement('label');
+        sortRows.appendChild(document.createTextNode('Sort rows by'));
+        sortRows.appendChild(sortRowsSelect);
+        tabs['Display'].appendChild(sortRows);
+
+        var sortRowsDescCb = document.createElement('input');
+        sortRowsDescCb.setAttribute('type', 'checkbox');
+        sortRowsDescCb.checked = this.rowSortingDesc;
+        sortRowsDescCb.onclick = (function(e) {
+          this.rowSortingDesc = e.target.checked;
+          this.refresh();
+        }).bind(this);
+        var sortRowsDesc = document.createElement('label');
+        sortRowsDesc.appendChild(sortRowsDescCb);
+        sortRowsDesc.appendChild(document.createTextNode('Desc.'));
+        tabs['Display'].appendChild(sortRowsDesc);
 
         var sortColsSelect = document.createElement('select');
         for (var i=0; i < sortOptionNames.length; ++i) {
@@ -242,10 +258,22 @@
           this.colSorting = e.target.value;
           this.refresh();
         }).bind(this);
-        var postColor = document.createElement('label');
-        postColor.appendChild(document.createTextNode('Sort columns by'));
-        postColor.appendChild(sortColsSelect);
-        tabs['Display'].appendChild(postColor);
+        var sortCols = document.createElement('label');
+        sortCols.appendChild(document.createTextNode('Sort columns by'));
+        sortCols.appendChild(sortColsSelect);
+        tabs['Display'].appendChild(sortCols);
+
+        var sortColsDescCb = document.createElement('input');
+        sortColsDescCb.setAttribute('type', 'checkbox');
+        sortColsDescCb.checked = this.colSortingDesc;
+        sortColsDescCb.onclick = (function(e) {
+          this.colSortingDesc = e.target.checked;
+          this.refresh();
+        }).bind(this);
+        var sortColsDesc = document.createElement('label');
+        sortColsDesc.appendChild(sortColsDescCb);
+        sortColsDesc.appendChild(document.createTextNode('Desc.'));
+        tabs['Display'].appendChild(sortColsDesc);
 
         var colorSelect = document.createElement('select');
         for (var i=0; i < colorOptions.length; ++i) {
@@ -333,10 +361,10 @@
     // Sort row dimensions
     var rowSort = sortOptions[this.rowSorting];
     if (rowSort && CATMAID.tools.isFn(rowSort.sort)) {
-      this.rowDimension.sort(rowSort.sort.bind(this, this.matrix,
-            this.rowDimension, true));
-      this.matrix.refresh();
-    } else {
+      this.rowDimension.sort(rowSort.sort.bind(this, this.rowSortingDesc,
+            this.matrix, this.rowDimension, true));
+    } else if (undefined === rowSort.sort) {
+      // Explicitly allow null as no-op
       CATMAID.error('Could not find row sorting function with name ' +
           this.rowSorting);
     }
@@ -344,9 +372,10 @@
     // Sort coumn dimensions
     var colSort = sortOptions[this.colSorting];
     if (colSort && CATMAID.tools.isFn(colSort.sort)) {
-      this.colDimension.sort(colSort.sort.bind(this, this.matrix,
-            this.colDimension, false));
-    } else {
+      this.colDimension.sort(colSort.sort.bind(this, this.colSortingDesc,
+            this.matrix, this.colDimension, false));
+    } else if (undefined === colSort.sort) {
+      // Explicitly allow null as no-op
       CATMAID.error('Could not find column sorting function with name ' +
           this.colSorting);
     }
@@ -1027,66 +1056,94 @@
   var sortOptions = [
     {
       name: 'No Sorting',
-      sort: function(matrix, src, isRow, a, b) {
-        return 0;
-      }
+      sort: null /* No-op */
     },
     {
       name: 'ID',
-      sort: function(matrix, src, isRow, a, b) {
-        return CATMAID.tools.compareStrings('' + a, '' + b);
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var c = CATMAID.tools.compareStrings('' + a, '' + b);
+        return desc ? -1 * c : c;
       }
     },
     {
       name: 'Name',
-      sort: function(matrix, src, isRow, a, b) {
+      sort: function(desc, matrix, src, isRow, a, b) {
         // Compare against the group name, if a or b is a group,
         // otherwise use the name of the neuron name service.
         var nns = NeuronNameService.getInstance();
         a = src.isGroup(a) ? a : nns.getName(a);
         b = src.isGroup(b) ? b : nns.getName(b);
-        return CATMAID.tools.compareStrings('' + a, '' + b);
+        var c = CATMAID.tools.compareStrings('' + a, '' + b);
+        return desc ? -1 * c : c;
       }
     },
     {
-      name: 'Max synapse count (desc.)',
-      sort: function(matrix, src, isRow, a, b) {
-        return compareDescendingSynapseCount(matrix, src, isRow, a, b);
+      name: 'Order of other',
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var ia, ib;
+        // Get index of a and b in other dimensions
+        if (isRow) {
+          ia = matrix.colSkeletonIDs.indexOf(a);
+          ib = matrix.colSkeletonIDs.indexOf(b);
+        } else {
+          ia = matrix.rowSkeletonIDs.indexOf(a);
+          ib = matrix.rowSkeletonIDs.indexOf(b);
+        }
+        // If either a or b is -1, meaning they were not found in the other
+        // dimension, the columns not found will be pushed to the end.
+        if (-1 === ia || -1 === ib) {
+          return -1;
+        } else {
+          return ia === ib ? 0 : (ia < ib ? -1 : 1);
+        }
       }
     },
     {
-      name: 'Max synapse count (asc.)',
-      sort: function(matrix, src, isRow, a, b) {
-        return -1 * compareDescendingSynapseCount(matrix, src, isRow, a, b);
+      name: 'Synapse count',
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var c = compareDescendingSynapseCount(matrix, src, isRow, a, b);
+        return desc ? -1 * c : c;
       }
     },
     {
-      name: 'Max total synapse count (desc.)',
-      sort: function(matrix, src, isRow, a, b) {
-        return compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
+      name: 'Output synapse count',
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var c = compareDescendingSynapseCount(matrix, src, isRow, a, b, true);
+        return desc ? -1 * c : c;
       }
     },
     {
-      name: 'Max total synapse count (asc.)',
-      sort: function(matrix, src, isRow, a, b) {
-        return -1 * compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
+      name: 'Total synapse count',
+      sort: function(desc, matrix, src, isRow, a, b) {
+        var c =  compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
+        return desc ? -1 * c : c;
       }
     }
   ];
 
   /**
-   * Compare by the maximum synapse count in rows or columns a and b.
+   * Compare by the maximum synapse count in rows or columns a and b. If the
+   * preToPost parameter is truthy, only columns will also be ordered by synapse
+   * count from row-to-column (pre to post).
    */
-  var compareDescendingSynapseCount = function(matrix, src, isRow, a, b) {
+  var compareDescendingSynapseCount = function(matrix, src, isRow, a, b, preToPost) {
     var m = matrix.connectivityMatrix;
-    if (isRow) {
+    if (isRow || preToPost) {
       // Find maximum synapse counts in the given rows
       var ia = matrix.rowSkeletonIDs.indexOf(a);
       var ib = matrix.rowSkeletonIDs.indexOf(b);
       var ca = m[ia];
       var cb = m[ib];
-      if (!ca) throw new CATMAID.ValueError("Invalid column: " + ia);
-      if (!cb) throw new CATMAID.ValueError("Invalid column: " + ib);
+      // If only pre-to-post (row-to-column) connections should be taken into
+      // account and a column doesn't exist as row, it is pushed to the end.
+      if (!ca) {
+        if (preToPost) return -1;
+        else throw new CATMAID.ValueError("Invalid column: " + ia);
+      }
+      if (!cb) {
+        if (preToPost) return -1;
+        throw new CATMAID.ValueError("Invalid column: " + ib);
+      }
       return compareMaxInArray(ca, cb);
     } else {
       var ia = matrix.colSkeletonIDs.indexOf(a);
@@ -1096,7 +1153,7 @@
         if (m[i][ia] > maxa) maxa = m[i][ia];
         if (m[i][ib] > maxb) maxb = m[i][ib];
       }
-      return maxa === maxb ? 0 : (maxa > maxb ? -1 : 1);
+      return maxa === maxb ? 0 : (maxa > maxb ? 1 : -1);
     }
   };
 
@@ -1125,7 +1182,7 @@
       }
     }
     // Compare aggregated synapses
-    return aAll === bAll ? 0 : (aAll > bAll ? -1 : 1);
+    return aAll === bAll ? 0 : (aAll > bAll ? 1 : -1);
   };
 
   /**
@@ -1142,7 +1199,7 @@
     for (var i=0; i<b.length; ++i) {
       if (b[i] > maxb) maxb = b[i];
     }
-    return maxa === maxb ? 0 : (maxa > maxb ? -1 : 1);
+    return maxa === maxb ? 0 : (maxa > maxb ? 1 : -1);
   };
 
   /**

@@ -14,6 +14,8 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
   var canvas,
       current_color,
       current_alpha,
+      color_changed = false,
+      alpha_changed = false,
       size,
       segments = no_segments || 60,
       bs_square = {},
@@ -115,18 +117,21 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
     y = page.pageY - (parent.offset().top + center);
 
     if(drag_target == hue_ring){
+      color_changed = true;
       set_hue_cursor(x,y);
       update_color();
       run_onchange_event();
       return true;
     }
     if(drag_target == bs_square){
+      color_changed = true;
       set_bs_cursor(x,y);
       update_color();
       run_onchange_event();
       return true;
     }
     if(drag_target == alpha_rect){
+      alpha_changed = true;
       set_alpha_cursor(x,y);
       update_color();
       run_onchange_event();
@@ -364,7 +369,7 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
 
   function run_onchange_event(){
     if (({}).toString.call(change_callback).match(/function/i)){
-      change_callback(current_color, current_alpha);
+      change_callback(current_color, current_alpha, color_changed, alpha_changed);
     }
   }
 

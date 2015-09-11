@@ -161,7 +161,7 @@
 
     // Create a 3D View that is not a SkeletonSource neither in an instance registry
     var W = function() {};
-    W.prototype = WebGLApplication.prototype;
+    W.prototype = CATMAID.WebGLApplication.prototype;
     this.webglapp = new W();
     this.webglapp.init(this.width - leftWidth - 50, usable_height,
         'dialog-3d-view'); // add to the right
@@ -179,6 +179,12 @@
             count1 = skeleton.createArbor().countNodes(),
             count2 = skeleton2.createArbor().countNodes(),
             over_count, under_count, over_skeleton, under_skeleton;
+
+        // Source and target don't change with size
+        var title = 'Merge skeleton "' + this.models[this.model2_id].baseName +
+          '" into "' + this.models[this.model1_id].baseName + '"';
+
+        $(this.dialog).dialog('option', 'title', title);
         // Find larger skeleton
         if (count1 > count2) {
           this.over_model_id = this.model1_id;
@@ -195,12 +201,9 @@
           over_skeleton = skeleton2;
           under_skeleton = skeleton;
         }
-        // Update dialog title, name over count model first
+        // Update titles and name over count model first
         var over_name = this.models[this.over_model_id].baseName;
         var under_name = this.models[this.under_model_id].baseName;
-        var title = 'Merge skeletons "' + over_name + '" and "' + under_name + '"';
-        $(this.dialog).dialog('option', 'title', title);
-        // Add titles
         titleBig.appendChild(document.createTextNode(over_count + " nodes"));
         titleBig.setAttribute('title', over_name);
         titleSmall.appendChild(document.createTextNode(under_count + " nodes"));

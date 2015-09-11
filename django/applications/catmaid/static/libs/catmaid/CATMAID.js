@@ -42,10 +42,13 @@ var requestQueue = new RequestQueue();
    *
    * @param {string} backendURL - The URL pointing to CATMAID's back-end.
    * @param {string} staticURL - The URL pointing to CATMAID's static files.
+   * @param {string} staticExtURL - Optional, the relative URL pointing to
+   *    CATMAID's static extension files.
    */
-  CATMAID.configure = function(backendURL, staticURL) {
+  CATMAID.configure = function(backendURL, staticURL, staticExtURL) {
     validateString(backendURL, "back-end URL");
     validateString(staticURL, "static URL");
+    if (typeof staticExtURL === 'undefined') staticExtURL = '';
 
     Object.defineProperty(CATMAID, "backendURL", {
       enumerable: false,
@@ -59,6 +62,13 @@ var requestQueue = new RequestQueue();
       configurable: true,
       writable: false,
       value: endsWith(staticURL, "/") ? staticURL : staticURL + "/"
+    });
+
+    Object.defineProperty(CATMAID, "staticExtensionURL", {
+      enumerable: false,
+      configurable: true,
+      writable: false,
+      value: endsWith(staticExtURL, "/") ? staticExtURL : staticExtURL + "/"
     });
   };
 
@@ -84,6 +94,20 @@ var requestQueue = new RequestQueue();
   CATMAID.makeStaticURL = function(path) {
     validateString(path, "relative path for URL creation");
     return CATMAID.staticURL + (startsWith(path, "/") ? path.substr(1) : path);
+  };
+
+  /**
+   * Build a CATMAID static extension URL. This URL refers to a location were
+   * extensions to CATMAID live that are not part of the main source tree.
+   *
+   * @param {string} path - The relative path, without backend URL. A leading
+   *                        slash is not required.
+   * @returns {string}    - The complete URL.
+   */
+  CATMAID.makeStaticExtensionURL = function(path) {
+    validateString(path, "relative path for URL creation");
+    return CATMAID.staticExtensionURL +
+      (startsWith(path, "/") ? path.substr(1) : path);
   };
 
 })(CATMAID);

@@ -29,6 +29,11 @@
     this.current_node = null;
     // Map registered neurons to the number of nodes referencing them
     this.registered_neurons = {};
+    // Listen to skeleton and annotation change events
+    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+      this.handleChangedSkeleton, this);
+    CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+      this.handleChangedAnnotations, this);
   };
 
   NeuronNavigator.prototype = {};
@@ -47,6 +52,12 @@
     this.unregisterInstance();
     this.unregisterSource();
     NeuronNameService.getInstance().unregister(this);
+
+    // Unregister from event stream
+    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+        this.handleChangedSkeleton, this);
+    CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+        this.handleChangedAnnotations, this);
   };
 
   NeuronNavigator.prototype.append = function() {};
@@ -291,11 +302,33 @@
   };
 
   /**
-   * Will refresh current node if notified by the neuron name service.
+   * Delegate neuron change event to the current node.
+   */
+  NeuronNavigator.prototype.handleChangedSkeleton = function(skeleton_id)
+  {
+    if (this.current_node.handleChangedSkeleton) {
+      this.current_node.handleChangedSkeleton(skeleton_id);
+    }
+  };
+
+  /**
+   * Delegate annotation change event to the current node.
+   */
+  NeuronNavigator.prototype.handleChangedAnnotations = function(annotated_enteties)
+  {
+    if (this.current_node.handleChangedAnnotations) {
+      this.current_node.handleChangedAnnotations(annotated_enteties);
+    }
+  };
+
+  /**
+   * Delegate neuron name change handling to the current node.
    */
   NeuronNavigator.prototype.updateNeuronNames = function()
   {
-    this.select_node(this.current_node);
+    if (this.current_node.updateNeuronNames) {
+      this.current_node.updateNeuronNames();
+    }
   };
 
 
@@ -566,36 +599,73 @@
     return rows;
   };
 
-  NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
-      table_id, filters, display_usage, display_annotator, unlink_handler, callback)
-  {
-    var content = document.createElement('div');
-    content.setAttribute('id', 'navigator_annotationlist_content' +
-        this.navigator.widgetID);
-
+  /**
+   * Get a annotation list column titles.
+   */
+  var getAnnotationColumTitles = function(usage, annotator, unlink) {
     // Prepare column definition, depending on whether there is a removal handler
     // and if the annotator should be displayed.
     var columns = ['Annotation', 'Last used'];
-    var column_params = [
-        { // Annotation name
-          "bSearchable": true,
-          "bSortable": true
-        },
-        { // Last used date
-          "bSearchable": false,
-          "bSortable": true
-        }
-      ];
-    if (display_usage) {
+
+    if (usage) {
         columns.push('# used');
+    }
+
+    if (annotator) {
+        columns.push('Annotator');
+    }
+
+    if (unlink) {
+      // Add multi-unlink column as first column
+      var select_all = document.createElement('input');
+      select_all.setAttribute('type', 'checkbox');
+      select_all.setAttribute('class', 'annotation-selection');
+      var unlink_selected = document.createElement('a');
+      unlink_selected.setAttribute('title', 'De-annotate selected');
+      unlink_selected.setAttribute('href', '#');
+      unlink_selected.setAttribute('class', 'unlink-annotations');
+      unlink_selected.appendChild(document.createTextNode('de-annotate'));
+      var action_container = document.createElement('div');
+      action_container.appendChild(unlink_selected);
+      action_container.appendChild(select_all);
+      columns.unshift(action_container);
+
+      // Add action column with unlink link
+      columns.push('Action');
+    }
+
+    return columns;
+  };
+
+  /**
+   * Get a annotation list column configurations.
+   */
+  var getAnnotationColumnParams = function(node, usage, annotator, unlink) {
+    // Prepare column definition, depending on whether there is a removal handler
+    // and if the annotator should be displayed.
+    var column_params = [
+      { // Annotation name
+        "bSearchable": true,
+        "bSortable": true,
+        "mData": 0
+      },
+      { // Last used date
+        "bSearchable": false,
+        "bSortable": true,
+        "mData": 1
+      }];
+
+    if (usage) {
         column_params.push(
           { // Usage
             "bSearchable": false,
-            "bSortable": true
+            "bSortable": true,
+            "mData": 2,
+            "bVisible": !!usage
           });
     }
-    if (display_annotator) {
-        columns.push('Annotator');
+
+    if (annotator) {
         column_params.push(
           { // Annotator username
             "bSearchable": true,
@@ -605,29 +675,58 @@
             }
           });
     }
-    if (unlink_handler) {
-      var self = this;
-      columns.push('Action');
+
+    if (unlink) {
+      column_params.unshift(
+        {
+          "sWidth": '5em',
+          "sClass": 'selector_column center',
+          "bSearchable": false,
+          "bSortable": false,
+          "mData": null,
+          "mRender": function (data, type, full) {
+            return '<input type="checkbox" class="annotation-selection" ' +
+              'data-annotation-id="' + full[4] + '"/>';
+        }
+      });
+
+      // Add action column with unlink link
       column_params.push(
         {
           "sWidth": '5em',
           "sClass": 'selector_column center',
           "bSearchable": false,
           "bSortable": false,
+          "mData": null,
           "mRender": function (data, type, full) {
-            var a_class = 'navigator_annotation_unlink_caller' +
-                self.navigator.widgetID;
-            return '<a href="#" class="' + a_class + '" annotation_id="' +
+            return '<a href="#" class="unlink-annotations" annotation-id="' +
                 full[4] + '">de-annotate</>';
         }
       });
     }
 
+    return column_params;
+  };
+
+  NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
+      table_id, filters, display_usage, display_annotator, unlink_handler, callback)
+  {
+    var content = document.createElement('div');
+    content.setAttribute('id', 'navigator_annotationlist_content' +
+        this.navigator.widgetID);
+
     // Create annotation table
+    var header_columns = getAnnotationColumTitles(display_usage,
+        display_annotator, unlink_handler);
+    var footer_columns = getAnnotationColumTitles(display_usage,
+        display_annotator, unlink_handler);
+    var column_params = getAnnotationColumnParams(this,
+        display_usage, display_annotator, unlink_handler);
+
     var table_header = document.createElement('thead');
-    table_header.appendChild(this.create_header_row(columns));
+    table_header.appendChild(this.create_header_row(header_columns));
     var table_footer = document.createElement('tfoot');
-    table_footer.appendChild(this.create_header_row(columns));
+    table_footer.appendChild(this.create_header_row(footer_columns));
     var table = document.createElement('table');
     table.setAttribute('id', table_id);
     table.setAttribute('class', 'display');
@@ -642,14 +741,68 @@
     // Add table to DOM
     $container.append(content);
 
-    // Add a general handler for this table to catch all clicks on the
-    // unlink links.
     if (unlink_handler) {
-      $(table).on('click', ' a.navigator_annotation_unlink_caller' +
-          this.navigator.widgetID, function () {
-              var ann_id = $(this).attr('annotation_id');
-              unlink_handler(ann_id);
+      // Add a general handler for this table to catch all clicks on the
+      // unlink links.
+      $(table).on('click', 'td a.unlink-annotations', function () {
+          var ann_id = $(this).attr('annotation-id');
+          unlink_handler(ann_id);
+      });
+
+      // Add a change handler to header/footer checkboxes to select all
+      // annotations for de-annotation.
+      $(table).on('change', 'th input[type=checkbox].annotation-selection',
+          function() {
+            // If all checkboxes are checked, uncheck them. Otherwise check all.
+            var table = $(this).closest('table');
+            var cbSelector = 'td input[type=checkbox].annotation-selection';
+            var cbs = $(table).find(cbSelector);
+            var cbsChecked = $(table).find(cbSelector + ':checked');
+            var selectAll = cbs.length !== cbsChecked.length;
+            cbs.prop('checked', selectAll);
+            // Make sure the other select-all checkbox is (un)checked, too
+            $(table).find('th input[type=checkbox].annotation-selection')
+              .prop('checked', selectAll);
           });
+
+      // Add a change handler to table body checkboxes to test if all checkboxes
+      // and set select-all checkboxes state.
+      $(table).on('change', 'td input[type=checkbox].annotation-selection',
+          function() {
+            var table = $(this).closest('table');
+            // If this checkbox is checked, test if with the newly checked
+            // checkbox all boxes are selected and if so, set both select-all
+            // checkboxes to checked. Otherwise, make sure both select-all
+            // checkboxes are unchecked.
+            if (this.checked) {
+              var cbSelector = 'td input[type=checkbox].annotation-selection';
+              var cbs = $(table).find(cbSelector);
+              var cbsChecked = $(table).find(cbSelector + ':checked');
+              var allSelected = (cbs.length === cbsChecked.length);
+              if (allSelected) {
+                $(table).find('th input[type=checkbox].annotation-selection')
+                  .prop('checked', true);
+              }
+            } else {
+              $(table).find('th input[type=checkbox].annotation-selection')
+                .prop('checked', false);
+            }
+          });
+
+      // Attach actual unlink handler that unlinks all selected annotations.
+      $(table).on('click', 'th a.unlink-annotations', function() {
+        var table = $(this).closest('table');
+        // Get all selected checkboxes
+        var annotationIDs = $(table)
+          .find('td input[type=checkbox].annotation-selection:checked')
+          .map(function(a) {
+            return $(this).data('annotation-id');
+          })
+          .get();
+
+        // Unlink selected annotations from the current neuron
+        unlink_handler(annotationIDs);
+      });
     }
 
     // Fill annotation table
@@ -777,7 +930,7 @@
         "sSearch": "Search annotations (regex):"
       },
       "bJQueryUI": true,
-      "aaSorting": [[ 0, "asc" ]],
+      "aaSorting": [[ 1, "asc" ]],
       "aoColumns": column_params
     });
 
@@ -1576,6 +1729,23 @@
       }
   };
 
+  NeuronNavigator.NeuronNode.prototype.handleChangedSkeleton = function(skeleton_id)
+  {
+    if (-1 !== this.skeleton_ids.indexOf(skeleton_id)) {
+      this.navigator.select_node(this);
+    }
+  };
+
+  /**
+   * Update this node if the neuron's annotation changed.
+   */
+  NeuronNavigator.NeuronNode.prototype.handleChangedAnnotations = function(annotated_entities)
+  {
+    if (-1 !== annotated_entities.indexOf(this.neuron_id)) {
+      this.navigator.select_node(this);
+    }
+  };
+
   NeuronNavigator.NeuronNode.prototype.create_ann_post_process_fn = function(
       node, $container)
   {
@@ -1874,13 +2044,25 @@
 
     // Add annotation data table based on filters above
     var annotation_datatable = this.add_annotation_list_table(container,
-        annotation_table_id, filters, false, true, function(annotation_id) {
+        annotation_table_id, filters, false, true, function(annotation_ids) {
+          if (annotation_ids instanceof Array) {
+            CATMAID.remove_annotations_from_entities([self.neuron_id],
+                annotation_ids, function(data) {
+                  if (data.deleted_annotations.length > 0) {
+                    CATMAID.info("Removed " + data.deleted_annotations.length +
+                       " annotations.");
+                  } else {
+                    CATMAID.info("Couldn not delete any annotation");
+                  }
+                });
+          } else {
             // Unlink the annotation from the current neuron
             CATMAID.remove_annotation(self.neuron_id,
-                annotation_id, function(message) {
+                annotation_ids, function(message) {
                     // Display message returned by the server
                     CATMAID.info(message);
                 });
+          }
         }, this.create_ann_post_process_fn(this, container));
 
     // If a user is selected an annotation filter node is created and the event

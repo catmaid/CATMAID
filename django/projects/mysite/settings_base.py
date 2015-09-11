@@ -131,7 +131,7 @@ PROFILE_SHOW_TRACING_TOOL = False
 PROFILE_SHOW_ONTOLOGY_TOOL = False
 PROFILE_SHOW_ROI_TOOL = False
 PROFILE_TRACING_OVERLAY_SCREEN_SCALING = True
-PROFILE_TRACING_OVERLAY_SCALE = 1
+PROFILE_TRACING_OVERLAY_SCALE = 1.0
 PROFILE_PREFER_WEBGL_LAYERS = False
 PROFILE_USE_CURSOR_FOLLOWING_ZOOM = True
 
@@ -228,3 +228,12 @@ TEST_RUNNER = 'custom_testrunner.TestSuiteRunner'
 # used to create commit links is defined here. The {} is used to denote the
 # commit name.
 PERFORMANCETEST_SCM_URL = "https://github.com/catmaid/CATMAID/commit/{version}"
+
+# Additional static files can be loaded by CATMAID if they are placed in the
+# folder defined by STATIC_EXTENSION_ROOT. These files are not respected by
+# Pipeline to allow updating them without running collectstatic. To use this
+# feature, your webserver has to resolve the STATIC_EXTENSION_URL to this
+# folder.
+STATIC_EXTENSION_URL = "/staticext/"
+STATIC_EXTENSION_ROOT = "/tmp"
+STATIC_EXTENSION_FILES = []

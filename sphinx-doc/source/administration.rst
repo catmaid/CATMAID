@@ -68,11 +68,12 @@ in the backup name, might therefore be a good idea. A mismatch might
 cause some trouble when a database backup is used that includes
 migrations that are not present in the selected CATMAID version.
 
-To backup the database::
+To backup the database named "catmaid"::
 
     pg_dump --clean -U <CATMAID-USER> catmaid -f catmaid_dump.sql
 
-To restore the dumped database::
+To restore the dumped database into a database named "catmaid" (which would have
+to be created like described in the basic install instructions)::
 
     psql -U <CATMAID-USER> -d catmaid -f catmaid_dump.sql
 
@@ -83,7 +84,49 @@ thing. Those, however, don't ask for a password, but require a
 ``.pgpass`` file (see `PostgreSQL documentation
 <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_).
 
+A cron job can be used to automate the backup process. Since this will be run as
+the ``root`` user, no password will be needed. The root user's crontab file can
+be edited with::
+
+  sudo crontab -e
+
+The actual crontab file is not meant to be edited directly, but only through the
+``crontab`` tool. To run the above backup  command every night at 3am, the
+following line would have to be added::
+
+  0 3 * * * sudo -u postgres pg_dump --clean catmaid -f "/opt/backup/psql/catmaid_$(date +\%Y\%m\%d\%H\%M).sql"
+
+This would create a new file in the folder ``/opt/backup/psql`` at 3am every
+night. It will fail if the folder isn't available or writable. The file name
+includes the date and time the command is run and will look like
+``catmaid_201509101007.sql``. Because ``cron`` treats ``%`` characters
+differently, they have to be escaped when calling ``date``).  The first five
+columns represent the date and time pattern when the command (``sudo -u postgres
+...``) should be run.  It consists of `minute`, `hour`, `day of month`, `month`
+and `day of week` with asterisks meaning `any`. For more information see the
+manual pages of ``cron`` and ``crontab``. Because this command is run as `root`
+and the actual ``pg_dump`` call is executed as `postgres` user with the help of
+``sudo``, no database password is required. If your actual backup command gets
+more complicated than this, it is recommendet to create a script file and call
+this from cron.
+
+
 .. _performance-tuning:
+
+Adding custom code
+------------------
+
+CATMAID supports adding custom code to its front end. This can be used to
+create custom tools separate from upstream development, which can make
+administration easier: To do so, collect your custom JavaScript files in a
+folder and add their filenames to the ``settings.py`` array variable
+``STATIC_EXTENSION_FILES``, for instance::
+
+    STATIC_EXTENSION_FILES += ('test.js', )
+
+Next you will have to instruct your web-server to make this folder available
+through the URL defined in ``STATIC_EXTENSION_URL``, which defaults to
+"/staticext/"). CATMAID will then try to load those files after its own files.
 
 Performance tuning
 ------------------

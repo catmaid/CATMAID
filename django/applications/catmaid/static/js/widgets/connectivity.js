@@ -23,6 +23,8 @@
     this.tablesSideBySide = true;
     // Do not update automatically by default
     this.autoUpdate = false;
+    // Ordering of neuron table, by default no ordering is applied
+    this.currentOrder = [];
 
     // Register for changed and removed skeletons
     CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -970,6 +972,7 @@
 
       // Create and append row for current skeleton
       var row = $('<tr />')
+          .attr('data-skeleton-id', skid)
           .append($('<td />').append((i + 1) + '.').append(removeSkeleton))
           .append($('<td />').attr('class', 'input-container')
               .append(selectionCb))
@@ -981,6 +984,37 @@
       neuronTable.append(row);
     }, this);
     content.append(neuronTable);
+
+    // Make the target neuron table a data table so that sorting is done in a
+    // consistent fashion.
+    neuronTable.DataTable({
+      dom: "t",
+      paging: false,
+      serverSide: false,
+      order: this.currentOrder,
+      columns: [
+        {orderable: false},
+        {orderable: false},
+        null,
+        {orderable: false},
+        {orderable: false},
+        {orderable: false},
+        {orderable: false},
+      ]
+    }).on("order.dt", this, function(e) {
+      var widget = e.data;
+      var table = $(this).DataTable();
+      // Get the current order of skeletons
+      var rows = table.rows({order: 'current'}).nodes().toArray();
+      var orderedSkids = rows.map(function(tr) {
+        return Number(tr.dataset.skeletonId);
+      });
+      // Write out current ordering
+      widget.currentOrder = table.order();
+      widget.ordered_skeleton_ids = orderedSkids;
+      // Redraw tables
+      widget.createConnectivityTable();
+    });
 
     neuronTable.on('click', '.remove-skeleton', this, function (e) {
           e.data.removeSkeletons([parseInt($(this).attr('skid'), 10)]);
@@ -1172,6 +1206,7 @@
 
     $('.dataTables_wrapper', tables).css('min-height', 0);
 
+    var widget = this;
     $.each([table_incoming, table_outgoing], function () {
       var self = this;
       $(this).siblings('.connectivity_table_actions')
@@ -1204,11 +1239,40 @@
         // Add table export buttons.
         .append($('<div class="dataTables_export"></div>').append(
           $('<input type="button" value="Export CSV" />').click(function () {
-            var text = self.fnSettings().aoHeader.map(function (r) {
+            // Add neuron names to synapse count cells. The header is different
+            // if multiple neurons have been added to this widget.
+            var addNames = (1 === widget.ordered_skeleton_ids.length) ?
+                function(rowIndex, c, i) {
+                  // Include neuron name in "syn count" field of first header row.
+                  if (0 === rowIndex && 2 === i) {
+                    var sk = widget.ordered_skeleton_ids[0];
+                    return '"#Synapses with ' + NeuronNameService.getInstance().getName(sk) + '"';
+                  }
+                  return c;
+                } :
+                function(rowIndex, c, i) {
+                  // Include neuron name in "syn count" field of first header row.
+                  var nSkeletons = widget.ordered_skeleton_ids.length;
+                  if (0 === rowIndex && -1 === c.indexOf("Sum") &&
+                      1 < i && (3 + nSkeletons) > i) {
+                    var index = parseInt(c.replace(/\"/g, ''), 10);
+                    var sk = widget.ordered_skeleton_ids[index - 1];
+                    return '"#Synapses with ' + NeuronNameService.getInstance().getName(sk) + '"';
+                  }
+                  return c;
+                };
+            // Remove duplicate header row if there are multiple input neurons
+            var removeDuplicate = (1 === widget.ordered_skeleton_ids.length) ?
+                function() { return true; } : function(c, i) { return i > 0; };
+            // Export CSV based on the HTML table content.
+            var text = self.fnSettings().aoHeader.filter(removeDuplicate).map(function (r, i) {
               return r.map(cellToText.bind(this, true))
-                .filter(function(c, i) { return i > 0; }).join(',');
+                .map(addNames.bind(this, i))
+                .filter(function(c, j) { return j > 0; }).join(',');
             }).join('\n');
-            text += '\n' + self.fnGetData().map(function (r) {
+            // Export table body
+            var data = self.DataTable().rows({order: 'current'}).data();
+            text += '\n' + data.map(function (r) {
               return r.map(cellToText.bind(this, false))
                 .filter(function(c, i) { return i > 0; }).join(',');
             }).join('\n');
@@ -1374,6 +1438,13 @@
      * avoid skeletons whose node count is too small, like e.g. a single node.
      */
     var distribution = function(partners, skeleton_node_count_threshold, skeletons) {
+      var filterSynapses = function (synapses, threshold) {
+        if (!synapses) return 0;
+        return synapses
+                .slice(threshold - 1)
+                .reduce(function (skidSum, c) {return skidSum + c;}, 0);
+      };
+
       var d = Object.keys(partners)
           .reduce(function(ob, partnerID) {
             var props = partners[partnerID];
@@ -1384,7 +1455,7 @@
             return Object.keys(skids)
                 .reduce(function(ob, skid) {
                   if (!ob.hasOwnProperty(skid)) ob[skid] = [];
-                  var synapse_count = skids[skid];
+                  var synapse_count = filterSynapses(skids[skid], 1);
                   if (!ob[skid].hasOwnProperty(synapse_count)) {
                     ob[skid][synapse_count] = 1;
                   } else {

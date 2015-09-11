@@ -13,8 +13,7 @@
   submitterFn,
   user_groups,
   userprofile,
-  User,
-  WebGLApplication
+  User
 */
 
 "use strict";
@@ -23,7 +22,16 @@
  * Contains the current state of skeleton annotations.
  */
 var SkeletonAnnotations = {
+  // Colors that a node can take
   atn_fillcolor : "rgb(0, 255, 0)",
+  active_skeleton_color: "rgb(255,255,0)",
+  active_skeleton_color_virtual: "rgb(255,255,0)",
+  inactive_skeleton_color: "rgb(255,0,255)",
+  inactive_skeleton_color_virtual: "rgb(255,0,255)",
+  inactive_skeleton_color_above: "rgb(0,0,255)",
+  inactive_skeleton_color_below: "rgb(255,0,0)",
+  root_node_color: "rgb(255,0,0)",
+  leaf_node_color: "rgb(128,0,0)",
 
   /**
    * Data of the active Treenode or ConnectorNode. Its position is stored in
@@ -82,6 +90,9 @@ SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.setRadiusAfterNodeCreation = false;
 SkeletonAnnotations.defaultNewNeuronName = '';
+// Don't show merging UI for single node skeletons
+SkeletonAnnotations.quickSingleNodeSkeletonMerge = true;
+
 CATMAID.Events.extend(SkeletonAnnotations);
 
 /**
@@ -459,8 +470,9 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
    * the mouse was. */
   this.coords = {lastX: null, lastY: null};
 
-  /* padding beyond screen borders for fetching data and updating nodes */
-  this.PAD = 256;
+  /* Padding beyond screen borders in X and Y for fetching data and updating
+   * nodes, in screen space pixel coordinates. */
+  this.padding = 256;
  
   /* old_x and old_y record the x and y position of the stack viewer the
      last time that an updateNodes request was made.  When panning
@@ -979,7 +991,8 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (
       xdiff = x - node.x;
       ydiff = y - node.y;
       // Must discard those not within current z
-      if (Math.abs(this.stackViewer.z - node.z) > 0.5) continue;
+      var d = node.z - this.stackViewer.z;
+      if (d < 0 || d >= 1) continue;
       distsq = xdiff*xdiff + ydiff*ydiff;
       if (distsq < mindistsq) {
         mindistsq = distsq;
@@ -1324,14 +1337,17 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
           self.executeIfSkeletonEditable(to_skid, function() {
             // The function used to instruct the backend to do the merge
             var merge = function(annotation_set) {
+              var data = {
+                  from_id: fromid,
+                  to_id: toid
+              };
+              if (annotation_set) {
+                data.annotation_set = JSON.stringify(annotation_set);
+              }
               // The call to join will reroot the target skeleton at the shift-clicked treenode
               self.submit(
                 django_url + project.id + '/skeleton/join',
-                {
-                  from_id: fromid,
-                  to_id: toid,
-                  annotation_set: JSON.stringify(annotation_set),
-                },
+                data,
                 function (json) {
                   self.updateNodes(function() {
                     self.selectNode(toid);
@@ -1380,17 +1396,31 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
                * there are some. Otherwise merge the single not without showing
                * the dialog.
                */
-              CATMAID.retrieve_annotations_for_skeleton(to_skid,
-                  function(annotations) {
-                    if (annotations.length > 0) {
-                      merge_multiple_nodes();
-                    } else {
-                      CATMAID.retrieve_annotations_for_skeleton(
-                          from_model.id, function(annotations) {
-                              merge(annotations.reduce(function(o, e) { o[e.name] = e.users[0].id; return o; }, {}));
-                          });
-                    }
-                  });
+              var noUI = SkeletonAnnotations.quickSingleNodeSkeletonMerge;
+
+              if (noUI) {
+                // Not specifying an annotation map will cause the combined
+                // annotation set of both skeletons to be used.
+                merge();
+              } else {
+                // Only show a dialog if the merged in neuron is annotated.
+                CATMAID.retrieve_annotations_for_skeleton(to_skid,
+                    function(to_annotations) {
+                      if (to_annotations.length === 0) {
+                        CATMAID.retrieve_annotations_for_skeleton(
+                            from_model.id, function(from_annotations) {
+                              // Merge annotations from both neurons
+                              function collectAnnotations(o, e) {
+                                o[e.name] = e.users[0].id; return o;
+                              }
+                              var annotationMap = from_annotations.reduce(collectAnnotations, {});
+                              merge(annotationMap);
+                            });
+                      } else {
+                        merge_multiple_nodes();
+                      }
+                    });
+              }
             };
 
             /* If the to-node contains more than one node, show the dialog.
@@ -1937,25 +1967,25 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
   // Don't udpate if the stack's current section or scale wasn't changed
   var doNotUpdate = stackViewer.old_z == stackViewer.z && stackViewer.old_s == stackViewer.s;
   if ( doNotUpdate ) {
+    var padS = this.padding / stackViewer.scale;
     // Don't upate if the center didn't move horizontally, but do if
-    var sPAD = this.PAD / stackViewer.scale;
     var dx = this.old_x - stackViewer.x;
-    doNotUpdate = dx < sPAD && dx > -sPAD;
+    doNotUpdate = dx <= padS && dx >= -padS;
     
     if ( doNotUpdate ) {
       // Don't upate if the center didn't move certically, but do if
       var dy = this.old_y - stackViewer.y;
-      doNotUpdate = dy < sPAD && dy > -sPAD;
+      doNotUpdate = dy <= padS && dy >= -padS;
     }
 
     if (doNotUpdate) {
       // Don't update if the view didn't get higher, but do if
-      doNotUpdate = stackViewer.viewWidth <= (this.old_width + this.PAD);
+      doNotUpdate = stackViewer.viewWidth <= (this.old_width + 2 * padS);
     }
 
     if (doNotUpdate) {
       // Don't update if the view got wider, but do if
-      doNotUpdate = stackViewer.viewHeight <= (this.old_height + this.PAD);
+      doNotUpdate = stackViewer.viewHeight <= (this.old_height + 2 * padS);
     }
   }
 
@@ -2324,6 +2354,14 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     var wx1 = stackViewer.primaryStack.stackToProjectX(z1, y1, x1),
         wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
         wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
+
+    // Add padding to bounding box
+    var xPadP = self.padding * stackViewer.primaryStack.resolution.x / stackViewer.scale;
+    var yPadP = self.padding * stackViewer.primaryStack.resolution.y / stackViewer.scale;
+    wx0 -= xPadP;
+    wx1 += xPadP;
+    wy0 -= yPadP;
+    wy1 += yPadP;
 
     // As long as stack space Z coordinates are always clamped to the last
     // section (i.e. if floor() is used instead of round() when transforming),
@@ -2768,7 +2806,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
          option: updateMode},
         function(json) {
           // Refresh 3d views if any
-          WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
+          CATMAID.WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
           // Reinit SVGOverlay to read in the radius of each altered treenode
           self.updateNodes();
         });

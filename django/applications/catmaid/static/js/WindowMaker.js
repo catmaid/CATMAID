@@ -205,7 +205,7 @@ var WindowMaker = new function()
 
   var createSkeletonMeasurementsTable = function()
   {
-    var SMT = new SkeletonMeasurementsTable();
+    var SMT = new CATMAID.SkeletonMeasurementsTable();
     var win = new CMWWindow("Skeleton Measurements Table " + SMT.widgetID);
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
@@ -824,22 +824,48 @@ var WindowMaker = new function()
         var skeletonID = rowToSkeletonID(this);
         var skeleton = table.skeletons[table.skeleton_ids[skeletonID]];
         // Select the inner div, which will contain the color wheel
-        var sel = $('#color-wheel' + table.widgetID + '-' + skeletonID + ' .colorwheel');
+        var container = $('#color-wheel' + table.widgetID + '-' + skeletonID);
+        var allSelected = $('input[type=checkbox]', container);
+        var colorwheel = $('div.colorwheel', container);
         if (skeleton.cw) {
           delete skeleton.cw;
-          $('#color-wheel' + table.widgetID + '-' + skeletonID).hide();
-          sel.empty();
+          container.hide();
+          colorwheel.empty();
+          allSelected.off('change.colorwheel');
         } else {
-          var cw = Raphael.colorwheel(sel[0], 150);
+          allSelected.on('change.colorwheel', function() {
+            if (this.checked) {
+              colorAllSelected(table, skeleton.color, skeleton.opacity);
+            }
+          });
+          var cw = Raphael.colorwheel(colorwheel[0], 150);
           cw.color('#' + skeleton.color.getHexString(), skeleton.opacity);
-          cw.onchange(function(color, alpha) {
-            skeleton.color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
+          cw.onchange(function(color, alpha, colorChanged, alphaChanged) {
+            var c = [parseInt(color.r) / 255.0,
+                     parseInt(color.g) / 255.0,
+                     parseInt(color.b) / 255.0];
+            skeleton.color.setRGB(c[0], c[1], c[2]);
             skeleton.opacity = alpha;
             table.gui.update_skeleton_color_button(skeleton);
             table.notifyLink(skeleton);
+
+            if (allSelected.prop('checked')) {
+              colorAllSelected(table, skeleton.color, alpha);
+            }
           });
           skeleton.cw = cw;
-          $('#color-wheel' + table.widgetID + '-' + skeletonID).show();
+          container.show();
+        }
+
+        function colorAllSelected(table, color, alpha) {
+          table.getSelectedSkeletons().forEach(function(skid) {
+            var s = table.skeletons[table.skeleton_ids[skid]];
+            s.color.copy(color);
+            s.opacity = alpha;
+            table.gui.update_skeleton_color_button(s);
+            table.notifyLink(s);
+          });
+          $('#selection-table-batch-color-button' + table.widgetID)[0].style.backgroundColor = color.getStyle();
         }
       });
 
@@ -928,13 +954,14 @@ var WindowMaker = new function()
   };
 
   var appendToTab = function(tab, elems) {
-    elems.forEach(function(e) {
+    return elems.map(function(e) {
       switch (e.length) {
-        case 1: tab.appendChild(e[0]); break;
-        case 2: appendButton(tab, e[0], e[1]); break;
-        case 3: appendButton(tab, e[0], e[1], e[2]); break;
-        case 4: appendCheckbox(tab, e[0], e[1], e[2], e[3]); break;
-        case 5: appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]); break;
+        case 1: return tab.appendChild(e[0]);
+        case 2: return appendButton(tab, e[0], e[1]);
+        case 3: return appendButton(tab, e[0], e[1], e[2]);
+        case 4: return appendCheckbox(tab, e[0], e[1], e[2], e[3]);
+        case 5: return appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]);
+        default: return undefined;
       }
     });
   };
@@ -966,7 +993,7 @@ var WindowMaker = new function()
       return;
     }
 
-    var WA = new WebGLApplication();
+    var WA = new CATMAID.WebGLApplication();
 
     var win = new CMWWindow(WA.getName());
     var content = win.getFrame();
@@ -1008,7 +1035,7 @@ var WindowMaker = new function()
     connectorRestrictions.appendChild(document.createTextNode('Connector restriction'));
     connectorRestrictions.appendChild(connectorRestrictionsSl);
 
-    appendToTab(tabs['View'],
+    var viewControls = appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
           ['Follow active', false, function() { WA.setFollowActive(this.checked); }, false],
@@ -1040,7 +1067,7 @@ var WindowMaker = new function()
       var name = this.options[this.selectedIndex].value;
       WA.activateView(name);
       // Update orthographic view checkbox
-      orthographicCbElems[0].checked = ('orthographic' === WA.options.camera_view);
+      viewControls[11].checked = ('orthographic' === WA.options.camera_view);
     };
     storedViewsSelect.onclick = storedViewsSelect.onchange;
     // Update the list when the element is focused
@@ -1146,7 +1173,7 @@ var WindowMaker = new function()
         WA.adjustStaticContent();
       };
     };
-    var o = WebGLApplication.prototype.OPTIONS;
+    var o = CATMAID.WebGLApplication.prototype.OPTIONS;
 
     appendToTab(tabs['View settings'],
         [
@@ -1158,6 +1185,7 @@ var WindowMaker = new function()
           ['Floor', true, adjustFn('show_floor'), false],
           ['Bounding box', true, adjustFn('show_box'), false],
           ['Z plane', false, adjustFn('show_zplane'), false],
+          ['Debug', false, function() { WA.setDebug(this.checked); }, false],
           ['Missing sections', false, adjustFn('show_missing_sections'), false],
           ['with height:', o.missing_section_height, ' %', function() {
               WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));
@@ -1444,10 +1472,7 @@ var WindowMaker = new function()
     color.options.add(new Option('circles of hell (downstream)', 'circles_of_hell_downstream'));
     color.onchange = GG._colorize.bind(GG, color);
 
-    var layout = appendSelect(tabs['Graph'], "compartment_layout",
-        ["Force-directed", "Hierarchical", "Grid", "Circle",
-         "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
-         "Random", "Compound Spring Embedder", "Manual"]);
+    var layout = appendSelect(tabs['Graph'], "compartment_layout", GG.layoutStrings);
 
     var edges = document.createElement('select');
     for (var i=1; i<101; ++i) edges.appendChild(new Option(i, i));
@@ -2280,27 +2305,29 @@ var WindowMaker = new function()
         option.value = -1;
         sync.appendChild(option);
         var operation_type_array = [
-        "rename_root",
-        "create_neuron",
-        "rename_neuron",
-        "remove_neuron",
-        "move_neuron",
+          "rename_root",
+          "create_neuron",
+          "rename_neuron",
+          "remove_neuron",
+          "move_neuron",
 
-        "create_group",
-        "rename_group",
-        "remove_group",
-        "move_group",
+          "create_group",
+          "rename_group",
+          "remove_group",
+          "move_group",
 
-        "create_skeleton",
-        "rename_skeleton",
-        "remove_skeleton",
-        "move_skeleton",
+          "create_skeleton",
+          "rename_skeleton",
+          "remove_skeleton",
+          "move_skeleton",
 
-        "split_skeleton",
-        "join_skeleton",
-        "reroot_skeleton",
+          "split_skeleton",
+          "join_skeleton",
+          "reroot_skeleton",
 
-        "change_confidence"
+          "change_confidence",
+
+          "reset_reviews"
         ];
         for( var i = 0; i < operation_type_array.length; i++ ) {
           var option = document.createElement("option");
@@ -2972,6 +2999,8 @@ var WindowMaker = new function()
     
     var queryFields = document.createElement('div');
     queryFields.setAttribute('id', 'neuron_annotations_query_fields' + NA.widgetID);
+    queryFields.setAttribute('class', 'buttonpanel');
+
     // Create the query fields HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
     var queryFields_html =
@@ -3037,11 +3066,12 @@ var WindowMaker = new function()
           'class="neuron_annotations_query_footer">' +
         '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
             'value="Annotate..." />' +
-        '<input id="neuron_annotation_prev_page{{NA-ID}}" type="button" value="<" />' +
-        '<span id="neuron_annotations_paginattion{{NA-ID}}">[0, 0] of 0</span>' +
-        '<input id="neuron_annotation_next_page{{NA-ID}}" type="button" value=">" />' +
         '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
           'Sync to: ' +
+        '</label>' +
+        '<label>' +
+          '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
+          'Show annotations' +
         '</label>' +
       '</div>' +
       '<table cellpadding="0" cellspacing="0" border="0" ' +
@@ -3052,9 +3082,7 @@ var WindowMaker = new function()
             '<th>' +
               '<input type="checkbox" ' +
                   'id="neuron_annotations_toggle_neuron_selections_checkbox{{NA-ID}}" />' +
-            '</th>' +
-            '<th>' +
-              'Entity Name' +
+              '<span>Entity Name</span>' +
             '</th>' +
             '<th>Type</th>' +
             '<th>' +
@@ -3114,10 +3142,13 @@ var WindowMaker = new function()
         CATMAID.annotate_entities(selected_entity_ids,
             this.refresh_annotations.bind(this));
     }).bind(NA);
-    $('#neuron_annotation_prev_page' + NA.widgetID)[0].onclick =
-        NA.prev_page.bind(NA);
-    $('#neuron_annotation_next_page' + NA.widgetID)[0].onclick =
-        NA.next_page.bind(NA);
+    $('#neuron_search_show_annotations' + NA.widgetID)
+      .prop('checked', NA.displayAnnotations)
+      .on('change', NA, function(e) {
+        var widget = e.data;
+        widget.displayAnnotations = this.checked;
+        widget.updateAnnotations();
+      });
 
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);
@@ -3154,7 +3185,8 @@ var WindowMaker = new function()
     $filter_select.combobox({
       selected: function(event, ui) {
         var val = $(this).val();
-        NA.toggle_annotation_display(val != 'show_all', val);
+        NA.annotationUserFilter = val != 'show_all' ? val : null;
+        NA.updateAnnotationUI();
       }
     });
     
@@ -3287,4 +3319,34 @@ var WindowMaker = new function()
     }
   };
 
+  /**
+   * Allow new widgets to register with a window maker.
+   */
+  this.registerWidget = function(key, creator) {
+    if (key in creators) {
+      throw new CATMAID.ValueError("A widget with the following key is " +
+          "already registered: " + key);
+    }
+    if (!CATMAID.tools.isFn(creator)) {
+      throw new CATMAID.ValueError("No valid constructor function provided");
+    }
+
+    creators[key] = function(options) {
+      return createWidget(new creator(options));
+    };
+  };
 }();
+
+
+(function(CATMAID) {
+
+  "use strict";
+
+  /**
+   * Make new widgets available under the given unique key.
+   */
+  CATMAID.registerWidget = function(options) {
+    WindowMaker.registerWidget(options.key, options.creator);
+  };
+
+})(CATMAID);

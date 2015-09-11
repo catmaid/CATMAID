@@ -1,3 +1,117 @@
+## 2015.9.11
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+
+### Features and enhancements
+
+Neuron Navigator:
+
+- It is now possible to remove multiple annotations at once from a neuron. A new
+  column is added to annotation tables, each annotation row has now a checkbox
+  in its first column. A click on the de-annotate link in this column's header
+  or footer will remove all selected annotations from the current neuron.
+
+
+Tracing:
+
+- If a single-node skeleton is merged into another skeleton, no merge dialog is
+  now shown by default. All annotations of this single-node skeleton are merged
+  into the target skeleton without asking. This behavior can be changed to again
+  show a merge UI if the single-node skeleton has annotations (behavior so far)
+  through a new entry in the Tracing section of the settings widget.
+
+
+Graph widget:
+
+- New layout modes "dagre", "cola", "spread" and "springy". The first is based
+  on DAGs (directed acyclic graphs) and the last three are force-directed. To
+  note that "spread" will evenly layout neurons in trying to occupy as much
+  space as possible, and also leads to symmetric-looking graphs when rendering
+  multiple disconnected graphs of e.g. left and right homologous neurons. Try
+  it.
+
+
+Connectivity matrix:
+
+- Descending and ascending sorting is now available for all sorting modes.
+
+- The new 'order of other' sorting mode will try to follow the column order for
+  rows and vice versa. If skeletons are not found in the reference dimension,
+  they are pushed to the end.
+
+
+Selection table:
+
+- When changing the color of a neuron, all other selected neurons can be colored
+  at the same time, when the new 'all selected' checkbox (right above the color
+  wheel) is checked.
+
+
+Neuron sarch:
+
+- The "select all" checkbox now does what it says and selects all neurons in the
+  results set.
+
+- Pagination now works like in other widgets and the number of elements per page
+  can be adjusted.
+
+- Annotations are not loaded by default anymore, but can be shown with the help
+  of the new "Show annotations" checkbox.
+
+
+Miscellaneous:
+
+- When a connector is selected, basic information about it is displayed at the
+  top of the window (where otherwise the neuron name is displayed).
+
+- A neuron search result's annotation list is now kept in sync with the rest of
+  the widgets. If annotations change on a listed neuron or annotation, the
+  search query is re-done.
+
+- If only transparency is changed in the batch color picker of the Selection
+  Table, the transparency alone (and not the color) of the target skeletons will
+  be updated. To also update the skeleton color, the color has to be changed in
+  the color picker, too.
+
+
+Administration:
+
+- Adding custom code to CATMAID's front end is now easier: Add file names to the
+  STATIC_EXTENSION_FILES array variable and have your web-server point the URL
+  defined in STATIC_EXTENSION_URL (defaults to /staticext/) to the folder were
+  those files live. CATMAID will then load those files after its own files.
+
+
+### Bug fixes
+
+- Nodes are now correctly scaled in skeleton projection layers.
+
+- Neuron navigator now updates if a skeleton is changed (e.g. due to a merge).
+
+- 'Sync to' selections to push changes from one widget to another (e.g. 3D
+  viewer controlled by selection table) are now updated correctly, if a selected
+  target is closed.
+
+- Changing the order of rows and columns of the connectivity matrix manually
+  does now work like expected.
+
+- From within the neuron search removed annotations will now disappear again
+  from the search widget after they are unlinked.
+
+- Using the CATMAID coloring scheme in the Selection Table is not random
+  anymore.
+
+- CSV files exported from the Connectivity Widget now respect the table ordering
+  and include the target neuron names.
+
+- Spheres that intersect in the 3D viewer (e.g. somas) don't appear broken up
+  anymore.
+
+- The 3D viewer's SVG export will now correctly calculate the size of exported
+  spheres (e.g. soma tags).
+
+
 ## 2015.7.31
 
 Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers

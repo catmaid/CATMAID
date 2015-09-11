@@ -186,6 +186,22 @@ div.form textarea, div.form input, div.form select
 	padding:0.5em 1em 0.5em 1em;
 }
 
+div#data_view .header {
+	margin:1.5em 16px 0.5em 20px;
+}
+
+div#data_view .header img {
+    float: left;
+    height: 2em;
+    margin-top: 0.2em;
+    margin-left: 1em;
+}
+
+div#data_view .header h1 {
+    float: left;
+    margin: 0px;
+}
+
 div#data_view table
 {
 	margin:1.5em 16px 0.5em 20px;
@@ -396,6 +412,18 @@ div#classification_graph_object img.roiimage {
 .navigator_content.multi_table_node .dataTables_wrapper {
     min-height: 0px;
     margin-bottom: 1em;
+}
+
+.navigator_content th a {
+    text-decoration: underline !important;
+}
+
+.navigator_content th a:hover {
+    text-decoration: none !important;
+}
+
+.navigator_content td input {
+    margin-left: 0;
 }
 
 .neuron_annotations_query_results_table td {
@@ -655,8 +683,16 @@ div#classification_graph_object img.roiimage {
   font-weight: bold;
 }
 
-#settings_widget .content {
-  margin-left: 3em;
+#settings_widget > .settings-container {
+  margin-left: 1em;
+}
+
+.settings-container > p {
+  margin-left: 0;
+}
+
+.settings-container .content {
+  margin-left: 1em;
 }
 
 .setting {
@@ -869,4 +905,35 @@ table.skeleton-table .sorting_desc_disabled::after {
 
 div.selection-table.windowContent {
     margin-top: 1em;
+}
+
+.help {
+    color: #999;
+    margin-left: 15em;
+}
+
+.checkbox-row .help {
+    margin-left: 0;
+}
+
+.setting input,
+.setting select {
+    margin-left: 0;
+}
+
+.blockMsg img {
+    margin: 0.5em auto 0.5em auto;
+    display: block;
+}
+
+.blockMsg span,
+.blockMsg div {
+    margin: 0.5em auto 0.5em auto;
+    font-size: medium;
+    font-weight: bold;
+    display: block;
+}
+
+.dataTables_wrapper {
+  min-height: 0;
 }

@@ -13,7 +13,6 @@
   session,
   SVGCanvas,
   SynapseClustering,
-  WebGLApplication,
   WindowMaker
 */
 
@@ -70,6 +69,203 @@ var GroupGraph = function() {
   this.tag_title_others = '';
 
   this.layout_fit = true;
+
+  this.layout_options = {
+    preset: {
+      name: 'preset',
+      // whether to fit to viewport
+      fit: true,
+      // padding on fit
+      padding: 30
+    },
+    grid: {
+      name: 'grid',
+      fit: true, // whether to fit the viewport to the graph
+      rows: undefined, // force num of rows in the grid
+      columns: undefined, // force num of cols in the grid
+    },
+    random: {
+      name: 'random',
+      fit: true // whether to fit to viewport
+    },
+    arbor: {
+      name: 'arbor',
+      liveUpdate: true, // whether to show the layout as it's running
+      maxSimulationTime: 2000, // max length in ms to run the layout
+      fit: true, // fit to viewport
+      padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+      ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
+
+      // forces used by arbor (use arbor default on undefined)
+      repulsion: undefined,
+      stiffness: undefined,
+      friction: undefined,
+      gravity: true,
+      fps: undefined,
+      precision: undefined,
+
+      // static numbers or functions that dynamically return what these
+      // values should be for each element
+      nodeMass: undefined,
+      edgeLength: undefined,
+
+      stepSize: 1, // size of timestep in simulation
+
+      // function that returns true if the system is stable to indicate
+      // that the layout can be stopped
+      stableEnergy: function( energy ){
+          var e = energy;
+          return (e.max <= 0.5) || (e.mean <= 0.3);
+      }
+    },
+    circle: {
+      name: 'circle',
+      fit: true, // whether to fit the viewport to the graph
+      rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
+      padding: 30, // the padding on fit
+      startAngle: 3/2 * Math.PI, // the position of the first node
+      counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+    },
+    breadthfirst: {
+      name: 'breadthfirst', // Hierarchical
+      fit: true, // whether to fit the viewport to the graph
+      directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
+      padding: 30, // padding on fit
+      circle: false, // put depths in concentric circles if true, put depths top down if false
+      roots: undefined // the roots of the trees
+    },
+    cose: {
+      name: 'cose',
+      // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
+      refresh: 0,
+      // Whether to fit the network view after when done
+      fit: true,
+      // Whether to randomize node positions on the beginning
+      randomize: true,
+      // Whether to use the JS console to print debug messages
+      debug: false,
+
+      // Node repulsion (non overlapping) multiplier
+      nodeRepulsion: 10000,
+      // Node repulsion (overlapping) multiplier
+      nodeOverlap: 10,
+      // Ideal edge (non nested) length
+      idealEdgeLength: 50,
+      // Divisor to compute edge forces
+      edgeElasticity: 100,
+      // Nesting factor (multiplier) to compute ideal edge length for nested edges
+      nestingFactor: 5,
+      // Gravity force (constant) for each group of nested nodes
+      gravity: 250,
+
+      // Maximum number of iterations to perform
+      numIter: 100,
+      // Initial temperature (maximum node displacement)
+      initialTemp: 200,
+      // Cooling factor (how the temperature is reduced between consecutive iterations)
+      coolingFactor: 0.95,
+      // Lower temperature threshold (below this point the layout will end)
+      minTemp: 1
+    },
+    concentric: {
+      name: 'concentric',
+      fit: true, // whether to fit the viewport to the graph
+      ready: undefined, // callback on layoutready
+      stop: undefined, // callback on layoutstop
+      padding: 30, // the padding on fit
+      startAngle: 3/2 * Math.PI, // the position of the first node
+      counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
+      minNodeSpacing: 80, // min spacing between outside of nodes (used for radius adjustment)
+      height: undefined, // height of layout area (overrides container height)
+      width: undefined, // width of layout area (overrides container width)
+      levelWidth: function(nodes) { // the variation of concentric values in each level
+        return nodes.maxDegree() / 4;
+      }
+    },
+    dagre: {
+      name: 'dagre',
+      // dagre algo options, uses default value on undefined
+      nodeSep: undefined, // the separation between adjacent nodes in the same rank
+      edgeSep: undefined, // the separation between adjacent edges in the same rank
+      rankSep: undefined, // the separation between adjacent nodes in the same rank
+      rankDir: undefined, // 'TB' for top to bottom flow, 'LR' for left to right
+      minLen: function( edge ){ return 1; }, // number of ranks to keep between the source and target of the edge
+      edgeWeight: function( edge ){ return 1; }, // higher weight edges are generally made shorter and straighter than lower weight edges
+      // general layout options
+      fit: true, // whether to fit to viewport
+      padding: 30, // fit padding
+      animate: false, // whether to transition the node positions
+      animationDuration: 500, // duration of animation in ms if enabled
+      boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+      ready: function(){}, // on layoutready
+      stop: function(){} // on layoutstop
+    },
+    cola: {
+      name: 'cola',
+      animate: true, // whether to show the layout as it's running
+      refresh: 1, // number of ticks per frame; higher is faster but more jerky
+      maxSimulationTime: 4000, // max length in ms to run the layout
+      ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
+      fit: true, // on every layout reposition of nodes, fit the viewport
+      padding: 30, // padding around the simulation
+      boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+      // layout event callbacks
+      ready: function(){}, // on layoutready
+      stop: function(){}, // on layoutstop
+      // positioning options
+      randomize: false, // use random node positions at beginning of layout
+      avoidOverlap: true, // if true, prevents overlap of node bounding boxes
+      handleDisconnected: true, // if true, avoids disconnected components from overlapping
+      nodeSpacing: function( node ){ return 10; }, // extra spacing around nodes
+      flow: undefined, // use DAG/tree flow layout if specified, e.g. { axis: 'y', minSeparation: 30 }
+      alignment: undefined, // relative alignment constraints on nodes, e.g. function( node ){ return { x: 0, y: 1 } }
+      // different methods of specifying edge length
+      // each can be a constant numerical value or a function like `function( edge ){ return 2; }`
+      edgeLength: undefined, // sets edge length directly in simulation
+      edgeSymDiffLength: undefined, // symmetric diff edge length in simulation
+      edgeJaccardLength: undefined, // jaccard edge length in simulation
+      // iterations of cola algorithm; uses default values on undefined
+      unconstrIter: undefined, // unconstrained initial layout iterations
+      userConstIter: undefined, // initial layout iterations with user-specified constraints
+      allConstIter: undefined, // initial layout iterations with all constraints including non-overlap
+      // infinite layout options
+      infinite: false // overrides all other options for a forces-all-the-time mode
+    },
+    spread: {
+      name: 'spread',
+      animate: true, // whether to show the layout as it's running
+      ready: undefined, // Callback on layoutready
+      stop: undefined, // Callback on layoutstop
+      fit: true, // Reset viewport to fit default simulationBounds
+      minDist: 20, // Minimum distance between nodes
+      padding: 20, // Padding
+      expandingFactor: -1.0, // If the network does not satisfy the minDist
+      // criterium then it expands the network of this amount
+      // If it is set to -1.0 the amount of expansion is automatically
+      // calculated based on the minDist, the aspect ratio and the
+      // number of nodes
+      maxFruchtermanReingoldIterations: 50, // Maximum number of initial force-directed iterations
+      maxExpandIterations: 4, // Maximum number of expanding iterations
+      boundingBox: undefined // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    },
+    springy: {
+      name: 'springy',
+      animate: true, // whether to show the layout as it's running
+      maxSimulationTime: 2000, // max length in ms to run the layout
+      ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
+      fit: true, // whether to fit the viewport to the graph
+      padding: 30, // padding on fit
+      boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+      random: false, // whether to use random initial positions
+      infinite: false, // overrides all other options for a forces-all-the-time mode
+      ready: undefined, // callback on layoutready
+      stop: undefined, // callback on layoutstop
+      // springy forces
+      stiffness: 400,
+      repulsion: 400,
+      damping: 0.5
+    }
+  };
 };
 
 GroupGraph.prototype = {};
@@ -343,6 +539,7 @@ GroupGraph.prototype.init = function() {
             "width": 15,
             "height": 15
           }),
+      boxSelectionEnabled: true,
   };
   var sel = $("#cyelement" + this.widgetID);
   sel.cytoscape(options).css('background', 'white');
@@ -442,10 +639,16 @@ GroupGraph.prototype.init = function() {
   }).bind(this));
 };
 
+// The index is relied upon by the updateLayout function
+GroupGraph.prototype.layoutStrings = ["Spread (force-directed)", "Hierarchical", "Grid", "Circle",
+         "Concentric (degree)", "Concentric (out degree)", "Concentric (in degree)",
+         "Random", "Compound Spring Embedder", "Manual", "Dagre (DAG-based)", "Cola (force-directed)",
+         "Arbor (force-directed)", "Springy (force-directed)"];
+
 /** Unlocks locked nodes, if any, when done. */
 GroupGraph.prototype.updateLayout = function(layout) {
   var index = layout ? layout.selectedIndex : 0;
-  var name = ['arbor', 'breadthfirst', 'grid', 'circle', 'concentric', 'concentric out', 'concentric in', 'random', 'cose', 'preset'][index];
+  var name = ['spread', 'breadthfirst', 'grid', 'circle', 'concentric', 'concentric out', 'concentric in', 'random', 'cose', 'preset', 'dagre', 'cola', 'arbor', 'springy'][index];
   var options = this.createLayoutOptions(name);
   options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
   this.cy.layout( options );
@@ -463,132 +666,25 @@ GroupGraph.prototype.toggleLayoutFit = function() {
 };
 
 GroupGraph.prototype.createLayoutOptions = function(name) {
-  var options;
-  var fit = this.layout_fit;
-  if ('grid' === name) {
-    options = {
-      name: 'grid',
-      fit: true, // whether to fit the viewport to the graph
-      rows: undefined, // force num of rows in the grid
-      columns: undefined, // force num of cols in the grid
-    };
-  } else if ('arbor' === name) {
-    options = {
-        name: 'arbor',
-        liveUpdate: true, // whether to show the layout as it's running
-        maxSimulationTime: 2000, // max length in ms to run the layout
-        fit: fit, // fit to viewport
-        padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
-        ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
+  var original;
 
-        // forces used by arbor (use arbor default on undefined)
-        repulsion: undefined,
-        stiffness: undefined,
-        friction: undefined,
-        gravity: true,
-        fps: undefined,
-        precision: undefined,
+  if (0 === name.indexOf('concentric')) {
+    original = name;
+    name = 'concentric';
+  }
 
-        // static numbers or functions that dynamically return what these
-        // values should be for each element
-        nodeMass: undefined,
-        edgeLength: undefined,
+  var options = this.layout_options[name];
+  if (!options) return alert("Invalid layout: " + name);
 
-        stepSize: 1, // size of timestep in simulation
+  // clone, to avoid modifying the original
+  options = $.extend({}, options);
+  options.fit = this.layout_fit;
 
-        // function that returns true if the system is stable to indicate
-        // that the layout can be stopped
-        stableEnergy: function( energy ){
-            var e = energy;
-            return (e.max <= 0.5) || (e.mean <= 0.3);
-        }
-    };
-  } else if ('circle' === name) {
-      options = {
-          name: 'circle',
-          fit: fit, // whether to fit the viewport to the graph
-          rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
-          padding: 30, // the padding on fit
-          startAngle: 3/2 * Math.PI, // the position of the first node
-          counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
-      };
-  } else if ('breadthfirst' === name) {
-    options = {
-        name: 'breadthfirst', // Hierarchical
-        fit: fit, // whether to fit the viewport to the graph
-        directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
-        padding: 30, // padding on fit
-        circle: false, // put depths in concentric circles if true, put depths top down if false
-        roots: undefined // the roots of the trees
-    };
-  } else if ('random' === name) {
-    options = {
-        name: 'random',
-        fit: fit // whether to fit to viewport
-    };
-  } else if ('cose' === name) {
-    options = {
-      name: 'cose',
-      // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-      refresh: 0,
-      // Whether to fit the network view after when done
-      fit: fit,
-      // Whether to randomize node positions on the beginning
-      randomize: true,
-      // Whether to use the JS console to print debug messages
-      debug: false,
-
-      // Node repulsion (non overlapping) multiplier
-      nodeRepulsion: 10000,
-      // Node repulsion (overlapping) multiplier
-      nodeOverlap: 10,
-      // Ideal edge (non nested) length
-      idealEdgeLength: 10,
-      // Divisor to compute edge forces
-      edgeElasticity: 100,
-      // Nesting factor (multiplier) to compute ideal edge length for nested edges
-      nestingFactor: 5,
-      // Gravity force (constant)
-      gravity: 250,
-
-      // Maximum number of iterations to perform
-      numIter: 100,
-      // Initial temperature (maximum node displacement)
-      initialTemp: 200,
-      // Cooling factor (how the temperature is reduced between consecutive iterations)
-      coolingFactor: 0.95,
-      // Lower temperature threshold (below this point the layout will end)
-      minTemp: 1
-    };
-  } else if ('preset' === name) {
-    options = {
-      name: 'preset',
-      // whether to fit to viewport
-      fit: fit,
-      // padding on fit
-      padding: 30
-    };
-  } else if (0 === name.indexOf('concentric')) {
-    options = {
-      name: 'concentric',
-      fit: fit, // whether to fit the viewport to the graph
-      ready: undefined, // callback on layoutready
-      stop: undefined, // callback on layoutstop
-      padding: 30, // the padding on fit
-      startAngle: 3/2 * Math.PI, // the position of the first node
-      counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
-      minNodeSpacing: 80, // min spacing between outside of nodes (used for radius adjustment)
-      height: undefined, // height of layout area (overrides container height)
-      width: undefined, // width of layout area (overrides container width)
-      levelWidth: function(nodes) { // the variation of concentric values in each level
-        return nodes.maxDegree() / 4;
-      }
-    };
-
+  if (original) {
     // Define the concentric value function: returns numeric value for each node, placing higher nodes in levels towards the centre
-    if      ('concentric'     === name) options.concentric = function() { return this.degree(); };
-    else if ('concentric in ' === name) options.concentric = function() { return this.indegree(); };
-    else if ('concentric out' === name) options.concentric = function() { return this.outdegree(); };
+    if      ('concentric'     === original) options.concentric = function() { return this.degree(); };
+    else if ('concentric in ' === original) options.concentric = function() { return this.indegree(); };
+    else if ('concentric out' === original) options.concentric = function() { return this.outdegree(); };
   }
 
   return options;
@@ -656,6 +752,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
                       skeletons: [model.clone()],
                       label: NeuronNameService.getInstance().getName(model.id),
                       node_count: 0,
+                      shape: "ellipse",
                       color: '#' + model.color.getHexString()}};
   };
 
@@ -707,6 +804,7 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
         parts = {},
         name = NeuronNameService.getInstance().getName(skid),
         common = {skeletons: [models[skid]],
+                  shape: "ellipse",
                   node_count: 0,
                   color: '#' + models[skid].color.getHexString()},
         createNode = function(id, label, is_branch) {
@@ -1270,19 +1368,24 @@ GroupGraph.prototype.appendGroup = function(models) {
     var json = $.parseJSON(text);
     if (json.error) return alert(json.error);
 
+    function hasAnnotation(aid, annotation) {
+      return annotation.id == aid;
+    }
+
     // Find common annotations, if any
     var skids = Object.keys(json.skeletons);
     var common = skids.length > 0 ? json.skeletons[skids[0]] : [];
     common = common.filter(function(annotation) {
+      var match = hasAnnotation.bind(window, annotation);
       return skids.reduce(function(all, skid) {
-        return all && -1 !== json.skeletons[skid].indexOf(annotation);
+        return all && -1 !== json.skeletons[skid].some(match);
       }, true);
-    }).map(function(aid) { return json.annotations[aid]; }).sort();
+    }).map(function(a) { return json.annotations[a.id]; }).sort();
 
     // Find set of all annotations
     var all = Object.keys(skids.reduce(function(o, skid) {
       return json.skeletons[skid].reduce(function(o, annotation) {
-        o[annotation] = true;
+        o[annotation.id] = true;
         return o;
       }, o);
     }, {})).map(function(aid) { return json.annotations[aid]; }).sort();
@@ -1911,7 +2014,7 @@ GroupGraph.prototype.colorBy = function(mode, select) {
       graph.add_edge(d.source, d.target, {weight: d.weight});
     });
 
-    if (graph.number_of_nodes() > 10) $.blockUI({message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /> <h2>Computing betweenness centrality for ' + graph.number_of_nodes() + ' nodes and ' + graph.number_of_edges() + ' edges.</div></h2>'});
+    if (graph.number_of_nodes() > 10) $.blockUI({message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /> <span>Computing betweenness centrality for ' + graph.number_of_nodes() + ' nodes and ' + graph.number_of_edges() + ' edges.</span>'});
 
     try {
       var bc = jsnx.betweenness_centrality(graph, {weight: 'weight'});
@@ -2133,6 +2236,11 @@ GroupGraph.prototype.loadSVGLibraries = function(callback) {
           // and explains perhaps the issues with the position of the M point in paths below,
           // which is fixable.
         };
+        // Monkey path SVGCanvas so that beginPath() does not perform a moveTo()
+        SVGCanvas.prototype.beginPath = function() {
+          // This is all the original function does, besides moveTo()
+          this._subpaths = [""];
+        };
       },
       chainLoad = function(libs, i) {
     try {
@@ -2238,7 +2346,7 @@ GroupGraph.prototype._exportSVG = function() {
   // Fix edge arrowheads if necessary
   for (var k=0; k<edges.length; ++k) {
     var edge = edges[k];
-    if (1 === edge.length) continue; // undirected edge
+    if (edge.length < 3) continue; // undirected edge or edge without duplicates
     // Fix the style
     var path = edge[2],
         attr = path.attributes;
@@ -2924,7 +3032,7 @@ GroupGraph.prototype.loadFromJSON = function(files) {
 
 GroupGraph.prototype.hideEdges = function(v) {
   // TODO refactor _validate into a Util or CATMAID namespace
-  v = WebGLApplication.prototype._validate(v, 'Invalid synaptic count', 1);
+  v = CATMAID.WebGLApplication.prototype._validate(v, 'Invalid synaptic count', 1);
   if (!v) return;
   v = v | 0; // cast to int
   this.edge_threshold = v;

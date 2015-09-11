@@ -21,6 +21,7 @@ import sys, os
 sys.path.append(os.path.abspath('_themes'))
 html_theme_path = ['_themes']
 html_theme = 'jinja'
+html_favicon = 'favicon.ico'
 
 # -- General configuration -----------------------------------------------------
 

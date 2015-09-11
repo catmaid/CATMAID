@@ -634,7 +634,8 @@ def connector_user_info(request, project_id):
     treenode_id = int(request.GET.get('treenode_id'))
     connector_id = int(request.GET.get('connector_id'))
     cursor = connection.cursor()
-    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+    relation_names = ('presynaptic_to', 'postsynaptic_to', 'abutting')
+    relations = get_relation_to_id_map(project_id, relation_names, cursor)
     relation_id = relations[request.GET.get('relation_name')]
     cursor.execute('''
         SELECT tc.id, tc.user_id, tc.creation_time, tc.edition_time

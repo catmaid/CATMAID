@@ -32,12 +32,34 @@ var submitterFn = function() {
   var queue = [];
   // Store last result
   var lastResult;
+  // The time in ms before a UI blocking dialog is shown, if enabled
+  var blockingTimeout = 300;
+  // The timeout for a blocking UI
+  var blockingTimeoutHandle;
+
+  var blockUI = function() {
+    // Block UI after a defined amount of time
+    blockingTimeoutHandle = setTimeout(function() {
+      $.blockUI({
+        message: '<img src="' + STATIC_URL_JS +
+          'images/busy.gif" /><span>Just a moment...</span>'
+      });
+    }, blockingTimeout);
+  };
+
+  var unblockUI = function() {
+    if (blockingTimeoutHandle) {
+      clearTimeout(blockingTimeoutHandle);
+      blockingTimeoutHandle = undefined;
+    }
+    $.unblockUI();
+  };
 
   var complete = function(q) {
     // Remove this call
     queue.shift();
     //
-    if (q.blockUI) $.unblockUI();
+    if (q.blockUI) unblockUI();
     // ... and invoke the oldest of any accumulated requests
     next();
   };
@@ -46,7 +68,7 @@ var submitterFn = function() {
     try {
       lastResult = q.fn ? q.fn(json) : json;
     } catch (e) {
-      alert(e);
+      CATMAID.error(e, e.stack);
     } finally {
       // If the result of the invocation is a promise (i.e. has a then()
       // method), wait with completion for its fulfillment.
@@ -65,7 +87,7 @@ var submitterFn = function() {
   };
 
   var reset = function(q, error) {
-    if (q.blockUI) $.unblockUI();
+    if (q.blockUI) unblockUI();
     // Collect all error callbacks from all queued items. The current item is
     // expected to be still the first element.
     var callbacks = queue.reduce(function(o, e) {
@@ -144,7 +166,7 @@ var submitterFn = function() {
 
     // Block UI prior to placing a request, if desired
     if (q.blockUI) {
-      $.blockUI({message: '<h2><img src="' + STATIC_URL_JS + 'images/busy.gif" /> Just a moment...</h2>'});
+      blockUI();
     }
 
     if (q.url) {

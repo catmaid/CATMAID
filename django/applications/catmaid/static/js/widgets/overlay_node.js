@@ -352,20 +352,10 @@
     })();
 
     ptype.AbstractTreenode = function() {
-      // Colors that a node can take
-      this.active_skeleton_color = "rgb(255,255,0)";
-      this.active_skeleton_color_virtual = "rgb(255,255,0)";
-      this.inactive_skeleton_color = "rgb(255,0,255)";
-      this.inactive_skeleton_color_virtual = "rgb(255,0,255)";
-      this.inactive_skeleton_color_above = "rgb(0,0,255)";
-      this.inactive_skeleton_color_below = "rgb(255,0,0)";
-      this.root_node_color = "rgb(255,0,0)";
-      this.leaf_node_color = "rgb(128,0,0)";
-
       // For drawing:
       this.USE_HREF = 'treenodeCircle';
       this.NODE_RADIUS = 3;
-      this.CATCH_RADIUS = 5;
+      this.CATCH_RADIUS = 6;
       this.BASE_EDGE_WIDTH = 2;
 
       // ID of the disabled nodes
@@ -390,9 +380,9 @@
           color = SkeletonAnnotations.getActiveNodeColor();
         } else if (this.isroot) {
           // The root node should be colored red unless it's active:
-          color = this.root_node_color;
+          color = SkeletonAnnotations.root_node_color;
         } else if (0 === this.numberOfChildren) {
-          color = this.leaf_node_color;
+          color = SkeletonAnnotations.leaf_node_color;
         } else {
           // If none of the above applies, just colour according to the z difference.
           color = this.colorFromZDiff();
@@ -505,19 +495,19 @@
         // zdiff is in sections, therefore the current section is at [0, 1) --
         // notice 0 is inclusive and 1 is exclusive.
         if (this.zdiff >= 1) {
-          return this.inactive_skeleton_color_above;
+          return SkeletonAnnotations.inactive_skeleton_color_above;
         } else if (this.zdiff < 0) {
-          return this.inactive_skeleton_color_below;
+          return SkeletonAnnotations.inactive_skeleton_color_below;
         } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
           if (SkeletonAnnotations.isRealNode(this.id)) {
-            return this.active_skeleton_color;
+            return SkeletonAnnotations.active_skeleton_color;
           } else {
-            return this.active_skeleton_color_virtual;
+            return SkeletonAnnotations.active_skeleton_color_virtual;
           }
         } else if (SkeletonAnnotations.isRealNode(this.id)) {
-          return this.inactive_skeleton_color;
+          return SkeletonAnnotations.inactive_skeleton_color;
         } else {
-          return this.inactive_skeleton_color_virtual;
+          return SkeletonAnnotations.inactive_skeleton_color_virtual;
         }
       };
 
@@ -699,8 +689,12 @@
               height: bbox.height + pad});
 
           if (line) {
-            var lineColor = self.active_skeleton_color;
-            if (r.z !== 0) lineColor = (r.z < 0) ? self.inactive_skeleton_color_above : self.inactive_skeleton_color_below;
+            var lineColor = SkeletonAnnotations.active_skeleton_color;
+            if (r.z !== 0) {
+              lineColor = (r.z < 0) ?
+                  SkeletonAnnotations.inactive_skeleton_color_above :
+                  SkeletonAnnotations.inactive_skeleton_color_below;
+            }
             line.attr({x2: nodeX + r.x, y2: nodeY + r.y, stroke: lineColor});
           }
         });
@@ -1258,6 +1252,7 @@
       this.CATCH_SCALE = 3;
       this.CONFIDENCE_FONT_PT = 15;
       this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
+      this.scaling = 1.0;
 
       /** Function to assign to the SVG arrow. */
       this.mousedown = (function(d) {
@@ -1266,6 +1261,10 @@
         if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
           return;
         }
+        // Mark this edge as suspended so that other interaction modes don't
+        // expect it to be there.
+        d.suspended = true;
+
         // 'this' will be the the connector's mouse catcher line
         var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
         requestQueue.register(django_url + project.id + '/link/delete', "POST", {
@@ -1279,9 +1278,13 @@
               if (text && text !== " ") {
                 var e = $.parseJSON(text);
                 if (e.error) {
+                  d.suspended = false;
                   alert(e.error);
                 } else {
-                  catmaidSVGOverlay.updateNodes();
+                  catmaidSVGOverlay.updateNodes(function() {
+                    // Reset deletion flag
+                    d.suspended = false;
+                  });
                   return true;
                 }
               }
@@ -1290,21 +1293,42 @@
       });
 
       this.mouseover = function (d) {
+        // If this edge is suspended, don't try to retrieve any information.
+        if (d.suspended) {
+          return;
+        }
+        var relation_name, title;
+        if (d.is_pre === undefined) {
+          relation_name = 'abutting';
+          title = 'Abutting';
+        } else if (d.is_pre) {
+          relation_name = 'presynaptic_to';
+          title = 'Presynaptic';
+        } else {
+          relation_name = 'postsynaptic_to';
+          title = 'Postsynaptic';
+        }
+
         requestQueue.register(
             django_url + project.id + '/connector/user-info',
             'GET',
             { treenode_id: d.treenode_id,
               connector_id: d.connector_id,
-              relation_name: d.is_pre ? 'presynaptic_to' : 'postsynaptic_to'},
+              relation_name: relation_name},
             CATMAID.jsonResponseHandler(function(data) {
-              var msg = (d.is_pre ? 'Presynaptic' : 'Postsynaptic') + ' edge: ';
-              msg += data.map(function (info) {
+              var msg = title + ' edge: ' + data.map(function (info) {
                 return 'created by ' + User.safeToString(info.user) + ' ' +
                     CATMAID.tools.contextualDateString(info.creation_time) +
                     ', last edited ' +
                     CATMAID.tools.contextualDateString(info.edition_time);
               }).join('; ');
               CATMAID.statusBar.replaceLast(msg);
+            }, function(json) {
+              // Display only a warning in case of an error. Since it is
+              // possible that we get false errors when the link or one of the
+              // nodes get removed, this is probably okay.
+              if (json && json.error) CATMAID.warn(json.error);
+              return true;
             }));
       };
 
@@ -1390,11 +1414,11 @@
       var markerSize = [5, 4];
 
       this.scale = function(baseScale, resScale, dynamicScale) {
-        var scale = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * baseScale * (dynamicScale ? 1 : resScale);
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT*scale + 'pt';
+        this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.scaling + 'pt';
         // If not in screen scaling mode, do not need to scale markers (but must reset scale).
-        scale = dynamicScale ? resScale*dynamicScale : 1;
+        var scale = dynamicScale ? resScale*dynamicScale : 1;
         this.markerDefs.forEach(function (m) {
           m.attr({
             markerWidth: markerSize[0]*scale,
@@ -1441,7 +1465,7 @@
                                            confidence,
                                            existing) {
         var text,
-        numberOffset = this.CONFIDENCE_FONT_PT * 1.5,
+        numberOffset = 0.8 * this.CONFIDENCE_FONT_PT * this.scaling,
         xdiff = parentx - x,
         ydiff = parenty - y,
         length = Math.sqrt(xdiff*xdiff + ydiff*ydiff),
@@ -1464,8 +1488,7 @@
                    y: newConfidenceY,
                    'font-size': this.confidenceFontSize,
                    'text-anchor': 'middle',
-                   stroke: 'black',
-                   'stroke-width': 0.5,
+                   'alignment-baseline': 'middle',
                    fill: fillColor})
             .text(""+confidence);
 

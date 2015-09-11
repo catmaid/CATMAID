@@ -512,6 +512,8 @@
     if ($.fn.DataTable.isDataTable(selector)) {
       var datatable = $(selector).DataTable();
       if (datatable) {
+        this.display_length = datatable.page.len();
+        this.display_start = datatable.page() * this.display_length;
         datatable.destroy();
       }
     }

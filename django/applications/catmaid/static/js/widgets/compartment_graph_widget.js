@@ -1370,7 +1370,7 @@ GroupGraph.prototype.appendGroup = function(models) {
 
     function hasAnnotation(aid, annotation) {
       return annotation.id == aid;
-    };
+    }
 
     // Find common annotations, if any
     var skids = Object.keys(json.skeletons);

@@ -849,7 +849,7 @@
             }, {});
             // Add annotation id, name and annotator to result set
             Object.keys(json.entities).forEach(function(eid) {
-              var result = results[eid]
+              var result = results[eid];
               if (!(result.annotations)) {
                 result.annotations = [];
               }

@@ -2290,7 +2290,7 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
 
         linked_annotations = parsed_response['skeletons'][str(skeleton_id)]
-        linked_annotation_ids = [a.id for a in linked_annotations]
+        linked_annotation_ids = [a['id'] for a in linked_annotations]
         self.assertFalse(annotations['A'] in linked_annotation_ids)
         self.assertFalse(annotations['C'] in linked_annotation_ids)
 

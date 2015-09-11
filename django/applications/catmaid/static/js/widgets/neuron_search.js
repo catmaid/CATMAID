@@ -174,30 +174,42 @@
   /**
    * Refresh data table UI.
    */
-  NeuronAnnotations.prototype.makeDataTable = function() {
-    var selector = 'table#neuron_annotations_query_results_table' + this.widgetID;
-    var datatable = $(selector).DataTable({
-      destroy: true,
-      dom: "lrptip",
-      autoWidth: false,
-      paging: true,
-      displayStart: this.display_start,
-      pageLength: this.display_length,
-      lengthMenu: [[50, 100, 500, -1], [50, 100, 500, "All"]],
-      order: [],
-      processing: true,
-      columns: [
-        { "orderable": false },
-        { "orderable": false },
-        { "orderable": false, "visible": this.displayAnnotations }
-      ]
-    }).off('.dt').on('draw.dt', this, function(e) {
-      e.data.updateSelectionUI();
-      e.data.updateAnnotationFiltering();
-    }).on('page.dt', this, function(e) {
-      e.data.updateAnnotations();
-    });;
-  };
+  NeuronAnnotations.prototype.makeDataTable = (function() {
+    // Indicate if a redraw operation should be followd by updating the
+    // annotation display.
+    var requestAnnotationUpdate = false;
+
+    return function() {
+      var selector = 'table#neuron_annotations_query_results_table' + this.widgetID;
+      var datatable = $(selector).DataTable({
+        destroy: true,
+        dom: "lrptip",
+        autoWidth: false,
+        paging: true,
+        displayStart: this.display_start,
+        pageLength: this.display_length,
+        lengthMenu: [[50, 100, 500, -1], [50, 100, 500, "All"]],
+        order: [],
+        processing: true,
+        columns: [
+          { "orderable": false },
+          { "orderable": false },
+          { "orderable": false, "visible": this.displayAnnotations }
+        ]
+      }).off('.dt').on('draw.dt', this, function(e) {
+        e.data.updateSelectionUI();
+        e.data.updateAnnotationFiltering();
+        if (requestAnnotationUpdate) {
+          requestAnnotationUpdate = false;
+          e.data.updateAnnotations();
+        }
+      }).on('page.dt', this, function(e) {
+        // After every page chage, annotations should be updated. This can't be
+        // done directly, because this event happens before redrawing.
+        requestAnnotationUpdate = true;
+      });
+    };
+  })();
 
   /**
    * Create a table row and passes it to add_row_fn which should it add it

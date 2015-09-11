@@ -2999,6 +2999,8 @@ var WindowMaker = new function()
     
     var queryFields = document.createElement('div');
     queryFields.setAttribute('id', 'neuron_annotations_query_fields' + NA.widgetID);
+    queryFields.setAttribute('class', 'buttonpanel');
+
     // Create the query fields HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
     var queryFields_html =
@@ -3064,11 +3066,12 @@ var WindowMaker = new function()
           'class="neuron_annotations_query_footer">' +
         '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
             'value="Annotate..." />' +
-        '<input id="neuron_annotation_prev_page{{NA-ID}}" type="button" value="<" />' +
-        '<span id="neuron_annotations_paginattion{{NA-ID}}">[0, 0] of 0</span>' +
-        '<input id="neuron_annotation_next_page{{NA-ID}}" type="button" value=">" />' +
         '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
           'Sync to: ' +
+        '</label>' +
+        '<label>' +
+          '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
+          'Show annotations' +
         '</label>' +
       '</div>' +
       '<table cellpadding="0" cellspacing="0" border="0" ' +
@@ -3079,9 +3082,7 @@ var WindowMaker = new function()
             '<th>' +
               '<input type="checkbox" ' +
                   'id="neuron_annotations_toggle_neuron_selections_checkbox{{NA-ID}}" />' +
-            '</th>' +
-            '<th>' +
-              'Entity Name' +
+              '<span>Entity Name</span>' +
             '</th>' +
             '<th>Type</th>' +
             '<th>' +
@@ -3141,10 +3142,13 @@ var WindowMaker = new function()
         CATMAID.annotate_entities(selected_entity_ids,
             this.refresh_annotations.bind(this));
     }).bind(NA);
-    $('#neuron_annotation_prev_page' + NA.widgetID)[0].onclick =
-        NA.prev_page.bind(NA);
-    $('#neuron_annotation_next_page' + NA.widgetID)[0].onclick =
-        NA.next_page.bind(NA);
+    $('#neuron_search_show_annotations' + NA.widgetID)
+      .prop('checked', NA.displayAnnotations)
+      .on('change', NA, function(e) {
+        var widget = e.data;
+        widget.displayAnnotations = this.checked;
+        widget.updateAnnotations();
+      });
 
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);
@@ -3181,7 +3185,8 @@ var WindowMaker = new function()
     $filter_select.combobox({
       selected: function(event, ui) {
         var val = $(this).val();
-        NA.toggle_annotation_display(val != 'show_all', val);
+        NA.annotationUserFilter = val != 'show_all' ? val : null;
+        NA.updateAnnotationUI();
       }
     });
     

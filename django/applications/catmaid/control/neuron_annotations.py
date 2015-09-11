@@ -156,20 +156,6 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
     entities = entities_qs.select_related('class_column')
     entity_ids = [e.id for e in entities]
 
-    # Make second query to retrieve annotations and skeletons
-    annotations = ClassInstanceClassInstance.objects.filter(
-        relation_id = relations['annotated_with'],
-        class_instance_a__id__in = entity_ids).order_by('id').values_list(
-                'class_instance_a', 'class_instance_b',
-                'class_instance_b__name', 'user__id')
-
-    annotation_dict = {}
-    for a in annotations:
-        if a[0] not in annotation_dict:
-            annotation_dict[a[0]] = []
-        annotation_dict[a[0]].append(
-          {'id': a[1], 'name': a[2], 'uid': a[3]})
-
     # Make third query to retrieve all skeletons and root nodes for entities (if
     # they have such).
     skeletons = ClassInstanceClassInstance.objects.filter(
@@ -186,11 +172,9 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
     annotated_entities = [];
     for e in entities:
         class_name = e.class_column.class_name
-        annotations = annotation_dict[e.id] if e.id in annotation_dict else []
         entity_info = {
             'id': e.id,
             'name': e.name,
-            'annotations': annotations,
             'type': class_name,
         }
 
@@ -201,6 +185,24 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
 
         annotated_entities.append(entity_info)
 
+    if annotations:
+        # Make second query to retrieve annotations and skeletons
+        annotations = ClassInstanceClassInstance.objects.filter(
+            relation_id = relations['annotated_with'],
+            class_instance_a__id__in = entity_ids).order_by('id').values_list(
+                    'class_instance_a', 'class_instance_b',
+                    'class_instance_b__name', 'user__id')
+
+        annotation_dict = {}
+        for a in annotations:
+            if a[0] not in annotation_dict:
+                annotation_dict[a[0]] = []
+            annotation_dict[a[0]].append(
+            {'id': a[1], 'name': a[2], 'uid': a[3]})
+
+        for e in annotated_entities:
+            e['annotations'] = annotation_dict.get(e['id'], [])
+
     return annotated_entities
 
 @requires_user_role([UserRole.Browse])
@@ -210,26 +212,18 @@ def query_neurons_by_annotations(request, project_id = None):
     classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
 
-    display_start = int(request.POST.get('display_start', 0))
-    display_length = int(request.POST.get('display_length', -1))
-    if display_length < 0:
-        display_length = 2000  # Default number of result rows
-
-    query = create_basic_annotated_entity_query(p, request.POST, relations,
-            classes)
+    query = create_basic_annotated_entity_query(p,
+            request.POST, relations, classes)
     query = query.order_by('id').distinct()
 
-    # Get total number of results
-    num_records = query.count()
+    with_annotations = request.POST.get('with_annotations', 'false') == 'true'
 
-    # Limit and offset result to display range
-    query = query[display_start:display_start + display_length]
-
-    dump = create_annotated_entity_list(p, query, relations)
+    # Collect entity information
+    entities = create_annotated_entity_list(p, query, relations,
+            with_annotations)
 
     return HttpResponse(json.dumps({
-      'entities': dump,
-      'total_n_records': num_records,
+      'entities': entities,
     }))
 
 @requires_user_role([UserRole.Browse])
@@ -972,7 +966,7 @@ def annotations_for_skeletons(request, project_id=None):
     # Select pairs of skeleton_id vs annotation name
     cursor.execute('''
     SELECT skeleton_neuron.class_instance_a,
-           annotation.id, annotation.name
+           annotation.id, annotation.name, neuron_annotation.user_id
     FROM class_instance_class_instance skeleton_neuron,
          class_instance_class_instance neuron_annotation,
          class_instance annotation
@@ -985,8 +979,8 @@ def annotations_for_skeletons(request, project_id=None):
     # Group by skeleton ID
     m = defaultdict(list)
     a = dict()
-    for skid, aid, name in cursor.fetchall():
-        m[skid].append(aid)
+    for skid, aid, name, uid in cursor.fetchall():
+        m[skid].append({'id': aid, 'uid': uid})
         a[aid] = name
 
     return HttpResponse(json.dumps({

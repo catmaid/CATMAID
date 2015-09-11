@@ -988,3 +988,33 @@ def annotations_for_skeletons(request, project_id=None):
         'annotations': a
     }, separators=(',', ':')))
 
+
+@requires_user_role([UserRole.Browse])
+def annotations_for_entities(request, project_id=None):
+    ids = tuple(int(eid) for key, eid in request.POST.iteritems() if key.startswith('ids['))
+    cursor = connection.cursor()
+    cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='annotated_with'" % int(project_id))
+    annotated_with_id = cursor.fetchone()[0]
+
+    # Select pairs of skeleton_id vs annotation name
+    cursor.execute('''
+    SELECT entity_annotation.class_instance_a,
+           annotation.id, annotation.name, entity_annotation.user_id
+    FROM class_instance_class_instance entity_annotation,
+         class_instance annotation
+    WHERE entity_annotation.class_instance_a IN (%s)
+      AND entity_annotation.relation_id = %s
+      AND entity_annotation.class_instance_b = annotation.id
+    ''' % (",".join(map(str, ids)), annotated_with_id))
+
+    # Group by entity ID
+    m = defaultdict(list)
+    a = dict()
+    for eid, aid, name, uid in cursor.fetchall():
+        m[eid].append({'id': aid, 'uid': uid})
+        a[aid] = name
+
+    return HttpResponse(json.dumps({
+        'entities': m,
+        'annotations': a
+    }, separators=(',', ':')))

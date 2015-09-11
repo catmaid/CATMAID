@@ -211,6 +211,7 @@
     tr.setAttribute('class', 'neuron_annotation_result_row' +
             this.widgetID + '_' + entity.id);
     tr.setAttribute('type', entity.type);
+    tr.dataset.entityId = entity.id;
 
     // Checkbox & name column, potentially indented
     var td_cb = document.createElement('td');
@@ -786,6 +787,19 @@
         "option", {source: CATMAID.annotations.getAllNames()});
   };
 
+  NeuronAnnotations.prototype.getEntitiesOnPage = function() {
+    var selector = 'table#neuron_annotations_query_results_table' + this.widgetID;
+    if ($.fn.DataTable.isDataTable(selector)) {
+      var datatable = $(selector).DataTable();
+      if (datatable) {
+        return datatable.rows({page: 'current'}).nodes().toArray().map(function(tr) {
+          return Number(tr.dataset.entityId);
+        });
+      }
+    }
+    return [];
+  };
+
   /**
    * Query annotations for results on the current page that no annotations have
    * been queried for before.
@@ -797,35 +811,36 @@
     }
 
     // Query annotations for all results that we don't have annotations for yet
-    var entities = this.queryResults[0];
-    var querySkeletons = entities.filter(function(e) {
-      return 'neuron' === e.type && (!e.annotations || 0 === e.annotations.length);
-    }).reduce(function(o, e) {
-      return o.concat(e.skeleton_ids);
+    var visibleEntityIds = this.getEntitiesOnPage();
+    var entitiesToQuery = this.queryResults.reduce(function(l, entities) {
+      return entities.filter(function(e) {
+        var onPage = (-1 !== visibleEntityIds.indexOf(e.id));
+        return onPage && (!e.annotations || 0 === e.annotations.length);
+      });
     }, []);
 
-    if (querySkeletons.length > 0) {
-      var url = CATMAID.makeURL(project.id + '/annotations/skeletons/list');
+    var entityIdsToQuery = entitiesToQuery.map(function(e) { return e.id; });
+
+    if (entitiesToQuery.length > 0) {
+      var url = CATMAID.makeURL(project.id + '/annotations/entities/list');
       var self = this;
       requestQueue.register(url, 'POST',
           {
-            skids: querySkeletons
+            ids: entityIdsToQuery
           },
           CATMAID.jsonResponseHandler(function(json) {
             // Create mapping from skeleton ID to result object
-            var results = entities.reduce(function(o, r, i) {
-              for (var j=0, max=r.skeleton_ids.length; j<max; ++j) {
-                o[r.skeleton_ids[j]] = r;
-              }
+            var results = entitiesToQuery.reduce(function(o, r, i) {
+              o[r.id] = r;
               return o;
             }, {});
             // Add annotation id, name and annotator to result set
-            Object.keys(json.skeletons).forEach(function(skid) {
-              var result = results[skid]
+            Object.keys(json.entities).forEach(function(eid) {
+              var result = results[eid]
               if (!(result.annotations)) {
                 result.annotations = [];
               }
-              var links = json.skeletons[skid];
+              var links = json.entities[eid];
               var annotations = json.annotations;
               links.forEach(function(a) {
                 result.annotations.push({
@@ -834,9 +849,9 @@
                   uid: a.uid
                 });
               });
-
-              self.refresh();
             });
+
+            self.refresh();
           }));
     } else {
       this.refresh();
